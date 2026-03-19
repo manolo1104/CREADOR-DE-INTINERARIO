@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Huasteca IA — Tu Viaje a la Medida</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<!-- Google Analytics 4 — Reemplazar G-XXXXXXXXXX con tu ID real -->
+<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script> -->
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -1014,81 +1022,7 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: not-allowed;
 }
 
-.payment-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.payment-modal.show { display: flex; }
-
-.payment-modal-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(8, 14, 10, 0.78);
-  backdrop-filter: blur(2px);
-}
-
-.payment-modal-card {
-  position: relative;
-  width: min(540px, 100%);
-  background: #152214;
-  border: 1px solid rgba(255,255,255,0.12);
-  padding: 24px;
-}
-
-.payment-modal-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 34px;
-  font-weight: 300;
-  color: var(--crema);
-  margin-bottom: 6px;
-}
-
-.payment-modal-sub {
-  font-size: 12px;
-  color: rgba(244,237,216,0.6);
-  margin-bottom: 16px;
-}
-
-.payment-modal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.payment-modal-grid .full { grid-column: span 2; }
-
-.modal-row {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 14px;
-  font-size: 12px;
-  color: rgba(244,237,216,0.7);
-}
-
-.modal-actions {
-  margin-top: 18px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.modal-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: var(--crema);
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
-}
+/* Payment modal CSS eliminado — se usará MercadoPago en v2 */
 
 /* ─── ANIMATIONS ─── */
 @keyframes riseIn {
@@ -1110,8 +1044,6 @@ input[type="range"]::-webkit-slider-thumb {
   .payment-panel { padding: 0 24px 40px; }
   .payment-grid { grid-template-columns: 1fr; }
   .payment-grid .full { grid-column: auto; }
-  .payment-modal-grid { grid-template-columns: 1fr; }
-  .payment-modal-grid .full { grid-column: auto; }
 }
 </style>
 </head>
@@ -1146,6 +1078,10 @@ input[type="range"]::-webkit-slider-thumb {
     </div>
   </div>
   <button class="btn-start" onclick="showWizard()">Crear mi Itinerario</button>
+  <div style="margin-top:32px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; opacity:0; animation:riseIn 0.7s ease forwards 1.4s">
+    <button class="interes-tag selected" onclick="setModo('turista')" id="modo-turista" type="button" style="padding:14px 28px;font-size:13px;cursor:pointer">🧳 Soy turista</button>
+    <button class="interes-tag" onclick="setModo('guia')" id="modo-guia" type="button" style="padding:14px 28px;font-size:13px;cursor:pointer">🗺️ Soy guía</button>
+  </div>
 </section>
 
 <!-- ═══════════════════════════════════════════
@@ -1229,12 +1165,31 @@ input[type="range"]::-webkit-slider-thumb {
             <span>1 día</span><span>5 días</span><span>10 días</span>
           </div>
         </div>
+
+        <div class="field-group">
+          <span class="field-label">¿Cuándo planeas viajar?</span>
+          <input type="month" id="fecha-viaje" min="2025-01"
+            style="background:transparent; border:1.5px solid rgba(255,255,255,0.1); color:var(--crema); padding:12px 16px; font-family:inherit; font-size:14px; max-width:250px">
+          <div id="temporada-aviso" style="margin-top:8px; font-size:12px; color:var(--dorado); line-height:1.5"></div>
+        </div>
+
+        <div class="field-group">
+          <span class="field-label">¿De dónde vienes?</span>
+          <div style="display:flex; gap:10px; flex-wrap:wrap">
+            <button class="interes-tag" onclick="selectOrigen(this,'CDMX')" type="button">🏙️ CDMX</button>
+            <button class="interes-tag" onclick="selectOrigen(this,'Monterrey')" type="button">🏔️ Monterrey</button>
+            <button class="interes-tag" onclick="selectOrigen(this,'SLP')" type="button">🌵 San Luis Potosí</button>
+            <button class="interes-tag" onclick="selectOrigen(this,'Tampico')" type="button">🌊 Tampico</button>
+            <button class="interes-tag" onclick="selectOrigen(this,'Guadalajara')" type="button">🎺 Guadalajara</button>
+            <button class="interes-tag selected" onclick="selectOrigen(this,'ya_estoy')" type="button">📍 Ya estoy aquí</button>
+          </div>
+          <div id="origen-info" style="margin-top:10px; font-size:12px; color:rgba(244,237,216,0.55); line-height:1.6"></div>
+        </div>
+
         <div class="step-nav">
           <button class="btn-next" onclick="nextStep(2)">Continuar →</button>
         </div>
       </div>
-
-      <!-- PASO 2: PRESUPUESTO -->
       <div class="step-panel" id="step-2">
         <div class="step-header">
           <div class="step-eyebrow">Paso 02 de 06</div>
@@ -1431,16 +1386,25 @@ input[type="range"]::-webkit-slider-thumb {
   <div class="result-content">
     <div id="itinerary-output"></div>
   </div>
-  <div class="payment-panel">
+  <div class="payment-panel" id="payment-panel">
     <div class="payment-card">
       <div class="payment-header">
         <div>
-          <div class="payment-title">Desbloquea tu PDF listo para enviar</div>
-          <div class="payment-sub">Completa tus datos, realiza el pago y habilita la descarga para tu cliente.</div>
+          <div class="payment-title">Tu precio por este itinerario</div>
+          <div class="payment-sub">Completa los datos para procesar el cobro de forma segura.</div>
         </div>
         <div class="price-badge">
           <span class="lbl">Total a cobrar</span>
-          <span class="val" id="payment-total">$0 MXN</span>
+          <span class="val" id="payment-total">$149 MXN</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <span class="field-label">Precio sugerido</span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px">
+          <button class="interes-tag" onclick="setPrecio(99)" type="button" style="min-width:70px;cursor:pointer">$99</button>
+          <button class="interes-tag selected" onclick="setPrecio(149)" type="button" style="min-width:70px;cursor:pointer">$149</button>
+          <button class="interes-tag" onclick="setPrecio(199)" type="button" style="min-width:70px;cursor:pointer">$199</button>
         </div>
       </div>
 
@@ -1448,7 +1412,11 @@ input[type="range"]::-webkit-slider-thumb {
         <input class="text-input" id="cliente-nombre" type="text" placeholder="Nombre del cliente">
         <input class="text-input" id="cliente-email" type="email" placeholder="Correo del cliente">
         <input class="text-input" id="cliente-whatsapp" type="text" placeholder="WhatsApp (opcional)">
-        <input class="text-input" type="text" value="Método de pago: Tarjeta (Stripe)" readonly>
+        <div class="text-input" style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;color:rgba(244,237,216,0.6);white-space:nowrap">Monto (MXN):</label>
+          <input type="number" id="monto-cobrar" value="149" min="1" step="1" inputmode="numeric"
+            style="background:transparent;border:none;color:var(--dorado);font-size:20px;font-family:'Cormorant Garamond',serif;width:90px;outline:none">
+        </div>
         <textarea class="text-input full" id="payment-notes" rows="2" placeholder="Notas de cobro (opcional). Ej: anticipo del 50%, incluye transporte..."></textarea>
       </div>
 
@@ -1457,10 +1425,10 @@ input[type="range"]::-webkit-slider-thumb {
         <label for="accept-terms" style="font-size:12px;color:rgba(244,237,216,0.65)">Confirmo que el cliente aceptó el itinerario, precio y condiciones de servicio.</label>
       </div>
 
-      <div class="payment-help" id="payment-method-help">Al hacer clic en “Cobrar ahora” se abrirá el modal para capturar tarjeta y procesar el pago.</div>
+      <div class="payment-help" id="payment-method-help">Al hacer clic en "Cobrar" se redirigirá a una plataforma de pago segura (MercadoPago).</div>
 
       <div class="payment-actions">
-        <button class="btn-action primary" id="btn-start-payment" onclick="startPayment()">Cobrar ahora</button>
+        <button class="btn-action primary" id="btn-start-payment" onclick="startPayment()">Cobrar $<span id="monto-display">149</span> MXN</button>
       </div>
 
       <div id="payment-status" class="status-msg">Esperando datos de cliente y cobro.</div>
@@ -1468,35 +1436,14 @@ input[type="range"]::-webkit-slider-thumb {
   </div>
   <div class="result-actions">
     <button class="btn-action secondary" onclick="showWizard(); resetWizard()">← Crear Otro Itinerario</button>
+    <button class="btn-action secondary" onclick="shareItinerary()">📤 Compartir</button>
     <button class="btn-action primary" id="btn-download-pdf" onclick="printItinerary()" disabled>⬇ Descargar PDF</button>
   </div>
 </section>
 
-<div class="payment-modal" id="payment-modal" aria-hidden="true">
-  <div class="payment-modal-backdrop" onclick="closePaymentModal()"></div>
-  <div class="payment-modal-card">
-    <button class="modal-close" onclick="closePaymentModal()">✕</button>
-    <div class="payment-modal-title">Pago con tarjeta</div>
-    <div class="payment-modal-sub">Captura los datos de la tarjeta para procesar el cobro del itinerario.</div>
+<!-- Modal de tarjeta eliminado por seguridad PCI DSS. 
+     Pagos se procesarán mediante MercadoPago / Stripe cuando se active. -->
 
-    <div class="payment-modal-grid">
-      <input class="text-input full" id="card-holder" type="text" placeholder="Nombre del titular (como aparece en la tarjeta)">
-      <input class="text-input full" id="card-number" type="text" inputmode="numeric" maxlength="19" placeholder="Número de tarjeta">
-      <input class="text-input" id="card-exp" type="text" inputmode="numeric" maxlength="5" placeholder="MM/AA">
-      <input class="text-input" id="card-cvv" type="password" inputmode="numeric" maxlength="4" placeholder="CVV">
-    </div>
-
-    <div class="modal-row">
-      <span>Total a cobrar:</span>
-      <strong id="modal-payment-total">$0 MXN</strong>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-action primary" onclick="processCardPayment()">Pagar tarjeta</button>
-      <button class="btn-action secondary" onclick="closePaymentModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
 
 </div><!-- /app -->
 
@@ -1569,9 +1516,12 @@ let state = {
   restricciones: "",
   sueno: "",
   pagoConfirmado: false,
-  ordenId: ""
+  ordenId: "",
+  fechaViaje: "",
+  origen: "ya_estoy"
 };
 
+let appMode = 'turista'; // 'turista' | 'guia'
 let currentStep = 1;
 let itineraryRawText = "";
 
@@ -1592,25 +1542,165 @@ const AI_CONFIG = {
 };
 
 // ══════════════════════════════════════════════════════
+//  DATOS DE TRANSPORTE POR ORIGEN
+// ══════════════════════════════════════════════════════
+const ORIGENES_TRANSPORTE = {
+  'CDMX': {
+    ruta: 'Terminal del Norte → Ciudad Valles (ADO/Oriente)',
+    tiempo: '5.5 hrs en autobús nocturno',
+    precio_bus: '$450–550 MXN',
+    en_auto: '5 hrs por carretera 57 + 85. Casetas aprox $380 MXN.'
+  },
+  'Monterrey': {
+    ruta: 'Central MTY → Ciudad Valles',
+    tiempo: '3.5 hrs en autobús',
+    precio_bus: '$280–380 MXN',
+    en_auto: '3 hrs por carretera 85. Sin casetas.'
+  },
+  'Tampico': {
+    ruta: 'Tampico → Ciudad Valles directo',
+    tiempo: '2 hrs en autobús',
+    precio_bus: '$120–180 MXN',
+    en_auto: '1.5 hrs por carretera 70.'
+  },
+  'SLP': {
+    ruta: 'San Luis Potosí → Ciudad Valles',
+    tiempo: '3 hrs en autobús',
+    precio_bus: '$180–250 MXN',
+    en_auto: '3 hrs por carretera 70.'
+  },
+  'Guadalajara': {
+    ruta: 'GDL → SLP → Ciudad Valles (transbordo)',
+    tiempo: '7–8 hrs total',
+    precio_bus: '$600–800 MXN',
+    en_auto: '6 hrs por autopista.'
+  },
+  'ya_estoy': { ruta: '', tiempo: '', precio_bus: '', en_auto: '' }
+};
+
+// ══════════════════════════════════════════════════════
+//  FUNCIONES NUEVAS: MODO, FECHA, ORIGEN, PRECIO, SHARE
+// ══════════════════════════════════════════════════════
+function setModo(modo) {
+  appMode = modo;
+  document.querySelectorAll('#modo-turista, #modo-guia').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`modo-${modo}`).classList.add('selected');
+}
+
+function selectOrigen(el, ciudad) {
+  el.parentElement.querySelectorAll('.interes-tag').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.origen = ciudad;
+  const info = ORIGENES_TRANSPORTE[ciudad];
+  const infoEl = document.getElementById('origen-info');
+  if (info && info.ruta) {
+    infoEl.innerHTML = `🚌 <strong>${info.ruta}</strong> · ${info.tiempo} · ${info.precio_bus}<br>🚗 ${info.en_auto}`;
+  } else {
+    infoEl.textContent = '';
+  }
+}
+
+function setPrecio(monto) {
+  const input = document.getElementById('monto-cobrar');
+  const display = document.getElementById('monto-display');
+  const total = document.getElementById('payment-total');
+  if (input) input.value = monto;
+  if (display) display.textContent = monto;
+  if (total) total.textContent = `$${monto} MXN`;
+  // Update price suggestion buttons
+  document.querySelectorAll('#payment-panel .interes-tag').forEach(btn => {
+    btn.classList.toggle('selected', btn.textContent.trim() === `$${monto}`);
+  });
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--verde-bosque);color:var(--crema);padding:14px 28px;font-size:13px;border:1px solid var(--verde-vivo);z-index:100;animation:riseIn 0.3s ease';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+async function shareItinerary() {
+  const titulo = `Mi itinerario de ${state.dias} días en la Huasteca Potosina 🌿`;
+  const texto = document.getElementById('itinerary-output').innerText.slice(0, 400) + '...';
+  const url = window.location.href;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: titulo, text: texto, url });
+    } catch (e) {
+      if (e.name !== 'AbortError') fallbackShare(url);
+    }
+  } else {
+    fallbackShare(url);
+  }
+}
+
+function fallbackShare(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('✅ Link copiado. ¡Compártelo con quien quieras!');
+  }).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('✅ Link copiado al portapapeles');
+  });
+}
+
+// Analytics tracking (placeholder — reemplazar G-XXXXXXXXXX con tu ID real)
+function trackEvent(nombre, datos) {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', nombre, datos || {});
+  }
+  console.log(`📊 Track: ${nombre}`, datos || '');
+}
+
+// ══════════════════════════════════════════════════════
 //  INICIALIZAR LUGARES
 // ══════════════════════════════════════════════════════
-function initLugares() {
+function initLugares(sourceDB) {
+  const db = sourceDB || DESTINOS_DB;
   const grid = document.getElementById("lugares-grid");
+
+  // Verificación defensiva
+  if (!grid) {
+    console.error('❌ #lugares-grid no encontrado en el DOM');
+    return;
+  }
+
+  if (!db || db.length === 0) {
+    console.error('❌ DESTINOS_DB está vacía o no definida');
+    grid.innerHTML = '<p style="color:#ffd6c4; padding:16px; font-size:13px;">⚠️ No se encontraron destinos. Intenta restaurar la base predeterminada.</p>';
+    return;
+  }
+
+  console.log(`✅ Cargando ${db.length} destinos...`);
   grid.innerHTML = "";
-  DESTINOS_DB.forEach(d => {
-    const tagsTxt = (d.ideal_para || []).slice(0, 3).join(" · ");
-    const el = document.createElement("div");
-    el.className = "lugar-item";
-    el.dataset.id = d.id;
-    el.innerHTML = `
-      <div class="lugar-check"></div>
-      <div class="lugar-info">
-        <div class="lugar-name">${d.emoji} ${d.nombre}</div>
-        <div class="lugar-tipo">${d.zona} · ${d.tipo}${tagsTxt ? ` · ${tagsTxt}` : ""}</div>
-      </div>`;
-    el.onclick = () => toggleLugar(el, d.id);
-    grid.appendChild(el);
+
+  db.forEach((d, i) => {
+    try {
+      const tagsTxt = (d.ideal_para || []).slice(0, 3).join(" · ");
+      const el = document.createElement("div");
+      el.className = "lugar-item";
+      el.dataset.id = d.id;
+      el.innerHTML = `
+        <div class="lugar-check"></div>
+        <div class="lugar-info">
+          <div class="lugar-name">${d.emoji || '📍'} ${d.nombre}</div>
+          <div class="lugar-tipo">${d.zona} · ${d.tipo}${tagsTxt ? ` · ${tagsTxt}` : ""}</div>
+        </div>`;
+      el.onclick = () => toggleLugar(el, d.id);
+      grid.appendChild(el);
+    } catch (err) {
+      console.error(`❌ Error al renderizar destino ${i}:`, d, err);
+    }
   });
+
+  console.log(`✅ ${grid.children.length} destinos renderizados`);
 }
 
 function normalizeHeader(key) {
@@ -1765,11 +1855,64 @@ function toggleLugar(el, id) {
 //  NAVEGACIÓN
 // ══════════════════════════════════════════════════════
 function showWizard() {
+  trackEvent('wizard_inicio', { modo: appMode });
   document.getElementById("screen-intro").style.display = "none";
   document.getElementById("screen-wizard").style.display = "block";
   bindExcelDatabaseLoader();
+  bindNewFields();
   initLugares();
   goToStep(1);
+}
+
+function bindNewFields() {
+  // Fecha de viaje — avisos de temporada
+  const fechaInput = document.getElementById('fecha-viaje');
+  if (fechaInput && !fechaInput.dataset.bound) {
+    fechaInput.dataset.bound = '1';
+    fechaInput.addEventListener('change', function() {
+      const mes = parseInt(this.value.split('-')[1]);
+      const avisos = {
+        1: '✅ Temporada ideal. Clima fresco, cascadas cristalinas, poca gente.',
+        2: '✅ Muy buena temporada. Similar a enero.',
+        3: '⚠️ Semana Santa puede estar muy llena. Reserva hospedaje con anticipación.',
+        4: '✅ Buen clima, post-Semana Santa más tranquilo.',
+        5: '⚠️ Inicio de lluvias. Algunas cascadas pueden estar turbulentas.',
+        6: '⚠️ Temporada de lluvias. Cascadas con más agua pero accesos difíciles.',
+        7: '🌧️ Lluvias intensas. Algunos destinos pueden cerrar. Riesgo en ríos.',
+        8: '🌧️ Similar a julio. Mucho calor y humedad.',
+        9: '🌧️ Fin de lluvias. Los ríos empiezan a bajar.',
+        10: '✅ Clima mejorando. Xantolo (Día de Muertos huasteco) a finales de octubre.',
+        11: '🎭 Xantolo el 1–2 de noviembre. Experiencia cultural única. Alta demanda.',
+        12: '⚠️ Navidad y Año Nuevo con precios altos. Reserva con meses de anticipación.',
+      };
+      document.getElementById('temporada-aviso').textContent = avisos[mes] || '';
+      state.fechaViaje = this.value;
+    });
+  }
+
+  // Monto cobrar — sincronizar con display
+  const montoInput = document.getElementById('monto-cobrar');
+  if (montoInput && !montoInput.dataset.bound) {
+    montoInput.dataset.bound = '1';
+    montoInput.addEventListener('input', function() {
+      const display = document.getElementById('monto-display');
+      const total = document.getElementById('payment-total');
+      if (display) display.textContent = this.value;
+      if (total) total.textContent = `$${this.value} MXN`;
+    });
+  }
+
+  // Checkbox accept-terms — habilitar/deshabilitar botón cobrar
+  const checkbox = document.getElementById('accept-terms');
+  if (checkbox && !checkbox.dataset.bound) {
+    checkbox.dataset.bound = '1';
+    checkbox.addEventListener('change', function() {
+      const btn = document.getElementById('btn-start-payment');
+      if (btn && !TEST_MODE.disablePayments) {
+        btn.disabled = !this.checked;
+      }
+    });
+  }
 }
 
 function nextStep(n) {
@@ -1778,6 +1921,7 @@ function nextStep(n) {
 }
 
 function goToStep(n) {
+  trackEvent('wizard_paso', { paso: n });
   document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
   document.getElementById(`step-${n}`).classList.add("active");
 
@@ -1796,11 +1940,12 @@ function collectCurrentStep() {
   state.dias = parseInt(document.getElementById("dias-slider").value);
   state.restricciones = document.getElementById("restricciones")?.value || "";
   state.sueno = document.getElementById("sueno")?.value || "";
+  state.fechaViaje = document.getElementById("fecha-viaje")?.value || "";
 
-  state.intereses = Array.from(document.querySelectorAll(".interes-tag.selected:not([data-group])"))
+  state.intereses = Array.from(document.querySelectorAll("#step-4 .interes-tag.selected"))
     .map(el => el.textContent.trim());
 
-  const actividad = document.querySelector(".interes-tag.selected[data-group='actividad']");
+  const actividad = document.querySelector("#step-5 .interes-tag.selected[data-group='actividad']");
   if (actividad) state.nivelActividad = actividad.textContent.trim();
 
   const viajero = document.querySelector(".viajero-card.selected .viajero-name");
@@ -1829,7 +1974,8 @@ function selectActividad(el) {
 
 function resetWizard() {
   state = { dias:3, presupuesto:"moderado", lugares:[], intereses:["🌊 Cascadas y Pozas"],
-    tipoViajero:"Solo/Sola", nivelActividad:"🦥 Tranquilo", restricciones:"", sueno:"", pagoConfirmado:true, ordenId:"" };
+    tipoViajero:"Solo/Sola", nivelActividad:"🦥 Tranquilo", restricciones:"", sueno:"",
+    pagoConfirmado:true, ordenId:"", fechaViaje:"", origen:"ya_estoy" };
   itineraryRawText = "";
   document.getElementById("screen-result").style.display = "none";
   document.getElementById("screen-wizard").style.display = "block";
@@ -1874,6 +2020,22 @@ function buildLocalItineraryText() {
 
   chunks.push(`## ✨ Itinerario personalizado (${state.dias} días)`);
   chunks.push(`Diseñado para **${state.tipoViajero}**, nivel **${state.nivelActividad}**, con enfoque en **${state.intereses.join(", ")}**.`);
+
+  // Agregar info de cómo llegar si viene de otra ciudad
+  const origenInfo = ORIGENES_TRANSPORTE[state.origen];
+  if (origenInfo && origenInfo.ruta) {
+    chunks.push(`### 🚌 Cómo llegar desde ${state.origen}`);
+    chunks.push(`**${origenInfo.ruta}** · ${origenInfo.tiempo} · ${origenInfo.precio_bus}`);
+    chunks.push(`🚗 En auto: ${origenInfo.en_auto}`);
+  }
+
+  // Aviso de temporada si se especificó fecha
+  if (state.fechaViaje) {
+    const mes = parseInt(state.fechaViaje.split('-')[1]);
+    if (mes >= 6 && mes <= 9) {
+      chunks.push(`> ⚠️ **Temporada de lluvias (${state.fechaViaje}):** Algunas cascadas pueden tener accesos difíciles. Lleva ropa impermeable y pregunta por condiciones locales antes de ir.`);
+    }
+  }
 
   for (let day = 1; day <= state.dias; day++) {
     const a = selected[(day * 2 - 2) % selected.length];
@@ -1922,6 +2084,13 @@ function buildLocalItineraryText() {
 // ══════════════════════════════════════════════════════
 async function generateItinerary() {
   collectCurrentStep();
+  trackEvent('itinerario_generado', {
+    dias: state.dias,
+    presupuesto: state.presupuesto,
+    num_destinos: state.lugares.length,
+    modo: appMode,
+    origen: state.origen
+  });
 
   // Mostrar loading
   document.getElementById("screen-wizard").style.display = "none";
@@ -1955,39 +2124,63 @@ async function generateItinerary() {
     `- ${l.emoji} ${l.nombre} (${l.zona}): ${l.descripcion} | Actividad/Tipo: ${l.tipo} | Duración: ${l.duracion_hrs}h | Precio: ${l.precio_entrada} | Dificultad: ${l.dificultad} | Tags: ${(l.ideal_para || []).join(", ")}`
   ).join("\n");
 
-  const prompt = `Eres un experto guía de turismo local de Xilitla y la Huasteca Potosina, México. 
-Con base en los siguientes datos del viajero, crea un itinerario DETALLADO, PRÁCTICO y PERSONALIZADO.
+  const prompt = `Eres el mejor guía local de la Huasteca Potosina, México. Vives en Xilitla.
 
-═══ DATOS DEL VIAJERO ═══
+DATOS DEL VIAJERO:
+- Ciudad de origen: ${state.origen || 'No especificada'}
+- Fecha de viaje: ${state.fechaViaje || 'No especificada'}
 - Duración: ${state.dias} días
 - Presupuesto: ${presupuestoLabels[state.presupuesto]}
 - Tipo de viajero: ${state.tipoViajero}
-- Nivel de actividad física: ${state.nivelActividad}
-- Intereses principales: ${state.intereses.join(", ") || "Naturaleza y cultura en general"}
-- Restricciones/necesidades: ${state.restricciones || "Ninguna"}
-- Sueño de viaje: ${state.sueno || "No especificado"}
+- Nivel de actividad: ${state.nivelActividad}
+- Intereses: ${state.intereses.join(", ") || "Naturaleza y cultura en general"}
+- Restricciones: ${state.restricciones || "Ninguna"}
+- Sueño del viaje: ${state.sueno || "No especificado"}
 
-═══ DESTINOS DISPONIBLES (base de datos local) ═══
+TIEMPOS DE TRASLADO REALES (úsalos para hacer itinerarios posibles):
+- Xilitla ↔ Ciudad Valles: 2.5 hrs auto / 3 hrs autobús ($120 MXN)
+- Ciudad Valles ↔ Cascada de Tamul: 1.5 hrs auto + 45 min lancha ($280 MXN ida y vuelta)
+- Ciudad Valles ↔ Cascadas de Micos: 30 min auto
+- Ciudad Valles ↔ Cascadas de Tamasopo: 45 min auto
+- Ciudad Valles ↔ Sótano de las Golondrinas: 1 hr auto
+- Xilitla ↔ Tamasopo: 3 hrs auto (ruta serrana, no recomendable de noche)
+- Ciudad Valles ↔ Zona Arqueológica Tamtoc: 40 min auto
+
+REGLAS INQUEBRANTABLES:
+1. NUNCA pongas más de 3 destinos con >1 hr de distancia entre sí en el mismo día
+2. Si el viajero llega de ${state.origen || 'fuera'}, el Día 1 debe incluir cómo llegar
+3. Siempre menciona que la mayoría de comercios son SOLO EFECTIVO
+4. Si la fecha es temporada de lluvias (junio–septiembre), sugiere alternativas en caso de lluvia
+5. Los horarios de acceso a Las Pozas son 9am–5pm, cierra los martes
+6. La lancha a Tamul sale a las 7am–11am; si llegan tarde no pueden entrar
+7. El Sótano de las Golondrinas: las golondrinas salen al amanecer (~6:30am), hay que llegar de noche anterior
+
+═══ DESTINOS DISPONIBLES ═══
 ${lugaresInfo}
 
 ═══ GASTRONOMÍA LOCAL ═══
 ${gastronomiaList}
 
-═══ HOSPEDAJE RECOMENDADO PARA SU PRESUPUESTO ═══
+═══ HOSPEDAJE RECOMENDADO ═══
 ${hospedajeRecomendado}
 
-═══ INSTRUCCIONES PARA EL ITINERARIO ═══
-1. Crea un itinerario DÍA POR DÍA para los ${state.dias} días exactos
-2. Para cada día incluye: mañana, tarde y noche con horarios aproximados
-3. Incluye al menos 1 recomendación gastronómica por día con platillo específico
-4. Sugiere hospedaje adecuado para su presupuesto
-5. Añade tips locales y consejos prácticos reales (no genéricos)
-6. Incluye costos aproximados por actividad
-7. Al final: presupuesto total estimado desglosado
-8. Usa formato con encabezados claros por día: ## Día 1: [nombre inspirador del día]
-9. Usa emojis para hacerlo visual y atractivo
-10. Tono: cálido, emocionante, como si un amigo local te contara el plan
-11. Al final agrega una sección "## ✦ Consejo del Guía Local" con un tip muy específico de Xilitla
+FORMATO DEL ITINERARIO:
+Para cada día usa exactamente esta estructura:
+## Día [N] — [Nombre inspirador] ([Zona geográfica])
+**Mañana** (hora de salida recomendada)
+- [Actividad] — [detalle práctico + costo]
+**Tarde**
+- [Actividad] — [detalle práctico + costo]
+**Noche / Dónde dormir**
+- [Hospedaje recomendado + precio] — [tip de reservación]
+🍽️ **Qué comer hoy:** [platillo + restaurante específico]
+💰 **Gasto estimado del día:** $[monto] MXN por persona
+
+Al final añade:
+## 📋 Resumen de presupuesto total
+## 🎒 Qué llevar para este viaje específico
+## ⚠️ Advertencias importantes
+## 💡 Consejo del guía local (un tip que NO está en Google)
 
 Genera el itinerario completo ahora:`;
 
@@ -2061,10 +2254,16 @@ function showResult(text) {
   }
 
   if (TEST_MODE.hidePaymentUI) {
-    const panel = document.querySelector(".payment-panel");
+    const panel = document.getElementById("payment-panel");
     if (panel) panel.style.display = "none";
-    const modal = document.getElementById("payment-modal");
-    if (modal) modal.style.display = "none";
+  } else if (appMode === 'turista') {
+    // Turistas: ocultar panel de cobro, solo mostrar descarga directa
+    const panel = document.getElementById("payment-panel");
+    if (panel) panel.style.display = "none";
+  } else {
+    // Guías: mostrar panel de cobro completo
+    const panel = document.getElementById("payment-panel");
+    if (panel) panel.style.display = "block";
   }
 
   updatePaymentSummary();
@@ -2134,82 +2333,28 @@ function formatMoneyMXN(value) {
 }
 
 function updatePaymentSummary() {
-  const total = calculatePriceMXN();
-  document.getElementById("payment-total").textContent = `${formatMoneyMXN(total)} ${PAYMENT_CONFIG.moneda}`;
-  const modalTotal = document.getElementById("modal-payment-total");
-  if (modalTotal) modalTotal.textContent = `${formatMoneyMXN(total)} ${PAYMENT_CONFIG.moneda}`;
+  const monto = parseFloat(document.getElementById("monto-cobrar")?.value) || PAYMENT_CONFIG.precioBase;
+  document.getElementById("payment-total").textContent = `$${monto} MXN`;
+  const display = document.getElementById("monto-display");
+  if (display) display.textContent = monto;
 }
 
 function validatePaymentForm() {
   const nombre = document.getElementById("cliente-nombre").value.trim();
   const email = document.getElementById("cliente-email").value.trim();
   const accepted = document.getElementById("accept-terms").checked;
+  const monto = parseFloat(document.getElementById("monto-cobrar")?.value || 0);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   if (!nombre) return "Ingresa el nombre del cliente.";
   if (!emailOk) return "Ingresa un correo válido del cliente.";
+  if (!monto || monto <= 0) return "Ingresa un monto válido a cobrar.";
   if (!accepted) return "Debes confirmar aceptación de condiciones para continuar.";
   return "";
 }
 
-function openPaymentModal() {
-  updatePaymentSummary();
-  const modal = document.getElementById("payment-modal");
-  modal.classList.add("show");
-  modal.setAttribute("aria-hidden", "false");
-  document.getElementById("card-holder").focus();
-}
-
-function closePaymentModal() {
-  const modal = document.getElementById("payment-modal");
-  modal.classList.remove("show");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-function validateCardFields() {
-  const holder = document.getElementById("card-holder").value.trim();
-  const number = document.getElementById("card-number").value.replace(/\s/g, "");
-  const exp = document.getElementById("card-exp").value.trim();
-  const cvv = document.getElementById("card-cvv").value.trim();
-
-  if (!holder) return "Ingresa el nombre del titular.";
-  if (!/^\d{16}$/.test(number)) return "El número de tarjeta debe tener 16 dígitos.";
-  if (!/^(0[1-9]|1[0-2])\/(\d{2})$/.test(exp)) return "La fecha debe tener formato MM/AA.";
-  if (!/^\d{3,4}$/.test(cvv)) return "El CVV debe tener 3 o 4 dígitos.";
-  return "";
-}
-
-function processCardPayment() {
-  if (TEST_MODE.disablePayments) return;
-
-  const status = document.getElementById("payment-status");
-  const cardError = validateCardFields();
-  if (cardError) {
-    status.className = "status-msg error";
-    status.textContent = cardError;
-    return;
-  }
-
-  const btn = document.querySelector(".modal-actions .btn-action.primary");
-  btn.disabled = true;
-  btn.textContent = "Procesando...";
-
-  setTimeout(() => {
-    state.pagoConfirmado = true;
-    document.getElementById("btn-download-pdf").disabled = false;
-
-    const nombre = document.getElementById("cliente-nombre").value.trim();
-    const email = document.getElementById("cliente-email").value.trim();
-    const total = calculatePriceMXN();
-    const number = document.getElementById("card-number").value.replace(/\s/g, "");
-    const ultimos4 = number.slice(-4);
-    status.className = "status-msg ok";
-    status.textContent = `Pago con tarjeta aprobado para orden ${state.ordenId}. Tarjeta terminación ${ultimos4}. PDF habilitado.`;
-
-    const confirmUrl = `${PAYMENT_CONFIG.confirmationPage}?order=${encodeURIComponent(state.ordenId)}&amount=${encodeURIComponent(total)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(nombre)}`;
-    window.location.href = confirmUrl;
-  }, 1200);
-}
+// Funciones de modal de tarjeta eliminadas por seguridad PCI DSS.
+// Se reemplazarán con MercadoPago cuando se active el cobro.
 
 function startPayment() {
   if (TEST_MODE.disablePayments) {
@@ -2227,11 +2372,20 @@ function startPayment() {
     return;
   }
 
-  const total = calculatePriceMXN();
+  const monto = parseFloat(document.getElementById("monto-cobrar").value);
+  trackEvent('cobro_iniciado', { monto: monto });
 
   status.className = "status-msg";
-  status.textContent = `Orden ${state.ordenId} lista. Total ${formatMoneyMXN(total)}. Abriendo pago con tarjeta...`;
-  openPaymentModal();
+  status.textContent = `Orden ${state.ordenId} lista. Total $${monto} MXN. Redirigiendo a MercadoPago...`;
+
+  // TODO: Cuando tengas backend con MercadoPago, descomentar:
+  // cobrarConMercadoPago(monto);
+
+  // Por ahora, mostrar mensaje informativo
+  setTimeout(() => {
+    status.className = "status-msg error";
+    status.textContent = "⚠️ Integración de MercadoPago pendiente. Contacta al desarrollador para activar cobros reales.";
+  }, 1500);
 }
 
 async function printItinerary() {
@@ -2298,18 +2452,6 @@ async function printItinerary() {
     wrapper.remove();
   }
 }
-
-document.getElementById("card-number")?.addEventListener("input", e => {
-  const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
-  e.target.value = raw.replace(/(.{4})/g, "$1 ").trim();
-});
-document.getElementById("card-exp")?.addEventListener("input", e => {
-  const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-  e.target.value = raw.length > 2 ? `${raw.slice(0,2)}/${raw.slice(2)}` : raw;
-});
-document.getElementById("card-cvv")?.addEventListener("input", e => {
-  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-});
 
 </script>
 </body>
