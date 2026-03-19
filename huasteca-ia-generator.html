@@ -1425,7 +1425,7 @@ input[type="range"]::-webkit-slider-thumb {
         <label for="accept-terms" style="font-size:12px;color:rgba(244,237,216,0.65)">Confirmo que el cliente aceptó el itinerario, precio y condiciones de servicio.</label>
       </div>
 
-      <div class="payment-help" id="payment-method-help">Al hacer clic en "Cobrar" se redirigirá a una plataforma de pago segura (MercadoPago).</div>
+      <div class="payment-help" id="payment-method-help">Al hacer clic en "Cobrar" se redirigirá a Stripe — plataforma de pagos segura y certificada PCI. Nunca capturamos datos de tarjeta.</div>
 
       <div class="payment-actions">
         <button class="btn-action primary" id="btn-start-payment" onclick="startPayment()">Cobrar $<span id="monto-display">149</span> MXN</button>
@@ -1783,7 +1783,7 @@ const TEST_MODE = {
 };
 
 const AI_CONFIG = {
-  useLocalGenerator: true
+  useLocalGenerator: false  // false = usa IA real vía /api/generate; true = modo local offline
 };
 
 // ══════════════════════════════════════════════════════
@@ -2604,7 +2604,8 @@ Genera el itinerario completo ahora:`;
   }
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // La API key vive en el servidor (.env) — nunca en el cliente
+    const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2615,6 +2616,11 @@ Genera el itinerario completo ahora:`;
     });
 
     const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+
     const text = data.content?.[0]?.text || "Error al generar el itinerario. Por favor intenta de nuevo.";
 
     clearInterval(lTimer);
@@ -2764,7 +2770,7 @@ function validatePaymentForm() {
 // Funciones de modal de tarjeta eliminadas por seguridad PCI DSS.
 // Se reemplazarán con MercadoPago cuando se active el cobro.
 
-function startPayment() {
+async function startPayment() {
   if (TEST_MODE.disablePayments) {
     const status = document.getElementById("payment-status");
     status.className = "status-msg ok";
@@ -2781,19 +2787,41 @@ function startPayment() {
   }
 
   const monto = parseFloat(document.getElementById("monto-cobrar").value);
-  trackEvent('cobro_iniciado', { monto: monto });
+  const email = document.getElementById("cliente-email").value.trim();
+  const btnPagar = document.getElementById("btn-start-payment");
+
+  trackEvent('cobro_iniciado', { monto });
 
   status.className = "status-msg";
-  status.textContent = `Orden ${state.ordenId} lista. Total $${monto} MXN. Redirigiendo a MercadoPago...`;
+  status.textContent = "Creando orden de cobro...";
+  if (btnPagar) btnPagar.disabled = true;
 
-  // TODO: Cuando tengas backend con MercadoPago, descomentar:
-  // cobrarConMercadoPago(monto);
+  try {
+    const res = await fetch("/api/cobrar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        monto,
+        descripcion: `Itinerario Huasteca Potosina — ${state.dias} días`,
+        email_cliente: email,
+      }),
+    });
 
-  // Por ahora, mostrar mensaje informativo
-  setTimeout(() => {
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || `Error HTTP ${res.status}`);
+    }
+
+    status.textContent = `Orden ${state.ordenId} lista ($${monto} MXN). Redirigiendo a MercadoPago...`;
+    // Redirigir al checkout de Stripe (seguro y legal — nunca capturamos tarjetas)
+    window.location.href = data.url;
+
+  } catch (err) {
     status.className = "status-msg error";
-    status.textContent = "⚠️ Integración de MercadoPago pendiente. Contacta al desarrollador para activar cobros reales.";
-  }, 1500);
+    status.textContent = `⚠️ ${err.message}`;
+    if (btnPagar) btnPagar.disabled = false;
+  }
 }
 
 async function printItinerary() {

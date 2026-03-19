@@ -7,3 +7,12 @@
 # IDE
 .vscode/
 .idea/
+
+# Secretos — NUNCA en git
+.env
+.env.local
+.env.production
+
+# Node
+node_modules/
+npm-debug.log*
