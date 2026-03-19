@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  name          String?
+  email         String?     @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  itineraries   Itinerary[]
+  bookings      Booking[]
+  createdAt     DateTime    @default(now())
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Destination {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  zone        String
+  type        String
+  emoji       String     @default("📍")
+  description String     @db.Text
+  lat         Float?
+  lng         Float?
+  duration    Float      @default(2)
+  price       String     @default("Gratis")
+  difficulty  String     @default("media")
+  schedule    String?
+  openDays    String?
+  bestTime    String?
+  idealSeason String?
+  warnings    String?    @db.Text
+  howToGet    String?    @db.Text
+  tips        String[]
+  tags        String[]
+  activities  Activity[]
+  createdAt   DateTime   @default(now())
+}
+
+model Activity {
+  id            String      @id @default(cuid())
+  title         String
+  description   String      @db.Text
+  price         Float
+  duration      Float
+  type          String
+  maxGroupSize  Int         @default(10)
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id])
+  bookings      Booking[]
+  createdAt     DateTime    @default(now())
+
+  @@index([destinationId])
+}
+
+model Itinerary {
+  id         String   @id @default(cuid())
+  userId     String?
+  title      String
+  days       Int      @default(3)
+  budget     String   @default("moderado")
+  traveler   String   @default("Solo/Sola")
+  interests  String[]
+  activities Json     // JSONB: { day: number, destinationIds: string[], notes: string }[]
+  totalCost  Float?
+  shareToken String?  @unique @default(cuid())
+  user       User?    @relation(fields: [userId], references: [id])
+  bookings   Booking[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Booking {
+  id            String    @id @default(cuid())
+  userId        String?
+  activityId    String?
+  itineraryId   String?
+  stripeSession String?   @unique
+  status        String    @default("pending") // pending | paid | cancelled
+  totalAmount   Float
+  customerEmail String?
+  customerName  String?
+  notes         String?
+  user          User?     @relation(fields: [userId], references: [id])
+  activity      Activity? @relation(fields: [activityId], references: [id])
+  itinerary     Itinerary? @relation(fields: [itineraryId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
