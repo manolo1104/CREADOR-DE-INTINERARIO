@@ -105,9 +105,11 @@ app.post('/api/cobrar', async (req, res) => {
 });
 
 // ── Iniciar servidor ──────────────────────────────────
+// Railway inyecta PORT automáticamente — escuchar en 0.0.0.0 para que
+// el contenedor sea alcanzable desde el proxy de Railway
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n🌿 Huasteca IA corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🌿 Huasteca IA corriendo en http://0.0.0.0:${PORT}`);
   console.log(`   Anthropic API: ${process.env.ANTHROPIC_API_KEY ? '✅ configurada' : '⚠️  no configurada (modo local)'}`);
   console.log(`   Stripe:        ${process.env.STRIPE_SECRET_KEY ? '✅ configurado' : '⚠️  no configurado (cobros desactivados)'}\n`);
 });
