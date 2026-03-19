@@ -7,6 +7,5 @@ RUN npm install --production
 
 COPY . .
 
-EXPOSE 3000
-
+# Railway inyecta PORT automáticamente — no hardcodear aquí
 CMD ["node", "server.js"]
