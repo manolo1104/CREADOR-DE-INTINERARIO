@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Huasteca IA — Tu Viaje a la Medida</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root {
@@ -1581,7 +1583,12 @@ const PAYMENT_CONFIG = {
 };
 
 const TEST_MODE = {
-  disablePayments: true
+  disablePayments: true,
+  hidePaymentUI: true
+};
+
+const AI_CONFIG = {
+  useLocalGenerator: true
 };
 
 // ══════════════════════════════════════════════════════
@@ -1822,12 +1829,92 @@ function selectActividad(el) {
 
 function resetWizard() {
   state = { dias:3, presupuesto:"moderado", lugares:[], intereses:["🌊 Cascadas y Pozas"],
-    tipoViajero:"Solo/Sola", nivelActividad:"🦥 Tranquilo", restricciones:"", sueno:"", pagoConfirmado:false, ordenId:"" };
+    tipoViajero:"Solo/Sola", nivelActividad:"🦥 Tranquilo", restricciones:"", sueno:"", pagoConfirmado:true, ordenId:"" };
   itineraryRawText = "";
   document.getElementById("screen-result").style.display = "none";
   document.getElementById("screen-wizard").style.display = "block";
   initLugares();
   goToStep(1);
+}
+
+function toNumberFromPrice(text) {
+  const n = parseFloat(String(text || "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function scoreDestinoForInterests(destino, interests) {
+  const tags = (destino.ideal_para || []).map(t => String(t).toLowerCase());
+  const user = interests.map(i => String(i).toLowerCase());
+  let score = 0;
+  user.forEach(i => {
+    if (tags.some(t => i.includes(t) || t.includes(i))) score += 2;
+  });
+  if (destino.dificultad === "baja" && state.nivelActividad.includes("Tranquilo")) score += 1;
+  if (destino.dificultad === "media" && state.nivelActividad.includes("Moderado")) score += 1;
+  if (destino.dificultad === "alta" && state.nivelActividad.includes("Intenso")) score += 1;
+  return score;
+}
+
+function buildLocalItineraryText() {
+  const pool = state.lugares.length
+    ? DESTINOS_DB.filter(d => state.lugares.includes(d.id))
+    : DESTINOS_DB.slice();
+
+  const ranked = pool
+    .map(d => ({ d, score: scoreDestinoForInterests(d, state.intereses) }))
+    .sort((a, b) => b.score - a.score)
+    .map(x => x.d);
+
+  const selected = ranked.slice(0, Math.max(state.dias * 2, 4));
+  const hoteles = HOSPEDAJE_DB[state.presupuesto] || HOSPEDAJE_DB.moderado;
+  const comidas = GASTRONOMIA_DB.slice();
+
+  let totalEstimado = 0;
+  const chunks = [];
+
+  chunks.push(`## ✨ Itinerario personalizado (${state.dias} días)`);
+  chunks.push(`Diseñado para **${state.tipoViajero}**, nivel **${state.nivelActividad}**, con enfoque en **${state.intereses.join(", ")}**.`);
+
+  for (let day = 1; day <= state.dias; day++) {
+    const a = selected[(day * 2 - 2) % selected.length];
+    const b = selected[(day * 2 - 1) % selected.length];
+    const comida = comidas[(day - 1) % comidas.length];
+    const costoA = toNumberFromPrice(a?.precio_entrada);
+    const costoB = toNumberFromPrice(b?.precio_entrada);
+    const costoDia = costoA + costoB + (state.presupuesto === "economico" ? 400 : state.presupuesto === "premium" ? 1700 : 900);
+    totalEstimado += costoDia;
+
+    chunks.push(`## Día ${day}: ${a?.emoji || "🌿"} ${a?.zona || "Huasteca"} auténtica`);
+    chunks.push(`### 🌅 Mañana (08:00 - 12:00)`);
+    chunks.push(`Visita a **${a?.nombre || "destino principal"}**. ${a?.descripcion || "Actividad recomendada según tus gustos."}`);
+    chunks.push(`Costo estimado: **${a?.precio_entrada || "Consultar"}**.`);
+
+    chunks.push(`### 🌞 Tarde (13:00 - 18:00)`);
+    chunks.push(`Actividad en **${b?.nombre || "segundo destino"}** (${b?.tipo || "experiencia local"}).`);
+    chunks.push(`Costo estimado: **${b?.precio_entrada || "Consultar"}**.`);
+
+    chunks.push(`### 🌙 Noche (19:00 - 22:00)`);
+    chunks.push(`Cena recomendada: **${comida.nombre}** — ${comida.desc}.`);
+    chunks.push(`Hospedaje sugerido: **${hoteles[(day - 1) % hoteles.length]}**.`);
+    chunks.push(`Tip local: lleva efectivo, funda impermeable y salida temprana para evitar filas.`);
+  }
+
+  chunks.push(`## 💰 Presupuesto estimado total`);
+  chunks.push(`Aproximado para ${state.dias} días: **${formatMoneyMXN(totalEstimado)} MXN** por persona.`);
+  chunks.push(`## ✦ Consejo del Guía Local`);
+  chunks.push(`Si vas a Xilitla, prioriza Las Pozas temprano y deja el centro para la tarde con café local.`);
+
+  if (state.restricciones) {
+    chunks.push(`## ⚠️ Restricciones tomadas en cuenta`);
+    chunks.push(`${state.restricciones}`);
+  }
+
+  if (state.sueno) {
+    chunks.push(`## 🌟 Sueño de viaje integrado`);
+    chunks.push(`${state.sueno}`);
+  }
+
+  return chunks.join("\n\n");
 }
 
 // ══════════════════════════════════════════════════════
@@ -1904,6 +1991,17 @@ ${hospedajeRecomendado}
 
 Genera el itinerario completo ahora:`;
 
+  if (AI_CONFIG.useLocalGenerator) {
+    clearInterval(lTimer);
+    lsteps.forEach(id => {
+      document.getElementById(id).classList.remove("active");
+      document.getElementById(id).classList.add("done");
+    });
+    const localText = buildLocalItineraryText();
+    setTimeout(() => showResult(localText), 500);
+    return;
+  }
+
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -1928,7 +2026,8 @@ Genera el itinerario completo ahora:`;
 
   } catch (err) {
     clearInterval(lTimer);
-    showResult(`# ⚠️ Error de Conexión\n\nNo se pudo conectar con el servicio de IA. Por favor verifica tu conexión e intenta de nuevo.\n\nError: ${err.message}`);
+    const fallback = buildLocalItineraryText();
+    showResult(`${fallback}\n\n---\n\n> Nota: se generó en modo local por un problema de conexión externa (${err.message}).`);
   }
 }
 
@@ -1959,6 +2058,13 @@ function showResult(text) {
     status.textContent = `Modo pruebas activo: cobro deshabilitado temporalmente. PDF habilitado sin pago.`;
   } else {
     if (btnStartPayment) btnStartPayment.disabled = false;
+  }
+
+  if (TEST_MODE.hidePaymentUI) {
+    const panel = document.querySelector(".payment-panel");
+    if (panel) panel.style.display = "none";
+    const modal = document.getElementById("payment-modal");
+    if (modal) modal.style.display = "none";
   }
 
   updatePaymentSummary();
@@ -2128,61 +2234,69 @@ function startPayment() {
   openPaymentModal();
 }
 
-function printItinerary() {
-  if (!state.pagoConfirmado) {
-    const status = document.getElementById("payment-status");
-    status.className = "status-msg error";
-    status.textContent = "Primero confirma el pago para habilitar la descarga del PDF.";
-    status.scrollIntoView({ behavior: "smooth", block: "center" });
+async function printItinerary() {
+  if (!window.jspdf || !window.jspdf.jsPDF || !window.html2canvas) {
+    alert("No se pudo cargar el exportador PDF. Revisa tu conexión e intenta de nuevo.");
     return;
   }
 
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert("No se pudo cargar el generador de PDF. Revisa tu conexión e intenta de nuevo.");
-    return;
-  }
+  const resultRoot = document.getElementById("screen-result");
+  const hero = resultRoot.querySelector(".result-hero");
+  const content = resultRoot.querySelector(".result-content");
+  const actions = resultRoot.querySelector(".result-actions");
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  if (!hero || !content) return;
 
-  const nombre = document.getElementById("cliente-nombre").value.trim() || "Cliente";
-  const email = document.getElementById("cliente-email").value.trim() || "sin correo";
-  const total = calculatePriceMXN();
-  const margenX = 48;
-  const maxW = 500;
-  let y = 56;
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-99999px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "1000px";
+  wrapper.style.background = "#0e1710";
+  wrapper.style.paddingBottom = "30px";
+  wrapper.appendChild(hero.cloneNode(true));
+  wrapper.appendChild(content.cloneNode(true));
+  document.body.appendChild(wrapper);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("Itinerario Huasteca IA", margenX, y);
+  if (actions) actions.style.visibility = "hidden";
 
-  y += 24;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Orden: ${state.ordenId}   ·   Cliente: ${nombre}   ·   Correo: ${email}`, margenX, y);
+  try {
+    const canvas = await html2canvas(wrapper, { backgroundColor: "#0e1710", scale: 2, useCORS: true });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "pt", format: "a4" });
 
-  y += 16;
-  doc.text(`Total pagado: ${formatMoneyMXN(total)} MXN`, margenX, y);
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = pdf.internal.pageSize.getHeight();
+    const imgW = pdfW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+    const pageCanvas = document.createElement("canvas");
+    const pageCtx = pageCanvas.getContext("2d");
+    const pageHeightPx = Math.floor((canvas.width * pdfH) / pdfW);
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = pageHeightPx;
 
-  y += 24;
-  doc.setFontSize(11);
-  const cleanText = itineraryRawText
-    .replace(/[*#>`-]/g, "")
-    .replace(/\n{3,}/g, "\n\n");
+    let rendered = 0;
+    let page = 0;
+    while (rendered < canvas.height) {
+      pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+      pageCtx.drawImage(canvas, 0, rendered, canvas.width, pageHeightPx, 0, 0, canvas.width, pageHeightPx);
+      const img = pageCanvas.toDataURL("image/jpeg", 0.95);
+      if (page > 0) pdf.addPage();
 
-  const lines = doc.splitTextToSize(cleanText, maxW);
-  const pageH = doc.internal.pageSize.getHeight();
+      const remainingPx = canvas.height - rendered;
+      const h = Math.min(pageHeightPx, remainingPx);
+      const hPt = (h * pdfW) / canvas.width;
+      pdf.addImage(img, "JPEG", 0, 0, imgW, hPt);
 
-  lines.forEach(line => {
-    if (y > pageH - 42) {
-      doc.addPage();
-      y = 54;
+      rendered += pageHeightPx;
+      page += 1;
     }
-    doc.text(line, margenX, y);
-    y += 15;
-  });
 
-  doc.save(`itinerario-${state.ordenId}.pdf`);
+    pdf.save(`itinerario-huasteca-${state.ordenId || Date.now()}.pdf`);
+  } finally {
+    if (actions) actions.style.visibility = "visible";
+    wrapper.remove();
+  }
 }
 
 document.getElementById("card-number")?.addEventListener("input", e => {
