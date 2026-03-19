@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pago confirmado · Huasteca IA</title>
+  <style>
+    :root {
+      --negro: #0e1710;
+      --verde: #3a6b1a;
+      --lima: #8fbe3a;
+      --crema: #f4edd8;
+      --dorado: #c4882a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #1a2e1a, var(--negro));
+      color: var(--crema);
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 20px;
+    }
+    .card {
+      width: min(640px, 100%);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 28px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 38px;
+      font-weight: 400;
+      color: var(--crema);
+    }
+    .sub {
+      margin: 0 0 24px;
+      font-size: 14px;
+      color: rgba(244,237,216,0.78);
+    }
+    .ok {
+      font-size: 48px;
+      margin-bottom: 14px;
+    }
+    .meta {
+      display: grid;
+      gap: 10px;
+      text-align: left;
+      margin: 18px 0 24px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px;
+    }
+    .meta div {
+      font-size: 14px;
+      color: rgba(244,237,216,0.9);
+    }
+    .lbl { color: rgba(244,237,216,0.6); }
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    a {
+      display: inline-block;
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 12px 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--crema);
+    }
+    .primary {
+      background: var(--dorado);
+      color: #111;
+      border-color: var(--dorado);
+      font-weight: 700;
+    }
+    .tag {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 11px;
+      color: rgba(244,237,216,0.65);
+      border: 1px solid rgba(143,190,58,0.4);
+      background: rgba(143,190,58,0.1);
+      padding: 6px 10px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="ok">✅</div>
+    <h1>Pago confirmado</h1>
+    <p class="sub">La transacción fue registrada correctamente. Ya puedes continuar con la entrega del itinerario.</p>
+
+    <section class="meta">
+      <div><span class="lbl">Orden:</span> <strong id="order">-</strong></div>
+      <div><span class="lbl">Cliente:</span> <strong id="name">-</strong></div>
+      <div><span class="lbl">Correo:</span> <strong id="email">-</strong></div>
+      <div><span class="lbl">Monto:</span> <strong id="amount">-</strong></div>
+    </section>
+
+    <div class="actions">
+      <a class="primary" href="huasteca-ia-generator.html">Volver al generador</a>
+    </div>
+
+    <span class="tag">Evento listo para medir conversiones</span>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const order = params.get('order') || 'N/A';
+    const name = params.get('name') || 'N/A';
+    const email = params.get('email') || 'N/A';
+    const amountRaw = Number(params.get('amount') || 0);
+
+    const money = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      maximumFractionDigits: 0
+    }).format(amountRaw);
+
+    document.getElementById('order').textContent = order;
+    document.getElementById('name').textContent = name;
+    document.getElementById('email').textContent = email;
+    document.getElementById('amount').textContent = `${money} MXN`;
+
+    // Google Analytics 4 / Google Ads conversion
+    if (typeof gtag === 'function') {
+      gtag('event', 'purchase', {
+        transaction_id: order,
+        value: amountRaw,
+        currency: 'MXN',
+        items: [{ item_name: 'Itinerario Huasteca IA', quantity: 1, price: amountRaw }]
+      });
+    }
+
+    // Meta Pixel conversion
+    if (typeof fbq === 'function') {
+      fbq('track', 'Purchase', {
+        value: amountRaw,
+        currency: 'MXN'
+      });
+    }
+
+    // Data layer para GTM
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'purchase',
+      ecommerce: {
+        transaction_id: order,
+        value: amountRaw,
+        currency: 'MXN'
+      }
+    });
+  </script>
+</body>
+</html>
