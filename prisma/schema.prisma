@@ -123,22 +123,28 @@ model Booking {
 }
 
 model BlogPost {
-  id               String   @id @default(cuid())
-  slug             String   @unique
-  title            String
-  metaDescription  String   @db.Text
-  focusKeyword     String
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  title             String
+  metaTitle         String?                   // SEO title (max 60 chars)
+  metaDescription   String   @db.Text
+  focusKeyword      String
   secondaryKeywords String[]
-  excerpt          String   @db.Text
-  content          String   @db.Text
-  coverImageUrl    String?
-  coverImageAlt    String?
-  tags             String[]
-  readingTime      Int      @default(5)
-  published        Boolean  @default(true)
-  publishedAt      DateTime @default(now())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  excerpt           String   @db.Text
+  content           String   @db.Text
+  authorBio         String?  @db.Text        // HTML block — bio de Manolo Covarrubias
+  schemaMarkup      String?  @db.Text        // JSON-LD Article+Person
+  coverImageUrl     String?
+  coverImageAlt     String?
+  coverImageFile    String?                   // nombre de archivo slug-based
+  internalLinks     String[]                  // slugs de posts relacionados
+  externalSources   String[] @default([])     // fuentes citadas
+  tags              String[]
+  readingTime       Int      @default(5)
+  published         Boolean  @default(true)
+  publishedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([slug])
   @@index([publishedAt])
