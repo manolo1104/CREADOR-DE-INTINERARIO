@@ -15,25 +15,39 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      slug, title, metaDescription, focusKeyword, secondaryKeywords = [],
-      excerpt, content, coverImageUrl, coverImageAlt, tags = [], readingTime = 5,
+      slug, title, metaTitle, metaDescription, focusKeyword, secondaryKeywords = [],
+      excerpt, content, authorBio, schemaMarkup,
+      coverImageUrl, coverImageAlt, coverImageFile,
+      internalLinks = [], externalSources = [],
+      tags = [], readingTime = 5,
     } = body;
 
     if (!slug || !title || !content) {
       return NextResponse.json({ error: "slug, title y content son requeridos" }, { status: 400 });
     }
 
+    // Serializar schemaMarkup como string si viene como objeto
+    const schemaMarkupStr = schemaMarkup && typeof schemaMarkup === "object"
+      ? JSON.stringify(schemaMarkup)
+      : schemaMarkup;
+
     // Upsert: crear o actualizar si ya existe el slug
     const post = await prisma.blogPost.upsert({
       where: { slug },
       create: {
-        slug, title, metaDescription, focusKeyword, secondaryKeywords,
-        excerpt, content, coverImageUrl, coverImageAlt, tags, readingTime,
+        slug, title, metaTitle, metaDescription, focusKeyword, secondaryKeywords,
+        excerpt, content, authorBio, schemaMarkup: schemaMarkupStr,
+        coverImageUrl, coverImageAlt, coverImageFile,
+        internalLinks, externalSources,
+        tags, readingTime,
         published: true, publishedAt: new Date(),
       },
       update: {
-        title, metaDescription, focusKeyword, secondaryKeywords,
-        excerpt, content, coverImageUrl, coverImageAlt, tags, readingTime,
+        title, metaTitle, metaDescription, focusKeyword, secondaryKeywords,
+        excerpt, content, authorBio, schemaMarkup: schemaMarkupStr,
+        coverImageUrl, coverImageAlt, coverImageFile,
+        internalLinks, externalSources,
+        tags, readingTime,
         updatedAt: new Date(),
       },
     });
