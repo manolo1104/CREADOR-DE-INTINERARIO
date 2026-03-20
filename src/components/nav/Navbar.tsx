@@ -178,6 +178,10 @@ export default function Navbar() {
               Info Práctica
             </Link>
 
+            <Link href="/blog" className={navLinkClass("/blog")}>
+              Blog
+            </Link>
+
             <Link
               href="/planear"
               className="bg-verde-selva text-crema px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-200"
@@ -291,6 +295,13 @@ export default function Navbar() {
               className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6"
             >
               Info Práctica
+            </Link>
+
+            <Link
+              href="/blog"
+              className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6"
+            >
+              Blog
             </Link>
 
             <div className="pt-4">
