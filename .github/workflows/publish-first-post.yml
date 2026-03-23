@@ -1,0 +1,32 @@
+name: Publicar Primer Post (one-time)
+
+on:
+  push:
+    branches:
+      - claude/fix-blog-creator-96Zaz
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: blog-agent
+        run: npm install
+
+      - name: Generate and publish first blog post
+        working-directory: blog-agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOG_AGENT_SECRET: ${{ secrets.BLOG_AGENT_SECRET }}
+          SITE_URL: ${{ secrets.SITE_URL || 'https://creador-de-intinerario-production.up.railway.app' }}
+        run: node index.js
