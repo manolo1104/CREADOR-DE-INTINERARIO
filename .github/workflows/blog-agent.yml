@@ -21,14 +21,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: blog-agent/package.json
 
       - name: Install dependencies
         working-directory: blog-agent
@@ -41,11 +39,11 @@ jobs:
           BLOG_AGENT_SECRET: ${{ secrets.BLOG_AGENT_SECRET }}
           SITE_URL: ${{ secrets.SITE_URL || 'https://creador-de-intinerario-production.up.railway.app' }}
         run: |
-          ARGS=""
+          ARGS=()
           if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
-            ARGS="$ARGS --dry-run"
+            ARGS+=(--dry-run)
           fi
           if [[ -n "${{ github.event.inputs.topic }}" ]]; then
-            ARGS="$ARGS --topic '${{ github.event.inputs.topic }}'"
+            ARGS+=(--topic "${{ github.event.inputs.topic }}")
           fi
-          node index.js $ARGS
+          node index.js "${ARGS[@]}"
