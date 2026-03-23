@@ -60,166 +60,205 @@ async function generatePost(topic, trendContext = "") {
 
   const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
 
-  const prompt = `Eres Manolo Covarrubias, promotor turístico de la Huasteca Potosina con más de 10 años explorando la región. Escribes para el blog de HuastecaPotosina.mx — la plataforma de itinerarios con IA más completa de la región.
+  const schemaType = topic.schemaType || "TouristAttraction";
+
+  const prompt = `Eres el dueño del Hotel Paraíso Encantado en Xilitla, San Luis Potosí — familia local con raíces profundas en la Huasteca Potosina. Escribes para el blog de paraisoencantado.com con un objetivo claro: que el viajero llegue a tu creador de itinerarios y, cuando visite, se hospede contigo.
+
+Tono: cálido, experto, persuasivo. Como un amigo que conoce cada vereda de la región.
+Nunca uses: "en conclusión", "sin duda alguna", "increíble experiencia", "no te lo puedes perder".
+Párrafos: máximo 3 líneas. Oraciones: máximo 18 palabras.
+Emojis: máximo 2 en todo el artículo.
 
 HOY ES: ${today}
 TEMA: ${topic.title}
 KEYWORD PRINCIPAL: ${topic.focusKeyword}
 KEYWORDS SECUNDARIOS: ${topic.secondaryKeywords.join(", ")}
 CATEGORÍA: ${topic.category}
+TIPO DE SCHEMA: ${schemaType}
 
-${trendContext ? `CONTEXTO ACTUAL (datos reales encontrados en internet):\n${trendContext}\n` : ""}
+${trendContext ? `DATOS ACTUALES (encontrados en internet):\n${trendContext}\n` : ""}
 
-━━━ NORMAS DE REDACCIÓN ━━━
+KEYWORDS LSI — incluye al menos 4 de estas de forma natural:
+"Huasteca Potosina" (mínimo 5 veces), "Xilitla" (mínimo 4 veces), "Sierra Madre Oriental", "ríos turquesa", "selva potosina", "pueblo mágico Xilitla", "cascadas San Luis Potosí", "Hotel Paraíso Encantado" (1–2 veces, solo en sección hotel).
 
-IDIOMA Y ORTOGRAFÍA:
-- Escribe SIEMPRE en español correcto: usa tildes (á, é, í, ó, ú, ü, ñ) en todas las palabras que las llevan.
-- Títulos y subtítulos: primera letra en mayúscula, el resto en minúsculas (salvo nombres propios).
-  Correcto: "Dónde hospedarse cerca de las cascadas"
-  Incorrecto: "Dónde Hospedarse Cerca De Las Cascadas"
-- Hipervínculos: el texto del enlace debe ser descriptivo, nunca "haz clic aquí" o "ver más".
-  Correcto: <a href="/destinos/cascada-de-tamul">la Cascada de Tamul</a>
-  Incorrecto: <a href="/destinos/cascada-de-tamul">clic aquí</a>
+━━━ ESTRUCTURA OBLIGATORIA DEL ARTÍCULO ━━━
 
-EXTENSIÓN: 1,100–1,200 palabras de contenido (sin contar el HTML de figuras, CTAs ni bio).
+EXTENSIÓN: 950–1,100 palabras de contenido de texto (sin contar HTML de figuras ni CTAs).
 
-━━━ ESTRUCTURA DEL ARTÍCULO ━━━
+【INTRODUCCIÓN】(120–150 palabras)
+Estructura: Problema o pregunta del viajero → Solución que ofrece este artículo → Promesa concreta.
+La keyword principal debe aparecer en las primeras 100 palabras.
+Cierra con señal E-E-A-T: "En el Paraíso Encantado llevamos años viendo cómo los viajeros llegan con dudas sobre [tema] — esta guía resume lo que le diríamos a cada uno."
+Enlace obligatorio: <a href="https://paraisoencantado.com/itinerarios" class="cta-link">nuestro creador de itinerarios gratuito</a>.
 
-**INTRODUCCIÓN** (150–180 palabras)
-Abre con una imagen sensorial y vivida. En el segundo párrafo, anécdota personal de Manolo que establezca credibilidad. Incluye el enlace al creador de itinerario:
-<a href="/planear" class="cta-link">planea tu ruta personalizada con nuestra herramienta de itinerarios con IA</a>.
-
-**4–5 SECCIONES H2** (200–250 palabras cada una)
-Cada H2 debe:
-- Contener una keyword secundaria integrada de forma natural en el texto (no forzada)
-- Incluir al menos 1 dato con fuente y año ("Según la Secretaría de Turismo de SLP, ${new Date().getFullYear()}...")
-- Resaltar con <strong> un dato o cifra clave
-
-**SEÑALES EEAT OBLIGATORIAS:**
-🔹 EXPERIENCIA — Al menos 2 secciones con frases como:
-"En mis recorridos por la Huasteca, he comprobado que...", "La primera vez que llegué a [lugar]...", "Después de visitar esta ruta decenas de veces..."
-
-🔹 EXPERTISE — Usa datos precisos: nombres de comunidades indígenas, tiempos de traslado reales, precios actuales ${new Date().getFullYear()}, flora y fauna endémica (nombres comunes y científicos si aplica).
-
-🔹 AUTORIDAD — Cita tu experiencia local cuando sea pertinente: "Como promotor turístico de la región durante más de una década..."
-
-🔹 CONFIANZA — Incluye al menos 1 advertencia honesta: un riesgo real, camino en malas condiciones, temporada a evitar, o limitación práctica.
-
-**ALIADOS LOCALES (integra solo si el tema lo permite, de forma orgánica):**
-- Gastronomía/restaurantes → <a href="https://paraisoencantadoxilitla.lat" rel="noopener">El Papán Huasteco en Xilitla</a>: "la cocina de fogón auténtica que todo viajero merece probar al menos una vez."
-- Hospedaje/hoteles → <a href="https://paraisoencantadoxilitla.lat" rel="noopener">Hotel Paraíso Encantado en Xilitla</a>: "despertar entre la selva a pasos del Jardín de Edward James, una experiencia que recomiendo sin reservas."
-
-━━━ IMÁGENES (2 obligatorias, 1 portada) ━━━
-
-REGLA CRÍTICA: elige la imagen que mejor describa el contenido ESPECÍFICO de esa sección, no una imagen genérica. Si el texto habla de cascadas, usa foto de cascada. Si habla de hospedaje, usa foto de hotel/cabaña. Si habla de gastronomía, usa foto de comida.
-
-Formato exacto:
+Imagen hero justo después de la intro:
 <figure>
-  <img src="[URL]" alt="[keyword principal + descripción específica de lo que muestra la imagen, 10-12 palabras]" loading="lazy" width="1200" height="800" />
-  <figcaption>[Descripción natural y atractiva de lo que muestra la imagen, en relación al tema del párrafo]</figcaption>
+  <img src="[URL de la categoría correcta]" alt="[keyword + descripción visual específica, 10-12 palabras]" loading="lazy" width="1200" height="630" />
+  <figcaption>[Descripción atractiva relacionada al párrafo]</figcaption>
 </figure>
 
-Biblioteca de imágenes por categoría — elige la más pertinente:
+【3–4 SECCIONES H2】(220–260 palabras cada una)
+Cada H2 debe:
+- Llevar una keyword secundaria o LSI integrada de forma natural
+- Incluir al menos 1 dato concreto con fuente y año (precio, distancia, tiempo, cifra oficial)
+- Resaltar ese dato con <strong>
+- Tener al menos 1 <h3> interno si la sección lo amerita
+
+Señales E-E-A-T en al menos 2 secciones:
+"Cuando acompañamos a huéspedes a [lugar], siempre les decimos..."
+"Desde el hotel hemos visto cómo esto cambia de temporada a temporada..."
+"La ruta que nosotros tomamos y recomendamos es..."
+
+Incluye al menos 1 advertencia honesta en el artículo completo: camino en mal estado, temporada a evitar, coste oculto o limitación real.
+
+Links internos (2–3, solo los relevantes al tema):
+- <a href="https://paraisoencantado.com/itinerarios">nuestro creador de itinerarios</a>
+- <a href="https://paraisoencantado.com/habitaciones">habitaciones del Hotel Paraíso Encantado</a>
+- <a href="https://paraisoencantado.com/blog">más guías de la Huasteca Potosina</a>
+
+Links externos con rel="noopener nofollow" a fuentes reales:
+SECTUR, INEGI, UNESCO, laspozasxilitla.org.mx, Lonely Planet, National Geographic.
+
+【BLOQUE CTA ITINERARIOS】— insertar DESPUÉS de la segunda sección H2:
+<div class="cta-box cta-selva">
+  <p><strong>[Frase gancho de 1 línea relacionada al tema del artículo]</strong></p>
+  <p>[Beneficio concreto en 1 línea: qué hace el creador de itinerarios por el viajero]</p>
+  <a href="https://paraisoencantado.com/itinerarios" class="cta-button">Crear mi itinerario gratis →</a>
+</div>
+
+【SECCIÓN FAQ】(H2: "Preguntas frecuentes sobre [tema]")
+Genera 4–5 preguntas reales que la gente busca en Google (People Also Ask) sobre este tema.
+Formato exacto:
+<section class="faq-section">
+  <h2>Preguntas frecuentes sobre [tema en minúsculas]</h2>
+  <dl>
+    <dt>[Pregunta 1 real y específica?]</dt>
+    <dd>[Respuesta directa. Máx 60 palabras. Incluye keyword si es natural.]</dd>
+    <dt>[Pregunta 2]</dt>
+    <dd>[Respuesta]</dd>
+    ... (4–5 preguntas en total)
+  </dl>
+</section>
+
+【SECCIÓN HOTEL】(H2: "Dónde hospedarte en [lugar]: Hotel Paraíso Encantado")
+2 párrafos: ubicación privilegiada, cercanía al atractivo principal del artículo, por qué es la mejor base para explorar.
+Menciona: "hoteles en la Huasteca Potosina" y "Hotel Paraíso Encantado en Xilitla".
+Imagen de hospedaje:
+<figure>
+  <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200&q=80" alt="Hotel Paraíso Encantado Xilitla habitación con vista a la selva" loading="lazy" width="900" height="500" />
+  <figcaption>Hotel Paraíso Encantado, a pasos del Jardín Surrealista de Edward James en Xilitla</figcaption>
+</figure>
+CTA de reservas:
+<div class="cta-box cta-reservas">
+  <h3>¿Listo para vivir la Huasteca Potosina?</h3>
+  <p>Reserva directo. Sin intermediarios. Mejor precio garantizado.</p>
+  <a href="https://booking-paraisoencantado.up.railway.app/" class="cta-button cta-naranja">Reservar ahora →</a>
+</div>
+
+【CONCLUSIÓN】(80–100 palabras)
+Reflexión personal como anfitrión local. Termina con enlace al itinerario.
+
+━━━ BIBLIOTECA DE IMÁGENES ━━━
+
+REGLA: elige la imagen que describa con precisión el contenido de esa sección. No uses imágenes genéricas.
 
 CASCADAS Y RÍOS:
-- https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80 (cascada entre montañas verdes)
-- https://images.unsplash.com/photo-1518638150340-f706e86654de?w=1200&q=80 (río de agua turquesa)
-- https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&q=80 (cascada tropical selva)
+- https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80 (cascada entre montañas)
+- https://images.unsplash.com/photo-1518638150340-f706e86654de?w=1200&q=80 (río turquesa)
+- https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&q=80 (cascada tropical)
 
 SELVA Y NATURALEZA:
-- https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80 (selva tropical densa)
-- https://images.unsplash.com/photo-1511497584788-876760111969?w=1200&q=80 (bosque verde exuberante)
-- https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&q=80 (naturaleza selvática)
+- https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80 (selva densa)
+- https://images.unsplash.com/photo-1511497584788-876760111969?w=1200&q=80 (bosque verde)
+- https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&q=80 (selva tropical)
 
 CUEVAS Y FORMACIONES:
-- https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1200&q=80 (cueva formaciones rocosas)
-- https://images.unsplash.com/photo-1504208434309-4f4efce3f033?w=1200&q=80 (entrada cueva sótano)
+- https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1200&q=80 (cueva rocosa)
+- https://images.unsplash.com/photo-1504208434309-4f4efce3f033?w=1200&q=80 (entrada sótano)
 
 AVENTURA Y SENDERISMO:
-- https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=1200&q=80 (aventura naturaleza)
+- https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=1200&q=80 (aventura exterior)
 - https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?w=1200&q=80 (senderismo montaña)
 - https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=1200&q=80 (kayak río)
 
-HOSPEDAJE Y CABAÑAS:
-- https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200&q=80 (resort selva piscina)
+HOSPEDAJE:
+- https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200&q=80 (hotel selva piscina)
 - https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80 (hotel jardín tropical)
-- https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1200&q=80 (habitación hotel boutique)
+- https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1200&q=80 (habitación boutique)
 
-GASTRONOMÍA MEXICANA:
-- https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=1200&q=80 (tacos comida mexicana)
+GASTRONOMÍA:
+- https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=1200&q=80 (tacos mexicanos)
 - https://images.unsplash.com/photo-1504544750208-dc0358ad4601?w=1200&q=80 (platillos tradicionales)
-- https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200&q=80 (mesa comida regional)
+- https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200&q=80 (comida regional)
 
 PUEBLO Y CULTURA:
-- https://images.unsplash.com/photo-1502920514313-52581002a659?w=1200&q=80 (pueblo colonial mexico)
+- https://images.unsplash.com/photo-1502920514313-52581002a659?w=1200&q=80 (pueblo colonial)
 - https://images.unsplash.com/photo-1568954500045-b8a40f7bfc01?w=1200&q=80 (arquitectura colonial)
 - https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?w=1200&q=80 (artesanías mercado)
 
-TRANSPORTE Y VIAJE:
+TRANSPORTE:
 - https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&q=80 (autobús carretera)
 - https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1200&q=80 (carretera paisaje)
 
-**LINKS INTERNOS (2–3, solo los relevantes al tema del artículo):**
-- <a href="/destinos/cascada-de-tamul">la Cascada de Tamul</a>
-- <a href="/destinos/las-pozas-jardin-surrealista">Las Pozas de Xilitla</a>
-- <a href="/destinos/sotano-de-las-golondrinas">el Sótano de las Golondrinas</a>
-- <a href="/destinos/cascadas-de-micos">las Cascadas de Micos</a>
-- <a href="/destinos/puente-de-dios-tamasopo">el Puente de Dios en Tamasopo</a>
-- <a href="/planear">el creador de itinerarios con IA</a>
+━━━ NORMAS DE REDACCIÓN ━━━
 
-**FUENTES EXTERNAS (1–2):**
-Cita fuentes reconocidas: SECTUR, INEGI, UNESCO, Lonely Planet, National Geographic, Travesías. Ejemplo: "De acuerdo con la Secretaría de Turismo de San Luis Potosí (${new Date().getFullYear()})..."
+ORTOGRAFÍA: tildes siempre (á, é, í, ó, ú, ü, ñ). Sin excepciones.
+TÍTULOS H2/H3: primera letra en mayúscula, resto en minúsculas (salvo nombres propios).
+  ✓ "Cómo llegar al sótano de las golondrinas"
+  ✗ "Cómo Llegar Al Sótano De Las Golondrinas"
+HIPERVÍNCULOS: texto ancla descriptivo y con keyword.
+  ✓ <a href="...">el sótano de las golondrinas</a>
+  ✗ <a href="...">haz clic aquí</a>
+PROHIBIDO inventar precios sin fuente. Si no tienes el precio exacto, da un rango con año.
 
-**CONCLUSIÓN + CTA** (100–120 palabras):
-Reflexión personal de Manolo. Termina con:
-<div class="cta-box">
-  <p>¿Listo para vivir la Huasteca Potosina? <strong>Crea tu itinerario personalizado en 2 minutos con nuestra IA</strong> — sin registro, gratis, con rutas reales y precios actualizados para ${new Date().getFullYear()}.</p>
-  <a href="/planear" class="cta-button">Crear mi itinerario gratis →</a>
-</div>
+━━━ SCHEMA JSON-LD ━━━
+
+Genera el schema del tipo: ${schemaType}
+- Si es FAQPage: incluye todas las preguntas del FAQ section
+- Si es HowTo: incluye los pasos principales del artículo
+- Si es TouristAttraction: incluye nombre, descripción, dirección y url
 
 ━━━ FORMATO DE ENTREGA ━━━
 
 Responde ÚNICAMENTE con JSON válido (sin markdown antes ni después):
 
 {
-  "slug": "keyword-principal-con-guiones-${new Date().getFullYear()}",
-  "metaTitle": "Título SEO (máx 60 caracteres, con keyword y año si cabe)",
-  "title": "Título H1 completo del artículo con tildes y ñ correctos",
-  "metaDescription": "Descripción para Google de 140–155 caracteres, con keyword y gancho claro",
+  "slug": "keyword-sin-tildes-con-guiones-${new Date().getFullYear()}",
+  "metaTitle": "Título SEO — keyword al inicio, máx 60 caracteres",
+  "title": "Título H1 completo con tildes y ñ correctos",
+  "metaDescription": "Descripción Google 140–155 caracteres, keyword + beneficio + gancho",
   "focusKeyword": "${topic.focusKeyword}",
   "secondaryKeywords": ${JSON.stringify(topic.secondaryKeywords)},
-  "excerpt": "Resumen atractivo de 2 oraciones para la lista del blog — incluye keyword y promesa de valor",
-  "content": "HTML COMPLETO del artículo",
-  "authorBio": "<div class='author-bio'><img src='https://ui-avatars.com/api/?name=Manolo+Covarrubias&background=2D4A1A&color=EDE0C4&size=80' alt='Manolo Covarrubias promotor turístico Huasteca Potosina' /><div><h4>Manolo Covarrubias</h4><p>Promotor turístico y experto en la Huasteca Potosina con más de 10 años recorriendo la región. Fundador de la plataforma de itinerarios huastecapotosina.mx y anfitrión del Hotel Paraíso Encantado en Xilitla, San Luis Potosí. Ha guiado a cientos de viajeros por las cascadas, cañones y selvas de esta región extraordinaria.</p><a href='/planear'>Ver itinerarios →</a></div></div>",
+  "excerpt": "2 oraciones para la lista del blog — keyword + promesa de valor concreta",
+  "content": "HTML COMPLETO: intro + imagen hero + secciones H2 + bloque CTA + FAQ + sección hotel + conclusión",
+  "authorBio": "<div class='author-bio'><img src='https://ui-avatars.com/api/?name=Paraiso+Encantado&background=2D4A1A&color=EDE0C4&size=80' alt='Hotel Paraíso Encantado Xilitla anfitrión local' /><div><h4>Hotel Paraíso Encantado</h4><p>Familia local de Xilitla con más de una década recibiendo viajeros en la Huasteca Potosina. Conocemos cada cascada, cada vereda y cada secreto de la Sierra Madre Oriental. Nuestra misión: que tu viaje sea tan auténtico como esta tierra.</p><a href='https://paraisoencantado.com/itinerarios'>Planea tu itinerario →</a></div></div>",
   "schemaMarkup": {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "${schemaType}",
     "headline": "[igual que title]",
     "description": "[igual que metaDescription]",
     "datePublished": "${new Date().toISOString()}",
     "dateModified": "${new Date().toISOString()}",
     "author": {
-      "@type": "Person",
-      "name": "Manolo Covarrubias",
-      "url": "https://creador-de-intinerario-production.up.railway.app/planear",
-      "jobTitle": "Promotor Turístico y Experto en Huasteca Potosina",
-      "knowsAbout": ["Huasteca Potosina", "Turismo México", "Xilitla", "Cascadas Mexico"]
+      "@type": "Organization",
+      "name": "Hotel Paraíso Encantado",
+      "url": "https://paraisoencantado.com"
     },
     "publisher": {
       "@type": "Organization",
-      "name": "Huasteca Potosina",
-      "url": "https://creador-de-intinerario-production.up.railway.app"
+      "name": "Hotel Paraíso Encantado",
+      "url": "https://paraisoencantado.com"
     },
-    "keywords": "[focusKeyword + secondaryKeywords separados por coma]",
+    "keywords": "[focusKeyword, secondary keywords separados por coma]",
     "articleSection": "${topic.category}"
   },
-  "coverImageUrl": "URL de Unsplash de la categoría más relevante al tema del artículo",
-  "coverImageAlt": "Alt text SEO: keyword principal + descripción de lo que muestra la imagen (10-12 palabras)",
-  "coverImageFile": "${topic.focusKeyword.toLowerCase().replace(/\\s+/g, '-')}-${new Date().getFullYear()}.jpg",
-  "internalLinks": ["/planear", "/destinos/cascada-de-tamul"],
-  "externalSources": ["nombre de fuente — referencia o URL"],
-  "tags": ["Huasteca Potosina", "${topic.category}", "tercer tag específico al tema"],
-  "readingTime": 6
+  "coverImageUrl": "URL de la biblioteca que mejor represente el tema del artículo",
+  "coverImageAlt": "Alt text SEO: keyword + descripción visual específica (10-12 palabras)",
+  "coverImageFile": "${topic.focusKeyword.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/\\s+/g,'-').replace(/[^a-z0-9-]/g,'')}-${new Date().getFullYear()}.jpg",
+  "internalLinks": ["https://paraisoencantado.com/itinerarios", "https://paraisoencantado.com/habitaciones"],
+  "externalSources": ["nombre fuente — referencia o URL"],
+  "tags": ["Huasteca Potosina", "Xilitla", "${topic.category}"],
+  "readingTime": 5
 }`;
 
   // Reintentar hasta 3 veces si hay rate limit (429)
