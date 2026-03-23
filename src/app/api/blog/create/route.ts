@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 // Endpoint protegido para que el blog-agent pueda publicar posts
@@ -51,6 +52,10 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date(),
       },
     });
+
+    // Limpiar caché de ISR para que el post aparezca de inmediato
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${post.slug}`);
 
     return NextResponse.json({ success: true, post: { id: post.id, slug: post.slug, title: post.title } });
   } catch (err: unknown) {
