@@ -30,7 +30,9 @@ async function searchTrends(topic) {
   // Usa la herramienta web_search de Claude para encontrar tendencias reales
   console.log(`\n🔍 Buscando tendencias: "${topic.focusKeyword}"...`);
 
-  const searchResponse = await anthropic.messages.create({
+  const SEARCH_TIMEOUT_MS = 30_000;
+
+  const searchPromise = anthropic.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1000,
     tools: [{ type: "web_search_20250305", name: "web_search" }],
@@ -39,6 +41,12 @@ async function searchTrends(topic) {
       content: `Busca en internet información actualizada sobre: "${topic.focusKeyword}" en el contexto de turismo en Huasteca Potosina, México. Necesito: 1) datos o cifras recientes, 2) tendencias de búsqueda, 3) información práctica actualizada para ${new Date().getFullYear()}. Dame un resumen de los hallazgos más relevantes.`
     }]
   });
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout web_search (${SEARCH_TIMEOUT_MS / 1000}s)`)), SEARCH_TIMEOUT_MS)
+  );
+
+  const searchResponse = await Promise.race([searchPromise, timeoutPromise]);
 
   // Extraer texto de la respuesta
   const textBlock = searchResponse.content.find(b => b.type === "text");
