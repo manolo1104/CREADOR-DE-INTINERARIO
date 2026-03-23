@@ -178,11 +178,26 @@ Responde ÚNICAMENTE con JSON válido (sin markdown antes ni después):
   "readingTime": 6
 }`;
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8000,
-    messages: [{ role: "user", content: prompt }],
-  });
+  // Reintentar hasta 3 veces si hay rate limit (429)
+  let message;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      message = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+      });
+      break;
+    } catch (err) {
+      if (err?.status === 429 && attempt < 3) {
+        const wait = attempt * 60_000; // 60s, 120s
+        console.warn(`⏳ Rate limit — esperando ${wait / 1000}s antes de reintentar (${attempt}/3)...`);
+        await new Promise(r => setTimeout(r, wait));
+      } else {
+        throw err;
+      }
+    }
+  }
 
   let raw = message.content[0].text.trim()
     .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
