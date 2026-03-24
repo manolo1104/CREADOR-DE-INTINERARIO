@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────────
  * Agente de contenido diario para Huasteca Potosina.
  * Framework: EEAT · Autor: Manolo Covarrubias
- * 750–900 palabras exactas · Máx 2 búsquedas web
+ * 750–900 palabras · Máx 2 búsquedas web
  *
  * Uso:
  *   node index.js                          ← publica el post del día
@@ -24,9 +24,22 @@ const anthropic    = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const SITE_URL     = process.env.SITE_URL || "https://creador-de-intinerario-production.up.railway.app";
 const BLOG_SECRET  = process.env.BLOG_AGENT_SECRET;
 
+const AUTHOR_PHOTO = "/authors/manolo-covarrubias.jpg"; // foto local en /public
+
+// Banco de imágenes de respaldo (Unsplash, libres de derechos)
+const FALLBACK_IMAGES = [
+  { url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80", theme: "selva verde densa" },
+  { url: "https://images.unsplash.com/photo-1518638150340-f706e86654de?w=1200&q=80", theme: "río turquesa cascada" },
+  { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80", theme: "cascada montaña" },
+  { url: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1200&q=80", theme: "bosque tropical" },
+  { url: "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1200&q=80", theme: "cueva roca aventura" },
+  { url: "https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=1200&q=80", theme: "naturaleza aventura" },
+  { url: "https://images.unsplash.com/photo-1502920514313-52581002a659?w=1200&q=80", theme: "pueblo mexicano" },
+];
+
 // ── Ejecuta llamada con web_search manejando el tool loop ──
 
-async function callWithSearch(prompt, maxTokens = 2000) {
+async function callWithSearch(prompt, maxTokens = 1500) {
   const messages = [{ role: "user", content: prompt }];
   let allText = [];
 
@@ -38,27 +51,22 @@ async function callWithSearch(prompt, maxTokens = 2000) {
       messages,
     });
 
-    // Recopilar texto de esta respuesta
     for (const block of response.content) {
       if (block.type === "text" && block.text) allText.push(block.text);
     }
 
     if (response.stop_reason === "end_turn") break;
 
-    // Si hay tool_use, agregar la respuesta del asistente y continuar
     const toolUses = response.content.filter(b => b.type === "tool_use");
     if (toolUses.length === 0) break;
 
     messages.push({ role: "assistant", content: response.content });
-    // Para web_search_20250305 server-side, no necesitamos enviar resultados manualmente:
-    // el modelo los tiene internamente. Solo continuamos el loop.
-    // Enviamos mensaje vacío de continuación.
     messages.push({
       role: "user",
       content: toolUses.map(t => ({
         type: "tool_result",
         tool_use_id: t.id,
-        content: [{ type: "text", text: "Resultados de búsqueda obtenidos por el servidor." }],
+        content: [{ type: "text", text: "Resultados de búsqueda procesados. Continúa." }],
       })),
     });
   }
@@ -71,140 +79,161 @@ async function callWithSearch(prompt, maxTokens = 2000) {
 async function doResearch(topic) {
   console.log(`\n🔍 Investigando: "${topic.focusKeyword}"...`);
 
-  const prompt = `Busca en internet datos actualizados sobre: "${topic.focusKeyword}" en el contexto de turismo en la Huasteca Potosina, México ${new Date().getFullYear()}.
+  const prompt = `Busca datos actualizados sobre: "${topic.focusKeyword}" turismo Huasteca Potosina México ${new Date().getFullYear()}.
 
-Necesito específicamente:
-1. UN dato estadístico reciente (visitantes, crecimiento, cifra oficial)
-2. UNA tendencia de búsqueda o interés del viajero actual
-3. UN detalle práctico actualizado (precio, horario, acceso)
+Lee solo los primeros 3 resultados. Extrae exactamente:
+1. UN dato estadístico con cifra (visitantes, crecimiento, precio promedio)
+2. UNA tendencia actual del viajero
+3. UN detalle práctico específico (horario, precio de entrada, acceso)
 
-Lee solo los primeros 3 resultados. Responde en 150 palabras máximo con los hallazgos concretos.`;
+Responde en máximo 150 palabras con los hallazgos concretos.`;
 
   const context = await callWithSearch(prompt, 800);
   if (context) console.log(`   ✅ Contexto obtenido (${context.length} chars)`);
   return context;
 }
 
-// ── PASO 4: Imagen (1 búsqueda) ────────────────────────────
+// ── PASO 4: Dos imágenes diferentes (1 búsqueda) ───────────
 
-async function findImage(topic) {
-  console.log(`\n🖼️  Buscando imagen real de: "${topic.focusKeyword}"...`);
+async function findImages(topic) {
+  console.log(`\n🖼️  Buscando 2 imágenes distintas para: "${topic.focusKeyword}"...`);
 
-  const prompt = `Busca en Unsplash o Wikimedia Commons la imagen más específica y real de: "${topic.focusKeyword}" en la Huasteca Potosina, México.
+  const prompt = `Busca en Unsplash, Pexels o Wikimedia Commons DOS imágenes DIFERENTES sobre "${topic.focusKeyword}" Huasteca Potosina.
 
-Si no encuentras imagen específica del lugar, elige la más apropiada de esta lista:
-- Selva verde: https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80
-- Río turquesa: https://images.unsplash.com/photo-1518638150340-f706e86654de?w=1200&q=80
-- Cascada montaña: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80
-- Cueva/aventura: https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1200&q=80
-- Pueblo mexicano: https://images.unsplash.com/photo-1502920514313-52581002a659?w=1200&q=80
+IMAGEN HERO (portada): debe mostrar el tema principal. Si es sobre hospedaje → hotel o cabaña en selva. Si es sobre cascadas → la cascada específica. Si es sobre gastronomía → el platillo o restaurante. NUNCA una imagen genérica de agua si el tema es otra cosa.
 
-Responde SOLO con:
-URL: [url exacta]
-ALT: [texto alt con keyword, 10-15 palabras]`;
+IMAGEN CUERPO: debe ilustrar un aspecto secundario del mismo artículo. URL OBLIGATORIAMENTE DIFERENTE a la del hero.
 
-  const result = await callWithSearch(prompt, 400);
+Responde SOLO con este formato:
+HERO_URL: [url exacta libre de derechos]
+HERO_ALT: [alt descriptivo con keyword, 10-15 palabras]
+BODY_URL: [url DIFERENTE libre de derechos]
+BODY_ALT: [alt descriptivo con keyword secundaria, 10-15 palabras]`;
 
-  // Extraer URL del resultado
-  const urlMatch = result.match(/URL:\s*(https?:\/\/\S+)/i);
-  const altMatch = result.match(/ALT:\s*(.+)/i);
+  const result = await callWithSearch(prompt, 600);
 
-  return {
-    url: urlMatch?.[1]?.trim() || "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80",
-    alt: altMatch?.[1]?.trim() || `${topic.focusKeyword} Huasteca Potosina guía de viaje ${new Date().getFullYear()}`,
+  const heroUrl  = result.match(/HERO_URL:\s*(https?:\/\/\S+)/i)?.[1]?.trim();
+  const heroAlt  = result.match(/HERO_ALT:\s*(.+)/i)?.[1]?.trim();
+  const bodyUrl  = result.match(/BODY_URL:\s*(https?:\/\/\S+)/i)?.[1]?.trim();
+  const bodyAlt  = result.match(/BODY_ALT:\s*(.+)/i)?.[1]?.trim();
+
+  // Asegurar URLs distintas con fallback
+  const hero = {
+    url: heroUrl || FALLBACK_IMAGES[0].url,
+    alt: heroAlt || `${topic.focusKeyword} Huasteca Potosina ${new Date().getFullYear()}`,
   };
+  const usedUrl = hero.url;
+  const bodyFallback = FALLBACK_IMAGES.find(i => i.url !== usedUrl) || FALLBACK_IMAGES[1];
+  const body = {
+    url: (bodyUrl && bodyUrl !== usedUrl) ? bodyUrl : bodyFallback.url,
+    alt: bodyAlt || `${topic.secondaryKeywords[0] || topic.focusKeyword} guía viaje Huasteca`,
+  };
+
+  console.log(`   Hero: ${hero.url.substring(0, 60)}...`);
+  console.log(`   Body: ${body.url.substring(0, 60)}...`);
+  return { hero, body };
 }
 
-// ── PASO 3 + 5–7: Redactar artículo completo en JSON ───────
+// ── PASOS 3 + 5–7: Redactar artículo + entregar JSON ───────
 
-async function writeArticle(topic, researchContext, imageData) {
+async function writeArticle(topic, researchContext, images) {
   console.log(`\n✍️  Redactando artículo EEAT (750–900 palabras)...`);
 
   const year  = new Date().getFullYear();
   const today = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
   const slug  = `${topic.focusKeyword.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}-${year}`;
 
-  const needsFood    = /gastronom|comida|restaurante|comer|platillo/i.test(topic.title + topic.category);
-  const needsHotel   = /hospedaje|hotel|dormir|alojamiento|hostal/i.test(topic.title + topic.category);
+  const needsFood  = /gastronom|comida|restaurante|comer|platillo/i.test(topic.title + topic.category);
+  const needsHotel = /hospedaje|hotel|dormir|alojamiento|hostal/i.test(topic.title + topic.category);
 
   const aliadoHtml = needsFood
-    ? `<p>En mi última visita, Manolo Covarrubias eligió <a href="https://paraisoencantadoxilitla.lat" rel="noopener">El Papán Huasteco</a> en Xilitla por su cocina de fogón auténtica: zacahuil, bocoles recién hechos y un caldo de res que reconforta después de un día de senderismo. Es la experiencia gastronómica que todo viajero merece probar al menos una vez en la Huasteca.</p>`
+    ? `<p>En mi última visita, elegí <a href="https://paraisoencantadoxilitla.lat" rel="noopener">El Papán Huasteco</a> en Xilitla: cocina de fogón auténtica, <strong>zacahuil y bocoles recién hechos</strong> que reconfortan después de un día de senderismo. La experiencia gastronómica que todo viajero merece probar al menos una vez en la Huasteca.</p>`
     : needsHotel
-    ? `<p>Para quien busca despertar entre la selva a pasos del Jardín de Edward James, el <a href="https://paraisoencantadoxilitla.lat" rel="noopener">Hotel Paraíso Encantado</a> en Xilitla es la elección que Manolo Covarrubias recomienda sin reservas — lo he vivido. Habitaciones con vista a la selva, silencio real y una atención que hace sentir al viajero como en casa.</p>`
+    ? `<p>Para quien busca despertar entre la selva a pasos del Jardín de Edward James, el <a href="https://paraisoencantadoxilitla.lat" rel="noopener">Hotel Paraíso Encantado</a> en Xilitla es la elección que hago sin reservas — lo he vivido. <strong>Habitaciones con vista a la selva</strong>, silencio real y atención que hace sentir al viajero como en casa.</p>`
     : "";
 
-  const prompt = `Eres Manolo Covarrubias, promotor turístico y experto en la Huasteca Potosina. Escribe un artículo de blog EEAT de exactamente 750–900 palabras.
+  // Schema markup generado programáticamente (fuera del prompt de Claude)
+  const schemaObj = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": topic.title,
+    "datePublished": new Date().toISOString(),
+    "dateModified": new Date().toISOString(),
+    "author": {
+      "@type": "Person",
+      "name": "Manolo Covarrubias",
+      "url": `${SITE_URL}/sobre-nosotros`,
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Huasteca Potosina",
+      "url": SITE_URL,
+    },
+    "description": "",      // se sobreescribe tras parsear el JSON de Claude
+    "image": images.hero.url,
+    "keywords": [topic.focusKeyword, ...topic.secondaryKeywords].join(", "),
+    "articleSection": topic.category,
+  };
 
-━━━ DATOS DEL ARTÍCULO ━━━
-HOY: ${today}
-TEMA: ${topic.title}
-KEYWORD PRINCIPAL: ${topic.focusKeyword}
+  const prompt = `Eres Manolo Covarrubias, promotor turístico y experto en la Huasteca Potosina. Escribe un artículo de blog EEAT.
+
+━━━ DATOS ━━━
+HOY: ${today} | TEMA: ${topic.title} | KEYWORD: ${topic.focusKeyword}
 KEYWORDS SECUNDARIOS: ${topic.secondaryKeywords.join(", ")}
-CATEGORÍA: ${topic.category}
 
-━━━ CONTEXTO DE INVESTIGACIÓN ━━━
-${researchContext || "(Usa conocimiento del modelo — no se obtuvo contexto web)"}
+━━━ CONTEXTO INVESTIGADO ━━━
+${researchContext || "(Usa conocimiento del modelo)"}
 
-━━━ ESTRUCTURA EXACTA DEL ARTÍCULO ━━━
-
-Usa este HTML para el campo "content" del JSON final:
-
-<h1>[Título con keyword principal — máx 60 caracteres]</h1>
+━━━ ESTRUCTURA HTML DEL CAMPO "content" ━━━
+IMPORTANTE: El <h1> lo renderiza el sitio web por separado. El content debe empezar directamente con los párrafos de introducción, sin <h1>.
 
 <p>[INTRO párrafo 1: Gancho sensorial. Keyword principal en este párrafo.]</p>
 <p>[INTRO párrafo 2: Contexto + por qué importa este tema]</p>
-<p>[INTRO párrafo 3: Promesa del artículo + link interno a /planear]</p>
+<p>[INTRO párrafo 3: Promesa del artículo + enlace natural a <a href="/planear">planear tu ruta con IA</a>]</p>
 
 <h2>[Primera sección — subtítulo con keyword secundaria]</h2>
-<p>[3–4 oraciones. Dato con cifra, fuente y año del contexto investigado. Al menos 1 <strong>dato clave</strong>.]</p>
+<p>[3–4 oraciones. Al menos 1 <strong>dato con cifra, fuente y año</strong> del contexto investigado.]</p>
 
 <h2>[Segunda sección — subtítulo descriptivo]</h2>
 <p>[3–4 oraciones. Señal EEAT de experiencia personal: "La primera vez que llegué a..." o "En mis visitas he comprobado que..."]</p>
 
 <figure>
-  <img src="${imageData.url}" alt="${imageData.alt}" loading="lazy" />
-  <figcaption>[Caption descriptivo y natural con keyword]</figcaption>
+  <img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" />
+  <figcaption>[Caption descriptivo con keyword]</figcaption>
 </figure>
 
-<h2>[Tercera sección — subtítulo descriptivo]</h2>
-${aliadoHtml || "<p>[3–4 oraciones con consejo práctico y honesto — incluye advertencia real sobre dificultades: clima, caminos, temporadas.]</p>"}
+<h2>[Tercera sección]</h2>
+${aliadoHtml || `<p>[3–4 oraciones. Consejo práctico + advertencia honesta sobre dificultades reales: clima, caminos, temporadas.]</p>`}
 
 <h2>[Cuarta sección — solo si el tema lo requiere]</h2>
-<p>[3–4 oraciones. Links internos naturales a: <a href="/destinos/cascada-de-tamul">Cascada de Tamul</a>, <a href="/destinos/las-pozas-jardin-surrealista">Las Pozas</a>, <a href="/destinos/sotano-de-las-golondrinas">Sótano de las Golondrinas</a>, <a href="/destinos/cascadas-de-micos">Cascadas de Micos</a>]</p>
+<p>[3–4 oraciones. Incluye 2–3 links internos naturales de: <a href="/destinos/cascada-de-tamul">Cascada de Tamul</a>, <a href="/destinos/las-pozas-jardin-surrealista">Las Pozas</a>, <a href="/destinos/sotano-de-las-golondrinas">Sótano de las Golondrinas</a>, <a href="/destinos/cascadas-de-micos">Cascadas de Micos</a>]</p>
 
-<p>[CONCLUSIÓN párrafo 1: Resumen + reflexión personal de Manolo]</p>
+<p>[CONCLUSIÓN: Reflexión personal de Manolo + resumen]</p>
 
 <div class="cta-box">
   <p>¿Listo para vivir la Huasteca Potosina? <strong>Crea tu itinerario personalizado en 2 minutos con nuestra IA</strong> — sin registro, gratis, con rutas reales y precios ${year}.</p>
   <a href="/planear" class="cta-button">Crear mi Itinerario Gratis →</a>
 </div>
 
-━━━ REGLAS OBLIGATORIAS ━━━
-- CUENTA LAS PALABRAS del body del artículo (sin contar bio ni cta-box). Si excedes 900, recorta. Si no llegas a 750, expande.
-- Al menos 1 <strong> por sección H2
-- 2–3 links internos de la lista disponible, donde fluyan natural
-- Nunca repitas el mismo dato dos veces
+━━━ REGLAS ━━━
+- 750–900 palabras en el body (sin contar el cta-box). Cuenta antes de entregar.
+- 1 <strong> por sección como mínimo
+- NUNCA uses <h1> dentro del content
+- NO repitas la imagen hero en el content (ya está asignada al campo coverImageUrl)
 
-━━━ ENTREGA ━━━
-Responde ÚNICAMENTE con este JSON válido (sin markdown, sin texto extra):
-
+━━━ ENTREGA: JSON VÁLIDO SIN MARKDOWN ━━━
 {
   "slug": "${slug}",
-  "metaTitle": "Título SEO (máx 60 caracteres con keyword y año)",
+  "metaTitle": "Título SEO máx 60 chars con keyword y ${year}",
   "title": "Título H1 completo del artículo",
-  "metaDescription": "Descripción Google 140–155 chars — keyword + año + propuesta de valor",
+  "metaDescription": "140–155 chars — keyword + año + propuesta de valor",
   "focusKeyword": "${topic.focusKeyword}",
   "secondaryKeywords": ${JSON.stringify(topic.secondaryKeywords)},
   "excerpt": "2 líneas evocadoras con keyword para la lista del blog",
-  "content": "HTML COMPLETO del artículo",
-  "authorBio": "<div class='author-bio'><img src='https://ui-avatars.com/api/?name=Manolo+Covarrubias&background=2D4A1A&color=EDE0C4&size=80' alt='Manolo Covarrubias experto Huasteca Potosina' /><div><h4>Manolo Covarrubias</h4><p>Promotor turístico y experto en la Huasteca Potosina con más de 10 años recorriendo la región. Fundador de la plataforma de itinerarios huastecapotosina.mx y anfitrión del Hotel Paraíso Encantado en Xilitla, San Luis Potosí.</p><a href='/planear'>Ver itinerarios →</a></div></div>",
-  "schemaMarkup": "{\\\"@context\\\":\\\"https://schema.org\\\",\\\"@type\\\":\\\"Article\\\",\\\"headline\\\":\\\"[title]\\\",\\\"description\\\":\\\"[metaDescription]\\\",\\\"datePublished\\\":\\\"${new Date().toISOString()}\\\",\\\"author\\\":{\\\"@type\\\":\\\"Person\\\",\\\"name\\\":\\\"Manolo Covarrubias\\\",\\\"jobTitle\\\":\\\"Promotor Turístico Huasteca Potosina\\\"},\\\"publisher\\\":{\\\"@type\\\":\\\"Organization\\\",\\\"name\\\":\\\"Huasteca Potosina\\\"}}",
-  "coverImageUrl": "${imageData.url}",
-  "coverImageAlt": "${imageData.alt}",
-  "coverImageFile": "${slug}.jpg",
+  "content": "HTML COMPLETO — solo párrafos, H2s, figure, strong, links, cta-box. SIN H1.",
   "internalLinks": ["/planear", "/destinos/cascada-de-tamul"],
-  "externalSources": ["SECTUR San Luis Potosí — turismo.slp.gob.mx", "segunda fuente citada en el artículo"],
-  "tags": ["Huasteca Potosina", "${topic.category}", "tercer tag relevante"],
+  "externalSources": ["SECTUR San Luis Potosí — turismo.slp.gob.mx", "segunda fuente"],
+  "tags": ["Huasteca Potosina", "${topic.category}", "tercer tag"],
   "readingTime": 6
 }`;
 
@@ -235,22 +264,38 @@ Responde ÚNICAMENTE con este JSON válido (sin markdown, sin texto extra):
     console.warn("✅ JSON reparado");
   }
 
-  // Normalizar schemaMarkup como string
-  if (post.schemaMarkup && typeof post.schemaMarkup === "object") {
-    post.schemaMarkup = JSON.stringify(post.schemaMarkup);
-  }
+  // ── Campos adicionales generados programáticamente (no por Claude) ──
+
+  // Imágenes
+  post.coverImageUrl  = images.hero.url;
+  post.coverImageAlt  = images.hero.alt;
+  post.coverImageFile = `${slug}.jpg`;
+
+  // Schema BlogPosting con metaDescription real
+  schemaObj.headline    = post.title || topic.title;
+  schemaObj.description = post.metaDescription || "";
+  post.schemaMarkup = JSON.stringify(schemaObj);
+
+  // Author bio con foto local
+  post.authorBio = `<div class="author-bio">
+  <img src="${AUTHOR_PHOTO}" alt="Manolo Covarrubias experto en turismo de la Huasteca Potosina" width="80" height="80" />
+  <div>
+    <h4>Manolo Covarrubias</h4>
+    <p>Promotor turístico y experto en la Huasteca Potosina con más de 10 años recorriendo la región. Fundador de la plataforma de itinerarios huastecapotosina.mx y anfitrión del Hotel Paraíso Encantado en Xilitla, San Luis Potosí. Ha guiado a cientos de viajeros por las cascadas, cañones y selvas de esta región extraordinaria.</p>
+    <a href="/planear">Ver itinerarios →</a>
+  </div>
+</div>`;
 
   const wordCount = (post.content || "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
-  console.log(`✅ Artículo generado: "${post.title}"`);
+  console.log(`✅ Artículo listo: "${post.title}"`);
   console.log(`   ~${wordCount} palabras | ${post.readingTime} min | keyword: ${post.focusKeyword}`);
-
-  if (wordCount < 700) console.warn(`⚠️  Artículo corto (${wordCount} palabras) — puede requerir revisión`);
-  if (wordCount > 950) console.warn(`⚠️  Artículo largo (${wordCount} palabras) — puede requerir recorte`);
+  if (wordCount < 700) console.warn(`⚠️  Artículo corto (${wordCount} palabras)`);
+  if (wordCount > 950) console.warn(`⚠️  Artículo largo (${wordCount} palabras)`);
 
   return post;
 }
 
-// ── Publicar en el sitio ────────────────────────────────────
+// ── Publicar ────────────────────────────────────────────────
 
 async function publishPost(post) {
   if (DRY_RUN) {
@@ -260,14 +305,11 @@ async function publishPost(post) {
     console.log(`Slug:         ${post.slug}`);
     console.log(`Keyword:      ${post.focusKeyword}`);
     console.log(`Meta desc:    ${post.metaDescription}`);
-    console.log(`Excerpt:      ${post.excerpt}`);
-    console.log(`Tags:         ${post.tags?.join(", ")}`);
-    console.log(`Fuentes:      ${post.externalSources?.join(" | ")}`);
     console.log(`Cover:        ${post.coverImageUrl}`);
-    console.log(`\n--- CONTENT PREVIEW (900 chars) ---`);
+    console.log(`\n--- CONTENT (900 chars) ---`);
     console.log(post.content?.slice(0, 900) + "...");
-    console.log(`\n--- AUTHOR BIO ---`);
-    console.log(post.authorBio?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    console.log(`\n--- SCHEMA ---`);
+    console.log(post.schemaMarkup?.slice(0, 300));
     return null;
   }
 
@@ -295,7 +337,6 @@ async function main() {
   console.log(`    Modo: ${DRY_RUN ? "🧪 DRY-RUN" : "🚀 LIVE"}`);
   console.log("═".repeat(55));
 
-  // Posts ya publicados
   let usedSlugs = [];
   if (!DRY_RUN && BLOG_SECRET) {
     try {
@@ -305,10 +346,9 @@ async function main() {
       const data = await res.json();
       usedSlugs = (data.posts || []).map(p => p.slug);
       console.log(`\n📚 Posts existentes: ${usedSlugs.length}`);
-    } catch { /* continuar sin historial */ }
+    } catch { /* continuar */ }
   }
 
-  // Seleccionar tema
   const topic = getDailyTopic(usedSlugs, CUSTOM_TOPIC);
   console.log(`\n📌 Tema:     ${topic.title}`);
   console.log(`🔑 Keyword:  ${topic.focusKeyword}`);
@@ -316,18 +356,18 @@ async function main() {
 
   // Paso 1: Investigación
   const researchContext = await doResearch(topic).catch(e => {
-    console.warn(`⚠️  Búsqueda fallida: ${e.message} — usando conocimiento del modelo`);
+    console.warn(`⚠️  Búsqueda fallida: ${e.message}`);
     return "";
   });
 
-  // Paso 4: Imagen
-  const imageData = await findImage(topic).catch(() => ({
-    url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200&q=80",
-    alt: `${topic.focusKeyword} Huasteca Potosina ${new Date().getFullYear()}`,
+  // Paso 4: Dos imágenes distintas
+  const images = await findImages(topic).catch(() => ({
+    hero: { url: FALLBACK_IMAGES[0].url, alt: `${topic.focusKeyword} Huasteca Potosina ${new Date().getFullYear()}` },
+    body: { url: FALLBACK_IMAGES[1].url, alt: `${topic.secondaryKeywords[0] || topic.focusKeyword} guía viaje` },
   }));
 
-  // Pasos 3 + 5–7: Redactar y estructurar en JSON
-  const post = await writeArticle(topic, researchContext, imageData);
+  // Pasos 3 + 5–7: Redactar y estructurar
+  const post = await writeArticle(topic, researchContext, images);
 
   // Publicar
   await publishPost(post);
