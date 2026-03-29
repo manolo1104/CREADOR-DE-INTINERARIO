@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 type Estado = "verificando" | "ok" | "error";
 
-export default function DescargaPage() {
+function DescargaContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [estado, setEstado] = useState<Estado>("verificando");
@@ -99,5 +99,17 @@ export default function DescargaPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function DescargaPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-2 border-verde-vivo border-t-transparent rounded-full animate-spin" />
+      </main>
+    }>
+      <DescargaContent />
+    </Suspense>
   );
 }
