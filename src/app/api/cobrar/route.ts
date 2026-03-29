@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { monto, descripcion, email_cliente } = await req.json();
+    const { monto, descripcion, email_cliente, producto } = await req.json();
 
     if (!monto || monto <= 0) {
       logger.warn("payment_invalid_amount", { monto });
@@ -45,8 +45,12 @@ export async function POST(req: NextRequest) {
         },
       ],
       customer_email: email_cliente ?? undefined,
-      success_url: `${appUrl}/confirmacion-pago.html?status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/confirmacion-pago.html?status=cancelled`,
+      success_url: producto === "guia_pdf"
+        ? `${appUrl}/guia/descarga?session_id={CHECKOUT_SESSION_ID}`
+        : `${appUrl}/confirmacion-pago.html?status=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: producto === "guia_pdf"
+        ? `${appUrl}/guia?cancelled=1`
+        : `${appUrl}/confirmacion-pago.html?status=cancelled`,
     });
 
     logger.info("payment_session_created", {
