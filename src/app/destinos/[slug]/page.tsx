@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { buildDestinationJsonLd } from "@/lib/jsonld";
 
 interface Props {
   params: { slug: string };
@@ -25,7 +26,14 @@ export default function DestinoPage({ params }: Props) {
   const destino = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!destino) notFound();
 
+  const jsonLd = buildDestinationJsonLd(destino);
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     <main className="min-h-screen">
       {/* Hero */}
       <div className="bg-gradient-to-br from-verde-profundo to-verde-bosque px-6 md:px-20 py-20 border-b border-white/8">
@@ -119,5 +127,6 @@ export default function DestinoPage({ params }: Props) {
         </Link>
       </div>
     </main>
+    </>
   );
 }
