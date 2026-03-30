@@ -30,3 +30,7 @@ body {
     -webkit-text-fill-color: transparent;
   }
 }
+
+.leaflet-container {
+  z-index: 0;
+}

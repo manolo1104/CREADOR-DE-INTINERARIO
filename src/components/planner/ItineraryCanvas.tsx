@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { extraerDestinosDelItinerario } from "@/lib/extraerDestinos";
 import {
   DndContext,
   closestCenter,
@@ -18,6 +20,15 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+const MapaItinerario = dynamic(() => import("./MapaItinerario"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-72 md:h-96 rounded-xl bg-white/4 flex items-center justify-center">
+      <span className="text-crema/30 text-sm">Cargando mapa…</span>
+    </div>
+  ),
+});
 
 interface DayActivity {
   id: string;
@@ -144,6 +155,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
   }
 
   const presupuestoLabel = { economico: "Mochilero", moderado: "Moderado", premium: "Premium ✨" }[state.presupuesto] ?? state.presupuesto;
+  const destinosEnMapa = loading ? [] : extraerDestinosDelItinerario(itinerary);
 
   // Suppress unused variable warnings for DnD state that's wired up but not rendered yet
   void days;
@@ -196,6 +208,15 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
             className="prose-custom"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(itinerary) }}
           />
+        )}
+
+        {destinosEnMapa.length > 0 && (
+          <div className="mt-10 mb-4">
+            <p className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-4">
+              Ruta de tu itinerario
+            </p>
+            <MapaItinerario destinosDelDia={destinosEnMapa} />
+          </div>
         )}
       </div>
 
