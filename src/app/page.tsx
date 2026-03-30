@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
 
@@ -196,26 +197,39 @@ export default function HomePage() {
             <Link
               key={d.slug}
               href={`/destinos/${d.slug}`}
-              className={`group relative overflow-hidden border border-white/8 hover:border-verde-vivo/60 bg-gradient-to-b ${getCardGradient(d.tipo)} hover:scale-[1.02] transition-all duration-300 flex flex-col p-5`}
+              className="group relative overflow-hidden border border-white/8 hover:border-verde-vivo/60 hover:scale-[1.02] transition-all duration-300 flex flex-col"
             >
-              <div className="text-5xl mb-4 text-center">{d.emoji}</div>
-              <div className="flex-1">
-                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo mb-1.5 font-dm">
-                  {d.tipo}
-                </p>
-                <h3 className="font-cormorant text-crema text-lg leading-tight mb-1">
-                  {d.nombre}
-                </h3>
-                <p className="text-crema/40 text-[11px] font-dm mb-4">{d.zona}</p>
+              {/* Image or gradient thumbnail */}
+              <div className="relative aspect-[4/3] overflow-hidden">
+                {d.imagen_hero ? (
+                  <Image
+                    src={d.imagen_hero}
+                    alt={d.nombre}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                ) : (
+                  <div className={`absolute inset-0 bg-gradient-to-b ${getCardGradient(d.tipo)}`} />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
+                <span className="absolute bottom-3 left-3 text-3xl">{d.emoji}</span>
               </div>
-              <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-auto">
-                <div>
-                  <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Desde</p>
-                  <p className="text-dorado text-sm font-dm font-medium">{d.precio_entrada.split(" ")[0]}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Duración</p>
-                  <p className="text-crema/70 text-sm font-dm">{d.duracion_hrs}h</p>
+
+              {/* Card body */}
+              <div className="flex flex-col flex-1 p-4 bg-negro/60">
+                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo mb-1 font-dm">{d.tipo}</p>
+                <h3 className="font-cormorant text-crema text-base leading-tight mb-1">{d.nombre}</h3>
+                <p className="text-crema/40 text-[10px] font-dm mb-3">{d.zona}</p>
+                <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-auto">
+                  <div>
+                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Desde</p>
+                    <p className="text-dorado text-sm font-dm font-medium">{d.precio_entrada.split(" ")[0]}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Duración</p>
+                    <p className="text-crema/70 text-sm font-dm">{d.duracion_hrs}h</p>
+                  </div>
                 </div>
               </div>
               <div className="absolute inset-0 border border-verde-vivo/0 group-hover:border-verde-vivo/40 transition-all duration-300 pointer-events-none" />

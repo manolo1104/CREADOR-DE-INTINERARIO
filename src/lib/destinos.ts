@@ -13,6 +13,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["Fue plantación de orquídeas", "Edward James nunca vivió en las estructuras"],
     errores_comunes: ["Llegar sin reservación", "Calzado liso"],
     lat: 21.3972, lng: -98.9939,
+    imagen_hero: "/imagenes/las-pozas-jardin-surrealista/hero.webp",
+    imagen_galeria: [
+      "/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg",
+      "/imagenes/las-pozas-jardin-surrealista/gallery-2.jpg",
+    ],
   },
   {
     id: "cascada_tamul", slug: "cascada-de-tamul",
@@ -28,6 +33,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["105m de caída", "En octubre: agua turquesa + follaje naranja"],
     errores_comunes: ["Llegar tarde", "No llevar efectivo"],
     lat: 21.8014, lng: -99.1794,
+    imagen_hero: "/imagenes/cascada-de-tamul/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cascada-de-tamul/gallery-1.jpg",
+      "/imagenes/cascada-de-tamul/gallery-2.webp",
+    ],
   },
   {
     id: "sotano_golondrinas", slug: "sotano-de-las-golondrinas",
@@ -43,6 +53,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["Las aves son VENCEJOS, no golondrinas", "Fondo = 3 campos de fútbol"],
     errores_comunes: ["Llegar a las 9 AM cuando aves ya salieron"],
     lat: 21.6001, lng: -99.0989,
+    imagen_hero: "/imagenes/sotano-de-las-golondrinas/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/sotano-de-las-golondrinas/gallery-1.avif",
+      "/imagenes/sotano-de-las-golondrinas/gallery-2.avif",
+    ],
   },
   {
     id: "cascada_micos", slug: "cascadas-de-micos",
@@ -58,6 +73,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["El río más versátil de la zona"],
     errores_comunes: ["No ajustar bien el chaleco"],
     lat: 21.9958, lng: -99.1678,
+    imagen_hero: "/imagenes/cascadas-de-micos/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cascadas-de-micos/gallery-1.webp",
+      "/imagenes/cascadas-de-micos/gallery-2.jpg",
+    ],
   },
   {
     id: "cascada_puente_dios", slug: "puente-de-dios-tamasopo",
@@ -73,6 +93,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["Efecto de luz en la cueva único en México"],
     errores_comunes: ["No usar aqua shoes (piedras MUY resbalosas)"],
     lat: 21.9214, lng: -99.4217,
+    imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/puente-de-dios-tamasopo/gallery-1.jpg",
+      "/imagenes/puente-de-dios-tamasopo/gallery-2.jpg",
+    ],
   },
   {
     id: "tamtoc", slug: "zona-arqueologica-tamtoc",
@@ -88,6 +113,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["Monumento 32 pesa 30 toneladas"],
     errores_comunes: ["No llevar agua", "Ir sin guía"],
     lat: 22.2131, lng: -98.8158,
+    imagen_hero: "/imagenes/zona-arqueologica-tamtoc/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/zona-arqueologica-tamtoc/gallery-1.jpg",
+      "/imagenes/zona-arqueologica-tamtoc/gallery-2.jpg",
+    ],
   },
   {
     id: "cascada_tamasopo", slug: "cascadas-de-tamasopo",
@@ -103,6 +133,11 @@ export const DESTINOS_DB = [
     datos_curiosos: ["Las pozas cambian de color según la estación"],
     errores_comunes: ["Usar bloqueador químico"],
     lat: 21.92, lng: -99.39,
+    imagen_hero: "/imagenes/cascadas-de-tamasopo/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cascadas-de-tamasopo/gallery-1.jpg",
+      "/imagenes/cascadas-de-tamasopo/gallery-2.webp",
+    ],
   },
   {
     id: "balneario_taninul", slug: "balneario-taninul",
@@ -118,6 +153,8 @@ export const DESTINOS_DB = [
     datos_curiosos: ["Agua mantiene 36°C constante todo el año"],
     errores_comunes: ["Llevar joyería de plata"],
     lat: 21.9452, lng: -98.8895,
+    imagen_hero: "/imagenes/balneario-taninul/hero.webp",
+    imagen_galeria: [],
   },
 ];
 

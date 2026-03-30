@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { DESTINOS_DB } from "@/lib/destinos";
 
 const FILTROS = [
@@ -98,11 +99,26 @@ export default function DestinosPage() {
           {destinosFiltrados.map((d) => (
             <div
               key={d.slug}
-              className={`group border border-white/8 bg-gradient-to-b ${getCardBg(d.tipo)} hover:border-verde-vivo/50 transition-all duration-300 overflow-hidden`}
+              className="group border border-white/8 hover:border-verde-vivo/50 transition-all duration-300 overflow-hidden bg-negro/40"
             >
+              {/* Imagen de cabecera */}
+              {d.imagen_hero && (
+                <div className="relative h-48 overflow-hidden">
+                  <Image
+                    src={d.imagen_hero}
+                    alt={d.nombre}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
+                  <span className="absolute bottom-3 left-4 text-3xl">{d.emoji}</span>
+                </div>
+              )}
+
               {/* Card Header */}
               <div className="flex items-start gap-5 p-6 pb-4 border-b border-white/6">
-                <div className="text-6xl flex-shrink-0">{d.emoji}</div>
+                {!d.imagen_hero && <div className="text-6xl flex-shrink-0">{d.emoji}</div>}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <h2 className="font-cormorant text-crema text-xl leading-tight">{d.nombre}</h2>
