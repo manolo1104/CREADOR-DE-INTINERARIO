@@ -43,7 +43,7 @@ export default function MapaItinerario({ destinosDelDia }: Props) {
   }, [destinosDelDia]);
 
   // Group by day for polylines
-  const diasUnicos = [...new Set(destinosDelDia.map((d) => d.dia))].sort((a, b) => a - b);
+  const diasUnicos = Array.from(new Set(destinosDelDia.map((d) => d.dia))).sort((a, b) => a - b);
 
   function crearIconoNumerado(orden: number, dia: number) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
