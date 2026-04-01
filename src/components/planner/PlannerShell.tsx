@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ItineraryCanvas } from "./ItineraryCanvas";
+import { FreemiumGate } from "./FreemiumGate";
+import { FreePreviewCanvas } from "./FreePreviewCanvas";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { generatePreviewItinerary, PreviewItinerary } from "@/lib/generatePreviewItinerary";
 
 type Step = "dias" | "presupuesto" | "destinos" | "intereses" | "perfil" | "extras" | "resultado";
 
 const STEPS: { key: Step; label: string; sub: string }[] = [
-  { key: "dias", label: "Duración", sub: "¿Cuántos días?" },
+  { key: "dias",        label: "Duración",    sub: "¿Cuántos días?" },
   { key: "presupuesto", label: "Presupuesto", sub: "¿Cuánto tienes?" },
-  { key: "destinos", label: "Destinos", sub: "¿Qué quieres ver?" },
-  { key: "intereses", label: "Intereses", sub: "¿Qué te apasiona?" },
-  { key: "perfil", label: "Perfil", sub: "¿Cómo viajas?" },
-  { key: "extras", label: "Extras", sub: "Detalles finales" },
+  { key: "destinos",    label: "Destinos",    sub: "¿Qué quieres ver?" },
+  { key: "intereses",   label: "Intereses",   sub: "¿Qué te apasiona?" },
+  { key: "perfil",      label: "Perfil",      sub: "¿Cómo viajas?" },
+  { key: "extras",      label: "Extras",      sub: "Detalles finales" },
 ];
 
 const INTERESES = [
@@ -22,10 +25,10 @@ const INTERESES = [
 ];
 
 const VIAJEROS = [
-  { emoji: "🧍", nombre: "Solo/Sola", desc: "Libertad total, a tu ritmo" },
-  { emoji: "👫", nombre: "En Pareja", desc: "Romántico y aventurero" },
-  { emoji: "👨‍👩‍👧‍👦", nombre: "Familia", desc: "Con niños, seguro y divertido" },
-  { emoji: "👯", nombre: "Amigos", desc: "Grupo, fiesta y aventura" },
+  { emoji: "🧍", nombre: "Solo/Sola",  desc: "Libertad total, a tu ritmo" },
+  { emoji: "👫", nombre: "En Pareja",  desc: "Romántico y aventurero" },
+  { emoji: "👨‍👩‍👧‍👦", nombre: "Familia",   desc: "Con niños, seguro y divertido" },
+  { emoji: "👯", nombre: "Amigos",     desc: "Grupo, fiesta y aventura" },
 ];
 
 interface State {
@@ -51,11 +54,48 @@ export function PlannerShell() {
     restricciones: "",
     sueno: "",
   });
-  const [itinerary, setItinerary] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [itinerary, setItinerary]           = useState<string>("");
+  const [loading, setLoading]               = useState(false);
+  const [preview, setPreview]               = useState<PreviewItinerary | null>(null);
+  const [showFreemiumGate, setShowFreemiumGate] = useState(false);
+  const [showFreePreview, setShowFreePreview]   = useState(false);
+
+  // ── Post-payment redirect: detect ?paid=1&session_id=... ──────────────────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paid") !== "1") return;
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
+
+    const saved = sessionStorage.getItem("huasteca_wizard_state");
+    if (!saved) return;
+
+    let restored: State;
+    try {
+      restored = JSON.parse(saved) as State;
+    } catch {
+      return;
+    }
+
+    sessionStorage.removeItem("huasteca_wizard_state");
+    window.history.replaceState({}, "", "/planear");
+    setState(restored);
+
+    // Verify payment then generate with AI
+    fetch(`/api/verify-session?session_id=${sessionId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.valid) runGenerateWithAI(restored);
+      })
+      .catch(() => {
+        // If verify endpoint fails, proceed anyway (payment was confirmed by Stripe redirect)
+        runGenerateWithAI(restored);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stepIndex = STEPS.findIndex((s) => s.key === currentStep);
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+  const progress  = ((stepIndex + 1) / STEPS.length) * 100;
 
   function toggleDestino(id: string) {
     setState((s) => ({
@@ -75,12 +115,23 @@ export function PlannerShell() {
     }));
   }
 
-  async function generate() {
+  // ── PASO 2 → 3: Genera preview local y muestra FreemiumGate ──────────────
+  function generate() {
+    const p = generatePreviewItinerary(state);
+    setPreview(p);
+    setShowFreemiumGate(true);
+    setShowFreePreview(false);
+  }
+
+  // ── Llamada real a Claude — sólo después del pago ─────────────────────────
+  async function runGenerateWithAI(s: State) {
+    setShowFreemiumGate(false);
+    setShowFreePreview(false);
     setCurrentStep("resultado");
     setLoading(true);
 
-    const destinosSeleccionados = state.destinos.length > 0
-      ? DESTINOS_DB.filter((d) => state.destinos.includes(d.id))
+    const destinosSeleccionados = s.destinos.length > 0
+      ? DESTINOS_DB.filter((d) => s.destinos.includes(d.id))
       : DESTINOS_DB.slice(0, 8);
 
     const lugaresInfo = destinosSeleccionados
@@ -89,17 +140,17 @@ export function PlannerShell() {
 
     const prompt = `Eres el mejor guía local de la Huasteca Potosina. Datos 2026.
 
-VIAJERO: ${state.dias} días | ${state.presupuesto} | ${state.viajero} | ${state.actividad}
-INTERESES: ${state.intereses.join(", ")}
-${state.restricciones ? `RESTRICCIONES: ${state.restricciones}` : ""}
-${state.sueno ? `SUEÑO: ${state.sueno}` : ""}
+VIAJERO: ${s.dias} días | ${s.presupuesto} | ${s.viajero} | ${s.actividad}
+INTERESES: ${s.intereses.join(", ")}
+${s.restricciones ? `RESTRICCIONES: ${s.restricciones}` : ""}
+${s.sueno ? `SUEÑO: ${s.sueno}` : ""}
 
 DESTINOS DISPONIBLES:
 ${lugaresInfo}
 
 REGLAS: Máx 2 destinos con >1hr de distancia por día. Menciona efectivo siempre. Horarios reales.
 
-Genera itinerario de ${state.dias} días con formato:
+Genera itinerario de ${s.dias} días con formato:
 ## Día N — [Nombre] ([Zona])
 **Mañana** - actividad, costo, hora
 **Tarde** - actividad, costo
@@ -126,10 +177,45 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
     setLoading(false);
   }
 
-  if (currentStep === "resultado") {
-    return <ItineraryCanvas itinerary={itinerary} loading={loading} state={state} onBack={() => setCurrentStep("extras")} />;
+  // ── Renderizado condicional ───────────────────────────────────────────────
+
+  if (showFreemiumGate && preview) {
+    return (
+      <FreemiumGate
+        preview={preview}
+        wizardState={state}
+        onContinueFree={() => {
+          setShowFreemiumGate(false);
+          setShowFreePreview(true);
+        }}
+      />
+    );
   }
 
+  if (showFreePreview && preview) {
+    return (
+      <FreePreviewCanvas
+        preview={preview}
+        onBack={() => {
+          setShowFreePreview(false);
+          setShowFreemiumGate(true);
+        }}
+      />
+    );
+  }
+
+  if (currentStep === "resultado") {
+    return (
+      <ItineraryCanvas
+        itinerary={itinerary}
+        loading={loading}
+        state={state}
+        onBack={() => setCurrentStep("extras")}
+      />
+    );
+  }
+
+  // ── Wizard ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex" style={{ background: "#0e1710" }}>
       {/* Sidebar */}
@@ -139,14 +225,14 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
         </div>
         <nav className="flex-1 space-y-1">
           {STEPS.map((step, i) => {
-            const done = i < stepIndex;
+            const done   = i < stepIndex;
             const active = step.key === currentStep;
             return (
               <div key={step.key} className="flex items-start gap-4 py-4 border-b border-white/5">
                 <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 transition-all ${
-                  done ? "bg-lima border-lima text-negro" :
+                  done   ? "bg-lima border-lima text-negro" :
                   active ? "bg-verde-selva border-verde-selva text-crema" :
-                  "border-white/15 text-white/30"
+                           "border-white/15 text-white/30"
                 }`}>
                   {done ? "✓" : i + 1}
                 </div>
@@ -213,9 +299,9 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mb-10">
               {[
-                { key: "economico", icon: "🎒", name: "Mochilero", range: "$300–600 MXN", desc: "Hostales, transporte público" },
-                { key: "moderado", icon: "🌿", name: "Moderado", range: "$600–1,500 MXN", desc: "Posadas, taxis, restaurantes" },
-                { key: "premium", icon: "✨", name: "Premium", range: "$1,500+ MXN", desc: "Hoteles boutique, guías privados" },
+                { key: "economico", icon: "🎒", name: "Mochilero",  range: "$300–600 MXN",   desc: "Hostales, transporte público" },
+                { key: "moderado",  icon: "🌿", name: "Moderado",   range: "$600–1,500 MXN", desc: "Posadas, taxis, restaurantes" },
+                { key: "premium",   icon: "✨", name: "Premium",    range: "$1,500+ MXN",    desc: "Hoteles boutique, guías privados" },
               ].map((b) => (
                 <button
                   key={b.key}

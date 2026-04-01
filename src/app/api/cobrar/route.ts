@@ -47,9 +47,13 @@ export async function POST(req: NextRequest) {
       customer_email: email_cliente ?? undefined,
       success_url: producto === "guia_pdf"
         ? `${appUrl}/guia/descarga?session_id={CHECKOUT_SESSION_ID}`
+        : producto === "itinerario"
+        ? `${appUrl}/planear?paid=1&session_id={CHECKOUT_SESSION_ID}`
         : `${appUrl}/confirmacion-pago.html?status=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: producto === "guia_pdf"
         ? `${appUrl}/guia?cancelled=1`
+        : producto === "itinerario"
+        ? `${appUrl}/planear`
         : `${appUrl}/confirmacion-pago.html?status=cancelled`,
     });
 
