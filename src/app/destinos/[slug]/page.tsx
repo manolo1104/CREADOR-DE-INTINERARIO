@@ -17,9 +17,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const destino = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!destino) return { title: "Destino no encontrado" };
   return {
-    title: `${destino.nombre} — Huasteca Potosina`,
-    description: destino.descripcion,
-    keywords: ["Huasteca Potosina", destino.zona, destino.nombre, "turismo México"],
+    title: destino.seo?.metaTitle ?? `${destino.nombre} — Huasteca Potosina`,
+    description: destino.seo?.metaDescription ?? destino.descripcion,
+    keywords: destino.seo?.keywords ?? ["Huasteca Potosina", destino.zona, destino.nombre, "turismo México"],
     openGraph: destino.imagen_hero
       ? { images: [{ url: destino.imagen_hero }] }
       : undefined,

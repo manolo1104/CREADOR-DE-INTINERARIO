@@ -3,6 +3,15 @@ import { Destino } from "./destinos";
 const BASE_URL = "https://huastecapotosina.mx";
 
 function buildFAQs(d: Destino) {
+  // Use curated FAQs from seo field when available
+  if (d.seo?.faqPrincipales?.length) {
+    return d.seo.faqPrincipales.map((faq) => ({
+      "@type": "Question",
+      name: faq.pregunta,
+      acceptedAnswer: { "@type": "Answer", text: faq.respuesta },
+    }));
+  }
+
   return [
     {
       "@type": "Question",
