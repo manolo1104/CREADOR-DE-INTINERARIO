@@ -191,9 +191,8 @@ export const DESTINOS_DB: Destino[] = [
     imagen_galeria: [],
   },
 
-  // ─── NUEVOS DESTINOS (9) ────────────────────────────────────────────────────
+  // ─── NUEVOS DESTINOS — TANDA 1 (8 sin Tambaque) ────────────────────────────
 
-  // 1. Cascadas de Minas Viejas
   {
     id: "cascadas-minas-viejas",
     slug: "cascadas-minas-viejas",
@@ -220,30 +219,23 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Llegar sin efectivo", "Ir en temporada de lluvias sin verificar acceso"],
     lat: 22.576111,
     lng: -99.280556,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/cascadas-minas-viejas/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cascadas-minas-viejas/gallery-1.webp",
+      "/imagenes/cascadas-minas-viejas/gallery-2.jpg",
+    ],
     seo: {
       metaTitle: "Guía Cascadas Minas Viejas 2026 | El Naranjo SLP",
       metaDescription: "Descubre las Cascadas de Minas Viejas en 2026: precios, horarios, cómo llegar y consejos para ver el turquesa más intenso de la Huasteca Potosina. ¡Planea ya!",
       keywords: ["minas viejas cascadas", "el naranjo san luis potosi", "cascadas huasteca potosina", "minas viejas 2026", "pozas turquesa slp"],
       faqPrincipales: [
-        {
-          pregunta: "¿Cuánto cuesta la entrada a Minas Viejas en 2026?",
-          respuesta: "El costo aproximado es de $100 MXN por persona. Solo efectivo, no hay cajero en la zona.",
-        },
-        {
-          pregunta: "¿Se puede nadar en las Cascadas de Minas Viejas?",
-          respuesta: "Sí, hay pozas designadas con aguas tranquilas para nadar. Usa bloqueador biodegradable obligatoriamente.",
-        },
-        {
-          pregunta: "¿Cómo llegar a Minas Viejas desde Ciudad Valles?",
-          respuesta: "Toma la carretera 70 norte y desvíate hacia El Naranjo por la 80. Son aproximadamente 95 km y 1 hora 45 minutos en auto.",
-        },
+        { pregunta: "¿Cuánto cuesta la entrada a Minas Viejas en 2026?", respuesta: "El costo aproximado es de $100 MXN por persona. Solo efectivo, no hay cajero en la zona." },
+        { pregunta: "¿Se puede nadar en las Cascadas de Minas Viejas?", respuesta: "Sí, hay pozas designadas con aguas tranquilas para nadar. Usa bloqueador biodegradable obligatoriamente." },
+        { pregunta: "¿Cómo llegar a Minas Viejas desde Ciudad Valles?", respuesta: "Toma la carretera 70 norte y desvíate hacia El Naranjo por la 80. Son aproximadamente 95 km y 1 hora 45 minutos en auto." },
       ],
     },
   },
 
-  // 2. Manantial de la Media Luna
   {
     id: "laguna-media-luna",
     slug: "laguna-media-luna",
@@ -261,7 +253,7 @@ export const DESTINOS_DB: Destino[] = [
     mejor_hora: "09:00–11:00",
     temporada_ideal: "Todo el año",
     advertencias: "No tocar el fondo para no levantar sedimentos. Chaleco salvavidas obligatorio para no-buceadores. Bloqueador no biodegradable estrictamente prohibido.",
-    como_llegar: "120 min desde Valles · Carretera 70 poniente hasta Rioverde, seguir señales al Ejido El Jabalí",
+    como_llegar: "120 min desde Valles · Carretera 70 poniente hasta Rioverde → señales al Ejido El Jabalí",
     que_llevar: ["equipo de snorkel (o rentar en sitio)", "traje de baño", "toalla", "googles de natación", "efectivo"],
     datos_curiosos: [
       "Se han encontrado ofrendas prehispánicas y posibles restos de mamut en el fondo del manantial.",
@@ -270,30 +262,23 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["No reservar en temporada alta (cupo limitado)", "Llevar bloqueador químico"],
     lat: 21.859722,
     lng: -100.012500,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/laguna-media-luna/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/laguna-media-luna/gallery-1.avif",
+      "/imagenes/laguna-media-luna/gallery-2.webp",
+    ],
     seo: {
       metaTitle: "Laguna Media Luna Rioverde 2026 | Guía de Viaje",
       metaDescription: "Visita el Manantial de la Media Luna en 2026: buceo, snorkel y aguas termales a 27°C en San Luis Potosí. Precios, reservaciones y cómo llegar desde Ciudad Valles.",
       keywords: ["laguna media luna rioverde", "manantial san luis potosi", "buceo media luna", "que hacer en rioverde", "media luna 2026"],
       faqPrincipales: [
-        {
-          pregunta: "¿Qué temperatura tiene el agua de la Media Luna?",
-          respuesta: "El agua se mantiene constante entre 27°C y 29°C durante todo el año, independientemente de la temporada.",
-        },
-        {
-          pregunta: "¿Es necesario saber bucear para disfrutar la Media Luna?",
-          respuesta: "No, puedes practicar snorkel o nadar con googles y ver el fondo cristalino desde la superficie.",
-        },
-        {
-          pregunta: "¿Hay límite de personas en la Media Luna?",
-          respuesta: "Sí, el acceso está controlado para preservar el ecosistema. Se recomienda reservar en temporada alta.",
-        },
+        { pregunta: "¿Qué temperatura tiene el agua de la Media Luna?", respuesta: "El agua se mantiene constante entre 27°C y 29°C durante todo el año, independientemente de la temporada." },
+        { pregunta: "¿Es necesario saber bucear para disfrutar la Media Luna?", respuesta: "No, puedes practicar snorkel o nadar con googles y ver el fondo cristalino desde la superficie." },
+        { pregunta: "¿Hay límite de personas en la Media Luna?", respuesta: "Sí, el acceso está controlado para preservar el ecosistema. Se recomienda reservar en temporada alta." },
       ],
     },
   },
 
-  // 3. Cascada El Aguacate
   {
     id: "cascada-el-aguacate",
     slug: "cascada-el-aguacate",
@@ -320,30 +305,23 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["No contratar guía local", "Ir con calzado inadecuado"],
     lat: 21.668240,
     lng: -99.081560,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/cascada-el-aguacate/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cascada-el-aguacate/gallery-1.webp",
+      "/imagenes/cascada-el-aguacate/gallery-2.jpg",
+    ],
     seo: {
       metaTitle: "Cascada El Aguacate Aquismón 2026 | Guía Huasteca",
       metaDescription: "Cascada El Aguacate en Aquismón: 70 metros de caída, sendero de selva y pozas naturales. Guía 2026 con precios, cómo llegar y lo que nadie te cuenta. ¡Descúbrela!",
       keywords: ["cascada el aguacate aquismón", "cascadas secretas huasteca potosina", "senderismo aquismón", "cascadas slp 2026", "turismo aventura san luis potosi"],
       faqPrincipales: [
-        {
-          pregunta: "¿Es difícil llegar a la Cascada El Aguacate?",
-          respuesta: "La caminata es de dificultad media — unos 45 minutos por sendero de selva. Se requiere calzado de montaña y guía local obligatorio.",
-        },
-        {
-          pregunta: "¿Hay baños en la Cascada El Aguacate?",
-          respuesta: "Las instalaciones son mínimas. Hay baños básicos en la comunidad ejidal a la entrada.",
-        },
-        {
-          pregunta: "¿Es apto para niños la Cascada El Aguacate?",
-          respuesta: "Se recomienda para niños mayores de 10 años con experiencia en caminata. El terreno es irregular y hay tramos empinados.",
-        },
+        { pregunta: "¿Es difícil llegar a la Cascada El Aguacate?", respuesta: "La caminata es de dificultad media — unos 45 minutos por sendero de selva. Se requiere calzado de montaña y guía local obligatorio." },
+        { pregunta: "¿Hay baños en la Cascada El Aguacate?", respuesta: "Las instalaciones son mínimas. Hay baños básicos en la comunidad ejidal a la entrada." },
+        { pregunta: "¿Es apto para niños la Cascada El Aguacate?", respuesta: "Se recomienda para niños mayores de 10 años con experiencia en caminata. El terreno es irregular y hay tramos empinados." },
       ],
     },
   },
 
-  // 4. Cascada El Salto
   {
     id: "cascada-el-salto",
     slug: "cascada-el-salto",
@@ -361,8 +339,8 @@ export const DESTINOS_DB: Destino[] = [
     mejor_hora: "Mañana temprana",
     temporada_ideal: "Sep–Oct (cascada activa) · pozas todo el año",
     advertencias: "Piso extremadamente resbaladizo en las pozas — accidentes frecuentes sin calzado adecuado. La cascada principal puede estar completamente seca la mayor parte del año.",
-    como_llegar: "110 min desde Valles · Desde El Naranjo, carretera hacia Ciudad del Maíz, 8 km · Acceso pavimentado",
-    que_llevar: ["calzado acuático — el piso cerca de las pozas es muy resbaladizo", "ropa ligera y traje de baño", "protección solar", "comida (sin restaurantes en el sitio)", "efectivo"],
+    como_llegar: "110 min desde Valles · Desde El Naranjo, carretera hacia Ciudad del Maíz · 8 km pavimentado",
+    que_llevar: ["calzado acuático — piso muy resbaladizo", "ropa ligera y traje de baño", "protección solar", "comida (sin restaurantes en el sitio)", "efectivo"],
     datos_curiosos: [
       "El flujo se desvía artificialmente hacia una planta hidroeléctrica — por eso la cascada 'desaparece' en temporada seca.",
       "En septiembre de 2024, las lluvias excepcionales la activaron por 3 semanas continuas.",
@@ -370,30 +348,23 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Ir esperando ver la cascada sin verificar antes", "No llevar calzado antiderrapante"],
     lat: 22.592500,
     lng: -99.308333,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/cascada-el-salto/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cascada-el-salto/gallery-1.jpg",
+      "/imagenes/cascada-el-salto/gallery-2.jpg",
+    ],
     seo: {
       metaTitle: "Cascada El Salto El Naranjo 2026 | Guía Completa",
       metaDescription: "Todo sobre Cascada El Salto en El Naranjo, SLP: cuándo cae de verdad, precios 2026, pozas turquesas y cómo combinarla con El Meco en un solo día. ¡Entra!",
       keywords: ["cascada el salto el naranjo", "pozas azules el naranjo slp", "cascadas huasteca potosina 2026", "turismo el naranjo san luis potosi", "cascada el salto slp"],
       faqPrincipales: [
-        {
-          pregunta: "¿Por qué no tiene agua la Cascada El Salto?",
-          respuesta: "El flujo se desvía a una planta hidroeléctrica. Solo cae con lluvias excepcionales, principalmente en septiembre y octubre.",
-        },
-        {
-          pregunta: "¿Se puede nadar si la cascada El Salto no tiene agua?",
-          respuesta: "Sí, las pozas naturales mantienen agua turquesa cristalina todo el año, con o sin la caída activa.",
-        },
-        {
-          pregunta: "¿Hay restaurantes cerca de Cascada El Salto?",
-          respuesta: "No en el sitio, pero en El Naranjo (a 8 km) hay varios restaurantes con comida típica huasteca.",
-        },
+        { pregunta: "¿Por qué no tiene agua la Cascada El Salto?", respuesta: "El flujo se desvía a una planta hidroeléctrica. Solo cae con lluvias excepcionales, principalmente en septiembre y octubre." },
+        { pregunta: "¿Se puede nadar si la cascada El Salto no tiene agua?", respuesta: "Sí, las pozas naturales mantienen agua turquesa cristalina todo el año, con o sin la caída activa." },
+        { pregunta: "¿Hay restaurantes cerca de Cascada El Salto?", respuesta: "No en el sitio, pero en El Naranjo (a 8 km) hay varios restaurantes con comida típica huasteca." },
       ],
     },
   },
 
-  // 5. Cascada El Meco
   {
     id: "cascada-el-meco",
     slug: "cascada-el-meco",
@@ -411,8 +382,8 @@ export const DESTINOS_DB: Destino[] = [
     mejor_hora: "17:00–18:00",
     temporada_ideal: "Nov–May",
     advertencias: "Corrientes fuertes en el centro del río — no nadar fuera de las zonas permitidas. La panga no opera si el río está crecido.",
-    como_llegar: "105 min desde Valles · Desde El Naranjo, 5 km señalizados hacia el embarcadero",
-    que_llevar: ["cámara o teléfono con funda impermeable", "repelente natural", "ropa cómoda", "efectivo para la panga y restaurantes"],
+    como_llegar: "105 min desde Valles · Desde El Naranjo, 5 km señalizados hasta el embarcadero",
+    que_llevar: ["cámara o teléfono con funda impermeable", "repelente natural", "ropa cómoda", "efectivo para panga y restaurantes"],
     datos_curiosos: [
       "Su nombre proviene de los monos 'mecos' (monos araña) que habitaban la zona antes de la deforestación del siglo XX.",
       "Es la única cascada permanente del municipio de El Naranjo — cae todo el año sin importar la temporada.",
@@ -420,30 +391,23 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Ir sin efectivo para la panga (~$150 MXN)", "No preguntar si la panga opera ese día"],
     lat: 22.585556,
     lng: -99.300556,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/cascada-el-meco/hero.avif",
+    imagen_galeria: [
+      "/imagenes/cascada-el-meco/gallery-1.jpg",
+      "/imagenes/cascada-el-meco/gallery-2.jpg",
+    ],
     seo: {
       metaTitle: "Cascada El Meco El Naranjo 2026 | Mirador y Pangas",
       metaDescription: "Cascada El Meco en El Naranjo: la única cascada permanente de la zona. Guía 2026 con precios de panga, rappel, restaurantes con vista y cómo llegar. ¡Descúbrela!",
       keywords: ["cascada el meco el naranjo", "paseo en panga huasteca", "el meco san luis potosi 2026", "cascadas permanentes huasteca", "que hacer en el naranjo slp"],
       faqPrincipales: [
-        {
-          pregunta: "¿El mirador de Cascada El Meco es gratuito?",
-          respuesta: "Sí, el mirador desde la carretera es completamente gratuito. El acceso al río y las pangas tienen costo adicional (~$60 MXN entrada, ~$150 MXN panga).",
-        },
-        {
-          pregunta: "¿Se puede hacer rappel en Cascada El Meco?",
-          respuesta: "Sí, hay operadores locales certificados que ofrecen rappel en la cascada. Consulta directamente en el sitio.",
-        },
-        {
-          pregunta: "¿Hay restaurantes con vista a Cascada El Meco?",
-          respuesta: "Sí, varios restaurantes tienen terrazas sobre el río con vista directa a la cascada — una de las mejores experiencias de El Naranjo.",
-        },
+        { pregunta: "¿El mirador de Cascada El Meco es gratuito?", respuesta: "Sí, el mirador desde la carretera es completamente gratuito. El acceso al río y las pangas tienen costo adicional (~$60 MXN entrada, ~$150 MXN panga)." },
+        { pregunta: "¿Se puede hacer rappel en Cascada El Meco?", respuesta: "Sí, hay operadores locales certificados que ofrecen rappel en la cascada. Consulta directamente en el sitio." },
+        { pregunta: "¿Hay restaurantes con vista a Cascada El Meco?", respuesta: "Sí, varios restaurantes tienen terrazas sobre el río con vista directa a la cascada — una de las mejores experiencias de El Naranjo." },
       ],
     },
   },
 
-  // 6. Sótano de las Huahuas
   {
     id: "sotano-de-las-huahuas",
     slug: "sotano-de-las-huahuas",
@@ -461,7 +425,7 @@ export const DESTINOS_DB: Destino[] = [
     mejor_hora: "17:30–18:30",
     temporada_ideal: "Mar–Oct",
     advertencias: "Caminata de subida intensa — no apta para personas con problemas de rodillas. No acercarse al borde sin guía. Sin señal de celular en todo el trayecto.",
-    como_llegar: "75 min desde Valles · Carretera 85 sur → desvío hacia San Pedro de las Anonas · Terracería final",
+    como_llegar: "75 min desde Valles · Carretera 85 sur → desvío San Pedro de las Anonas · Terracería final",
     que_llevar: ["lámpara de mano o frontal", "calzado de montaña con agarre", "binoculares", "cámara con teleobjetivo", "agua y snacks", "ropa abrigadora para el amanecer"],
     datos_curiosos: [
       "Con 478 metros de profundidad, es uno de los abismos kársticos más profundos de México.",
@@ -470,30 +434,22 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Llegar tarde sin tiempo para ver el vuelo", "No llevar guía — el borde no tiene barandales"],
     lat: 21.603889,
     lng: -99.043889,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/sotano-de-las-huahuas/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/sotano-de-las-huahuas/gallery-1.jpg",
+    ],
     seo: {
       metaTitle: "Sótano de las Huahuas 2026 | Espectáculo de Aves",
       metaDescription: "Sótano de las Huahuas en Aquismón: 478 m de profundidad y miles de loros en espiral al atardecer. Guía 2026 con horarios, caminata y diferencias con las Golondrinas.",
       keywords: ["sótano de las huahuas aquismón", "abismo loros huasteca potosina", "senderismo aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
       faqPrincipales: [
-        {
-          pregunta: "¿A qué hora salen las aves del Sótano de las Huahuas?",
-          respuesta: "Los loros salen al amanecer (6:00–7:00 AM) y regresan al atardecer (18:00–19:00 PM). El atardecer suele ser más espectacular por la luz.",
-        },
-        {
-          pregunta: "¿En qué se diferencia el Sótano de las Huahuas del Sótano de las Golondrinas?",
-          respuesta: "Las Golondrinas (333 m) tiene vencejos y el vuelo icónico es al amanecer. Las Huahuas (478 m) alberga loros verdes y el mejor espectáculo es al atardecer. Son experiencias distintas.",
-        },
-        {
-          pregunta: "¿Es difícil la caminata al Sótano de las Huahuas?",
-          respuesta: "La caminata de subida es de 30–40 minutos de intensidad media. Requiere calzado de montaña. No es apta para personas con problemas serios de movilidad.",
-        },
+        { pregunta: "¿A qué hora salen las aves del Sótano de las Huahuas?", respuesta: "Los loros salen al amanecer (6:00–7:00 AM) y regresan al atardecer (18:00–19:00 PM). El atardecer suele ser más espectacular por la luz." },
+        { pregunta: "¿En qué se diferencia el Sótano de las Huahuas del Sótano de las Golondrinas?", respuesta: "Las Golondrinas (333 m) tiene vencejos y el vuelo icónico es al amanecer. Las Huahuas (478 m) alberga loros verdes y el mejor espectáculo es al atardecer. Son experiencias distintas." },
+        { pregunta: "¿Es difícil la caminata al Sótano de las Huahuas?", respuesta: "La caminata de subida es de 30–40 minutos de intensidad media. Requiere calzado de montaña. No es apta para personas con problemas serios de movilidad." },
       ],
     },
   },
 
-  // 7. Cuevas de Mantetzulel
   {
     id: "cuevas-de-mantetzulel",
     slug: "cuevas-de-mantetzulel",
@@ -520,80 +476,23 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Ir sin guía comunitario", "Visitar después de lluvia reciente (senderos peligrosos)"],
     lat: 21.631450,
     lng: -99.064820,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/cuevas-de-mantetzulel/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/cuevas-de-mantetzulel/gallery-1.jpg",
+      "/imagenes/cuevas-de-mantetzulel/gallery-2.jpg",
+    ],
     seo: {
       metaTitle: "Cuevas de Mantetzulel Aquismón 2026 | Guía Completa",
       metaDescription: "Cuevas de Mantetzulel en Aquismón: bóvedas sagradas con luz cenital y turismo comunitario Tének. Guía 2026 con precios, caminata y el mejor horario para la foto perfecta.",
       keywords: ["cuevas mantetzulel aquismón", "espeleología huasteca potosina", "turismo comunitario tének slp", "mantetzulel 2026", "cuevas sagradas san luis potosi"],
       faqPrincipales: [
-        {
-          pregunta: "¿Cuántas cuevas se visitan en Mantetzulel?",
-          respuesta: "El recorrido estándar visita 2 cuevas grandes. Con tiempo y condición física se pueden explorar las 4 cavidades del conjunto.",
-        },
-        {
-          pregunta: "¿Hay murciélagos en las Cuevas de Mantetzulel?",
-          respuesta: "Sí, habitan en las zonas altas de las bóvedas, pero no representan riesgo para los visitantes con guía.",
-        },
-        {
-          pregunta: "¿Se necesita equipo especial para visitar Mantetzulel?",
-          respuesta: "No equipo de espeleología avanzada. Solo calzado antideslizante, linterna y ropa que pueda ensuciarse.",
-        },
+        { pregunta: "¿Cuántas cuevas se visitan en Mantetzulel?", respuesta: "El recorrido estándar visita 2 cuevas grandes. Con tiempo y condición física se pueden explorar las 4 cavidades del conjunto." },
+        { pregunta: "¿Hay murciélagos en las Cuevas de Mantetzulel?", respuesta: "Sí, habitan en las zonas altas de las bóvedas, pero no representan riesgo para los visitantes con guía." },
+        { pregunta: "¿Se necesita equipo especial para visitar Mantetzulel?", respuesta: "No equipo de espeleología avanzada. Solo calzado antideslizante, linterna y ropa que pueda ensuciarse." },
       ],
     },
   },
 
-  // 8. Nacimiento de Tambaque
-  {
-    id: "nacimiento-tambaque",
-    slug: "nacimiento-tambaque",
-    nombre: "Nacimiento de Tambaque",
-    zona: "Aquismón",
-    tipo: "Naturaleza",
-    emoji: "💎",
-    descripcion: "El punto exacto donde el agua brota de la sierra — pozas cristalinas casi sin turistas.",
-    duracion_hrs: 3,
-    precio_entrada: "$40 MXN",
-    dificultad: "baja",
-    ideal_para: ["natacion", "familia", "relajacion"],
-    horario: "08:00–18:00",
-    dias_abierto: "Lunes a Domingo",
-    mejor_hora: "09:00–11:00",
-    temporada_ideal: "Oct–May",
-    advertencias: "Hay zonas profundas cerca del nacimiento — precaución con niños. Pocas opciones de comida en el sitio.",
-    como_llegar: "60 min desde Valles · Carretera 85 sur, desvío señalizado hacia Tambaque antes de Aquismón · Acceso pavimentado",
-    que_llevar: ["traje de baño", "sandalias acuáticas", "googles para ver el nacimiento bajo el agua", "comida y agua propias", "efectivo"],
-    datos_curiosos: [
-      "Tambaque significa 'lugar donde el agua cae bajito' en lengua Tének.",
-      "El agua brota a temperatura constante todo el año — más fría que el resto de los ríos huastecos.",
-    ],
-    errores_comunes: ["No llevar googles (pierdes el momento más especial)", "Ir sin comida propia"],
-    lat: 21.616667,
-    lng: -99.016667,
-    imagen_hero: "",
-    imagen_galeria: [],
-    seo: {
-      metaTitle: "Nacimiento de Tambaque 2026 | Aquismón SLP",
-      metaDescription: "Nacimiento de Tambaque en Aquismón: donde el agua brota de la sierra en pozas cristalinas. El destino más tranquilo de la Huasteca Potosina. Guía 2026 completa.",
-      keywords: ["tambaque aquismón", "nacimiento agua huasteca potosina", "pozas cristalinas slp 2026", "turismo tranquilo huasteca", "tambaque san luis potosi"],
-      faqPrincipales: [
-        {
-          pregunta: "¿Qué tan profunda es el agua en Tambaque?",
-          respuesta: "Hay pozas de diversas profundidades: desde muy bajas (menos de 1 m) hasta pozas de hasta 3 metros. Preguntar a los locales antes de nadar.",
-        },
-        {
-          pregunta: "¿Hay asadores en Tambaque?",
-          respuesta: "Sí, hay palapas con fogones y áreas para picnic. Lleva tu propia comida.",
-        },
-        {
-          pregunta: "¿El camino a Tambaque está pavimentado?",
-          respuesta: "Sí, el acceso es pavimentado y transitable para cualquier tipo de vehículo.",
-        },
-      ],
-    },
-  },
-
-  // 9. Nacimiento de Huichihuayán
   {
     id: "nacimiento-huichihuayan",
     slug: "nacimiento-huichihuayan",
@@ -611,7 +510,7 @@ export const DESTINOS_DB: Destino[] = [
     mejor_hora: "15:00–17:00",
     temporada_ideal: "Todo el año",
     advertencias: "Hay zonas profundas cerca del nacimiento — precaución con niños. Destino poco documentado — verificar condiciones antes de ir.",
-    como_llegar: "80 min desde Valles · Carretera 85 sur hacia Tamazunchale · Desvío a Huehuetlán · Señales al nacimiento desde el centro del pueblo",
+    como_llegar: "80 min desde Valles · Carretera 85 sur hacia Tamazunchale · Desvío a Huehuetlán",
     que_llevar: ["traje de baño", "sandalias acuáticas", "alimentos (opciones limitadas en el sitio)", "googles de natación"],
     datos_curiosos: [
       "Huichihuayán es uno de los pueblos más activos en la preservación de la danza de los Voladores de Palo.",
@@ -620,25 +519,195 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["No preguntar en el pueblo sobre la danza de Voladores", "No llevar googles para ver los peces"],
     lat: 21.483333,
     lng: -98.966667,
-    imagen_hero: "",
-    imagen_galeria: [],
+    imagen_hero: "/imagenes/nacimiento-huichihuayan/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/nacimiento-huichihuayan/gallery-1.jpg",
+      "/imagenes/nacimiento-huichihuayan/gallery-2.jpg",
+    ],
     seo: {
       metaTitle: "Nacimiento de Huichihuayán 2026 | Huehuetlán SLP",
       metaDescription: "Nacimiento de Huichihuayán en Huehuetlán: río cristalino con peces visibles y la danza de los Voladores. El destino más auténtico del sur de la Huasteca. Guía 2026 completa.",
       keywords: ["nacimiento huichihuayán huehuetlán", "rio cristalino huasteca potosina", "voladores huichihuayan", "turismo huehuetlán slp 2026", "destinos sur huasteca potosina"],
       faqPrincipales: [
-        {
-          pregunta: "¿El agua de Huichihuayán está fría?",
-          respuesta: "Es fresca y agradable, no tan fría como Tambaque. El clima cálido de la zona la mantiene a una temperatura ideal para nadar.",
-        },
-        {
-          pregunta: "¿Se puede rentar chaleco en Huichihuayán?",
-          respuesta: "Sí, hay puestos locales que rentan chalecos y llantas a precios accesibles.",
-        },
-        {
-          pregunta: "¿Qué son los Voladores de Huichihuayán?",
-          respuesta: "Es una danza ritual prehispánica declarada Patrimonio de la Humanidad por la UNESCO. En Huichihuayán se practica activamente — pregunta en el pueblo si hay presentación.",
-        },
+        { pregunta: "¿El agua de Huichihuayán está fría?", respuesta: "Es fresca y agradable, no tan fría como Tambaque. El clima cálido de la zona la mantiene a una temperatura ideal para nadar." },
+        { pregunta: "¿Se puede rentar chaleco en Huichihuayán?", respuesta: "Sí, hay puestos locales que rentan chalecos y llantas a precios accesibles." },
+        { pregunta: "¿Qué son los Voladores de Huichihuayán?", respuesta: "Es una danza ritual prehispánica declarada Patrimonio de la Humanidad por la UNESCO. En Huichihuayán se practica activamente — pregunta en el pueblo si hay presentación." },
+      ],
+    },
+  },
+
+  // ─── NUEVOS DESTINOS — TANDA 2 (4 del PDF) ─────────────────────────────────
+
+  // nacimiento-tambaque — versión corregida con datos del PDF
+  // Precio: $10 MXN · Coords exactas · Horario 09:00 · Estacionamiento $30 MXN extra
+  {
+    id: "nacimiento-tambaque",
+    slug: "nacimiento-tambaque",
+    nombre: "Nacimiento de Tambaque",
+    zona: "Aquismón",
+    tipo: "Naturaleza",
+    emoji: "💎",
+    descripcion: "Oasis donde el río Coy brota de la Sierra de Tanchanaco en pozas de azul cristalino, con corriente casi nula.",
+    duracion_hrs: 3,
+    precio_entrada: "$10 MXN",
+    dificultad: "baja",
+    ideal_para: ["natacion", "familia", "relajacion"],
+    horario: "09:00–18:00",
+    dias_abierto: "Lunes a Domingo",
+    mejor_hora: "09:00–11:00",
+    temporada_ideal: "Oct–May",
+    advertencias: "Temperatura del agua muy fría (nace de acuífero subterráneo) — choque térmico si entras rápido. Piso resbaladizo dentro del agua — calzado acuático obligatorio. Estacionamiento $30 MXN adicional.",
+    como_llegar: "55 min desde Valles · Carretera 85 sur → Crucero San Pedro de las Anonas · 100% pavimentado",
+    que_llevar: ["aquashoes o calzado acuático", "efectivo en denominaciones bajas (sin cajero ni terminal)", "comida propia (opciones solo fines de semana)", "protector solar biodegradable", "repelente natural"],
+    datos_curiosos: [
+      "En 1950 el nacimiento se secó completamente. El 10 de mayo de 1951, tras una gran tormenta, brotó con tal fuerza que llenó el balneario en una sola noche — los locales lo recuerdan como 'el milagro de Tambaque'.",
+      "Tambaque significa 'lugar de agua bajita' en lengua Tének, referencia a la poca profundidad de sus pozas.",
+    ],
+    errores_comunes: ["No llevar calzado acuático (piso con algas muy resbaladizo)", "Entrar al agua rápido sin aclimatarse (choque térmico)"],
+    lat: 21.687222,
+    lng: -99.042778,
+    imagen_hero: "/imagenes/nacimiento-tambaque/hero.webp",
+    imagen_galeria: [
+      "/imagenes/nacimiento-tambaque/gallery-1.webp",
+      "/imagenes/nacimiento-tambaque/gallery-2.webp",
+    ],
+    seo: {
+      metaTitle: "Balneario Tambaque Aquismón 2026 | Guía, Precios y Cómo Llegar",
+      metaDescription: "Descubre el Nacimiento de Tambaque en Aquismón, SLP. Paraíso de aguas cristalinas ideal para familias. Precios 2026, ubicación exacta y mejores consejos de viaje.",
+      keywords: ["balneario tambaque slp", "nacimiento de tambaque aquismón", "qué hacer en aquismón huasteca", "aguas cristalinas san luis potosí", "turismo aquismón 2026"],
+      faqPrincipales: [
+        { pregunta: "¿Qué significa Tambaque?", respuesta: "En lengua huasteca Tének significa 'lugar de agua bajita', referencia a la poca profundidad de sus pozas — ideal para niños y no nadadores." },
+        { pregunta: "¿Pueden entrar niños pequeños a Tambaque?", respuesta: "Es el paraje más recomendado de la Huasteca para niños pequeños: corriente casi nula, agua playita y senderos seguros con andadores de piedra." },
+        { pregunta: "¿Hay comida en Tambaque?", respuesta: "Los fines de semana y temporada alta hay venta de comida típica: enchiladas huastecas, boles y tamales. Entre semana se recomienda llevar alimentos propios." },
+      ],
+    },
+  },
+
+  {
+    id: "voladores-tamaleton",
+    slug: "voladores-tamaleton",
+    nombre: "Voladores de Tamaletón",
+    zona: "Tancanhuitz",
+    tipo: "Arte & Cultura",
+    emoji: "🦅",
+    descripcion: "El ritual prehispánico más antiguo de la Huasteca — 5 hombres vuelan desde un mástil de 30 m en honor al sol.",
+    duracion_hrs: 4,
+    precio_entrada: "$100 MXN",
+    dificultad: "baja",
+    ideal_para: ["cultura", "fotografia", "historia"],
+    horario: "09:00–17:00",
+    dias_abierto: "Jueves a Domingo (mayor actividad) · Lun-Mié menor actividad",
+    mejor_hora: "11:30–13:30",
+    temporada_ideal: "Dic–Feb",
+    advertencias: "El vuelo se cancela con lluvia o viento — no garantizado para visitantes individuales sin grupo de 30+. Sin señal telefónica en la parte alta de Tamaletón. No conducir de noche hacia Tancanhuitz.",
+    como_llegar: "52 min desde Valles · Carretera 85 sur → Crucero Aquismón → Tancanhuitz → Centro Ceremonial",
+    que_llevar: ["efectivo (sin cajeros en Tamaletón)", "ropa cómoda para calor", "cámara fotográfica", "agua suficiente", "respeto y disposición para el silencio durante los rezos"],
+    datos_curiosos: [
+      "El ritual suma exactamente 52 vueltas (13 × 4 danzantes) — el número del 'Siglo Indígena' o ciclo del Fuego Nuevo mesoamericano.",
+      "Bajudh (Jacinta) fue la primera mujer en convertirse en voladora oficial de Tamaletón, rompiendo siglos de prohibición.",
+    ],
+    errores_comunes: ["Llegar esperando vuelo garantizado sin grupo previo", "No llevar efectivo"],
+    lat: 21.592222,
+    lng: -98.964722,
+    imagen_hero: "/imagenes/voladores-tamaleton/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/voladores-tamaleton/gallery-1.jpg",
+      "/imagenes/voladores-tamaleton/gallery-2.jpg",
+    ],
+    seo: {
+      metaTitle: "Voladores de Tamaletón 2026 | Guía del Ritual Sagrado Teenek",
+      metaDescription: "Descubre el Centro Ceremonial Tamaletón en Tancanhuitz. Guía de precios 2026, logística desde Ciudad Valles y el misterio de la Danza del Gavilán Tének. ¡Visítalo ahora!",
+      keywords: ["voladores de tamaletón", "huasteca potosina turismo cultural 2026", "danza del gavilán tancanhuitz", "tancanhuitz san luis potosí", "cultura tének huasteca"],
+      faqPrincipales: [
+        { pregunta: "¿Los Voladores de Tamaletón son lo mismo que los de Papantla?", respuesta: "No. Aunque comparten el concepto del vuelo, Tamaletón pertenece a la etnia Tének, usa vestimenta de manta blanca con plumas naturales y tiene origen histórico independiente vinculado al gavilán sagrado, no al quetzal." },
+        { pregunta: "¿Pueden volar mujeres en Tamaletón?", respuesta: "Sí. Tamaletón hizo historia con Bajudh (Jacinta), la primera mujer en romper la prohibición patriarcal y convertirse en voladora oficial." },
+        { pregunta: "¿Está garantizado ver el vuelo si voy por mi cuenta?", respuesta: "No. El ritual se programa solo para grupos de 30+ personas o en fechas festivas. Los visitantes individuales pueden ver el mástil y el museo, pero no tienen garantizado presenciar el vuelo." },
+      ],
+    },
+  },
+
+  {
+    id: "rio-tampaon-rafting",
+    slug: "rio-tampaon-rafting",
+    nombre: "Río Tampaón — Rafting Clase III",
+    zona: "Aquismón",
+    tipo: "Aventura",
+    emoji: "🚣",
+    descripcion: "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
+    duracion_hrs: 7,
+    precio_entrada: "$1,670 MXN (tour completo)",
+    dificultad: "media",
+    ideal_para: ["aventura", "amigos", "fotografia"],
+    horario: "09:00–18:00",
+    dias_abierto: "Lunes a Domingo (reservación requerida)",
+    mejor_hora: "11:00–13:00",
+    temporada_ideal: "Nov–Mar",
+    advertencias: "Nunca navegar por cuenta propia en jul-ago — crecidas repentinas de varios metros en minutos. Guías NO pueden suministrar medicamentos — llevar los propios. Solo efectivo en Tanchachín.",
+    como_llegar: "45 min desde Valles · Carretera 70 → desvío Ejido Tanchachín · Últimos 18 km terracería transitable",
+    que_llevar: ["calcetines de algodón dentro del calzado acuático (evitan ampollas)", "doble muda de ropa seca en el vehículo", "bloqueador 100% biodegradable (obligatorio)", "GoPro con soporte de pecho o casco únicamente", "medicamentos propios"],
+    datos_curiosos: [
+      "El agua turquesa proviene de la alta concentración de minerales kársticos en el lecho — el mismo mecanismo que colorea las cascadas de Tamul.",
+      "El rápido 'La Tumba' ocurre donde las paredes del cañón se cierran tanto que el eco desaparece — el silencio absoluto antes del rápido más técnico del descenso.",
+    ],
+    errores_comunes: ["Ir sin reservación en temporada alta", "Llevar bloqueador convencional (prohibido y multa)"],
+    lat: 22.063222,
+    lng: -99.010389,
+    imagen_hero: "/imagenes/rio-tampaon-rafting/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/rio-tampaon-rafting/gallery-1.jpg",
+      "/imagenes/rio-tampaon-rafting/gallery-2.jpg",
+    ],
+    seo: {
+      metaTitle: "Rafting Río Tampaón 2026 | Guía Experta Huasteca Potosina",
+      metaDescription: "Vive el mejor rafting de México en el Río Tampaón. Precios 2026 ($1,450–$1,890 MXN), logística desde Ciudad Valles y consejos de seguridad. ¡Reserva tu aventura turquesa hoy!",
+      keywords: ["rafting huasteca potosina 2026", "río tampaón rápidos clase III", "tours ciudad valles rafting", "precio rafting río tampaón", "mejor época rafting san luis potosí"],
+      faqPrincipales: [
+        { pregunta: "¿Es seguro hacer rafting en el Río Tampaón si no sé nadar?", respuesta: "Sí, siempre que uses el equipo de flotación de alta calidad de las operadoras certificadas. Debes informar al guía antes de subir para ubicarte estratégicamente en la balsa." },
+        { pregunta: "¿Qué pasa si mi tour de rafting se cancela por el nivel del río?", respuesta: "La mayoría de operadoras ofrecen cambio de actividad a un río más tranquilo (como Micos) o reprogramación. Los reembolsos totales dependen de qué tan anticipado se confirme la inviabilidad del descenso." },
+        { pregunta: "¿Puedo llevar mi cámara GoPro al rafting en el Tampaón?", respuesta: "Sí, con soporte de pecho o casco únicamente. Está prohibido llevarla en la mano — ambas manos deben estar libres para remar y sujetarse de las cuerdas de seguridad." },
+      ],
+    },
+  },
+
+  {
+    id: "xilitla-pueblo-magico",
+    slug: "xilitla-pueblo-magico",
+    nombre: "Xilitla — Pueblo Mágico Surrealista",
+    zona: "Xilitla",
+    tipo: "Arte & Cultura",
+    emoji: "🏰",
+    descripcion: "Donde el concreto cobra vida y la selva se vuelve geométrica — Las Pozas de Edward James y 3 museos de clase mundial.",
+    duracion_hrs: 8,
+    precio_entrada: "$180 MXN (Las Pozas adulto)",
+    dificultad: "media",
+    ideal_para: ["cultura", "fotografia", "pareja"],
+    horario: "09:00–18:00",
+    dias_abierto: "Miércoles a Lunes — Las Pozas CIERRA los martes",
+    mejor_hora: "08:30–10:00",
+    temporada_ideal: "Nov–Mar",
+    advertencias: "No manejar hacia Xilitla después de las 18:00 — carreteras sin iluminación y neblina densa. Cajeros pueden quedarse sin fondos en puentes. Reservación hasta 60 días antes en temporada alta. Guía obligatorio en Las Pozas (+$30 MXN).",
+    como_llegar: "90 min desde Valles · Carretera 85 sur → desvío Carr. 120 hacia Xilitla · 100% pavimentado",
+    que_llevar: ["calzado suela de goma con tracción profunda (trail running)", "ropa oscura o colores tierra (musgo mancha permanentemente)", "efectivo suficiente (cajeros pueden vaciarse)", "reservación anticipada de Las Pozas", "paraguas o impermeable ligero"],
+    datos_curiosos: [
+      "La helada de 1962 mató miles de orquídeas de Edward James — decidió construir flores de concreto que 'nunca morirían'. De ahí nacieron Las Pozas.",
+      "Edward James financió a Salvador Dalí y René Magritte, y mantuvo correspondencia con Frank Lloyd Wright — influencias visibles en la escala y fantasía de Las Pozas.",
+    ],
+    errores_comunes: ["Llegar martes (Las Pozas CERRADO — error muy frecuente)", "No reservar con anticipación en temporada alta"],
+    lat: 21.385278,
+    lng: -98.989444,
+    imagen_hero: "/imagenes/xilitla-pueblo-magico/hero.jpg",
+    imagen_galeria: [
+      "/imagenes/xilitla-pueblo-magico/gallery-1.jpg",
+      "/imagenes/xilitla-pueblo-magico/gallery-2.jpg",
+    ],
+    seo: {
+      metaTitle: "Xilitla Huasteca Potosina 2026 | Guía de Viaje Completa",
+      metaDescription: "Planifica tu visita a Xilitla, el pueblo surrealista de la Huasteca Potosina. Horarios 2026, costos de Las Pozas ($180 MXN), museos y consejos de seguridad. ¡Vive la magia!",
+      keywords: ["xilitla san luis potosí 2026", "jardín escultórico edward james boletos", "museo leonora carrington xilitla precios", "cómo llegar a xilitla desde ciudad valles", "pueblos mágicos huasteca potosina"],
+      faqPrincipales: [
+        { pregunta: "¿Cuánto tiempo se necesita para recorrer Xilitla?", respuesta: "Mínimo 2 días: el primero para Las Pozas completo y la Cascada Los Comales, el segundo para los museos del centro y el Huapango dominical en la plaza." },
+        { pregunta: "¿Es seguro viajar a Xilitla en 2026?", respuesta: "Sí, es seguro siempre que se transite de día. El principal riesgo no es la violencia sino las condiciones de las carreteras de sierra: neblina densa, curvas cerradas y falta de iluminación nocturna." },
+        { pregunta: "¿Cuánto cuesta la entrada a Las Pozas de Xilitla en 2026?", respuesta: "Adultos: $180 MXN. Niños 6–12 años y adultos mayores con INAPAM: $120 MXN. Menores de 6 años: gratis. Guía obligatorio adicional: $30 MXN en español." },
       ],
     },
   },
