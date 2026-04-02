@@ -7,6 +7,7 @@ interface Props {
   preview: PreviewItinerary;
   wizardState: WizardInputs;
   onContinueFree: () => void;
+  onGenerateFree: () => void;   // called when valid 100% discount code bypasses Stripe
 }
 
 const TABLE_ROWS = [
@@ -23,10 +24,37 @@ const TABLE_ROWS = [
   { label: "Itinerario ajustado a tu perfil",   free: false, premium: true },
 ];
 
-export function FreemiumGate({ preview, wizardState, onContinueFree }: Props) {
-  const [email, setEmail]       = useState("");
-  const [paying, setPaying]     = useState(false);
-  const [payStatus, setPayStatus] = useState("");
+const PRECIO_BASE = 99;
+// 1.0 = 100 % off → bypass Stripe entirely
+const CODIGOS_VALIDOS: Record<string, number> = { HUASTECA2026: 1.0 };
+
+export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateFree }: Props) {
+  const [email, setEmail]                 = useState("");
+  const [paying, setPaying]               = useState(false);
+  const [payStatus, setPayStatus]         = useState("");
+  const [codigo, setCodigo]               = useState("");
+  const [descuentoAplicado, setDescuento] = useState(false);
+  const [mensajeCodigo, setMensajeCodigo] = useState("");
+
+  const pct         = descuentoAplicado ? CODIGOS_VALIDOS["HUASTECA2026"] : 0;
+  const eGratis     = pct >= 1;
+  const precioFinal = Math.round(PRECIO_BASE * (1 - pct));
+
+  function aplicarCodigo() {
+    const key = codigo.trim().toUpperCase();
+    if (CODIGOS_VALIDOS[key] !== undefined) {
+      setDescuento(true);
+      const pctNum = Math.round(CODIGOS_VALIDOS[key] * 100);
+      setMensajeCodigo(
+        pctNum >= 100
+          ? "✓ Código válido — acceso gratuito desbloqueado"
+          : `✓ Código aplicado — ${pctNum}% de descuento`
+      );
+    } else {
+      setDescuento(false);
+      setMensajeCodigo("⚠️ Código inválido");
+    }
+  }
 
   async function handlePay() {
     if (!email) {
@@ -45,10 +73,11 @@ export function FreemiumGate({ preview, wizardState, onContinueFree }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          monto: 99,
+          monto: precioFinal,
           descripcion: `Itinerario IA — Huasteca Potosina ${wizardState.dias} días`,
           email_cliente: email,
           producto: "itinerario",
+          codigoDescuento: descuentoAplicado ? codigo.trim().toUpperCase() : undefined,
         }),
       });
       const data = await res.json();
@@ -255,32 +284,84 @@ export function FreemiumGate({ preview, wizardState, onContinueFree }: Props) {
 
         {/* ── D: CTA DE PAGO ────────────────────────────────────── */}
         <div className="border border-agua/30 bg-agua/6 p-8 text-center mb-8">
-          <div
-            className="font-cormorant text-crema mb-1"
-            style={{ fontSize: "clamp(28px,4vw,44px)" }}
-          >
-            <em className="text-agua">$99 MXN</em>
-            <span className="text-crema/35 text-xl ml-3">— un solo pago</span>
+
+          {/* Precio */}
+          <div className="font-cormorant text-crema mb-1" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
+            {descuentoAplicado && !eGratis && (
+              <span className="text-crema/30 line-through text-2xl mr-2">${PRECIO_BASE}</span>
+            )}
+            {eGratis ? (
+              <>
+                <span className="text-crema/30 line-through text-2xl mr-2">${PRECIO_BASE} MXN</span>
+                <em className="text-lima">Gratis</em>
+              </>
+            ) : (
+              <>
+                <em className="text-agua">${precioFinal} MXN</em>
+                <span className="text-crema/35 text-xl ml-3">— un solo pago</span>
+              </>
+            )}
           </div>
           <p className="text-crema/40 text-xs mb-7">
-            Itinerario completo generado por IA, personalizado para tu perfil y presupuesto
+            {eGratis
+              ? "Código aplicado — genera tu itinerario completo sin costo"
+              : "Itinerario completo generado por IA, personalizado para tu perfil y presupuesto"}
           </p>
 
-          <input
-            type="email"
-            placeholder="Tu correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full max-w-sm mx-auto block bg-white/4 border border-white/10 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/20 mb-4"
-          />
+          <div className="max-w-sm mx-auto space-y-3 mb-5">
+            {/* Email — ocultar cuando el código da 100% */}
+            {!eGratis && (
+              <input
+                type="email"
+                placeholder="Tu correo electrónico"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/4 border border-white/10 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/20"
+              />
+            )}
 
-          <button
-            onClick={handlePay}
-            disabled={paying}
-            className="bg-agua text-negro px-14 py-4 text-[11px] tracking-[4px] uppercase font-medium hover:opacity-90 transition-opacity disabled:opacity-50 w-full max-w-sm"
-          >
-            {paying ? "Procesando..." : "Generar mi itinerario completo →"}
-          </button>
+            {/* Código de descuento */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Código de descuento"
+                value={codigo}
+                onChange={(e) => { setCodigo(e.target.value); setMensajeCodigo(""); setDescuento(false); }}
+                onKeyDown={(e) => e.key === "Enter" && aplicarCodigo()}
+                className="flex-1 bg-white/4 border border-white/10 text-crema px-4 py-2.5 text-sm outline-none focus:border-agua/60 placeholder:text-crema/20 uppercase tracking-widest"
+              />
+              <button
+                onClick={aplicarCodigo}
+                className="border border-white/15 text-crema/60 px-4 py-2.5 text-[10px] tracking-[2px] uppercase hover:border-agua/40 hover:text-crema transition-all flex-shrink-0"
+              >
+                Aplicar
+              </button>
+            </div>
+
+            {mensajeCodigo && (
+              <p className={`text-xs text-left pl-1 ${descuentoAplicado ? "text-lima" : "text-terracota/80"}`}>
+                {mensajeCodigo}
+              </p>
+            )}
+          </div>
+
+          {/* CTA principal: bypass Stripe si 100% off, o ir a pagar */}
+          {eGratis ? (
+            <button
+              onClick={onGenerateFree}
+              className="bg-lima text-negro px-14 py-4 text-[11px] tracking-[4px] uppercase font-medium hover:opacity-90 transition-opacity w-full max-w-sm"
+            >
+              Generar mi itinerario →
+            </button>
+          ) : (
+            <button
+              onClick={handlePay}
+              disabled={paying}
+              className="bg-agua text-negro px-14 py-4 text-[11px] tracking-[4px] uppercase font-medium hover:opacity-90 transition-opacity disabled:opacity-50 w-full max-w-sm"
+            >
+              {paying ? "Procesando..." : "Generar mi itinerario completo →"}
+            </button>
+          )}
 
           {payStatus && (
             <p className="mt-3 text-xs text-crema/60 border-l-2 border-agua pl-3 text-left max-w-sm mx-auto">
@@ -288,9 +369,11 @@ export function FreemiumGate({ preview, wizardState, onContinueFree }: Props) {
             </p>
           )}
 
-          <p className="mt-5 text-[10px] text-crema/25 tracking-wide">
-            Pago seguro · Sin suscripción · Listo en 30 segundos
-          </p>
+          {!eGratis && (
+            <p className="mt-5 text-[10px] text-crema/25 tracking-wide">
+              Pago seguro · Sin suscripción · Listo en 30 segundos
+            </p>
+          )}
         </div>
 
         {/* ── E: OPCIÓN GRATUITA ────────────────────────────────── */}

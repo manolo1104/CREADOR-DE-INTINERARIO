@@ -14,7 +14,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { monto, descripcion, email_cliente, producto } = await req.json();
+    const { monto, descripcion, email_cliente, producto, codigoDescuento } = await req.json();
+
+    const CODIGOS_DESCUENTO: Record<string, number> = {
+      HUASTECA2026: 1,
+    };
+    const pctDescuento =
+      typeof codigoDescuento === "string" && CODIGOS_DESCUENTO[codigoDescuento.trim().toUpperCase()]
+        ? CODIGOS_DESCUENTO[codigoDescuento.trim().toUpperCase()]
+        : 0;
+    const montoFinal = parseFloat(monto) * (1 - pctDescuento);
 
     if (!monto || monto <= 0) {
       logger.warn("payment_invalid_amount", { monto });
@@ -22,7 +31,8 @@ export async function POST(req: NextRequest) {
     }
 
     logger.info("payment_session_creating", {
-      monto_mxn: parseFloat(monto),
+      monto_mxn: montoFinal,
+      descuento_pct: pctDescuento,
       email: email_cliente ? email_cliente.replace(/(.{2}).+(@.+)/, "$1***$2") : null,
     });
 
@@ -39,7 +49,7 @@ export async function POST(req: NextRequest) {
               name: descripcion ?? "Itinerario Huasteca Potosina",
               description: "Itinerario personalizado — Huasteca IA",
             },
-            unit_amount: Math.round(parseFloat(monto) * 100),
+            unit_amount: Math.round(montoFinal * 100),
           },
           quantity: 1,
         },
@@ -59,7 +69,8 @@ export async function POST(req: NextRequest) {
 
     logger.info("payment_session_created", {
       session_id: session.id,
-      monto_mxn: parseFloat(monto),
+      monto_mxn: montoFinal,
+      codigo_descuento: pctDescuento > 0 ? codigoDescuento : null,
     });
 
     return NextResponse.json({ url: session.url, id: session.id });

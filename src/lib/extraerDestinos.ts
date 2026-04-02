@@ -2,10 +2,12 @@ import { DESTINOS_DB } from "./destinos";
 
 export interface DestinoEnMapa {
   nombre: string;
+  slug: string;
   lat: number;
   lng: number;
   dia: number;
   orden: number;
+  imagen_hero: string;
 }
 
 function normalizar(str: string): string {
@@ -48,10 +50,12 @@ export function extraerDestinosDelItinerario(itinerary: string): DestinoEnMapa[]
         ordenEnDia += 1;
         resultado.push({
           nombre: d.nombre,
+          slug: d.slug,
           lat: d.lat,
           lng: d.lng,
           dia: diaActual,
           orden: ordenEnDia,
+          imagen_hero: d.imagen_hero,
         });
         vistos.add(key);
       }

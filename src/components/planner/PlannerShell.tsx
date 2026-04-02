@@ -188,6 +188,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
           setShowFreemiumGate(false);
           setShowFreePreview(true);
         }}
+        onGenerateFree={() => runGenerateWithAI(state)}
       />
     );
   }
