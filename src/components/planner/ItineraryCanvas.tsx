@@ -99,10 +99,6 @@ interface Props {
 export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
   const [days, setDays] = useState<ItineraryDay[]>([]);
   const [activeDay, setActiveDay] = useState<number | null>(null);
-  const [paying, setPaying] = useState(false);
-  const [monto, setMonto] = useState(149);
-  const [email, setEmail] = useState("");
-  const [payStatus, setPayStatus] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -127,32 +123,6 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
     },
     []
   );
-
-  async function handlePay() {
-    if (!email || monto <= 0) {
-      setPayStatus("⚠️ Ingresa tu correo y un monto válido.");
-      return;
-    }
-    setPaying(true);
-    setPayStatus("Creando sesión de pago...");
-    try {
-      const res = await fetch("/api/cobrar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          monto,
-          descripcion: `Itinerario Huasteca Potosina — ${state.dias} días`,
-          email_cliente: email,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      window.location.href = data.url;
-    } catch (err: unknown) {
-      setPayStatus(`⚠️ ${err instanceof Error ? err.message : "Error al procesar pago"}`);
-      setPaying(false);
-    }
-  }
 
   const presupuestoLabel = { economico: "Mochilero", moderado: "Moderado", premium: "Premium ✨" }[state.presupuesto] ?? state.presupuesto;
   const destinosEnMapa = loading ? [] : extraerDestinosDelItinerario(itinerary);
@@ -220,71 +190,6 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
         )}
       </div>
 
-      {/* Payment Panel */}
-      {!loading && (
-        <div className="max-w-4xl mx-auto px-6 pb-16">
-          <div className="border border-white/8 bg-white/2 p-7">
-            <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
-              <div>
-                <h3 className="font-cormorant text-crema text-2xl font-light">
-                  Descarga tu PDF
-                </h3>
-                <p className="text-crema/50 text-xs mt-1">
-                  Pago seguro via Stripe — nunca capturamos datos de tarjeta
-                </p>
-              </div>
-              <div className="border border-dorado/40 bg-dorado/10 px-4 py-2 text-right">
-                <span className="text-[9px] tracking-[2px] uppercase text-crema/45 block">Total</span>
-                <span className="font-cormorant text-dorado text-2xl">${monto} MXN</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2 mb-5">
-              {[99, 149, 199].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setMonto(p)}
-                  className={`border px-4 py-1.5 text-xs transition-all ${
-                    monto === p ? "border-verde-vivo bg-verde-selva/10 text-crema" : "border-white/10 text-crema/50 hover:border-verde-selva/40"
-                  }`}
-                >
-                  ${p}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-              <input
-                type="email"
-                placeholder="Tu correo electrónico"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-white/4 border border-white/10 text-crema px-4 py-3 text-sm outline-none focus:border-verde-vivo placeholder:text-crema/20"
-              />
-              <input
-                type="number"
-                value={monto}
-                onChange={(e) => setMonto(+e.target.value)}
-                min={1}
-                className="bg-white/4 border border-white/10 text-dorado px-4 py-3 text-sm outline-none focus:border-verde-vivo font-cormorant text-lg"
-              />
-            </div>
-
-            <button
-              onClick={handlePay}
-              disabled={paying}
-              className="w-full bg-dorado text-negro py-4 text-[11px] tracking-[4px] uppercase font-medium hover:bg-lima transition-colors disabled:opacity-50"
-            >
-              {paying ? "Procesando..." : `Pagar $${monto} MXN con Stripe`}
-            </button>
-
-            {payStatus && (
-              <p className="mt-3 text-xs text-crema/60 border-l-2 border-verde-selva pl-3">{payStatus}</p>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Actions */}
       <div className="flex gap-4 justify-center flex-wrap px-6 pb-16 border-t border-white/6 pt-8">
         <button
@@ -295,13 +200,28 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
         </button>
         <button
           onClick={() => {
-            const text = itinerary;
-            navigator.clipboard.writeText(text).then(() => alert("✅ Copiado al portapapeles")).catch(() => {});
+            navigator.clipboard.writeText(itinerary).then(() => alert("✅ Copiado al portapapeles")).catch(() => {});
           }}
           className="border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
         >
           📤 Compartir
         </button>
+        {!loading && (
+          <button
+            onClick={() => {
+              const blob = new Blob([itinerary], { type: "text/plain;charset=utf-8" });
+              const url  = URL.createObjectURL(blob);
+              const a    = document.createElement("a");
+              a.href     = url;
+              a.download = "itinerario-huasteca.txt";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[3px] uppercase font-medium hover:bg-lima transition-colors"
+          >
+            ⬇ Descargar
+          </button>
+        )}
       </div>
     </div>
   );
