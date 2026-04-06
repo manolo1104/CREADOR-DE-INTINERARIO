@@ -69,6 +69,14 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Skip to content — visible on focus for keyboard/screen-reader users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-verde-selva focus:text-crema focus:px-4 focus:py-2 focus:text-sm focus:rounded"
+      >
+        Saltar al contenido principal
+      </a>
+
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled || mobileOpen
@@ -100,7 +108,10 @@ export default function Navbar() {
                   setDestinosOpen(!destinosOpen);
                   setExperienciasOpen(false);
                 }}
-                className={`text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 flex items-center gap-1.5 ${
+                aria-expanded={destinosOpen}
+                aria-controls="destinos-menu"
+                aria-haspopup="true"
+                className={`text-xs tracking-[2px] uppercase font-dm transition-colors duration-200 flex items-center gap-1.5 ${
                   isActive("/destinos") ? "text-lima" : "text-crema/70 hover:text-crema"
                 }`}
               >
@@ -114,7 +125,7 @@ export default function Navbar() {
               </button>
 
               {destinosOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 bg-negro/98 backdrop-blur-md border border-white/12 shadow-2xl py-2">
+                <div id="destinos-menu" role="menu" aria-label="Menú de destinos" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 bg-negro/98 backdrop-blur-md border border-white/12 shadow-2xl py-2">
                   <div className="px-4 py-2 border-b border-white/8 mb-1">
                     <Link
                       href="/destinos"
@@ -146,7 +157,10 @@ export default function Navbar() {
                   setExperienciasOpen(!experienciasOpen);
                   setDestinosOpen(false);
                 }}
-                className={`text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 flex items-center gap-1.5 ${
+                aria-expanded={experienciasOpen}
+                aria-controls="experiencias-menu"
+                aria-haspopup="true"
+                className={`text-xs tracking-[2px] uppercase font-dm transition-colors duration-200 flex items-center gap-1.5 ${
                   isActive("/experiencias") ? "text-lima" : "text-crema/70 hover:text-crema"
                 }`}
               >
@@ -160,7 +174,7 @@ export default function Navbar() {
               </button>
 
               {experienciasOpen && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-negro/98 backdrop-blur-md border border-white/12 shadow-2xl py-2">
+                <div id="experiencias-menu" role="menu" aria-label="Menú de experiencias" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-negro/98 backdrop-blur-md border border-white/12 shadow-2xl py-2">
                   {EXPERIENCIAS_NAV.map((e) => (
                     <Link
                       key={e.href}

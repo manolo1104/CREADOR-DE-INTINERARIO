@@ -3,86 +3,113 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
 
+const SITE_URL = "https://creador-de-intinerario-production.up.railway.app";
+
 export const metadata: Metadata = {
   title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
   description:
-    "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. 8 destinos únicos en San Luis Potosí, México.",
+    `Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. ${DESTINOS_DB.length} destinos únicos en San Luis Potosí, México.`,
 };
 
 const CATEGORIAS = [
-  { emoji: "💧", label: "Cascadas & Pozas", href: "/experiencias?tipo=cascadas" },
-  { emoji: "🏔️", label: "Aventura Extrema", href: "/experiencias?tipo=aventura" },
-  { emoji: "🏛️", label: "Cultura & Arte", href: "/experiencias?tipo=cultura" },
-  { emoji: "🌿", label: "Ecoturismo", href: "/experiencias?tipo=naturaleza" },
-  { emoji: "📸", label: "Fotografía", href: "/experiencias?tipo=fotografia" },
-  { emoji: "♨️", label: "Bienestar", href: "/experiencias?tipo=bienestar" },
-];
-
-const STATS_HERO = [
-  { num: "8", label: "Destinos Únicos" },
-  { num: "Todo el año", label: "Temporada" },
-  { num: "Desde $60", label: "MXN entrada" },
+  { emoji: "💧", label: "Cascadas & Pozas",  href: "/experiencias?tipo=cascadas" },
+  { emoji: "🏔️", label: "Aventura Extrema",  href: "/experiencias?tipo=aventura" },
+  { emoji: "🏛️", label: "Cultura & Arte",    href: "/experiencias?tipo=cultura" },
+  { emoji: "🌿", label: "Ecoturismo",         href: "/experiencias?tipo=naturaleza" },
+  { emoji: "📸", label: "Fotografía",         href: "/experiencias?tipo=fotografia" },
+  { emoji: "♨️", label: "Bienestar",          href: "/experiencias?tipo=bienestar" },
 ];
 
 const REGION_STATS = [
-  { num: "105m", label: "La cascada más alta" },
-  { num: "333m", label: "Sótano más profundo" },
-  { num: "+8", label: "Destinos únicos" },
-  { num: "Todo el año", label: "Temporada abierta" },
+  { num: "105m",                          label: "La cascada más alta" },
+  { num: "333m",                          label: "Sótano más profundo" },
+  { num: `+${DESTINOS_DB.length}`,        label: "Destinos únicos" },
+  { num: "Todo el año",                   label: "Temporada abierta" },
 ];
 
 function getCardGradient(tipo: string) {
-  if (tipo.includes("Aventura") || tipo.includes("Extrema")) {
+  if (tipo.includes("Aventura") || tipo.includes("Extrema"))
     return "from-terracota/30 via-terracota/10 to-verde-profundo";
-  }
-  if (tipo.includes("Arqueología") || tipo.includes("Arte") || tipo.includes("Cultura")) {
+  if (tipo.includes("Arqueología") || tipo.includes("Arte") || tipo.includes("Cultura"))
     return "from-dorado/25 via-dorado/8 to-verde-profundo";
-  }
-  if (tipo.includes("Naturaleza") || tipo.includes("Bienestar")) {
+  if (tipo.includes("Naturaleza") || tipo.includes("Bienestar"))
     return "from-agua/20 via-agua/8 to-verde-profundo";
-  }
   return "from-verde-selva/30 via-verde-selva/10 to-verde-profundo";
 }
 
+// ── JSON-LD schemas ─────────────────────────────────────────────────────────
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Huasteca Potosina",
+  url: SITE_URL,
+  description: "Turismo en la Huasteca Potosina, San Luis Potosí, México",
+  inLanguage: "es-MX",
+};
+
+const destinosSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Destinos en la Huasteca Potosina",
+  numberOfItems: DESTINOS_DB.length,
+  itemListElement: DESTINOS_DB.map((d, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "TouristDestination",
+      name: d.nombre,
+      url: `${SITE_URL}/destinos/${d.slug}`,
+      image: d.imagen_hero,
+      description: d.descripcion,
+    },
+  })),
+};
+
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
+    <main id="main-content" className="min-h-screen">
+      {/* ── JSON-LD ── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(destinosSchema) }}
+      />
+
       {/* ── HERO ── */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 overflow-hidden">
+      <section
+        aria-label="Bienvenida a la Huasteca Potosina"
+        className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 overflow-hidden"
+      >
         {/* Animated background */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-b from-verde-profundo/60 via-negro to-negro" />
-          {/* Animated floating circles */}
           <div
             className="absolute rounded-full blur-3xl opacity-20"
             style={{
-              width: "500px",
-              height: "500px",
+              width: "500px", height: "500px",
               background: "radial-gradient(circle, #3a6b1a, transparent)",
-              top: "10%",
-              left: "15%",
+              top: "10%", left: "15%",
               animation: "floatSlow 18s ease-in-out infinite",
             }}
           />
           <div
             className="absolute rounded-full blur-3xl opacity-15"
             style={{
-              width: "350px",
-              height: "350px",
+              width: "350px", height: "350px",
               background: "radial-gradient(circle, #c4882a, transparent)",
-              bottom: "20%",
-              right: "10%",
+              bottom: "20%", right: "10%",
               animation: "floatSlow 24s ease-in-out infinite reverse",
             }}
           />
           <div
             className="absolute rounded-full blur-3xl opacity-10"
             style={{
-              width: "250px",
-              height: "250px",
+              width: "250px", height: "250px",
               background: "radial-gradient(circle, #3a8aaa, transparent)",
-              top: "40%",
-              right: "30%",
+              top: "40%", right: "30%",
               animation: "floatSlow 20s ease-in-out infinite 8s",
             }}
           />
@@ -91,8 +118,8 @@ export default function HomePage() {
         <style>{`
           @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) scale(1); }
-            33% { transform: translateY(-30px) scale(1.05); }
-            66% { transform: translateY(15px) scale(0.97); }
+            33%  { transform: translateY(-30px) scale(1.05); }
+            66%  { transform: translateY(15px) scale(0.97); }
           }
         `}</style>
 
@@ -101,16 +128,10 @@ export default function HomePage() {
         </p>
 
         <h1 className="font-cormorant font-light leading-[0.9] tracking-tight mb-8">
-          <span
-            className="block text-crema"
-            style={{ fontSize: "clamp(64px,12vw,130px)" }}
-          >
+          <span className="block text-crema" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
             La Huasteca
           </span>
-          <span
-            className="block text-dorado italic"
-            style={{ fontSize: "clamp(64px,12vw,130px)" }}
-          >
+          <span className="block text-dorado italic" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
             Potosina
           </span>
         </h1>
@@ -127,13 +148,13 @@ export default function HomePage() {
         <div className="flex flex-wrap gap-4 justify-center mb-16">
           <Link
             href="/destinos"
-            className="border border-crema/40 text-crema px-10 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-crema/10 transition-all duration-300"
+            className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300"
           >
             Explorar Destinos
           </Link>
           <Link
             href="/planear"
-            className="bg-verde-selva text-crema px-10 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300"
+            className="bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300"
           >
             Planear mi Viaje IA
           </Link>
@@ -141,7 +162,11 @@ export default function HomePage() {
 
         {/* Stats row */}
         <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">
-          {STATS_HERO.map((s) => (
+          {[
+            { num: String(DESTINOS_DB.length), label: "Destinos Únicos" },
+            { num: "Todo el año",              label: "Temporada" },
+            { num: "Desde $60",                label: "MXN entrada" },
+          ].map((s) => (
             <div key={s.label} className="text-center">
               <span
                 className="font-cormorant font-light text-dorado block leading-none"
@@ -158,16 +183,19 @@ export default function HomePage() {
       </section>
 
       {/* ── CATEGORÍAS STRIP ── */}
-      <section className="bg-verde-profundo/50 border-y border-white/8 py-8 overflow-hidden">
+      <section
+        aria-label="Categorías de experiencias"
+        className="bg-verde-profundo/50 border-y border-white/8 py-8 overflow-hidden"
+      >
         <div className="overflow-x-auto scrollbar-none">
           <div className="flex gap-3 px-6 min-w-max mx-auto justify-center">
             {CATEGORIAS.map((cat) => (
               <Link
                 key={cat.label}
                 href={cat.href}
-                className="flex items-center gap-2 border border-white/15 px-5 py-2.5 text-[11px] tracking-[2px] uppercase font-dm text-crema/60 hover:text-crema hover:border-verde-vivo/60 hover:bg-verde-selva/15 transition-all duration-200 whitespace-nowrap"
+                className="flex items-center gap-2 border border-white/15 px-5 py-2.5 text-xs tracking-[2px] uppercase font-dm text-crema/60 hover:text-crema hover:border-verde-vivo/60 hover:bg-verde-selva/15 transition-all duration-200 whitespace-nowrap"
               >
-                <span className="text-base">{cat.emoji}</span>
+                <span className="text-base" aria-hidden="true">{cat.emoji}</span>
                 {cat.label}
               </Link>
             ))}
@@ -176,7 +204,10 @@ export default function HomePage() {
       </section>
 
       {/* ── DESTINOS DESTACADOS ── */}
-      <section className="max-w-7xl mx-auto px-6 py-24">
+      <section
+        aria-label="Descubre los destinos de la región"
+        className="max-w-7xl mx-auto px-6 py-24"
+      >
         <div className="text-center mb-16">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             Explora la región
@@ -188,59 +219,70 @@ export default function HomePage() {
             Descubre la <em className="text-dorado">Región</em>
           </h2>
           <p className="text-crema/45 mt-4 font-dm text-sm max-w-md mx-auto">
-            8 destinos que transformarán tu forma de ver México
+            {DESTINOS_DB.length} destinos que transformarán tu forma de ver México
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {DESTINOS_DB.map((d) => (
-            <Link
-              key={d.slug}
-              href={`/destinos/${d.slug}`}
-              className="group relative overflow-hidden border border-white/8 hover:border-verde-vivo/60 hover:scale-[1.02] transition-all duration-300 flex flex-col"
-            >
-              {/* Image or gradient thumbnail */}
-              <div className="relative aspect-[4/3] overflow-hidden">
-                {d.imagen_hero ? (
-                  <Image
-                    src={d.imagen_hero}
-                    alt={d.nombre}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                  />
-                ) : (
-                  <div className={`absolute inset-0 bg-gradient-to-b ${getCardGradient(d.tipo)}`} />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
-                <span className="absolute bottom-3 left-3 text-3xl">{d.emoji}</span>
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {DESTINOS_DB.map((d) => {
+            const precioBase = d.precio_entrada.split(" ")[0];
+            const esPago = precioBase.startsWith("$");
+            return (
+              <Link
+                key={d.slug}
+                href={`/destinos/${d.slug}`}
+                className="group relative overflow-hidden border border-white/8 hover:border-verde-vivo/60 hover:scale-[1.02] transition-all duration-300 flex flex-col"
+              >
+                {/* Image or gradient thumbnail */}
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  {d.imagen_hero ? (
+                    <Image
+                      src={d.imagen_hero}
+                      alt={d.nombre}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                  ) : (
+                    <div className={`absolute inset-0 bg-gradient-to-b ${getCardGradient(d.tipo)}`} />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
+                  <span className="absolute bottom-3 left-3 text-3xl" aria-hidden="true">
+                    {d.emoji}
+                  </span>
+                </div>
 
-              {/* Card body */}
-              <div className="flex flex-col flex-1 p-4 bg-negro/60">
-                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo mb-1 font-dm">{d.tipo}</p>
-                <h3 className="font-cormorant text-crema text-base leading-tight mb-1">{d.nombre}</h3>
-                <p className="text-crema/40 text-[10px] font-dm mb-3">{d.zona}</p>
-                <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-auto">
-                  <div>
-                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Desde</p>
-                    <p className="text-dorado text-sm font-dm font-medium">{d.precio_entrada.split(" ")[0]}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Duración</p>
-                    <p className="text-crema/70 text-sm font-dm">{d.duracion_hrs}h</p>
+                {/* Card body */}
+                <div className="flex flex-col flex-1 p-4 bg-negro/60">
+                  <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo mb-1 font-dm">{d.tipo}</p>
+                  <h3 className="font-cormorant text-crema text-base leading-tight mb-1">{d.nombre}</h3>
+                  <p className="text-crema/40 text-[10px] font-dm mb-3">{d.zona}</p>
+                  <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-auto">
+                    <div>
+                      <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Desde</p>
+                      <p className="text-dorado text-sm font-dm font-medium">
+                        {precioBase}
+                        {esPago && (
+                          <span className="text-[9px] text-crema/45 font-dm font-normal ml-1">MXN</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Duración</p>
+                      <p className="text-crema/70 text-sm font-dm">{d.duracion_hrs}h</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="absolute inset-0 border border-verde-vivo/0 group-hover:border-verde-vivo/40 transition-all duration-300 pointer-events-none" />
-            </Link>
-          ))}
+                <div className="absolute inset-0 border border-verde-vivo/0 group-hover:border-verde-vivo/40 transition-all duration-300 pointer-events-none" />
+              </Link>
+            );
+          })}
         </div>
 
         <div className="text-center mt-10">
           <Link
             href="/destinos"
-            className="inline-block border border-verde-vivo/40 text-verde-vivo px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all duration-200"
+            className="inline-block border border-verde-vivo/40 text-verde-vivo px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all duration-200"
           >
             Ver todos los destinos
           </Link>
@@ -248,7 +290,10 @@ export default function HomePage() {
       </section>
 
       {/* ── POR QUÉ LA HUASTECA ── */}
-      <section className="bg-verde-profundo/30 border-y border-white/6 py-24 px-6">
+      <section
+        aria-label="Por qué visitar la Huasteca Potosina"
+        className="bg-verde-profundo/30 border-y border-white/6 py-24 px-6"
+      >
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left: text */}
           <div>
@@ -282,7 +327,7 @@ export default function HomePage() {
             <div className="mt-8">
               <Link
                 href="/experiencias"
-                className="text-[11px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors border-b border-verde-vivo/40 pb-0.5 font-dm"
+                className="text-sm tracking-[2px] uppercase text-verde-vivo hover:text-lima transition-colors border-b border-verde-vivo/40 pb-0.5 font-dm"
               >
                 Explorar experiencias →
               </Link>
@@ -312,7 +357,7 @@ export default function HomePage() {
       </section>
 
       {/* ── PLANIFICADOR IA ── */}
-      <section className="py-24 px-6">
+      <section aria-label="Planea tu viaje con IA" className="py-24 px-6">
         <div className="max-w-3xl mx-auto text-center border border-verde-profundo/80 bg-negro/60 p-12 md:p-16">
           <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/50 px-4 py-1.5 mb-6 font-dm">
             ✦ Tecnología IA
@@ -338,7 +383,7 @@ export default function HomePage() {
             ].map((pill) => (
               <span
                 key={pill}
-                className="border border-white/15 px-4 py-2 text-[11px] tracking-[1px] text-crema/60 font-dm"
+                className="border border-white/15 px-4 py-2 text-xs tracking-[1px] text-crema/60 font-dm"
               >
                 {pill}
               </span>
@@ -347,19 +392,22 @@ export default function HomePage() {
 
           <Link
             href="/planear"
-            className="inline-block bg-dorado text-negro px-12 py-4 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300 mb-5"
+            className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300 mb-5"
           >
             Crear mi Itinerario Gratis →
           </Link>
 
-          <p className="text-[11px] text-crema/30 tracking-wide font-dm">
+          <p className="text-xs text-crema/30 tracking-wide font-dm">
             Sin registro · Gratis · PDF descargable
           </p>
         </div>
       </section>
 
       {/* ── INFO PRÁCTICA PREVIEW ── */}
-      <section className="bg-verde-profundo/20 border-y border-white/6 py-16 px-6">
+      <section
+        aria-label="Información práctica para tu viaje"
+        className="bg-verde-profundo/20 border-y border-white/6 py-16 px-6"
+      >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2
@@ -395,12 +443,12 @@ export default function HomePage() {
                 key={card.title}
                 className="border border-white/8 bg-negro/30 p-6 hover:border-verde-vivo/30 transition-colors group"
               >
-                <div className="text-3xl mb-4">{card.icon}</div>
+                <div className="text-3xl mb-4" aria-hidden="true">{card.icon}</div>
                 <h3 className="font-cormorant text-crema text-xl mb-3">{card.title}</h3>
                 <p className="text-crema/50 text-sm font-dm leading-relaxed mb-5">{card.text}</p>
                 <Link
                   href={card.href}
-                  className="text-[10px] tracking-[2px] uppercase text-verde-vivo hover:text-lima transition-colors font-dm"
+                  className="text-xs tracking-[2px] uppercase text-verde-vivo hover:text-lima transition-colors font-dm"
                 >
                   Ver más →
                 </Link>
@@ -430,7 +478,7 @@ export default function HomePage() {
               </p>
               <a
                 href="https://wa.me/524441234567"
-                className="text-[11px] text-verde-vivo hover:text-lima transition-colors font-dm"
+                className="text-xs text-verde-vivo hover:text-lima transition-colors font-dm"
               >
                 WhatsApp: +52 (444) 123-4567
               </a>
@@ -438,9 +486,9 @@ export default function HomePage() {
 
             {/* Col 2: Destinos */}
             <div>
-              <h4 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
+              <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
                 Destinos
-              </h4>
+              </h3>
               <ul className="space-y-3">
                 {DESTINOS_DB.slice(0, 4).map((d) => (
                   <li key={d.slug}>
@@ -448,7 +496,7 @@ export default function HomePage() {
                       href={`/destinos/${d.slug}`}
                       className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                     >
-                      <span className="text-verde-vivo text-xs">→</span>
+                      <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
                       {d.nombre}
                     </Link>
                   </li>
@@ -458,48 +506,53 @@ export default function HomePage() {
 
             {/* Col 3: Explora */}
             <div>
-              <h4 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
+              <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
                 Explora
-              </h4>
+              </h3>
               <ul className="space-y-3">
                 {[
-                  { label: "Experiencias", href: "/experiencias" },
-                  { label: "Info Práctica", href: "/info-practica" },
+                  { label: "Experiencias",    href: "/experiencias" },
+                  { label: "Info Práctica",   href: "/info-practica" },
                   { label: "Planear mi Viaje", href: "/planear" },
-                  { label: "Blog (próximamente)", href: "#" },
                 ].map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
                       className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                     >
-                      <span className="text-verde-vivo text-xs">→</span>
+                      <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
                       {link.label}
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <span className="text-crema/25 text-sm font-dm flex items-center gap-2 cursor-not-allowed">
+                    <span className="text-crema/15 text-xs" aria-hidden="true">→</span>
+                    Blog <span className="text-[9px] tracking-wide opacity-70">(próximamente)</span>
+                  </span>
+                </li>
               </ul>
             </div>
 
             {/* Col 4: Conecta */}
             <div>
-              <h4 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
+              <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
                 Conecta
-              </h4>
+              </h3>
               <div className="flex gap-4 mb-5">
                 {[
-                  { icon: "📸", label: "Instagram", href: "#" },
-                  { icon: "📘", label: "Facebook", href: "#" },
-                  { icon: "🎵", label: "TikTok", href: "#" },
+                  { icon: "📸", label: "Instagram (próximamente)" },
+                  { icon: "📘", label: "Facebook (próximamente)" },
+                  { icon: "🎵", label: "TikTok (próximamente)" },
                 ].map((social) => (
-                  <a
+                  <span
                     key={social.label}
-                    href={social.href}
                     aria-label={social.label}
-                    className="w-10 h-10 border border-white/15 flex items-center justify-center text-lg hover:border-verde-vivo/50 hover:bg-verde-selva/15 transition-all"
+                    title="Próximamente"
+                    className="w-10 h-10 border border-white/8 flex items-center justify-center text-lg opacity-35 cursor-not-allowed"
                   >
-                    {social.icon}
-                  </a>
+                    <span aria-hidden="true">{social.icon}</span>
+                  </span>
                 ))}
               </div>
               <a
@@ -512,7 +565,7 @@ export default function HomePage() {
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-[11px] text-crema/25 font-dm tracking-wide">
+          <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
             <span>© 2026 Huasteca Potosina · Todos los derechos reservados</span>
             <span>San Luis Potosí, México</span>
           </div>

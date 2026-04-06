@@ -7,7 +7,7 @@ interface Props {
   preview: PreviewItinerary;
   wizardState: WizardInputs;
   onContinueFree: () => void;
-  onGenerateFree: () => void;   // called when valid 100% discount code bypasses Stripe
+  onGenerateFree: () => void;
 }
 
 const TABLE_ROWS = [
@@ -24,75 +24,25 @@ const TABLE_ROWS = [
   { label: "Itinerario ajustado a tu perfil",   free: false, premium: true },
 ];
 
-const PRECIO_BASE = 99;
-// 1.0 = 100 % off → bypass Stripe entirely
-const CODIGOS_VALIDOS: Record<string, number> = { HUASTECA2026: 1.0 };
+export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props) {
+  const [email, setEmail]     = useState("");
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
 
-export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateFree }: Props) {
-  const [email, setEmail]                 = useState("");
-  const [paying, setPaying]               = useState(false);
-  const [payStatus, setPayStatus]         = useState("");
-  const [codigo, setCodigo]               = useState("");
-  const [descuentoAplicado, setDescuento] = useState(false);
-  const [mensajeCodigo, setMensajeCodigo] = useState("");
-
-  const pct         = descuentoAplicado ? CODIGOS_VALIDOS["HUASTECA2026"] : 0;
-  const eGratis     = pct >= 1;
-  const precioFinal = Math.round(PRECIO_BASE * (1 - pct));
-
-  function aplicarCodigo() {
-    const key = codigo.trim().toUpperCase();
-    if (CODIGOS_VALIDOS[key] !== undefined) {
-      setDescuento(true);
-      const pctNum = Math.round(CODIGOS_VALIDOS[key] * 100);
-      setMensajeCodigo(
-        pctNum >= 100
-          ? "✓ Código válido — acceso gratuito desbloqueado"
-          : `✓ Código aplicado — ${pctNum}% de descuento`
-      );
-    } else {
-      setDescuento(false);
-      setMensajeCodigo("⚠️ Código inválido");
-    }
-  }
-
-  async function handlePay() {
-    if (!email) {
-      setPayStatus("⚠️ Ingresa tu correo electrónico");
+  function handleGenerar() {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Ingresa un correo válido para continuar");
       return;
     }
-    setPaying(true);
-    setPayStatus("Preparando pago...");
-
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("huasteca_wizard_state", JSON.stringify(wizardState));
-    }
-
-    try {
-      const res = await fetch("/api/cobrar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          monto: precioFinal,
-          descripcion: `Itinerario IA — Huasteca Potosina ${wizardState.dias} días`,
-          email_cliente: email,
-          producto: "itinerario",
-          codigoDescuento: descuentoAplicado ? codigo.trim().toUpperCase() : undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      window.location.href = data.url;
-    } catch (err: unknown) {
-      setPayStatus(`⚠️ ${err instanceof Error ? err.message : "Error al procesar pago"}`);
-      setPaying(false);
-    }
+    setError("");
+    setLoading(true);
+    onGenerateFree();
   }
 
   return (
     <div className="min-h-screen" style={{ background: "#0e1710" }}>
 
-      {/* ── A: HEADER ─────────────────────────────────────────── */}
+      {/* ── A: HEADER ── */}
       <div className="bg-gradient-to-br from-verde-profundo via-verde-bosque to-[#1a3a10] px-10 py-16 text-center border-b border-verde-selva/20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-radial from-verde-selva/10 to-transparent" />
         <div className="relative">
@@ -113,17 +63,16 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
 
       <div className="max-w-4xl mx-auto px-6 py-12">
 
-        {/* ── B: PREVIEW GRATUITO ───────────────────────────────── */}
+        {/* ── B: PREVIEW GRATUITO ── */}
         <div className="mb-14">
           <p className="text-[10px] tracking-[3px] uppercase text-crema/40 mb-6">
-            Vista previa gratuita · {preview.diasCubiertos} días · {preview.destinosUsados} destinos
+            Vista previa · {preview.diasCubiertos} días · {preview.destinosUsados} destinos
           </p>
 
           <div className="space-y-4">
             {preview.dias.map((dia) => (
               <div key={dia.dia} className="border border-white/8 bg-white/2 p-6">
 
-                {/* Day header */}
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <h3 className="font-cormorant text-crema text-xl">{dia.titulo}</h3>
                   <span className="text-[10px] tracking-[2px] uppercase text-dorado border border-dorado/30 px-2 py-1 flex-shrink-0">
@@ -135,7 +84,7 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
                 <div className="space-y-2 mb-4">
                   {dia.destinos.map((d) => (
                     <div key={d.id} className="flex items-center gap-3">
-                      <span className="text-lg">{d.emoji}</span>
+                      <span className="text-lg" aria-hidden="true">{d.emoji}</span>
                       <div>
                         <span className="text-sm text-crema">{d.nombre}</span>
                         <span className="text-[10px] text-crema/40 ml-2">{d.zona}</span>
@@ -162,9 +111,9 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
                 {/* Locked fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {[
-                    { label: "Horario exacto",  content: dia.destinos[0]?.horario ?? "08:00–18:00" },
-                    { label: "Cómo llegar",     content: dia.destinos[0]?.como_llegar ?? "Desde Ciudad Valles..." },
-                    { label: "Tip de insider",  content: dia.nota },
+                    { label: "Horario exacto", content: dia.destinos[0]?.horario ?? "08:00–18:00" },
+                    { label: "Cómo llegar",    content: dia.destinos[0]?.como_llegar ?? "Desde Ciudad Valles..." },
+                    { label: "Tip de insider", content: dia.nota },
                   ].map((item) => (
                     <div key={item.label} className="relative overflow-hidden border border-white/6 bg-white/2 p-3 rounded">
                       <p className="text-[9px] tracking-[2px] uppercase text-crema/30 mb-1">{item.label}</p>
@@ -173,14 +122,10 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
                       </p>
                       <div className="absolute inset-0 flex items-center justify-center bg-negro/50">
                         <div className="flex items-center gap-1.5">
-                          <svg className="w-3 h-3 text-crema/50" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                              clipRule="evenodd"
-                            />
+                          <svg className="w-3 h-3 text-crema/50" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-[9px] text-crema/50 tracking-wide">Disponible en versión premium</span>
+                          <span className="text-[9px] text-crema/50 tracking-wide">Disponible en versión completa</span>
                         </div>
                       </div>
                     </div>
@@ -207,10 +152,7 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
             </div>
             <div className="text-right">
               <p className="text-[10px] tracking-[2px] uppercase text-crema/40">Tu presupuesto ({preview.diasCubiertos} días)</p>
-              <p
-                className="font-cormorant text-2xl"
-                style={{ color: preview.dentroDePresupuesto ? "#a3d977" : "#e07a5f" }}
-              >
+              <p className="font-cormorant text-2xl" style={{ color: preview.dentroDePresupuesto ? "#a3d977" : "#e07a5f" }}>
                 ${preview.presupuestoUsuario.toLocaleString()} MXN
               </p>
               <p className="text-[10px] mt-0.5" style={{ color: preview.dentroDePresupuesto ? "#a3d977" : "#e07a5f" }}>
@@ -220,10 +162,10 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
           </div>
         </div>
 
-        {/* ── C: TABLA COMPARATIVA ─────────────────────────────── */}
+        {/* ── C: TABLA COMPARATIVA ── */}
         <div className="mb-14">
           <p className="text-[10px] tracking-[3px] uppercase text-crema/40 mb-6">
-            ¿Qué incluye cada versión?
+            ¿Qué incluye el itinerario completo?
           </p>
 
           {/* Desktop */}
@@ -233,10 +175,10 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
                 <tr className="border-b border-white/8">
                   <th className="text-left py-4 px-5 w-1/2" />
                   <th className="py-4 px-5 text-[10px] tracking-[2px] uppercase text-crema/40 text-center">
-                    Gratis
+                    Vista previa
                   </th>
                   <th className="py-4 px-5 text-[10px] tracking-[2px] uppercase text-agua text-center bg-agua/6 border-l border-agua/20">
-                    Premium ✦
+                    Completo ✦
                   </th>
                 </tr>
               </thead>
@@ -259,10 +201,10 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
             </table>
           </div>
 
-          {/* Mobile stacked */}
+          {/* Mobile */}
           <div className="sm:hidden space-y-3">
             <div className="border border-white/8 bg-white/2 p-5">
-              <p className="text-[10px] tracking-[3px] uppercase text-crema/40 mb-4">Gratis</p>
+              <p className="text-[10px] tracking-[3px] uppercase text-crema/40 mb-4">Vista previa</p>
               {TABLE_ROWS.filter((r) => r.free).map((r) => (
                 <div key={r.label} className="flex items-center gap-2.5 py-1.5">
                   <span className="text-verde-vivo text-sm">✓</span>
@@ -271,7 +213,7 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
               ))}
             </div>
             <div className="border border-agua/40 bg-agua/6 p-5">
-              <p className="text-[10px] tracking-[3px] uppercase text-agua mb-4">Premium ✦</p>
+              <p className="text-[10px] tracking-[3px] uppercase text-agua mb-4">Completo ✦</p>
               {TABLE_ROWS.map((r) => (
                 <div key={r.label} className="flex items-center gap-2.5 py-1.5">
                   <span className="text-agua text-sm">✓</span>
@@ -282,107 +224,50 @@ export function FreemiumGate({ preview, wizardState, onContinueFree, onGenerateF
           </div>
         </div>
 
-        {/* ── D: CTA DE PAGO ────────────────────────────────────── */}
+        {/* ── D: CTA — solo email ── */}
         <div className="border border-agua/30 bg-agua/6 p-8 text-center mb-8">
-
-          {/* Precio */}
-          <div className="font-cormorant text-crema mb-1" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
-            {descuentoAplicado && !eGratis && (
-              <span className="text-crema/30 line-through text-2xl mr-2">${PRECIO_BASE}</span>
-            )}
-            {eGratis ? (
-              <>
-                <span className="text-crema/30 line-through text-2xl mr-2">${PRECIO_BASE} MXN</span>
-                <em className="text-lima">Gratis</em>
-              </>
-            ) : (
-              <>
-                <em className="text-agua">${precioFinal} MXN</em>
-                <span className="text-crema/35 text-xl ml-3">— un solo pago</span>
-              </>
-            )}
-          </div>
-          <p className="text-crema/40 text-xs mb-7">
-            {eGratis
-              ? "Código aplicado — genera tu itinerario completo sin costo"
-              : "Itinerario completo generado por IA, personalizado para tu perfil y presupuesto"}
+          <h2 className="font-cormorant text-crema mb-2" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
+            Genera tu itinerario <em className="text-agua">completo gratis</em>
+          </h2>
+          <p className="text-crema/40 text-xs mb-7 font-dm">
+            Itinerario personalizado generado por IA · Sin costo · Listo en 30 segundos
           </p>
 
-          <div className="max-w-sm mx-auto space-y-3 mb-5">
-            {/* Email — ocultar cuando el código da 100% */}
-            {!eGratis && (
-              <input
-                type="email"
-                placeholder="Tu correo electrónico"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/4 border border-white/10 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/20"
-              />
+          <div className="max-w-sm mx-auto space-y-3">
+            <input
+              type="email"
+              placeholder="Tu correo electrónico"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && handleGenerar()}
+              className="w-full bg-white/4 border border-white/10 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/20"
+            />
+
+            {error && (
+              <p className="text-xs text-terracota/80 text-left pl-1">{error}</p>
             )}
 
-            {/* Código de descuento */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Código de descuento"
-                value={codigo}
-                onChange={(e) => { setCodigo(e.target.value); setMensajeCodigo(""); setDescuento(false); }}
-                onKeyDown={(e) => e.key === "Enter" && aplicarCodigo()}
-                className="flex-1 bg-white/4 border border-white/10 text-crema px-4 py-2.5 text-sm outline-none focus:border-agua/60 placeholder:text-crema/20 uppercase tracking-widest"
-              />
-              <button
-                onClick={aplicarCodigo}
-                className="border border-white/15 text-crema/60 px-4 py-2.5 text-[10px] tracking-[2px] uppercase hover:border-agua/40 hover:text-crema transition-all flex-shrink-0"
-              >
-                Aplicar
-              </button>
-            </div>
-
-            {mensajeCodigo && (
-              <p className={`text-xs text-left pl-1 ${descuentoAplicado ? "text-lima" : "text-terracota/80"}`}>
-                {mensajeCodigo}
-              </p>
-            )}
+            <button
+              onClick={handleGenerar}
+              disabled={loading}
+              className="w-full bg-agua text-negro py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? "Generando..." : "Generar mi itinerario →"}
+            </button>
           </div>
 
-          {/* CTA principal: bypass Stripe si 100% off, o ir a pagar */}
-          {eGratis ? (
-            <button
-              onClick={onGenerateFree}
-              className="bg-lima text-negro px-14 py-4 text-[11px] tracking-[4px] uppercase font-medium hover:opacity-90 transition-opacity w-full max-w-sm"
-            >
-              Generar mi itinerario →
-            </button>
-          ) : (
-            <button
-              onClick={handlePay}
-              disabled={paying}
-              className="bg-agua text-negro px-14 py-4 text-[11px] tracking-[4px] uppercase font-medium hover:opacity-90 transition-opacity disabled:opacity-50 w-full max-w-sm"
-            >
-              {paying ? "Procesando..." : "Generar mi itinerario completo →"}
-            </button>
-          )}
-
-          {payStatus && (
-            <p className="mt-3 text-xs text-crema/60 border-l-2 border-agua pl-3 text-left max-w-sm mx-auto">
-              {payStatus}
-            </p>
-          )}
-
-          {!eGratis && (
-            <p className="mt-5 text-[10px] text-crema/25 tracking-wide">
-              Pago seguro · Sin suscripción · Listo en 30 segundos
-            </p>
-          )}
+          <p className="mt-5 text-[10px] text-crema/25 tracking-wide font-dm">
+            Sin registro permanente · Sin tarjeta · Gratis
+          </p>
         </div>
 
-        {/* ── E: OPCIÓN GRATUITA ────────────────────────────────── */}
+        {/* ── E: OPCIÓN PREVIA GRATUITA ── */}
         <div className="text-center">
           <button
             onClick={onContinueFree}
-            className="text-crema/35 text-xs hover:text-crema/60 transition-colors underline underline-offset-4"
+            className="text-crema/35 text-xs hover:text-crema/60 transition-colors underline underline-offset-4 font-dm"
           >
-            Continuar con la vista previa gratuita →
+            Ver solo la vista previa →
           </button>
         </div>
       </div>

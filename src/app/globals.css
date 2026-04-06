@@ -34,3 +34,14 @@ body {
 .leaflet-container {
   z-index: 0;
 }
+
+/* ── Accesibilidad: focus visible ── */
+:focus-visible {
+  outline: 2px solid #5a9e2a;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}

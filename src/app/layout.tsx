@@ -18,9 +18,10 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://creador-de-intinerario-production.up.railway.app"),
   title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
   description:
-    "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles y la magia de San Luis Potosí. Planea tu viaje con IA.",
+    "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA. San Luis Potosí, México.",
   keywords: [
     "Huasteca Potosina",
     "turismo San Luis Potosí",
@@ -32,11 +33,28 @@ export const metadata: Metadata = {
     "itinerario",
   ],
   openGraph: {
-    title: "Huasteca Potosina — La región más extraordinaria de México",
+    title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
     description:
-      "Cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje perfecto con IA.",
-    type: "website",
+      "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+    url: "https://creador-de-intinerario-production.up.railway.app",
+    siteName: "Huasteca Potosina",
     locale: "es_MX",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Cascadas turquesas de la Huasteca Potosina, México",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
+    description:
+      "Cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+    images: ["/og-image.jpg"],
   },
 };
 
