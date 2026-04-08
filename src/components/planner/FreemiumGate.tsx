@@ -29,13 +29,21 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleGenerar() {
+  async function handleGenerar() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("Ingresa un correo válido para continuar");
       return;
     }
     setError("");
     setLoading(true);
+
+    // Guardar email en Google Sheets (fire-and-forget — no bloquea la generación)
+    fetch("/api/guardar-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    }).catch(() => { /* silencioso — no afecta al usuario */ });
+
     onGenerateFree();
   }
 
