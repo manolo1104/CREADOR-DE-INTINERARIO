@@ -76,12 +76,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     "author": {
       "@type": "Person",
       "name": "Manolo Covarrubias",
-      "url": "https://creador-de-intinerario-production.up.railway.app/sobre-nosotros",
+      "url": "https://www.huasteca-potosina.com/sobre-nosotros",
     },
     "publisher": {
       "@type": "Organization",
       "name": "Huasteca Potosina",
-      "url": "https://creador-de-intinerario-production.up.railway.app",
+      "url": "https://www.huasteca-potosina.com",
     },
     "description": post.metaDescription || post.excerpt || "",
     "image": post.coverImageUrl || "",

@@ -19,7 +19,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://creador-de-intinerario-production.up.railway.app"),
+  metadataBase: new URL("https://www.huasteca-potosina.com"),
   title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
   description:
     "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA. San Luis Potosí, México.",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
     description:
       "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
-    url: "https://creador-de-intinerario-production.up.railway.app",
+    url: "https://www.huasteca-potosina.com",
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",

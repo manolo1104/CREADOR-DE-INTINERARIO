@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { DestinoProductCard } from "@/components/DestinoProductCard";
 
-const SITE_URL = "https://creador-de-intinerario-production.up.railway.app";
+const SITE_URL = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
   title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
