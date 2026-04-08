@@ -20,7 +20,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://creador-de-intinerario-production.up.railway.app"),
-  title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
+  title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
   description:
     "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA. San Luis Potosí, México.",
   keywords: [
@@ -34,11 +34,11 @@ export const metadata: Metadata = {
     "itinerario",
   ],
   openGraph: {
-    title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
+    title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
     description:
       "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
     url: "https://creador-de-intinerario-production.up.railway.app",
-    siteName: "Huasteca Potosina",
+    siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
     images: [
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
+    title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
     description:
       "Cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
     images: ["/og-image.jpg"],

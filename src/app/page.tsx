@@ -6,7 +6,7 @@ import { DestinoProductCard } from "@/components/DestinoProductCard";
 const SITE_URL = "https://creador-de-intinerario-production.up.railway.app";
 
 export const metadata: Metadata = {
-  title: "Huasteca Potosina — Turismo, Cascadas & Aventura | México",
+  title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
   description:
     `Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. ${DESTINOS_DB.length} destinos únicos en San Luis Potosí, México.`,
 };
@@ -31,7 +31,7 @@ const REGION_STATS = [
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "Huasteca Potosina",
+  name: "Tours Huasteca Potosina",
   url: SITE_URL,
   description: "Turismo en la Huasteca Potosina, San Luis Potosí, México",
   inLanguage: "es-MX",
@@ -40,7 +40,7 @@ const websiteSchema = {
 const destinosSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "Destinos en la Huasteca Potosina",
+  name: "Destinos en Tours Huasteca Potosina",
   numberOfItems: DESTINOS_DB.length,
   itemListElement: DESTINOS_DB.map((d, i) => ({
     "@type": "ListItem",
@@ -506,7 +506,7 @@ export default function HomePage() {
 
           {/* Bottom bar */}
           <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
-            <span>© 2026 Huasteca Potosina · Todos los derechos reservados</span>
+            <span>© 2026 Tours Huasteca Potosina · Todos los derechos reservados</span>
             <span>San Luis Potosí, México</span>
           </div>
         </div>
