@@ -9,7 +9,9 @@ async function getSheetsClient() {
   const key = rawKey
     .replace(/\\n/g, "\n")
     .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n");
+    .replace(/\r/g, "\n")
+    .replace(/-----BEGIN PRIVATE KEY-----\s*/g, "-----BEGIN PRIVATE KEY-----\n")
+    .replace(/\s*-----END PRIVATE KEY-----/g,   "\n-----END PRIVATE KEY-----");
 
   const auth = new google.auth.GoogleAuth({
     credentials: {
