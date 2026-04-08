@@ -34,8 +34,9 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("[guardar-email]", err);
-    return NextResponse.json({ error: "Error al guardar" }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[guardar-email]", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
