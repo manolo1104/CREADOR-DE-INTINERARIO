@@ -5,9 +5,16 @@ const SHEET_ID  = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_TAB = "Leads"; // nombre de la pestaña en tu Sheet
 
 async function getSheetsClient() {
-  const auth = new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key:   (process.env.GOOGLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
+  // Railway puede guardar la key con \n literales o con saltos reales —
+  // normalizamos a saltos reales en ambos casos.
+  const rawKey = process.env.GOOGLE_PRIVATE_KEY ?? "";
+  const key = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, "\n") : rawKey;
+
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: key,
+    },
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
   return google.sheets({ version: "v4", auth });
