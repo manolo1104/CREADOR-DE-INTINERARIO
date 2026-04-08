@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { DestinoProductCard } from "@/components/DestinoProductCard";
 
 const SITE_URL = "https://creador-de-intinerario-production.up.railway.app";
 
@@ -26,16 +26,6 @@ const REGION_STATS = [
   { num: `+${DESTINOS_DB.length}`,        label: "Destinos únicos" },
   { num: "Todo el año",                   label: "Temporada abierta" },
 ];
-
-function getCardGradient(tipo: string) {
-  if (tipo.includes("Aventura") || tipo.includes("Extrema"))
-    return "from-terracota/30 via-terracota/10 to-verde-profundo";
-  if (tipo.includes("Arqueología") || tipo.includes("Arte") || tipo.includes("Cultura"))
-    return "from-dorado/25 via-dorado/8 to-verde-profundo";
-  if (tipo.includes("Naturaleza") || tipo.includes("Bienestar"))
-    return "from-agua/20 via-agua/8 to-verde-profundo";
-  return "from-verde-selva/30 via-verde-selva/10 to-verde-profundo";
-}
 
 // ── JSON-LD schemas ─────────────────────────────────────────────────────────
 const websiteSchema = {
@@ -223,60 +213,10 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {DESTINOS_DB.map((d) => {
-            const precioBase = d.precio_entrada.split(" ")[0];
-            const esPago = precioBase.startsWith("$");
-            return (
-              <Link
-                key={d.slug}
-                href={`/destinos/${d.slug}`}
-                className="group relative overflow-hidden border border-white/8 hover:border-verde-vivo/60 hover:scale-[1.02] transition-all duration-300 flex flex-col"
-              >
-                {/* Image or gradient thumbnail */}
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  {d.imagen_hero ? (
-                    <Image
-                      src={d.imagen_hero}
-                      alt={d.nombre}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    />
-                  ) : (
-                    <div className={`absolute inset-0 bg-gradient-to-b ${getCardGradient(d.tipo)}`} />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
-                  <span className="absolute bottom-3 left-3 text-3xl" aria-hidden="true">
-                    {d.emoji}
-                  </span>
-                </div>
-
-                {/* Card body */}
-                <div className="flex flex-col flex-1 p-4 bg-negro/60">
-                  <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo mb-1 font-dm">{d.tipo}</p>
-                  <h3 className="font-cormorant text-crema text-base leading-tight mb-1">{d.nombre}</h3>
-                  <p className="text-crema/40 text-[10px] font-dm mb-3">{d.zona}</p>
-                  <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-auto">
-                    <div>
-                      <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Desde</p>
-                      <p className="text-dorado text-sm font-dm font-medium">
-                        {precioBase}
-                        {esPago && (
-                          <span className="text-[9px] text-crema/45 font-dm font-normal ml-1">MXN</span>
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Duración</p>
-                      <p className="text-crema/70 text-sm font-dm">{d.duracion_hrs}h</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute inset-0 border border-verde-vivo/0 group-hover:border-verde-vivo/40 transition-all duration-300 pointer-events-none" />
-              </Link>
-            );
-          })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {DESTINOS_DB.map((d) => (
+            <DestinoProductCard key={d.slug} destino={d} variant="compact" />
+          ))}
         </div>
 
         <div className="text-center mt-10">

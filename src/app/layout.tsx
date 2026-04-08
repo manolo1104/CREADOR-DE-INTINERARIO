@@ -3,6 +3,7 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import Navbar from "@/components/nav/Navbar";
+import { ItinerarioProvider } from "@/context/ItinerarioContext";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -63,8 +64,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${cormorant.variable} ${dmSans.variable}`}>
       <body>
         <div className="fixed inset-0 -z-10 bg-negro" />
-        <Navbar />
-        <Providers>{children}</Providers>
+        <ItinerarioProvider>
+          <Navbar />
+          <Providers>{children}</Providers>
+        </ItinerarioProvider>
       </body>
     </html>
   );

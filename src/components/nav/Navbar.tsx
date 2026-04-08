@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useItinerario } from "@/context/ItinerarioContext";
 
 const DESTINOS_NAV = [
   { emoji: "🏛️", nombre: "Las Pozas (Jardín Surrealista)", slug: "las-pozas-jardin-surrealista" },
@@ -24,6 +25,7 @@ const EXPERIENCIAS_NAV = [
 ];
 
 export default function Navbar() {
+  const { count } = useItinerario();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [destinosOpen, setDestinosOpen] = useState(false);
@@ -198,9 +200,14 @@ export default function Navbar() {
 
             <Link
               href="/planear"
-              className="bg-verde-selva text-crema px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-200"
+              className="relative bg-verde-selva text-crema px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-200"
             >
               Planear mi Viaje
+              {count > 0 && (
+                <span className="absolute -top-2 -right-2 bg-dorado text-negro text-[10px] font-dm font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {count}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -321,9 +328,14 @@ export default function Navbar() {
             <div className="pt-4">
               <Link
                 href="/planear"
-                className="block text-center bg-verde-selva text-crema py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
+                className="relative block text-center bg-verde-selva text-crema py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
               >
                 Planear mi Viaje
+                {count > 0 && (
+                  <span className="absolute top-2 right-4 bg-dorado text-negro text-[10px] font-dm font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                    {count}
+                  </span>
+                )}
               </Link>
             </div>
           </div>
