@@ -24,19 +24,6 @@ async function getSheetsClient() {
   return google.sheets({ version: "v4", auth });
 }
 
-// DEBUG — eliminar después de verificar
-export async function GET() {
-  const rawKey = process.env.GOOGLE_PRIVATE_KEY ?? "";
-  return Response.json({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    sheetId: process.env.GOOGLE_SHEETS_ID,
-    keyStart: rawKey.slice(0, 60),
-    keyEnd:   rawKey.slice(-40),
-    hasLiteralN: rawKey.includes("\\n"),
-    hasRealN:    rawKey.includes("\n"),
-    length: rawKey.length,
-  });
-}
 
 export async function POST(req: Request) {
   try {
@@ -59,9 +46,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[guardar-email]", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (err) {
+    console.error("[guardar-email]", err);
+    return NextResponse.json({ error: "Error al guardar" }, { status: 500 });
   }
 }
