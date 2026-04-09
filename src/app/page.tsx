@@ -173,6 +173,21 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── TRUST BAR ── */}
+      <section aria-label="Confianza y garantías" className="bg-negro border-y border-white/6 py-4 overflow-hidden">
+        <div className="overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-8 px-6 min-w-max mx-auto justify-center text-[10px] tracking-[1.5px] uppercase font-dm text-crema/45">
+            <span>💬 +500 viajeros atendidos</span>
+            <span className="text-white/15">|</span>
+            <span>⭐ 4.9/5 en WhatsApp</span>
+            <span className="text-white/15">|</span>
+            <span>🏅 Guías NOM-09</span>
+            <span className="text-white/15">|</span>
+            <span>✅ Todo incluido</span>
+          </div>
+        </div>
+      </section>
+
       {/* ── CATEGORÍAS STRIP ── */}
       <section
         aria-label="Categorías de experiencias"

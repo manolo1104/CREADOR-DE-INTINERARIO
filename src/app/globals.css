@@ -45,3 +45,12 @@ body {
 :focus:not(:focus-visible) {
   outline: none;
 }
+
+/* ── WhatsApp button pulse ── */
+@keyframes waPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  50%       { box-shadow: 0 0 0 14px rgba(37, 211, 102, 0); }
+}
+.wa-pulse {
+  animation: waPulse 3s ease-in-out infinite;
+}

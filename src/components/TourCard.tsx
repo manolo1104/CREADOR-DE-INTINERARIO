@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Tour } from "@/lib/tours";
+import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 const dificultadConfig = {
   alta:  { label: "AVANZADO", bg: "bg-orange-700",  dot: "bg-orange-400"  },
@@ -108,13 +109,16 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             Ver tour completo →
           </Link>
           <a
-            href={`https://wa.me/524891251458?text=Hola,%20me%20interesa%20el%20${encodeURIComponent(t.nombre)}`}
+            href={waLink(WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
             Reservar por WhatsApp
           </a>
+          <p className="text-center text-[9px] text-crema/25 font-dm pt-1">
+            ✓ Cancelación gratuita con 48h de anticipación
+          </p>
         </div>
       </div>
     </article>
