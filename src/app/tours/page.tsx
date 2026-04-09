@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { TOURS_DB } from "@/lib/tours";
 import { TourCalculadora } from "@/components/TourCalculadora";
+import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
@@ -103,6 +104,8 @@ export default function ToursPage() {
           Reservar por WhatsApp
         </a>
       </section>
+
+      <GuideProfile />
 
       {/* ── BADGES ── */}
       <section className="bg-verde-profundo/20 border-y border-white/6 py-12 px-6">
