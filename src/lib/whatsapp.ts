@@ -21,4 +21,11 @@ export const WA_MESSAGES = {
 
   flotante:
     "Hola, quiero información sobre los tours de la Huasteca Potosina.",
+
+  // Alias para compatibilidad con nuevos componentes
+  general:
+    "Hola, quiero información sobre los tours de la Huasteca. ¿Qué opciones tienen disponibles?",
+
+  faq: (tour: string, pregunta: string) =>
+    `Hola, tengo una pregunta sobre el tour "${tour}": ${pregunta}`,
 };
