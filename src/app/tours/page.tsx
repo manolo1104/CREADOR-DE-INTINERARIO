@@ -55,6 +55,13 @@ const TESTIMONIOS = [
       "Las Minas Viejas me dejaron sin palabras. El agua turquesa, la selva… Respondieron mi WhatsApp en 20 minutos y todo estuvo organizado en el día.",
     tour: "Paraíso Escalonado",
   },
+  {
+    nombre: "Rodrigo Sánchez",
+    ciudad: "Querétaro, QRO",
+    texto:
+      "El color del agua en Minas Viejas es irreal. Todo el tour perfectamente organizado, sin tiempos muertos. El precio incluye más de lo que esperaba.",
+    tour: "Paraíso Escalonado",
+  },
 ];
 
 const COMO_FUNCIONA = [
