@@ -3,6 +3,7 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import Navbar from "@/components/nav/Navbar";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ItinerarioProvider } from "@/context/ItinerarioContext";
 
 const cormorant = Cormorant_Garamond({
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ItinerarioProvider>
           <Navbar />
           <Providers>{children}</Providers>
+          <WhatsAppButton />
         </ItinerarioProvider>
       </body>
     </html>

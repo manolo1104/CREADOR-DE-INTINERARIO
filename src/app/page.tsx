@@ -417,10 +417,12 @@ export default function HomePage() {
                 aventura sin límites.
               </p>
               <a
-                href="https://wa.me/524441234567"
+                href="https://wa.me/524891251458"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs text-verde-vivo hover:text-lima transition-colors font-dm"
               >
-                WhatsApp: +52 (444) 123-4567
+                WhatsApp: +52 489 125 1458
               </a>
             </div>
 
