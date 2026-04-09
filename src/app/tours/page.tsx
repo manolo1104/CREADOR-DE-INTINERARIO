@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { TOURS_DB } from "@/lib/tours";
+import { TOUR_FAQS } from "@/lib/tourFaqs";
 import { TourCalculadora } from "@/components/TourCalculadora";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -160,6 +161,11 @@ export default function ToursPage() {
                       ${tour.precio.toLocaleString("es-MX")}
                     </p>
                     <p className="text-[9px] text-crema/35 font-dm mt-0.5">MXN por persona</p>
+                    {tour.urgencia && (
+                      <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-1.5 font-dm leading-tight">
+                        {tour.urgencia}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -204,8 +210,40 @@ export default function ToursPage() {
                 </ul>
               </div>
 
-              {/* Calculadora */}
-              <div className="px-7 py-5">
+              {/* FAQ */}
+              {TOUR_FAQS[tour.id] && TOUR_FAQS[tour.id].length > 0 && (
+                <div className="px-7 py-5 border-t border-white/6">
+                  <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
+                    Preguntas frecuentes
+                  </p>
+                  <div className="space-y-0">
+                    {TOUR_FAQS[tour.id].map((faq, i) => (
+                      <details
+                        key={i}
+                        className="border-b border-white/6 last:border-0 group"
+                      >
+                        <summary className="flex items-center justify-between gap-3 py-3 cursor-pointer list-none text-sm text-crema/70 font-dm hover:text-crema transition-colors">
+                          {faq.q}
+                          <span className="text-crema/30 group-open:rotate-45 transition-transform text-lg flex-shrink-0">+</span>
+                        </summary>
+                        <p className="text-xs text-crema/50 font-dm pb-3 leading-relaxed">
+                          {faq.a}
+                        </p>
+                      </details>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cancelación + Calculadora */}
+              <div className="px-7 py-5 border-t border-white/6">
+                <p className="flex items-center gap-1.5 text-[10px] text-verde-vivo font-dm mb-3">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  Cancelación gratuita con 48h de anticipación
+                </p>
                 <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} />
               </div>
             </article>

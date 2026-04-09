@@ -12,6 +12,7 @@ export interface Tour {
   dificultad:  "baja" | "media" | "alta";
   imagen_hero: string;
   imagenes:    string[];
+  urgencia?:   string;
 }
 
 export const TOURS_DB: Tour[] = [
@@ -41,6 +42,7 @@ export const TOURS_DB: Tour[] = [
       "Botiquín de primeros auxilios",
     ],
     precio: 1450,
+    urgencia: "🔥 El más reservado — se llena los fines de semana",
     imagen_hero: "/imagenes/cascada-de-tamul/hero.jpg",
     imagenes: [
       "/imagenes/cascada-de-tamul/hero.jpg",
@@ -72,6 +74,7 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1300,
+    urgencia: "⚡ Alta demanda en temporada nov–mar",
     imagen_hero: "/imagenes/nacimiento-huichihuayan/hero.jpg",
     imagenes: [
       "/imagenes/nacimiento-huichihuayan/hero.jpg",
@@ -102,6 +105,7 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1600,
+    urgencia: "📸 Favorito de fotógrafos — cupos limitados",
     imagen_hero: "/imagenes/cascada-el-salto/hero.jpg",
     imagenes: [
       "/imagenes/cascada-el-salto/hero.jpg",
@@ -130,6 +134,7 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1500,
+    urgencia: "👨‍👩‍👧 Ideal para familias — reserva con anticipación",
     imagen_hero: "/imagenes/cascadas-minas-viejas/hero.jpg",
     imagenes: [
       "/imagenes/cascadas-minas-viejas/hero.jpg",
@@ -161,6 +166,7 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1500,
+    urgencia: "🌊 El más completo — últimos lugares disponibles",
     imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero.jpg",
     imagenes: [
       "/imagenes/puente-de-dios-tamasopo/hero.jpg",
