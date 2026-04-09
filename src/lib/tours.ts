@@ -10,6 +10,8 @@ export interface Tour {
   emoji:       string;
   tipo:        string;
   dificultad:  "baja" | "media" | "alta";
+  imagen_hero: string;
+  imagenes:    string[];
 }
 
 export const TOURS_DB: Tour[] = [
@@ -39,6 +41,11 @@ export const TOURS_DB: Tour[] = [
       "Botiquín de primeros auxilios",
     ],
     precio: 1450,
+    imagen_hero: "/imagenes/cascada-de-tamul/hero.jpg",
+    imagenes: [
+      "/imagenes/cascada-de-tamul/hero.jpg",
+      "/imagenes/sotano-de-las-huahuas/hero.jpg",
+    ],
   },
   {
     id:      "tour-edward-james",
@@ -65,6 +72,11 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1300,
+    imagen_hero: "/imagenes/nacimiento-huichihuayan/hero.jpg",
+    imagenes: [
+      "/imagenes/nacimiento-huichihuayan/hero.jpg",
+      "/imagenes/xilitla-pueblo-magico/hero.jpg",
+    ],
   },
   {
     id:      "tour-meco",
@@ -90,6 +102,10 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1600,
+    imagen_hero: "/imagenes/cascada-el-salto/hero.jpg",
+    imagenes: [
+      "/imagenes/cascada-el-salto/hero.jpg",
+    ],
   },
   {
     id:      "tour-minas-micos",
@@ -114,6 +130,11 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1500,
+    imagen_hero: "/imagenes/cascadas-minas-viejas/hero.jpg",
+    imagenes: [
+      "/imagenes/cascadas-minas-viejas/hero.jpg",
+      "/imagenes/cascadas-de-micos/hero.jpg",
+    ],
   },
   {
     id:      "tour-puente-dios",
@@ -140,5 +161,10 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     precio: 1500,
+    imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero.jpg",
+    imagenes: [
+      "/imagenes/puente-de-dios-tamasopo/hero.jpg",
+      "/imagenes/cascadas-de-tamasopo/hero.jpg",
+    ],
   },
 ];

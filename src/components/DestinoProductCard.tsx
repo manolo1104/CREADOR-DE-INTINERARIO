@@ -16,13 +16,6 @@ const dificultadConfig = {
 
 type DificultadKey = keyof typeof dificultadConfig;
 
-/** Returns just the first price token: "$180" | "Gratis" */
-function precioCorto(p: string) {
-  if (p.toLowerCase().startsWith("grat")) return { valor: "Gratis", moneda: "" };
-  const m = p.match(/\$[\d,]+/);
-  return { valor: m ? m[0] : p.split(" ")[0], moneda: "MXN" };
-}
-
 // ── component ─────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -37,7 +30,6 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
 
   const difKey = d.dificultad.toLowerCase() as DificultadKey;
   const difConfig = dificultadConfig[difKey] ?? dificultadConfig.media;
-  const precio = precioCorto(d.precio_entrada);
 
   return (
     <article className="group flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300">
@@ -113,19 +105,6 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
 
         {/* Separador */}
         <div className="border-t border-white/8 mb-3" />
-
-        {/* Precio */}
-        <div className="mb-4">
-          <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-0.5">
-            Desde
-          </p>
-          <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
-            {precio.valor}
-            {precio.moneda && (
-              <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">{precio.moneda}</span>
-            )}
-          </p>
-        </div>
 
         {/* CTA — siempre al fondo */}
         <div className="mt-auto flex flex-col gap-2">

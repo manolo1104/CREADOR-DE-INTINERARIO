@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { DestinoProductCard } from "@/components/DestinoProductCard";
+import { TOURS_DB } from "@/lib/tours";
+import { TourCard } from "@/components/TourCard";
 
 const SITE_URL = "https://www.huasteca-potosina.com";
 
@@ -206,25 +207,25 @@ export default function HomePage() {
             className="font-cormorant font-light text-crema"
             style={{ fontSize: "clamp(36px,5vw,56px)" }}
           >
-            Descubre la <em className="text-dorado">Región</em>
+            Nuestros <em className="text-dorado">Tours</em>
           </h2>
           <p className="text-crema/45 mt-4 font-dm text-sm max-w-md mx-auto">
-            {DESTINOS_DB.length} destinos que transformarán tu forma de ver México
+            {TOURS_DB.length} recorridos guiados con transporte, desayuno y guía certificado incluidos
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {DESTINOS_DB.map((d) => (
-            <DestinoProductCard key={d.slug} destino={d} variant="compact" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {TOURS_DB.map((t) => (
+            <TourCard key={t.slug} tour={t} variant="compact" />
           ))}
         </div>
 
         <div className="text-center mt-10">
           <Link
-            href="/destinos"
+            href="/tours"
             className="inline-block border border-verde-vivo/40 text-verde-vivo px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all duration-200"
           >
-            Ver todos los destinos
+            Ver todos los tours
           </Link>
         </div>
       </section>
