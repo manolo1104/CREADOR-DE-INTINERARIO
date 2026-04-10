@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import { TOURS_DB } from "@/lib/tours";
+import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TourCalculadora } from "@/components/TourCalculadora";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
@@ -81,14 +82,23 @@ export default function TourDetailPage({ params }: Props) {
         {/* Columna principal */}
         <div className="lg:col-span-2 space-y-10">
 
-          {/* Descripción */}
+          {/* Descripción aspiracional */}
           <section>
             <h2 className="font-cormorant text-crema text-2xl mb-4">
               Acerca de este tour
             </h2>
-            <p className="text-crema/65 font-dm text-sm leading-relaxed">
+            <p className="text-crema/65 font-dm text-sm leading-relaxed mb-6">
               {tour.descripcion}
             </p>
+            {tour.descripcionLarga && (
+              <div className="space-y-4 border-l-2 border-verde-vivo/30 pl-5">
+                {tour.descripcionLarga.split("\n\n").map((parrafo, i) => (
+                  <p key={i} className="text-crema/55 font-dm text-sm leading-relaxed">
+                    {parrafo}
+                  </p>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Destinos */}
@@ -144,17 +154,95 @@ export default function TourDetailPage({ params }: Props) {
               ))}
             </ul>
           </section>
+
+          {/* Reseñas */}
+          {TOUR_REVIEWS[tour.id]?.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-cormorant text-crema text-2xl">
+                  Lo que dicen quienes ya fueron
+                </h2>
+                <a
+                  href={GOOGLE_MAPS_REVIEWS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-verde-vivo hover:text-lima font-dm underline underline-offset-2 transition-colors flex-shrink-0"
+                >
+                  Ver en Google →
+                </a>
+              </div>
+              <div className="flex gap-1 mb-6">
+                {"★★★★★".split("").map((s, i) => (
+                  <span key={i} className="text-dorado text-lg">{s}</span>
+                ))}
+                <span className="text-crema/40 font-dm text-sm ml-2 self-end">5.0 · {TOUR_REVIEWS[tour.id].length} reseñas</span>
+              </div>
+              <div className="space-y-5">
+                {TOUR_REVIEWS[tour.id].map((r) => (
+                  <div key={r.nombre} className="border border-white/8 bg-negro/30 p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-verde-selva/60 border border-verde-vivo/20 flex items-center justify-center text-xs text-crema font-dm font-medium flex-shrink-0">
+                        {r.iniciales}
+                      </div>
+                      <div>
+                        <p className="text-crema font-dm text-sm font-medium leading-none">{r.nombre}</p>
+                        <p className="text-crema/35 font-dm text-[10px] mt-0.5">{r.ciudad}</p>
+                      </div>
+                      <div className="ml-auto flex gap-0.5">
+                        {"★★★★★".split("").map((s, i) => (
+                          <span key={i} className="text-dorado text-xs">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-crema/60 font-dm text-sm leading-relaxed">
+                      &ldquo;{r.texto}&rdquo;
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-center">
+                <a
+                  href={GOOGLE_MAPS_REVIEWS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-verde-vivo hover:text-lima font-dm underline underline-offset-2 transition-colors"
+                >
+                  Ver todas las reseñas en Google Maps →
+                </a>
+              </p>
+            </section>
+          )}
         </div>
 
         {/* Sidebar sticky */}
         <aside className="lg:col-span-1">
           <div className="sticky top-24 space-y-4">
             <div className="border border-white/10 bg-negro/60 p-5">
-              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">desde</p>
+              {/* Descuento badge */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">
+                  30% OFF
+                </span>
+                <span className="text-[9px] text-crema/35 font-dm">Precio especial</span>
+              </div>
+              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">desde</p>
+              <p className="text-[12px] text-crema/35 font-dm line-through leading-none">
+                ${tour.precioOriginal.toLocaleString("es-MX")}
+              </p>
               <p className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(32px,4vw,48px)" }}>
                 ${tour.precio.toLocaleString("es-MX")}
               </p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">MXN por persona</p>
+              {/* Duración */}
+              <p className="text-[10px] text-crema/40 font-dm mt-2">
+                ⏱ Duración: {tour.duracion_hrs} horas aprox.
+              </p>
+              {/* Urgencia */}
+              {tour.urgencia && (
+                <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">
+                  {tour.urgencia}
+                </p>
+              )}
             </div>
 
             <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} />

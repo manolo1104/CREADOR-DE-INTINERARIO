@@ -45,12 +45,32 @@ function Counter({
   );
 }
 
+/** ISO date → "lunes 14 de julio de 2026" */
+function formatFecha(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("es-MX", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+}
+
+/** Today in YYYY-MM-DD for min attribute */
+function today(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
 export function TourCalculadora({ tourName, precioBase }: Props) {
   const [adultos, setAdultos] = useState(2);
   const [ninos, setNinos]     = useState(0);
+  const [fecha, setFecha]     = useState("");
 
   const precioNino = Math.round(precioBase * 0.6);
   const total      = adultos * precioBase + ninos * precioNino;
+
+  const waMsg = (() => {
+    const base = WA_MESSAGES.tour(tourName, adultos, ninos, total);
+    return fecha ? `${base} Fecha deseada: ${formatFecha(fecha)}.` : base;
+  })();
 
   return (
     <div className="border border-white/10 bg-negro/60 p-4 space-y-3">
@@ -58,9 +78,32 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
         Calcular precio de tu grupo
       </p>
 
+      {/* Fecha */}
+      <div className="space-y-1">
+        <label className="text-xs text-crema/60 font-dm block">
+          Fecha preferida
+        </label>
+        <input
+          type="date"
+          value={fecha}
+          min={today()}
+          onChange={(e) => setFecha(e.target.value)}
+          className="w-full bg-negro/80 border border-white/15 text-crema font-dm text-xs px-3 py-2
+                     focus:outline-none focus:border-verde-vivo transition-colors
+                     [color-scheme:dark] cursor-pointer"
+        />
+        {fecha && (
+          <p className="text-[10px] text-verde-vivo font-dm capitalize">
+            {formatFecha(fecha)}
+          </p>
+        )}
+      </div>
+
       <Counter label="Adultos" value={adultos} min={1} max={15} onChange={setAdultos} />
-      <Counter label={`Niños 4–12 años ($${precioNino.toLocaleString("es-MX")} c/u)`}
-        value={ninos} min={0} max={10} onChange={setNinos} />
+      <Counter
+        label={`Niños 4–12 años ($${precioNino.toLocaleString("es-MX")} c/u)`}
+        value={ninos} min={0} max={10} onChange={setNinos}
+      />
 
       {ninos === 0 && (
         <p className="text-[10px] text-crema/30 font-dm">
@@ -77,12 +120,13 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
           </p>
         </div>
         <p className="text-[9px] text-verde-vivo font-dm">
-          {adultos} adulto{adultos > 1 ? "s" : ""}{ninos > 0 ? ` · ${ninos} niño${ninos > 1 ? "s" : ""}` : ""}
+          {adultos} adulto{adultos > 1 ? "s" : ""}
+          {ninos > 0 ? ` · ${ninos} niño${ninos > 1 ? "s" : ""}` : ""}
         </p>
       </div>
 
       <a
-        href={waLink(WA_MESSAGES.tour(tourName, adultos, ninos, total))}
+        href={waLink(waMsg)}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20ba59]

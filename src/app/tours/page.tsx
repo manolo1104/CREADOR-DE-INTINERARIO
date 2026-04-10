@@ -1,6 +1,8 @@
+import Image from "next/image";
 import { Metadata } from "next";
 import { TOURS_DB } from "@/lib/tours";
 import { TOUR_FAQS } from "@/lib/tourFaqs";
+import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TourCalculadora } from "@/components/TourCalculadora";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -141,6 +143,34 @@ export default function ToursPage() {
               key={tour.id}
               className="border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col"
             >
+              {/* Hero image */}
+              {tour.imagen_hero && (
+                <div className="relative h-52 overflow-hidden flex-shrink-0">
+                  <Image
+                    src={tour.imagen_hero}
+                    alt={tour.nombre}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
+                  {/* Urgencia badge sobre imagen */}
+                  {tour.urgencia && (
+                    <span className="absolute top-3 left-3 bg-dorado/90 text-negro text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
+                      {tour.urgencia}
+                    </span>
+                  )}
+                  {/* Descuento badge */}
+                  <span className="absolute top-3 right-3 bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
+                    30% OFF
+                  </span>
+                  {/* Duración */}
+                  <span className="absolute bottom-3 left-3 bg-negro/70 text-crema/80 text-[9px] font-dm tracking-[1px] px-2 py-1">
+                    ⏱ {tour.duracion_hrs} horas
+                  </span>
+                </div>
+              )}
+
               {/* Card header */}
               <div className="p-7 border-b border-white/6">
                 <div className="flex items-start justify-between gap-4 mb-4">
@@ -157,15 +187,14 @@ export default function ToursPage() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">desde</p>
+                    {/* Precio tachado */}
+                    <p className="text-[11px] text-crema/35 font-dm line-through">
+                      ${tour.precioOriginal.toLocaleString("es-MX")}
+                    </p>
                     <p className="font-cormorant text-dorado text-2xl font-light leading-none">
                       ${tour.precio.toLocaleString("es-MX")}
                     </p>
                     <p className="text-[9px] text-crema/35 font-dm mt-0.5">MXN por persona</p>
-                    {tour.urgencia && (
-                      <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-1.5 font-dm leading-tight">
-                        {tour.urgencia}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -230,6 +259,44 @@ export default function ToursPage() {
                           {faq.a}
                         </p>
                       </details>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mini-reviews */}
+              {TOUR_REVIEWS[tour.id]?.length > 0 && (
+                <div className="px-7 py-5 border-t border-white/6">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm">
+                      Reseñas ⭐⭐⭐⭐⭐
+                    </p>
+                    <a
+                      href={GOOGLE_MAPS_REVIEWS_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[9px] text-verde-vivo hover:text-lima font-dm underline underline-offset-2 transition-colors"
+                    >
+                      Ver en Google Maps →
+                    </a>
+                  </div>
+                  <div className="space-y-3">
+                    {TOUR_REVIEWS[tour.id].slice(0, 2).map((r) => (
+                      <div key={r.nombre} className="flex gap-3">
+                        <div
+                          className="w-7 h-7 rounded-full bg-verde-selva/60 flex items-center justify-center text-[10px] text-crema font-dm font-medium flex-shrink-0"
+                        >
+                          {r.iniciales}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-crema/70 font-dm font-medium leading-none mb-0.5">
+                            {r.nombre} <span className="text-crema/35 font-normal">· {r.ciudad}</span>
+                          </p>
+                          <p className="text-[10px] text-crema/50 font-dm leading-relaxed line-clamp-2">
+                            &ldquo;{r.texto}&rdquo;
+                          </p>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
