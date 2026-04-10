@@ -75,14 +75,14 @@ export async function POST(req: NextRequest) {
         : producto === "itinerario"
         ? `${appUrl}/planear?paid=1&session_id={CHECKOUT_SESSION_ID}`
         : producto === "tour_booking"
-        ? `${appUrl}/confirmacion-pago.html?status=success&producto=tour&session_id={CHECKOUT_SESSION_ID}`
+        ? `${appUrl}/confirmacion-tour?status=success&session_id={CHECKOUT_SESSION_ID}`
         : `${appUrl}/confirmacion-pago.html?status=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: producto === "guia_pdf"
         ? `${appUrl}/guia?cancelled=1`
         : producto === "itinerario"
         ? `${appUrl}/planear`
         : producto === "tour_booking"
-        ? `${appUrl}/confirmacion-pago.html?status=cancelled&producto=tour`
+        ? `${appUrl}/confirmacion-tour?status=cancelled`
         : `${appUrl}/confirmacion-pago.html?status=cancelled`,
     });
 

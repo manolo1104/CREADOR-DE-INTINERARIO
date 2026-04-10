@@ -74,17 +74,26 @@ export default function HomePage() {
         aria-label="Bienvenida a la Huasteca Potosina"
         className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 overflow-hidden"
       >
-        {/* Video background */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/video/hero.mov" type="video/mp4" />
-        </video>
+        {/* YouTube background — autoplay, muted, loop, no controls */}
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <iframe
+            src="https://www.youtube.com/embed/yE3i_hUYmMU?autoplay=1&mute=1&loop=1&playlist=yE3i_hUYmMU&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3"
+            allow="autoplay; encrypted-media"
+            title=""
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "177.78vh",   /* 16/9 × 100vh — always wider than viewport */
+              minWidth: "100%",
+              height: "56.25vw",  /* 9/16 × 100vw — always taller than viewport */
+              minHeight: "100%",
+              border: "none",
+              pointerEvents: "none",
+            }}
+          />
+        </div>
 
         {/* Overlay: oscurece el video para que el texto resalte */}
         <div className="absolute inset-0 bg-gradient-to-b from-negro/60 via-negro/50 to-negro/85" />
