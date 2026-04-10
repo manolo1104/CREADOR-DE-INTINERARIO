@@ -307,10 +307,10 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={b.key}
                   onClick={() => setState((s) => ({ ...s, presupuesto: b.key }))}
-                  className={`border p-6 text-left transition-all ${
+                  className={`gloss-selector-light border p-6 text-left transition-all ${
                     state.presupuesto === b.key
-                      ? "border-verde-vivo bg-verde-selva/10"
-                      : "border-white/8 bg-white/2 hover:border-verde-selva/40"
+                      ? "border-verde-vivo bg-gradient-to-br from-crema/18 via-crema/10 to-arena/8"
+                      : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-verde-selva/45"
                   }`}
                 >
                   <span className="text-2xl mb-3 block">{b.icon}</span>
@@ -339,10 +339,10 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={d.id}
                   onClick={() => toggleDestino(d.id)}
-                  className={`flex items-center gap-3 border p-4 text-left transition-all ${
+                  className={`gloss-selector-light flex items-center gap-3 border p-4 text-left transition-all ${
                     state.destinos.includes(d.id)
-                      ? "border-verde-vivo bg-verde-selva/10"
-                      : "border-white/7 bg-white/2 hover:border-verde-selva/35"
+                      ? "border-verde-vivo bg-gradient-to-br from-crema/18 via-crema/10 to-arena/8"
+                      : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-verde-selva/40"
                   }`}
                 >
                   <div className={`w-4.5 h-4.5 border rounded-sm flex items-center justify-center text-[9px] flex-shrink-0 ${
@@ -376,10 +376,10 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={tag}
                   onClick={() => toggleInteres(tag)}
-                  className={`border rounded-full px-5 py-2.5 text-xs transition-all ${
+                  className={`gloss-selector-light border rounded-full px-5 py-2.5 text-xs transition-all ${
                     state.intereses.includes(tag)
-                      ? "bg-verde-selva border-verde-selva text-crema"
-                      : "border-white/10 text-crema/50 hover:border-verde-selva/40 hover:text-crema"
+                      ? "bg-gradient-to-br from-crema/22 via-crema/15 to-arena/12 border-verde-selva text-crema"
+                      : "border-crema/20 text-crema/70 bg-gradient-to-br from-crema/10 via-crema/5 to-arena/4 hover:border-verde-selva/40 hover:text-crema"
                   }`}
                 >
                   {tag}
@@ -405,10 +405,10 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={v.nombre}
                   onClick={() => setState((s) => ({ ...s, viajero: v.nombre }))}
-                  className={`border p-6 text-center transition-all ${
+                  className={`gloss-selector-light border p-6 text-center transition-all ${
                     state.viajero === v.nombre
-                      ? "border-dorado bg-dorado/8"
-                      : "border-white/7 bg-white/2 hover:border-dorado/40"
+                      ? "border-dorado bg-gradient-to-br from-crema/20 via-arena/10 to-dorado/10"
+                      : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-dorado/45"
                   }`}
                 >
                   <span className="text-3xl block mb-2">{v.emoji}</span>
@@ -424,10 +424,10 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                   <button
                     key={a}
                     onClick={() => setState((s) => ({ ...s, actividad: a }))}
-                    className={`border rounded-full px-5 py-2.5 text-xs transition-all ${
+                    className={`gloss-selector-light border rounded-full px-5 py-2.5 text-xs transition-all ${
                       state.actividad === a
-                        ? "bg-verde-selva border-verde-selva text-crema"
-                        : "border-white/10 text-crema/50 hover:border-verde-selva/40 hover:text-crema"
+                        ? "bg-gradient-to-br from-crema/22 via-crema/15 to-arena/12 border-verde-selva text-crema"
+                        : "border-crema/20 text-crema/70 bg-gradient-to-br from-crema/10 via-crema/5 to-arena/4 hover:border-verde-selva/40 hover:text-crema"
                     }`}
                   >
                     {a}
@@ -459,7 +459,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                   onChange={(e) => setState((s) => ({ ...s, restricciones: e.target.value }))}
                   rows={3}
                   placeholder="Ej: soy vegetariano, miedo a las alturas, viajo con bebé..."
-                  className="w-full bg-white/4 border border-white/10 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/20"
+                  className="gloss-surface-light w-full border border-crema/20 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/25"
                 />
               </div>
               <div>
@@ -471,7 +471,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                   onChange={(e) => setState((s) => ({ ...s, sueno: e.target.value }))}
                   rows={3}
                   placeholder="Ej: nadar en cascada turquesa, ver amanecer en las montañas..."
-                  className="w-full bg-white/4 border border-white/10 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/20"
+                  className="gloss-surface-light w-full border border-crema/20 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/25"
                 />
               </div>
             </div>

@@ -31,6 +31,39 @@ body {
   }
 }
 
+@layer components {
+  .gloss-surface-light {
+    position: relative;
+    overflow: hidden;
+    background-image: linear-gradient(140deg, rgba(244, 237, 216, 0.18), rgba(230, 212, 176, 0.08));
+    border-color: rgba(244, 237, 216, 0.28);
+    backdrop-filter: blur(8px);
+  }
+
+  .gloss-surface-light::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.04) 42%, transparent 70%);
+  }
+
+  .gloss-selector-light {
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+
+  .gloss-selector-light::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.03) 45%, transparent 75%);
+    opacity: 0.95;
+  }
+}
+
 .leaflet-container {
   z-index: 0;
 }

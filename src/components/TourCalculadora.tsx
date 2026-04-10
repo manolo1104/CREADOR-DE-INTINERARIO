@@ -27,7 +27,7 @@ function Counter({
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           aria-label={`Reducir ${label}`}
-          className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-crema/60 hover:border-verde-vivo hover:text-crema disabled:opacity-30 transition-colors text-sm"
+          className="gloss-selector-light w-7 h-7 rounded-full border border-crema/25 flex items-center justify-center text-crema/70 hover:border-verde-vivo hover:text-crema disabled:opacity-30 transition-colors text-sm"
         >
           −
         </button>
@@ -36,7 +36,7 @@ function Counter({
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
           aria-label={`Aumentar ${label}`}
-          className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-crema/60 hover:border-verde-vivo hover:text-crema disabled:opacity-30 transition-colors text-sm"
+          className="gloss-selector-light w-7 h-7 rounded-full border border-crema/25 flex items-center justify-center text-crema/70 hover:border-verde-vivo hover:text-crema disabled:opacity-30 transition-colors text-sm"
         >
           +
         </button>
@@ -63,6 +63,8 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
   const [adultos, setAdultos] = useState(2);
   const [ninos, setNinos]     = useState(0);
   const [fecha, setFecha]     = useState("");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
 
   const precioNino = Math.round(precioBase * 0.6);
   const total      = adultos * precioBase + ninos * precioNino;
@@ -72,10 +74,45 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
     return fecha ? `${base} Fecha deseada: ${formatFecha(fecha)}.` : base;
   })();
 
+  async function handleStripeCheckout() {
+    setCheckoutLoading(true);
+    setCheckoutError("");
+
+    try {
+      const res = await fetch("/api/cobrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monto: String(total),
+          descripcion: `Reserva tour: ${tourName}`,
+          producto: "tour_booking",
+          metadata: {
+            tour: tourName,
+            adultos: String(adultos),
+            ninos: String(ninos),
+            fecha_preferida: fecha || "sin_fecha",
+          },
+        }),
+      });
+
+      const data: { url?: string; error?: string } = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      setCheckoutError(data.error || "No se pudo iniciar el pago con Stripe.");
+    } catch {
+      setCheckoutError("Error de conexión al iniciar pago.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
   return (
-    <div className="border border-white/10 bg-negro/60 p-4 space-y-3">
+    <div className="gloss-surface-light border border-crema/20 p-4 space-y-3">
       <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">
-        Calcular precio de tu grupo
+        Booking summary
       </p>
 
       {/* Fecha */}
@@ -88,7 +125,7 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
           value={fecha}
           min={today()}
           onChange={(e) => setFecha(e.target.value)}
-          className="w-full bg-negro/80 border border-white/15 text-crema font-dm text-xs px-3 py-2
+          className="gloss-selector-light w-full border border-crema/25 text-crema font-dm text-xs px-3 py-2
                      focus:outline-none focus:border-verde-vivo transition-colors
                      [color-scheme:dark] cursor-pointer"
         />
@@ -136,6 +173,18 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
         {WA_SVG}
         Reservar por WhatsApp
       </a>
+
+      <button
+        onClick={handleStripeCheckout}
+        disabled={checkoutLoading || total <= 0}
+        className="w-full border border-agua/45 bg-agua/12 hover:bg-agua/20 text-agua py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-50"
+      >
+        {checkoutLoading ? "Redirigiendo a Stripe..." : "Pagar reserva con tarjeta (Stripe)"}
+      </button>
+
+      {checkoutError && (
+        <p className="text-[11px] text-terracota/85 font-dm text-center">{checkoutError}</p>
+      )}
 
       <p className="text-center text-[10px] text-crema/25 font-dm">
         ✓ Cancelación gratuita con 48h de anticipación

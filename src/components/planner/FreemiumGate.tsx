@@ -248,7 +248,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(""); }}
               onKeyDown={(e) => e.key === "Enter" && handleGenerar()}
-              className="w-full bg-white/4 border border-white/10 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/20"
+              className="gloss-surface-light w-full border border-crema/20 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/25"
             />
 
             {error && (

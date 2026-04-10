@@ -14,7 +14,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { monto, descripcion, email_cliente, producto, codigoDescuento } = await req.json();
+    const {
+      monto,
+      descripcion,
+      email_cliente,
+      producto,
+      codigoDescuento,
+      metadata,
+    }: {
+      monto: string | number;
+      descripcion?: string;
+      email_cliente?: string;
+      producto?: string;
+      codigoDescuento?: string;
+      metadata?: Record<string, string>;
+    } = await req.json();
 
     const CODIGOS_DESCUENTO: Record<string, number> = {
       HUASTECA2026: 1,
@@ -55,15 +69,20 @@ export async function POST(req: NextRequest) {
         },
       ],
       customer_email: email_cliente ?? undefined,
+      metadata: metadata ?? undefined,
       success_url: producto === "guia_pdf"
         ? `${appUrl}/guia/descarga?session_id={CHECKOUT_SESSION_ID}`
         : producto === "itinerario"
         ? `${appUrl}/planear?paid=1&session_id={CHECKOUT_SESSION_ID}`
+        : producto === "tour_booking"
+        ? `${appUrl}/confirmacion-pago.html?status=success&producto=tour&session_id={CHECKOUT_SESSION_ID}`
         : `${appUrl}/confirmacion-pago.html?status=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: producto === "guia_pdf"
         ? `${appUrl}/guia?cancelled=1`
         : producto === "itinerario"
         ? `${appUrl}/planear`
+        : producto === "tour_booking"
+        ? `${appUrl}/confirmacion-pago.html?status=cancelled&producto=tour`
         : `${appUrl}/confirmacion-pago.html?status=cancelled`,
     });
 

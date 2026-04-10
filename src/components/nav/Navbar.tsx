@@ -127,11 +127,14 @@ export default function Navbar() {
               </button>
 
               {destinosOpen && (
-                <div id="destinos-menu" role="menu" aria-label="Menú de destinos" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 bg-negro/98 backdrop-blur-md border border-white/12 shadow-2xl py-2">
-                  <div className="px-4 py-2 border-b border-white/8 mb-1">
+                <div id="destinos-menu" role="menu" aria-label="Menú de destinos" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 rounded-2xl overflow-hidden bg-gradient-to-br from-crema/95 via-crema/90 to-arena/80 backdrop-blur-xl border border-crema/70 shadow-2xl">
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/80 via-white/20 to-transparent" />
+                  <div className="absolute -top-10 -left-8 w-56 h-28 rotate-[-12deg] pointer-events-none bg-white/45 blur-md" />
+
+                  <div className="relative z-10 px-4 py-3 border-b border-verde-selva/15 mb-1">
                     <Link
                       href="/destinos"
-                      className="text-[9px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors"
+                      className="text-[9px] tracking-[3px] uppercase text-verde-selva hover:text-verde-bosque transition-colors"
                     >
                       Ver todos los destinos →
                     </Link>
@@ -140,10 +143,10 @@ export default function Navbar() {
                     <Link
                       key={d.slug}
                       href={`/destinos/${d.slug}`}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-verde-profundo/50 transition-colors group"
+                      className="relative z-10 flex items-center gap-3 px-4 py-2.5 hover:bg-verde-selva/12 transition-colors group"
                     >
                       <span className="text-lg">{d.emoji}</span>
-                      <span className="text-[12px] text-crema/75 group-hover:text-crema transition-colors font-dm">
+                      <span className="text-[12px] text-verde-profundo/80 group-hover:text-verde-bosque transition-colors font-dm">
                         {d.nombre}
                       </span>
                     </Link>
@@ -176,12 +179,15 @@ export default function Navbar() {
               </button>
 
               {experienciasOpen && (
-                <div id="experiencias-menu" role="menu" aria-label="Menú de experiencias" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-negro/98 backdrop-blur-md border border-white/12 shadow-2xl py-2">
+                <div id="experiencias-menu" role="menu" aria-label="Menú de experiencias" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 rounded-2xl overflow-hidden bg-gradient-to-br from-crema/95 via-crema/90 to-arena/80 backdrop-blur-xl border border-crema/70 shadow-2xl py-2">
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/80 via-white/20 to-transparent" />
+                  <div className="absolute -top-10 -left-8 w-56 h-28 rotate-[-12deg] pointer-events-none bg-white/45 blur-md" />
+
                   {EXPERIENCIAS_NAV.map((e) => (
                     <Link
                       key={e.href}
                       href={e.href}
-                      className="block px-4 py-2.5 text-[12px] text-crema/75 hover:text-crema hover:bg-verde-profundo/50 transition-colors font-dm"
+                      className="relative z-10 block px-4 py-2.5 text-[12px] text-verde-profundo/80 hover:text-verde-bosque hover:bg-verde-selva/12 transition-colors font-dm"
                     >
                       {e.label}
                     </Link>
@@ -268,7 +274,8 @@ export default function Navbar() {
                 </svg>
               </button>
               {destinosOpen && (
-                <div className="pb-3 space-y-1 pl-3">
+                <div className="relative overflow-hidden pb-3 space-y-1 pl-3 mt-1 mr-1 rounded-xl border border-crema/20 bg-gradient-to-br from-crema/15 via-crema/10 to-arena/10 backdrop-blur-sm">
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/30 to-transparent" />
                   <Link href="/destinos" className="block py-2 text-[10px] tracking-[2px] uppercase text-verde-vivo hover:text-lima">
                     Ver todos →
                   </Link>
@@ -276,7 +283,7 @@ export default function Navbar() {
                     <Link
                       key={d.slug}
                       href={`/destinos/${d.slug}`}
-                      className="flex items-center gap-2.5 py-2 text-sm text-crema/60 hover:text-crema"
+                      className="relative z-10 flex items-center gap-2.5 py-2 pr-3 text-sm text-crema/70 hover:text-crema"
                     >
                       <span>{d.emoji}</span>
                       <span>{d.nombre}</span>
@@ -301,12 +308,13 @@ export default function Navbar() {
                 </svg>
               </button>
               {experienciasOpen && (
-                <div className="pb-3 space-y-1 pl-3">
+                <div className="relative overflow-hidden pb-3 space-y-1 pl-3 mt-1 mr-1 rounded-xl border border-crema/20 bg-gradient-to-br from-crema/15 via-crema/10 to-arena/10 backdrop-blur-sm">
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/30 to-transparent" />
                   {EXPERIENCIAS_NAV.map((e) => (
                     <Link
                       key={e.href}
                       href={e.href}
-                      className="block py-2 text-sm text-crema/60 hover:text-crema"
+                      className="relative z-10 block py-2 pr-3 text-sm text-crema/70 hover:text-crema"
                     >
                       {e.label}
                     </Link>
