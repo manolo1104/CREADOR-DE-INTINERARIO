@@ -74,102 +74,80 @@ export default function HomePage() {
         aria-label="Bienvenida a la Huasteca Potosina"
         className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 overflow-hidden"
       >
-        {/* Animated background */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-verde-profundo/60 via-negro to-negro" />
-          <div
-            className="absolute rounded-full blur-3xl opacity-20"
-            style={{
-              width: "500px", height: "500px",
-              background: "radial-gradient(circle, #3a6b1a, transparent)",
-              top: "10%", left: "15%",
-              animation: "floatSlow 18s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="absolute rounded-full blur-3xl opacity-15"
-            style={{
-              width: "350px", height: "350px",
-              background: "radial-gradient(circle, #c4882a, transparent)",
-              bottom: "20%", right: "10%",
-              animation: "floatSlow 24s ease-in-out infinite reverse",
-            }}
-          />
-          <div
-            className="absolute rounded-full blur-3xl opacity-10"
-            style={{
-              width: "250px", height: "250px",
-              background: "radial-gradient(circle, #3a8aaa, transparent)",
-              top: "40%", right: "30%",
-              animation: "floatSlow 20s ease-in-out infinite 8s",
-            }}
-          />
-        </div>
-
-        <style>{`
-          @keyframes floatSlow {
-            0%, 100% { transform: translateY(0px) scale(1); }
-            33%  { transform: translateY(-30px) scale(1.05); }
-            66%  { transform: translateY(15px) scale(0.97); }
-          }
-        `}</style>
-
-        <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm">
-          ✦ San Luis Potosí · México ✦
-        </p>
-
-        <h1 className="font-cormorant font-light leading-[0.9] tracking-tight mb-8">
-          <span className="block text-crema" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
-            La Huasteca
-          </span>
-          <span className="block text-dorado italic" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
-            Potosina
-          </span>
-        </h1>
-
-        <p
-          className="text-crema/60 max-w-xl mb-12 leading-relaxed font-dm"
-          style={{ fontSize: "clamp(15px,1.8vw,18px)" }}
+        {/* Video background */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
         >
-          Cascadas turquesas, jardines surrealistas, cañones imposibles.
-          La región más extraordinaria de México.
-        </p>
+          <source src="/video/hero.mov" type="video/mp4" />
+        </video>
 
-        {/* CTAs */}
-        <div className="flex flex-wrap gap-4 justify-center mb-16">
-          <Link
-            href="/destinos"
-            className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300"
-          >
-            Explorar Destinos
-          </Link>
-          <Link
-            href="/planear"
-            className="bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300"
-          >
-            Planear mi Viaje IA
-          </Link>
-        </div>
+        {/* Overlay: oscurece el video para que el texto resalte */}
+        <div className="absolute inset-0 bg-gradient-to-b from-negro/60 via-negro/50 to-negro/85" />
 
-        {/* Stats row */}
-        <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">
-          {[
-            { num: String(DESTINOS_DB.length), label: "Destinos Únicos" },
-            { num: "Todo el año",              label: "Temporada" },
-            { num: "Desde $60",                label: "MXN entrada" },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <span
-                className="font-cormorant font-light text-dorado block leading-none"
-                style={{ fontSize: "clamp(28px,4vw,40px)" }}
-              >
-                {s.num}
-              </span>
-              <span className="text-[9px] tracking-[3px] uppercase text-crema/40 mt-2 block font-dm">
-                {s.label}
-              </span>
-            </div>
-          ))}
+        {/* Contenido — posicionado sobre el video */}
+        <div className="relative z-10 flex flex-col items-center">
+          <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm drop-shadow-lg">
+            ✦ San Luis Potosí · México ✦
+          </p>
+
+          <h1 className="font-cormorant font-light leading-[0.9] tracking-tight mb-8 drop-shadow-2xl">
+            <span className="block text-white" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
+              La Huasteca
+            </span>
+            <span className="block text-dorado italic" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
+              Potosina
+            </span>
+          </h1>
+
+          <p
+            className="text-crema/80 max-w-xl mb-12 leading-relaxed font-dm drop-shadow"
+            style={{ fontSize: "clamp(15px,1.8vw,18px)" }}
+          >
+            Cascadas turquesas, jardines surrealistas, cañones imposibles.
+            La región más extraordinaria de México.
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-wrap gap-4 justify-center mb-16">
+            <Link
+              href="/destinos"
+              className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300"
+            >
+              Explorar Destinos
+            </Link>
+            <Link
+              href="/planear"
+              className="bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300"
+            >
+              Planear mi Viaje IA
+            </Link>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">
+            {[
+              { num: String(DESTINOS_DB.length), label: "Destinos Únicos" },
+              { num: "Todo el año",              label: "Temporada" },
+              { num: "Desde $60",                label: "MXN entrada" },
+            ].map((s) => (
+              <div key={s.label} className="text-center">
+                <span
+                  className="font-cormorant font-light text-dorado block leading-none"
+                  style={{ fontSize: "clamp(28px,4vw,40px)" }}
+                >
+                  {s.num}
+                </span>
+                <span className="text-[9px] tracking-[3px] uppercase text-crema/40 mt-2 block font-dm">
+                  {s.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
