@@ -200,6 +200,10 @@ export default function Navbar() {
               Info Práctica
             </Link>
 
+            <Link href="/nosotros" className={navLinkClass("/nosotros")}>
+              Nosotros
+            </Link>
+
             <Link href="/blog" className={navLinkClass("/blog")}>
               Blog
             </Link>
@@ -329,6 +333,13 @@ export default function Navbar() {
               className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6"
             >
               Info Práctica
+            </Link>
+
+            <Link
+              href="/nosotros"
+              className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6"
+            >
+              Nosotros
             </Link>
 
             <Link

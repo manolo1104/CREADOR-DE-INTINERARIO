@@ -5,6 +5,8 @@ import { Metadata } from "next";
 import { TOURS_DB } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TourCalculadora } from "@/components/TourCalculadora";
+import { TourGallery } from "@/components/TourGallery";
+import { TourDeparture } from "@/components/TourDeparture";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 interface Props { params: { slug: string } }
@@ -118,25 +120,13 @@ export default function TourDetailPage({ params }: Props) {
             </ul>
           </section>
 
-          {/* Galería de imágenes */}
-          {tour.imagenes.length > 1 && (
+          {/* Galería interactiva */}
+          {tour.gallery.length > 0 && (
             <section>
               <h2 className="font-cormorant text-crema text-2xl mb-5">
                 Imágenes del recorrido
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                {tour.imagenes.map((img, i) => (
-                  <div key={i} className="relative aspect-[4/3] overflow-hidden rounded-lg">
-                    <Image
-                      src={img}
-                      alt={`${tour.nombre} — imagen ${i + 1}`}
-                      fill
-                      className="object-cover hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 50vw, 33vw"
-                    />
-                  </div>
-                ))}
-              </div>
+              <TourGallery images={tour.gallery} tourName={tour.nombre} />
             </section>
           )}
 
@@ -154,6 +144,9 @@ export default function TourDetailPage({ params }: Props) {
               ))}
             </ul>
           </section>
+
+          {/* Punto de salida */}
+          <TourDeparture />
 
           {/* Reseñas */}
           {TOUR_REVIEWS[tour.id]?.length > 0 && (
@@ -181,12 +174,17 @@ export default function TourDetailPage({ params }: Props) {
                 {TOUR_REVIEWS[tour.id].map((r) => (
                   <div key={r.nombre} className="border border-white/8 bg-negro/30 p-5">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-9 h-9 rounded-full bg-verde-selva/60 border border-verde-vivo/20 flex items-center justify-center text-xs text-crema font-dm font-medium flex-shrink-0">
-                        {r.iniciales}
-                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(r.nombre)}&background=2d5a27&color=f4edd8&size=48&bold=true`}
+                        alt={r.nombre}
+                        width={36}
+                        height={36}
+                        className="w-9 h-9 rounded-full flex-shrink-0"
+                      />
                       <div>
                         <p className="text-crema font-dm text-sm font-medium leading-none">{r.nombre}</p>
-                        <p className="text-crema/35 font-dm text-[10px] mt-0.5">{r.ciudad}</p>
+                        <p className="text-crema/35 font-dm text-[10px] mt-0.5">{r.ciudad} · {r.fecha}</p>
                       </div>
                       <div className="ml-auto flex gap-0.5">
                         {"★★★★★".split("").map((s, i) => (
@@ -233,10 +231,29 @@ export default function TourDetailPage({ params }: Props) {
                 ${tour.precio.toLocaleString("es-MX")}
               </p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">MXN por persona</p>
+              {/* Rating */}
+              <p className="text-[10px] text-dorado/80 font-dm mt-2">
+                ⭐ 4.9 · ({tour.reviewCount} reseñas)
+              </p>
               {/* Duración */}
-              <p className="text-[10px] text-crema/40 font-dm mt-2">
+              <p className="text-[10px] text-crema/40 font-dm mt-1">
                 ⏱ Duración: {tour.duracion_hrs} horas aprox.
               </p>
+              {/* Tamaño de grupo */}
+              <p className="text-[10px] text-crema/40 font-dm mt-1">
+                👥 Grupo: máx. {tour.groupMax} personas
+              </p>
+              {/* Tour privado */}
+              {tour.privateAvailable && (
+                <a
+                  href={waLink(`Hola, me interesa hacer el tour "${tour.nombre}" de forma privada. ¿Cuál sería el costo?`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-[10px] text-verde-vivo hover:text-lima font-dm mt-2 transition-colors"
+                >
+                  🔒 ¿Tour privado para tu grupo? →
+                </a>
+              )}
               {/* Urgencia */}
               {tour.urgencia && (
                 <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">

@@ -1,3 +1,10 @@
+export interface GalleryImage {
+  src: string;
+  alt: string;
+  hasRealPeople?: boolean;
+  caption?: string;
+}
+
 export interface Tour {
   id:               string;
   nombre:           string;
@@ -16,21 +23,32 @@ export interface Tour {
   imagen_hero:      string;
   imagenes:         string[];
   urgencia?:        string;
+  reviewCount:      number;
+  groupMin:         number;
+  groupMax:         number;
+  privateAvailable: boolean;
+  privateMinPrice?: number;
+  gallery:          GalleryImage[];
 }
 
 export const TOURS_DB: Tour[] = [
   {
-    id:           "tour-tamul",
-    slug:         "expedicion-tamul",
-    emoji:        "🌊",
-    tipo:         "Aventura & Naturaleza",
-    dificultad:   "media",
-    duracion_hrs: 9,
-    nombre:       "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
-    tagline:      "El tour más completo de la Huasteca en un solo día",
-    precio:       1450,
-    precioOriginal: 2100,
-    urgencia:     "🔥 El más reservado — se llena los fines de semana",
+    id:               "tour-tamul",
+    slug:             "expedicion-tamul",
+    emoji:            "🌊",
+    tipo:             "Aventura & Naturaleza",
+    dificultad:       "media",
+    duracion_hrs:     9,
+    reviewCount:      127,
+    groupMin:         2,
+    groupMax:         12,
+    privateAvailable: true,
+    privateMinPrice:  8500,
+    nombre:           "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
+    tagline:          "El tour más completo de la Huasteca en un solo día",
+    precio:           1450,
+    precioOriginal:   2100,
+    urgencia:         "🔥 El más reservado — se llena los fines de semana",
     descripcion:
       "Presencia el vuelo circular de miles de pericos al amanecer en el Sótano de las Huahuas, navega en canoa por el Cañón del Tampaón hasta la cascada más alta de México y termina sumergiéndote en la magia subterránea de la Cueva del Agua. Una jornada que redefine lo que la naturaleza puede ofrecerte.",
     descripcionLarga:
@@ -55,19 +73,32 @@ export const TOURS_DB: Tour[] = [
       "/imagenes/cascada-de-tamul/hero.jpg",
       "/imagenes/sotano-de-las-huahuas/hero.jpg",
     ],
+    gallery: [
+      { src: "/imagenes/cascada-de-tamul/hero.jpg",       alt: "Cascada de Tamul — 105 metros de caída libre sobre el río Tampaón" },
+      { src: "/imagenes/sotano-de-las-huahuas/hero.jpg",  alt: "Miles de pericos emergiendo en espiral del Sótano de las Huahuas al amanecer" },
+      { src: "/imagenes/cascada-de-tamul/hero.jpg",       alt: "Paseo en canoa por el Cañón del Tampaón con paredes de 80 metros", hasRealPeople: true, caption: "Recorrido en canoa incluido" },
+      { src: "/imagenes/sotano-de-las-huahuas/hero.jpg",  alt: "Vista panorámica del Sótano de las Huahuas desde el mirador", hasRealPeople: true },
+      { src: "/imagenes/cascadas-de-tamasopo/hero.jpg",   alt: "Aguas turquesas de la Cueva del Agua" },
+      { src: "/imagenes/cascada-de-tamul/hero.jpg",       alt: "El Cañón del Tampaón al atardecer desde la canoa" },
+    ],
   },
   {
-    id:           "tour-edward-james",
-    slug:         "ruta-surrealista-edward-james",
-    emoji:        "🌿",
-    tipo:         "Cultura & Naturaleza",
-    dificultad:   "baja",
-    duracion_hrs: 8,
-    nombre:       "Ruta Surrealista — Edward James, Manantiales & Selva",
-    tagline:      "Arte, agua y misterio en un recorrido de contrastes únicos",
-    precio:       1300,
-    precioOriginal: 1900,
-    urgencia:     "⚡ Alta demanda en temporada nov–mar",
+    id:               "tour-edward-james",
+    slug:             "ruta-surrealista-edward-james",
+    emoji:            "🌿",
+    tipo:             "Cultura & Naturaleza",
+    dificultad:       "baja",
+    duracion_hrs:     8,
+    reviewCount:      84,
+    groupMin:         2,
+    groupMax:         10,
+    privateAvailable: true,
+    privateMinPrice:  7500,
+    nombre:           "Ruta Surrealista — Edward James, Manantiales & Selva",
+    tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
+    precio:           1300,
+    precioOriginal:   1900,
+    urgencia:         "⚡ Alta demanda en temporada nov–mar",
     descripcion:
       "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y la arquitectura colonial del Castillo de la Salud. Cultura y naturaleza que se funden en un solo día extraordinario.",
     descripcionLarga:
@@ -91,19 +122,32 @@ export const TOURS_DB: Tour[] = [
       "/imagenes/nacimiento-huichihuayan/hero.jpg",
       "/imagenes/xilitla-pueblo-magico/hero.jpg",
     ],
+    gallery: [
+      { src: "/imagenes/nacimiento-huichihuayan/hero.jpg", alt: "Nacimiento de Huichihuayán — aguas cristalinas que brotan a 22°C" },
+      { src: "/imagenes/xilitla-pueblo-magico/hero.jpg",   alt: "Las Pozas de Edward James — esculturas surrealistas en la selva tropical" },
+      { src: "/imagenes/nacimiento-huichihuayan/hero.jpg", alt: "Visitantes flotando en el Nacimiento de Huichihuayán", hasRealPeople: true, caption: "📸 Foto real del recorrido" },
+      { src: "/imagenes/xilitla-pueblo-magico/hero.jpg",   alt: "Escaleras al cielo de Edward James en Las Pozas de Xilitla" },
+      { src: "/imagenes/nacimiento-huichihuayan/hero.jpg", alt: "Interior de la Cueva de las Quilas", hasRealPeople: true },
+      { src: "/imagenes/xilitla-pueblo-magico/hero.jpg",   alt: "Pueblo Mágico de Xilitla con arquitectura colonial y selva al fondo" },
+    ],
   },
   {
-    id:           "tour-meco",
-    slug:         "cascadas-del-meco",
-    emoji:        "💧",
-    tipo:         "Cascadas & Fotografía",
-    dificultad:   "baja",
-    duracion_hrs: 7,
-    nombre:       "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
-    tagline:      "Tres caídas de agua, tres emociones distintas",
-    precio:       1600,
-    precioOriginal: 2300,
-    urgencia:     "📸 Favorito de fotógrafos — cupos limitados",
+    id:               "tour-meco",
+    slug:             "cascadas-del-meco",
+    emoji:            "💧",
+    tipo:             "Cascadas & Fotografía",
+    dificultad:       "baja",
+    duracion_hrs:     7,
+    reviewCount:      96,
+    groupMin:         2,
+    groupMax:         8,
+    privateAvailable: true,
+    privateMinPrice:  7000,
+    nombre:           "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
+    tagline:          "Tres caídas de agua, tres emociones distintas",
+    precio:           1600,
+    precioOriginal:   2300,
+    urgencia:         "📸 Favorito de fotógrafos — cupos limitados",
     descripcion:
       "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
     descripcionLarga:
@@ -122,22 +166,33 @@ export const TOURS_DB: Tour[] = [
       "Fotografías del tour",
     ],
     imagen_hero: "/imagenes/cascada-el-salto/hero.jpg",
-    imagenes: [
-      "/imagenes/cascada-el-salto/hero.jpg",
+    imagenes: ["/imagenes/cascada-el-salto/hero.jpg"],
+    gallery: [
+      { src: "/imagenes/cascada-el-salto/hero.jpg",       alt: "Cascada del Salto — 40 metros de caída libre en la Huasteca" },
+      { src: "/imagenes/cascada-el-salto/hero.jpg",       alt: "Pozas turquesas de la Cascada del Meco a las 10 AM con luz perfecta" },
+      { src: "/imagenes/cascadas-de-tamasopo/hero.jpg",   alt: "Mirador panorámico del Meco con vista a la selva potosina" },
+      { src: "/imagenes/cascada-el-salto/hero.jpg",       alt: "Fotógrafo capturando el color turquesa neón del Meco", hasRealPeople: true, caption: "📸 Foto real del recorrido" },
+      { src: "/imagenes/cascadas-de-tamasopo/hero.jpg",   alt: "Pozas en cascada conectadas de la Cascada del Meco" },
+      { src: "/imagenes/cascada-el-salto/hero.jpg",       alt: "Vista desde el mirador panorámico hacia la selva", hasRealPeople: true },
     ],
   },
   {
-    id:           "tour-minas-micos",
-    slug:         "paraiso-escalonado-minas-micos",
-    emoji:        "🏞️",
-    tipo:         "Cascadas & Bienestar",
-    dificultad:   "baja",
-    duracion_hrs: 8,
-    nombre:       "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
-    tagline:      "Dos joyas naturales, un día perfecto para desconectar",
-    precio:       1500,
-    precioOriginal: 2200,
-    urgencia:     "👨‍👩‍👧 Ideal para familias — reserva con anticipación",
+    id:               "tour-minas-micos",
+    slug:             "paraiso-escalonado-minas-micos",
+    emoji:            "🏞️",
+    tipo:             "Cascadas & Bienestar",
+    dificultad:       "baja",
+    duracion_hrs:     8,
+    reviewCount:      112,
+    groupMin:         2,
+    groupMax:         12,
+    privateAvailable: true,
+    privateMinPrice:  8000,
+    nombre:           "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
+    tagline:          "Dos joyas naturales, un día perfecto para desconectar",
+    precio:           1500,
+    precioOriginal:   2200,
+    urgencia:         "👨‍👩‍👧 Ideal para familias — reserva con anticipación",
     descripcion:
       "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
     descripcionLarga:
@@ -159,19 +214,32 @@ export const TOURS_DB: Tour[] = [
       "/imagenes/cascadas-minas-viejas/hero.jpg",
       "/imagenes/cascadas-de-micos/hero.jpg",
     ],
+    gallery: [
+      { src: "/imagenes/cascadas-minas-viejas/hero.jpg",  alt: "Terrazas de travertino de Minas Viejas con agua color jade" },
+      { src: "/imagenes/cascadas-de-micos/hero.jpg",      alt: "Cascadas de Micos — siete caídas de agua en secuencia en la selva" },
+      { src: "/imagenes/cascadas-minas-viejas/hero.jpg",  alt: "Familia nadando en las terrazas de Minas Viejas", hasRealPeople: true, caption: "📸 Foto real del recorrido familiar" },
+      { src: "/imagenes/cascadas-de-micos/hero.jpg",      alt: "Pozas turquesas de Micos con chalecos salvavidas incluidos", hasRealPeople: true },
+      { src: "/imagenes/cascadas-minas-viejas/hero.jpg",  alt: "Detalle del agua turquesa sobre el travertino de Minas Viejas" },
+      { src: "/imagenes/cascadas-de-micos/hero.jpg",      alt: "Vista de las Cascadas de Micos rodeadas de selva potosina" },
+    ],
   },
   {
-    id:           "tour-puente-dios",
-    slug:         "ruta-acuatica-puente-de-dios",
-    emoji:        "🌀",
-    tipo:         "Aventura Acuática",
-    dificultad:   "media",
-    duracion_hrs: 10,
-    nombre:       "Ruta Acuática — Puente de Dios, Hacienda & Siete Cascadas",
-    tagline:      "El recorrido más refrescante y completo de la región",
-    precio:       1500,
-    precioOriginal: 2200,
-    urgencia:     "🌊 El más completo — últimos lugares disponibles",
+    id:               "tour-puente-dios",
+    slug:             "ruta-acuatica-puente-de-dios",
+    emoji:            "🌀",
+    tipo:             "Aventura Acuática",
+    dificultad:       "media",
+    duracion_hrs:     10,
+    reviewCount:      73,
+    groupMin:         2,
+    groupMax:         10,
+    privateAvailable: true,
+    privateMinPrice:  8500,
+    nombre:           "Ruta Acuática — Puente de Dios, Hacienda & Siete Cascadas",
+    tagline:          "El recorrido más refrescante y completo de la región",
+    precio:           1500,
+    precioOriginal:   2200,
+    urgencia:         "🌊 El más completo — últimos lugares disponibles",
     descripcion:
       "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies, explora la Hacienda Los Gómez y desciende por las Siete Cascadas en secuencia. Las pozas cristalinas de Tamasopo esperan a quienes quieran prolongar la aventura.",
     descripcionLarga:
@@ -194,6 +262,14 @@ export const TOURS_DB: Tour[] = [
     imagenes: [
       "/imagenes/puente-de-dios-tamasopo/hero.jpg",
       "/imagenes/cascadas-de-tamasopo/hero.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/puente-de-dios-tamasopo/hero.jpg", alt: "Puente de Dios — arco de roca natural con luz solar sobre el río" },
+      { src: "/imagenes/cascadas-de-tamasopo/hero.jpg",    alt: "Cascadas de Tamasopo — pozas cristalinas en secuencia" },
+      { src: "/imagenes/puente-de-dios-tamasopo/hero.jpg", alt: "Cruzando el Puente de Dios con el río a los pies", hasRealPeople: true, caption: "📸 Foto real del recorrido" },
+      { src: "/imagenes/cascadas-de-tamasopo/hero.jpg",    alt: "Siete Cascadas de Tamasopo en cascada perfecta" },
+      { src: "/imagenes/puente-de-dios-tamasopo/hero.jpg", alt: "Interior del Puente de Dios con haces de luz sobre el agua", hasRealPeople: true, caption: "La luz perfecta entre las 11 y 13 horas" },
+      { src: "/imagenes/cascadas-de-tamasopo/hero.jpg",    alt: "Hacienda Los Gómez — arquitectura colonial en la Huasteca" },
     ],
   },
 ];

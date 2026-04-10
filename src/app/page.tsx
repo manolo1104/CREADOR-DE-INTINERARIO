@@ -166,7 +166,14 @@ export default function HomePage() {
           <div className="flex items-center gap-8 px-6 min-w-max mx-auto justify-center text-[10px] tracking-[1.5px] uppercase font-dm text-crema/45">
             <span>💬 +500 viajeros atendidos</span>
             <span className="text-white/15">|</span>
-            <span>⭐ 4.9/5 en WhatsApp</span>
+            <a
+              href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-crema/70 transition-colors underline-offset-2 hover:underline"
+            >
+              ⭐ 4.9/5 · 492 reseñas verificadas en Google
+            </a>
             <span className="text-white/15">|</span>
             <span>🏅 Guías NOM-09</span>
             <span className="text-white/15">|</span>

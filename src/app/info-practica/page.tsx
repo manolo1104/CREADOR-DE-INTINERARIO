@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { FAQAccordion } from "@/components/FAQAccordion";
+import type { FAQCategory } from "@/components/FAQAccordion";
 
 export const metadata: Metadata = {
   title: "Guía Práctica — Cómo llegar, Dónde quedarse & Más | Huasteca Potosina",
@@ -71,6 +73,72 @@ function BulletList({ items }: { items: string[] }) {
     </ul>
   );
 }
+
+const FAQ_DATA: FAQCategory[] = [
+  {
+    titulo: "Sobre los tours",
+    items: [
+      {
+        q: "¿Los tours se realizan aunque llueva?",
+        a: "Sí, salvo condiciones de alerta meteorológica. La lluvia en la Huasteca es parte de la experiencia y las cascadas lucen más espectaculares. En caso de cancelación por clima extremo, reagendamos sin costo.",
+      },
+      {
+        q: "¿Qué nivel físico se requiere?",
+        a: "Depende del tour. Cada ficha indica el nivel (Fácil / Moderado). Los tours Fácil son aptos para toda la familia. Los Moderado requieren poder caminar 3–5 km en terreno irregular.",
+      },
+      {
+        q: "¿Pueden participar niños?",
+        a: "Sí. Los menores de 4 años no pagan entrada. De 4 a 12 años tienen precio preferencial (60% del precio adulto). Consulta la ficha de cada tour para los detalles.",
+      },
+      {
+        q: "¿Pueden participar personas mayores?",
+        a: "Sí, en los tours nivel Fácil. Recomendamos consultarnos si hay condiciones de salud específicas para orientarte al mejor recorrido.",
+      },
+      {
+        q: "¿El guía habla inglés?",
+        a: "Nuestros guías tienen inglés básico–intermedio. Si requieres guía completamente bilingüe, consúltanos con anticipación.",
+      },
+      {
+        q: "¿Cuántas personas hay en cada tour?",
+        a: "Nuestros grupos son pequeños, máximo 12 personas, para garantizar una experiencia personalizada. También ofrecemos tours privados para tu grupo.",
+      },
+    ],
+  },
+  {
+    titulo: "Reservas y pagos",
+    items: [
+      {
+        q: "¿Cómo reservo mi lugar?",
+        a: "Por WhatsApp o con tarjeta de crédito/débito a través de Stripe (pago seguro en línea). Al reservar se confirma tu lugar de inmediato.",
+      },
+      {
+        q: "¿Cuál es la política de cancelación?",
+        a: "— Cancelación con 48h o más de anticipación: reembolso completo.\n— Cancelación con menos de 24h: sin reembolso, pero puedes reagendar una vez sin costo adicional.\n— No-show (no presentarse): sin reembolso.\n— Cancelación por parte nuestra (clima extremo u operativo): reembolso completo o reagendamiento sin costo, a tu elección.",
+      },
+      {
+        q: "¿Necesito pagar el total al reservar?",
+        a: "No. Puedes pagar el 50% como anticipo para confirmar tu lugar y el resto el día del tour. Consúltanos por WhatsApp para coordinar.",
+      },
+    ],
+  },
+  {
+    titulo: "Logística",
+    items: [
+      {
+        q: "¿Desde dónde salen los tours?",
+        a: "Todos nuestros tours salen del Hotel Paraíso Encantado Xilitla, nuestro hotel sede. Si no te hospedas ahí, coordina tu recogida con nosotros por WhatsApp.",
+      },
+      {
+        q: "¿A qué hora es la salida?",
+        a: "La mayoría de tours salen a las 5:30 AM para aprovechar la luz del amanecer y los momentos más mágicos (como el vuelo de los pericos en el Sótano). Regreso aproximado entre 6:00 y 7:00 PM.",
+      },
+      {
+        q: "¿Qué debo llevar?",
+        a: "Ropa cómoda y que puedas mojar, zapatos con agarre (no sandalias de playa), bloqueador solar biodegradable, agua, identificación oficial y ganas de aventura. Todo lo demás lo ponemos nosotros.",
+      },
+    ],
+  },
+];
 
 export default function InfoPracticaPage() {
   return (
@@ -517,6 +585,41 @@ export default function InfoPracticaPage() {
           </InfoCard>
         </div>
       </Section>
+
+      {/* ── FAQ ── */}
+      <section className="py-20 border-b border-white/6">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl" aria-hidden="true">❓</span>
+            <h2
+              className="font-cormorant font-light text-crema"
+              style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
+            >
+              Preguntas Frecuentes
+            </h2>
+          </div>
+          <p className="text-crema/45 font-dm text-sm mb-10 ml-12">
+            Todo lo que necesitas saber antes de reservar.
+          </p>
+
+          {/* Política de cancelación destacada */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
+            {[
+              { color: "text-lima border-lima/30 bg-lima/8",       icon: "✅", titulo: "+48h de anticipación", sub: "Reembolso completo" },
+              { color: "text-dorado border-dorado/30 bg-dorado/8", icon: "⚠️", titulo: "-24h de anticipación",  sub: "Sin reembolso · Reagendamiento gratuito (1 vez)" },
+              { color: "text-terracota border-terracota/30 bg-terracota/8", icon: "❌", titulo: "No-show",          sub: "Sin reembolso" },
+            ].map((p) => (
+              <div key={p.titulo} className={`border ${p.color} p-4 rounded`}>
+                <span className="text-xl block mb-2" aria-hidden="true">{p.icon}</span>
+                <p className="font-dm text-sm font-medium mb-1">{p.titulo}</p>
+                <p className="text-[11px] font-dm opacity-75">{p.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          <FAQAccordion categorias={FAQ_DATA} />
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6">

@@ -61,6 +61,9 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <p className="text-crema/50 text-[10px] font-dm tracking-[1px] mt-0.5">
             {t.tagline}
           </p>
+          <p className="text-[10px] font-dm text-dorado/90 mt-1">
+            ⭐ 4.9 · ({t.reviewCount} reseñas)
+          </p>
         </div>
       </Link>
 
@@ -88,6 +91,12 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
         </div>
 
         <div className="border-t border-white/8 mb-3" />
+
+        {/* Duración + grupo */}
+        <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm">
+          <span>⏱ {t.duracion_hrs}h</span>
+          <span>👥 máx. {t.groupMax} personas</span>
+        </div>
 
         {/* Precio */}
         <div className="mb-4">
