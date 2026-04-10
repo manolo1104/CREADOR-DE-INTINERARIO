@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       typeof codigoDescuento === "string" && CODIGOS_DESCUENTO[codigoDescuento.trim().toUpperCase()]
         ? CODIGOS_DESCUENTO[codigoDescuento.trim().toUpperCase()]
         : 0;
-    const montoFinal = parseFloat(monto) * (1 - pctDescuento);
+    const montoFinal = parseFloat(String(monto)) * (1 - pctDescuento);
 
     if (!monto || monto <= 0) {
       logger.warn("payment_invalid_amount", { monto });
