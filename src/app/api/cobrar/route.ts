@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         : 0;
     const montoFinal = parseFloat(String(monto)) * (1 - pctDescuento);
 
-    if (!monto || monto <= 0) {
+    if (!monto || parseFloat(String(monto)) <= 0) {
       logger.warn("payment_invalid_amount", { monto });
       return NextResponse.json({ error: "Monto inválido." }, { status: 400 });
     }
