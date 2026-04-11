@@ -1,0 +1,413 @@
+{
+  "blog_agent_best_practices": {
+    "version": "1.0",
+    "site": "huasteca-potosina.com",
+    "last_updated": "2026-04-11",
+    "reference_blog": "https://paraisoencantado.com/blog/f/cómo-llegar-a-la-huasteca-potosina-y-xilitla-2026",
+
+    "seo": {
+      "meta": {
+        "title": {
+          "max_chars": 60,
+          "keyword_position": "primeras 4 palabras",
+          "include_year": true,
+          "format": "[keyword principal] + [complemento] + [año]",
+          "example": "Cascada de Tamul: cómo llegar y qué ver 2026"
+        },
+        "description": {
+          "max_chars": 155,
+          "must_include": ["keyword principal", "variante de keyword", "beneficio claro"],
+          "example": "Descubre cómo llegar a la Cascada de Tamul desde Xilitla. Rutas, precios, horarios y tours guiados en la Huasteca Potosina 2026."
+        },
+        "slug": {
+          "format": "minusculas-sin-acentos-con-guiones",
+          "no_stop_words": true,
+          "max_words": 7,
+          "example": "como-llegar-cascada-tamul-xilitla"
+        }
+      },
+
+      "keyword_strategy": {
+        "primary_keyword": {
+          "min_occurrences": 8,
+          "max_occurrences": 12,
+          "required_positions": [
+            "H1",
+            "primeras 100 palabras del intro",
+            "al menos 1 H2",
+            "meta title",
+            "meta description",
+            "alt tag de imagen hero"
+          ]
+        },
+        "fixed_keywords_every_article": [
+          { "keyword": "Huasteca Potosina", "min": 5, "max": 9 },
+          { "keyword": "tours en la Huasteca Potosina", "min": 2, "max": 4 },
+          { "keyword": "itinerario Huasteca Potosina", "min": 1, "max": 3 }
+        ],
+        "lsi_keywords": {
+          "source": "keywords.json del banco",
+          "min_per_keyword": 2,
+          "max_per_keyword": 4,
+          "examples": [
+            "selva potosina",
+            "ríos turquesa",
+            "Sierra Madre Oriental",
+            "pueblo mágico Xilitla",
+            "cascadas San Luis Potosí",
+            "ecoturismo Huasteca"
+          ]
+        },
+        "density": {
+          "target_min": "1.3%",
+          "target_max": "1.6%",
+          "warning": "Por encima de 1.8% es sobreoptimización. Reescribir."
+        },
+        "forbidden": [
+          "keyword stuffing",
+          "repetir keyword principal más de 2 veces en el mismo párrafo",
+          "anchor text genérico: 'clic aquí', 'ver más', 'aquí'"
+        ]
+      },
+
+      "schema_markup": {
+        "always_include": true,
+        "selection_rule": "elegir por tipo de artículo",
+        "types": {
+          "FAQPage": "cuando el artículo tiene sección FAQ — la mayoría",
+          "HowTo": "artículos de rutas o instrucciones paso a paso",
+          "TouristAttraction": "artículos centrados en un lugar específico",
+          "Article": "artículos de opinión o listas sin pasos ni FAQ"
+        },
+        "combination_rule": "combinar FAQPage + HowTo cuando apliquen los dos",
+        "consistency_rule": "el texto del schema debe coincidir palabra por palabra con el artículo",
+        "placement": "al final del artículo, en bloque de código JSON-LD"
+      },
+
+      "internal_linking": {
+        "min_per_article": 5,
+        "types": {
+          "tipo_A_informacional": {
+            "description": "Enlaza a contenido relacionado del blog",
+            "anchor_format": "keyword descriptiva del destino",
+            "url_base": "https://www.huasteca-potosina.com/blog/",
+            "placement": "dentro del párrafo, flujo natural",
+            "min_per_article": 2
+          },
+          "tipo_B_itinerario": {
+            "description": "CTA suave al creador de itinerarios con IA",
+            "anchor_examples": [
+              "planea tu itinerario a [destino]",
+              "arma tu recorrido por la Huasteca",
+              "crear mi itinerario gratis"
+            ],
+            "url": "https://www.huasteca-potosina.com/itinerarios",
+            "placement": "después de sección de rutas o logística",
+            "min_per_article": 1
+          },
+          "tipo_C_tour": {
+            "description": "CTA directo a venta de tours — máxima prioridad comercial",
+            "anchor_examples": [
+              "reserva el tour a [atracción]",
+              "ver tours disponibles en [zona]",
+              "tours guiados a [cascada/lugar]"
+            ],
+            "url": "https://www.huasteca-potosina.com/tours",
+            "placement": [
+              "al final de cada H3 que describa una atracción",
+              "en bloque CTA después de sección 2",
+              "en sección final antes de FAQ"
+            ],
+            "min_per_article": 2
+          }
+        },
+        "anchor_text_rules": {
+          "always_descriptive": true,
+          "never_use": ["clic aquí", "ver más", "aquí", "este enlace"],
+          "always_include_destination_or_action": true
+        }
+      },
+
+      "external_linking": {
+        "allowed_domains": [
+          "laspozasxilitla.org.mx",
+          "google.com/maps",
+          "inah.gob.mx",
+          "gob.mx"
+        ],
+        "rel_attribute": "noopener nofollow",
+        "anchor_rule": "siempre el nombre oficial del lugar, nunca la URL cruda",
+        "max_per_article": 3
+      },
+
+      "images": {
+        "source": "SOLO desde images.json del banco — nunca buscar en internet",
+        "hero": {
+          "size": "1200x630px",
+          "format": "WebP",
+          "quantity": 1
+        },
+        "section_images": {
+          "size": "900x500px",
+          "format": "WebP",
+          "quantity": "2 a 4 por artículo"
+        },
+        "alt_tag_formula": "[keyword principal o LSI] + [descripción visual específica] + [ubicación geográfica]",
+        "alt_tag_examples": [
+          "Cascada de Tamul vista desde lancha en Aquismón San Luis Potosí",
+          "Jardín Escultórico Edward James Las Pozas Xilitla selva potosina",
+          "turistas en tirolesa sobre ríos turquesa Huasteca Potosina"
+        ],
+        "alt_tag_forbidden": [
+          "imagen1.jpg",
+          "foto de cascada",
+          "hermosa vista"
+        ],
+        "fallback_rule": "si no hay imagen exacta para una sección, usar la más cercana temáticamente y ajustar el alt tag al contenido del texto"
+      }
+    },
+
+    "content_structure": {
+      "article_order": [
+        "1. META — title, description, slug, schema_type",
+        "2. IMAGEN HERO + H1",
+        "3. INTRO — Problema → Solución → Promesa + frase E-E-A-T",
+        "4. SECCIÓN 1 — H2 + H3s con links Tipo A y Tipo C",
+        "5. SECCIÓN 2 — H2 + H3s con links Tipo A y Tipo C",
+        "6. CTA TOURS — bloque destacado",
+        "7. CTA ITINERARIO — bloque secundario",
+        "8. SECCIÓN 3 — H2 + H3s (si aplica)",
+        "9. FAQ — 4 a 6 preguntas reales",
+        "10. CTA FINAL — doble botón tours + itinerario",
+        "11. SCHEMA JSON-LD"
+      ],
+
+      "heading_hierarchy": {
+        "H1": {
+          "quantity": 1,
+          "must_contain": "keyword principal",
+          "max_chars": 70,
+          "keyword_position": "primeras 4 palabras"
+        },
+        "H2": {
+          "quantity": "2 a 5 por artículo",
+          "rule": "cada H2 es un bloque temático autónomo que Google puede extraer como snippet",
+          "must_contain": "keyword LSI — no repetir keyword principal exacta",
+          "no_duplicate_across_articles": true
+        },
+        "H3": {
+          "quantity": "1 a 3 por H2",
+          "rule": "cada H3 es extraíble como featured snippet independiente",
+          "must_end_with": "link Tipo C si describe una atracción"
+        }
+      },
+
+      "word_count": {
+        "target_min": 950,
+        "target_max": 1100,
+        "warning_below": 800,
+        "warning_above": 1300
+      },
+
+      "sections": {
+        "intro": {
+          "structure": "Problema → Solución → Promesa",
+          "paragraph_1": "Identifica el dolor o duda del viajero. No empieces con 'Si estás...'",
+          "paragraph_2": "Declara la solución. Incluye keyword secundaria. Añade frase de intención: 'Si buscas [keyword principal] de forma segura y sin perderte, aquí tienes la información actualizada para [año].'",
+          "paragraph_3": "Frase E-E-A-T obligatoria: 'En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana.'"
+        },
+
+        "body_sections": {
+          "paragraphs_per_h3": "2 a 3",
+          "lines_per_paragraph": "máx 3",
+          "words_per_sentence": "máx 18",
+          "required_per_h3": [
+            "al menos 1 dato concreto: precio, distancia, tiempo u horario",
+            "1 link interno (Tipo A, B o C)"
+          ],
+          "recommended_per_h3": [
+            "anécdota o experiencia de viajero real",
+            "consejo práctico accionable"
+          ]
+        },
+
+        "faq": {
+          "question_count": "4 a 6",
+          "source": "People Also Ask de Google + Reddit + TripAdvisor investigados en Paso 1",
+          "answer_max_words": 60,
+          "keyword_rule": "incluir keyword secundaria en al menos 2 respuestas de forma natural",
+          "h2_format": "Preguntas frecuentes sobre [tema del artículo]"
+        },
+
+        "cta_blocks": {
+          "cta_tours": {
+            "position": "posición 6 — después de sección 2",
+            "headline_formula": "¿Quieres vivir [atracción del artículo] con guía experto?",
+            "subtext": "Tours desde la Huasteca Potosina. Grupos pequeños, guías locales y traslados incluidos.",
+            "button_text": "Ver tours disponibles →",
+            "url": "https://www.huasteca-potosina.com/tours",
+            "style": "fondo turquesa #00B4D8 o verde selva #2D6A4F"
+          },
+          "cta_itinerario": {
+            "position": "posición 7 — después del CTA tours",
+            "headline": "¿Ya tienes tu itinerario para la Huasteca?",
+            "subtext": "Nuestro planificador con IA arma tu recorrido en minutos, con tiempos reales, distancias y qué no perderte.",
+            "button_text": "Crear mi itinerario gratis →",
+            "url": "https://www.huasteca-potosina.com/itinerarios",
+            "style": "fondo más claro, secundario visualmente"
+          },
+          "cta_final": {
+            "position": "posición 10 — antes del schema",
+            "headline": "Reserva tu experiencia en la Huasteca Potosina",
+            "subtext_1": "Tours con guías locales · Grupos reducidos · Sin estrés",
+            "subtext_2": "O planea tu propio recorrido con nuestro creador de itinerarios.",
+            "button_primary_text": "Ver todos los tours →",
+            "button_primary_url": "https://www.huasteca-potosina.com/tours",
+            "button_secondary_text": "Crear mi itinerario →",
+            "button_secondary_url": "https://www.huasteca-potosina.com/itinerarios",
+            "style": "full width, prominente, máximo contraste visual"
+          }
+        }
+      }
+    },
+
+    "voice_and_style": {
+      "identity": "Plataforma regional de turismo de la Huasteca Potosina. Expertos locales que conocen cada cascada, ruta y operador de tours de la región.",
+      "tone": "cercano, experto local, persuasivo sin hipérboles",
+      "eeat_signal": "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana.",
+
+      "formatting_rules": {
+        "paragraph_max_lines": 3,
+        "sentence_max_words": 18,
+        "verb_style": "activo — 'sal temprano', 'descarga los mapas', 'reserva directo'",
+        "emoji_max_per_article": 2,
+        "emoji_allowed_only_in": "bloques CTA",
+        "lists": "solo cuando hay 3 o más ítems comparables — no abusar",
+        "bold": "solo para datos críticos: precios, distancias, horarios, nombres de rutas"
+      },
+
+      "readability": {
+        "target_flesch_spanish": "63 a 68",
+        "strategy": [
+          "oraciones cortas",
+          "sin subordinadas anidadas",
+          "verbos al inicio de instrucciones",
+          "párrafos de 2 a 3 líneas",
+          "listas claras para comparaciones"
+        ]
+      },
+
+      "required_per_article": [
+        "al menos 1 anécdota o experiencia de viajero real",
+        "al menos 1 dato concreto con referencia temporal (ej: 'precio promedio abril 2026')",
+        "frase E-E-A-T en intro",
+        "frase E-E-A-T o de autoridad local en sección FAQ o cierre"
+      ],
+
+      "forbidden_words_and_phrases": [
+        "increíble experiencia",
+        "sin duda alguna",
+        "en conclusión",
+        "es importante mencionar",
+        "cabe destacar",
+        "no te puedes perder",
+        "lugar mágico",
+        "joya escondida",
+        "paraíso terrenal",
+        "de ensueño"
+      ],
+
+      "forbidden_actions": [
+        "inventar precios o datos sin haberlos investigado en el Paso 1",
+        "repetir el mismo H2 que ya existe en otro artículo del banco de temas",
+        "usar anchor text genérico",
+        "buscar imágenes fuera del banco",
+        "publicar sin los tres CTAs obligatorios",
+        "generar artículo sin ejecutar primero los 3 web searches"
+      ]
+    },
+
+    "research_process": {
+      "mandatory_before_writing": true,
+      "max_web_searches": 3,
+      "search_order": {
+        "query_1": {
+          "purpose": "datos actualizados del tema",
+          "formula": "[tema principal] huasteca potosina [año actual]",
+          "extract": ["precios actuales", "horarios", "distancias reales", "condiciones de acceso"]
+        },
+        "query_2": {
+          "purpose": "preguntas reales de usuarios",
+          "formula": "[keyword principal] site:reddit.com OR site:tripadvisor.com",
+          "extract": ["dudas frecuentes", "experiencias reales", "problemas comunes del viajero"]
+        },
+        "query_3": {
+          "purpose": "análisis de competencia y ángulo diferenciador",
+          "formula": "[keyword principal] [ciudad de origen más buscada]",
+          "extract": ["qué está rankeando ahora", "qué ángulo no está cubierto", "People Also Ask"]
+        }
+      },
+      "research_outputs": [
+        "4 a 6 preguntas reales para FAQ",
+        "1 dato concreto exclusivo que otros artículos no tienen",
+        "ángulo E-E-A-T: qué experiencia local puede aportar la plataforma"
+      ]
+    },
+
+    "token_control": {
+      "max_output_tokens": 1800,
+      "max_web_searches": 3,
+      "output_format": "solo artículo final en markdown + schema JSON-LD al final",
+      "no_preamble": true,
+      "no_explanations": true,
+      "no_variants_or_drafts": true,
+      "clarification_rule": "si necesita aclarar algo, máx 2 líneas antes del artículo"
+    },
+
+    "pre_publish_checklist": {
+      "rule": "el agente verifica internamente antes de entregar — nunca notifica el checklist al usuario",
+      "items": [
+        "keyword principal en H1 y en primeras 100 palabras",
+        "frase E-E-A-T de la plataforma en intro",
+        "al menos 1 link Tipo C (tour) por cada H3 de atracción",
+        "CTA Tours presente en posición 6",
+        "CTA Itinerario presente en posición 7",
+        "CTA Final con doble botón en posición 10",
+        "FAQ con 4 a 6 preguntas reales investigadas",
+        "todas las imágenes vienen del BANK_IMAGES — no de internet",
+        "todos los alt tags: keyword + descripción visual + ubicación geográfica",
+        "mínimo 2 links Tipo A (informacionales a blog)",
+        "mínimo 1 link Tipo B (itinerarios)",
+        "mínimo 2 links Tipo C (tours)",
+        "schema JSON-LD válido y consistente con el contenido del artículo",
+        "word count entre 950 y 1100 palabras",
+        "densidad de keyword principal entre 1.3% y 1.6%",
+        "ninguna frase prohibida presente en el artículo",
+        "los 3 web searches ejecutados antes de escribir"
+      ]
+    },
+
+    "data_sources": {
+      "root_path": "/INTINERARIO HUASTECA/blog-agent/",
+      "files": {
+        "keywords": {
+          "filename": "keywords.json",
+          "read_on_start": true,
+          "structure": "keyword | intención (informacional / logística / transaccional)"
+        },
+        "topics": {
+          "filename": "topics.json",
+          "read_on_start": true,
+          "structure": "topic_id | título sugerido | keywords relacionadas",
+          "selection_rule": "tomar el siguiente topic disponible en orden — no repetir"
+        },
+        "images": {
+          "filename": "images.json",
+          "read_on_start": true,
+          "structure": "image_id | filename | descripción visual | tema",
+          "url_base": "https://raw.githubusercontent.com/[repo]/main/INTINERARIO%20HUASTECA/blog-agent/images/"
+        }
+      }
+    }
+  }
+}
