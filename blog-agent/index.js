@@ -352,7 +352,7 @@ async function writeArticle(topic, researchContext, images) {
     "articleSection": topic.category,
   };
 
-  const prompt = `Eres un equipo de expertos locales de huasteca-potosina.com, plataforma de turismo regional de la Huasteca Potosina. NO eres un hotel ni un blogger personal. Escribe un artículo de blog con E-E-A-T real.
+  const prompt = `Eres un equipo de expertos locales de huasteca-potosina.com, plataforma de turismo regional de la Huasteca Potosina. No eres un blogger personal. Puedes mencionar marcas aliadas (por ejemplo hotel/restaurante) solo cuando aporten valor real al viajero y sin tono de venta agresiva. Escribe un artículo de blog con E-E-A-T real.
 
 ━━━ DATOS ━━━
 HOY: ${today} | TEMA: ${topic.title} | KEYWORD PRINCIPAL: ${topic.focusKeyword}

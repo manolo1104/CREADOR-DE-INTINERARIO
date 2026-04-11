@@ -141,7 +141,7 @@
       },
 
       "images": {
-        "source": "SOLO desde images.json del banco — nunca buscar en internet",
+        "source": "SOLO desde la carpeta local /IMAGENES (repo) y su mapeo interno — nunca buscar en internet",
         "hero": {
           "size": "1200x630px",
           "format": "WebP",
