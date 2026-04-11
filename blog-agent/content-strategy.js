@@ -173,6 +173,43 @@ const FALLBACK_TOPICS = [
   },
 ];
 
+// ── Corrección 7: Reglas de inferencia de categoría por keywords ──
+
+const CATEGORY_INFERENCE_RULES = [
+  { keywords_match: ["café", "gastronomía", "comida", "tamal", "papan", "zacahuil", "bocoles", "restaurante", "platillo"], category: "Café y Gastronomía" },
+  { keywords_match: ["cascada", "tamul", "minas viejas", "micos", "puente de dios", "el meco", "el salto", "el aguacate", "tamasopo"], category: "Cascadas" },
+  { keywords_match: ["itinerario", "ruta", "días", "fin de semana", "planear"], category: "Itinerarios" },
+  { keywords_match: ["tour", "guía", "precio", "costo", "reserva"], category: "Tours" },
+  { keywords_match: ["hotel", "hostal", "dormir", "hospedaje", "cabaña", "glamping"], category: "Hospedaje" },
+  { keywords_match: ["cómo llegar", "carretera", "autobús", "cdmx", "transporte", "aeropuerto"], category: "Info Práctica" },
+  { keywords_match: ["sótano", "golondrinas", "huahuas", "cueva", "espeleología", "mantetzulel"], category: "Aventura Subterránea" },
+  { keywords_match: ["rafting", "rappel", "kayak", "tirolesa", "senderismo", "aventura"], category: "Aventura" },
+  { keywords_match: ["cultura", "tradición", "huapango", "danza", "artesanía", "teenek", "voladores"], category: "Cultura" },
+  { keywords_match: ["xilitla", "edward james", "las pozas", "jardín surrealista"], category: "Xilitla" },
+  { keywords_match: ["media luna", "laguna", "buceo", "snorkel", "rioverde"], category: "Lagunas" },
+  { keywords_match: ["tamtoc", "arqueología", "zona arqueológica", "tamuín"], category: "Arqueología" },
+  { keywords_match: ["temporada", "clima", "lluvias", "mejor época"], category: "Temporadas" },
+  { keywords_match: ["presupuesto", "cuánto cuesta", "económico", "barato"], category: "Presupuesto" },
+  { keywords_match: ["fotografía", "instagram", "spots", "fotos"], category: "Fotografía" },
+];
+
+export function inferCategoryByKeyword(focusKeyword, title, secondaryKeywords = []) {
+  const text = [focusKeyword, title, ...secondaryKeywords].join(" ").toLowerCase();
+
+  let bestMatch = null;
+  let bestCount = 0;
+
+  for (const rule of CATEGORY_INFERENCE_RULES) {
+    const count = rule.keywords_match.filter(kw => text.includes(kw.toLowerCase())).length;
+    if (count > bestCount) {
+      bestCount = count;
+      bestMatch = rule.category;
+    }
+  }
+
+  return bestMatch || "Huasteca Potosina";
+}
+
 // ── Seleccionar tema del día ───────────────────────────────
 
 export function getDailyTopic(usedSlugs = [], customTitle = null) {

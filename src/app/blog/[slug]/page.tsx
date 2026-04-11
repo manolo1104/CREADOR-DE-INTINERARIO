@@ -164,6 +164,15 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               prose-figure:my-8
               prose-figcaption:text-crema/40 prose-figcaption:text-xs prose-figcaption:text-center prose-figcaption:mt-2
               [&_.cta-box]:my-10 [&_.cta-box]:p-8 [&_.cta-box]:bg-forest [&_.cta-box]:border [&_.cta-box]:border-lima/20 [&_.cta-box]:text-center
+              [&_.cta-block]:my-10 [&_.cta-block]:p-8 [&_.cta-block]:border [&_.cta-block]:border-lima/20 [&_.cta-block]:text-center [&_.cta-block]:rounded-lg
+              [&_.cta-tours]:bg-[#00B4D8]/10 [&_.cta-tours]:border-[#00B4D8]/30
+              [&_.cta-itinerario]:bg-[#f0f9ff]/5 [&_.cta-itinerario]:border-[#2D6A4F]/30
+              [&_.cta-final]:bg-verde-selva [&_.cta-final]:text-crema
+              [&_.cta-headline]:font-display [&_.cta-headline]:text-xl [&_.cta-headline]:text-crema [&_.cta-headline]:mb-2 [&_.cta-headline]:font-normal
+              [&_.cta-subtext]:text-crema/60 [&_.cta-subtext]:font-dm [&_.cta-subtext]:text-sm [&_.cta-subtext]:mb-4 [&_.cta-subtext]:font-light
+              [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:gap-2 [&_.cta-button]:px-8 [&_.cta-button]:py-3 [&_.cta-button]:text-xs [&_.cta-button]:tracking-widest [&_.cta-button]:uppercase [&_.cta-button]:font-dm [&_.cta-button]:no-underline [&_.cta-button]:rounded [&_.cta-button]:mx-2 [&_.cta-button]:mt-2
+              [&_.cta-button--primary]:bg-[#00B4D8] [&_.cta-button--primary]:text-white [&_.cta-button--primary]:hover:bg-[#0096B7]
+              [&_.cta-button--secondary]:bg-transparent [&_.cta-button--secondary]:text-crema [&_.cta-button--secondary]:border [&_.cta-button--secondary]:border-crema/40 [&_.cta-button--secondary]:hover:border-lima/60
               [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:gap-2 [&_.cta-button]:bg-verde-selva [&_.cta-button]:text-crema [&_.cta-button]:px-8 [&_.cta-button]:py-3 [&_.cta-button]:text-xs [&_.cta-button]:tracking-widest [&_.cta-button]:uppercase [&_.cta-button]:font-dm [&_.cta-button]:no-underline
               [&_.cta-link]:text-lima [&_.cta-link]:underline"
             dangerouslySetInnerHTML={{ __html: safeContent }}
