@@ -15,73 +15,109 @@
           "id": 1,
           "titulo": "Guía definitiva para visitar Xilitla: Todo lo que necesitas saber antes de ir",
           "palabras_clave": ["Qué hacer en Xilitla", "Tips de viaje", "Clima", "Tours Xilitla"],
-          "enfoque_agente": "Proveer información de valor y mencionar sutilmente la venta de itinerarios personalizados."
+          "enfoque_agente": "Proveer información de valor y mencionar sutilmente la venta de itinerarios personalizados.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 2,
           "titulo": "5 Razones para hospedarte cerca del Jardín Surrealista de Edward James",
           "palabras_clave": ["Hoteles cerca de Las Pozas", "Ventajas de ubicación", "Hotel Paraíso Encantado"],
-          "enfoque_agente": "Destacar la ubicación del hotel como ventaja competitiva principal."
+          "enfoque_agente": "Destacar la ubicación del hotel como ventaja competitiva principal.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 3,
           "titulo": "La historia detrás del Zacahuil: El platillo gigante de la Huasteca",
           "palabras_clave": ["Comida típica", "Gastronomía", "Papan Huasteco"],
-          "enfoque_agente": "Hablar de la cultura gastronómica e invitar a probarlo en el restaurante del hotel."
+          "enfoque_agente": "Hablar de la cultura gastronómica e invitar a probarlo en el restaurante del hotel.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 4,
           "titulo": "¿Cómo llegar a Xilitla? Rutas desde CDMX, Monterrey y SLP",
           "palabras_clave": ["Cómo llegar a Xilitla", "Ruta carretera", "Transporte"],
-          "enfoque_agente": "Guía práctica de rutas. Sugerir la contratación de tours para evitar manejar en la zona."
+          "enfoque_agente": "Guía práctica de rutas. Sugerir la contratación de tours para evitar manejar en la zona.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 5,
           "titulo": "Hoteles con encanto en Xilitla: Por qué elegir Paraíso Encantado",
           "palabras_clave": ["Hotel en Xilitla", "Hotel Boutique", "Amenidades", "Vistas"],
-          "enfoque_agente": "Artículo de venta directa destacando las características únicas del alojamiento."
+          "enfoque_agente": "Artículo de venta directa destacando las características únicas del alojamiento.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 6,
           "titulo": "Más allá del Castillo: 3 Cascadas secretas cerca de Xilitla",
           "palabras_clave": ["Cascada Los Comales", "Turismo naturaleza", "Qué ver en Xilitla", "Tours a cascadas"],
-          "enfoque_agente": "Inspirar a la aventura y ofrecer la gestión/venta del tour a estas cascadas."
+          "enfoque_agente": "Inspirar a la aventura y ofrecer la gestión/venta del tour a estas cascadas.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 7,
           "titulo": "Presupuesto para viajar a Xilitla: ¿Cuánto cuesta un fin de semana?",
           "palabras_clave": ["Precios Xilitla", "Viaje económico vs lujo", "Costos entradas"],
-          "enfoque_agente": "Desglose de costos y promoción de paquetes de hotel + tours para optimizar el presupuesto."
+          "enfoque_agente": "Desglose de costos y promoción de paquetes de hotel + tours para optimizar el presupuesto.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 8,
           "titulo": "Gastronomía Potosina: Los mejores platillos que servimos en Papan Huasteco",
           "palabras_clave": ["Restaurantes en Xilitla", "Menú", "Enchiladas potosinas"],
-          "enfoque_agente": "Promoción directa del menú del restaurante."
+          "enfoque_agente": "Promoción directa del menú del restaurante.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 9,
           "titulo": "Sótano de las Golondrinas vs. Sótano de las Huahuas: ¿Cuál visitar?",
           "palabras_clave": ["Sótano de las Golondrinas", "Huasteca Potosina", "Tours Xilitla"],
-          "enfoque_agente": "Comparativa y CTA para comprar el itinerario o tour hacia estos destinos."
+          "enfoque_agente": "Comparativa y CTA para comprar el itinerario o tour hacia estos destinos.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 10,
           "titulo": "El clima en Xilitla: ¿Cuál es la mejor época para viajar?",
           "palabras_clave": ["Mejor temporada para ir", "Lluvias", "Ropa para Xilitla"],
-          "enfoque_agente": "Contenido informativo útil para la planeación del viaje."
+          "enfoque_agente": "Contenido informativo útil para la planeación del viaje.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 11,
           "titulo": "Escapada Romántica: Planes para parejas en la Huasteca Potosina",
           "palabras_clave": ["Xilitla en pareja", "Cena romántica", "Hotel para parejas"],
-          "enfoque_agente": "Promocionar habitaciones de lujo, cenas en el restaurante y tours privados."
+          "enfoque_agente": "Promocionar habitaciones de lujo, cenas en el restaurante y tours privados.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 12,
           "titulo": "Mitos y Leyendas de Xilitla: El misticismo de la Huasteca",
           "palabras_clave": ["Historia de Xilitla", "Pueblo Mágico", "Cultura"],
-          "enfoque_agente": "Generar engagement e interés cultural en el destino."
+          "enfoque_agente": "Generar engagement e interés cultural en el destino.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         }
       ]
     },
@@ -92,73 +128,109 @@
           "id": 13,
           "titulo": "Itinerario perfecto de 3 días en Xilitla (Plan descargable)",
           "palabras_clave": ["Itinerario Xilitla", "Qué hacer en 3 días", "Creador de itinerarios"],
-          "enfoque_agente": "Core content. Mostrar un itinerario base y ofrecer la personalización/venta de itinerarios completos y reservas."
+          "enfoque_agente": "Core content. Mostrar un itinerario base y ofrecer la personalización/venta de itinerarios completos y reservas.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 14,
           "titulo": "Desayunos en Xilitla: Empieza tu día con la mejor vista en Papan Huasteco",
           "palabras_clave": ["Desayunos Xilitla", "Café de olla", "Vistas panorámicas"],
-          "enfoque_agente": "Promoción del servicio matutino del restaurante."
+          "enfoque_agente": "Promoción del servicio matutino del restaurante.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 15,
           "titulo": "Consejos de seguridad para viajar por carretera en la Huasteca",
           "palabras_clave": ["Seguridad Xilitla", "Carreteras SLP", "Consejos de manejo"],
-          "enfoque_agente": "Generar confianza. Mencionar que reservar tours guiados es una opción más segura y cómoda."
+          "enfoque_agente": "Generar confianza. Mencionar que reservar tours guiados es una opción más segura y cómoda.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 16,
           "titulo": "¿Por qué reservar directo en nuestro sitio web es mejor que las OTAs?",
           "palabras_clave": ["Reservar hotel Xilitla", "Mejor precio", "Hotel Paraíso Encantado"],
-          "enfoque_agente": "Educación al cliente para aumentar márgenes de ganancia sin intermediarios."
+          "enfoque_agente": "Educación al cliente para aumentar márgenes de ganancia sin intermediarios.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 17,
           "titulo": "Leonora Carrington en Xilitla: Guía para visitar su museo",
           "palabras_clave": ["Museo Leonora Carrington", "Arte surrealista", "Cultura"],
-          "enfoque_agente": "Información turística con enlace a itinerarios culturales."
+          "enfoque_agente": "Información turística con enlace a itinerarios culturales.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 18,
           "titulo": "Actividades para niños en Xilitla: Viajando en familia",
           "palabras_clave": ["Xilitla con niños", "Hoteles familiares", "Tours familiares"],
-          "enfoque_agente": "Enfocado al segmento familiar, destacando amenidades del hotel y tours aptos para niños."
+          "enfoque_agente": "Enfocado al segmento familiar, destacando amenidades del hotel y tours aptos para niños.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 19,
           "titulo": "Top 5 lugares 'Instagrammeables' dentro de Paraíso Encantado",
           "palabras_clave": ["Fotos Xilitla", "Instagram spots", "Hotel con vistas"],
-          "enfoque_agente": "Promoción visual de las instalaciones para atraer al público joven/parejas."
+          "enfoque_agente": "Promoción visual de las instalaciones para atraer al público joven/parejas.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 20,
           "titulo": "La tradición del café en Xilitla: De la planta a tu taza",
           "palabras_clave": ["Café de altura", "Productos locales", "Papan Huasteco"],
-          "enfoque_agente": "Destacar la calidad del café servido en el restaurante y su origen."
+          "enfoque_agente": "Destacar la calidad del café servido en el restaurante y su origen.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 21,
           "titulo": "¿Qué llevar en tu maleta para la selva potosina? Checklist",
           "palabras_clave": ["Equipaje", "Zapatos para agua", "Repelente", "Viaje a Xilitla"],
-          "enfoque_agente": "Utilidad pura para el viajero en etapa de preparación."
+          "enfoque_agente": "Utilidad pura para el viajero en etapa de preparación.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 22,
           "titulo": "Preguntas Frecuentes sobre el Jardín de Edward James (Horarios y Boletos)",
           "palabras_clave": ["Boletos Las Pozas", "Horarios", "Tips de entrada"],
-          "enfoque_agente": "Resolver dudas comunes y ofrecer la gestión de entradas dentro de los paquetes/itinerarios."
+          "enfoque_agente": "Resolver dudas comunes y ofrecer la gestión de entradas dentro de los paquetes/itinerarios.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 23,
           "titulo": "Cena especial en Papan Huasteco: Nuestra carta de vinos y licores",
           "palabras_clave": ["Cena Xilitla", "Bebidas típicas", "Vida nocturna tranquila"],
-          "enfoque_agente": "Impulsar las ventas nocturnas y el consumo interno del huésped."
+          "enfoque_agente": "Impulsar las ventas nocturnas y el consumo interno del huésped.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         },
         {
           "id": 24,
           "titulo": "Reseña: Lo que dicen nuestros huéspedes de Paraíso Encantado",
           "palabras_clave": ["Opiniones", "Testimonios", "Calidad en el servicio"],
-          "enfoque_agente": "Prueba social (Social Proof) para cerrar ventas e inspirar confianza."
+          "enfoque_agente": "Prueba social (Social Proof) para cerrar ventas e inspirar confianza.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         }
       ]
     }

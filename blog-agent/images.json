@@ -3,342 +3,399 @@
     "id": "balneario-taninul-hero",
     "filename": "balneario-taninul/hero.webp",
     "descripcion": "Balneario Taninul con aguas termales rodeado de vegetación tropical en Ciudad Valles",
-    "tema": "balneario aguas termales taninul ciudad valles spa naturaleza relax alberca"
+    "tema": "balneario aguas termales taninul ciudad valles spa naturaleza relax alberca",
+    "tags": ["taninul", "aguas termales", "balneario", "ciudad valles", "spa", "huasteca"]
   },
   {
     "id": "cascada-de-tamul-hero",
     "filename": "cascada-de-tamul/hero.jpg",
     "descripcion": "Cascada de Tamul cayendo sobre el río Tampaón vista desde lancha en Aquismón",
-    "tema": "cascada tamul río tampaón aquismón cascada más alta san luis potosí lancha"
+    "tema": "cascada tamul río tampaón aquismón cascada más alta san luis potosí lancha",
+    "tags": ["tamul", "cascada", "rio tampaon", "aquismon", "lancha", "huasteca"]
   },
   {
     "id": "cascada-de-tamul-gallery-1",
     "filename": "cascada-de-tamul/gallery-1.jpg",
     "descripcion": "Vista panorámica de la Cascada de Tamul con vegetación selvática",
-    "tema": "cascada tamul panorámica río tampaón selva naturaleza"
+    "tema": "cascada tamul panorámica río tampaón selva naturaleza",
+    "tags": ["tamul", "cascada", "panoramica", "selva"]
   },
   {
     "id": "cascada-de-tamul-gallery-2",
     "filename": "cascada-de-tamul/gallery-2.webp",
     "descripcion": "Lanchas navegando hacia la Cascada de Tamul en el río Tampaón",
-    "tema": "cascada tamul lancha río tampaón tour paseo acuático"
+    "tema": "cascada tamul lancha río tampaón tour paseo acuático",
+    "tags": ["tamul", "lancha", "rio tampaon", "tour", "paseo acuatico"]
   },
   {
     "id": "cascada-el-aguacate-hero",
     "filename": "cascada-el-aguacate/hero.jpg",
     "descripcion": "Cascada El Aguacate con aguas cristalinas rodeada de selva verde",
-    "tema": "cascada aguacate aguas cristalinas selva naturaleza huasteca"
+    "tema": "cascada aguacate aguas cristalinas selva naturaleza huasteca",
+    "tags": ["aguacate", "cascada", "aguas cristalinas", "selva", "huasteca"]
   },
   {
     "id": "cascada-el-aguacate-gallery-1",
     "filename": "cascada-el-aguacate/gallery-1.webp",
     "descripcion": "Poza de la Cascada El Aguacate ideal para nadar",
-    "tema": "cascada aguacate poza nadar ecoturismo"
+    "tema": "cascada aguacate poza nadar ecoturismo",
+    "tags": ["aguacate", "cascada", "poza", "nadar"]
   },
   {
     "id": "cascada-el-aguacate-gallery-2",
     "filename": "cascada-el-aguacate/gallery-2.jpg",
     "descripcion": "Sendero natural hacia la Cascada El Aguacate entre vegetación tropical",
-    "tema": "cascada aguacate sendero caminata naturaleza tropical"
+    "tema": "cascada aguacate sendero caminata naturaleza tropical",
+    "tags": ["aguacate", "cascada", "sendero", "caminata"]
   },
   {
     "id": "cascada-el-meco-hero",
     "filename": "cascada-el-meco/hero.avif",
     "descripcion": "Cascada El Meco con aguas turquesa en la Huasteca Potosina",
-    "tema": "cascada meco aguas turquesa huasteca potosina cañón"
+    "tema": "cascada meco aguas turquesa huasteca potosina cañón",
+    "tags": ["meco", "cascada", "aguas turquesa", "huasteca", "canon"]
   },
   {
     "id": "cascada-el-meco-gallery-1",
     "filename": "cascada-el-meco/gallery-1.jpg",
     "descripcion": "Vista cercana de la Cascada El Meco con vegetación exuberante",
-    "tema": "cascada meco vegetación selva río"
+    "tema": "cascada meco vegetación selva río",
+    "tags": ["meco", "cascada", "selva", "rio"]
   },
   {
     "id": "cascada-el-meco-gallery-2",
     "filename": "cascada-el-meco/gallery-2.jpg",
     "descripcion": "Poza natural al pie de la Cascada El Meco para bañarse",
-    "tema": "cascada meco poza natural bañarse ecoturismo"
+    "tema": "cascada meco poza natural bañarse ecoturismo",
+    "tags": ["meco", "cascada", "poza", "ecoturismo"]
   },
   {
     "id": "cascada-el-salto-hero",
     "filename": "cascada-el-salto/hero.jpg",
     "descripcion": "Cascada El Salto con caída de agua impresionante rodeada de naturaleza",
-    "tema": "cascada salto caída agua naturaleza huasteca río"
+    "tema": "cascada salto caída agua naturaleza huasteca río",
+    "tags": ["salto", "cascada", "huasteca", "naturaleza", "rio"]
   },
   {
     "id": "cascada-el-salto-gallery-1",
     "filename": "cascada-el-salto/gallery-1.jpg",
     "descripcion": "Mirador hacia la Cascada El Salto desde sendero elevado",
-    "tema": "cascada salto mirador sendero vista panorámica"
+    "tema": "cascada salto mirador sendero vista panorámica",
+    "tags": ["salto", "cascada", "mirador", "sendero"]
   },
   {
     "id": "cascada-el-salto-gallery-2",
     "filename": "cascada-el-salto/gallery-2.jpg",
     "descripcion": "Zona de acceso a la Cascada El Salto con escaleras naturales",
-    "tema": "cascada salto acceso escaleras visita turística"
+    "tema": "cascada salto acceso escaleras visita turística",
+    "tags": ["salto", "cascada", "acceso", "turismo"]
   },
   {
     "id": "cascadas-de-micos-hero",
     "filename": "cascadas-de-micos/hero.jpg",
     "descripcion": "Cascadas de Micos con sus pozas escalonadas de agua turquesa en Ciudad Valles",
-    "tema": "cascadas micos pozas escalonadas turquesa ciudad valles clavados saltos"
+    "tema": "cascadas micos pozas escalonadas turquesa ciudad valles clavados saltos",
+    "tags": ["micos", "cascadas", "pozas", "ciudad valles", "clavados", "huasteca"]
   },
   {
     "id": "cascadas-de-micos-gallery-1",
     "filename": "cascadas-de-micos/gallery-1.webp",
     "descripcion": "Turistas saltando en las pozas de las Cascadas de Micos",
-    "tema": "cascadas micos turistas saltos pozas aventura diversión"
+    "tema": "cascadas micos turistas saltos pozas aventura diversión",
+    "tags": ["micos", "cascadas", "saltos", "aventura", "turismo"]
   },
   {
     "id": "cascadas-de-micos-gallery-2",
     "filename": "cascadas-de-micos/gallery-2.jpg",
     "descripcion": "Vista aérea de las Cascadas de Micos entre la vegetación",
-    "tema": "cascadas micos vista aérea selva naturaleza"
+    "tema": "cascadas micos vista aérea selva naturaleza",
+    "tags": ["micos", "cascadas", "vista aerea", "selva"]
   },
   {
     "id": "cascadas-de-tamasopo-hero",
     "filename": "cascadas-de-tamasopo/hero.jpg",
     "descripcion": "Cascadas de Tamasopo con tres caídas de agua entre rocas y vegetación",
-    "tema": "cascadas tamasopo tres caídas agua rocas vegetación balneario"
+    "tema": "cascadas tamasopo tres caídas agua rocas vegetación balneario",
+    "tags": ["tamasopo", "cascadas", "balneario", "rocas", "huasteca"]
   },
   {
     "id": "cascadas-de-tamasopo-gallery-1",
     "filename": "cascadas-de-tamasopo/gallery-1.jpg",
     "descripcion": "Poza principal de las Cascadas de Tamasopo para nadar",
-    "tema": "cascadas tamasopo poza nadar familia balneario natural"
+    "tema": "cascadas tamasopo poza nadar familia balneario natural",
+    "tags": ["tamasopo", "cascadas", "poza", "nadar", "familia"]
   },
   {
     "id": "cascadas-de-tamasopo-gallery-2",
     "filename": "cascadas-de-tamasopo/gallery-2.webp",
     "descripcion": "Área de descanso junto a las Cascadas de Tamasopo",
-    "tema": "cascadas tamasopo descanso picnic área verde"
+    "tema": "cascadas tamasopo descanso picnic área verde",
+    "tags": ["tamasopo", "cascadas", "descanso", "picnic"]
   },
   {
     "id": "cascadas-minas-viejas-hero",
     "filename": "cascadas-minas-viejas/hero.jpg",
     "descripcion": "Cascadas de Minas Viejas con doble caída de agua espectacular en El Naranjo",
-    "tema": "cascadas minas viejas doble caída agua el naranjo rappel aventura"
+    "tema": "cascadas minas viejas doble caída agua el naranjo rappel aventura",
+    "tags": ["minas viejas", "cascadas", "el naranjo", "rappel", "aventura", "huasteca"]
   },
   {
     "id": "cascadas-minas-viejas-gallery-1",
     "filename": "cascadas-minas-viejas/gallery-1.webp",
     "descripcion": "Vista frontal de las Cascadas de Minas Viejas con arcoíris",
-    "tema": "cascadas minas viejas frontal arcoíris niebla"
+    "tema": "cascadas minas viejas frontal arcoíris niebla",
+    "tags": ["minas viejas", "cascadas", "arcoiris", "paisaje"]
   },
   {
     "id": "cascadas-minas-viejas-gallery-2",
     "filename": "cascadas-minas-viejas/gallery-2.jpg",
     "descripcion": "Sendero hacia el mirador de las Cascadas de Minas Viejas",
-    "tema": "cascadas minas viejas sendero mirador caminata"
+    "tema": "cascadas minas viejas sendero mirador caminata",
+    "tags": ["minas viejas", "cascadas", "sendero", "mirador"]
   },
   {
     "id": "cuevas-de-mantetzulel-hero",
     "filename": "cuevas-de-mantetzulel/hero.jpg",
     "descripcion": "Interior de las Cuevas de Mantetzulel con formaciones de estalactitas",
-    "tema": "cuevas mantetzulel estalactitas estalagmitas espeleología aquismón subterráneo"
+    "tema": "cuevas mantetzulel estalactitas estalagmitas espeleología aquismón subterráneo",
+    "tags": ["mantetzulel", "cuevas", "estalactitas", "aquismon", "espeleologia", "huasteca"]
   },
   {
     "id": "cuevas-de-mantetzulel-gallery-1",
     "filename": "cuevas-de-mantetzulel/gallery-1.jpg",
     "descripcion": "Entrada a las Cuevas de Mantetzulel con iluminación natural",
-    "tema": "cuevas mantetzulel entrada iluminación natural caverna"
+    "tema": "cuevas mantetzulel entrada iluminación natural caverna",
+    "tags": ["mantetzulel", "cuevas", "entrada", "caverna"]
   },
   {
     "id": "cuevas-de-mantetzulel-gallery-2",
     "filename": "cuevas-de-mantetzulel/gallery-2.jpg",
     "descripcion": "Formaciones rocosas dentro de las Cuevas de Mantetzulel",
-    "tema": "cuevas mantetzulel formaciones rocosas interior geología"
+    "tema": "cuevas mantetzulel formaciones rocosas interior geología",
+    "tags": ["mantetzulel", "cuevas", "formaciones", "geologia"]
   },
   {
     "id": "laguna-media-luna-hero",
     "filename": "laguna-media-luna/hero.jpg",
     "descripcion": "Laguna de la Media Luna con aguas cristalinas en Rioverde San Luis Potosí",
-    "tema": "laguna media luna rioverde aguas cristalinas buceo snorkel manantial"
+    "tema": "laguna media luna rioverde aguas cristalinas buceo snorkel manantial",
+    "tags": ["media luna", "laguna", "rioverde", "buceo", "snorkel", "huasteca"]
   },
   {
     "id": "laguna-media-luna-gallery-1",
     "filename": "laguna-media-luna/gallery-1.avif",
     "descripcion": "Buzos practicando snorkel en la Laguna de la Media Luna",
-    "tema": "laguna media luna snorkel buceo submarino visibilidad"
+    "tema": "laguna media luna snorkel buceo submarino visibilidad",
+    "tags": ["media luna", "snorkel", "buceo", "laguna"]
   },
   {
     "id": "laguna-media-luna-gallery-2",
     "filename": "laguna-media-luna/gallery-2.webp",
     "descripcion": "Vista panorámica de la Laguna de la Media Luna al atardecer",
-    "tema": "laguna media luna panorámica atardecer paisaje"
+    "tema": "laguna media luna panorámica atardecer paisaje",
+    "tags": ["media luna", "laguna", "atardecer", "paisaje"]
   },
   {
     "id": "las-pozas-jardin-surrealista-hero",
     "filename": "las-pozas-jardin-surrealista/hero.webp",
     "descripcion": "Las Pozas de Edward James jardín escultórico surrealista en Xilitla",
-    "tema": "las pozas edward james xilitla jardín surrealista esculturas selva arte"
+    "tema": "las pozas edward james xilitla jardín surrealista esculturas selva arte",
+    "tags": ["las pozas", "edward james", "xilitla", "jardin surrealista", "esculturas", "huasteca"]
   },
   {
     "id": "las-pozas-jardin-surrealista-gallery-1",
     "filename": "las-pozas-jardin-surrealista/gallery-1.jpg",
     "descripcion": "Escalera al cielo en Las Pozas de Edward James entre la selva de Xilitla",
-    "tema": "las pozas edward james escalera cielo xilitla arquitectura surrealismo"
+    "tema": "las pozas edward james escalera cielo xilitla arquitectura surrealismo",
+    "tags": ["las pozas", "xilitla", "escalera al cielo", "surrealismo"]
   },
   {
     "id": "las-pozas-jardin-surrealista-gallery-2",
     "filename": "las-pozas-jardin-surrealista/gallery-2.jpg",
     "descripcion": "Estructuras de concreto cubiertas de musgo en Las Pozas Xilitla",
-    "tema": "las pozas xilitla concreto musgo vegetación escultura"
+    "tema": "las pozas xilitla concreto musgo vegetación escultura",
+    "tags": ["las pozas", "xilitla", "escultura", "musgo"]
   },
   {
     "id": "nacimiento-huichihuayan-hero",
     "filename": "nacimiento-huichihuayan/hero.jpg",
     "descripcion": "Nacimiento de Huichihuayán con aguas turquesa cristalinas rodeado de selva",
-    "tema": "nacimiento huichihuayán aguas turquesa cristalinas selva ojo de agua manantial"
+    "tema": "nacimiento huichihuayán aguas turquesa cristalinas selva ojo de agua manantial",
+    "tags": ["huichihuayan", "nacimiento", "aguas turquesa", "manantial", "selva", "huasteca"]
   },
   {
     "id": "nacimiento-huichihuayan-gallery-1",
     "filename": "nacimiento-huichihuayan/gallery-1.jpg",
     "descripcion": "Zona de nado en el Nacimiento de Huichihuayán con lanchas",
-    "tema": "nacimiento huichihuayán nado lanchas paseo acuático"
+    "tema": "nacimiento huichihuayán nado lanchas paseo acuático",
+    "tags": ["huichihuayan", "nacimiento", "nado", "lanchas"]
   },
   {
     "id": "nacimiento-huichihuayan-gallery-2",
     "filename": "nacimiento-huichihuayan/gallery-2.jpg",
     "descripcion": "Vegetación tropical alrededor del Nacimiento de Huichihuayán",
-    "tema": "nacimiento huichihuayán vegetación tropical paisaje naturaleza"
+    "tema": "nacimiento huichihuayán vegetación tropical paisaje naturaleza",
+    "tags": ["huichihuayan", "nacimiento", "vegetacion", "tropical"]
   },
   {
     "id": "nacimiento-tambaque-hero",
     "filename": "nacimiento-tambaque/hero.webp",
     "descripcion": "Nacimiento de Tambaque con poza de aguas azul turquesa en medio de la selva",
-    "tema": "nacimiento tambaque poza aguas azul turquesa selva cañón natación"
+    "tema": "nacimiento tambaque poza aguas azul turquesa selva cañón natación",
+    "tags": ["tambaque", "nacimiento", "aguas turquesa", "selva", "poza", "huasteca"]
   },
   {
     "id": "nacimiento-tambaque-gallery-1",
     "filename": "nacimiento-tambaque/gallery-1.webp",
     "descripcion": "Cañón natural del Nacimiento de Tambaque con paredes de roca",
-    "tema": "nacimiento tambaque cañón roca paredes naturaleza"
+    "tema": "nacimiento tambaque cañón roca paredes naturaleza",
+    "tags": ["tambaque", "nacimiento", "canon", "roca"]
   },
   {
     "id": "nacimiento-tambaque-gallery-2",
     "filename": "nacimiento-tambaque/gallery-2.webp",
     "descripcion": "Visitantes nadando en la poza del Nacimiento de Tambaque",
-    "tema": "nacimiento tambaque nado visitantes turismo ecoturismo"
+    "tema": "nacimiento tambaque nado visitantes turismo ecoturismo",
+    "tags": ["tambaque", "nacimiento", "nado", "ecoturismo"]
   },
   {
     "id": "puente-de-dios-tamasopo-hero",
     "filename": "puente-de-dios-tamasopo/hero.jpg",
     "descripcion": "Puente de Dios en Tamasopo con rayo de luz entrando por la cueva sobre aguas turquesa",
-    "tema": "puente de dios tamasopo cueva luz aguas turquesa rayo sol cenote"
+    "tema": "puente de dios tamasopo cueva luz aguas turquesa rayo sol cenote",
+    "tags": ["puente de dios", "tamasopo", "cueva", "aguas turquesa", "cenote", "huasteca"]
   },
   {
     "id": "puente-de-dios-tamasopo-gallery-1",
     "filename": "puente-de-dios-tamasopo/gallery-1.jpg",
     "descripcion": "Interior del Puente de Dios con formación rocosa natural y agua cristalina",
-    "tema": "puente de dios interior roca agua cristalina cueva"
+    "tema": "puente de dios interior roca agua cristalina cueva",
+    "tags": ["puente de dios", "interior", "roca", "agua cristalina"]
   },
   {
     "id": "puente-de-dios-tamasopo-gallery-2",
     "filename": "puente-de-dios-tamasopo/gallery-2.jpg",
     "descripcion": "Acceso al Puente de Dios con sendero entre la selva de Tamasopo",
-    "tema": "puente de dios acceso sendero selva tamasopo"
+    "tema": "puente de dios acceso sendero selva tamasopo",
+    "tags": ["puente de dios", "tamasopo", "sendero", "selva"]
   },
   {
     "id": "rio-tampaon-rafting-hero",
     "filename": "rio-tampaon-rafting/hero.jpg",
     "descripcion": "Grupo de personas haciendo rafting en el Río Tampaón con rápidos",
-    "tema": "río tampaón rafting rápidos aventura grupo kayak deporte extremo"
+    "tema": "río tampaón rafting rápidos aventura grupo kayak deporte extremo",
+    "tags": ["rio tampaon", "rafting", "rapidos", "aventura", "kayak", "huasteca"]
   },
   {
     "id": "rio-tampaon-rafting-gallery-1",
     "filename": "rio-tampaon-rafting/gallery-1.jpg",
     "descripcion": "Vista del Río Tampaón con cañones verdes ideales para rafting",
-    "tema": "río tampaón cañones verde paisaje naturaleza agua"
+    "tema": "río tampaón cañones verde paisaje naturaleza agua",
+    "tags": ["rio tampaon", "canones", "paisaje", "naturaleza"]
   },
   {
     "id": "rio-tampaon-rafting-gallery-2",
     "filename": "rio-tampaon-rafting/gallery-2.jpg",
     "descripcion": "Lanchas y kayaks en zona de embarque del Río Tampaón",
-    "tema": "río tampaón lanchas kayak embarque tour acuático"
+    "tema": "río tampaón lanchas kayak embarque tour acuático",
+    "tags": ["rio tampaon", "lanchas", "kayak", "tour"]
   },
   {
     "id": "sotano-de-las-golondrinas-hero",
     "filename": "sotano-de-las-golondrinas/hero.jpg",
     "descripcion": "Sótano de las Golondrinas vista desde el borde del abismo con aves volando",
-    "tema": "sótano golondrinas abismo aves vencejos aquismón profundidad espeleología rappel"
+    "tema": "sótano golondrinas abismo aves vencejos aquismón profundidad espeleología rappel",
+    "tags": ["sotano golondrinas", "abismo", "aves", "aquismon", "espeleologia", "huasteca"]
   },
   {
     "id": "sotano-de-las-golondrinas-gallery-1",
     "filename": "sotano-de-las-golondrinas/gallery-1.avif",
     "descripcion": "Miles de vencejos saliendo del Sótano de las Golondrinas al amanecer",
-    "tema": "sótano golondrinas vencejos amanecer vuelo espectáculo natural"
+    "tema": "sótano golondrinas vencejos amanecer vuelo espectáculo natural",
+    "tags": ["sotano golondrinas", "vencejos", "amanecer", "espectaculo"]
   },
   {
     "id": "sotano-de-las-golondrinas-gallery-2",
     "filename": "sotano-de-las-golondrinas/gallery-2.avif",
     "descripcion": "Rappelista descendiendo al interior del Sótano de las Golondrinas",
-    "tema": "sótano golondrinas rappel descenso aventura extrema deporte"
+    "tema": "sótano golondrinas rappel descenso aventura extrema deporte",
+    "tags": ["sotano golondrinas", "rappel", "aventura extrema", "deporte"]
   },
   {
     "id": "sotano-de-las-huahuas-hero",
     "filename": "sotano-de-las-huahuas/hero.jpg",
     "descripcion": "Sótano de las Huahuas con vegetación colgante y luz natural entrando",
-    "tema": "sótano huahuas vegetación luz natural cueva selva profundidad"
+    "tema": "sótano huahuas vegetación luz natural cueva selva profundidad",
+    "tags": ["sotano huahuas", "cueva", "vegetacion", "luz natural", "selva", "huasteca"]
   },
   {
     "id": "sotano-de-las-huahuas-gallery-1",
     "filename": "sotano-de-las-huahuas/gallery-1.jpg",
     "descripcion": "Vista interior del Sótano de las Huahuas con helechos y humedad",
-    "tema": "sótano huahuas interior helechos humedad espeleología"
+    "tema": "sótano huahuas interior helechos humedad espeleología",
+    "tags": ["sotano huahuas", "interior", "helechos", "espeleologia"]
   },
   {
     "id": "voladores-tamaleton-hero",
     "filename": "voladores-tamaleton/hero.jpg",
     "descripcion": "Danza de los Voladores de Tamaleón girando desde el mástil en ceremonia teenek",
-    "tema": "voladores tamaleón danza mástil ceremonia teenek tradición cultura"
+    "tema": "voladores tamaleón danza mástil ceremonia teenek tradición cultura",
+    "tags": ["voladores", "tamaleton", "danza", "ceremonia", "teenek", "huasteca"]
   },
   {
     "id": "voladores-tamaleton-gallery-1",
     "filename": "voladores-tamaleton/gallery-1.jpg",
     "descripcion": "Voladores descendiendo del mástil con trajes ceremoniales coloridos",
-    "tema": "voladores tamaleón descendiendo trajes ceremoniales color tradición"
+    "tema": "voladores tamaleón descendiendo trajes ceremoniales color tradición",
+    "tags": ["voladores", "tamaleton", "trajes", "tradicion"]
   },
   {
     "id": "voladores-tamaleton-gallery-2",
     "filename": "voladores-tamaleton/gallery-2.jpg",
     "descripcion": "Público observando la ceremonia de los Voladores de Tamaleón",
-    "tema": "voladores tamaleón público ceremonia espectáculo cultural"
+    "tema": "voladores tamaleón público ceremonia espectáculo cultural",
+    "tags": ["voladores", "tamaleton", "ceremonia", "cultural"]
   },
   {
     "id": "xilitla-pueblo-magico-hero",
     "filename": "xilitla-pueblo-magico/hero.jpg",
     "descripcion": "Vista del pueblo mágico de Xilitla con iglesia y montañas de la Sierra Madre",
-    "tema": "xilitla pueblo mágico iglesia sierra madre oriental montañas café"
+    "tema": "xilitla pueblo mágico iglesia sierra madre oriental montañas café",
+    "tags": ["xilitla", "pueblo magico", "sierra madre", "iglesia", "cafe", "huasteca"]
   },
   {
     "id": "xilitla-pueblo-magico-gallery-1",
     "filename": "xilitla-pueblo-magico/gallery-1.jpg",
     "descripcion": "Calles coloridas del centro de Xilitla pueblo mágico",
-    "tema": "xilitla calles coloridas centro pueblo mágico artesanías"
+    "tema": "xilitla calles coloridas centro pueblo mágico artesanías",
+    "tags": ["xilitla", "calles", "pueblo magico", "artesanias"]
   },
   {
     "id": "xilitla-pueblo-magico-gallery-2",
     "filename": "xilitla-pueblo-magico/gallery-2.jpg",
     "descripcion": "Cafetales y plantaciones de café en la zona de Xilitla San Luis Potosí",
-    "tema": "xilitla café cafetales plantación gastronomía sierra"
+    "tema": "xilitla café cafetales plantación gastronomía sierra",
+    "tags": ["xilitla", "cafe", "cafetales", "gastronomia", "sierra"]
   },
   {
     "id": "zona-arqueologica-tamtoc-hero",
     "filename": "zona-arqueologica-tamtoc/hero.jpg",
     "descripcion": "Pirámide principal de la zona arqueológica de Tamtoc en Tamuín",
-    "tema": "tamtoc zona arqueológica pirámide tamuín historia prehispánica cultura huasteca"
+    "tema": "tamtoc zona arqueológica pirámide tamuín historia prehispánica cultura huasteca",
+    "tags": ["tamtoc", "zona arqueologica", "piramide", "tamuin", "historia", "huasteca"]
   },
   {
     "id": "zona-arqueologica-tamtoc-gallery-1",
     "filename": "zona-arqueologica-tamtoc/gallery-1.jpg",
     "descripcion": "Monolito de la Mujer Escarificada en Tamtoc pieza arqueológica",
-    "tema": "tamtoc monolito mujer escarificada arqueología pieza museo"
+    "tema": "tamtoc monolito mujer escarificada arqueología pieza museo",
+    "tags": ["tamtoc", "monolito", "arqueologia", "museo"]
   },
   {
     "id": "zona-arqueologica-tamtoc-gallery-2",
     "filename": "zona-arqueologica-tamtoc/gallery-2.jpg",
     "descripcion": "Explanada ceremonial de la zona arqueológica de Tamtoc con montículos",
-    "tema": "tamtoc explanada ceremonial montículos zona arqueológica historia"
+    "tema": "tamtoc explanada ceremonial montículos zona arqueológica historia",
+    "tags": ["tamtoc", "explanada", "ceremonial", "zona arqueologica"]
   }
 ]

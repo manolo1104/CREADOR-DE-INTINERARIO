@@ -43,6 +43,9 @@ function loadTopicsFromJson() {
       const articles = mesData?.articulos || [];
       if (!Array.isArray(articles)) continue;
       for (const article of articles) {
+        // Corrección 6: Solo cargar topics con estado "pendiente" (o sin estado para compat)
+        if (article.estado && article.estado !== "pendiente") continue;
+
         const palabrasClave = article.palabras_clave || [];
         topics.push({
           title: article.title || article.titulo || "",

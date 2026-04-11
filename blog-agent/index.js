@@ -16,6 +16,7 @@ import fetch from "node-fetch";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
 import { getDailyTopic, inferCategoryByKeyword } from "./content-strategy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,7 +29,7 @@ const anthropic       = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const SITE_URL        = process.env.SITE_URL || "https://www.huasteca-potosina.com";
 const BLOG_SECRET     = process.env.BLOG_AGENT_SECRET;
 
-// ── Corrección 1: URL de imágenes desde GITHUB_REPO_NAME ────
+// ── URL de imágenes desde GITHUB_REPO_NAME ──────────────────
 const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME;
 const IMAGE_BASE_URL   = GITHUB_REPO_NAME
   ? `https://raw.githubusercontent.com/${GITHUB_REPO_NAME}/main/INTINERARIO%20HUASTECA/blog-agent/images/`
@@ -44,12 +45,61 @@ async function callWithRetry(fn, retries = 2) {
       return await fn();
     } catch (err) {
       if (err?.status === 429 && i < retries) {
-        const wait = (i + 1) * 30000; // 30s, 60s
+        const wait = (i + 1) * 30000;
         console.log(`   ⏳ Rate limit — esperando ${wait / 1000}s...`);
         await sleep(wait);
       } else throw err;
     }
   }
+}
+
+// ── Corrección 2: Slug — generación y validación ────────────
+
+function normalizeStr(str) {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function generateSlug(title, primaryKeyword, year) {
+  const keywordSlug = normalizeStr(primaryKeyword);
+  const titleSlug   = normalizeStr(title);
+  const yearStr     = String(year);
+
+  let finalSlug = titleSlug.includes(keywordSlug)
+    ? titleSlug
+    : `${keywordSlug}-${titleSlug.replace(keywordSlug, "").replace(/^-|-$/g, "")}`;
+
+  if (!finalSlug.endsWith(yearStr)) {
+    finalSlug = `${finalSlug}-${yearStr}`;
+  }
+
+  const withoutYear = finalSlug.replace(`-${yearStr}`, "");
+  if (withoutYear.length > 60) {
+    finalSlug = `${withoutYear.slice(0, 60).replace(/-$/, "")}-${yearStr}`;
+  }
+
+  return finalSlug;
+}
+
+function validateSlug(slug, primaryKeyword) {
+  const normalizedSlug = slug.split("-").join(" ");
+  const normalizedKw = primaryKeyword
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (!normalizedSlug.includes(normalizedKw)) {
+    throw new Error(
+      `SLUG INVÁLIDO: "${slug}" no contiene la keyword "${primaryKeyword}". Abortando publicación.`
+    );
+  }
+  return true;
 }
 
 // ── Banco de imágenes desde images.json ─────────────────────
@@ -81,21 +131,28 @@ function loadDataBanks() {
   }
 }
 
-// ── Corrección 1: Matching semántico para selección de imágenes ──
+// ── Corrección 4: Scoring por tags + tema ───────────────────
 
-function computeSemanticScore(imageTema, articleTerms) {
-  const temaWords = imageTema.toLowerCase().split(/\s+/);
-  let matches = 0;
-  for (const term of articleTerms) {
-    if (temaWords.some(w => w.includes(term) || term.includes(w))) {
-      matches++;
+function computeImageScore(image, articleTerms) {
+  const tags = image.tags || [];
+  let score = 0;
+  for (const tag of tags) {
+    const tagLow = tag.toLowerCase();
+    if (articleTerms.some(t => t.includes(tagLow) || tagLow.includes(t))) {
+      score += 20;
     }
   }
-  return articleTerms.length > 0 ? matches / articleTerms.length : 0;
+  // Bonus: tema match (legacy compat)
+  const temaWords = (image.tema || "").toLowerCase().split(/\s+/);
+  for (const term of articleTerms) {
+    if (temaWords.some(w => w.includes(term) || term.includes(w))) {
+      score += 5;
+    }
+  }
+  return Math.min(score, 100);
 }
 
 function selectImages(topic, imagesBank) {
-  // Corrección 1: Abortar si no hay GITHUB_REPO_NAME
   if (!IMAGE_BASE_URL) {
     console.error("ERROR: GITHUB_REPO_NAME no definida — abortando publicación");
     process.exit(1);
@@ -106,36 +163,43 @@ function selectImages(topic, imagesBank) {
     ...topic.focusKeyword.toLowerCase().split(/\s+/),
     ...(topic.secondaryKeywords || []).flatMap(k => k.toLowerCase().split(/\s+/)),
     ...topic.title.toLowerCase().split(/\s+/).filter(w => w.length > 3),
-  ].filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+  ].filter((v, i, a) => a.indexOf(v) === i);
 
-  // Filtrar imágenes hero vs gallery
   const heroImages = imagesBank.filter(img => img.filename.includes("hero"));
   const bodyImages = imagesBank.filter(img => !img.filename.includes("hero"));
 
-  // Scoring semántico para hero
+  // Scoring para hero
   let bestHero = null;
   let bestScore = 0;
   for (const img of heroImages) {
-    const score = computeSemanticScore(img.tema, articleTerms);
+    const score = computeImageScore(img, articleTerms);
     if (score > bestScore) {
       bestScore = score;
       bestHero = img;
     }
   }
 
-  const heroMatchOk = bestScore >= 0.5;
-  if (!heroMatchOk) {
-    console.warn("WARN: imagen hero sin coincidencia temática — revisar banco de imágenes");
+  // Corrección 4: Fallback geográfico si <40%
+  let heroMatchOk = bestScore >= 40;
+  let hero;
+  if (heroMatchOk) {
+    hero = bestHero;
+  } else {
+    console.warn(`WARN: imagen hero por fallback geográfico — añadir imágenes de "${topic.focusKeyword}" al banco`);
+    const geoFallback = heroImages.find(img =>
+      (img.tags || []).some(t => ["xilitla", "huasteca", "sierra"].includes(t.toLowerCase()))
+    );
+    hero = geoFallback || bestHero || heroImages[0] || imagesBank[0];
+    heroMatchOk = false;
   }
-  const hero = bestHero || heroImages[0] || imagesBank[0];
 
-  // Body: mejor match que no sea del mismo folder que hero
+  // Body: mejor match fuera del folder del hero
   const heroFolder = hero.filename.split("/")[0];
   const bodyPool = bodyImages.filter(img => !img.filename.startsWith(heroFolder));
   let bestBody = null;
   let bestBodyScore = 0;
   for (const img of bodyPool.length > 0 ? bodyPool : bodyImages) {
-    const score = computeSemanticScore(img.tema, articleTerms);
+    const score = computeImageScore(img, articleTerms);
     if (score > bestBodyScore) {
       bestBodyScore = score;
       bestBody = img;
@@ -146,14 +210,14 @@ function selectImages(topic, imagesBank) {
   const heroUrl = `${IMAGE_BASE_URL}${encodeURI(hero.filename)}`;
   const bodyUrl = `${IMAGE_BASE_URL}${encodeURI(body.filename)}`;
 
-  // Corrección 1: Alt tag describe el tema del artículo cuando no hay coincidencia
+  // Corrección 4: Alt describe artículo si no hay coincidencia
   const heroAlt = heroMatchOk
     ? `${topic.focusKeyword} ${hero.descripcion} Huasteca Potosina ${year}`
-    : `${topic.focusKeyword} Huasteca Potosina ${year}`;
+    : `${topic.focusKeyword} en Xilitla, Huasteca Potosina ${year}`;
 
   console.log(`\n🖼️  Imágenes seleccionadas:`);
-  console.log(`   Hero: ${hero.filename} (score: ${(bestScore * 100).toFixed(0)}%)`);
-  console.log(`   Body: ${body.filename} (score: ${(bestBodyScore * 100).toFixed(0)}%)`);
+  console.log(`   Hero: ${hero.filename} (score: ${bestScore}%)`);
+  console.log(`   Body: ${body.filename} (score: ${bestBodyScore}%)`);
 
   return {
     hero: { url: heroUrl, alt: heroAlt, filename: hero.filename, matchScore: bestScore },
@@ -203,7 +267,7 @@ async function callWithSearch(prompt, maxTokens = 400) {
   return allText.join("\n\n");
 }
 
-// ── PASO 1: Investigación (1 búsqueda compacta) ────────────
+// ── PASO 1: Investigación ───────────────────────────────────
 
 async function doResearch(topic) {
   console.log(`\n🔍 Investigando: "${topic.focusKeyword}"...`);
@@ -222,7 +286,7 @@ Solo datos concretos, sin introducción.`;
   return result;
 }
 
-// ── Corrección 3: Validar links internos contra posts existentes ──
+// ── Validar links internos contra posts existentes ──────────
 
 function validateInternalLinks(content, postsExistentes, siteUrl) {
   const escapedUrl = siteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -237,9 +301,8 @@ function validateInternalLinks(content, postsExistentes, siteUrl) {
     totalCount++;
     if (existingSlugs.has(slug)) {
       validCount++;
-      return match; // OK — slug exists
+      return match;
     }
-    // Corrección 3: Reemplazar slugs no verificados
     console.warn(`   ⚠️  Slug no verificado: /blog/${slug}`);
     if (/tour|guia|precio|reserva|actividad|cascada|rafting|aventura/.test(slug)) {
       return `href="${siteUrl}/tours"`;
@@ -253,7 +316,7 @@ function validateInternalLinks(content, postsExistentes, siteUrl) {
   return { content: fixed, validCount, totalCount };
 }
 
-// ── Corrección 4: Verificar keyword density ─────────────────
+// ── Corrección 1: Verificar keyword density ─────────────────
 
 function checkKeywordDensity(content, keyword) {
   const text = content.replace(/<[^>]+>/g, " ").toLowerCase();
@@ -267,19 +330,66 @@ function checkKeywordDensity(content, keyword) {
   return { occurrences, wordCount, density };
 }
 
-// ── PASOS 3 + 5–7: Redactar artículo + entregar JSON ───────
+// ── Corrección 5: Validar word count ANTES de publicar ──────
 
-async function writeArticle(topic, researchContext, images, postsExistentes) {
-  console.log(`\n✍️  Redactando artículo E-E-A-T (950–1,100 palabras)...`);
+function validateWordCount(contentHtml) {
+  const text = contentHtml
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[#*`\[\]]/g, "")
+    .split(/\s+/)
+    .filter(w => w.length > 0);
+  const wordCount = text.length;
 
-  const year  = new Date().getFullYear();
-  const slug  = `${topic.focusKeyword.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}-${year}`;
+  if (wordCount > 1100) {
+    return { valid: false, wordCount, excess: wordCount - 1100, action: "trim_required" };
+  }
+  if (wordCount < 950) {
+    return { valid: false, wordCount, deficit: 950 - wordCount, action: "expand_required" };
+  }
+  return { valid: true, wordCount };
+}
 
-  // Corrección 3: Slugs verificados para links internos
-  const verifiedSlugs = postsExistentes.map(p => `/blog/${p.slug}`).join(", ") || "(ninguno aún)";
+// ── Corrección 5: Corregir word count con segunda llamada LLM ──
 
-  // ── Corrección 6: CTAs con clases CSS — sin headings ──────
+async function correctWordCount(contentHtml, validation, topic) {
+  const { action, wordCount } = validation;
 
+  let instruction;
+  if (action === "trim_required") {
+    instruction = `El artículo tiene ${wordCount} palabras. Necesito que lo recortes a máximo 1,100 palabras. Elimina texto en este orden de prioridad:
+1. Frases adjetivas no esenciales en el cuerpo
+2. Párrafos que repitan información ya dicha en otra sección
+3. Detalles secundarios dentro de H3
+Nunca elimines: los primeros 3 párrafos del intro, secciones FAQ, bloques con class="cta-block".
+Devuelve SOLO el HTML corregido, sin explicaciones ni markdown fences.`;
+  } else {
+    instruction = `El artículo tiene ${wordCount} palabras. Necesito expandirlo a mínimo 950 palabras añadiendo contenido útil. Añade en este orden:
+1. Un dato concreto adicional (precio, horario o distancia) en la sección más corta
+2. Una frase de contexto local en el intro
+3. Una pregunta adicional en el FAQ con formato <details><summary><strong>pregunta</strong></summary><p>respuesta</p></details>
+Devuelve SOLO el HTML corregido, sin explicaciones ni markdown fences.`;
+  }
+
+  console.log(`   ⏳ Pausa de 10s antes de corrección word count...`);
+  await sleep(10000);
+
+  const response = await callWithRetry(() => anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 5000,
+    messages: [{
+      role: "user",
+      content: `${instruction}\n\n---\n\n${contentHtml}`,
+    }],
+  }));
+
+  let corrected = (response.content[0]?.text || "").trim();
+  corrected = corrected.replace(/^```html?\s*/i, "").replace(/\s*```$/i, "").trim();
+  return corrected;
+}
+
+// ── Corrección 3: CTAs como HTML directo ────────────────────
+
+function buildCTAs(topic) {
   const CTA_TOURS = `<div class="cta-block cta-tours">
   <p class="cta-headline">¿Quieres vivir ${topic.focusKeyword} con guía experto?</p>
   <p class="cta-subtext">Tours desde la Huasteca Potosina. Grupos pequeños, guías locales y traslados incluidos.</p>
@@ -294,17 +404,43 @@ async function writeArticle(topic, researchContext, images, postsExistentes) {
 
   const CTA_FINAL = `<div class="cta-block cta-final">
   <p class="cta-headline">Reserva tu experiencia en la Huasteca Potosina</p>
-  <p class="cta-subtext">Tours con guías locales · Grupos reducidos · Sin estrés</p>
-  <a href="${SITE_URL}/tours" class="cta-button cta-button--primary">Ver todos los tours →</a>
-  <a href="${SITE_URL}/itinerarios" class="cta-button cta-button--secondary">Crear mi itinerario →</a>
+  <p class="cta-subtext-1">Tours con guías locales · Grupos reducidos · Sin estrés</p>
+  <p class="cta-subtext-2">O planea tu propio recorrido con nuestro creador de itinerarios.</p>
+  <div class="cta-buttons">
+    <a href="${SITE_URL}/tours" class="cta-button cta-button--primary">Ver todos los tours →</a>
+    <a href="${SITE_URL}/itinerarios" class="cta-button cta-button--secondary">Crear mi itinerario →</a>
+  </div>
 </div>`;
 
-  // ── Prompt con correcciones 4 + 5 (density + word count) ──
+  return { CTA_TOURS, CTA_ITINERARIO, CTA_FINAL };
+}
+
+// ── Redactar artículo ───────────────────────────────────────
+
+async function writeArticle(topic, researchContext, images, postsExistentes) {
+  console.log(`\n✍️  Redactando artículo E-E-A-T (950–1,100 palabras)...`);
+
+  const year = new Date().getFullYear();
+  const slug = generateSlug(topic.title, topic.focusKeyword, year);
+
+  // Corrección 2: Validar slug
+  validateSlug(slug, topic.focusKeyword);
+  console.log(`   🔗 Slug generado: ${slug}`);
+
+  // Slugs verificados para links internos
+  const verifiedSlugs = postsExistentes.map(p => `/blog/${p.slug}`).join(", ") || "(ninguno aún)";
+
+  // Corrección 1: Calcular keyword target count
+  const kwWordCount = topic.focusKeyword.split(/\s+/).length;
+  const keywordTargetCount = kwWordCount >= 2
+    ? Math.round(1000 * 0.012)  // 12 para multi-word
+    : Math.round(1000 * 0.014); // 14 para single-word
+  const lsiList = (topic.secondaryKeywords || []).join(", ");
 
   const prompt = `Escribe un artículo HTML para huasteca-potosina.com. ESTRICTAMENTE 950–1100 palabras.
 
 TEMA: ${topic.title}
-KEYWORD: ${topic.focusKeyword} (usar entre 8 y 14 veces — NUNCA más de 14)
+KEYWORD: ${topic.focusKeyword}
 SECUNDARIAS: ${topic.secondaryKeywords.join(", ")}
 URL: ${SITE_URL}
 IMAGEN CUERPO: <img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" width="900" height="500" />
@@ -314,6 +450,29 @@ ${researchContext || "(Usa tu conocimiento)"}
 
 LINKS INTERNOS VERIFICADOS (SOLO enlazar a estos): ${verifiedSlugs}
 Si necesitas enlazar a un blog pero no existe slug verificado, usa ${SITE_URL}/tours (actividades) o ${SITE_URL}/itinerarios (planificación) o ${SITE_URL}/blog (general). NUNCA inventes un slug.
+
+KEYWORD DENSITY — INSTRUCCIÓN DURANTE REDACCIÓN:
+
+La keyword principal de este artículo es: "${topic.focusKeyword}"
+Debes usarla exactamente ${keywordTargetCount} veces en el artículo.
+
+Distribución obligatoria:
+- 1 vez en el H1
+- 2 veces en los primeros 150 palabras del intro
+- 1 vez en el alt tag de la imagen hero
+- 1 vez en al menos un H2
+- El resto distribuido naturalmente en el cuerpo
+
+Para las demás apariciones, usa estas variantes y sinónimos:
+${lsiList}
+
+Antes de terminar, cuenta las ocurrencias de "${topic.focusKeyword}".
+Si el conteo es menor a 8 o mayor a 14, ajusta el texto antes de entregar.
+
+WORD COUNT — INSTRUCCIÓN DURANTE REDACCIÓN:
+Antes de entregar el artículo, cuenta las palabras del HTML (sin tags).
+Si supera 1100, recorta párrafos redundantes del cuerpo. NUNCA recortes intro, FAQ ni schema.
+Si es menor a 950, añade un dato concreto en la sección más corta.
 
 ESTRUCTURA (SIN <h1>, el sitio lo pone):
 1. INTRO: 3 párrafos. P1=gancho con keyword. P2=solución. P3=incluir textual: "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." + <a href="${SITE_URL}/itinerarios">planea tu itinerario</a>
@@ -326,14 +485,9 @@ NO incluyas bloques CTA (los agrego yo después). NO uses <h1>. Usa <strong> en 
 NUNCA uses: "increíble experiencia", "sin duda alguna", "joya escondida", "paraíso terrenal", "de ensueño", "clic aquí".
 Enlaces externos solo: laspozasxilitla.org.mx, google.com/maps, inah.gob.mx con rel="noopener nofollow".
 
-VERIFICACIÓN OBLIGATORIA ANTES DE ENTREGAR:
-- Cuenta las palabras del HTML (sin tags): si supera 1100, recorta párrafos redundantes del cuerpo. NUNCA recortes intro, FAQ ni schema.
-- Cuenta ocurrencias de "${topic.focusKeyword}": si supera 14, reemplaza excedentes con sinónimos del tema, pronombres contextuales o términos LSI. NUNCA elimines de H1, primeras 100 palabras ni alt tags.
-
 Respuesta: JSON puro sin markdown.
-{"slug":"${slug}","metaTitle":"máx 60 chars con keyword y ${year}","title":"H1 completo","metaDescription":"140-155 chars","focusKeyword":"${topic.focusKeyword}","secondaryKeywords":${JSON.stringify(topic.secondaryKeywords)},"excerpt":"2 líneas","content":"HTML completo","tags":["Huasteca Potosina","${topic.category}","tag3"],"readingTime":7}`;
+{"slug":"${slug}","metaTitle":"máx 60 chars con keyword y ${year}","title":"H1 completo","metaDescription":"140-155 chars","focusKeyword":"${topic.focusKeyword}","secondaryKeywords":${JSON.stringify(topic.secondaryKeywords)},"excerpt":"2 líneas","content":"HTML completo sin CTAs","tags":["Huasteca Potosina","${topic.category}","tag3"],"readingTime":7}`;
 
-  // Esperar 15s para no pegar el rate limit tras la búsqueda
   console.log(`   ⏳ Pausa de 15s antes de redactar...`);
   await sleep(15000);
 
@@ -364,14 +518,19 @@ Respuesta: JSON puro sin markdown.
     console.warn("✅ JSON reparado");
   }
 
-  // ── Corrección 3: Validar links internos ──
+  // Corrección 2: Forzar slug generado
+  post.slug = slug;
+
+  // Validar links internos
   if (post.content) {
     const linkCheck = validateInternalLinks(post.content, postsExistentes, SITE_URL);
     post.content = linkCheck.content;
     post._linkValidation = linkCheck;
   }
 
-  // ── Corrección 6: Inyectar CTAs con clases CSS ──
+  // Corrección 3: Inyectar CTAs como HTML directo (segmentos)
+  const { CTA_TOURS, CTA_ITINERARIO, CTA_FINAL } = buildCTAs(topic);
+
   if (post.content) {
     const lastH2 = post.content.lastIndexOf("<h2>");
     if (lastH2 > 0) {
@@ -382,7 +541,7 @@ Respuesta: JSON puro sin markdown.
     post.content += "\n" + CTA_FINAL;
   }
 
-  // ── Campos adicionales ──
+  // Campos adicionales
   post.coverImageUrl   = images.hero.url;
   post.coverImageAlt   = images.hero.alt;
   post.coverImageFile  = `${slug}.jpg`;
@@ -390,7 +549,7 @@ Respuesta: JSON puro sin markdown.
   post.externalSources = post.externalSources || [];
   post.schemaType      = "BlogPosting+FAQPage";
 
-  // ── Corrección 7: Categoría por regla semántica ──
+  // Categoría por regla semántica
   const inferredCategory = inferCategoryByKeyword(
     topic.focusKeyword, topic.title, topic.secondaryKeywords || []
   );
@@ -402,43 +561,30 @@ Respuesta: JSON puro sin markdown.
   post._category = inferredCategory;
   post._categorySource = "regla semántica";
 
-  // ── Corrección 2: Schema JSON-LD como objeto separado ──
+  // Schema JSON-LD como objeto
   const schemaBase = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": post.title || topic.title,
     "datePublished": new Date().toISOString(),
     "dateModified": new Date().toISOString(),
-    "author": {
-      "@type": "Organization",
-      "name": "Huasteca Potosina",
-      "url": SITE_URL,
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Huasteca Potosina",
-      "url": SITE_URL,
-    },
+    "author": { "@type": "Organization", "name": "Huasteca Potosina", "url": SITE_URL },
+    "publisher": { "@type": "Organization", "name": "Huasteca Potosina", "url": SITE_URL },
     "description": post.metaDescription || "",
     "image": images.hero.url,
     "keywords": [topic.focusKeyword, ...topic.secondaryKeywords].join(", "),
     "articleSection": inferredCategory,
   };
 
-  // Extraer FAQ items del content para FAQPage schema
   const faqMatches = [...(post.content || "").matchAll(
     /<details>\s*<summary>\s*<strong>(.*?)<\/strong>\s*<\/summary>\s*<p>([\s\S]*?)<\/p>\s*<\/details>/gi
   )];
   const faqItems = faqMatches.map(m => ({
     "@type": "Question",
     "name": m[1].replace(/<[^>]+>/g, "").trim(),
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": m[2].replace(/<[^>]+>/g, "").trim(),
-    },
+    "acceptedAnswer": { "@type": "Answer", "text": m[2].replace(/<[^>]+>/g, "").trim() },
   }));
 
-  // schema_jsonld como OBJETO (no string) — Corrección 2
   let schemaJsonLd;
   if (faqItems.length > 0) {
     schemaJsonLd = [schemaBase, { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqItems }];
@@ -446,11 +592,10 @@ Respuesta: JSON puro sin markdown.
     schemaJsonLd = schemaBase;
   }
 
-  // Para el API (string) y para verificación/output (objeto)
   post.schemaMarkup  = JSON.stringify(schemaJsonLd);
   post._schemaJsonLd = schemaJsonLd;
 
-  // ── Corrección 4 + 5: Métricas de calidad ──
+  // Métricas
   const densityCheck = checkKeywordDensity(post.content || "", topic.focusKeyword);
   post._metrics = {
     wordCount: densityCheck.wordCount,
@@ -462,6 +607,75 @@ Respuesta: JSON puro sin markdown.
   };
 
   return post;
+}
+
+// ── Corrección 6: Marcar topic como usado en topics.json ────
+
+function markTopicAsPublished(topicId, slug) {
+  const topicsPath = path.join(__dirname, "topics.json");
+  try {
+    const raw = fs.readFileSync(topicsPath, "utf-8");
+    const data = JSON.parse(raw);
+    const calendario = data.calendario_editorial || {};
+
+    let found = false;
+    for (const [, mesData] of Object.entries(calendario)) {
+      const articles = mesData?.articulos || [];
+      for (const article of articles) {
+        if (article.id === topicId) {
+          article.estado = "publicado";
+          article.slug_publicado = slug;
+          article.fecha_publicacion = new Date().toISOString();
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+
+    if (found) {
+      fs.writeFileSync(topicsPath, JSON.stringify(data, null, 2), "utf-8");
+      console.log(`   ✅ Topic ${topicId} marcado como publicado en topics.json`);
+
+      // Commit topics.json
+      try {
+        execSync(`git add topics.json && git commit -m "chore: marcar topic ${topicId} como publicado"`, {
+          cwd: __dirname,
+          stdio: "pipe",
+        });
+        console.log(`   ✅ Commit de topics.json realizado`);
+      } catch {
+        console.warn(`   ⚠️  No se pudo commitear topics.json (no fatal)`);
+      }
+    }
+  } catch (e) {
+    console.warn(`   ⚠️  No se pudo actualizar topics.json: ${e.message}`);
+  }
+}
+
+function revertTopicState(topicId) {
+  const topicsPath = path.join(__dirname, "topics.json");
+  try {
+    const raw = fs.readFileSync(topicsPath, "utf-8");
+    const data = JSON.parse(raw);
+    const calendario = data.calendario_editorial || {};
+
+    for (const [, mesData] of Object.entries(calendario)) {
+      for (const article of mesData?.articulos || []) {
+        if (article.id === topicId) {
+          article.estado = "pendiente";
+          article.slug_publicado = null;
+          article.fecha_publicacion = null;
+          break;
+        }
+      }
+    }
+
+    fs.writeFileSync(topicsPath, JSON.stringify(data, null, 2), "utf-8");
+    console.log(`   ↩️  Topic ${topicId} revertido a pendiente`);
+  } catch {
+    console.warn(`   ⚠️  No se pudo revertir topic ${topicId}`);
+  }
 }
 
 // ── Publicar ────────────────────────────────────────────────
@@ -480,7 +694,7 @@ async function publishPost(post) {
     console.log(post.content?.slice(0, 900) + "...");
     console.log(`\n--- SCHEMA JSON-LD ---`);
     console.log(JSON.stringify(post._schemaJsonLd, null, 2).slice(0, 500));
-    return { schemaVerified: true }; // DRY_RUN — skip verification
+    return { schemaVerified: true };
   }
 
   const res = await fetch(`${SITE_URL}/api/blog/create`, {
@@ -497,10 +711,10 @@ async function publishPost(post) {
 
   console.log(`\n🚀 Publicado: ${SITE_URL}/blog/${data.post.slug}`);
 
-  // ── Corrección 2: Verificar schema JSON-LD en HTML publicado ──
+  // Verificar schema JSON-LD en HTML publicado
   let schemaVerified = false;
   try {
-    await sleep(3000); // esperar a que Next.js regenere
+    await sleep(3000);
     const htmlRes = await fetch(`${SITE_URL}/blog/${data.post.slug}`);
     const html = await htmlRes.text();
     schemaVerified = html.includes('type="application/ld+json"');
@@ -514,7 +728,7 @@ async function publishPost(post) {
   return { ...data.post, schemaVerified };
 }
 
-// ── Corrección 9: Log de métricas de calidad ────────────────
+// ── Corrección 7: Log de métricas ───────────────────────────
 
 function printQualityLog(post, publishResult) {
   const m = post._metrics;
@@ -524,46 +738,39 @@ function printQualityLog(post, publishResult) {
   console.log("📊 MÉTRICAS DE CALIDAD");
   console.log("─".repeat(55));
 
-  // Corrección 5: Word count
   const wcOk = m.wordCount >= 950 && m.wordCount <= 1100;
   console.log(`${wcOk ? "✅" : "❌"} Word count: ${m.wordCount} palabras (${wcOk ? "dentro de rango 950-1100" : "FUERA de rango 950-1100"})`);
   if (!wcOk) issues.push(`Word count ${m.wordCount}`);
 
-  // Corrección 4: Keyword density
   const kdOk = m.keywordOccurrences >= 8 && m.keywordOccurrences <= 14;
   const kdStatus = m.keywordOccurrences > 14 ? "SOBREOPTIMIZADO" : m.keywordOccurrences < 8 ? "BAJO" : "ok";
   console.log(`${kdOk ? "✅" : "❌"} Keyword density: ${m.keywordOccurrences} ocurrencias / ${m.wordCount} palabras = ${m.keywordDensity.toFixed(1)}% (${kdStatus})`);
   if (!kdOk) issues.push(`Keyword density: ${m.keywordOccurrences} occ (${kdStatus})`);
 
-  // Corrección 1: Imágenes
   const imgOk = post.coverImageUrl && !post.coverImageUrl.includes("[repo]") && IMAGE_BASE_URL;
   console.log(`${imgOk ? "✅" : "❌"} Imágenes: URL ${imgOk ? "válida sin [repo] placeholder" : "CONTIENE [repo] o URL inválida"}`);
-  if (!imgOk) issues.push("URL de imagen con [repo] placeholder");
+  if (!imgOk) issues.push("URL de imagen inválida");
 
-  // Corrección 1: Hero match
-  console.log(`${m.heroMatchOk ? "✅" : "⚠️"} Hero match: score ${(m.heroMatchScore * 100).toFixed(0)}% (${m.heroMatchOk ? "coincidencia temática OK" : "sin coincidencia >50%"})`);
+  console.log(`${m.heroMatchOk ? "✅" : "⚠️"} Hero match: score ${m.heroMatchScore}% (${m.heroMatchOk ? "coincidencia temática OK" : "fallback geográfico"})`);
 
-  // Corrección 3: Links internos
   const lv = m.linkValidation;
   const linksOk = lv.totalCount === 0 || lv.validCount === lv.totalCount;
   console.log(`${linksOk ? "✅" : "❌"} Links internos: ${lv.validCount} verificados / ${lv.totalCount} total`);
   if (!linksOk) issues.push(`Links: ${lv.totalCount - lv.validCount} no verificados (reemplazados)`);
 
-  // Corrección 2: Schema
   const schemaOk = publishResult?.schemaVerified ?? false;
   console.log(`${schemaOk ? "✅" : "❌"} Schema JSON-LD: ${schemaOk ? "inyectado en HTML publicado" : "NO confirmado en HTML"}`);
   if (!schemaOk && !DRY_RUN) issues.push("Schema JSON-LD no confirmado");
 
-  // Corrección 7: Categoría
   console.log(`✅ Categoría: ${post._category} (asignada por ${post._categorySource})`);
 
-  // Corrección 6: CTAs
   const ctaClassOk = (post.content || "").includes('class="cta-block');
   const ctaHasHeading = /class="cta-block[^"]*">[\s\S]*?<h[23]/i.test(post.content || "");
   console.log(`${ctaClassOk && !ctaHasHeading ? "✅" : "❌"} CTAs: ${ctaClassOk ? "clases CSS aplicadas" : "SIN clases"} | ${ctaHasHeading ? "CONTIENE headings" : "sin headings"}`);
   if (!ctaClassOk || ctaHasHeading) issues.push("CTAs sin clases o con headings");
 
-  // Resumen
+  console.log(`✅ Slug: ${post.slug} (validado con keyword)`);
+
   if (issues.length > 0) {
     console.log(`\n⚠️  REQUIERE REVISIÓN MANUAL: ${issues.join(" | ")}`);
   } else {
@@ -571,16 +778,10 @@ function printQualityLog(post, publishResult) {
   }
   console.log("─".repeat(55));
 
-  // Errores críticos que detienen pipeline
-  const criticalErrors = [];
-  if (!imgOk) criticalErrors.push("imagen rota");
-  if (!schemaOk && !DRY_RUN) criticalErrors.push("schema no inyectado");
-  if (!post.slug) criticalErrors.push("slug inválido");
-
-  return { issues, criticalErrors };
+  return { issues };
 }
 
-// ── Main ────────────────────────────────────────────────────
+// ── Main — Corrección 7: Pipeline reordenado ────────────────
 
 async function main() {
   console.log("\n📝  BLOG AGENT — huasteca-potosina.com");
@@ -588,7 +789,7 @@ async function main() {
   console.log(`    Modo: ${DRY_RUN ? "🧪 DRY-RUN" : "🚀 LIVE"}`);
   console.log("═".repeat(55));
 
-  // Corrección 1: Verificar GITHUB_REPO_NAME al inicio
+  // Paso 0: Verificar GITHUB_REPO_NAME
   if (!GITHUB_REPO_NAME) {
     console.error("ERROR: GITHUB_REPO_NAME no definida — abortando publicación");
     process.exit(1);
@@ -596,12 +797,12 @@ async function main() {
   console.log(`   🔗 Repo: ${GITHUB_REPO_NAME}`);
   console.log(`   🖼️  Image base: ${IMAGE_BASE_URL}`);
 
-  // Cargar bancos de datos
+  // Paso 1: Cargar bancos de datos
   console.log("\n📂 Cargando bancos de datos...");
   loadDataBanks();
   const imagesBank = loadImagesBank();
 
-  // Corrección 3: Cargar posts existentes para validar links
+  // Paso 2: Cargar posts existentes para links y slug dedup
   let postsExistentes = [];
   if (BLOG_SECRET) {
     try {
@@ -620,7 +821,7 @@ async function main() {
   const usedSlugs = postsExistentes.map(p => p.slug);
   const topic = getDailyTopic(usedSlugs, CUSTOM_TOPIC);
 
-  // Corrección 7: Re-inferir categoría por regla semántica
+  // Re-inferir categoría por regla semántica
   topic.category = inferCategoryByKeyword(
     topic.focusKeyword, topic.title, topic.secondaryKeywords || []
   );
@@ -629,31 +830,94 @@ async function main() {
   console.log(`🔑 Keyword:    ${topic.focusKeyword}`);
   console.log(`🏷️  Categoría:  ${topic.category} (inferida por regla)`);
 
-  // Paso 1: Investigación
+  // Paso 3: Investigación
   const researchContext = await doResearch(topic).catch(e => {
     console.warn(`⚠️  Búsqueda fallida: ${e.message}`);
     return "";
   });
 
-  // Paso 2: Selección de imágenes (Corrección 1: semántico)
+  // Paso 4: Selección de imágenes
   const images = selectImages(topic, imagesBank);
 
-  // Paso 3: Redactar y estructurar
+  // Paso 5: Redactar artículo
   const post = await writeArticle(topic, researchContext, images, postsExistentes);
 
-  // Publicar
-  const publishResult = await publishPost(post);
+  // ── VALIDACIONES PRE-PUBLICACIÓN (Corrección 7: pasos 6-9) ──
 
-  // Corrección 9: Log de métricas de calidad
-  const { criticalErrors } = printQualityLog(post, publishResult);
+  console.log("\n🔍 Validaciones pre-publicación...");
+
+  // Paso 6: Validar word count → corregir si necesario (Corrección 5)
+  let wcCheck = validateWordCount(post.content || "");
+  if (!wcCheck.valid) {
+    console.log(`   ⚠️  Word count ${wcCheck.wordCount} — ${wcCheck.action}`);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      console.log(`   🔄 Intento de corrección ${attempt}/2...`);
+      const corrected = await correctWordCount(post.content, wcCheck, topic);
+      if (corrected && corrected.length > 200) {
+        post.content = corrected;
+        wcCheck = validateWordCount(post.content);
+        if (wcCheck.valid) {
+          console.log(`   ✅ Word count corregido: ${wcCheck.wordCount}`);
+          break;
+        }
+      }
+      if (attempt === 2 && !wcCheck.valid) {
+        console.warn(`   ⚠️  Word count fuera de rango tras 2 intentos (${wcCheck.wordCount})`);
+      }
+    }
+  } else {
+    console.log(`   ✅ Word count: ${wcCheck.wordCount} (OK)`);
+  }
+  // Actualizar métricas con word count final
+  const finalDensity = checkKeywordDensity(post.content || "", topic.focusKeyword);
+  post._metrics.wordCount = finalDensity.wordCount;
+  post._metrics.keywordOccurrences = finalDensity.occurrences;
+  post._metrics.keywordDensity = finalDensity.density;
+
+  // Paso 7: Validar keyword density → loggear
+  const kdOk = finalDensity.occurrences >= 8 && finalDensity.occurrences <= 14;
+  console.log(`   ${kdOk ? "✅" : "⚠️"} Keyword density: ${finalDensity.occurrences} occ / ${finalDensity.wordCount} words = ${finalDensity.density.toFixed(1)}%`);
+
+  // Paso 8: Validar slug (ya validado en writeArticle, pero doble check)
+  try {
+    validateSlug(post.slug, topic.focusKeyword);
+    console.log(`   ✅ Slug: "${post.slug}" (keyword incluida)`);
+  } catch (e) {
+    console.error(`   ❌ ${e.message}`);
+    process.exit(1);
+  }
+
+  // Paso 9: Validar que no hay [repo] en URLs
+  if (post.coverImageUrl?.includes("[repo]") || (post.content || "").includes("[repo]")) {
+    console.error("   ❌ URL contiene [repo] placeholder — abortando publicación");
+    process.exit(1);
+  }
+  console.log(`   ✅ URLs: sin [repo] placeholder`);
+
+  // ── Paso 10: Marcar topic como publicado (Corrección 6) ──
+  const topicId = topic.id;
+  if (topicId && !DRY_RUN) {
+    markTopicAsPublished(topicId, post.slug);
+  }
+
+  // ── Paso 11: Publicar en CMS ──
+  let publishResult;
+  try {
+    publishResult = await publishPost(post);
+  } catch (e) {
+    // Corrección 6: Revertir topic si publicación falla
+    if (topicId && !DRY_RUN) {
+      revertTopicState(topicId);
+    }
+    throw e;
+  }
+
+  // ── Paso 12: Verificar schema (ya ocurre dentro de publishPost) ──
+  // ── Paso 13: Log de métricas finales (Corrección 7) ──
+  printQualityLog(post, publishResult);
 
   console.log("\n" + "═".repeat(55));
-  if (criticalErrors.length > 0) {
-    console.error(`❌ ERRORES CRÍTICOS: ${criticalErrors.join(", ")}`);
-    console.error("   La publicación requiere intervención manual.");
-  } else {
-    console.log("✅  Blog Agent completado.");
-  }
+  console.log("✅  Blog Agent completado.");
   console.log("═".repeat(55) + "\n");
 }
 
