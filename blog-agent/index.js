@@ -27,8 +27,6 @@ const CUSTOM_TOPIC = TOPIC_IDX !== -1 ? process.argv[TOPIC_IDX + 1] : null;
 const anthropic       = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const SITE_URL        = process.env.SITE_URL || "https://www.huasteca-potosina.com";
 const BLOG_SECRET     = process.env.BLOG_AGENT_SECRET;
-const GITHUB_RAW_BASE = process.env.GITHUB_RAW_BASE || "https://raw.githubusercontent.com/[repo]/main/IMAGENES";
-
 // ── Utilidades ──────────────────────────────────────────────
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -47,48 +45,52 @@ async function callWithRetry(fn, retries = 2) {
   }
 }
 
-// Solo imágenes locales desde /IMAGENES
+// ── Banco de imágenes públicas (servidas por Next.js desde /public/imagenes/) ──
 
-// ── Mapa keyword → carpeta IMAGENES ────────────────────────
+const PUBLIC_IMAGES = [
+  { folder: "balneario-taninul",         hero: "hero.webp",  gallery: ["hero.webp"] },
+  { folder: "cascada-de-tamul",          hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.webp"] },
+  { folder: "cascada-el-aguacate",       hero: "hero.jpg",   gallery: ["gallery-1.webp", "gallery-2.jpg"] },
+  { folder: "cascada-el-meco",           hero: "hero.avif",  gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "cascada-el-salto",          hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "cascadas-de-micos",         hero: "hero.jpg",   gallery: ["gallery-1.webp", "gallery-2.jpg"] },
+  { folder: "cascadas-de-tamasopo",      hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.webp"] },
+  { folder: "cascadas-minas-viejas",     hero: "hero.jpg",   gallery: ["gallery-1.webp", "gallery-2.jpg"] },
+  { folder: "cuevas-de-mantetzulel",     hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "laguna-media-luna",         hero: "hero.jpg",   gallery: ["gallery-1.avif", "gallery-2.webp"] },
+  { folder: "las-pozas-jardin-surrealista", hero: "hero.webp", gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "nacimiento-huichihuayan",   hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "nacimiento-tambaque",       hero: "hero.webp",  gallery: ["gallery-1.webp", "gallery-2.webp"] },
+  { folder: "puente-de-dios-tamasopo",   hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "rio-tampaon-rafting",       hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "sotano-de-las-golondrinas", hero: "hero.jpg",   gallery: ["gallery-1.avif", "gallery-2.avif"] },
+  { folder: "sotano-de-las-huahuas",     hero: "hero.jpg",   gallery: ["gallery-1.jpg"] },
+  { folder: "voladores-tamaleton",       hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "xilitla-pueblo-magico",     hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+  { folder: "zona-arqueologica-tamtoc",  hero: "hero.jpg",   gallery: ["gallery-1.jpg", "gallery-2.jpg"] },
+];
 
-const IMAGE_FOLDER_MAP = {
-  "cascada de tamul": "CASCADA DE TAMUL",
-  "tamul": "CASCADA DE TAMUL",
-  "rio tampaon": "RIO TAMPAON",
-  "tampaon": "RIO TAMPAON",
-  "rafting": "RIO TAMPAON",
-  "cascadas de micos": "CASCADAS DE MICOS",
-  "micos": "CASCADAS DE MICOS",
-  "cascada minas viejas": "CASCADA MINAS VIEJAS",
-  "minas viejas": "CASCADA MINAS VIEJAS",
-  "rappel": "CASCADA MINAS VIEJAS",
-  "cascada el meco": "CASCADA EL MECO",
-  "el meco": "CASCADA EL MECO",
-  "cascada el salto": "CASCADA EL SALTO",
-  "el salto": "CASCADA EL SALTO",
-  "puente de dios": "PUENTE DE DIOS",
-  "tamasopo": "TAMASOPO",
-  "cascadas de tamasopo": "TAMASOPO",
-  "sotano de las golondrinas": "SOTANO DE LAS GOLONDRINAS",
-  "golondrinas": "SOTANO DE LAS GOLONDRINAS",
-  "sotano de las huahuas": "SOTANO DE LAS HUAHUAS",
-  "huahuas": "SOTANO DE LAS HUAHUAS",
-  "las pozas": "JARDIN DE EDWARD JAMES",
-  "edward james": "JARDIN DE EDWARD JAMES",
-  "xilitla": "JARDIN DE EDWARD JAMES",
-  "jardin surrealista": "JARDIN DE EDWARD JAMES",
-  "nacimiento de huichihuayan": "NACIMIENTO DE HUICHIHUAYAN",
-  "huichihuayan": "NACIMIENTO DE HUICHIHUAYAN",
-  "balneario taninul": "BALNEARIO TANINUL",
-  "taninul": "BALNEARIO TANINUL",
-  "laguna media luna": "LAGUNA MEDIA LUNA",
-  "media luna": "LAGUNA MEDIA LUNA",
-  "tamtoc": "ZONA ARQUEOLOGICA TAMTOC",
-  "zona arqueologica tamtoc": "ZONA ARQUEOLOGICA TAMTOC",
-  "cuevas de mantetzulel": "CUEVAS DE MANTETZULEL",
-  "mantetzulel": "CUEVAS DE MANTETZULEL",
-  "tambaque": "TAMBAQUE",
-  "voladores": "VOLADORES DE TAMALETON",
+// Mapa keyword → carpeta de public/imagenes/
+const KEYWORD_TO_FOLDER = {
+  "cascada de tamul": "cascada-de-tamul", "tamul": "cascada-de-tamul",
+  "rio tampaon": "rio-tampaon-rafting", "tampaon": "rio-tampaon-rafting", "rafting": "rio-tampaon-rafting",
+  "cascadas de micos": "cascadas-de-micos", "micos": "cascadas-de-micos",
+  "cascada minas viejas": "cascadas-minas-viejas", "minas viejas": "cascadas-minas-viejas", "rappel": "cascadas-minas-viejas",
+  "cascada el meco": "cascada-el-meco", "el meco": "cascada-el-meco",
+  "cascada el salto": "cascada-el-salto", "el salto": "cascada-el-salto",
+  "puente de dios": "puente-de-dios-tamasopo",
+  "tamasopo": "cascadas-de-tamasopo", "cascadas de tamasopo": "cascadas-de-tamasopo",
+  "sotano de las golondrinas": "sotano-de-las-golondrinas", "golondrinas": "sotano-de-las-golondrinas",
+  "sotano de las huahuas": "sotano-de-las-huahuas", "huahuas": "sotano-de-las-huahuas",
+  "las pozas": "las-pozas-jardin-surrealista", "edward james": "las-pozas-jardin-surrealista",
+  "xilitla": "xilitla-pueblo-magico", "jardin surrealista": "las-pozas-jardin-surrealista",
+  "nacimiento de huichihuayan": "nacimiento-huichihuayan", "huichihuayan": "nacimiento-huichihuayan",
+  "balneario taninul": "balneario-taninul", "taninul": "balneario-taninul",
+  "laguna media luna": "laguna-media-luna", "media luna": "laguna-media-luna",
+  "tamtoc": "zona-arqueologica-tamtoc", "zona arqueologica tamtoc": "zona-arqueologica-tamtoc",
+  "cuevas de mantetzulel": "cuevas-de-mantetzulel", "mantetzulel": "cuevas-de-mantetzulel",
+  "tambaque": "nacimiento-tambaque",
+  "voladores": "voladores-tamaleton",
 };
 
 // ── Cargar bancos de datos locales ──────────────────────────
@@ -106,125 +108,65 @@ function loadDataBanks() {
   }
 }
 
-// ── Imágenes desde banco local ──────────────────────────────
+// ── Selección de imágenes desde public/imagenes/ ────────────
 
-function getLocalImages(topic) {
-  const IMAGENES_ROOT = path.join(__dirname, "..", "IMAGENES");
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
-  // Intentar encontrar carpeta usando el mapa
+function selectImages(topic) {
+  const year = new Date().getFullYear();
   const searchTerms = [
     topic.focusKeyword.toLowerCase(),
-    topic.title.toLowerCase(),
     ...(topic.secondaryKeywords || []).map(k => k.toLowerCase()),
+    topic.title.toLowerCase(),
   ];
 
-  let folderName = null;
+  // Buscar carpeta por keyword
+  let matched = null;
   for (const term of searchTerms) {
-    // Buscar coincidencia directa
-    if (IMAGE_FOLDER_MAP[term]) {
-      folderName = IMAGE_FOLDER_MAP[term];
+    if (KEYWORD_TO_FOLDER[term]) {
+      matched = PUBLIC_IMAGES.find(p => p.folder === KEYWORD_TO_FOLDER[term]);
       break;
     }
-    // Buscar coincidencia parcial
-    for (const [key, val] of Object.entries(IMAGE_FOLDER_MAP)) {
+    for (const [key, folder] of Object.entries(KEYWORD_TO_FOLDER)) {
       if (term.includes(key) || key.includes(term)) {
-        folderName = val;
+        matched = PUBLIC_IMAGES.find(p => p.folder === folder);
         break;
       }
     }
-    if (folderName) break;
+    if (matched) break;
   }
 
-  if (!folderName) return null;
+  // Si no hay match, usar carpeta random
+  const heroPick = matched || pickRandom(PUBLIC_IMAGES);
 
-  const folderPath = path.join(IMAGENES_ROOT, folderName);
-  if (!fs.existsSync(folderPath)) return null;
-
-  const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".avif"];
-  let files;
-  try {
-    files = fs.readdirSync(folderPath).filter(f =>
-      IMAGE_EXTS.includes(path.extname(f).toLowerCase())
-    );
-  } catch {
-    return null;
+  // Body: carpeta diferente al hero
+  let bodyPick = pickRandom(PUBLIC_IMAGES);
+  for (let i = 0; i < 5 && bodyPick.folder === heroPick.folder; i++) {
+    bodyPick = pickRandom(PUBLIC_IMAGES);
   }
 
-  if (files.length === 0) return null;
+  const heroUrl = `${SITE_URL}/imagenes/${heroPick.folder}/${heroPick.hero}`;
+  const bodyFile = pickRandom(bodyPick.gallery);
+  const bodyUrl = `${SITE_URL}/imagenes/${bodyPick.folder}/${bodyFile}`;
 
-  // Hero: preferir PORTADA.jpg (case-insensitive) o primer archivo
-  const portadaFile = files.find(f => f.toUpperCase() === "PORTADA.JPG") || files[0];
-  const heroFilename = portadaFile;
-
-  // Body: un archivo diferente al hero (aleatorio del resto)
-  const remaining = files.filter(f => f !== heroFilename);
-  const bodyFilename = remaining.length > 0
-    ? remaining[Math.floor(Math.random() * remaining.length)]
-    : heroFilename;
-
-  const makeUrl = (filename) =>
-    `${GITHUB_RAW_BASE}/${encodeURIComponent(folderName)}/${encodeURIComponent(filename)}`;
+  console.log(`\n🖼️  Imágenes seleccionadas:`);
+  console.log(`   Hero: ${heroPick.folder}/${heroPick.hero}`);
+  console.log(`   Body: ${bodyPick.folder}/${bodyFile}`);
 
   return {
     hero: {
-      url: makeUrl(heroFilename),
-      alt: `${topic.focusKeyword} Huasteca Potosina ${new Date().getFullYear()}`,
-      filename: heroFilename,
-      folder: folderName,
+      url: heroUrl,
+      alt: `${topic.focusKeyword} Huasteca Potosina ${year}`,
+      filename: heroPick.hero,
+      folder: heroPick.folder,
     },
     body: {
-      url: makeUrl(bodyFilename),
+      url: bodyUrl,
       alt: `${topic.secondaryKeywords?.[0] || topic.focusKeyword} guía viaje Huasteca Potosina`,
-      filename: bodyFilename,
-      folder: folderName,
-    },
-  };
-}
-
-function getAnyLocalImages(topic) {
-  const IMAGENES_ROOT = path.join(__dirname, "..", "IMAGENES");
-  if (!fs.existsSync(IMAGENES_ROOT)) return null;
-
-  const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".avif"];
-  const folders = fs.readdirSync(IMAGENES_ROOT, { withFileTypes: true })
-    .filter(d => d.isDirectory() && !d.name.toLowerCase().startsWith("copia de"))
-    .map(d => d.name);
-
-  const all = [];
-  for (const folderName of folders) {
-    const folderPath = path.join(IMAGENES_ROOT, folderName);
-    try {
-      const files = fs.readdirSync(folderPath)
-        .filter(f => IMAGE_EXTS.includes(path.extname(f).toLowerCase()));
-      for (const filename of files) all.push({ folderName, filename });
-    } catch {
-      // continuar
-    }
-  }
-
-  if (all.length === 0) return null;
-
-  const heroPick = all[Math.floor(Math.random() * all.length)];
-  const remaining = all.filter(x => !(x.folderName === heroPick.folderName && x.filename === heroPick.filename));
-  const bodyPick = remaining.length > 0
-    ? remaining[Math.floor(Math.random() * remaining.length)]
-    : heroPick;
-
-  const makeUrl = (folderName, filename) =>
-    `${GITHUB_RAW_BASE}/${encodeURIComponent(folderName)}/${encodeURIComponent(filename)}`;
-
-  return {
-    hero: {
-      url: makeUrl(heroPick.folderName, heroPick.filename),
-      alt: `${topic.focusKeyword} Huasteca Potosina ${new Date().getFullYear()}`,
-      filename: heroPick.filename,
-      folder: heroPick.folderName,
-    },
-    body: {
-      url: makeUrl(bodyPick.folderName, bodyPick.filename),
-      alt: `${topic.secondaryKeywords?.[0] || topic.focusKeyword} guía viaje Huasteca Potosina`,
-      filename: bodyPick.filename,
-      folder: bodyPick.folderName,
+      filename: bodyFile,
+      folder: bodyPick.folder,
     },
   };
 }
@@ -264,27 +206,6 @@ async function callWithSearch(prompt, maxTokens = 400) {
   }
 
   return allText.join("\n\n");
-}
-
-// ── Selección de imágenes: SOLO local ──
-
-async function selectImages(topic) {
-  console.log(`\n🖼️  Seleccionando imágenes para: "${topic.focusKeyword}"...`);
-
-  const local = getLocalImages(topic);
-  if (local) {
-    console.log(`   Imágenes del banco local: ${local.hero.filename} / ${local.body.filename}`);
-    return local;
-  }
-
-  console.log(`   Sin coincidencia por tema — usando fallback local de /IMAGENES...`);
-  const anyLocal = getAnyLocalImages(topic);
-  if (anyLocal) {
-    console.log(`   Fallback local: ${anyLocal.hero.filename} / ${anyLocal.body.filename}`);
-    return anyLocal;
-  }
-
-  throw new Error("No se encontraron imágenes en la carpeta IMAGENES");
 }
 
 // ── PASO 1: Investigación (1 búsqueda compacta) ────────────
@@ -528,8 +449,8 @@ async function main() {
     return "";
   });
 
-  // Paso 2: Selección de imágenes (solo carpeta /IMAGENES)
-  const images = await selectImages(topic);
+  // Paso 2: Selección de imágenes (public/imagenes/)
+  const images = selectImages(topic);
 
   // Paso 3: Redactar y estructurar
   const post = await writeArticle(topic, researchContext, images);
