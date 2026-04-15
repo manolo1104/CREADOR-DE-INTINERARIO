@@ -106,6 +106,30 @@ body {
   z-index: 0;
 }
 
+/* ── Blog FAQ: details/summary ── */
+.prose details summary {
+  position: relative;
+  padding-right: 2.5rem;
+}
+.prose details summary::after {
+  content: '+';
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: rgba(143, 190, 58, 0.6);
+  transition: transform 0.2s;
+}
+.prose details[open] summary::after {
+  content: '−';
+}
+.prose details summary::-webkit-details-marker,
+.prose details summary::marker {
+  display: none;
+}
+
 /* ── Accesibilidad: focus visible ── */
 :focus-visible {
   outline: 2px solid #5a9e2a;

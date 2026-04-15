@@ -47,7 +47,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BLOG_AGENT_SECRET: ${{ secrets.BLOG_AGENT_SECRET }}
-          SITE_URL: ${{ secrets.SITE_URL || 'https://creador-de-intinerario-production.up.railway.app' }}
+          SITE_URL: 'https://www.huasteca-potosina.com'
           GITHUB_REPO_NAME: ${{ github.repository }}
         run: |
           ARGS=""

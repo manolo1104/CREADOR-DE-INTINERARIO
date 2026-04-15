@@ -89,17 +89,23 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     "articleSection": post.tags[0] || "Turismo",
   });
 
-  // Problem 1: Eliminar cualquier <h1> del content — el H1 lo renderiza el layout
+  // Sanitizar contenido: reemplazar URLs de railway.app con dominio público + strip H1
+  const RAILWAY_REGEX = /https:\/\/creador-de-intinerario-production\.up\.railway\.app/gi;
+  const PUBLIC_URL = "https://www.huasteca-potosina.com";
   const safeContent = (post.content || "")
+    .replace(RAILWAY_REGEX, PUBLIC_URL)
     .replace(/<h1[^>]*>/gi, "<h2>")
     .replace(/<\/h1>/gi, "</h2>");
 
+  // También sanitizar schemaMarkup para corregir URLs en posts existentes
+  const safeSchema = schemaMarkup.replace(RAILWAY_REGEX, PUBLIC_URL);
+
   return (
     <>
-      {/* Problem 3: JSON-LD en <head> vía script */}
+      {/* JSON-LD en <head> — sanitizado para dominio público */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: schemaMarkup }}
+        dangerouslySetInnerHTML={{ __html: safeSchema }}
       />
 
       <main className="min-h-screen bg-jungle pt-24 pb-20">
@@ -174,7 +180,15 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               [&_.cta-button--primary]:bg-[#00B4D8] [&_.cta-button--primary]:text-white [&_.cta-button--primary]:hover:bg-[#0096B7]
               [&_.cta-button--secondary]:bg-transparent [&_.cta-button--secondary]:text-crema [&_.cta-button--secondary]:border [&_.cta-button--secondary]:border-crema/40 [&_.cta-button--secondary]:hover:border-lima/60
               [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:gap-2 [&_.cta-button]:bg-verde-selva [&_.cta-button]:text-crema [&_.cta-button]:px-8 [&_.cta-button]:py-3 [&_.cta-button]:text-xs [&_.cta-button]:tracking-widest [&_.cta-button]:uppercase [&_.cta-button]:font-dm [&_.cta-button]:no-underline
-              [&_.cta-link]:text-lima [&_.cta-link]:underline"
+              [&_.cta-link]:text-lima [&_.cta-link]:underline
+              [&_details]:my-3 [&_details]:border [&_details]:border-white/10 [&_details]:rounded-lg [&_details]:overflow-hidden [&_details]:bg-forest
+              [&_details[open]]:border-lima/20
+              [&_summary]:cursor-pointer [&_summary]:px-5 [&_summary]:py-4 [&_summary]:text-crema [&_summary]:font-dm [&_summary]:font-medium [&_summary]:text-base [&_summary]:list-none [&_summary]:select-none
+              [&_summary::-webkit-details-marker]:hidden
+              [&_summary::marker]:hidden
+              [&_summary]:hover:bg-white/5
+              [&_details>p]:px-5 [&_details>p]:pb-4 [&_details>p]:pt-0 [&_details>p]:text-crema/60 [&_details>p]:text-sm [&_details>p]:font-light [&_details>p]:leading-relaxed
+              [&_details_strong]:text-crema [&_details_strong]:font-medium"
             dangerouslySetInnerHTML={{ __html: safeContent }}
           />
 

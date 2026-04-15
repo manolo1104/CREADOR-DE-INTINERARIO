@@ -26,7 +26,12 @@ const TOPIC_IDX    = process.argv.indexOf("--topic");
 const CUSTOM_TOPIC = TOPIC_IDX !== -1 ? process.argv[TOPIC_IDX + 1] : null;
 
 const anthropic       = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const SITE_URL        = process.env.SITE_URL || "https://www.huasteca-potosina.com";
+
+// ── SITE_URL: Siempre el dominio PÚBLICO para links, CTAs y schema ──
+// Nunca usar railway.app en contenido visible al usuario.
+const PUBLIC_DOMAIN   = "https://www.huasteca-potosina.com";
+const SITE_URL        = PUBLIC_DOMAIN;
+const API_BASE_URL    = process.env.SITE_URL || PUBLIC_DOMAIN; // Railway URL solo para API calls
 const BLOG_SECRET     = process.env.BLOG_AGENT_SECRET;
 
 // ── URL de imágenes desde GITHUB_REPO_NAME ──────────────────
@@ -697,7 +702,7 @@ async function publishPost(post) {
     return { schemaVerified: true };
   }
 
-  const res = await fetch(`${SITE_URL}/api/blog/create`, {
+const res = await fetch(`${API_BASE_URL}/api/blog/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -709,13 +714,13 @@ async function publishPost(post) {
   const data = await res.json();
   if (!res.ok) throw new Error(`API error ${res.status}: ${JSON.stringify(data)}`);
 
-  console.log(`\n🚀 Publicado: ${SITE_URL}/blog/${data.post.slug}`);
+  console.log(`\n🚀 Publicado: ${PUBLIC_DOMAIN}/blog/${data.post.slug}`);
 
   // Verificar schema JSON-LD en HTML publicado
   let schemaVerified = false;
   try {
     await sleep(3000);
-    const htmlRes = await fetch(`${SITE_URL}/blog/${data.post.slug}`);
+    const htmlRes = await fetch(`${API_BASE_URL}/blog/${data.post.slug}`);
     const html = await htmlRes.text();
     schemaVerified = html.includes('type="application/ld+json"');
     if (!schemaVerified) {
@@ -806,7 +811,7 @@ async function main() {
   let postsExistentes = [];
   if (BLOG_SECRET) {
     try {
-      const res = await fetch(`${SITE_URL}/api/blog/create`, {
+      const res = await fetch(`${API_BASE_URL}/api/blog/create`, {
         headers: { "Authorization": `Bearer ${BLOG_SECRET}` },
       });
       const data = await res.json();
