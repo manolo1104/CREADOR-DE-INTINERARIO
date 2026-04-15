@@ -479,16 +479,67 @@ Antes de entregar el artículo, cuenta las palabras del HTML (sin tags).
 Si supera 1100, recorta párrafos redundantes del cuerpo. NUNCA recortes intro, FAQ ni schema.
 Si es menor a 950, añade un dato concreto en la sección más corta.
 
-ESTRUCTURA (SIN <h1>, el sitio lo pone):
-1. INTRO: 3 párrafos. P1=gancho con keyword. P2=solución. P3=incluir textual: "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." + <a href="${SITE_URL}/itinerarios">planea tu itinerario</a>
-2. SECCIÓN 1: H2 + 2 H3s con datos concretos. Cada H3 termina con enlace verificado.
-3. SECCIÓN 2: H2 + <figure> con la imagen cuerpo + 2 H3s
-4. SECCIÓN 3: H2 consejos prácticos con 2-3 enlaces verificados.
-5. FAQ: H2 "Preguntas frecuentes sobre ${topic.focusKeyword}" + 4 <details><summary><strong>pregunta</strong></summary><p>respuesta máx 60 palabras</p></details>
+ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 
-NO incluyas bloques CTA (los agrego yo después). NO uses <h1>. Usa <strong> en cada sección. "Huasteca Potosina" 5-9 veces. Incluye mín 2 enlaces a ${SITE_URL}/tours.
-NUNCA uses: "increíble experiencia", "sin duda alguna", "joya escondida", "paraíso terrenal", "de ensueño", "clic aquí".
-Enlaces externos solo: laspozasxilitla.org.mx, google.com/maps, inah.gob.mx con rel="noopener nofollow".
+━━━ INTRO (3 párrafos) ━━━
+<p>[P1 — Gancho: identifica el problema o duda real del viajero. Incluye la keyword en las primeras 2 oraciones. NO empieces con "Si estás buscando..." ni "Si quieres..."]</p>
+<p>[P2 — Solución: qué va a encontrar en este artículo. Incluye una keyword secundaria. Añade un dato concreto del contexto investigado.]</p>
+<p>[P3 — E-E-A-T obligatorio, copia textual: "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Cierra con: <a href="${SITE_URL}/itinerarios">planea tu itinerario a ${topic.focusKeyword}</a>]</p>
+
+━━━ SECCIÓN 1 ━━━
+<h2>[Título descriptivo con keyword LSI — ej: "Destinos imprescindibles para [keyword]" o "[Destino]: qué ver y hacer" o "Los mejores [tema] en la Huasteca Potosina"]</h2>
+
+<h3>[Subtema específico — extractable como featured snippet, máx 12 palabras. Ej: "Cascada de Tamul: el recorrido en lancha que no olvidarás"]</h3>
+<p>[2-3 oraciones. Dato concreto obligatorio: precio, distancia o tiempo con año. Ej: "El acceso cuesta $100 pesos por persona en 2026."]</p>
+<p>[2-3 oraciones. Dato de experiencia real: "Los viajeros que coordinamos..." o "En cada visita que organizamos..."] <a href="${SITE_URL}/tours" title="tours ${topic.focusKeyword} Huasteca Potosina">reserva el tour a ${topic.focusKeyword}</a></p>
+
+<h3>[Segundo subtema específico — extractable como featured snippet, máx 8 palabras]</h3>
+<p>[2-3 oraciones. Consejo práctico accionable con horario o condición concreta.]</p>
+<p>[2-3 oraciones. Link interno Tipo A a post relacionado del blog si existe slug verificado, o a ${SITE_URL}/tours si no.]</p>
+
+━━━ SECCIÓN 2 ━━━
+<h2>[Segundo título temático — diferente ángulo al H2 anterior. Ej: "Actividades y precios en [tema] ${year}" o "Qué esperar en [destino]" o "Todo sobre [subtema relacionado]"]</h2>
+
+<figure>
+  <img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" width="900" height="500" />
+  <figcaption>[Caption con keyword principal + detalle visual específico + ubicación geográfica]</figcaption>
+</figure>
+
+<h3>[Subtema — experiencia del viajero]</h3>
+<p>[2-3 oraciones. Señal E-E-A-T: anécdota o experiencia de viajeros reales que atendemos. "Los grupos que llevamos cada temporada..." o "Quienes visitan por primera vez..."]</p>
+<p>[2-3 oraciones. Advertencia honesta sobre clima, acceso o temporada.] <a href="${SITE_URL}/tours" title="ver tours Huasteca Potosina">ver tours disponibles en la Huasteca Potosina</a></p>
+
+<h3>[Subtema — logística o costos]</h3>
+<p>[2-3 oraciones. Desglose de costos o logística con datos del contexto investigado. Incluye <strong> en cada cifra.]</p>
+<p>[2-3 oraciones. Link interno Tipo A a otro post relacionado si existe, si no a ${SITE_URL}/itinerarios.]</p>
+
+━━━ SECCIÓN 3 ━━━
+<h2>[Tercer título — consejos prácticos. Formato: "Consejos antes de visitar [destino]" o "Qué llevar y cómo preparar tu viaje a [tema]"]</h2>
+<p>[Párrafo introductorio de 2-3 oraciones.]</p>
+<ul>
+  <li><strong>[Consejo 1 en 3-5 palabras]:</strong> [explicación concreta con dato.]</li>
+  <li><strong>[Consejo 2]:</strong> [explicación. Si existe slug verificado, enlaza aquí con Tipo A.]</li>
+  <li><strong>[Consejo 3]:</strong> [explicación con link Tipo A a post relacionado si existe.]</li>
+  <li><strong>[Consejo 4]:</strong> [equipamiento, ropa o seguridad.]</li>
+</ul>
+
+━━━ FAQ ━━━
+<h2>Preguntas frecuentes sobre ${topic.focusKeyword}</h2>
+<div class="faq">
+<details><summary><strong>[Pregunta real de People Also Ask — específica, no genérica]</strong></summary><p>[Respuesta directa ≤60 palabras. Incluye dato concreto con año.]</p></details>
+<details><summary><strong>[Pregunta sobre precio o costo]</strong></summary><p>[Respuesta con cifras reales del contexto investigado.]</p></details>
+<details><summary><strong>[Pregunta sobre cómo llegar o temporada]</strong></summary><p>[Respuesta con distancia, tiempo o meses concretos.]</p></details>
+<details><summary><strong>[Pregunta sobre seguridad o recomendaciones para familias/parejas]</strong></summary><p>[Respuesta con consejo accionable. Incluye keyword secundaria.]</p></details>
+</div>
+
+━━━ REGLAS FINALES ━━━
+- NO incluyas bloques CTA (los inyecto yo después)
+- NO uses <h1> en ninguna parte del content
+- Usa <strong> en cada cifra, precio, horario y nombre de ruta
+- "Huasteca Potosina" entre 5 y 9 veces en todo el artículo
+- Mínimo 2 enlaces a ${SITE_URL}/tours en el cuerpo (no en CTAs)
+- NUNCA uses: "increíble experiencia", "sin duda alguna", "joya escondida", "paraíso terrenal", "de ensueño", "clic aquí", "Si estás buscando..."
+- Links externos permitidos solo: laspozasxilitla.org.mx, google.com/maps, inah.gob.mx — con rel="noopener nofollow", anchor = nombre oficial del lugar
 
 Respuesta: JSON puro sin markdown.
 {"slug":"${slug}","metaTitle":"máx 60 chars con keyword y ${year}","title":"H1 completo","metaDescription":"140-155 chars","focusKeyword":"${topic.focusKeyword}","secondaryKeywords":${JSON.stringify(topic.secondaryKeywords)},"excerpt":"2 líneas","content":"HTML completo sin CTAs","tags":["Huasteca Potosina","${topic.category}","tag3"],"readingTime":7}`;
