@@ -6,7 +6,7 @@ export const metadata = {
   description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina: cascadas, Las Pozas, Sótano de las Golondrinas, gastronomía y más.",
 };
 
-export const revalidate = 3600; // revalidar cada hora
+export const dynamic = "force-dynamic";
 
 async function getPosts() {
   try {
