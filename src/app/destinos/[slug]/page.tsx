@@ -2,10 +2,16 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import {
+  Clock, Ticket, BarChart2, Calendar, Sun, CloudSun, MapPin,
+  AlertTriangle, Car, Backpack, Lightbulb, Map, Zap,
+} from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { buildDestinationJsonLd } from "@/lib/jsonld";
 import { DESTINO_EN_TOURS } from "@/lib/tourMapping";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 interface Props {
   params: { slug: string };
@@ -65,7 +71,7 @@ export default function DestinoPage({ params }: Props) {
             <Link href="/destinos" className="text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors mb-8 block">
               ← Todos los destinos
             </Link>
-            <div className="text-5xl mb-4">{destino.emoji}</div>
+            <DestinoIcon name={destino.icon} className="w-12 h-12 text-crema/60 mb-4" />
             <h1 className="font-cormorant font-light text-crema mb-3" style={{ fontSize: "clamp(40px,6vw,64px)" }}>
               {destino.nombre}
             </h1>
@@ -79,7 +85,8 @@ export default function DestinoPage({ params }: Props) {
                     href={`/tours/${t.slug}`}
                     className="inline-flex items-center gap-1.5 bg-verde-selva/80 hover:bg-verde-vivo text-crema text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 transition-colors"
                   >
-                    🗺 Incluido en: {t.nombre} →
+                    <Map className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                    Incluido en: {t.nombre} →
                   </Link>
                 ))}
               </div>
@@ -109,18 +116,20 @@ export default function DestinoPage({ params }: Props) {
           {/* Datos prácticos */}
           <div className="space-y-4">
             <h2 className="font-cormorant text-crema text-2xl mb-6">Datos prácticos</h2>
-            {[
-              { icon: "⏱️", label: "Duración", val: `${destino.duracion_hrs} horas` },
-              { icon: "🎟️", label: "Entrada", val: destino.precio_entrada },
-              { icon: "📊", label: "Dificultad", val: destino.dificultad },
-              { icon: "🕐", label: "Horario", val: destino.horario },
-              { icon: "📅", label: "Días abierto", val: destino.dias_abierto },
-              { icon: "⭐", label: "Mejor hora", val: destino.mejor_hora },
-              { icon: "🌤️", label: "Temporada ideal", val: destino.temporada_ideal },
-              { icon: "📍", label: "Punto de encuentro", val: "Ciudad Valles — frente a la central de autobuses" },
-            ].filter(i => i.val).map((item) => (
+            {(
+              [
+                { Icon: Clock,     label: "Duración",           val: `${destino.duracion_hrs} horas` },
+                { Icon: Ticket,    label: "Entrada",            val: destino.precio_entrada },
+                { Icon: BarChart2, label: "Dificultad",         val: destino.dificultad },
+                { Icon: Clock,     label: "Horario",            val: destino.horario },
+                { Icon: Calendar,  label: "Días abierto",       val: destino.dias_abierto },
+                { Icon: Sun,       label: "Mejor hora",         val: destino.mejor_hora },
+                { Icon: CloudSun,  label: "Temporada ideal",    val: destino.temporada_ideal },
+                { Icon: MapPin,    label: "Punto de encuentro", val: "Ciudad Valles — frente a la central de autobuses" },
+              ] as { Icon: LucideIcon; label: string; val: string | undefined }[]
+            ).filter(i => i.val).map((item) => (
               <div key={item.label} className="flex gap-3 py-3 border-b border-white/6">
-                <span className="text-lg flex-shrink-0">{item.icon}</span>
+                <item.Icon className="w-4 h-4 flex-shrink-0 text-verde-selva mt-0.5" aria-hidden="true" />
                 <div>
                   <div className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-0.5">{item.label}</div>
                   <div className="text-sm text-crema">{item.val}</div>
@@ -133,19 +142,19 @@ export default function DestinoPage({ params }: Props) {
           <div className="space-y-6">
             {destino.advertencias && (
               <div className="border-l-2 border-terracota bg-terracota/8 p-4">
-                <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2">⚠️ Advertencias</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" aria-hidden="true" /> Advertencias</p>
                 <p className="text-sm text-crema/75">{destino.advertencias}</p>
               </div>
             )}
             {destino.como_llegar && (
               <div className="border-l-2 border-agua bg-agua/8 p-4">
-                <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2">🚗 Cómo llegar</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2 flex items-center gap-1.5"><Car className="w-3 h-3" aria-hidden="true" /> Cómo llegar</p>
                 <p className="text-sm text-crema/75">{destino.como_llegar}</p>
               </div>
             )}
             {destino.que_llevar?.length > 0 && (
               <div>
-                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3">🎒 Qué llevar</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Backpack className="w-3 h-3" aria-hidden="true" /> Qué llevar</p>
                 <ul className="space-y-1.5">
                   {destino.que_llevar.map((item) => (
                     <li key={item} className="text-sm text-crema/70 flex gap-2">
@@ -157,7 +166,7 @@ export default function DestinoPage({ params }: Props) {
             )}
             {destino.datos_curiosos?.length > 0 && (
               <div>
-                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3">💡 Datos curiosos</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Lightbulb className="w-3 h-3" aria-hidden="true" /> Datos curiosos</p>
                 <ul className="space-y-1.5">
                   {destino.datos_curiosos.map((d) => (
                     <li key={d} className="text-sm text-crema/70 flex gap-2">
@@ -191,8 +200,8 @@ export default function DestinoPage({ params }: Props) {
             </svg>
             Reservar tour por WhatsApp
           </a>
-          <p className="text-[10px] text-crema/35 font-dm">
-            ⚡ Respuesta en menos de 1 hora · Lun–Dom
+          <p className="text-[10px] text-crema/35 font-dm flex items-center justify-center gap-1.5">
+            <Zap className="w-3 h-3" aria-hidden="true" /> Respuesta en menos de 1 hora · Lun–Dom
           </p>
         </div>
       </main>

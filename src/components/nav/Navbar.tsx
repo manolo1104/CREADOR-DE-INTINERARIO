@@ -4,16 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useItinerario } from "@/context/ItinerarioContext";
+import {
+  Landmark, Waves, Bird, Droplets, MountainSnow, BookOpen, Droplet, Thermometer,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const DESTINOS_NAV = [
-  { emoji: "🏛️", nombre: "Las Pozas (Jardín Surrealista)", slug: "las-pozas-jardin-surrealista" },
-  { emoji: "🌈", nombre: "Cascada de Tamul", slug: "cascada-de-tamul" },
-  { emoji: "🐦", nombre: "Sótano de las Golondrinas", slug: "sotano-de-las-golondrinas" },
-  { emoji: "💦", nombre: "Cascadas de Micos", slug: "cascadas-de-micos" },
-  { emoji: "🌀", nombre: "Puente de Dios", slug: "puente-de-dios-tamasopo" },
-  { emoji: "🗿", nombre: "Zona Arqueológica Tamtoc", slug: "zona-arqueologica-tamtoc" },
-  { emoji: "🏊", nombre: "Cascadas de Tamasopo", slug: "cascadas-de-tamasopo" },
-  { emoji: "♨️", nombre: "Balneario Taninul", slug: "balneario-taninul" },
+const DESTINOS_NAV: { Icon: LucideIcon; nombre: string; slug: string }[] = [
+  { Icon: Landmark,    nombre: "Las Pozas (Jardín Surrealista)", slug: "las-pozas-jardin-surrealista" },
+  { Icon: Waves,       nombre: "Cascada de Tamul",               slug: "cascada-de-tamul" },
+  { Icon: Bird,        nombre: "Sótano de las Golondrinas",       slug: "sotano-de-las-golondrinas" },
+  { Icon: Droplets,    nombre: "Cascadas de Micos",               slug: "cascadas-de-micos" },
+  { Icon: MountainSnow,nombre: "Puente de Dios",                  slug: "puente-de-dios-tamasopo" },
+  { Icon: BookOpen,    nombre: "Zona Arqueológica Tamtoc",        slug: "zona-arqueologica-tamtoc" },
+  { Icon: Droplet,     nombre: "Cascadas de Tamasopo",            slug: "cascadas-de-tamasopo" },
+  { Icon: Thermometer, nombre: "Balneario Taninul",               slug: "balneario-taninul" },
 ];
 
 const EXPERIENCIAS_NAV = [
@@ -137,15 +141,15 @@ export default function Navbar() {
                       Ver todos los destinos →
                     </Link>
                   </div>
-                  {DESTINOS_NAV.map((d) => (
+                  {DESTINOS_NAV.map(({ Icon, nombre, slug }) => (
                     <Link
-                      key={d.slug}
-                      href={`/destinos/${d.slug}`}
+                      key={slug}
+                      href={`/destinos/${slug}`}
                       className="relative z-10 flex items-center gap-3 px-4 py-2.5 hover:bg-verde-selva/10 transition-colors group"
                     >
-                      <span className="text-lg">{d.emoji}</span>
+                      <Icon className="w-4 h-4 text-verde-selva/70 flex-shrink-0 group-hover:text-verde-selva transition-colors" aria-hidden="true" />
                       <span className="text-[12px] text-verde-profundo font-dm group-hover:text-verde-selva transition-colors">
-                        {d.nombre}
+                        {nombre}
                       </span>
                     </Link>
                   ))}
@@ -278,14 +282,14 @@ export default function Navbar() {
                   <Link href="/destinos" className="relative z-10 block py-2 text-[10px] tracking-[2px] uppercase text-verde-selva font-dm font-semibold hover:text-verde-bosque transition-colors">
                     Ver todos →
                   </Link>
-                  {DESTINOS_NAV.map((d) => (
+                  {DESTINOS_NAV.map(({ Icon, nombre, slug }) => (
                     <Link
-                      key={d.slug}
-                      href={`/destinos/${d.slug}`}
+                      key={slug}
+                      href={`/destinos/${slug}`}
                       className="relative z-10 flex items-center gap-2.5 py-2 pr-3 text-sm text-verde-profundo font-dm hover:text-verde-selva transition-colors"
                     >
-                      <span>{d.emoji}</span>
-                      <span>{d.nombre}</span>
+                      <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                      <span>{nombre}</span>
                     </Link>
                   ))}
                 </div>

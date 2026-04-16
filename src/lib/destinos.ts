@@ -4,7 +4,7 @@ export interface Destino {
   nombre: string;
   zona: string;
   tipo: string;
-  emoji: string;
+  icon: string;
   descripcion: string;
   duracion_hrs: number;
   precio_entrada: string;
@@ -35,7 +35,7 @@ export const DESTINOS_DB: Destino[] = [
   // ─── DESTINOS ORIGINALES (8) ───────────────────────────────────────────────
   {
     id: "xilitla_pozas", slug: "las-pozas-jardin-surrealista",
-    nombre: "Las Pozas (Jardín Surrealista)", zona: "Xilitla", tipo: "Arte & Naturaleza", emoji: "🏛️",
+    nombre: "Las Pozas (Jardín Surrealista)", zona: "Xilitla", tipo: "Arte & Naturaleza", icon: "Landmark",
     descripcion: "El icónico jardín surrealista de Edward James: esculturas de concreto entre cascadas y selva tropical.",
     duracion_hrs: 4, precio_entrada: "$180 MXN", dificultad: "media",
     ideal_para: ["fotografia", "pareja", "solo", "cultura"],
@@ -55,7 +55,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "cascada_tamul", slug: "cascada-de-tamul",
-    nombre: "Cascada de Tamul", zona: "Aquismón", tipo: "Aventura", emoji: "🌈",
+    nombre: "Cascada de Tamul", zona: "Aquismón", tipo: "Aventura", icon: "Waves",
     descripcion: "La cascada más alta de SLP (105m), accesible remando por el río Tampaón. Espectacular caída turquesa.",
     duracion_hrs: 5, precio_entrada: "$220 MXN + $300 panga p/p", dificultad: "alta",
     ideal_para: ["aventura", "fotografia", "amigos"],
@@ -75,7 +75,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "sotano_golondrinas", slug: "sotano-de-las-golondrinas",
-    nombre: "Sótano de las Golondrinas", zona: "Aquismón", tipo: "Extrema", emoji: "🐦",
+    nombre: "Sótano de las Golondrinas", zona: "Aquismón", tipo: "Extrema", icon: "Bird",
     descripcion: "Abismo kárstico de 333m. Santuario de vencejos con vuelo espiral al amanecer.",
     duracion_hrs: 3, precio_entrada: "$100 MXN", dificultad: "media",
     ideal_para: ["fotografia", "naturaleza", "solo"],
@@ -95,7 +95,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "cascada_micos", slug: "cascadas-de-micos",
-    nombre: "Cascadas de Micos", zona: "Ciudad Valles", tipo: "Aventura", emoji: "💦",
+    nombre: "Cascadas de Micos", zona: "Ciudad Valles", tipo: "Aventura", icon: "Droplets",
     descripcion: "Serie de 7 cascadas con circuito de saltos, tirolesa, kayak y skybike.",
     duracion_hrs: 4, precio_entrada: "$100 MXN", dificultad: "media",
     ideal_para: ["amigos", "aventura"],
@@ -115,7 +115,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "cascada_puente_dios", slug: "puente-de-dios-tamasopo",
-    nombre: "Puente de Dios (Tamasopo)", zona: "Tamasopo", tipo: "Naturaleza", emoji: "🌀",
+    nombre: "Puente de Dios (Tamasopo)", zona: "Tamasopo", tipo: "Naturaleza", icon: "MountainSnow",
     descripcion: "Poza azul cobalto bajo puente natural. La luz entra a la cueva entre 11:00–13:00.",
     duracion_hrs: 3.5, precio_entrada: "$150 MXN", dificultad: "media",
     ideal_para: ["pareja", "fotografia"],
@@ -135,7 +135,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "tamtoc", slug: "zona-arqueologica-tamtoc",
-    nombre: "Zona Arqueológica Tamtoc", zona: "Tamuín", tipo: "Arqueología", emoji: "🗿",
+    nombre: "Zona Arqueológica Tamtoc", zona: "Tamuín", tipo: "Arqueología", icon: "BookOpen",
     descripcion: "El asentamiento prehispánico más importante de la cultura Huasteca.",
     duracion_hrs: 3, precio_entrada: "$95 MXN", dificultad: "baja",
     ideal_para: ["historia", "cultura", "familia"],
@@ -155,7 +155,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "cascada_tamasopo", slug: "cascadas-de-tamasopo",
-    nombre: "Cascadas de Tamasopo", zona: "Tamasopo", tipo: "Naturaleza", emoji: "🏊",
+    nombre: "Cascadas de Tamasopo", zona: "Tamasopo", tipo: "Naturaleza", icon: "Droplet",
     descripcion: "Paraíso de agua azul turquesa con pozas para nadar, ideal para familias.",
     duracion_hrs: 4, precio_entrada: "$60 MXN", dificultad: "baja",
     ideal_para: ["familia", "relajacion", "fotografia"],
@@ -175,7 +175,7 @@ export const DESTINOS_DB: Destino[] = [
   },
   {
     id: "balneario_taninul", slug: "balneario-taninul",
-    nombre: "Balneario Taninul", zona: "Ciudad Valles", tipo: "Naturaleza", emoji: "♨️",
+    nombre: "Balneario Taninul", zona: "Ciudad Valles", tipo: "Naturaleza", icon: "Thermometer",
     descripcion: "Aguas termales sulfurosas (36°C constante) y lodo terapéutico.",
     duracion_hrs: 4, precio_entrada: "$150 MXN", dificultad: "baja",
     ideal_para: ["familia", "pareja", "relajacion"],
@@ -199,7 +199,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Cascadas de Minas Viejas",
     zona: "El Naranjo",
     tipo: "Aventura",
-    emoji: "🌊",
+    icon: "Waves",
     descripcion: "Dos caídas gemelas de 50 m con pozas color turquesa rodeadas de selva preservada.",
     duracion_hrs: 4,
     precio_entrada: "$100 MXN",
@@ -242,7 +242,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Manantial de la Media Luna",
     zona: "Rioverde",
     tipo: "Bienestar",
-    emoji: "🌙",
+    icon: "Droplet",
     descripcion: "Manantial termal cristalino con visibilidad de 30 m y vestigios prehispánicos sumergidos.",
     duracion_hrs: 6,
     precio_entrada: "$150 MXN",
@@ -285,7 +285,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Cascada El Aguacate",
     zona: "Aquismón",
     tipo: "Aventura",
-    emoji: "🌿",
+    icon: "Leaf",
     descripcion: "Caída de 70 m entre cañones de selva densa — uno de los secretos mejor guardados de Aquismón.",
     duracion_hrs: 3,
     precio_entrada: "$50 MXN",
@@ -328,7 +328,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Cascada El Salto",
     zona: "El Naranjo",
     tipo: "Naturaleza",
-    emoji: "💧",
+    icon: "Droplet",
     descripcion: "Pared de roca kárstica de 70 m con pozas turquesas permanentes — con o sin cascada es espectacular.",
     duracion_hrs: 3,
     precio_entrada: "$50 MXN",
@@ -371,7 +371,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Cascada El Meco",
     zona: "El Naranjo",
     tipo: "Aventura",
-    emoji: "🦜",
+    icon: "Bird",
     descripcion: "Cascada constante de 35 m sobre roca caliza — la única de El Naranjo que cae todo el año.",
     duracion_hrs: 2,
     precio_entrada: "$60 MXN",
@@ -414,7 +414,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Sótano de las Huahuas",
     zona: "Aquismón",
     tipo: "Extrema",
-    emoji: "🕳️",
+    icon: "MountainSnow",
     descripcion: "Abismo de 478 m donde miles de loros y vencejos dibujan espirales al amanecer y atardecer.",
     duracion_hrs: 3,
     precio_entrada: "$60 MXN",
@@ -456,7 +456,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Cuevas de Mantetzulel",
     zona: "Aquismón",
     tipo: "Naturaleza",
-    emoji: "🌅",
+    icon: "Sun",
     descripcion: "Cuatro cuevas sagradas con techos colapsados — la luz entra desde arriba como columnas sólidas.",
     duracion_hrs: 4,
     precio_entrada: "$70 MXN",
@@ -499,7 +499,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Nacimiento de Huichihuayán",
     zona: "Huehuetlán",
     tipo: "Naturaleza",
-    emoji: "🐟",
+    icon: "Waves",
     descripcion: "Río cristalino que nace de una cueva — tan claro que se ven los peces en el fondo desde la orilla.",
     duracion_hrs: 3,
     precio_entrada: "$30 MXN",
@@ -546,7 +546,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Nacimiento de Tambaque",
     zona: "Aquismón",
     tipo: "Naturaleza",
-    emoji: "💎",
+    icon: "Droplet",
     descripcion: "Oasis donde el río Coy brota de la Sierra de Tanchanaco en pozas de azul cristalino, con corriente casi nula.",
     duracion_hrs: 3,
     precio_entrada: "$10 MXN",
@@ -589,7 +589,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Voladores de Tamaletón",
     zona: "Tancanhuitz",
     tipo: "Arte & Cultura",
-    emoji: "🦅",
+    icon: "Wind",
     descripcion: "El ritual prehispánico más antiguo de la Huasteca — 5 hombres vuelan desde un mástil de 30 m en honor al sol.",
     duracion_hrs: 4,
     precio_entrada: "$100 MXN",
@@ -632,7 +632,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Río Tampaón — Rafting Clase III",
     zona: "Aquismón",
     tipo: "Aventura",
-    emoji: "🚣",
+    icon: "Anchor",
     descripcion: "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
     duracion_hrs: 7,
     precio_entrada: "$1,670 MXN (tour completo)",
@@ -675,7 +675,7 @@ export const DESTINOS_DB: Destino[] = [
     nombre: "Xilitla — Pueblo Mágico Surrealista",
     zona: "Xilitla",
     tipo: "Arte & Cultura",
-    emoji: "🏰",
+    icon: "Landmark",
     descripcion: "Donde el concreto cobra vida y la selva se vuelve geométrica — Las Pozas de Edward James y 3 museos de clase mundial.",
     duracion_hrs: 8,
     precio_entrada: "$180 MXN (Las Pozas adulto)",

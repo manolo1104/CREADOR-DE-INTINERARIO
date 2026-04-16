@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { Award, Calendar, Globe, Stethoscope, Shield, Users, Compass } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Quiénes Somos — Guías Certificados | Tours Huasteca Potosina",
@@ -17,19 +18,21 @@ const GUIAS = [
     años:         8,
     especialidad: "Cascadas, aventura y naturaleza",
     bio:          "Somos una familia de guías locales nacidos en la Huasteca. Conocemos cada sendero, cada cascada y cada secreto de la región. Nuestro trabajo es que regreses con las mejores fotos de tu vida y ganas de volver.",
-    idiomas:      ["🇲🇽 Español", "🇺🇸 Inglés"],
+    idiomas:      ["Español", "Inglés"],
     certs:        ["NOM-09 SECTUR", "Primeros Auxilios", "Rescate Acuático"],
     foto:         "/images/equipo/hp-team.jpg",
   },
 ];
 
-const GARANTIAS = [
-  { icon: "🏅", titulo: "Certificación NOM-09 SECTUR",      sub: "Guías oficialmente avalados por la Secretaría de Turismo" },
-  { icon: "📅", titulo: "+8 años de experiencia",            sub: "Cientos de grupos guiados con cero incidentes" },
-  { icon: "🌐", titulo: "Guías bilingües",                   sub: "Español nativo · Inglés básico–intermedio" },
-  { icon: "🩺", titulo: "Botiquín de primeros auxilios",     sub: "Equipados en cada recorrido" },
-  { icon: "🛡️", titulo: "Seguro de responsabilidad civil",   sub: "Tu seguridad es nuestra prioridad" },
-  { icon: "👥", titulo: "Grupos pequeños",                   sub: "Máximo 12 personas para atención personalizada" },
+import type { LucideIcon } from "lucide-react";
+
+const GARANTIAS: { Icon: LucideIcon; titulo: string; sub: string }[] = [
+  { Icon: Award,       titulo: "Certificación NOM-09 SECTUR",      sub: "Guías oficialmente avalados por la Secretaría de Turismo" },
+  { Icon: Calendar,    titulo: "+8 años de experiencia",            sub: "Cientos de grupos guiados con cero incidentes" },
+  { Icon: Globe,       titulo: "Guías bilingües",                   sub: "Español nativo · Inglés básico–intermedio" },
+  { Icon: Stethoscope, titulo: "Botiquín de primeros auxilios",     sub: "Equipados en cada recorrido" },
+  { Icon: Shield,      titulo: "Seguro de responsabilidad civil",   sub: "Tu seguridad es nuestra prioridad" },
+  { Icon: Users,       titulo: "Grupos pequeños",                   sub: "Máximo 12 personas para atención personalizada" },
 ];
 
 const WA_SVG = (
@@ -76,7 +79,7 @@ export default function NosotrosPage() {
             <article key={g.nombre} className="border border-white/10 bg-negro/50 p-6 flex flex-col items-center text-center">
               {/* Avatar placeholder circular */}
               <div className="w-24 h-24 rounded-full bg-verde-selva/40 border-2 border-verde-vivo/30 flex items-center justify-center mb-5 overflow-hidden">
-                <span className="text-3xl" aria-hidden="true">🧭</span>
+                <Compass className="w-10 h-10 text-verde-vivo/70" aria-hidden="true" />
               </div>
 
               {/* Badge años */}
@@ -132,7 +135,7 @@ export default function NosotrosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {GARANTIAS.map((g) => (
               <div key={g.titulo} className="border border-dorado/15 bg-negro/40 p-5">
-                <span className="text-2xl block mb-3" aria-hidden="true">{g.icon}</span>
+                <g.Icon className="w-6 h-6 text-dorado/70 mb-3" aria-hidden="true" />
                 <h3 className="font-cormorant text-crema text-base mb-1 leading-tight">{g.titulo}</h3>
                 <p className="text-[11px] text-crema/45 font-dm leading-relaxed">{g.sub}</p>
               </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import { Star, Clock, Users } from "lucide-react";
 
 const dificultadConfig = {
   alta:  { label: "AVANZADO", bg: "bg-orange-700",  dot: "bg-orange-400"  },
@@ -43,7 +44,6 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
 
         {/* Badge tipo — top left */}
         <span className="absolute top-3 left-3 z-10 bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full">
-          <span aria-hidden="true" className="mr-1">{t.emoji}</span>
           {t.tipo}
         </span>
 
@@ -61,8 +61,8 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <p className="text-crema/50 text-[10px] font-dm tracking-[1px] mt-0.5">
             {t.tagline}
           </p>
-          <p className="text-[10px] font-dm text-dorado/90 mt-1">
-            ⭐ 4.9 · ({t.reviewCount} reseñas)
+          <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
+            <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} reseñas)
           </p>
         </div>
       </Link>
@@ -94,8 +94,8 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
 
         {/* Duración + grupo */}
         <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm">
-          <span>⏱ {t.duracion_hrs}h</span>
-          <span>👥 máx. {t.groupMax} personas</span>
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" aria-hidden="true" /> {t.duracion_hrs}h</span>
+          <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> máx. {t.groupMax} personas</span>
         </div>
 
         {/* Precio */}

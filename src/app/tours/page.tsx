@@ -6,6 +6,9 @@ import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TourCalculadora } from "@/components/TourCalculadora";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import type { LucideIcon } from "lucide-react";
+import { Award, Bus, Camera, CheckCircle2, MessageCircle, Star, Users } from "lucide-react";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 export const metadata: Metadata = {
   title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
@@ -27,13 +30,13 @@ const DIFICULTAD_STYLE: Record<string, string> = {
   baja:  "text-lima border-lima/50",
 };
 
-const BADGES = [
-  { icon: "🏅", title: "Guías Certificados",          sub: "NOM-09 SECTUR" },
-  { icon: "🚐", title: "Transporte Incluido",          sub: "Desde tu hotel" },
-  { icon: "📸", title: "Fotos & Video",                sub: "Del recorrido completo" },
-  { icon: "✅", title: "Todo Incluido",                sub: "Sin costos ocultos" },
-  { icon: "💬", title: "Respuesta en < 1 hora",        sub: "Lun–Dom, todo el día" },
-  { icon: "✅", title: "Confirmación inmediata",       sub: "Por WhatsApp al reservar" },
+const BADGES: { Icon: LucideIcon; title: string; sub: string }[] = [
+  { Icon: Award,         title: "Guías Certificados",    sub: "NOM-09 SECTUR" },
+  { Icon: Bus,           title: "Transporte Incluido",   sub: "Desde tu hotel" },
+  { Icon: Camera,        title: "Fotos & Video",         sub: "Del recorrido completo" },
+  { Icon: CheckCircle2,  title: "Todo Incluido",         sub: "Sin costos ocultos" },
+  { Icon: MessageCircle, title: "Respuesta en < 1 hora", sub: "Lun–Dom, todo el día" },
+  { Icon: CheckCircle2,  title: "Confirmación inmediata",sub: "Por WhatsApp al reservar" },
 ];
 
 const TESTIMONIOS = [
@@ -126,7 +129,7 @@ export default function ToursPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
             {BADGES.map((item) => (
               <div key={item.title} className="border border-white/8 bg-negro/30 p-4">
-                <div className="text-2xl mb-2" aria-hidden="true">{item.icon}</div>
+                <item.Icon className="w-6 h-6 text-verde-selva mx-auto mb-2" aria-hidden="true" />
                 <p className="font-cormorant text-crema text-sm mb-0.5 leading-tight">{item.title}</p>
                 <p className="text-[9px] text-crema/40 font-dm tracking-wide">{item.sub}</p>
               </div>
@@ -175,7 +178,7 @@ export default function ToursPage() {
               <div className="p-7 border-b border-white/6">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl" aria-hidden="true">{tour.emoji}</span>
+                    <DestinoIcon name={tour.icon} className="w-8 h-8 text-verde-selva flex-shrink-0" />
                     <div>
                       <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">
                         {tour.tipo}
@@ -268,8 +271,8 @@ export default function ToursPage() {
               {TOUR_REVIEWS[tour.id]?.length > 0 && (
                 <div className="px-7 py-5 border-t border-white/6">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm">
-                      Reseñas ⭐⭐⭐⭐⭐
+                    <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-dorado/60 text-dorado/60" aria-hidden="true" /> Reseñas
                     </p>
                     <a
                       href={GOOGLE_MAPS_REVIEWS_URL}

@@ -1,16 +1,18 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Car, ClipboardList, Utensils, Zap, Phone } from "lucide-react";
 
-const INCLUIDO = [
-  { icon: "📍", text: "Los 8 destinos esenciales con fichas completas — precios 2026, horarios reales, GPS" },
-  { icon: "🗓️", text: "3 itinerarios probados: 3, 5 y 7 días con horarios y tiempos de traslado" },
-  { icon: "💰", text: "Presupuesto real por tipo de viajero — mochilero, viajero medio, con comodidad" },
-  { icon: "🚗", text: "Rutas desde CDMX, Monterrey, Guadalajara y Tampico con precios actualizados" },
-  { icon: "📋", text: "Checklist de empaque completo con lo que SÍ y lo que NO llevar" },
-  { icon: "🍽️", text: "Gastronomía huasteca, frases útiles y cultura local" },
-  { icon: "⚡", text: "Tips insider que no encuentras en blogs de viaje — ángulos de foto, horarios secretos" },
-  { icon: "📞", text: "Contactos de emergencia y guías certificados por municipio" },
+const INCLUIDO: { Icon: LucideIcon; text: string }[] = [
+  { Icon: MapPin,        text: "Los 8 destinos esenciales con fichas completas — precios 2026, horarios reales, GPS" },
+  { Icon: Calendar,      text: "3 itinerarios probados: 3, 5 y 7 días con horarios y tiempos de traslado" },
+  { Icon: DollarSign,    text: "Presupuesto real por tipo de viajero — mochilero, viajero medio, con comodidad" },
+  { Icon: Car,           text: "Rutas desde CDMX, Monterrey, Guadalajara y Tampico con precios actualizados" },
+  { Icon: ClipboardList, text: "Checklist de empaque completo con lo que SÍ y lo que NO llevar" },
+  { Icon: Utensils,      text: "Gastronomía huasteca, frases útiles y cultura local" },
+  { Icon: Zap,           text: "Tips insider que no encuentras en blogs de viaje — ángulos de foto, horarios secretos" },
+  { Icon: Phone,         text: "Contactos de emergencia y guías certificados por municipio" },
 ];
 
 const TESTIMONIOS = [
@@ -105,7 +107,7 @@ export default function GuiaPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {INCLUIDO.map((item) => (
             <div key={item.text} className="flex gap-4 p-5 border border-white/6 bg-white/2 hover:border-verde-vivo/20 transition-colors">
-              <span className="text-2xl flex-shrink-0">{item.icon}</span>
+              <item.Icon className="w-5 h-5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-crema/70 leading-relaxed">{item.text}</p>
             </div>
           ))}

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Destino } from "@/lib/destinos";
+import { Clock, CloudSun, Calendar } from "lucide-react";
 import { useItinerario } from "@/context/ItinerarioContext";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 // ── Colores por nivel de dificultad ──────────────────────────────────────────
 
@@ -57,7 +59,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
 
         {/* Badge categoría — esquina superior izquierda */}
         <span className="absolute top-3 left-3 z-10 bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full">
-          {d.emoji && <span aria-hidden="true" className="mr-1">{d.emoji}</span>}
+          <DestinoIcon name={d.icon} className="w-3 h-3 inline-block mr-1" />
           {d.tipo}
         </span>
 
@@ -86,18 +88,18 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
         {/* Metadatos — fila 1 */}
         <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mb-3">
           <span className="flex items-center gap-1.5 text-crema/60 text-[11px] font-dm">
-            <span aria-hidden="true">⏱</span>
+            <Clock className="w-3 h-3" aria-hidden="true" />
             <span>{d.duracion_hrs}h</span>
           </span>
           {d.temporada_ideal && (
             <span className="flex items-center gap-1.5 text-crema/60 text-[11px] font-dm">
-              <span aria-hidden="true">🌤</span>
+              <CloudSun className="w-3 h-3" aria-hidden="true" />
               <span>{d.temporada_ideal}</span>
             </span>
           )}
           {d.dias_abierto && (
             <span className="flex items-center gap-1.5 text-crema/60 text-[11px] font-dm">
-              <span aria-hidden="true">📅</span>
+              <Calendar className="w-3 h-3" aria-hidden="true" />
               <span>{d.dias_abierto}</span>
             </span>
           )}

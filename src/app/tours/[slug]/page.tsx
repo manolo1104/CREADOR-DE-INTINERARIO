@@ -8,6 +8,7 @@ import { TourCalculadora } from "@/components/TourCalculadora";
 import { TourGallery } from "@/components/TourGallery";
 import { TourDeparture } from "@/components/TourDeparture";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import { Star, Clock, Users, Lock } from "lucide-react";
 
 interface Props { params: { slug: string } }
 
@@ -55,7 +56,7 @@ export default function TourDetailPage({ params }: Props) {
         {/* Badges */}
         <div className="absolute top-24 left-6 flex gap-2">
           <span className="bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full">
-            {tour.emoji} {tour.tipo}
+            {tour.tipo}
           </span>
           <span className={`${dif.bg} text-white text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
             <span className={`w-1.5 h-1.5 rounded-full ${dif.dot}`} aria-hidden="true" />
@@ -232,16 +233,16 @@ export default function TourDetailPage({ params }: Props) {
               </p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">MXN por persona</p>
               {/* Rating */}
-              <p className="text-[10px] text-dorado/80 font-dm mt-2">
-                ⭐ 4.9 · ({tour.reviewCount} reseñas)
+              <p className="text-[10px] text-dorado/80 font-dm mt-2 flex items-center gap-1">
+                <Star className="w-3 h-3 fill-dorado/80" aria-hidden="true" /> 4.9 · ({tour.reviewCount} reseñas)
               </p>
               {/* Duración */}
-              <p className="text-[10px] text-crema/40 font-dm mt-1">
-                ⏱ Duración: {tour.duracion_hrs} horas aprox.
+              <p className="text-[10px] text-crema/40 font-dm mt-1 flex items-center gap-1">
+                <Clock className="w-3 h-3" aria-hidden="true" /> Duración: {tour.duracion_hrs} horas aprox.
               </p>
               {/* Tamaño de grupo */}
-              <p className="text-[10px] text-crema/40 font-dm mt-1">
-                👥 Grupo: máx. {tour.groupMax} personas
+              <p className="text-[10px] text-crema/40 font-dm mt-1 flex items-center gap-1">
+                <Users className="w-3 h-3" aria-hidden="true" /> Grupo: máx. {tour.groupMax} personas
               </p>
               {/* Tour privado */}
               {tour.privateAvailable && (
@@ -249,9 +250,9 @@ export default function TourDetailPage({ params }: Props) {
                   href={waLink(`Hola, me interesa hacer el tour "${tour.nombre}" de forma privada. ¿Cuál sería el costo?`)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-[10px] text-verde-vivo hover:text-lima font-dm mt-2 transition-colors"
+                  className="flex items-center gap-1 text-[10px] text-verde-vivo hover:text-lima font-dm mt-2 transition-colors"
                 >
-                  🔒 ¿Tour privado para tu grupo? →
+                  <Lock className="w-3 h-3" aria-hidden="true" /> ¿Tour privado para tu grupo? →
                 </a>
               )}
               {/* Urgencia */}

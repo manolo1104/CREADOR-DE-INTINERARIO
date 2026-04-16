@@ -2,6 +2,15 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import type { FAQCategory } from "@/components/FAQAccordion";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bus, Plane, Car, Bike,
+  Calendar, BedDouble, DollarSign, CreditCard,
+  Backpack, Shield, AlertTriangle, Waves, Hospital,
+  HelpCircle, Lightbulb, MapPin,
+  CheckCircle2, XCircle,
+  Footprints, Shirt, FlaskConical, ClipboardList, Smartphone, Phone,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Guía Práctica — Cómo llegar, Dónde quedarse & Más | Huasteca Potosina",
@@ -11,12 +20,12 @@ export const metadata: Metadata = {
 
 function Section({
   id,
-  icon,
+  Icon,
   title,
   children,
 }: {
   id: string;
-  icon: string;
+  Icon: LucideIcon;
   title: string;
   children: React.ReactNode;
 }) {
@@ -24,7 +33,7 @@ function Section({
     <section id={id} className="py-16 border-b border-white/6">
       <div className="max-w-4xl mx-auto px-6">
         <div className="flex items-center gap-3 mb-8">
-          <span className="text-3xl">{icon}</span>
+          <Icon className="w-7 h-7 text-verde-selva flex-shrink-0" aria-hidden="true" />
           <h2
             className="font-cormorant font-light text-crema"
             style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
@@ -181,14 +190,14 @@ export default function InfoPracticaPage() {
       </section>
 
       {/* ── CÓMO LLEGAR ── */}
-      <Section id="como-llegar" icon="🚌" title="Cómo llegar">
+      <Section id="como-llegar" Icon={Bus} title="Cómo llegar">
         <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
           <strong className="text-crema">Ciudad Valles (SLP)</strong> es la puerta de entrada a la
           Huasteca Potosina. Desde aquí, todos los destinos principales están a menos de 2 horas.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-          <InfoCard title="✈️ En avión" accent="agua">
+          <InfoCard title="En avión" accent="agua">
             <BulletList
               items={[
                 "Aeropuerto más cercano: San Luis Potosí (SLP) — 3.5h en coche",
@@ -199,7 +208,7 @@ export default function InfoPracticaPage() {
             />
           </InfoCard>
 
-          <InfoCard title="🚌 En autobús" accent="verde">
+          <InfoCard title="En autobús" accent="verde">
             <BulletList
               items={[
                 "ADO GL desde CDMX (Terminal Norte) → Ciudad Valles: ~8 horas",
@@ -210,7 +219,7 @@ export default function InfoPracticaPage() {
             />
           </InfoCard>
 
-          <InfoCard title="🚗 En coche" accent="dorado">
+          <InfoCard title="En coche" accent="dorado">
             <BulletList
               items={[
                 "Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ~5.5h",
@@ -222,7 +231,7 @@ export default function InfoPracticaPage() {
             />
           </InfoCard>
 
-          <InfoCard title="🏍️ Transporte local" accent="agua">
+          <InfoCard title="Transporte local" accent="agua">
             <BulletList
               items={[
                 "Combis (minivanes) conectan Valles con Micos, Tamasopo, Tamuín",
@@ -236,8 +245,8 @@ export default function InfoPracticaPage() {
         </div>
 
         <div className="bg-dorado/8 border border-dorado/25 p-5">
-          <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm mb-2">
-            💡 Consejo del viajero
+          <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
+            <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" /> Consejo del viajero
           </p>
           <p className="text-crema/70 text-sm font-dm">
             Si vas en grupo de 4 o más personas, rentar un coche en Valles suele salir más barato
@@ -248,7 +257,7 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── CUÁNDO VIAJAR ── */}
-      <Section id="cuando-viajar" icon="📅" title="Cuándo viajar">
+      <Section id="cuando-viajar" Icon={Calendar} title="Cuándo viajar">
         <p className="text-crema/60 font-dm text-sm mb-8">
           La Huasteca recibe visitantes todo el año, pero cada temporada tiene su carácter.
         </p>
@@ -310,11 +319,11 @@ export default function InfoPracticaPage() {
             </thead>
             <tbody>
               {[
-                { mes: "Ene–Feb", temp: "18–26°C", lluvia: "Poca", cascadas: "⭐⭐⭐⭐⭐ Excelente" },
-                { mes: "Mar–May", temp: "24–36°C", lluvia: "Moderada", cascadas: "⭐⭐⭐⭐ Muy buena" },
-                { mes: "Jun–Sep", temp: "26–34°C", lluvia: "Alta", cascadas: "⭐⭐ Variable" },
-                { mes: "Oct–Nov", temp: "22–30°C", lluvia: "Bajando", cascadas: "⭐⭐⭐ Buena" },
-                { mes: "Dic", temp: "16–24°C", lluvia: "Poca", cascadas: "⭐⭐⭐⭐ Muy buena" },
+                { mes: "Ene–Feb", temp: "18–26°C", lluvia: "Poca", cascadas: "Excelente" },
+                { mes: "Mar–May", temp: "24–36°C", lluvia: "Moderada", cascadas: "Muy buena" },
+                { mes: "Jun–Sep", temp: "26–34°C", lluvia: "Alta", cascadas: "Variable" },
+                { mes: "Oct–Nov", temp: "22–30°C", lluvia: "Bajando", cascadas: "Buena" },
+                { mes: "Dic", temp: "16–24°C", lluvia: "Poca", cascadas: "Muy buena" },
               ].map((row) => (
                 <tr key={row.mes} className="border-b border-white/6 hover:bg-verde-profundo/20 transition-colors">
                   <td className="py-2.5 pr-4 text-crema/70">{row.mes}</td>
@@ -329,7 +338,7 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── DÓNDE QUEDARSE ── */}
-      <Section id="donde-quedarse" icon="🏨" title="Dónde quedarse">
+      <Section id="donde-quedarse" Icon={BedDouble} title="Dónde quedarse">
         <p className="text-crema/60 font-dm text-sm mb-8">
           Elige tu base según el estilo de viaje. Ciudad Valles tiene la mejor logística;
           Xilitla y Tamasopo ofrecen inmersión total en la naturaleza.
@@ -375,7 +384,7 @@ export default function InfoPracticaPage() {
               ],
             },
           ].map((h) => (
-            <InfoCard key={h.lugar} title={`📍 ${h.lugar} · ${h.etiqueta}`} accent={h.color}>
+            <InfoCard key={h.lugar} title={`${h.lugar} · ${h.etiqueta}`} accent={h.color}>
               <p className="text-crema/60 text-sm mb-3">{h.descripcion}</p>
               <BulletList items={h.opciones} />
             </InfoCard>
@@ -384,7 +393,7 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── PRESUPUESTO ── */}
-      <Section id="presupuesto" icon="💰" title="Presupuesto diario">
+      <Section id="presupuesto" Icon={DollarSign} title="Presupuesto diario">
         <p className="text-crema/60 font-dm text-sm mb-8">
           Costos aproximados por persona/día (2026). La Huasteca es sorprendentemente accesible.
         </p>
@@ -395,7 +404,7 @@ export default function InfoPracticaPage() {
               nivel: "Económico",
               rango: "$400–600 MXN",
               color: "border-lima/40 bg-lima/8",
-              icon: "🌿",
+              dot: "bg-lima",
               incluye: [
                 "Hospedaje: hostal o camping ($150–200)",
                 "Comida: mercado y puestos locales ($100–150)",
@@ -407,7 +416,7 @@ export default function InfoPracticaPage() {
               nivel: "Moderado",
               rango: "$800–1,500 MXN",
               color: "border-dorado/40 bg-dorado/8",
-              icon: "⭐",
+              dot: "bg-dorado",
               incluye: [
                 "Hotel 3 estrellas o posada ($400–600)",
                 "Restaurantes y cafés ($200–300)",
@@ -420,7 +429,7 @@ export default function InfoPracticaPage() {
               nivel: "Premium",
               rango: "$1,500+ MXN",
               color: "border-agua/40 bg-agua/8",
-              icon: "✨",
+              dot: "bg-agua",
               incluye: [
                 "Hotel boutique o posada de lujo ($800+)",
                 "Restaurante de cocina huasteca gourmet",
@@ -431,7 +440,7 @@ export default function InfoPracticaPage() {
             },
           ].map((p) => (
             <div key={p.nivel} className={`border ${p.color} p-6`}>
-              <div className="text-2xl mb-2">{p.icon}</div>
+              <span className={`inline-block w-3 h-3 rounded-full ${p.dot} mb-3`} aria-hidden="true" />
               <h3 className="font-cormorant text-crema text-xl mb-1">{p.nivel}</h3>
               <p className="text-dorado font-dm text-sm font-medium mb-4">{p.rango} / día</p>
               <BulletList items={p.incluye} />
@@ -439,7 +448,7 @@ export default function InfoPracticaPage() {
           ))}
         </div>
 
-        <InfoCard title="💳 Pagos y efectivo" accent="dorado">
+        <InfoCard title="Pagos y efectivo" accent="dorado">
           <BulletList
             items={[
               "SIEMPRE llevar efectivo. Muchos destinos solo aceptan efectivo",
@@ -452,11 +461,11 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── QUÉ LLEVAR ── */}
-      <Section id="que-llevar" icon="🎒" title="Qué llevar">
+      <Section id="que-llevar" Icon={Backpack} title="Qué llevar">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {[
             {
-              categoria: "👟 Calzado",
+              categoria: "Calzado",
               items: [
                 "Aqua shoes INDISPENSABLES para ríos y pozas",
                 "Tenis con suela antiderrapante para senderos",
@@ -465,7 +474,7 @@ export default function InfoPracticaPage() {
               ],
             },
             {
-              categoria: "👕 Ropa",
+              categoria: "Ropa",
               items: [
                 "Ropa dry-fit o de secado rápido (2–3 mudas)",
                 "Traje de baño (llevar 2 si habrá días seguidos de agua)",
@@ -475,7 +484,7 @@ export default function InfoPracticaPage() {
               ],
             },
             {
-              categoria: "🧴 Salud y protección",
+              categoria: "Salud y protección",
               items: [
                 "Repelente BIODEGRADABLE (obligatorio en pozas y cascadas)",
                 "Bloqueador solar BIODEGRADABLE (solo este permitido en agua)",
@@ -485,7 +494,7 @@ export default function InfoPracticaPage() {
               ],
             },
             {
-              categoria: "📋 Documentos y dinero",
+              categoria: "Documentos y dinero",
               items: [
                 "INE o pasaporte vigente",
                 "Efectivo en pesos mexicanos (ver sección Presupuesto)",
@@ -495,7 +504,7 @@ export default function InfoPracticaPage() {
               ],
             },
             {
-              categoria: "📱 Tecnología",
+              categoria: "Tecnología",
               items: [
                 "Powerbank: muchos sitios sin carga disponible",
                 "Funda impermeable para teléfono (esencial en lanchas y pozas)",
@@ -505,7 +514,7 @@ export default function InfoPracticaPage() {
               ],
             },
             {
-              categoria: "🎒 Mochila y extras",
+              categoria: "Mochila y extras",
               items: [
                 "Mochila resistente al agua o bolsas zip-lock para lo electrónico",
                 "Botella de agua reutilizable (2L mínimo para días de cascadas)",
@@ -523,9 +532,9 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── SEGURIDAD ── */}
-      <Section id="seguridad" icon="🛡️" title="Seguridad y emergencias">
+      <Section id="seguridad" Icon={Shield} title="Seguridad y emergencias">
         <div className="space-y-5">
-          <InfoCard title="🆘 Números de emergencia" accent="terracota">
+          <InfoCard title="Números de emergencia" accent="terracota">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               {[
                 { label: "Emergencias general", num: "911" },
@@ -545,7 +554,7 @@ export default function InfoPracticaPage() {
             </div>
           </InfoCard>
 
-          <InfoCard title="⚠️ Consejos de seguridad general" accent="dorado">
+          <InfoCard title="Consejos de seguridad general" accent="dorado">
             <BulletList
               items={[
                 "La región es generalmente segura para turistas. Mantén actitud de viajero responsable.",
@@ -558,7 +567,7 @@ export default function InfoPracticaPage() {
             />
           </InfoCard>
 
-          <InfoCard title="🌊 Seguridad en el agua" accent="agua">
+          <InfoCard title="Seguridad en el agua" accent="agua">
             <BulletList
               items={[
                 "Chaleco salvavidas OBLIGATORIO en Tamul y actividades de río.",
@@ -571,7 +580,7 @@ export default function InfoPracticaPage() {
             />
           </InfoCard>
 
-          <InfoCard title="🏥 Salud" accent="verde">
+          <InfoCard title="Salud" accent="verde">
             <BulletList
               items={[
                 "Hospital Regional Ciudad Valles: atención de urgencias 24hrs.",
@@ -590,7 +599,7 @@ export default function InfoPracticaPage() {
       <section className="py-20 border-b border-white/6">
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl" aria-hidden="true">❓</span>
+            <HelpCircle className="w-7 h-7 text-verde-selva flex-shrink-0" aria-hidden="true" />
             <h2
               className="font-cormorant font-light text-crema"
               style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
@@ -598,19 +607,19 @@ export default function InfoPracticaPage() {
               Preguntas Frecuentes
             </h2>
           </div>
-          <p className="text-crema/45 font-dm text-sm mb-10 ml-12">
+          <p className="text-crema/45 font-dm text-sm mb-10 ml-10">
             Todo lo que necesitas saber antes de reservar.
           </p>
 
           {/* Política de cancelación destacada */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
-            {[
-              { color: "text-lima border-lima/30 bg-lima/8",       icon: "✅", titulo: "+48h de anticipación", sub: "Reembolso completo" },
-              { color: "text-dorado border-dorado/30 bg-dorado/8", icon: "⚠️", titulo: "-24h de anticipación",  sub: "Sin reembolso · Reagendamiento gratuito (1 vez)" },
-              { color: "text-terracota border-terracota/30 bg-terracota/8", icon: "❌", titulo: "No-show",          sub: "Sin reembolso" },
-            ].map((p) => (
+            {([
+              { color: "text-lima border-lima/30 bg-lima/8",       Icon: CheckCircle2,   titulo: "+48h de anticipación", sub: "Reembolso completo" },
+              { color: "text-dorado border-dorado/30 bg-dorado/8", Icon: AlertTriangle,  titulo: "-24h de anticipación", sub: "Sin reembolso · Reagendamiento gratuito (1 vez)" },
+              { color: "text-terracota border-terracota/30 bg-terracota/8", Icon: XCircle, titulo: "No-show",             sub: "Sin reembolso" },
+            ] as { color: string; Icon: LucideIcon; titulo: string; sub: string }[]).map((p) => (
               <div key={p.titulo} className={`border ${p.color} p-4 rounded`}>
-                <span className="text-xl block mb-2" aria-hidden="true">{p.icon}</span>
+                <p.Icon className="w-5 h-5 mb-2" aria-hidden="true" />
                 <p className="font-dm text-sm font-medium mb-1">{p.titulo}</p>
                 <p className="text-[11px] font-dm opacity-75">{p.sub}</p>
               </div>

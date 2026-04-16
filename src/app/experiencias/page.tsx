@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import type { LucideIcon } from "lucide-react";
+import { Droplets, Mountain, Landmark, Thermometer, Camera } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 export const metadata: Metadata = {
   title: "Experiencias — Huasteca Potosina",
@@ -50,7 +53,7 @@ function ExperienceCard({ destino, description }: ExperienceCardProps) {
   return (
     <div className="flex-shrink-0 w-64 border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-200 group">
       <div className="p-5 flex flex-col h-full">
-        <div className="text-4xl mb-3">{destino.emoji}</div>
+        <DestinoIcon name={destino.icon} className="w-8 h-8 text-verde-selva mb-3" />
         <h3 className="font-cormorant text-crema text-base leading-tight mb-1">
           {destino.nombre}
         </h3>
@@ -78,14 +81,14 @@ function ExperienceCard({ destino, description }: ExperienceCardProps) {
 
 interface CategorySectionProps {
   id: string;
-  emoji: string;
+  Icon: LucideIcon;
   title: string;
   subtitle: string;
   slugs: string[];
   descriptions?: Record<string, string>;
 }
 
-function CategorySection({ id, emoji, title, subtitle, slugs, descriptions }: CategorySectionProps) {
+function CategorySection({ id, Icon, title, subtitle, slugs, descriptions }: CategorySectionProps) {
   const destinos = getDestinos(slugs);
 
   return (
@@ -93,7 +96,7 @@ function CategorySection({ id, emoji, title, subtitle, slugs, descriptions }: Ca
       <div className="max-w-7xl mx-auto px-6">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">{emoji}</span>
+            <Icon className="w-8 h-8 text-verde-selva flex-shrink-0" aria-hidden="true" />
             <h2
               className="font-cormorant font-light text-crema"
               style={{ fontSize: "clamp(26px,3.5vw,40px)" }}
@@ -160,7 +163,7 @@ export default function ExperienciasPage() {
       {/* Category Sections */}
       <CategorySection
         id="cascadas"
-        emoji="💧"
+        Icon={Droplets}
         title="Cascadas & Pozas"
         subtitle="Las aguas turquesas más espectaculares de México. Cada cascada tiene su carácter único."
         slugs={CASCADAS_SLUGS}
@@ -174,7 +177,7 @@ export default function ExperienciasPage() {
 
       <CategorySection
         id="aventura"
-        emoji="🏔️"
+        Icon={Mountain}
         title="Aventura Extrema"
         subtitle="Para quienes necesitan más adrenalina. La Huasteca desafía tus límites."
         slugs={AVENTURA_SLUGS}
@@ -187,7 +190,7 @@ export default function ExperienciasPage() {
 
       <CategorySection
         id="cultura"
-        emoji="🏛️"
+        Icon={Landmark}
         title="Arte & Cultura"
         subtitle="El legado de Edward James y la civilización Huasteca. Historia que asombra."
         slugs={CULTURA_SLUGS}
@@ -199,7 +202,7 @@ export default function ExperienciasPage() {
 
       <CategorySection
         id="bienestar"
-        emoji="♨️"
+        Icon={Thermometer}
         title="Naturaleza & Bienestar"
         subtitle="Aguas termales, pozas para nadar y paisajes que sanan el espíritu."
         slugs={BIENESTAR_SLUGS}
@@ -212,7 +215,7 @@ export default function ExperienciasPage() {
 
       <CategorySection
         id="fotografia"
-        emoji="📸"
+        Icon={Camera}
         title="Fotografía & Naturaleza"
         subtitle="Los mejores spots fotográficos de la Huasteca. Imágenes que no se olvidan."
         slugs={FOTOGRAFIA_SLUGS}

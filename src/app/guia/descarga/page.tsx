@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 
 type Estado = "verificando" | "ok" | "error";
 
@@ -38,7 +39,7 @@ function DescargaContent() {
 
         {estado === "ok" && (
           <>
-            <div className="text-5xl mb-6">✅</div>
+            <CheckCircle2 className="w-12 h-12 text-verde-vivo mx-auto mb-6" />
             <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-4">Pago confirmado</p>
             <h1 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
               Tu guía está <em className="text-dorado">lista</em>
@@ -73,7 +74,7 @@ function DescargaContent() {
 
         {estado === "error" && (
           <>
-            <div className="text-5xl mb-6">⚠️</div>
+            <AlertTriangle className="w-12 h-12 text-terracota mx-auto mb-6" />
             <h1 className="font-cormorant font-light text-crema mb-4 text-3xl">
               No pudimos verificar el pago
             </h1>

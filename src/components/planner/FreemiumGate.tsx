@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PreviewItinerary, WizardInputs } from "@/lib/generatePreviewItinerary";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 interface Props {
   preview: PreviewItinerary;
@@ -92,7 +93,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
                 <div className="space-y-2 mb-4">
                   {dia.destinos.map((d) => (
                     <div key={d.id} className="flex items-center gap-3">
-                      <span className="text-lg" aria-hidden="true">{d.emoji}</span>
+                      <DestinoIcon name={d.icon} className="w-5 h-5 text-verde-selva flex-shrink-0" />
                       <div>
                         <span className="text-sm text-crema">{d.nombre}</span>
                         <span className="text-[10px] text-crema/40 ml-2">{d.zona}</span>

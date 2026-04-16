@@ -51,7 +51,7 @@ export default async function BlogPage() {
       {/* Posts grid */}
       {posts.length === 0 ? (
         <div className="max-w-2xl mx-auto px-6 text-center py-20">
-          <p className="text-crema/40 font-dm text-lg">Próximamente — El primer artículo está en camino. 🌿</p>
+          <p className="text-crema/40 font-dm text-lg">Próximamente — El primer artículo está en camino.</p>
         </div>
       ) : (
         <section className="max-w-6xl mx-auto px-6">

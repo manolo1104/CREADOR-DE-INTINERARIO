@@ -1,4 +1,5 @@
 /* TourDeparture — Punto de salida y transporte (Server Component) */
+import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
 
 const WA_LLEGADA =
   "https://wa.me/524891251458?text=Hola%2C%20tengo%20dudas%20sobre%20c%C3%B3mo%20llegar%20al%20punto%20de%20salida%20del%20tour.";
@@ -9,7 +10,7 @@ export function TourDeparture() {
   return (
     <section>
       <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
-        <span aria-hidden="true">📍</span> Punto de salida y transporte
+        <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> Punto de salida y transporte
       </h2>
 
       <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
@@ -50,13 +51,13 @@ export function TourDeparture() {
 
         {/* Info de logística */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { icon: "🕐", label: "Horario de salida", value: "5:30 AM (puntual)" },
-            { icon: "🚐", label: "Transporte", value: "Desde tu hospedaje en Xilitla" },
-            { icon: "✅", label: "Regreso aprox.", value: "6:00–7:00 PM" },
-          ].map((item) => (
+          {([
+            { Icon: Clock,        label: "Horario de salida", value: "5:30 AM (puntual)" },
+            { Icon: Bus,          label: "Transporte",        value: "Desde tu hospedaje en Xilitla" },
+            { Icon: CheckCircle2, label: "Regreso aprox.",    value: "6:00–7:00 PM" },
+          ] as { Icon: typeof Clock; label: string; value: string }[]).map((item) => (
             <div key={item.label} className="bg-verde-profundo/30 border border-white/8 p-3 rounded">
-              <span className="text-lg block mb-1" aria-hidden="true">{item.icon}</span>
+              <item.Icon className="w-5 h-5 text-verde-vivo/60 mb-1" aria-hidden="true" />
               <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm mb-0.5">
                 {item.label}
               </p>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { PreviewItinerary } from "@/lib/generatePreviewItinerary";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 interface Props {
   preview: PreviewItinerary;
@@ -41,7 +42,7 @@ export function FreePreviewCanvas({ preview, onBack }: Props) {
               <div className="space-y-3 mb-5">
                 {dia.destinos.map((d) => (
                   <div key={d.id} className="flex items-start gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0">
-                    <span className="text-2xl mt-0.5">{d.emoji}</span>
+                    <DestinoIcon name={d.icon} className="w-6 h-6 text-verde-selva flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm text-crema font-medium">{d.nombre}</p>
                       <p className="text-[10px] text-crema/40 mt-0.5">{d.zona} · {d.duracion_hrs}h · {d.precio_entrada}</p>

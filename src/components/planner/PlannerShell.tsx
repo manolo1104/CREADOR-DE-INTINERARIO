@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { LucideIcon } from "lucide-react";
+import { User, Users, Baby, UserRound, Backpack, Leaf, Gem } from "lucide-react";
 import { ItineraryCanvas } from "./ItineraryCanvas";
 import { FreemiumGate } from "./FreemiumGate";
 import { FreePreviewCanvas } from "./FreePreviewCanvas";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { generatePreviewItinerary, PreviewItinerary } from "@/lib/generatePreviewItinerary";
 
 type Step = "dias" | "presupuesto" | "destinos" | "intereses" | "perfil" | "extras" | "resultado";
@@ -19,16 +22,16 @@ const STEPS: { key: Step; label: string; sub: string }[] = [
 ];
 
 const INTERESES = [
-  "🌊 Cascadas y Pozas", "🥾 Senderismo", "🦅 Ecoturismo", "🎨 Arte y Cultura",
-  "🍜 Gastronomía Local", "📸 Fotografía", "🧗 Aventura Extrema", "🛕 Historia y Arqueología",
-  "🧘 Relajación", "🎭 Festividades Locales",
+  "Cascadas y Pozas", "Senderismo", "Ecoturismo", "Arte y Cultura",
+  "Gastronomía Local", "Fotografía", "Aventura Extrema", "Historia y Arqueología",
+  "Relajación", "Festividades Locales",
 ];
 
-const VIAJEROS = [
-  { emoji: "🧍", nombre: "Solo/Sola",  desc: "Libertad total, a tu ritmo" },
-  { emoji: "👫", nombre: "En Pareja",  desc: "Romántico y aventurero" },
-  { emoji: "👨‍👩‍👧‍👦", nombre: "Familia",   desc: "Con niños, seguro y divertido" },
-  { emoji: "👯", nombre: "Amigos",     desc: "Grupo, fiesta y aventura" },
+const VIAJEROS: { Icon: LucideIcon; nombre: string; desc: string }[] = [
+  { Icon: User,      nombre: "Solo/Sola", desc: "Libertad total, a tu ritmo" },
+  { Icon: UserRound, nombre: "En Pareja", desc: "Romántico y aventurero" },
+  { Icon: Baby,      nombre: "Familia",   desc: "Con niños, seguro y divertido" },
+  { Icon: Users,     nombre: "Amigos",    desc: "Grupo, fiesta y aventura" },
 ];
 
 interface State {
@@ -48,9 +51,9 @@ export function PlannerShell() {
     dias: 3,
     presupuesto: "moderado",
     destinos: [],
-    intereses: ["🌊 Cascadas y Pozas"],
+    intereses: ["Cascadas y Pozas"],
     viajero: "Solo/Sola",
-    actividad: "🦥 Tranquilo",
+    actividad: "Tranquilo",
     restricciones: "",
     sueno: "",
   });
@@ -135,7 +138,7 @@ export function PlannerShell() {
       : DESTINOS_DB.slice(0, 8);
 
     const lugaresInfo = destinosSeleccionados
-      .map((l) => `- ${l.emoji} ${l.nombre} (${l.zona}): ${l.descripcion} | ${l.precio_entrada} | ${l.advertencias}`)
+      .map((l) => `- ${l.nombre} (${l.zona}): ${l.descripcion} | ${l.precio_entrada} | ${l.advertencias}`)
       .join("\n");
 
     const prompt = `Eres el mejor guía local de la Huasteca Potosina. Datos 2026.
@@ -155,7 +158,7 @@ Genera itinerario de ${s.dias} días con formato:
 **Mañana** - actividad, costo, hora
 **Tarde** - actividad, costo
 **Noche** - hospedaje + cena típica
-💰 Gasto estimado: $X MXN/persona
+Gasto estimado: $X MXN/persona
 
 Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo del guía local.`;
 
@@ -300,9 +303,9 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mb-10">
               {[
-                { key: "economico", icon: "🎒", name: "Mochilero",  range: "$300–600 MXN",   desc: "Hostales, transporte público" },
-                { key: "moderado",  icon: "🌿", name: "Moderado",   range: "$600–1,500 MXN", desc: "Posadas, taxis, restaurantes" },
-                { key: "premium",   icon: "✨", name: "Premium",    range: "$1,500+ MXN",    desc: "Hoteles boutique, guías privados" },
+                { key: "economico", Icon: Backpack, name: "Mochilero", range: "$300–600 MXN",   desc: "Hostales, transporte público" },
+                { key: "moderado",  Icon: Leaf,     name: "Moderado",  range: "$600–1,500 MXN", desc: "Posadas, taxis, restaurantes" },
+                { key: "premium",   Icon: Gem,      name: "Premium",   range: "$1,500+ MXN",    desc: "Hoteles boutique, guías privados" },
               ].map((b) => (
                 <button
                   key={b.key}
@@ -313,7 +316,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                       : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-verde-selva/45"
                   }`}
                 >
-                  <span className="text-2xl mb-3 block">{b.icon}</span>
+                  <b.Icon className="w-6 h-6 text-verde-selva mb-3" aria-hidden="true" />
                   <div className="text-sm font-medium text-crema mb-1">{b.name}</div>
                   <div className="font-cormorant text-dorado text-lg block mb-2">{b.range}</div>
                   <div className="text-[11px] text-crema/35 leading-relaxed">{b.desc}</div>
@@ -351,7 +354,10 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                     {state.destinos.includes(d.id) ? "✓" : ""}
                   </div>
                   <div>
-                    <div className="text-xs text-crema">{d.emoji} {d.nombre}</div>
+                    <div className="text-xs text-crema flex items-center gap-1.5">
+                      <DestinoIcon name={d.icon} className="w-3.5 h-3.5 text-verde-selva/70 flex-shrink-0" />
+                      {d.nombre}
+                    </div>
                     <div className="text-[10px] text-crema/35">{d.zona}</div>
                   </div>
                 </button>
@@ -411,7 +417,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                       : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-dorado/45"
                   }`}
                 >
-                  <span className="text-3xl block mb-2">{v.emoji}</span>
+                  <v.Icon className="w-7 h-7 text-verde-selva mx-auto mb-2" aria-hidden="true" />
                   <div className="text-xs text-crema mb-1">{v.nombre}</div>
                   <div className="text-[10px] text-crema/35 leading-tight">{v.desc}</div>
                 </button>
@@ -420,7 +426,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
             <div className="mb-8">
               <p className="text-[10px] tracking-[3px] uppercase text-crema/50 mb-3">Nivel de actividad física</p>
               <div className="flex gap-2.5 flex-wrap">
-                {["🦥 Tranquilo", "🚶 Moderado", "🏃 Intenso"].map((a) => (
+                {["Tranquilo", "Moderado", "Intenso"].map((a) => (
                   <button
                     key={a}
                     onClick={() => setState((s) => ({ ...s, actividad: a }))}

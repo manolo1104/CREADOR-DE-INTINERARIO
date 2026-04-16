@@ -3,6 +3,12 @@ import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
 import { TourCard } from "@/components/TourCard";
+import {
+  Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
+  MessageCircle, Star, Award, CheckCircle2,
+  Bus, Calendar, BedDouble,
+  AtSign, Share2, Music2,
+} from "lucide-react";
 
 const SITE_URL = "https://www.huasteca-potosina.com";
 
@@ -13,12 +19,12 @@ export const metadata: Metadata = {
 };
 
 const CATEGORIAS = [
-  { emoji: "💧", label: "Cascadas & Pozas",  href: "/experiencias?tipo=cascadas" },
-  { emoji: "🏔️", label: "Aventura Extrema",  href: "/experiencias?tipo=aventura" },
-  { emoji: "🏛️", label: "Cultura & Arte",    href: "/experiencias?tipo=cultura" },
-  { emoji: "🌿", label: "Ecoturismo",         href: "/experiencias?tipo=naturaleza" },
-  { emoji: "📸", label: "Fotografía",         href: "/experiencias?tipo=fotografia" },
-  { emoji: "♨️", label: "Bienestar",          href: "/experiencias?tipo=bienestar" },
+  { Icon: Droplet,     label: "Cascadas & Pozas",  href: "/experiencias?tipo=cascadas" },
+  { Icon: Mountain,    label: "Aventura Extrema",  href: "/experiencias?tipo=aventura" },
+  { Icon: Landmark,    label: "Cultura & Arte",    href: "/experiencias?tipo=cultura" },
+  { Icon: Leaf,        label: "Ecoturismo",        href: "/experiencias?tipo=naturaleza" },
+  { Icon: Camera,      label: "Fotografía",        href: "/experiencias?tipo=fotografia" },
+  { Icon: Thermometer, label: "Bienestar",         href: "/experiencias?tipo=bienestar" },
 ];
 
 const REGION_STATS = [
@@ -164,20 +170,20 @@ export default function HomePage() {
       <section aria-label="Confianza y garantías" className="bg-negro border-y border-white/6 py-4 overflow-hidden">
         <div className="overflow-x-auto scrollbar-none">
           <div className="flex items-center gap-8 px-6 min-w-max mx-auto justify-center text-[10px] tracking-[1.5px] uppercase font-dm text-crema/45">
-            <span>💬 +500 viajeros atendidos</span>
+            <span className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" aria-hidden="true" /> +500 viajeros atendidos</span>
             <span className="text-white/15">|</span>
             <a
               href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-crema/70 transition-colors underline-offset-2 hover:underline"
+              className="hover:text-crema/70 transition-colors underline-offset-2 hover:underline flex items-center gap-1.5"
             >
-              ⭐ 4.9/5 · 492 reseñas verificadas en Google
+              <Star className="w-3.5 h-3.5" aria-hidden="true" /> 4.9/5 · 492 reseñas verificadas en Google
             </a>
             <span className="text-white/15">|</span>
-            <span>🏅 Guías NOM-09</span>
+            <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5" aria-hidden="true" /> Guías NOM-09</span>
             <span className="text-white/15">|</span>
-            <span>✅ Todo incluido</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> Todo incluido</span>
           </div>
         </div>
       </section>
@@ -189,14 +195,14 @@ export default function HomePage() {
       >
         <div className="overflow-x-auto scrollbar-none">
           <div className="flex gap-3 px-6 min-w-max mx-auto justify-center">
-            {CATEGORIAS.map((cat) => (
+            {CATEGORIAS.map(({ Icon, label, href }) => (
               <Link
-                key={cat.label}
-                href={cat.href}
+                key={label}
+                href={href}
                 className="flex items-center gap-2 border border-white/15 px-5 py-2.5 text-xs tracking-[2px] uppercase font-dm text-crema/60 hover:text-crema hover:border-verde-vivo/60 hover:bg-verde-selva/15 transition-all duration-200 whitespace-nowrap"
               >
-                <span className="text-base" aria-hidden="true">{cat.emoji}</span>
-                {cat.label}
+                <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                {label}
               </Link>
             ))}
           </div>
@@ -327,9 +333,9 @@ export default function HomePage() {
           {/* Feature pills */}
           <div className="flex flex-wrap gap-3 justify-center mb-10">
             {[
-              "🗓️ Itinerario día a día",
-              "🗺️ Rutas reales",
-              "💰 Precios actualizados 2026",
+              "Itinerario día a día",
+              "Rutas reales",
+              "Precios actualizados 2026",
             ].map((pill) => (
               <span
                 key={pill}
@@ -371,19 +377,19 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: "🚌",
+                Icon: Bus,
                 title: "Cómo llegar",
                 text: "Ciudad Valles es la puerta de entrada. Vuelos desde CDMX o autobús ADO directo en 8 horas.",
                 href: "/info-practica#como-llegar",
               },
               {
-                icon: "📅",
+                Icon: Calendar,
                 title: "Mejor época",
                 text: "Todo el año. Nov–Mayo ideal para cascadas. Jun–Oct lush verde, más lluvia, menos turismo.",
                 href: "/info-practica#cuando-viajar",
               },
               {
-                icon: "🏨",
+                Icon: BedDouble,
                 title: "Dónde quedarse",
                 text: "Ciudad Valles como base. Opciones boutique en Xilitla y Tamasopo para inmersión total.",
                 href: "/info-practica#donde-quedarse",
@@ -393,7 +399,7 @@ export default function HomePage() {
                 key={card.title}
                 className="border border-white/8 bg-negro/30 p-6 hover:border-verde-vivo/30 transition-colors group"
               >
-                <div className="text-3xl mb-4" aria-hidden="true">{card.icon}</div>
+                <card.Icon className="w-7 h-7 text-verde-selva mb-4" aria-hidden="true" />
                 <h3 className="font-cormorant text-crema text-xl mb-3">{card.title}</h3>
                 <p className="text-crema/50 text-sm font-dm leading-relaxed mb-5">{card.text}</p>
                 <Link
@@ -493,17 +499,17 @@ export default function HomePage() {
               </h3>
               <div className="flex gap-4 mb-5">
                 {[
-                  { icon: "📸", label: "Instagram (próximamente)" },
-                  { icon: "📘", label: "Facebook (próximamente)" },
-                  { icon: "🎵", label: "TikTok (próximamente)" },
-                ].map((social) => (
+                  { Icon: AtSign,  label: "Instagram (próximamente)" },
+                  { Icon: Share2,  label: "Facebook (próximamente)" },
+                  { Icon: Music2,    label: "TikTok (próximamente)" },
+                ].map(({ Icon, label }) => (
                   <span
-                    key={social.label}
-                    aria-label={social.label}
+                    key={label}
+                    aria-label={label}
                     title="Próximamente"
-                    className="w-10 h-10 border border-white/8 flex items-center justify-center text-lg opacity-35 cursor-not-allowed"
+                    className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed"
                   >
-                    <span aria-hidden="true">{social.icon}</span>
+                    <Icon className="w-4 h-4" aria-hidden="true" />
                   </span>
                 ))}
               </div>

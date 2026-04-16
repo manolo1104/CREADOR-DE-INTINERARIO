@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import type { GalleryImage } from "@/lib/tours";
+import { Camera } from "lucide-react";
 
 interface Props {
   images: GalleryImage[];
@@ -41,8 +42,9 @@ export function TourGallery({ images, tourName }: Props) {
             priority
           />
           {active.hasRealPeople && (
-            <span className="absolute bottom-3 left-3 bg-negro/80 backdrop-blur-sm text-verde-vivo text-[9px] font-dm tracking-wide px-2.5 py-1 rounded-full border border-verde-vivo/30">
-              {active.caption ?? "📸 Foto real del recorrido"}
+            <span className="absolute bottom-3 left-3 bg-negro/80 backdrop-blur-sm text-verde-vivo text-[9px] font-dm tracking-wide px-2.5 py-1 rounded-full border border-verde-vivo/30 flex items-center gap-1.5">
+              <Camera className="w-3 h-3" aria-hidden="true" />
+              {active.caption ?? "Foto real del recorrido"}
             </span>
           )}
           {/* Expand icon */}
@@ -114,8 +116,8 @@ export function TourGallery({ images, tourName }: Props) {
                 sizes="85vw"
               />
               {img.hasRealPeople && (
-                <span className="absolute bottom-3 left-3 bg-negro/80 text-verde-vivo text-[9px] font-dm px-2 py-1 rounded-full border border-verde-vivo/30">
-                  📸 Foto real
+                <span className="absolute bottom-3 left-3 bg-negro/80 text-verde-vivo text-[9px] font-dm px-2 py-1 rounded-full border border-verde-vivo/30 flex items-center gap-1">
+                  <Camera className="w-3 h-3" aria-hidden="true" /> Foto real
                 </span>
               )}
             </div>
@@ -182,8 +184,9 @@ export function TourGallery({ images, tourName }: Props) {
               sizes="90vw"
             />
             {images[lightboxIdx].hasRealPeople && (
-              <span className="absolute bottom-4 left-4 bg-negro/80 text-verde-vivo text-[10px] font-dm px-3 py-1.5 rounded-full border border-verde-vivo/30">
-                {images[lightboxIdx].caption ?? "📸 Foto real del recorrido"}
+              <span className="absolute bottom-4 left-4 bg-negro/80 text-verde-vivo text-[10px] font-dm px-3 py-1.5 rounded-full border border-verde-vivo/30 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5" aria-hidden="true" />
+                {images[lightboxIdx].caption ?? "Foto real del recorrido"}
               </span>
             )}
           </div>

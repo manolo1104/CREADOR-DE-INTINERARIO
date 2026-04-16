@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { Loader2, Share2, Download } from "lucide-react";
 import { extraerDestinosDelItinerario } from "@/lib/extraerDestinos";
 import {
   DndContext,
@@ -124,7 +125,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
     []
   );
 
-  const presupuestoLabel = { economico: "Mochilero", moderado: "Moderado", premium: "Premium ✨" }[state.presupuesto] ?? state.presupuesto;
+  const presupuestoLabel = { economico: "Mochilero", moderado: "Moderado", premium: "Premium" }[state.presupuesto] ?? state.presupuesto;
   const destinosEnMapa = loading ? [] : extraerDestinosDelItinerario(itinerary);
 
   // Suppress unused variable warnings for DnD state that's wired up but not rendered yet
@@ -169,7 +170,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
       <div className="max-w-4xl mx-auto px-6 py-14">
         {loading ? (
           <div className="text-center py-24">
-            <div className="text-5xl mb-6 animate-spin inline-block">🌿</div>
+            <Loader2 className="w-12 h-12 mb-6 animate-spin text-verde-selva inline-block" />
             <p className="font-cormorant text-crema text-3xl mb-3">Diseñando tu aventura...</p>
             <p className="text-crema/40 text-sm">La IA está organizando tu itinerario perfecto</p>
           </div>
@@ -200,11 +201,12 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
         </button>
         <button
           onClick={() => {
-            navigator.clipboard.writeText(itinerary).then(() => alert("✅ Copiado al portapapeles")).catch(() => {});
+            navigator.clipboard.writeText(itinerary).then(() => alert("Copiado al portapapeles")).catch(() => {});
           }}
-          className="border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
+          className="inline-flex items-center gap-2 border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
         >
-          📤 Compartir
+          <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+          Compartir
         </button>
         {!loading && (
           <button
@@ -217,9 +219,10 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
               a.click();
               URL.revokeObjectURL(url);
             }}
-            className="bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[3px] uppercase font-medium hover:bg-lima transition-colors"
+            className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[3px] uppercase font-medium hover:bg-lima transition-colors"
           >
-            ⬇ Descargar
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+            Descargar
           </button>
         )}
       </div>
