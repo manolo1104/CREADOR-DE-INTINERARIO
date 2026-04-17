@@ -173,7 +173,11 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
         }),
       });
       const data = await res.json();
-      setItinerary(data.content?.[0]?.text || "Error al generar.");
+      if (!res.ok) {
+        setItinerary(data.error ?? "El generador de itinerarios está temporalmente desactivado. Escríbenos por WhatsApp y te armamos tu itinerario personalizado.");
+      } else {
+        setItinerary(data.content?.[0]?.text || "Error al generar.");
+      }
     } catch {
       setItinerary("Error de conexión. Intenta de nuevo.");
     }
