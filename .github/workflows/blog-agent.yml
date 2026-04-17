@@ -1,16 +1,9 @@
 name: Blog Agent — Publicación Diaria
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - blog-agent/index.js
-      - blog-agent/content-strategy.js
-      - blog-agent/*.json
-      - .github/workflows/blog-agent.yml
-  schedule:
-    - cron: "0 14 * * *"  # 8:00 AM hora CDMX (UTC-6) todos los días
+  # schedule y push desactivados — reactivar cuando se quiera reanudar publicación automática
+  # schedule:
+  #   - cron: "0 14 * * *"  # 8:00 AM hora CDMX (UTC-6) todos los días
   workflow_dispatch:
     inputs:
       topic:
