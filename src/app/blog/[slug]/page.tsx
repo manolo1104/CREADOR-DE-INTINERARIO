@@ -94,6 +94,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const PUBLIC_URL = "https://www.huasteca-potosina.com";
   const safeContent = (post.content || "")
     .replace(RAILWAY_REGEX, PUBLIC_URL)
+    .replace(/href="\/planear[^"]*"/gi, 'href="https://www.huasteca-potosina.com/planear"')
     .replace(/<h1[^>]*>/gi, "<h2>")
     .replace(/<\/h1>/gi, "</h2>");
 
