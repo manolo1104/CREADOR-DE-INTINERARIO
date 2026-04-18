@@ -123,12 +123,12 @@ export const TOURS_DB: Tour[] = [
       "/imagenes/xilitla-pueblo-magico/hero.jpg",
     ],
     gallery: [
-      { src: "/imagenes/nacimiento-huichihuayan/hero.jpg",        alt: "Nacimiento de Huichihuayán — aguas cristalinas a 22°C entre palmas" },
-      { src: "/imagenes/las-pozas-jardin-surrealista/hero.webp",  alt: "Las Pozas de Edward James — esculturas surrealistas en la selva tropical" },
-      { src: "/imagenes/xilitla-pueblo-magico/hero.jpg",          alt: "Xilitla — Pueblo Mágico entre selva y arquitectura colonial" },
-      { src: "/imagenes/nacimiento-huichihuayan/gallery-1.jpg",   alt: "Vegetación tropical rodeando el Nacimiento de Huichihuayán" },
+      { src: "/imagenes/nacimiento-huichihuayan/hero.jpg",           alt: "Nacimiento de Huichihuayán — aguas cristalinas a 22°C entre palmas" },
+      { src: "/imagenes/las-pozas-jardin-surrealista/hero.webp",     alt: "Las Pozas de Edward James — esculturas surrealistas en la selva tropical" },
+      { src: "/imagenes/xilitla-pueblo-magico/hero.jpg",             alt: "Xilitla — Pueblo Mágico entre selva y arquitectura colonial" },
+      { src: "/imagenes/castillo-de-la-salud/hero.jpg",              alt: "Castillo de la Salud — arquitectura única en Xilitla, San Luis Potosí" },
+      { src: "/imagenes/nacimiento-huichihuayan/gallery-1.jpg",      alt: "Vegetación tropical rodeando el Nacimiento de Huichihuayán" },
       { src: "/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg", alt: "Escaleras al cielo de Edward James en Las Pozas" },
-      { src: "/imagenes/nacimiento-huichihuayan/gallery-2.jpg",   alt: "Aguas del Nacimiento de Huichihuayán entre helechos" },
     ],
   },
   {
@@ -170,10 +170,9 @@ export const TOURS_DB: Tour[] = [
     gallery: [
       { src: "/imagenes/cascada-el-salto/hero.jpg",      alt: "Cascada del Salto — 40 metros de caída libre en la Huasteca" },
       { src: "/imagenes/cascada-el-meco/gallery-1.jpg",  alt: "Cascada del Meco — pozas turquesas con luz perfecta de la mañana" },
-      { src: "/imagenes/cascada-el-meco/gallery-2.jpg",  alt: "Mirador panorámico del Meco con vista a la selva potosina" },
       { src: "/imagenes/cascada-el-salto/gallery-1.jpg", alt: "Vista inferior de la Cascada del Salto entre la vegetación" },
+      { src: "/imagenes/cascada-el-meco/gallery-2.jpg",  alt: "Mirador panorámico del Meco con vista a la selva potosina" },
       { src: "/imagenes/cascada-el-salto/gallery-2.jpg", alt: "Pozas cristalinas al pie de la Cascada del Salto" },
-      { src: "/imagenes/cascada-el-aguacate/hero.jpg",   alt: "Cascada El Aguacate — caída de agua entre selva potosina" },
     ],
   },
   {
