@@ -1,401 +1,2974 @@
 [
   {
-    "id": "balneario-taninul-hero",
+    "id": "balneario-taninul-gallery-1-webp",
+    "filename": "balneario-taninul/gallery-1.webp",
+    "descripcion": "Imagen de balneario taninul en la Huasteca Potosina",
+    "tema": "balneario aguas termales taninul ciudad valles spa alberca relax",
+    "tags": [
+      "taninul",
+      "aguas termales",
+      "balneario",
+      "ciudad valles",
+      "spa",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "balneario-taninul-hero-webp",
     "filename": "balneario-taninul/hero.webp",
     "descripcion": "Balneario Taninul con aguas termales rodeado de vegetación tropical en Ciudad Valles",
-    "tema": "balneario aguas termales taninul ciudad valles spa naturaleza relax alberca",
-    "tags": ["taninul", "aguas termales", "balneario", "ciudad valles", "spa", "huasteca"]
+    "tema": "balneario aguas termales taninul ciudad valles spa alberca relax",
+    "tags": [
+      "taninul",
+      "aguas termales",
+      "balneario",
+      "ciudad valles",
+      "spa",
+      "huasteca"
+    ]
   },
   {
-    "id": "cascada-de-tamul-hero",
+    "id": "cascada-de-tamul-gallery-1-jpg",
+    "filename": "cascada-de-tamul/gallery-1.jpg",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-2-webp",
+    "filename": "cascada-de-tamul/gallery-2.webp",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-3-jpg",
+    "filename": "cascada-de-tamul/gallery-3.jpg",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-4-jpg",
+    "filename": "cascada-de-tamul/gallery-4.jpg",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-5-jpg",
+    "filename": "cascada-de-tamul/gallery-5.jpg",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-6-jpg",
+    "filename": "cascada-de-tamul/gallery-6.jpg",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-7-jpg",
+    "filename": "cascada-de-tamul/gallery-7.jpg",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-8-webp",
+    "filename": "cascada-de-tamul/gallery-8.webp",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-gallery-9-webp",
+    "filename": "cascada-de-tamul/gallery-9.webp",
+    "descripcion": "Imagen de cascada de tamul en la Huasteca Potosina",
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
+  },
+  {
+    "id": "cascada-de-tamul-hero-jpg",
     "filename": "cascada-de-tamul/hero.jpg",
     "descripcion": "Cascada de Tamul cayendo sobre el río Tampaón vista desde lancha en Aquismón",
-    "tema": "cascada tamul río tampaón aquismón cascada más alta san luis potosí lancha",
-    "tags": ["tamul", "cascada", "rio tampaon", "aquismon", "lancha", "huasteca"]
+    "tema": "cascada tamul rio tampaon aquismon lancha kayak naturaleza",
+    "tags": [
+      "tamul",
+      "cascada",
+      "rio tampaon",
+      "aquismon",
+      "lancha",
+      "huasteca"
+    ]
   },
   {
-    "id": "cascada-de-tamul-gallery-1",
-    "filename": "cascada-de-tamul/gallery-1.jpg",
-    "descripcion": "Vista panorámica de la Cascada de Tamul con vegetación selvática",
-    "tema": "cascada tamul panorámica río tampaón selva naturaleza",
-    "tags": ["tamul", "cascada", "panoramica", "selva"]
+    "id": "cascada-el-aguacate-gallery-1-webp",
+    "filename": "cascada-el-aguacate/gallery-1.webp",
+    "descripcion": "Imagen de cascada el aguacate en la Huasteca Potosina",
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
   },
   {
-    "id": "cascada-de-tamul-gallery-2",
-    "filename": "cascada-de-tamul/gallery-2.webp",
-    "descripcion": "Lanchas navegando hacia la Cascada de Tamul en el río Tampaón",
-    "tema": "cascada tamul lancha río tampaón tour paseo acuático",
-    "tags": ["tamul", "lancha", "rio tampaon", "tour", "paseo acuatico"]
+    "id": "cascada-el-aguacate-gallery-2-jpg",
+    "filename": "cascada-el-aguacate/gallery-2.jpg",
+    "descripcion": "Imagen de cascada el aguacate en la Huasteca Potosina",
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
   },
   {
-    "id": "cascada-el-aguacate-hero",
+    "id": "cascada-el-aguacate-gallery-3-jpg",
+    "filename": "cascada-el-aguacate/gallery-3.jpg",
+    "descripcion": "Imagen de cascada el aguacate en la Huasteca Potosina",
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascada-el-aguacate-gallery-4-jpg",
+    "filename": "cascada-el-aguacate/gallery-4.jpg",
+    "descripcion": "Imagen de cascada el aguacate en la Huasteca Potosina",
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascada-el-aguacate-gallery-5-webp",
+    "filename": "cascada-el-aguacate/gallery-5.webp",
+    "descripcion": "Imagen de cascada el aguacate en la Huasteca Potosina",
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascada-el-aguacate-gallery-6-jpg",
+    "filename": "cascada-el-aguacate/gallery-6.jpg",
+    "descripcion": "Imagen de cascada el aguacate en la Huasteca Potosina",
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascada-el-aguacate-hero-jpg",
     "filename": "cascada-el-aguacate/hero.jpg",
     "descripcion": "Cascada El Aguacate con aguas cristalinas rodeada de selva verde",
-    "tema": "cascada aguacate aguas cristalinas selva naturaleza huasteca",
-    "tags": ["aguacate", "cascada", "aguas cristalinas", "selva", "huasteca"]
+    "tema": "cascada aguacate poza nadar selva ecoturismo caminata",
+    "tags": [
+      "aguacate",
+      "cascada",
+      "poza",
+      "nadar",
+      "selva"
+    ]
   },
   {
-    "id": "cascada-el-aguacate-gallery-1",
-    "filename": "cascada-el-aguacate/gallery-1.webp",
-    "descripcion": "Poza de la Cascada El Aguacate ideal para nadar",
-    "tema": "cascada aguacate poza nadar ecoturismo",
-    "tags": ["aguacate", "cascada", "poza", "nadar"]
+    "id": "cascada-el-meco-gallery-1-jpg",
+    "filename": "cascada-el-meco/gallery-1.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
   },
   {
-    "id": "cascada-el-aguacate-gallery-2",
-    "filename": "cascada-el-aguacate/gallery-2.jpg",
-    "descripcion": "Sendero natural hacia la Cascada El Aguacate entre vegetación tropical",
-    "tema": "cascada aguacate sendero caminata naturaleza tropical",
-    "tags": ["aguacate", "cascada", "sendero", "caminata"]
+    "id": "cascada-el-meco-gallery-10-jpg",
+    "filename": "cascada-el-meco/gallery-10.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
   },
   {
-    "id": "cascada-el-meco-hero",
+    "id": "cascada-el-meco-gallery-2-jpg",
+    "filename": "cascada-el-meco/gallery-2.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-3-jpg",
+    "filename": "cascada-el-meco/gallery-3.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-4-jpg",
+    "filename": "cascada-el-meco/gallery-4.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-5-jpg",
+    "filename": "cascada-el-meco/gallery-5.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-6-jpg",
+    "filename": "cascada-el-meco/gallery-6.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-7-avif",
+    "filename": "cascada-el-meco/gallery-7.avif",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-8-jpg",
+    "filename": "cascada-el-meco/gallery-8.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-gallery-9-jpg",
+    "filename": "cascada-el-meco/gallery-9.jpg",
+    "descripcion": "Imagen de cascada el meco en la Huasteca Potosina",
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
+  },
+  {
+    "id": "cascada-el-meco-hero-avif",
     "filename": "cascada-el-meco/hero.avif",
     "descripcion": "Cascada El Meco con aguas turquesa en la Huasteca Potosina",
-    "tema": "cascada meco aguas turquesa huasteca potosina cañón",
-    "tags": ["meco", "cascada", "aguas turquesa", "huasteca", "canon"]
+    "tema": "cascada meco aguas turquesa huasteca canon salto",
+    "tags": [
+      "meco",
+      "cascada",
+      "aguas turquesa",
+      "huasteca",
+      "canon"
+    ]
   },
   {
-    "id": "cascada-el-meco-gallery-1",
-    "filename": "cascada-el-meco/gallery-1.jpg",
-    "descripcion": "Vista cercana de la Cascada El Meco con vegetación exuberante",
-    "tema": "cascada meco vegetación selva río",
-    "tags": ["meco", "cascada", "selva", "rio"]
-  },
-  {
-    "id": "cascada-el-meco-gallery-2",
-    "filename": "cascada-el-meco/gallery-2.jpg",
-    "descripcion": "Poza natural al pie de la Cascada El Meco para bañarse",
-    "tema": "cascada meco poza natural bañarse ecoturismo",
-    "tags": ["meco", "cascada", "poza", "ecoturismo"]
-  },
-  {
-    "id": "cascada-el-salto-hero",
-    "filename": "cascada-el-salto/hero.jpg",
-    "descripcion": "Cascada El Salto con caída de agua impresionante rodeada de naturaleza",
-    "tema": "cascada salto caída agua naturaleza huasteca río",
-    "tags": ["salto", "cascada", "huasteca", "naturaleza", "rio"]
-  },
-  {
-    "id": "cascada-el-salto-gallery-1",
+    "id": "cascada-el-salto-gallery-1-jpg",
     "filename": "cascada-el-salto/gallery-1.jpg",
-    "descripcion": "Mirador hacia la Cascada El Salto desde sendero elevado",
-    "tema": "cascada salto mirador sendero vista panorámica",
-    "tags": ["salto", "cascada", "mirador", "sendero"]
+    "descripcion": "Imagen de cascada el salto en la Huasteca Potosina",
+    "tema": "cascada el salto waterfall san luis potosi naturaleza",
+    "tags": [
+      "el salto",
+      "cascada",
+      "san luis potosi",
+      "naturaleza"
+    ]
   },
   {
-    "id": "cascada-el-salto-gallery-2",
+    "id": "cascada-el-salto-gallery-2-jpg",
     "filename": "cascada-el-salto/gallery-2.jpg",
-    "descripcion": "Zona de acceso a la Cascada El Salto con escaleras naturales",
-    "tema": "cascada salto acceso escaleras visita turística",
-    "tags": ["salto", "cascada", "acceso", "turismo"]
+    "descripcion": "Imagen de cascada el salto en la Huasteca Potosina",
+    "tema": "cascada el salto waterfall san luis potosi naturaleza",
+    "tags": [
+      "el salto",
+      "cascada",
+      "san luis potosi",
+      "naturaleza"
+    ]
   },
   {
-    "id": "cascadas-de-micos-hero",
-    "filename": "cascadas-de-micos/hero.jpg",
-    "descripcion": "Cascadas de Micos con sus pozas escalonadas de agua turquesa en Ciudad Valles",
-    "tema": "cascadas micos pozas escalonadas turquesa ciudad valles clavados saltos",
-    "tags": ["micos", "cascadas", "pozas", "ciudad valles", "clavados", "huasteca"]
+    "id": "cascada-el-salto-gallery-3-jpg",
+    "filename": "cascada-el-salto/gallery-3.jpg",
+    "descripcion": "Imagen de cascada el salto en la Huasteca Potosina",
+    "tema": "cascada el salto waterfall san luis potosi naturaleza",
+    "tags": [
+      "el salto",
+      "cascada",
+      "san luis potosi",
+      "naturaleza"
+    ]
   },
   {
-    "id": "cascadas-de-micos-gallery-1",
+    "id": "cascada-el-salto-gallery-4-jpg",
+    "filename": "cascada-el-salto/gallery-4.jpg",
+    "descripcion": "Imagen de cascada el salto en la Huasteca Potosina",
+    "tema": "cascada el salto waterfall san luis potosi naturaleza",
+    "tags": [
+      "el salto",
+      "cascada",
+      "san luis potosi",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascada-el-salto-gallery-5-jpg",
+    "filename": "cascada-el-salto/gallery-5.jpg",
+    "descripcion": "Imagen de cascada el salto en la Huasteca Potosina",
+    "tema": "cascada el salto waterfall san luis potosi naturaleza",
+    "tags": [
+      "el salto",
+      "cascada",
+      "san luis potosi",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascada-el-salto-hero-jpg",
+    "filename": "cascada-el-salto/hero.jpg",
+    "descripcion": "Cascada El Salto en la Huasteca Potosina entre vegetación selvática",
+    "tema": "cascada el salto waterfall san luis potosi naturaleza",
+    "tags": [
+      "el salto",
+      "cascada",
+      "san luis potosi",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-1-webp",
     "filename": "cascadas-de-micos/gallery-1.webp",
-    "descripcion": "Turistas saltando en las pozas de las Cascadas de Micos",
-    "tema": "cascadas micos turistas saltos pozas aventura diversión",
-    "tags": ["micos", "cascadas", "saltos", "aventura", "turismo"]
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
   },
   {
-    "id": "cascadas-de-micos-gallery-2",
+    "id": "cascadas-de-micos-gallery-10-jpg",
+    "filename": "cascadas-de-micos/gallery-10.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-11-jpg",
+    "filename": "cascadas-de-micos/gallery-11.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-12-jpg",
+    "filename": "cascadas-de-micos/gallery-12.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-13-jpg",
+    "filename": "cascadas-de-micos/gallery-13.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-2-jpg",
     "filename": "cascadas-de-micos/gallery-2.jpg",
-    "descripcion": "Vista aérea de las Cascadas de Micos entre la vegetación",
-    "tema": "cascadas micos vista aérea selva naturaleza",
-    "tags": ["micos", "cascadas", "vista aerea", "selva"]
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
   },
   {
-    "id": "cascadas-de-tamasopo-hero",
-    "filename": "cascadas-de-tamasopo/hero.jpg",
-    "descripcion": "Cascadas de Tamasopo con tres caídas de agua entre rocas y vegetación",
-    "tema": "cascadas tamasopo tres caídas agua rocas vegetación balneario",
-    "tags": ["tamasopo", "cascadas", "balneario", "rocas", "huasteca"]
+    "id": "cascadas-de-micos-gallery-3-jpg",
+    "filename": "cascadas-de-micos/gallery-3.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
   },
   {
-    "id": "cascadas-de-tamasopo-gallery-1",
+    "id": "cascadas-de-micos-gallery-4-jpg",
+    "filename": "cascadas-de-micos/gallery-4.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-5-jpg",
+    "filename": "cascadas-de-micos/gallery-5.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-6-jpg",
+    "filename": "cascadas-de-micos/gallery-6.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-7-jpg",
+    "filename": "cascadas-de-micos/gallery-7.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-8-jpg",
+    "filename": "cascadas-de-micos/gallery-8.jpg",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-gallery-9-webp",
+    "filename": "cascadas-de-micos/gallery-9.webp",
+    "descripcion": "Imagen de cascadas de micos en la Huasteca Potosina",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-micos-hero-jpg",
+    "filename": "cascadas-de-micos/hero.jpg",
+    "descripcion": "Tirolesa sobre el río en las Cascadas de Micos, la aventura más emocionante de la Huasteca",
+    "tema": "micos tirolesa bici aerea saltos circuito aventura rio",
+    "tags": [
+      "micos",
+      "tirolesa",
+      "bici aerea",
+      "circuito",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-1-jpg",
     "filename": "cascadas-de-tamasopo/gallery-1.jpg",
-    "descripcion": "Poza principal de las Cascadas de Tamasopo para nadar",
-    "tema": "cascadas tamasopo poza nadar familia balneario natural",
-    "tags": ["tamasopo", "cascadas", "poza", "nadar", "familia"]
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
   },
   {
-    "id": "cascadas-de-tamasopo-gallery-2",
+    "id": "cascadas-de-tamasopo-gallery-10-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-10.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-11-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-11.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-12-webp",
+    "filename": "cascadas-de-tamasopo/gallery-12.webp",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-2-webp",
     "filename": "cascadas-de-tamasopo/gallery-2.webp",
-    "descripcion": "Área de descanso junto a las Cascadas de Tamasopo",
-    "tema": "cascadas tamasopo descanso picnic área verde",
-    "tags": ["tamasopo", "cascadas", "descanso", "picnic"]
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
   },
   {
-    "id": "cascadas-minas-viejas-hero",
-    "filename": "cascadas-minas-viejas/hero.jpg",
-    "descripcion": "Cascadas de Minas Viejas con doble caída de agua espectacular en El Naranjo",
-    "tema": "cascadas minas viejas doble caída agua el naranjo rappel aventura",
-    "tags": ["minas viejas", "cascadas", "el naranjo", "rappel", "aventura", "huasteca"]
+    "id": "cascadas-de-tamasopo-gallery-3-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-3.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
   },
   {
-    "id": "cascadas-minas-viejas-gallery-1",
+    "id": "cascadas-de-tamasopo-gallery-4-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-4.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-5-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-5.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-6-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-6.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-7-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-7.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-8-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-8.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-gallery-9-jpg",
+    "filename": "cascadas-de-tamasopo/gallery-9.jpg",
+    "descripcion": "Imagen de cascadas de tamasopo en la Huasteca Potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-de-tamasopo-hero-jpg",
+    "filename": "cascadas-de-tamasopo/hero.jpg",
+    "descripcion": "Cascadas de Tamasopo con aguas turquesa entre la selva potosina",
+    "tema": "tamasopo cascadas parque acuatico poza nadar selva tropical",
+    "tags": [
+      "tamasopo",
+      "cascadas",
+      "parque",
+      "nadar",
+      "selva"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-1-webp",
     "filename": "cascadas-minas-viejas/gallery-1.webp",
-    "descripcion": "Vista frontal de las Cascadas de Minas Viejas con arcoíris",
-    "tema": "cascadas minas viejas frontal arcoíris niebla",
-    "tags": ["minas viejas", "cascadas", "arcoiris", "paisaje"]
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
   },
   {
-    "id": "cascadas-minas-viejas-gallery-2",
+    "id": "cascadas-minas-viejas-gallery-10-jpg",
+    "filename": "cascadas-minas-viejas/gallery-10.jpg",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-2-jpg",
     "filename": "cascadas-minas-viejas/gallery-2.jpg",
-    "descripcion": "Sendero hacia el mirador de las Cascadas de Minas Viejas",
-    "tema": "cascadas minas viejas sendero mirador caminata",
-    "tags": ["minas viejas", "cascadas", "sendero", "mirador"]
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
   },
   {
-    "id": "cuevas-de-mantetzulel-hero",
-    "filename": "cuevas-de-mantetzulel/hero.jpg",
-    "descripcion": "Interior de las Cuevas de Mantetzulel con formaciones de estalactitas",
-    "tema": "cuevas mantetzulel estalactitas estalagmitas espeleología aquismón subterráneo",
-    "tags": ["mantetzulel", "cuevas", "estalactitas", "aquismon", "espeleologia", "huasteca"]
+    "id": "cascadas-minas-viejas-gallery-3-jpg",
+    "filename": "cascadas-minas-viejas/gallery-3.jpg",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
   },
   {
-    "id": "cuevas-de-mantetzulel-gallery-1",
+    "id": "cascadas-minas-viejas-gallery-4-jpg",
+    "filename": "cascadas-minas-viejas/gallery-4.jpg",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-5-jpg",
+    "filename": "cascadas-minas-viejas/gallery-5.jpg",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-6-webp",
+    "filename": "cascadas-minas-viejas/gallery-6.webp",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-7-webp",
+    "filename": "cascadas-minas-viejas/gallery-7.webp",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-8-jpg",
+    "filename": "cascadas-minas-viejas/gallery-8.jpg",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-gallery-9-jpg",
+    "filename": "cascadas-minas-viejas/gallery-9.jpg",
+    "descripcion": "Imagen de cascadas minas viejas en la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "cascadas-minas-viejas-hero-jpg",
+    "filename": "cascadas-minas-viejas/hero.jpg",
+    "descripcion": "Cascada Minas Viejas, joya escondida de la Huasteca Potosina",
+    "tema": "minas viejas cascada cañon huasteca potosina naturaleza",
+    "tags": [
+      "minas viejas",
+      "cascada",
+      "huasteca",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "castillo-de-la-salud-gallery-1-jpg",
+    "filename": "castillo-de-la-salud/gallery-1.jpg",
+    "descripcion": "Imagen de castillo de la salud en la Huasteca Potosina",
+    "tema": "castillo salud dia muertos xantolo tradicion cultura huasteca",
+    "tags": [
+      "castillo de la salud",
+      "dia de muertos",
+      "xantolo",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "castillo-de-la-salud-gallery-2-avif",
+    "filename": "castillo-de-la-salud/gallery-2.avif",
+    "descripcion": "Imagen de castillo de la salud en la Huasteca Potosina",
+    "tema": "castillo salud dia muertos xantolo tradicion cultura huasteca",
+    "tags": [
+      "castillo de la salud",
+      "dia de muertos",
+      "xantolo",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "castillo-de-la-salud-gallery-3-jpg",
+    "filename": "castillo-de-la-salud/gallery-3.jpg",
+    "descripcion": "Imagen de castillo de la salud en la Huasteca Potosina",
+    "tema": "castillo salud dia muertos xantolo tradicion cultura huasteca",
+    "tags": [
+      "castillo de la salud",
+      "dia de muertos",
+      "xantolo",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "castillo-de-la-salud-gallery-4-jpg",
+    "filename": "castillo-de-la-salud/gallery-4.jpg",
+    "descripcion": "Imagen de castillo de la salud en la Huasteca Potosina",
+    "tema": "castillo salud dia muertos xantolo tradicion cultura huasteca",
+    "tags": [
+      "castillo de la salud",
+      "dia de muertos",
+      "xantolo",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "castillo-de-la-salud-gallery-5-jpg",
+    "filename": "castillo-de-la-salud/gallery-5.jpg",
+    "descripcion": "Imagen de castillo de la salud en la Huasteca Potosina",
+    "tema": "castillo salud dia muertos xantolo tradicion cultura huasteca",
+    "tags": [
+      "castillo de la salud",
+      "dia de muertos",
+      "xantolo",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "castillo-de-la-salud-hero-jpg",
+    "filename": "castillo-de-la-salud/hero.jpg",
+    "descripcion": "Castillo de la Salud, icónica sede del Xantolo en la tradición huasteca",
+    "tema": "castillo salud dia muertos xantolo tradicion cultura huasteca",
+    "tags": [
+      "castillo de la salud",
+      "dia de muertos",
+      "xantolo",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "cuevas-de-mantetzulel-gallery-1-jpg",
     "filename": "cuevas-de-mantetzulel/gallery-1.jpg",
-    "descripcion": "Entrada a las Cuevas de Mantetzulel con iluminación natural",
-    "tema": "cuevas mantetzulel entrada iluminación natural caverna",
-    "tags": ["mantetzulel", "cuevas", "entrada", "caverna"]
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
   },
   {
-    "id": "cuevas-de-mantetzulel-gallery-2",
+    "id": "cuevas-de-mantetzulel-gallery-2-jpg",
     "filename": "cuevas-de-mantetzulel/gallery-2.jpg",
-    "descripcion": "Formaciones rocosas dentro de las Cuevas de Mantetzulel",
-    "tema": "cuevas mantetzulel formaciones rocosas interior geología",
-    "tags": ["mantetzulel", "cuevas", "formaciones", "geologia"]
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
   },
   {
-    "id": "laguna-media-luna-hero",
-    "filename": "laguna-media-luna/hero.jpg",
-    "descripcion": "Laguna de la Media Luna con aguas cristalinas en Rioverde San Luis Potosí",
-    "tema": "laguna media luna rioverde aguas cristalinas buceo snorkel manantial",
-    "tags": ["media luna", "laguna", "rioverde", "buceo", "snorkel", "huasteca"]
+    "id": "cuevas-de-mantetzulel-gallery-3-jpg",
+    "filename": "cuevas-de-mantetzulel/gallery-3.jpg",
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
   },
   {
-    "id": "laguna-media-luna-gallery-1",
+    "id": "cuevas-de-mantetzulel-gallery-4-jpg",
+    "filename": "cuevas-de-mantetzulel/gallery-4.jpg",
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cuevas-de-mantetzulel-gallery-5-jpg",
+    "filename": "cuevas-de-mantetzulel/gallery-5.jpg",
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cuevas-de-mantetzulel-gallery-6-jpg",
+    "filename": "cuevas-de-mantetzulel/gallery-6.jpg",
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cuevas-de-mantetzulel-gallery-7-jpg",
+    "filename": "cuevas-de-mantetzulel/gallery-7.jpg",
+    "descripcion": "Imagen de cuevas de mantetzulel en la Huasteca Potosina",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cuevas-de-mantetzulel-hero-jpg",
+    "filename": "cuevas-de-mantetzulel/hero.jpg",
+    "descripcion": "Cuevas de Mantetzulel, misteriosas formaciones kársticas en San Luis Potosí",
+    "tema": "mantetzulel cuevas grutas espeleologia aventura san luis potosi",
+    "tags": [
+      "mantetzulel",
+      "cuevas",
+      "grutas",
+      "espeleologia",
+      "aventura"
+    ]
+  },
+  {
+    "id": "cultura-huasteca-gallery-1-webp",
+    "filename": "cultura-huasteca/gallery-1.webp",
+    "descripcion": "Imagen de cultura huasteca en la Huasteca Potosina",
+    "tema": "cultura tradiciones musica huapango xantolo artesanias festival huasteca",
+    "tags": [
+      "cultura",
+      "tradiciones",
+      "musica",
+      "huapango",
+      "xantolo",
+      "artesanias"
+    ]
+  },
+  {
+    "id": "cultura-huasteca-gallery-2-jpg",
+    "filename": "cultura-huasteca/gallery-2.jpg",
+    "descripcion": "Imagen de cultura huasteca en la Huasteca Potosina",
+    "tema": "cultura tradiciones musica huapango xantolo artesanias festival huasteca",
+    "tags": [
+      "cultura",
+      "tradiciones",
+      "musica",
+      "huapango",
+      "xantolo",
+      "artesanias"
+    ]
+  },
+  {
+    "id": "cultura-huasteca-gallery-3-jpg",
+    "filename": "cultura-huasteca/gallery-3.jpg",
+    "descripcion": "Imagen de cultura huasteca en la Huasteca Potosina",
+    "tema": "cultura tradiciones musica huapango xantolo artesanias festival huasteca",
+    "tags": [
+      "cultura",
+      "tradiciones",
+      "musica",
+      "huapango",
+      "xantolo",
+      "artesanias"
+    ]
+  },
+  {
+    "id": "cultura-huasteca-gallery-4-webp",
+    "filename": "cultura-huasteca/gallery-4.webp",
+    "descripcion": "Imagen de cultura huasteca en la Huasteca Potosina",
+    "tema": "cultura tradiciones musica huapango xantolo artesanias festival huasteca",
+    "tags": [
+      "cultura",
+      "tradiciones",
+      "musica",
+      "huapango",
+      "xantolo",
+      "artesanias"
+    ]
+  },
+  {
+    "id": "cultura-huasteca-gallery-5-webp",
+    "filename": "cultura-huasteca/gallery-5.webp",
+    "descripcion": "Imagen de cultura huasteca en la Huasteca Potosina",
+    "tema": "cultura tradiciones musica huapango xantolo artesanias festival huasteca",
+    "tags": [
+      "cultura",
+      "tradiciones",
+      "musica",
+      "huapango",
+      "xantolo",
+      "artesanias"
+    ]
+  },
+  {
+    "id": "estaciones-huasteca-gallery-1-jpg",
+    "filename": "estaciones-huasteca/gallery-1.jpg",
+    "descripcion": "Imagen de estaciones huasteca en la Huasteca Potosina",
+    "tema": "temporada epoca año lluvias secas mejor mes visitar huasteca cuando ir",
+    "tags": [
+      "temporada",
+      "epoca",
+      "lluvias",
+      "secas",
+      "mejor mes",
+      "cuando ir"
+    ]
+  },
+  {
+    "id": "estaciones-huasteca-gallery-2-webp",
+    "filename": "estaciones-huasteca/gallery-2.webp",
+    "descripcion": "Imagen de estaciones huasteca en la Huasteca Potosina",
+    "tema": "temporada epoca año lluvias secas mejor mes visitar huasteca cuando ir",
+    "tags": [
+      "temporada",
+      "epoca",
+      "lluvias",
+      "secas",
+      "mejor mes",
+      "cuando ir"
+    ]
+  },
+  {
+    "id": "estaciones-huasteca-gallery-3-webp",
+    "filename": "estaciones-huasteca/gallery-3.webp",
+    "descripcion": "Imagen de estaciones huasteca en la Huasteca Potosina",
+    "tema": "temporada epoca año lluvias secas mejor mes visitar huasteca cuando ir",
+    "tags": [
+      "temporada",
+      "epoca",
+      "lluvias",
+      "secas",
+      "mejor mes",
+      "cuando ir"
+    ]
+  },
+  {
+    "id": "estaciones-huasteca-gallery-4-webp",
+    "filename": "estaciones-huasteca/gallery-4.webp",
+    "descripcion": "Imagen de estaciones huasteca en la Huasteca Potosina",
+    "tema": "temporada epoca año lluvias secas mejor mes visitar huasteca cuando ir",
+    "tags": [
+      "temporada",
+      "epoca",
+      "lluvias",
+      "secas",
+      "mejor mes",
+      "cuando ir"
+    ]
+  },
+  {
+    "id": "familias-huasteca-gallery-1-webp",
+    "filename": "familias-huasteca/gallery-1.webp",
+    "descripcion": "Imagen de familias huasteca en la Huasteca Potosina",
+    "tema": "familias ninos huasteca potosina turismo familiar actividades infantiles rafting tirolesa",
+    "tags": [
+      "familias",
+      "ninos",
+      "turismo familiar",
+      "actividades",
+      "infantiles"
+    ]
+  },
+  {
+    "id": "familias-huasteca-gallery-2-jpg",
+    "filename": "familias-huasteca/gallery-2.jpg",
+    "descripcion": "Imagen de familias huasteca en la Huasteca Potosina",
+    "tema": "familias ninos huasteca potosina turismo familiar actividades infantiles rafting tirolesa",
+    "tags": [
+      "familias",
+      "ninos",
+      "turismo familiar",
+      "actividades",
+      "infantiles"
+    ]
+  },
+  {
+    "id": "familias-huasteca-gallery-3-jpg",
+    "filename": "familias-huasteca/gallery-3.jpg",
+    "descripcion": "Imagen de familias huasteca en la Huasteca Potosina",
+    "tema": "familias ninos huasteca potosina turismo familiar actividades infantiles rafting tirolesa",
+    "tags": [
+      "familias",
+      "ninos",
+      "turismo familiar",
+      "actividades",
+      "infantiles"
+    ]
+  },
+  {
+    "id": "familias-huasteca-gallery-4-jpg",
+    "filename": "familias-huasteca/gallery-4.jpg",
+    "descripcion": "Imagen de familias huasteca en la Huasteca Potosina",
+    "tema": "familias ninos huasteca potosina turismo familiar actividades infantiles rafting tirolesa",
+    "tags": [
+      "familias",
+      "ninos",
+      "turismo familiar",
+      "actividades",
+      "infantiles"
+    ]
+  },
+  {
+    "id": "familias-huasteca-gallery-5-webp",
+    "filename": "familias-huasteca/gallery-5.webp",
+    "descripcion": "Imagen de familias huasteca en la Huasteca Potosina",
+    "tema": "familias ninos huasteca potosina turismo familiar actividades infantiles rafting tirolesa",
+    "tags": [
+      "familias",
+      "ninos",
+      "turismo familiar",
+      "actividades",
+      "infantiles"
+    ]
+  },
+  {
+    "id": "familias-huasteca-gallery-6-jpg",
+    "filename": "familias-huasteca/gallery-6.jpg",
+    "descripcion": "Imagen de familias huasteca en la Huasteca Potosina",
+    "tema": "familias ninos huasteca potosina turismo familiar actividades infantiles rafting tirolesa",
+    "tags": [
+      "familias",
+      "ninos",
+      "turismo familiar",
+      "actividades",
+      "infantiles"
+    ]
+  },
+  {
+    "id": "hacienda-los-gomez-gallery-1-jpg",
+    "filename": "hacienda-los-gomez/gallery-1.jpg",
+    "descripcion": "Imagen de hacienda los gomez en la Huasteca Potosina",
+    "tema": "hacienda los gomez historia colonial arquitectura huasteca",
+    "tags": [
+      "hacienda",
+      "historia",
+      "colonial",
+      "arquitectura"
+    ]
+  },
+  {
+    "id": "hacienda-los-gomez-gallery-2-jpg",
+    "filename": "hacienda-los-gomez/gallery-2.jpg",
+    "descripcion": "Imagen de hacienda los gomez en la Huasteca Potosina",
+    "tema": "hacienda los gomez historia colonial arquitectura huasteca",
+    "tags": [
+      "hacienda",
+      "historia",
+      "colonial",
+      "arquitectura"
+    ]
+  },
+  {
+    "id": "hacienda-los-gomez-hero-jpg",
+    "filename": "hacienda-los-gomez/hero.jpg",
+    "descripcion": "Hacienda Los Gómez, joya colonial en la Huasteca Potosina",
+    "tema": "hacienda los gomez historia colonial arquitectura huasteca",
+    "tags": [
+      "hacienda",
+      "historia",
+      "colonial",
+      "arquitectura"
+    ]
+  },
+  {
+    "id": "hotel-paraiso-encantado-gallery-1-jpg",
+    "filename": "hotel-paraiso-encantado/gallery-1.jpg",
+    "descripcion": "Imagen de hotel paraiso encantado en la Huasteca Potosina",
+    "tema": "hotel paraiso encantado hospedaje xilitla alojamiento habitaciones lujo boutique",
+    "tags": [
+      "hotel",
+      "paraiso encantado",
+      "hospedaje",
+      "xilitla",
+      "alojamiento",
+      "boutique"
+    ]
+  },
+  {
+    "id": "hotel-paraiso-encantado-gallery-2-jpg",
+    "filename": "hotel-paraiso-encantado/gallery-2.jpg",
+    "descripcion": "Imagen de hotel paraiso encantado en la Huasteca Potosina",
+    "tema": "hotel paraiso encantado hospedaje xilitla alojamiento habitaciones lujo boutique",
+    "tags": [
+      "hotel",
+      "paraiso encantado",
+      "hospedaje",
+      "xilitla",
+      "alojamiento",
+      "boutique"
+    ]
+  },
+  {
+    "id": "hotel-paraiso-encantado-gallery-3-jpg",
+    "filename": "hotel-paraiso-encantado/gallery-3.jpg",
+    "descripcion": "Imagen de hotel paraiso encantado en la Huasteca Potosina",
+    "tema": "hotel paraiso encantado hospedaje xilitla alojamiento habitaciones lujo boutique",
+    "tags": [
+      "hotel",
+      "paraiso encantado",
+      "hospedaje",
+      "xilitla",
+      "alojamiento",
+      "boutique"
+    ]
+  },
+  {
+    "id": "hotel-paraiso-encantado-gallery-4-jpg",
+    "filename": "hotel-paraiso-encantado/gallery-4.jpg",
+    "descripcion": "Imagen de hotel paraiso encantado en la Huasteca Potosina",
+    "tema": "hotel paraiso encantado hospedaje xilitla alojamiento habitaciones lujo boutique",
+    "tags": [
+      "hotel",
+      "paraiso encantado",
+      "hospedaje",
+      "xilitla",
+      "alojamiento",
+      "boutique"
+    ]
+  },
+  {
+    "id": "hotel-paraiso-encantado-gallery-5-jpg",
+    "filename": "hotel-paraiso-encantado/gallery-5.jpg",
+    "descripcion": "Imagen de hotel paraiso encantado en la Huasteca Potosina",
+    "tema": "hotel paraiso encantado hospedaje xilitla alojamiento habitaciones lujo boutique",
+    "tags": [
+      "hotel",
+      "paraiso encantado",
+      "hospedaje",
+      "xilitla",
+      "alojamiento",
+      "boutique"
+    ]
+  },
+  {
+    "id": "hotel-paraiso-encantado-hero-jpg",
+    "filename": "hotel-paraiso-encantado/hero.jpg",
+    "descripcion": "Hotel Paraíso Encantado en Xilitla, boutique de lujo rodeado de selva tropical",
+    "tema": "hotel paraiso encantado hospedaje xilitla alojamiento habitaciones lujo boutique",
+    "tags": [
+      "hotel",
+      "paraiso encantado",
+      "hospedaje",
+      "xilitla",
+      "alojamiento",
+      "boutique"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-1-avif",
     "filename": "laguna-media-luna/gallery-1.avif",
-    "descripcion": "Buzos practicando snorkel en la Laguna de la Media Luna",
-    "tema": "laguna media luna snorkel buceo submarino visibilidad",
-    "tags": ["media luna", "snorkel", "buceo", "laguna"]
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
   },
   {
-    "id": "laguna-media-luna-gallery-2",
+    "id": "laguna-media-luna-gallery-10-jpg",
+    "filename": "laguna-media-luna/gallery-10.jpg",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-11-jpg",
+    "filename": "laguna-media-luna/gallery-11.jpg",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-12-avif",
+    "filename": "laguna-media-luna/gallery-12.avif",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-13-webp",
+    "filename": "laguna-media-luna/gallery-13.webp",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-2-webp",
     "filename": "laguna-media-luna/gallery-2.webp",
-    "descripcion": "Vista panorámica de la Laguna de la Media Luna al atardecer",
-    "tema": "laguna media luna panorámica atardecer paisaje",
-    "tags": ["media luna", "laguna", "atardecer", "paisaje"]
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
   },
   {
-    "id": "las-pozas-jardin-surrealista-hero",
-    "filename": "las-pozas-jardin-surrealista/hero.webp",
-    "descripcion": "Las Pozas de Edward James jardín escultórico surrealista en Xilitla",
-    "tema": "las pozas edward james xilitla jardín surrealista esculturas selva arte",
-    "tags": ["las pozas", "edward james", "xilitla", "jardin surrealista", "esculturas", "huasteca"]
+    "id": "laguna-media-luna-gallery-3-jpg",
+    "filename": "laguna-media-luna/gallery-3.jpg",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
   },
   {
-    "id": "las-pozas-jardin-surrealista-gallery-1",
+    "id": "laguna-media-luna-gallery-4-jpg",
+    "filename": "laguna-media-luna/gallery-4.jpg",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-5-webp",
+    "filename": "laguna-media-luna/gallery-5.webp",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-6-webp",
+    "filename": "laguna-media-luna/gallery-6.webp",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-7-jpg",
+    "filename": "laguna-media-luna/gallery-7.jpg",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-8-jpg",
+    "filename": "laguna-media-luna/gallery-8.jpg",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-gallery-9-webp",
+    "filename": "laguna-media-luna/gallery-9.webp",
+    "descripcion": "Imagen de laguna media luna en la Huasteca Potosina",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "laguna-media-luna-hero-jpg",
+    "filename": "laguna-media-luna/hero.jpg",
+    "descripcion": "Laguna Media Luna en Rioverde, paraíso del buceo y snorkel en aguas cristalinas",
+    "tema": "media luna laguna buceo snorkel rioverde aguas cristalinas",
+    "tags": [
+      "media luna",
+      "laguna",
+      "buceo",
+      "snorkel",
+      "rioverde"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-1-jpg",
     "filename": "las-pozas-jardin-surrealista/gallery-1.jpg",
-    "descripcion": "Escalera al cielo en Las Pozas de Edward James entre la selva de Xilitla",
-    "tema": "las pozas edward james escalera cielo xilitla arquitectura surrealismo",
-    "tags": ["las pozas", "xilitla", "escalera al cielo", "surrealismo"]
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
   },
   {
-    "id": "las-pozas-jardin-surrealista-gallery-2",
+    "id": "las-pozas-jardin-surrealista-gallery-10-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-10.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-11-webp",
+    "filename": "las-pozas-jardin-surrealista/gallery-11.webp",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-12-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-12.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-13-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-13.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-2-jpg",
     "filename": "las-pozas-jardin-surrealista/gallery-2.jpg",
-    "descripcion": "Estructuras de concreto cubiertas de musgo en Las Pozas Xilitla",
-    "tema": "las pozas xilitla concreto musgo vegetación escultura",
-    "tags": ["las pozas", "xilitla", "escultura", "musgo"]
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
   },
   {
-    "id": "nacimiento-huichihuayan-hero",
-    "filename": "nacimiento-huichihuayan/hero.jpg",
-    "descripcion": "Nacimiento de Huichihuayán con aguas turquesa cristalinas rodeado de selva",
-    "tema": "nacimiento huichihuayán aguas turquesa cristalinas selva ojo de agua manantial",
-    "tags": ["huichihuayan", "nacimiento", "aguas turquesa", "manantial", "selva", "huasteca"]
+    "id": "las-pozas-jardin-surrealista-gallery-3-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-3.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
   },
   {
-    "id": "nacimiento-huichihuayan-gallery-1",
+    "id": "las-pozas-jardin-surrealista-gallery-4-webp",
+    "filename": "las-pozas-jardin-surrealista/gallery-4.webp",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-5-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-5.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-6-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-6.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-7-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-7.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-8-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-8.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-gallery-9-jpg",
+    "filename": "las-pozas-jardin-surrealista/gallery-9.jpg",
+    "descripcion": "Imagen de las pozas jardin surrealista en la Huasteca Potosina",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "las-pozas-jardin-surrealista-hero-webp",
+    "filename": "las-pozas-jardin-surrealista/hero.webp",
+    "descripcion": "Las Pozas de Edward James, jardín surrealista en la selva de Xilitla",
+    "tema": "las pozas edward james xilitla surrealista jardin escultorico selva",
+    "tags": [
+      "las pozas",
+      "edward james",
+      "xilitla",
+      "surrealista",
+      "jardin"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-gallery-1-jpg",
     "filename": "nacimiento-huichihuayan/gallery-1.jpg",
-    "descripcion": "Zona de nado en el Nacimiento de Huichihuayán con lanchas",
-    "tema": "nacimiento huichihuayán nado lanchas paseo acuático",
-    "tags": ["huichihuayan", "nacimiento", "nado", "lanchas"]
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
   },
   {
-    "id": "nacimiento-huichihuayan-gallery-2",
+    "id": "nacimiento-huichihuayan-gallery-2-jpg",
     "filename": "nacimiento-huichihuayan/gallery-2.jpg",
-    "descripcion": "Vegetación tropical alrededor del Nacimiento de Huichihuayán",
-    "tema": "nacimiento huichihuayán vegetación tropical paisaje naturaleza",
-    "tags": ["huichihuayan", "nacimiento", "vegetacion", "tropical"]
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
   },
   {
-    "id": "nacimiento-tambaque-hero",
-    "filename": "nacimiento-tambaque/hero.webp",
-    "descripcion": "Nacimiento de Tambaque con poza de aguas azul turquesa en medio de la selva",
-    "tema": "nacimiento tambaque poza aguas azul turquesa selva cañón natación",
-    "tags": ["tambaque", "nacimiento", "aguas turquesa", "selva", "poza", "huasteca"]
+    "id": "nacimiento-huichihuayan-gallery-3-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-3.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
   },
   {
-    "id": "nacimiento-tambaque-gallery-1",
+    "id": "nacimiento-huichihuayan-gallery-4-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-4.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-gallery-5-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-5.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-gallery-6-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-6.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-gallery-7-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-7.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-gallery-8-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-8.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-gallery-9-jpg",
+    "filename": "nacimiento-huichihuayan/gallery-9.jpg",
+    "descripcion": "Imagen de nacimiento huichihuayan en la Huasteca Potosina",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-huichihuayan-hero-jpg",
+    "filename": "nacimiento-huichihuayan/hero.jpg",
+    "descripcion": "Nacimiento de Huichihuayan con aguas turquesa entre la vegetación tropical",
+    "tema": "huichihuayan nacimiento rio aguas turquesa ecoturismo",
+    "tags": [
+      "huichihuayan",
+      "nacimiento",
+      "rio",
+      "aguas turquesa"
+    ]
+  },
+  {
+    "id": "nacimiento-tambaque-gallery-1-webp",
     "filename": "nacimiento-tambaque/gallery-1.webp",
-    "descripcion": "Cañón natural del Nacimiento de Tambaque con paredes de roca",
-    "tema": "nacimiento tambaque cañón roca paredes naturaleza",
-    "tags": ["tambaque", "nacimiento", "canon", "roca"]
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
   },
   {
-    "id": "nacimiento-tambaque-gallery-2",
+    "id": "nacimiento-tambaque-gallery-2-webp",
     "filename": "nacimiento-tambaque/gallery-2.webp",
-    "descripcion": "Visitantes nadando en la poza del Nacimiento de Tambaque",
-    "tema": "nacimiento tambaque nado visitantes turismo ecoturismo",
-    "tags": ["tambaque", "nacimiento", "nado", "ecoturismo"]
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
   },
   {
-    "id": "puente-de-dios-tamasopo-hero",
-    "filename": "puente-de-dios-tamasopo/hero.jpg",
-    "descripcion": "Puente de Dios en Tamasopo con rayo de luz entrando por la cueva sobre aguas turquesa",
-    "tema": "puente de dios tamasopo cueva luz aguas turquesa rayo sol cenote",
-    "tags": ["puente de dios", "tamasopo", "cueva", "aguas turquesa", "cenote", "huasteca"]
+    "id": "nacimiento-tambaque-gallery-3-jpg",
+    "filename": "nacimiento-tambaque/gallery-3.jpg",
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
   },
   {
-    "id": "puente-de-dios-tamasopo-gallery-1",
+    "id": "nacimiento-tambaque-gallery-4-webp",
+    "filename": "nacimiento-tambaque/gallery-4.webp",
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
+  },
+  {
+    "id": "nacimiento-tambaque-gallery-5-webp",
+    "filename": "nacimiento-tambaque/gallery-5.webp",
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
+  },
+  {
+    "id": "nacimiento-tambaque-gallery-6-webp",
+    "filename": "nacimiento-tambaque/gallery-6.webp",
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
+  },
+  {
+    "id": "nacimiento-tambaque-gallery-7-jpg",
+    "filename": "nacimiento-tambaque/gallery-7.jpg",
+    "descripcion": "Imagen de nacimiento tambaque en la Huasteca Potosina",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
+  },
+  {
+    "id": "nacimiento-tambaque-hero-webp",
+    "filename": "nacimiento-tambaque/hero.webp",
+    "descripcion": "Nacimiento Tambaque, balneario natural de aguas cristalinas en la Huasteca",
+    "tema": "tambaque nacimiento balneario poza nadar aventura huasteca",
+    "tags": [
+      "tambaque",
+      "nacimiento",
+      "balneario",
+      "nadar"
+    ]
+  },
+  {
+    "id": "papan-huasteco-gallery-1-jpg",
+    "filename": "papan-huasteco/gallery-1.jpg",
+    "descripcion": "Imagen de papan huasteco en la Huasteca Potosina",
+    "tema": "papan huasteco restaurante cena gastronomia comida regional xilitla vinos platillos",
+    "tags": [
+      "papan huasteco",
+      "restaurante",
+      "cena",
+      "gastronomia",
+      "xilitla",
+      "vinos"
+    ]
+  },
+  {
+    "id": "papan-huasteco-gallery-2-webp",
+    "filename": "papan-huasteco/gallery-2.webp",
+    "descripcion": "Imagen de papan huasteco en la Huasteca Potosina",
+    "tema": "papan huasteco restaurante cena gastronomia comida regional xilitla vinos platillos",
+    "tags": [
+      "papan huasteco",
+      "restaurante",
+      "cena",
+      "gastronomia",
+      "xilitla",
+      "vinos"
+    ]
+  },
+  {
+    "id": "papan-huasteco-gallery-3-webp",
+    "filename": "papan-huasteco/gallery-3.webp",
+    "descripcion": "Imagen de papan huasteco en la Huasteca Potosina",
+    "tema": "papan huasteco restaurante cena gastronomia comida regional xilitla vinos platillos",
+    "tags": [
+      "papan huasteco",
+      "restaurante",
+      "cena",
+      "gastronomia",
+      "xilitla",
+      "vinos"
+    ]
+  },
+  {
+    "id": "papan-huasteco-gallery-4-jpg",
+    "filename": "papan-huasteco/gallery-4.jpg",
+    "descripcion": "Imagen de papan huasteco en la Huasteca Potosina",
+    "tema": "papan huasteco restaurante cena gastronomia comida regional xilitla vinos platillos",
+    "tags": [
+      "papan huasteco",
+      "restaurante",
+      "cena",
+      "gastronomia",
+      "xilitla",
+      "vinos"
+    ]
+  },
+  {
+    "id": "puente-de-dios-tamasopo-gallery-1-jpg",
     "filename": "puente-de-dios-tamasopo/gallery-1.jpg",
-    "descripcion": "Interior del Puente de Dios con formación rocosa natural y agua cristalina",
-    "tema": "puente de dios interior roca agua cristalina cueva",
-    "tags": ["puente de dios", "interior", "roca", "agua cristalina"]
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
   },
   {
-    "id": "puente-de-dios-tamasopo-gallery-2",
+    "id": "puente-de-dios-tamasopo-gallery-2-jpg",
     "filename": "puente-de-dios-tamasopo/gallery-2.jpg",
-    "descripcion": "Acceso al Puente de Dios con sendero entre la selva de Tamasopo",
-    "tema": "puente de dios acceso sendero selva tamasopo",
-    "tags": ["puente de dios", "tamasopo", "sendero", "selva"]
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
   },
   {
-    "id": "rio-tampaon-rafting-hero",
-    "filename": "rio-tampaon-rafting/hero.jpg",
-    "descripcion": "Grupo de personas haciendo rafting en el Río Tampaón con rápidos",
-    "tema": "río tampaón rafting rápidos aventura grupo kayak deporte extremo",
-    "tags": ["rio tampaon", "rafting", "rapidos", "aventura", "kayak", "huasteca"]
+    "id": "puente-de-dios-tamasopo-gallery-3-jpg",
+    "filename": "puente-de-dios-tamasopo/gallery-3.jpg",
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
   },
   {
-    "id": "rio-tampaon-rafting-gallery-1",
+    "id": "puente-de-dios-tamasopo-gallery-4-jpg",
+    "filename": "puente-de-dios-tamasopo/gallery-4.jpg",
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
+  },
+  {
+    "id": "puente-de-dios-tamasopo-gallery-5-jpg",
+    "filename": "puente-de-dios-tamasopo/gallery-5.jpg",
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
+  },
+  {
+    "id": "puente-de-dios-tamasopo-gallery-6-jpg",
+    "filename": "puente-de-dios-tamasopo/gallery-6.jpg",
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
+  },
+  {
+    "id": "puente-de-dios-tamasopo-gallery-7-jpg",
+    "filename": "puente-de-dios-tamasopo/gallery-7.jpg",
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
+  },
+  {
+    "id": "puente-de-dios-tamasopo-gallery-8-jpg",
+    "filename": "puente-de-dios-tamasopo/gallery-8.jpg",
+    "descripcion": "Imagen de puente de dios tamasopo en la Huasteca Potosina",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
+  },
+  {
+    "id": "puente-de-dios-tamasopo-hero-jpg",
+    "filename": "puente-de-dios-tamasopo/hero.jpg",
+    "descripcion": "Puente de Dios en Tamasopo, arco natural sobre aguas turquesa",
+    "tema": "puente de dios tamasopo aguas turquesa cañon naturaleza",
+    "tags": [
+      "puente de dios",
+      "tamasopo",
+      "aguas turquesa",
+      "canon"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-1-jpg",
     "filename": "rio-tampaon-rafting/gallery-1.jpg",
-    "descripcion": "Vista del Río Tampaón con cañones verdes ideales para rafting",
-    "tema": "río tampaón cañones verde paisaje naturaleza agua",
-    "tags": ["rio tampaon", "canones", "paisaje", "naturaleza"]
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
   },
   {
-    "id": "rio-tampaon-rafting-gallery-2",
+    "id": "rio-tampaon-rafting-gallery-10-jpg",
+    "filename": "rio-tampaon-rafting/gallery-10.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-11-jpg",
+    "filename": "rio-tampaon-rafting/gallery-11.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-2-jpg",
     "filename": "rio-tampaon-rafting/gallery-2.jpg",
-    "descripcion": "Lanchas y kayaks en zona de embarque del Río Tampaón",
-    "tema": "río tampaón lanchas kayak embarque tour acuático",
-    "tags": ["rio tampaon", "lanchas", "kayak", "tour"]
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
   },
   {
-    "id": "sotano-de-las-golondrinas-hero",
-    "filename": "sotano-de-las-golondrinas/hero.jpg",
-    "descripcion": "Sótano de las Golondrinas vista desde el borde del abismo con aves volando",
-    "tema": "sótano golondrinas abismo aves vencejos aquismón profundidad espeleología rappel",
-    "tags": ["sotano golondrinas", "abismo", "aves", "aquismon", "espeleologia", "huasteca"]
+    "id": "rio-tampaon-rafting-gallery-3-jpg",
+    "filename": "rio-tampaon-rafting/gallery-3.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
   },
   {
-    "id": "sotano-de-las-golondrinas-gallery-1",
+    "id": "rio-tampaon-rafting-gallery-4-jpg",
+    "filename": "rio-tampaon-rafting/gallery-4.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-5-webp",
+    "filename": "rio-tampaon-rafting/gallery-5.webp",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-6-jpg",
+    "filename": "rio-tampaon-rafting/gallery-6.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-7-jpg",
+    "filename": "rio-tampaon-rafting/gallery-7.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-8-jpg",
+    "filename": "rio-tampaon-rafting/gallery-8.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-gallery-9-jpg",
+    "filename": "rio-tampaon-rafting/gallery-9.jpg",
+    "descripcion": "Imagen de rio tampaon rafting en la Huasteca Potosina",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "rio-tampaon-rafting-hero-jpg",
+    "filename": "rio-tampaon-rafting/hero.jpg",
+    "descripcion": "Rafting de aventura en el Río Tampaón, la experiencia más emocionante de la Huasteca",
+    "tema": "tampaon rafting kayak canoa aventura rio rapidos",
+    "tags": [
+      "tampaon",
+      "rafting",
+      "kayak",
+      "canoa",
+      "aventura"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-1-avif",
     "filename": "sotano-de-las-golondrinas/gallery-1.avif",
-    "descripcion": "Miles de vencejos saliendo del Sótano de las Golondrinas al amanecer",
-    "tema": "sótano golondrinas vencejos amanecer vuelo espectáculo natural",
-    "tags": ["sotano golondrinas", "vencejos", "amanecer", "espectaculo"]
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
   },
   {
-    "id": "sotano-de-las-golondrinas-gallery-2",
+    "id": "sotano-de-las-golondrinas-gallery-10-jpg",
+    "filename": "sotano-de-las-golondrinas/gallery-10.jpg",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-11-jpg",
+    "filename": "sotano-de-las-golondrinas/gallery-11.jpg",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-12-jpg",
+    "filename": "sotano-de-las-golondrinas/gallery-12.jpg",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-13-webp",
+    "filename": "sotano-de-las-golondrinas/gallery-13.webp",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-2-avif",
     "filename": "sotano-de-las-golondrinas/gallery-2.avif",
-    "descripcion": "Rappelista descendiendo al interior del Sótano de las Golondrinas",
-    "tema": "sótano golondrinas rappel descenso aventura extrema deporte",
-    "tags": ["sotano golondrinas", "rappel", "aventura extrema", "deporte"]
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
   },
   {
-    "id": "sotano-de-las-huahuas-hero",
-    "filename": "sotano-de-las-huahuas/hero.jpg",
-    "descripcion": "Sótano de las Huahuas con vegetación colgante y luz natural entrando",
-    "tema": "sótano huahuas vegetación luz natural cueva selva profundidad",
-    "tags": ["sotano huahuas", "cueva", "vegetacion", "luz natural", "selva", "huasteca"]
+    "id": "sotano-de-las-golondrinas-gallery-3-avif",
+    "filename": "sotano-de-las-golondrinas/gallery-3.avif",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
   },
   {
-    "id": "sotano-de-las-huahuas-gallery-1",
+    "id": "sotano-de-las-golondrinas-gallery-4-jpg",
+    "filename": "sotano-de-las-golondrinas/gallery-4.jpg",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-5-avif",
+    "filename": "sotano-de-las-golondrinas/gallery-5.avif",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-6-webp",
+    "filename": "sotano-de-las-golondrinas/gallery-6.webp",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-7-webp",
+    "filename": "sotano-de-las-golondrinas/gallery-7.webp",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-8-avif",
+    "filename": "sotano-de-las-golondrinas/gallery-8.avif",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-gallery-9-jpg",
+    "filename": "sotano-de-las-golondrinas/gallery-9.jpg",
+    "descripcion": "Imagen de sotano de las golondrinas en la Huasteca Potosina",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-golondrinas-hero-jpg",
+    "filename": "sotano-de-las-golondrinas/hero.jpg",
+    "descripcion": "Sótano de las Golondrinas, el abismo más profundo de México en San Luis Potosí",
+    "tema": "golondrinas sotano abismo rapel aventura extrema san luis potosi",
+    "tags": [
+      "golondrinas",
+      "sotano",
+      "abismo",
+      "rapel",
+      "aventura extrema"
+    ]
+  },
+  {
+    "id": "sotano-de-las-huahuas-gallery-1-jpg",
     "filename": "sotano-de-las-huahuas/gallery-1.jpg",
-    "descripcion": "Vista interior del Sótano de las Huahuas con helechos y humedad",
-    "tema": "sótano huahuas interior helechos humedad espeleología",
-    "tags": ["sotano huahuas", "interior", "helechos", "espeleologia"]
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
   },
   {
-    "id": "voladores-tamaleton-hero",
-    "filename": "voladores-tamaleton/hero.jpg",
-    "descripcion": "Danza de los Voladores de Tamaleón girando desde el mástil en ceremonia teenek",
-    "tema": "voladores tamaleón danza mástil ceremonia teenek tradición cultura",
-    "tags": ["voladores", "tamaleton", "danza", "ceremonia", "teenek", "huasteca"]
+    "id": "sotano-de-las-huahuas-gallery-2-jpg",
+    "filename": "sotano-de-las-huahuas/gallery-2.jpg",
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
   },
   {
-    "id": "voladores-tamaleton-gallery-1",
+    "id": "sotano-de-las-huahuas-gallery-3-jpg",
+    "filename": "sotano-de-las-huahuas/gallery-3.jpg",
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "sotano-de-las-huahuas-gallery-4-jpg",
+    "filename": "sotano-de-las-huahuas/gallery-4.jpg",
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "sotano-de-las-huahuas-gallery-5-jpg",
+    "filename": "sotano-de-las-huahuas/gallery-5.jpg",
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "sotano-de-las-huahuas-gallery-6-jpg",
+    "filename": "sotano-de-las-huahuas/gallery-6.jpg",
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "sotano-de-las-huahuas-gallery-7-webp",
+    "filename": "sotano-de-las-huahuas/gallery-7.webp",
+    "descripcion": "Imagen de sotano de las huahuas en la Huasteca Potosina",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "sotano-de-las-huahuas-hero-jpg",
+    "filename": "sotano-de-las-huahuas/hero.jpg",
+    "descripcion": "Sótano de las Huahuas, impresionante formación geológica en la Huasteca",
+    "tema": "huahuas sotano cueva aventura naturaleza huasteca potosina",
+    "tags": [
+      "huahuas",
+      "sotano",
+      "cueva",
+      "aventura",
+      "naturaleza"
+    ]
+  },
+  {
+    "id": "voladores-tamaleton-gallery-1-jpg",
     "filename": "voladores-tamaleton/gallery-1.jpg",
-    "descripcion": "Voladores descendiendo del mástil con trajes ceremoniales coloridos",
-    "tema": "voladores tamaleón descendiendo trajes ceremoniales color tradición",
-    "tags": ["voladores", "tamaleton", "trajes", "tradicion"]
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
   },
   {
-    "id": "voladores-tamaleton-gallery-2",
+    "id": "voladores-tamaleton-gallery-2-jpg",
     "filename": "voladores-tamaleton/gallery-2.jpg",
-    "descripcion": "Público observando la ceremonia de los Voladores de Tamaleón",
-    "tema": "voladores tamaleón público ceremonia espectáculo cultural",
-    "tags": ["voladores", "tamaleton", "ceremonia", "cultural"]
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
   },
   {
-    "id": "xilitla-pueblo-magico-hero",
-    "filename": "xilitla-pueblo-magico/hero.jpg",
-    "descripcion": "Vista del pueblo mágico de Xilitla con iglesia y montañas de la Sierra Madre",
-    "tema": "xilitla pueblo mágico iglesia sierra madre oriental montañas café",
-    "tags": ["xilitla", "pueblo magico", "sierra madre", "iglesia", "cafe", "huasteca"]
+    "id": "voladores-tamaleton-gallery-3-jpg",
+    "filename": "voladores-tamaleton/gallery-3.jpg",
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
   },
   {
-    "id": "xilitla-pueblo-magico-gallery-1",
+    "id": "voladores-tamaleton-gallery-4-jpg",
+    "filename": "voladores-tamaleton/gallery-4.jpg",
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "voladores-tamaleton-gallery-5-jpg",
+    "filename": "voladores-tamaleton/gallery-5.jpg",
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "voladores-tamaleton-gallery-6-jpg",
+    "filename": "voladores-tamaleton/gallery-6.jpg",
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "voladores-tamaleton-gallery-7-jpg",
+    "filename": "voladores-tamaleton/gallery-7.jpg",
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "voladores-tamaleton-gallery-8-jpg",
+    "filename": "voladores-tamaleton/gallery-8.jpg",
+    "descripcion": "Imagen de voladores tamaleton en la Huasteca Potosina",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "voladores-tamaleton-hero-jpg",
+    "filename": "voladores-tamaleton/hero.jpg",
+    "descripcion": "Voladores de Tamaletón, ritual ancestral totonaca declarado Patrimonio de la Humanidad",
+    "tema": "voladores tamaleton danza ritual totonaca tradicion cultura huasteca",
+    "tags": [
+      "voladores",
+      "tamaleton",
+      "danza",
+      "ritual",
+      "tradicion"
+    ]
+  },
+  {
+    "id": "xilitla-pueblo-magico-gallery-1-jpg",
     "filename": "xilitla-pueblo-magico/gallery-1.jpg",
-    "descripcion": "Calles coloridas del centro de Xilitla pueblo mágico",
-    "tema": "xilitla calles coloridas centro pueblo mágico artesanías",
-    "tags": ["xilitla", "calles", "pueblo magico", "artesanias"]
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
   },
   {
-    "id": "xilitla-pueblo-magico-gallery-2",
+    "id": "xilitla-pueblo-magico-gallery-2-jpg",
     "filename": "xilitla-pueblo-magico/gallery-2.jpg",
-    "descripcion": "Cafetales y plantaciones de café en la zona de Xilitla San Luis Potosí",
-    "tema": "xilitla café cafetales plantación gastronomía sierra",
-    "tags": ["xilitla", "cafe", "cafetales", "gastronomia", "sierra"]
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
   },
   {
-    "id": "zona-arqueologica-tamtoc-hero",
-    "filename": "zona-arqueologica-tamtoc/hero.jpg",
-    "descripcion": "Pirámide principal de la zona arqueológica de Tamtoc en Tamuín",
-    "tema": "tamtoc zona arqueológica pirámide tamuín historia prehispánica cultura huasteca",
-    "tags": ["tamtoc", "zona arqueologica", "piramide", "tamuin", "historia", "huasteca"]
+    "id": "xilitla-pueblo-magico-gallery-3-jpg",
+    "filename": "xilitla-pueblo-magico/gallery-3.jpg",
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
   },
   {
-    "id": "zona-arqueologica-tamtoc-gallery-1",
+    "id": "xilitla-pueblo-magico-gallery-4-jpg",
+    "filename": "xilitla-pueblo-magico/gallery-4.jpg",
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
+  },
+  {
+    "id": "xilitla-pueblo-magico-gallery-5-jpg",
+    "filename": "xilitla-pueblo-magico/gallery-5.jpg",
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
+  },
+  {
+    "id": "xilitla-pueblo-magico-gallery-6-jpg",
+    "filename": "xilitla-pueblo-magico/gallery-6.jpg",
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
+  },
+  {
+    "id": "xilitla-pueblo-magico-gallery-7-jpg",
+    "filename": "xilitla-pueblo-magico/gallery-7.jpg",
+    "descripcion": "Imagen de xilitla pueblo magico en la Huasteca Potosina",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
+  },
+  {
+    "id": "xilitla-pueblo-magico-hero-jpg",
+    "filename": "xilitla-pueblo-magico/hero.jpg",
+    "descripcion": "Xilitla Pueblo Mágico, joya escondida en la Sierra de San Luis Potosí",
+    "tema": "xilitla pueblo magico cafe altura jardin cascada cultura sierra",
+    "tags": [
+      "xilitla",
+      "pueblo magico",
+      "cafe",
+      "sierra",
+      "cultura"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-1-jpg",
     "filename": "zona-arqueologica-tamtoc/gallery-1.jpg",
-    "descripcion": "Monolito de la Mujer Escarificada en Tamtoc pieza arqueológica",
-    "tema": "tamtoc monolito mujer escarificada arqueología pieza museo",
-    "tags": ["tamtoc", "monolito", "arqueologia", "museo"]
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
   },
   {
-    "id": "zona-arqueologica-tamtoc-gallery-2",
+    "id": "zona-arqueologica-tamtoc-gallery-2-jpg",
     "filename": "zona-arqueologica-tamtoc/gallery-2.jpg",
-    "descripcion": "Explanada ceremonial de la zona arqueológica de Tamtoc con montículos",
-    "tema": "tamtoc explanada ceremonial montículos zona arqueológica historia",
-    "tags": ["tamtoc", "explanada", "ceremonial", "zona arqueologica"]
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-3-jpg",
+    "filename": "zona-arqueologica-tamtoc/gallery-3.jpg",
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-4-jpg",
+    "filename": "zona-arqueologica-tamtoc/gallery-4.jpg",
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-5-jpg",
+    "filename": "zona-arqueologica-tamtoc/gallery-5.jpg",
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-6-jpg",
+    "filename": "zona-arqueologica-tamtoc/gallery-6.jpg",
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-7-webp",
+    "filename": "zona-arqueologica-tamtoc/gallery-7.webp",
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-gallery-8-jpg",
+    "filename": "zona-arqueologica-tamtoc/gallery-8.jpg",
+    "descripcion": "Imagen de zona arqueologica tamtoc en la Huasteca Potosina",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
+  },
+  {
+    "id": "zona-arqueologica-tamtoc-hero-jpg",
+    "filename": "zona-arqueologica-tamtoc/hero.jpg",
+    "descripcion": "Zona Arqueológica Tamtoc, vestigios de la civilización huasteca prehispánica",
+    "tema": "tamtoc zona arqueologica prehispanico huasteca historia cultura",
+    "tags": [
+      "tamtoc",
+      "zona arqueologica",
+      "prehispanico",
+      "historia"
+    ]
   }
 ]

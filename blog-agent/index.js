@@ -34,11 +34,8 @@ const SITE_URL        = PUBLIC_DOMAIN;
 const API_BASE_URL    = process.env.SITE_URL || PUBLIC_DOMAIN; // Railway URL solo para API calls
 const BLOG_SECRET     = process.env.BLOG_AGENT_SECRET;
 
-// ── URL de imágenes desde GITHUB_REPO_NAME ──────────────────
-const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME;
-const IMAGE_BASE_URL   = GITHUB_REPO_NAME
-  ? `https://raw.githubusercontent.com/${GITHUB_REPO_NAME}/main/INTINERARIO%20HUASTECA/blog-agent/images/`
-  : null;
+// ── URL de imágenes servidas desde /public/imagenes/ ────────
+const IMAGE_BASE_URL = `${SITE_URL}/imagenes/`;
 
 // ── Utilidades ──────────────────────────────────────────────
 
@@ -158,11 +155,6 @@ function computeImageScore(image, articleTerms) {
 }
 
 function selectImages(topic, imagesBank) {
-  if (!IMAGE_BASE_URL) {
-    console.error("ERROR: GITHUB_REPO_NAME no definida — abortando publicación");
-    process.exit(1);
-  }
-
   const year = new Date().getFullYear();
   const articleTerms = [
     ...topic.focusKeyword.toLowerCase().split(/\s+/),
@@ -803,7 +795,7 @@ function printQualityLog(post, publishResult) {
   console.log(`${kdOk ? "✅" : "❌"} Keyword density: ${m.keywordOccurrences} ocurrencias / ${m.wordCount} palabras = ${m.keywordDensity.toFixed(1)}% (${kdStatus})`);
   if (!kdOk) issues.push(`Keyword density: ${m.keywordOccurrences} occ (${kdStatus})`);
 
-  const imgOk = post.coverImageUrl && !post.coverImageUrl.includes("[repo]") && IMAGE_BASE_URL;
+  const imgOk = post.coverImageUrl && !post.coverImageUrl.includes("[repo]");
   console.log(`${imgOk ? "✅" : "❌"} Imágenes: URL ${imgOk ? "válida sin [repo] placeholder" : "CONTIENE [repo] o URL inválida"}`);
   if (!imgOk) issues.push("URL de imagen inválida");
 
