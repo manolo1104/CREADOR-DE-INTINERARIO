@@ -349,50 +349,89 @@ export default function InfoPracticaPage() {
         </p>
 
         <div className="space-y-5">
-          {[
-            {
-              lugar: "Ciudad Valles",
-              etiqueta: "Base logística ideal",
-              color: "verde" as const,
-              descripcion:
-                "El hub perfecto. Acceso a todos los destinos en menos de 2 horas, con la mayor variedad de hospedaje, restaurantes y servicios. Aeropuerto pequeño y terminal ADO.",
-              opciones: [
+          {/* Ciudad Valles */}
+          <InfoCard title="Ciudad Valles · Base logística ideal" accent="verde">
+            <p className="text-crema/60 text-sm mb-3">
+              El hub perfecto. Acceso a todos los destinos en menos de 2 horas, con la mayor variedad
+              de hospedaje, restaurantes y servicios. Aeropuerto pequeño y terminal ADO.
+            </p>
+            <BulletList
+              items={[
                 "Hotel Valles: tradicional, alberca, desde $900 MXN/noche",
                 "Hotel Casa Real: boutique, céntrico, desde $1,100 MXN/noche",
                 "Hostal La Huasteca: viajeros solo/mochilero, desde $280 MXN/cama",
                 "Airbnb: casas completas desde $600 MXN/noche",
-              ],
-            },
-            {
-              lugar: "Xilitla",
-              etiqueta: "Experiencia boutique",
-              color: "dorado" as const,
-              descripcion:
-                "El pueblo mágico más cercano a Las Pozas. Opciones boutique en casas coloniales con vistas al cañón. Perfecto para 1–2 noches de inmersión cultural.",
-              opciones: [
+              ]}
+            />
+          </InfoCard>
+
+          {/* Xilitla — con Hotel Paraíso Encantado destacado */}
+          <InfoCard title="Xilitla · Experiencia boutique" accent="dorado">
+            <p className="text-crema/60 text-sm mb-4">
+              El pueblo mágico más cercano a Las Pozas. Opciones boutique en casas coloniales con
+              vistas al cañón. Perfecto para 1–2 noches de inmersión cultural.
+            </p>
+
+            {/* Recomendación destacada */}
+            <div className="border border-dorado/40 bg-dorado/8 p-4 mb-4">
+              <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
+                <Star className="w-3 h-3 fill-dorado" aria-hidden="true" /> Recomendación de nuestro equipo
+              </p>
+              <p className="text-crema font-dm text-sm font-medium mb-1">
+                Hotel Paraíso Encantado Xilitla
+              </p>
+              <p className="text-crema/65 font-dm text-xs leading-relaxed mb-3">
+                Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín
+                Surrealista, con piscina, restaurante de cocina huasteca y punto de salida de todos
+                nuestros tours. Hospedarte aquí elimina cualquier traslado de madrugada.
+              </p>
+              <ul className="space-y-1 mb-3">
+                {[
+                  "Punto de salida oficial de los tours — salida a las 5:30 AM sin traslados",
+                  "Piscina con vista al cañón · Restaurante propio · AC y WiFi",
+                  "Tarifa especial para viajeros que reservan tours con nosotros",
+                  "Desde $1,200 MXN/noche (habitación doble)",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-xs text-crema/65 font-dm">
+                    <span className="text-dorado mt-0.5 flex-shrink-0">✦</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="https://wa.me/524891251458?text=Hola%2C%20me%20interesa%20hospedarme%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/50 hover:border-dorado hover:bg-dorado/10 px-4 py-1.5 transition-all"
+              >
+                Consultar disponibilidad →
+              </a>
+            </div>
+
+            <p className="text-[10px] tracking-[1px] uppercase text-crema/35 font-dm mb-2">Otras opciones</p>
+            <BulletList
+              items={[
                 "Castillo El Buen Café: histórico, vista panorámica, desde $1,500 MXN",
                 "Posada El Castillo: en la propiedad de Edward James, desde $2,200 MXN",
                 "Posada Xilitla: familiar, económica, desde $600 MXN",
-              ],
-            },
-            {
-              lugar: "Tamasopo",
-              etiqueta: "Inmersión en la naturaleza",
-              color: "agua" as const,
-              descripcion:
-                "Pequeño pueblo a 10 min de las Cascadas de Tamasopo y Puente de Dios. Opciones rurales y eco-campamentos. Ideal para amantes de la naturaleza.",
-              opciones: [
+              ]}
+            />
+          </InfoCard>
+
+          {/* Tamasopo */}
+          <InfoCard title="Tamasopo · Inmersión en la naturaleza" accent="agua">
+            <p className="text-crema/60 text-sm mb-3">
+              Pequeño pueblo a 10 min de las Cascadas de Tamasopo y Puente de Dios. Opciones
+              rurales y eco-campamentos. Ideal para amantes de la naturaleza.
+            </p>
+            <BulletList
+              items={[
                 "Cabañas Tamasopo: piscina, naturaleza, desde $800 MXN/noche",
                 "Eco-camping junto a las cascadas: desde $150 MXN/persona",
                 "Posadas familiares: básicas, auténticas, desde $350 MXN/noche",
-              ],
-            },
-          ].map((h) => (
-            <InfoCard key={h.lugar} title={`${h.lugar} · ${h.etiqueta}`} accent={h.color}>
-              <p className="text-crema/60 text-sm mb-3">{h.descripcion}</p>
-              <BulletList items={h.opciones} />
-            </InfoCard>
-          ))}
+              ]}
+            />
+          </InfoCard>
         </div>
       </Section>
 

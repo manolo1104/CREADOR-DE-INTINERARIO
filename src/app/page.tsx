@@ -63,7 +63,7 @@ const destinosSchema = {
   })),
 };
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 async function getRecentPosts() {
   try {
@@ -267,64 +267,75 @@ export default async function HomePage() {
       </section>
 
       {/* ── BLOG PREVIEW ── */}
-      {recentPosts.length > 0 && (
-        <section aria-label="Artículos recientes del blog" className="max-w-7xl mx-auto px-6 py-20">
-          <div className="text-center mb-12">
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">Del blog</p>
-            <h2
-              className="font-cormorant font-light text-crema"
-              style={{ fontSize: "clamp(32px,4.5vw,48px)" }}
-            >
-              Guías & <em className="text-dorado">Rutas de Viaje</em>
-            </h2>
-          </div>
+      <section aria-label="Artículos recientes del blog" className="max-w-7xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">Del blog</p>
+          <h2
+            className="font-cormorant font-light text-crema"
+            style={{ fontSize: "clamp(32px,4.5vw,48px)" }}
+          >
+            Guías & <em className="text-dorado">Rutas de Viaje</em>
+          </h2>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentPosts.map((post) => (
-              <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
-                <article className="bg-verde-profundo/20 border border-white/8 overflow-hidden hover:border-verde-vivo/30 transition-colors h-full flex flex-col rounded-xl">
-                  {post.coverImageUrl && (
-                    <div className="aspect-video overflow-hidden">
-                      <img
-                        src={post.coverImageUrl}
-                        alt={post.coverImageAlt || post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    </div>
-                  )}
-                  <div className="p-6 flex flex-col flex-1">
-                    {post.tags[0] && (
-                      <span className="text-[9px] tracking-[3px] uppercase text-verde-vivo/70 font-dm mb-3">{post.tags[0]}</span>
+        {recentPosts.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentPosts.map((post) => (
+                <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
+                  <article className="bg-verde-profundo/20 border border-white/8 overflow-hidden hover:border-verde-vivo/30 transition-colors h-full flex flex-col rounded-xl">
+                    {post.coverImageUrl && (
+                      <div className="aspect-video overflow-hidden">
+                        <img
+                          src={post.coverImageUrl}
+                          alt={post.coverImageAlt || post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                      </div>
                     )}
-                    <h3 className="font-cormorant text-crema text-xl mb-3 leading-snug group-hover:text-dorado transition-colors flex-1">
-                      {post.title}
-                    </h3>
-                    {post.excerpt && (
-                      <p className="text-crema/45 font-dm text-xs leading-relaxed mb-4">
-                        {post.excerpt.slice(0, 110)}…
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/25 mt-auto">
-                      <span>{post.readingTime} min lectura</span>
-                      <span>·</span>
-                      <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
+                    <div className="p-6 flex flex-col flex-1">
+                      {post.tags[0] && (
+                        <span className="text-[9px] tracking-[3px] uppercase text-verde-vivo/70 font-dm mb-3">{post.tags[0]}</span>
+                      )}
+                      <h3 className="font-cormorant text-crema text-xl mb-3 leading-snug group-hover:text-dorado transition-colors flex-1">
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="text-crema/45 font-dm text-xs leading-relaxed mb-4">
+                          {post.excerpt.slice(0, 110)}…
+                        </p>
+                      )}
+                      <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/25 mt-auto">
+                        <span>{post.readingTime} min lectura</span>
+                        <span>·</span>
+                        <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
+                      </div>
                     </div>
-                  </div>
-                </article>
+                  </article>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center mt-10">
+              <Link
+                href="/blog"
+                className="inline-block border border-verde-vivo/40 text-verde-vivo px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all duration-200"
+              >
+                Ver todos los artículos
               </Link>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12 border border-white/8 bg-verde-profundo/10">
+            <p className="text-crema/40 font-dm text-sm mb-4">Artículos en camino — próximamente guías, rutas y consejos de la Huasteca.</p>
             <Link
               href="/blog"
-              className="inline-block border border-verde-vivo/40 text-verde-vivo px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all duration-200"
+              className="inline-block border border-verde-vivo/40 text-verde-vivo px-8 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all"
             >
-              Ver todos los artículos
+              Ir al blog →
             </Link>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* ── POR QUÉ LA HUASTECA ── */}
       <section

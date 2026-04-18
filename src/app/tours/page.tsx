@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { TOURS_DB } from "@/lib/tours";
@@ -144,8 +145,14 @@ export default function ToursPage() {
           {TOURS_DB.map((tour) => (
             <article
               key={tour.id}
-              className="border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col"
+              className="relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col"
             >
+              {/* Stretched link — full card clickable to tour detail */}
+              <Link
+                href={`/tours/${tour.slug}`}
+                aria-label={`Ver tour completo: ${tour.nombre}`}
+                className="absolute inset-0 z-0"
+              />
               {/* Hero image */}
               {tour.imagen_hero && (
                 <div className="relative h-52 overflow-hidden flex-shrink-0">
@@ -306,7 +313,7 @@ export default function ToursPage() {
               )}
 
               {/* Cancelación + Calculadora */}
-              <div className="px-7 py-5 border-t border-white/6">
+              <div className="relative z-10 px-7 py-5 border-t border-white/6">
                 <p className="flex items-center gap-1.5 text-[10px] text-verde-vivo font-dm mb-3">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2" aria-hidden="true">
