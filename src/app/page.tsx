@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
 import { TourCard } from "@/components/TourCard";
+import { prisma } from "@/lib/prisma";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
   MessageCircle, Star, Award, CheckCircle2,
@@ -62,7 +63,27 @@ const destinosSchema = {
   })),
 };
 
-export default function HomePage() {
+export const revalidate = 3600;
+
+async function getRecentPosts() {
+  try {
+    return await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+      select: {
+        slug: true, title: true, excerpt: true, coverImageUrl: true,
+        coverImageAlt: true, tags: true, readingTime: true, publishedAt: true,
+      },
+    });
+  } catch {
+    return [];
+  }
+}
+
+export default async function HomePage() {
+  const recentPosts = await getRecentPosts();
+
   return (
     <main id="main-content" className="min-h-screen">
       {/* ── JSON-LD ── */}
@@ -244,6 +265,66 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* ── BLOG PREVIEW ── */}
+      {recentPosts.length > 0 && (
+        <section aria-label="Artículos recientes del blog" className="max-w-7xl mx-auto px-6 py-20">
+          <div className="text-center mb-12">
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">Del blog</p>
+            <h2
+              className="font-cormorant font-light text-crema"
+              style={{ fontSize: "clamp(32px,4.5vw,48px)" }}
+            >
+              Guías & <em className="text-dorado">Rutas de Viaje</em>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentPosts.map((post) => (
+              <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
+                <article className="bg-verde-profundo/20 border border-white/8 overflow-hidden hover:border-verde-vivo/30 transition-colors h-full flex flex-col rounded-xl">
+                  {post.coverImageUrl && (
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={post.coverImageUrl}
+                        alt={post.coverImageAlt || post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    </div>
+                  )}
+                  <div className="p-6 flex flex-col flex-1">
+                    {post.tags[0] && (
+                      <span className="text-[9px] tracking-[3px] uppercase text-verde-vivo/70 font-dm mb-3">{post.tags[0]}</span>
+                    )}
+                    <h3 className="font-cormorant text-crema text-xl mb-3 leading-snug group-hover:text-dorado transition-colors flex-1">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="text-crema/45 font-dm text-xs leading-relaxed mb-4">
+                        {post.excerpt.slice(0, 110)}…
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/25 mt-auto">
+                      <span>{post.readingTime} min lectura</span>
+                      <span>·</span>
+                      <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
+                    </div>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/blog"
+              className="inline-block border border-verde-vivo/40 text-verde-vivo px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 hover:border-verde-vivo transition-all duration-200"
+            >
+              Ver todos los artículos
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ── POR QUÉ LA HUASTECA ── */}
       <section
@@ -484,10 +565,13 @@ export default function HomePage() {
                   </li>
                 ))}
                 <li>
-                  <span className="text-crema/25 text-sm font-dm flex items-center gap-2 cursor-not-allowed">
-                    <span className="text-crema/15 text-xs" aria-hidden="true">→</span>
-                    Blog <span className="text-[9px] tracking-wide opacity-70">(próximamente)</span>
-                  </span>
+                  <Link
+                    href="/blog"
+                    className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                    Blog
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -498,21 +582,32 @@ export default function HomePage() {
                 Conecta
               </h3>
               <div className="flex gap-4 mb-5">
-                {[
-                  { Icon: AtSign,  label: "Instagram (próximamente)" },
-                  { Icon: Share2,  label: "Facebook (próximamente)" },
-                  { Icon: Music2,    label: "TikTok (próximamente)" },
-                ].map(({ Icon, label }) => (
-                  <span
-                    key={label}
-                    aria-label={label}
-                    title="Próximamente"
-                    className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed"
-                  >
-                    <Icon className="w-4 h-4" aria-hidden="true" />
-                  </span>
-                ))}
+                <a
+                  href="https://www.facebook.com/huastecatours/?locale=es_LA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook — 14K seguidores"
+                  title="Síguenos en Facebook · 14K seguidores"
+                  className="w-10 h-10 border border-white/20 hover:border-verde-vivo/60 flex items-center justify-center text-crema/50 hover:text-verde-vivo transition-all"
+                >
+                  <Share2 className="w-4 h-4" aria-hidden="true" />
+                </a>
+                <span
+                  aria-label="Instagram (próximamente)"
+                  title="Próximamente"
+                  className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed"
+                >
+                  <AtSign className="w-4 h-4" aria-hidden="true" />
+                </span>
+                <span
+                  aria-label="TikTok (próximamente)"
+                  title="Próximamente"
+                  className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed"
+                >
+                  <Music2 className="w-4 h-4" aria-hidden="true" />
+                </span>
               </div>
+              <p className="text-[10px] tracking-[1px] text-crema/30 font-dm mb-3">14K seguidores en Facebook</p>
               <a
                 href="mailto:hola@huastecapotosina.mx"
                 className="text-crema/50 hover:text-crema text-sm font-dm transition-colors"

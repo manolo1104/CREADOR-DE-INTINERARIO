@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import type { FAQCategory } from "@/components/FAQAccordion";
@@ -10,6 +11,7 @@ import {
   HelpCircle, Lightbulb, MapPin,
   CheckCircle2, XCircle,
   Footprints, Shirt, FlaskConical, ClipboardList, Smartphone, Phone,
+  Hotel, UtensilsCrossed, Star,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -174,6 +176,8 @@ export default function InfoPracticaPage() {
             { label: "Cómo llegar", href: "#como-llegar" },
             { label: "Cuándo viajar", href: "#cuando-viajar" },
             { label: "Dónde quedarse", href: "#donde-quedarse" },
+            { label: "Hotel Paraíso", href: "#hotel-paraiso" },
+            { label: "Dónde comer", href: "#papan-huasteco" },
             { label: "Presupuesto", href: "#presupuesto" },
             { label: "Qué llevar", href: "#que-llevar" },
             { label: "Seguridad", href: "#seguridad" },
@@ -389,6 +393,165 @@ export default function InfoPracticaPage() {
               <BulletList items={h.opciones} />
             </InfoCard>
           ))}
+        </div>
+      </Section>
+
+      {/* ── HOTEL PARAÍSO ENCANTADO ── */}
+      <Section id="hotel-paraiso" Icon={Hotel} title="Nuestra base: Hotel Paraíso Encantado">
+        <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
+          Todos nuestros tours salen desde el{" "}
+          <strong className="text-crema">Hotel Paraíso Encantado Xilitla</strong>,
+          a pasos del Jardín Surrealista de Edward James. Hospedarte aquí simplifica la
+          logística y garantiza la salida puntual a las 5:30 AM.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Galería */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative aspect-[4/3] col-span-2 overflow-hidden rounded-lg">
+              <Image
+                src="/imagenes/hotel-paraiso-encantado/hero.jpg"
+                alt="Hotel Paraíso Encantado Xilitla — fachada y jardines"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+            <div className="relative aspect-square overflow-hidden rounded-lg">
+              <Image
+                src="/imagenes/hotel-paraiso-encantado/habitacion.jpg"
+                alt="Habitación del Hotel Paraíso Encantado Xilitla"
+                fill
+                className="object-cover"
+                sizes="25vw"
+              />
+            </div>
+            <div className="relative aspect-square overflow-hidden rounded-lg">
+              <Image
+                src="/imagenes/hotel-paraiso-encantado/terraza.jpg"
+                alt="Terraza con vista al cañón en el Hotel Paraíso Encantado"
+                fill
+                className="object-cover"
+                sizes="25vw"
+              />
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-1 mb-2">
+              {[1,2,3,4,5].map((i) => (
+                <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
+              ))}
+              <span className="text-crema/50 font-dm text-xs ml-2">Boutique 4 estrellas</span>
+            </div>
+
+            <InfoCard title="¿Por qué hospedarte aquí?" accent="dorado">
+              <BulletList
+                items={[
+                  "Punto de salida oficial de todos los tours — sin traslados de madrugada",
+                  "A 50 metros del Jardín Surrealista de Edward James",
+                  "Desayuno de cocina huasteca incluido en los tours",
+                  "Piscina con vista al cañón y zona de selva",
+                  "Habitaciones con AC, WiFi y baño privado",
+                  "Recepción 24h para coordinación de logística",
+                ]}
+              />
+            </InfoCard>
+
+            <InfoCard title="Reservas" accent="verde">
+              <p className="text-crema/60 font-dm text-sm mb-3">
+                Mencionando que vas con nosotros al reservar obtienes tarifa preferencial.
+              </p>
+              <a
+                href="https://wa.me/524891251458?text=Hola%2C%20quisiera%20reservar%20habitaci%C3%B3n%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-[#25D366] border border-[#25D366]/40 hover:border-[#25D366] hover:bg-[#25D366]/10 px-4 py-2 transition-all rounded"
+              >
+                Consultar disponibilidad →
+              </a>
+            </InfoCard>
+
+            <a
+              href="https://share.google/YS3dbxN4wrnHZ8lO9"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors"
+            >
+              Ver en Google Maps →
+            </a>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── RESTAURANTE PAPÁN HUASTECO ── */}
+      <Section id="papan-huasteco" Icon={UtensilsCrossed} title="Dónde comer: Restaurante Papán Huasteco">
+        <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
+          En el mismo corazón de Xilitla, el{" "}
+          <strong className="text-crema">Restaurante Papán Huasteco</strong> es nuestra
+          recomendación número uno para cocina regional auténtica. Platillos tradicionales
+          huastecos cocinados en fogón de leña, con ingredientes de la región.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Info */}
+          <div className="space-y-4">
+            <InfoCard title="Lo que no debes perderte" accent="terracota">
+              <BulletList
+                items={[
+                  "Zacahuil — el tamal gigante huasteco en hoja de plátano",
+                  "Bocoles rellenos de frijol y queso fresco",
+                  "Enchiladas huastecas con carne de cerdo",
+                  "Café de olla preparado con piloncillo y canela",
+                  "Agua de tamarindo y jamaica de la región",
+                ]}
+              />
+            </InfoCard>
+
+            <InfoCard title="Razones para venir" accent="dorado">
+              <BulletList
+                items={[
+                  "Recetas auténticas de cocineras locales, no fusión turística",
+                  "Ingredientes frescos de mercado huasteco",
+                  "Fogón de leña — sabores que no existen en la ciudad",
+                  "Precios justos: comida completa desde $120 MXN",
+                  "Perfecto antes o después de visitar Las Pozas",
+                ]}
+              />
+            </InfoCard>
+          </div>
+
+          {/* Galería */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative aspect-[4/3] col-span-2 overflow-hidden rounded-lg">
+              <Image
+                src="/imagenes/papan-huasteco/hero.webp"
+                alt="Restaurante Papán Huasteco — cocina regional auténtica en Xilitla"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
+            <div className="relative aspect-square overflow-hidden rounded-lg">
+              <Image
+                src="/imagenes/papan-huasteco/platillos.jpg"
+                alt="Platillos típicos huastecos — zacahuil y bocoles"
+                fill
+                className="object-cover"
+                sizes="25vw"
+              />
+            </div>
+            <div className="relative aspect-square overflow-hidden rounded-lg">
+              <Image
+                src="/imagenes/papan-huasteco/fogon.webp"
+                alt="Fogón de leña en el Restaurante Papán Huasteco"
+                fill
+                className="object-cover"
+                sizes="25vw"
+              />
+            </div>
+          </div>
         </div>
       </Section>
 

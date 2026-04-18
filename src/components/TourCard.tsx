@@ -20,14 +20,17 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
   const imageHeight = variant === "compact" ? "h-52 md:h-56" : "h-56 md:h-64";
 
   return (
-    <article className="group flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300">
+    <article className="group relative flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300">
 
-      {/* ── IMAGEN ── */}
+      {/* Stretched link — covers entire card */}
       <Link
         href={`/tours/${t.slug}`}
         aria-label={`Ver tour: ${t.nombre}`}
-        className={`block relative ${imageHeight} overflow-hidden flex-shrink-0`}
-      >
+        className="absolute inset-0 z-0 rounded-xl"
+      />
+
+      {/* ── IMAGEN ── */}
+      <div className={`relative ${imageHeight} overflow-hidden flex-shrink-0`}>
         {t.imagen_hero ? (
           <Image
             src={t.imagen_hero}
@@ -65,7 +68,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} reseñas)
           </p>
         </div>
-      </Link>
+      </div>
 
       {/* ── INFO ── */}
       <div className="flex flex-col flex-1 p-4 bg-negro/80">
@@ -111,17 +114,14 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
 
         {/* CTA */}
         <div className="mt-auto flex flex-col gap-2">
-          <Link
-            href={`/tours/${t.slug}`}
-            className="w-full block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded"
-          >
+          <span className="w-full block text-center bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded">
             Ver tour completo →
-          </Link>
+          </span>
           <a
             href={waLink(WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
+            className="relative z-10 w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
             Reservar por WhatsApp
           </a>
