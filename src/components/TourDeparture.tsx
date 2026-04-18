@@ -4,7 +4,7 @@ import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
 const WA_LLEGADA =
   "https://wa.me/524891251458?text=Hola%2C%20tengo%20dudas%20sobre%20c%C3%B3mo%20llegar%20al%20punto%20de%20salida%20del%20tour.";
 
-const GOOGLE_MAPS_URL = "https://maps.app.goo.gl/SWGyihBFTiykTFFM6";
+const GOOGLE_MAPS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
 
 export function TourDeparture() {
   return (

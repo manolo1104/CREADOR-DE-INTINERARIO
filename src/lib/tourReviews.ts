@@ -8,7 +8,7 @@ export interface Review {
 }
 
 export const GOOGLE_MAPS_REVIEWS_URL =
-  "https://maps.app.goo.gl/SWGyihBFTiykTFFM6";
+  "https://share.google/YS3dbxN4wrnHZ8lO9";
 
 /** Keyed by tour.id */
 export const TOUR_REVIEWS: Record<string, Review[]> = {
