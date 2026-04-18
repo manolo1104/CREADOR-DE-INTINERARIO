@@ -74,11 +74,40 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const full = req.nextUrl.searchParams.get("full") === "1";
     const posts = await prisma.blogPost.findMany({
       orderBy: { publishedAt: "desc" },
-      select: { slug: true, title: true, publishedAt: true, focusKeyword: true },
+      select: {
+        slug: true, title: true, publishedAt: true, focusKeyword: true,
+        ...(full ? { content: true, tags: true } : {}),
+      },
     });
     return NextResponse.json({ posts });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const auth = req.headers.get("authorization");
+  const secret = process.env.BLOG_AGENT_SECRET;
+
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { slug } = await req.json();
+    if (!slug) return NextResponse.json({ error: "slug requerido" }, { status: 400 });
+
+    const existing = await prisma.blogPost.findUnique({ where: { slug } });
+    if (!existing) return NextResponse.json({ error: `Post no encontrado: ${slug}` }, { status: 404 });
+
+    await prisma.blogPost.delete({ where: { slug } });
+    revalidatePath("/blog");
+
+    return NextResponse.json({ success: true, deleted: slug });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error";
     return NextResponse.json({ error: message }, { status: 500 });

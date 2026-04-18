@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { slug, coverImageUrl, coverImageAlt } = await req.json();
+    const { slug, coverImageUrl, coverImageAlt, content } = await req.json();
 
     if (!slug) {
       return NextResponse.json({ error: "slug es requerido" }, { status: 400 });
@@ -29,6 +29,7 @@ export async function PATCH(req: NextRequest) {
       data: {
         ...(coverImageUrl && { coverImageUrl }),
         ...(coverImageAlt && { coverImageAlt }),
+        ...(content    && { content }),
         updatedAt: new Date(),
       },
     });
