@@ -184,9 +184,9 @@
             "Creador de itinerarios"
           ],
           "enfoque_agente": "Core content. Mostrar un itinerario base y ofrecer la personalización/venta de itinerarios completos y reservas.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "itinerario-xilitla-itinerario-perfecto-de-3-dias-en-xilitla-2026",
+          "fecha_publicacion": "2026-04-24T19:43:07.614Z"
         },
         {
           "id": 14,
