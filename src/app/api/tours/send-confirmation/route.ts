@@ -69,8 +69,10 @@ export async function POST(req: NextRequest) {
           promoDiscount: Number(promoDiscount) || 0,
         });
 
-        const from    = process.env.RESEND_FROM_TOURS || "tours@huasteca-potosina.com";
-        const adminTo = process.env.ADMIN_EMAIL_TOURS  || "hola@huasteca-potosina.com";
+        // Usar dominio verificado en Resend. Mientras se verifica huasteca-potosina.com,
+        // usar onboarding@resend.dev (modo prueba de Resend).
+        const from    = process.env.RESEND_FROM_TOURS || "onboarding@resend.dev";
+        const adminTo = process.env.ADMIN_EMAIL_TOURS  || "daftpunkmanolo@gmail.com";
         const bcc     = Array.from(new Set([adminTo]));
 
         const { data, error: resendError } = await resend.emails.send({
