@@ -172,7 +172,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
 
       {error && (
         <div className="bg-terracota/10 border border-terracota/30 px-4 py-3">
-          <p className="text-terracota font-dm text-sm">{error}</p>
+          <p className="text-terracota font-dm text-sm" role="alert">{error}</p>
         </div>
       )}
 

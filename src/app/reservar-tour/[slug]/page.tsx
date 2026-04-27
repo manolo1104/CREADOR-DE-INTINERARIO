@@ -227,7 +227,7 @@ export default function ReservarTourPage() {
                 </button>
               </div>
             )}
-            {promoError && <p className="mt-2 text-terracota text-xs font-dm">{promoError}</p>}
+            {promoError && <p className="mt-2 text-terracota text-xs font-dm" role="alert">{promoError}</p>}
           </section>
 
         </div>

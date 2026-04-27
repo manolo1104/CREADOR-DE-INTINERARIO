@@ -150,7 +150,7 @@ export default function ToursPage() {
           href={waLink(WA_MESSAGES.tourGeneral)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+          className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]"
         >
           {WA_SVG}
           Reservar por WhatsApp
@@ -259,7 +259,7 @@ export default function ToursPage() {
 
               {/* Destinos */}
               <div className="px-7 py-5 border-b border-white/6">
-                <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
+                <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
                   Destinos del recorrido
                 </p>
                 <ul className="space-y-1.5">
@@ -274,7 +274,7 @@ export default function ToursPage() {
 
               {/* Incluye */}
               <div className="px-7 py-5 border-b border-white/6">
-                <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
+                <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
                   Todo incluido
                 </p>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -290,7 +290,7 @@ export default function ToursPage() {
               {/* FAQ */}
               {TOUR_FAQS[tour.id] && TOUR_FAQS[tour.id].length > 0 && (
                 <div className="px-7 py-5 border-t border-white/6">
-                  <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
+                  <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
                     Preguntas frecuentes
                   </p>
                   <div className="space-y-0">
@@ -316,7 +316,7 @@ export default function ToursPage() {
               {TOUR_REVIEWS[tour.id]?.length > 0 && (
                 <div className="px-7 py-5 border-t border-white/6">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm flex items-center gap-1">
+                    <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm flex items-center gap-1">
                       <Star className="w-3 h-3 fill-dorado/60 text-dorado/60" aria-hidden="true" /> Reseñas
                     </p>
                     <a
@@ -443,12 +443,12 @@ export default function ToursPage() {
           href={waLink(WA_MESSAGES.tourGeneral)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+          className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]"
         >
           {WA_SVG}
           +52 489 125 1458
         </a>
-        <p className="mt-4 text-[10px] text-crema/25 font-dm">
+        <p className="mt-4 text-[10px] text-crema/50 font-dm">
           ✓ Cancelación gratuita con 48h de anticipación · Sin cargos ocultos
         </p>
       </section>

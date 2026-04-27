@@ -122,7 +122,7 @@ export default function NosotrosPage() {
               <div className="font-cormorant text-dorado font-light leading-none mb-2" style={{ fontSize: "clamp(36px,5vw,52px)" }}>
                 {n.num}
               </div>
-              <div className="text-[10px] tracking-[2px] uppercase text-negro/45 font-dm">{n.label}</div>
+              <div className="text-[10px] tracking-[2px] uppercase text-negro/65 font-dm">{n.label}</div>
             </div>
           ))}
         </div>
@@ -204,7 +204,7 @@ export default function NosotrosPage() {
                 <c.Icon className="w-6 h-6 text-dorado/70 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
                   <h3 className="font-cormorant text-verde-profundo text-base mb-1 leading-tight">{c.titulo}</h3>
-                  <p className="text-[11px] text-negro/45 font-dm leading-relaxed">{c.sub}</p>
+                  <p className="text-[11px] text-negro/65 font-dm leading-relaxed">{c.sub}</p>
                 </div>
               </div>
             ))}
@@ -220,7 +220,7 @@ export default function NosotrosPage() {
             <div className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/tripadvisor.svg" alt="TripAdvisor Travellers Choice" className="h-12 w-auto" />
-              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/45">Travellers Choice</span>
+              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65">Travellers Choice</span>
             </div>
             <div className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity">
               <div className="flex items-center gap-2 bg-white border border-negro/10 rounded-lg px-4 py-2 shadow-sm">
@@ -241,21 +241,21 @@ export default function NosotrosPage() {
                   </div>
                 </div>
               </div>
-              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/45">4.9 · 492 reseñas</span>
+              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65">4.9 · 492 reseñas</span>
             </div>
             <div className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity">
               <div className="border-2 border-negro/20 rounded-lg px-5 py-3 text-center">
                 <p className="text-[11px] font-dm text-negro/70 font-semibold tracking-wider uppercase">SECTUR</p>
                 <p className="text-[9px] font-dm text-negro/40 mt-0.5">Certificado NOM-09</p>
               </div>
-              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/45">Guías oficiales</span>
+              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65">Guías oficiales</span>
             </div>
             <div className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity">
               <div className="bg-[#25D366]/10 border border-[#25D366]/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#25D366]" />
                 <span className="text-[11px] font-dm text-negro/70 font-medium">Negocio Verificado</span>
               </div>
-              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/45">Google Maps</span>
+              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65">Google Maps</span>
             </div>
           </div>
         </div>

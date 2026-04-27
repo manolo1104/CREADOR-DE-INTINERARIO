@@ -123,7 +123,7 @@ export default async function BlogPage() {
                     <p className="text-crema/40 font-dm font-light text-xs leading-relaxed mb-4">
                       {post.excerpt.slice(0, 120)}...
                     </p>
-                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/25 mt-auto">
+                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/45 mt-auto">
                       <span>{post.readingTime} min</span>
                       <span>·</span>
                       <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
