@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 interface Props {
-  tourName: string;
+  tourName:  string;
   precioBase: number;
+  tourSlug?:  string;
 }
 
 const WA_SVG = (
@@ -59,7 +61,7 @@ function today(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-export function TourCalculadora({ tourName, precioBase }: Props) {
+export function TourCalculadora({ tourName, precioBase, tourSlug }: Props) {
   const [adultos, setAdultos] = useState(2);
   const [ninos, setNinos]     = useState(0);
   const [fecha, setFecha]     = useState("");
@@ -174,13 +176,22 @@ export function TourCalculadora({ tourName, precioBase }: Props) {
         Reservar por WhatsApp
       </a>
 
-      <button
-        onClick={handleStripeCheckout}
-        disabled={checkoutLoading || total <= 0}
-        className="w-full border border-agua/45 bg-agua/12 hover:bg-agua/20 text-agua py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-50"
-      >
-        {checkoutLoading ? "Redirigiendo a Stripe..." : "Pagar reserva con tarjeta (Stripe)"}
-      </button>
+      {tourSlug ? (
+        <Link
+          href={`/reservar-tour/${tourSlug}`}
+          className="flex items-center justify-center gap-2 w-full bg-dorado hover:bg-terracota text-negro py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 font-medium"
+        >
+          Reservar con tarjeta →
+        </Link>
+      ) : (
+        <button
+          onClick={handleStripeCheckout}
+          disabled={checkoutLoading || total <= 0}
+          className="w-full border border-agua/45 bg-agua/12 hover:bg-agua/20 text-agua py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-50"
+        >
+          {checkoutLoading ? "Redirigiendo..." : "Pagar con tarjeta"}
+        </button>
+      )}
 
       {checkoutError && (
         <p className="text-[11px] text-terracota/85 font-dm text-center">{checkoutError}</p>

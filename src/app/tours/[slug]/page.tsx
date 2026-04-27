@@ -315,7 +315,7 @@ export default function TourDetailPage({ params }: Props) {
               )}
             </div>
 
-            <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} />
+            <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} tourSlug={tour.slug} />
 
             <Link
               href="/tours"

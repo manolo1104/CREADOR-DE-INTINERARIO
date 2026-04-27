@@ -122,6 +122,32 @@ model Booking {
   updatedAt     DateTime  @updatedAt
 }
 
+model TourBooking {
+  id                    String   @id @default(cuid())
+  confirmationNumber    String   @unique
+  tourId                String
+  tourName              String
+  tourSlug              String
+  tourDate              String
+  adults                Int      @default(1)
+  children              Int      @default(0)
+  totalAmount           Int
+  promoCode             String?
+  promoDiscount         Int      @default(0)
+  stripePaymentIntentId String?
+  customerName          String
+  customerEmail         String
+  customerPhone         String?
+  notes                 String?
+  status                String   @default("pending")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([customerEmail])
+  @@index([tourDate])
+  @@index([status])
+}
+
 model BlogPost {
   id                String   @id @default(cuid())
   slug              String   @unique
