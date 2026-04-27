@@ -2,10 +2,20 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Leaf, Droplet, Users, TreePine, Heart, Shield, Sun, Recycle } from "lucide-react";
 
+const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sustentabilidad y Conservación — Tours Huasteca Potosina",
-  description:
-    "Nuestro compromiso con la conservación de la Huasteca Potosina: turismo responsable, apoyo a comunidades locales y protección de ecosistemas únicos de México.",
+  description: "Nuestro compromiso con la conservación de la Huasteca Potosina: turismo responsable, apoyo a comunidades locales y protección de ecosistemas únicos de México.",
+  openGraph: {
+    title: "Sustentabilidad y Conservación — Tours Huasteca Potosina",
+    description: "Turismo responsable, cero plásticos, empleo local 100% y fondo de conservación activo en la Huasteca Potosina.",
+    url: `${SITE}/sustentabilidad-y-conservacion`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630 }],
+  },
+  twitter: { card: "summary_large_image", title: "Sustentabilidad — Tours Huasteca Potosina", description: "Turismo responsable y conservación de ecosistemas.", images: [`${SITE}/og-image.jpg`] },
 };
 
 const COMPROMISOS = [

@@ -11,10 +11,47 @@ import type { LucideIcon } from "lucide-react";
 import { Award, Bus, Camera, CheckCircle2, MessageCircle, Star, Users } from "lucide-react";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
+const SITE = "https://www.huasteca-potosina.com";
+
 export const metadata: Metadata = {
   title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
   description:
     "Tours guiados por la Huasteca Potosina: Tamul, Edward James, Meco, Minas Viejas y más. Transporte, desayuno, entradas y guía certificado incluidos.",
+  openGraph: {
+    title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
+    description: "Tours guiados por la Huasteca Potosina: Tamul, Edward James, Meco, Minas Viejas y más. Transporte, desayuno, entradas y guía certificado incluidos.",
+    url: `${SITE}/tours`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Tours Huasteca Potosina" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
+    description: "Tours guiados por la Huasteca Potosina con todo incluido.",
+    images: [`${SITE}/og-image.jpg`],
+  },
+};
+
+const toursItemListSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Tours Huasteca Potosina",
+  url: `${SITE}/tours`,
+  numberOfItems: TOURS_DB.length,
+  itemListElement: TOURS_DB.map((t, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "TouristTrip",
+      name: t.nombre,
+      description: t.descripcion,
+      url: `${SITE}/tours/${t.slug}`,
+      image: t.imagen_hero?.startsWith("http") ? t.imagen_hero : `${SITE}${t.imagen_hero}`,
+      offers: { "@type": "Offer", price: t.precio, priceCurrency: "MXN" },
+    },
+  })),
 };
 
 const WA_SVG = (
@@ -91,7 +128,8 @@ const COMO_FUNCIONA = [
 
 export default function ToursPage() {
   return (
-    <main id="main-content" className="min-h-screen">
+    <main id="main-content" className="min-h-screen bg-crema">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(toursItemListSchema) }} />
 
       {/* ── HERO ── */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-20 text-center">

@@ -1,9 +1,20 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+const SITE = "https://www.huasteca-potosina.com";
 export const metadata = {
   title: "Blog Huasteca Potosina — Guías, Rutas y Consejos de Viaje",
   description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina: cascadas, Las Pozas, Sótano de las Golondrinas, gastronomía y más.",
+  openGraph: {
+    title: "Blog Huasteca Potosina — Guías, Rutas y Consejos de Viaje",
+    description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina.",
+    url: `${SITE}/blog`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630 }],
+  },
+  twitter: { card: "summary_large_image", title: "Blog Huasteca Potosina", description: "Guías, rutas y consejos de viaje.", images: [`${SITE}/og-image.jpg`] },
 };
 
 export const dynamic = "force-dynamic";
@@ -27,7 +38,7 @@ export default async function BlogPage() {
   const posts = await getPosts();
 
   return (
-    <main className="min-h-screen bg-jungle pt-24 pb-20">
+    <main className="min-h-screen bg-crema pt-24 pb-20">
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 text-center mb-16">
         <p className="text-[10px] tracking-[4px] uppercase text-lima/70 font-dm mb-4">
@@ -58,7 +69,7 @@ export default async function BlogPage() {
           {/* Post destacado */}
           {posts[0] && (
             <Link href={`/blog/${posts[0].slug}`} className="group block mb-12">
-              <article className="grid md:grid-cols-2 gap-0 bg-forest border border-white/8 overflow-hidden hover:border-lima/30 transition-colors">
+              <article className="grid md:grid-cols-2 gap-0 bg-white border border-white/8 overflow-hidden hover:border-lima/30 transition-colors">
                 {posts[0].coverImageUrl && (
                   <div className="aspect-[4/3] md:aspect-auto overflow-hidden">
                     <img
@@ -92,7 +103,7 @@ export default async function BlogPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.slice(1).map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
-                <article className="bg-forest border border-white/8 overflow-hidden hover:border-lima/30 transition-colors h-full flex flex-col">
+                <article className="bg-white border border-white/8 overflow-hidden hover:border-lima/30 transition-colors h-full flex flex-col">
                   {post.coverImageUrl && (
                     <div className="aspect-video overflow-hidden">
                       <img

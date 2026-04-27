@@ -66,24 +66,29 @@ const destinosSchema = {
 
 export const dynamic = "force-dynamic";
 
-async function getRecentPosts() {
+async function getRandomPosts() {
   try {
-    return await prisma.blogPost.findMany({
+    const all = await prisma.blogPost.findMany({
       where: { published: true },
-      orderBy: { publishedAt: "desc" },
-      take: 3,
       select: {
         slug: true, title: true, excerpt: true, coverImageUrl: true,
         coverImageAlt: true, tags: true, readingTime: true, publishedAt: true,
       },
     });
+    // Shuffle deterministically by day so SSR and client match
+    const seed = Math.floor(Date.now() / 86_400_000);
+    return all
+      .map((p, i) => ({ p, sort: (seed * 2654435761 + i * 40503) % all.length }))
+      .sort((a, b) => a.sort - b.sort)
+      .slice(0, 3)
+      .map((x) => x.p);
   } catch {
     return [];
   }
 }
 
 export default async function HomePage() {
-  const recentPosts = await getRecentPosts();
+  const recentPosts = await getRandomPosts();
 
   return (
     <main id="main-content" className="min-h-screen bg-crema">
@@ -554,6 +559,9 @@ export default async function HomePage() {
 
           <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
             <span>© 2026 Tours Huasteca Potosina · Todos los derechos reservados</span>
+            <Link href="/aviso-de-privacidad" className="hover:text-crema/50 transition-colors underline-offset-2 hover:underline">
+              Aviso de Privacidad
+            </Link>
             <span>San Luis Potosí, México</span>
           </div>
         </div>

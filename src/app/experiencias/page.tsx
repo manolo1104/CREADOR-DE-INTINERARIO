@@ -5,10 +5,20 @@ import { Droplets, Mountain, Landmark, Thermometer, Camera } from "lucide-react"
 import { DESTINOS_DB } from "@/lib/destinos";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
+const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
-  title: "Experiencias — Huasteca Potosina",
-  description:
-    "Cascadas y pozas, aventura extrema, arte y cultura, naturaleza y bienestar, fotografía. Todas las experiencias de la Huasteca Potosina.",
+  title: "Experiencias — Cascadas, Aventura y Cultura | Huasteca Potosina",
+  description: "Cascadas y pozas, aventura extrema, arte y cultura, naturaleza y bienestar, fotografía. Todas las experiencias de la Huasteca Potosina.",
+  openGraph: {
+    title: "Experiencias — Cascadas, Aventura y Cultura | Huasteca Potosina",
+    description: "Cascadas y pozas, aventura extrema, arte y cultura, naturaleza y bienestar, fotografía en la Huasteca Potosina.",
+    url: `${SITE}/experiencias`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Experiencias Huasteca Potosina" }],
+  },
+  twitter: { card: "summary_large_image", title: "Experiencias — Huasteca Potosina", description: "Cascadas, aventura y cultura en la Huasteca Potosina.", images: [`${SITE}/og-image.jpg`] },
 };
 
 const CASCADAS_SLUGS = [
@@ -123,7 +133,7 @@ function CategorySection({ id, Icon, title, subtitle, slugs, descriptions }: Cat
 
 export default function ExperienciasPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-crema">
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">

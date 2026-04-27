@@ -3,10 +3,20 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Thermometer, Calendar, Globe, Mountain, Droplet } from "lucide-react";
 
+const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
-  description:
-    "Todo lo que necesitas saber sobre la Huasteca Potosina: geografía, clima, cultura Teenek, gastronomía, historia y los mejores momentos para visitar.",
+  description: "Todo lo que necesitas saber sobre la Huasteca Potosina: geografía, clima, cultura Teenek, gastronomía, historia y los mejores momentos para visitar.",
+  openGraph: {
+    title: "La Huasteca Potosina — Historia, Cultura y Geografía",
+    description: "Descubre la geografía, historia Teenek, gastronomía y los mejores destinos de la Huasteca Potosina, San Luis Potosí.",
+    url: `${SITE}/sobre-la-huasteca-potosina`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`, width: 1920, height: 1280, alt: "Cascada de Tamul — Huasteca Potosina" }],
+  },
+  twitter: { card: "summary_large_image", title: "La Huasteca Potosina — Historia y Cultura", description: "Geografía, historia Teenek, gastronomía y destinos.", images: [`${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`] },
 };
 
 const DATOS = [

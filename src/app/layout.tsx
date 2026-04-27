@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import Navbar from "@/components/nav/Navbar";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ItinerarioProvider } from "@/context/ItinerarioContext";
+import { CookieBanner } from "@/components/CookieBanner";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -63,12 +64,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${cormorant.variable} ${dmSans.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/favicon.svg" />
+      </head>
       <body>
-        <div className="fixed inset-0 -z-10 bg-negro" />
+        <div className="fixed inset-0 -z-10 bg-crema" />
         <ItinerarioProvider>
           <Navbar />
           <Providers>{children}</Providers>
           <WhatsAppButton />
+          <CookieBanner />
         </ItinerarioProvider>
       </body>
     </html>

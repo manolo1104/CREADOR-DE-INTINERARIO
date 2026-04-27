@@ -16,12 +16,31 @@ export function generateStaticParams() {
   return TOURS_DB.map((t) => ({ slug: t.slug }));
 }
 
+const SITE = "https://www.huasteca-potosina.com";
+
 export function generateMetadata({ params }: Props): Metadata {
   const tour = TOURS_DB.find((t) => t.slug === params.slug);
   if (!tour) return {};
+  const url = `${SITE}/tours/${tour.slug}`;
+  const image = tour.imagen_hero?.startsWith("http") ? tour.imagen_hero : `${SITE}${tour.imagen_hero}`;
   return {
     title: `${tour.nombre} | Tours Huasteca Potosina`,
     description: tour.descripcion,
+    openGraph: {
+      title: `${tour.nombre} | Tours Huasteca Potosina`,
+      description: tour.descripcion,
+      url,
+      siteName: "Tours Huasteca Potosina",
+      locale: "es_MX",
+      type: "website",
+      images: [{ url: image, width: 1200, height: 630, alt: tour.nombre }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${tour.nombre} | Tours Huasteca Potosina`,
+      description: tour.descripcion,
+      images: [image],
+    },
   };
 }
 
@@ -36,9 +55,42 @@ export default function TourDetailPage({ params }: Props) {
   if (!tour) notFound();
 
   const dif = DIFICULTAD_CONFIG[tour.dificultad];
+  const reviews = TOUR_REVIEWS[tour.id as keyof typeof TOUR_REVIEWS] ?? [];
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : "4.9";
+
+  const tourSchema = {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: tour.nombre,
+    description: tour.descripcionLarga,
+    image: tour.imagen_hero?.startsWith("http") ? tour.imagen_hero : `${SITE}${tour.imagen_hero}`,
+    url: `${SITE}/tours/${tour.slug}`,
+    touristType: ["Turismo de aventura", "Turismo de naturaleza", tour.tipo],
+    duration: `PT${tour.duracion_hrs}H`,
+    provider: {
+      "@type": "TouristInformationCenter",
+      name: "Tours Huasteca Potosina",
+      url: SITE,
+    },
+    offers: {
+      "@type": "Offer",
+      price: tour.precio,
+      priceCurrency: "MXN",
+      availability: "https://schema.org/InStock",
+      url: `${SITE}/tours/${tour.slug}`,
+    },
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: avgRating,
+      reviewCount: tour.reviewCount,
+      bestRating: 5,
+      worstRating: 1,
+    },
+  };
 
   return (
-    <main id="main-content" className="min-h-screen">
+    <main id="main-content" className="min-h-screen bg-crema">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
 
       {/* ── HERO ── */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">

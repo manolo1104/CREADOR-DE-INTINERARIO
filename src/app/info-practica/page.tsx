@@ -14,10 +14,20 @@ import {
   Hotel, UtensilsCrossed, Star,
 } from "lucide-react";
 
+const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Guía Práctica — Cómo llegar, Dónde quedarse & Más | Huasteca Potosina",
-  description:
-    "Todo lo que necesitas para planear tu viaje a la Huasteca Potosina: cómo llegar, cuándo ir, dónde hospedarte, presupuesto, qué llevar y seguridad.",
+  description: "Todo lo que necesitas para planear tu viaje a la Huasteca Potosina: cómo llegar, cuándo ir, dónde hospedarte, presupuesto, qué llevar y seguridad.",
+  openGraph: {
+    title: "Guía Práctica para viajar a la Huasteca Potosina",
+    description: "Todo lo que necesitas: cómo llegar, cuándo ir, dónde hospedarte, presupuesto, qué llevar y seguridad.",
+    url: `${SITE}/info-practica`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Guía práctica Huasteca Potosina" }],
+  },
+  twitter: { card: "summary_large_image", title: "Guía Práctica — Huasteca Potosina", description: "Cómo llegar, cuándo ir, dónde quedarse y qué llevar.", images: [`${SITE}/og-image.jpg`] },
 };
 
 function Section({
@@ -153,7 +163,7 @@ const FAQ_DATA: FAQCategory[] = [
 
 export default function InfoPracticaPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-crema">
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">

@@ -5,10 +5,20 @@ import {
   Heart, Leaf, Star, CheckCircle2, MapPin, TrendingUp,
 } from "lucide-react";
 
+const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Quiénes Somos — Guías Locales Certificados | Tours Huasteca Potosina",
-  description:
-    "Somos una empresa familiar de guías nacidos en la Huasteca Potosina. +8 años de experiencia, certificación NOM-09 SECTUR y el compromiso de mostrarte la región como ningún otro puede hacerlo.",
+  description: "Somos una empresa familiar de guías nacidos en la Huasteca Potosina. +8 años de experiencia, certificación NOM-09 SECTUR y el compromiso de mostrarte la región como ningún otro puede hacerlo.",
+  openGraph: {
+    title: "Quiénes Somos — Tours Huasteca Potosina",
+    description: "Empresa familiar de guías locales certificados NOM-09 SECTUR. +8 años, 4.9 estrellas en Google, cero incidentes.",
+    url: `${SITE}/nosotros`,
+    siteName: "Tours Huasteca Potosina",
+    locale: "es_MX",
+    type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Equipo Tours Huasteca Potosina" }],
+  },
+  twitter: { card: "summary_large_image", title: "Quiénes Somos — Tours Huasteca Potosina", description: "Guías locales certificados con +8 años de experiencia.", images: [`${SITE}/og-image.jpg`] },
 };
 
 const WA = "https://wa.me/524891251458?text=Hola%2C%20quisiera%20saber%20m%C3%A1s%20sobre%20el%20equipo.";
