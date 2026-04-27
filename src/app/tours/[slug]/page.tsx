@@ -89,7 +89,7 @@ export default function TourDetailPage({ params }: Props) {
   };
 
   return (
-    <main id="main-content" className="min-h-screen bg-crema">
+    <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
 
       {/* ── HERO ── */}
