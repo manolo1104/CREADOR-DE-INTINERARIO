@@ -61,19 +61,19 @@ interface ExperienceCardProps {
 
 function ExperienceCard({ destino, description }: ExperienceCardProps) {
   return (
-    <div className="flex-shrink-0 w-64 border border-negro/10 bg-white hover:border-verde-selva/40 transition-all duration-200 group shadow-sm">
+    <div className="flex-shrink-0 w-64 border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-200 group">
       <div className="p-5 flex flex-col h-full">
         <DestinoIcon name={destino.icon} className="w-8 h-8 text-verde-selva mb-3" />
-        <h3 className="font-cormorant text-verde-profundo text-base leading-tight mb-1">
+        <h3 className="font-cormorant text-crema text-base leading-tight mb-1">
           {destino.nombre}
         </h3>
         <p className="text-[10px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
           {destino.zona}
         </p>
-        <p className="text-negro/60 text-xs font-dm leading-relaxed mb-4 flex-1">
+        <p className="text-crema/50 text-xs font-dm leading-relaxed mb-4 flex-1">
           {description || destino.descripcion.slice(0, 80) + "…"}
         </p>
-        <div className="flex items-center justify-between border-t border-negro/8 pt-3">
+        <div className="flex items-center justify-between border-t border-white/8 pt-3">
           <span className="text-dorado text-sm font-dm">
             {destino.precio_entrada.split(" ").slice(0, 2).join(" ")}
           </span>
@@ -102,19 +102,19 @@ function CategorySection({ id, Icon, title, subtitle, slugs, descriptions }: Cat
   const destinos = getDestinos(slugs);
 
   return (
-    <section id={id} className="py-16 border-b border-negro/8">
+    <section id={id} className="py-16 border-b border-white/6">
       <div className="max-w-7xl mx-auto px-6">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Icon className="w-8 h-8 text-verde-selva flex-shrink-0" aria-hidden="true" />
             <h2
-              className="font-cormorant font-light text-verde-profundo"
+              className="font-cormorant font-light text-crema"
               style={{ fontSize: "clamp(26px,3.5vw,40px)" }}
             >
               {title}
             </h2>
           </div>
-          <p className="text-negro/55 font-dm text-sm ml-12">{subtitle}</p>
+          <p className="text-crema/45 font-dm text-sm ml-12">{subtitle}</p>
         </div>
 
         <div className="flex gap-4 overflow-x-auto scrollbar-none pb-4">
@@ -133,7 +133,7 @@ function CategorySection({ id, Icon, title, subtitle, slugs, descriptions }: Cat
 
 export default function ExperienciasPage() {
   return (
-    <main className="min-h-screen bg-crema">
+    <main className="min-h-screen bg-negro">
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">

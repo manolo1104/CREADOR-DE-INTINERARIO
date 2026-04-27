@@ -128,7 +128,7 @@ const COMO_FUNCIONA = [
 
 export default function ToursPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-crema">
+    <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(toursItemListSchema) }} />
 
       {/* ── HERO ── */}
@@ -160,17 +160,17 @@ export default function ToursPage() {
       <GuideProfile />
 
       {/* ── BADGES ── */}
-      <section className="bg-white border-y border-negro/8 py-12 px-6">
+      <section className="bg-verde-profundo/20 border-y border-white/6 py-12 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-8 font-dm">
             Por qué elegirnos
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
             {BADGES.map((item) => (
-              <div key={item.title} className="border border-negro/8 bg-crema/60 p-4">
+              <div key={item.title} className="border border-white/8 bg-negro/30 p-4">
                 <item.Icon className="w-6 h-6 text-verde-selva mx-auto mb-2" aria-hidden="true" />
-                <p className="font-cormorant text-negro text-sm mb-0.5 leading-tight">{item.title}</p>
-                <p className="text-[9px] text-negro/50 font-dm tracking-wide">{item.sub}</p>
+                <p className="font-cormorant text-crema text-sm mb-0.5 leading-tight">{item.title}</p>
+                <p className="text-[9px] text-crema/40 font-dm tracking-wide">{item.sub}</p>
               </div>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default function ToursPage() {
           {TOURS_DB.map((tour) => (
             <article
               key={tour.id}
-              className="relative border border-negro/10 bg-white hover:border-verde-selva/40 transition-all duration-300 flex flex-col shadow-sm"
+              className="relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col"
             >
               {/* Stretched link — full card clickable to tour detail */}
               <Link
@@ -220,7 +220,7 @@ export default function ToursPage() {
               )}
 
               {/* Card header */}
-              <div className="p-7 border-b border-negro/8">
+              <div className="p-7 border-b border-white/6">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
                     <DestinoIcon name={tour.icon} className="w-8 h-8 text-verde-selva flex-shrink-0" />
@@ -234,37 +234,37 @@ export default function ToursPage() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[9px] tracking-[1px] uppercase text-negro/40 font-dm">desde</p>
+                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">desde</p>
                     {/* Precio tachado */}
-                    <p className="text-[11px] text-negro/35 font-dm line-through">
+                    <p className="text-[11px] text-crema/35 font-dm line-through">
                       ${tour.precioOriginal.toLocaleString("es-MX")}
                     </p>
                     <p className="font-cormorant text-dorado text-2xl font-light leading-none">
                       ${tour.precio.toLocaleString("es-MX")}
                     </p>
-                    <p className="text-[9px] text-negro/40 font-dm mt-0.5">MXN por persona</p>
+                    <p className="text-[9px] text-crema/35 font-dm mt-0.5">MXN por persona</p>
                   </div>
                 </div>
 
-                <h2 className="font-cormorant text-verde-profundo text-xl leading-tight mb-1">
+                <h2 className="font-cormorant text-crema text-xl leading-tight mb-1">
                   {tour.nombre}
                 </h2>
                 <p className="text-[10px] tracking-[1px] uppercase text-dorado/70 font-dm mb-4">
                   {tour.tagline}
                 </p>
-                <p className="text-negro/65 text-sm font-dm leading-relaxed">
+                <p className="text-crema/60 text-sm font-dm leading-relaxed">
                   {tour.descripcion}
                 </p>
               </div>
 
               {/* Destinos */}
-              <div className="px-7 py-5 border-b border-negro/8">
+              <div className="px-7 py-5 border-b border-white/6">
                 <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
                   Destinos del recorrido
                 </p>
                 <ul className="space-y-1.5">
                   {tour.destinos.map((d) => (
-                    <li key={d} className="flex items-start gap-2 text-xs text-negro/65 font-dm">
+                    <li key={d} className="flex items-start gap-2 text-xs text-crema/65 font-dm">
                       <span className="text-verde-vivo mt-0.5 flex-shrink-0">→</span>
                       {d}
                     </li>
@@ -273,13 +273,13 @@ export default function ToursPage() {
               </div>
 
               {/* Incluye */}
-              <div className="px-7 py-5 border-b border-negro/8">
+              <div className="px-7 py-5 border-b border-white/6">
                 <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
                   Todo incluido
                 </p>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {tour.incluye.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-xs text-negro/65 font-dm">
+                    <li key={item} className="flex items-start gap-2 text-xs text-crema/65 font-dm">
                       <span className="text-dorado mt-0.5 flex-shrink-0">✦</span>
                       {item}
                     </li>
@@ -289,7 +289,7 @@ export default function ToursPage() {
 
               {/* FAQ */}
               {TOUR_FAQS[tour.id] && TOUR_FAQS[tour.id].length > 0 && (
-                <div className="px-7 py-5 border-t border-negro/8">
+                <div className="px-7 py-5 border-t border-white/6">
                   <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-3">
                     Preguntas frecuentes
                   </p>
@@ -297,13 +297,13 @@ export default function ToursPage() {
                     {TOUR_FAQS[tour.id].map((faq, i) => (
                       <details
                         key={i}
-                        className="border-b border-negro/8 last:border-0 group"
+                        className="border-b border-white/6 last:border-0 group"
                       >
-                        <summary className="flex items-center justify-between gap-3 py-3 cursor-pointer list-none text-sm text-negro/70 font-dm hover:text-negro transition-colors">
+                        <summary className="flex items-center justify-between gap-3 py-3 cursor-pointer list-none text-sm text-crema/70 font-dm hover:text-crema transition-colors">
                           {faq.q}
-                          <span className="text-negro/30 group-open:rotate-45 transition-transform text-lg flex-shrink-0">+</span>
+                          <span className="text-crema/30 group-open:rotate-45 transition-transform text-lg flex-shrink-0">+</span>
                         </summary>
-                        <p className="text-xs text-negro/55 font-dm pb-3 leading-relaxed">
+                        <p className="text-xs text-crema/50 font-dm pb-3 leading-relaxed">
                           {faq.a}
                         </p>
                       </details>
@@ -314,7 +314,7 @@ export default function ToursPage() {
 
               {/* Mini-reviews */}
               {TOUR_REVIEWS[tour.id]?.length > 0 && (
-                <div className="px-7 py-5 border-t border-negro/8">
+                <div className="px-7 py-5 border-t border-white/6">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm flex items-center gap-1">
                       <Star className="w-3 h-3 fill-dorado/60 text-dorado/60" aria-hidden="true" /> Reseñas
@@ -332,15 +332,15 @@ export default function ToursPage() {
                     {TOUR_REVIEWS[tour.id].slice(0, 2).map((r) => (
                       <div key={r.nombre} className="flex gap-3">
                         <div
-                          className="w-7 h-7 rounded-full bg-verde-selva flex items-center justify-center text-[10px] text-crema font-dm font-medium flex-shrink-0"
+                          className="w-7 h-7 rounded-full bg-verde-selva/60 flex items-center justify-center text-[10px] text-crema font-dm font-medium flex-shrink-0"
                         >
                           {r.iniciales}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-negro/70 font-dm font-medium leading-none mb-0.5">
-                            {r.nombre} <span className="text-negro/35 font-normal">· {r.ciudad}</span>
+                          <p className="text-[10px] text-crema/70 font-dm font-medium leading-none mb-0.5">
+                            {r.nombre} <span className="text-crema/35 font-normal">· {r.ciudad}</span>
                           </p>
-                          <p className="text-[10px] text-negro/55 font-dm leading-relaxed line-clamp-2">
+                          <p className="text-[10px] text-crema/50 font-dm leading-relaxed line-clamp-2">
                             &ldquo;{r.texto}&rdquo;
                           </p>
                         </div>
@@ -351,7 +351,7 @@ export default function ToursPage() {
               )}
 
               {/* Cancelación + Calculadora */}
-              <div className="relative z-10 px-7 py-5 border-t border-negro/8">
+              <div className="relative z-10 px-7 py-5 border-t border-white/6">
                 <p className="flex items-center gap-1.5 text-[10px] text-verde-vivo font-dm mb-3">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -367,13 +367,13 @@ export default function ToursPage() {
       </section>
 
       {/* ── CÓMO FUNCIONA ── */}
-      <section className="bg-arena/30 border-y border-negro/8 py-20 px-6">
+      <section className="bg-verde-profundo/20 border-y border-white/6 py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <p className="text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             Simple y sin complicaciones
           </p>
           <h2
-            className="font-cormorant font-light text-verde-profundo text-center mb-14"
+            className="font-cormorant font-light text-crema text-center mb-14"
             style={{ fontSize: "clamp(28px,4vw,44px)" }}
           >
             Cómo <em className="text-dorado">funciona</em>
@@ -387,8 +387,8 @@ export default function ToursPage() {
                 >
                   {step.num}
                 </div>
-                <h3 className="font-cormorant text-verde-profundo text-xl mb-3">{step.titulo}</h3>
-                <p className="text-negro/60 font-dm text-sm leading-relaxed">{step.detalle}</p>
+                <h3 className="font-cormorant text-crema text-xl mb-3">{step.titulo}</h3>
+                <p className="text-crema/50 font-dm text-sm leading-relaxed">{step.detalle}</p>
               </div>
             ))}
           </div>
@@ -401,20 +401,20 @@ export default function ToursPage() {
           Lo que dicen nuestros viajeros
         </p>
         <h2
-          className="font-cormorant font-light text-verde-profundo text-center mb-14"
+          className="font-cormorant font-light text-crema text-center mb-14"
           style={{ fontSize: "clamp(28px,4vw,44px)" }}
         >
           Experiencias <em className="text-dorado">reales</em>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TESTIMONIOS.map((t) => (
-            <div key={t.nombre} className="border border-negro/8 bg-white p-6 flex flex-col shadow-sm">
-              <p className="text-negro/70 font-dm text-sm leading-relaxed mb-6 flex-1 italic">
+            <div key={t.nombre} className="border border-white/8 bg-negro/30 p-6 flex flex-col">
+              <p className="text-crema/70 font-dm text-sm leading-relaxed mb-6 flex-1">
                 &ldquo;{t.texto}&rdquo;
               </p>
               <div>
-                <p className="text-negro font-dm text-sm font-medium">{t.nombre}</p>
-                <p className="text-negro/40 font-dm text-[10px] mt-0.5">{t.ciudad}</p>
+                <p className="text-crema font-dm text-sm font-medium">{t.nombre}</p>
+                <p className="text-crema/35 font-dm text-[10px] mt-0.5">{t.ciudad}</p>
                 <p className="text-verde-vivo font-dm text-[10px] mt-1 tracking-wide">
                   ✓ {t.tour}
                 </p>

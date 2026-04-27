@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="shortcut icon" href="/favicon.svg" />
       </head>
       <body>
-        <div className="fixed inset-0 -z-10 bg-crema" />
+        <div className="fixed inset-0 -z-10 bg-negro" />
         <ItinerarioProvider>
           <Navbar />
           <Providers>{children}</Providers>

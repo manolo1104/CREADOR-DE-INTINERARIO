@@ -38,7 +38,7 @@ export default async function BlogPage() {
   const posts = await getPosts();
 
   return (
-    <main className="min-h-screen bg-crema pt-24 pb-20">
+    <main className="min-h-screen bg-negro pt-24 pb-20">
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 text-center mb-16">
         <p className="text-[10px] tracking-[4px] uppercase text-lima/70 font-dm mb-4">
@@ -69,7 +69,7 @@ export default async function BlogPage() {
           {/* Post destacado */}
           {posts[0] && (
             <Link href={`/blog/${posts[0].slug}`} className="group block mb-12">
-              <article className="grid md:grid-cols-2 gap-0 bg-white border border-negro/10 overflow-hidden hover:border-verde-selva/30 shadow-sm transition-colors">
+              <article className="grid md:grid-cols-2 gap-0 bg-white border border-white/8 overflow-hidden hover:border-lima/30 transition-colors">
                 {posts[0].coverImageUrl && (
                   <div className="aspect-[4/3] md:aspect-auto overflow-hidden">
                     <img
@@ -83,13 +83,13 @@ export default async function BlogPage() {
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-[9px] tracking-[3px] uppercase text-lima/70 font-dm">✦ Artículo Destacado</span>
                   </div>
-                  <h2 className="font-cormorant text-verde-profundo text-3xl mb-4 leading-tight group-hover:text-dorado transition-colors">
+                  <h2 className="font-cormorant text-crema text-3xl mb-4 leading-tight group-hover:text-lima transition-colors">
                     {posts[0].title}
                   </h2>
-                  <p className="text-negro/60 font-dm text-sm leading-relaxed mb-6">
+                  <p className="text-crema/50 font-dm font-light text-sm leading-relaxed mb-6">
                     {posts[0].excerpt}
                   </p>
-                  <div className="flex items-center gap-4 text-[10px] tracking-[2px] uppercase font-dm text-negro/35">
+                  <div className="flex items-center gap-4 text-[10px] tracking-[2px] uppercase font-dm text-crema/30">
                     <span>{posts[0].readingTime} min lectura</span>
                     <span>·</span>
                     <span>{new Date(posts[0].publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</span>
@@ -103,7 +103,7 @@ export default async function BlogPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.slice(1).map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
-                <article className="bg-white border border-negro/10 overflow-hidden hover:border-verde-selva/30 shadow-sm transition-colors h-full flex flex-col">
+                <article className="bg-white border border-white/8 overflow-hidden hover:border-lima/30 transition-colors h-full flex flex-col">
                   {post.coverImageUrl && (
                     <div className="aspect-video overflow-hidden">
                       <img
@@ -117,13 +117,13 @@ export default async function BlogPage() {
                     {post.tags[0] && (
                       <span className="text-[9px] tracking-[3px] uppercase text-lima/60 font-dm mb-3">{post.tags[0]}</span>
                     )}
-                    <h3 className="font-cormorant text-verde-profundo text-xl mb-3 leading-snug group-hover:text-dorado transition-colors flex-1">
+                    <h3 className="font-cormorant text-crema text-xl mb-3 leading-snug group-hover:text-lima transition-colors flex-1">
                       {post.title}
                     </h3>
-                    <p className="text-negro/50 font-dm text-xs leading-relaxed mb-4">
+                    <p className="text-crema/40 font-dm font-light text-xs leading-relaxed mb-4">
                       {post.excerpt.slice(0, 120)}...
                     </p>
-                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-negro/30 mt-auto">
+                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/25 mt-auto">
                       <span>{post.readingTime} min</span>
                       <span>·</span>
                       <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
@@ -137,10 +137,10 @@ export default async function BlogPage() {
       )}
 
       {/* CTA final */}
-      <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-negro/8">
+      <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-white/8">
         <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ Tecnología IA</p>
-        <h2 className="font-cormorant font-light text-verde-profundo text-3xl mb-4">¿Listo para planear tu viaje?</h2>
-        <p className="text-negro/60 font-dm mb-8">
+        <h2 className="font-cormorant font-light text-crema text-3xl mb-4">¿Listo para planear tu viaje?</h2>
+        <p className="text-crema/50 font-dm font-light mb-8">
           Dinos cuántos días tienes y la IA crea tu itinerario personalizado en 2 minutos. Gratis, sin registro.
         </p>
         <Link
