@@ -135,17 +135,21 @@ function loadDataBanks() {
 
 // ── Corrección 4: Scoring por tags + tema ───────────────────
 
+function stripAccents(str) {
+  return str.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 function computeImageScore(image, articleTerms) {
   const tags = image.tags || [];
   let score = 0;
   for (const tag of tags) {
-    const tagLow = tag.toLowerCase();
-    if (articleTerms.some(t => t.includes(tagLow) || tagLow.includes(t))) {
+    const tagNorm = stripAccents(tag.toLowerCase());
+    if (articleTerms.some(t => t.includes(tagNorm) || tagNorm.includes(t))) {
       score += 20;
     }
   }
   // Bonus: tema match (legacy compat)
-  const temaWords = (image.tema || "").toLowerCase().split(/\s+/);
+  const temaWords = stripAccents((image.tema || "").toLowerCase()).split(/\s+/);
   for (const term of articleTerms) {
     if (temaWords.some(w => w.includes(term) || term.includes(w))) {
       score += 5;
@@ -160,7 +164,9 @@ function selectImages(topic, imagesBank) {
     ...topic.focusKeyword.toLowerCase().split(/\s+/),
     ...(topic.secondaryKeywords || []).flatMap(k => k.toLowerCase().split(/\s+/)),
     ...topic.title.toLowerCase().split(/\s+/).filter(w => w.length > 3),
-  ].filter((v, i, a) => a.indexOf(v) === i);
+  ]
+    .map(t => stripAccents(t))
+    .filter((v, i, a) => a.indexOf(v) === i);
 
   const heroImages = imagesBank.filter(img => img.filename.includes("hero"));
   const bodyImages = imagesBank.filter(img => !img.filename.includes("hero"));
@@ -311,6 +317,55 @@ function validateInternalLinks(content, postsExistentes, siteUrl) {
   });
 
   return { content: fixed, validCount, totalCount };
+}
+
+// ── AI SEO: Verificar señales de citabilidad ─────────────────
+
+function checkAISEOSignals(content, focusKeyword) {
+  const text = content.replace(/<[^>]+>/g, " ");
+
+  // Estadísticas: números seguidos de unidades o porcentajes, o precedidos de "$"
+  const statsMatches = text.match(/(\d[\d,\.]*\s*(%|pesos|km|metros|horas?|minutos?|personas?|visitantes?|grupos?|años?|días?|meses?)|\$\s*\d[\d,\.]*)/gi) || [];
+  const statsCount = statsMatches.length;
+
+  // Atribuciones: "según", "de acuerdo", "reportan", "confirman"
+  const attributionMatches = text.match(/\b(según|de acuerdo|reportan|confirman|señalan|indican)\b/gi) || [];
+  const attributionCount = attributionMatches.length;
+
+  // Headings como query (contienen "¿" o "cómo" o "cuánto" o "cuál" o "dónde")
+  const headings = content.match(/<h[23][^>]*>(.*?)<\/h[23]>/gi) || [];
+  const queryHeadings = headings.filter(h =>
+    /[¿?]|cómo|cuánto|cuál|dónde|cuándo|por qué/i.test(h)
+  ).length;
+
+  // Bloque de definición: primera oración auto-contenida con "es" + keyword
+  const firstPara = (content.match(/<p>([\s\S]*?)<\/p>/i) || [])[1] || "";
+  const firstSentence = firstPara.replace(/<[^>]+>/g, "").split(/[.!]/)[0] || "";
+  const hasDefinition = firstSentence.length > 30 && firstSentence.length < 200 &&
+    /\bes\b|\bson\b|\bse llama\b|\bconsiste\b/i.test(firstSentence);
+
+  // Freshness: "Última actualización" presente
+  const hasFreshness = /última actualización|last updated/i.test(content);
+
+  // Tabla de comparación
+  const hasTable = /<table[\s>]/i.test(content);
+
+  return {
+    statsCount,
+    attributionCount,
+    queryHeadings,
+    hasDefinition,
+    hasFreshness,
+    hasTable,
+    score: (
+      (statsCount >= 2 ? 25 : statsCount === 1 ? 12 : 0) +
+      (attributionCount >= 1 ? 20 : 0) +
+      (queryHeadings >= 2 ? 20 : queryHeadings === 1 ? 10 : 0) +
+      (hasDefinition ? 20 : 0) +
+      (hasFreshness ? 10 : 0) +
+      (hasTable ? 5 : 0)
+    ),
+  };
 }
 
 // ── Corrección 1: Verificar keyword density ─────────────────
@@ -474,9 +529,9 @@ Si es menor a 950, añade un dato concreto en la sección más corta.
 ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 
 ━━━ INTRO (3 párrafos) ━━━
-<p>[P1 — Gancho: identifica el problema o duda real del viajero. Incluye la keyword en las primeras 2 oraciones. NO empieces con "Si estás buscando..." ni "Si quieres..."]</p>
-<p>[P2 — Solución: qué va a encontrar en este artículo. Incluye una keyword secundaria. Añade un dato concreto del contexto investigado.]</p>
-<p>[P3 — E-E-A-T obligatorio, copia textual: "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Cierra con: <a href="${SITE_URL}/itinerarios">planea tu itinerario a ${topic.focusKeyword}</a>]</p>
+<p>[P1 — BLOQUE DE DEFINICIÓN (AI SEO): empieza con una oración que defina o describa "${topic.focusKeyword}" en 15-20 palabras, auto-contenida y extractable sin contexto adicional. Ej: "La Cascada de Tamul es la cascada más grande de San Luis Potosí, con una caída de 105 metros." Luego añade el gancho: identifica el problema o duda real del viajero. Incluye la keyword en las primeras 2 oraciones. NO empieces con "Si estás buscando..." ni "Si quieres..."]</p>
+<p>[P2 — Solución: qué va a encontrar en este artículo. Incluye una keyword secundaria. Añade un dato concreto del contexto investigado con número específico y año.]</p>
+<p>[P3 — E-E-A-T + FRESHNESS obligatorio: "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Añade al final: <em>Última actualización: ${new Date().toLocaleDateString("es-MX", { month: "long", year: "numeric" })}.</em> Cierra con: <a href="${SITE_URL}/itinerarios">planea tu itinerario a ${topic.focusKeyword}</a>]</p>
 
 ━━━ SECCIÓN 1 ━━━
 <h2>[Título descriptivo con keyword LSI — ej: "Destinos imprescindibles para [keyword]" o "[Destino]: qué ver y hacer" o "Los mejores [tema] en la Huasteca Potosina"]</h2>
@@ -524,6 +579,22 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 <details><summary><strong>[Pregunta sobre seguridad o recomendaciones para familias/parejas]</strong></summary><p>[Respuesta con consejo accionable. Incluye keyword secundaria.]</p></details>
 </div>
 
+━━━ AI SEO — CITABILIDAD (Princeton GEO Study) ━━━
+Estas reglas aumentan hasta +40% la probabilidad de ser citado por ChatGPT, Perplexity y Google AI Overviews:
+
+ESTADÍSTICAS (+37% visibilidad): Incluye mínimo 2 estadísticas con número específico, año y atribución. Formato obligatorio:
+  "Según [guías locales / SECTUR / operadores de la región], [dato concreto con número] en ${year}."
+  Ejemplos válidos: "Según operadores locales, más de 12,000 visitantes recorren la ruta cada mes de julio."
+  NO inventes estadísticas — usa datos del contexto investigado o datos conocidos verificables.
+
+RESPUESTAS AUTO-CONTENIDAS (+20% claridad): Cada H3 debe tener al menos 1 párrafo de 40-60 palabras que responda la pregunta del heading por sí solo, sin necesitar leer el resto del artículo.
+
+HEADINGS COMO QUERIES (+25% extracción): Al menos 2 de los H2/H3 deben estar formulados como pregunta real que alguien buscaría:
+  Ej: "¿Cuánto cuesta visitar ${topic.focusKeyword}?" / "¿Cómo llegar a ${topic.focusKeyword} desde Ciudad Valles?" / "¿Cuál es la mejor época para ${topic.focusKeyword}?"
+
+TABLAS DE COMPARACIÓN (cuando aplique): Si el tema involucra opciones (tours, hospedaje, rutas, precios), añade una tabla HTML simple:
+  <table><thead><tr><th>Opción</th><th>Precio</th><th>Incluye</th></tr></thead><tbody>...</tbody></table>
+
 ━━━ REGLAS FINALES ━━━
 - NO incluyas bloques CTA (los inyecto yo después)
 - NO uses <h1> en ninguna parte del content
@@ -532,6 +603,7 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 - Mínimo 2 enlaces a ${SITE_URL}/tours en el cuerpo (no en CTAs)
 - NUNCA uses: "increíble experiencia", "sin duda alguna", "joya escondida", "paraíso terrenal", "de ensueño", "clic aquí", "Si estás buscando..."
 - Links externos permitidos solo: laspozasxilitla.org.mx, google.com/maps, inah.gob.mx — con rel="noopener nofollow", anchor = nombre oficial del lugar
+- KEYWORD STUFFING: NO repitas la keyword de forma forzada — el keyword stuffing reduce visibilidad AI en -10%
 
 Respuesta: JSON puro sin markdown.
 {"slug":"${slug}","metaTitle":"máx 60 chars con keyword y ${year}","title":"H1 completo","metaDescription":"140-155 chars","focusKeyword":"${topic.focusKeyword}","secondaryKeywords":${JSON.stringify(topic.secondaryKeywords)},"excerpt":"2 líneas","content":"HTML completo sin CTAs","tags":["Huasteca Potosina","${topic.category}","tag3"],"readingTime":7}`;
@@ -609,19 +681,36 @@ Respuesta: JSON puro sin markdown.
   post._category = inferredCategory;
   post._categorySource = "regla semántica";
 
-  // Schema JSON-LD como objeto
+  // Schema JSON-LD como objeto — AI SEO: speakable + author expertise + mainEntityOfPage
+  const postUrl = `${SITE_URL}/blog/${slug}`;
   const schemaBase = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": postUrl },
     "headline": post.title || topic.title,
     "datePublished": new Date().toISOString(),
     "dateModified": new Date().toISOString(),
-    "author": { "@type": "Organization", "name": "Huasteca Potosina", "url": SITE_URL },
-    "publisher": { "@type": "Organization", "name": "Huasteca Potosina", "url": SITE_URL },
+    "author": {
+      "@type": "Organization",
+      "name": "Huasteca Potosina",
+      "url": SITE_URL,
+      "description": "Operadores y guías locales con más de 10 años de experiencia en la Huasteca Potosina, San Luis Potosí.",
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Huasteca Potosina",
+      "url": SITE_URL,
+      "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` },
+    },
     "description": post.metaDescription || "",
-    "image": images.hero.url,
+    "image": { "@type": "ImageObject", "url": images.hero.url, "description": images.hero.alt },
     "keywords": [topic.focusKeyword, ...topic.secondaryKeywords].join(", "),
     "articleSection": inferredCategory,
+    "inLanguage": "es-MX",
+    "speakable": {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["h2", "h3", ".faq details p"],
+    },
   };
 
   const faqMatches = [...(post.content || "").matchAll(
@@ -645,6 +734,7 @@ Respuesta: JSON puro sin markdown.
 
   // Métricas
   const densityCheck = checkKeywordDensity(post.content || "", topic.focusKeyword);
+  const aiSeoSignals = checkAISEOSignals(post.content || "", topic.focusKeyword);
   post._metrics = {
     wordCount: densityCheck.wordCount,
     keywordOccurrences: densityCheck.occurrences,
@@ -652,6 +742,7 @@ Respuesta: JSON puro sin markdown.
     heroMatchScore: images.hero.matchScore,
     heroMatchOk: images.heroMatchOk,
     linkValidation: post._linkValidation || { validCount: 0, totalCount: 0 },
+    aiSeo: aiSeoSignals,
   };
 
   return post;
@@ -723,6 +814,38 @@ function revertTopicState(topicId) {
     console.log(`   ↩️  Topic ${topicId} revertido a pendiente`);
   } catch {
     console.warn(`   ⚠️  No se pudo revertir topic ${topicId}`);
+  }
+}
+
+// ── Guardar copia local en HTML ──────────────────────────────
+
+function saveLocalHTML(post) {
+  const blogsDir = path.join(__dirname, "..", "BLOGS");
+  try {
+    if (!fs.existsSync(blogsDir)) fs.mkdirSync(blogsDir, { recursive: true });
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${post.metaTitle || post.title}</title>
+  <meta name="description" content="${post.metaDescription || ""}">
+</head>
+<body>
+  <h1>${post.title}</h1>
+  <p><strong>Slug:</strong> ${post.slug}</p>
+  <p><strong>Keyword:</strong> ${post.focusKeyword}</p>
+  <p><strong>Categoría:</strong> ${post._category || ""}</p>
+  <p><strong>Publicado:</strong> ${new Date().toISOString()}</p>
+  <hr>
+  ${post.content || ""}
+</body>
+</html>`;
+    const filePath = path.join(blogsDir, `${post.slug}.html`);
+    fs.writeFileSync(filePath, html, "utf-8");
+    console.log(`   💾 Copia local guardada: BLOGS/${post.slug}.html`);
+  } catch (e) {
+    console.warn(`   ⚠️  No se pudo guardar copia local: ${e.message}`);
   }
 }
 
@@ -819,6 +942,17 @@ function printQualityLog(post, publishResult) {
 
   console.log(`✅ Slug: ${post.slug} (validado con keyword)`);
 
+  // ── AI SEO signals ──
+  const ai = m.aiSeo || {};
+  console.log(`\n🤖 AI SEO — CITABILIDAD (score: ${ai.score ?? 0}/100)`);
+  console.log(`   ${(ai.statsCount || 0) >= 2 ? "✅" : "⚠️"} Estadísticas con número: ${ai.statsCount || 0} (mínimo 2 para +37% citabilidad)`);
+  console.log(`   ${(ai.attributionCount || 0) >= 1 ? "✅" : "⚠️"} Atribuciones "Según...": ${ai.attributionCount || 0}`);
+  console.log(`   ${(ai.queryHeadings || 0) >= 2 ? "✅" : "⚠️"} Headings como query (¿...?): ${ai.queryHeadings || 0}`);
+  console.log(`   ${ai.hasDefinition ? "✅" : "⚠️"} Bloque de definición en P1: ${ai.hasDefinition ? "sí" : "no encontrado"}`);
+  console.log(`   ${ai.hasFreshness ? "✅" : "⚠️"} Señal de frescura (Última actualización): ${ai.hasFreshness ? "sí" : "no"}`);
+  console.log(`   ${ai.hasTable ? "✅" : "ℹ️"} Tabla comparativa: ${ai.hasTable ? "presente" : "no aplica o no generada"}`);
+  if ((ai.score || 0) < 60) issues.push(`AI SEO score bajo: ${ai.score}/100`);
+
   if (issues.length > 0) {
     console.log(`\n⚠️  REQUIERE REVISIÓN MANUAL: ${issues.join(" | ")}`);
   } else {
@@ -837,12 +971,6 @@ async function main() {
   console.log(`    Modo: ${DRY_RUN ? "🧪 DRY-RUN" : "🚀 LIVE"}`);
   console.log("═".repeat(55));
 
-  // Paso 0: Verificar GITHUB_REPO_NAME
-  if (!GITHUB_REPO_NAME) {
-    console.error("ERROR: GITHUB_REPO_NAME no definida — abortando publicación");
-    process.exit(1);
-  }
-  console.log(`   🔗 Repo: ${GITHUB_REPO_NAME}`);
   console.log(`   🖼️  Image base: ${IMAGE_BASE_URL}`);
 
   // Paso 1: Cargar bancos de datos
@@ -947,6 +1075,9 @@ async function main() {
   if (topicId && !DRY_RUN) {
     markTopicAsPublished(topicId, post.slug);
   }
+
+  // ── Guardar copia HTML local ──
+  saveLocalHTML(post);
 
   // ── Paso 11: Publicar en CMS ──
   let publishResult;
