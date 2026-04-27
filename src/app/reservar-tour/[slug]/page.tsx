@@ -213,7 +213,7 @@ export default function ReservarTourPage() {
               <div className="flex gap-3">
                 <input
                   type="text"
-                  placeholder="HUASTECA20"
+                  placeholder="Tu código aquí"
                   value={promoInput}
                   onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && applyPromo()}

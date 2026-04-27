@@ -42,12 +42,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="py-16 border-b border-white/6">
+    <section id={id} className="py-16 border-b border-negro/8">
       <div className="max-w-4xl mx-auto px-6">
         <div className="flex items-center gap-3 mb-8">
           <Icon className="w-7 h-7 text-verde-selva flex-shrink-0" aria-hidden="true" />
           <h2
-            className="font-cormorant font-light text-crema"
+            className="font-cormorant font-light text-verde-profundo"
             style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
           >
             {title}
@@ -76,7 +76,7 @@ function InfoCard({
   };
   return (
     <div className={`border-l-2 ${colors[accent]} p-5`}>
-      <h3 className="font-dm text-[11px] tracking-[2px] uppercase text-crema/60 mb-3">{title}</h3>
+      <h3 className="font-dm text-[11px] tracking-[2px] uppercase text-negro/50 mb-3">{title}</h3>
       {children}
     </div>
   );
@@ -86,7 +86,7 @@ function BulletList({ items }: { items: string[] }) {
   return (
     <ul className="space-y-2">
       {items.map((item) => (
-        <li key={item} className="flex items-start gap-2 text-sm text-crema/65 font-dm">
+        <li key={item} className="flex items-start gap-2 text-sm text-negro/65 font-dm">
           <span className="text-verde-vivo mt-0.5 flex-shrink-0">·</span>
           {item}
         </li>
@@ -756,7 +756,7 @@ export default function InfoPracticaPage() {
                 { label: "Policía Municipal Valles", num: "(481) 382-0066" },
                 { label: "Protección Civil SLP", num: "(444) 812-6000" },
               ].map((e) => (
-                <div key={e.label} className="flex items-center gap-3 py-2 border-b border-white/6">
+                <div key={e.label} className="flex items-center gap-3 py-2 border-b border-negro/8">
                   <div>
                     <div className="text-[10px] uppercase tracking-[1px] text-crema/40 font-dm">{e.label}</div>
                     <div className="text-crema text-sm font-dm font-medium">{e.num}</div>
@@ -808,12 +808,12 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── FAQ ── */}
-      <section className="py-20 border-b border-white/6">
+      <section className="py-20 border-b border-negro/8">
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex items-center gap-3 mb-4">
             <HelpCircle className="w-7 h-7 text-verde-selva flex-shrink-0" aria-hidden="true" />
             <h2
-              className="font-cormorant font-light text-crema"
+              className="font-cormorant font-light text-verde-profundo"
               style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
             >
               Preguntas Frecuentes
@@ -843,7 +843,7 @@ export default function InfoPracticaPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6">
+      <section className="py-16 px-6 text-center bg-verde-profundo/20 border-t border-negro/8">
         <h2
           className="font-cormorant font-light text-crema mb-4"
           style={{ fontSize: "clamp(24px,3.5vw,40px)" }}

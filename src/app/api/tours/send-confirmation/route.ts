@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
+import { addTourToSheet } from "@/lib/sheetsHuasteca";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,28 @@ export async function POST(req: NextRequest) {
     // 1. Número de confirmación
     const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
-    // 2. Guardar en base de datos
+    // 2. Guardar en Google Sheets tab HUASTECA
+    try {
+      await addTourToSheet({
+        confirmationNumber: confirmationNumber,
+        customerName,
+        customerPhone: customerPhone || null,
+        customerEmail: email,
+        tourName,
+        tourDate,
+        adults:        Number(adults)   || 1,
+        children:      Number(children) || 0,
+        totalAmount:   Math.round(Number(totalAmount) || 0),
+        promoCode:     promoCode  || null,
+        promoDiscount: Number(promoDiscount) || 0,
+        stripePaymentIntentId: paymentIntentId || null,
+        notes:         notes || null,
+      });
+    } catch (e: any) {
+      console.error("❌ Sheets tour:", e.message);
+    }
+
+    // 3. Guardar en base de datos
     try {
       await prisma.tourBooking.create({
         data: {

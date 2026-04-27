@@ -84,10 +84,8 @@ export default function Navbar() {
       </a>
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled || mobileOpen
-            ? "bg-negro/95 backdrop-blur-md border-b border-white/8 shadow-lg"
-            : "bg-transparent"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${
+          scrolled || mobileOpen ? "shadow-lg" : ""
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -213,15 +211,10 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/planear"
-              className="relative bg-verde-selva text-crema px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-200"
+              href="/tours"
+              className="relative bg-dorado text-negro px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors duration-200 font-medium"
             >
-              Planear mi Viaje
-              {count > 0 && (
-                <span className="absolute -top-2 -right-2 bg-dorado text-negro text-[10px] font-dm font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                  {count}
-                </span>
-              )}
+              Reservar Tour
             </Link>
           </div>
 
@@ -355,15 +348,10 @@ export default function Navbar() {
 
             <div className="pt-4">
               <Link
-                href="/planear"
-                className="relative block text-center bg-verde-selva text-crema py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
+                href="/tours"
+                className="block text-center bg-dorado text-negro py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium"
               >
-                Planear mi Viaje
-                {count > 0 && (
-                  <span className="absolute top-2 right-4 bg-dorado text-negro text-[10px] font-dm font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                    {count}
-                  </span>
-                )}
+                Reservar Tour
               </Link>
             </div>
           </div>
