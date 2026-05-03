@@ -178,7 +178,7 @@ export default function ToursPage() {
       </section>
 
       {/* ── TOURS GRID ── */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
+      <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {TOURS_DB.map((tour) => (
             <article
@@ -455,8 +455,7 @@ export default function ToursPage() {
               ))}
             </ul>
             <a
-              href="/tours"
-              onClick={e => { e.preventDefault(); document.getElementById("tours-grid")?.scrollIntoView({ behavior: "smooth" }); }}
+              href="#tours-grid"
               className="inline-block border border-verde-selva/50 text-verde-vivo px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 transition-colors"
             >
               Ver todos los tours →
