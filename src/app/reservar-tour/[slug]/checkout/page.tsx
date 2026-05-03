@@ -12,7 +12,10 @@ import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate 
 import type { TourBookingState } from "@/lib/tourBooking";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users } from "lucide-react";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+  "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
+);
 
 // ── Formulario interno (necesita acceso a stripe/elements) ───
 
