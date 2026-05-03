@@ -424,6 +424,89 @@ export default function ToursPage() {
         </div>
       </section>
 
+      {/* ── ATENCIÓN A GRUPOS ── */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border border-white/10 overflow-hidden">
+
+          {/* Grupos regulares */}
+          <div className="p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-white/10">
+            <span className="inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">
+              Grupos · 2–12 personas
+            </span>
+            <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
+              Tours en grupo compartido
+            </h2>
+            <p className="text-crema/60 font-dm text-sm leading-relaxed mb-6">
+              Vive la experiencia con otros viajeros. Grupos pequeños de máximo 12 personas
+              para garantizar atención personalizada, acceso a rincones exclusivos y un ritmo
+              que ningún autobús turístico puede ofrecer.
+            </p>
+            <ul className="space-y-2 mb-7">
+              {[
+                "Máximo 12 personas por grupo",
+                "Guía dedicado todo el recorrido",
+                "Transporte desde tu hospedaje",
+                "Precio desde $1,300 MXN por persona",
+              ].map(item => (
+                <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65">
+                  <span className="text-verde-vivo mt-0.5 flex-shrink-0">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <a
+              href="/tours"
+              onClick={e => { e.preventDefault(); document.getElementById("tours-grid")?.scrollIntoView({ behavior: "smooth" }); }}
+              className="inline-block border border-verde-selva/50 text-verde-vivo px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 transition-colors"
+            >
+              Ver todos los tours →
+            </a>
+          </div>
+
+          {/* Tours privados */}
+          <div className="p-8 md:p-10 bg-dorado/8">
+            <span className="inline-block text-[9px] tracking-[3px] uppercase text-dorado border border-dorado/40 px-3 py-1 font-dm mb-5">
+              Tour Privado · Exclusivo
+            </span>
+            <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
+              Tu grupo, tu ritmo,<br/>
+              <em className="text-dorado">tu experiencia</em>
+            </h2>
+            <p className="text-crema/60 font-dm text-sm leading-relaxed mb-6">
+              Ideal para familias, equipos corporativos, despedidas, aniversarios o cualquier
+              ocasión especial. Sin horarios fijos, sin extraños — solo tu grupo y el mejor
+              guía de la región.
+            </p>
+            <ul className="space-y-2 mb-7">
+              {[
+                "Grupos desde 2 personas",
+                "Itinerario personalizado a tu medida",
+                "Horario flexible — salida cuando tú elijas",
+                "Desde $7,000 MXN el grupo completo",
+                "Descuentos por grupos de 10+ personas",
+              ].map(item => (
+                <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65">
+                  <span className="text-dorado mt-0.5 flex-shrink-0">✦</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <a
+              href="https://wa.me/524891251458?text=Hola%2C%20quiero%20información%20sobre%20tours%20privados%20para%20mi%20grupo."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-dorado hover:bg-terracota text-negro hover:text-crema px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+              </svg>
+              Cotizar tour privado
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA FINAL ── */}
       <section className="py-20 px-6 text-center bg-verde-profundo">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">

@@ -319,10 +319,11 @@ export default function CheckoutTourPage() {
         </div>
 
         {/* ── SIDEBAR ── */}
-        <aside className="lg:sticky lg:top-24">
+        <aside className="lg:sticky lg:top-24 space-y-4">
+
+          {/* Resumen de reserva */}
           <div className="bg-white border border-negro/8 p-5 space-y-4">
             <h3 className="font-cormorant text-verde-profundo text-lg">Tu reserva</h3>
-
             <div className="space-y-2 text-sm font-dm">
               <p className="text-negro/80 font-medium leading-snug">{booking.tourName}</p>
               <p className="text-negro/50">{formatTourDate(booking.tourDate)}</p>
@@ -331,7 +332,6 @@ export default function CheckoutTourPage() {
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" />{booking.adults + booking.children} personas</span>
               </div>
             </div>
-
             <div className="border-t border-negro/8 pt-4 space-y-2 text-sm font-dm">
               <div className="flex justify-between text-negro/60">
                 <span>{booking.adults} adulto{booking.adults !== 1 ? "s" : ""}</span>
@@ -354,7 +354,6 @@ export default function CheckoutTourPage() {
                 <span className="font-cormorant text-xl text-dorado">{formatMXN(booking.total)} MXN</span>
               </div>
             </div>
-
             <div className="border-t border-negro/8 pt-4">
               <p className="text-[9px] tracking-[2px] uppercase text-negro/30 font-dm mb-2">Incluido</p>
               <ul className="space-y-1 text-xs font-dm text-negro/50">
@@ -365,6 +364,51 @@ export default function CheckoutTourPage() {
               </ul>
             </div>
           </div>
+
+          {/* Social proof — reseña real */}
+          <div className="bg-verde-profundo p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map(i => (
+                  <svg key={i} className="w-3.5 h-3.5 text-dorado fill-current" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                ))}
+              </div>
+              <span className="font-cormorant text-dorado text-base">4.9</span>
+              <span className="text-crema/45 font-dm text-[10px]">· 492 reseñas verificadas</span>
+            </div>
+            <blockquote className="text-crema/80 font-dm text-xs leading-relaxed italic border-l-2 border-dorado/40 pl-3">
+              "El guía conocía cada rincón del Tamul. Nos llevó a miradores que nunca hubiéramos encontrado solos. ¡100% recomendado!"
+            </blockquote>
+            <p className="text-crema/40 font-dm text-[10px]">— Sandra M. · Ciudad de México</p>
+          </div>
+
+          {/* Garantías */}
+          <div className="bg-white border border-negro/8 p-5">
+            <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Reserva con confianza</p>
+            <ul className="space-y-2">
+              {[
+                { icon: "🔒", text: "Pago 100% seguro · Stripe" },
+                { icon: "✅", text: "Cancelación gratuita con 48h" },
+                { icon: "🏅", text: "Guías NOM-09 SECTUR" },
+                { icon: "📞", text: "Respuesta en menos de 1 hora" },
+                { icon: "📧", text: "Confirmación por correo inmediata" },
+              ].map(({ icon, text }) => (
+                <li key={text} className="flex items-center gap-2 text-xs font-dm text-negro/65">
+                  <span>{icon}</span>{text}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Badges */}
+          <div className="flex items-center justify-center gap-5 py-1 opacity-65">
+            <img src="/badges/tripadvisor.svg" alt="TripAdvisor" className="h-6 w-auto" />
+            <img src="/badges/travellers-choice.svg" alt="Travellers Choice" className="h-6 w-auto" />
+            <img src="/badges/top-rated-google.svg" alt="Top Rated Google" className="h-6 w-auto" />
+          </div>
+
         </aside>
       </div>
     </main>
