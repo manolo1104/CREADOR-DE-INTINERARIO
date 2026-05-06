@@ -12,26 +12,27 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   try {
     const b = await prisma.tourBooking.findUniqueOrThrow({ where: { id: params.id } });
 
+    // Misma plantilla que cuando el cliente reserva desde la web
     const html = buildTourEmailHtml({
-      customerName:      b.customerName,
+      customerName:       b.customerName,
       confirmationNumber: b.confirmationNumber,
-      paymentIntentId:   b.stripePaymentIntentId || undefined,
-      tourName:          b.tourName,
-      tourDate:          b.tourDate,
-      tourSlug:          b.tourSlug,
-      adults:            b.adults,
-      children:          b.children,
-      totalAmount:       b.totalAmount,
-      promoCode:         b.promoCode || undefined,
-      promoDiscount:     b.promoDiscount,
+      paymentIntentId:    b.stripePaymentIntentId || undefined,
+      tourName:           b.tourName,
+      tourDate:           b.tourDate,
+      tourSlug:           b.tourSlug,
+      adults:             b.adults,
+      children:           b.children,
+      totalAmount:        b.totalAmount,
+      promoCode:          b.promoCode || undefined,
+      promoDiscount:      b.promoDiscount,
     });
 
-    const from    = "onboarding@resend.dev";
-    const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
+    const from    = process.env.RESEND_FROM_TOURS || "onboarding@resend.dev";
+    const adminTo = process.env.ADMIN_EMAIL_TOURS  || "daftpunkmanolo@gmail.com";
 
     const { error } = await resend.emails.send({
       from,
-      to:      [adminTo],
+      to:      [b.customerEmail],
       bcc:     [adminTo],
       subject: `Tu tour está confirmado — ${b.confirmationNumber}`,
       html,
