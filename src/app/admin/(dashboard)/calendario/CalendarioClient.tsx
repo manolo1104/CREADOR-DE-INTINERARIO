@@ -88,9 +88,8 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
                 <div className="space-y-0.5">
                   {dayBookings.slice(0,3).map(b => (
                     <div key={b.id}
-                      style={{ background: tourColor(b.tourSlug)+"22", borderLeft:`2px solid ${tourColor(b.tourSlug)}` }}
-                      className="text-[9px] font-dm px-1 py-0.5 truncate rounded-sm"
                       style={{ background: tourColor(b.tourSlug)+"18", borderLeft:`2px solid ${tourColor(b.tourSlug)}`, color: tourColor(b.tourSlug) }}
+                      className="text-[9px] font-dm px-1 py-0.5 truncate rounded-sm"
                     >
                       {b.customerName.split(" ")[0]} · {b.adults+b.children}p
                     </div>
