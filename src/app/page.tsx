@@ -562,6 +562,9 @@ export default async function HomePage() {
             <Link href="/aviso-de-privacidad" className="hover:text-crema/50 transition-colors underline-offset-2 hover:underline">
               Aviso de Privacidad
             </Link>
+            <Link href="/admin/login" className="hover:text-crema/30 transition-colors text-crema/15 underline-offset-2 hover:underline text-[10px]">
+              Admin
+            </Link>
             <span>San Luis Potosí, México</span>
           </div>
         </div>

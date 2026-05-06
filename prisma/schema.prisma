@@ -122,6 +122,27 @@ model Booking {
   updatedAt     DateTime  @updatedAt
 }
 
+model TourQuote {
+  id           String   @id @default(cuid())
+  quoteNumber  String   @unique
+  tourName     String
+  tourSlug     String
+  tourDate     String
+  adults       Int      @default(1)
+  children     Int      @default(0)
+  totalAmount  Int
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  notes        String?
+  status       String   @default("borrador") // borrador | enviada | aceptada | expirada
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([customerEmail])
+  @@index([status])
+}
+
 model TourBooking {
   id                    String   @id @default(cuid())
   confirmationNumber    String   @unique
