@@ -111,12 +111,15 @@ table{border-collapse:collapse}a{color:#1a2e1a;text-decoration:none}</style>
 </td></tr></table>
 </body></html>`;
 
-    const from    = process.env.RESEND_FROM_TOURS || "onboarding@resend.dev";
-    const adminTo = process.env.ADMIN_EMAIL_TOURS  || "daftpunkmanolo@gmail.com";
+    const from    = "onboarding@resend.dev";
+    const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
 
+    // Sin dominio verificado en Resend, solo se puede enviar al email propio.
+    // El admin reenvía manualmente o activa dominio en resend.com/domains.
     const { error } = await resend.emails.send({
-      from, to: [q.customerEmail], bcc: [adminTo],
-      subject: `Tu cotización de tour — ${q.quoteNumber}`,
+      from,
+      to:      [adminTo],
+      subject: `[COTIZACIÓN PARA ${q.customerEmail}] ${q.quoteNumber} — ${q.tourName}`,
       html,
     });
 

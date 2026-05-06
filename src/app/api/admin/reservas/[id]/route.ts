@@ -18,10 +18,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await prisma.tourBooking.update({
-      where: { id: params.id },
-      data: { status: "cancelled", updatedAt: new Date() },
-    });
+    // Eliminación completa de la base de datos
+    await prisma.tourBooking.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

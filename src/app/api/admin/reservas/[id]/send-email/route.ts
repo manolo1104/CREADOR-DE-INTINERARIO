@@ -26,12 +26,12 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       promoDiscount:     b.promoDiscount,
     });
 
-    const from    = process.env.RESEND_FROM_TOURS || "onboarding@resend.dev";
-    const adminTo = process.env.ADMIN_EMAIL_TOURS  || "daftpunkmanolo@gmail.com";
+    const from    = "onboarding@resend.dev";
+    const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
 
     const { error } = await resend.emails.send({
       from,
-      to:      [b.customerEmail],
+      to:      [adminTo],
       bcc:     [adminTo],
       subject: `Tu tour está confirmado — ${b.confirmationNumber}`,
       html,
