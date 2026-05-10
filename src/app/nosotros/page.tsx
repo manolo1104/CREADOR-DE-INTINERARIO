@@ -1,9 +1,12 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Award, Calendar, Globe, Stethoscope, Shield, Users,
   Heart, Leaf, Star, CheckCircle2, MapPin, TrendingUp,
 } from "lucide-react";
+import { TOURS_DB } from "@/lib/tours";
+import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
@@ -286,6 +289,73 @@ export default function NosotrosPage() {
             >
               Ver nuestros tours
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── RESERVA CON NOSOTROS ── */}
+      <section className="bg-negro py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">
+            Disponibles ahora
+          </p>
+          <h2
+            className="font-cormorant font-light text-crema text-center mb-12"
+            style={{ fontSize: "clamp(28px,4vw,46px)" }}
+          >
+            Reserva con nosotros
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {TOURS_DB.map((tour) => (
+              <article
+                key={tour.slug}
+                className="group flex flex-col border border-white/10 hover:border-verde-vivo/50 bg-negro/60 transition-colors duration-300 overflow-hidden"
+              >
+                {/* Imagen */}
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  {tour.imagen_hero && (
+                    <Image
+                      src={tour.imagen_hero}
+                      alt={tour.nombre}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
+                  <span className="absolute top-2 left-2 bg-verde-vivo text-negro text-[8px] font-dm font-bold tracking-[1px] uppercase px-2 py-0.5">
+                    {tour.tipo}
+                  </span>
+                </div>
+
+                {/* Info */}
+                <div className="flex flex-col flex-1 p-4">
+                  <h3 className="font-cormorant text-crema text-sm leading-snug mb-2 line-clamp-2">
+                    {tour.nombre}
+                  </h3>
+                  <div className="mt-auto space-y-2">
+                    <p className="font-cormorant text-dorado text-lg leading-none">
+                      ${tour.precio.toLocaleString("es-MX")}
+                      <span className="font-dm text-[9px] text-crema/40 ml-1">MXN</span>
+                    </p>
+                    <Link
+                      href={`/reservar-tour/${tour.slug}`}
+                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors"
+                    >
+                      Reservar
+                    </Link>
+                    <a
+                      href={waLink(WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all"
+                    >
+                      Preguntar vía WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>

@@ -7,6 +7,25 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.githubusercontent.com' },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/tours/ruta-surrealista",
+        destination: "/tours/ruta-surrealista-edward-james",
+        permanent: true,
+      },
+      {
+        source: "/tours/paraiso-escalonado",
+        destination: "/tours/paraiso-escalonado-minas-micos",
+        permanent: true,
+      },
+      {
+        source: "/tours/ruta-acuatica",
+        destination: "/tours/ruta-acuatica-puente-de-dios",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -7,6 +7,7 @@ import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TourCalculadora } from "@/components/TourCalculadora";
 import { TourGallery } from "@/components/TourGallery";
 import { TourDeparture } from "@/components/TourDeparture";
+import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users, Lock } from "lucide-react";
 
@@ -127,9 +128,23 @@ export default function TourDetailPage({ params }: Props) {
           >
             {tour.nombre}
           </h1>
-          <p className="text-dorado/80 font-dm text-sm italic">{tour.tagline}</p>
+          <p className="text-dorado/80 font-dm text-sm italic mb-4">{tour.tagline}</p>
+          {/* Precio visible en el fold */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-sm">
+              30% OFF
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(24px,3.5vw,36px)" }}>
+                ${tour.precio.toLocaleString("es-MX")}
+              </span>
+              <span className="text-crema/50 font-dm text-xs">MXN / persona · Todo incluido</span>
+            </div>
+          </div>
         </div>
       </section>
+
+      <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} />
 
       {/* ── CONTENIDO ── */}
       <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">

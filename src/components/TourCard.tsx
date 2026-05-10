@@ -123,7 +123,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             rel="noopener noreferrer"
             className="relative z-10 w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
-            Reservar por WhatsApp
+            Preguntar por WhatsApp
           </a>
           <p className="text-center text-[9px] text-crema/25 font-dm pt-1">
             ✓ Cancelación gratuita con 48h de anticipación

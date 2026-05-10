@@ -20,24 +20,14 @@ const DESTINOS_NAV: { Icon: LucideIcon; nombre: string; slug: string }[] = [
   { Icon: Thermometer, nombre: "Balneario Taninul",               slug: "balneario-taninul" },
 ];
 
-const EXPERIENCIAS_NAV = [
-  { label: "Cascadas & Pozas", href: "/experiencias?tipo=cascadas" },
-  { label: "Aventura Extrema", href: "/experiencias?tipo=aventura" },
-  { label: "Cultura & Historia", href: "/experiencias?tipo=cultura" },
-  { label: "Naturaleza & Bienestar", href: "/experiencias?tipo=naturaleza" },
-  { label: "Fotografía", href: "/experiencias?tipo=fotografia" },
-];
-
 export default function Navbar() {
   const { count } = useItinerario();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [destinosOpen, setDestinosOpen] = useState(false);
-  const [experienciasOpen, setExperienciasOpen] = useState(false);
   const pathname = usePathname();
 
   const destinosRef = useRef<HTMLDivElement>(null);
-  const experienciasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -49,7 +39,6 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
     setDestinosOpen(false);
-    setExperienciasOpen(false);
   }, [pathname]);
 
   // Close dropdowns on outside click
@@ -57,9 +46,6 @@ export default function Navbar() {
     const handler = (e: MouseEvent) => {
       if (destinosRef.current && !destinosRef.current.contains(e.target as Node)) {
         setDestinosOpen(false);
-      }
-      if (experienciasRef.current && !experienciasRef.current.contains(e.target as Node)) {
-        setExperienciasOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -110,7 +96,6 @@ export default function Navbar() {
               <button
                 onClick={() => {
                   setDestinosOpen(!destinosOpen);
-                  setExperienciasOpen(false);
                 }}
                 aria-expanded={destinosOpen}
                 aria-controls="destinos-menu"
@@ -155,47 +140,12 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Experiencias Dropdown */}
-            <div ref={experienciasRef} className="relative">
-              <button
-                onClick={() => {
-                  setExperienciasOpen(!experienciasOpen);
-                  setDestinosOpen(false);
-                }}
-                aria-expanded={experienciasOpen}
-                aria-controls="experiencias-menu"
-                aria-haspopup="true"
-                className={`text-xs tracking-[2px] uppercase font-dm transition-colors duration-200 flex items-center gap-1.5 ${
-                  isActive("/experiencias") ? "text-lima" : "text-crema/70 hover:text-crema"
-                }`}
-              >
-                Experiencias
-                <svg
-                  className={`w-3 h-3 transition-transform duration-200 ${experienciasOpen ? "rotate-180" : ""}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {experienciasOpen && (
-                <div id="experiencias-menu" role="menu" aria-label="Menú de experiencias"
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 rounded-2xl gloss-dropdown py-2">
-                  {EXPERIENCIAS_NAV.map((e) => (
-                    <Link
-                      key={e.href}
-                      href={e.href}
-                      className="relative z-10 block px-4 py-2.5 text-[12px] text-verde-profundo font-dm hover:text-verde-selva hover:bg-verde-selva/10 transition-colors"
-                    >
-                      {e.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <Link href="/tours" className={navLinkClass("/tours")}>
+              <Link href="/tours" className={navLinkClass("/tours")}>
               Tours
+            </Link>
+
+            <Link href="/paquetes" className={navLinkClass("/paquetes")}>
+              Paquetes
             </Link>
 
             <Link href="/info-practica" className={navLinkClass("/info-practica")}>
@@ -289,40 +239,18 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile Experiencias */}
-            <div className="border-b border-white/6">
-              <button
-                onClick={() => setExperienciasOpen(!experienciasOpen)}
-                className="flex items-center justify-between w-full py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema"
-              >
-                Experiencias
-                <svg
-                  className={`w-3 h-3 transition-transform ${experienciasOpen ? "rotate-180" : ""}`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {experienciasOpen && (
-                <div className="gloss-dropdown pb-3 space-y-0.5 pl-3 mt-1 mr-1 rounded-xl">
-                  {EXPERIENCIAS_NAV.map((e) => (
-                    <Link
-                      key={e.href}
-                      href={e.href}
-                      className="relative z-10 block py-2 pr-3 text-sm text-verde-profundo font-dm hover:text-verde-selva transition-colors"
-                    >
-                      {e.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <Link
               href="/tours"
               className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6"
             >
               Tours
+            </Link>
+
+            <Link
+              href="/paquetes"
+              className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6"
+            >
+              Paquetes
             </Link>
 
             <Link
@@ -359,13 +287,10 @@ export default function Navbar() {
       </nav>
 
       {/* Overlay to close dropdowns */}
-      {(destinosOpen || experienciasOpen) && (
+      {destinosOpen && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => {
-            setDestinosOpen(false);
-            setExperienciasOpen(false);
-          }}
+          onClick={() => setDestinosOpen(false)}
         />
       )}
     </>

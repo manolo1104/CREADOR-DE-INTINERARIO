@@ -164,34 +164,48 @@ export function TourCalculadora({ tourName, precioBase, tourSlug }: Props) {
         </p>
       </div>
 
-      <a
-        href={waLink(waMsg)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20ba59]
-                   text-white py-3.5 text-[11px] tracking-[2px] uppercase font-dm
-                   transition-colors duration-200"
-      >
-        {WA_SVG}
-        Reservar por WhatsApp
-      </a>
+      <p className="text-center text-[10px] text-verde-vivo/70 font-dm flex items-center justify-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0" aria-hidden="true">
+          <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+        </svg>
+        Pago 100% seguro · Stripe · TLS cifrado
+      </p>
 
       {tourSlug ? (
         <Link
           href={`/reservar-tour/${tourSlug}`}
-          className="flex items-center justify-center gap-2 w-full bg-dorado hover:bg-terracota text-negro py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 font-medium"
+          className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 font-medium"
         >
-          Reservar con tarjeta →
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
+            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+          </svg>
+          Reservar con tarjeta
         </Link>
       ) : (
         <button
           onClick={handleStripeCheckout}
           disabled={checkoutLoading || total <= 0}
-          className="w-full border border-agua/45 bg-agua/12 hover:bg-agua/20 text-agua py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-50"
+          className="w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
+            <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+          </svg>
           {checkoutLoading ? "Redirigiendo..." : "Pagar con tarjeta"}
         </button>
       )}
+
+      <a
+        href={waLink(waMsg)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366]
+                   text-[#25D366] hover:bg-[#25D366]/8
+                   py-2.5 text-[10px] tracking-[2px] uppercase font-dm
+                   transition-all duration-200"
+      >
+        {WA_SVG}
+        Preguntar por WhatsApp
+      </a>
 
       {checkoutError && (
         <p className="text-[11px] text-terracota/85 font-dm text-center">{checkoutError}</p>

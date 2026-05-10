@@ -1,7 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/nav/Navbar";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { FloatingReservarButton } from "@/components/FloatingReservarButton";
 import { CookieBanner } from "@/components/CookieBanner";
 
 export function PublicShell({ children }: { children: React.ReactNode }) {
@@ -11,7 +11,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
     <>
       {!isAdmin && <Navbar />}
       {children}
-      {!isAdmin && <WhatsAppButton />}
+      {!isAdmin && <FloatingReservarButton />}
       {!isAdmin && <CookieBanner />}
     </>
   );
