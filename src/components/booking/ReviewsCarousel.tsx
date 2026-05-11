@@ -1,41 +1,38 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 interface Review {
-  nombre:      string;
-  ciudad:      string;
-  fecha:       string;
-  texto:       string;
-  iniciales:   string;
-  avatarColor: string;
+  nombre:  string;
+  ciudad:  string;
+  fecha:   string;
+  texto:   string;
+  foto:    string;
 }
 
 const REVIEWS: Review[] = [
   {
-    nombre:      "Sandra Morales",
-    ciudad:      "Ciudad de México",
-    fecha:       "Febrero 2025",
-    iniciales:   "SM",
-    avatarColor: "bg-rose-300",
+    nombre: "Sandra Morales",
+    ciudad: "Ciudad de México",
+    fecha:  "Febrero 2025",
+    foto:   "/imagenes/reviews/reviewer-1.jpg",
     texto:
       "Salimos a las 5:30 AM y valió cada minuto de sueño perdido. El guía conocía cada rincón y nos llevó al mirador perfecto para la foto. 10/10, sin duda el mejor tour que he hecho en México.",
   },
   {
-    nombre:      "Andrés Villanueva",
-    ciudad:      "Monterrey, NL",
-    fecha:       "Enero 2025",
-    iniciales:   "AV",
-    avatarColor: "bg-sky-300",
+    nombre: "Andrés y Valeria",
+    ciudad: "Monterrey, NL",
+    fecha:  "Enero 2025",
+    foto:   "/imagenes/reviews/reviewer-2.jpg",
     texto:
-      "La canoa por el Cañón del Tampaón es surrealista. Las paredes de roca, el silencio y de repente la cascada. Fui con mi pareja y fue el mejor día del viaje. El desayuno que incluyeron estaba delicioso.",
+      "La canoa por el Cañón del Tampaón es surrealista. Las paredes de roca, el silencio y de repente la cascada. Fue el mejor día del viaje. El desayuno que incluyeron estaba delicioso.",
   },
   {
-    nombre:      "Mariana Castro",
-    ciudad:      "Querétaro, QRO",
-    fecha:       "Diciembre 2024",
-    iniciales:   "MC",
-    avatarColor: "bg-emerald-300",
+    nombre: "Mariana Castro",
+    ciudad: "Querétaro, QRO",
+    fecha:  "Diciembre 2024",
+    foto:   "/imagenes/reviews/reviewer-4.jpg",
     texto:
       "Las Pozas de Edward James son lo más extraño y hermoso que he visto en México. El guía nos contó toda la historia y el contexto lo hace todo más impresionante. Regresé al mes siguiente con mis papás.",
   },
@@ -65,10 +62,7 @@ export function ReviewsCarousel() {
 
   const goTo = useCallback((idx: number) => {
     setVisible(false);
-    setTimeout(() => {
-      setActive(idx);
-      setVisible(true);
-    }, 300);
+    setTimeout(() => { setActive(idx); setVisible(true); }, 300);
   }, []);
 
   useEffect(() => {
@@ -99,10 +93,7 @@ export function ReviewsCarousel() {
             <div key={stars} className="flex items-center gap-2">
               <span className="text-[9px] text-crema/40 font-dm w-5 text-right">{stars}★</span>
               <div className="flex-1 h-1.5 bg-crema/10 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-dorado/70 rounded-full"
-                  style={{ width: `${pct}%` }}
-                />
+                <div className="h-full bg-dorado/70 rounded-full" style={{ width: `${pct}%` }} />
               </div>
               <span className="text-[9px] text-crema/35 font-dm w-7">{pct}%</span>
             </div>
@@ -113,20 +104,22 @@ export function ReviewsCarousel() {
       <div className="border-t border-white/10" />
 
       {/* Review card */}
-      <div
-        className="transition-opacity duration-300"
-        style={{ opacity: visible ? 1 : 0 }}
-      >
+      <div className="transition-opacity duration-300" style={{ opacity: visible ? 1 : 0 }}>
         <div className="flex items-start gap-3 mb-3">
-          {/* Avatar */}
-          <div className={`w-9 h-9 rounded-full ${r.avatarColor} flex-shrink-0 flex items-center justify-center`}>
-            <span className="text-xs font-dm font-semibold text-negro/70">{r.iniciales}</span>
+          {/* Foto real del viajero */}
+          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-crema/20">
+            <Image
+              src={r.foto}
+              alt={r.nombre}
+              width={36}
+              height={36}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-crema font-dm text-sm font-medium leading-none">{r.nombre}</p>
-            <p className="text-crema/35 font-dm text-[10px] mt-0.5">
-              {r.ciudad} · {r.fecha}
-            </p>
+            <p className="text-crema/35 font-dm text-[10px] mt-0.5">{r.ciudad} · {r.fecha}</p>
           </div>
           <div className="ml-auto flex-shrink-0">
             <StarRow />
@@ -140,13 +133,8 @@ export function ReviewsCarousel() {
       {/* Dots */}
       <div className="flex justify-center gap-1.5 pt-1">
         {REVIEWS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goTo(i)}
-            aria-label={`Reseña ${i + 1}`}
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              i === active ? "bg-dorado" : "bg-crema/20 hover:bg-crema/40"
-            }`}
+          <button key={i} onClick={() => goTo(i)} aria-label={`Reseña ${i + 1}`}
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === active ? "bg-dorado" : "bg-crema/20 hover:bg-crema/40"}`}
           />
         ))}
       </div>

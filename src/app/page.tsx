@@ -183,10 +183,10 @@ export default async function HomePage() {
       {/* ── BADGES BANNER (negro, justo debajo del hero) ── */}
       <section aria-label="Premios y reconocimientos" className="bg-negro py-5 border-b border-white/8">
         <div className="max-w-5xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 md:gap-14">
-          <img src="/badges/tripadvisor.svg"        alt="TripAdvisor"                        className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/badges/travellers-choice.svg"  alt="Travellers Choice TripAdvisor"      className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/badges/top-rated-google.svg"   alt="Top Rated Google Maps"              className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/badges/mejor-tour-operador.avif" alt="Mejor Tour Operador Norteamérica" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/badges/tripadvisor.svg"          alt="TripAdvisor"                        loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/badges/travellers-choice.svg"  alt="Travellers Choice TripAdvisor"      loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/badges/top-rated-google.svg"   alt="Top Rated Google Maps"              loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
+          <img src="/badges/mejor-tour-operador.avif" alt="Mejor Tour Operador Norteamérica" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
         </div>
       </section>
 

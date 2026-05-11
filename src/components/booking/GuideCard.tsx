@@ -1,11 +1,20 @@
+import Image from "next/image";
+
 export function GuideCard() {
   return (
     <div className="bg-white border border-negro/8 p-5">
       <p className="text-[9px] tracking-[2px] uppercase text-negro/35 font-dm mb-4">Tu guía ese día</p>
       <div className="flex gap-4 items-start">
-        {/* Avatar con iniciales */}
-        <div className="w-16 h-16 rounded-full border-2 border-dorado flex-shrink-0 bg-verde-profundo flex items-center justify-center shadow-sm">
-          <span className="font-cormorant text-dorado text-xl font-light select-none">CR</span>
+        {/* Foto del guía */}
+        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-dorado flex-shrink-0 shadow-sm">
+          <Image
+            src="/imagenes/guias/guia-principal.jpg"
+            alt="Carlos R. — Guía certificado"
+            width={64}
+            height={64}
+            className="w-full h-full object-cover object-top"
+            loading="lazy"
+          />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-dm text-sm font-medium text-negro/85 leading-none mb-0.5">Carlos R.</p>

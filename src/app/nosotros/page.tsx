@@ -99,8 +99,17 @@ export default function NosotrosPage() {
     <main id="main-content" className="min-h-screen bg-crema">
 
       {/* ── HERO ── */}
-      <section className="relative bg-verde-profundo px-6 pt-36 pb-28 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_60%_40%,rgba(58,107,26,0.25),transparent_70%)] pointer-events-none" />
+      <section className="relative bg-verde-profundo px-6 pt-36 pb-28 text-center overflow-hidden min-h-[60vh] flex items-center justify-center">
+        {/* Foto del equipo de guías */}
+        <Image
+          src="/imagenes/guias/equipo-guias.jpg"
+          alt="Equipo de guías certificados de Tours Huasteca Potosina"
+          fill
+          className="object-cover object-center"
+          priority
+          quality={85}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/50 to-negro/40" />
         <div className="relative z-10 max-w-3xl mx-auto">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             ✦ Quiénes somos

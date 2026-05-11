@@ -13,7 +13,7 @@ import type { TourBookingState } from "@/lib/tourBooking";
 import { trackPurchase } from "@/lib/analytics";
 import { ReviewsCarousel } from "@/components/booking/ReviewsCarousel";
 import { GuideCard } from "@/components/booking/GuideCard";
-import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle } from "lucide-react";
+import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Phone, Mail } from "lucide-react";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
@@ -36,11 +36,17 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
   const [name,           setName]           = useState("");
   const [email,          setEmail]          = useState("");
   const [phone,          setPhone]          = useState("");
-  const [pickupLocation, setPickupLocation] = useState("");
+  const [hotelOption,    setHotelOption]    = useState<"paraiso" | "otro">("paraiso");
+  const [otroHotel,      setOtroHotel]      = useState("");
   const [notes,          setNotes]          = useState("");
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState("");
   const [pickupError,    setPickupError]    = useState("");
+
+  // Construye el texto de pickup según la opción
+  const pickupLocation = hotelOption === "paraiso"
+    ? "Hotel Paraíso Encantado Xilitla"
+    : otroHotel.trim();
 
   const isDeposit   = booking.paymentMode === "deposit";
   const chargeAmt   = booking.chargeAmount ?? booking.total;
@@ -59,7 +65,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
       setError("Nombre y correo son obligatorios.");
       return;
     }
-    if (!pickupLocation.trim()) {
+    if (!pickupLocation) {
       setPickupError("Por favor indícanos dónde recogerte 🙂");
       return;
     }
@@ -191,25 +197,68 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
             />
           </div>
 
-          {/* Mejora 4 — Hotel de recogida */}
+          {/* Mejora 7 — Hotel de recogida con selector */}
           <div>
-            <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">
-              Hotel o dirección de recogida *
+            <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-2">
+              Hotel de recogida *
             </label>
-            <textarea
-              value={pickupLocation}
-              onChange={(e) => { setPickupLocation(e.target.value); setPickupError(""); }}
-              placeholder="Ej. Hotel Valles, calle Juárez 45, Airbnb cerca del centro..."
-              rows={2}
-              className={`w-full border px-4 py-3 font-dm text-sm text-negro focus:outline-none transition-colors resize-none bg-crema ${
-                pickupError ? "border-terracota" : "border-negro/20 focus:border-verde-selva"
+
+            {/* Opción rápida: Paraíso Encantado */}
+            <button
+              type="button"
+              onClick={() => { setHotelOption("paraiso"); setPickupError(""); }}
+              className={`w-full flex items-center gap-3 border px-4 py-3 mb-2 text-left transition-colors ${
+                hotelOption === "paraiso"
+                  ? "border-verde-selva bg-verde-selva/5"
+                  : "border-negro/15 hover:border-negro/30"
               }`}
-            />
+            >
+              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                hotelOption === "paraiso" ? "border-verde-selva" : "border-negro/25"
+              }`}>
+                {hotelOption === "paraiso" && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
+              </div>
+              <div>
+                <p className="font-dm text-sm text-negro/85 font-medium leading-none">Hotel Paraíso Encantado Xilitla</p>
+                <p className="text-[10px] text-negro/45 font-dm mt-0.5">Xilitla, San Luis Potosí</p>
+              </div>
+            </button>
+
+            {/* Opción: otro hotel */}
+            <button
+              type="button"
+              onClick={() => { setHotelOption("otro"); setPickupError(""); }}
+              className={`w-full flex items-center gap-3 border px-4 py-3 text-left transition-colors ${
+                hotelOption === "otro"
+                  ? "border-verde-selva bg-verde-selva/5"
+                  : "border-negro/15 hover:border-negro/30"
+              }`}
+            >
+              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                hotelOption === "otro" ? "border-verde-selva" : "border-negro/25"
+              }`}>
+                {hotelOption === "otro" && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
+              </div>
+              <p className="font-dm text-sm text-negro/85">Otro hotel o dirección</p>
+            </button>
+
+            {hotelOption === "otro" && (
+              <textarea
+                value={otroHotel}
+                onChange={(e) => { setOtroHotel(e.target.value); setPickupError(""); }}
+                placeholder="Nombre del hotel y ciudad · Ej. Hotel Valles, Ciudad Valles SLP"
+                rows={2}
+                className={`mt-2 w-full border px-4 py-3 font-dm text-sm text-negro focus:outline-none transition-colors resize-none bg-crema ${
+                  pickupError ? "border-terracota" : "border-negro/20 focus:border-verde-selva"
+                }`}
+              />
+            )}
+
             {pickupError ? (
               <p className="mt-1.5 text-xs text-terracota font-dm" role="alert">{pickupError}</p>
             ) : (
-              <p className="mt-1.5 text-xs text-negro/40 font-dm">
-                Pasamos a recogerte. Indícanos el nombre de tu hotel o dirección exacta.
+              <p className="mt-2 text-[10px] text-negro/40 font-dm">
+                Pasamos a recogerte a tu hospedaje. Respuesta por WhatsApp para coordinar hora exacta.
               </p>
             )}
           </div>
@@ -476,14 +525,15 @@ export default function CheckoutTourPage() {
             <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Reserva con confianza</p>
             <ul className="space-y-2">
               {[
-                { icon: "🔒", text: "Pago 100% seguro · Stripe" },
-                { icon: "✅", text: "Cancelación gratuita con 48h" },
-                { icon: "🏅", text: "Guías NOM-09 SECTUR" },
-                { icon: "📞", text: "Respuesta en menos de 1 hora" },
-                { icon: "📧", text: "Confirmación por correo inmediata" },
-              ].map(({ icon, text }) => (
+                { Icon: CreditCard,    text: "Pago 100% seguro · Stripe" },
+                { Icon: CalendarCheck, text: "Cancelación gratuita con 48h" },
+                { Icon: Award,         text: "Guías NOM-09 SECTUR" },
+                { Icon: Phone,         text: "Respuesta en menos de 1 hora" },
+                { Icon: Mail,          text: "Confirmación por correo inmediata" },
+              ].map(({ Icon, text }) => (
                 <li key={text} className="flex items-center gap-2 text-xs font-dm text-negro/65">
-                  <span>{icon}</span>{text}
+                  <Icon className="w-3.5 h-3.5 text-verde-selva flex-shrink-0" aria-hidden="true" />
+                  {text}
                 </li>
               ))}
             </ul>
@@ -491,9 +541,9 @@ export default function CheckoutTourPage() {
 
           {/* Badges */}
           <div className="flex items-center justify-center gap-5 py-1 opacity-65">
-            <img src="/badges/tripadvisor.svg" alt="TripAdvisor" className="h-6 w-auto" />
-            <img src="/badges/travellers-choice.svg" alt="Travellers Choice" className="h-6 w-auto" />
-            <img src="/badges/top-rated-google.svg" alt="Top Rated Google" className="h-6 w-auto" />
+            <img src="/badges/tripadvisor.svg" alt="TripAdvisor" loading="lazy" className="h-6 w-auto" />
+            <img src="/badges/travellers-choice.svg" alt="Travellers Choice" loading="lazy" className="h-6 w-auto" />
+            <img src="/badges/top-rated-google.svg" alt="Top Rated Google" loading="lazy" className="h-6 w-auto" />
           </div>
 
         </aside>

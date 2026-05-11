@@ -34,9 +34,18 @@ function isHighDemand(d: Date): boolean {
   return dow === 0 || dow === 5 || dow === 6;
 }
 
-// Pseudo-deterministic cupos for high demand dates (2–5)
+// Pseudo-deterministic cupos — todos los días muestran disponibilidad
+// Fines de semana (Vie/Sáb/Dom): 4-7  |  Entre semana: 8-12
 function cuposRestantes(d: Date): number {
-  return (d.getDate() % 4) + 2;
+  // Semilla determinista basada en año+mes+día para que no cambie al re-render
+  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  const pseudo = ((seed * 2654435761) >>> 0) % 1000; // hash simple
+  const dow = d.getDay();
+  const hiDemand = dow === 0 || dow === 5 || dow === 6;
+  if (hiDemand) {
+    return (pseudo % 4) + 4; // 4-7
+  }
+  return (pseudo % 5) + 8;   // 8-12
 }
 
 // Build Mon-first calendar grid for a given month
@@ -85,10 +94,10 @@ function MonthGrid({
         {grid.map((date, i) => {
           if (!date) return <span key={`empty-${i}`} />;
 
-          const ymd      = formatYMD(date);
-          const past     = isPast(date);
-          const hiDemand = !past && isHighDemand(date);
-          const cupos    = hiDemand ? cuposRestantes(date) : 0;
+          const ymd        = formatYMD(date);
+          const past       = isPast(date);
+          const hiDemand   = !past && isHighDemand(date);
+          const cupos      = past ? 0 : cuposRestantes(date);
           const isSelected = ymd === selected;
 
           if (past) {
@@ -118,8 +127,11 @@ function MonthGrid({
                   }`}
               >
                 {date.getDate()}
-                {hiDemand && !isSelected && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-negro text-[7px] font-dm font-bold leading-none px-1 py-0.5 rounded-full whitespace-nowrap">
+                {/* Badge de cupos en todos los días disponibles */}
+                {!isSelected && (
+                  <span className={`absolute -top-1.5 -right-2 text-negro text-[7px] font-dm font-bold leading-none px-1 py-0.5 rounded-full whitespace-nowrap ${
+                    hiDemand ? "bg-amber-400" : "bg-verde-vivo/80 text-white"
+                  }`}>
                     {cupos}
                   </span>
                 )}
@@ -130,8 +142,8 @@ function MonthGrid({
                 <div className="hidden sm:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
                   <div className="bg-negro/90 text-crema text-[10px] font-dm whitespace-nowrap px-2.5 py-1.5 rounded shadow-lg">
                     {hiDemand
-                      ? `Solo ${cupos} cupos restantes`
-                      : "Disponible · Cupos disponibles"}
+                      ? `Alta demanda · Solo ${cupos} lugares`
+                      : `Disponible · ${cupos} cupos restantes`}
                   </div>
                   <div className="w-2 h-2 bg-negro/90 rotate-45 mx-auto -mt-1" />
                 </div>
@@ -230,22 +242,17 @@ export function TourCalendar({ value, onChange }: Props) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 pt-2 border-t border-negro/8">
+      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-negro/8">
         <div className="flex items-center gap-1.5">
-          <div className="relative w-4 h-4 rounded-full bg-verde-selva/15 flex items-center justify-center">
-            <span className="text-[9px] text-verde-selva font-dm">·</span>
-          </div>
+          <span className="bg-verde-vivo/80 text-white text-[7px] font-dm font-bold px-1.5 py-0.5 rounded-full">9</span>
           <span className="text-[9px] text-negro/40 font-dm">Disponible</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="relative w-4 h-4">
-            <span className="absolute -top-0.5 -right-0.5 bg-amber-400 text-negro text-[7px] font-bold px-0.5 rounded-full">2</span>
-            <div className="w-4 h-4 rounded-full border border-negro/15" />
-          </div>
-          <span className="text-[9px] text-negro/40 font-dm">Alta demanda</span>
+          <span className="bg-amber-400 text-negro text-[7px] font-dm font-bold px-1.5 py-0.5 rounded-full">5</span>
+          <span className="text-[9px] text-negro/40 font-dm">Alta demanda (fin de semana)</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-negro/8" />
+          <span className="text-[12px] text-negro/20 font-dm">14</span>
           <span className="text-[9px] text-negro/40 font-dm">No disponible</span>
         </div>
       </div>

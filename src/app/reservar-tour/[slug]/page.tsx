@@ -285,7 +285,7 @@ export default function ReservarTourPage() {
           <div className="bg-white border border-negro/8 overflow-hidden">
             {tour.imagen_hero && (
               <div className="aspect-video overflow-hidden">
-                <img src={tour.imagen_hero} alt={tour.nombre} className="w-full h-full object-cover" />
+                <img src={tour.imagen_hero} alt={tour.nombre} loading="lazy" className="w-full h-full object-cover" />
               </div>
             )}
             <div className="p-5">
