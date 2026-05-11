@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { trackCtaClick } from "@/lib/analytics";
 
 const LOCK_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
@@ -23,6 +24,7 @@ export function FloatingReservarButton() {
     <Link
       href={href}
       aria-label="Reservar tour"
+      onClick={() => trackCtaClick("floating_button", href)}
       className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5
                  bg-dorado hover:bg-terracota text-negro hover:text-crema
                  pl-4 pr-5 py-3.5 rounded-full shadow-xl shadow-black/40

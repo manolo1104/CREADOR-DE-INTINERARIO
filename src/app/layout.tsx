@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { ItinerarioProvider } from "@/context/ItinerarioContext";
 import { PublicShell } from "@/components/NavbarWrapper";
+import { Analytics } from "@/components/Analytics";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="shortcut icon" href="/favicon.svg" />
+        <Analytics />
       </head>
       <body>
         <div className="fixed inset-0 -z-10 bg-negro" />

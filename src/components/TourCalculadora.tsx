@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import { trackBeginCheckout, trackWhatsapp } from "@/lib/analytics";
 
 interface Props {
-  tourName:  string;
+  tourName:   string;
   precioBase: number;
   tourSlug?:  string;
+  tourId?:    string;
 }
 
 const WA_SVG = (
@@ -61,7 +63,7 @@ function today(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-export function TourCalculadora({ tourName, precioBase, tourSlug }: Props) {
+export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Props) {
   const [adultos, setAdultos] = useState(2);
   const [ninos, setNinos]     = useState(0);
   const [fecha, setFecha]     = useState("");
@@ -174,6 +176,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug }: Props) {
       {tourSlug ? (
         <Link
           href={`/reservar-tour/${tourSlug}`}
+          onClick={() => trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName, price: total, source: "widget" })}
           className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 font-medium"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
@@ -198,6 +201,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug }: Props) {
         href={waLink(waMsg)}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => trackWhatsapp("tour_widget", total)}
         className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366]
                    text-[#25D366] hover:bg-[#25D366]/8
                    py-2.5 text-[10px] tracking-[2px] uppercase font-dm

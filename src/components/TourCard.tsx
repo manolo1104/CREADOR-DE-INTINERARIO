@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import type { Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
+import { trackWhatsapp } from "@/lib/analytics";
 
 const dificultadConfig = {
   alta:  { label: "AVANZADO", bg: "bg-orange-700",  dot: "bg-orange-400"  },
@@ -121,6 +124,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             href={waLink(WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackWhatsapp("tour_card", t.precio * 2)}
             className="relative z-10 w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
             Preguntar por WhatsApp

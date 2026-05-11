@@ -8,6 +8,7 @@ import { TourCalculadora } from "@/components/TourCalculadora";
 import { TourGallery } from "@/components/TourGallery";
 import { TourDeparture } from "@/components/TourDeparture";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
+import { TourPageTracker } from "@/components/TourPageTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users, Lock } from "lucide-react";
 
@@ -144,7 +145,8 @@ export default function TourDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} />
+      <TourPageTracker tourId={tour.id} nombre={tour.nombre} precio={tour.precio} tipo={tour.tipo} />
+      <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} tourId={tour.id} tourName={tour.nombre} />
 
       {/* ── CONTENIDO ── */}
       <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -330,7 +332,7 @@ export default function TourDetailPage({ params }: Props) {
               )}
             </div>
 
-            <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} tourSlug={tour.slug} />
+            <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} tourSlug={tour.slug} tourId={tour.id} />
 
             <Link
               href="/tours"

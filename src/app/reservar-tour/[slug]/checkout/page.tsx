@@ -10,6 +10,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate } from "@/lib/tourBooking";
 import type { TourBookingState } from "@/lib/tourBooking";
+import { trackPurchase } from "@/lib/analytics";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users } from "lucide-react";
 
 const stripePromise = loadStripe(
@@ -83,6 +84,15 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
         });
         const data = await res.json();
         const confirmationNumber = data.confirmationNumber || "HP" + Date.now().toString(36).toUpperCase();
+
+        trackPurchase({
+          confirmationNumber,
+          tourId:   booking.tourId,
+          tourName: booking.tourName,
+          total:    booking.total,
+          adults:   booking.adults,
+          children: booking.children,
+        });
 
         // Guardar en sessionStorage para la página de confirmación
         sessionStorage.setItem("hp_tour_confirmation", JSON.stringify({

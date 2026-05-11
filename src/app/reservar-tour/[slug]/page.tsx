@@ -10,6 +10,7 @@ import {
   validatePromoCode, minBookingDate, formatTourDate,
 } from "@/lib/tourBooking";
 import { ChevronLeft, Clock, Users, Shield, Star } from "lucide-react";
+import { trackDateSelected, trackPromoApplied } from "@/lib/analytics";
 
 export default function ReservarTourPage() {
   const router = useRouter();
@@ -52,6 +53,7 @@ export default function ReservarTourPage() {
     setPromoCode(promoInput.trim().toUpperCase());
     setPromoDiscount(result.discount);
     setPromoMsg(result.msg);
+    trackPromoApplied(promoInput.trim().toUpperCase(), result.discount);
   }
 
   function removePromo() {
@@ -130,7 +132,10 @@ export default function ReservarTourPage() {
                 type="date"
                 min={minBookingDate()}
                 value={tourDate}
-                onChange={(e) => setTourDate(e.target.value)}
+                onChange={(e) => {
+                setTourDate(e.target.value);
+                if (e.target.value && tour) trackDateSelected(tour.nombre, e.target.value);
+              }}
                 className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
               />
               {tourDate && (
