@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { TOURS_DB } from "@/lib/tours";
 import {
   saveTourBookingState, formatMXN, calcTourTotal,
-  validatePromoCode, minBookingDate, formatTourDate,
+  validatePromoCode, formatTourDate,
 } from "@/lib/tourBooking";
-import { ChevronLeft, Clock, Users, Shield, Star } from "lucide-react";
+import { TourCalendar } from "@/components/booking/TourCalendar";
+import { ViewersCounter } from "@/components/booking/ViewersCounter";
+import { ChevronLeft, Clock, Users, Shield, Star, Lock } from "lucide-react";
 import { trackDateSelected, trackPromoApplied } from "@/lib/analytics";
 
 export default function ReservarTourPage() {
@@ -25,11 +26,14 @@ export default function ReservarTourPage() {
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [promoMsg,      setPromoMsg]      = useState("");
   const [promoError,    setPromoError]    = useState("");
+  const [paymentMode,   setPaymentMode]   = useState<"deposit" | "full">("deposit");
 
   const notFound = !tour;
   const { subtotal, discount, total, childPrice } = calcTourTotal(
     tour?.precio ?? 0, adults, children, promoDiscount
   );
+  const deposit = Math.round(total * 0.3);
+  const chargeAmount = paymentMode === "deposit" ? deposit : total;
 
   if (notFound || !tour) {
     return (
@@ -43,13 +47,9 @@ export default function ReservarTourPage() {
   }
 
   function applyPromo() {
-    setPromoError("");
-    setPromoMsg("");
+    setPromoError(""); setPromoMsg("");
     const result = validatePromoCode(promoInput);
-    if (!result.valid) {
-      setPromoError(result.msg);
-      return;
-    }
+    if (!result.valid) { setPromoError(result.msg); return; }
     setPromoCode(promoInput.trim().toUpperCase());
     setPromoDiscount(result.discount);
     setPromoMsg(result.msg);
@@ -57,16 +57,12 @@ export default function ReservarTourPage() {
   }
 
   function removePromo() {
-    setPromoCode("");
-    setPromoDiscount(0);
-    setPromoMsg("");
-    setPromoError("");
-    setPromoInput("");
+    setPromoCode(""); setPromoDiscount(0);
+    setPromoMsg(""); setPromoError(""); setPromoInput("");
   }
 
   function handleContinue() {
     if (!tourDate || !tour) return;
-    const sessionId = crypto.randomUUID();
     saveTourBookingState({
       tourId:       tour.id,
       tourSlug:     tour.slug,
@@ -81,7 +77,9 @@ export default function ReservarTourPage() {
       promoDiscount,
       subtotal,
       total,
-      sessionId,
+      chargeAmount,
+      paymentMode,
+      sessionId: crypto.randomUUID(),
     });
     router.push(`/reservar-tour/${tour.slug}/checkout`);
   }
@@ -121,36 +119,22 @@ export default function ReservarTourPage() {
         {/* ── FORMULARIO ── */}
         <div className="space-y-6">
 
-          {/* Fecha */}
+          {/* Calendario */}
           <section className="bg-white border border-negro/8 p-6">
             <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Selecciona la fecha</h2>
-            <div>
-              <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-2">
-                Fecha del recorrido *
-              </label>
-              <input
-                type="date"
-                min={minBookingDate()}
-                value={tourDate}
-                onChange={(e) => {
-                setTourDate(e.target.value);
-                if (e.target.value && tour) trackDateSelected(tour.nombre, e.target.value);
+            <TourCalendar
+              value={tourDate}
+              onChange={(ymd) => {
+                setTourDate(ymd);
+                if (ymd) trackDateSelected(tour.nombre, ymd);
               }}
-                className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
-              />
-              {tourDate && (
-                <p className="mt-2 text-verde-selva text-xs font-dm">
-                  ✓ {formatTourDate(tourDate)} · Salida 5:30 AM desde tu hotel
-                </p>
-              )}
-            </div>
+            />
           </section>
 
           {/* Participantes */}
           <section className="bg-white border border-negro/8 p-6">
             <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Participantes</h2>
             <div className="space-y-5">
-
               {/* Adultos */}
               <div className="flex items-center justify-between">
                 <div>
@@ -158,24 +142,15 @@ export default function ReservarTourPage() {
                   <p className="font-dm text-xs text-negro/40">{formatMXN(tour.precio)} por persona</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setAdults(Math.max(1, adults - 1))}
+                  <button onClick={() => setAdults(Math.max(1, adults - 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Reducir adultos"
-                  >
-                    −
-                  </button>
+                    aria-label="Reducir adultos">−</button>
                   <span className="w-8 text-center font-dm text-negro">{adults}</span>
-                  <button
-                    onClick={() => setAdults(Math.min(tour.groupMax, adults + 1))}
+                  <button onClick={() => setAdults(Math.min(tour.groupMax, adults + 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Aumentar adultos"
-                  >
-                    +
-                  </button>
+                    aria-label="Aumentar adultos">+</button>
                 </div>
               </div>
-
               {/* Niños */}
               <div className="flex items-center justify-between border-t border-negro/6 pt-5">
                 <div>
@@ -183,24 +158,15 @@ export default function ReservarTourPage() {
                   <p className="font-dm text-xs text-negro/40">{formatMXN(childPrice)} por persona · 60 % del precio</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setChildren(Math.max(0, children - 1))}
+                  <button onClick={() => setChildren(Math.max(0, children - 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Reducir niños"
-                  >
-                    −
-                  </button>
+                    aria-label="Reducir niños">−</button>
                   <span className="w-8 text-center font-dm text-negro">{children}</span>
-                  <button
-                    onClick={() => setChildren(Math.min(tour.groupMax - adults, children + 1))}
+                  <button onClick={() => setChildren(Math.min(tour.groupMax - adults, children + 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Aumentar niños"
-                  >
-                    +
-                  </button>
+                    aria-label="Aumentar niños">+</button>
                 </div>
               </div>
-
               <p className="text-xs text-negro/40 font-dm">Menores de 4 años: entrada gratuita (no cuentan como participantes)</p>
               <p className="text-xs text-negro/40 font-dm">Máximo {tour.groupMax} participantes por tour</p>
             </div>
@@ -224,10 +190,8 @@ export default function ReservarTourPage() {
                   onKeyDown={(e) => e.key === "Enter" && applyPromo()}
                   className="flex-1 border border-negro/20 bg-crema px-4 py-2.5 font-dm text-sm uppercase tracking-[1px] focus:outline-none focus:border-verde-selva transition-colors"
                 />
-                <button
-                  onClick={applyPromo}
-                  className="px-5 py-2.5 bg-verde-profundo text-crema text-xs font-dm tracking-[1.5px] uppercase hover:bg-verde-selva transition-colors"
-                >
+                <button onClick={applyPromo}
+                  className="px-5 py-2.5 bg-verde-profundo text-crema text-xs font-dm tracking-[1.5px] uppercase hover:bg-verde-selva transition-colors">
                   Aplicar
                 </button>
               </div>
@@ -235,9 +199,86 @@ export default function ReservarTourPage() {
             {promoError && <p className="mt-2 text-terracota text-xs font-dm" role="alert">{promoError}</p>}
           </section>
 
+          {/* ── MEJORA 11 — Modalidad de pago ── */}
+          <section className="bg-white border border-negro/8 p-6">
+            <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Modalidad de pago</h2>
+            <div className="space-y-3">
+
+              {/* Opción A: Depósito */}
+              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-150 ${
+                paymentMode === "deposit"
+                  ? "border-verde-selva bg-verde-selva/5"
+                  : "border-negro/15 hover:border-negro/30"
+              }`}>
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  value="deposit"
+                  checked={paymentMode === "deposit"}
+                  onChange={() => setPaymentMode("deposit")}
+                  className="sr-only"
+                />
+                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
+                  paymentMode === "deposit" ? "border-verde-selva" : "border-negro/25"
+                }`}>
+                  {paymentMode === "deposit" && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-verde-selva" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-dm text-sm font-medium text-negro/85">
+                      Reserva con {formatMXN(deposit)} MXN
+                    </span>
+                    <span className="bg-verde-selva/15 text-verde-selva text-[9px] font-dm font-bold tracking-[1px] uppercase px-2 py-0.5">
+                      RECOMENDADO
+                    </span>
+                  </div>
+                  <p className="text-xs text-negro/50 font-dm mt-1">
+                    30% ahora · Paga el resto al llegar · Sin riesgo · Cancelación gratuita 48h
+                  </p>
+                </div>
+              </label>
+
+              {/* Opción B: Total */}
+              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-150 ${
+                paymentMode === "full"
+                  ? "border-verde-selva bg-verde-selva/5"
+                  : "border-negro/15 hover:border-negro/30"
+              }`}>
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  value="full"
+                  checked={paymentMode === "full"}
+                  onChange={() => setPaymentMode("full")}
+                  className="sr-only"
+                />
+                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
+                  paymentMode === "full" ? "border-verde-selva" : "border-negro/25"
+                }`}>
+                  {paymentMode === "full" && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-verde-selva" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-dm text-sm font-medium text-negro/85">
+                    Pago completo — {formatMXN(total)} MXN
+                  </p>
+                  <p className="text-xs text-negro/50 font-dm mt-1">
+                    Sin pendientes · Misma cancelación gratuita con 48h
+                  </p>
+                </div>
+              </label>
+            </div>
+            <p className="mt-3 text-[10px] text-negro/40 font-dm">
+              ✓ El pago restante se cobra el día del tour o puedes pagarlo antes desde tu confirmación.
+            </p>
+          </section>
+
         </div>
 
-        {/* ── SIDEBAR — RESUMEN ── */}
+        {/* ── SIDEBAR ── */}
         <aside className="lg:sticky lg:top-24 space-y-4">
 
           {/* Tour card */}
@@ -249,7 +290,13 @@ export default function ReservarTourPage() {
             )}
             <div className="p-5">
               <p className="text-[9px] tracking-[2px] uppercase text-verde-selva/70 font-dm mb-2">{tour.tipo}</p>
-              <h3 className="font-cormorant text-verde-profundo text-lg leading-snug mb-3">{tour.nombre}</h3>
+              <h3 className="font-cormorant text-verde-profundo text-lg leading-snug mb-2">{tour.nombre}</h3>
+
+              {/* Mejora 7B — Viewers counter */}
+              <div className="mb-3">
+                <ViewersCounter />
+              </div>
+
               <div className="flex flex-wrap gap-3 text-xs font-dm text-negro/50">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{tour.duracion_hrs}h</span>
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" />Máx. {tour.groupMax}</span>
@@ -279,9 +326,15 @@ export default function ReservarTourPage() {
                 </div>
               )}
               <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-3 text-base">
-                <span>Total</span>
+                <span>Total completo</span>
                 <span className="font-cormorant text-xl text-dorado">{formatMXN(total)} MXN</span>
               </div>
+              {paymentMode === "deposit" && (
+                <div className="flex justify-between text-verde-selva font-medium bg-verde-selva/8 border border-verde-selva/20 px-3 py-2">
+                  <span className="text-xs">Pagas ahora (30%)</span>
+                  <span className="font-cormorant text-base">{formatMXN(deposit)} MXN</span>
+                </div>
+              )}
             </div>
 
             {/* Incluye */}
@@ -308,9 +361,18 @@ export default function ReservarTourPage() {
           <button
             onClick={handleContinue}
             disabled={!canContinue}
-            className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {canContinue ? `Continuar al pago — ${formatMXN(total)}` : "Selecciona una fecha"}
+            {canContinue ? (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                {paymentMode === "deposit"
+                  ? `Reservar con ${formatMXN(deposit)} MXN →`
+                  : `Pagar ${formatMXN(total)} MXN completo →`}
+              </>
+            ) : (
+              "Selecciona una fecha para continuar"
+            )}
           </button>
 
           {!canContinue && !tourDate && (

@@ -70,6 +70,9 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
             <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} reseñas)
           </p>
+          <p className="text-[10px] font-dm text-verde-vivo/70 mt-0.5 flex items-center gap-1">
+            <Users className="w-3 h-3" aria-hidden="true" /> 492 viajeros lo han completado · 38 reservas este mes
+          </p>
         </div>
       </div>
 

@@ -101,35 +101,15 @@ export default async function HomePage() {
         aria-label="Bienvenida a la Huasteca Potosina"
         className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 overflow-hidden"
       >
-        {/* DESKTOP: Video de YouTube */}
-        <div className="absolute inset-0 overflow-hidden hidden md:block" aria-hidden="true">
-          <iframe
-            src="https://www.youtube.com/embed/yE3i_hUYmMU?autoplay=1&mute=1&loop=1&playlist=yE3i_hUYmMU&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3"
-            allow="autoplay; encrypted-media"
-            title=""
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "177.78vh",
-              minWidth: "100%",
-              height: "56.25vw",
-              minHeight: "100%",
-              border: "none",
-              pointerEvents: "none",
-            }}
-          />
-        </div>
-
-        {/* MOBILE: Imagen estática Cascada de Tamul */}
-        <div className="absolute inset-0 block md:hidden" aria-hidden="true">
+        {/* Hero image */}
+        <div className="absolute inset-0" aria-hidden="true">
           <Image
-            src="/imagenes/cascada-de-tamul/hero-mobile.jpg"
-            alt="Cascada de Tamul, Huasteca Potosina"
+            src="/imagenes/hero-home.jpg"
+            alt="Paddle surf en las aguas turquesas de la Huasteca Potosina"
             fill
             className="object-cover object-center"
             priority
+            quality={90}
           />
         </div>
 

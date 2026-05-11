@@ -13,7 +13,9 @@ export interface TourBookingState {
   promoCode:     string;
   promoDiscount: number; // porcentaje 0–100
   subtotal:      number;
-  total:         number;
+  total:         number;  // precio total completo
+  chargeAmount:  number;  // monto real a cobrar (depósito o total)
+  paymentMode:   "deposit" | "full";
   sessionId:     string;
 }
 
