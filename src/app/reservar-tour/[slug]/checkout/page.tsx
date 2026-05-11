@@ -10,6 +10,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate } from "@/lib/tourBooking";
 import type { TourBookingState } from "@/lib/tourBooking";
+import { TOURS_DB } from "@/lib/tours";
 import { trackPurchase } from "@/lib/analytics";
 import { ReviewsCarousel } from "@/components/booking/ReviewsCarousel";
 import { GuideCard } from "@/components/booking/GuideCard";
@@ -36,7 +37,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
   const [name,           setName]           = useState("");
   const [email,          setEmail]          = useState("");
   const [phone,          setPhone]          = useState("");
-  const [hotelOption,    setHotelOption]    = useState<"paraiso" | "otro">("paraiso");
+  const [hotelOption,    setHotelOption]    = useState<"paraiso" | "otro" | "pordefinir">("paraiso");
   const [otroHotel,      setOtroHotel]      = useState("");
   const [notes,          setNotes]          = useState("");
   const [loading,        setLoading]        = useState(false);
@@ -46,6 +47,8 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
   // Construye el texto de pickup según la opción
   const pickupLocation = hotelOption === "paraiso"
     ? "Hotel Paraíso Encantado Xilitla"
+    : hotelOption === "pordefinir"
+    ? "Por definir — te contactaremos para coordinarlo"
     : otroHotel.trim();
 
   const isDeposit   = booking.paymentMode === "deposit";
@@ -65,8 +68,8 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
       setError("Nombre y correo son obligatorios.");
       return;
     }
-    if (!pickupLocation) {
-      setPickupError("Por favor indícanos dónde recogerte 🙂");
+    if (hotelOption === "otro" && !otroHotel.trim()) {
+      setPickupError("Por favor indícanos el nombre de tu hotel o dirección 🙂");
       return;
     }
 
@@ -242,6 +245,27 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
               <p className="font-dm text-sm text-negro/85">Otro hotel o dirección</p>
             </button>
 
+            {/* Opción: por definir */}
+            <button
+              type="button"
+              onClick={() => { setHotelOption("pordefinir"); setPickupError(""); }}
+              className={`w-full flex items-center gap-3 border px-4 py-3 text-left transition-colors ${
+                hotelOption === "pordefinir"
+                  ? "border-verde-selva bg-verde-selva/5"
+                  : "border-negro/15 hover:border-negro/30"
+              }`}
+            >
+              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                hotelOption === "pordefinir" ? "border-verde-selva" : "border-negro/25"
+              }`}>
+                {hotelOption === "pordefinir" && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
+              </div>
+              <div>
+                <p className="font-dm text-sm text-negro/85">Por definir</p>
+                <p className="text-[10px] text-negro/45 font-dm mt-0.5">Te contactaremos para coordinarlo</p>
+              </div>
+            </button>
+
             {hotelOption === "otro" && (
               <textarea
                 value={otroHotel}
@@ -388,6 +412,8 @@ export default function CheckoutTourPage() {
 
   if (!booking) return null;
 
+  const tourData = TOURS_DB.find((t) => t.id === booking.tourId || t.slug === booking.tourSlug);
+
   const stripeOptions = {
     clientSecret,
     appearance: {
@@ -410,13 +436,26 @@ export default function CheckoutTourPage() {
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">
 
-      {/* Breadcrumb */}
-      <div className="max-w-5xl mx-auto px-6 mb-8">
+      {/* Breadcrumb + Teléfono visible */}
+      <div className="max-w-5xl mx-auto px-6 mb-8 flex items-center justify-between gap-4 flex-wrap">
         <Link href={`/reservar-tour/${params.slug}`}
           className="inline-flex items-center gap-1.5 text-negro/50 hover:text-verde-selva text-xs font-dm tracking-[1px] uppercase transition-colors">
           <ChevronLeft className="w-3 h-3" />
           Atrás
         </Link>
+        {/* Mejora 8 — Teléfono siempre visible */}
+        <a
+          href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola, tengo una pregunta sobre mi reserva del tour "${booking?.tourName ?? ""}".`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-verde-selva hover:text-verde-vivo transition-colors group"
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span className="font-dm text-sm font-medium">+52 489 125 1458</span>
+          <span className="hidden sm:block text-[10px] text-negro/40 font-dm group-hover:text-negro/60 transition-colors">
+            · ¿Dudas? Escríbenos
+          </span>
+        </a>
       </div>
 
       {/* Stepper */}
@@ -505,11 +544,21 @@ export default function CheckoutTourPage() {
               )}
             </div>
             <div className="border-t border-negro/8 pt-4">
-              <ul className="space-y-1 text-xs font-dm text-negro/50">
-                <li>✓ Transporte desde tu hotel</li>
-                <li>✓ Guía certificado NOM-09</li>
-                <li>✓ Entradas y desayuno</li>
-                <li>✓ Equipo de seguridad</li>
+              <p className="text-[9px] tracking-[2px] uppercase text-negro/30 font-dm mb-2">Todo incluido</p>
+              <ul className="space-y-1 text-xs font-dm text-negro/55">
+                {(tourData?.incluye ?? [
+                  "Transporte desde tu hotel",
+                  "Guía certificado NOM-09 SECTUR",
+                  "Entradas a todas las atracciones",
+                  "Desayuno con platillos típicos",
+                  "Equipo de seguridad completo",
+                  "Fotografías y video del recorrido",
+                ]).map((item) => (
+                  <li key={item} className="flex items-start gap-1.5">
+                    <span className="text-verde-selva flex-shrink-0 mt-0.5">✓</span>
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
           </div>

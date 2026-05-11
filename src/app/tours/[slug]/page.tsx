@@ -246,11 +246,12 @@ export default function TourDetailPage({ params }: Props) {
                     <div className="flex items-center gap-3 mb-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(r.nombre)}&background=2d5a27&color=f4edd8&size=48&bold=true`}
+                        src={r.foto}
                         alt={r.nombre}
                         width={36}
                         height={36}
-                        className="w-9 h-9 rounded-full flex-shrink-0"
+                        loading="lazy"
+                        className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
                       />
                       <div>
                         <p className="text-crema font-dm text-sm font-medium leading-none">{r.nombre}</p>

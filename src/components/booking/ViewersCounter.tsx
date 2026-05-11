@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 
 export function ViewersCounter() {
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(14);
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
     function schedule() {
       const delay = Math.random() * 60_000 + 30_000; // 30-90 s
       timeout = setTimeout(() => {
-        setCount(Math.floor(Math.random() * 5) + 2); // 2-6
+        setCount(Math.floor(Math.random() * 11) + 10); // 10-20
         schedule();
       }, delay);
     }

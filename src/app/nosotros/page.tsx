@@ -224,6 +224,59 @@ export default function NosotrosPage() {
         </div>
       </section>
 
+      {/* ── NUESTRO EQUIPO ── */}
+      <section className="py-20 px-6 bg-negro">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">
+            Quienes te guiarán
+          </p>
+          <h2
+            className="font-cormorant font-light text-crema text-center mb-10"
+            style={{ fontSize: "clamp(28px,4vw,46px)" }}
+          >
+            Nuestro <em className="text-dorado">equipo</em>
+          </h2>
+          <div className="relative aspect-[16/7] overflow-hidden mb-8">
+            <Image
+              src="/imagenes/guias/equipo-guias.jpg"
+              alt="Equipo de guías certificados de Tours Huasteca Potosina con turistas en el río"
+              fill
+              className="object-cover object-center"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-negro/60 to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6">
+              <p className="text-crema/90 font-dm text-sm leading-relaxed max-w-2xl">
+                Guías certificados NOM-09 SECTUR nacidos en la Huasteca Potosina. Más de 8 años guiando grupos con seguridad, pasión y conocimiento local único.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              { nombre: "Carlos R.", rol: "Guía Principal · Tamul & Sótano", exp: "8+ años" },
+              { nombre: "Miguel A.", rol: "Guía · Xilitla & Las Pozas", exp: "6+ años" },
+              { nombre: "José L.", rol: "Guía · Cascadas & Bienestar", exp: "5+ años" },
+            ].map((g) => (
+              <div key={g.nombre} className="border border-white/10 bg-negro/60 p-5 text-center">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-dorado mx-auto mb-3">
+                  <Image
+                    src="/imagenes/guias/guia-principal.jpg"
+                    alt={g.nombre}
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-cover object-top"
+                    loading="lazy"
+                  />
+                </div>
+                <p className="font-cormorant text-crema text-lg leading-none mb-0.5">{g.nombre}</p>
+                <p className="text-[10px] tracking-[1.5px] uppercase text-verde-vivo font-dm mb-1">{g.rol}</p>
+                <p className="text-[10px] text-crema/35 font-dm">{g.exp} de experiencia</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── BADGES DE CONFIANZA ── */}
       <section className="bg-arena/40 border-y border-negro/8 py-12 px-6">
         <div className="max-w-4xl mx-auto">
@@ -231,7 +284,7 @@ export default function NosotrosPage() {
           <div className="flex flex-wrap items-center justify-center gap-8">
             <div className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tripadvisor.svg" alt="TripAdvisor Travellers Choice" className="h-12 w-auto" />
+              <img src="/tripadvisor.svg" alt="TripAdvisor Travellers Choice" loading="lazy" className="h-12 w-auto" />
               <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65">Travellers Choice</span>
             </div>
             <div className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity">
