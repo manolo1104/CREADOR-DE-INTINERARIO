@@ -11,6 +11,8 @@ import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { TourPageTracker } from "@/components/TourPageTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users, Lock } from "lucide-react";
+import { InventoryBadge } from "@/components/booking/InventoryBadge";
+import { SocialProofToast } from "@/components/booking/SocialProofToast";
 
 interface Props { params: { slug: string } }
 
@@ -325,6 +327,8 @@ export default function TourDetailPage({ params }: Props) {
                   <Lock className="w-3 h-3" aria-hidden="true" /> ¿Tour privado para tu grupo? →
                 </a>
               )}
+              {/* Inventory badge */}
+              <InventoryBadge tourId={tour.id} tourName={tour.nombre} />
               {/* Urgencia */}
               {tour.urgencia && (
                 <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">
@@ -383,6 +387,7 @@ export default function TourDetailPage({ params }: Props) {
         </div>
       </section>
 
+      <SocialProofToast tourId={tour.id} tourName={tour.nombre} />
     </main>
   );
 }

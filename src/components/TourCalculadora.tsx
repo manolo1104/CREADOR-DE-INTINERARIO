@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { trackBeginCheckout, trackWhatsapp } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 interface Props {
   tourName:   string;
@@ -140,10 +141,18 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
         )}
       </div>
 
-      <Counter label="Adultos" value={adultos} min={1} max={15} onChange={setAdultos} />
+      <Counter label="Adultos" value={adultos} min={1} max={15} onChange={(v) => {
+        setAdultos(v);
+        const newTotal = v * precioBase + ninos * precioNino;
+        trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: v, children: ninos, total: v + ninos, amount: newTotal });
+      }} />
       <Counter
         label={`Niños 4–12 años ($${precioNino.toLocaleString("es-MX")} c/u)`}
-        value={ninos} min={0} max={10} onChange={setNinos}
+        value={ninos} min={0} max={10} onChange={(v) => {
+          setNinos(v);
+          const newTotal = adultos * precioBase + v * precioNino;
+          trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: adultos, children: v, total: adultos + v, amount: newTotal });
+        }}
       />
 
       {ninos === 0 && (
@@ -176,7 +185,10 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
       {tourSlug ? (
         <Link
           href={`/reservar-tour/${tourSlug}`}
-          onClick={() => trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName, price: total, source: "widget" })}
+          onClick={() => {
+            trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName, price: total, source: "widget" });
+            trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName, adults: adultos, children: ninos, amount: total, source: "widget" });
+          }}
           className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 font-medium"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
@@ -201,7 +213,10 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
         href={waLink(waMsg)}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => trackWhatsapp("tour_widget", total)}
+        onClick={() => {
+          trackWhatsapp("tour_widget", total);
+          trackTourEvent("WHATSAPP_CLICK", { tour: tourId ?? tourName, context: "widget", amount: total });
+        }}
         className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366]
                    text-[#25D366] hover:bg-[#25D366]/8
                    py-2.5 text-[10px] tracking-[2px] uppercase font-dm

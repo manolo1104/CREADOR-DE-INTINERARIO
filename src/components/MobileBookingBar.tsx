@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { trackBeginCheckout } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 interface Props {
   tourSlug: string;
@@ -23,7 +24,10 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName }: Props) 
       </div>
       <Link
         href={`/reservar-tour/${tourSlug}`}
-        onClick={() => trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source: "mobile_bar" })}
+        onClick={() => {
+          trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source: "mobile_bar" });
+          trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, source: "mobile_bar" });
+        }}
         className="flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium flex-shrink-0"
       >
         <Lock className="w-3.5 h-3.5" aria-hidden="true" />

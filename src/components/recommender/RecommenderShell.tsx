@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { trackTourEvent } from "@/lib/tourTracker";
 import Link from "next/link";
 import {
   Users, User, UserRound, Baby,
@@ -327,6 +328,12 @@ export function RecommenderShell() {
 
   async function submit() {
     setStep("loading");
+    trackTourEvent("RECOMMENDER_STARTED", {
+      origen:    state.origen,
+      grupo:     state.grupo,
+      intereses: state.intereses,
+      actividad: state.actividad,
+    });
     try {
       const res = await fetch("/api/recomendar-tour", {
         method:  "POST",
@@ -341,6 +348,13 @@ export function RecommenderShell() {
       const data: AIResult = await res.json();
       setResult(data);
       setStep("result");
+      trackTourEvent("RECOMMENDER_COMPLETED", {
+        primary_tour:   data.primary.tourId,
+        secondary_tour: data.secondary.tourId,
+        origen:         state.origen,
+        grupo:          state.grupo,
+        intereses:      state.intereses,
+      });
     } catch {
       setStep("result");
     }

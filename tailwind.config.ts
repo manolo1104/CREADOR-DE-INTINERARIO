@@ -26,6 +26,20 @@ const config: Config = {
         cormorant: ["var(--font-cormorant)", "serif"],
         dm: ["var(--font-dm-sans)", "sans-serif"],
       },
+      keyframes: {
+        "slide-up": {
+          "0%":   { transform: "translateY(12px)", opacity: "0" },
+          "100%": { transform: "translateY(0)",    opacity: "1" },
+        },
+        shrink: {
+          "0%":   { width: "100%" },
+          "100%": { width: "0%" },
+        },
+      },
+      animation: {
+        "slide-up": "slide-up 0.25s ease-out forwards",
+        shrink:     "shrink linear forwards",
+      },
     },
   },
   plugins: [typography],
