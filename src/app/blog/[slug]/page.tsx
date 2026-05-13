@@ -5,6 +5,34 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
+const SITE = "https://www.huasteca-potosina.com";
+const RAILWAY_REGEX = /https:\/\/creador-de-intinerario-production\.up\.railway\.app/gi;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Trunca el título a ≤60 chars y añade "| Huasteca Potosina" cuando cabe */
+function formatSeoTitle(raw: string): string {
+  const suffix = " | Huasteca Potosina";
+  if (raw.length + suffix.length <= 60) return raw + suffix;
+  if (raw.length <= 60) return raw;
+  return raw.slice(0, 57) + "…";
+}
+
+/** Extrae pares pregunta/respuesta de los <details>/<summary> del HTML del post */
+function extractFAQs(html: string): { question: string; answer: string }[] {
+  const re = /<details[^>]*>[\s\S]*?<summary[^>]*>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi;
+  const results: { question: string; answer: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const question = m[1].replace(/<[^>]+>/g, "").trim();
+    const answer   = m[2].replace(/<[^>]+>/g, "").trim();
+    if (question && answer) results.push({ question, answer });
+  }
+  return results;
+}
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
+
 async function getPost(slug: string) {
   try {
     return await prisma.blogPost.findUnique({ where: { slug, published: true } });
@@ -13,28 +41,45 @@ async function getPost(slug: string) {
   }
 }
 
-async function getRelatedPosts(slug: string, tags: string[]) {
+/**
+ * Related posts strategy:
+ * 1. Use post.internalLinks (manually curated slugs) when ≥ 2 exist
+ * 2. Fall back to tag-based matching
+ */
+async function getRelatedPosts(
+  slug: string,
+  tags: string[],
+  internalLinks: string[]
+): Promise<{ slug: string; title: string; excerpt: string; coverImageUrl: string | null; readingTime: number; tags: string[] }[]> {
   try {
+    if (internalLinks.length >= 2) {
+      const curated = await prisma.blogPost.findMany({
+        where:   { published: true, slug: { in: internalLinks } },
+        take:    3,
+        select:  { slug: true, title: true, excerpt: true, coverImageUrl: true, readingTime: true, tags: true },
+      });
+      if (curated.length >= 2) return curated;
+    }
     return await prisma.blogPost.findMany({
-      where: { published: true, slug: { not: slug }, tags: { hasSome: tags } },
-      orderBy: { publishedAt: "desc" },
-      take: 3,
-      select: { slug: true, title: true, excerpt: true, coverImageUrl: true, readingTime: true, tags: true },
+      where:     { published: true, slug: { not: slug }, tags: { hasSome: tags } },
+      orderBy:   { publishedAt: "desc" },
+      take:      3,
+      select:    { slug: true, title: true, excerpt: true, coverImageUrl: true, readingTime: true, tags: true },
     });
   } catch {
     return [];
   }
 }
 
-// ── Metadata / SEO (Problem 5) ───────────────────────────────
+// ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await getPost(params.slug);
   if (!post) return { title: "Artículo no encontrado" };
 
-  const title = post.metaTitle || post.title;
-  const description = post.metaDescription || post.excerpt || "";
-  const imageUrl = post.coverImageUrl || "";
+  const title       = formatSeoTitle(post.metaTitle || post.title);
+  const description = (post.metaDescription || post.excerpt || "").slice(0, 155);
+  const imageUrl    = post.coverImageUrl || "";
 
   return {
     title,
@@ -43,70 +88,102 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     openGraph: {
       title,
       description,
-      type: "article",
+      type:          "article",
       publishedTime: post.publishedAt.toISOString(),
-      modifiedTime: post.updatedAt.toISOString(),
-      authors: ["Manolo Covarrubias"],
-      images: imageUrl ? [{ url: imageUrl, alt: post.coverImageAlt || title }] : [],
+      modifiedTime:  post.updatedAt.toISOString(),
+      authors:       ["Manolo Covarrubias"],
+      images:        imageUrl ? [{ url: imageUrl, alt: post.coverImageAlt || title }] : [],
     },
     twitter: {
-      card: "summary_large_image",
+      card:        "summary_large_image",
       title,
       description,
-      images: imageUrl ? [imageUrl] : [],
+      images:      imageUrl ? [imageUrl] : [],
     },
   };
 }
 
-// ── Page ─────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = await getPost(params.slug);
   if (!post) notFound();
 
-  const related = await getRelatedPosts(post.slug, post.tags);
+  const related = await getRelatedPosts(post.slug, post.tags, post.internalLinks ?? []);
 
-  // Problem 3: Schema BlogPosting — usar el generado por el agente o fallback
-  const schemaMarkup = post.schemaMarkup || JSON.stringify({
+  // ── Schema 1: BlogPosting (from DB or fallback) ───────────────────────────
+  const blogPostingSchema = post.schemaMarkup || JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "datePublished": post.publishedAt.toISOString(),
-    "dateModified": post.updatedAt.toISOString(),
-    "author": {
+    "@type":    "BlogPosting",
+    headline:   post.title,
+    datePublished: post.publishedAt.toISOString(),
+    dateModified:  post.updatedAt.toISOString(),
+    author: {
       "@type": "Person",
-      "name": "Manolo Covarrubias",
-      "url": "https://www.huasteca-potosina.com/sobre-nosotros",
+      name:    "Manolo Covarrubias",
+      url:     `${SITE}/nosotros`,
     },
-    "publisher": {
+    publisher: {
       "@type": "Organization",
-      "name": "Huasteca Potosina",
-      "url": "https://www.huasteca-potosina.com",
+      name:    "Tours Huasteca Potosina",
+      url:     SITE,
+      logo:    { "@type": "ImageObject", url: `${SITE}/logo.png` },
     },
-    "description": post.metaDescription || post.excerpt || "",
-    "image": post.coverImageUrl || "",
-    "keywords": [post.focusKeyword, ...post.secondaryKeywords].join(", "),
-    "articleSection": post.tags[0] || "Turismo",
+    description:    post.metaDescription || post.excerpt || "",
+    image:          post.coverImageUrl || "",
+    url:            `${SITE}/blog/${post.slug}`,
+    keywords:       [post.focusKeyword, ...post.secondaryKeywords].join(", "),
+    articleSection: post.tags[0] || "Turismo",
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE}/blog/${post.slug}` },
   });
 
-  // Sanitizar contenido: reemplazar URLs de railway.app con dominio público + strip H1
-  const RAILWAY_REGEX = /https:\/\/creador-de-intinerario-production\.up\.railway\.app/gi;
-  const PUBLIC_URL = "https://www.huasteca-potosina.com";
-  const safeContent = (post.content || "")
-    .replace(RAILWAY_REGEX, PUBLIC_URL)
-    .replace(/href="\/planear[^"]*"/gi, 'href="https://www.huasteca-potosina.com/planear"')
-    .replace(/<h1[^>]*>/gi, "<h2>")
-    .replace(/<\/h1>/gi, "</h2>");
+  // ── Schema 2: BreadcrumbList + FAQPage (always injected, complementa al anterior) ──
+  const faqs     = extractFAQs(post.content || "");
+  const graphNodes: object[] = [
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio",     item: SITE },
+        { "@type": "ListItem", position: 2, name: "Blog",       item: `${SITE}/blog` },
+        { "@type": "ListItem", position: 3, name: post.tags[0] || "Artículo", item: `${SITE}/blog/${post.slug}` },
+      ],
+    },
+  ];
+  if (faqs.length > 0) {
+    graphNodes.push({
+      "@type":      "FAQPage",
+      mainEntity:   faqs.map(({ question, answer }) => ({
+        "@type":         "Question",
+        name:            question,
+        acceptedAnswer:  { "@type": "Answer", text: answer },
+      })),
+    });
+  }
+  const enhancedSchema = JSON.stringify({ "@context": "https://schema.org", "@graph": graphNodes });
 
-  // También sanitizar schemaMarkup para corregir URLs en posts existentes
-  const safeSchema = schemaMarkup.replace(RAILWAY_REGEX, PUBLIC_URL);
+  // ── Content sanitization ─────────────────────────────────────────────────
+  const safeContent = (post.content || "")
+    .replace(RAILWAY_REGEX, SITE)
+    .replace(/href="\/planear[^"]*"/gi, `href="${SITE}/planear"`)
+    .replace(/<h1[^>]*>/gi, "<h2>")
+    .replace(/<\/h1>/gi,    "</h2>");
+
+  const safeSchema = blogPostingSchema.replace(RAILWAY_REGEX, SITE);
+
+  // Cluster label for related posts section
+  const clusterTag = post.tags[0] || "la Huasteca Potosina";
 
   return (
     <>
-      {/* JSON-LD en <head> — sanitizado para dominio público */}
+      {/* BlogPosting JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeSchema }}
+      />
+      {/* BreadcrumbList + FAQPage JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: enhancedSchema }}
       />
 
       <main className="min-h-screen bg-jungle pt-24 pb-20">
@@ -130,7 +207,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             ))}
           </div>
 
-          {/* Problem 1: Único H1 en la página */}
           <h1 className="font-display text-4xl md:text-5xl text-crema leading-tight mb-6">
             {post.title}
           </h1>
@@ -144,7 +220,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             <span className="text-lima/50">{post.focusKeyword}</span>
           </div>
 
-          {/* Hero image (Problem 2: imagen diferente al body, viene de coverImageUrl) */}
+          {/* Hero image */}
           {post.coverImageUrl && (
             <div className="aspect-video overflow-hidden mb-10">
               <img
@@ -156,7 +232,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             </div>
           )}
 
-          {/* Content (Problem 1: H1 strips aplicados, body image viene dentro del HTML) */}
+          {/* Content */}
           <div
             className="prose prose-invert prose-lg max-w-none
               prose-headings:font-display prose-headings:text-crema prose-headings:font-normal
@@ -193,7 +269,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             dangerouslySetInnerHTML={{ __html: safeContent }}
           />
 
-          {/* Problem 4: Author bio con foto local /authors/manolo-covarrubias.jpg */}
+          {/* Author bio */}
           {post.authorBio && (
             <div
               className="mt-12 pt-8 border-t border-white/8
@@ -222,16 +298,22 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           </div>
         </article>
 
-        {/* Posts relacionados */}
+        {/* ── Artículos relacionados (clúster) ── */}
         {related.length > 0 && (
           <section className="max-w-5xl mx-auto px-6 mt-16 pt-12 border-t border-white/8">
-            <p className="text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-10">
-              Más guías de la Huasteca Potosina
-            </p>
+            <div className="text-center mb-10">
+              <p className="text-[9px] tracking-[3px] uppercase text-lima/50 font-dm mb-2">
+                Clúster de contenido
+              </p>
+              <p className="text-[10px] tracking-[4px] uppercase text-crema/30 font-dm">
+                Más guías sobre{" "}
+                <span className="text-lima/60">{clusterTag}</span>
+              </p>
+            </div>
             <div className="grid md:grid-cols-3 gap-6">
               {related.map(p => (
                 <Link key={p.slug} href={`/blog/${p.slug}`} className="group">
-                  <article className="bg-forest border border-white/8 hover:border-lima/30 transition-colors overflow-hidden">
+                  <article className="bg-forest border border-white/8 hover:border-lima/30 transition-colors overflow-hidden h-full flex flex-col">
                     {p.coverImageUrl && (
                       <div className="aspect-video overflow-hidden">
                         <img
@@ -242,9 +324,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                         />
                       </div>
                     )}
-                    <div className="p-5">
-                      <h4 className="font-display text-lg text-crema group-hover:text-lima transition-colors leading-snug mb-2">{p.title}</h4>
-                      <p className="text-crema/40 font-dm font-light text-xs">{p.readingTime} min · {p.tags[0]}</p>
+                    <div className="p-5 flex flex-col flex-1">
+                      {p.tags[0] && (
+                        <span className="text-[9px] tracking-[2px] uppercase text-lima/50 font-dm mb-2">{p.tags[0]}</span>
+                      )}
+                      <h4 className="font-display text-lg text-crema group-hover:text-lima transition-colors leading-snug mb-2 flex-1">{p.title}</h4>
+                      <p className="text-crema/40 font-dm font-light text-xs">{p.readingTime} min lectura</p>
                     </div>
                   </article>
                 </Link>

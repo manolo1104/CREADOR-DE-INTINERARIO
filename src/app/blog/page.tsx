@@ -1,20 +1,27 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
 
 const SITE = "https://www.huasteca-potosina.com";
-export const metadata = {
-  title: "Blog Huasteca Potosina — Guías, Rutas y Consejos de Viaje",
-  description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina: cascadas, Las Pozas, Sótano de las Golondrinas, gastronomía y más.",
+
+export const metadata: Metadata = {
+  title: "Blog de Viajes — Guías & Rutas | Huasteca Potosina",
+  description: "Guías completas para explorar la Huasteca Potosina: cascadas turquesas, Las Pozas, Sótano de las Golondrinas, gastronomía y consejos de viaje 2026.",
   openGraph: {
-    title: "Blog Huasteca Potosina — Guías, Rutas y Consejos de Viaje",
-    description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina.",
+    title: "Blog de Viajes — Guías & Rutas | Huasteca Potosina",
+    description: "Guías completas para explorar la Huasteca Potosina: cascadas, Las Pozas, Sótano de las Golondrinas y más.",
     url: `${SITE}/blog`,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
     images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630 }],
   },
-  twitter: { card: "summary_large_image", title: "Blog Huasteca Potosina", description: "Guías, rutas y consejos de viaje.", images: [`${SITE}/og-image.jpg`] },
+  twitter: {
+    card: "summary_large_image",
+    title: "Blog Huasteca Potosina — Guías & Rutas de Viaje",
+    description: "Cascadas turquesas, cañones y selva. Todo lo que necesitas para planear tu visita.",
+    images: [`${SITE}/og-image.jpg`],
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -37,7 +44,49 @@ async function getPosts() {
 export default async function BlogPage() {
   const posts = await getPosts();
 
+  const itemListSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        name:    "Blog de Viajes — Guías & Rutas Huasteca Potosina",
+        url:     `${SITE}/blog`,
+        description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina.",
+        publisher: {
+          "@type": "Organization",
+          name:    "Tours Huasteca Potosina",
+          url:     SITE,
+        },
+      },
+      {
+        "@type": "ItemList",
+        name:    "Artículos del Blog",
+        url:     `${SITE}/blog`,
+        numberOfItems: posts.length,
+        itemListElement: posts.map((p, i) => ({
+          "@type":    "ListItem",
+          position:   i + 1,
+          name:       p.title,
+          url:        `${SITE}/blog/${p.slug}`,
+          description: p.excerpt.slice(0, 155),
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Blog",   item: `${SITE}/blog` },
+        ],
+      },
+    ],
+  });
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: itemListSchema }}
+      />
     <main className="min-h-screen bg-negro pt-24 pb-20">
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 text-center mb-16">
@@ -151,5 +200,6 @@ export default async function BlogPage() {
         </Link>
       </section>
     </main>
+    </>
   );
 }
