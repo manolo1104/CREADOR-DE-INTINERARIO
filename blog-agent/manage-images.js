@@ -160,7 +160,8 @@ async function main() {
     process.exit(1);
   }
 
-  const posts = await res.json();
+  const raw   = await res.json();
+  const posts = Array.isArray(raw) ? raw : (raw.posts || []);
   const allImages = getPublicImages();
 
   // 2. Clasificar por estado de imagen
