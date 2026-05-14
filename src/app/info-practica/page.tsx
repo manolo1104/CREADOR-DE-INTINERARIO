@@ -3,15 +3,17 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import type { FAQCategory } from "@/components/FAQAccordion";
+import { ClimaWidget } from "@/components/ClimaWidget";
+import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import type { LucideIcon } from "lucide-react";
 import {
   Bus, Plane, Car, Bike,
   Calendar, BedDouble, DollarSign, CreditCard,
   Backpack, Shield, AlertTriangle, Waves, Hospital,
-  HelpCircle, Lightbulb, MapPin,
+  HelpCircle, Lightbulb, MapPin, Map, Download, Route,
   CheckCircle2, XCircle,
   Footprints, Shirt, FlaskConical, ClipboardList, Smartphone, Phone,
-  Hotel, UtensilsCrossed, Star,
+  Hotel, UtensilsCrossed, Star, ExternalLink,
 } from "lucide-react";
 
 const SITE = "https://www.huasteca-potosina.com";
@@ -161,9 +163,23 @@ const FAQ_DATA: FAQCategory[] = [
   },
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_DATA.flatMap((cat) =>
+    cat.items.map((item) => ({
+      "@type": "Question",
+      name:           item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    }))
+  ),
+};
+
 export default function InfoPracticaPage() {
   return (
     <main className="min-h-screen bg-negro">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
@@ -183,14 +199,16 @@ export default function InfoPracticaPage() {
         {/* Quick nav */}
         <div className="flex flex-wrap gap-2 justify-center">
           {[
-            { label: "Cómo llegar", href: "#como-llegar" },
-            { label: "Cuándo viajar", href: "#cuando-viajar" },
-            { label: "Dónde quedarse", href: "#donde-quedarse" },
-            { label: "Hotel Paraíso", href: "#hotel-paraiso" },
-            { label: "Dónde comer", href: "#papan-huasteco" },
-            { label: "Presupuesto", href: "#presupuesto" },
-            { label: "Qué llevar", href: "#que-llevar" },
-            { label: "Seguridad", href: "#seguridad" },
+            { label: "Cómo llegar",      href: "#como-llegar" },
+            { label: "Cuándo viajar",    href: "#cuando-viajar" },
+            { label: "Dónde quedarse",   href: "#donde-quedarse" },
+            { label: "Hotel Paraíso",    href: "#hotel-paraiso" },
+            { label: "Dónde comer",      href: "#papan-huasteco" },
+            { label: "Presupuesto",      href: "#presupuesto" },
+            { label: "Itinerarios",      href: "#itinerarios" },
+            { label: "Qué llevar",       href: "#que-llevar" },
+            { label: "Mapa",             href: "#mapa" },
+            { label: "Seguridad",        href: "#seguridad" },
           ].map((link) => (
             <a
               key={link.label}
@@ -258,7 +276,22 @@ export default function InfoPracticaPage() {
           </InfoCard>
         </div>
 
-        <div className="bg-dorado/8 border border-dorado/25 p-5">
+        {/* Imagen contextual */}
+        <div className="relative aspect-[21/9] overflow-hidden mb-6">
+          <Image
+            src="/imagenes/tours/tamul/gallery-3.png"
+            alt="Grupo en canoa recorriendo el Cañón del Tampaón — Huasteca Potosina"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 896px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-negro/60 to-transparent" />
+          <p className="absolute bottom-3 left-4 text-[10px] font-dm text-crema/50">
+            El río Tampaón es la ruta de acceso a la Cascada de Tamul — 30 min en canoa
+          </p>
+        </div>
+
+        <div className="bg-dorado/8 border border-dorado/25 p-5 mb-6">
           <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
             <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" /> Consejo del viajero
           </p>
@@ -268,6 +301,49 @@ export default function InfoPracticaPage() {
             regular antes de las 8am.
           </p>
         </div>
+
+        {/* Links afiliados de transporte */}
+        <div className="border border-white/8 bg-negro/30 p-5">
+          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">Reserva tu transporte</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <a
+              href="https://www.ado.com.mx/"
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="flex items-center justify-between border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
+            >
+              <div>
+                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">ADO · Autobús</p>
+                <p className="text-[10px] font-dm text-crema/35">CDMX → Valles desde $600</p>
+              </div>
+              <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
+            </a>
+            <a
+              href="https://www.rentalcars.com/es/?affiliateCode=huasteca"
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="flex items-center justify-between border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
+            >
+              <div>
+                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">Rentalcars · Auto</p>
+                <p className="text-[10px] font-dm text-crema/35">Valles desde ~$800/día</p>
+              </div>
+              <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
+            </a>
+            <a
+              href="https://www.kayak.com.mx/flights"
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="flex items-center justify-between border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
+            >
+              <div>
+                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">Kayak · Vuelos</p>
+                <p className="text-[10px] font-dm text-crema/35">CDMX → SLP desde $1,200</p>
+              </div>
+              <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
+            </a>
+          </div>
+        </div>
       </Section>
 
       {/* ── CUÁNDO VIAJAR ── */}
@@ -275,6 +351,32 @@ export default function InfoPracticaPage() {
         <p className="text-crema/60 font-dm text-sm mb-8">
           La Huasteca recibe visitantes todo el año, pero cada temporada tiene su carácter.
         </p>
+
+        {/* Imágenes temporada seca vs verde */}
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          <div className="relative aspect-[4/3] overflow-hidden">
+            <Image
+              src="/imagenes/tours/tamul/gallery-1.png"
+              alt="Cueva del Agua con agua turquesa — temporada seca Nov–Mar"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, 440px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
+            <p className="absolute bottom-2 left-3 text-[10px] font-dm text-crema/80">Nov–Mar · Agua turquesa</p>
+          </div>
+          <div className="relative aspect-[4/3] overflow-hidden">
+            <Image
+              src="/imagenes/tours/tamul/gallery-5.png"
+              alt="Sótano de las Huahuas con vegetación verde exuberante — temporada lluvias"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, 440px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
+            <p className="absolute bottom-2 left-3 text-[10px] font-dm text-crema/80">Jun–Oct · Verde intenso</p>
+          </div>
+        </div>
 
         <div className="space-y-4 mb-8">
           {[
@@ -313,10 +415,24 @@ export default function InfoPracticaPage() {
                 "Consultar condiciones antes de ir a Tamul (corrientes peligrosas)",
               ],
             },
-          ].map((t) => (
-            <InfoCard key={t.meses} title={`${t.meses} · ${t.etiqueta}`} accent={t.color}>
-              <BulletList items={t.puntos} />
-            </InfoCard>
+          ].map((t, i) => (
+            <div key={t.meses}>
+              <InfoCard title={`${t.meses} · ${t.etiqueta}`} accent={t.color}>
+                <BulletList items={t.puntos} />
+              </InfoCard>
+              {/* Micro-CTA tras temporada ideal */}
+              {i === 0 && (
+                <div className="mt-2 ml-4 flex items-center gap-2">
+                  <span className="text-verde-vivo text-sm">→</span>
+                  <Link
+                    href="/tours"
+                    className="text-xs font-dm text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors"
+                  >
+                    Ver tours disponibles para esta temporada
+                  </Link>
+                </div>
+              )}
+            </div>
           ))}
         </div>
 
@@ -351,6 +467,11 @@ export default function InfoPracticaPage() {
         </div>
       </Section>
 
+      {/* ── WIDGET DE CLIMA ── (dentro del bloque Cuándo Viajar pero fuera del Section — mejor UX) */}
+      <div className="max-w-4xl mx-auto px-6 -mt-8 mb-10">
+        <ClimaWidget />
+      </div>
+
       {/* ── DÓNDE QUEDARSE ── */}
       <Section id="donde-quedarse" Icon={BedDouble} title="Dónde quedarse">
         <p className="text-crema/60 font-dm text-sm mb-8">
@@ -373,13 +494,36 @@ export default function InfoPracticaPage() {
                 "Airbnb: casas completas desde $600 MXN/noche",
               ]}
             />
+            {/* Links afiliados */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href="https://www.airbnb.mx/s/Ciudad-Valles--San-Luis-Potos%C3%AD/homes"
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="flex items-center gap-1.5 text-[10px] font-dm text-verde-vivo border border-verde-vivo/30 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all"
+              >
+                <ExternalLink className="w-3 h-3" /> Ver en Airbnb
+              </a>
+              <a
+                href="https://www.booking.com/searchresults.es.html?ss=Ciudad+Valles%2C+San+Luis+Potos%C3%AD"
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="flex items-center gap-1.5 text-[10px] font-dm text-verde-vivo border border-verde-vivo/30 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all"
+              >
+                <ExternalLink className="w-3 h-3" /> Ver en Booking.com
+              </a>
+            </div>
           </InfoCard>
 
           {/* Xilitla — con Hotel Paraíso Encantado destacado */}
           <InfoCard title="Xilitla · Experiencia boutique" accent="dorado">
             <p className="text-crema/60 text-sm mb-4">
-              El pueblo mágico más cercano a Las Pozas. Opciones boutique en casas coloniales con
-              vistas al cañón. Perfecto para 1–2 noches de inmersión cultural.
+              El pueblo mágico más cercano a{" "}
+              <Link href="/destinos/las-pozas-jardin-surrealista" className="text-dorado hover:text-lima underline underline-offset-2 transition-colors">
+                Las Pozas de Edward James
+              </Link>
+              . Opciones boutique en casas coloniales con vistas al cañón. Perfecto para 1–2 noches
+              de inmersión cultural.
             </p>
 
             {/* Recomendación destacada */}
@@ -427,6 +571,19 @@ export default function InfoPracticaPage() {
               ]}
             />
           </InfoCard>
+
+          {/* Micro-CTA Xilitla */}
+          <div className="flex items-center gap-2 ml-4 -mt-2">
+            <span className="text-dorado text-sm">→</span>
+            <Link
+              href="https://wa.me/524891251458?text=Hola%2C%20quiero%20reservar%20el%20Hotel%20Para%C3%ADso%20Encantado%20con%20tarifa%20especial%20de%20tour"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-dm text-dorado hover:text-lima underline underline-offset-2 transition-colors"
+            >
+              Reserva el Hotel Paraíso Encantado con tarifa especial al combinar con tour
+            </Link>
+          </div>
 
           {/* Tamasopo */}
           <InfoCard title="Tamasopo · Inmersión en la naturaleza" accent="agua">
@@ -531,6 +688,56 @@ export default function InfoPracticaPage() {
               Ver en Google Maps →
             </a>
           </div>
+        </div>
+      </Section>
+
+      {/* ── MAPA INTERACTIVO ── */}
+      <Section id="mapa" Icon={Map} title="Mapa de la región">
+        <p className="text-crema/60 font-dm text-sm mb-6 leading-relaxed">
+          La Huasteca Potosina se concentra alrededor de{" "}
+          <Link href="/destinos/xilitla-pueblo-magico" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
+            Xilitla
+          </Link>{" "}
+          y{" "}
+          <strong className="text-crema">Ciudad Valles</strong>. Todos los destinos principales están a
+          menos de 2 horas entre sí. Puntos clave:{" "}
+          <Link href="/destinos/cascada-de-tamul" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Cascada de Tamul</Link>,{" "}
+          <Link href="/destinos/las-pozas-jardin-surrealista" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Las Pozas</Link>,{" "}
+          <Link href="/destinos/sotano-de-las-golondrinas" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Sótano de las Golondrinas</Link>,{" "}
+          <Link href="/destinos/puente-de-dios-tamasopo" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Puente de Dios</Link>.
+        </p>
+
+        <div className="relative w-full aspect-[16/9] overflow-hidden border border-white/10">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d458726.1!2d-99.01!3d21.95!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses-419!2smx!4v1"
+            width="100%"
+            height="100%"
+            style={{ border: 0, position: "absolute", inset: 0 }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Mapa Huasteca Potosina — destinos principales"
+          />
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Cascada de Tamul",        href: "/destinos/cascada-de-tamul",          dist: "1.5h desde Valles" },
+            { label: "Las Pozas (Xilitla)",      href: "/destinos/las-pozas-jardin-surrealista", dist: "1h desde Valles" },
+            { label: "Sótano de Golondrinas",   href: "/destinos/sotano-de-las-golondrinas", dist: "1h desde Valles" },
+            { label: "Puente de Dios",           href: "/destinos/puente-de-dios-tamasopo",   dist: "45 min desde Valles" },
+          ].map((d) => (
+            <Link
+              key={d.href}
+              href={d.href}
+              className="border border-white/8 hover:border-verde-vivo/40 bg-negro/30 p-3 group transition-all"
+            >
+              <p className="text-xs font-dm font-medium text-crema/75 group-hover:text-crema transition-colors leading-snug mb-1">
+                {d.label}
+              </p>
+              <p className="text-[10px] font-dm text-crema/35">{d.dist}</p>
+            </Link>
+          ))}
         </div>
       </Section>
 
@@ -672,8 +879,133 @@ export default function InfoPracticaPage() {
         </InfoCard>
       </Section>
 
+      {/* ── ITINERARIOS SUGERIDOS ── */}
+      <Section id="itinerarios" Icon={Route} title="Itinerarios sugeridos">
+        <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
+          La pregunta más común es: ¿cuántos días necesito y en qué orden? Aquí tres rutas modelo
+          según tu disponibilidad. Todos nuestros tours encajan en cualquiera de estos itinerarios.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 3 días */}
+          <div className="border border-verde-vivo/20 bg-verde-selva/5 p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-verde-vivo" />
+              <p className="text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo">Intenso</p>
+            </div>
+            <h3 className="font-cormorant text-crema text-xl mb-0.5">3 Días</h3>
+            <p className="text-crema/40 font-dm text-[11px] mb-5">Lo esencial — para fines de semana largos</p>
+            <ol className="space-y-3">
+              {[
+                { dia: "Día 1", lugar: "Llegada a Ciudad Valles · Noche en Valles o Xilitla" },
+                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 5:30am · Noche Xilitla" },
+                { dia: "Día 3", lugar: "Las Pozas (Edward James) · Regreso tarde" },
+              ].map((d) => (
+                <li key={d.dia} className="flex gap-3">
+                  <span className="text-[9px] tracking-[1px] uppercase text-verde-vivo font-dm font-bold flex-shrink-0 mt-0.5 w-10">{d.dia}</span>
+                  <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
+                </li>
+              ))}
+            </ol>
+            <Link
+              href="/tours/tour-tamul"
+              className="mt-5 block text-center border border-verde-vivo/40 hover:bg-verde-vivo/10 text-verde-vivo text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all"
+            >
+              Ver tour Tamul →
+            </Link>
+          </div>
+
+          {/* 5 días */}
+          <div className="border border-dorado/20 bg-dorado/5 p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-dorado" />
+              <p className="text-[9px] tracking-[2px] uppercase font-dm text-dorado">Ideal</p>
+            </div>
+            <h3 className="font-cormorant text-crema text-xl mb-0.5">5 Días</h3>
+            <p className="text-crema/40 font-dm text-[11px] mb-5">Lo recomendado — sin prisas y sin perderte nada</p>
+            <ol className="space-y-3">
+              {[
+                { dia: "Día 1", lugar: "Llegada · Comida en Papán Huasteco · Noche Xilitla" },
+                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas" },
+                { dia: "Día 3", lugar: "Las Pozas de Edward James · Pueblo de Xilitla" },
+                { dia: "Día 4", lugar: "Tour Cascada El Meco o Minas Viejas + Micos" },
+                { dia: "Día 5", lugar: "Puente de Dios + Tamasopo · Regreso" },
+              ].map((d) => (
+                <li key={d.dia} className="flex gap-3">
+                  <span className="text-[9px] tracking-[1px] uppercase text-dorado font-dm font-bold flex-shrink-0 mt-0.5 w-10">{d.dia}</span>
+                  <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
+                </li>
+              ))}
+            </ol>
+            <Link
+              href="/recomendar"
+              className="mt-5 block text-center bg-dorado/20 hover:bg-dorado/30 text-dorado text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all"
+            >
+              ¿Qué tour primero? →
+            </Link>
+          </div>
+
+          {/* 7 días */}
+          <div className="border border-agua/20 bg-agua/5 p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-agua" />
+              <p className="text-[9px] tracking-[2px] uppercase font-dm text-agua">Completo</p>
+            </div>
+            <h3 className="font-cormorant text-crema text-xl mb-0.5">7 Días</h3>
+            <p className="text-crema/40 font-dm text-[11px] mb-5">La Huasteca completa — para quienes se quieren perder aquí</p>
+            <ol className="space-y-3">
+              {[
+                { dia: "Día 1", lugar: "Llegada Valles · Explora el centro · Noche Valles" },
+                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Noche Xilitla" },
+                { dia: "Día 3", lugar: "Las Pozas · Pueblo Mágico Xilitla · Noche Xilitla" },
+                { dia: "Día 4", lugar: "Tour Cascada El Meco · Noche Tamasopo o Valles" },
+                { dia: "Día 5", lugar: "Tour Minas Viejas + Micos · Laguna Media Luna" },
+                { dia: "Día 6", lugar: "Tour Puente de Dios + Siete Cascadas de Tamasopo" },
+                { dia: "Día 7", lugar: "Tamtoc + mercado local + regreso tranquilo" },
+              ].map((d) => (
+                <li key={d.dia} className="flex gap-3">
+                  <span className="text-[9px] tracking-[1px] uppercase text-agua font-dm font-bold flex-shrink-0 mt-0.5 w-10">{d.dia}</span>
+                  <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
+                </li>
+              ))}
+            </ol>
+            <Link
+              href="/tours"
+              className="mt-5 block text-center border border-agua/40 hover:bg-agua/10 text-agua text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all"
+            >
+              Ver todos los tours →
+            </Link>
+          </div>
+        </div>
+
+        <p className="mt-6 text-center text-crema/35 font-dm text-xs">
+          ¿No sabes por dónde empezar?{" "}
+          <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
+            Usa el recomendador IA →
+          </Link>
+        </p>
+      </Section>
+
       {/* ── QUÉ LLEVAR ── */}
       <Section id="que-llevar" Icon={Backpack} title="Qué llevar">
+        {/* Imagen introductoria */}
+        <div className="relative aspect-[21/9] overflow-hidden mb-8">
+          <Image
+            src="/imagenes/tours/tamul/gallery-4.png"
+            alt="Viajeros disfrutando en las aguas del río Tampaón — equipo básico para la Huasteca"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 896px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
+          <p className="absolute bottom-3 left-4 text-[10px] font-dm text-crema/70">
+            Aqua shoes y ropa de secado rápido son indispensables en la{" "}
+            <Link href="/destinos/cascada-de-tamul" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
+              Cascada de Tamul
+            </Link>
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {[
             {
@@ -839,6 +1171,52 @@ export default function InfoPracticaPage() {
           </div>
 
           <FAQAccordion categorias={FAQ_DATA} />
+        </div>
+      </section>
+
+      {/* ── LEAD MAGNET PDF ── */}
+      <section className="py-16 border-b border-white/6">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            <div>
+              <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3">
+                ✦ Guía descargable gratuita
+              </p>
+              <h2
+                className="font-cormorant font-light text-crema mb-4"
+                style={{ fontSize: "clamp(26px,3.5vw,42px)" }}
+              >
+                Llévate la guía completa en{" "}
+                <em className="text-dorado">PDF</em>
+              </h2>
+              <p className="text-crema/55 font-dm text-sm mb-6 leading-relaxed">
+                Mapa de la región, checklist de equipaje, presupuesto detallado y los 3 itinerarios
+                modelo — todo en un PDF que funciona sin internet, listo para el día del viaje.
+              </p>
+              <ul className="space-y-2 mb-6">
+                {[
+                  "Mapa descargable con todos los destinos",
+                  "Checklist de empaque (no olvides nada)",
+                  "Presupuesto detallado por tipo de viajero",
+                  "Itinerarios 3, 5 y 7 días listos para imprimir",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-sm text-crema/65 font-dm">
+                    <span className="text-verde-vivo mt-0.5 flex-shrink-0">✦</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-negro/40 border border-white/10 p-6">
+              <p className="font-dm text-sm font-medium text-crema/80 mb-1">
+                Ingresa tu email y te lo enviamos al instante
+              </p>
+              <p className="font-dm text-[11px] text-crema/40 mb-5">
+                Completamente gratuito · Sin spam · Descarga inmediata
+              </p>
+              <LeadMagnetForm />
+            </div>
+          </div>
         </div>
       </section>
 
