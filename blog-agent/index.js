@@ -68,22 +68,17 @@ function normalizeStr(str) {
     .replace(/-+/g, "-");
 }
 
-function generateSlug(title, primaryKeyword, year) {
+function generateSlug(title, primaryKeyword, _year) {
+  // No incluir el año en el slug — SEO atemporal
   const keywordSlug = normalizeStr(primaryKeyword);
   const titleSlug   = normalizeStr(title);
-  const yearStr     = String(year);
 
   let finalSlug = titleSlug.includes(keywordSlug)
     ? titleSlug
     : `${keywordSlug}-${titleSlug.replace(keywordSlug, "").replace(/^-|-$/g, "")}`;
 
-  if (!finalSlug.endsWith(yearStr)) {
-    finalSlug = `${finalSlug}-${yearStr}`;
-  }
-
-  const withoutYear = finalSlug.replace(`-${yearStr}`, "");
-  if (withoutYear.length > 60) {
-    finalSlug = `${withoutYear.slice(0, 60).replace(/-$/, "")}-${yearStr}`;
+  if (finalSlug.length > 70) {
+    finalSlug = finalSlug.slice(0, 70).replace(/-$/, "");
   }
 
   return finalSlug;

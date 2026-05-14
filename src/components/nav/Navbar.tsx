@@ -76,13 +76,15 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex flex-col leading-none group">
-            <span className="font-cormorant text-crema text-xl font-light tracking-[4px] uppercase group-hover:text-dorado transition-colors duration-200">
-              HUASTECA
-            </span>
-            <span className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mt-0.5">
-              Potosina
-            </span>
+          <Link href="/" className="flex-shrink-0 group" aria-label="Tours Huasteca Potosina — Inicio">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logos/huasteca-logo-dark.svg"
+              alt="Tours Huasteca Potosina"
+              width={44}
+              height={44}
+              className="h-11 w-11 transition-opacity duration-200 group-hover:opacity-85"
+            />
           </Link>
 
           {/* Desktop Nav */}

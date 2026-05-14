@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <title>HUASTECA · Logo Opción A · Sello Editorial</title>
+  <defs>
+    <pattern id="rays1" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#f4edd8" stroke-width="0.7"></line>
+    </pattern>
+    <path id="topArc" d="M 80,300 A 220,220 0 0 1 520,300" fill="none"></path>
+    <path id="botArc" d="M 110,335 A 200,200 0 0 0 490,335" fill="none"></path>
+  </defs>
+
+  
+  <rect width="600" height="600" fill="#0e1710"></rect>
+
+  
+  <circle cx="300" cy="300" r="270" fill="none" stroke="#f4edd8" stroke-width="3"></circle>
+  <circle cx="300" cy="300" r="258" fill="none" stroke="#f4edd8" stroke-width="0.8"></circle>
+
+  
+  <g opacity="0.10" stroke="#f4edd8" fill="none">
+    
+    <g stroke-width="0.9">
+      <line x1="300" y1="60" x2="300" y2="540"></line>
+      <line x1="60" y1="300" x2="540" y2="300"></line>
+    </g>
+    <g stroke-width="0.5">
+      <line x1="130" y1="130" x2="470" y2="470"></line>
+      <line x1="130" y1="470" x2="470" y2="130"></line>
+    </g>
+    
+    <g fill="#f4edd8" stroke="none" opacity="0.9">
+      <polygon points="300,90 308,300 300,510 292,300"></polygon>
+      <polygon points="90,300 300,292 510,300 300,308"></polygon>
+    </g>
+    
+    <g stroke-width="0.5">
+      <g transform="rotate(0 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(15 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(30 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(45 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(60 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(75 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(90 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(105 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(120 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(135 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(150 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(165 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(180 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(195 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(210 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(225 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(240 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(255 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(270 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(285 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(300 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(315 300 300)"><line x1="300" y1="66" x2="300" y2="74"></line></g>
+      <g transform="rotate(330 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+      <g transform="rotate(345 300 300)"><line x1="300" y1="66" x2="300" y2="72"></line></g>
+    </g>
+  </g>
+
+  
+  <g stroke="#f4edd8" stroke-width="2">
+    <line x1="300" y1="30" x2="300" y2="44"></line>
+    <line x1="300" y1="556" x2="300" y2="570"></line>
+    <line x1="30" y1="300" x2="44" y2="300"></line>
+    <line x1="556" y1="300" x2="570" y2="300"></line>
+  </g>
+
+  
+  <text font-family="DM Sans, sans-serif" font-size="22" letter-spacing="8" fill="#f4edd8" font-weight="500">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">★  HUASTECA  POTOSINA  TOURS  ★</textPath>
+  </text>
+
+  
+  <text x="290" y="395" font-family="Cormorant Garamond, Georgia, serif" font-size="300" font-weight="500" text-anchor="middle" fill="#f4edd8" font-style="italic">H</text>
+
+  
+  <g opacity="0.55">
+    <rect x="212" y="270" width="28" height="148" fill="url(#rays1)"></rect>
+    <rect x="338" y="270" width="28" height="148" fill="url(#rays1)"></rect>
+  </g>
+
+  
+  <text font-family="DM Sans, sans-serif" font-size="14" letter-spacing="6" fill="#c4882a" font-style="italic">
+    <textPath href="#botArc" startOffset="50%" text-anchor="middle">San Luis Potosí · México</textPath>
+  </text>
+
+  
+  <text x="300" y="525" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-style="italic" font-size="28" fill="#c4882a">— 2010 —</text>
+</svg>
