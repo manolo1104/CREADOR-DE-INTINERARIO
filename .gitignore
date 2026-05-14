@@ -19,3 +19,5 @@ npm-debug.log*
 
 # Next.js
 .next/
+tsbuildinfo
+tsconfig.tsbuildinfo
