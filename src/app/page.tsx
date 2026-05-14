@@ -132,12 +132,24 @@ export default async function HomePage() {
           </h1>
 
           <p
-            className="text-crema/80 max-w-xl mb-12 leading-relaxed font-dm drop-shadow"
+            className="text-crema/80 max-w-xl mb-6 leading-relaxed font-dm drop-shadow"
             style={{ fontSize: "clamp(15px,1.8vw,18px)" }}
           >
             Cascadas turquesas, jardines surrealistas, cañones imposibles.
             La región más extraordinaria de México.
           </p>
+
+          {/* Social proof bajo el subtítulo */}
+          <div className="flex items-center gap-2 mb-12">
+            <div className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-dorado text-dorado drop-shadow" />
+              ))}
+            </div>
+            <span className="font-dm text-crema/90 text-sm drop-shadow">
+              4.9 · Más de 10,000 viajeros satisfechos
+            </span>
+          </div>
 
           {/* CTAs */}
           <div className="flex flex-wrap gap-4 justify-center mb-10">
@@ -149,9 +161,10 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/recomendar"
-              className="bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300"
+              className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5"
             >
-              ¿Qué tour es para mí? →
+              <span>✦ Recomendador IA →</span>
+              <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">2 minutos · Gratuito</span>
             </Link>
           </div>
 

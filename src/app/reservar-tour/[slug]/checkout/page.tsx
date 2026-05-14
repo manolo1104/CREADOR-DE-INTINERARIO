@@ -416,6 +416,7 @@ export default function CheckoutTourPage() {
 
   const stripeOptions = {
     clientSecret,
+    locale: "es-419" as const,
     appearance: {
       theme: "stripe" as const,
       variables: {

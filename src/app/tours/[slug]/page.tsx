@@ -9,7 +9,7 @@ import { TourDeparture } from "@/components/TourDeparture";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { TourPageTracker } from "@/components/TourPageTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { Star, Clock, Users, Lock } from "lucide-react";
+import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones } from "lucide-react";
 import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
 
@@ -91,9 +91,78 @@ export default function TourDetailPage({ params }: Props) {
     },
   };
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: `¿Qué incluye el ${tour.nombre}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: tour.incluye.join(", ") + ". Todo incluido en el precio.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: `¿Cuánto dura el ${tour.nombre}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `El tour tiene una duración aproximada de ${tour.duracion_hrs} horas e incluye transporte, guía certificado y todas las entradas.`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿Puedo cancelar mi reserva?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Sí. Cancelación gratuita hasta 48 horas antes del tour. Reembolso completo sin preguntas.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿Cuál es el precio por persona?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `El precio es $${tour.precio.toLocaleString("es-MX")} MXN por persona adulta. Niños (4–12 años) tienen un 40% de descuento. Menores de 4 años entran gratis.`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: "¿Dónde es el punto de salida?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "El tour sale desde Ciudad Valles, San Luis Potosí. Incluimos recogida en tu hotel o punto de encuentro acordado.",
+        },
+      },
+    ],
+  };
+
+  const reviewSchema = reviews.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: tour.nombre,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: avgRating,
+      reviewCount: reviews.length,
+      bestRating: 5,
+      worstRating: 1,
+    },
+    review: reviews.map((r) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: r.nombre },
+      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
+      reviewBody: r.texto,
+      datePublished: r.fecha,
+    })),
+  } : null;
+
   return (
     <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      {reviewSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />}
 
       {/* ── HERO ── */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
@@ -355,6 +424,41 @@ export default function TourDetailPage({ params }: Props) {
                 Preguntar por WhatsApp
               </a>
               <p className="text-center text-[9px] text-crema/25 font-dm">Cancela gratis · 48h antes</p>
+            </div>
+
+            {/* Garantías explícitas */}
+            <div className="border border-white/10 bg-negro/60 p-5">
+              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">Reserva con total confianza</p>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <Shield className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="text-[11px] font-dm font-medium text-crema/85">Cancelación gratuita</p>
+                    <p className="text-[10px] font-dm text-crema/40">Hasta 48h antes · Reembolso completo</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <RefreshCw className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="text-[11px] font-dm font-medium text-crema/85">Si llueve, reprogramamos</p>
+                    <p className="text-[10px] font-dm text-crema/40">Sin costo adicional · Fecha flexible</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Camera className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="text-[11px] font-dm font-medium text-crema/85">Fotos y video incluidos</p>
+                    <p className="text-[10px] font-dm text-crema/40">Entregados el mismo día · Sin extra</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Headphones className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="text-[11px] font-dm font-medium text-crema/85">Soporte en WhatsApp 24/7</p>
+                    <p className="text-[10px] font-dm text-crema/40">Respuesta en menos de 1 hora</p>
+                  </div>
+                </li>
+              </ul>
             </div>
 
             <Link

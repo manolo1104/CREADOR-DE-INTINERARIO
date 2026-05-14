@@ -220,6 +220,22 @@ function TourResultCard({
           </p>
         )}
 
+        {/* Destinos del tour */}
+        <div className="mb-4">
+          <p className="text-[9px] tracking-[2px] uppercase text-negro/35 font-dm mb-2">Destinos que visitarás</p>
+          <ul className="space-y-1">
+            {tour.destinos.slice(0, 4).map((d) => (
+              <li key={d} className="flex items-start gap-1.5 text-[11px] font-dm text-negro/65">
+                <span className="text-verde-selva flex-shrink-0 mt-0.5">→</span>
+                {d}
+              </li>
+            ))}
+            {tour.destinos.length > 4 && (
+              <li className="text-[11px] text-negro/35 font-dm pl-3.5">+{tour.destinos.length - 4} más incluidos</li>
+            )}
+          </ul>
+        </div>
+
         {/* Personalized reason */}
         <div className="bg-verde-selva/5 border-l-2 border-verde-selva px-4 py-3 mb-4">
           <p className="font-dm text-sm text-negro/75 leading-relaxed">{reason}</p>

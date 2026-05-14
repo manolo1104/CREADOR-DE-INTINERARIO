@@ -118,6 +118,28 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           </p>
         </div>
 
+        {/* Guía asignado */}
+        {(() => {
+          const guiaMap: Record<string, { foto: string; nombre: string; rating: string }> = {
+            "tour-tamul":      { foto: "/guides/guia-2.png", nombre: "Miguel Ángel", rating: "5.0" },
+            "tour-puente-dios":{ foto: "/guides/guia-2.png", nombre: "Miguel Ángel", rating: "5.0" },
+            "tour-meco":       { foto: "/guides/guia-3.png", nombre: "José Laredo",  rating: "4.9" },
+            "tour-minas-micos":{ foto: "/guides/guia-3.png", nombre: "José Laredo",  rating: "4.9" },
+          };
+          const g = guiaMap[t.id] ?? { foto: "/guides/guia-1.png", nombre: "Carlos Rodríguez", rating: "4.9" };
+          return (
+            <div className="flex items-center gap-2.5 border-t border-white/8 pt-3 mb-3">
+              <div className="relative z-10 w-8 h-8 rounded-full overflow-hidden border border-dorado/50 flex-shrink-0">
+                <Image src={g.foto} alt={g.nombre} width={32} height={32} className="w-full h-full object-cover object-top" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-dm text-crema/60">Tu guía: <span className="text-crema/85 font-medium">{g.nombre}</span></p>
+                <p className="text-[9px] text-dorado/70 font-dm">★ {g.rating} certificado</p>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* CTA */}
         <div className="mt-auto flex flex-col gap-2">
           <span className="w-full block text-center bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded">
