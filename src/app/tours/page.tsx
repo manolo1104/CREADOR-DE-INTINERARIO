@@ -132,7 +132,7 @@ export default function ToursPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(toursItemListSchema) }} />
 
       {/* ── HERO ── */}
-      <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-20 text-center">
+      <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           Tours con todo incluido
         </p>
@@ -142,10 +142,32 @@ export default function ToursPage() {
         >
           Recorridos <em className="text-dorado">Guiados</em>
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-8">
+        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-5">
           {TOURS_DB.length} tours diseñados para vivir la Huasteca sin preocupaciones.
           Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.
         </p>
+
+        {/* Rating + reseñas — primer punto de confianza */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <a
+            href="https://share.google/YS3dbxN4wrnHZ8lO9"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/15 px-5 py-2 transition-all group"
+          >
+            <span className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />
+              ))}
+            </span>
+            <span className="font-dm text-sm text-crema/85 group-hover:text-crema transition-colors">
+              4.9 · 492 reseñas Google
+            </span>
+          </a>
+          <span className="text-crema/25 font-dm text-xs hidden sm:block">·</span>
+          <span className="font-dm text-xs text-crema/45 hidden sm:block">+10,000 viajeros satisfechos</span>
+        </div>
+
         <a
           href={waLink(WA_MESSAGES.tourGeneral)}
           target="_blank"
@@ -156,6 +178,25 @@ export default function ToursPage() {
           Reservar por WhatsApp
         </a>
       </section>
+
+      {/* ── ANCLAS DE NAVEGACIÓN ── */}
+      <nav aria-label="Ir directamente al tour" className="sticky top-16 z-40 bg-negro/98 backdrop-blur-md border-b border-white/8 py-3 px-6 overflow-x-auto scrollbar-none">
+        <ul className="flex items-center justify-center gap-1 min-w-max mx-auto">
+          {TOURS_DB.map((t) => (
+            <li key={t.id}>
+              <a
+                href={`#${t.id}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-[1.5px] uppercase font-dm text-crema/55 hover:text-crema hover:bg-white/8 border border-transparent hover:border-white/10 transition-all duration-150"
+              >
+                <span className="text-verde-vivo text-[8px]">→</span>
+                {t.nombre.split(" ")[0] === "Expedición" || t.nombre.split(" ")[0] === "Ruta" || t.nombre.split(" ")[0] === "Cascada" || t.nombre.split(" ")[0] === "Paraíso"
+                  ? t.nombre.split(" ").slice(1, 3).join(" ")
+                  : t.nombre.split(" ").slice(0, 2).join(" ")}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
       <GuideProfile />
 
@@ -180,10 +221,44 @@ export default function ToursPage() {
       {/* ── TOURS GRID ── */}
       <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {TOURS_DB.map((tour) => (
+          {TOURS_DB.map((tour, tourIndex) => {
+            // Urgency badge — pseudo-deterministic per tour
+            const seed = tourIndex * 2654435761;
+            const pseudo = (seed >>> 0) % 100;
+            let urgencyBadge: React.ReactNode;
+            if (pseudo < 30) {
+              const spots = (tourIndex % 3) + 1;
+              urgencyBadge = (
+                <span className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse flex-shrink-0" />
+                  Solo {spots} lugar{spots > 1 ? "es" : ""} disponible
+                </span>
+              );
+            } else if (pseudo < 60) {
+              urgencyBadge = (
+                <span className="absolute top-3 right-3 bg-amber-500 text-negro text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
+                  🔥 Alta demanda fines de semana
+                </span>
+              );
+            } else {
+              // Next available Saturday
+              const today = new Date();
+              const daysUntilSat = (6 - today.getDay() + 7) % 7 || 7;
+              const nextSat = new Date(today);
+              nextSat.setDate(today.getDate() + daysUntilSat + (tourIndex % 2 === 0 ? 7 : 0));
+              const dateStr = nextSat.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+              urgencyBadge = (
+                <span className="absolute top-3 right-3 bg-verde-selva/90 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
+                  Próx. salida: {dateStr}
+                </span>
+              );
+            }
+
+            return (
             <article
               key={tour.id}
-              className="relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col"
+              id={tour.id}
+              className="relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col scroll-mt-28"
             >
               {/* Stretched link — full card clickable to tour detail */}
               <Link
@@ -202,16 +277,14 @@ export default function ToursPage() {
                     sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
-                  {/* Urgencia badge sobre imagen */}
+                  {/* Urgencia badge sobre imagen (izquierda) */}
                   {tour.urgencia && (
                     <span className="absolute top-3 left-3 bg-dorado/90 text-negro text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
                       {tour.urgencia}
                     </span>
                   )}
-                  {/* Descuento badge */}
-                  <span className="absolute top-3 right-3 bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
-                    30% OFF
-                  </span>
+                  {/* Urgencia rotativa (derecha) */}
+                  {urgencyBadge}
                   {/* Duración */}
                   <span className="absolute bottom-3 left-3 bg-negro/70 text-crema/80 text-[9px] font-dm tracking-[1px] px-2 py-1">
                     ⏱ {tour.duracion_hrs} horas
@@ -337,6 +410,12 @@ export default function ToursPage() {
                           {r.iniciales}
                         </div>
                         <div className="flex-1 min-w-0">
+                          {/* Estrellas visuales */}
+                          <div className="flex gap-0.5 mb-0.5">
+                            {[...Array(r.rating ?? 5)].map((_, i) => (
+                              <Star key={i} className="w-2.5 h-2.5 fill-dorado text-dorado" aria-hidden="true" />
+                            ))}
+                          </div>
                           <p className="text-[10px] text-crema/70 font-dm font-medium leading-none mb-0.5">
                             {r.nombre} <span className="text-crema/35 font-normal">· {r.ciudad}</span>
                           </p>
@@ -362,7 +441,8 @@ export default function ToursPage() {
                 <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} tourSlug={tour.slug} />
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -409,6 +489,12 @@ export default function ToursPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TESTIMONIOS.map((t) => (
             <div key={t.nombre} className="border border-white/8 bg-negro/30 p-6 flex flex-col">
+              {/* Estrellas visuales */}
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />
+                ))}
+              </div>
               <p className="text-crema/70 font-dm text-sm leading-relaxed mb-6 flex-1">
                 &ldquo;{t.texto}&rdquo;
               </p>

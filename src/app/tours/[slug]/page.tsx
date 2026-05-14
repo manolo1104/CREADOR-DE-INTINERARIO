@@ -471,43 +471,95 @@ export default function TourDetailPage({ params }: Props) {
         </aside>
       </div>
 
-      {/* ── OTROS TOURS ── */}
-      <section className="bg-verde-profundo/20 border-t border-white/6 py-16 px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-cormorant text-crema text-2xl mb-8 text-center">
-            Otros tours disponibles
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {TOURS_DB.filter((t) => t.slug !== tour.slug).slice(0, 3).map((t) => (
-              <Link
-                key={t.slug}
-                href={`/tours/${t.slug}`}
-                className="group border border-white/8 hover:border-verde-vivo/40 bg-negro/40 p-5 transition-all duration-200"
-              >
-                <div className="relative aspect-[3/2] overflow-hidden mb-4">
-                  {t.imagen_hero && (
-                    <Image
-                      src={t.imagen_hero}
-                      alt={t.nombre}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/60 to-transparent" />
+      {/* ── TOURS SIMILARES / CROSS-SELL ── */}
+      {(() => {
+        const COMBOS: Record<string, { slug: string; msg: string }> = {
+          "tour-tamul":       { slug: "tour-edward-james", msg: "Si tienes un día más: Las Pozas de Edward James es el complemento perfecto — arte surrealista después de la naturaleza bruta." },
+          "tour-edward-james":{ slug: "tour-tamul",        msg: "Combínalo con la Expedición Tamul — cascada + selva al día siguiente. El clásico de 2 días de la Huasteca." },
+          "tour-meco":        { slug: "tour-minas-micos",  msg: "Combínalo con el Tour Minas + Micos para un segundo día de aguas turquesas con más cascadas y tirolesas." },
+          "tour-minas-micos": { slug: "tour-meco",         msg: "Combínalo con Cascada El Meco — aguas turquesas reales con luz perfecta. Dos días, dos experiencias únicas." },
+          "tour-puente-dios": { slug: "tour-minas-micos",  msg: "Combínalo con Minas + Micos al día siguiente — más cascadas, más pozas, la ruta de aguas completa." },
+        };
+        const combo = COMBOS[tour.id];
+        const comboTour = combo ? TOURS_DB.find((t) => t.slug === combo.slug) : null;
+        const otherTours = TOURS_DB.filter((t) => t.slug !== tour.slug && t.slug !== combo?.slug).slice(0, 2);
+
+        return (
+          <section className="border-t border-white/6 py-16 px-6">
+            <div className="max-w-5xl mx-auto">
+              <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm text-center mb-2">Maximiza tu viaje</p>
+              <h2 className="font-cormorant text-crema text-2xl mb-10 text-center">
+                Tours que combinan con este recorrido
+              </h2>
+
+              {/* Combo destacado */}
+              {comboTour && combo && (
+                <div className="border border-dorado/25 bg-dorado/5 p-5 mb-8 flex flex-col sm:flex-row gap-5 items-start">
+                  <div className="sm:flex-shrink-0 w-full sm:w-40">
+                    <div className="relative aspect-[3/2] overflow-hidden">
+                      {comboTour.imagen_hero && (
+                        <Image
+                          src={comboTour.imagen_hero}
+                          alt={comboTour.nombre}
+                          fill
+                          className="object-cover"
+                          sizes="160px"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="inline-block text-[8px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 px-2 py-0.5 mb-2">
+                      ✦ Combinación recomendada
+                    </span>
+                    <h3 className="font-cormorant text-crema text-lg leading-snug mb-1">{comboTour.nombre}</h3>
+                    <p className="text-crema/55 font-dm text-xs leading-relaxed mb-3">{combo.msg}</p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-cormorant text-dorado text-base">
+                        ${comboTour.precio.toLocaleString("es-MX")} MXN/persona
+                      </span>
+                      <Link
+                        href={`/tours/${comboTour.slug}`}
+                        className="text-[9px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-3 py-1.5 transition-all"
+                      >
+                        Ver tour →
+                      </Link>
+                      <Link
+                        href={`/reservar-tour/${comboTour.slug}`}
+                        className="text-[9px] tracking-[2px] uppercase font-dm text-negro bg-dorado hover:bg-lima px-3 py-1.5 transition-all"
+                      >
+                        Reservar →
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{t.tipo}</p>
-                <h3 className="font-cormorant text-crema text-base leading-tight group-hover:text-dorado transition-colors">
-                  {t.nombre}
-                </h3>
-                <p className="text-[10px] text-crema/40 font-dm mt-2">
-                  Desde ${t.precio.toLocaleString("es-MX")} MXN
-                </p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+              )}
+
+              {/* Otros tours */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {otherTours.map((t) => (
+                  <Link
+                    key={t.slug}
+                    href={`/tours/${t.slug}`}
+                    className="group border border-white/8 hover:border-verde-vivo/40 bg-negro/40 p-5 flex gap-4 items-start transition-all duration-200"
+                  >
+                    <div className="relative w-20 h-20 overflow-hidden flex-shrink-0">
+                      {t.imagen_hero && (
+                        <Image src={t.imagen_hero} alt={t.nombre} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="80px" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{t.tipo}</p>
+                      <h3 className="font-cormorant text-crema text-base leading-tight group-hover:text-dorado transition-colors mb-1">{t.nombre}</h3>
+                      <p className="text-[10px] text-crema/40 font-dm">Desde ${t.precio.toLocaleString("es-MX")} MXN</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <SocialProofToast tourId={tour.id} tourName={tour.nombre} />
     </main>
