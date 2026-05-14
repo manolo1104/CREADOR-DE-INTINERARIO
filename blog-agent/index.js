@@ -24,6 +24,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DRY_RUN      = process.argv.includes("--dry-run");
 const TOPIC_IDX    = process.argv.indexOf("--topic");
 const CUSTOM_TOPIC = TOPIC_IDX !== -1 ? process.argv[TOPIC_IDX + 1] : null;
+// Por defecto NO selecciona imagen automáticamente — el usuario la asigna manualmente
+// con: node assign-image.js [slug] [url] [alt]
+// Para usar la selección automática pasa: --auto-image
+const AUTO_IMAGE   = process.argv.includes("--auto-image");
 
 const anthropic       = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -484,13 +488,17 @@ async function writeArticle(topic, researchContext, images, postsExistentes) {
     : Math.round(1000 * 0.014); // 14 para single-word
   const lsiList = (topic.secondaryKeywords || []).join(", ");
 
+  const bodyImgTag = images
+    ? `<img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" width="900" height="500" />`
+    : `<!-- SIN IMAGEN — se asignará manualmente con assign-image.js -->`;
+
   const prompt = `Escribe un artículo HTML para huasteca-potosina.com. ESTRICTAMENTE 950–1100 palabras.
 
 TEMA: ${topic.title}
 KEYWORD: ${topic.focusKeyword}
 SECUNDARIAS: ${topic.secondaryKeywords.join(", ")}
 URL: ${SITE_URL}
-IMAGEN CUERPO: <img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" width="900" height="500" />
+IMAGEN CUERPO: ${bodyImgTag}
 
 CONTEXTO:
 ${researchContext || "(Usa tu conocimiento)"}
@@ -542,10 +550,10 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 ━━━ SECCIÓN 2 ━━━
 <h2>[Segundo título temático — diferente ángulo al H2 anterior. Ej: "Actividades y precios en [tema] ${year}" o "Qué esperar en [destino]" o "Todo sobre [subtema relacionado]"]</h2>
 
-<figure>
+${images ? `<figure>
   <img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" width="900" height="500" />
   <figcaption>[Caption con keyword principal + detalle visual específico + ubicación geográfica]</figcaption>
-</figure>
+</figure>` : `<!-- IMAGEN CUERPO: se añadirá manualmente después de publicar -->`}
 
 <h3>[Subtema — experiencia del viajero]</h3>
 <p>[2-3 oraciones. Señal E-E-A-T: anécdota o experiencia de viajeros reales que atendemos. "Los grupos que llevamos cada temporada..." o "Quienes visitan por primera vez..."]</p>
@@ -657,9 +665,9 @@ Respuesta: JSON puro sin markdown.
   }
 
   // Campos adicionales
-  post.coverImageUrl   = images.hero.url;
-  post.coverImageAlt   = images.hero.alt;
-  post.coverImageFile  = `${slug}.jpg`;
+  post.coverImageUrl   = images ? images.hero.url  : null;
+  post.coverImageAlt   = images ? images.hero.alt  : "";
+  post.coverImageFile  = images ? `${slug}.jpg`    : null;
   post.internalLinks   = post.internalLinks || [`${SITE_URL}/tours`, `${SITE_URL}/itinerarios`];
   post.externalSources = post.externalSources || [];
   post.schemaType      = "BlogPosting+FAQPage";
@@ -1007,8 +1015,11 @@ async function main() {
     return "";
   });
 
-  // Paso 4: Selección de imágenes
-  const images = selectImages(topic, imagesBank);
+  // Paso 4: Selección de imágenes (solo con --auto-image)
+  const images = AUTO_IMAGE ? selectImages(topic, imagesBank) : null;
+  if (!AUTO_IMAGE) {
+    console.log("\n🖼️  Imagen: se asignará manualmente (usa assign-image.js después de publicar)");
+  }
 
   // Paso 5: Redactar artículo
   const post = await writeArticle(topic, researchContext, images, postsExistentes);
@@ -1092,6 +1103,12 @@ async function main() {
 
   console.log("\n" + "═".repeat(55));
   console.log("✅  Blog Agent completado.");
+  if (!AUTO_IMAGE) {
+    console.log("\n📸 El artículo se publicó SIN imagen de portada.");
+    console.log(`   Asigna la imagen con:\n`);
+    console.log(`   node assign-image.js "${post.slug}" "https://..." "Descripción de la imagen"\n`);
+    console.log(`   O desde el admin: PATCH /api/blog/update-images`);
+  }
   console.log("═".repeat(55) + "\n");
 }
 
