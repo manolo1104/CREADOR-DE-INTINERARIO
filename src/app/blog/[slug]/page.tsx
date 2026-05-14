@@ -61,7 +61,19 @@ function isPromocional(tags: string[], title: string) {
 
 async function getPost(slug: string) {
   try {
-    return await prisma.blogPost.findUnique({ where: { slug, published: true } });
+    // 1. Exact match (clean slug, after migration)
+    const exact = await prisma.blogPost.findUnique({ where: { slug, published: true } });
+    if (exact) return exact;
+
+    // 2. Fallback: try slug + year suffix (slugs generated before migration)
+    for (const year of ["2026", "2025", "2024", "2027"]) {
+      const withYear = await prisma.blogPost.findUnique({
+        where: { slug: `${slug}-${year}`, published: true },
+      });
+      if (withYear) return withYear;
+    }
+
+    return null;
   } catch {
     return null;
   }
