@@ -101,10 +101,10 @@ export default async function BlogPage() {
           Cascadas turquesas, cañones imposibles, selva viva. Todo lo que necesitas saber para planear tu viaje perfecto.
         </p>
         <Link
-          href="/planear"
+          href="/recomendar"
           className="inline-flex items-center gap-2 bg-verde-selva text-crema px-6 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors"
         >
-          Crear mi Itinerario con IA →
+          ¿Qué tour es para mí? →
         </Link>
       </section>
 
@@ -193,10 +193,10 @@ export default async function BlogPage() {
           Dinos cuántos días tienes y la IA crea tu itinerario personalizado en 2 minutos. Gratis, sin registro.
         </p>
         <Link
-          href="/planear"
+          href="/recomendar"
           className="inline-flex items-center gap-2 bg-verde-selva text-crema px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors"
         >
-          Crear mi Itinerario Gratis →
+          Encontrar mi tour perfecto →
         </Link>
       </section>
     </main>

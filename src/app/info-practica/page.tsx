@@ -862,10 +862,10 @@ export default function InfoPracticaPage() {
             Ver destinos
           </Link>
           <Link
-            href="/planear"
+            href="/recomendar"
             className="bg-verde-selva text-crema px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
           >
-            Planear con IA →
+            ¿Qué tour es para mí? →
           </Link>
         </div>
       </section>

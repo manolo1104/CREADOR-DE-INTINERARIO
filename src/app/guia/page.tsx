@@ -178,8 +178,8 @@ export default function GuiaPage() {
         </p>
         <p className="mt-6 text-[11px] text-crema/20">
           ¿Prefieres un itinerario personalizado?{" "}
-          <Link href="/planear" className="text-verde-vivo hover:text-lima underline underline-offset-2">
-            Usa el planificador IA →
+          <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2">
+            Encuentra tu tour ideal →
           </Link>
         </p>
       </section>

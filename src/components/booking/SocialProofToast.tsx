@@ -4,27 +4,24 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
 
-const POOL = [
-  { grupo: "Una familia",           ciudad: "Monterrey",      tour: "Expedición Tamul" },
-  { grupo: "Una pareja",            ciudad: "CDMX",           tour: "Ruta Surrealista" },
-  { grupo: "Un grupo de amigos",    ciudad: "Guadalajara",    tour: "Cascadas del Meco" },
-  { grupo: "Una familia con niños", ciudad: "Querétaro",      tour: "Paraíso Escalonado" },
-  { grupo: "Una pareja",            ciudad: "San Luis Potosí","tour": "Ruta Acuática" },
-  { grupo: "Un grupo de amigos",    ciudad: "Tampico",        tour: "Expedición Tamul" },
-  { grupo: "Una familia",           ciudad: "Puebla",         tour: "Cascadas del Meco" },
-  { grupo: "Una pareja",            ciudad: "León",           tour: "Ruta Surrealista" },
-  { grupo: "Un grupo de amigos",    ciudad: "Tijuana",        tour: "Expedición Tamul" },
-  { grupo: "Una familia",           ciudad: "Mérida",         tour: "Paraíso Escalonado" },
+// 15 mensajes únicos — variedad de grupos, ciudades y tours
+const MENSAJES: { texto: string; tiempo: string }[] = [
+  { texto: "Una familia de Monterrey acaba de reservar la Expedición Tamul",          tiempo: "hace 8 min" },
+  { texto: "Una pareja de CDMX reservó la Ruta Surrealista de Edward James",          tiempo: "hace 23 min" },
+  { texto: "Un grupo de amigos de Guadalajara confirmó las Cascadas del Meco",        tiempo: "hace 41 min" },
+  { texto: "Una familia con niños de Querétaro reservó el Paraíso Escalonado",        tiempo: "hace 1 hora" },
+  { texto: "Una pareja de San Luis Potosí confirmó la Ruta Acuática",                 tiempo: "hace 1 h 20 min" },
+  { texto: "3 amigos de Tampico reservaron la Expedición Tamul para este fin de semana", tiempo: "hace 2 horas" },
+  { texto: "Una familia de Puebla eligió las Cascadas del Meco",                      tiempo: "hace 2 h 15 min" },
+  { texto: "Una pareja de León completó su reserva de la Ruta Surrealista",           tiempo: "hace 2 h 40 min" },
+  { texto: "4 amigos de Tijuana reservaron la Expedición Tamul para el sábado",       tiempo: "hace 3 horas" },
+  { texto: "Una familia de Mérida reservó el Paraíso Escalonado con 2 niños",         tiempo: "hace 3 h 10 min" },
+  { texto: "Una pareja de Monterrey confirmó el Puente de Dios y las Siete Cascadas", tiempo: "hace 3 h 45 min" },
+  { texto: "Un grupo de 5 amigos de CDMX reservó la Expedición Tamul",                tiempo: "hace 4 horas" },
+  { texto: "Una familia de Aguascalientes eligió las Cascadas de Minas Viejas",       tiempo: "hace 4 h 20 min" },
+  { texto: "Una pareja de Guadalajara reservó la Ruta Acuática para su luna de miel", tiempo: "hace 5 horas" },
+  { texto: "3 amigos de Morelia confirmaron la Ruta Surrealista de Edward James",     tiempo: "hace 5 h 30 min" },
 ];
-
-const TIEMPOS = [
-  "hace 20 min", "hace 45 min", "hace 1 hora",
-  "hace 2 horas", "hace 3 horas", "hace 4 horas",
-];
-
-function pick<T>(arr: T[], seed: number): T {
-  return arr[seed % arr.length];
-}
 
 interface Props {
   tourId:   string;
@@ -34,27 +31,26 @@ interface Props {
 export function SocialProofToast({ tourId, tourName }: Props) {
   const [visible,   setVisible]   = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [msgIndex,  setMsgIndex]  = useState(0);
+  // Start from a random index so each session sees a different first message
+  const [msgIndex,  setMsgIndex]  = useState(() => Math.floor(Math.random() * MENSAJES.length));
   const hideTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((idx: number) => {
     if (dismissed) return;
+    // Pick a truly random next index each appearance
+    const nextIdx = Math.floor(Math.random() * MENSAJES.length);
     setMsgIndex(idx);
     setVisible(true);
 
-    const entry = pick(POOL, idx);
-    const tiempo = pick(TIEMPOS, idx + 2);
-    const message = `${entry.grupo} de ${entry.ciudad} reservó ${entry.tour} ${tiempo}`;
-    trackTourEvent("TOAST_SHOWN", { tour: tourId, message });
+    const msg = MENSAJES[idx % MENSAJES.length];
+    trackTourEvent("TOAST_SHOWN", { tour: tourId, message: msg.texto });
 
-    // Auto-hide after 8s
     hideTimer.current = setTimeout(() => {
       setVisible(false);
-      // Schedule next appearance: 60–120s
       nextTimer.current = setTimeout(() => {
-        showToast(idx + 1);
-      }, 60_000 + Math.random() * 60_000);
+        showToast(nextIdx);
+      }, 55_000 + Math.random() * 65_000);
     }, 8_000);
   }, [dismissed, tourId]);
 
@@ -79,12 +75,11 @@ export function SocialProofToast({ tourId, tourName }: Props) {
 
   if (!visible || dismissed) return null;
 
-  const entry  = pick(POOL,   msgIndex);
-  const tiempo = pick(TIEMPOS, msgIndex + 2);
+  const msg = MENSAJES[msgIndex % MENSAJES.length];
 
   return (
     <div
-      className="fixed bottom-20 left-4 z-50 max-w-[280px] sm:max-w-xs
+      className="fixed bottom-20 left-4 z-50 max-w-[285px] sm:max-w-xs
                  bg-negro/95 border border-white/12 shadow-xl shadow-black/40
                  animate-slide-up"
       role="status"
@@ -106,13 +101,8 @@ export function SocialProofToast({ tourId, tourName }: Props) {
 
       {/* Body */}
       <div className="px-3 pb-3">
-        <p className="font-dm text-xs text-crema/80 leading-snug">
-          <span className="text-verde-vivo font-medium">{entry.grupo}</span>
-          {" de "}<span className="text-dorado">{entry.ciudad}</span>
-          {" acaba de reservar "}
-          <span className="text-crema font-medium">{entry.tour}</span>
-        </p>
-        <p className="font-dm text-[10px] text-crema/35 mt-1">{tiempo}</p>
+        <p className="font-dm text-xs text-crema/85 leading-snug">{msg.texto}</p>
+        <p className="font-dm text-[10px] text-crema/35 mt-1">{msg.tiempo}</p>
       </div>
 
       {/* Progress bar */}

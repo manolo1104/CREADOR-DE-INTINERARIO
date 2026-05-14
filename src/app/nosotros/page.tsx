@@ -253,17 +253,17 @@ export default function NosotrosPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
-              { nombre: "Carlos R.", rol: "Guía Principal · Tamul & Sótano", exp: "8+ años" },
-              { nombre: "Miguel A.", rol: "Guía · Xilitla & Las Pozas", exp: "6+ años" },
-              { nombre: "José L.", rol: "Guía · Cascadas & Bienestar", exp: "5+ años" },
+              { nombre: "Carlos Rodríguez", rol: "Guía Principal · Tamul & Sótano", exp: "8+ años", foto: "/guides/guia-1.png" },
+              { nombre: "Miguel Ángel",     rol: "Guía Acuático · Río Tampaón",     exp: "6+ años", foto: "/guides/guia-2.png" },
+              { nombre: "José Laredo",      rol: "Guía de Aventura · Rappel",       exp: "5+ años", foto: "/guides/guia-3.png" },
             ].map((g) => (
               <div key={g.nombre} className="border border-white/10 bg-negro/60 p-5 text-center">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-dorado mx-auto mb-3">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dorado mx-auto mb-3">
                   <Image
-                    src="/imagenes/guias/guia-principal.jpg"
+                    src={g.foto}
                     alt={g.nombre}
-                    width={64}
-                    height={64}
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover object-top"
                     loading="lazy"
                   />

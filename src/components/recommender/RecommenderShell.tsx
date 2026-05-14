@@ -288,13 +288,25 @@ function TourResultCard({
 
 // ── Main shell ────────────────────────────────────────────────────────────────
 
-type WizardStep = "origen" | "grupo" | "intereses" | "actividad" | "loading" | "result";
+const DESTINOS_BUCKET = [
+  "Cascada de Tamul",
+  "Las Pozas de Xilitla (Edward James)",
+  "Cascadas del Meco",
+  "Minas Viejas",
+  "Puente de Dios",
+  "Sótano de las Huahuas",
+  "Cascadas de Micos",
+  "Sin preferencia — sorpréndeme",
+];
+
+type WizardStep = "origen" | "grupo" | "intereses" | "actividad" | "destino" | "loading" | "result";
 
 interface WizardState {
   origen:    string;
   grupo:     string;
   intereses: string[];
   actividad: string;
+  destino:   string;
 }
 
 interface AIResult {
@@ -304,7 +316,7 @@ interface AIResult {
 
 export function RecommenderShell() {
   const [step,   setStep]   = useState<WizardStep>("origen");
-  const [state,  setState]  = useState<WizardState>({ origen: "", grupo: "", intereses: [], actividad: "" });
+  const [state,  setState]  = useState<WizardState>({ origen: "", grupo: "", intereses: [], actividad: "", destino: "" });
   const [result, setResult] = useState<AIResult | null>(null);
   const [origenInput, setOrigenInput] = useState("");
   const [showInput, setShowInput]     = useState(false);
@@ -333,6 +345,7 @@ export function RecommenderShell() {
       grupo:     state.grupo,
       intereses: state.intereses,
       actividad: state.actividad,
+      destino:   state.destino,
     });
     try {
       const res = await fetch("/api/recomendar-tour", {
@@ -343,6 +356,7 @@ export function RecommenderShell() {
           grupo:     state.grupo,
           intereses: state.intereses,
           actividad: state.actividad,
+          destino:   state.destino,
         }),
       });
       const data: AIResult = await res.json();
@@ -444,7 +458,7 @@ export function RecommenderShell() {
           </div>
 
           <button
-            onClick={() => { setResult(null); setStep("origen"); setState({ origen: "", grupo: "", intereses: [], actividad: "" }); }}
+            onClick={() => { setResult(null); setStep("origen"); setState({ origen: "", grupo: "", intereses: [], actividad: "", destino: "" }); }}
             className="text-xs font-dm text-negro/35 hover:text-negro/60 underline text-center block mx-auto transition-colors"
           >
             ← Volver a empezar con otro perfil
@@ -456,9 +470,9 @@ export function RecommenderShell() {
 
   // ── Wizard ───────────────────────────────────────────────────────────────
 
-  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, grupo: 2, intereses: 3, actividad: 4 };
+  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, grupo: 2, intereses: 3, actividad: 4, destino: 5 };
   const stepNum = STEP_NUMS[step] ?? 1;
-  const progress = (stepNum / 4) * 100;
+  const progress = (stepNum / 5) * 100;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#0e1710" }}>
@@ -488,7 +502,7 @@ export function RecommenderShell() {
         {/* STEP 1: ORIGEN */}
         {step === "origen" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 01 · 04</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 01 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿De dónde nos <em className="text-dorado">visitas?</em>
             </h2>
@@ -544,7 +558,7 @@ export function RecommenderShell() {
         {/* STEP 2: GRUPO */}
         {step === "grupo" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 02 · 04</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 02 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Cómo <em className="text-dorado">viajas?</em>
             </h2>
@@ -584,7 +598,7 @@ export function RecommenderShell() {
         {/* STEP 3: INTERESES */}
         {step === "intereses" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 03 · 04</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 03 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Qué te <em className="text-dorado">emociona?</em>
             </h2>
@@ -631,7 +645,7 @@ export function RecommenderShell() {
         {/* STEP 4: ACTIVIDAD */}
         {step === "actividad" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 04 · 04</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 04 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Cuánta <em className="text-dorado">energía</em> tienes?
             </h2>
@@ -659,19 +673,65 @@ export function RecommenderShell() {
               ))}
             </div>
 
-            {/* Trust signal before submit */}
+            <div className="flex gap-3">
+              <button onClick={() => setStep("intereses")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button
+                onClick={() => setStep("destino")}
+                disabled={!state.actividad}
+                className="flex-1 bg-verde-selva text-crema py-3.5 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continuar →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: DESTINO SOÑADO */}
+        {step === "destino" && (
+          <div>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 05 · 05</p>
+            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
+              ¿Hay un lugar que no te<br />
+              puedes <em className="text-dorado">perder?</em>
+            </h2>
+            <p className="font-dm text-crema/40 text-sm mb-8">Si tienes un destino en mente, lo incluimos en la recomendación</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-10">
+              {DESTINOS_BUCKET.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setState((s) => ({ ...s, destino: d }))}
+                  className={`border px-4 py-3.5 text-left text-sm font-dm transition-all ${
+                    state.destino === d
+                      ? "border-verde-vivo bg-verde-vivo/10 text-crema font-medium"
+                      : "border-crema/20 text-crema/60 hover:border-verde-selva/40 hover:text-crema"
+                  }`}
+                >
+                  {d === "Sin preferencia — sorpréndeme" ? (
+                    <span className="text-dorado/80">{d}</span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <span className="text-verde-vivo text-xs">→</span>
+                      {d}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Trust signal */}
             <div className="flex items-center gap-3 bg-white/5 border border-white/8 px-4 py-3 mb-6">
               <Shield className="w-4 h-4 text-verde-selva flex-shrink-0" />
               <p className="text-[11px] font-dm text-crema/50 leading-snug">
-                Recomendación gratuita · Sin compromisos · Cancela gratis hasta 48h antes de tu tour
+                Recomendación gratuita · Sin compromisos · Cancela gratis hasta 48h antes
               </p>
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep("intereses")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setStep("actividad")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
               <button
                 onClick={submit}
-                disabled={!state.actividad}
+                disabled={!state.destino}
                 className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 ✦ Ver mi tour perfecto

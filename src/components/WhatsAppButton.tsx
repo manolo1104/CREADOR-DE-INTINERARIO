@@ -13,7 +13,7 @@ const WA_SVG = (
 
 export function WhatsAppButton() {
   const pathname = usePathname();
-  if (pathname === "/planear") return null;
+  if (pathname === "/planear" || pathname === "/recomendar") return null;
 
   return (
     <a

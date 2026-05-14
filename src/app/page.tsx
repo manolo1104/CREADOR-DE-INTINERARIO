@@ -148,10 +148,10 @@ export default async function HomePage() {
               Explorar Destinos
             </Link>
             <Link
-              href="/planear"
+              href="/recomendar"
               className="bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300"
             >
-              Planear mi Viaje IA
+              ¿Qué tour es para mí? →
             </Link>
           </div>
 
@@ -407,10 +407,10 @@ export default async function HomePage() {
           </div>
 
           <Link
-            href="/planear"
+            href="/recomendar"
             className="inline-block bg-dorado text-white px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-terracota transition-colors duration-300 mb-5"
           >
-            Crear mi Itinerario Gratis →
+            Descubrir mi Tour Ideal →
           </Link>
 
           <p className="text-xs text-negro/30 tracking-wide font-dm">
@@ -502,7 +502,7 @@ export default async function HomePage() {
                 {[
                   { label: "Experiencias",         href: "/experiencias" },
                   { label: "Info Práctica",        href: "/info-practica" },
-                  { label: "Planear mi Viaje",     href: "/planear" },
+                  { label: "¿Qué tour es para mí?", href: "/recomendar" },
                   { label: "Blog",                 href: "/blog" },
                   { label: "Sobre la Huasteca",    href: "/sobre-la-huasteca-potosina" },
                   { label: "Sustentabilidad",      href: "/sustentabilidad-y-conservacion" },

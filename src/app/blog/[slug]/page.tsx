@@ -290,10 +290,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               Dinos cuántos días tienes y la IA crea tu itinerario personalizado con rutas reales, tiempos y precios {new Date().getFullYear()}.
             </p>
             <Link
-              href="/planear"
+              href="/recomendar"
               className="inline-flex items-center gap-2 bg-verde-selva text-crema px-8 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors"
             >
-              Crear mi Itinerario Gratis →
+              ¿Qué tour es para mí? →
             </Link>
           </div>
         </article>

@@ -13,7 +13,7 @@ const LOCK_SVG = (
 
 export function FloatingReservarButton() {
   const pathname = usePathname();
-  if (pathname === "/planear") return null;
+  if (pathname === "/planear" || pathname === "/recomendar") return null;
 
   const tourSlugMatch = pathname.match(/^\/tours\/([^/]+)$/);
   const href = tourSlugMatch

@@ -564,7 +564,10 @@ export default function CheckoutTourPage() {
           </div>
 
           {/* Mejora 9 — Foto del guía */}
-          <GuideCard />
+          <GuideCard guiaIndex={
+            booking.tourId === "tour-tamul" || booking.tourId === "tour-puente-dios" ? 1 :
+            booking.tourId === "tour-meco"  || booking.tourId === "tour-minas-micos" ? 2 : 0
+          } />
 
           {/* Mejora 6 — Reviews en rotación */}
           <ReviewsCarousel />

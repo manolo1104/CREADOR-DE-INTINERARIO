@@ -63,10 +63,10 @@ function DescargaContent() {
                 ¿Quieres un itinerario personalizado para tus fechas y presupuesto específico?
               </p>
               <Link
-                href="/planear"
+                href="/recomendar"
                 className="text-[11px] tracking-[3px] uppercase text-verde-vivo hover:text-lima border-b border-verde-vivo/30 pb-0.5 transition-colors"
               >
-                Crear itinerario IA →
+                Descubrir mi tour ideal →
               </Link>
             </div>
           </>

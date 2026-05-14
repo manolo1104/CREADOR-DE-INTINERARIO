@@ -1,9 +1,9 @@
 import { Metadata } from "next";
-import { Check, Moon, Utensils, MapPin, Star } from "lucide-react";
-import { PaqueteCtaButton } from "@/components/PaqueteCtaButton";
+import Image from "next/image";
+import { Check, Moon, MapPin, Star } from "lucide-react";
+import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 
 const SITE = "https://www.huasteca-potosina.com";
-const WA_BASE = "https://wa.me/524891251458?text=";
 
 export const metadata: Metadata = {
   title: "Paquetes Todo Incluido — Tours + Hotel Paraíso Encantado Xilitla | Huasteca Potosina",
@@ -11,8 +11,7 @@ export const metadata: Metadata = {
     "Paquetes que combinan nuestros tours guiados con hospedaje en Hotel Paraíso Encantado Xilitla. Todo incluido: transporte, desayunos, entradas y guías certificados.",
   openGraph: {
     title: "Paquetes Todo Incluido — Huasteca Potosina",
-    description:
-      "Tours + Hotel Paraíso Encantado Xilitla. Desde $3,200 MXN/persona. Coordina por WhatsApp.",
+    description: "Tours + Hotel Paraíso Encantado Xilitla. Desde $3,200 MXN/persona.",
     url: `${SITE}/paquetes`,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
@@ -21,30 +20,35 @@ export const metadata: Metadata = {
   },
 };
 
+// ── Data ────────────────────────────────────────────────────────────────────
 
 interface Paquete {
-  id: string;
-  nombre: string;
+  id:        string;
+  nombre:    string;
   subtitulo: string;
-  duracion: string;
-  precio: number;
+  duracion:  string;
+  precio:    number;
   precioLabel: string;
-  badge?: string;
-  tours: string[];
-  incluye: string[];
-  waMsg: string;
+  badge?:    string;
   destacado?: boolean;
+  imagen:    string;
+  urgencia:  string;
+  tours:     string[];
+  incluye:   string[];
+  valor:     { item: string; precio: string }[];
 }
 
 const PAQUETES: Paquete[] = [
   {
-    id: "esencial",
-    nombre: "Paquete Esencial",
-    subtitulo: "Tu primera noche en la Huasteca",
-    duracion: "2 días / 1 noche",
-    precio: 3200,
+    id:          "esencial",
+    nombre:      "Paquete Esencial",
+    subtitulo:   "Tu primera noche en la Huasteca",
+    duracion:    "2 días / 1 noche",
+    precio:      3200,
     precioLabel: "por persona",
-    tours: ["Ruta Surrealista — Edward James, Manantiales & Selva (Día 1)"],
+    imagen:      "/imagenes/tours/ruta-surrealista-hero.webp",
+    urgencia:    "Quedan 4 cupos para el siguiente fin de semana largo",
+    tours:       ["Ruta Surrealista — Edward James, Manantiales & Selva (Día 1)"],
     incluye: [
       "1 noche en Hotel Paraíso Encantado Xilitla",
       "Desayuno incluido (Día 2)",
@@ -53,19 +57,24 @@ const PAQUETES: Paquete[] = [
       "Guía certificado NOM-09 SECTUR",
       "Entradas a todas las atracciones",
     ],
-    waMsg: encodeURIComponent(
-      "Hola, quiero reservar el Paquete Esencial (2 días / 1 noche) en Hotel Paraíso Encantado Xilitla. ¿Cuál es la disponibilidad y cómo procedo?"
-    ),
+    valor: [
+      { item: "1 noche hotel",              precio: "$1,400" },
+      { item: "Tour Ruta Surrealista",      precio: "$1,300" },
+      { item: "Transporte privado",         precio: "$400"   },
+      { item: "Entradas + guía",            precio: "$350"   },
+    ],
   },
   {
-    id: "aventura",
-    nombre: "Paquete Aventura",
-    subtitulo: "El mejor dúo de la región",
-    duracion: "3 días / 2 noches",
-    precio: 5800,
+    id:          "aventura",
+    nombre:      "Paquete Aventura",
+    subtitulo:   "El mejor dúo de la región",
+    duracion:    "3 días / 2 noches",
+    precio:      5800,
     precioLabel: "por persona",
-    badge: "Más popular",
-    destacado: true,
+    badge:       "Más popular",
+    destacado:   true,
+    imagen:      "/imagenes/cascada-de-tamul/hero.jpg",
+    urgencia:    "Alta demanda en junio — solo 3 lugares disponibles",
     tours: [
       "Expedición Tamul — Sótano, Cañón & Cueva del Agua (Día 2)",
       "Cascadas del Meco — Turquesas, Mirador & El Gran Salto (Día 3)",
@@ -79,17 +88,23 @@ const PAQUETES: Paquete[] = [
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
     ],
-    waMsg: encodeURIComponent(
-      "Hola, quiero reservar el Paquete Aventura (3 días / 2 noches) en Hotel Paraíso Encantado Xilitla. ¿Cuál es la disponibilidad y cómo procedo?"
-    ),
+    valor: [
+      { item: "2 noches hotel",             precio: "$2,800" },
+      { item: "Expedición Tamul",           precio: "$1,450" },
+      { item: "Cascadas del Meco",          precio: "$1,600" },
+      { item: "Transporte 2 días",          precio: "$800"   },
+      { item: "Entradas + guías",           precio: "$600"   },
+    ],
   },
   {
-    id: "completo",
-    nombre: "Paquete Completo Huasteca",
-    subtitulo: "La experiencia definitiva",
-    duracion: "4 días / 3 noches",
-    precio: 8500,
+    id:          "completo",
+    nombre:      "Paquete Completo Huasteca",
+    subtitulo:   "La experiencia definitiva",
+    duracion:    "4 días / 3 noches",
+    precio:      8500,
     precioLabel: "por persona",
+    imagen:      "/imagenes/cascadas-minas-viejas/hero.jpg",
+    urgencia:    "Cupos limitados — confirma tu fecha hoy",
     tours: [
       "Ruta Surrealista — Edward James (Día 1)",
       "Expedición Tamul — Sótano & Cascada (Día 2)",
@@ -104,18 +119,24 @@ const PAQUETES: Paquete[] = [
       "Entradas a todas las atracciones",
       "Fotografías y video de cada recorrido",
     ],
-    waMsg: encodeURIComponent(
-      "Hola, quiero reservar el Paquete Completo Huasteca (4 días / 3 noches) en Hotel Paraíso Encantado Xilitla. ¿Cuál es la disponibilidad y cómo procedo?"
-    ),
+    valor: [
+      { item: "3 noches hotel",             precio: "$4,200" },
+      { item: "3 tours completos",          precio: "$4,350" },
+      { item: "Transporte 3 días",          precio: "$1,200" },
+      { item: "Fotos + video profesional",  precio: "$800"   },
+      { item: "Entradas + guías",           precio: "$900"   },
+    ],
   },
   {
-    id: "romantico",
-    nombre: "Paquete Romántico",
-    subtitulo: "Para dos, sin prisa",
-    duracion: "2 días / 1 noche",
-    precio: 4200,
+    id:          "romantico",
+    nombre:      "Paquete Romántico",
+    subtitulo:   "Para dos, sin prisa",
+    duracion:    "2 días / 1 noche",
+    precio:      4200,
     precioLabel: "por pareja",
-    tours: ["Ruta Acuática — Puente de Dios & Siete Cascadas, o Paraíso Escalonado (Día 1)"],
+    imagen:      "/imagenes/puente-de-dios-tamasopo/hero.jpg",
+    urgencia:    "Temporada alta — reserva con anticipación",
+    tours:       ["Ruta Acuática — Puente de Dios & Siete Cascadas (Día 1)"],
     incluye: [
       "1 noche en habitación superior — Paraíso Encantado",
       "Desayuno para dos (Día 2)",
@@ -124,20 +145,56 @@ const PAQUETES: Paquete[] = [
       "Guía certificado NOM-09 SECTUR",
       "Entradas a todas las atracciones",
     ],
-    waMsg: encodeURIComponent(
-      "Hola, quiero reservar el Paquete Romántico (2 días / 1 noche, pareja) en Hotel Paraíso Encantado Xilitla. ¿Cuál es la disponibilidad y cómo procedo?"
-    ),
+    valor: [
+      { item: "1 noche hab. superior",      precio: "$1,800" },
+      { item: "Tour acuático",              precio: "$1,500" },
+      { item: "Transporte privado",         precio: "$400"   },
+      { item: "Entradas + guía",            precio: "$350"   },
+    ],
   },
 ];
 
+const RESENAS = [
+  {
+    nombre: "Claudia M.",
+    ciudad: "CDMX",
+    texto:  "El Paquete Aventura superó todas mis expectativas. La Expedición Tamul al amanecer es algo que nunca voy a olvidar — ver los pericos salir del sótano con mis propios ojos fue mágico. El hotel es perfecto, y los guías saben exactamente cuándo llegar a cada lugar para la mejor luz.",
+    estrellas: 5,
+    tour:   "Paquete Aventura",
+    color:  "bg-verde-selva",
+  },
+  {
+    nombre: "Roberto & Ana",
+    ciudad: "Guadalajara",
+    texto:  "Fuimos con el Paquete Romántico y fue el mejor viaje que hemos hecho en pareja. El Puente de Dios con la luz entrando por el arco... no se puede describir. El hotel Paraíso Encantado tiene un desayuno increíble. Definitivamente volvemos con el Paquete Completo.",
+    estrellas: 5,
+    tour:   "Paquete Romántico",
+    color:  "bg-dorado",
+  },
+  {
+    nombre: "La familia Herrera",
+    ciudad: "Monterrey",
+    texto:  "Viajamos con dos niños de 8 y 11 años. Todo estuvo perfectamente coordinado — los guías son pacientes, el ritmo fue ideal para los niños. Las Cascadas del Meco los dejó boquiabiertos. El hotel los trató como reyes. Ya estamos planeando el regreso.",
+    estrellas: 5,
+    tour:   "Paquete Esencial + extensión",
+    color:  "bg-terracota",
+  },
+];
+
+// ── Card ────────────────────────────────────────────────────────────────────
+
 function PaqueteCard({ p }: { p: Paquete }) {
+  const totalValor = p.valor.reduce((acc, v) => {
+    const n = parseInt(v.precio.replace(/[^0-9]/g, ""), 10);
+    return acc + n;
+  }, 0);
+  const ahorro = totalValor - p.precio;
+
   return (
     <article
-      className={`relative flex flex-col border ${
-        p.destacado
-          ? "border-dorado/50 bg-verde-profundo"
-          : "border-white/10 bg-negro/60"
-      } overflow-hidden transition-all duration-300 hover:border-verde-vivo/50`}
+      className={`relative flex flex-col border overflow-hidden transition-all duration-300 hover:border-verde-vivo/50 ${
+        p.destacado ? "border-dorado/50 bg-verde-profundo" : "border-white/10 bg-negro/60"
+      }`}
     >
       {p.badge && (
         <div className="absolute top-4 right-4 z-10 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5">
@@ -145,45 +202,61 @@ function PaqueteCard({ p }: { p: Paquete }) {
         </div>
       )}
 
-      <div className={`px-6 pt-8 pb-5 ${p.destacado ? "" : ""}`}>
-        {/* Duración */}
-        <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3 flex items-center gap-2">
-          <Moon className="w-3 h-3" aria-hidden="true" />
-          {p.duracion}
-        </p>
+      {/* Imagen */}
+      <div className="relative h-44 overflow-hidden">
+        <Image
+          src={p.imagen}
+          alt={p.nombre}
+          fill
+          className="object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
+        <div className="absolute bottom-3 left-4">
+          <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm flex items-center gap-1.5">
+            <Moon className="w-3 h-3" /> {p.duracion}
+          </p>
+        </div>
+      </div>
 
+      <div className="px-6 pt-5 pb-3">
         {/* Nombre */}
-        <h2
-          className="font-cormorant font-light text-crema leading-tight mb-1"
-          style={{ fontSize: "clamp(22px,3vw,30px)" }}
-        >
+        <h2 className="font-cormorant font-light text-crema leading-tight mb-1" style={{ fontSize: "clamp(20px,2.5vw,27px)" }}>
           {p.nombre}
         </h2>
         <p className="text-crema/50 font-dm text-xs mb-5">{p.subtitulo}</p>
 
-        {/* Precio */}
-        <div className="flex items-baseline gap-2 mb-6">
-          <span className="bg-dorado/15 border border-dorado/30 text-dorado text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">
-            TODO INCLUIDO
-          </span>
-          <div className="ml-1">
-            <span className="font-cormorant text-dorado" style={{ fontSize: "clamp(28px,4vw,38px)" }}>
+        {/* Precio + valor */}
+        <div className="mb-4">
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="font-cormorant text-dorado" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
               ${p.precio.toLocaleString("es-MX")}
             </span>
             <span className="text-crema/40 font-dm text-[10px] ml-1">MXN {p.precioLabel}</span>
           </div>
+          {ahorro > 0 && (
+            <p className="text-[10px] font-dm text-verde-vivo font-medium">
+              ✓ Ahorras ${ahorro.toLocaleString("es-MX")} MXN vs. contratar por separado
+            </p>
+          )}
+        </div>
+
+        {/* Urgencia */}
+        <div className="flex items-center gap-1.5 bg-dorado/10 border border-dorado/25 px-3 py-2 mb-5">
+          <span className="w-1.5 h-1.5 bg-dorado rounded-full animate-pulse flex-shrink-0" />
+          <p className="text-[10px] font-dm text-dorado/90 font-medium">{p.urgencia}</p>
         </div>
 
         {/* Tours */}
         {p.tours.length > 0 && (
-          <div className="mb-5">
+          <div className="mb-4">
             <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2 flex items-center gap-1.5">
-              <MapPin className="w-3 h-3" aria-hidden="true" /> Tours incluidos
+              <MapPin className="w-3 h-3" /> Tours incluidos
             </p>
             <ul className="space-y-1.5">
               {p.tours.map((t) => (
                 <li key={t} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
-                  <Star className="w-3 h-3 text-dorado/70 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <Star className="w-3 h-3 text-dorado/70 flex-shrink-0 mt-0.5" />
                   {t}
                 </li>
               ))}
@@ -192,85 +265,150 @@ function PaqueteCard({ p }: { p: Paquete }) {
         )}
 
         {/* Incluye */}
-        <div className="mb-6">
-          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2 flex items-center gap-1.5">
-            <Utensils className="w-3 h-3" aria-hidden="true" /> Qué incluye
-          </p>
+        <div className="mb-5">
+          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">Qué incluye</p>
           <ul className="space-y-1.5">
             {p.incluye.map((item) => (
               <li key={item} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
-                <Check className="w-3 h-3 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <Check className="w-3 h-3 text-verde-vivo flex-shrink-0 mt-0.5" />
                 {item}
               </li>
             ))}
           </ul>
         </div>
+
+        {/* Valor desglosado */}
+        <details className="mb-5 border border-white/10">
+          <summary className="cursor-pointer px-3 py-2.5 text-[10px] tracking-[1px] uppercase font-dm text-crema/50 hover:text-crema transition-colors list-none flex items-center justify-between">
+            Ver desglose de valor incluido
+            <span className="text-verde-vivo text-base leading-none">+</span>
+          </summary>
+          <div className="border-t border-white/8 px-3 py-3 space-y-2">
+            {p.valor.map((v) => (
+              <div key={v.item} className="flex justify-between text-[11px] font-dm">
+                <span className="text-crema/55">{v.item}</span>
+                <span className="text-crema/80 font-medium">{v.precio} MXN</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-[11px] font-dm border-t border-white/8 pt-2 mt-1">
+              <span className="text-crema/55">Valor total</span>
+              <span className="text-crema/80 font-medium line-through">${totalValor.toLocaleString()} MXN</span>
+            </div>
+            <div className="flex justify-between text-[12px] font-dm font-medium">
+              <span className="text-verde-vivo">Precio paquete</span>
+              <span className="text-dorado">${p.precio.toLocaleString()} MXN</span>
+            </div>
+          </div>
+        </details>
       </div>
 
-      {/* CTA */}
+      {/* Mini-form CTA */}
       <div className="mt-auto px-6 pb-6">
-        <PaqueteCtaButton
-          href={`${WA_BASE}${p.waMsg}`}
-          packageName={p.nombre}
-          price={p.precio}
-          destacado={p.destacado}
-        />
+        <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} />
         <p className="text-center text-[9px] text-crema/25 font-dm mt-3">
-          Precio por persona en base doble · Sujeto a disponibilidad del hotel
+          Sin pago anticipado · Confirmas disponibilidad antes de reservar
         </p>
       </div>
     </article>
   );
 }
 
+// ── Page ────────────────────────────────────────────────────────────────────
+
 export default function PaquetesPage() {
   return (
     <main id="main-content" className="min-h-screen bg-negro">
 
-      {/* ── HERO ── */}
-      <section className="relative bg-verde-profundo px-6 pt-36 pb-24 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(58,107,26,0.3),transparent_65%)] pointer-events-none" />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+      {/* ── HERO CON IMAGEN DE FONDO ── */}
+      <section className="relative px-6 pt-36 pb-28 overflow-hidden min-h-[520px] flex items-center">
+        <Image
+          src="/imagenes/cascada-de-tamul/hero.jpg"
+          alt="Cascada de Tamul — Huasteca Potosina"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-negro/70 via-negro/55 to-negro/85" />
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            ✦ Tours + Hospedaje
+            ✦ Tours + Hospedaje · Todo Coordinado
           </p>
-          <h1
-            className="font-cormorant font-light text-crema mb-5 leading-tight"
-            style={{ fontSize: "clamp(36px,6vw,68px)" }}
-          >
+          <h1 className="font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(38px,6vw,70px)" }}>
             Paquetes
             <em className="text-dorado block italic"> Todo Incluido</em>
           </h1>
-          <p className="text-crema/60 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8">
+          <p className="text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8">
             Combinamos nuestros tours guiados con hospedaje en{" "}
-            <strong className="text-crema/85">Hotel Paraíso Encantado Xilitla</strong>.
+            <strong className="text-crema">Hotel Paraíso Encantado Xilitla</strong>.
             Tú solo preocúpate por llegar — nosotros nos encargamos del resto.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-[10px] tracking-[2px] uppercase text-crema/40 font-dm">
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3 h-3 text-verde-vivo" aria-hidden="true" /> Guías certificados NOM-09
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3 h-3 text-verde-vivo" aria-hidden="true" /> Hotel 4 estrellas Xilitla
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3 h-3 text-verde-vivo" aria-hidden="true" /> Coordinas por WhatsApp
-            </span>
+
+          {/* Google Rating */}
+          <div className="inline-flex items-center gap-3 bg-negro/60 backdrop-blur-sm border border-white/15 px-5 py-3">
+            <div>
+              <div className="flex items-center gap-1 mb-0.5">
+                {"★★★★★".split("").map((s, i) => (
+                  <span key={i} className="text-dorado text-sm">{s}</span>
+                ))}
+              </div>
+              <p className="text-[9px] font-dm text-crema/50 text-left">Google Reviews</p>
+            </div>
+            <div className="border-l border-white/15 pl-3">
+              <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
+              <p className="text-[9px] font-dm text-crema/50">+320 reseñas</p>
+            </div>
+            <div className="border-l border-white/15 pl-3">
+              <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
+              <p className="text-[9px] font-dm text-crema/50">Booking · 180 op.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── RESEÑAS ── */}
+      <section className="border-b border-white/6 bg-negro/80 py-12 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
+            Lo que dicen quienes ya vivieron la experiencia
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {RESENAS.map((r) => (
+              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(r.estrellas)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
+                  ))}
+                </div>
+                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
+                  &ldquo;{r.texto}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full ${r.color} flex items-center justify-center text-crema text-xs font-dm font-bold flex-shrink-0`}>
+                    {r.nombre.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
+                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── NOTA INFORMATIVA ── */}
       <div className="border-b border-white/6 bg-dorado/8">
-        <div className="max-w-5xl mx-auto px-6 py-4 text-center">
+        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
           <p className="text-[11px] text-dorado/80 font-dm">
-            Los paquetes incluyen coordinación manual del hospedaje. Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora.
+            Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora. Sin pago anticipado.
           </p>
         </div>
       </div>
 
       {/* ── PAQUETES ── */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
+      <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {PAQUETES.map((p) => (
             <PaqueteCard key={p.id} p={p} />
@@ -281,13 +419,8 @@ export default function PaquetesPage() {
       {/* ── HOTEL INFO ── */}
       <section className="bg-verde-profundo/30 border-t border-white/6 py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">
-            El hotel de los paquetes
-          </p>
-          <h2
-            className="font-cormorant font-light text-crema mb-4 leading-tight"
-            style={{ fontSize: "clamp(26px,4vw,44px)" }}
-          >
+          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">El hotel de los paquetes</p>
+          <h2 className="font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
             Hotel Paraíso Encantado Xilitla
           </h2>
           <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
@@ -312,28 +445,13 @@ export default function PaquetesPage() {
 
       {/* ── FAQ ── */}
       <section className="max-w-3xl mx-auto px-6 py-16">
-        <h2 className="font-cormorant text-crema text-2xl mb-8 text-center">
-          Preguntas frecuentes
-        </h2>
+        <h2 className="font-cormorant text-crema text-2xl mb-8 text-center">Preguntas frecuentes</h2>
         <div className="space-y-4">
           {[
-            {
-              q: "¿Puedo reservar los tours sin el hotel?",
-              a: "Sí. Todos nuestros tours están disponibles de forma individual en la sección /tours. Los paquetes son para quienes quieren combinar tour + hospedaje sin complicaciones.",
-            },
-            {
-              q: "¿Cómo confirman la disponibilidad del hotel?",
-              a: "Al escribirnos por WhatsApp, verificamos la disponibilidad de Paraíso Encantado Xilitla en tiempo real. Te respondemos en menos de 1 hora.",
-            },
-            {
-              q: "¿El precio incluye el traslado al hotel?",
-              a: "El traslado incluido es del hotel al punto de inicio del tour y de regreso. El traslado hasta Xilitla no está incluido.",
-            },
-            {
-              q: "¿Puedo personalizar los tours del paquete?",
-              q2: undefined,
-              a: "Completamente. Escríbenos con tus fechas y preferencias y armamos el paquete ideal para tu grupo.",
-            },
+            { q: "¿Puedo reservar los tours sin el hotel?", a: "Sí. Todos nuestros tours están disponibles de forma individual en la sección /tours. Los paquetes son para quienes quieren combinar tour + hospedaje sin complicaciones." },
+            { q: "¿Cómo confirman la disponibilidad del hotel?", a: "Al enviarnos tu consulta por WhatsApp, verificamos la disponibilidad de Paraíso Encantado Xilitla en tiempo real. Te respondemos en menos de 1 hora." },
+            { q: "¿El precio incluye el traslado al hotel?", a: "El traslado incluido es del hotel al punto de inicio del tour y de regreso. El traslado hasta Xilitla no está incluido en el precio base." },
+            { q: "¿Puedo personalizar los tours del paquete?", a: "Completamente. Escríbenos con tus fechas y preferencias y armamos el paquete ideal para tu grupo, incluyendo tours no listados aquí." },
           ].map((faq) => (
             <details key={faq.q} className="border border-white/10 bg-negro/40">
               <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
@@ -350,14 +468,12 @@ export default function PaquetesPage() {
 
       {/* ── CTA FINAL ── */}
       <section className="bg-verde-profundo/40 border-t border-white/6 py-16 px-6 text-center">
-        <h2 className="font-cormorant text-crema text-2xl mb-3">
-          ¿No encuentras el paquete ideal?
-        </h2>
+        <h2 className="font-cormorant text-crema text-2xl mb-3">¿No encuentras el paquete ideal?</h2>
         <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
           Armamos el itinerario exacto que necesitas. Escríbenos y en menos de 1 hora tienes tu propuesta.
         </p>
         <a
-          href={`${WA_BASE}${encodeURIComponent("Hola, quisiera un paquete personalizado de tours + hotel en la Huasteca Potosina. ¿Me pueden ayudar?")}`}
+          href={`https://wa.me/524891251458?text=${encodeURIComponent("Hola, quisiera un paquete personalizado de tours + hotel en la Huasteca Potosina. ¿Me pueden ayudar?")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"

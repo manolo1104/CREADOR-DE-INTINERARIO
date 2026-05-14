@@ -110,10 +110,10 @@ export default function DestinosPage() {
           según tus días, presupuesto y preferencias.
         </p>
         <Link
-          href="/planear"
+          href="/recomendar"
           className="inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
         >
-          Usar planificador IA →
+          Descubrir mi tour ideal →
         </Link>
       </section>
     </main>

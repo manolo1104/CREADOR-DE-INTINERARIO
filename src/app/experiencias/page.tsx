@@ -253,10 +253,10 @@ export default function ExperienciasPage() {
           reales, tiempos de traslado y presupuesto personalizado.
         </p>
         <Link
-          href="/planear"
+          href="/recomendar"
           className="inline-block bg-dorado text-negro px-12 py-4 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors"
         >
-          Crear mi Itinerario IA →
+          Encontrar mi tour perfecto →
         </Link>
         <p className="mt-4 text-[11px] text-crema/30 font-dm">Sin registro · Gratis · 2 minutos</p>
       </section>

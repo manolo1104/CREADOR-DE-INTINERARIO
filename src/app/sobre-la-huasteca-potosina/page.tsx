@@ -211,10 +211,10 @@ export default function SobreLaHuastecaPage() {
             Ver todos los tours
           </Link>
           <Link
-            href="/planear"
+            href="/recomendar"
             className="inline-block border border-crema/30 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-colors"
           >
-            Planear mi viaje con IA
+            ¿Qué tour es para mí? →
           </Link>
         </div>
       </section>
