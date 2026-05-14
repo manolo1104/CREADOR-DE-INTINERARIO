@@ -210,7 +210,7 @@ export default async function HomePage() {
           {/* Texto stats */}
           <div className="flex flex-wrap items-center gap-6 text-[10px] tracking-[1.5px] uppercase font-dm text-negro/50">
             <span className="flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" /> +500 viajeros
+              <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" /> +10,000 viajeros
             </span>
             <span className="text-negro/15 hidden sm:block">|</span>
             <a

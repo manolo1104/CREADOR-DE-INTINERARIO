@@ -12,7 +12,7 @@ export function LeadMagnetForm() {
     if (!email) return;
     setStatus("loading");
     try {
-      const res = await fetch("/api/guardar-email", {
+      const res = await fetch("/api/lead-magnet", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ email, fuente: "Guía PDF info-practica" }),
