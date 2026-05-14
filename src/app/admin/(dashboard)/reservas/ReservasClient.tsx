@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { ReservaModal } from "@/components/admin/ReservaModal";
+import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem } from "@/components/admin/ReservaModal";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -21,23 +21,24 @@ const fDateL = (d: string) => {
   return r.charAt(0).toUpperCase() + r.slice(1);
 };
 
-const EMPTY_FORM = { tourSlug: "", tourDate: "", adults: 2, children: 0, customerName: "", customerEmail: "", customerPhone: "", notes: "" };
+function calcLine(l: LineItem): number {
+  const t = TOURS_DB.find(t => t.slug === l.tourSlug);
+  if (!t) return 0;
+  return t.precio * l.adults + Math.round(t.precio * 0.6) * l.children;
+}
 
 export default function ReservasClient({ initialBookings }: { initialBookings: TourBooking[] }) {
-  const [bookings, setBookings] = useState(initialBookings);
-  const [search,   setSearch]   = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [sending,  setSending]  = useState<string | null>(null);
-  const [msg,      setMsg]      = useState("");
-  const [modal,    setModal]    = useState<"new" | "edit" | null>(null);
+  const [bookings,   setBookings]   = useState(initialBookings);
+  const [search,     setSearch]     = useState("");
+  const [loading,    setLoading]    = useState(false);
+  const [sending,    setSending]    = useState<string | null>(null);
+  const [msg,        setMsg]        = useState("");
+  const [modal,      setModal]      = useState<"new" | "edit" | null>(null);
   const [editTarget, setEditTarget] = useState<TourBooking | null>(null);
-  const [form,     setForm]     = useState(EMPTY_FORM);
-  const [saving,   setSaving]   = useState(false);
+  const [form,       setForm]       = useState<ReservaFormState>(EMPTY_RESERVA_FORM);
+  const [saving,     setSaving]     = useState(false);
 
-  const tour   = TOURS_DB.find(t => t.slug === form.tourSlug);
-  const pAdult = tour?.precio ?? 0;
-  const pChild = Math.round(pAdult * 0.6);
-  const total  = pAdult * form.adults + pChild * form.children;
+  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(""), 4000); }
 
   async function refresh() {
     setLoading(true);
@@ -63,42 +64,68 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 
   function openEdit(b: TourBooking) {
     setEditTarget(b);
-    setForm({ tourSlug: b.tourSlug, tourDate: b.tourDate, adults: b.adults, children: b.children,
-      customerName: b.customerName, customerEmail: b.customerEmail, customerPhone: b.customerPhone || "", notes: b.notes || "" });
+    // Restore lines from lineItems JSON if available
+    const storedLines = (b as any).lineItems as LineItem[] | null;
+    const lines: LineItem[] = storedLines?.length
+      ? storedLines
+      : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, children: b.children, subtotal: b.totalAmount }];
+
+    setForm({
+      customerName:  b.customerName,
+      customerEmail: b.customerEmail,
+      customerPhone: b.customerPhone || "",
+      notes:         b.notes || "",
+      lines,
+      totalOverride: "",
+      depositoPagado: String((b as any).depositoPagado ?? 0),
+    });
     setModal("edit");
   }
 
+  function buildPayload(form: ReservaFormState) {
+    const lineItems = form.lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    const calcTotal = lineItems.reduce((s, l) => s + l.subtotal, 0);
+    const totalAmount = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
+    const primaryLine = form.lines[0];
+    const tourNames = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
+    return {
+      tourId:        primaryLine.tourSlug,
+      tourName:      tourNames || TOURS_DB.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
+      tourSlug:      primaryLine.tourSlug,
+      tourDate:      primaryLine.tourDate,
+      adults:        form.lines.reduce((s, l) => s + l.adults, 0),
+      children:      form.lines.reduce((s, l) => s + l.children, 0),
+      totalAmount,
+      lineItems,
+      depositoPagado: Number(form.depositoPagado) || 0,
+      customerName:  form.customerName,
+      customerEmail: form.customerEmail,
+      customerPhone: form.customerPhone,
+      notes:         form.notes,
+    };
+  }
+
   async function saveNew() {
-    if (!form.tourSlug || !form.tourDate || !form.customerName) return;
+    if (!form.customerName || form.lines.some(l => !l.tourSlug || !l.tourDate)) return;
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
     const r = await fetch("/api/admin/reservas", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        confirmationNumber, tourId: form.tourSlug, tourName: tour?.nombre || "",
-        tourSlug: form.tourSlug, tourDate: form.tourDate, adults: form.adults,
-        children: form.children, totalAmount: total, customerName: form.customerName,
-        customerEmail: form.customerEmail, customerPhone: form.customerPhone,
-        notes: form.notes, status: "paid",
-      }),
+      body: JSON.stringify({ confirmationNumber, status: "paid", ...buildPayload(form) }),
     });
-    if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_FORM); flash("✅ Reserva creada"); }
+    if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM); flash("✅ Reserva creada"); }
     setSaving(false);
   }
 
   async function saveEdit() {
     if (!editTarget) return;
     setSaving(true);
-    const tourName = TOURS_DB.find(t => t.slug === form.tourSlug)?.nombre || editTarget.tourName;
     const r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tourSlug: form.tourSlug, tourDate: form.tourDate, tourName,
-        adults: form.adults, children: form.children, totalAmount: total || editTarget.totalAmount,
-        customerName: form.customerName, customerEmail: form.customerEmail,
-        customerPhone: form.customerPhone, notes: form.notes }),
+      body: JSON.stringify(buildPayload(form)),
     });
     if (r.ok) {
-      setBookings(b => b.map(x => x.id === editTarget.id ? { ...x, ...form, tourName, totalAmount: total || x.totalAmount } : x));
+      await refresh();
       setModal(null); setEditTarget(null); flash("✅ Reserva actualizada");
     }
     setSaving(false);
@@ -107,57 +134,63 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
   function downloadPDF(b: TourBooking) {
     const win = window.open("", "_blank");
     if (!win) return;
-    const t = TOURS_DB.find(t => t.slug === b.tourSlug);
-    const heroUrl = t?.imagen_hero?.startsWith("http") ? t.imagen_hero : t?.imagen_hero ? `https://www.huasteca-potosina.com${t.imagen_hero}` : "";
-    const destinosHtml = t?.destinos?.map(d => `<li>${d}</li>`).join("") || "";
+    const storedLines = (b as any).lineItems as LineItem[] | null;
+    const lines: LineItem[] = storedLines?.length
+      ? storedLines
+      : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, children: b.children, subtotal: b.totalAmount }];
+
+    const deposito = (b as any).depositoPagado ?? 0;
+    const pendiente = Math.max(0, b.totalAmount - deposito);
+
+    const tourSections = lines.map(l => {
+      const t = TOURS_DB.find(t => t.slug === l.tourSlug);
+      const heroUrl = t?.imagen_hero?.startsWith("http") ? t.imagen_hero : t?.imagen_hero ? `https://www.huasteca-potosina.com${t.imagen_hero}` : "";
+      const destinos = t?.destinos?.map(d => `<li>→ ${d}</li>`).join("") || "";
+      return `
+        <div style="margin-bottom:18px">
+          ${heroUrl ? `<img src="${heroUrl}" alt="${l.tourName}" style="width:100%;height:140px;object-fit:cover;border-radius:2px;margin-bottom:8px"/>` : ""}
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px">${l.tourName}</div>
+          <div style="font-family:Arial;font-size:12px;color:#3a3a2e">📅 ${fDateL(l.tourDate)} · ${l.adults} adulto${l.adults!==1?"s":""}${l.children>0?` · ${l.children} niño${l.children!==1?"s":""}`:""}</div>
+          ${destinos ? `<ul style="list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:1.9;margin-top:6px">${destinos}</ul>` : ""}
+        </div>`;
+    }).join("<hr style='border:none;border-top:1px dashed #d4ccbc;margin:12px 0'/>");
 
     win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Confirmación ${b.confirmationNumber}</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a2e1a;padding:40px;max-width:720px;margin:0 auto}
 .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a2e1a;padding-bottom:20px;margin-bottom:24px}
 .brand h1{font-size:20px;letter-spacing:4px;text-transform:uppercase;font-weight:400}.brand p{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#3a6b1a;margin-top:4px;font-family:Arial}
-.conf-box{text-align:right}.conf-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px}
-.conf-num{font-size:20px}.conf-status{font-size:11px;color:#3a6b1a;font-family:Arial;margin-top:3px;font-weight:600}
-.section-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:10px}
+.conf-box{text-align:right}.conf-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px}.conf-num{font-size:20px}.conf-status{font-size:11px;color:#3a6b1a;font-family:Arial;margin-top:3px;font-weight:600}
+.sl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#d4ccbc;border:1px solid #d4ccbc;margin-bottom:20px}
-.cell{background:#faf7ee;padding:12px 14px}.cell .cl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px}.cell .cv{font-size:14px}
-.hero{width:100%;height:160px;object-fit:cover;margin-bottom:16px;border-radius:2px}
-.total-row{background:#1a2e1a;color:#f4edd8;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.total-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a;font-family:Arial}.total-value{font-size:24px;font-weight:600}
-.includes{border-left:3px solid #3a6b1a;padding-left:14px;margin-bottom:16px}.includes p,.includes li{font-family:Arial;font-size:12px;color:#3a3a2e;line-height:2.1}
-.destinos{margin-bottom:16px}.destinos ul{list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:2}
-.destinos li::before{content:"→ ";color:#3a6b1a;font-weight:600}
+.cell{background:#faf7ee;padding:12px 14px}.cl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px}.cv{font-size:14px}
+.total-row{background:#1a2e1a;color:#f4edd8;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.total-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a;font-family:Arial}.total-value{font-size:22px;font-weight:600}
+.pago-row{display:flex;justify-content:space-between;padding:8px 20px;font-family:Arial;font-size:12px;margin-bottom:4px}
+.includes{border-left:3px solid #3a6b1a;padding-left:14px;margin:16px 0}.includes p{font-family:Arial;font-size:12px;color:#3a3a2e;line-height:2.1}
 .footer{border-top:1px solid #d4ccbc;padding-top:14px;font-family:Arial;font-size:11px;color:#9a8a6a;text-align:center;line-height:1.7}
 @media print{body{padding:20px}@page{margin:1cm}}</style></head><body>
 <div class="header">
   <div class="brand"><h1>Tours Huasteca Potosina</h1><p>Xilitla · San Luis Potosí · México</p></div>
   <div class="conf-box"><div class="conf-label">Confirmación de Reserva</div><div class="conf-num">${b.confirmationNumber}</div><div class="conf-status">✓ ${STATUS_LABEL[b.status] || b.status}</div></div>
 </div>
-<div class="section-label">Datos del cliente</div>
+<div class="sl">Datos del cliente</div>
 <div class="grid" style="margin-bottom:20px">
   <div class="cell"><div class="cl">Nombre</div><div class="cv">${b.customerName}</div></div>
   <div class="cell"><div class="cl">Email</div><div class="cv" style="font-size:12px">${b.customerEmail || "—"}</div></div>
   <div class="cell"><div class="cl">Teléfono</div><div class="cv">${b.customerPhone || "—"}</div></div>
   <div class="cell"><div class="cl">Fecha de reserva</div><div class="cv" style="font-size:12px">${new Date(b.createdAt).toLocaleDateString("es-MX")}</div></div>
 </div>
-${heroUrl ? `<img src="${heroUrl}" alt="${b.tourName}" class="hero" />` : ""}
-<div class="section-label">Detalles del tour</div>
-<div class="grid">
-  <div class="cell" style="grid-column:1/-1"><div class="cl">Tour</div><div class="cv" style="font-size:17px">${b.tourName}</div></div>
-  <div class="cell"><div class="cl">Fecha del recorrido</div><div class="cv">${fDateL(b.tourDate)}</div></div>
-  <div class="cell"><div class="cl">Participantes</div><div class="cv">${b.adults} adulto${b.adults !== 1 ? "s" : ""}${b.children > 0 ? ` · ${b.children} niño${b.children !== 1 ? "s" : ""}` : ""}</div></div>
-</div>
-${destinosHtml ? `<div class="destinos" style="margin-top:16px"><div class="section-label">Destinos incluidos</div><ul>${destinosHtml}</ul></div>` : ""}
-<div class="total-row"><span class="total-label">Total Pagado</span><span class="total-value">${fmx(b.totalAmount)}</span></div>
-<div class="section-label">Todo incluido</div>
-<div class="includes"><p>✓ Transporte desde tu hotel &nbsp; ✓ Desayuno típico &nbsp; ✓ Entradas &nbsp; ✓ Guía NOM-09 &nbsp; ✓ Equipo de seguridad &nbsp; ✓ Fotografías</p></div>
-${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-bottom:16px"><strong>Notas:</strong> ${b.notes}</p>` : ""}
+<div class="sl" style="margin-bottom:14px">Tours del recorrido</div>
+${tourSections}
+<div class="total-row"><span class="total-label">Total</span><span class="total-value">${fmx(b.totalAmount)}</span></div>
+${deposito > 0 ? `<div class="pago-row" style="background:#f0fff4;border:1px solid #c6f6d5"><span style="color:#3a6b1a;font-weight:600">✓ Anticipo pagado</span><span style="color:#3a6b1a;font-weight:600">${fmx(deposito)}</span></div><div class="pago-row" style="background:#fffbeb;border:1px solid #fef3c7"><span style="color:#b45309">Pendiente el día del tour</span><span style="color:#b45309;font-weight:600">${fmx(pendiente)}</span></div>` : ""}
+<div class="includes" style="margin-top:16px"><p>✓ Transporte desde tu hotel &nbsp; ✓ Desayuno típico &nbsp; ✓ Entradas &nbsp; ✓ Guía NOM-09 &nbsp; ✓ Equipo de seguridad &nbsp; ✓ Fotografías</p></div>
+${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin:14px 0"><strong>Notas:</strong> ${b.notes}</p>` : ""}
 <div class="footer">Tours Huasteca Potosina · +52 489 125 1458 · hola@huasteca-potosina.com · Guías NOM-09 SECTUR</div>
 </body></html>`);
     win.document.close();
     setTimeout(() => win.print(), 600);
   }
-
-  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(""), 4000); }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -181,7 +214,7 @@ ${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-bot
             className="flex items-center gap-2 border border-[#1a2e1a]/20 text-[#1a2e1a]/60 hover:text-[#1a2e1a] px-3 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors disabled:opacity-40 rounded-sm">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />Actualizar
           </button>
-          <button onClick={() => { setForm(EMPTY_FORM); setModal("new"); }}
+          <button onClick={() => { setForm(EMPTY_RESERVA_FORM); setModal("new"); }}
             className="flex items-center gap-2 bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-4 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
             <Plus className="w-4 h-4" />Nueva Reserva
           </button>
@@ -207,40 +240,52 @@ ${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-bot
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#f4edd8]">
               <tr className="border-b border-[#1a2e1a]/10 text-[#1a2e1a]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Confirmación","Cliente","Tour","Fecha","Personas","Total","Estado","Acciones"].map(h => (
-                  <th key={h} className="py-3 px-4 text-left font-dm">{h}</th>
+                {["Confirmación","Cliente","Tour","Fecha","Personas","Total","Anticipo","Estado","Acciones"].map(h => (
+                  <th key={h} className="py-3 px-3 text-left font-dm">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={8} className="py-12 text-center text-[#1a2e1a]/30 font-dm">Sin resultados</td></tr>}
-              {filtered.map(b => (
-                <tr key={b.id} className="border-b border-[#1a2e1a]/6 hover:bg-[#f4edd8]/50 transition-colors">
-                  <td className="py-3 px-4 text-[#3a6b1a] font-mono text-xs font-medium">{b.confirmationNumber}</td>
-                  <td className="py-3 px-4"><p className="text-[#1a2e1a] font-medium">{b.customerName}</p><p className="text-[#1a2e1a]/40 text-xs">{b.customerEmail}</p></td>
-                  <td className="py-3 px-4 text-[#1a2e1a]/70 max-w-[160px] truncate">{b.tourName}</td>
-                  <td className="py-3 px-4 text-[#1a2e1a]/70 whitespace-nowrap">{fDate(b.tourDate)}</td>
-                  <td className="py-3 px-4 text-[#1a2e1a]/70">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</td>
-                  <td className="py-3 px-4 text-[#c4882a] font-medium whitespace-nowrap">{fmx(b.totalAmount)}</td>
-                  <td className="py-3 px-4">
-                    <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_LABEL[b.status] || b.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => sendEmail(b.id)} disabled={sending === b.id} title="Enviar email"
-                        className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                      <button onClick={() => downloadPDF(b)} title="Descargar PDF"
-                        className="text-[#1a2e1a]/40 hover:text-[#c4882a] transition-colors"><Download className="w-4 h-4" /></button>
-                      <button onClick={() => openEdit(b)} title="Editar"
-                        className="text-[#1a2e1a]/40 hover:text-[#1a2e1a] transition-colors"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => hardDelete(b.id)} title="Eliminar"
-                        className="text-[#1a2e1a]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filtered.length === 0 && <tr><td colSpan={9} className="py-12 text-center text-[#1a2e1a]/30 font-dm">Sin resultados</td></tr>}
+              {filtered.map(b => {
+                const deposito = (b as any).depositoPagado ?? 0;
+                const pendiente = Math.max(0, b.totalAmount - deposito);
+                return (
+                  <tr key={b.id} className="border-b border-[#1a2e1a]/6 hover:bg-[#f4edd8]/50 transition-colors">
+                    <td className="py-3 px-3 text-[#3a6b1a] font-mono text-xs font-medium">{b.confirmationNumber}</td>
+                    <td className="py-3 px-3"><p className="text-[#1a2e1a] font-medium">{b.customerName}</p><p className="text-[#1a2e1a]/40 text-xs">{b.customerEmail}</p></td>
+                    <td className="py-3 px-3 text-[#1a2e1a]/70 max-w-[140px] truncate text-xs">{b.tourName}</td>
+                    <td className="py-3 px-3 text-[#1a2e1a]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
+                    <td className="py-3 px-3 text-[#1a2e1a]/70 text-xs">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</td>
+                    <td className="py-3 px-3 text-[#c4882a] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
+                    <td className="py-3 px-3 text-xs">
+                      {deposito > 0 ? (
+                        <div>
+                          <p className="text-green-700 font-medium">{fmx(deposito)}</p>
+                          {pendiente > 0 && <p className="text-orange-600 text-[10px]">Pend: {fmx(pendiente)}</p>}
+                        </div>
+                      ) : <span className="text-[#1a2e1a]/30">—</span>}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
+                        {STATUS_LABEL[b.status] || b.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => sendEmail(b.id)} disabled={sending === b.id} title="Enviar email"
+                          className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                        <button onClick={() => downloadPDF(b)} title="Descargar PDF"
+                          className="text-[#1a2e1a]/40 hover:text-[#c4882a] transition-colors"><Download className="w-4 h-4" /></button>
+                        <button onClick={() => openEdit(b)} title="Editar"
+                          className="text-[#1a2e1a]/40 hover:text-[#1a2e1a] transition-colors"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => hardDelete(b.id)} title="Eliminar"
+                          className="text-[#1a2e1a]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

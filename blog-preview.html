@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog Preview — Huasteca Potosina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --negro:#0e1710; --forest:#1a2e1a; --verde-selva:#2D6A4F; --verde-vivo:#3a8c5c;
+    --lima:#8fbe3a; --turquesa:#00B4D8; --crema:#f4edd8; --arena:#e6d4b0;
+    --dorado:#c4882a; --terracota:#9a4a1e; --gris:#6b7280;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--negro); color:var(--crema); font-family:'DM Sans',system-ui,sans-serif; line-height:1.6; }
+  h1,h2,h3,h4 { font-family:'Cormorant Garamond',Georgia,serif; }
+
+  /* Layout */
+  .app { display:grid; grid-template-columns:280px 1fr; min-height:100vh; }
+  .sidebar { background:#111d11; border-right:1px solid rgba(255,255,255,.07); padding:1.5rem; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .main { overflow-y:auto; }
+
+  /* Sidebar */
+  .sidebar h2 { font-size:1rem; color:var(--lima); margin-bottom:1.2rem; letter-spacing:2px; text-transform:uppercase; }
+  .tree-item { padding:.35rem .5rem; border-radius:3px; font-size:.78rem; cursor:pointer; transition:.15s; display:flex; align-items:center; gap:.5rem; margin-bottom:2px; }
+  .tree-item:hover { background:rgba(255,255,255,.06); }
+  .tree-item.active { background:rgba(143,190,58,.15); color:var(--lima); }
+  .tree-h1  { border-left:3px solid #e5534b; padding-left:.6rem; }
+  .tree-h2  { border-left:3px solid var(--turquesa); padding-left:.6rem; margin-left:.8rem; }
+  .tree-h3  { border-left:3px solid #a78bfa; padding-left:.6rem; margin-left:1.6rem; }
+  .tree-cta { border-left:3px solid var(--lima); padding-left:.6rem; margin-left:.8rem; }
+  .tree-faq { border-left:3px solid var(--dorado); padding-left:.6rem; margin-left:.8rem; }
+  .tree-img { border-left:3px solid var(--gris); padding-left:.6rem; margin-left:.8rem; }
+  .label { font-size:.6rem; padding:1px 5px; border-radius:3px; font-weight:600; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; }
+  .label-h1  { background:#e5534b; color:#fff; }
+  .label-h2  { background:var(--turquesa); color:#000; }
+  .label-h3  { background:#a78bfa; color:#fff; }
+  .label-cta { background:var(--lima); color:#000; }
+  .label-faq { background:var(--dorado); color:#fff; }
+  .label-img { background:var(--gris); color:#fff; }
+  .label-warn { background:var(--terracota); color:#fff; }
+
+  /* Top bar */
+  .topbar { background:#111d11; border-bottom:1px solid rgba(255,255,255,.07); padding:.8rem 1.5rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .topbar-title { font-size:.85rem; font-weight:600; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:4px; font-size:.65rem; letter-spacing:1.2px; text-transform:uppercase; font-weight:600; }
+  .badge-ok   { background:#1a5c1a; color:#8fbe3a; }
+  .badge-warn { background:#5c2a1a; color:#f0ad4e; }
+  .badge-err  { background:#5c1a1a; color:#e74c3c; }
+  .badge-info { background:#1a3a5c; color:var(--turquesa); }
+
+  /* Tabs */
+  .tabs { display:flex; gap:0; border-bottom:1px solid rgba(255,255,255,.07); padding:0 1.5rem; }
+  .tab { padding:.7rem 1.2rem; background:none; color:var(--crema); opacity:.4; cursor:pointer; border:none; font-size:.75rem; letter-spacing:1.5px; text-transform:uppercase; font-family:inherit; transition:.2s; border-bottom:2px solid transparent; }
+  .tab:hover { opacity:.7; }
+  .tab.active { opacity:1; border-bottom-color:var(--lima); color:var(--lima); }
+  .tab-panel { display:none; padding:2rem 1.5rem; }
+  .tab-panel.active { display:block; }
+
+  /* ─── BLOG POST RENDER ─── */
+  .article-wrap { max-width:760px; margin:0 auto; }
+
+  .meta-bar { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:6px; padding:1rem 1.2rem; margin-bottom:2rem; font-size:.78rem; }
+  .meta-bar .meta-row { display:flex; gap:.5rem; align-items:flex-start; margin-bottom:.4rem; }
+  .meta-bar .meta-label { color:var(--turquesa); min-width:90px; font-weight:600; font-size:.7rem; text-transform:uppercase; letter-spacing:1px; }
+  .meta-bar .meta-val { opacity:.8; flex:1; }
+
+  .cover-wrap { position:relative; margin-bottom:2rem; border-radius:6px; overflow:hidden; }
+  .cover-wrap img { width:100%; height:340px; object-fit:cover; }
+  .cover-badge { position:absolute; top:.7rem; right:.7rem; font-size:.6rem; }
+
+  /* Headings */
+  .post-h1 { font-size:2.4rem; line-height:1.2; margin-bottom:1.2rem; color:var(--crema); position:relative; }
+  .post-h2 { font-size:1.6rem; margin:2rem 0 .8rem; color:var(--crema); border-bottom:1px solid rgba(255,255,255,.08); padding-bottom:.4rem; position:relative; }
+  .post-h3 { font-size:1.2rem; margin:1.4rem 0 .6rem; color:var(--arena); position:relative; }
+
+  /* Annotation badges on headings */
+  .anno { position:absolute; right:0; top:0; font-size:.55rem; }
+
+  /* Paragraphs & lists */
+  .post-p { margin-bottom:1rem; font-size:.95rem; line-height:1.7; opacity:.88; }
+  .post-ul { margin:0 0 1rem 1.2rem; font-size:.9rem; opacity:.85; }
+  .post-ul li { margin-bottom:.4rem; }
+  .post-strong { font-weight:600; color:var(--arena); }
+
+  /* Links */
+  a.link-a { color:var(--turquesa); text-decoration:underline; text-decoration-style:dotted; }
+  a.link-b { color:var(--verde-vivo); font-weight:600; text-decoration:underline; }
+  a.link-c { color:var(--lima); font-weight:600; text-decoration:underline; }
+  a.link-ext { color:var(--dorado); font-style:italic; }
+
+  /* Figure */
+  .post-figure { margin:1.5rem 0; border-radius:6px; overflow:hidden; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); }
+  .post-figure img { width:100%; height:260px; object-fit:cover; }
+  .post-figure figcaption { padding:.6rem 1rem; font-size:.75rem; opacity:.5; font-style:italic; }
+
+  /* CTAs */
+  .cta-tours { background:#00B4D8; color:#fff; padding:1.5rem 2rem; border-radius:8px; margin:2rem 0; text-align:center; }
+  .cta-tours p { color:#fff; opacity:1; margin-bottom:.6rem; }
+  .cta-tours strong { color:#fff; font-size:1.05rem; font-family:'Cormorant Garamond',Georgia,serif; }
+  .cta-tours .cta-button { display:inline-block; background:#fff; color:#00B4D8; padding:10px 24px; border-radius:4px; font-weight:700; text-decoration:none; font-size:.9rem; margin-top:.5rem; }
+  .cta-tours .cta-button:hover { background:#e0f7fa; }
+
+  .cta-itinerario { background:#f0f9ff; color:#1a2e1a; padding:1.2rem 1.8rem; border-radius:8px; margin:1.5rem 0; text-align:center; border:1px solid rgba(0,180,216,.2); }
+  .cta-itinerario p { color:#1a2e1a; opacity:1; margin-bottom:.5rem; font-size:.9rem; }
+  .cta-itinerario strong { font-size:1rem; font-family:'Cormorant Garamond',Georgia,serif; }
+  .cta-itinerario .cta-button-secondary { display:inline-block; background:#2D6A4F; color:#fff; padding:10px 24px; border-radius:4px; font-weight:700; text-decoration:none; font-size:.9rem; margin-top:.5rem; }
+
+  .cta-final { background:#2D6A4F; color:#fff; padding:2rem; border-radius:8px; margin:2.5rem 0; text-align:center; }
+  .cta-final h3 { color:#fff; font-size:1.5rem; margin-bottom:.5rem; }
+  .cta-final p { color:rgba(255,255,255,.85); margin-bottom:.3rem; font-size:.9rem; opacity:1; }
+  .cta-final .btn-row { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:1.2rem; }
+  .cta-final .btn-primary { background:#00B4D8; color:#fff; padding:12px 28px; border-radius:4px; font-weight:700; text-decoration:none; font-size:.9rem; }
+  .cta-final .btn-secondary { background:transparent; color:#fff; padding:12px 28px; border-radius:4px; font-weight:700; text-decoration:none; border:2px solid #fff; font-size:.9rem; }
+
+  /* FAQ */
+  .faq-wrap { margin:1.5rem 0; }
+  .faq-item { border:1px solid rgba(255,255,255,.08); border-radius:6px; margin-bottom:.6rem; overflow:hidden; }
+  .faq-summary { padding:.9rem 1.1rem; cursor:pointer; font-weight:600; font-size:.9rem; list-style:none; display:flex; justify-content:space-between; align-items:center; }
+  .faq-summary:hover { background:rgba(255,255,255,.04); }
+  .faq-summary::after { content:'+'; color:var(--lima); font-size:1.2rem; }
+  details[open] .faq-summary::after { content:'−'; }
+  .faq-answer { padding:.8rem 1.1rem; font-size:.88rem; opacity:.8; border-top:1px solid rgba(255,255,255,.06); }
+
+  /* Schema block */
+  .schema-block { background:#0a1a0a; border:1px solid rgba(143,190,58,.2); border-radius:6px; padding:1rem; margin:1.5rem 0; font-family:'JetBrains Mono',monospace; font-size:.7rem; color:#8fbe3a; overflow-x:auto; white-space:pre-wrap; }
+
+  /* ─── INSPECTOR VIEW ─── */
+  .insp-section { margin-bottom:2rem; }
+  .insp-title { font-size:.8rem; color:var(--lima); letter-spacing:2px; text-transform:uppercase; margin-bottom:.8rem; border-bottom:1px solid rgba(255,255,255,.07); padding-bottom:.4rem; }
+  .insp-row { display:grid; grid-template-columns:120px 1fr auto; gap:.5rem; align-items:start; padding:.5rem .6rem; border-radius:4px; margin-bottom:3px; font-size:.8rem; border:1px solid rgba(255,255,255,.04); }
+  .insp-row:hover { background:rgba(255,255,255,.03); }
+  .insp-key { opacity:.5; font-size:.7rem; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
+  .insp-val { word-break:break-all; }
+  .insp-tag { font-size:.6rem; padding:1px 6px; border-radius:3px; font-weight:600; white-space:nowrap; align-self:flex-start; }
+
+  /* ─── ISSUES VIEW ─── */
+  .issue { background:var(--forest); border-radius:6px; padding:1rem 1.2rem; margin-bottom:.8rem; }
+  .issue.err  { border-left:4px solid #e74c3c; }
+  .issue.warn { border-left:4px solid #f0ad4e; }
+  .issue.ok   { border-left:4px solid var(--lima); }
+  .issue h4 { font-size:.9rem; margin-bottom:.3rem; }
+  .issue p  { font-size:.8rem; opacity:.6; }
+  .fix-label { font-size:.65rem; background:rgba(143,190,58,.15); color:var(--lima); padding:2px 8px; border-radius:3px; margin-left:.5rem; }
+
+  /* ─── LINKS AUDIT ─── */
+  .links-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+  .links-table th { text-align:left; padding:.5rem .7rem; background:rgba(255,255,255,.05); font-size:.65rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--crema); opacity:.6; }
+  .links-table td { padding:.5rem .7rem; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:top; }
+  .links-table tr:hover td { background:rgba(255,255,255,.02); }
+  .url-cell { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--turquesa); word-break:break-all; }
+  .anchor-cell { color:var(--crema); }
+
+  /* Annotation overlay toggle */
+  .toggle-annos { display:flex; align-items:center; gap:.5rem; font-size:.78rem; opacity:.7; cursor:pointer; user-select:none; }
+  .toggle-annos input { accent-color:var(--lima); }
+  .anno-badge { display:none; font-size:.55rem; padding:1px 5px; border-radius:3px; font-weight:700; vertical-align:middle; margin-left:3px; }
+  body.show-annos .anno-badge { display:inline; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR (estructura del artículo) ── -->
+  <aside class="sidebar">
+    <h2>Estructura</h2>
+
+    <div class="tree-item tree-h1" onclick="scrollTo('h1-main')">
+      <span class="label label-h1">H1</span>
+      <span>Huasteca Potosina con Niños</span>
+    </div>
+
+    <div class="tree-item tree-img" onclick="scrollTo('hero-img')">
+      <span class="label label-img">IMG</span>
+      <span>Hero — Taninul ⚠</span>
+    </div>
+
+    <div class="tree-item tree-h2" onclick="scrollTo('h2-1')">
+      <span class="label label-h2">H2</span>
+      <span>Destinos imprescindibles</span>
+    </div>
+    <div class="tree-item tree-h3" onclick="scrollTo('h3-1')">
+      <span class="label label-h3">H3</span>
+      <span>Micos y Tamasopo</span>
+    </div>
+    <div class="tree-item tree-h3" onclick="scrollTo('h3-2')">
+      <span class="label label-h3">H3</span>
+      <span>Cascada de Tamul</span>
+    </div>
+
+    <div class="tree-item tree-h2" onclick="scrollTo('h2-2')">
+      <span class="label label-h2">H2</span>
+      <span>Actividades y presupuesto</span>
+    </div>
+    <div class="tree-item tree-img" onclick="scrollTo('body-img')">
+      <span class="label label-img">IMG</span>
+      <span>Cuerpo — El Meco</span>
+    </div>
+    <div class="tree-item tree-h3" onclick="scrollTo('h3-3')">
+      <span class="label label-h3">H3</span>
+      <span>Las Pozas Xilitla</span>
+    </div>
+    <div class="tree-item tree-h3" onclick="scrollTo('h3-4')">
+      <span class="label label-h3">H3</span>
+      <span>Paquetes tour 2026</span>
+    </div>
+
+    <div class="tree-item tree-cta" onclick="scrollTo('cta-tours')">
+      <span class="label label-cta">CTA</span>
+      <span>Tours — turquesa</span>
+    </div>
+    <div class="tree-item tree-cta" onclick="scrollTo('cta-itinerario')">
+      <span class="label label-cta">CTA</span>
+      <span>Itinerario — claro</span>
+    </div>
+
+    <div class="tree-item tree-h2" onclick="scrollTo('h2-3')">
+      <span class="label label-h2">H2</span>
+      <span>Consejos prácticos</span>
+    </div>
+
+    <div class="tree-item tree-faq" onclick="scrollTo('faq-section')">
+      <span class="label label-faq">FAQ</span>
+      <span>4 preguntas</span>
+    </div>
+
+    <div class="tree-item tree-cta" onclick="scrollTo('cta-final')">
+      <span class="label label-cta">CTA</span>
+      <span>Final — doble botón</span>
+    </div>
+
+    <div class="tree-item tree-img" onclick="scrollTo('schema-block')">
+      <span class="label label-img">JSON</span>
+      <span>Schema JSON-LD</span>
+    </div>
+
+    <hr style="margin:1.2rem 0;border-color:rgba(255,255,255,.07);">
+
+    <div style="font-size:.7rem;opacity:.4;margin-bottom:.8rem;letter-spacing:1px;text-transform:uppercase;">Leyenda</div>
+    <div style="font-size:.72rem;display:flex;flex-direction:column;gap:.4rem;">
+      <span><span class="label label-h1">H1</span> Título principal</span>
+      <span><span class="label label-h2">H2</span> Sección temática</span>
+      <span><span class="label label-h3">H3</span> Subtema / snippet</span>
+      <span><span class="label label-cta">CTA</span> Bloque de conversión</span>
+      <span><span class="label label-faq">FAQ</span> Preguntas frecuentes</span>
+      <span><span class="label label-img">IMG</span> Imagen</span>
+      <span><span class="label label-warn">⚠</span> Problema detectado</span>
+    </div>
+
+    <hr style="margin:1.2rem 0;border-color:rgba(255,255,255,.07);">
+    <label class="toggle-annos">
+      <input type="checkbox" onchange="document.body.classList.toggle('show-annos',this.checked)"> Mostrar etiquetas
+    </label>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+    <!-- Top bar -->
+    <div class="topbar">
+      <span class="topbar-title">huasteca-potosina.com · Post más reciente</span>
+      <span class="badge badge-ok">✓ E-E-A-T presente</span>
+      <span class="badge badge-ok">✓ 3 tipos de link</span>
+      <span class="badge badge-ok">✓ FAQ 4 preguntas</span>
+      <span class="badge badge-ok">✓ Schema BlogPosting+FAQ</span>
+      <span class="badge badge-warn">⚠ Imagen hero ≠ tema</span>
+      <span class="badge badge-warn">⚠ Intro inicia "Si estás..."</span>
+      <span class="badge badge-warn">⚠ Anchor Tipo C genérico</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('render')">📖 Render del Post</button>
+      <button class="tab" onclick="showTab('inspector')">🔍 Inspector</button>
+      <button class="tab" onclick="showTab('links')">🔗 Links (18)</button>
+      <button class="tab" onclick="showTab('issues')">⚠ Issues (5)</button>
+    </div>
+
+    <!-- ─────────────────────────────────────────── -->
+    <!-- TAB 1: RENDER -->
+    <!-- ─────────────────────────────────────────── -->
+    <div id="panel-render" class="tab-panel active">
+      <div class="article-wrap">
+
+        <!-- META BAR -->
+        <div class="meta-bar">
+          <div class="meta-row"><span class="meta-label">Meta Title</span><span class="meta-val">Huasteca Potosina con Niños: Ruta Familiar 2026 <span class="badge badge-ok" style="font-size:.6rem;">53 chars ✓</span></span></div>
+          <div class="meta-row"><span class="meta-label">Meta Desc</span><span class="meta-val" style="font-size:.75rem;">Descubre la Huasteca Potosina con niños en 2026: precios reales, actividades seguras y la ruta familiar perfecta para turismo familiar San Luis Potosí. <span class="badge badge-ok" style="font-size:.6rem;">151 chars ✓</span></span></div>
+          <div class="meta-row"><span class="meta-label">Slug</span><span class="meta-val" style="font-family:monospace;font-size:.75rem;">huasteca-potosina-con-ninos-la-ruta-familiar-perfecta-2026</span></div>
+          <div class="meta-row"><span class="meta-label">Keyword</span><span class="meta-val">huasteca potosina con niños</span></div>
+        </div>
+
+        <!-- HERO IMAGE -->
+        <div class="cover-wrap" id="hero-img">
+          <img src="https://raw.githubusercontent.com/manolo1104/CREADOR-DE-INTINERARIO/main/INTINERARIO%20HUASTECA/blog-agent/images/balneario-taninul/hero.webp"
+               alt="huasteca potosina con niños en Xilitla, Huasteca Potosina 2026"
+               onerror="this.style.background='#1a2e1a';this.style.height='200px';this.src='';this.alt='[imagen: balneario-taninul/hero.webp]'">
+          <span class="badge badge-warn cover-badge">⚠ Taninul ≠ Niños</span>
+        </div>
+
+        <!-- H1 -->
+        <h1 class="post-h1" id="h1-main">
+          Huasteca Potosina con Niños: La Ruta Familiar Perfecta
+          <span class="anno"><span class="anno-badge label-h1">H1</span></span>
+        </h1>
+
+        <!-- INTRO -->
+        <p class="post-p">
+          Planear un viaje de <strong class="post-strong">huasteca potosina con niños</strong> puede parecer complicado, pero con la información correcta se convierte en una de las mejores decisiones que tomará tu familia. Cascadas de agua turquesa, selva exuberante y pueblos mágicos forman el escenario ideal para que los más pequeños descubran la naturaleza a fondo.
+          <span class="badge badge-warn" style="font-size:.6rem;vertical-align:middle;">⚠ continúa con "Si estás..."</span>
+        </p>
+        <p class="post-p">
+          La región ofrece una variedad de <strong class="post-strong">huasteca niños actividades</strong> que se adaptan a distintas edades y presupuestos. Desde recorridos en lancha hasta caminatas cortas junto a cascadas, el <strong class="post-strong">viaje familiar huasteca</strong> puede estructurarse para que tanto los bebés como los adolescentes disfruten cada etapa.
+        </p>
+        <p class="post-p">
+          En <strong class="post-strong">huasteca-potosina.com</strong> trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la <strong class="post-strong">Huasteca Potosina</strong> cada semana. Si quieres ahorrar tiempo,
+          <a href="https://www.huasteca-potosina.com/itinerarios" class="link-b">planea tu itinerario</a>
+          con nuestra herramienta antes de reservar.
+          <span class="badge badge-info" style="font-size:.6rem;vertical-align:middle;">Tipo B ✓</span>
+        </p>
+
+        <!-- SECTION 1 -->
+        <h2 class="post-h2" id="h2-1">
+          Destinos imprescindibles para huasteca potosina con niños
+          <span class="anno"><span class="anno-badge label-h2">H2</span></span>
+        </h2>
+
+        <h3 class="post-h3" id="h3-1">
+          Cascadas de Micos y Tamasopo: agua y aventura apta para familias
+          <span class="anno"><span class="anno-badge label-h3">H3</span></span>
+        </h3>
+        <p class="post-p">
+          Las <strong class="post-strong">Cascadas de Micos</strong> son uno de los puntos más visitados en cualquier <strong class="post-strong">viaje familiar huasteca</strong>. El acceso cuesta <strong class="post-strong">$100 pesos por persona</strong>; los niños mayores de 5 años pagan entrada, y el precio incluye chaleco salvavidas. Las pozas naturales permiten chapotear en aguas calmadas, una actividad perfecta para niños de entre 4 y 12 años.
+        </p>
+        <p class="post-p">
+          Tamasopo suma otra opción accesible: entrada de <strong class="post-strong">$50 pesos</strong> con pozas de menor corriente ideales para los más pequeños. Puente de Dios, a solo <strong class="post-strong">$40 pesos</strong>, ofrece una cueva con agua azul. Para conocer las opciones de tour que combinan estos tres puntos, revisa las
+          <a href="https://www.huasteca-potosina.com/tours" class="link-c">actividades disponibles</a>
+          con operadores verificados.
+          <span class="badge badge-warn" style="font-size:.6rem;vertical-align:middle;">⚠ Anchor Tipo C genérico</span>
+        </p>
+
+        <h3 class="post-h3" id="h3-2">
+          Cascada de Tamul: el recorrido en lancha que los niños no olvidarán
+          <span class="anno"><span class="anno-badge label-h3">H3</span></span>
+        </h3>
+        <p class="post-p">
+          Llegar a la <strong class="post-strong">Cascada de Tamul</strong> requiere un recorrido en lancha por el <strong class="post-strong">Río Tampaón</strong>. El costo es de <strong class="post-strong">$150 pesos por persona</strong> desde 1 año de edad. El sitio abre todos los días de <strong class="post-strong">7:00 a 16:00 horas</strong>, lo que permite planificar la salida temprano para evitar el calor del mediodía.
+        </p>
+        <p class="post-p">
+          Para un itinerario estructurado que incluya Tamul, consulta la
+          <a href="/blog/itinerario-huasteca-potosina-3-dias-3-dias-en-la-huasteca-po-2026" class="link-a">guía de 3 días en la Huasteca Potosina</a>
+          que preparamos con recorridos probados por familias reales.
+          <span class="badge badge-info" style="font-size:.6rem;vertical-align:middle;">Tipo A ✓</span>
+        </p>
+
+        <!-- SECTION 2 -->
+        <h2 class="post-h2" id="h2-2">
+          Actividades y presupuesto para tu viaje familiar huasteca 2026
+          <span class="anno"><span class="anno-badge label-h2">H2</span></span>
+        </h2>
+
+        <!-- Body image -->
+        <figure class="post-figure" id="body-img">
+          <img src="https://raw.githubusercontent.com/manolo1104/CREADOR-DE-INTINERARIO/main/INTINERARIO%20HUASTECA/blog-agent/images/cascada-el-meco/gallery-2.jpg"
+               alt="huasteca potosina con niños guía viaje familiar huasteca"
+               onerror="this.style.background='#1a2e1a';this.style.height='140px';this.src='';this.alt='[imagen: cascada-el-meco]'">
+          <figcaption>Cascada El Meco, uno de los puntos más accesibles para el turismo familiar San Luis Potosí.</figcaption>
+        </figure>
+
+        <h3 class="post-h3" id="h3-3">
+          Las Pozas de Xilitla: cultura y naturaleza para todas las edades
+          <span class="anno"><span class="anno-badge label-h3">H3</span></span>
+        </h3>
+        <p class="post-p">
+          El <strong class="post-strong">Jardín Edward James</strong> en Xilitla cuesta <strong class="post-strong">$100 pesos por persona</strong> y combina arte surrealista con naturaleza. Los niños responden bien a las esculturas gigantes entre la selva y el recorrido no exige esfuerzo físico extremo. Puedes ampliar la información en la
+          <a href="/blog/las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece-2026" class="link-a">guía completa de Las Pozas</a>,
+          que incluye horarios detallados y recomendaciones de visita.
+          <span class="badge badge-info" style="font-size:.6rem;vertical-align:middle;">Tipo A ✓</span>
+        </p>
+
+        <h3 class="post-h3" id="h3-4">
+          Paquetes de tour 2026: cuánto cuesta llevar a la familia
+          <span class="anno"><span class="anno-badge label-h3">H3</span></span>
+        </h3>
+        <p class="post-p">
+          Los paquetes vigentes en 2026 están diseñados para distintos presupuestos. El <strong class="post-strong">Paquete 1</strong> parte desde <strong class="post-strong">$1,530 MXN</strong> por persona; el <strong class="post-strong">Paquete 2</strong> desde <strong class="post-strong">$3,245 MXN</strong>; y el <strong class="post-strong">Paquete 3</strong> desde <strong class="post-strong">$6,490 MXN</strong>. Para el tour de 3 días en mayo 2026, adulto: <strong class="post-strong">$4,190 MXN</strong>, menor 7–16 años: <strong class="post-strong">$3,200 MXN</strong>, niños 3–7 años: desde <strong class="post-strong">$990 MXN</strong>. Consulta la oferta actualizada de
+          <a href="https://www.huasteca-potosina.com/tours" class="link-c">tours familiares en la Huasteca Potosina</a>
+          antes de reservar.
+          <span class="badge badge-info" style="font-size:.6rem;vertical-align:middle;">Tipo C ✓</span>
+        </p>
+
+        <!-- CTA TOURS (posición 6) -->
+        <div class="cta-tours" id="cta-tours">
+          <p><strong>¿Quieres vivir la Huasteca Potosina con niños con guía experto?</strong></p>
+          <p>Tours desde la Huasteca Potosina. Grupos pequeños, guías locales y traslados incluidos.</p>
+          <a href="https://www.huasteca-potosina.com/tours" class="cta-button">Ver tours disponibles →</a>
+          <div style="font-size:.62rem;opacity:.6;margin-top:.5rem;color:#fff;">Posición 6 · CTA Tours</div>
+        </div>
+
+        <!-- CTA ITINERARIO (posición 7) -->
+        <div class="cta-itinerario" id="cta-itinerario">
+          <p><strong>¿Ya tienes tu itinerario para la Huasteca?</strong></p>
+          <p>Nuestro planificador con IA arma tu recorrido en minutos, con tiempos reales, distancias y qué no perderte.</p>
+          <a href="https://www.huasteca-potosina.com/itinerarios" class="cta-button-secondary">Crear mi itinerario gratis →</a>
+          <div style="font-size:.62rem;opacity:.4;margin-top:.5rem;">Posición 7 · CTA Itinerario</div>
+        </div>
+
+        <!-- SECTION 3 -->
+        <h2 class="post-h2" id="h2-3">
+          Consejos prácticos para el turismo familiar San Luis Potosí
+          <span class="anno"><span class="anno-badge label-h2">H2</span></span>
+        </h2>
+        <p class="post-p">Organizar un <strong class="post-strong">viaje familiar huasteca</strong> requiere atender algunos detalles que marcan la diferencia. A continuación, los más importantes según guías locales:</p>
+        <ul class="post-ul">
+          <li><strong class="post-strong">Mejor época:</strong> Los meses de noviembre a marzo son los más recomendados. Lee el análisis en la <a href="/blog/mejor-epoca-para-visitar-la-huasteca-potosina-2026" class="link-a">guía de mejor época para visitar la Huasteca Potosina</a>.</li>
+          <li><strong class="post-strong">Hospedaje:</strong> Busca alojamiento cercano a los sitios naturales. Encuentra opciones en la <a href="/blog/hospedaje-cerca-de-cascadas-huasteca-2026" class="link-a">guía de hospedaje cerca de cascadas</a>.</li>
+          <li><strong class="post-strong">Presupuesto total:</strong> Revisa el <a href="/blog/cuanto-cuesta-huasteca-potosina-2026" class="link-a">desglose de costos reales en la Huasteca Potosina</a>.</li>
+          <li><strong class="post-strong">Equipamiento:</strong> Ropa de cambio, zapatos de agua, protector solar y repelente.</li>
+          <li><strong class="post-strong">SkyBike + tirolesas:</strong> <strong class="post-strong">$900 pesos</strong> por persona; confirma el límite de edad con el operador.</li>
+        </ul>
+
+        <!-- FAQ (posición 9) -->
+        <h2 class="post-h2" id="faq-section">
+          Preguntas frecuentes sobre huasteca potosina con niños
+          <span class="anno"><span class="anno-badge label-faq">FAQ</span></span>
+        </h2>
+        <div class="faq-wrap">
+          <div class="faq-item"><details>
+            <summary class="faq-summary">¿Desde qué edad es seguro llevar a los niños a la Huasteca Potosina?</summary>
+            <div class="faq-answer">Desde los 3 años ya existen actividades seguras, como el recorrido en lancha a Tamul y la visita al Jardín Edward James. Para actividades acuáticas intensas como Cascadas de Micos, se recomienda que los niños tengan al menos 5 años y sepan flotar con chaleco salvavidas.</div>
+          </details></div>
+          <div class="faq-item"><details>
+            <summary class="faq-summary">¿Cuánto cuesta el tour familiar de 3 días en 2026?</summary>
+            <div class="faq-answer">El tour de 3 días cuesta $4,190 MXN por adulto, $3,200 MXN por menor de 7 a 16 años y desde $990 MXN para niños de 3 a 7 años. Los paquetes generales parten desde $1,530 MXN por persona.</div>
+          </details></div>
+          <div class="faq-item"><details>
+            <summary class="faq-summary">¿Qué actividades son gratuitas o muy económicas?</summary>
+            <div class="faq-answer">No hay sitios totalmente gratuitos, pero Puente de Dios ($40 pesos) y Tamasopo ($50 pesos) son las entradas más accesibles. Muchos hoteles cerca de cascadas ofrecen acceso a pozas propias sin costo adicional.</div>
+          </details></div>
+          <div class="faq-item"><details>
+            <summary class="faq-summary">¿Necesito reservar con anticipación para el viaje familiar?</summary>
+            <div class="faq-answer">En temporada alta (Semana Santa, julio y diciembre) se recomienda reservar tours con al menos 2 semanas de anticipación. En temporada baja, una semana suele ser suficiente.</div>
+          </details></div>
+        </div>
+
+        <!-- CTA FINAL (posición 10) -->
+        <div class="cta-final" id="cta-final">
+          <h3>Reserva tu experiencia en la Huasteca Potosina</h3>
+          <p>Tours con guías locales · Grupos reducidos · Sin estrés</p>
+          <p>O planea tu propio recorrido con nuestro creador de itinerarios.</p>
+          <div class="btn-row">
+            <a href="https://www.huasteca-potosina.com/tours" class="btn-primary">Ver todos los tours →</a>
+            <a href="https://www.huasteca-potosina.com/itinerarios" class="btn-secondary">Crear mi itinerario →</a>
+          </div>
+          <div style="font-size:.62rem;opacity:.4;margin-top:.8rem;color:#fff;">Posición 10 · CTA Final</div>
+        </div>
+
+        <!-- SCHEMA JSON-LD -->
+        <div class="schema-block" id="schema-block">{
+  "@context": "https://schema.org",
+  "@type": ["BlogPosting", "FAQPage"],
+  "headline": "Huasteca Potosina con Niños: La Ruta Familiar Perfecta",
+  "datePublished": "2026-04-14T...",
+  "author": {
+    "@type": "Organization",
+    "name": "Huasteca Potosina",
+    "url": "https://www.huasteca-potosina.com"
+  },
+  "image": "https://raw.githubusercontent.com/.../balneario-taninul/hero.webp",
+  "keywords": "huasteca potosina con niños, Huasteca Potosina, tours en la Huasteca Potosina...",
+  "mainEntity": [
+    { "@type": "Question", "name": "¿Desde qué edad es seguro llevar a los niños?", ... },
+    { "@type": "Question", "name": "¿Cuánto cuesta el tour familiar de 3 días?", ... },
+    { "@type": "Question", "name": "¿Qué actividades son gratuitas?", ... },
+    { "@type": "Question", "name": "¿Necesito reservar con anticipación?", ... }
+  ]
+}</div>
+
+      </div><!-- /article-wrap -->
+    </div><!-- /panel-render -->
+
+
+    <!-- ─────────────────────────────────────────── -->
+    <!-- TAB 2: INSPECTOR -->
+    <!-- ─────────────────────────────────────────── -->
+    <div id="panel-inspector" class="tab-panel">
+
+      <div class="insp-section">
+        <div class="insp-title">Meta SEO</div>
+        <div class="insp-row">
+          <span class="insp-key">meta title</span>
+          <span class="insp-val">Huasteca Potosina con Niños: Ruta Familiar 2026</span>
+          <span class="insp-tag badge-ok badge">53 chars ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">meta desc</span>
+          <span class="insp-val">Descubre la Huasteca Potosina con niños en 2026: precios reales, actividades seguras y la ruta familiar perfecta para turismo familiar San Luis Potosí.</span>
+          <span class="insp-tag badge-ok badge">151 chars ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">slug</span>
+          <span class="insp-val" style="font-family:monospace;font-size:.72rem;">huasteca-potosina-con-ninos-la-ruta-familiar-perfecta-2026</span>
+          <span class="insp-tag badge-ok badge">OK</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">keyword</span>
+          <span class="insp-val">huasteca potosina con niños</span>
+          <span class="insp-tag badge-ok badge">en H1 ✓</span>
+        </div>
+      </div>
+
+      <div class="insp-section">
+        <div class="insp-title">Jerarquía de Títulos</div>
+        <div class="insp-row">
+          <span class="insp-key"><span class="label label-h1">H1</span></span>
+          <span class="insp-val">Huasteca Potosina con Niños: La Ruta Familiar Perfecta</span>
+          <span class="insp-tag badge-ok badge">keyword ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key"><span class="label label-h2">H2 ×3</span></span>
+          <span class="insp-val">Destinos imprescindibles / Actividades y presupuesto / Consejos prácticos</span>
+          <span class="insp-tag badge-ok badge">sin H1 rep ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key"><span class="label label-h3">H3 ×4</span></span>
+          <span class="insp-val">Micos y Tamasopo / Tamul / Las Pozas / Paquetes tour 2026</span>
+          <span class="insp-tag badge-ok badge">extractable ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">H2 FAQ</span>
+          <span class="insp-val">Preguntas frecuentes sobre huasteca potosina con niños</span>
+          <span class="insp-tag badge-ok badge">4 Q ✓</span>
+        </div>
+      </div>
+
+      <div class="insp-section">
+        <div class="insp-title">Imágenes</div>
+        <div class="insp-row">
+          <span class="insp-key">Hero</span>
+          <span class="insp-val" style="font-size:.72rem;font-family:monospace;">balneario-taninul/hero.webp<br><span style="color:#f0ad4e;font-size:.7rem;">Alt: "huasteca potosina con niños en Xilitla..."</span></span>
+          <span class="insp-tag badge-warn badge">⚠ tema ≠ imagen</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">Cuerpo</span>
+          <span class="insp-val" style="font-size:.72rem;font-family:monospace;">cascada-el-meco/gallery-2.jpg<br><span style="opacity:.6;font-size:.7rem;">Alt: "huasteca potosina con niños guía viaje..."</span></span>
+          <span class="insp-tag badge-info badge">aceptable</span>
+        </div>
+      </div>
+
+      <div class="insp-section">
+        <div class="insp-title">CTAs (3 bloques)</div>
+        <div class="insp-row">
+          <span class="insp-key">Posición 6</span>
+          <span class="insp-val">CTA Tours — fondo turquesa #00B4D8 · botón blanco</span>
+          <span class="insp-tag badge-ok badge">presente ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">Posición 7</span>
+          <span class="insp-val">CTA Itinerario — fondo claro · botón verde #2D6A4F</span>
+          <span class="insp-tag badge-ok badge">presente ✓</span>
+        </div>
+        <div class="insp-row">
+          <span class="insp-key">Posición 10</span>
+          <span class="insp-val">CTA Final — fondo verde #2D6A4F · 2 botones (tours + itinerario)</span>
+          <span class="insp-tag badge-ok badge">presente ✓</span>
+        </div>
+      </div>
+
+      <div class="insp-section">
+        <div class="insp-title">Keywords (conteo estimado en ~980 palabras)</div>
+        <div class="insp-row"><span class="insp-key">Huasteca Potosina</span><span class="insp-val">~8 ocurrencias</span><span class="insp-tag badge-ok badge">5–9 ✓</span></div>
+        <div class="insp-row"><span class="insp-key">focus keyword</span><span class="insp-val">huasteca potosina con niños — ~9 ocurrencias</span><span class="insp-tag badge-ok badge">8–12 ✓</span></div>
+        <div class="insp-row"><span class="insp-key">tours en la...</span><span class="insp-val">~2 ocurrencias</span><span class="insp-tag badge-ok badge">2–4 ✓</span></div>
+        <div class="insp-row"><span class="insp-key">itinerario...</span><span class="insp-val">~2 ocurrencias</span><span class="insp-tag badge-ok badge">1–3 ✓</span></div>
+        <div class="insp-row"><span class="insp-key">word count</span><span class="insp-val">~980 palabras (sin CTAs)</span><span class="insp-tag badge-ok badge">950–1100 ✓</span></div>
+      </div>
+
+      <div class="insp-section">
+        <div class="insp-title">Schema JSON-LD</div>
+        <div class="insp-row"><span class="insp-key">BlogPosting</span><span class="insp-val">headline, datePublished, author (Organization), image, keywords</span><span class="insp-tag badge-ok badge">✓</span></div>
+        <div class="insp-row"><span class="insp-key">FAQPage</span><span class="insp-val">4 mainEntity Question/Answer extraídos del contenido</span><span class="insp-tag badge-ok badge">✓</span></div>
+        <div class="insp-row"><span class="insp-key">author</span><span class="insp-val">Organization "Huasteca Potosina" (no Person/hotel)</span><span class="insp-tag badge-ok badge">✓</span></div>
+      </div>
+
+    </div><!-- /panel-inspector -->
+
+
+    <!-- ─────────────────────────────────────────── -->
+    <!-- TAB 3: LINKS -->
+    <!-- ─────────────────────────────────────────── -->
+    <div id="panel-links" class="tab-panel">
+      <p style="font-size:.8rem;opacity:.5;margin-bottom:1.2rem;">18 links totales en el artículo (excluyendo navegación del sitio)</p>
+      <table class="links-table">
+        <tr><th>Tipo</th><th>Anchor Text</th><th>URL</th><th>Estado</th></tr>
+        <tr>
+          <td><span class="label label-h3" style="background:#3b82f6;">Tipo B</span></td>
+          <td class="anchor-cell">planea tu itinerario</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/itinerarios</td>
+          <td><span class="badge badge-warn">⚠ poco específico</span></td>
+        </tr>
+        <tr>
+          <td><span class="label" style="background:#e74c3c;color:#fff;">Tipo C</span></td>
+          <td class="anchor-cell">actividades disponibles</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/tours</td>
+          <td><span class="badge badge-warn">⚠ anchor genérico</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-h2">Tipo A</span></td>
+          <td class="anchor-cell">guía de 3 días en la Huasteca Potosina</td>
+          <td class="url-cell">/blog/itinerario-huasteca-potosina-3-dias-...</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-h2">Tipo A</span></td>
+          <td class="anchor-cell">guía completa de Las Pozas</td>
+          <td class="url-cell">/blog/las-pozas-xilitla-...</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label" style="background:#e74c3c;color:#fff;">Tipo C</span></td>
+          <td class="anchor-cell">tours familiares en la Huasteca Potosina</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/tours</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-cta">CTA 6</span></td>
+          <td class="anchor-cell">Ver tours disponibles →</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/tours</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-cta">CTA 7</span></td>
+          <td class="anchor-cell">Crear mi itinerario gratis →</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/itinerarios</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-h2">Tipo A</span></td>
+          <td class="anchor-cell">guía de mejor época para visitar la Huasteca Potosina</td>
+          <td class="url-cell">/blog/mejor-epoca-para-visitar-...</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-h2">Tipo A</span></td>
+          <td class="anchor-cell">guía de hospedaje cerca de cascadas</td>
+          <td class="url-cell">/blog/hospedaje-cerca-de-cascadas-...</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-h2">Tipo A</span></td>
+          <td class="anchor-cell">desglose de costos reales en la Huasteca Potosina</td>
+          <td class="url-cell">/blog/cuanto-cuesta-huasteca-potosina-2026</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-cta">CTA 10</span></td>
+          <td class="anchor-cell">Ver todos los tours →</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/tours</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+        <tr>
+          <td><span class="label label-cta">CTA 10</span></td>
+          <td class="anchor-cell">Crear mi itinerario →</td>
+          <td class="url-cell">https://www.huasteca-potosina.com/itinerarios</td>
+          <td><span class="badge badge-ok">✓</span></td>
+        </tr>
+      </table>
+
+      <div style="margin-top:1.5rem;background:rgba(255,255,255,.03);padding:1rem;border-radius:6px;font-size:.8rem;">
+        <strong>Resumen de tipos:</strong>
+        <span style="margin:0 .5rem;"><span class="label label-h2">Tipo A</span> 5 links (mín 2 ✓)</span>
+        <span style="margin:0 .5rem;"><span class="label" style="background:#3b82f6;color:#fff;">Tipo B</span> 1 link (mín 1 ✓)</span>
+        <span style="margin:0 .5rem;"><span class="label" style="background:#e74c3c;color:#fff;">Tipo C</span> 2 links + 3 CTAs (mín 2 ✓)</span>
+      </div>
+    </div><!-- /panel-links -->
+
+
+    <!-- ─────────────────────────────────────────── -->
+    <!-- TAB 4: ISSUES -->
+    <!-- ─────────────────────────────────────────── -->
+    <div id="panel-issues" class="tab-panel">
+
+      <div class="issue err">
+        <h4>🔴 Imagen hero no corresponde al tema</h4>
+        <p>El artículo es sobre "niños en la Huasteca" pero la imagen hero es del <strong>Balneario Taninul</strong>. Ocurre porque el mapa IMAGE_FOLDER_MAP no tiene un folder específico para el tema "niños" y toma el primero disponible.<br><strong>Fix en agente:</strong> Cuando no hay folder exacto para el tema, buscar en web en lugar de usar imagen aleatoria del banco.</p>
+      </div>
+
+      <div class="issue warn">
+        <h4>🟡 Intro comienza con frase prohibida "Si estás buscando..."</h4>
+        <p>El tercer párrafo del intro inicia con "Si estás buscando opciones de huasteca potosina con niños..." — esto está explícitamente prohibido en las instrucciones del agente.<br><strong>Fix en agente:</strong> Reforzar la restricción en el prompt. Agregar ejemplo negativo claro.</p>
+      </div>
+
+      <div class="issue warn">
+        <h4>🟡 Anchor Tipo C genérico: "actividades disponibles"</h4>
+        <p>El primer link Tipo C (hacia /tours) usa "actividades disponibles" como anchor, que es demasiado genérico. Debería ser "ver tours para familias en la Huasteca Potosina" o "tours con niños en la Huasteca".<br><strong>Fix en agente:</strong> Añadir ejemplos de anchors prohibidos genéricos en el prompt.</p>
+      </div>
+
+      <div class="issue warn">
+        <h4>🟡 Link Tipo B poco específico</h4>
+        <p>El anchor del link Tipo B es "planea tu itinerario" sin mencionar el destino específico. Debería ser "planea tu itinerario familiar a la Huasteca Potosina".<br><strong>Fix en agente:</strong> Especificar en el prompt que el anchor Tipo B siempre incluya el destino o segmento.</p>
+      </div>
+
+      <div class="issue ok">
+        <h4>✅ Los 3 CTAs están presentes y en las posiciones correctas</h4>
+        <p>CTA Tours (pos 6), CTA Itinerario (pos 7) y CTA Final con doble botón (pos 10) están correctamente posicionados y con los colores correctos (#00B4D8 y #2D6A4F).</p>
+      </div>
+
+      <div class="issue ok">
+        <h4>✅ FAQ con 4 preguntas reales + Schema FAQPage generado</h4>
+        <p>Las 4 preguntas del FAQ tienen datos concretos (precios exactos, edades, temporadas) y están extraídas en el schema JSON-LD automáticamente.</p>
+      </div>
+
+      <div class="issue ok">
+        <h4>✅ E-E-A-T de plataforma presente en intro</h4>
+        <p>"En huasteca-potosina.com trabajamos con guías y operadores locales..." aparece en el párrafo 3 del intro, correctamente.</p>
+      </div>
+
+      <div class="issue ok">
+        <h4>✅ Word count y densidad dentro del rango</h4>
+        <p>~980 palabras (rango 950–1100 ✓). Keyword principal ~9 veces. Densidad estimada ~1.6%.</p>
+      </div>
+
+    </div><!-- /panel-issues -->
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+function scrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) { showTab('render'); el.scrollIntoView({ behavior:'smooth', block:'center' }); }
+}
+</script>
+</body>
+</html>
