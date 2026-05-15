@@ -5,12 +5,13 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
+import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import { prisma } from "@/lib/prisma";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
   MessageCircle, Star, Award, CheckCircle2,
   Bus, Calendar, BedDouble,
-  AtSign, Share2, Music2,
+  AtSign, Share2, Music2, Quote,
 } from "lucide-react";
 
 const SITE_URL = "https://www.huasteca-potosina.com";
@@ -44,6 +45,31 @@ const websiteSchema = {
   url: SITE_URL,
   description: "Turismo en la Huasteca Potosina, San Luis Potosí, México",
   inLanguage: "es-MX",
+};
+
+const agencySchema = {
+  "@context": "https://schema.org",
+  "@type": ["TouristAgency", "Organization"],
+  name: "Tours Huasteca Potosina",
+  url: SITE_URL,
+  logo: `${SITE_URL}/imagenes/hero-home.jpg`,
+  description: "Tour operador certificado en la Huasteca Potosina, San Luis Potosí, México. Cascadas, aventura y ecoturismo con guías certificados NOM-09.",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Xilitla",
+    addressRegion: "San Luis Potosí",
+    addressCountry: "MX",
+  },
+  telephone: "+524891251458",
+  email: "hola@huasteca-potosina.com",
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.9",
+    bestRating: "5",
+    reviewCount: "492",
+  },
+  award: "Mejor Tour Operador Norteamérica — Arival 2023",
+  sameAs: ["https://www.facebook.com/huastecatours/"],
 };
 
 const destinosSchema = {
@@ -95,6 +121,7 @@ export default async function HomePage() {
       {/* ── JSON-LD ── */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(destinosSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(agencySchema) }} />
 
       {/* ── HERO ── */}
       <section
@@ -177,8 +204,8 @@ export default async function HomePage() {
           <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">
             {[
               { num: String(DESTINOS_DB.length), label: "Destinos Únicos" },
-              { num: "Todo el año",              label: "Temporada" },
-              { num: "Desde $60",                label: "MXN entrada" },
+              { num: "Máx. 12",                  label: "Personas por grupo" },
+              { num: "Guías",                    label: "Certificados NOM-09" },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <span className="font-cormorant font-light text-dorado block leading-none" style={{ fontSize: "clamp(28px,4vw,40px)" }}>
@@ -274,6 +301,112 @@ export default async function HomePage() {
           >
             Ver todos los tours
           </Link>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIOS ── */}
+      <section aria-label="Reseñas de viajeros" className="bg-white border-y border-negro/8 py-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Lo que dicen los viajeros</p>
+            <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
+              492 Reseñas · <em className="text-dorado">4.9 estrellas</em>
+            </h2>
+            <div className="flex justify-center gap-1 mt-3">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-dorado text-dorado" aria-hidden="true" />
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Testimonio 1 */}
+            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src="/imagenes/reviews/reviewer-turquoise-group.png"
+                  alt="Grupo de viajeros en las aguas turquesas de la Huasteca"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div className="p-6">
+                <Quote className="w-6 h-6 text-dorado/40 mb-3" aria-hidden="true" />
+                <p className="text-negro/70 font-dm text-sm leading-relaxed mb-5 italic">
+                  "¡Increíble experiencia! El agua turquesa es algo que jamás habíamos visto. El guía fue extraordinario — conocía cada detalle de la región y nos cuidó en todo momento. ¡Ya reservamos para volver con más familia!"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-verde-selva/15 flex items-center justify-center text-verde-selva font-dm font-medium text-sm flex-shrink-0">CM</div>
+                  <div>
+                    <p className="font-dm text-negro/80 text-sm font-medium">Carlos M.</p>
+                    <p className="font-dm text-negro/40 text-[11px]">Monterrey, N.L. · Tour Todo Huasteca · Mar 2026</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            {/* Testimonio 2 */}
+            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src="/imagenes/reviews/reviewer-familia-tamul.png"
+                  alt="Familia frente a la Cascada Tamul"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div className="p-6">
+                <Quote className="w-6 h-6 text-dorado/40 mb-3" aria-hidden="true" />
+                <p className="text-negro/70 font-dm text-sm leading-relaxed mb-5 italic">
+                  "Llevamos a nuestros hijos por primera vez y fue absolutamente mágico. La cascada Tamul superó todas nuestras expectativas. Transporte puntual, guía atento y todo incluido. Lo más recomendable que hemos hecho en familia."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-dorado/15 flex items-center justify-center text-dorado font-dm font-medium text-sm flex-shrink-0">AG</div>
+                  <div>
+                    <p className="font-dm text-negro/80 text-sm font-medium">Ana González</p>
+                    <p className="font-dm text-negro/40 text-[11px]">Ciudad de México · Tour Cascada Tamul · Feb 2026</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            {/* Testimonio 3 */}
+            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src="/imagenes/tours/hd-gente-sentada-piedra-tamul-editada-3-julio-2016.jpg"
+                  alt="Grupo de amigos en el Cañón del Tamul"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div className="p-6">
+                <Quote className="w-6 h-6 text-dorado/40 mb-3" aria-hidden="true" />
+                <p className="text-negro/70 font-dm text-sm leading-relaxed mb-5 italic">
+                  "Organizamos el viaje para 8 amigos y fue perfectamente coordinado. Desde la reserva hasta el último momento del tour, todo impecable. El paisaje del Cañón del Tamul es simplemente irreal. ¡Vuelvo seguro!"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-terracota/15 flex items-center justify-center text-terracota font-dm font-medium text-sm flex-shrink-0">SR</div>
+                  <div>
+                    <p className="font-dm text-negro/80 text-sm font-medium">Sofía R.</p>
+                    <p className="font-dm text-negro/40 text-[11px]">Guadalajara, Jal. · Tour Tamul & Río Gallinas · Ene 2026</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div className="text-center mt-10">
+            <a
+              href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all duration-200"
+            >
+              <Star className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
+              Ver las 492 reseñas en Google
+            </a>
+          </div>
         </div>
       </section>
 
@@ -429,6 +562,33 @@ export default async function HomePage() {
           <p className="text-xs text-negro/30 tracking-wide font-dm">
             Sin registro · Gratis · PDF descargable
           </p>
+        </div>
+      </section>
+
+      {/* ── LEAD MAGNET — CAPTURA DE EMAIL ── */}
+      <section aria-label="Descarga la guía gratuita de la Huasteca Potosina" className="py-20 px-6 bg-verde-profundo">
+        <div className="max-w-3xl mx-auto text-center">
+          <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
+            ✦ Guía PDF Gratuita
+          </span>
+          <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
+            Los 5 mejores días para visitar{" "}
+            <em className="text-dorado">la Huasteca Potosina en 2026</em>
+          </h2>
+          <p className="text-crema/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
+            Con itinerarios detallados, precios actualizados y consejos locales que no encontrarás en ningún blog.
+            Más de 2,000 viajeros ya la descargaron.
+          </p>
+
+          <div className="flex flex-wrap gap-4 justify-center mb-10 text-[10px] tracking-[2px] uppercase font-dm text-crema/40">
+            <span className="flex items-center gap-1.5">✓ Itinerario día a día</span>
+            <span className="flex items-center gap-1.5">✓ Precios 2026</span>
+            <span className="flex items-center gap-1.5">✓ Checklist de viaje</span>
+          </div>
+
+          <div className="max-w-lg mx-auto">
+            <LeadMagnetForm withName={true} fuente="Guía PDF homepage" />
+          </div>
         </div>
       </section>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import { sendBrevoEmail } from "@/lib/brevo";
 import { google } from "googleapis";
 
 const SHEET_ID  = process.env.GOOGLE_SHEETS_ID!;
@@ -25,7 +25,8 @@ async function getSheetsClient() {
   return google.sheets({ version: "v4", auth });
 }
 
-function buildGuideHtml(email: string): string {
+function buildGuideHtml(email: string, name?: string): string {
+  const greeting = name ? `Hola ${name},` : "Hola,";
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -56,8 +57,8 @@ function buildGuideHtml(email: string): string {
 
   <div class="hero">
     <p style="color:#4a8c1c;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">✦ Huasteca Potosina · México ✦</p>
-    <h1>Guía Completa de Viaje</h1>
-    <p>Todo lo que necesitas para vivir la región más extraordinaria de México</p>
+    <h1>Los 5 Mejores Días para Visitar la Huasteca en 2026</h1>
+    <p>${greeting} Tu guía con itinerarios, precios y consejos locales.</p>
   </div>
 
   <div class="section">
@@ -69,10 +70,12 @@ function buildGuideHtml(email: string): string {
   </div>
 
   <div class="section">
-    <h2>Cuándo viajar</h2>
-    <div class="item"><span class="dot">🌟</span><p><strong>Nov–Mar (Ideal):</strong> Cascadas en nivel óptimo y color turquesa, clima fresco 18–26°C. Temporada alta — reserva con anticipación.</p></div>
-    <div class="item"><span class="dot">☀️</span><p><strong>Abr–May (Buena):</strong> Cascadas aún con buen caudal, temperaturas suben 28–38°C. Semana Santa muy concurrida.</p></div>
-    <div class="item"><span class="dot">🌧️</span><p><strong>Jun–Oct (Lluvia):</strong> Verde explosivo, menos turistas, precios más bajos. Consultar condiciones en Tamul.</p></div>
+    <h2>Los 5 Mejores Días (2026)</h2>
+    <div class="timeline-item"><span>Día 1 — Llegada y Xilitla</span><p>Las Pozas de Edward James al atardecer. Cena en el mercado local. Hotel boutique en el pueblo mágico.</p></div>
+    <div class="timeline-item"><span>Día 2 — Cascada Tamul</span><p>El recorrido en canoa por el Río Gallinas. Mejor entre noviembre y marzo — agua turquesa garantizada.</p></div>
+    <div class="timeline-item"><span>Día 3 — Sótano de las Golondrinas</span><p>Llegada a las 6 am para ver el vuelo de miles de vencejos. El espectáculo más impresionante de la región.</p></div>
+    <div class="timeline-item"><span>Día 4 — Cascadas de Micos y Tamasopo</span><p>Tour de cascadas en un solo día. Llevar aqua shoes, la corriente es fuerte y vale la pena nadar.</p></div>
+    <div class="timeline-item"><span>Día 5 — Puente de Dios y regreso</span><p>La luz perfecta entra entre 11 y 13 horas. Último baño y vuelta a casa con recuerdos para siempre.</p></div>
   </div>
 
   <div class="section">
@@ -87,15 +90,7 @@ function buildGuideHtml(email: string): string {
   </div>
 
   <div class="section">
-    <h2>Itinerarios sugeridos</h2>
-    <div class="timeline-item"><span>3 Días (Intenso)</span><p>Día 1: Llegada Xilitla. Día 2: Tour Tamul + Sótano. Día 3: Las Pozas.</p></div>
-    <div class="timeline-item"><span>5 Días (Ideal)</span><p>Día 1: Llegada. Día 2: Tamul. Día 3: Las Pozas. Día 4: El Meco o Minas+Micos. Día 5: Puente de Dios.</p></div>
-    <div class="timeline-item"><span>7 Días (Completo)</span><p>Todo lo anterior + Laguna Media Luna, Tamtoc, mercado local y tiempo libre en Xilitla.</p></div>
-  </div>
-
-  <div class="section">
     <h2>Qué llevar — Checklist</h2>
-    <p style="margin-bottom:10px;">Guarda esta lista antes del viaje:</p>
     <span class="badge">Aqua shoes</span><span class="badge">Ropa dry-fit</span><span class="badge">Bloqueador biodegradable</span>
     <span class="badge">Repelente biodegradable</span><span class="badge">Powerbank</span><span class="badge">Funda impermeable cel</span>
     <span class="badge">Efectivo en pesos</span><span class="badge">Botiquín básico</span><span class="badge">Chamarra ligera (Sótano)</span>
@@ -116,7 +111,7 @@ function buildGuideHtml(email: string): string {
   <div class="footer">
     <p>Tours Huasteca Potosina · Xilitla, San Luis Potosí, México</p>
     <p style="margin-top:6px;"><a href="https://www.huasteca-potosina.com" style="color:#4a8c1c;">www.huasteca-potosina.com</a></p>
-    <p style="margin-top:12px;font-size:11px;">Recibiste este email porque solicitaste nuestra guía en <a href="https://www.huasteca-potosina.com/info-practica" style="color:#4a8c1c;">info-practica</a>.</p>
+    <p style="margin-top:12px;font-size:11px;">Recibiste este email porque solicitaste nuestra guía en <a href="https://www.huasteca-potosina.com" style="color:#4a8c1c;">huasteca-potosina.com</a>.</p>
   </div>
 
 </div>
@@ -126,7 +121,8 @@ function buildGuideHtml(email: string): string {
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+    const body = await req.json();
+    const { email, name, fuente } = body;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
@@ -138,31 +134,23 @@ export async function POST(req: Request) {
       const fecha  = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range:         `${SHEET_TAB}!A:C`,
+        range:         `${SHEET_TAB}!A:D`,
         valueInputOption: "USER_ENTERED",
-        requestBody:   { values: [[email, fecha, "Guía PDF info-practica"]] },
+        requestBody:   { values: [[email, name || "", fecha, fuente || "Guía PDF"]] },
       });
     } catch (err) {
       console.warn("[lead-magnet] sheets write failed (non-fatal):", err);
     }
 
-    // 2 — Enviar email via Resend
-    const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-    if (!resend) {
-      console.warn("[lead-magnet] RESEND_API_KEY no configurada — email omitido");
-      return NextResponse.json({ ok: true, warn: "email_skipped" });
-    }
-
-    const from = process.env.RESEND_FROM_TOURS || "onboarding@resend.dev";
-    const { error } = await resend.emails.send({
-      from,
-      to:      email,
-      subject: "Tu Guía Completa de Viaje — Huasteca Potosina 🌿",
-      html:    buildGuideHtml(email),
-    });
-
-    if (error) {
-      console.error("[lead-magnet] Resend error:", error.message);
+    // 2 — Enviar email via Brevo
+    try {
+      await sendBrevoEmail({
+        to:          [{ email, name: name || undefined }],
+        subject:     "Tu Guía de Viaje — Los 5 Mejores Días en la Huasteca Potosina 🌿",
+        htmlContent: buildGuideHtml(email, name),
+      });
+    } catch (err: any) {
+      console.error("[lead-magnet] Brevo error:", err.message);
       return NextResponse.json({ error: "Error al enviar email" }, { status: 500 });
     }
 

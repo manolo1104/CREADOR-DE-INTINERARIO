@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Mail, CheckCircle, Loader2 } from "lucide-react";
+import { Download, Mail, User, CheckCircle, Loader2 } from "lucide-react";
 
-export function LeadMagnetForm() {
+interface Props {
+  withName?: boolean;
+  fuente?: string;
+}
+
+export function LeadMagnetForm({ withName = false, fuente = "Guía PDF" }: Props) {
   const [email, setEmail]   = useState("");
+  const [name,  setName]    = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -15,7 +21,7 @@ export function LeadMagnetForm() {
       const res = await fetch("/api/lead-magnet", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ email, fuente: "Guía PDF info-practica" }),
+        body:    JSON.stringify({ email, name: name || undefined, fuente }),
       });
       if (res.ok) setStatus("success");
       else        setStatus("error");
@@ -47,32 +53,46 @@ export function LeadMagnetForm() {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crema/30 pointer-events-none" />
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-            className="w-full bg-negro/50 border border-white/20 focus:border-verde-selva text-crema placeholder:text-crema/30 font-dm text-sm pl-9 pr-4 py-3 outline-none transition-colors"
-          />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        {withName && (
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crema/30 pointer-events-none" />
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Tu nombre"
+              className="w-full bg-negro/50 border border-white/20 focus:border-verde-selva text-crema placeholder:text-crema/30 font-dm text-sm pl-9 pr-4 py-3 outline-none transition-colors"
+            />
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crema/30 pointer-events-none" />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+              className="w-full bg-negro/50 border border-white/20 focus:border-verde-selva text-crema placeholder:text-crema/30 font-dm text-sm pl-9 pr-4 py-3 outline-none transition-colors"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={status === "loading" || !email}
+            className="flex items-center justify-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+          >
+            {status === "loading" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Descargar gratis
+              </>
+            )}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={status === "loading" || !email}
-          className="flex items-center justify-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-        >
-          {status === "loading" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <>
-              <Download className="w-4 h-4" />
-              Descargar gratis
-            </>
-          )}
-        </button>
       </form>
       {status === "error" && (
         <p className="mt-2 text-terracota font-dm text-xs">

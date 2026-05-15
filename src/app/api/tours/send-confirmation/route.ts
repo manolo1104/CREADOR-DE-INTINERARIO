@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
@@ -7,8 +7,6 @@ import { addTourToSheet } from "@/lib/sheetsHuasteca";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-
   try {
     const body = await req.json();
     const {
@@ -19,13 +17,11 @@ export async function POST(req: NextRequest) {
       promoCode, promoDiscount,
     } = body;
 
-    // 1. Número de confirmación
     const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
-    // 2. Guardar en Google Sheets tab HUASTECA
     try {
       await addTourToSheet({
-        confirmationNumber: confirmationNumber,
+        confirmationNumber,
         customerName,
         customerPhone: customerPhone || null,
         customerEmail: email,
@@ -43,7 +39,6 @@ export async function POST(req: NextRequest) {
       console.error("❌ Sheets tour:", e.message);
     }
 
-    // 3. Guardar en base de datos
     try {
       await prisma.tourBooking.create({
         data: {
@@ -70,13 +65,10 @@ export async function POST(req: NextRequest) {
       console.error("❌ prisma.tourBooking.create:", e.message);
     }
 
-    // 3. Email de confirmación
-    if (!resend) {
-      console.warn("⚠️ RESEND_API_KEY no configurada — email omitido");
+    if (!email?.includes("@")) {
+      console.warn("⚠️ Email inválido — confirmación omitida");
     } else {
       try {
-        if (!email?.includes("@")) throw new Error("Email inválido");
-
         const html = buildTourEmailHtml({
           customerName,
           confirmationNumber,
@@ -91,27 +83,18 @@ export async function POST(req: NextRequest) {
           promoDiscount: Number(promoDiscount) || 0,
         });
 
-        // Usar dominio verificado en Resend. Mientras se verifica huasteca-potosina.com,
-        // usar onboarding@resend.dev (modo prueba de Resend).
-        const from    = process.env.RESEND_FROM_TOURS || "onboarding@resend.dev";
-        const adminTo = process.env.ADMIN_EMAIL_TOURS  || "daftpunkmanolo@gmail.com";
-        const bcc     = Array.from(new Set([adminTo]));
+        const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
 
-        const { data, error: resendError } = await resend.emails.send({
-          from,
-          to:      [email],
-          bcc,
+        await sendBrevoEmail({
+          to:      [{ email, name: customerName }],
+          bcc:     [{ email: adminTo }],
           subject: `Tu tour está confirmado — ${confirmationNumber}`,
-          html,
+          htmlContent: html,
         });
 
-        if (resendError) {
-          console.error(`❌ Resend: ${resendError.message} | to=${email}`);
-        } else {
-          console.log(`✅ Email enviado | id=${data?.id} | to=${email} | cn=${confirmationNumber}`);
-        }
+        console.log(`✅ Email Brevo enviado | to=${email} | cn=${confirmationNumber}`);
       } catch (e: any) {
-        console.error("❌ Email exception:", e.message);
+        console.error("❌ Brevo email exception:", e.message);
       }
     }
 
