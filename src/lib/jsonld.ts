@@ -1,6 +1,7 @@
 import { Destino } from "./destinos";
+import { RATING_DESTINO } from "./destinoData";
 
-const BASE_URL = "https://huastecapotosina.mx";
+const BASE_URL = "https://www.huasteca-potosina.com";
 
 function buildFAQs(d: Destino) {
   // Use curated FAQs from seo field when available
@@ -121,6 +122,14 @@ export function buildDestinationJsonLd(d: Destino) {
           value: true,
         })),
         isAccessibleForFree: false,
+        image: d.imagen_hero ? `${BASE_URL}${d.imagen_hero}` : undefined,
+        aggregateRating: RATING_DESTINO[d.slug] ? {
+          "@type":       "AggregateRating",
+          ratingValue:   RATING_DESTINO[d.slug].rating,
+          reviewCount:   RATING_DESTINO[d.slug].count,
+          bestRating:    "5",
+          worstRating:   "1",
+        } : undefined,
       },
       {
         "@type": "FAQPage",

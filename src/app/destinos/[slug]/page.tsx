@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   Clock, Ticket, BarChart2, Calendar, Sun, CloudSun, MapPin,
-  AlertTriangle, Car, Backpack, Lightbulb, Map, Zap, Lock,
+  AlertTriangle, Car, Backpack, Lightbulb, Map, Zap, Lock, Star, ExternalLink,
 } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { buildDestinationJsonLd } from "@/lib/jsonld";
@@ -13,6 +13,16 @@ import { DESTINO_EN_TOURS } from "@/lib/tourMapping";
 import { TOURS_DB } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
+import { DestinoGallery } from "@/components/DestinoGallery";
+import { MejorEpocaWidget } from "@/components/MejorEpocaWidget";
+import {
+  NARRATIVA_DESTINO,
+  COMBINACION_DESTINO,
+  REVIEWS_POR_DESTINO,
+  RATING_DESTINO,
+} from "@/lib/destinoData";
+
+const SITE = "https://www.huasteca-potosina.com";
 
 interface Props {
   params: { slug: string };
@@ -29,9 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: destino.seo?.metaTitle ?? `${destino.nombre} — Huasteca Potosina`,
     description: destino.seo?.metaDescription ?? destino.descripcion,
     keywords: destino.seo?.keywords ?? ["Huasteca Potosina", destino.zona, destino.nombre, "turismo México"],
-    openGraph: destino.imagen_hero
-      ? { images: [{ url: destino.imagen_hero }] }
-      : undefined,
+    openGraph: destino.imagen_hero ? { images: [{ url: `${SITE}${destino.imagen_hero}` }] } : undefined,
   };
 }
 
@@ -39,32 +47,35 @@ export default function DestinoPage({ params }: Props) {
   const destino = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!destino) notFound();
 
-  const jsonLd = buildDestinationJsonLd(destino);
+  const jsonLd           = buildDestinationJsonLd(destino);
   const toursRelacionados = DESTINO_EN_TOURS[destino.slug] ?? [];
-  const toursCompletos = toursRelacionados
-    .map((t) => TOURS_DB.find((tour) => tour.slug === t.slug))
-    .filter(Boolean);
+  const toursCompletos   = toursRelacionados.map((t) => TOURS_DB.find((tour) => tour.slug === t.slug)).filter(Boolean);
+  const narrativa        = NARRATIVA_DESTINO[destino.slug];
+  const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
+  const reviewsDestino   = REVIEWS_POR_DESTINO[destino.slug] ?? [];
+  const rating           = RATING_DESTINO[destino.slug];
+  const tourHref         = toursRelacionados[0] ? `/tours/${toursRelacionados[0].slug}` : undefined;
+
+  // Build all gallery images: hero + galeria
+  const allImages = [
+    { src: destino.imagen_hero, alt: destino.nombre },
+    ...destino.imagen_galeria.map((src, i) => ({ src, alt: `${destino.nombre} — foto ${i + 2}` })),
+  ].filter(img => !!img.src);
+
+  // Google Maps URL
+  const mapsUrl  = `https://www.google.com/maps/search/${encodeURIComponent(destino.nombre + " " + destino.zona + " San Luis Potosí")}/@${destino.lat},${destino.lng},13z`;
+  const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${destino.lng - 0.08},${destino.lat - 0.06},${destino.lng + 0.08},${destino.lat + 0.06}&layer=mapnik&marker=${destino.lat},${destino.lng}`;
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="min-h-screen">
 
-        {/* Hero — imagen de fondo cuando hay foto, gradiente cuando no */}
+        {/* ── HERO ── */}
         <div className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
           {destino.imagen_hero ? (
             <>
-              <Image
-                src={destino.imagen_hero}
-                alt={destino.nombre}
-                fill
-                priority
-                className="object-cover"
-                sizes="100vw"
-              />
+              <Image src={destino.imagen_hero} alt={destino.nombre} fill priority className="object-cover" sizes="100vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/60 to-transparent" />
             </>
           ) : (
@@ -79,17 +90,27 @@ export default function DestinoPage({ params }: Props) {
             <h1 className="font-cormorant font-light text-crema mb-3" style={{ fontSize: "clamp(40px,6vw,64px)" }}>
               {destino.nombre}
             </h1>
-            <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4">{destino.zona} · {destino.tipo}</p>
+            <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-2">{destino.zona} · {destino.tipo}</p>
+
+            {/* Rating en hero */}
+            {rating && (
+              <div className="flex items-center gap-1.5 mb-4">
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_,i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
+                </div>
+                <span className="font-dm text-sm text-dorado font-medium">{rating.rating}</span>
+                <span className="font-dm text-xs text-crema/40">· {rating.count} opiniones</span>
+              </div>
+            )}
+
             <p className="text-crema/75 max-w-2xl leading-relaxed text-base mb-5">{destino.descripcion}</p>
+
             {toursRelacionados.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {toursRelacionados.map((t) => (
-                  <Link
-                    key={t.slug}
-                    href={`/tours/${t.slug}`}
-                    className="inline-flex items-center gap-1.5 bg-verde-selva/80 hover:bg-verde-vivo text-crema text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 transition-colors"
-                  >
-                    <Map className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                  <Link key={t.slug} href={`/tours/${t.slug}`}
+                    className="inline-flex items-center gap-1.5 bg-verde-selva/80 hover:bg-verde-vivo text-crema text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 transition-colors">
+                    <Map className="w-3 h-3 flex-shrink-0" />
                     Incluido en: {t.nombre} →
                   </Link>
                 ))}
@@ -98,25 +119,33 @@ export default function DestinoPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Galería de imágenes adicionales */}
-        {destino.imagen_galeria.length > 0 && (
-          <div className="grid grid-cols-2 gap-1">
-            {destino.imagen_galeria.map((src, i) => (
-              <div key={src} className="relative aspect-video overflow-hidden">
-                <Image
-                  src={src}
-                  alt={`${destino.nombre} — foto ${i + 2}`}
-                  fill
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                  sizes="50vw"
-                />
-              </div>
-            ))}
+        {/* ── GALERÍA LIGHTBOX ── */}
+        {allImages.length > 1 && (
+          <DestinoGallery images={allImages} nombre={destino.nombre} />
+        )}
+
+        {/* ── NARRATIVA EMOCIONAL ── */}
+        {narrativa && (
+          <div className="max-w-4xl mx-auto px-6 pt-14 pb-2">
+            <div className="border-l-2 border-verde-vivo/40 pl-6 py-2">
+              <p className="text-crema/75 font-dm text-sm leading-relaxed italic">
+                {narrativa}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Info Grid */}
-        <div className="max-w-4xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* ── WIDGET MEJOR ÉPOCA ── */}
+        <div className="max-w-4xl mx-auto px-6 pt-8 pb-2">
+          <MejorEpocaWidget
+            temporada={destino.temporada_ideal}
+            destinoNombre={destino.nombre}
+            tourHref={tourHref}
+          />
+        </div>
+
+        {/* ── INFO GRID ── */}
+        <div className="max-w-4xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Datos prácticos */}
           <div className="space-y-4">
             <h2 className="font-cormorant text-crema text-2xl mb-6">Datos prácticos</h2>
@@ -133,7 +162,7 @@ export default function DestinoPage({ params }: Props) {
               ] as { Icon: LucideIcon; label: string; val: string | undefined }[]
             ).filter(i => i.val).map((item) => (
               <div key={item.label} className="flex gap-3 py-3 border-b border-white/6">
-                <item.Icon className="w-4 h-4 flex-shrink-0 text-verde-selva mt-0.5" aria-hidden="true" />
+                <item.Icon className="w-4 h-4 flex-shrink-0 text-verde-selva mt-0.5" />
                 <div>
                   <div className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-0.5">{item.label}</div>
                   <div className="text-sm text-crema">{item.val}</div>
@@ -146,19 +175,19 @@ export default function DestinoPage({ params }: Props) {
           <div className="space-y-6">
             {destino.advertencias && (
               <div className="border-l-2 border-terracota bg-terracota/8 p-4">
-                <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" aria-hidden="true" /> Advertencias</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" /> Advertencias</p>
                 <p className="text-sm text-crema/75">{destino.advertencias}</p>
               </div>
             )}
             {destino.como_llegar && (
               <div className="border-l-2 border-agua bg-agua/8 p-4">
-                <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2 flex items-center gap-1.5"><Car className="w-3 h-3" aria-hidden="true" /> Cómo llegar</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2 flex items-center gap-1.5"><Car className="w-3 h-3" /> Cómo llegar</p>
                 <p className="text-sm text-crema/75">{destino.como_llegar}</p>
               </div>
             )}
             {destino.que_llevar?.length > 0 && (
               <div>
-                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Backpack className="w-3 h-3" aria-hidden="true" /> Qué llevar</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Backpack className="w-3 h-3" /> Qué llevar</p>
                 <ul className="space-y-1.5">
                   {destino.que_llevar.map((item) => (
                     <li key={item} className="text-sm text-crema/70 flex gap-2">
@@ -170,7 +199,7 @@ export default function DestinoPage({ params }: Props) {
             )}
             {destino.datos_curiosos?.length > 0 && (
               <div>
-                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Lightbulb className="w-3 h-3" aria-hidden="true" /> Datos curiosos</p>
+                <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Lightbulb className="w-3 h-3" /> Datos curiosos</p>
                 <ul className="space-y-1.5">
                   {destino.datos_curiosos.map((d) => (
                     <li key={d} className="text-sm text-crema/70 flex gap-2">
@@ -183,13 +212,76 @@ export default function DestinoPage({ params }: Props) {
           </div>
         </div>
 
-        {/* CTA — si hay tours relacionados los mostramos con precio y reserva directa */}
+        {/* ── MAPA EMBEBIDO ── */}
+        <div className="max-w-4xl mx-auto px-6 pb-12">
+          <h2 className="font-cormorant text-crema text-xl mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-verde-selva" /> Ubicación
+          </h2>
+          <div className="relative overflow-hidden border border-white/10" style={{ height: "280px" }}>
+            {/* Skeleton mientras carga el mapa */}
+            <div className="absolute inset-0 bg-verde-profundo/30 animate-pulse" />
+            <iframe
+              src={embedUrl}
+              width="100%"
+              height="280"
+              style={{ border: 0, position: "relative", zIndex: 10 }}
+              loading="lazy"
+              title={`Mapa de ${destino.nombre}`}
+              allowFullScreen={false}
+            />
+          </div>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 mt-2 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" /> Abrir en Google Maps →
+          </a>
+        </div>
+
+        {/* ── RESEÑAS POR DESTINO ── */}
+        {reviewsDestino.length > 0 && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-cormorant text-crema text-xl">Lo que dicen los viajeros</h2>
+              {rating && (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}
+                  </div>
+                  <span className="text-dorado font-dm text-sm font-medium">{rating.rating}</span>
+                  <span className="text-crema/40 font-dm text-xs">({rating.count})</span>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {reviewsDestino.map((r) => (
+                <div key={r.nombre} className="border border-white/8 bg-negro/30 p-4">
+                  <div className="flex gap-0.5 mb-2">
+                    {[...Array(r.rating)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}
+                  </div>
+                  <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-3">&ldquo;{r.texto}&rdquo;</p>
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={r.foto} alt={r.nombre} width={28} height={28} loading="lazy" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                    <div>
+                      <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
+                      <p className="text-[9px] text-crema/35 font-dm">{r.ciudad}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TOURS RELACIONADOS ── */}
         {toursCompletos.length > 0 ? (
           <div className="bg-verde-selva/20 border-t border-verde-vivo/20 py-16 px-6">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="font-cormorant text-crema text-3xl mb-3">
-                Tours que incluyen{" "}
-                <em className="text-dorado">{destino.nombre}</em>
+                Tours que incluyen <em className="text-dorado">{destino.nombre}</em>
               </h2>
               <p className="text-crema/50 text-sm mb-10 font-dm max-w-md mx-auto">
                 Reserva directamente con tarjeta o pregunta por WhatsApp.
@@ -198,51 +290,28 @@ export default function DestinoPage({ params }: Props) {
                 {toursCompletos.map((tour) => {
                   if (!tour) return null;
                   return (
-                    <div
-                      key={tour.slug}
-                      className="border border-white/10 bg-negro/60 overflow-hidden text-left"
-                    >
+                    <div key={tour.slug} className="border border-white/10 bg-negro/60 overflow-hidden text-left">
                       {tour.imagen_hero && (
                         <div className="relative aspect-video overflow-hidden">
-                          <Image
-                            src={tour.imagen_hero}
-                            alt={tour.nombre}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 100vw, 50vw"
-                          />
+                          <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
                           <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
                         </div>
                       )}
                       <div className="p-5">
-                        <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">
-                          {tour.tipo}
-                        </p>
-                        <h3 className="font-cormorant text-crema text-base leading-snug mb-3">
-                          {tour.nombre}
-                        </h3>
+                        <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{tour.tipo}</p>
+                        <h3 className="font-cormorant text-crema text-base leading-snug mb-3">{tour.nombre}</h3>
                         <p className="font-cormorant text-dorado text-xl leading-none mb-4">
                           ${tour.precio.toLocaleString("es-MX")}
                           <span className="font-dm text-[10px] text-crema/40 ml-1">MXN / persona</span>
                         </p>
                         <div className="space-y-2">
-                          <Link
-                            href={`/reservar-tour/${tour.slug}`}
-                            className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
-                          >
-                            <Lock className="w-3 h-3" aria-hidden="true" />
-                            Reservar con tarjeta
+                          <Link href={`/reservar-tour/${tour.slug}`}
+                            className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors">
+                            <Lock className="w-3 h-3" />Reservar con tarjeta
                           </Link>
-                          <a
-                            href={waLink(WA_MESSAGES.destino(destino.nombre))}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
-                            </svg>
+                          <a href={waLink(WA_MESSAGES.destino(destino.nombre))} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
                             Preguntar por WhatsApp
                           </a>
                         </div>
@@ -252,7 +321,7 @@ export default function DestinoPage({ params }: Props) {
                 })}
               </div>
               <p className="mt-8 text-[10px] text-crema/35 font-dm flex items-center justify-center gap-1.5">
-                <Zap className="w-3 h-3" aria-hidden="true" /> Respuesta en menos de 1 hora · Lun–Dom
+                <Zap className="w-3 h-3" /> Respuesta en menos de 1 hora · Lun–Dom
               </p>
             </div>
           </div>
@@ -264,22 +333,41 @@ export default function DestinoPage({ params }: Props) {
             <p className="text-crema/50 text-sm mb-8 font-dm max-w-md mx-auto">
               Escríbenos por WhatsApp y te armamos el tour ideal para tu grupo y fechas.
             </p>
-            <a
-              href={waLink(WA_MESSAGES.destino(destino.nombre))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 mb-4"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                className="w-4 h-4 flex-shrink-0" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
-              </svg>
+            <a href={waLink(WA_MESSAGES.destino(destino.nombre))} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
               Reservar tour por WhatsApp
             </a>
             <p className="text-[10px] text-crema/35 font-dm flex items-center justify-center gap-1.5">
-              <Zap className="w-3 h-3" aria-hidden="true" /> Respuesta en menos de 1 hora · Lun–Dom
+              <Zap className="w-3 h-3" /> Respuesta en menos de 1 hora · Lun–Dom
             </p>
+          </div>
+        )}
+
+        {/* ── MEJOR COMBINACIÓN (cross-sell) ── */}
+        {combinaciones.length > 0 && (
+          <div className="max-w-4xl mx-auto px-6 py-12 border-t border-white/6">
+            <p className="text-[9px] tracking-[3px] uppercase text-crema/35 font-dm mb-3">
+              Los viajeros que visitan {destino.nombre} también suelen incluir:
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {combinaciones.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/destinos/${c.slug}`}
+                  className="border border-verde-selva/30 bg-verde-selva/8 hover:bg-verde-selva/15 text-crema/75 hover:text-crema font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5"
+                >
+                  <span className="text-verde-vivo text-sm">→</span>
+                  {c.nombre}
+                </Link>
+              ))}
+              <Link
+                href="/recomendar"
+                className="border border-dorado/30 bg-dorado/8 hover:bg-dorado/15 text-dorado/75 hover:text-dorado font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5"
+              >
+                ✦ Crear itinerario personalizado
+              </Link>
+            </div>
           </div>
         )}
       </main>

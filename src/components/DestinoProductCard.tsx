@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Destino } from "@/lib/destinos";
-import { Clock, CloudSun, Calendar } from "lucide-react";
+import { Clock, CloudSun, Calendar, Star } from "lucide-react";
 import { useItinerario } from "@/context/ItinerarioContext";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
+import { RATING_DESTINO } from "@/lib/destinoData";
 
 // ── Colores por nivel de dificultad ──────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
           {difConfig.label}
         </span>
 
-        {/* Título + zona sobre la imagen */}
+        {/* Título + zona + rating sobre la imagen */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 z-10">
           <h3 className="font-cormorant text-crema text-lg font-normal leading-tight uppercase tracking-wide">
             {d.nombre}
@@ -79,6 +80,19 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
           <p className="text-crema/50 text-[10px] font-dm tracking-[1px] uppercase mt-0.5">
             {d.zona}
           </p>
+          {/* Rating */}
+          {RATING_DESTINO[d.slug] ? (
+            <div className="flex items-center gap-1 mt-1">
+              <Star className="w-3 h-3 fill-dorado text-dorado flex-shrink-0" aria-hidden="true" />
+              <span className="text-[10px] font-dm text-dorado font-medium">{RATING_DESTINO[d.slug].rating}</span>
+              <span className="text-[9px] font-dm text-crema/35">({RATING_DESTINO[d.slug].count} opiniones)</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 mt-1">
+              <Star className="w-3 h-3 fill-dorado/60 text-dorado/60 flex-shrink-0" aria-hidden="true" />
+              <span className="text-[9px] font-dm text-dorado/60">Recomendado</span>
+            </div>
+          )}
         </div>
       </Link>
 
