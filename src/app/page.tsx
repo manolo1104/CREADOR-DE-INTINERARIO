@@ -374,7 +374,7 @@ export default async function HomePage() {
             <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
               <div className="aspect-[4/3] overflow-hidden">
                 <img
-                  src="/imagenes/tours/hd-gente-sentada-piedra-tamul-editada-3-julio-2016.jpg"
+                  src="/imagenes/reviews/reviewer-tamul-grupo.jpg"
                   alt="Grupo de amigos en el Cañón del Tamul"
                   className="w-full h-full object-cover"
                   loading="lazy"
