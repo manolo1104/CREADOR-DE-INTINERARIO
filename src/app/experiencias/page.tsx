@@ -1,264 +1,217 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import type { LucideIcon } from "lucide-react";
-import { Droplets, Mountain, Landmark, Thermometer, Camera } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { DestinoIcon } from "@/components/icons/DestinoIcon";
+import { LeadMagnetForm } from "@/components/LeadMagnetForm";
+import ExperienciasClient from "./ExperienciasClient";
 
 const SITE = "https://www.huasteca-potosina.com";
+
 export const metadata: Metadata = {
-  title: "Experiencias — Cascadas, Aventura y Cultura | Huasteca Potosina",
-  description: "Cascadas y pozas, aventura extrema, arte y cultura, naturaleza y bienestar, fotografía. Todas las experiencias de la Huasteca Potosina.",
+  title: "Qué Hacer en la Huasteca Potosina — Cascadas, Aventura y Cultura 2026",
+  description: `Descubre las ${DESTINOS_DB.length} mejores experiencias en la Huasteca Potosina: cascadas turquesas, aventura extrema, cultura huasteca y naturaleza. Tours guiados con transporte incluido.`,
+  alternates: { canonical: `${SITE}/experiencias` },
   openGraph: {
-    title: "Experiencias — Cascadas, Aventura y Cultura | Huasteca Potosina",
-    description: "Cascadas y pozas, aventura extrema, arte y cultura, naturaleza y bienestar, fotografía en la Huasteca Potosina.",
+    title: "Experiencias en la Huasteca Potosina — Cascadas, Aventura y Cultura",
+    description: `${DESTINOS_DB.length} experiencias únicas en la Huasteca Potosina. Cascadas turquesas, sótanos kársticos, jardines surrealistas y aguas termales en San Luis Potosí.`,
     url: `${SITE}/experiencias`,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
-    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Experiencias Huasteca Potosina" }],
   },
-  twitter: { card: "summary_large_image", title: "Experiencias — Huasteca Potosina", description: "Cascadas, aventura y cultura en la Huasteca Potosina.", images: [`${SITE}/og-image.jpg`] },
+  twitter: {
+    card: "summary_large_image",
+    title: "Experiencias Huasteca Potosina — Cascadas, Aventura y Cultura 2026",
+    description: `${DESTINOS_DB.length} experiencias únicas en la Huasteca Potosina. Cascadas, aventura y cultura.`,
+  },
 };
 
-const CASCADAS_SLUGS = [
-  "cascada-de-tamul",
-  "cascadas-de-micos",
-  "cascadas-de-tamasopo",
-  "puente-de-dios-tamasopo",
-];
-const AVENTURA_SLUGS = [
-  "sotano-de-las-golondrinas",
-  "cascadas-de-micos",
-  "cascada-de-tamul",
-];
-const CULTURA_SLUGS = [
-  "las-pozas-jardin-surrealista",
-  "zona-arqueologica-tamtoc",
-];
-const BIENESTAR_SLUGS = [
-  "balneario-taninul",
-  "cascadas-de-tamasopo",
-  "puente-de-dios-tamasopo",
-];
-const FOTOGRAFIA_SLUGS = [
-  "las-pozas-jardin-surrealista",
-  "cascada-de-tamul",
-  "puente-de-dios-tamasopo",
-  "sotano-de-las-golondrinas",
+const FAQS = [
+  {
+    q: "¿Cuál es la mejor época para visitar la Huasteca Potosina?",
+    a: "De noviembre a marzo es la temporada ideal: clima fresco (18–26°C), cascadas con nivel óptimo y el color turquesa más intenso. Semana Santa y julio–agosto son temporada alta con más afluencia y calor.",
+  },
+  {
+    q: "¿Qué incluye el precio de cada experiencia?",
+    a: "El precio indicado es el acceso o entrada por persona al destino natural. Los tours guiados con transporte desde tu hotel, desayuno típico, entradas y guía certificado NOM-09 tienen un costo adicional disponible en la sección de Tours.",
+  },
+  {
+    q: "¿Se puede visitar la Huasteca Potosina con niños?",
+    a: "Sí. Las Cascadas de Tamasopo, Puente de Dios y Las Pozas de Xilitla son perfectas para familias con niños desde los 5 años. El Sótano de las Golondrinas (333m de profundidad) y el río Tampaón requieren mayor edad y condición física.",
+  },
+  {
+    q: "¿Cómo llegar a la Huasteca Potosina desde Ciudad de México?",
+    a: "Desde CDMX son aproximadamente 6 horas en coche por la carretera 85D. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son 8 horas (~$600 MXN). Ciudad Valles es la base de operaciones de la región.",
+  },
 ];
 
-function getDestinos(slugs: string[]) {
-  return slugs
-    .map((slug) => DESTINOS_DB.find((d) => d.slug === slug))
-    .filter(Boolean) as typeof DESTINOS_DB;
-}
-
-interface ExperienceCardProps {
-  destino: typeof DESTINOS_DB[0];
-  description?: string;
-}
-
-function ExperienceCard({ destino, description }: ExperienceCardProps) {
-  return (
-    <div className="flex-shrink-0 w-64 border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-200 group">
-      <div className="p-5 flex flex-col h-full">
-        <DestinoIcon name={destino.icon} className="w-8 h-8 text-verde-selva mb-3" />
-        <h3 className="font-cormorant text-crema text-base leading-tight mb-1">
-          {destino.nombre}
-        </h3>
-        <p className="text-[10px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
-          {destino.zona}
-        </p>
-        <p className="text-crema/50 text-xs font-dm leading-relaxed mb-4 flex-1">
-          {description || destino.descripcion.slice(0, 80) + "…"}
-        </p>
-        <div className="flex items-center justify-between border-t border-white/8 pt-3">
-          <span className="text-dorado text-sm font-dm">
-            {destino.precio_entrada.split(" ").slice(0, 2).join(" ")}
-          </span>
-          <Link
-            href={`/destinos/${destino.slug}`}
-            className="text-[9px] tracking-[2px] uppercase text-verde-vivo hover:text-lima transition-colors font-dm"
-          >
-            Ver más →
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface CategorySectionProps {
-  id: string;
-  Icon: LucideIcon;
-  title: string;
-  subtitle: string;
-  slugs: string[];
-  descriptions?: Record<string, string>;
-}
-
-function CategorySection({ id, Icon, title, subtitle, slugs, descriptions }: CategorySectionProps) {
-  const destinos = getDestinos(slugs);
-
-  return (
-    <section id={id} className="py-16 border-b border-white/6">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Icon className="w-8 h-8 text-verde-selva flex-shrink-0" aria-hidden="true" />
-            <h2
-              className="font-cormorant font-light text-crema"
-              style={{ fontSize: "clamp(26px,3.5vw,40px)" }}
-            >
-              {title}
-            </h2>
-          </div>
-          <p className="text-crema/45 font-dm text-sm ml-12">{subtitle}</p>
-        </div>
-
-        <div className="flex gap-4 overflow-x-auto scrollbar-none pb-4">
-          {destinos.map((d) => (
-            <ExperienceCard
-              key={d.slug}
-              destino={d}
-              description={descriptions?.[d.slug]}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+const experienciasSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "ItemList",
+      name: "Experiencias en la Huasteca Potosina",
+      description: "Tours y actividades en la Huasteca Potosina, San Luis Potosí, México",
+      url: `${SITE}/experiencias`,
+      numberOfItems: DESTINOS_DB.length,
+      itemListElement: DESTINOS_DB.map((d, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "TouristAttraction",
+          name: d.nombre,
+          description: d.descripcion,
+          url: `${SITE}/destinos/${d.slug}`,
+          image: d.imagen_hero ? `${SITE}${d.imagen_hero}` : undefined,
+          touristType: d.tipo,
+          geo: { "@type": "GeoCoordinates", latitude: d.lat, longitude: d.lng },
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: d.zona,
+            addressRegion: "San Luis Potosí",
+            addressCountry: "MX",
+          },
+          offers: {
+            "@type": "Offer",
+            price: d.precio_entrada.match(/\d+/)?.[0] || "0",
+            priceCurrency: "MXN",
+            availability: "https://schema.org/InStock",
+          },
+        },
+      })),
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio",        item: SITE },
+        { "@type": "ListItem", position: 2, name: "Experiencias",  item: `${SITE}/experiencias` },
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: FAQS.map(({ q, a }) => ({
+        "@type": "Question",
+        name: q,
+        acceptedAnswer: { "@type": "Answer", text: a },
+      })),
+    },
+  ],
+};
 
 export default function ExperienciasPage() {
   return (
     <main className="min-h-screen bg-negro">
-      {/* Hero */}
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(experienciasSchema) }}
+      />
+
+      {/* ── HERO ── */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-          Huasteca Potosina
+          ✦ Huasteca Potosina · San Luis Potosí ✦
         </p>
         <h1
-          className="font-cormorant font-light text-crema mb-5"
+          className="font-cormorant font-light text-crema mb-4"
           style={{ fontSize: "clamp(40px,7vw,76px)" }}
         >
-          Experiencias para <em className="text-dorado">todos</em>
+          Experiencias en la <em className="text-dorado">Huasteca Potosina</em>
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-8">
-          Desde la adrenalina de asomarse a un sótano de 333 metros hasta relajarte en aguas
-          termales. La Huasteca tiene una experiencia para cada tipo de viajero.
+        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed">
+          {DESTINOS_DB.length} destinos únicos — cascadas turquesas, aventura extrema, arte surrealista y aguas
+          termales. Una experiencia para cada tipo de viajero.
         </p>
+      </section>
 
-        {/* Quick links */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {[
-            { label: "Cascadas", href: "#cascadas" },
-            { label: "Aventura", href: "#aventura" },
-            { label: "Cultura", href: "#cultura" },
-            { label: "Bienestar", href: "#bienestar" },
-            { label: "Fotografía", href: "#fotografia" },
-          ].map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="border border-white/20 px-4 py-1.5 text-[10px] tracking-[2px] uppercase font-dm text-crema/60 hover:text-crema hover:border-verde-vivo/50 transition-all"
-            >
-              {link.label}
-            </a>
-          ))}
+      {/* ── BANNER PLANIFICADOR IA ── */}
+      <div className="bg-verde-profundo/30 border-y border-verde-vivo/15 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-0.5">✦ Planificador IA · Gratis</p>
+            <p className="text-crema font-dm text-sm">¿No sabes qué combinar? Arma tu itinerario perfecto en 2 minutos.</p>
+          </div>
+          <Link
+            href="/recomendar"
+            className="flex-shrink-0 bg-dorado text-negro text-[10px] tracking-[2px] uppercase font-dm px-6 py-3 hover:bg-lima transition-colors whitespace-nowrap font-medium"
+          >
+            Encontrar mi tour ideal →
+          </Link>
+        </div>
+      </div>
+
+      {/* ── GRID CON FILTROS (client component) ── */}
+      <ExperienciasClient />
+
+      {/* ── CTA TOURS ── */}
+      <section className="py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6">
+        <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
+          ✦ Tours con todo incluido
+        </span>
+        <h2
+          className="font-cormorant font-light text-crema mb-4"
+          style={{ fontSize: "clamp(26px,4vw,44px)" }}
+        >
+          ¿Listo para <em className="text-dorado">reservar?</em>
+        </h2>
+        <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
+          Transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas.
+          Cancelación gratis con 48h de antelación.
+        </p>
+        <Link
+          href="/tours"
+          className="inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors"
+        >
+          Ver todos los tours →
+        </Link>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section className="py-16 px-6 border-t border-white/6">
+        <div className="max-w-3xl mx-auto">
+          <h2
+            className="font-cormorant font-light text-crema text-center mb-10"
+            style={{ fontSize: "clamp(28px,4vw,44px)" }}
+          >
+            Preguntas <em className="text-dorado">frecuentes</em>
+          </h2>
+          <div className="space-y-2">
+            {FAQS.map(({ q, a }) => (
+              <details
+                key={q}
+                className="group border border-white/10 overflow-hidden open:border-verde-selva/30"
+              >
+                <summary className="cursor-pointer px-5 py-4 text-crema font-dm text-sm font-medium list-none select-none hover:bg-white/5 transition-colors flex items-center justify-between gap-4">
+                  <span>{q}</span>
+                  <span className="text-verde-vivo text-lg flex-shrink-0 group-open:rotate-45 transition-transform duration-200">+</span>
+                </summary>
+                <p className="px-5 pb-5 pt-1 text-crema/55 font-dm text-sm leading-relaxed">{a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Category Sections */}
-      <CategorySection
-        id="cascadas"
-        Icon={Droplets}
-        title="Cascadas & Pozas"
-        subtitle="Las aguas turquesas más espectaculares de México. Cada cascada tiene su carácter único."
-        slugs={CASCADAS_SLUGS}
-        descriptions={{
-          "cascada-de-tamul": "La cascada más alta de SLP (105m). Solo accesible en lancha por el río Tampaón.",
-          "cascadas-de-micos": "7 cascadas en un mismo circuito con actividades de aventura incluidas.",
-          "cascadas-de-tamasopo": "Pozas turquesas ideales para nadar. La favorita de las familias.",
-          "puente-de-dios-tamasopo": "Poza azul cobalto bajo puente natural con efecto de luz único.",
-        }}
-      />
-
-      <CategorySection
-        id="aventura"
-        Icon={Mountain}
-        title="Aventura Extrema"
-        subtitle="Para quienes necesitan más adrenalina. La Huasteca desafía tus límites."
-        slugs={AVENTURA_SLUGS}
-        descriptions={{
-          "sotano-de-las-golondrinas": "Abismo kárstico de 333m. El vuelo en espiral al amanecer es irrepetible.",
-          "cascadas-de-micos": "Tirolesa, saltos, kayak y skybike en el río más versátil de la zona.",
-          "cascada-de-tamul": "Remada de 45 min por selva virgen para llegar a la cascada más alta.",
-        }}
-      />
-
-      <CategorySection
-        id="cultura"
-        Icon={Landmark}
-        title="Arte & Cultura"
-        subtitle="El legado de Edward James y la civilización Huasteca. Historia que asombra."
-        slugs={CULTURA_SLUGS}
-        descriptions={{
-          "las-pozas-jardin-surrealista": "El jardín surrealista más único del mundo: esculturas de concreto entre cascadas.",
-          "zona-arqueologica-tamtoc": "El asentamiento prehispánico más importante de la cultura Huasteca.",
-        }}
-      />
-
-      <CategorySection
-        id="bienestar"
-        Icon={Thermometer}
-        title="Naturaleza & Bienestar"
-        subtitle="Aguas termales, pozas para nadar y paisajes que sanan el espíritu."
-        slugs={BIENESTAR_SLUGS}
-        descriptions={{
-          "balneario-taninul": "Aguas termales sulfurosas a 36°C constante. Lodo terapéutico incluido.",
-          "cascadas-de-tamasopo": "Pozas de agua cristalina para nadar rodeado de naturaleza exuberante.",
-          "puente-de-dios-tamasopo": "Una poza de silencio y color azul cobalto bajo un puente de roca.",
-        }}
-      />
-
-      <CategorySection
-        id="fotografia"
-        Icon={Camera}
-        title="Fotografía & Naturaleza"
-        subtitle="Los mejores spots fotográficos de la Huasteca. Imágenes que no se olvidan."
-        slugs={FOTOGRAFIA_SLUGS}
-        descriptions={{
-          "las-pozas-jardin-surrealista": "Estructuras surrealistas, vegetación desbordante. Cada ángulo es una obra de arte.",
-          "cascada-de-tamul": "105 metros de caída turquesa. En octubre: follaje naranja + agua turquesa.",
-          "puente-de-dios-tamasopo": "La luz entra a la cueva entre 11:00 y 13:00. Efecto único en México.",
-          "sotano-de-las-golondrinas": "Miles de vencejos en vuelo espiral al amanecer. Espectáculo natural.",
-        }}
-      />
-
-      {/* CTA Planner */}
-      <section className="py-20 px-6 text-center bg-verde-profundo/20 border-t border-white/6">
-        <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
-          ✦ Planificador IA
-        </span>
-        <h2
-          className="font-cormorant font-light text-crema mb-5"
-          style={{ fontSize: "clamp(26px,4vw,44px)" }}
-        >
-          ¿No sabes por dónde <em className="text-dorado">empezar?</em>
-        </h2>
-        <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
-          Usa el planificador IA para combinar experiencias en un itinerario día a día con rutas
-          reales, tiempos de traslado y presupuesto personalizado.
-        </p>
-        <Link
-          href="/recomendar"
-          className="inline-block bg-dorado text-negro px-12 py-4 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors"
-        >
-          Encontrar mi tour perfecto →
-        </Link>
-        <p className="mt-4 text-[11px] text-crema/30 font-dm">Sin registro · Gratis · 2 minutos</p>
+      {/* ── LEAD MAGNET ── */}
+      <section className="py-20 px-6 bg-verde-profundo border-t border-white/8">
+        <div className="max-w-2xl mx-auto text-center">
+          <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
+            ✦ Guía PDF Gratuita
+          </span>
+          <h2
+            className="font-cormorant font-light text-crema mb-4"
+            style={{ fontSize: "clamp(26px,4vw,44px)" }}
+          >
+            Los 5 mejores días para visitar{" "}
+            <em className="text-dorado">la Huasteca en 2026</em>
+          </h2>
+          <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto leading-relaxed">
+            Itinerarios reales, precios actualizados y consejos de guías locales.
+            Descárgala gratis.
+          </p>
+          <div className="max-w-lg mx-auto">
+            <LeadMagnetForm withName={true} fuente="Guía PDF experiencias" />
+          </div>
+        </div>
       </section>
     </main>
   );
