@@ -8,7 +8,7 @@ import { TourCalculadora } from "@/components/TourCalculadora";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
-import { Award, Bus, Camera, CheckCircle2, MessageCircle, Star, Users } from "lucide-react";
+import { Award, Bus, Calendar, Camera, CheckCircle2, MessageCircle, Star, Users } from "lucide-react";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 
 const SITE = "https://www.huasteca-potosina.com";
@@ -149,10 +149,15 @@ export default function ToursPage() {
         >
           Recorridos <em className="text-dorado">Guiados</em>
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-5">
+        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
           {TOURS_DB.length} tours diseñados para vivir la Huasteca sin preocupaciones.
           Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.
         </p>
+        {/* Salidas diarias — trust pill */}
+        <div className="inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
+          <Calendar className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+          Salidas todos los días del año — reserva con 24h de anticipación
+        </div>
 
         {/* Rating + reseñas — primer punto de confianza */}
         <div className="flex items-center justify-center gap-3 mb-8">

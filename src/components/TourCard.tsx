@@ -101,10 +101,11 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
 
         <div className="border-t border-white/8 mb-3" />
 
-        {/* Duración + grupo */}
-        <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm">
+        {/* Duración + grupo + salidas */}
+        <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm flex-wrap">
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" aria-hidden="true" /> {t.duracion_hrs}h</span>
-          <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> máx. {t.groupMax} personas</span>
+          <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> máx. {t.groupMax}</span>
+          <span className="text-verde-vivo/70 font-medium">✦ Salidas diarias</span>
         </div>
 
         {/* Precio */}

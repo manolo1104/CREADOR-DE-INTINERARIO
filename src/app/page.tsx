@@ -213,6 +213,7 @@ export default async function HomePage() {
           <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">
             {[
               { num: String(DESTINOS_DB.length), label: "Destinos Únicos" },
+              { num: "Salidas",                  label: "Todos los días" },
               { num: "Máx. 12",                  label: "Personas por grupo" },
               { num: "Guías",                    label: "Certificados NOM-09" },
             ].map((s) => (
@@ -261,6 +262,8 @@ export default async function HomePage() {
             <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5" aria-hidden="true" /> Guías NOM-09</span>
             <span className="text-negro/15 hidden sm:block">|</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> Todo incluido</span>
+            <span className="text-negro/15 hidden sm:block">|</span>
+            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" aria-hidden="true" /> Salidas todos los días</span>
           </div>
         </div>
       </section>

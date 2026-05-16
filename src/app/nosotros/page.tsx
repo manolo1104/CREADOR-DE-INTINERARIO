@@ -364,7 +364,7 @@ export default function NosotrosPage() {
                   Nació en Xilitla, San Luis Potosí — el mismo pueblo mágico donde se encuentran Las Pozas de Edward James y el corazón de la Huasteca. Creció rodeado de cascadas turquesas, cañones y una naturaleza que muy pocas personas en el mundo tienen el privilegio de llamar hogar.
                 </p>
                 <p>
-                  Estudió Estrategia y Transformación de Negocios en el Tecnológico de Monterrey, donde se graduó recientemente. Regresó a su tierra natal con una misión clara: llevar el talento empresarial al lugar donde más importa y construir algo que beneficie a su región y a quienes la visitan.
+                  Estudió Estrategia y Transformación de Negocios en el Tecnológico de Monterrey. Durante un intercambio académico en Australia recorrió sus costas, las islas de Indonesia y los paisajes de Nueva Zelanda — y fue ahí donde todo cambió: comparando esos destinos con la Huasteca Potosina se dio cuenta de que México tiene lugares igual de impresionantes o más hermosos, pero el mundo todavía no lo sabe. Esa convicción fue la chispa que encendió todo.
                 </p>
                 <p>
                   A sus 22 años fundó Tours Huasteca Potosina con un objetivo simple y poderoso: <strong className="text-negro/80">difundir la hermosura de la Huasteca Potosina y asegurarse de que cada viajero se lleve la mejor experiencia posible</strong> de la región más extraordinaria de México.
