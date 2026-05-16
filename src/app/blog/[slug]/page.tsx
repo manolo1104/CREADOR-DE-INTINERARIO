@@ -121,7 +121,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       publishedTime: post.publishedAt.toISOString(),
       modifiedTime:  post.updatedAt.toISOString(),
       authors:       ["Manolo Covarrubias"],
-      images:        imageUrl ? [{ url: imageUrl, alt: post.coverImageAlt || title }] : [],
+      images:        imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: post.coverImageAlt || title }] : [],
     },
     twitter: { card: "summary_large_image", title, description, images: imageUrl ? [imageUrl] : [] },
     alternates: { canonical: `${SITE}/blog/${post.slug}` },

@@ -6,22 +6,20 @@ import { BlogFilters } from "@/components/BlogFilters";
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
-  title: "Blog de Viajes — Guías & Rutas | Huasteca Potosina",
-  description: "Guías completas para explorar la Huasteca Potosina: cascadas turquesas, Las Pozas, Sótano de las Golondrinas, gastronomía y consejos de viaje.",
+  title: "Blog Huasteca Potosina — Guías de Viaje, Rutas e Itinerarios 2026",
+  description: "Guías completas para planear tu viaje a la Huasteca Potosina: mejores épocas, itinerarios de 3-7 días, cascadas, gastronomía y consejos de guías locales.",
   openGraph: {
-    title: "Blog de Viajes — Guías & Rutas | Huasteca Potosina",
-    description: "Guías completas para explorar la Huasteca Potosina: cascadas, Las Pozas, Sótano de las Golondrinas y más.",
+    title: "Blog Huasteca Potosina — Guías de Viaje 2026",
+    description: "Itinerarios, mejores épocas, cascadas y consejos de guías locales. Todo gratis.",
     url: `${SITE}/blog`,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
-    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blog Huasteca Potosina — Guías & Rutas de Viaje",
-    description: "Cascadas turquesas, cañones y selva. Todo lo que necesitas para planear tu visita.",
-    images: [`${SITE}/og-image.jpg`],
+    title: "Blog Huasteca Potosina — Guías de Viaje 2026",
+    description: "Itinerarios detallados, mejores épocas y consejos de guías locales.",
   },
   alternates: { canonical: `${SITE}/blog` },
 };

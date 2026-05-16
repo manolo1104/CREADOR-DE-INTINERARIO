@@ -14,23 +14,21 @@ import { DestinoIcon } from "@/components/icons/DestinoIcon";
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
-  title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
+  title: "Tours Huasteca Potosina 2026 — Recorridos Todo Incluido desde $1,300 MXN",
   description:
-    "Tours guiados por la Huasteca Potosina: Tamul, Edward James, Meco, Minas Viejas y más. Transporte, desayuno, entradas y guía certificado incluidos.",
+    "5 tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas. Cancela gratis con 48h. Reserva con tarjeta o WhatsApp.",
   openGraph: {
-    title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
-    description: "Tours guiados por la Huasteca Potosina: Tamul, Edward James, Meco, Minas Viejas y más. Transporte, desayuno, entradas y guía certificado incluidos.",
+    title: "Tours Huasteca Potosina 2026 — Recorridos Todo Incluido",
+    description: "5 tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas.",
     url: `${SITE}/tours`,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
-    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Tours Huasteca Potosina" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tours Huasteca Potosina — Recorridos Guiados con Todo Incluido",
-    description: "Tours guiados por la Huasteca Potosina con todo incluido.",
-    images: [`${SITE}/og-image.jpg`],
+    title: "Tours Huasteca Potosina 2026 — Todo Incluido desde $1,300 MXN",
+    description: "5 tours con transporte, desayuno y guía NOM-09. Grupos máx. 12 personas.",
   },
   alternates: { canonical: `${SITE}/tours` },
 };
@@ -131,6 +129,14 @@ export default function ToursPage() {
   return (
     <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(toursItemListSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Tours",  item: `${SITE}/tours` },
+        ],
+      }) }} />
 
       {/* ── HERO ── */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">

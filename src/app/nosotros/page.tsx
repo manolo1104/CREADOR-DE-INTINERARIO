@@ -21,9 +21,8 @@ export const metadata: Metadata = {
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
-    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Equipo Tours Huasteca Potosina" }],
   },
-  twitter: { card: "summary_large_image", title: "Quiénes Somos — Tours Huasteca Potosina", description: "Guías locales certificados con 6+ años desde 2019.", images: [`${SITE}/og-image.jpg`] },
+  twitter: { card: "summary_large_image", title: "Quiénes Somos — Tours Huasteca Potosina", description: "Guías locales certificados NOM-09 con 6+ años desde 2019. 4.9★ · 492 reseñas." },
   alternates: { canonical: `${SITE}/nosotros` },
 };
 

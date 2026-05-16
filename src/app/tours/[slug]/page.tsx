@@ -164,6 +164,15 @@ export default function TourDetailPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       {reviewSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Tours",  item: `${SITE}/tours` },
+          { "@type": "ListItem", position: 3, name: tour.nombre, item: `${SITE}/tours/${tour.slug}` },
+        ],
+      }) }} />
 
       {/* ── HERO ── */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
