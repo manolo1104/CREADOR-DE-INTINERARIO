@@ -152,6 +152,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       "@type": "Person",
       name:    "Manolo Covarrubias",
       url:     `${SITE}/nosotros`,
+      image:   `${SITE}/imagenes/guias/manolo-covarrubias.jpg`,
     },
     publisher: {
       "@type": "Organization",
@@ -275,12 +276,22 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               <h1 className="font-display text-4xl md:text-5xl text-crema leading-tight mb-6">{post.title}</h1>
 
               {/* Meta */}
-              <div className="flex items-center gap-4 text-[10px] tracking-[2px] uppercase font-dm text-crema/30 mb-10 pb-8 border-b border-white/8">
+              <div className="flex flex-wrap items-center gap-3 text-[10px] tracking-[2px] uppercase font-dm text-crema/30 mb-10 pb-8 border-b border-white/8">
+                {/* Author */}
+                <Link href="/nosotros" className="flex items-center gap-2 hover:text-crema/60 transition-colors group">
+                  <img
+                    src="/imagenes/guias/manolo-covarrubias.jpg"
+                    alt="Manolo Covarrubias"
+                    className="w-7 h-7 rounded-full object-cover object-top border border-white/15 group-hover:border-lima/40 transition-colors flex-shrink-0"
+                  />
+                  <span className="text-crema/50 group-hover:text-crema/80 transition-colors">Manolo Covarrubias</span>
+                </Link>
+                <span className="text-crema/15">·</span>
                 <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</span>
-                <span>·</span>
+                <span className="text-crema/15">·</span>
                 <span>{post.readingTime} min de lectura</span>
-                <span>·</span>
-                <span className="text-lima/50">{post.focusKeyword}</span>
+                <span className="text-crema/15 hidden sm:inline">·</span>
+                <span className="text-lima/50 hidden sm:inline">{post.focusKeyword}</span>
               </div>
 
               {/* Hero image */}
@@ -301,18 +312,31 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentSecond }} />
               )}
 
-              {/* Author bio */}
-              {post.authorBio && (
-                <div
-                  className="mt-12 pt-8 border-t border-white/8
-                    [&_.author-bio]:flex [&_.author-bio]:gap-5 [&_.author-bio]:items-start
-                    [&_.author-bio_img]:rounded-full [&_.author-bio_img]:w-16 [&_.author-bio_img]:h-16 [&_.author-bio_img]:flex-shrink-0 [&_.author-bio_img]:object-cover
-                    [&_.author-bio_h4]:font-display [&_.author-bio_h4]:text-crema [&_.author-bio_h4]:text-xl [&_.author-bio_h4]:mb-2 [&_.author-bio_h4]:font-normal
-                    [&_.author-bio_p]:text-crema/50 [&_.author-bio_p]:font-dm [&_.author-bio_p]:font-light [&_.author-bio_p]:text-sm [&_.author-bio_p]:leading-relaxed [&_.author-bio_p]:mb-3
-                    [&_.author-bio_a]:text-lima [&_.author-bio_a]:text-xs [&_.author-bio_a]:tracking-widest [&_.author-bio_a]:uppercase [&_.author-bio_a]:font-dm [&_.author-bio_a]:no-underline hover:[&_.author-bio_a]:underline"
-                  dangerouslySetInnerHTML={{ __html: post.authorBio }}
-                />
-              )}
+              {/* Author card — siempre visible */}
+              <div className="mt-12 pt-8 border-t border-white/8">
+                <div className="flex items-start gap-5">
+                  <Link href="/nosotros" className="flex-shrink-0">
+                    <img
+                      src="/imagenes/guias/manolo-covarrubias.jpg"
+                      alt="Manolo Covarrubias — guía local y fundador"
+                      className="w-16 h-16 rounded-full object-cover object-top border-2 border-verde-selva/40 hover:border-lima/60 transition-colors"
+                    />
+                  </Link>
+                  <div>
+                    <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-1">Escrito por</p>
+                    <Link href="/nosotros" className="font-cormorant text-crema text-xl font-light hover:text-lima transition-colors">
+                      Manolo Covarrubias
+                    </Link>
+                    <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-crema/35 mb-2">
+                      Guía local · Fundador · Certificado NOM-09
+                    </p>
+                    <p className="text-crema/45 font-dm font-light text-sm leading-relaxed max-w-md">
+                      Nacido en la Huasteca Potosina. Lleva más de 6 años llevando viajeros a los rincones que ningún autobús turístico alcanza.
+                      4.9★ en Google · Premio Arival Mejor Tour Operador Norteamérica 2023.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* CTA final */}
               <div className="my-12 p-8 bg-forest border border-lima/20 text-center">
