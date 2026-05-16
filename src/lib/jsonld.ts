@@ -123,14 +123,22 @@ export function buildDestinationJsonLd(d: Destino) {
         })),
         isAccessibleForFree: false,
         image: d.imagen_hero ? `${BASE_URL}${d.imagen_hero}` : undefined,
-        aggregateRating: RATING_DESTINO[d.slug] ? {
-          "@type":       "AggregateRating",
-          ratingValue:   RATING_DESTINO[d.slug].rating,
-          reviewCount:   RATING_DESTINO[d.slug].count,
-          bestRating:    5,
-          worstRating:   1,
-        } : undefined,
+        // aggregateRating movido a Product — TouristAttraction no soportado por Google para rich snippets de reseñas
       },
+      // Product: único tipo soportado por Google para AggregateRating rich snippets
+      ...(RATING_DESTINO[d.slug] ? [{
+        "@type": "Product",
+        name: d.nombre,
+        description: d.descripcion,
+        image: d.imagen_hero ? `${BASE_URL}${d.imagen_hero}` : undefined,
+        aggregateRating: {
+          "@type":      "AggregateRating",
+          ratingValue:  RATING_DESTINO[d.slug].rating,
+          reviewCount:  RATING_DESTINO[d.slug].count,
+          bestRating:   5,
+          worstRating:  1,
+        },
+      }] : []),
       {
         "@type": "FAQPage",
         mainEntity: buildFAQs(d),
