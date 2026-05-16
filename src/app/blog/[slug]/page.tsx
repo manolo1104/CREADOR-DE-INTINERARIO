@@ -121,6 +121,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       publishedTime: post.publishedAt.toISOString(),
       modifiedTime:  post.updatedAt.toISOString(),
       authors:       ["Manolo Covarrubias"],
+      section:       post.tags[0] || "Guías de Viaje",
+      tags:          [post.focusKeyword, ...post.tags].filter(Boolean),
       images:        imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: post.coverImageAlt || title }] : [],
     },
     twitter: { card: "summary_large_image", title, description, images: imageUrl ? [imageUrl] : [] },
@@ -158,7 +160,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       "@type": "Organization",
       name:    "Tours Huasteca Potosina",
       url:     SITE,
-      logo:    { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo-light.svg`, width: 600, height: 600 },
+      logo:    { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo.png`, width: 600, height: 600 },
     },
     description:    post.metaDescription || post.excerpt || "",
     image: post.coverImageUrl ? {
