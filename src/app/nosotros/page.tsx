@@ -57,7 +57,7 @@ const orgSchema = {
     { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday"], opens: "06:00", closes: "20:00" },
     { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday","Sunday"], opens: "05:00", closes: "20:00" },
   ],
-  aggregateRating: { "@type": "AggregateRating", ratingValue: "4.9", reviewCount: "492", bestRating: "5", worstRating: "1" },
+  aggregateRating: { "@type": "AggregateRating", ratingValue: 4.9, reviewCount: 492, bestRating: 5, worstRating: 1 },
   sameAs: [GOOGLE_REVIEWS_URL, "https://www.tripadvisor.com.mx/Search?q=Tours+Huasteca+Potosina+Xilitla"],
 };
 

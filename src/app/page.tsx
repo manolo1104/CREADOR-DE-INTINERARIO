@@ -73,9 +73,9 @@ const agencySchema = {
   email: "hola@huasteca-potosina.com",
   aggregateRating: {
     "@type": "AggregateRating",
-    ratingValue: "4.9",
-    bestRating: "5",
-    reviewCount: "492",
+    ratingValue: 4.9,
+    bestRating: 5,
+    reviewCount: 492,
   },
   award: "Mejor Tour Operador Norteamérica — Arival 2023",
   sameAs: ["https://www.facebook.com/huastecatours/"],

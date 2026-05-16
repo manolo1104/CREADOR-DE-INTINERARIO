@@ -127,8 +127,8 @@ export function buildDestinationJsonLd(d: Destino) {
           "@type":       "AggregateRating",
           ratingValue:   RATING_DESTINO[d.slug].rating,
           reviewCount:   RATING_DESTINO[d.slug].count,
-          bestRating:    "5",
-          worstRating:   "1",
+          bestRating:    5,
+          worstRating:   1,
         } : undefined,
       },
       {

@@ -60,7 +60,6 @@ export default function TourDetailPage({ params }: Props) {
 
   const dif = DIFICULTAD_CONFIG[tour.dificultad];
   const reviews = TOUR_REVIEWS[tour.id as keyof typeof TOUR_REVIEWS] ?? [];
-  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : "4.9";
 
   const tourSchema = {
     "@context": "https://schema.org",
@@ -72,7 +71,7 @@ export default function TourDetailPage({ params }: Props) {
     touristType: ["Turismo de aventura", "Turismo de naturaleza", tour.tipo],
     duration: `PT${tour.duracion_hrs}H`,
     provider: {
-      "@type": "TouristInformationCenter",
+      "@type": "TouristAgency",
       name: "Tours Huasteca Potosina",
       url: SITE,
     },
@@ -83,13 +82,7 @@ export default function TourDetailPage({ params }: Props) {
       availability: "https://schema.org/InStock",
       url: `${SITE}/tours/${tour.slug}`,
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: avgRating,
-      reviewCount: tour.reviewCount,
-      bestRating: 5,
-      worstRating: 1,
-    },
+    // aggregateRating va en Product (abajo) — TouristTrip no es soportado por Google para rich snippets de reseñas
   };
 
   const faqSchema = {
@@ -139,31 +132,34 @@ export default function TourDetailPage({ params }: Props) {
     ],
   };
 
-  const reviewSchema = reviews.length > 0 ? {
+  // Product: único tipo soportado por Google para rich snippets de reseñas con AggregateRating
+  const reviewSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: tour.nombre,
     aggregateRating: {
       "@type": "AggregateRating",
-      ratingValue: avgRating,
-      reviewCount: reviews.length,
+      ratingValue: 4.9,          // Number, no string — valor real de Google Maps
+      reviewCount: tour.reviewCount, // Total real de reseñas
       bestRating: 5,
       worstRating: 1,
     },
-    review: reviews.map((r) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: r.nombre },
-      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
-      reviewBody: r.texto,
-      datePublished: r.fecha,
-    })),
-  } : null;
+    ...(reviews.length > 0 ? {
+      review: reviews.map((r) => ({
+        "@type": "Review",
+        author: { "@type": "Person", name: r.nombre },
+        reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
+        reviewBody: r.texto,
+        datePublished: r.fecha,
+      })),
+    } : {}),
+  };
 
   return (
     <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      {reviewSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
