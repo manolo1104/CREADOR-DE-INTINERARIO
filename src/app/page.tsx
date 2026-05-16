@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
   description:
     `Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. ${DESTINOS_DB.length} destinos únicos en San Luis Potosí, México.`,
+  alternates: { canonical: "https://www.huasteca-potosina.com/" },
 };
 
 const CATEGORIAS = [

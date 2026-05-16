@@ -40,6 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: destino.seo?.metaDescription ?? destino.descripcion,
     keywords: destino.seo?.keywords ?? ["Huasteca Potosina", destino.zona, destino.nombre, "turismo México"],
     openGraph: destino.imagen_hero ? { images: [{ url: `${SITE}${destino.imagen_hero}` }] } : undefined,
+    alternates: { canonical: `${SITE}/destinos/${destino.slug}` },
   };
 }
 

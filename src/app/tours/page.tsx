@@ -32,6 +32,7 @@ export const metadata: Metadata = {
     description: "Tours guiados por la Huasteca Potosina con todo incluido.",
     images: [`${SITE}/og-image.jpg`],
   },
+  alternates: { canonical: `${SITE}/tours` },
 };
 
 const toursItemListSchema = {

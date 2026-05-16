@@ -87,7 +87,7 @@ function buildOpeningHours(d: Destino) {
 
 export function buildDestinationJsonLd(d: Destino) {
   const url = `${BASE_URL}/destinos/${d.slug}`;
-  const precio = d.precio_entrada.replace(/[^0-9]/g, "") || "0";
+  const precio = d.precio_entrada.match(/\d+/)?.[0] || "0";
 
   return {
     "@context": "https://schema.org",

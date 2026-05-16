@@ -38,6 +38,7 @@ export function generateMetadata({ params }: Props): Metadata {
       type: "website",
       images: [{ url: image, width: 1200, height: 630, alt: tour.nombre }],
     },
+    alternates: { canonical: url },
     twitter: {
       card: "summary_large_image",
       title: `${tour.nombre} | Tours Huasteca Potosina`,

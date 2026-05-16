@@ -24,6 +24,7 @@ export const metadata: Metadata = {
     images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Equipo Tours Huasteca Potosina" }],
   },
   twitter: { card: "summary_large_image", title: "Quiénes Somos — Tours Huasteca Potosina", description: "Guías locales certificados con 6+ años desde 2019.", images: [`${SITE}/og-image.jpg`] },
+  alternates: { canonical: `${SITE}/nosotros` },
 };
 
 const WA = "https://wa.me/524891251458?text=Hola%2C%20quisiera%20saber%20m%C3%A1s%20sobre%20el%20equipo.";

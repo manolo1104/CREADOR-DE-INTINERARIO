@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Guía práctica Huasteca Potosina" }],
   },
   twitter: { card: "summary_large_image", title: "Guía Práctica — Huasteca Potosina", description: "Cómo llegar, cuándo ir, dónde quedarse y qué llevar.", images: [`${SITE}/og-image.jpg`] },
+  alternates: { canonical: `${SITE}/info-practica` },
 };
 
 function Section({

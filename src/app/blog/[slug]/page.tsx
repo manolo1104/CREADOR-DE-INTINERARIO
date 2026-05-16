@@ -124,6 +124,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       images:        imageUrl ? [{ url: imageUrl, alt: post.coverImageAlt || title }] : [],
     },
     twitter: { card: "summary_large_image", title, description, images: imageUrl ? [imageUrl] : [] },
+    alternates: { canonical: `${SITE}/blog/${post.slug}` },
   };
 }
 
@@ -141,7 +142,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const wordCount = Math.round((post.content || "").replace(/<[^>]+>/g, " ").split(/\s+/).length);
   const blogPostingSchema = post.schemaMarkup || JSON.stringify({
     "@context": "https://schema.org",
-    "@type":    "Article",
+    "@type":    "BlogPosting",
     headline:   post.title,
     datePublished: post.publishedAt.toISOString(),
     dateModified:  post.updatedAt.toISOString(),

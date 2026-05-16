@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     description: "Cascadas turquesas, cañones y selva. Todo lo que necesitas para planear tu visita.",
     images: [`${SITE}/og-image.jpg`],
   },
+  alternates: { canonical: `${SITE}/blog` },
 };
 
 export const dynamic = "force-dynamic";
