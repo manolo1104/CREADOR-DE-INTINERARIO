@@ -30,7 +30,7 @@ const WA = "https://wa.me/524891251458?text=Hola%2C%20quisiera%20saber%20m%C3%A1
 
 const orgSchema = {
   "@context": "https://schema.org",
-  "@type": "TouristInformationCenter",
+  "@type": "TouristAgency",
   name: "Tours Huasteca Potosina",
   url: SITE,
   logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo-light.svg`, width: 600, height: 600 },

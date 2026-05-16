@@ -41,8 +41,9 @@ async function getPosts() {
   }
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({ searchParams }: { searchParams?: { q?: string } }) {
   const posts = await getPosts();
+  const initialQuery = searchParams?.q || "";
 
   const itemListSchema = JSON.stringify({
     "@context": "https://schema.org",
@@ -103,7 +104,7 @@ export default async function BlogPage() {
           </div>
         ) : (
           <section className="max-w-6xl mx-auto px-6">
-            <BlogFilters posts={posts} featuredPost={posts[0] ?? null} />
+            <BlogFilters posts={posts} featuredPost={posts[0] ?? null} initialQuery={initialQuery} />
           </section>
         )}
 

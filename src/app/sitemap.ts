@@ -5,11 +5,16 @@ import { prisma } from "@/lib/prisma";
 
 const BASE = "https://www.huasteca-potosina.com";
 
-async function getBlogSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
+function absImg(path: string): string {
+  if (!path) return "";
+  return path.startsWith("http") ? path : `${BASE}${path}`;
+}
+
+async function getBlogPosts(): Promise<{ slug: string; updatedAt: Date; coverImageUrl: string | null; title: string }[]> {
   try {
     return await prisma.blogPost.findMany({
       where: { published: true },
-      select: { slug: true, updatedAt: true },
+      select: { slug: true, updatedAt: true, coverImageUrl: true, title: true },
     });
   } catch {
     return [];
@@ -17,7 +22,7 @@ async function getBlogSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const blogPosts = await getBlogSlugs();
+  const blogPosts = await getBlogPosts();
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`,              lastModified: new Date(), changeFrequency: "weekly",  priority: 1.0 },
@@ -35,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.9,
+    images: t.imagen_hero ? [absImg(t.imagen_hero)] : undefined,
   }));
 
   const destinoPages: MetadataRoute.Sitemap = DESTINOS_DB.map((d) => ({
@@ -42,6 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
     changeFrequency: "monthly",
     priority: 0.7,
+    images: d.imagen_hero ? [absImg(d.imagen_hero)] : undefined,
   }));
 
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
@@ -49,6 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: p.updatedAt,
     changeFrequency: "monthly",
     priority: 0.8,
+    images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
   }));
 
   return [...staticPages, ...tourPages, ...destinoPages, ...blogPages];

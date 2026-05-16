@@ -47,11 +47,12 @@ function isPromocional(tags: string[], title: string): boolean {
 interface Props {
   posts: Post[];
   featuredPost: Post | null;
+  initialQuery?: string;
 }
 
-export function BlogFilters({ posts, featuredPost }: Props) {
+export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
   const [activeCategory, setActiveCategory] = useState("all");
-  const [query, setQuery]                   = useState("");
+  const [query, setQuery]                   = useState(initialQuery);
 
   const filtered = useMemo(() => {
     return posts.filter((p) => {
