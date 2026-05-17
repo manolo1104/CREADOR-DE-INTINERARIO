@@ -650,6 +650,47 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── BADGES DE CONFIANZA ── */}
+      <section aria-label="Certificaciones y reconocimientos oficiales" className="bg-white border-t border-negro/8 py-10 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-[9px] tracking-[3px] uppercase text-negro/30 font-dm mb-8">
+            Certificados y reconocidos por
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
+            <img
+              src="/badges/sectur.png"
+              alt="SECTUR — Secretaría de Turismo de México"
+              loading="lazy"
+              className="h-12 w-auto opacity-75 hover:opacity-100 transition-opacity"
+            />
+            <img
+              src="/badges/tripadvisor-full.png"
+              alt="Tripadvisor"
+              loading="lazy"
+              className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity"
+            />
+            <img
+              src="/badges/viajemos-todos.png"
+              alt="Viajemos Todos por México"
+              loading="lazy"
+              className="h-12 w-auto opacity-75 hover:opacity-100 transition-opacity"
+            />
+            <img
+              src="/badges/travellers-choice.svg"
+              alt="Travellers' Choice — TripAdvisor"
+              loading="lazy"
+              className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity"
+            />
+            <img
+              src="/badges/mejor-tour-operador.avif"
+              alt="Mejor Tour Operador Norteamérica — Arival 2023"
+              loading="lazy"
+              className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
       <footer className="bg-verde-profundo border-t border-white/8 py-16 px-6">
         <div className="max-w-6xl mx-auto">
