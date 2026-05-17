@@ -158,6 +158,7 @@ const RESENAS = [
   {
     nombre: "Claudia M.",
     ciudad: "CDMX",
+    foto:   "/imagenes/reviews/reviewer-30.jpg",
     texto:  "El Paquete Aventura superó todas mis expectativas. La Expedición Tamul al amanecer es algo que nunca voy a olvidar — ver los pericos salir del sótano con mis propios ojos fue mágico. El hotel es perfecto, y los guías saben exactamente cuándo llegar a cada lugar para la mejor luz.",
     estrellas: 5,
     tour:   "Paquete Aventura",
@@ -166,6 +167,7 @@ const RESENAS = [
   {
     nombre: "Roberto & Ana",
     ciudad: "Guadalajara",
+    foto:   "/imagenes/reviews/reviewer-31.jpg",
     texto:  "Fuimos con el Paquete Romántico y fue el mejor viaje que hemos hecho en pareja. El Puente de Dios con la luz entrando por el arco... no se puede describir. El hotel Paraíso Encantado tiene un desayuno increíble. Definitivamente volvemos con el Paquete Completo.",
     estrellas: 5,
     tour:   "Paquete Romántico",
@@ -174,6 +176,7 @@ const RESENAS = [
   {
     nombre: "La familia Herrera",
     ciudad: "Monterrey",
+    foto:   "/imagenes/reviews/reviewer-32.jpg",
     texto:  "Viajamos con dos niños de 8 y 11 años. Todo estuvo perfectamente coordinado — los guías son pacientes, el ritmo fue ideal para los niños. Las Cascadas del Meco los dejó boquiabiertos. El hotel los trató como reyes. Ya estamos planeando el regreso.",
     estrellas: 5,
     tour:   "Paquete Esencial + extensión",
@@ -384,9 +387,12 @@ export default function PaquetesPage() {
                   &ldquo;{r.texto}&rdquo;
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-full ${r.color} flex items-center justify-center text-crema text-xs font-dm font-bold flex-shrink-0`}>
-                    {r.nombre.charAt(0)}
-                  </div>
+                  <img
+                    src={r.foto}
+                    alt={r.nombre}
+                    className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15"
+                    loading="lazy"
+                  />
                   <div>
                     <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
                     <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>

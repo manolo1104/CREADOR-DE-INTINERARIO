@@ -120,24 +120,24 @@ export const REVIEWS_POR_DESTINO: Record<string, DestinoReview[]> = {
     { nombre: "Sofía R.", ciudad: "Monterrey", rating: 5, iniciales: "SR", foto: "/imagenes/reviews/reviewer-3.jpg", texto: "El sótano de las huahuas al amanecer es indescriptible. Miles de aves saliendo en espiral con el cielo anaranjado de fondo." },
   ],
   "las-pozas-jardin-surrealista": [
-    { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-4.jpg", texto: "Las Pozas de Edward James son otro mundo. Imposible de describir con palabras. Las esculturas entre la selva real crean algo que no existe en ningún otro lugar del planeta." },
-    { nombre: "Miguel T.", ciudad: "CDMX", rating: 5, iniciales: "MT", foto: "/imagenes/reviews/reviewer-5.jpg", texto: "El tour más único que he hecho en México. Los guías conocen cada rincón y te explican la historia de Edward James con un nivel de detalle que hace todo más mágico." },
-    { nombre: "Mariana Castro", ciudad: "Querétaro, QRO", rating: 5, iniciales: "MC", foto: "/imagenes/reviews/reviewer-4.jpg", texto: "Las Pozas de Edward James son lo más extraño y hermoso que he visto en México. Regresé al mes siguiente con mis papás. Los dos quedaron igual de impresionados." },
+    { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-17.jpg", texto: "Las Pozas de Edward James son otro mundo. Imposible de describir con palabras. Las esculturas entre la selva real crean algo que no existe en ningún otro lugar del planeta." },
+    { nombre: "Miguel T.", ciudad: "CDMX", rating: 5, iniciales: "MT", foto: "/imagenes/reviews/reviewer-22.jpg", texto: "El tour más único que he hecho en México. Los guías conocen cada rincón y te explican la historia de Edward James con un nivel de detalle que hace todo más mágico." },
+    { nombre: "Mariana Castro", ciudad: "Querétaro, QRO", rating: 5, iniciales: "MC", foto: "/imagenes/reviews/reviewer-16.jpg", texto: "Las Pozas de Edward James son lo más extraño y hermoso que he visto en México. Regresé al mes siguiente con mis papás. Los dos quedaron igual de impresionados." },
   ],
   "cascada-el-meco": [
-    { nombre: "Laura G.", ciudad: "Querétaro", rating: 5, iniciales: "LG", foto: "/imagenes/reviews/reviewer-4.jpg", texto: "Las fotos que saqué son las mejores de mi vida. El agua realmente es turquesa. Los guías saben exactamente cuándo ir para tener la luz perfecta." },
-    { nombre: "Javier S.", ciudad: "San Luis Potosí", rating: 5, iniciales: "JS", foto: "/imagenes/reviews/reviewer-5.jpg", texto: "Llegamos a la hora perfecta de luz. Los guías saben exactamente cuándo ir y el color del agua no necesita filtros. Es literalmente así." },
+    { nombre: "Laura G.", ciudad: "Querétaro", rating: 5, iniciales: "LG", foto: "/imagenes/reviews/reviewer-18.jpg", texto: "Las fotos que saqué son las mejores de mi vida. El agua realmente es turquesa. Los guías saben exactamente cuándo ir para tener la luz perfecta." },
+    { nombre: "Javier S.", ciudad: "San Luis Potosí", rating: 5, iniciales: "JS", foto: "/imagenes/reviews/reviewer-23.jpg", texto: "Llegamos a la hora perfecta de luz. Los guías saben exactamente cuándo ir y el color del agua no necesita filtros. Es literalmente así." },
   ],
   "cascadas-minas-viejas": [
-    { nombre: "Patricia H.", ciudad: "Monterrey", rating: 5, iniciales: "PH", foto: "/imagenes/reviews/reviewer-1.jpg", texto: "El color del agua de Minas Viejas es imposible. Lo tienes que ver con tus propios ojos. Mis hijos no querían salirse." },
-    { nombre: "Roberto V.", ciudad: "CDMX", rating: 5, iniciales: "RV", foto: "/imagenes/reviews/reviewer-2.jpg", texto: "Todo perfectamente organizado para familias. Las terrazas de agua azul en cascada son algo que no olvidas fácilmente." },
+    { nombre: "Patricia H.", ciudad: "Monterrey", rating: 5, iniciales: "PH", foto: "/imagenes/reviews/reviewer-11.jpg", texto: "El color del agua de Minas Viejas es imposible. Lo tienes que ver con tus propios ojos. Mis hijos no querían salirse." },
+    { nombre: "Roberto V.", ciudad: "CDMX", rating: 5, iniciales: "RV", foto: "/imagenes/reviews/reviewer-13.jpg", texto: "Todo perfectamente organizado para familias. Las terrazas de agua azul en cascada son algo que no olvidas fácilmente." },
   ],
   "puente-de-dios-tamasopo": [
-    { nombre: "Diego F.", ciudad: "Guadalajara", rating: 5, iniciales: "DF", foto: "/imagenes/reviews/reviewer-5.jpg", texto: "El Puente de Dios con la luz entrando por el arco es algo de otro mundo. Llegamos justo a las 11 AM como recomendaron los guías y el efecto de luz es real." },
-    { nombre: "Valeria C.", ciudad: "CDMX", rating: 5, iniciales: "VC", foto: "/imagenes/reviews/reviewer-4.jpg", texto: "Las Siete Cascadas en secuencia son increíbles. Fuimos cinco amigos y quedamos todos maravillados. El guía sabía exactamente el orden para aprovechar la luz." },
+    { nombre: "Diego F.", ciudad: "Guadalajara", rating: 5, iniciales: "DF", foto: "/imagenes/reviews/reviewer-24.jpg", texto: "El Puente de Dios con la luz entrando por el arco es algo de otro mundo. Llegamos justo a las 11 AM como recomendaron los guías y el efecto de luz es real." },
+    { nombre: "Valeria C.", ciudad: "CDMX", rating: 5, iniciales: "VC", foto: "/imagenes/reviews/reviewer-19.jpg", texto: "Las Siete Cascadas en secuencia son increíbles. Fuimos cinco amigos y quedamos todos maravillados. El guía sabía exactamente el orden para aprovechar la luz." },
   ],
   "nacimiento-huichihuayan": [
-    { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-4.jpg", texto: "El Nacimiento de Huichihuayán es uno de los lugares más serenos que he visitado en México. El agua a 22°C todo el año y esa transparencia increíble. Lo combinamos con Las Pozas y fue el día perfecto." },
+    { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-17.jpg", texto: "El Nacimiento de Huichihuayán es uno de los lugares más serenos que he visitado en México. El agua a 22°C todo el año y esa transparencia increíble. Lo combinamos con Las Pozas y fue el día perfecto." },
   ],
 };
 

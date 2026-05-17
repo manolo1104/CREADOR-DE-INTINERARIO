@@ -348,7 +348,7 @@ export default async function HomePage() {
                   "¡Increíble experiencia! El agua turquesa es algo que jamás habíamos visto. El guía fue extraordinario — conocía cada detalle de la región y nos cuidó en todo momento. ¡Ya reservamos para volver con más familia!"
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-verde-selva/15 flex items-center justify-center text-verde-selva font-dm font-medium text-sm flex-shrink-0">CM</div>
+                  <img src="/imagenes/reviews/reviewer-5.jpg" alt="Carlos M." className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-negro/10" loading="lazy" />
                   <div>
                     <p className="font-dm text-negro/80 text-sm font-medium">Carlos M.</p>
                     <p className="font-dm text-negro/40 text-[11px]">Monterrey, N.L. · Tour Todo Huasteca · Mar 2026</p>
@@ -373,7 +373,7 @@ export default async function HomePage() {
                   "Llevamos a nuestros hijos por primera vez y fue absolutamente mágico. La cascada Tamul superó todas nuestras expectativas. Transporte puntual, guía atento y todo incluido. Lo más recomendable que hemos hecho en familia."
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-dorado/15 flex items-center justify-center text-dorado font-dm font-medium text-sm flex-shrink-0">AG</div>
+                  <img src="/imagenes/reviews/reviewer-29.jpg" alt="Ana González" className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-negro/10" loading="lazy" />
                   <div>
                     <p className="font-dm text-negro/80 text-sm font-medium">Ana González</p>
                     <p className="font-dm text-negro/40 text-[11px]">Ciudad de México · Tour Cascada Tamul · Feb 2026</p>
@@ -398,7 +398,7 @@ export default async function HomePage() {
                   "Organizamos el viaje para 8 amigos y fue perfectamente coordinado. Desde la reserva hasta el último momento del tour, todo impecable. El paisaje del Cañón del Tamul es simplemente irreal. ¡Vuelvo seguro!"
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-terracota/15 flex items-center justify-center text-terracota font-dm font-medium text-sm flex-shrink-0">SR</div>
+                  <img src="/imagenes/reviews/reviewer-3.jpg" alt="Sofía R." className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-negro/10" loading="lazy" />
                   <div>
                     <p className="font-dm text-negro/80 text-sm font-medium">Sofía R.</p>
                     <p className="font-dm text-negro/40 text-[11px]">Guadalajara, Jal. · Tour Tamul & Río Gallinas · Ene 2026</p>

@@ -24,7 +24,7 @@ const REVIEWS: Review[] = [
     nombre: "Andrés y Valeria",
     ciudad: "Monterrey, NL",
     fecha:  "Enero 2025",
-    foto:   "/imagenes/reviews/reviewer-2.jpg",
+    foto:   "/imagenes/reviews/reviewer-14.jpg",
     texto:
       "La canoa por el Cañón del Tampaón es surrealista. Las paredes de roca, el silencio y de repente la cascada. Fue el mejor día del viaje. El desayuno que incluyeron estaba delicioso.",
   },
@@ -32,7 +32,7 @@ const REVIEWS: Review[] = [
     nombre: "Mariana Castro",
     ciudad: "Querétaro, QRO",
     fecha:  "Diciembre 2024",
-    foto:   "/imagenes/reviews/reviewer-4.jpg",
+    foto:   "/imagenes/reviews/reviewer-16.jpg",
     texto:
       "Las Pozas de Edward James son lo más extraño y hermoso que he visto en México. El guía nos contó toda la historia y el contexto lo hace todo más impresionante. Regresé al mes siguiente con mis papás.",
   },

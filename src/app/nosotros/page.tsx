@@ -156,9 +156,9 @@ const GUIAS = [
 ];
 
 const TESTIMONIOS_GUIAS = [
-  { texto: "Carlos nos explicó la historia del ejido mientras remábamos por el Tampaón. Me sé toda la historia de la Cascada de Tamul gracias a él. El tour vale el doble solo por eso.", nombre: "Diana L.", ciudad: "Guadalajara, Jal.", guia: "Carlos Rodríguez", foto: "/imagenes/reviews/reviewer-4.jpg" },
-  { texto: "Miguel Ángel nos indicó exactamente dónde pararnos para capturar la cascada con la luz perfecta. Tiene un conocimiento del río que no se aprende en ningún libro.", nombre: "Roberto V.", ciudad: "Ciudad de México", guia: "Miguel Ángel", foto: "/imagenes/reviews/reviewer-2.jpg" },
-  { texto: "Le dije a José que le tenía terror a las alturas. Me llevó al borde del Sótano paso a paso. Terminé sintiéndome la persona más valiente del mundo.", nombre: "Alejandra M.", ciudad: "Monterrey, N.L.", guia: "José Laredo", foto: "/imagenes/reviews/reviewer-1.jpg" },
+  { texto: "Carlos nos explicó la historia del ejido mientras remábamos por el Tampaón. Me sé toda la historia de la Cascada de Tamul gracias a él. El tour vale el doble solo por eso.", nombre: "Diana L.", ciudad: "Guadalajara, Jal.", guia: "Carlos Rodríguez", foto: "/imagenes/reviews/reviewer-21.jpg" },
+  { texto: "Miguel Ángel nos indicó exactamente dónde pararnos para capturar la cascada con la luz perfecta. Tiene un conocimiento del río que no se aprende en ningún libro.", nombre: "Roberto V.", ciudad: "Ciudad de México", guia: "Miguel Ángel", foto: "/imagenes/reviews/reviewer-13.jpg" },
+  { texto: "Le dije a José que le tenía terror a las alturas. Me llevó al borde del Sótano paso a paso. Terminé sintiéndome la persona más valiente del mundo.", nombre: "Alejandra M.", ciudad: "Monterrey, N.L.", guia: "José Laredo", foto: "/imagenes/reviews/reviewer-10.jpg" },
 ];
 
 const VALORES = [
