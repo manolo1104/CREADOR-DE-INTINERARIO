@@ -13,7 +13,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   expirada: { label: "Expirada",  cls: "bg-red-100 text-red-700"       },
 };
 
-interface LineItem { tourSlug: string; tourName: string; tourDate: string; adults: number; children: number; subtotal: number; }
+interface LineItem { tourSlug: string; tourName: string; tourDate: string; adults: number; childrenMid: number; childrenSmall: number; subtotal: number; }
 
 const HABITACIONES_PRESET = [
   { label: "Vista Montañas",           precio: 1800 },
@@ -28,13 +28,17 @@ const fmx    = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate  = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const fDateL = (d: string) => { if (!d) return "—"; const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return r.charAt(0).toUpperCase() + r.slice(1); };
 
-const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, children: 0, subtotal: 0 };
+const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "" };
 
 function calcLine(item: LineItem): number {
   const t = TOURS_DB.find(t => t.slug === item.tourSlug);
   if (!t) return 0;
-  return t.precio * item.adults + Math.round(t.precio * 0.6) * item.children;
+  return (
+    t.precio * item.adults +
+    Math.round(t.precio * 0.7) * (item.childrenMid   ?? 0) +
+    Math.round(t.precio * 0.5) * (item.childrenSmall ?? 0)
+  );
 }
 
 const inputCls = "w-full border border-[#1a2e1a]/15 text-[#1a2e1a] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#3a6b1a] rounded-sm placeholder:text-[#1a2e1a]/25 bg-white";
@@ -95,10 +99,14 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   function openEdit(q: TourQuote) {
     setEditTarget(q);
     setForm({ customerName: q.customerName, customerEmail: q.customerEmail || "", customerPhone: q.customerPhone || "", notes: q.notes || "" });
-    const storedLines = (q as any).lineItems as LineItem[] | null;
+    const storedLines = (q as any).lineItems as any[] | null;
     setLines(storedLines?.length
-      ? storedLines
-      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, children: q.children, subtotal: q.totalAmount }]
+      ? storedLines.map(l => ({
+          ...l,
+          childrenMid:   l.childrenMid   ?? (l.children ?? 0),
+          childrenSmall: l.childrenSmall ?? 0,
+        }))
+      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }]
     );
     setPackages((q as any).packageItems ?? []);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
@@ -116,7 +124,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       tourName: lines.map(l => l.tourName).join(" + "), tourSlug: lines[0].tourSlug,
       tourDate: lines[0].tourDate,
       adults: lines.reduce((s, l) => s + l.adults, 0),
-      children: lines.reduce((s, l) => s + l.children, 0),
+      children: lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
       totalAmount: finalTotal, lineItems, packageItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
@@ -184,7 +192,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       return `<div style="margin-bottom:22px">
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:8px">${it.tourName}</div>
         ${heroUrl ? `<img src="${heroUrl}" alt="${it.tourName}" style="width:100%;height:150px;object-fit:cover;border-radius:2px;margin-bottom:10px"/>` : ""}
-        <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-bottom:6px">📅 ${fDateL(it.tourDate)} · ${it.adults}A${it.children>0?` · ${it.children}N`:""}</div>
+        <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-bottom:6px">📅 ${fDateL(it.tourDate)} · ${it.adults} adulto${it.adults!==1?"s":""}${(it.childrenMid??0)>0?` · ${it.childrenMid} niño${it.childrenMid!==1?"s":""} (6-10)`:""} ${(it.childrenSmall??0)>0?` · ${it.childrenSmall} niño${it.childrenSmall!==1?"s":""} (&lt;6)`:""}</div>
         ${destinos ? `<ul style="list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:1.9">${destinos}</ul>` : ""}
         <div style="text-align:right;font-family:Arial;font-size:12px;color:#c4882a;margin-top:6px;font-weight:600">Subtotal: $${calcLine(it).toLocaleString("es-MX")} MXN</div>
       </div>`;
@@ -387,14 +395,18 @@ ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bot
                           <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Fecha *</label>
                           <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Adultos</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1" title=">10 años — precio completo">Adultos</label>
                             <input type="number" min={1} max={12} value={line.adults} onChange={e => updateLine(i, "adults", Number(e.target.value))} className={inputCls} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Niños</label>
-                            <input type="number" min={0} max={12} value={line.children} onChange={e => updateLine(i, "children", Number(e.target.value))} className={inputCls} />
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1" title="6-10 años — 30% descuento">Niños 6-10</label>
+                            <input type="number" min={0} max={12} value={line.childrenMid} onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1" title="Menores de 6 años — 50% descuento">Niños &lt;6</label>
+                            <input type="number" min={0} max={12} value={line.childrenSmall} onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
                           </div>
                         </div>
                         {t && <div className="sm:col-span-2 text-right text-xs font-dm text-[#c4882a]">Subtotal: {fmx(calcLine(line))}</div>}

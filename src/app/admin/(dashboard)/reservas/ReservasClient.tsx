@@ -60,10 +60,14 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 
   function openEdit(b: TourBooking) {
     setEditTarget(b);
-    const storedLines = (b as any).lineItems as LineItem[] | null;
+    const storedLines = (b as any).lineItems as any[] | null;
     const lines: LineItem[] = storedLines?.length
-      ? storedLines
-      : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, children: b.children, subtotal: b.totalAmount }];
+      ? storedLines.map(l => ({
+          ...l,
+          childrenMid:   l.childrenMid   ?? (l.children ?? 0),
+          childrenSmall: l.childrenSmall ?? 0,
+        }))
+      : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
     const storedPkgs = (b as any).packageItems as PackageItem[] | null;
 
     setForm({
@@ -94,7 +98,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       tourSlug:       primaryLine.tourSlug,
       tourDate:       primaryLine.tourDate,
       adults:         form.lines.reduce((s, l) => s + l.adults, 0),
-      children:       form.lines.reduce((s, l) => s + l.children, 0),
+      children:       form.lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
       totalAmount,
       lineItems,
       packageItems,
@@ -135,10 +139,14 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
   function downloadPDF(b: TourBooking) {
     const win = window.open("", "_blank");
     if (!win) return;
-    const storedLines = (b as any).lineItems as LineItem[] | null;
+    const storedLines = (b as any).lineItems as any[] | null;
     const lines: LineItem[] = storedLines?.length
-      ? storedLines
-      : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, children: b.children, subtotal: b.totalAmount }];
+      ? storedLines.map((l: any) => ({
+          ...l,
+          childrenMid:   l.childrenMid   ?? (l.children ?? 0),
+          childrenSmall: l.childrenSmall ?? 0,
+        }))
+      : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
     const pkgs: PackageItem[] = (b as any).packageItems ?? [];
 
     const deposito = (b as any).depositoPagado ?? 0;
@@ -152,7 +160,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
         <div style="margin-bottom:18px">
           ${heroUrl ? `<img src="${heroUrl}" alt="${l.tourName}" style="width:100%;height:140px;object-fit:cover;border-radius:2px;margin-bottom:8px"/>` : ""}
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px">${l.tourName}</div>
-          <div style="font-family:Arial;font-size:12px;color:#3a3a2e">📅 ${fDateL(l.tourDate)} · ${l.adults} adulto${l.adults!==1?"s":""}${l.children>0?` · ${l.children} niño${l.children!==1?"s":""}`:""}</div>
+          <div style="font-family:Arial;font-size:12px;color:#3a3a2e">📅 ${fDateL(l.tourDate)} · ${l.adults} adulto${l.adults!==1?"s":""}${(l.childrenMid??0)>0?` · ${l.childrenMid} niño${l.childrenMid!==1?"s":""} (6-10)`:""}${(l.childrenSmall??0)>0?` · ${l.childrenSmall} niño${l.childrenSmall!==1?"s":""} (<6)`:""}</div>
           ${destinos ? `<ul style="list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:1.9;margin-top:6px">${destinos}</ul>` : ""}
         </div>`;
     }).join("<hr style='border:none;border-top:1px dashed #d4ccbc;margin:12px 0'/>");

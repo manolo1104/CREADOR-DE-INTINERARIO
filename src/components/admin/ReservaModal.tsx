@@ -7,12 +7,13 @@ import { TOURS_DB } from "@/lib/tours";
 const fmx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 
 export interface LineItem {
-  tourSlug: string;
-  tourName: string;
-  tourDate: string;
-  adults:   number;
-  children: number;
-  subtotal: number;
+  tourSlug:      string;
+  tourName:      string;
+  tourDate:      string;
+  adults:        number;
+  childrenMid:   number;  // 6-10 años → 70% del precio
+  childrenSmall: number;  // < 6 años  → 50% del precio
+  subtotal:      number;
 }
 
 export interface PackageItem {
@@ -60,7 +61,7 @@ const EMPTY_PACKAGE: PackageItem = {
   subtotal:       3800,
 };
 
-export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, children: 0, subtotal: 0 };
+export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
   lines: [{ ...EMPTY_LINE }], packages: [], totalOverride: "", depositoPagado: "",
@@ -69,7 +70,11 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
 export function calcTourLine(l: LineItem): number {
   const t = TOURS_DB.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
-  return t.precio * l.adults + Math.round(t.precio * 0.6) * l.children;
+  return (
+    t.precio * l.adults +
+    Math.round(t.precio * 0.7) * (l.childrenMid   ?? 0) +
+    Math.round(t.precio * 0.5) * (l.childrenSmall ?? 0)
+  );
 }
 
 export function calcPackageLine(p: PackageItem): number {
@@ -200,20 +205,25 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                         {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}</option>)}
                       </select>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="col-span-2 sm:col-span-1">
                         <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Fecha *</label>
                         <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
                       </div>
                       <div>
-                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Adultos</label>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1" title=">10 años — precio completo">Adultos</label>
                         <input type="number" min={1} max={12} value={line.adults}
                           onChange={e => updateLine(i, "adults", Number(e.target.value))} className={inputCls} />
                       </div>
                       <div>
-                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Niños</label>
-                        <input type="number" min={0} max={12} value={line.children}
-                          onChange={e => updateLine(i, "children", Number(e.target.value))} className={inputCls} />
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1" title="6-10 años — 30% descuento">Niños 6-10</label>
+                        <input type="number" min={0} max={12} value={line.childrenMid}
+                          onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1" title="Menores de 6 años — 50% descuento">Niños &lt;6</label>
+                        <input type="number" min={0} max={12} value={line.childrenSmall}
+                          onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
                       </div>
                     </div>
                     {line.tourSlug && (
