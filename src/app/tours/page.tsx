@@ -416,11 +416,11 @@ export default function ToursPage() {
                   <div className="space-y-3">
                     {TOUR_REVIEWS[tour.id].slice(0, 2).map((r) => (
                       <div key={r.nombre} className="flex gap-3">
-                        <div
-                          className="w-7 h-7 rounded-full bg-verde-selva/60 flex items-center justify-center text-[10px] text-crema font-dm font-medium flex-shrink-0"
-                        >
-                          {r.iniciales}
-                        </div>
+                        <img
+                          src={r.foto}
+                          alt={r.nombre}
+                          className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-crema/20"
+                        />
                         <div className="flex-1 min-w-0">
                           {/* Estrellas visuales */}
                           <div className="flex gap-0.5 mb-0.5">

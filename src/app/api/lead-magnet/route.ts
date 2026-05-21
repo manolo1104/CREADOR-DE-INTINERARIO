@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { google } from "googleapis";
+import fs from "fs";
+import path from "path";
 
 const SHEET_ID  = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_TAB = "Leads";
@@ -142,12 +144,16 @@ export async function POST(req: Request) {
       console.warn("[lead-magnet] sheets write failed (non-fatal):", err);
     }
 
-    // 2 — Enviar email via Brevo
+    // 2 — Enviar email via Brevo con PDF adjunto
     try {
+      const pdfPath = path.join(process.cwd(), "public", "guia-huasteca-potosina.pdf");
+      const pdfBase64 = fs.readFileSync(pdfPath).toString("base64");
+
       await sendBrevoEmail({
         to:          [{ email, name: name || undefined }],
         subject:     "Tu Guía de Viaje — Los 5 Mejores Días en la Huasteca Potosina 🌿",
         htmlContent: buildGuideHtml(email, name),
+        attachments: [{ name: "Guia-Huasteca-Potosina.pdf", content: pdfBase64 }],
       });
     } catch (err: any) {
       console.error("[lead-magnet] Brevo error:", err.message);

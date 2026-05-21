@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
-import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check } from "lucide-react";
+import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
+import { type PackageItem, calcPackageLine } from "@/components/admin/ReservaModal";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   borrador: { label: "Borrador",  cls: "bg-gray-100 text-gray-600"     },
@@ -13,6 +14,15 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 };
 
 interface LineItem { tourSlug: string; tourName: string; tourDate: string; adults: number; children: number; subtotal: number; }
+
+const HABITACIONES_PRESET = [
+  { label: "Vista Montañas",           precio: 1800 },
+  { label: "Vista Jardines / Piscina", precio: 1500 },
+];
+const EMPTY_PACKAGE: PackageItem = {
+  habitacion: "Vista Montañas", hotel: "Hotel Paraíso Encantado, Xilitla",
+  noches: 2, habitaciones: 1, precioPorNoche: 1800, checkin: "", checkout: "", subtotal: 3600,
+};
 
 const fmx    = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate  = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -36,6 +46,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   const [editTarget,     setEditTarget]     = useState<TourQuote | null>(null);
   const [form,           setForm]           = useState(EMPTY_FORM);
   const [lines,          setLines]          = useState<LineItem[]>([{ ...EMPTY_LINE }]);
+  const [packages,       setPackages]       = useState<PackageItem[]>([]);
   const [priceOverride,  setPriceOverride]  = useState<string>("");
   const [editingPrice,   setEditingPrice]   = useState(false);
   // Descuento
@@ -45,7 +56,9 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
 
-  const calcTotal  = lines.reduce((s, l) => s + calcLine(l), 0);
+  const toursTotal = lines.reduce((s, l) => s + calcLine(l), 0);
+  const pkgsTotal  = packages.reduce((s, p) => s + calcPackageLine(p), 0);
+  const calcTotal  = toursTotal + pkgsTotal;
   const baseTotal  = priceOverride !== "" ? Number(priceOverride) || 0 : calcTotal;
   const discountAmt = discountValue !== ""
     ? discountType === "percent"
@@ -74,6 +87,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setLines([{ ...EMPTY_LINE }]);
+    setPackages([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
     setModal("new");
   }
@@ -86,6 +100,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       ? storedLines
       : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, children: q.children, subtotal: q.totalAmount }]
     );
+    setPackages((q as any).packageItems ?? []);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
     setModal("edit");
   }
@@ -95,13 +110,14 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   async function saveQuote() {
     if (!form.customerName || lines.some(l => !l.tourSlug || !l.tourDate)) return;
     setSaving(true);
-    const lineItems = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    const packageItems = packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
     const payload = {
       tourName: lines.map(l => l.tourName).join(" + "), tourSlug: lines[0].tourSlug,
       tourDate: lines[0].tourDate,
       adults: lines.reduce((s, l) => s + l.adults, 0),
       children: lines.reduce((s, l) => s + l.children, 0),
-      totalAmount: finalTotal, lineItems,
+      totalAmount: finalTotal, lineItems, packageItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
     };
@@ -154,6 +170,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const items: LineItem[] = Array.isArray((q as any).lineItems)
       ? (q as any).lineItems
       : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, children: q.children, subtotal: q.totalAmount }];
+    const pkgs: PackageItem[] = (q as any).packageItems ?? [];
 
     const heroSections = items.map(it => {
       const t = TOURS_DB.find(t => t.slug === it.tourSlug);
@@ -194,6 +211,21 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
 </div>
 <div class="sl" style="margin-bottom:16px">Tours del paquete</div>
 ${heroSections}
+${pkgs.length > 0 ? `
+  <hr style="border:none;border-top:1px solid #e8e0d0;margin:16px 0"/>
+  <div class="sl" style="margin-bottom:12px">Hospedaje incluido</div>
+  ${pkgs.map(p => `
+    <div style="margin-bottom:12px;padding:12px 14px;background:#faf7ee;border:1px solid #e0d8c4;border-radius:2px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:6px">🏨 ${p.hotel}</div>
+      <div style="font-family:Arial;font-size:13px;color:#1a2e1a;font-weight:600;margin-bottom:4px">${p.habitacion}</div>
+      <div style="font-family:Arial;font-size:12px;color:#3a3a2e">
+        ${p.checkin ? `Check-in: ${fDate(p.checkin)} · ` : ""}${p.checkout ? `Check-out: ${fDate(p.checkout)}` : ""}
+      </div>
+      <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-top:2px">
+        ${p.noches} noche${p.noches !== 1 ? "s" : ""} · ${p.habitaciones} habitación${p.habitaciones !== 1 ? "es" : ""} · $${p.precioPorNoche.toLocaleString("es-MX")} MXN/noche
+      </div>
+      <div style="text-align:right;font-family:Arial;font-size:12px;color:#8a6f1e;font-weight:600;margin-top:4px">$${calcPackageLine(p).toLocaleString("es-MX")} MXN</div>
+    </div>`).join("")}` : ""}
 <div class="total-row"><span class="total-label">Total Cotizado</span><span class="total-value">${fmx(q.totalAmount)}</span></div>
 <div class="includes"><p>✓ Transporte desde tu hotel &nbsp; ✓ Desayuno típico &nbsp; ✓ Entradas a todos los parques<br>✓ Guía certificado NOM-09 SECTUR &nbsp; ✓ Equipo de seguridad &nbsp; ✓ Fotografías del recorrido</p></div>
 ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bottom:18px"><strong>Notas:</strong> ${q.notes}</p>` : ""}
@@ -368,6 +400,94 @@ ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bot
               </div>
             </div>
 
+            {/* Hospedaje */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm flex items-center gap-1.5">
+                  <BedDouble className="w-3 h-3" />Hospedaje (opcional)
+                </p>
+                <button type="button"
+                  onClick={() => setPackages(ps => [...ps, { ...EMPTY_PACKAGE }])}
+                  className="flex items-center gap-1 text-xs font-dm text-[#8a6f1e] border border-[#8a6f1e]/30 px-2 py-1 hover:bg-[#8a6f1e]/8 transition-colors rounded-sm">
+                  <Plus className="w-3 h-3" />Agregar habitación
+                </button>
+              </div>
+              {packages.length === 0 && (
+                <p className="text-[10px] font-dm text-[#1a2e1a]/30 border border-dashed border-[#1a2e1a]/15 rounded-sm py-3 text-center">
+                  Sin hospedaje en el paquete
+                </p>
+              )}
+              <div className="space-y-3">
+                {packages.map((pkg, i) => (
+                  <div key={i} className="border border-[#8a6f1e]/25 p-3 rounded-sm bg-[#faf7ee]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] tracking-[2px] uppercase text-[#8a6f1e]/70 font-dm flex items-center gap-1">
+                        <BedDouble className="w-3 h-3" /> Habitación {i + 1}
+                      </span>
+                      <button type="button" onClick={() => setPackages(ps => ps.filter((_, idx) => idx !== i))}
+                        className="text-[#1a2e1a]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Hotel</label>
+                        <input type="text" value={pkg.hotel} className={inputCls}
+                          onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, hotel: e.target.value } : p))} />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Tipo de habitación</label>
+                        <div className="flex gap-2 flex-wrap mb-1.5">
+                          {HABITACIONES_PRESET.map(h => (
+                            <button key={h.label} type="button"
+                              onClick={() => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, habitacion: h.label, precioPorNoche: h.precio, subtotal: calcPackageLine({ ...p, habitacion: h.label, precioPorNoche: h.precio }) } : p))}
+                              className={`text-[10px] font-dm px-2.5 py-1 rounded border transition-colors ${pkg.habitacion === h.label ? "bg-[#8a6f1e] text-white border-[#8a6f1e]" : "border-[#8a6f1e]/30 text-[#8a6f1e] hover:bg-[#8a6f1e]/10"}`}>
+                              {h.label}
+                            </button>
+                          ))}
+                        </div>
+                        <input type="text" value={pkg.habitacion} placeholder="Personalizar..." className={inputCls}
+                          onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, habitacion: e.target.value } : p))} />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Noches</label>
+                          <input type="number" min={1} max={30} value={pkg.noches} className={inputCls}
+                            onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, noches: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Habitaciones</label>
+                          <input type="number" min={1} max={10} value={pkg.habitaciones} className={inputCls}
+                            onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, habitaciones: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">$/noche</label>
+                          <input type="number" min={0} value={pkg.precioPorNoche} className={inputCls}
+                            onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, precioPorNoche: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-in</label>
+                          <input type="date" value={pkg.checkin} className={inputCls}
+                            onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, checkin: e.target.value } : p))} />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-out</label>
+                          <input type="date" value={pkg.checkout} className={inputCls}
+                            onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, checkout: e.target.value } : p))} />
+                        </div>
+                      </div>
+                      <p className="text-right text-xs font-dm text-[#8a6f1e] font-medium">
+                        Subtotal: {fmx(calcPackageLine(pkg))}
+                        <span className="text-[#1a2e1a]/35 font-normal ml-1">
+                          ({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="mb-3">
               <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Notas</label>
               <textarea value={form.notes} rows={2} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={`${inputCls} resize-none`} />
@@ -375,6 +495,16 @@ ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bot
 
             {/* Precio editable */}
             <div className="border border-[#c4882a]/30 bg-[#c4882a]/8 px-4 py-3 rounded-sm mb-3">
+              {pkgsTotal > 0 && (
+                <div className="flex justify-between text-xs font-dm text-[#1a2e1a]/50 mb-1">
+                  <span>Tours</span><span>{fmx(toursTotal)}</span>
+                </div>
+              )}
+              {pkgsTotal > 0 && (
+                <div className="flex justify-between text-xs font-dm text-[#8a6f1e] mb-2 pb-2 border-b border-[#c4882a]/20">
+                  <span>Hospedaje</span><span>{fmx(pkgsTotal)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1">
                   <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">

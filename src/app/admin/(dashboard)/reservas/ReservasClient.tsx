@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem } from "@/components/admin/ReservaModal";
+import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine } from "@/components/admin/ReservaModal";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -21,11 +21,7 @@ const fDateL = (d: string) => {
   return r.charAt(0).toUpperCase() + r.slice(1);
 };
 
-function calcLine(l: LineItem): number {
-  const t = TOURS_DB.find(t => t.slug === l.tourSlug);
-  if (!t) return 0;
-  return t.precio * l.adults + Math.round(t.precio * 0.6) * l.children;
-}
+function calcLine(l: LineItem): number { return calcTourLine(l); }
 
 export default function ReservasClient({ initialBookings }: { initialBookings: TourBooking[] }) {
   const [bookings,   setBookings]   = useState(initialBookings);
@@ -64,44 +60,49 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 
   function openEdit(b: TourBooking) {
     setEditTarget(b);
-    // Restore lines from lineItems JSON if available
     const storedLines = (b as any).lineItems as LineItem[] | null;
     const lines: LineItem[] = storedLines?.length
       ? storedLines
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, children: b.children, subtotal: b.totalAmount }];
+    const storedPkgs = (b as any).packageItems as PackageItem[] | null;
 
     setForm({
-      customerName:  b.customerName,
-      customerEmail: b.customerEmail,
-      customerPhone: b.customerPhone || "",
-      notes:         b.notes || "",
+      customerName:   b.customerName,
+      customerEmail:  b.customerEmail,
+      customerPhone:  b.customerPhone || "",
+      notes:          b.notes || "",
       lines,
-      totalOverride: "",
+      packages:       storedPkgs ?? [],
+      totalOverride:  "",
       depositoPagado: String((b as any).depositoPagado ?? 0),
     });
     setModal("edit");
   }
 
   function buildPayload(form: ReservaFormState) {
-    const lineItems = form.lines.map(l => ({ ...l, subtotal: calcLine(l) }));
-    const calcTotal = lineItems.reduce((s, l) => s + l.subtotal, 0);
-    const totalAmount = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
-    const primaryLine = form.lines[0];
-    const tourNames = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
+    const lineItems    = form.lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
+    const toursTotal   = lineItems.reduce((s, l) => s + l.subtotal, 0);
+    const pkgsTotal    = packageItems.reduce((s, p) => s + p.subtotal, 0);
+    const calcTotal    = toursTotal + pkgsTotal;
+    const totalAmount  = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
+    const primaryLine  = form.lines[0];
+    const tourNames    = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
     return {
-      tourId:        primaryLine.tourSlug,
-      tourName:      tourNames || TOURS_DB.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
-      tourSlug:      primaryLine.tourSlug,
-      tourDate:      primaryLine.tourDate,
-      adults:        form.lines.reduce((s, l) => s + l.adults, 0),
-      children:      form.lines.reduce((s, l) => s + l.children, 0),
+      tourId:         primaryLine.tourSlug,
+      tourName:       tourNames || TOURS_DB.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
+      tourSlug:       primaryLine.tourSlug,
+      tourDate:       primaryLine.tourDate,
+      adults:         form.lines.reduce((s, l) => s + l.adults, 0),
+      children:       form.lines.reduce((s, l) => s + l.children, 0),
       totalAmount,
       lineItems,
+      packageItems,
       depositoPagado: Number(form.depositoPagado) || 0,
-      customerName:  form.customerName,
-      customerEmail: form.customerEmail,
-      customerPhone: form.customerPhone,
-      notes:         form.notes,
+      customerName:   form.customerName,
+      customerEmail:  form.customerEmail,
+      customerPhone:  form.customerPhone,
+      notes:          form.notes,
     };
   }
 
@@ -138,6 +139,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     const lines: LineItem[] = storedLines?.length
       ? storedLines
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, children: b.children, subtotal: b.totalAmount }];
+    const pkgs: PackageItem[] = (b as any).packageItems ?? [];
 
     const deposito = (b as any).depositoPagado ?? 0;
     const pendiente = Math.max(0, b.totalAmount - deposito);
@@ -154,6 +156,22 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
           ${destinos ? `<ul style="list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:1.9;margin-top:6px">${destinos}</ul>` : ""}
         </div>`;
     }).join("<hr style='border:none;border-top:1px dashed #d4ccbc;margin:12px 0'/>");
+
+    const pkgSection = pkgs.length > 0 ? `
+      <hr style="border:none;border-top:1px dashed #d4ccbc;margin:16px 0"/>
+      <div class="sl" style="margin-bottom:14px">Hospedaje incluido</div>
+      ${pkgs.map(p => `
+        <div style="margin-bottom:14px;padding:12px 14px;background:#faf7ee;border:1px solid #e0d8c4;border-radius:2px">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:6px">🏨 ${p.hotel}</div>
+          <div style="font-family:Arial;font-size:13px;color:#1a2e1a;font-weight:600;margin-bottom:4px">${p.habitacion}</div>
+          <div style="font-family:Arial;font-size:12px;color:#3a3a2e">
+            ${p.checkin ? `Check-in: ${fDate(p.checkin)} · ` : ""}Check-out: ${p.checkout ? fDate(p.checkout) : "—"}
+          </div>
+          <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-top:2px">
+            ${p.noches} noche${p.noches !== 1 ? "s" : ""} · ${p.habitaciones} habitación${p.habitaciones !== 1 ? "es" : ""} · $${p.precioPorNoche.toLocaleString("es-MX")} MXN/noche
+          </div>
+          <div style="text-align:right;font-family:Arial;font-size:12px;color:#8a6f1e;font-weight:600;margin-top:4px">$${calcPackageLine(p).toLocaleString("es-MX")} MXN</div>
+        </div>`).join("")}` : "";
 
     win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Confirmación ${b.confirmationNumber}</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a2e1a;padding:40px;max-width:720px;margin:0 auto}
@@ -182,6 +200,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 </div>
 <div class="sl" style="margin-bottom:14px">Tours del recorrido</div>
 ${tourSections}
+${pkgSection}
 <div class="total-row"><span class="total-label">Total</span><span class="total-value">${fmx(b.totalAmount)}</span></div>
 ${deposito > 0 ? `<div class="pago-row" style="background:#f0fff4;border:1px solid #c6f6d5"><span style="color:#3a6b1a;font-weight:600">✓ Anticipo pagado</span><span style="color:#3a6b1a;font-weight:600">${fmx(deposito)}</span></div><div class="pago-row" style="background:#fffbeb;border:1px solid #fef3c7"><span style="color:#b45309">Pendiente el día del tour</span><span style="color:#b45309;font-weight:600">${fmx(pendiente)}</span></div>` : ""}
 <div class="includes" style="margin-top:16px"><p>✓ Transporte desde tu hotel &nbsp; ✓ Desayuno típico &nbsp; ✓ Entradas &nbsp; ✓ Guía NOM-09 &nbsp; ✓ Equipo de seguridad &nbsp; ✓ Fotografías</p></div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Check, Pencil } from "lucide-react";
+import { X, Plus, Check, Pencil, BedDouble } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 
 const fmx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
@@ -15,35 +15,67 @@ export interface LineItem {
   subtotal: number;
 }
 
+export interface PackageItem {
+  habitacion:     string;  // "Vista Montañas" | "Vista Jardines / Piscina" | personalizado
+  hotel:          string;  // "Hotel Paraíso Encantado, Xilitla"
+  noches:         number;
+  habitaciones:   number;
+  precioPorNoche: number;
+  checkin:        string;
+  checkout:       string;
+  subtotal:       number;
+}
+
 export interface ReservaFormState {
-  customerName:  string;
-  customerEmail: string;
-  customerPhone: string;
-  notes:         string;
-  lines:         LineItem[];
-  totalOverride: string;   // "" = usa calculado
+  customerName:   string;
+  customerEmail:  string;
+  customerPhone:  string;
+  notes:          string;
+  lines:          LineItem[];
+  packages:       PackageItem[];
+  totalOverride:  string;
   depositoPagado: string;
 }
+
+const HABITACIONES_PRESET = [
+  { label: "Vista Montañas",       precio: 1800 },
+  { label: "Vista Jardines / Piscina", precio: 1500 },
+];
+
+const EMPTY_PACKAGE: PackageItem = {
+  habitacion:     "Vista Montañas",
+  hotel:          "Hotel Paraíso Encantado, Xilitla",
+  noches:         2,
+  habitaciones:   1,
+  precioPorNoche: 1800,
+  checkin:        "",
+  checkout:       "",
+  subtotal:       3600,
+};
 
 export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, children: 0, subtotal: 0 };
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
-  lines: [{ ...EMPTY_LINE }], totalOverride: "", depositoPagado: "",
+  lines: [{ ...EMPTY_LINE }], packages: [], totalOverride: "", depositoPagado: "",
 };
 
-function calcLine(l: LineItem): number {
+export function calcTourLine(l: LineItem): number {
   const t = TOURS_DB.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
   return t.precio * l.adults + Math.round(t.precio * 0.6) * l.children;
 }
 
+export function calcPackageLine(p: PackageItem): number {
+  return p.precioPorNoche * p.noches * p.habitaciones;
+}
+
 interface Props {
-  title:    string;
-  form:     ReservaFormState;
-  setForm:  (f: ReservaFormState | ((p: ReservaFormState) => ReservaFormState)) => void;
-  onSave:   () => void;
-  onClose:  () => void;
-  saving:   boolean;
+  title:   string;
+  form:    ReservaFormState;
+  setForm: (f: ReservaFormState | ((p: ReservaFormState) => ReservaFormState)) => void;
+  onSave:  () => void;
+  onClose: () => void;
+  saving:  boolean;
 }
 
 export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: Props) {
@@ -51,10 +83,12 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
 
   const inputCls = "w-full border border-[#1a2e1a]/15 text-[#1a2e1a] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#3a6b1a] rounded-sm placeholder:text-[#1a2e1a]/25 bg-white";
 
-  const calcTotal  = form.lines.reduce((s, l) => s + calcLine(l), 0);
-  const finalTotal = form.totalOverride !== "" ? Number(form.totalOverride) || 0 : calcTotal;
-  const deposito   = Number(form.depositoPagado) || 0;
-  const pendiente  = Math.max(0, finalTotal - deposito);
+  const toursTotal    = form.lines.reduce((s, l) => s + calcTourLine(l), 0);
+  const packagesTotal = form.packages.reduce((s, p) => s + calcPackageLine(p), 0);
+  const calcTotal     = toursTotal + packagesTotal;
+  const finalTotal    = form.totalOverride !== "" ? Number(form.totalOverride) || 0 : calcTotal;
+  const deposito      = Number(form.depositoPagado) || 0;
+  const pendiente     = Math.max(0, finalTotal - deposito);
 
   function updateLine(i: number, field: keyof LineItem, val: string | number) {
     setForm(f => ({
@@ -66,12 +100,36 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
           const t = TOURS_DB.find(t => t.slug === val);
           up.tourName = t?.nombre || "";
         }
-        up.subtotal = calcLine(up);
+        up.subtotal = calcTourLine(up);
         return up;
       }),
-      // reset override when lines change
       totalOverride: "",
     }));
+  }
+
+  function updatePackage(i: number, field: keyof PackageItem, val: string | number) {
+    setForm(f => ({
+      ...f,
+      packages: f.packages.map((p, idx) => {
+        if (idx !== i) return p;
+        const up = { ...p, [field]: val };
+        if (field === "habitacion") {
+          const preset = HABITACIONES_PRESET.find(h => h.label === val);
+          if (preset) up.precioPorNoche = preset.precio;
+        }
+        up.subtotal = calcPackageLine(up);
+        return up;
+      }),
+      totalOverride: "",
+    }));
+  }
+
+  function addPackage() {
+    setForm(f => ({ ...f, packages: [...f.packages, { ...EMPTY_PACKAGE }], totalOverride: "" }));
+  }
+
+  function removePackage(i: number) {
+    setForm(f => ({ ...f, packages: f.packages.filter((_, idx) => idx !== i), totalOverride: "" }));
   }
 
   const canSave = !saving && !!form.customerName && form.lines.every(l => !!l.tourSlug && !!l.tourDate);
@@ -108,7 +166,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
             </div>
           </div>
 
-          {/* Tours (multi-línea) */}
+          {/* Tours */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Tours</p>
@@ -152,8 +210,107 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                       </div>
                     </div>
                     {line.tourSlug && (
-                      <p className="text-right text-xs font-dm text-[#c4882a]">Subtotal: {fmx(calcLine(line))}</p>
+                      <p className="text-right text-xs font-dm text-[#c4882a]">Subtotal: {fmx(calcTourLine(line))}</p>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Paquete de Hotel */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm flex items-center gap-1.5">
+                <BedDouble className="w-3 h-3" />Hospedaje (opcional)
+              </p>
+              <button onClick={addPackage}
+                className="flex items-center gap-1 text-xs font-dm text-[#8a6f1e] border border-[#8a6f1e]/30 px-2 py-1 hover:bg-[#8a6f1e]/8 transition-colors rounded-sm">
+                <Plus className="w-3 h-3" />Agregar habitación
+              </button>
+            </div>
+            {form.packages.length === 0 && (
+              <p className="text-[10px] font-dm text-[#1a2e1a]/30 border border-dashed border-[#1a2e1a]/15 rounded-sm py-3 text-center">
+                Sin hospedaje en el paquete
+              </p>
+            )}
+            <div className="space-y-2">
+              {form.packages.map((pkg, i) => (
+                <div key={i} className="border border-[#8a6f1e]/25 p-3 rounded-sm bg-[#faf7ee]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] tracking-[2px] uppercase text-[#8a6f1e]/70 font-dm flex items-center gap-1">
+                      <BedDouble className="w-3 h-3" /> Habitación {i + 1}
+                    </span>
+                    <button onClick={() => removePackage(i)} className="text-[#1a2e1a]/30 hover:text-red-500">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {/* Hotel */}
+                    <div>
+                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Hotel</label>
+                      <input type="text" value={pkg.hotel}
+                        onChange={e => updatePackage(i, "hotel", e.target.value)}
+                        className={inputCls} />
+                    </div>
+                    {/* Tipo de habitación */}
+                    <div>
+                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Tipo de habitación</label>
+                      <div className="flex gap-2 flex-wrap mb-1.5">
+                        {HABITACIONES_PRESET.map(h => (
+                          <button key={h.label} type="button"
+                            onClick={() => updatePackage(i, "habitacion", h.label)}
+                            className={`text-[10px] font-dm px-2.5 py-1 rounded border transition-colors ${
+                              pkg.habitacion === h.label
+                                ? "bg-[#8a6f1e] text-white border-[#8a6f1e]"
+                                : "border-[#8a6f1e]/30 text-[#8a6f1e] hover:bg-[#8a6f1e]/10"
+                            }`}>
+                            {h.label}
+                          </button>
+                        ))}
+                      </div>
+                      <input type="text" value={pkg.habitacion}
+                        onChange={e => updatePackage(i, "habitacion", e.target.value)}
+                        placeholder="Personalizar descripción..."
+                        className={inputCls} />
+                    </div>
+                    {/* Grid: noches, habitaciones, precio */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Noches</label>
+                        <input type="number" min={1} max={30} value={pkg.noches}
+                          onChange={e => updatePackage(i, "noches", Number(e.target.value))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Habitaciones</label>
+                        <input type="number" min={1} max={10} value={pkg.habitaciones}
+                          onChange={e => updatePackage(i, "habitaciones", Number(e.target.value))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">$/noche</label>
+                        <input type="number" min={0} value={pkg.precioPorNoche}
+                          onChange={e => updatePackage(i, "precioPorNoche", Number(e.target.value))} className={inputCls} />
+                      </div>
+                    </div>
+                    {/* Check-in / Check-out */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-in</label>
+                        <input type="date" value={pkg.checkin}
+                          onChange={e => updatePackage(i, "checkin", e.target.value)} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-out</label>
+                        <input type="date" value={pkg.checkout}
+                          onChange={e => updatePackage(i, "checkout", e.target.value)} className={inputCls} />
+                      </div>
+                    </div>
+                    <p className="text-right text-xs font-dm text-[#8a6f1e] font-medium">
+                      Subtotal: {fmx(calcPackageLine(pkg))}
+                      <span className="text-[#1a2e1a]/35 font-normal ml-1">
+                        ({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})
+                      </span>
+                    </p>
                   </div>
                 </div>
               ))}
@@ -170,6 +327,16 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
 
           {/* Total editable */}
           <div className="border border-[#c4882a]/30 bg-[#c4882a]/8 px-4 py-3 rounded-sm">
+            {packagesTotal > 0 && (
+              <div className="flex justify-between text-xs font-dm text-[#1a2e1a]/50 mb-1.5">
+                <span>Tours</span><span>{fmx(toursTotal)}</span>
+              </div>
+            )}
+            {packagesTotal > 0 && (
+              <div className="flex justify-between text-xs font-dm text-[#8a6f1e] mb-2 pb-2 border-b border-[#c4882a]/20">
+                <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
                 <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">
@@ -214,12 +381,11 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                   <span className="text-[#1a2e1a]/40 font-dm text-sm">$</span>
                   <input type="number" min={0} value={form.depositoPagado}
                     onChange={e => setForm(f => ({ ...f, depositoPagado: e.target.value }))}
-                    placeholder="0"
-                    className={inputCls} />
+                    placeholder="0" className={inputCls} />
                 </div>
               </div>
               <div>
-                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Pendiente día del tour</label>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Pendiente</label>
                 <p className={`font-cormorant text-xl pt-2 ${pendiente > 0 ? "text-orange-600" : "text-green-600"}`}>
                   {fmx(pendiente)}
                 </p>

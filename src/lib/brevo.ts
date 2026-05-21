@@ -3,6 +3,11 @@ interface BrevoRecipient {
   name?: string;
 }
 
+interface BrevoAttachment {
+  name: string;
+  content: string; // base64
+}
+
 interface BrevoEmailParams {
   to: BrevoRecipient[];
   bcc?: BrevoRecipient[];
@@ -10,6 +15,7 @@ interface BrevoEmailParams {
   htmlContent: string;
   senderName?: string;
   senderEmail?: string;
+  attachments?: BrevoAttachment[];
 }
 
 export async function sendBrevoEmail(params: BrevoEmailParams) {
@@ -37,6 +43,7 @@ export async function sendBrevoEmail(params: BrevoEmailParams) {
       ...(params.bcc?.length ? { bcc: params.bcc } : {}),
       subject: params.subject,
       htmlContent: params.htmlContent,
+      ...(params.attachments?.length ? { attachment: params.attachments } : {}),
     }),
   });
 

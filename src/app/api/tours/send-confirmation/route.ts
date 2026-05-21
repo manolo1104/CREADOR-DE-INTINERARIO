@@ -3,6 +3,8 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -85,11 +87,21 @@ export async function POST(req: NextRequest) {
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
 
+        let pdfAttachment: { name: string; content: string }[] = [];
+        try {
+          const pdfPath = path.join(process.cwd(), "public", "guia-huasteca-potosina.pdf");
+          const pdfBase64 = fs.readFileSync(pdfPath).toString("base64");
+          pdfAttachment = [{ name: "Guia-Huasteca-Potosina.pdf", content: pdfBase64 }];
+        } catch {
+          // Si el PDF no está disponible, el correo igual se envía
+        }
+
         await sendBrevoEmail({
           to:      [{ email, name: customerName }],
           bcc:     [{ email: adminTo }],
           subject: `Tu tour está confirmado — ${confirmationNumber}`,
           htmlContent: html,
+          attachments: pdfAttachment,
         });
 
         console.log(`✅ Email Brevo enviado | to=${email} | cn=${confirmationNumber}`);
