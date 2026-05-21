@@ -136,6 +136,7 @@ model TourQuote {
   customerPhone String?
   notes        String?
   lineItems    Json?    // [{tourSlug,tourName,tourDate,adults,children,subtotal}]
+  packageItems Json?    // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
   status       String   @default("borrador") // borrador | enviada | aceptada | expirada
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

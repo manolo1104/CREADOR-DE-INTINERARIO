@@ -138,6 +138,11 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       setQuotes(await ref.json());
       closeModal();
       flash(modal === "edit" ? "✅ Cotización actualizada" : "✅ Cotización creada");
+    } else {
+      const d = await r.json().catch(() => ({}));
+      const msg = d.error || `Error ${r.status}`;
+      flash(`❌ Error al guardar: ${msg}`);
+      alert(`❌ Error al guardar cotización:\n${msg}`);
     }
     setSaving(false);
   }
