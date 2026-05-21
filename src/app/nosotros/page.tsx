@@ -162,12 +162,12 @@ const TESTIMONIOS_GUIAS = [
 ];
 
 const VALORES = [
-  { Icon: Heart,      titulo: "Pasión local",          texto: "Nacimos aquí. La Huasteca no es un trabajo para nosotros — es nuestra casa, nuestra familia y nuestro orgullo.", foto: "/imagenes/tours/tamul/hero.png",      fotoAlt: "Guías locales en la Cascada de Tamul" },
+  { Icon: Heart,      titulo: "Pasión local",          texto: "Nacimos aquí. La Huasteca no es un trabajo para nosotros — es nuestra casa, nuestra familia y nuestro orgullo.", foto: "/imagenes/tours/tamul/hero.jpg",      fotoAlt: "Guías locales en la Cascada de Tamul" },
   { Icon: Shield,     titulo: "Seguridad primero",      texto: "Todos nuestros guías tienen certificación en primeros auxilios, rescate acuático y manejo de grupos en entornos naturales.", foto: "/guides/guia-1.png",                 fotoAlt: "Carlos Rodríguez — guía certificado con equipo de seguridad" },
-  { Icon: Leaf,       titulo: "Turismo responsable",    texto: "Aforos limitados, cero plásticos y $30 MXN de cada tour van al Fondo de Conservación Huasteca.", foto: "/imagenes/tours/tamul/gallery-3.png", fotoAlt: "Grupo en canoa en el Cañón del Tampaón — bajo impacto" },
-  { Icon: Star,       titulo: "Experiencia auténtica",  texto: "No seguimos guiones. Cada recorrido se adapta al ritmo y los intereses de tu grupo para vivir la Huasteca de verdad.", foto: "/imagenes/tours/tamul/gallery-1.png", fotoAlt: "Cueva del Agua — destinos inaccesibles solo con guía local" },
-  { Icon: Users,      titulo: "Grupos pequeños",         texto: "Máximo 12 personas por grupo. Atención personalizada y acceso a rincones que los autobuses turísticos nunca verán.", foto: "/imagenes/tours/tamul/gallery-4.png", fotoAlt: "Grupo pequeño en el río — experiencia personalizada" },
-  { Icon: TrendingUp, titulo: "Mejora constante",        texto: "Cada temporada actualizamos protocolos, rutas y equipamiento. Capacitación continua con SECTUR.", foto: "/imagenes/tours/tamul/gallery-5.png",  fotoAlt: "Sótano de las Huahuas al amanecer — acceso exclusivo" },
+  { Icon: Leaf,       titulo: "Turismo responsable",    texto: "Aforos limitados, cero plásticos y $30 MXN de cada tour van al Fondo de Conservación Huasteca.", foto: "/imagenes/tours/tamul/gallery-3.jpg", fotoAlt: "Grupo en canoa en el Cañón del Tampaón — bajo impacto" },
+  { Icon: Star,       titulo: "Experiencia auténtica",  texto: "No seguimos guiones. Cada recorrido se adapta al ritmo y los intereses de tu grupo para vivir la Huasteca de verdad.", foto: "/imagenes/tours/tamul/gallery-1.jpg", fotoAlt: "Cueva del Agua — destinos inaccesibles solo con guía local" },
+  { Icon: Users,      titulo: "Grupos pequeños",         texto: "Máximo 12 personas por grupo. Atención personalizada y acceso a rincones que los autobuses turísticos nunca verán.", foto: "/imagenes/tours/tamul/gallery-4.jpg", fotoAlt: "Grupo pequeño en el río — experiencia personalizada" },
+  { Icon: TrendingUp, titulo: "Mejora constante",        texto: "Cada temporada actualizamos protocolos, rutas y equipamiento. Capacitación continua con SECTUR.", foto: "/imagenes/tours/tamul/gallery-5.jpg",  fotoAlt: "Sótano de las Huahuas al amanecer — acceso exclusivo" },
 ];
 
 const HISTORIA = [

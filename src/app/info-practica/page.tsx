@@ -279,7 +279,7 @@ export default function InfoPracticaPage() {
         {/* Imagen contextual */}
         <div className="relative aspect-[21/9] overflow-hidden mb-6">
           <Image
-            src="/imagenes/tours/tamul/gallery-3.png"
+            src="/imagenes/tours/tamul/gallery-3.jpg"
             alt="Grupo en canoa recorriendo el Cañón del Tampaón — Huasteca Potosina"
             fill
             className="object-cover"
@@ -356,7 +356,7 @@ export default function InfoPracticaPage() {
         <div className="grid grid-cols-2 gap-3 mb-8">
           <div className="relative aspect-[4/3] overflow-hidden">
             <Image
-              src="/imagenes/tours/tamul/gallery-1.png"
+              src="/imagenes/tours/tamul/gallery-1.jpg"
               alt="Cueva del Agua con agua turquesa — temporada seca Nov–Mar"
               fill
               className="object-cover"
@@ -367,7 +367,7 @@ export default function InfoPracticaPage() {
           </div>
           <div className="relative aspect-[4/3] overflow-hidden">
             <Image
-              src="/imagenes/tours/tamul/gallery-5.png"
+              src="/imagenes/tours/tamul/gallery-5.jpg"
               alt="Sótano de las Huahuas con vegetación verde exuberante — temporada lluvias"
               fill
               className="object-cover"
@@ -991,7 +991,7 @@ export default function InfoPracticaPage() {
         {/* Imagen introductoria */}
         <div className="relative aspect-[21/9] overflow-hidden mb-8">
           <Image
-            src="/imagenes/tours/tamul/gallery-4.png"
+            src="/imagenes/tours/tamul/gallery-4.jpg"
             alt="Viajeros disfrutando en las aguas del río Tampaón — equipo básico para la Huasteca"
             fill
             className="object-cover"

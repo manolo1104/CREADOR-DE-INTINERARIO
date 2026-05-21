@@ -38,19 +38,26 @@ export interface ReservaFormState {
 }
 
 const HABITACIONES_PRESET = [
-  { label: "Vista Montañas",       precio: 1800 },
-  { label: "Vista Jardines / Piscina", precio: 1500 },
+  { label: "Suite Flor de Liz",    precio: 1900 },
+  { label: "Suite LindaVista",     precio: 1990 },
+  { label: "Suite Lajas",          precio: 1900 },
+  { label: "Suite Jungla",         precio: 1990 },
+  { label: "Lirios",               precio: 1500 },
+  { label: "Orquídeas King",       precio: 1500 },
+  { label: "Orquídeas Doble",      precio: 1500 },
+  { label: "Bromelias",            precio: 1500 },
+  { label: "Helechos",             precio: 1900 },
 ];
 
 const EMPTY_PACKAGE: PackageItem = {
-  habitacion:     "Vista Montañas",
+  habitacion:     "Suite Flor de Liz",
   hotel:          "Hotel Paraíso Encantado, Xilitla",
   noches:         2,
   habitaciones:   1,
-  precioPorNoche: 1800,
+  precioPorNoche: 1900,
   checkin:        "",
   checkout:       "",
-  subtotal:       3600,
+  subtotal:       3800,
 };
 
 export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, children: 0, subtotal: 0 };
