@@ -162,7 +162,8 @@ model TourBooking {
   customerEmail         String
   customerPhone         String?
   notes                 String?
-  lineItems             Json?    // [{tourSlug,tourName,tourDate,adults,children,subtotal}]
+  lineItems             Json?    // [{tourSlug,tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}]
+  packageItems          Json?    // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
   depositoPagado        Int      @default(0)
   status                String   @default("pending")
   createdAt             DateTime @default(now())
