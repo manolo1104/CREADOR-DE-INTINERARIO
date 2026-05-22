@@ -465,6 +465,55 @@ function buildCTAs(topic) {
   return { CTA_TOURS, CTA_ITINERARIO, CTA_FINAL };
 }
 
+// ── Extractor de JSON robusto para blog (maneja HTML con comillas sin escapar) ──
+function extractBlogJSON(raw) {
+  const result = {};
+
+  // Campos simples de texto
+  for (const f of ['slug','metaTitle','title','metaDescription','focusKeyword','excerpt']) {
+    const m = raw.match(new RegExp(`"${f}"\\s*:\\s*"((?:[^"\\\\]|\\\\[\\s\\S])*)"`));
+    if (m) result[f] = m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+  }
+
+  // Campo content: extraer todo el HTML entre "content":" y la siguiente clave JSON
+  // Buscamos el patrón ","tags": o ","readingTime": para delimitar el fin
+  const cIdx = raw.indexOf('"content"');
+  if (cIdx !== -1) {
+    const afterContent = raw.slice(cIdx + '"content"'.length);
+    const colon = afterContent.indexOf(':');
+    const quote = afterContent.indexOf('"', colon + 1);
+    if (quote !== -1) {
+      // Extraer hasta la última ocurrencia de ","tags" o ","readingTime"
+      const rest = afterContent.slice(quote + 1);
+      const endMarkers = [/",\s*"tags"\s*:/, /",\s*"readingTime"\s*:/, /",\s*"secondaryKeywords"\s*:/];
+      let bestEnd = rest.length;
+      for (const marker of endMarkers) {
+        const m = rest.search(marker);
+        if (m !== -1 && m < bestEnd) bestEnd = m;
+      }
+      result.content = rest.slice(0, bestEnd)
+        .replace(/\\"/g, '"')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\\\/g, '\\');
+    }
+  }
+
+  // Arrays
+  const tagsM = raw.match(/"tags"\s*:\s*(\[[^\]]*\])/);
+  if (tagsM) { try { result.tags = JSON.parse(tagsM[1]); } catch { result.tags = []; } }
+
+  const skM = raw.match(/"secondaryKeywords"\s*:\s*(\[[^\]]*\])/);
+  if (skM) { try { result.secondaryKeywords = JSON.parse(skM[1]); } catch { result.secondaryKeywords = []; } }
+
+  // Número
+  const rtM = raw.match(/"readingTime"\s*:\s*(\d+)/);
+  if (rtM) result.readingTime = parseInt(rtM[1]);
+
+  if (!result.title && !result.content) throw new Error("No se pudo extraer el JSON del artículo");
+  return result;
+}
+
 // ── Redactar artículo ───────────────────────────────────────
 
 async function writeArticle(topic, researchContext, images, postsExistentes) {
@@ -615,7 +664,7 @@ Respuesta: JSON puro sin markdown.
 
   const response = await callWithRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 5000,
+    max_tokens: 8000,
     messages: [{ role: "user", content: prompt }],
   }));
 
@@ -629,15 +678,9 @@ Respuesta: JSON puro sin markdown.
   try {
     post = JSON.parse(jsonMatch[0]);
   } catch {
-    console.warn("⚠️  JSON incompleto, reparando...");
-    let partial = jsonMatch[0];
-    let b = 0, br = 0;
-    for (const ch of partial) {
-      if (ch === "{") b++; else if (ch === "}") b--;
-      if (ch === "[") br++; else if (ch === "]") br--;
-    }
-    post = JSON.parse(partial + "]".repeat(Math.max(0, br)) + "}".repeat(Math.max(0, b)));
-    console.warn("✅ JSON reparado");
+    console.warn("⚠️  JSON con caracteres problemáticos, reparando...");
+    post = extractBlogJSON(jsonMatch[0]);
+    console.warn("✅ JSON extraído por campo");
   }
 
   // Corrección 2: Forzar slug generado
