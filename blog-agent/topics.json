@@ -289,9 +289,9 @@
             "Viaje a Xilitla"
           ],
           "enfoque_agente": "Utilidad pura para el viajero en etapa de preparación.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "equipaje-que-llevar-en-tu-maleta-para-la-selva-potosina-checklist",
+          "fecha_publicacion": "2026-05-22T21:26:35.026Z"
         },
         {
           "id": 22,
