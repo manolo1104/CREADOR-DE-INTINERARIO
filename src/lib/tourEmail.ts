@@ -308,10 +308,10 @@ export function buildTourQuoteEmailHtml(data: {
   tourDate:      string;
   tourSlug:      string;
   adults:        number;
-  children:      number;
+  children:      number;  // total (childrenMid + childrenSmall)
   totalAmount:   number;
   notes?:        string;
-  lineItems?:    { tourName: string; tourDate: string; adults: number; children: number; subtotal: number }[];
+  lineItems?:    { tourName: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number }[];
 }): string {
   const base     = "https://www.huasteca-potosina.com";
   const waUrl    = "https://wa.me/524891251458";
@@ -335,7 +335,7 @@ export function buildTourQuoteEmailHtml(data: {
       <tr>
         <td style="padding:14px 0;vertical-align:top;width:65%">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
-          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(it.tourDate)} · ${it.adults}A${it.children > 0 ? ` ${it.children}N` : ""}</p>
+          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(it.tourDate)} · ${it.adults} adulto${it.adults !== 1 ? "s" : ""}${(it.childrenMid ?? 0) > 0 ? ` · ${it.childrenMid} niño${it.childrenMid !== 1 ? "s" : ""} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${it.childrenSmall} niño${it.childrenSmall !== 1 ? "s" : ""} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${it.children} niño${it.children !== 1 ? "s" : ""}` : ""}</p>
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(it.subtotal)}</p>
