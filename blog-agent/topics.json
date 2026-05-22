@@ -302,9 +302,9 @@
             "Tips de entrada"
           ],
           "enfoque_agente": "Resolver dudas comunes y ofrecer la gestión de entradas dentro de los paquetes/itinerarios.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "boletos-las-pozas-preguntas-frecuentes-sobre-el-jardin-de-edward-james",
+          "fecha_publicacion": "2026-05-22T20:17:55.720Z"
         },
         {
           "id": 23,
