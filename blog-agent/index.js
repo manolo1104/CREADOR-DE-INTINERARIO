@@ -24,10 +24,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DRY_RUN      = process.argv.includes("--dry-run");
 const TOPIC_IDX    = process.argv.indexOf("--topic");
 const CUSTOM_TOPIC = TOPIC_IDX !== -1 ? process.argv[TOPIC_IDX + 1] : null;
-// Por defecto NO selecciona imagen automáticamente — el usuario la asigna manualmente
-// con: node assign-image.js [slug] [url] [alt]
-// Para usar la selección automática pasa: --auto-image
-const AUTO_IMAGE   = process.argv.includes("--auto-image");
+// Selecciona imagen automáticamente desde images.json (igual que blogs existentes).
+// Pasa --no-image para asignar manualmente después con assign-image.js
+const AUTO_IMAGE   = !process.argv.includes("--no-image");
 
 const anthropic       = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -706,7 +705,7 @@ Respuesta: JSON puro sin markdown.
       "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` },
     },
     "description": post.metaDescription || "",
-    "image": { "@type": "ImageObject", "url": images.hero.url, "description": images.hero.alt },
+    ...(images ? { "image": { "@type": "ImageObject", "url": images.hero.url, "description": images.hero.alt } } : {}),
     "keywords": [topic.focusKeyword, ...topic.secondaryKeywords].join(", "),
     "articleSection": inferredCategory,
     "inLanguage": "es-MX",
@@ -1018,7 +1017,7 @@ async function main() {
   // Paso 4: Selección de imágenes (solo con --auto-image)
   const images = AUTO_IMAGE ? selectImages(topic, imagesBank) : null;
   if (!AUTO_IMAGE) {
-    console.log("\n🖼️  Imagen: se asignará manualmente (usa assign-image.js después de publicar)");
+    console.log("\n🖼️  Imagen: omitida (pasa sin --no-image para auto-seleccionar)");
   }
 
   // Paso 5: Redactar artículo
