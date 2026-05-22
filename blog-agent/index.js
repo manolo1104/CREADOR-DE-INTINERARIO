@@ -664,7 +664,7 @@ Respuesta: JSON puro sin markdown.
 
   const response = await callWithRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 8000,
+    max_tokens: 10000,
     messages: [{ role: "user", content: prompt }],
   }));
 
