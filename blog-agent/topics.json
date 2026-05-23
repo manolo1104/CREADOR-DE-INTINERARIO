@@ -88,9 +88,9 @@
             "Tours a cascadas"
           ],
           "enfoque_agente": "Inspirar a la aventura y ofrecer la gestión/venta del tour a estas cascadas.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "cascada-los-comales-mas-alla-del-castillo-3-cascadas-secretas-cerca-de",
+          "fecha_publicacion": "2026-05-23T05:49:15.582Z"
         },
         {
           "id": 7,
