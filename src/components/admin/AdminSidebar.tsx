@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard } from "lucide-react";
 
 const NAV = [
-  { href: "/admin/reservas",     icon: BookOpen,   label: "Reservas"     },
-  { href: "/admin/calendario",   icon: Calendar,   label: "Calendario"   },
-  { href: "/admin/cotizaciones", icon: FileText,   label: "Cotizaciones" },
-  { href: "/admin/ingresos",     icon: TrendingUp, label: "Ingresos"     },
-  { href: "/admin/clientes",     icon: Users,      label: "Clientes"     },
+  { href: "/admin",              icon: LayoutDashboard, label: "Inicio",       exact: true  },
+  { href: "/admin/reservas",     icon: BookOpen,        label: "Reservas"                   },
+  { href: "/admin/calendario",   icon: Calendar,        label: "Calendario"                 },
+  { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones"               },
+  { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ingresos"                   },
+  { href: "/admin/clientes",     icon: Users,           label: "Clientes"                   },
 ];
 
 export default function AdminSidebar() {
@@ -25,8 +26,8 @@ export default function AdminSidebar() {
 
   const navItems = (
     <nav className="flex-1 px-3 py-4 space-y-0.5">
-      {NAV.map(({ href, icon: Icon, label }) => {
-        const active = pathname.startsWith(href);
+      {NAV.map(({ href, icon: Icon, label, exact }) => {
+        const active = exact ? pathname === href : pathname.startsWith(href);
         return (
           <Link key={href} href={href} onClick={() => setOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 text-sm font-dm transition-colors rounded-sm ${
@@ -50,7 +51,7 @@ export default function AdminSidebar() {
       {/* Desktop */}
       <aside className={`hidden md:flex ${sidebarClass}`}>
         <div className="px-5 py-5 border-b border-[#1a2e1a]/10">
-          <Link href="/admin/reservas">
+          <Link href="/admin">
             <div className="font-cormorant text-[#1a2e1a] text-lg tracking-[3px] uppercase">HUASTECA</div>
             <div className="text-[8px] tracking-[3px] uppercase text-[#3a6b1a] font-dm mt-0.5">Admin Panel</div>
           </Link>

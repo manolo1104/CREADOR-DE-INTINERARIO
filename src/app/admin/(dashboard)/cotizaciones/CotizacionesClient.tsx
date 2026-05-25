@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
-import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble } from "lucide-react";
+import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { type PackageItem, calcPackageLine } from "@/components/admin/ReservaModal";
 
@@ -31,6 +31,13 @@ const fDateL = (d: string) => { if (!d) return "—"; const r = new Date(d + "T1
 const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "" };
 
+function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string } {
+  return pkgs.find((p: any) => p._meta) || {};
+}
+function cleanPackages(pkgs: any[]): PackageItem[] {
+  return pkgs.filter((p: any) => !p._meta);
+}
+
 function calcLine(item: LineItem): number {
   const t = TOURS_DB.find(t => t.slug === item.tourSlug);
   if (!t) return 0;
@@ -56,6 +63,8 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   // Descuento
   const [discountType,   setDiscountType]   = useState<"percent" | "fixed">("percent");
   const [discountValue,  setDiscountValue]  = useState<string>("");
+  const [anticipo,       setAnticipo]       = useState<string>("");
+  const [vigencia,       setVigencia]       = useState<string>("7dias");
   const [saving,         setSaving]         = useState(false);
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
@@ -93,6 +102,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setLines([{ ...EMPTY_LINE }]);
     setPackages([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
+    setAnticipo(""); setVigencia("7dias");
     setModal("new");
   }
 
@@ -108,7 +118,11 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
         }))
       : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }]
     );
-    setPackages((q as any).packageItems ?? []);
+    const rawPkgs = (q as any).packageItems ?? [];
+    const meta = getMeta(rawPkgs);
+    setPackages(cleanPackages(rawPkgs));
+    setAnticipo(meta.anticipo != null ? String(meta.anticipo) : "");
+    setVigencia(meta.vigencia || "7dias");
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
     setModal("edit");
   }
@@ -119,7 +133,11 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     if (!form.customerName || lines.some(l => !l.tourSlug || !l.tourDate)) return;
     setSaving(true);
     const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
-    const packageItems = packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
+    const anticipoNum  = anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5);
+    const packageItems = [
+      { _meta: true, anticipo: anticipoNum, vigencia },
+      ...packages.map(p => ({ ...p, subtotal: calcPackageLine(p) })),
+    ];
     const payload = {
       tourName: lines.map(l => l.tourName).join(" + "), tourSlug: lines[0].tourSlug,
       tourDate: lines[0].tourDate,
@@ -170,6 +188,48 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
   }
 
+  async function convertToReserva(q: TourQuote) {
+    if (!confirm(`¿Convertir la cotización ${q.quoteNumber} a una reserva pagada?`)) return;
+    const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
+    const lineItems    = Array.isArray((q as any).lineItems) ? (q as any).lineItems : [];
+    const packageItems = cleanPackages((q as any).packageItems ?? []);
+
+    const r = await fetch("/api/admin/reservas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        confirmationNumber,
+        status:        "paid",
+        tourId:        q.tourSlug,
+        tourName:      q.tourName,
+        tourSlug:      q.tourSlug,
+        tourDate:      q.tourDate,
+        adults:        q.adults,
+        children:      q.children,
+        totalAmount:   q.totalAmount,
+        lineItems,
+        packageItems,
+        customerName:  q.customerName,
+        customerEmail: q.customerEmail,
+        customerPhone: q.customerPhone,
+        notes:         q.notes,
+      }),
+    });
+
+    if (r.ok) {
+      await fetch(`/api/admin/cotizaciones/${q.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "aceptada" }),
+      });
+      setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "aceptada" } : x));
+      flash(`✅ Reserva creada · ${confirmationNumber}`);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      flash(`❌ Error: ${d.error || "No se pudo crear la reserva"}`);
+    }
+  }
+
   async function hardDeleteQ(id: string) {
     if (!confirm("¿Eliminar completamente esta cotización?")) return;
     await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" });
@@ -180,72 +240,200 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   function downloadPDF(q: TourQuote) {
     const win = window.open("", "_blank");
     if (!win) return;
-    const items: LineItem[] = Array.isArray((q as any).lineItems)
-      ? (q as any).lineItems
-      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, children: q.children, subtotal: q.totalAmount }];
-    const pkgs: PackageItem[] = (q as any).packageItems ?? [];
 
-    const heroSections = items.map(it => {
-      const t = TOURS_DB.find(t => t.slug === it.tourSlug);
-      const heroUrl = t?.imagen_hero?.startsWith("http") ? t.imagen_hero : t?.imagen_hero ? `https://www.huasteca-potosina.com${t.imagen_hero}` : "";
-      const destinos = t?.destinos?.map(d => `<li>→ ${d}</li>`).join("") || "";
-      return `<div style="margin-bottom:22px">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:8px">${it.tourName}</div>
-        ${heroUrl ? `<img src="${heroUrl}" alt="${it.tourName}" style="width:100%;height:150px;object-fit:cover;border-radius:2px;margin-bottom:10px"/>` : ""}
-        <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-bottom:6px">📅 ${fDateL(it.tourDate)} · ${it.adults} adulto${it.adults!==1?"s":""}${(it.childrenMid??0)>0?` · ${it.childrenMid} niño${it.childrenMid!==1?"s":""} (6-10)`:""} ${(it.childrenSmall??0)>0?` · ${it.childrenSmall} niño${it.childrenSmall!==1?"s":""} (&lt;6)`:""}</div>
-        ${destinos ? `<ul style="list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:1.9">${destinos}</ul>` : ""}
-        <div style="text-align:right;font-family:Arial;font-size:12px;color:#c4882a;margin-top:6px;font-weight:600">Subtotal: $${calcLine(it).toLocaleString("es-MX")} MXN</div>
-      </div>`;
-    }).join("<hr style='border:none;border-top:1px solid #e8e0d0;margin:14px 0'/>");
+    const rawPkgs  = (q as any).packageItems ?? [];
+    const meta     = getMeta(rawPkgs);
+    const pkgs: PackageItem[] = cleanPackages(rawPkgs);
+    const items: LineItem[] = Array.isArray((q as any).lineItems) && (q as any).lineItems.length
+      ? (q as any).lineItems.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.children ?? 0), childrenSmall: l.childrenSmall ?? 0 }))
+      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }];
 
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cotización ${q.quoteNumber}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a2e1a;background:#fff;padding:40px;max-width:720px;margin:0 auto}
-.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a2e1a;padding-bottom:18px;margin-bottom:24px}
-.brand h1{font-size:20px;letter-spacing:4px;text-transform:uppercase;font-weight:400}.brand p{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#3a6b1a;margin-top:4px;font-family:Arial}
-.cot-box{text-align:right}.cl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial}
-.sl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#d4ccbc;border:1px solid #d4ccbc;margin-bottom:22px}
-.cell{background:#faf7ee;padding:12px 14px}
-.total-row{background:#1a2e1a;color:#f4edd8;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.total-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a;font-family:Arial}.total-value{font-size:24px;font-weight:600}
-.includes{border-left:3px solid #3a6b1a;padding-left:14px;margin-bottom:18px}.includes p{font-family:Arial;font-size:12px;color:#3a3a2e;line-height:2.1}
-.footer{border-top:1px solid #d4ccbc;padding-top:14px;font-family:Arial;font-size:11px;color:#9a8a6a;text-align:center;line-height:1.7}
-@media print{body{padding:20px}@page{margin:1cm}}</style></head><body>
-<div class="header">
-  <div class="brand"><h1>Tours Huasteca Potosina</h1><p>Xilitla · San Luis Potosí · México</p></div>
-  <div class="cot-box"><div class="cl" style="margin-bottom:4px">Cotización</div><div style="font-size:20px">${q.quoteNumber}</div><div style="font-size:11px;color:#9a8a6a;font-family:Arial;margin-top:3px">Válida 48 horas · ${new Date().toLocaleDateString("es-MX")}</div></div>
-</div>
-<div class="sl">Datos del cliente</div>
-<div class="grid">
-  <div class="cell"><div class="cl">Nombre</div><div style="font-size:14px">${q.customerName}</div></div>
-  <div class="cell"><div class="cl">Email</div><div style="font-size:12px">${q.customerEmail || "—"}</div></div>
-  <div class="cell"><div class="cl">Teléfono</div><div style="font-size:14px">${q.customerPhone || "—"}</div></div>
-  <div class="cell"><div class="cl">Fecha</div><div style="font-size:12px">${new Date().toLocaleDateString("es-MX")}</div></div>
-</div>
-<div class="sl" style="margin-bottom:16px">Tours del paquete</div>
-${heroSections}
-${pkgs.length > 0 ? `
-  <hr style="border:none;border-top:1px solid #e8e0d0;margin:16px 0"/>
-  <div class="sl" style="margin-bottom:12px">Hospedaje incluido</div>
-  ${pkgs.map(p => `
-    <div style="margin-bottom:12px;padding:12px 14px;background:#faf7ee;border:1px solid #e0d8c4;border-radius:2px">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:6px">🏨 ${p.hotel}</div>
-      <div style="font-family:Arial;font-size:13px;color:#1a2e1a;font-weight:600;margin-bottom:4px">${p.habitacion}</div>
-      <div style="font-family:Arial;font-size:12px;color:#3a3a2e">
-        ${p.checkin ? `Check-in: ${fDate(p.checkin)} · ` : ""}${p.checkout ? `Check-out: ${fDate(p.checkout)}` : ""}
+    const today    = new Date();
+    const vigDays  = meta.vigencia === "48h" ? 2 : meta.vigencia === "15dias" ? 15 : meta.vigencia === "30dias" ? 30 : 7;
+    const vigDate  = new Date(today.getTime() + vigDays * 24 * 60 * 60 * 1000);
+    const vigLabel = meta.vigencia === "48h" ? "48 horas" : meta.vigencia === "15dias" ? "15 días" : meta.vigencia === "30dias" ? "30 días" : "7 días";
+    const fmt      = (d: Date) => d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+
+    const anticipoNum = meta.anticipo != null ? meta.anticipo : Math.round(q.totalAmount * 0.5);
+    const saldo       = Math.max(0, q.totalAmount - anticipoNum);
+    const toursTotal  = items.reduce((s, l) => s + calcLine(l), 0);
+    const pkgsTotal   = pkgs.reduce((s, p) => s + calcPackageLine(p), 0);
+    const descuento   = Math.max(0, toursTotal + pkgsTotal - q.totalAmount);
+
+    const tourDates    = items.map(l => l.tourDate).filter(Boolean).sort();
+    const checkouts    = pkgs.map(p => p.checkout).filter(Boolean).sort();
+    const fechaInicio  = tourDates[0] || q.tourDate;
+    const fechaFin     = checkouts.length ? checkouts[checkouts.length - 1] : tourDates[tourDates.length - 1] || q.tourDate;
+    const d1 = new Date(fechaInicio + "T12:00:00");
+    const d2 = new Date(fechaFin + "T12:00:00");
+    const duracion     = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / 86400000) + 1);
+    const numPersonas  = items.reduce((s, l) => s + l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0) || q.adults + (q.children ?? 0);
+    const hospNombre   = pkgs.length ? pkgs[0].hotel : "No incluye";
+
+    const tourRows = items.map(l => {
+      const total = l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+      const sub   = [
+        l.adults > 0 ? `${l.adults} adulto${l.adults !== 1 ? "s" : ""}` : "",
+        (l.childrenMid ?? 0) > 0 ? `${l.childrenMid} niño${l.childrenMid !== 1 ? "s" : ""} (6-10)` : "",
+        (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (<6)` : "",
+      ].filter(Boolean).join(" · ");
+      const fd = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
+      return `<div class="row"><div><div class="tour-name">${l.tourName}</div><div class="tour-sub">${sub}</div></div><div class="num">${fd}</div><div class="num right">${total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
+    }).join("");
+
+    const hospRows = pkgs.map(p => {
+      const fechas = [p.checkin ? fDate(p.checkin) : "", p.checkout ? fDate(p.checkout) : ""].filter(Boolean).join(" → ");
+      return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${p.hotel} — ${p.habitacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
+    }).join("");
+
+    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Cotización ${q.quoteNumber}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--negro:#0e1710;--verde-selva:#3a6b1a;--lima:#8fbe3a;--crema:#f4edd8;--dorado:#c4882a;--terracota:#9a4a1e;--display:'Cormorant Garamond',Georgia,serif;--dm:'DM Sans',system-ui,sans-serif;}
+@page{size:A4 portrait;margin:0;}*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(--negro);}
+.page{width:210mm;height:296mm;background:var(--crema);overflow:hidden;position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:10mm 14mm 10mm;display:flex;flex-direction:column;}
+@media print{html,body{background:white;}.page{margin:0;box-shadow:none;}}
+.head{display:grid;grid-template-columns:1fr auto;align-items:flex-start;padding-bottom:4mm;border-bottom:1px solid rgba(14,23,16,.18);}
+.brand{display:flex;align-items:baseline;gap:5mm;}.wordmark{font-family:var(--display);font-size:15pt;letter-spacing:4px;text-transform:uppercase;line-height:1;color:var(--negro);}
+.contact{font-size:7.5pt;line-height:1.5;color:rgba(14,23,16,.65);margin-top:2mm;font-family:ui-monospace,monospace;}
+.stamp{width:18mm;height:18mm;border-radius:50%;border:1px solid rgba(14,23,16,.4);display:flex;align-items:center;justify-content:center;position:relative;}
+.h{font-family:var(--display);font-style:italic;font-size:16pt;color:var(--dorado);}
+.title-block{margin-top:3mm;display:grid;grid-template-columns:1fr auto;gap:10mm;align-items:end;}
+.title-block h1{font-family:var(--display);font-weight:300;font-size:28pt;margin:0;line-height:.95;}
+.ital{font-style:italic;color:var(--dorado);}
+.meta{text-align:right;font-size:8.5pt;line-height:1.5;}.meta .row{display:flex;justify-content:flex-end;gap:6mm;}
+.meta .k{color:rgba(14,23,16,.55);letter-spacing:1.5px;text-transform:uppercase;font-size:8pt;}.meta .v{font-family:ui-monospace,monospace;color:var(--negro);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:4mm;}
+.card{border:1px solid rgba(14,23,16,.15);padding:4mm 5mm;}.card.dark{background:var(--negro);color:var(--crema);border-color:var(--negro);}
+.card h3{font-family:var(--display);font-weight:300;font-size:13pt;margin:0 0 2.5mm;line-height:1;}.card.dark h3{color:var(--crema);}
+.card .field{display:grid;grid-template-columns:1fr 1fr;gap:2.5mm 5mm;}
+.card .field .k{font-size:7pt;letter-spacing:1.5px;text-transform:uppercase;color:rgba(14,23,16,.55);}.card.dark .field .k{color:rgba(244,237,216,.55);}
+.card .field .v{font-size:9pt;line-height:1.3;margin-top:.5mm;}
+.tour-table{margin-top:4mm;}
+.head-row{display:grid;grid-template-columns:1fr 28mm 18mm 28mm;padding:2mm 0;border-bottom:2px solid var(--negro);font-size:7.5pt;letter-spacing:2px;text-transform:uppercase;font-weight:500;}
+.row{display:grid;grid-template-columns:1fr 28mm 18mm 28mm;padding:2.5mm 0;border-bottom:1px solid rgba(14,23,16,.15);align-items:start;}
+.tour-name{font-family:var(--display);font-size:11pt;line-height:1.15;font-weight:400;}
+.tour-sub{font-size:7.5pt;color:rgba(14,23,16,.65);line-height:1.35;margin-top:.5mm;}
+.num{font-family:ui-monospace,monospace;font-size:8.5pt;}.right{text-align:right;}
+.amt{font-family:var(--display);font-style:italic;font-size:12pt;color:var(--terracota);}
+.totals{margin-top:4mm;display:grid;grid-template-columns:1fr 65mm;align-items:start;gap:6mm;}
+.note{font-size:7.5pt;line-height:1.5;color:rgba(14,23,16,.65);}.note strong{color:var(--negro);}
+.calc{display:flex;flex-direction:column;gap:1mm;}
+.line{display:flex;justify-content:space-between;font-size:8.5pt;padding:.8mm 0;}
+.line.sub-line{border-bottom:1px solid rgba(14,23,16,.15);}
+.line.grand{background:var(--negro);color:var(--crema);padding:3mm 4mm;margin-top:2mm;align-items:baseline;}
+.line.grand .k{font-family:var(--dm);font-size:8pt;letter-spacing:2.5px;text-transform:uppercase;}
+.line.grand .v{font-family:var(--display);font-style:italic;font-size:18pt;color:var(--dorado);line-height:1;}
+.line.deposit{color:var(--terracota);font-weight:500;}
+.checks{margin-top:4mm;display:grid;grid-template-columns:1fr 1fr;gap:6mm;}
+.checks h4{font-family:var(--display);font-size:11pt;font-weight:400;margin:0 0 2mm;}
+.checks ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:1mm 4mm;}
+.checks li{display:grid;grid-template-columns:auto 1fr;gap:1.5mm;font-size:7.5pt;line-height:1.3;}
+.yes li::before{content:'✓';color:var(--verde-selva);font-weight:600;}
+.no li::before{content:'×';color:var(--terracota);font-weight:600;}
+.no li{color:rgba(14,23,16,.65);}
+.foot{margin-top:auto;padding-top:4mm;border-top:1px solid rgba(14,23,16,.18);display:grid;grid-template-columns:1fr auto;gap:6mm;align-items:center;}
+.terms{font-size:7.5pt;line-height:1.45;color:rgba(14,23,16,.65);}.terms strong{color:var(--negro);}
+.cta{background:var(--negro);color:var(--crema);padding:3mm 6mm;text-decoration:none;text-align:center;}
+.cta .lbl{font-size:7pt;letter-spacing:2px;text-transform:uppercase;color:var(--lima);}
+.cta .num{font-family:var(--display);font-style:italic;color:var(--dorado);font-size:13pt;margin-top:1mm;line-height:1;}
+.pageno{position:absolute;bottom:10mm;right:18mm;font-size:8pt;letter-spacing:2px;color:rgba(14,23,16,.4);}
+.runfoot{position:absolute;bottom:10mm;left:18mm;font-size:8pt;letter-spacing:2px;color:rgba(14,23,16,.4);text-transform:uppercase;}
+</style></head><body>
+<section class="page">
+  <header class="head">
+    <div>
+      <div class="brand"><span class="wordmark">HUASTECA POTOSINA TOURS</span></div>
+      <div class="contact">Manolo Covarrubias · guía local&#10;hola@huasteca-potosina.com · WhatsApp +52 489 125 1458&#10;Xilitla, San Luis Potosí, México · Operador SECTUR</div>
+    </div>
+    <div class="stamp">
+      <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(14,23,16,0.35)" stroke-width="0.8"/>
+        <defs><path id="arcC" d="M 50,50 m -36,0 a 36,36 0 1,1 72,0 a 36,36 0 1,1 -72,0" fill="none"/></defs>
+        <text font-family="DM Sans" font-size="6" letter-spacing="2.2" fill="rgba(14,23,16,0.55)"><textPath href="#arcC" startOffset="0%">★ HUASTECA · POTOSINA · TOURS ·</textPath></text>
+      </svg>
+      <div class="h">H</div>
+    </div>
+  </header>
+
+  <div class="title-block">
+    <div><h1>Cotización<br/><em class="ital">№ ${q.quoteNumber}</em></h1></div>
+    <div class="meta">
+      <div class="row"><span class="k">Emitida</span><span class="v">${fmt(today)}</span></div>
+      <div class="row"><span class="k">Vigencia</span><span class="v">${fmt(vigDate)}</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>Cliente</h3>
+      <div class="field">
+        <div><div class="k">Nombre</div><div class="v">${q.customerName}</div></div>
+        <div><div class="k">Personas</div><div class="v">${numPersonas}</div></div>
+        <div><div class="k">WhatsApp</div><div class="v">${q.customerPhone || "—"}</div></div>
+        <div><div class="k">Email</div><div class="v" style="font-size:7.5pt">${q.customerEmail || "—"}</div></div>
+        ${q.notes ? `<div style="grid-column:1/-1"><div class="k">Notas</div><div class="v" style="font-size:7.5pt">${q.notes}</div></div>` : ""}
       </div>
-      <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-top:2px">
-        ${p.noches} noche${p.noches !== 1 ? "s" : ""} · ${p.habitaciones} habitación${p.habitaciones !== 1 ? "es" : ""} · $${p.precioPorNoche.toLocaleString("es-MX")} MXN/noche
+    </div>
+    <div class="card dark">
+      <h3>Detalles del viaje</h3>
+      <div class="field">
+        <div><div class="k">Fecha inicio</div><div class="v">${fDate(fechaInicio)}</div></div>
+        <div><div class="k">Fecha fin</div><div class="v">${fDate(fechaFin)}</div></div>
+        <div><div class="k">Duración</div><div class="v">${duracion} día${duracion !== 1 ? "s" : ""}</div></div>
+        <div><div class="k">Hospedaje</div><div class="v" style="font-size:8pt">${hospNombre}</div></div>
+        <div style="grid-column:1/-1"><div class="k">Punto de salida</div><div class="v">Xilitla, SLP — recogida en hotel</div></div>
       </div>
-      <div style="text-align:right;font-family:Arial;font-size:12px;color:#8a6f1e;font-weight:600;margin-top:4px">$${calcPackageLine(p).toLocaleString("es-MX")} MXN</div>
-    </div>`).join("")}` : ""}
-<div class="total-row"><span class="total-label">Total Cotizado</span><span class="total-value">${fmx(q.totalAmount)}</span></div>
-<div class="includes"><p>✓ Transporte desde tu hotel &nbsp; ✓ Desayuno típico &nbsp; ✓ Entradas a todos los parques<br>✓ Guía certificado NOM-09 SECTUR &nbsp; ✓ Equipo de seguridad &nbsp; ✓ Fotografías del recorrido</p></div>
-${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bottom:18px"><strong>Notas:</strong> ${q.notes}</p>` : ""}
-<div class="footer">Tours Huasteca Potosina · +52 489 125 1458 · hola@huasteca-potosina.com<br>Guías certificados NOM-09 SECTUR · www.huasteca-potosina.com<br><em>Cotización válida por 48 horas. Precios en pesos mexicanos (MXN).</em></div>
+    </div>
+  </div>
+
+  <div class="tour-table">
+    <div class="head-row"><span>Concepto</span><span>Fecha</span><span class="right">Pers.</span><span class="right">Subtotal MXN</span></div>
+    ${tourRows}${hospRows}
+  </div>
+
+  <div class="totals">
+    <div class="note"><strong>Sobre los precios:</strong> Todos los importes están en <strong>pesos mexicanos (MXN)</strong>. Vigencia: <strong>${vigLabel}</strong> desde la emisión. Tarifas sujetas a disponibilidad al confirmar.</div>
+    <div class="calc">
+      <div class="line"><span>Subtotal tours</span><span class="num">$${toursTotal.toLocaleString("es-MX")}</span></div>
+      ${pkgsTotal > 0 ? `<div class="line"><span>Subtotal hospedaje</span><span class="num">$${pkgsTotal.toLocaleString("es-MX")}</span></div>` : ""}
+      ${descuento > 0 ? `<div class="line sub-line"><span>Descuento aplicado</span><span class="num">−$${descuento.toLocaleString("es-MX")}</span></div>` : ""}
+      <div class="line grand"><span class="k">Total</span><span class="v">$${q.totalAmount.toLocaleString("es-MX")}</span></div>
+      <div class="line deposit"><span>Anticipo para reservar</span><span class="num">$${anticipoNum.toLocaleString("es-MX")}</span></div>
+      <div class="line"><span>Saldo al inicio del tour</span><span class="num">$${saldo.toLocaleString("es-MX")}</span></div>
+    </div>
+  </div>
+
+  <div class="checks">
+    <div><h4>Sí incluye</h4>
+      <ul class="yes">
+        <li>Transporte desde y hacia tu hotel</li><li>Desayuno típico</li>
+        <li>Entradas a todos los parques</li><li>Guía certificado NOM-09 SECTUR</li>
+        <li>Equipo de seguridad</li><li>Seguro de viajero</li><li>Fotografías del recorrido</li>
+      </ul>
+    </div>
+    <div><h4>No incluye</h4>
+      <ul class="no">
+        <li>Vuelos o transporte a Xilitla</li><li>Comidas y cenas</li>
+        <li>Actividades opcionales</li><li>Propinas</li>
+        <li>Bebidas alcohólicas</li><li>Gastos personales</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="terms">Para apartar tu lugar realiza el pago del anticipo a la cuenta indicada o por transferencia. Recibirás confirmación por WhatsApp. Cancelación gratuita hasta 48 h antes del primer tour; posteriores aplican cargo del 50%. El saldo se paga el día del tour en efectivo, transferencia o tarjeta (3% comisión).</div>
+    <a class="cta" href="https://wa.me/524891251458"><div class="lbl">Confirmar por WhatsApp</div><div class="num">+52 489 125 1458</div></a>
+  </div>
+
+  <span class="runfoot">Cotización № ${q.quoteNumber}</span>
+  <span class="pageno">Página 1 de 1</span>
+</section>
 </body></html>`);
     win.document.close();
-    setTimeout(() => win.print(), 600);
+    setTimeout(() => win.print(), 1000);
   }
 
   function waMsg(q: TourQuote) {
@@ -308,6 +496,10 @@ ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bot
                     <td className="py-3 px-4"><span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${s.cls}`}>{s.label}</span></td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
+                        {q.status !== "aceptada" && q.status !== "expirada" && (
+                          <button onClick={() => convertToReserva(q)} title="Convertir a reserva"
+                            className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors"><BookCheck className="w-4 h-4" /></button>
+                        )}
                         <button onClick={() => openEdit(q)} title="Editar"
                           className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => sendEmail(q.id)} disabled={sending === q.id} title="Enviar email"
@@ -340,7 +532,16 @@ ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bot
                 {isEditMode ? "Editar Cotización" : "Nueva Cotización"}
                 {isEditMode && editTarget && <span className="text-[#3a6b1a] text-sm font-dm ml-2">{editTarget.quoteNumber}</span>}
               </h2>
-              <button onClick={closeModal} className="text-[#1a2e1a]/40 hover:text-[#1a2e1a]"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <select value={vigencia} onChange={e => setVigencia(e.target.value)}
+                  className="text-[9px] font-dm border border-[#1a2e1a]/15 rounded-sm px-2 py-1.5 text-[#1a2e1a]/60 bg-white focus:outline-none focus:border-[#3a6b1a]">
+                  <option value="48h">Vigencia 48 h</option>
+                  <option value="7dias">Vigencia 7 días</option>
+                  <option value="15dias">Vigencia 15 días</option>
+                  <option value="30dias">Vigencia 30 días</option>
+                </select>
+                <button onClick={closeModal} className="text-[#1a2e1a]/40 hover:text-[#1a2e1a]"><X className="w-5 h-5" /></button>
+              </div>
             </div>
 
             {/* Datos del cliente */}
@@ -597,6 +798,32 @@ ${q.notes ? `<p style="font-family:Arial;font-size:13px;color:#3a3a2e;margin-bot
                 <span className="font-cormorant text-[#c4882a] text-2xl">{fmx(finalTotal)}</span>
               </div>
             )}
+
+            {/* Anticipo */}
+            <div className="border border-[#9a4a1e]/20 bg-[#9a4a1e]/5 px-4 py-3 rounded-sm mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Anticipo para reservar</p>
+                <button type="button"
+                  onClick={() => setAnticipo(String(Math.round(finalTotal * 0.5)))}
+                  className="text-[9px] font-dm text-[#9a4a1e] border border-[#9a4a1e]/30 px-2 py-1 rounded-sm hover:bg-[#9a4a1e]/10 transition-colors">
+                  50% = {fmx(Math.round(finalTotal * 0.5))}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#1a2e1a]/50 font-dm text-sm">$</span>
+                <input type="number" min={0} value={anticipo}
+                  onChange={e => setAnticipo(e.target.value)}
+                  placeholder={String(Math.round(finalTotal * 0.5))}
+                  className={inputCls}
+                />
+                <span className="text-[#1a2e1a]/50 font-dm text-sm">MXN</span>
+              </div>
+              {finalTotal > 0 && (
+                <p className="mt-1.5 text-[10px] font-dm text-[#1a2e1a]/50">
+                  Saldo al tour: {fmx(Math.max(0, finalTotal - (anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5))))}
+                </p>
+              )}
+            </div>
 
             <button onClick={saveQuote}
               disabled={saving || !form.customerName || lines.some(l => !l.tourSlug || !l.tourDate)}

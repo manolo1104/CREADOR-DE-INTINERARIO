@@ -36,6 +36,9 @@ export interface ReservaFormState {
   packages:       PackageItem[];
   totalOverride:  string;
   depositoPagado: string;
+  metodoPago:     string;
+  folioPago:      string;
+  pickupLugar:    string;
 }
 
 const HABITACIONES_PRESET = [
@@ -65,6 +68,7 @@ export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", 
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
   lines: [{ ...EMPTY_LINE }], packages: [], totalOverride: "", depositoPagado: "",
+  metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
 };
 
 export function calcTourLine(l: LineItem): number {
@@ -388,10 +392,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
             </div>
           </div>
 
-          {/* Anticipo / Pendiente */}
+          {/* Anticipo / Pendiente / Pago */}
           <div className="border border-[#1a2e1a]/10 bg-[#f4edd8]/40 px-4 py-3 rounded-sm">
             <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-3">Pago</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Anticipo recibido</label>
                 <div className="flex items-center gap-1">
@@ -407,6 +411,33 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                   {fmx(pendiente)}
                 </p>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Método de pago</label>
+                <select value={form.metodoPago}
+                  onChange={e => setForm(f => ({ ...f, metodoPago: e.target.value }))}
+                  className={inputCls}>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Stripe">Stripe</option>
+                  <option value="Tarjeta">Tarjeta (presencial)</option>
+                  <option value="PayPal">PayPal</option>
+                  <option value="—">—</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Folio / referencia</label>
+                <input type="text" value={form.folioPago} placeholder="TXN-00000 / —"
+                  onChange={e => setForm(f => ({ ...f, folioPago: e.target.value }))}
+                  className={inputCls} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Lugar de recogida</label>
+              <input type="text" value={form.pickupLugar} placeholder="Lobby de tu hotel en Xilitla"
+                onChange={e => setForm(f => ({ ...f, pickupLugar: e.target.value }))}
+                className={inputCls} />
             </div>
           </div>
 

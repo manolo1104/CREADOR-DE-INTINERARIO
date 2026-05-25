@@ -24,15 +24,17 @@ const fDateL = (d: string) => {
 function calcLine(l: LineItem): number { return calcTourLine(l); }
 
 export default function ReservasClient({ initialBookings }: { initialBookings: TourBooking[] }) {
-  const [bookings,   setBookings]   = useState(initialBookings);
-  const [search,     setSearch]     = useState("");
-  const [loading,    setLoading]    = useState(false);
-  const [sending,    setSending]    = useState<string | null>(null);
-  const [msg,        setMsg]        = useState("");
-  const [modal,      setModal]      = useState<"new" | "edit" | null>(null);
-  const [editTarget, setEditTarget] = useState<TourBooking | null>(null);
-  const [form,       setForm]       = useState<ReservaFormState>(EMPTY_RESERVA_FORM);
-  const [saving,     setSaving]     = useState(false);
+  const [bookings,      setBookings]      = useState(initialBookings);
+  const [search,        setSearch]        = useState("");
+  const [statusFilter,  setStatusFilter]  = useState<"all" | "paid" | "pending" | "cancelled">("all");
+  const [loading,       setLoading]       = useState(false);
+  const [sending,       setSending]       = useState<string | null>(null);
+  const [statusEditing, setStatusEditing] = useState<string | null>(null);
+  const [msg,           setMsg]           = useState("");
+  const [modal,         setModal]         = useState<"new" | "edit" | null>(null);
+  const [editTarget,    setEditTarget]    = useState<TourBooking | null>(null);
+  const [form,          setForm]          = useState<ReservaFormState>(EMPTY_RESERVA_FORM);
+  const [saving,        setSaving]        = useState(false);
 
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(""), 4000); }
 
@@ -51,6 +53,18 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     setSending(null);
   }
 
+  async function changeStatus(id: string, newStatus: string) {
+    const r = await fetch(`/api/admin/reservas/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (r.ok) {
+      setBookings(b => b.map(x => x.id === id ? { ...x, status: newStatus } : x));
+      flash("✅ Estado actualizado");
+    }
+    setStatusEditing(null);
+  }
+
   async function hardDelete(id: string) {
     if (!confirm("¿Eliminar completamente esta reserva? No se puede deshacer.")) return;
     await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" });
@@ -60,9 +74,11 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 
   function openEdit(b: TourBooking) {
     setEditTarget(b);
-    const storedLines = (b as any).lineItems as any[] | null;
-    const lines: LineItem[] = storedLines?.length
-      ? storedLines.map(l => ({
+    const rawLines   = (b as any).lineItems as any[] | null;
+    const meta       = rawLines?.find((l: any) => l._meta) || {};
+    const cleanLines = rawLines?.filter((l: any) => !l._meta);
+    const lines: LineItem[] = cleanLines?.length
+      ? cleanLines.map((l: any) => ({
           ...l,
           childrenMid:   l.childrenMid   ?? (l.children ?? 0),
           childrenSmall: l.childrenSmall ?? 0,
@@ -79,14 +95,20 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       packages:       storedPkgs ?? [],
       totalOverride:  "",
       depositoPagado: String((b as any).depositoPagado ?? 0),
+      metodoPago:     meta.metodoPago  || "Transferencia",
+      folioPago:      meta.folioPago   || "",
+      pickupLugar:    meta.pickupLugar || "Lobby de tu hotel en Xilitla",
     });
     setModal("edit");
   }
 
   function buildPayload(form: ReservaFormState) {
-    const lineItems    = form.lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    const lineItems = [
+      { _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago, pickupLugar: form.pickupLugar },
+      ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
+    ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
-    const toursTotal   = lineItems.reduce((s, l) => s + l.subtotal, 0);
+    const toursTotal   = lineItems.reduce((s, l) => s + ((l as any).subtotal ?? 0), 0);
     const pkgsTotal    = packageItems.reduce((s, p) => s + p.subtotal, 0);
     const calcTotal    = toursTotal + pkgsTotal;
     const totalAmount  = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
@@ -139,90 +161,200 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
   function downloadPDF(b: TourBooking) {
     const win = window.open("", "_blank");
     if (!win) return;
-    const storedLines = (b as any).lineItems as any[] | null;
-    const lines: LineItem[] = storedLines?.length
-      ? storedLines.map((l: any) => ({
-          ...l,
-          childrenMid:   l.childrenMid   ?? (l.children ?? 0),
-          childrenSmall: l.childrenSmall ?? 0,
-        }))
+
+    const rawLines   = (b as any).lineItems as any[] | null;
+    const meta       = rawLines?.find((l: any) => l._meta) || {};
+    const cleanLines = rawLines?.filter((l: any) => !l._meta);
+    const lines: LineItem[] = cleanLines?.length
+      ? cleanLines.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.children ?? 0), childrenSmall: l.childrenSmall ?? 0 }))
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
+
     const pkgs: PackageItem[] = (b as any).packageItems ?? [];
+    const deposito   = (b as any).depositoPagado ?? 0;
+    const pendiente  = Math.max(0, b.totalAmount - deposito);
+    const metodoPago = meta.metodoPago  || "—";
+    const folioPago  = meta.folioPago   || "—";
+    const pickupLugar = meta.pickupLugar || "Lobby de tu hotel en Xilitla";
 
-    const deposito = (b as any).depositoPagado ?? 0;
-    const pendiente = Math.max(0, b.totalAmount - deposito);
+    const tourDates  = lines.map(l => l.tourDate).filter(Boolean).sort();
+    const checkouts  = pkgs.map(p => p.checkout).filter(Boolean).sort();
+    const fechaInicio = tourDates[0] || b.tourDate;
+    const fechaFin   = checkouts.length ? checkouts[checkouts.length - 1] : tourDates[tourDates.length - 1] || b.tourDate;
+    const numPersonas = lines.reduce((s, l) => s + l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0) || b.adults + (b.children ?? 0);
+    const tourTitulo = lines.map(l => l.tourName).filter(Boolean).join(" · ") || b.tourName;
+    const confirmDate = new Date(b.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
 
-    const tourSections = lines.map(l => {
-      const t = TOURS_DB.find(t => t.slug === l.tourSlug);
-      const heroUrl = t?.imagen_hero?.startsWith("http") ? t.imagen_hero : t?.imagen_hero ? `https://www.huasteca-potosina.com${t.imagen_hero}` : "";
-      const destinos = t?.destinos?.map(d => `<li>→ ${d}</li>`).join("") || "";
-      return `
-        <div style="margin-bottom:18px">
-          ${heroUrl ? `<img src="${heroUrl}" alt="${l.tourName}" style="width:100%;height:140px;object-fit:cover;border-radius:2px;margin-bottom:8px"/>` : ""}
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px">${l.tourName}</div>
-          <div style="font-family:Arial;font-size:12px;color:#3a3a2e">📅 ${fDateL(l.tourDate)} · ${l.adults} adulto${l.adults!==1?"s":""}${(l.childrenMid??0)>0?` · ${l.childrenMid} niño${l.childrenMid!==1?"s":""} (6-10)`:""}${(l.childrenSmall??0)>0?` · ${l.childrenSmall} niño${l.childrenSmall!==1?"s":""} (<6)`:""}</div>
-          ${destinos ? `<ul style="list-style:none;font-family:Arial;font-size:12px;color:#3a3a2e;line-height:1.9;margin-top:6px">${destinos}</ul>` : ""}
-        </div>`;
-    }).join("<hr style='border:none;border-top:1px dashed #d4ccbc;margin:12px 0'/>");
+    const DIFIC: Record<string, string> = { baja: "Fácil", media: "Moderada", alta: "Difícil" };
 
-    const pkgSection = pkgs.length > 0 ? `
-      <hr style="border:none;border-top:1px dashed #d4ccbc;margin:16px 0"/>
-      <div class="sl" style="margin-bottom:14px">Hospedaje incluido</div>
-      ${pkgs.map(p => `
-        <div style="margin-bottom:14px;padding:12px 14px;background:#faf7ee;border:1px solid #e0d8c4;border-radius:2px">
-          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:6px">🏨 ${p.hotel}</div>
-          <div style="font-family:Arial;font-size:13px;color:#1a2e1a;font-weight:600;margin-bottom:4px">${p.habitacion}</div>
-          <div style="font-family:Arial;font-size:12px;color:#3a3a2e">
-            ${p.checkin ? `Check-in: ${fDate(p.checkin)} · ` : ""}Check-out: ${p.checkout ? fDate(p.checkout) : "—"}
+    const dayRows = lines.map((l, i) => {
+      const t    = TOURS_DB.find(t => t.slug === l.tourSlug);
+      const dur  = t ? `${t.duracion_hrs} h` : "—";
+      const dif  = t ? (DIFIC[t.dificultad] || t.dificultad) : "—";
+      const fd   = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short" }) : "—";
+      const num  = String(i + 1).padStart(2, "0");
+      return `<div class="day">
+        <div class="num">${num}</div>
+        <div>
+          <h4 class="name">${l.tourName}</h4>
+          <div class="meta">
+            <span><span class="k">Fecha</span> ${fd}</span>
+            <span><span class="k">Dur.</span> ${dur}</span>
+            <span><span class="k">Dif.</span> ${dif}</span>
           </div>
-          <div style="font-family:Arial;font-size:12px;color:#3a3a2e;margin-top:2px">
-            ${p.noches} noche${p.noches !== 1 ? "s" : ""} · ${p.habitaciones} habitación${p.habitaciones !== 1 ? "es" : ""} · $${p.precioPorNoche.toLocaleString("es-MX")} MXN/noche
-          </div>
-          <div style="text-align:right;font-family:Arial;font-size:12px;color:#8a6f1e;font-weight:600;margin-top:4px">$${calcPackageLine(p).toLocaleString("es-MX")} MXN</div>
-        </div>`).join("")}` : "";
+        </div>
+        <div class="pickup">
+          <div class="k">Recogida</div>
+          <div class="v">09:00</div>
+          <div class="where">${pickupLugar}</div>
+        </div>
+      </div>`;
+    }).join("");
 
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Confirmación ${b.confirmationNumber}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a2e1a;padding:40px;max-width:720px;margin:0 auto}
-.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a2e1a;padding-bottom:20px;margin-bottom:24px}
-.brand h1{font-size:20px;letter-spacing:4px;text-transform:uppercase;font-weight:400}.brand p{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#3a6b1a;margin-top:4px;font-family:Arial}
-.conf-box{text-align:right}.conf-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px}.conf-num{font-size:20px}.conf-status{font-size:11px;color:#3a6b1a;font-family:Arial;margin-top:3px;font-weight:600}
-.sl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#d4ccbc;border:1px solid #d4ccbc;margin-bottom:20px}
-.cell{background:#faf7ee;padding:12px 14px}.cl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a5a;font-family:Arial;margin-bottom:4px}.cv{font-size:14px}
-.total-row{background:#1a2e1a;color:#f4edd8;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.total-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a;font-family:Arial}.total-value{font-size:22px;font-weight:600}
-.pago-row{display:flex;justify-content:space-between;padding:8px 20px;font-family:Arial;font-size:12px;margin-bottom:4px}
-.includes{border-left:3px solid #3a6b1a;padding-left:14px;margin:16px 0}.includes p{font-family:Arial;font-size:12px;color:#3a3a2e;line-height:2.1}
-.footer{border-top:1px solid #d4ccbc;padding-top:14px;font-family:Arial;font-size:11px;color:#9a8a6a;text-align:center;line-height:1.7}
-@media print{body{padding:20px}@page{margin:1cm}}</style></head><body>
-<div class="header">
-  <div class="brand"><h1>Tours Huasteca Potosina</h1><p>Xilitla · San Luis Potosí · México</p></div>
-  <div class="conf-box"><div class="conf-label">Confirmación de Reserva</div><div class="conf-num">${b.confirmationNumber}</div><div class="conf-status">✓ ${STATUS_LABEL[b.status] || b.status}</div></div>
-</div>
-<div class="sl">Datos del cliente</div>
-<div class="grid" style="margin-bottom:20px">
-  <div class="cell"><div class="cl">Nombre</div><div class="cv">${b.customerName}</div></div>
-  <div class="cell"><div class="cl">Email</div><div class="cv" style="font-size:12px">${b.customerEmail || "—"}</div></div>
-  <div class="cell"><div class="cl">Teléfono</div><div class="cv">${b.customerPhone || "—"}</div></div>
-  <div class="cell"><div class="cl">Fecha de reserva</div><div class="cv" style="font-size:12px">${new Date(b.createdAt).toLocaleDateString("es-MX")}</div></div>
-</div>
-<div class="sl" style="margin-bottom:14px">Tours del recorrido</div>
-${tourSections}
-${pkgSection}
-<div class="total-row"><span class="total-label">Total</span><span class="total-value">${fmx(b.totalAmount)}</span></div>
-${deposito > 0 ? `<div class="pago-row" style="background:#f0fff4;border:1px solid #c6f6d5"><span style="color:#3a6b1a;font-weight:600">✓ Anticipo pagado</span><span style="color:#3a6b1a;font-weight:600">${fmx(deposito)}</span></div><div class="pago-row" style="background:#fffbeb;border:1px solid #fef3c7"><span style="color:#b45309">Pendiente el día del tour</span><span style="color:#b45309;font-weight:600">${fmx(pendiente)}</span></div>` : ""}
-<div class="includes" style="margin-top:16px"><p>✓ Transporte desde tu hotel &nbsp; ✓ Desayuno típico &nbsp; ✓ Entradas &nbsp; ✓ Guía NOM-09 &nbsp; ✓ Equipo de seguridad &nbsp; ✓ Fotografías</p></div>
-${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin:14px 0"><strong>Notas:</strong> ${b.notes}</p>` : ""}
-<div class="footer">Tours Huasteca Potosina · +52 489 125 1458 · hola@huasteca-potosina.com · Guías NOM-09 SECTUR</div>
+    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Confirmación ${b.confirmationNumber}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--negro:#0e1710;--verde-profundo:#1a2e1a;--verde-selva:#3a6b1a;--verde-vivo:#5a9e2a;--lima:#8fbe3a;--crema:#f4edd8;--arena:#e6d4b0;--dorado:#c4882a;--terracota:#9a4a1e;--display:'Cormorant Garamond',Georgia,serif;--dm:'DM Sans',system-ui,sans-serif;}
+@page{size:A4 portrait;margin:0;}*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(--negro);}
+.page{width:210mm;height:296mm;background:var(--crema);position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;}
+@media print{html,body{background:white;}.page{margin:0;box-shadow:none;}}
+.hero{background:var(--negro);color:var(--crema);padding:9mm 14mm 7mm;position:relative;}
+.hero::after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(135deg,rgba(244,237,216,.04) 0 2px,transparent 2px 14px);pointer-events:none;}
+.hero>*{position:relative;z-index:1;}
+.hero .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5mm;}
+.brand{display:flex;align-items:baseline;gap:4mm;}.wordmark{font-family:var(--display);font-size:14pt;letter-spacing:5px;text-transform:uppercase;color:var(--crema);line-height:1;}
+.stamp{width:16mm;height:16mm;border-radius:50%;border:1px solid rgba(244,237,216,.4);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.h{font-family:var(--display);font-style:italic;font-size:15pt;color:var(--dorado);}
+.hero-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:7mm;align-items:end;}
+.hero h1{font-family:var(--display);font-weight:300;font-size:30pt;line-height:.95;color:var(--crema);margin:2mm 0 0;letter-spacing:-.01em;}
+.hero h1 em{font-style:italic;color:var(--dorado);}
+.conf-badge{display:inline-flex;align-items:center;gap:2mm;background:var(--verde-selva);color:white;padding:1.5mm 3mm;font-size:7.5pt;letter-spacing:2.5px;text-transform:uppercase;font-weight:600;}
+.salute{font-family:var(--display);font-style:italic;font-size:10pt;color:rgba(244,237,216,.8);margin:0;line-height:1.4;}
+.summary{background:var(--arena);padding:5mm 14mm;display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;}
+.summary .item .k{font-size:7pt;letter-spacing:2.5px;text-transform:uppercase;color:var(--verde-selva);margin-bottom:1.5mm;}
+.summary .item .v{font-family:var(--display);font-size:12pt;line-height:1.1;color:var(--negro);}
+.summary .item .v.italic{font-style:italic;color:var(--dorado);}
+.summary .item .v.mono{font-family:ui-monospace,monospace;font-size:9pt;font-style:normal;}
+.body{padding:6mm 14mm;flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:7mm;min-height:0;}
+.itin h3,.practical h3,.keyinfo h3{font-family:var(--display);font-weight:300;font-size:13pt;margin:0 0 3mm;line-height:1;}
+.day{display:grid;grid-template-columns:10mm 1fr auto;gap:3mm;padding:2.5mm 0;border-bottom:1px solid rgba(14,23,16,.12);align-items:start;}
+.day:last-child{border-bottom:none;}
+.day .num{font-family:var(--display);font-style:italic;font-size:18pt;color:var(--dorado);line-height:.9;}
+.day .name{font-family:var(--display);font-size:11pt;line-height:1.15;margin:0;}
+.day .meta{font-size:7.5pt;color:rgba(14,23,16,.62);margin-top:.8mm;display:flex;gap:3mm;flex-wrap:wrap;}
+.day .meta .k{color:rgba(14,23,16,.4);text-transform:uppercase;letter-spacing:1px;font-size:6.5pt;}
+.pickup{background:var(--negro);color:var(--crema);padding:2mm 3.5mm;text-align:right;min-width:24mm;}
+.pickup .k{font-size:6.5pt;letter-spacing:1.5px;text-transform:uppercase;color:var(--lima);line-height:1;}
+.pickup .v{font-family:var(--display);font-style:italic;font-size:12pt;color:var(--dorado);margin-top:.5mm;line-height:1;}
+.pickup .where{font-size:6.5pt;opacity:.7;margin-top:.5mm;line-height:1.2;}
+.right-col{display:flex;flex-direction:column;gap:5mm;}
+.keyinfo{background:var(--arena);padding:4mm 5mm;}
+.keyinfo .row{display:flex;justify-content:space-between;padding:1mm 0;border-bottom:1px dashed rgba(14,23,16,.2);font-size:8.5pt;line-height:1.3;}
+.keyinfo .row:last-child{border-bottom:none;}
+.keyinfo .k{color:rgba(14,23,16,.55);letter-spacing:1.2px;text-transform:uppercase;font-size:7pt;}
+.keyinfo .v{font-family:ui-monospace,monospace;font-size:8.5pt;}
+.practical{border:1px solid rgba(14,23,16,.15);padding:4mm 5mm;background:#fffaf0;}
+.practical ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:1mm 4mm;}
+.practical li{display:grid;grid-template-columns:auto 1fr;gap:1.5mm;font-size:7.5pt;line-height:1.35;}
+.practical li::before{content:'→';color:var(--verde-selva);}
+.terms-strip{padding:5mm 14mm 4mm;background:var(--negro);color:var(--crema);}
+.terms-strip .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6mm;}
+.terms-strip h3{font-family:var(--display);font-weight:300;font-size:11pt;margin:0 0 2mm;line-height:1;color:var(--crema);}
+.terms-strip p{font-size:7.5pt;line-height:1.45;margin:0;color:rgba(244,237,216,.75);}
+.terms-strip p strong{color:var(--dorado);font-weight:500;}
+.foot{background:var(--verde-profundo);color:var(--crema);padding:5mm 14mm;display:grid;grid-template-columns:1fr auto;gap:8mm;align-items:center;}
+.foot .text{font-family:var(--display);font-style:italic;font-size:10pt;line-height:1.3;margin:0;max-width:115mm;}
+.foot .text strong{color:var(--dorado);font-style:normal;font-weight:500;}
+.wa{background:#25D366;color:white;padding:3mm 5mm;display:flex;align-items:center;gap:3mm;text-decoration:none;}
+.wa .num{font-family:var(--display);font-style:italic;font-size:12pt;font-weight:500;line-height:1;white-space:nowrap;}
+.wa .lbl{font-size:6.5pt;letter-spacing:1.5px;text-transform:uppercase;opacity:.9;}
+.wa .dot{font-size:11pt;line-height:1;}
+</style></head><body>
+<section class="page">
+  <div class="hero">
+    <div class="top">
+      <div class="brand"><span class="wordmark">HUASTECA POTOSINA TOURS</span></div>
+      <div class="stamp">
+        <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(244,237,216,0.4)" stroke-width="0.8"/>
+          <defs><path id="arcCv" d="M 50,50 m -36,0 a 36,36 0 1,1 72,0 a 36,36 0 1,1 -72,0" fill="none"/></defs>
+          <text font-family="DM Sans" font-size="6" letter-spacing="2.2" fill="rgba(244,237,216,0.75)"><textPath href="#arcCv" startOffset="0%">★ HUASTECA · POTOSINA · TOURS ·</textPath></text>
+        </svg>
+        <div class="h">H</div>
+      </div>
+    </div>
+    <div class="hero-grid">
+      <div>
+        <div class="conf-badge">✓ Reserva confirmada</div>
+        <h1>Reserva <em>№ ${b.confirmationNumber}</em></h1>
+      </div>
+      <p class="salute">Hola <strong style="color:var(--crema)">${b.customerName}</strong>, gracias por confiar en nosotros. Tu reserva quedó confirmada el ${confirmDate}.</p>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="item"><div class="k">Tour</div><div class="v italic">${tourTitulo}</div></div>
+    <div class="item"><div class="k">Fechas</div><div class="v mono">${fDate(fechaInicio)} al ${fDate(fechaFin)}</div></div>
+    <div class="item"><div class="k">Personas</div><div class="v">${numPersonas}</div></div>
+    <div class="item">
+      <div class="k">Total · saldo</div>
+      <div class="v italic">$${b.totalAmount.toLocaleString("es-MX")}</div>
+      ${pendiente > 0 ? `<div class="v mono" style="color:var(--terracota);margin-top:1mm">saldo $${pendiente.toLocaleString("es-MX")}</div>` : `<div class="v mono" style="color:#3a6b1a;margin-top:1mm">pagado ✓</div>`}
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="itin">
+      <h3>Itinerario <em style="font-style:italic;color:var(--dorado)">día por día</em></h3>
+      ${dayRows}
+    </div>
+    <div class="right-col">
+      <div class="keyinfo">
+        <h3>Pago</h3>
+        <div class="row"><span class="k">Anticipo pagado</span><span class="v">$${deposito > 0 ? deposito.toLocaleString("es-MX") : "—"}</span></div>
+        <div class="row"><span class="k">Saldo pendiente</span><span class="v">$${pendiente > 0 ? pendiente.toLocaleString("es-MX") : "0"}</span></div>
+        <div class="row"><span class="k">Método</span><span class="v">${metodoPago}</span></div>
+        <div class="row"><span class="k">Folio</span><span class="v">${folioPago}</span></div>
+      </div>
+      <div class="practical">
+        <h3>Qué empacar</h3>
+        <ul>
+          <li>Traje de baño (2)</li><li>Sandalias acuáticas</li>
+          <li>Tenis ligeros</li><li>Bloqueador biodegradable</li>
+          <li>Repelente</li><li>Toalla microfibra</li>
+          <li>Bolsa seca</li><li>Identificación</li>
+          <li>Efectivo</li><li>Gorra o sombrero</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="terms-strip">
+    <div class="row">
+      <div><h3>Cancelación</h3><p><strong>Gratis</strong> hasta 48 h antes del primer tour. Después aplica cargo del 50%. Fuerza mayor: reagendamos sin costo.</p></div>
+      <div><h3>Saldo</h3><p>El <strong>saldo de $${pendiente.toLocaleString("es-MX")} MXN</strong> se paga el primer día del tour. Efectivo, transferencia o tarjeta (3% comisión).</p></div>
+      <div><h3>El día del tour</h3><p>Espera al guía <strong>10 min antes</strong> de la hora indicada en el lobby de tu hotel. Lleva esta confirmación impresa o en pantalla.</p></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <p class="text"><strong>Manolo Covarrubias</strong>, fundador & guía local · Xilitla, SLP — gracias por elegir vivir la Huasteca con nosotros.</p>
+    <a class="wa" href="https://wa.me/524891251458"><span class="dot">●</span><span><span class="lbl">WhatsApp soporte</span><div class="num">+52 489 125 1458</div></span></a>
+  </div>
+</section>
 </body></html>`);
     win.document.close();
-    setTimeout(() => win.print(), 600);
+    setTimeout(() => win.print(), 1000);
   }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return bookings.filter(b => !q || [b.customerName, b.customerEmail, b.confirmationNumber, b.tourName].some(v => v?.toLowerCase().includes(q)));
-  }, [bookings, search]);
+    return bookings.filter(b => {
+      if (statusFilter !== "all" && b.status !== statusFilter) return false;
+      return !q || [b.customerName, b.customerEmail, b.confirmationNumber, b.tourName].some(v => v?.toLowerCase().includes(q));
+    });
+  }, [bookings, search, statusFilter]);
 
   const totalIngresos = bookings.filter(b => b.status !== "cancelled").reduce((s, b) => s + b.totalAmount, 0);
 
@@ -253,6 +385,31 @@ ${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin:14p
           {msg}
         </div>
       )}
+
+      {/* Status filter tabs */}
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+        {([
+          { key: "all",       label: "Todas"      },
+          { key: "paid",      label: "Pagadas"    },
+          { key: "pending",   label: "Pendientes" },
+          { key: "cancelled", label: "Canceladas" },
+        ] as const).map(tab => {
+          const count = tab.key === "all" ? bookings.length : bookings.filter(b => b.status === tab.key).length;
+          return (
+            <button key={tab.key} onClick={() => setStatusFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm whitespace-nowrap rounded-sm transition-colors ${
+                statusFilter === tab.key
+                  ? "bg-[#1a2e1a] text-white"
+                  : "border border-[#1a2e1a]/15 text-[#1a2e1a]/60 hover:text-[#1a2e1a] hover:border-[#1a2e1a]/30"
+              }`}>
+              {tab.label}
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusFilter === tab.key ? "bg-white/20 text-white" : "bg-[#1a2e1a]/8 text-[#1a2e1a]/50"}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1a2e1a]/30" />
@@ -293,10 +450,26 @@ ${b.notes ? `<p style="font-family:Arial;font-size:12px;color:#3a3a2e;margin:14p
                         </div>
                       ) : <span className="text-[#1a2e1a]/30">—</span>}
                     </td>
-                    <td className="py-3 px-3">
-                      <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
+                    <td className="py-3 px-3 relative">
+                      {statusEditing === b.id && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setStatusEditing(null)} />
+                          <div className="absolute left-0 top-8 z-20 bg-white border border-[#1a2e1a]/15 shadow-lg rounded-sm overflow-hidden min-w-[120px]">
+                            {(["paid", "pending", "cancelled"] as const).map(s => (
+                              <button key={s} onClick={() => changeStatus(b.id, s)}
+                                className={`w-full text-left px-3 py-2 text-[10px] font-dm tracking-[1px] uppercase hover:bg-[#f4edd8] transition-colors flex items-center gap-2 ${b.status === s ? "text-[#3a6b1a] font-semibold" : "text-[#1a2e1a]/60"}`}>
+                                {b.status === s && <span className="text-[#3a6b1a]">✓</span>}
+                                {STATUS_LABEL[s]}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      <button onClick={() => setStatusEditing(statusEditing === b.id ? null : b.id)}
+                        title="Cambiar estado"
+                        className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm cursor-pointer hover:opacity-75 transition-opacity ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
                         {STATUS_LABEL[b.status] || b.status}
-                      </span>
+                      </button>
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
