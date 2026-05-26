@@ -218,7 +218,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 @page{size:A4 portrait;margin:0;}*{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(--negro);}
 .page{width:210mm;height:296mm;background:var(--crema);position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;}
-@media print{html,body{background:white;}.page{margin:0;box-shadow:none;}}
+@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}html,body{background:white;}.page{margin:0;box-shadow:none;}}
 .hero{background:var(--negro);color:var(--crema);padding:9mm 14mm 7mm;position:relative;}
 .hero::after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(135deg,rgba(244,237,216,.04) 0 2px,transparent 2px 14px);pointer-events:none;}
 .hero>*{position:relative;z-index:1;}
