@@ -132,6 +132,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/puente-de-dios-tamasopo/gallery-1.jpg",
       "/imagenes/puente-de-dios-tamasopo/gallery-2.jpg",
     ],
+    seo: {
+      metaTitle: "Puente de Dios Tamasopo 2026 | Guía: Horarios, Precio $150 y Cómo Llegar",
+      metaDescription: "Visita la poza azul cobalto del Puente de Dios en Tamasopo, SLP. El sol entra por el arco natural entre 11–13h. Entrada $150 MXN, 1h desde Ciudad Valles. Guía 2026.",
+      keywords: ["puente de dios tamasopo", "poza azul tamasopo", "tamasopo san luis potosi", "puente natural huasteca potosina", "como llegar puente de dios desde ciudad valles"],
+      faqPrincipales: [
+        { pregunta: "¿A qué hora entra la luz solar al Puente de Dios?", respuesta: "El efecto de luz azul cobalto ocurre entre las 11:00 y las 13:00 horas, cuando el sol entra perpendicular al arco natural. Fuera de ese horario la poza sigue siendo hermosa pero sin el efecto de luz." },
+        { pregunta: "¿Cuánto cuesta la entrada al Puente de Dios Tamasopo?", respuesta: "La entrada al Puente de Dios cuesta $150 MXN por persona (2026). Solo se acepta efectivo. Se recomienda llevar cambio." },
+        { pregunta: "¿Cómo llegar al Puente de Dios desde Ciudad Valles?", respuesta: "Toma la autopista Ciudad Valles–San Luis Potosí por aproximadamente 1 hora. El desvío a Tamasopo está bien señalizado. El acceso al parque es por terracería corta desde el pueblo." },
+      ],
+    },
   },
   {
     id: "tamtoc", slug: "zona-arqueologica-tamtoc",
@@ -152,6 +162,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/zona-arqueologica-tamtoc/gallery-1.jpg",
       "/imagenes/zona-arqueologica-tamtoc/gallery-2.jpg",
     ],
+    seo: {
+      metaTitle: "Zona Arqueológica Tamtoc 2026 | Guía, Horarios Martes–Dom y Precios $95",
+      metaDescription: "Descubre Tamtoc, la zona arqueológica más importante de la cultura Huasteca en San Luis Potosí. El Monumento 32 de 30 toneladas te espera. Entrada $95 MXN, 45 min desde Ciudad Valles.",
+      keywords: ["zona arqueologica tamtoc", "tamtoc tamuín san luis potosi", "cultura huasteca arqueologia", "que visitar en tamuín", "monumentos huastecos mexico"],
+      faqPrincipales: [
+        { pregunta: "¿Qué es el Monumento 32 de Tamtoc?", respuesta: "El Monumento 32 es una figura femenina de 30 toneladas tallada en piedra, considerada la representación más importante de la cultura Huasteca. Mide más de 4 metros de altura y ha permanecido en el mismo punto desde hace siglos." },
+        { pregunta: "¿Cuánto cuesta entrar a Tamtoc?", respuesta: "La entrada a la Zona Arqueológica Tamtoc cuesta $95 MXN por persona en 2026. Abre de martes a domingo de 9:00 a 17:00h. Los lunes permanece cerrada para labores de mantenimiento." },
+        { pregunta: "¿Cuánto tiempo se necesita para recorrer Tamtoc?", respuesta: "El recorrido completo toma entre 2.5 y 3 horas. Se recomienda llegar a las 9 AM antes de que el sol esté en su punto más alto, ya que hay poca sombra y en verano las temperaturas superan los 40°C." },
+      ],
+    },
   },
   {
     id: "cascada_tamasopo", slug: "cascadas-de-tamasopo",
@@ -189,6 +209,16 @@ export const DESTINOS_DB: Destino[] = [
     lat: 21.9452, lng: -98.8895,
     imagen_hero: "/imagenes/balneario-taninul/hero.webp",
     imagen_galeria: [],
+    seo: {
+      metaTitle: "Balneario Taninul Ciudad Valles 2026 | Aguas Termales 36°C — Guía Completa",
+      metaDescription: "Sumérgete en las aguas termales sulfurosas de Taninul a 36°C constante, a solo 15 minutos de Ciudad Valles. Entrada $150 MXN, abierto todos los días de 7 a 20h.",
+      keywords: ["balneario taninul", "aguas termales ciudad valles", "taninul san luis potosi", "balneario sulfuroso huasteca", "termas ciudad valles 2026"],
+      faqPrincipales: [
+        { pregunta: "¿A qué temperatura están las aguas de Taninul?", respuesta: "Las aguas termales del Balneario Taninul mantienen una temperatura constante de 36–38°C todo el año, gracias a su origen sulfuroso natural. Es ideal para relajación muscular y tratamientos de lodo terapéutico." },
+        { pregunta: "¿Por qué no se puede llevar joyería de plata a Taninul?", respuesta: "El agua de Taninul contiene azufre natural que reacciona con la plata y la oscurece de forma permanente en minutos. Se recomienda dejar cualquier joya de plata en el hotel antes de visitar." },
+        { pregunta: "¿Cómo llegar al Balneario Taninul desde Ciudad Valles?", respuesta: "El Balneario Taninul está a solo 15 minutos de Ciudad Valles. Toma la carretera 85 hacia Tampico, el acceso está señalizado. También puedes llegar en taxi o mototaxi desde el centro de Valles." },
+      ],
+    },
   },
 
   // ─── NUEVOS DESTINOS — TANDA 1 (8 sin Tambaque) ────────────────────────────

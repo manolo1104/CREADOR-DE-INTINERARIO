@@ -139,6 +139,30 @@ export const REVIEWS_POR_DESTINO: Record<string, DestinoReview[]> = {
   "nacimiento-huichihuayan": [
     { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-17.jpg", texto: "El Nacimiento de Huichihuayán es uno de los lugares más serenos que he visitado en México. El agua a 22°C todo el año y esa transparencia increíble. Lo combinamos con Las Pozas y fue el día perfecto." },
   ],
+  "cascada-el-salto": [
+    { nombre: "Paola Mendoza", ciudad: "San Luis Potosí", rating: 5, iniciales: "PM", foto: "/imagenes/reviews/reviewer-6.jpg", texto: "La Cascada El Salto combinada con El Meco fue el mejor día del viaje. El agua es realmente turquesa — sin filtros. Los guías saben exactamente a qué hora llegar para la mejor luz." },
+    { nombre: "Tomás Ríos", ciudad: "Querétaro", rating: 5, iniciales: "TR", foto: "/imagenes/reviews/reviewer-8.jpg", texto: "Nadar en la base de la cascada es una experiencia que no se olvida. El sonido del agua golpeando la roca lo sientes en el pecho. Las pozas son cristalinas. Volveremos en septiembre para verla con más agua." },
+  ],
+  "nacimiento-tambaque": [
+    { nombre: "Claudia Espinoza", ciudad: "CDMX", rating: 5, iniciales: "CE", foto: "/imagenes/reviews/reviewer-9.jpg", texto: "Tambaque es exactamente lo que necesitaba. Sin ruido, sin multitudes, solo agua cristalina y árboles. La temperatura del agua sorprende un poco al principio pero te acostumbras rápido. El lugar más tranquilo de toda la Huasteca." },
+    { nombre: "Emilio V.", ciudad: "Monterrey", rating: 5, iniciales: "EV", foto: "/imagenes/reviews/reviewer-14.jpg", texto: "Un nacimiento de agua escondido entre tamarindos. El sendero de acceso ya es parte de la experiencia. Mi novia propuso matrimonio aquí — el lugar lo inspiró. 10/10." },
+  ],
+  "voladores-tamaleton": [
+    { nombre: "Beatriz Cruz", ciudad: "Guadalajara", rating: 5, iniciales: "BC", foto: "/imagenes/reviews/reviewer-20.jpg", texto: "Ver a los Voladores de Tamaletón en persona es algo completamente diferente a verlos en video. La combinación del ritual, la música y el mástil a 30 metros te deja sin palabras. El guía explicó cada detalle del significado sagrado. Emocionante." },
+    { nombre: "Ignacio Soto", ciudad: "CDMX", rating: 5, iniciales: "IS", foto: "/imagenes/reviews/reviewer-21.jpg", texto: "Un ritual de 2,000 años perfectamente preservado. Los danzantes bajan gigrando exactamente 52 vueltas. No esperaba que me impactara tanto — terminé con los ojos llorosos. Cultura viva que no se puede perder." },
+  ],
+  "xilitla-pueblo-magico": [
+    { nombre: "Renata Fuentes", ciudad: "Monterrey", rating: 5, iniciales: "RF", foto: "/imagenes/reviews/reviewer-25.jpg", texto: "Xilitla es mucho más que Las Pozas. El pueblo en sí tiene una magia especial: el café tostado en fogón, los artesanos Tének, la neblina por las mañanas. Nos quedamos 2 noches y regresamos convencidos de que se necesitan al menos 3." },
+    { nombre: "Héctor Ibarra", ciudad: "San Luis Potosí", rating: 5, iniciales: "HI", foto: "/imagenes/reviews/reviewer-26.jpg", texto: "Combinar Las Pozas con el centro de Xilitla es la experiencia completa. El museo Leonora Carrington vale el desvío solo. Los guías locales conocen rincones que no aparecen en ninguna guía de viaje." },
+  ],
+  "zona-arqueologica-tamtoc": [
+    { nombre: "Alejandro Mora", ciudad: "CDMX", rating: 5, iniciales: "AM", foto: "/imagenes/reviews/reviewer-27.jpg", texto: "Llegar a Tamtoc al amanecer, cuando la niebla cubre el río Tampaón al fondo, es una imagen que no olvidarás. El Monumento 32 te hace entender la escala de lo que aquí se construyó hace 2,000 años. Fue la visita más inesperadamente poderosa del viaje." },
+    { nombre: "Lucía Torres", ciudad: "Guadalajara", rating: 5, iniciales: "LT", foto: "/imagenes/reviews/reviewer-28.jpg", texto: "El guía de Tamtoc sabe hacer la historia arqueológica fascinante. No es solo ver piedras — es entender toda una civilización. La figura del Monumento 32 frente al horizonte es de las imágenes más impresionantes que he fotografiado." },
+  ],
+  "balneario-taninul": [
+    { nombre: "Sofía Peñaloza", ciudad: "Monterrey", rating: 5, iniciales: "SP", foto: "/imagenes/reviews/reviewer-29.jpg", texto: "Taninul es el cierre perfecto para un día de cascadas. Te sumerges en el agua caliente sulfurosa y el cansancio desaparece. A las 6 PM, con el sol bajando y casi sin gente, es el spa más hermoso que he visitado en mi vida." },
+    { nombre: "Marco Leal", ciudad: "Querétaro", rating: 5, iniciales: "ML", foto: "/imagenes/reviews/reviewer-30.jpg", texto: "Las aguas termales a 36°C son tan relajantes que casi no queremos salir. El lodo terapéutico es una experiencia única. Solo hay que recordar no llevar plata — el azufre la oscurece instantáneamente. El personal muy amable y las instalaciones bien cuidadas." },
+  ],
 };
 
 // ── Rating promedio por destino (para tarjetas del índice) ───────────────────
