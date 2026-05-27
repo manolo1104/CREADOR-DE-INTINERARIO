@@ -9,6 +9,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const isAdmin = pathname.startsWith("/admin");
   return (
     <>
+      {!isAdmin && <div className="scroll-progress-bar" aria-hidden="true" />}
       {!isAdmin && <Navbar />}
       {children}
       {!isAdmin && <FloatingReservarButton />}

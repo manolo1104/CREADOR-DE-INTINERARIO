@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import type { Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
@@ -22,8 +24,35 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
   const dif = dificultadConfig[t.dificultad];
   const imageHeight = variant === "compact" ? "h-52 md:h-56" : "h-56 md:h-64";
 
+  const rotateXRaw = useMotionValue(0);
+  const rotateYRaw = useMotionValue(0);
+  const rotateX = useSpring(rotateXRaw, { stiffness: 280, damping: 22 });
+  const rotateY = useSpring(rotateYRaw, { stiffness: 280, damping: 22 });
+  const isTouchRef = useRef(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (isTouchRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    rotateXRaw.set(-y * 6);
+    rotateYRaw.set(x * 6);
+  };
+
+  const handleMouseLeave = () => {
+    rotateXRaw.set(0);
+    rotateYRaw.set(0);
+  };
+
   return (
-    <article className="group relative flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300">
+    <div style={{ perspective: "1000px" }} className="h-full">
+    <motion.article
+      className="group relative flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300 tour-card-shimmer"
+      style={{ rotateX, rotateY, willChange: "transform" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={() => { isTouchRef.current = true; }}
+    >
 
       {/* Stretched link — covers entire card */}
       <Link
@@ -58,6 +87,13 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <span className={`w-1.5 h-1.5 rounded-full ${dif.dot}`} aria-hidden="true" />
           {dif.label}
         </span>
+
+        {/* Hover overlay with rotating arrow */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-br from-verde-selva/0 via-transparent to-dorado/15 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3 pointer-events-none">
+          <span className="w-7 h-7 rounded-full border border-dorado/60 bg-negro/40 flex items-center justify-center group-hover:-rotate-45 transition-transform duration-300 text-dorado text-xs font-dm">
+            →
+          </span>
+        </div>
 
         {/* Nombre + tagline sobre imagen */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 z-10">
@@ -108,15 +144,19 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <span className="text-verde-vivo/70 font-medium">✦ Salidas diarias</span>
         </div>
 
-        {/* Precio */}
-        <div className="mb-4">
+        {/* Precio con tooltip */}
+        <div className="mb-4 relative group/price">
           <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-0.5">
             desde
           </p>
-          <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
+          <p className="font-cormorant text-dorado text-2xl font-normal leading-none cursor-default">
             ${t.precio.toLocaleString("es-MX")}
             <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN / persona</span>
           </p>
+          <div className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-dorado text-negro text-[10px] font-dm tracking-[0.5px] whitespace-nowrap opacity-0 group-hover/price:opacity-100 transition-opacity duration-200 pointer-events-none rounded shadow-lg z-20">
+            Transporte, guía y desayuno incluidos
+            <div className="absolute top-full left-4 border-4 border-transparent border-t-dorado" />
+          </div>
         </div>
 
         {/* Guía asignado */}
@@ -160,6 +200,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           </p>
         </div>
       </div>
-    </article>
+    </motion.article>
+    </div>
   );
 }

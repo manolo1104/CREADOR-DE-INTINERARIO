@@ -191,6 +191,24 @@ body {
   .wa-pulse {
     animation: none;
   }
+  .shimmer-gold {
+    animation: none;
+    -webkit-text-fill-color: #c4882a;
+  }
+  .scroll-progress-bar {
+    animation: none;
+    display: none;
+  }
+  .heading-underline {
+    animation: none;
+    transform: scaleX(1);
+  }
+  .testimonial-card {
+    transition: none;
+  }
+  .star-group:hover .star-icon {
+    animation: none;
+  }
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
@@ -212,4 +230,139 @@ body {
 }
 .animate-fade-in {
   animation: fadeIn 0.25s ease-out;
+}
+
+/* ── Scroll progress bar (scroll-driven, progressive enhancement) ── */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  transform-origin: left;
+  background: linear-gradient(90deg, #c4882a 0%, #5a9e2a 55%, #3a8aaa 100%);
+  animation-name: scroll-progress-anim;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-timeline: scroll(root);
+  pointer-events: none;
+}
+
+@keyframes scroll-progress-anim {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Heading decorative underline (scroll-driven, progressive enhancement) ── */
+.heading-underline {
+  height: 2px;
+  width: 48px;
+  background: linear-gradient(90deg, #c4882a, #8fbe3a);
+  transform: scaleX(0);
+  transform-origin: center;
+  margin: 10px auto 0;
+  animation-name: underline-grow;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-timeline: view();
+  animation-range: entry 15% entry 60%;
+}
+
+@keyframes underline-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Shimmer gold on stat numbers ── */
+@keyframes shimmer-sweep {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.shimmer-gold {
+  background: linear-gradient(90deg, #c4882a 30%, #f5e3a5 50%, #c4882a 70%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-sweep 3s linear infinite;
+}
+
+/* ── Navbar link hover shimmer ── */
+.nav-link-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  pointer-events: none;
+  transition: left 0.35s ease;
+}
+
+.nav-link-shimmer:hover::after {
+  left: 150%;
+}
+
+/* ── Tour card shimmer on hover ── */
+.tour-card-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.07) 50%, transparent 65%);
+  transform: translateX(-100%);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.tour-card-shimmer:hover::after {
+  transform: translateX(100%);
+  transition: transform 0.55s ease;
+}
+
+/* ── Testimonial levitation ── */
+.testimonial-card {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.testimonial-card:hover {
+  transform: translateY(-6px) rotate(-0.5deg);
+  box-shadow: 0 20px 48px rgba(14, 23, 16, 0.12);
+}
+
+.testimonial-card:nth-child(2):hover {
+  transform: translateY(-6px) rotate(0.5deg);
+}
+
+/* ── Stars bounce on hover ── */
+@keyframes star-bounce {
+  0%   { transform: scale(1) rotate(0deg); }
+  40%  { transform: scale(1.4) rotate(20deg); filter: drop-shadow(0 0 4px #c4882a); }
+  70%  { transform: scale(1.12) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.star-group:hover .star-icon {
+  animation: star-bounce 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.star-group:hover .star-icon:nth-child(2) { animation-delay: 35ms; }
+.star-group:hover .star-icon:nth-child(3) { animation-delay: 70ms; }
+.star-group:hover .star-icon:nth-child(4) { animation-delay: 105ms; }
+.star-group:hover .star-icon:nth-child(5) { animation-delay: 140ms; }
+
+/* ── Input focus golden ring ── */
+input[type="email"]:focus,
+input[type="text"]:focus,
+input[type="tel"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #c4882a, 0 0 0 5px rgba(196, 136, 42, 0.15);
+  transform: scale(1.008);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
 }

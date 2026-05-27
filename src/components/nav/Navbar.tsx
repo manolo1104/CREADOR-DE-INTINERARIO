@@ -23,17 +23,30 @@ const DESTINOS_NAV: { Icon: LucideIcon; nombre: string; slug: string }[] = [
 export default function Navbar() {
   const { count } = useItinerario();
   const [scrolled, setScrolled] = useState(false);
+  const [navbarVisible, setNavbarVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [destinosOpen, setDestinosOpen] = useState(false);
   const pathname = usePathname();
+  const lastScrollY = useRef(0);
 
   const destinosRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      setScrolled(currentY > 40);
+      if (currentY <= 80 || mobileOpen) {
+        setNavbarVisible(true);
+      } else if (currentY > lastScrollY.current + 8) {
+        setNavbarVisible(false);
+      } else if (currentY < lastScrollY.current - 5) {
+        setNavbarVisible(true);
+      }
+      lastScrollY.current = currentY;
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [mobileOpen]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -55,7 +68,7 @@ export default function Navbar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   const navLinkClass = (href: string) =>
-    `text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 ${
+    `text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 nav-link-shimmer ${
       isActive(href) ? "text-lima" : "text-crema/70 hover:text-crema"
     }`;
 
@@ -72,7 +85,7 @@ export default function Navbar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${
           scrolled || mobileOpen ? "shadow-lg" : ""
-        }`}
+        } ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}

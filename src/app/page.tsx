@@ -6,6 +6,9 @@ import { TOURS_DB } from "@/lib/tours";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { LeadMagnetForm } from "@/components/LeadMagnetForm";
+import { HeroTypewriter } from "@/components/HeroTypewriter";
+import { StatTile } from "@/components/StatTile";
+import { MagneticButton } from "@/components/MagneticButton";
 import { prisma } from "@/lib/prisma";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
@@ -162,9 +165,7 @@ export default async function HomePage() {
             <span className="block text-white" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
               La Huasteca
             </span>
-            <span className="block text-dorado italic" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
-              Potosina
-            </span>
+            <HeroTypewriter />
           </h1>
 
           <p
@@ -177,9 +178,9 @@ export default async function HomePage() {
 
           {/* Social proof bajo el subtítulo */}
           <div className="flex items-center gap-2 mb-12">
-            <div className="flex gap-0.5">
+            <div className="flex gap-0.5 star-group">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-dorado text-dorado drop-shadow" />
+                <Star key={i} className="w-4 h-4 fill-dorado text-dorado drop-shadow star-icon" />
               ))}
             </div>
             <span className="font-dm text-crema/90 text-sm drop-shadow">
@@ -295,6 +296,7 @@ export default async function HomePage() {
           <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
             Nuestros <em className="text-dorado">Tours</em>
           </h2>
+          <div className="heading-underline" aria-hidden="true" />
           <p className="text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
             {TOURS_DB.length} recorridos guiados con transporte, desayuno y guía certificado incluidos
           </p>
@@ -324,16 +326,16 @@ export default async function HomePage() {
             <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
               492 Reseñas · <em className="text-dorado">4.9 estrellas</em>
             </h2>
-            <div className="flex justify-center gap-1 mt-3">
+            <div className="flex justify-center gap-1 mt-3 star-group">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-dorado text-dorado" aria-hidden="true" />
+                <Star key={i} className="w-5 h-5 fill-dorado text-dorado star-icon" aria-hidden="true" />
               ))}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Testimonio 1 */}
-            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
+            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm testimonial-card">
               <div className="aspect-[4/3] overflow-hidden">
                 <img
                   src="/imagenes/reviews/reviewer-turquoise-group.png"
@@ -358,7 +360,7 @@ export default async function HomePage() {
             </article>
 
             {/* Testimonio 2 */}
-            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
+            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm testimonial-card">
               <div className="aspect-[4/3] overflow-hidden">
                 <img
                   src="/imagenes/reviews/reviewer-familia-tamul.png"
@@ -383,7 +385,7 @@ export default async function HomePage() {
             </article>
 
             {/* Testimonio 3 */}
-            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm">
+            <article className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm testimonial-card">
               <div className="aspect-[4/3] overflow-hidden">
                 <img
                   src="/imagenes/reviews/reviewer-tamul-grupo.jpg"
@@ -430,6 +432,7 @@ export default async function HomePage() {
             <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
               Guías & <em className="text-dorado">Rutas de Viaje</em>
             </h2>
+            <div className="heading-underline" aria-hidden="true" />
           </div>
 
           {recentPosts.length > 0 ? (
@@ -528,15 +531,7 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-2 gap-4">
             {REGION_STATS.map((s) => (
-              <div
-                key={s.label}
-                className="border border-negro/10 bg-crema p-6 text-center hover:border-dorado/40 transition-colors"
-              >
-                <div className="font-cormorant font-light text-dorado leading-none mb-2" style={{ fontSize: "clamp(32px,4vw,48px)" }}>
-                  {s.num}
-                </div>
-                <div className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm">{s.label}</div>
-              </div>
+              <StatTile key={s.label} num={s.num} label={s.label} />
             ))}
           </div>
         </div>
@@ -564,12 +559,14 @@ export default async function HomePage() {
             ))}
           </div>
 
-          <Link
-            href="/recomendar"
-            className="inline-block bg-dorado text-white px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-terracota transition-colors duration-300 mb-5"
-          >
-            Descubrir mi Tour Ideal →
-          </Link>
+          <MagneticButton className="inline-block mb-5">
+            <Link
+              href="/recomendar"
+              className="inline-block bg-dorado text-white px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-terracota transition-colors duration-300"
+            >
+              Descubrir mi Tour Ideal →
+            </Link>
+          </MagneticButton>
 
           <p className="text-xs text-negro/30 tracking-wide font-dm">
             Sin registro · Gratis · PDF descargable
