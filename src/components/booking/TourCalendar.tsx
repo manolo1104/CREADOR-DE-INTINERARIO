@@ -28,30 +28,6 @@ function isPast(d: Date): boolean {
   return dd < tomorrow;
 }
 
-// High demand: Fri (5), Sat (6), Sun (0)
-function isHighDemand(d: Date): boolean {
-  const dow = d.getDay();
-  return dow === 0 || dow === 5 || dow === 6;
-}
-
-// Pseudo-deterministic cupos — convincentes y con urgencia real
-// Fines de semana (Vie/Sáb/Dom): 1–5  |  Entre semana: 5–10
-// Los próximos 7 días muestran cupos más bajos (mayor urgencia)
-function cuposRestantes(d: Date): number {
-  const seed   = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-  const pseudo = ((seed * 2654435761) >>> 0) % 1000;
-  const dow    = d.getDay();
-  const hiDemand = dow === 0 || dow === 5 || dow === 6;
-
-  const daysFromNow = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const isNextWeek  = daysFromNow >= 0 && daysFromNow <= 7;
-
-  if (hiDemand && isNextWeek) return (pseudo % 2) + 1; // 1–2 ← urgencia máxima
-  if (hiDemand)               return (pseudo % 3) + 2; // 2–4
-  if (isNextWeek)             return (pseudo % 3) + 3; // 3–5
-  return (pseudo % 5) + 5;                              // 5–9
-}
-
 // Build Mon-first calendar grid for a given month
 function buildGrid(year: number, month: number): (Date | null)[] {
   const first = new Date(year, month, 1);
@@ -74,7 +50,6 @@ function MonthGrid({
   selected: string;
   onSelect: (ymd: string) => void;
 }) {
-  const [tooltip, setTooltip] = useState<string | null>(null);
   const grid = buildGrid(year, month);
 
   return (
@@ -100,8 +75,6 @@ function MonthGrid({
 
           const ymd        = formatYMD(date);
           const past       = isPast(date);
-          const hiDemand   = !past && isHighDemand(date);
-          const cupos      = past ? 0 : cuposRestantes(date);
           const isSelected = ymd === selected;
 
           if (past) {
@@ -118,50 +91,18 @@ function MonthGrid({
             <div
               key={ymd}
               className="relative flex flex-col items-center py-1"
-              onMouseEnter={() => setTooltip(ymd)}
-              onMouseLeave={() => setTooltip(null)}
             >
               <button
                 onClick={() => onSelect(ymd)}
                 aria-label={`Seleccionar ${ymd}`}
-                className={`relative w-8 h-8 flex items-center justify-center text-[12px] font-dm rounded-full transition-all duration-150
+                className={`w-8 h-8 flex items-center justify-center text-[12px] font-dm rounded-full transition-all duration-150
                   ${isSelected
                     ? "bg-verde-selva text-white font-semibold"
                     : "text-negro/80 hover:bg-verde-selva/15 hover:text-verde-selva"
                   }`}
               >
                 {date.getDate()}
-                {/* Badge de cupos */}
-                {!isSelected && (
-                  <span className={`absolute -top-1.5 -right-2 text-[7px] font-dm font-bold leading-none px-1 py-0.5 rounded-full whitespace-nowrap ${
-                    cupos <= 1
-                      ? "bg-red-500 text-white animate-pulse"
-                      : cupos <= 3
-                        ? "bg-orange-400 text-negro"
-                        : hiDemand
-                          ? "bg-amber-400 text-negro"
-                          : "bg-verde-vivo/80 text-white"
-                  }`}>
-                    {cupos <= 1 ? "¡1!" : cupos}
-                  </span>
-                )}
               </button>
-
-              {/* Tooltip desktop */}
-              {tooltip === ymd && !isSelected && (
-                <div className="hidden sm:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
-                  <div className="bg-negro/90 text-crema text-[10px] font-dm whitespace-nowrap px-2.5 py-1.5 rounded shadow-lg">
-                    {cupos <= 1
-                      ? `⚠️ ¡Último lugar disponible!`
-                      : cupos <= 3
-                        ? `🔥 Solo ${cupos} lugares — se llena rápido`
-                        : hiDemand
-                          ? `Alta demanda · ${cupos} lugares`
-                          : `Disponible · ${cupos} cupos`}
-                  </div>
-                  <div className="w-2 h-2 bg-negro/90 rotate-45 mx-auto -mt-1" />
-                </div>
-              )}
             </div>
           );
         })}
@@ -255,25 +196,6 @@ export function TourCalendar({ value, onChange }: Props) {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-negro/8">
-        <div className="flex items-center gap-1.5">
-          <span className="bg-red-500 text-white text-[7px] font-dm font-bold px-1.5 py-0.5 rounded-full animate-pulse">¡1!</span>
-          <span className="text-[9px] text-negro/40 font-dm">Último lugar</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="bg-orange-400 text-negro text-[7px] font-dm font-bold px-1.5 py-0.5 rounded-full">3</span>
-          <span className="text-[9px] text-negro/40 font-dm">Casi lleno</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="bg-amber-400 text-negro text-[7px] font-dm font-bold px-1.5 py-0.5 rounded-full">5</span>
-          <span className="text-[9px] text-negro/40 font-dm">Alta demanda</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="bg-verde-vivo/80 text-white text-[7px] font-dm font-bold px-1.5 py-0.5 rounded-full">8</span>
-          <span className="text-[9px] text-negro/40 font-dm">Disponible</span>
-        </div>
-      </div>
     </div>
   );
 

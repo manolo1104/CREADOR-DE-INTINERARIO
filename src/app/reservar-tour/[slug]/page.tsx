@@ -129,33 +129,6 @@ export default function ReservarTourPage() {
                 if (ymd) trackDateSelected(tour.nombre, ymd);
               }}
             />
-            {tourDate && (() => {
-              const [y, m, d] = tourDate.split("-").map(Number);
-              const date = new Date(y, m - 1, d);
-              const dow = date.getDay();
-              const hiDemand = dow === 0 || dow === 5 || dow === 6;
-              const seed = y * 10000 + m * 100 + d;
-              const pseudo = ((seed * 2654435761) >>> 0) % 1000;
-              const daysFromNow = Math.floor((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-              const isNextWeek = daysFromNow >= 0 && daysFromNow <= 7;
-              let cupos: number;
-              if (hiDemand && isNextWeek) cupos = (pseudo % 2) + 1;
-              else if (hiDemand) cupos = (pseudo % 3) + 2;
-              else if (isNextWeek) cupos = (pseudo % 3) + 3;
-              else cupos = (pseudo % 5) + 5;
-              return (
-                <div className={`mt-4 flex items-center gap-2 px-4 py-3 text-xs font-dm font-medium ${
-                  cupos <= 1 ? "bg-red-50 border border-red-200 text-red-700" :
-                  cupos <= 3 ? "bg-orange-50 border border-orange-200 text-orange-700" :
-                  "bg-verde-selva/8 border border-verde-selva/25 text-verde-selva"
-                }`}>
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cupos <= 1 ? "bg-red-500 animate-pulse" : cupos <= 3 ? "bg-orange-400" : "bg-verde-selva"}`} />
-                  {cupos <= 1 ? "⚠️ ¡Último lugar disponible para esta fecha!" :
-                   cupos <= 3 ? `🔥 Solo ${cupos} lugares disponibles — se reservan rápido` :
-                   `✓ ${cupos} lugares disponibles para esta fecha`}
-                </div>
-              );
-            })()}
           </section>
 
           {/* Participantes */}
