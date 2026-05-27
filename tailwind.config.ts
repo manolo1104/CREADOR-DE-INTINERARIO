@@ -41,8 +41,8 @@ const config: Config = {
           "100%": { transform: "scale(1)" },
         },
         "date-pop": {
-          "0%":   { transform: "scale(0.72)", opacity: "0.3" },
-          "60%":  { transform: "scale(1.1)" },
+          "0%":   { transform: "scale(0.88)", opacity: "0.4" },
+          "60%":  { transform: "scale(1.06)" },
           "100%": { transform: "scale(1)",    opacity: "1" },
         },
         shake: {
@@ -56,9 +56,9 @@ const config: Config = {
       animation: {
         "slide-up":   "slide-up 0.25s ease-out forwards",
         shrink:       "shrink linear forwards",
-        "price-bump": "price-bump 320ms cubic-bezier(0.34,1.56,0.64,1)",
-        "date-pop":   "date-pop 350ms cubic-bezier(0.34,1.56,0.64,1)",
-        shake:        "shake 450ms ease-in-out",
+        "price-bump": "price-bump 180ms cubic-bezier(0.34,1.56,0.64,1)",
+        "date-pop":   "date-pop 220ms cubic-bezier(0.34,1.56,0.64,1)",
+        shake:        "shake 280ms cubic-bezier(0.23,1,0.32,1)",
       },
       transitionTimingFunction: {
         "spring":     "cubic-bezier(0.34, 1.56, 0.64, 1)",
