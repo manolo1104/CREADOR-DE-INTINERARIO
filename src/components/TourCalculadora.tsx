@@ -65,14 +65,17 @@ function today(): string {
 }
 
 export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Props) {
-  const [adultos, setAdultos] = useState(2);
-  const [ninos, setNinos]     = useState(0);
-  const [fecha, setFecha]     = useState("");
+  const [adultos,     setAdultos]     = useState(2);
+  const [ninosMid,    setNinosMid]    = useState(0); // 6–10 años → 70%
+  const [ninosSmall,  setNinosSmall]  = useState(0); // <6 años   → 50%
+  const [fecha, setFecha]             = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
-  const precioNino = Math.round(precioBase * 0.6);
-  const total      = adultos * precioBase + ninos * precioNino;
+  const precioNinoMid   = Math.round(precioBase * 0.7);
+  const precioNinoSmall = Math.round(precioBase * 0.5);
+  const ninos = ninosMid + ninosSmall;
+  const total = adultos * precioBase + ninosMid * precioNinoMid + ninosSmall * precioNinoSmall;
 
   const waMsg = (() => {
     const base = WA_MESSAGES.tour(tourName, adultos, ninos, total);
@@ -143,21 +146,29 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
 
       <Counter label="Adultos" value={adultos} min={1} max={15} onChange={(v) => {
         setAdultos(v);
-        const newTotal = v * precioBase + ninos * precioNino;
+        const newTotal = v * precioBase + ninosMid * precioNinoMid + ninosSmall * precioNinoSmall;
         trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: v, children: ninos, total: v + ninos, amount: newTotal });
       }} />
       <Counter
-        label={`Niños 4–12 años ($${precioNino.toLocaleString("es-MX")} c/u)`}
-        value={ninos} min={0} max={10} onChange={(v) => {
-          setNinos(v);
-          const newTotal = adultos * precioBase + v * precioNino;
-          trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: adultos, children: v, total: adultos + v, amount: newTotal });
+        label={`Niños 6–10 años ($${precioNinoMid.toLocaleString("es-MX")} c/u · −30%)`}
+        value={ninosMid} min={0} max={10} onChange={(v) => {
+          setNinosMid(v);
+          const newTotal = adultos * precioBase + v * precioNinoMid + ninosSmall * precioNinoSmall;
+          trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: adultos, children: v + ninosSmall, total: adultos + v + ninosSmall, amount: newTotal });
+        }}
+      />
+      <Counter
+        label={`Menores de 6 ($${precioNinoSmall.toLocaleString("es-MX")} c/u · −50%)`}
+        value={ninosSmall} min={0} max={10} onChange={(v) => {
+          setNinosSmall(v);
+          const newTotal = adultos * precioBase + ninosMid * precioNinoMid + v * precioNinoSmall;
+          trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: adultos, children: ninosMid + v, total: adultos + ninosMid + v, amount: newTotal });
         }}
       />
 
       {ninos === 0 && (
         <p className="text-[10px] text-crema/30 font-dm">
-          Menores de 4 años: gratis · Agrega niños para ver descuento
+          Bebés menores de 3 años: gratis · Agrega niños para ver descuento
         </p>
       )}
 
@@ -171,7 +182,8 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
         </div>
         <p className="text-[9px] text-verde-vivo font-dm">
           {adultos} adulto{adultos > 1 ? "s" : ""}
-          {ninos > 0 ? ` · ${ninos} niño${ninos > 1 ? "s" : ""}` : ""}
+          {ninosMid > 0 ? ` · ${ninosMid} niño${ninosMid > 1 ? "s" : ""} 6–10` : ""}
+          {ninosSmall > 0 ? ` · ${ninosSmall} menor${ninosSmall > 1 ? "es" : ""} <6` : ""}
         </p>
       </div>
 

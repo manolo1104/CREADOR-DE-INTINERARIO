@@ -18,19 +18,21 @@ export default function ReservarTourPage() {
   const params = useParams<{ slug: string }>();
   const tour   = TOURS_DB.find((t) => t.slug === params.slug);
 
-  const [tourDate,      setTourDate]      = useState("");
-  const [adults,        setAdults]        = useState(2);
-  const [children,      setChildren]      = useState(0);
-  const [promoInput,    setPromoInput]    = useState("");
-  const [promoCode,     setPromoCode]     = useState("");
-  const [promoDiscount, setPromoDiscount] = useState(0);
-  const [promoMsg,      setPromoMsg]      = useState("");
-  const [promoError,    setPromoError]    = useState("");
-  const [paymentMode,   setPaymentMode]   = useState<"deposit" | "full">("deposit");
+  const [tourDate,       setTourDate]       = useState("");
+  const [adults,         setAdults]         = useState(2);
+  const [childrenMid,    setChildrenMid]    = useState(0); // 6–10 años → 70%
+  const [childrenSmall,  setChildrenSmall]  = useState(0); // <6 años   → 50%
+  const [promoInput,     setPromoInput]     = useState("");
+  const [promoCode,      setPromoCode]      = useState("");
+  const [promoDiscount,  setPromoDiscount]  = useState(0);
+  const [promoMsg,       setPromoMsg]       = useState("");
+  const [promoError,     setPromoError]     = useState("");
+  const [paymentMode,    setPaymentMode]    = useState<"deposit" | "full">("deposit");
 
+  const children = childrenMid + childrenSmall;
   const notFound = !tour;
-  const { subtotal, discount, total, childPrice } = calcTourTotal(
-    tour?.precio ?? 0, adults, children, promoDiscount
+  const { subtotal, discount, total, childPriceMid, childPriceSmall } = calcTourTotal(
+    tour?.precio ?? 0, adults, childrenMid, childrenSmall, promoDiscount
   );
   const deposit = Math.round(total * 0.3);
   const chargeAmount = paymentMode === "deposit" ? deposit : total;
@@ -64,15 +66,17 @@ export default function ReservarTourPage() {
   function handleContinue() {
     if (!tourDate || !tour) return;
     saveTourBookingState({
-      tourId:       tour.id,
-      tourSlug:     tour.slug,
-      tourName:     tour.nombre,
-      tourImage:    tour.imagen_hero,
-      tourDuration: tour.duracion_hrs,
-      priceAdult:   tour.precio,
+      tourId:        tour.id,
+      tourSlug:      tour.slug,
+      tourName:      tour.nombre,
+      tourImage:     tour.imagen_hero,
+      tourDuration:  tour.duracion_hrs,
+      priceAdult:    tour.precio,
       tourDate,
       adults,
       children,
+      childrenMid,
+      childrenSmall,
       promoCode,
       promoDiscount,
       subtotal,
@@ -152,22 +156,40 @@ export default function ReservarTourPage() {
                 </div>
               </div>
               {/* Niños */}
+              {/* Niños 6–10 años */}
               <div className="flex items-center justify-between border-t border-negro/6 pt-5">
                 <div>
-                  <p className="font-dm text-sm text-negro/80">Niños (4–12 años)</p>
-                  <p className="font-dm text-xs text-negro/40">{formatMXN(childPrice)} por persona · 60 % del precio</p>
+                  <p className="font-dm text-sm text-negro/80">Niños 6–10 años</p>
+                  <p className="font-dm text-xs text-negro/40">{formatMXN(childPriceMid)} por persona · 70 % del precio</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setChildren(Math.max(0, children - 1))}
+                  <button onClick={() => setChildrenMid(Math.max(0, childrenMid - 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Reducir niños">−</button>
-                  <span className="w-8 text-center font-dm text-negro">{children}</span>
-                  <button onClick={() => setChildren(Math.min(tour.groupMax - adults, children + 1))}
+                    aria-label="Reducir niños 6–10">−</button>
+                  <span className="w-8 text-center font-dm text-negro">{childrenMid}</span>
+                  <button onClick={() => setChildrenMid(Math.min(tour.groupMax - adults - childrenSmall, childrenMid + 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Aumentar niños">+</button>
+                    aria-label="Aumentar niños 6–10">+</button>
                 </div>
               </div>
-              <p className="text-xs text-negro/40 font-dm">Menores de 4 años: entrada gratuita (no cuentan como participantes)</p>
+
+              {/* Niños menores de 6 */}
+              <div className="flex items-center justify-between border-t border-negro/6 pt-5">
+                <div>
+                  <p className="font-dm text-sm text-negro/80">Niños menores de 6</p>
+                  <p className="font-dm text-xs text-negro/40">{formatMXN(childPriceSmall)} por persona · 50 % del precio</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setChildrenSmall(Math.max(0, childrenSmall - 1))}
+                    className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
+                    aria-label="Reducir niños menores de 6">−</button>
+                  <span className="w-8 text-center font-dm text-negro">{childrenSmall}</span>
+                  <button onClick={() => setChildrenSmall(Math.min(tour.groupMax - adults - childrenMid, childrenSmall + 1))}
+                    className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
+                    aria-label="Aumentar niños menores de 6">+</button>
+                </div>
+              </div>
+              <p className="text-xs text-negro/40 font-dm">Bebés menores de 3 años: entrada gratuita (no cuentan como participantes)</p>
               <p className="text-xs text-negro/40 font-dm">Máximo {tour.groupMax} participantes por tour</p>
             </div>
           </section>
@@ -313,10 +335,16 @@ export default function ReservarTourPage() {
                 <span>{adults} adulto{adults !== 1 ? "s" : ""} × {formatMXN(tour.precio)}</span>
                 <span>{formatMXN(tour.precio * adults)}</span>
               </div>
-              {children > 0 && (
+              {childrenMid > 0 && (
                 <div className="flex justify-between text-negro/70">
-                  <span>{children} niño{children !== 1 ? "s" : ""} × {formatMXN(childPrice)}</span>
-                  <span>{formatMXN(childPrice * children)}</span>
+                  <span>{childrenMid} niño{childrenMid !== 1 ? "s" : ""} 6–10 años × {formatMXN(childPriceMid)}</span>
+                  <span>{formatMXN(childPriceMid * childrenMid)}</span>
+                </div>
+              )}
+              {childrenSmall > 0 && (
+                <div className="flex justify-between text-negro/70">
+                  <span>{childrenSmall} niño{childrenSmall !== 1 ? "s" : ""} &lt;6 años × {formatMXN(childPriceSmall)}</span>
+                  <span>{formatMXN(childPriceSmall * childrenSmall)}</span>
                 </div>
               )}
               {discount > 0 && (

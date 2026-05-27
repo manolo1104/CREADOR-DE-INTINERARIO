@@ -9,7 +9,9 @@ export interface TourBookingState {
   priceAdult:    number;
   tourDate:      string; // YYYY-MM-DD
   adults:        number;
-  children:      number; // 4–12 años → 60 % del precio adulto
+  children:      number; // total menores (childrenMid + childrenSmall)
+  childrenMid:   number; // 6–10 años → 70 % del precio adulto
+  childrenSmall: number; // menores de 6 → 50 % del precio adulto
   promoCode:     string;
   promoDiscount: number; // porcentaje 0–100
   subtotal:      number;
@@ -46,15 +48,17 @@ export function formatMXN(n: number) {
 // ── Precios ──────────────────────────────────────────────────
 
 export function calcTourTotal(
-  priceAdult: number,
-  adults: number,
-  children: number,
+  priceAdult:    number,
+  adults:        number,
+  childrenMid:   number, // 6–10 años → 70 %
+  childrenSmall: number, // menores de 6 → 50 %
   promoDiscount: number
 ) {
-  const childPrice = Math.round(priceAdult * 0.6);
-  const subtotal   = priceAdult * adults + childPrice * children;
-  const discount   = Math.round(subtotal * promoDiscount / 100);
-  return { subtotal, discount, total: subtotal - discount, childPrice };
+  const childPriceMid   = Math.round(priceAdult * 0.7);
+  const childPriceSmall = Math.round(priceAdult * 0.5);
+  const subtotal = priceAdult * adults + childPriceMid * childrenMid + childPriceSmall * childrenSmall;
+  const discount = Math.round(subtotal * promoDiscount / 100);
+  return { subtotal, discount, total: subtotal - discount, childPriceMid, childPriceSmall };
 }
 
 // ── Códigos promo ────────────────────────────────────────────
