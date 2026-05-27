@@ -59,9 +59,15 @@ export default function DestinosClient() {
           {destinosFiltrados.length} destino{destinosFiltrados.length !== 1 ? "s" : ""}
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {destinosFiltrados.map((d) => (
-            <DestinoProductCard key={d.slug} destino={d} />
+        <div key={filtroActivo} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {destinosFiltrados.map((d, i) => (
+            <div
+              key={d.slug}
+              className="stagger-reveal"
+              style={{ animationDelay: `${Math.min(i, 8) * 65}ms` }}
+            >
+              <DestinoProductCard destino={d} />
+            </div>
           ))}
         </div>
 

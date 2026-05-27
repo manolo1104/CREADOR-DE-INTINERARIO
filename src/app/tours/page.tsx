@@ -270,7 +270,8 @@ export default function ToursPage() {
             <article
               key={tour.id}
               id={tour.id}
-              className="relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-300 flex flex-col scroll-mt-28"
+              className="stagger-reveal relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28"
+              style={{ animationDelay: `${tourIndex * 80}ms` }}
             >
               {/* Stretched link — full card clickable to tour detail */}
               <Link

@@ -27,6 +27,7 @@ export default function ReservarTourPage() {
   const [promoDiscount,  setPromoDiscount]  = useState(0);
   const [promoMsg,       setPromoMsg]       = useState("");
   const [promoError,     setPromoError]     = useState("");
+  const [promoShake,     setPromoShake]     = useState(false);
   const [paymentMode,    setPaymentMode]    = useState<"deposit" | "full">("deposit");
 
   const children = childrenMid + childrenSmall;
@@ -51,7 +52,12 @@ export default function ReservarTourPage() {
   function applyPromo() {
     setPromoError(""); setPromoMsg("");
     const result = validatePromoCode(promoInput);
-    if (!result.valid) { setPromoError(result.msg); return; }
+    if (!result.valid) {
+      setPromoError(result.msg);
+      setPromoShake(true);
+      setTimeout(() => setPromoShake(false), 500);
+      return;
+    }
     setPromoCode(promoInput.trim().toUpperCase());
     setPromoDiscount(result.discount);
     setPromoMsg(result.msg);
@@ -198,12 +204,12 @@ export default function ReservarTourPage() {
           <section className="bg-white border border-negro/8 p-6">
             <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Código de descuento</h2>
             {promoCode ? (
-              <div className="flex items-center justify-between bg-verde-selva/10 border border-verde-selva/30 px-4 py-3">
+              <div className="flex items-center justify-between bg-verde-selva/10 border border-verde-selva/30 px-4 py-3 animate-fade-in">
                 <p className="font-dm text-sm text-verde-selva">{promoMsg}</p>
                 <button onClick={removePromo} className="text-xs text-negro/40 hover:text-terracota font-dm transition-colors">Quitar</button>
               </div>
             ) : (
-              <div className="flex gap-3">
+              <div className={`flex gap-3 ${promoShake ? "animate-shake" : ""}`}>
                 <input
                   type="text"
                   placeholder="Tu código aquí"
@@ -227,9 +233,9 @@ export default function ReservarTourPage() {
             <div className="space-y-3">
 
               {/* Opción A: Depósito */}
-              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-150 ${
+              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-200 ${
                 paymentMode === "deposit"
-                  ? "border-verde-selva bg-verde-selva/5"
+                  ? "border-verde-selva bg-verde-selva/5 -translate-y-0.5 shadow-sm"
                   : "border-negro/15 hover:border-negro/30"
               }`}>
                 <input
@@ -263,9 +269,9 @@ export default function ReservarTourPage() {
               </label>
 
               {/* Opción B: Total */}
-              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-150 ${
+              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-200 ${
                 paymentMode === "full"
-                  ? "border-verde-selva bg-verde-selva/5"
+                  ? "border-verde-selva bg-verde-selva/5 -translate-y-0.5 shadow-sm"
                   : "border-negro/15 hover:border-negro/30"
               }`}>
                 <input
@@ -355,7 +361,7 @@ export default function ReservarTourPage() {
               )}
               <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-3 text-base">
                 <span>Total completo</span>
-                <span className="font-cormorant text-xl text-dorado">{formatMXN(total)} MXN</span>
+                <span key={total} className="font-cormorant text-xl text-dorado animate-price-bump">{formatMXN(total)} MXN</span>
               </div>
               {paymentMode === "deposit" && (
                 <div className="flex justify-between text-verde-selva font-medium bg-verde-selva/8 border border-verde-selva/20 px-3 py-2">

@@ -175,7 +175,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
       <div className="border-t border-white/10 pt-3 flex items-end justify-between">
         <div>
           <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Total estimado</p>
-          <p className="font-cormorant text-dorado text-2xl leading-none">
+          <p key={total} className="font-cormorant text-dorado text-2xl leading-none animate-price-bump">
             ${total.toLocaleString("es-MX")}
             <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN</span>
           </p>

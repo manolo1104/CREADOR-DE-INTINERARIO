@@ -95,9 +95,9 @@ function MonthGrid({
               <button
                 onClick={() => onSelect(ymd)}
                 aria-label={`Seleccionar ${ymd}`}
-                className={`w-8 h-8 flex items-center justify-center text-[12px] font-dm rounded-full transition-all duration-150
+                className={`w-8 h-8 flex items-center justify-center text-[12px] font-dm rounded-full transition-colors duration-150
                   ${isSelected
-                    ? "bg-verde-selva text-white font-semibold"
+                    ? "bg-verde-selva text-white font-semibold animate-date-pop"
                     : "text-negro/80 hover:bg-verde-selva/15 hover:text-verde-selva"
                   }`}
               >
