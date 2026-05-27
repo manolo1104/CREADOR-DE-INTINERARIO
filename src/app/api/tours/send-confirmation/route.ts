@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
       console.warn("⚠️ Email inválido — confirmación omitida");
     } else {
       try {
+        // Extraer pickup de notes: "Recogida: Hotel X | otras notas"
+        const pickupMatch = (notes || "").match(/Recogida:\s*([^|]+)/);
+        const pickupLugar = pickupMatch ? pickupMatch[1].trim() : undefined;
+
         const html = buildTourEmailHtml({
           customerName,
           confirmationNumber,
@@ -78,11 +82,12 @@ export async function POST(req: NextRequest) {
           tourName,
           tourDate,
           tourSlug,
-          adults:       Number(adults)   || 1,
-          children:     Number(children) || 0,
-          totalAmount:  Math.round(Number(totalAmount) || 0),
+          adults:        Number(adults)      || 1,
+          children:      Number(children)    || 0,
+          totalAmount:   Math.round(Number(totalAmount) || 0),
           promoCode,
           promoDiscount: Number(promoDiscount) || 0,
+          pickupLugar,
         });
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";

@@ -12,6 +12,9 @@ export function buildTourEmailHtml(data: {
   totalAmount:       number;
   promoCode?:        string;
   promoDiscount?:    number;
+  depositoPagado?:   number;
+  metodoPago?:       string;
+  pickupLugar?:      string;
 }): string {
   const base = "https://www.huasteca-potosina.com";
   const tourUrl = `${base}/tours/${data.tourSlug}`;
@@ -26,6 +29,10 @@ export function buildTourEmailHtml(data: {
   const totalParticipants = data.adults + data.children;
   const participantsText  = `${data.adults} adulto${data.adults !== 1 ? "s" : ""}${data.children > 0 ? ` · ${data.children} menor${data.children !== 1 ? "es" : ""}` : ""}`;
   const hasPromo = data.promoCode && (data.promoDiscount ?? 0) > 0;
+  const deposito  = data.depositoPagado ?? 0;
+  const pendiente = Math.max(0, data.totalAmount - deposito);
+  const fmxEmail  = (n: number) => `$${Number(n).toLocaleString("es-MX")} MXN`;
+  const pickupText = data.pickupLugar || "Frente a tu hotel. Confirma tu dirección exacta por WhatsApp.";
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -160,21 +167,38 @@ export function buildTourEmailHtml(data: {
                 <tr>
                   <td>
                     <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c4882a;">
-                      Total Pagado
+                      Total del tour
                     </p>
                   </td>
                   <td style="text-align:right;">
                     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#f4edd8;">
-                      $${Number(data.totalAmount).toLocaleString("es-MX")}<span style="font-size:13px;color:#c4882a;"> MXN</span>
+                      ${fmxEmail(data.totalAmount)}
                     </p>
                   </td>
                 </tr>
                 ${hasPromo ? `
-                <tr><td colspan="2" style="padding-top:12px;border-top:1px solid rgba(196,136,42,0.3);">
+                <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.3);">
                   <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8fbe3a;">
                     ✓ Código ${data.promoCode} aplicado — ${data.promoDiscount}% de descuento
                   </p>
                 </td></tr>` : ""}
+                ${deposito > 0 ? `
+                <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.3);">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td><p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.65);">Anticipo pagado</p></td>
+                      <td style="text-align:right;"><p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:13px;color:#8fbe3a;">${fmxEmail(deposito)}</p></td>
+                    </tr>
+                    <tr>
+                      <td><p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${pendiente > 0 ? "#f4a44a" : "#8fbe3a"};">${pendiente > 0 ? "Saldo pendiente" : "✓ Liquidado"}</p></td>
+                      <td style="text-align:right;"><p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:${pendiente > 0 ? "#f4a44a" : "#8fbe3a"};">${fmxEmail(pendiente)}</p></td>
+                    </tr>
+                  </table>
+                </td></tr>
+                ${data.metodoPago ? `
+                <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.2);">
+                  <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.5);">Método de pago: <span style="color:rgba(244,237,216,0.8);">${data.metodoPago}</span></p>
+                </td></tr>` : ""}` : ""}
               </table>
             </td></tr>
           </table>
@@ -210,7 +234,7 @@ export function buildTourEmailHtml(data: {
                   🌅 Punto de Salida
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
-                  Frente a tu hotel a las 5:30 AM. Confirma tu dirección exacta por WhatsApp.
+                  ${pickupText}
                 </p>
               </td>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-left:none;background-color:#f4edd8;">
