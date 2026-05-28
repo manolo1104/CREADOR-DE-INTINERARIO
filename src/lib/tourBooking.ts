@@ -85,9 +85,14 @@ export function formatTourDate(dateStr: string) {
   return f.charAt(0).toUpperCase() + f.slice(1);
 }
 
-// Fecha mínima seleccionable (mañana)
+// Fecha mínima seleccionable (mañana, en horario de México para evitar
+// desfases por UTC cerca de la medianoche).
 export function minBookingDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0];
+  const hoyMX = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }); // YYYY-MM-DD
+  const [y, m, d] = hoyMX.split("-").map(Number);
+  const manana = new Date(y, m - 1, d + 1);
+  const yyyy = manana.getFullYear();
+  const mm = String(manana.getMonth() + 1).padStart(2, "0");
+  const dd = String(manana.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }

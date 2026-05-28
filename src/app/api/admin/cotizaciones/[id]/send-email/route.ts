@@ -35,6 +35,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     await prisma.tourQuote.update({ where: { id: params.id }, data: { status: "enviada" } });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("admin/cotizaciones send-email:", e?.message);
+    return NextResponse.json({ error: "No se pudo enviar el email" }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { rateLimit } from "@/lib/rateLimit";
 import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
@@ -121,7 +122,10 @@ function buildGuideHtml(email: string, name?: string): string {
 </html>`;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { key: "lead-magnet", limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   try {
     const body = await req.json();
     const { email, name, fuente } = body;
@@ -137,7 +141,7 @@ export async function POST(req: Request) {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
         range:         `${SHEET_TAB}!A:D`,
-        valueInputOption: "USER_ENTERED",
+        valueInputOption: "RAW", // RAW evita inyección de fórmulas vía email del usuario
         requestBody:   { values: [[email, name || "", fecha, fuente || "Guía PDF"]] },
       });
     } catch (err) {

@@ -3,15 +3,15 @@
 import { useState } from "react";
 import type { TourBooking } from "@prisma/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { TOURS_DB } from "@/lib/tours";
+import { hoyMX } from "@/lib/dates";
 
-const TOUR_COLORS: Record<string, string> = {
-  "expedicion-tamul":                 "#3a6b1a",
-  "ruta-surrealista-edward-james":    "#c4882a",
-  "cascadas-del-meco":                "#1a4e8a",
-  "paraiso-escalonado-minas-micos":   "#7a3a6a",
-  "ruta-acuatica-puente-de-dios":     "#2a7a6a",
-};
-function tourColor(slug: string) { return TOUR_COLORS[slug] || "#5a5a5a"; }
+// Paleta asignada a cada tour del catálogo (cubre tours nuevos automáticamente).
+const PALETTE = ["#3a6b1a", "#c4882a", "#1a4e8a", "#7a3a6a", "#2a7a6a", "#9a4a1e", "#5a7a2a", "#8a6f1e", "#3a6b6b", "#6a4a8a"];
+const COLOR_BY_SLUG: Record<string, string> = {};
+TOURS_DB.forEach((t, i) => { COLOR_BY_SLUG[t.slug] = PALETTE[i % PALETTE.length]; });
+function tourColor(slug: string) { return COLOR_BY_SLUG[slug] || "#5a5a5a"; }
+function tourLabel(slug: string) { return TOURS_DB.find(t => t.slug === slug)?.nombre || slug.replace(/-/g, " "); }
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -27,7 +27,7 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
 
   const firstDay  = new Date(year, month, 1).getDay();
   const daysInMo  = new Date(year, month+1, 0).getDate();
-  const todayStr  = today.toISOString().split("T")[0];
+  const todayStr  = hoyMX();
 
   // Index bookings by tourDate
   const byDay: Record<string, TourBooking[]> = {};
@@ -104,12 +104,12 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
         </div>
       </div>
 
-      {/* Leyenda tours */}
+      {/* Leyenda tours — solo los que aparecen en reservas */}
       <div className="mt-4 flex flex-wrap gap-3">
-        {Object.entries(TOUR_COLORS).map(([slug, color]) => (
+        {Array.from(new Set(bookings.map(b => b.tourSlug))).map(slug => (
           <div key={slug} className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm" style={{background:color}} />
-            <span className="text-[10px] font-dm text-[#1a2e1a]/50 capitalize">{slug.replace(/-/g," ")}</span>
+            <div className="w-3 h-3 rounded-sm" style={{background:tourColor(slug)}} />
+            <span className="text-[10px] font-dm text-[#1a2e1a]/50">{tourLabel(slug)}</span>
           </div>
         ))}
       </div>

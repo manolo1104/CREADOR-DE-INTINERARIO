@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import path from "path";
 
 export const dynamic = "force-dynamic";
@@ -19,15 +19,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const blogAgentDir = path.join(process.cwd(), "blog-agent");
-    const cmd = topic
-      ? `node index.js --topic "${topic.replace(/"/g, '\\"')}"`
-      : "node index.js";
 
-    console.log(`[cron/blog-post] ejecutando: ${cmd}`);
-    const output = execSync(cmd, {
-      cwd:     blogAgentDir,
-      env:     { ...process.env },
-      timeout: 270_000, // 4.5 min
+    // execFileSync NO usa shell: el topic se pasa como argumento, sin riesgo de
+    // inyección de comandos ($(), backticks, ;, &&, etc.).
+    const args = topic ? ["index.js", "--topic", topic] : ["index.js"];
+
+    console.log(`[cron/blog-post] ejecutando: node ${args.join(" ")}`);
+    const output = execFileSync("node", args, {
+      cwd:      blogAgentDir,
+      env:      { ...process.env },
+      timeout:  270_000, // 4.5 min
       encoding: "utf-8",
     });
 

@@ -28,15 +28,14 @@ export default function ReservarTourPage() {
   const [promoMsg,       setPromoMsg]       = useState("");
   const [promoError,     setPromoError]     = useState("");
   const [promoShake,     setPromoShake]     = useState(false);
-  const [paymentMode,    setPaymentMode]    = useState<"deposit" | "full">("deposit");
 
   const children = childrenMid + childrenSmall;
   const notFound = !tour;
   const { subtotal, discount, total, childPriceMid, childPriceSmall } = calcTourTotal(
     tour?.precio ?? 0, adults, childrenMid, childrenSmall, promoDiscount
   );
-  const deposit = Math.round(total * 0.3);
-  const chargeAmount = paymentMode === "deposit" ? deposit : total;
+  // Pago 100%: siempre se cobra el total completo.
+  const chargeAmount = total;
 
   if (notFound || !tour) {
     return (
@@ -88,7 +87,7 @@ export default function ReservarTourPage() {
       subtotal,
       total,
       chargeAmount,
-      paymentMode,
+      paymentMode: "full",
       sessionId: crypto.randomUUID(),
     });
     router.push(`/reservar-tour/${tour.slug}/checkout`);
@@ -156,7 +155,7 @@ export default function ReservarTourPage() {
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
                     aria-label="Reducir adultos">−</button>
                   <span className="w-8 text-center font-dm text-negro">{adults}</span>
-                  <button onClick={() => setAdults(Math.min(tour.groupMax, adults + 1))}
+                  <button onClick={() => setAdults(Math.min(tour.groupMax - children, adults + 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
                     aria-label="Aumentar adultos">+</button>
                 </div>
@@ -227,83 +226,6 @@ export default function ReservarTourPage() {
             {promoError && <p className="mt-2 text-terracota text-xs font-dm" role="alert">{promoError}</p>}
           </section>
 
-          {/* ── MEJORA 11 — Modalidad de pago ── */}
-          <section className="bg-white border border-negro/8 p-6">
-            <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Modalidad de pago</h2>
-            <div className="space-y-3">
-
-              {/* Opción A: Depósito */}
-              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-200 ${
-                paymentMode === "deposit"
-                  ? "border-verde-selva bg-verde-selva/5 -translate-y-0.5 shadow-sm"
-                  : "border-negro/15 hover:border-negro/30"
-              }`}>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="deposit"
-                  checked={paymentMode === "deposit"}
-                  onChange={() => setPaymentMode("deposit")}
-                  className="sr-only"
-                />
-                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                  paymentMode === "deposit" ? "border-verde-selva" : "border-negro/25"
-                }`}>
-                  {paymentMode === "deposit" && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-verde-selva" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-dm text-sm font-medium text-negro/85">
-                      Reserva con {formatMXN(deposit)} MXN
-                    </span>
-                    <span className="bg-verde-selva/15 text-verde-selva text-[9px] font-dm font-bold tracking-[1px] uppercase px-2 py-0.5">
-                      RECOMENDADO
-                    </span>
-                  </div>
-                  <p className="text-xs text-negro/50 font-dm mt-1">
-                    30% ahora · Paga el resto al llegar · Sin riesgo · Cancelación gratuita 48h
-                  </p>
-                </div>
-              </label>
-
-              {/* Opción B: Total */}
-              <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all duration-200 ${
-                paymentMode === "full"
-                  ? "border-verde-selva bg-verde-selva/5 -translate-y-0.5 shadow-sm"
-                  : "border-negro/15 hover:border-negro/30"
-              }`}>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="full"
-                  checked={paymentMode === "full"}
-                  onChange={() => setPaymentMode("full")}
-                  className="sr-only"
-                />
-                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                  paymentMode === "full" ? "border-verde-selva" : "border-negro/25"
-                }`}>
-                  {paymentMode === "full" && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-verde-selva" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-dm text-sm font-medium text-negro/85">
-                    Pago completo — {formatMXN(total)} MXN
-                  </p>
-                  <p className="text-xs text-negro/50 font-dm mt-1">
-                    Sin pendientes · Misma cancelación gratuita con 48h
-                  </p>
-                </div>
-              </label>
-            </div>
-            <p className="mt-3 text-[10px] text-negro/40 font-dm">
-              ✓ El pago restante se cobra el día del tour o puedes pagarlo antes desde tu confirmación.
-            </p>
-          </section>
-
         </div>
 
         {/* ── SIDEBAR ── */}
@@ -360,15 +282,9 @@ export default function ReservarTourPage() {
                 </div>
               )}
               <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-3 text-base">
-                <span>Total completo</span>
+                <span>Total</span>
                 <span key={total} className="font-cormorant text-xl text-dorado animate-price-bump">{formatMXN(total)} MXN</span>
               </div>
-              {paymentMode === "deposit" && (
-                <div className="flex justify-between text-verde-selva font-medium bg-verde-selva/8 border border-verde-selva/20 px-3 py-2">
-                  <span className="text-xs">Pagas ahora (30%)</span>
-                  <span className="font-cormorant text-base">{formatMXN(deposit)} MXN</span>
-                </div>
-              )}
             </div>
 
             {/* Incluye */}
@@ -400,9 +316,7 @@ export default function ReservarTourPage() {
             {canContinue ? (
               <>
                 <Lock className="w-3.5 h-3.5" />
-                {paymentMode === "deposit"
-                  ? `Reservar con ${formatMXN(deposit)} MXN →`
-                  : `Pagar ${formatMXN(total)} MXN completo →`}
+                {`Pagar ${formatMXN(total)} MXN →`}
               </>
             ) : (
               "Selecciona una fecha para continuar"

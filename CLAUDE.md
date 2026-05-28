@@ -52,7 +52,7 @@ Brevo for transactional email (`BREVO_API_KEY` env var). Admin booking copy uses
 
 ## Auth
 
-Next-Auth v5 beta (`next-auth@5.0.0-beta.19`) with Prisma adapter. Admin routes protected under `/admin/**`. Session check via `src/lib/admin.ts`.
+Next-Auth v5 beta (`next-auth@5.0.0-beta.19`) with Prisma adapter. Admin pages and `/api/admin/**` routes are protected in `src/middleware.ts` (JWT cookie `admin_session`). Token signing/verification and credential checks live in `src/lib/admin/auth.ts`. `ADMIN_JWT_SECRET` is required (no fallback) — if unset, all admin access is denied.
 
 ## Design System
 

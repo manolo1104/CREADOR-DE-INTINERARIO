@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+import { rateLimit } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
+
+// Precios fijos por producto (MXN). El cliente NO decide el monto.
+const PRECIOS_FIJOS: Record<string, number> = {
+  guia_pdf: 50,
+};
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
     logger.error("payment_error", { reason: "STRIPE_SECRET_KEY missing" });
     return NextResponse.json(
-      { error: "STRIPE_SECRET_KEY no configurada." },
+      { error: "Pagos no disponibles temporalmente." },
       { status: 503 }
     );
   }
+
+  const limited = rateLimit(req, { key: "cobrar", limit: 20, windowMs: 60_000 });
+  if (limited) return limited;
 
   try {
     const {
@@ -19,34 +28,28 @@ export async function POST(req: NextRequest) {
       descripcion,
       email_cliente,
       producto,
-      codigoDescuento,
       metadata,
     }: {
-      monto: string | number;
+      monto?: string | number;
       descripcion?: string;
       email_cliente?: string;
       producto?: string;
-      codigoDescuento?: string;
       metadata?: Record<string, string>;
     } = await req.json();
 
-    const CODIGOS_DESCUENTO: Record<string, number> = {
-      HUASTECA2026: 1,
-    };
-    const pctDescuento =
-      typeof codigoDescuento === "string" && CODIGOS_DESCUENTO[codigoDescuento.trim().toUpperCase()]
-        ? CODIGOS_DESCUENTO[codigoDescuento.trim().toUpperCase()]
-        : 0;
-    const montoFinal = parseFloat(String(monto)) * (1 - pctDescuento);
+    // Si el producto tiene precio fijo en el servidor, se usa ese (ignora monto del cliente).
+    const precioFijo = producto ? PRECIOS_FIJOS[producto] : undefined;
+    const montoSolicitado = parseFloat(String(monto ?? ""));
+    const montoFinal = precioFijo ?? montoSolicitado;
 
-    if (!monto || parseFloat(String(monto)) <= 0) {
-      logger.warn("payment_invalid_amount", { monto });
+    if (!montoFinal || montoFinal <= 0) {
+      logger.warn("payment_invalid_amount", { producto });
       return NextResponse.json({ error: "Monto inválido." }, { status: 400 });
     }
 
     logger.info("payment_session_creating", {
       monto_mxn: montoFinal,
-      descuento_pct: pctDescuento,
+      producto: producto ?? null,
       email: email_cliente ? email_cliente.replace(/(.{2}).+(@.+)/, "$1***$2") : null,
     });
 
@@ -89,13 +92,13 @@ export async function POST(req: NextRequest) {
     logger.info("payment_session_created", {
       session_id: session.id,
       monto_mxn: montoFinal,
-      codigo_descuento: pctDescuento > 0 ? codigoDescuento : null,
+      producto: producto ?? null,
     });
 
     return NextResponse.json({ url: session.url, id: session.id });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error";
     logger.error("payment_exception", { reason: msg });
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo iniciar el pago." }, { status: 500 });
   }
 }

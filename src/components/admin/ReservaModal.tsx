@@ -115,6 +115,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
           const t = TOURS_DB.find(t => t.slug === val);
           up.tourName = t?.nombre || "";
         }
+        // Evitar valores 0/NaN en participantes
+        if (field === "adults")        up.adults        = Math.max(1, Number(val) || 1);
+        if (field === "childrenMid")   up.childrenMid   = Math.max(0, Number(val) || 0);
+        if (field === "childrenSmall") up.childrenSmall = Math.max(0, Number(val) || 0);
         up.subtotal = calcTourLine(up);
         return up;
       }),

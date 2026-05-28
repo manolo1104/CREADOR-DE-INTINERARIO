@@ -86,6 +86,9 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       if (idx !== i) return l;
       const up = { ...l, [field]: val };
       if (field === "tourSlug") { const t = TOURS_DB.find(t => t.slug === val); up.tourName = t?.nombre || ""; }
+      if (field === "adults")        up.adults        = Math.max(1, Number(val) || 1);
+      if (field === "childrenMid")   up.childrenMid   = Math.max(0, Number(val) || 0);
+      if (field === "childrenSmall") up.childrenSmall = Math.max(0, Number(val) || 0);
       up.subtotal = calcLine(up);
       return up;
     }));
@@ -112,20 +115,27 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setEditTarget(q);
     setForm({ customerName: q.customerName, customerEmail: q.customerEmail || "", customerPhone: q.customerPhone || "", notes: q.notes || "" });
     const storedLines = (q as any).lineItems as any[] | null;
-    setLines(storedLines?.length
+    const editLines: LineItem[] = storedLines?.length
       ? storedLines.map(l => ({
           ...l,
           childrenMid:   l.childrenMid   ?? (l.children ?? 0),
           childrenSmall: l.childrenSmall ?? 0,
         }))
-      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }]
-    );
+      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }];
+    setLines(editLines);
     const rawPkgs = (q as any).packageItems ?? [];
     const meta = getMeta(rawPkgs);
-    setPackages(cleanPackages(rawPkgs));
+    const editPkgs = cleanPackages(rawPkgs);
+    setPackages(editPkgs);
     setAnticipo(meta.anticipo != null ? String(meta.anticipo) : "");
     setVigencia(meta.vigencia || "7dias");
-    setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
+
+    // Preservar descuento/precio editado: si el total guardado difiere del calculado,
+    // lo cargamos como precio editado para no perderlo al guardar de nuevo.
+    const calc = editLines.reduce((s, l) => s + calcLine(l), 0)
+               + editPkgs.reduce((s, p) => s + calcPackageLine(p), 0);
+    setPriceOverride(q.totalAmount !== calc ? String(q.totalAmount) : "");
+    setDiscountValue(""); setDiscountType("percent");
     setStep(1);
     setModal("edit");
   }
@@ -133,7 +143,9 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   function closeModal() { setModal(null); setEditTarget(null); }
 
   async function saveQuote() {
-    if (!form.customerName || lines.some(l => !l.tourSlug || !l.tourDate)) return;
+    if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
+    if (lines.some(l => !l.tourSlug || !l.tourDate)) { flash("❌ Completa el tour y la fecha en cada línea"); return; }
+    if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
     const anticipoNum  = anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5);
@@ -187,35 +199,49 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
 
   async function expireQ(id: string) {
     if (!confirm("¿Marcar como expirada?")) return;
-    await fetch(`/api/admin/cotizaciones/${id}`, { method: "DELETE" });
-    setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
+    const r = await fetch(`/api/admin/cotizaciones/${id}`, { method: "DELETE" }).catch(() => null);
+    if (r?.ok) {
+      setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
+      flash("✅ Cotización marcada como expirada");
+    } else {
+      flash("❌ No se pudo actualizar la cotización");
+    }
   }
 
   async function convertToReserva(q: TourQuote) {
     if (!confirm(`¿Convertir la cotización ${q.quoteNumber} a una reserva pagada?`)) return;
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
-    const lineItems    = Array.isArray((q as any).lineItems) ? (q as any).lineItems : [];
-    const packageItems = cleanPackages((q as any).packageItems ?? []);
+    const rawPkgs      = (q as any).packageItems ?? [];
+    const meta         = getMeta(rawPkgs);
+    const anticipo     = meta.anticipo != null ? Number(meta.anticipo) : 0;
+    const packageItems = cleanPackages(rawPkgs);
+    // Conservar el _meta de la reserva (método de pago / pickup) en lineItems.
+    const tourLines    = Array.isArray((q as any).lineItems) ? (q as any).lineItems : [];
+    const lineItems    = [
+      { _meta: true, metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla" },
+      ...tourLines,
+    ];
 
     const r = await fetch("/api/admin/reservas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         confirmationNumber,
-        status:        "paid",
-        tourId:        q.tourSlug,
-        tourName:      q.tourName,
-        tourSlug:      q.tourSlug,
-        tourDate:      q.tourDate,
-        adults:        q.adults,
-        children:      q.children,
-        totalAmount:   q.totalAmount,
+        status:         "paid",
+        tourId:         q.tourSlug,
+        tourName:       q.tourName,
+        tourSlug:       q.tourSlug,
+        tourDate:       q.tourDate,
+        adults:         q.adults,
+        children:       q.children,
+        totalAmount:    q.totalAmount,
+        depositoPagado: anticipo, // anticipo acordado en la cotización
         lineItems,
         packageItems,
-        customerName:  q.customerName,
-        customerEmail: q.customerEmail,
-        customerPhone: q.customerPhone,
-        notes:         q.notes,
+        customerName:   q.customerName,
+        customerEmail:  q.customerEmail,
+        customerPhone:  q.customerPhone,
+        notes:          q.notes,
       }),
     });
 
@@ -235,14 +261,18 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
 
   async function hardDeleteQ(id: string) {
     if (!confirm("¿Eliminar completamente esta cotización?")) return;
-    await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" });
-    setQuotes(q => q.filter(x => x.id !== id));
-    flash("✅ Cotización eliminada");
+    const r = await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" }).catch(() => null);
+    if (r?.ok) {
+      setQuotes(q => q.filter(x => x.id !== id));
+      flash("✅ Cotización eliminada");
+    } else {
+      flash("❌ No se pudo eliminar la cotización");
+    }
   }
 
   function downloadPDF(q: TourQuote) {
     const win = window.open("", "_blank");
-    if (!win) return;
+    if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
 
     const rawPkgs  = (q as any).packageItems ?? [];
     const meta     = getMeta(rawPkgs);

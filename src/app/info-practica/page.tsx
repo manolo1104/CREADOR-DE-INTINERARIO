@@ -141,7 +141,7 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         q: "¿Necesito pagar el total al reservar?",
-        a: "No. Puedes pagar el 50% como anticipo para confirmar tu lugar y el resto el día del tour. Consúltanos por WhatsApp para coordinar.",
+        a: "Sí. La reserva se confirma con el pago completo del tour en línea, de forma segura con tarjeta. Si prefieres otro medio de pago, escríbenos por WhatsApp y lo coordinamos.",
       },
     ],
   },

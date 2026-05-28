@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { rateLimit } from "@/lib/rateLimit";
 
 const SHEET_ID  = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_TAB = "Leads"; // nombre de la pestaña en tu Sheet
@@ -25,7 +26,10 @@ async function getSheetsClient() {
 }
 
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { key: "guardar-email", limit: 5, windowMs: 60_000 });
+  if (limited) return limited;
+
   try {
     const { email } = await req.json();
 
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range:         `${SHEET_TAB}!A:C`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW", // RAW evita que un email tipo "=FORMULA()" se ejecute en Sheets
       requestBody: {
         values: [[email, fecha, "Planificador IA"]],
       },

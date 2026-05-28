@@ -51,9 +51,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
     ? "Por definir — te contactaremos para coordinarlo"
     : otroHotel.trim();
 
-  const isDeposit   = booking.paymentMode === "deposit";
-  const chargeAmt   = booking.chargeAmount ?? booking.total;
-  const remaining   = booking.total - chargeAmt;
+  const chargeAmt   = booking.total;
 
   const waDoubtsMsg = encodeURIComponent(
     `Hola, estoy a punto de reservar el tour "${booking.tourName}" y tengo una pregunta antes de pagar.`
@@ -309,14 +307,6 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
           <Lock className="w-4 h-4 text-verde-selva" />
           <h2 className="font-cormorant text-verde-profundo text-xl">Información de pago</h2>
         </div>
-        {isDeposit && (
-          <div className="mb-4 bg-verde-selva/8 border border-verde-selva/20 px-4 py-3">
-            <p className="text-xs font-dm text-verde-selva">
-              ✓ Depósito de reserva (30%) — {formatMXN(chargeAmt)} MXN.
-              El resto ({formatMXN(remaining)} MXN) se paga el día del tour.
-            </p>
-          </div>
-        )}
         <PaymentElement options={{ layout: "tabs" }} />
       </section>
 
@@ -352,7 +342,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
         ) : (
           <>
             <Lock className="w-3.5 h-3.5" />
-            {isDeposit ? `Reservar con ${formatMXN(chargeAmt)} MXN` : `Pagar ${formatMXN(chargeAmt)} MXN`}
+            {`Pagar ${formatMXN(chargeAmt)} MXN`}
           </>
         )}
       </button>
@@ -384,19 +374,20 @@ export default function CheckoutTourPage() {
     }
     setBooking(state);
 
-    const chargeAmt = state.chargeAmount ?? state.total;
-
     fetch("/api/tours/create-payment-intent", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        amount: chargeAmt,
+        // El monto lo calcula el servidor a partir de estos datos (no se envía amount).
         tourDetails: {
-          tourId:   state.tourId,
-          tourName: state.tourName,
-          tourDate: state.tourDate,
-          adults:   state.adults,
-          children: state.children,
+          tourId:        state.tourId,
+          tourSlug:      state.tourSlug,
+          tourName:      state.tourName,
+          tourDate:      state.tourDate,
+          adults:        state.adults,
+          childrenMid:   state.childrenMid,
+          childrenSmall: state.childrenSmall,
+          promoCode:     state.promoCode,
         },
       }),
     })
@@ -430,9 +421,6 @@ export default function CheckoutTourPage() {
       },
     },
   };
-
-  const chargeAmt = booking.chargeAmount ?? booking.total;
-  const isDeposit = booking.paymentMode === "deposit";
 
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">
@@ -521,10 +509,16 @@ export default function CheckoutTourPage() {
                 <span>{booking.adults} adulto{booking.adults !== 1 ? "s" : ""}</span>
                 <span>{formatMXN(booking.priceAdult * booking.adults)}</span>
               </div>
-              {booking.children > 0 && (
+              {booking.childrenMid > 0 && (
                 <div className="flex justify-between text-negro/60">
-                  <span>{booking.children} niño{booking.children !== 1 ? "s" : ""}</span>
-                  <span>{formatMXN(Math.round(booking.priceAdult * 0.6) * booking.children)}</span>
+                  <span>{booking.childrenMid} niño{booking.childrenMid !== 1 ? "s" : ""} 6–10 años</span>
+                  <span>{formatMXN(Math.round(booking.priceAdult * 0.7) * booking.childrenMid)}</span>
+                </div>
+              )}
+              {booking.childrenSmall > 0 && (
+                <div className="flex justify-between text-negro/60">
+                  <span>{booking.childrenSmall} menor{booking.childrenSmall !== 1 ? "es" : ""} de 6</span>
+                  <span>{formatMXN(Math.round(booking.priceAdult * 0.5) * booking.childrenSmall)}</span>
                 </div>
               )}
               {booking.promoDiscount > 0 && (
@@ -537,12 +531,6 @@ export default function CheckoutTourPage() {
                 <span>Total</span>
                 <span className="font-cormorant text-xl text-dorado">{formatMXN(booking.total)} MXN</span>
               </div>
-              {isDeposit && (
-                <div className="flex justify-between text-verde-selva font-medium bg-verde-selva/8 border border-verde-selva/20 px-3 py-2 text-xs">
-                  <span>Cobro ahora (30%)</span>
-                  <span className="font-cormorant text-sm">{formatMXN(chargeAmt)} MXN</span>
-                </div>
-              )}
             </div>
             <div className="border-t border-negro/8 pt-4">
               <p className="text-[9px] tracking-[2px] uppercase text-negro/30 font-dm mb-2">Todo incluido</p>

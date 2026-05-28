@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { hoyMX, addDaysYMD, partsMX, mxMonthStart } from "@/lib/dates";
 import DashboardClient from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const todayStr   = new Date().toISOString().split("T")[0];
-  const nextWeek   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const todayStr   = hoyMX();
+  const nextWeek   = addDaysYMD(todayStr, 7);
+  const { year, month } = partsMX(new Date());
+  const monthStart = mxMonthStart(year, month);
 
   const [todayBookings, upcomingBookings, recentBookings, pendingQuotes, monthBookings, allPending] = await Promise.all([
     prisma.tourBooking.findMany({
@@ -23,8 +25,9 @@ export default async function AdminDashboard() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    // "Ingresos del mes": solo reservas pagadas creadas este mes
     prisma.tourBooking.findMany({
-      where: { status: { not: "cancelled" }, createdAt: { gte: monthStart } },
+      where: { status: "paid", createdAt: { gte: monthStart } },
     }),
     prisma.tourBooking.findMany({ where: { status: "pending" } }),
   ]);

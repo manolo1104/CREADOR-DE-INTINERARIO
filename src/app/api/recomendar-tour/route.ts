@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TOURS_DB } from "@/lib/tours";
 import { TOUR_ACTIVITIES } from "@/lib/tourActivities";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -61,6 +62,9 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, { key: "recomendar-tour", limit: 15, windowMs: 60_000 });
+  if (limited) return limited;
+
   const { origen, grupo, intereses, actividad, destino } = await req.json();
 
   const toursInfo = TOURS_DB.map(

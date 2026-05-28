@@ -57,19 +57,25 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     const r = await fetch(`/api/admin/reservas/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
-    });
-    if (r.ok) {
+    }).catch(() => null);
+    if (r?.ok) {
       setBookings(b => b.map(x => x.id === id ? { ...x, status: newStatus } : x));
       flash("✅ Estado actualizado");
+    } else {
+      flash("❌ No se pudo actualizar el estado");
     }
     setStatusEditing(null);
   }
 
   async function hardDelete(id: string) {
     if (!confirm("¿Eliminar completamente esta reserva? No se puede deshacer.")) return;
-    await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" });
-    setBookings(b => b.filter(x => x.id !== id));
-    flash("✅ Reserva eliminada");
+    const r = await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" }).catch(() => null);
+    if (r?.ok) {
+      setBookings(b => b.filter(x => x.id !== id));
+      flash("✅ Reserva eliminada");
+    } else {
+      flash("❌ No se pudo eliminar la reserva");
+    }
   }
 
   function openEdit(b: TourBooking) {
@@ -133,7 +139,9 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
   }
 
   async function saveNew() {
-    if (!form.customerName || form.lines.some(l => !l.tourSlug || !l.tourDate)) return;
+    if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
+    if (form.lines.some(l => !l.tourSlug || !l.tourDate)) { flash("❌ Completa el tour y la fecha en cada línea"); return; }
+    if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
     const r = await fetch("/api/admin/reservas", {
@@ -160,7 +168,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
 
   function downloadPDF(b: TourBooking) {
     const win = window.open("", "_blank");
-    if (!win) return;
+    if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
 
     const rawLines   = (b as any).lineItems as any[] | null;
     const meta       = rawLines?.find((l: any) => l._meta) || {};
@@ -170,7 +178,9 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
 
     const pkgs: PackageItem[] = (b as any).packageItems ?? [];
-    const deposito   = (b as any).depositoPagado ?? 0;
+    const rawDeposito = (b as any).depositoPagado ?? 0;
+    // Pago online por Stripe = liquidado al 100% aunque no tenga anticipo registrado.
+    const deposito   = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
     const pendiente  = Math.max(0, b.totalAmount - deposito);
     const metodoPago = meta.metodoPago  || "—";
     const folioPago  = meta.folioPago   || "—";
@@ -432,7 +442,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             <tbody>
               {filtered.length === 0 && <tr><td colSpan={9} className="py-12 text-center text-[#1a2e1a]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
-                const deposito = (b as any).depositoPagado ?? 0;
+                const rawDeposito = (b as any).depositoPagado ?? 0;
+                const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
                 const pendiente = Math.max(0, b.totalAmount - deposito);
                 return (
                   <tr key={b.id} className="border-b border-[#1a2e1a]/6 hover:bg-[#f4edd8]/50 transition-colors">
