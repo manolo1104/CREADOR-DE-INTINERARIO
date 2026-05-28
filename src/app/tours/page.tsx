@@ -10,6 +10,7 @@ import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
 import { Award, Bus, Calendar, Camera, CheckCircle2, MessageCircle, Star, Users } from "lucide-react";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
+import { FloatingLeaves } from "@/components/FloatingLeaves";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -140,14 +141,14 @@ export default function ToursPage() {
 
       {/* ── HERO ── */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
-        <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+        <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           Tours con todo incluido
         </p>
         <h1
-          className="font-cormorant font-light text-crema mb-5"
+          className="reveal-up font-cormorant font-light text-crema mb-5"
           style={{ fontSize: "clamp(42px,7vw,80px)" }}
         >
-          Recorridos <em className="text-dorado">Guiados</em>
+          Recorridos <em className="shimmer-gold">Guiados</em>
         </h1>
         <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
           {TOURS_DB.length} tours diseñados para vivir la Huasteca sin preocupaciones.
@@ -213,14 +214,15 @@ export default function ToursPage() {
       <GuideProfile />
 
       {/* ── BADGES ── */}
-      <section className="bg-verde-profundo/20 border-y border-white/6 py-12 px-6">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-8 font-dm">
+      <section className="relative bg-verde-profundo/20 border-y border-white/6 py-12 px-6 overflow-hidden">
+        <FloatingLeaves count={14} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <p className="reveal-fade text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-8 font-dm">
             Por qué elegirnos
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
-            {BADGES.map((item) => (
-              <div key={item.title} className="border border-white/8 bg-negro/30 p-4">
+            {BADGES.map((item, i) => (
+              <div key={item.title} className="reveal-up border border-white/8 bg-negro/30 p-4" style={{ animationDelay: `${i * 55}ms` }}>
                 <item.Icon className="w-6 h-6 text-verde-selva mx-auto mb-2" aria-hidden="true" />
                 <p className="font-cormorant text-crema text-sm mb-0.5 leading-tight">{item.title}</p>
                 <p className="text-[9px] text-crema/40 font-dm tracking-wide">{item.sub}</p>
@@ -375,7 +377,7 @@ export default function ToursPage() {
 
               {/* FAQ */}
               {TOUR_FAQS[tour.id] && TOUR_FAQS[tour.id].length > 0 && (
-                <div className="px-7 py-5 border-t border-white/6">
+                <div className="relative z-10 px-7 py-5 border-t border-white/6">
                   <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
                     Preguntas frecuentes
                   </p>
@@ -460,20 +462,21 @@ export default function ToursPage() {
       </section>
 
       {/* ── CÓMO FUNCIONA ── */}
-      <section className="bg-verde-profundo/20 border-y border-white/6 py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+      <section className="relative bg-verde-profundo/20 border-y border-white/6 py-20 px-6 overflow-hidden">
+        <FloatingLeaves count={16} />
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <p className="reveal-fade text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             Simple y sin complicaciones
           </p>
           <h2
-            className="font-cormorant font-light text-crema text-center mb-14"
+            className="reveal-up font-cormorant font-light text-crema text-center mb-14"
             style={{ fontSize: "clamp(28px,4vw,44px)" }}
           >
-            Cómo <em className="text-dorado">funciona</em>
+            Cómo <em className="shimmer-gold">funciona</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {COMO_FUNCIONA.map((step) => (
-              <div key={step.num} className="text-center">
+            {COMO_FUNCIONA.map((step, i) => (
+              <div key={step.num} className="reveal-up text-center" style={{ animationDelay: `${i * 100}ms` }}>
                 <div
                   className="font-cormorant text-dorado/30 leading-none mb-4"
                   style={{ fontSize: "clamp(60px,8vw,80px)" }}
@@ -490,18 +493,18 @@ export default function ToursPage() {
 
       {/* ── TESTIMONIOS ── */}
       <section className="max-w-5xl mx-auto px-6 py-20">
-        <p className="text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+        <p className="reveal-fade text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           Lo que dicen nuestros viajeros
         </p>
         <h2
-          className="font-cormorant font-light text-crema text-center mb-14"
+          className="reveal-up font-cormorant font-light text-crema text-center mb-14"
           style={{ fontSize: "clamp(28px,4vw,44px)" }}
         >
-          Experiencias <em className="text-dorado">reales</em>
+          Experiencias <em className="shimmer-gold">reales</em>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIOS.map((t) => (
-            <div key={t.nombre} className="border border-white/8 bg-negro/30 p-6 flex flex-col">
+          {TESTIMONIOS.map((t, i) => (
+            <div key={t.nombre} className="reveal-up border border-white/8 bg-negro/30 p-6 flex flex-col" style={{ animationDelay: `${i * 80}ms` }}>
               {/* Estrellas visuales */}
               <div className="flex gap-0.5 mb-3">
                 {[...Array(5)].map((_, i) => (
@@ -606,7 +609,9 @@ export default function ToursPage() {
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section className="py-20 px-6 text-center bg-verde-profundo">
+      <section className="relative py-20 px-6 text-center bg-verde-profundo overflow-hidden">
+        <FloatingLeaves count={18} />
+        <div className="relative z-10">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           ¿Tienes dudas?
         </p>
@@ -632,6 +637,7 @@ export default function ToursPage() {
         <p className="mt-4 text-[10px] text-crema/50 font-dm">
           ✓ Cancelación gratuita con 48h de anticipación · Sin cargos ocultos
         </p>
+        </div>
       </section>
 
     </main>

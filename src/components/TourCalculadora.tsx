@@ -50,25 +50,11 @@ function Counter({
   );
 }
 
-/** ISO date → "lunes 14 de julio de 2026" */
-function formatFecha(iso: string): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("es-MX", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
-}
-
-/** Today in YYYY-MM-DD for min attribute */
-function today(): string {
-  return new Date().toISOString().split("T")[0];
-}
 
 export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Props) {
   const [adultos,     setAdultos]     = useState(2);
   const [ninosMid,    setNinosMid]    = useState(0); // 6–10 años → 70%
   const [ninosSmall,  setNinosSmall]  = useState(0); // <6 años   → 50%
-  const [fecha, setFecha]             = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
@@ -77,10 +63,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
   const ninos = ninosMid + ninosSmall;
   const total = adultos * precioBase + ninosMid * precioNinoMid + ninosSmall * precioNinoSmall;
 
-  const waMsg = (() => {
-    const base = WA_MESSAGES.tour(tourName, adultos, ninos, total);
-    return fecha ? `${base} Fecha deseada: ${formatFecha(fecha)}.` : base;
-  })();
+  const waMsg = WA_MESSAGES.tour(tourName, adultos, ninos, total);
 
   async function handleStripeCheckout() {
     setCheckoutLoading(true);
@@ -98,7 +81,6 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
             tour: tourName,
             adultos: String(adultos),
             ninos: String(ninos),
-            fecha_preferida: fecha || "sin_fecha",
           },
         }),
       });
@@ -122,27 +104,6 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
       <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">
         Booking summary
       </p>
-
-      {/* Fecha */}
-      <div className="space-y-1">
-        <label className="text-xs text-crema/60 font-dm block">
-          Fecha preferida
-        </label>
-        <input
-          type="date"
-          value={fecha}
-          min={today()}
-          onChange={(e) => setFecha(e.target.value)}
-          className="gloss-selector-light w-full border border-crema/25 text-crema font-dm text-xs px-3 py-2
-                     focus:outline-none focus:border-verde-vivo transition-colors
-                     [color-scheme:dark] cursor-pointer"
-        />
-        {fecha && (
-          <p className="text-[10px] text-verde-vivo font-dm capitalize">
-            {formatFecha(fecha)}
-          </p>
-        )}
-      </div>
 
       <Counter label="Adultos" value={adultos} min={1} max={15} onChange={(v) => {
         setAdultos(v);

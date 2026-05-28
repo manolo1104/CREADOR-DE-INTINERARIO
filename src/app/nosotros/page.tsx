@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { NosotrosNumeros } from "@/components/NosotrosNumeros";
+import { NosotrosTimeline } from "@/components/NosotrosTimeline";
 
 const SITE = "https://www.huasteca-potosina.com";
 const GOOGLE_REVIEWS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
@@ -267,11 +270,11 @@ export default function NosotrosPage() {
         <Image src="/imagenes/guias/equipo-guias.jpg" alt="Equipo de guías certificados de Tours Huasteca Potosina" fill className="object-cover object-center" priority quality={85} />
         <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/50 to-negro/40" />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">✦ Quiénes somos</p>
-          <h1 className="font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(36px,6vw,68px)" }}>
-            Una empresa familiar<em className="text-dorado block italic"> nacida en la Huasteca</em>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">✦ Quiénes somos</p>
+          <h1 className="reveal-up font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(36px,6vw,68px)" }}>
+            Una empresa familiar<em className="shimmer-gold block"> nacida en la Huasteca</em>
           </h1>
-          <p className="text-crema/65 font-dm text-sm leading-relaxed max-w-xl mx-auto">
+          <p className="reveal-fade text-crema/65 font-dm text-sm leading-relaxed max-w-xl mx-auto">
             No somos una agencia de escritorio. Somos guías locales que crecimos explorando cada sendero, cascada y comunidad de la región.
           </p>
         </div>
@@ -279,14 +282,7 @@ export default function NosotrosPage() {
 
       {/* NÚMEROS */}
       <section className="bg-white border-b border-negro/8 py-12 px-6">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {NUMEROS.map((n) => (
-            <div key={n.label} className="p-4">
-              <div className="font-cormorant text-dorado font-light leading-none mb-2" style={{ fontSize: "clamp(36px,5vw,52px)" }}>{n.num}</div>
-              <div className="text-[10px] tracking-[2px] uppercase text-negro/65 font-dm">{n.label}</div>
-            </div>
-          ))}
-        </div>
+        <NosotrosNumeros />
       </section>
 
       {/* FUNDADOR & CEO */}
@@ -338,7 +334,7 @@ export default function NosotrosPage() {
 
             {/* Contenido */}
             <div>
-              <h2 className="font-cormorant font-light text-verde-profundo mb-1" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
+              <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-1" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
                 Manolo Covarrubias
               </h2>
               <p className="text-[11px] tracking-[3px] uppercase text-verde-selva font-dm mb-6">
@@ -390,9 +386,9 @@ export default function NosotrosPage() {
       <section className="max-w-4xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Nuestra historia</p>
-            <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
-              De guías locales a <em className="text-dorado">referentes de la región</em>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Nuestra historia</p>
+            <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
+              De guías locales a <em className="shimmer-gold">referentes de la región</em>
             </h2>
             <div className="space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               <p>
@@ -414,33 +410,16 @@ export default function NosotrosPage() {
             </div>
           </div>
 
-          {/* Timeline con micro-CTAs */}
-          <div className="relative pl-8">
-            <div className="absolute left-0 top-0 bottom-0 w-px bg-verde-selva/20" />
-            <div className="space-y-6">
-              {HISTORIA.map((h) => (
-                <div key={h.año} className="relative">
-                  <div className="absolute -left-10 w-3 h-3 rounded-full bg-verde-selva top-1" />
-                  <span className="font-cormorant text-dorado text-base font-light block mb-1">{h.año}</span>
-                  <p className="text-negro/60 font-dm text-sm leading-relaxed mb-1.5">{h.hito}</p>
-                  {h.cta && (
-                    <Link href={h.cta.href} className="inline-flex items-center gap-1 text-[10px] font-dm text-verde-selva hover:text-verde-vivo underline underline-offset-2 transition-colors">
-                      <span className="text-verde-vivo">→</span> {h.cta.label}
-                    </Link>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <NosotrosTimeline />
         </div>
       </section>
 
       {/* VALORES CON FOTOS */}
       <section className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lo que nos define</p>
-          <h2 className="font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Nuestros <em className="text-dorado">valores</em>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lo que nos define</p>
+          <h2 className="reveal-up font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+            Nuestros <em className="shimmer-gold">valores</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {VALORES.map((v) => (
@@ -461,11 +440,12 @@ export default function NosotrosPage() {
       </section>
 
       {/* IMPACTO COMUNITARIO */}
-      <section className="bg-verde-profundo py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Más que turismo</p>
-          <h2 className="font-cormorant font-light text-crema text-center mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Impacto <em className="text-dorado">comunitario</em>
+      <section className="relative bg-verde-profundo py-20 px-6 overflow-hidden">
+        <FloatingLeaves count={18} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Más que turismo</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+            Impacto <em className="shimmer-gold">comunitario</em>
           </h2>
           <p className="text-crema/55 font-dm text-sm text-center mb-12 max-w-lg mx-auto leading-relaxed">
             Cuando reservas con nosotros, tu dinero no va a una corporación. Va directamente a familias de la región y a la conservación de los ecosistemas que hicieron posible tu experiencia.
@@ -495,11 +475,12 @@ export default function NosotrosPage() {
       </section>
 
       {/* EQUIPO */}
-      <section className="py-20 px-6 bg-negro">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Quienes te guiarán</p>
-          <h2 className="font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Nuestro <em className="text-dorado">equipo</em>
+      <section className="relative py-20 px-6 bg-negro overflow-hidden">
+        <FloatingLeaves count={16} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Quienes te guiarán</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+            Nuestro <em className="shimmer-gold">equipo</em>
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {GUIAS.map((g) => (
@@ -535,9 +516,9 @@ export default function NosotrosPage() {
       {/* TESTIMONIOS CON NOMBRE DE GUÍA */}
       <section className="py-20 px-6 bg-crema border-y border-negro/8">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lo que dicen de nuestro equipo</p>
-          <h2 className="font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Mencionan a nuestros guías <em className="text-dorado">por nombre</em>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lo que dicen de nuestro equipo</p>
+          <h2 className="reveal-up font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+            Mencionan a nuestros guías <em className="shimmer-gold">por nombre</em>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {TESTIMONIOS_GUIAS.map((t) => (
@@ -571,9 +552,9 @@ export default function NosotrosPage() {
       {/* CERTIFICACIONES */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Respaldo oficial</p>
-          <h2 className="font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Certificaciones y <em className="text-dorado">garantías</em>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Respaldo oficial</p>
+          <h2 className="reveal-up font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+            Certificaciones y <em className="shimmer-gold">garantías</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CERTIFICACIONES.map((c) => (
@@ -631,8 +612,8 @@ export default function NosotrosPage() {
       {/* CTA */}
       <section className="py-20 px-6 text-center bg-crema">
         <div className="max-w-2xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Hablemos</p>
-          <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Hablemos</p>
+          <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
             ¿Preguntas para nuestro equipo?
           </h2>
           <p className="text-negro/55 font-dm text-sm mb-10 leading-relaxed">
@@ -650,10 +631,11 @@ export default function NosotrosPage() {
       </section>
 
       {/* TOURS GRID */}
-      <section className="bg-negro py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Disponibles ahora</p>
-          <h2 className="font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>Reserva con nosotros</h2>
+      <section className="relative bg-negro py-20 px-6 overflow-hidden">
+        <FloatingLeaves count={14} />
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Disponibles ahora</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>Reserva con nosotros</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {TOURS_DB.map((tour) => (
               <article key={tour.slug} className="group flex flex-col border border-white/10 hover:border-verde-vivo/50 bg-negro/60 transition-colors duration-300 overflow-hidden">

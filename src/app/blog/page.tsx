@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogFilters } from "@/components/BlogFilters";
+import { FloatingLeaves } from "@/components/FloatingLeaves";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -81,11 +82,15 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: itemListSchema }} />
-      <main className="min-h-screen bg-negro pt-24 pb-20">
+      <main className="relative min-h-screen bg-negro pt-24 pb-20">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          <FloatingLeaves count={20} />
+        </div>
+        <div className="relative z-10">
         {/* Hero */}
         <section className="max-w-5xl mx-auto px-6 text-center mb-12">
-          <p className="text-[10px] tracking-[4px] uppercase text-lima/70 font-dm mb-4">✦ Huasteca Potosina · Blog de Viajes</p>
-          <h1 className="font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(32px,5vw,60px)" }}>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-lima/70 font-dm mb-4">✦ Huasteca Potosina · Blog de Viajes</p>
+          <h1 className="reveal-up font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(32px,5vw,60px)" }}>
             Guías & Rutas para Explorar<br />
             <span className="text-lima">la Huasteca Potosina</span>
           </h1>
@@ -111,12 +116,13 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
         {/* CTA final */}
         <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-white/8">
           <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ Tecnología IA</p>
-          <h2 className="font-cormorant font-light text-crema text-3xl mb-4">¿Listo para planear tu viaje?</h2>
+          <h2 className="reveal-up font-cormorant font-light text-crema text-3xl mb-4">¿Listo para planear tu viaje?</h2>
           <p className="text-crema/50 font-dm font-light mb-8">Dinos cuántos días tienes y la IA crea tu itinerario personalizado en 2 minutos. Gratis, sin registro.</p>
           <Link href="/recomendar" className="inline-flex items-center gap-2 bg-verde-selva text-crema px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors">
             Encontrar mi tour perfecto →
           </Link>
         </section>
+        </div>
       </main>
     </>
   );

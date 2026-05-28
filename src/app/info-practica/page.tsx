@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { FAQAccordion } from "@/components/FAQAccordion";
+import { FloatingLeaves } from "@/components/FloatingLeaves";
 import type { FAQCategory } from "@/components/FAQAccordion";
 import { ClimaWidget } from "@/components/ClimaWidget";
 import { LeadMagnetForm } from "@/components/LeadMagnetForm";
@@ -49,7 +50,7 @@ function Section({
         <div className="flex items-center gap-3 mb-8">
           <Icon className="w-7 h-7 text-verde-selva flex-shrink-0" aria-hidden="true" />
           <h2
-            className="font-cormorant font-light text-crema"
+            className="reveal-up font-cormorant font-light text-crema"
             style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
           >
             {title}
@@ -182,16 +183,16 @@ export default function InfoPracticaPage() {
 
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
-        <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+        <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           Todo lo que necesitas saber
         </p>
         <h1
-          className="font-cormorant font-light text-crema mb-5"
+          className="reveal-up font-cormorant font-light text-crema mb-5"
           style={{ fontSize: "clamp(40px,7vw,76px)" }}
         >
-          Guía Práctica de <em className="text-dorado">Viaje</em>
+          Guía Práctica de <em className="shimmer-gold">Viaje</em>
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-8">
+        <p className="reveal-fade text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-8">
           Todo lo que necesitas para llegar, moverte, hospedarte y disfrutar la Huasteca Potosina
           sin sorpresas desagradables.
         </p>
@@ -1183,11 +1184,11 @@ export default function InfoPracticaPage() {
                 ✦ Guía descargable gratuita
               </p>
               <h2
-                className="font-cormorant font-light text-crema mb-4"
+                className="reveal-up font-cormorant font-light text-crema mb-4"
                 style={{ fontSize: "clamp(26px,3.5vw,42px)" }}
               >
                 Llévate la guía completa en{" "}
-                <em className="text-dorado">PDF</em>
+                <em className="shimmer-gold">PDF</em>
               </h2>
               <p className="text-crema/55 font-dm text-sm mb-6 leading-relaxed">
                 Mapa de la región, checklist de equipaje, presupuesto detallado y los 3 itinerarios
@@ -1221,12 +1222,14 @@ export default function InfoPracticaPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6">
+      <section className="relative py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6 overflow-hidden">
+        <FloatingLeaves count={14} />
+        <div className="relative z-10">
         <h2
-          className="font-cormorant font-light text-crema mb-4"
+          className="reveal-up font-cormorant font-light text-crema mb-4"
           style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
         >
-          ¿Listo para <em className="text-dorado">planear tu viaje?</em>
+          ¿Listo para <em className="shimmer-gold">planear tu viaje?</em>
         </h2>
         <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
           Usa nuestro planificador IA para crear un itinerario personalizado con toda la
@@ -1245,6 +1248,7 @@ export default function InfoPracticaPage() {
           >
             ¿Qué tour es para mí? →
           </Link>
+        </div>
         </div>
       </section>
     </main>

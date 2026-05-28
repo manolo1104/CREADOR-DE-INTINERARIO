@@ -144,19 +144,15 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <span className="text-verde-vivo/70 font-medium">✦ Salidas diarias</span>
         </div>
 
-        {/* Precio con tooltip */}
-        <div className="mb-4 relative group/price">
+        {/* Precio */}
+        <div className="mb-4">
           <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-0.5">
             desde
           </p>
-          <p className="font-cormorant text-dorado text-2xl font-normal leading-none cursor-default">
+          <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
             ${t.precio.toLocaleString("es-MX")}
             <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN / persona</span>
           </p>
-          <div className="absolute bottom-full left-0 mb-2 px-3 py-1.5 bg-dorado text-negro text-[10px] font-dm tracking-[0.5px] whitespace-nowrap opacity-0 group-hover/price:opacity-100 transition-opacity duration-200 pointer-events-none rounded shadow-lg z-20">
-            Transporte, guía y desayuno incluidos
-            <div className="absolute top-full left-4 border-4 border-transparent border-t-dorado" />
-          </div>
         </div>
 
         {/* Guía asignado */}
