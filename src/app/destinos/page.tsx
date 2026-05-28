@@ -57,16 +57,16 @@ export default function DestinosPage() {
     <main className="min-h-screen">
       {/* Hero — rendered on server, no interactivity */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
-        <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+        <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           San Luis Potosí · México
         </p>
         <h1
-          className="font-cormorant font-light text-crema mb-5"
+          className="reveal-up font-cormorant font-light text-crema mb-5"
           style={{ fontSize: "clamp(42px,7vw,80px)" }}
         >
-          Explora los <em className="text-dorado">Destinos</em>
+          Explora los <em className="shimmer-gold">Destinos</em>
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed">
+        <p className="reveal-up text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed" style={{ animationDelay: "80ms" }}>
           {DESTINOS_DB.length} destinos únicos en la Huasteca Potosina. Cascadas, pozas, cañones,
           arte y cultura ancestral en uno de los paisajes más diversos de México.
         </p>

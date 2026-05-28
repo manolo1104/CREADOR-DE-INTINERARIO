@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import ExperienciasClient from "./ExperienciasClient";
+import { FloatingLeaves } from "@/components/FloatingLeaves";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -108,16 +109,16 @@ export default function ExperienciasPage() {
 
       {/* ── HERO ── */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
-        <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+        <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           ✦ Huasteca Potosina · San Luis Potosí ✦
         </p>
         <h1
-          className="font-cormorant font-light text-crema mb-4"
+          className="reveal-up font-cormorant font-light text-crema mb-4"
           style={{ fontSize: "clamp(40px,7vw,76px)" }}
         >
-          Experiencias en la <em className="text-dorado">Huasteca Potosina</em>
+          Experiencias en la <em className="shimmer-gold">Huasteca Potosina</em>
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed">
+        <p className="reveal-up text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed" style={{ animationDelay: "80ms" }}>
           {DESTINOS_DB.length} destinos únicos — cascadas turquesas, aventura extrema, arte surrealista y aguas
           termales. Una experiencia para cada tipo de viajero.
         </p>
@@ -143,15 +144,17 @@ export default function ExperienciasPage() {
       <ExperienciasClient />
 
       {/* ── CTA TOURS ── */}
-      <section className="py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6">
+      <section className="relative py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6 overflow-hidden">
+        <FloatingLeaves count={12} />
+        <div className="relative z-10">
         <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
           ✦ Tours con todo incluido
         </span>
         <h2
-          className="font-cormorant font-light text-crema mb-4"
+          className="reveal-up font-cormorant font-light text-crema mb-4"
           style={{ fontSize: "clamp(26px,4vw,44px)" }}
         >
-          ¿Listo para <em className="text-dorado">reservar?</em>
+          ¿Listo para <em className="shimmer-gold">reservar?</em>
         </h2>
         <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
           Transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas.
@@ -163,6 +166,7 @@ export default function ExperienciasPage() {
         >
           Ver todos los tours →
         </Link>
+        </div>
       </section>
 
       {/* ── FAQ ── */}
@@ -192,8 +196,9 @@ export default function ExperienciasPage() {
       </section>
 
       {/* ── LEAD MAGNET ── */}
-      <section className="py-20 px-6 bg-verde-profundo border-t border-white/8">
-        <div className="max-w-2xl mx-auto text-center">
+      <section className="relative py-20 px-6 bg-verde-profundo border-t border-white/8 overflow-hidden">
+        <FloatingLeaves count={18} />
+        <div className="relative z-10 max-w-2xl mx-auto text-center">
           <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
             ✦ Guía PDF Gratuita
           </span>

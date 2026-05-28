@@ -9,6 +9,8 @@ import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
 import { StatTile } from "@/components/StatTile";
 import { MagneticButton } from "@/components/MagneticButton";
+import { HeroStats } from "@/components/HeroStats";
+import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { prisma } from "@/lib/prisma";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
@@ -190,19 +192,23 @@ export default async function HomePage() {
 
           {/* CTAs */}
           <div className="flex flex-wrap gap-4 justify-center mb-10">
-            <Link
-              href="/destinos"
-              className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300"
-            >
-              Explorar Destinos
-            </Link>
-            <Link
-              href="/recomendar"
-              className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5"
-            >
-              <span>✦ Recomendador IA →</span>
-              <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">2 minutos · Gratuito</span>
-            </Link>
+            <MagneticButton>
+              <Link
+                href="/destinos"
+                className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300 block"
+              >
+                Explorar Destinos
+              </Link>
+            </MagneticButton>
+            <MagneticButton>
+              <Link
+                href="/recomendar"
+                className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5"
+              >
+                <span>✦ Recomendador IA →</span>
+                <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">2 minutos · Gratuito</span>
+              </Link>
+            </MagneticButton>
           </div>
 
           {/* Urgency widget */}
@@ -210,24 +216,8 @@ export default async function HomePage() {
             <UrgencyWidget />
           </div>
 
-          {/* Stats row */}
-          <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">
-            {[
-              { num: String(DESTINOS_DB.length), label: "Destinos Únicos" },
-              { num: "Salidas",                  label: "Todos los días" },
-              { num: "Máx. 12",                  label: "Personas por grupo" },
-              { num: "Guías",                    label: "Certificados NOM-09" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <span className="font-cormorant font-light text-dorado block leading-none" style={{ fontSize: "clamp(28px,4vw,40px)" }}>
-                  {s.num}
-                </span>
-                <span className="text-[9px] tracking-[3px] uppercase text-crema/40 mt-2 block font-dm">
-                  {s.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          {/* Stats row — shimmer dorado + counter-up */}
+          <HeroStats destinosCount={DESTINOS_DB.length} />
         </div>
       </section>
 
@@ -294,7 +284,7 @@ export default async function HomePage() {
             Explora la región
           </p>
           <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
-            Nuestros <em className="text-dorado">Tours</em>
+            Nuestros <em className="shimmer-gold">Tours</em>
           </h2>
           <div className="heading-underline" aria-hidden="true" />
           <p className="text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
@@ -309,12 +299,14 @@ export default async function HomePage() {
         </div>
 
         <div className="text-center mt-10">
-          <Link
-            href="/tours"
-            className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200"
-          >
-            Ver todos los tours
-          </Link>
+          <MagneticButton className="inline-block">
+            <Link
+              href="/tours"
+              className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200"
+            >
+              Ver todos los tours
+            </Link>
+          </MagneticButton>
         </div>
       </section>
 
@@ -324,7 +316,7 @@ export default async function HomePage() {
           <div className="text-center mb-12">
             <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Lo que dicen los viajeros</p>
             <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
-              492 Reseñas · <em className="text-dorado">4.9 estrellas</em>
+              492 Reseñas · <em className="shimmer-gold">4.9 estrellas</em>
             </h2>
             <div className="flex justify-center gap-1 mt-3 star-group">
               {[...Array(5)].map((_, i) => (
@@ -430,7 +422,7 @@ export default async function HomePage() {
           <div className="text-center mb-12">
             <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Del blog</p>
             <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
-              Guías & <em className="text-dorado">Rutas de Viaje</em>
+              Guías & <em className="shimmer-gold">Rutas de Viaje</em>
             </h2>
             <div className="heading-underline" aria-hidden="true" />
           </div>
@@ -500,7 +492,7 @@ export default async function HomePage() {
               ¿Por qué la Huasteca?
             </p>
             <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
-              Una región que{" "}<em className="text-dorado">te cambia</em>
+              Una región que{" "}<em className="shimmer-gold">te cambia</em>
             </h2>
             <div className="space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               <p>
@@ -544,7 +536,7 @@ export default async function HomePage() {
             ✦ Tecnología IA
           </span>
           <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
-            Tu viaje perfecto,{" "}<em className="text-dorado">diseñado en 2 minutos</em>
+            Tu viaje perfecto,{" "}<em className="shimmer-gold">diseñado en 2 minutos</em>
           </h2>
           <p className="text-negro/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
             Dinos cuántos días tienes, tu presupuesto y qué te emociona. La IA genera un itinerario
@@ -575,14 +567,16 @@ export default async function HomePage() {
       </section>
 
       {/* ── LEAD MAGNET — CAPTURA DE EMAIL ── */}
-      <section aria-label="Descarga la guía gratuita de la Huasteca Potosina" className="py-20 px-6 bg-verde-profundo">
+      <section aria-label="Descarga la guía gratuita de la Huasteca Potosina" className="relative py-20 px-6 bg-verde-profundo overflow-hidden">
+        <FloatingLeaves />
         <div className="max-w-3xl mx-auto text-center">
+          <div className="relative z-10">
           <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
             ✦ Guía PDF Gratuita
           </span>
           <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
             Los 5 mejores días para visitar{" "}
-            <em className="text-dorado">la Huasteca Potosina en 2026</em>
+            <em className="shimmer-gold">la Huasteca Potosina en 2026</em>
           </h2>
           <p className="text-crema/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
             Con itinerarios detallados, precios actualizados y consejos locales que no encontrarás en ningún blog.
@@ -597,6 +591,7 @@ export default async function HomePage() {
 
           <div className="max-w-lg mx-auto">
             <LeadMagnetForm withName={true} fuente="Guía PDF homepage" />
+          </div>
           </div>
         </div>
       </section>
@@ -689,8 +684,9 @@ export default async function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-verde-profundo border-t border-white/8 py-16 px-6">
-        <div className="max-w-6xl mx-auto">
+      <footer className="relative bg-verde-profundo border-t border-white/8 py-16 px-6 overflow-hidden">
+        <FloatingLeaves count={16} />
+        <div className="relative z-10 max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div>
               <div className="mb-4">

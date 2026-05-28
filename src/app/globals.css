@@ -363,6 +363,58 @@ body {
 .star-group:hover .star-icon:nth-child(4) { animation-delay: 105ms; }
 .star-group:hover .star-icon:nth-child(5) { animation-delay: 140ms; }
 
+/* ── Scroll reveal — animaciones sutiles al entrar al viewport ── */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes reveal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes reveal-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes reveal-right {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* CSS scroll-driven — Chrome/Edge 115+ sin JS */
+.reveal-up {
+  animation: reveal-up 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-timeline: view();
+  animation-range: entry 2% entry 30%;
+}
+.reveal-fade {
+  animation: reveal-fade 0.7s ease both;
+  animation-timeline: view();
+  animation-range: entry 2% entry 30%;
+}
+.reveal-left {
+  animation: reveal-left 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-timeline: view();
+  animation-range: entry 2% entry 30%;
+}
+.reveal-right {
+  animation: reveal-right 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-timeline: view();
+  animation-range: entry 2% entry 30%;
+}
+/* Variantes de delay para stagger sutil */
+.reveal-d1 { animation-delay: 80ms; }
+.reveal-d2 { animation-delay: 160ms; }
+.reveal-d3 { animation-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-up, .reveal-fade, .reveal-left, .reveal-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ── Input focus golden ring ── */
 input[type="email"]:focus,
 input[type="text"]:focus,
