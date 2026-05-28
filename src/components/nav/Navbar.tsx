@@ -48,6 +48,13 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [mobileOpen]);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--navbar-offset",
+      navbarVisible ? "64px" : "0px"
+    );
+  }, [navbarVisible]);
+
   // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);

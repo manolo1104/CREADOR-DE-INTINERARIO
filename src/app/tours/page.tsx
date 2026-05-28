@@ -192,7 +192,7 @@ export default function ToursPage() {
       </section>
 
       {/* ── ANCLAS DE NAVEGACIÓN ── */}
-      <nav aria-label="Ir directamente al tour" className="sticky top-16 z-40 bg-negro/98 backdrop-blur-md border-b border-white/8 py-3 px-6 overflow-x-auto scrollbar-none">
+      <nav aria-label="Ir directamente al tour" className="sticky sticky-subnav z-40 bg-negro/98 backdrop-blur-md border-b border-white/8 py-3 px-6 overflow-x-auto scrollbar-none" style={{ top: "var(--navbar-offset, 64px)" }}>
         <ul className="flex items-center justify-center gap-1 min-w-max mx-auto">
           {TOURS_DB.map((t) => (
             <li key={t.id}>

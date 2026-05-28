@@ -13,6 +13,12 @@
   --arena: #e6d4b0;
   --dorado: #c4882a;
   --terracota: #9a4a1e;
+  --navbar-offset: 64px;
+}
+
+/* Sticky subnavs that track navbar hide/show */
+.sticky-subnav {
+  transition: top 0.3s ease;
 }
 
 * { box-sizing: border-box; }

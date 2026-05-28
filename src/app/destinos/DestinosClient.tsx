@@ -35,7 +35,7 @@ export default function DestinosClient() {
   return (
     <>
       {/* Filter Bar */}
-      <div className="sticky top-16 z-30 bg-negro/90 backdrop-blur-md border-b border-white/8 py-4 px-6">
+      <div className="sticky sticky-subnav z-30 bg-negro/90 backdrop-blur-md border-b border-white/8 py-4 px-6" style={{ top: "var(--navbar-offset, 64px)" }}>
         <div className="max-w-6xl mx-auto flex gap-2 overflow-x-auto scrollbar-none justify-start md:justify-center">
           {FILTROS.map((f) => (
             <button
