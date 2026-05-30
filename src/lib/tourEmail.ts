@@ -146,7 +146,7 @@ export function buildTourEmailHtml(data: {
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
                   ${formatDate(data.tourDate)}
                 </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Salida: 5:30 AM desde tu hotel</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Salida: 8:30–9:00 AM desde tu hotel</p>
               </td>
               <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
                 <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">

@@ -86,7 +86,7 @@ export const TOUR_REVIEWS: Record<string, Review[]> = {
       fecha:     "Febrero 2025",
       foto:      "/imagenes/reviews/reviewer-1.jpg",
       texto:
-        "Salimos muy temprano y valió cada minuto de sueño perdido. Ver a los pericos salir del sótano al amanecer es algo que no te puedo describir con palabras. El guía conocía cada rincón y nos llevó al mirador perfecto para la foto. 10/10.",
+        "La canoa por el Cañón del Tampaón hasta la Cascada de Tamul es algo que no te puedo describir con palabras. El guía conocía cada rincón y nos llevó al mirador perfecto para la foto. Asomarse al abismo del Sótano de las Huahuas también impresiona muchísimo. 10/10.",
     },
     {
       nombre:    "Andrés Villanueva",

@@ -56,7 +56,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿A qué hora es la salida?",
-      a: "Salimos a las 5:30 AM desde Ciudad Valles para llegar al Sótano al amanecer.",
+      a: "Salimos entre las 8:30 y las 9:00 AM desde Ciudad Valles. Confirmamos la hora exacta de tu recogida al reservar.",
     },
     {
       q: "¿Qué pasa si llueve?",

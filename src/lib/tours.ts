@@ -138,12 +138,12 @@ export const TOURS_DB: Tour[] = [
     precioOriginal:   2100,
     urgencia:         "El más reservado — se llena los fines de semana",
     descripcion:
-      "Presencia el vuelo circular de miles de pericos al amanecer en el Sótano de las Huahuas, navega en canoa por el Cañón del Tampaón hasta la cascada más alta de México y termina sumergiéndote en la magia subterránea de la Cueva del Agua. Una jornada que redefine lo que la naturaleza puede ofrecerte.",
+      "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, asómate al imponente abismo del Sótano de las Huahuas y termina sumergiéndote en la magia subterránea de la Cueva del Agua. Una jornada que redefine lo que la naturaleza puede ofrecerte.",
     descripcionLarga:
-      "El amanecer más épico de la Huasteca comienza antes de que salga el sol. Mientras México todavía duerme, estarás de pie en el borde del Sótano de las Huahuas, presenciando uno de los espectáculos naturales más extraordinarios de América: miles de pericos y loros que emergen en espiral desde las profundidades de la tierra, tiñendo el cielo de verde y amarillo en un vuelo circular que dura más de cuarenta minutos.\n\nDespués, la canoa te llevará por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de México con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla. Nuestros guías conocen el ángulo exacto y la hora precisa para que la foto sea perfecta.\n\nCerramos en la Cueva del Agua, un cenote subterráneo donde la luz entra en haces perfectos y el agua alcanza tonalidades de turquesa imposible. Quienes hacen este tour siempre vuelven. Y siempre traen a alguien más.",
+      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— para encadenar tres escenarios naturales que parecen de otro planeta, uno tras otro, con la mejor luz sobre el agua turquesa.\n\nLa canoa te llevará por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de México con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla. En el trayecto te asomas también al borde del Sótano de las Huahuas, un abismo de 512 metros que corta la respiración. Nuestros guías conocen el ángulo exacto y la hora precisa para que la foto sea perfecta.\n\nCerramos en la Cueva del Agua, un cenote subterráneo donde la luz entra en haces perfectos y el agua alcanza tonalidades de turquesa imposible. Quienes hacen este tour siempre vuelven. Y siempre traen a alguien más.",
     destinos: [
-      "Sótano de las Huahuas + show de pericos",
       "Cascada de Tamul (paseo en canoa)",
+      "Sótano de las Huahuas (mirador al abismo de 512 m)",
       "Cenote Cueva del Agua",
     ],
     incluye: [
@@ -159,7 +159,7 @@ export const TOURS_DB: Tour[] = [
     imagen_hero: "/imagenes/tours/tamul/hero.jpg",
     imagenes: [
       "/imagenes/tours/tamul/hero.jpg",
-      "/imagenes/tours/tamul/gallery-5.jpg",
+      "/imagenes/tours/tamul/gallery-3.jpg",
     ],
     gallery: [
       { src: "/imagenes/tours/tamul/hero.jpg",      alt: "Vista de la Cascada de Tamul desde el cañón — turistas con chalecos", hasRealPeople: true },
@@ -167,7 +167,6 @@ export const TOURS_DB: Tour[] = [
       { src: "/imagenes/tours/tamul/gallery-2.jpg", alt: "Clavado desde las piedras en el Cañón del Tampaón", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-3.jpg", alt: "Canoa feliz en el Cañón del Tampaón — la Cascada de Tamul al fondo", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-4.jpg", alt: "Guerra de agua entre canoas en el río Tampaón", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-5.jpg", alt: "Sótano de las Huahuas — miles de pericos emergiendo en espiral al amanecer" },
       { src: "/imagenes/tours/tamul/gallery-6.jpg", alt: "Asomándose al borde del Sótano de las Huahuas — 512 metros de profundidad", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-extra-1.jpg", alt: "Viajera sentada en las rocas del Cañón del Tampaón señalando la Cascada de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-extra-2.jpg", alt: "Aguas turquesas del Río Tampaón con vegetación colgante — Expedición Tamul" },

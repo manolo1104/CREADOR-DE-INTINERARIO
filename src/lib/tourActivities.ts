@@ -19,8 +19,8 @@ NOTA: Es una actividad enfocada (3–5 h), no un tour de día completo. El equip
 
   "tour-tamul": `
 Momentos que vas a vivir:
-- Antes de que salga el sol, te asomas al borde del Sótano de las Huahuas: un agujero en la tierra de 512 metros de profundidad. De repente, miles de pericos emergen en espiral desde las profundidades — el ruido, el movimiento, el color verde invadiendo el cielo durante 40 minutos. Es imposible no quedarse sin palabras.
 - Subes a una canoa de madera con remos y navegas por el Cañón del Tampaón: paredes de roca caliza de 80 metros a cada lado, silencio absoluto roto solo por el agua. Los guías a veces provocan "guerras de agua" entre lanchas — y nadie sale seco.
+- En el trayecto te asomas al borde del Sótano de las Huahuas: un agujero en la tierra de 512 metros de profundidad que corta la respiración solo de mirarlo hacia abajo.
 - Al fondo del cañón aparece la Cascada de Tamul: 105 metros de caída libre sobre el río, la más alta de México. Te puedes meter al agua hasta los pies y sentir la vibración del agua en el pecho.
 - En la Cueva del Agua, el agua turquesa brilla con luz propia. Los más atrevidos se lanzan desde las piedras al agua — 3 metros de caída libre que se sienten como 10.`,
 
