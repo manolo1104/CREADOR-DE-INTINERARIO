@@ -13,6 +13,70 @@ export const GOOGLE_MAPS_REVIEWS_URL =
 
 /** Keyed by tour.id */
 export const TOUR_REVIEWS: Record<string, Review[]> = {
+  "tour-rzr-xilitla": [
+    {
+      nombre:    "Andrés Patiño",
+      ciudad:    "Querétaro, QRO",
+      rating:    5,
+      iniciales: "AP",
+      fecha:     "Marzo 2025",
+      foto:      "/imagenes/reviews/reviewer-2.jpg",
+      texto:
+        "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. El guía nos abrió la ruta todo el tiempo y nunca sentimos inseguridad. La cascada Nanacatli al final es un premiazo. ¡Repetiría mil veces!",
+    },
+    {
+      nombre:    "Karla Méndez",
+      ciudad:    "Monterrey, NL",
+      rating:    5,
+      iniciales: "KM",
+      fecha:     "Febrero 2025",
+      foto:      "/imagenes/reviews/reviewer-8.jpg",
+      texto:
+        "Nunca había manejado un todoterreno y me daba nervios, pero el briefing y el guía me dieron toda la confianza. Terminé manejando los cruces de río como si nada. Súper divertido y muy bien organizado. Lleven ropa de cambio porque salen empapados de lodo.",
+    },
+    {
+      nombre:    "Luis Carranza",
+      ciudad:    "Ciudad de México",
+      rating:    5,
+      iniciales: "LC",
+      fecha:     "Abril 2025",
+      foto:      "/imagenes/reviews/reviewer-15.jpg",
+      texto:
+        "Fuimos cuatro amigos y la pasamos increíble. La ruta por la selva es preciosa y los tramos de barro le ponen la adrenalina perfecta. Llegar a una cascada escondida a la que no llegas de otra forma vale totalmente la pena. Muy recomendable.",
+    },
+  ],
+  "tour-rappel-tamul": [
+    {
+      nombre:    "Diego Salas",
+      ciudad:    "Querétaro, QRO",
+      rating:    5,
+      iniciales: "DS",
+      fecha:     "Marzo 2025",
+      foto:      "/imagenes/reviews/reviewer-7.jpg",
+      texto:
+        "Nunca había hecho rappel en mi vida y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo paso a paso. El rocío de la cascada pegándote mientras bajas es algo que no se me va a olvidar. Las fotos con dron quedaron de revista.",
+    },
+    {
+      nombre:    "Mariana Cabrera",
+      ciudad:    "Ciudad de México",
+      rating:    5,
+      iniciales: "MC",
+      fecha:     "Febrero 2025",
+      foto:      "/imagenes/reviews/reviewer-12.jpg",
+      texto:
+        "La experiencia más adrenalínica que he hecho. Me daba pánico al principio pero el guía me dio toda la confianza. Estar colgada con el río turquesa abajo y la cascada al lado es indescriptible. El video que te dan al final lo he visto como veinte veces.",
+    },
+    {
+      nombre:    "Roberto Fuentes",
+      ciudad:    "Tampico, TAMPS",
+      rating:    5,
+      iniciales: "RF",
+      fecha:     "Abril 2025",
+      foto:      "/imagenes/reviews/reviewer-19.jpg",
+      texto:
+        "Equipo en excelente estado y guías muy profesionales. Llegamos por nuestra cuenta al embarcadero, súper fácil de encontrar. Vale cada peso. Si vienes a la Huasteca y te gusta la aventura, este rappel es obligatorio.",
+    },
+  ],
   "tour-tamul": [
     {
       nombre:    "Sandra Morales",

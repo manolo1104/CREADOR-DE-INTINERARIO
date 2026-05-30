@@ -5,8 +5,23 @@ import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
+/** Pulls clean JSON out of a model response that may include ```json fences or prose. */
+function extractJson(raw: string): string {
+  let s = raw.trim();
+  // Drop leading/trailing markdown code fences if present.
+  s = s.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const first = s.indexOf("{");
+  const last  = s.lastIndexOf("}");
+  if (first !== -1 && last !== -1 && last > first) {
+    return s.slice(first, last + 1);
+  }
+  return s;
+}
+
 function fallbackMatch(intereses: string[], grupo: string, actividad: string, destino: string) {
   const scores: Record<string, number> = {
+    "tour-rzr-xilitla":  0,
+    "tour-rappel-tamul": 0,
     "tour-tamul":        0,
     "tour-edward-james": 0,
     "tour-meco":         0,
@@ -15,43 +30,66 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   };
 
   if (intereses.some((i) => ["Fotografía perfecta", "Cascadas turquesas"].includes(i))) {
-    scores["tour-meco"]        += 3;
-    scores["tour-minas-micos"] += 2;
+    scores["tour-meco"]         += 3;
+    scores["tour-minas-micos"]  += 2;
+    scores["tour-rappel-tamul"] += 1;
   }
   if (intereses.includes("Aventura extrema")) {
-    scores["tour-tamul"]       += 3;
-    scores["tour-puente-dios"] += 2;
+    scores["tour-rappel-tamul"] += 4;
+    scores["tour-tamul"]        += 3;
+    scores["tour-rzr-xilitla"]  += 3;
+    scores["tour-puente-dios"]  += 2;
   }
   if (intereses.some((i) => ["Arte y cultura"].includes(i))) {
     scores["tour-edward-james"] += 3;
   }
   if (intereses.includes("Relax total")) {
-    scores["tour-minas-micos"] += 2;
-    scores["tour-meco"]        += 1;
+    scores["tour-minas-micos"]  += 2;
+    scores["tour-meco"]         += 1;
+    scores["tour-rappel-tamul"] -= 2;
+    scores["tour-rzr-xilitla"]  -= 1;
   }
   if (grupo === "Familia con niños") {
-    scores["tour-minas-micos"] += 2;
-    scores["tour-meco"]        += 1;
-    scores["tour-tamul"]       -= 1;
+    scores["tour-minas-micos"]  += 2;
+    scores["tour-rzr-xilitla"]  += 2;
+    scores["tour-meco"]         += 1;
+    scores["tour-tamul"]        -= 1;
+    scores["tour-rappel-tamul"] -= 3;
   }
   if (grupo === "Con amigos") {
-    scores["tour-tamul"]       += 2;
-    scores["tour-puente-dios"] += 1;
+    scores["tour-rzr-xilitla"]  += 3;
+    scores["tour-rappel-tamul"] += 2;
+    scores["tour-tamul"]        += 2;
+    scores["tour-puente-dios"]  += 1;
   }
   if (grupo === "En pareja") {
     scores["tour-edward-james"] += 1;
     scores["tour-meco"]         += 1;
+    scores["tour-rappel-tamul"] += 1;
+    scores["tour-rzr-xilitla"]  += 1;
+  }
+  if (grupo === "Solo/Sola") {
+    scores["tour-rappel-tamul"] += 1;
   }
   if (actividad === "Intenso") {
-    scores["tour-tamul"]       += 2;
-    scores["tour-puente-dios"] += 1;
+    scores["tour-rappel-tamul"] += 3;
+    scores["tour-rzr-xilitla"]  += 2;
+    scores["tour-tamul"]        += 2;
+    scores["tour-puente-dios"]  += 1;
+  }
+  if (actividad === "Moderado") {
+    scores["tour-rzr-xilitla"]  += 1;
   }
   if (actividad === "Tranquilo") {
-    scores["tour-minas-micos"] += 2;
-    scores["tour-edward-james"]+= 1;
+    scores["tour-minas-micos"]  += 2;
+    scores["tour-edward-james"] += 1;
+    scores["tour-rappel-tamul"] -= 2;
+    scores["tour-rzr-xilitla"]  -= 1;
   }
   // Bonus for matching destino
-  if (destino.includes("Tamul") || destino.includes("Huahuas"))    scores["tour-tamul"]       += 4;
+  if (destino.includes("RZR") || destino.includes("off-road") || destino.includes("Nanacatli")) scores["tour-rzr-xilitla"] += 4;
+  if (destino.includes("Tamul"))                                  { scores["tour-tamul"] += 4; scores["tour-rappel-tamul"] += 3; }
+  if (destino.includes("Huahuas") || destino.includes("Golondrinas")) scores["tour-tamul"] += 4;
   if (destino.includes("Pozas") || destino.includes("Edward"))     scores["tour-edward-james"]+= 4;
   if (destino.includes("Meco"))                                    scores["tour-meco"]        += 4;
   if (destino.includes("Minas") || destino.includes("Micos"))      scores["tour-minas-micos"] += 4;
@@ -73,6 +111,7 @@ export async function POST(req: NextRequest) {
   Nombre: ${t.nombre}
   Tipo: ${t.tipo} | Dificultad: ${t.dificultad} | Duración: ${t.duracion_hrs}h | Precio: $${t.precio} MXN
   Destinos: ${t.destinos.join(", ")}
+  Incluye: ${t.incluye.join("; ")}
   ${TOUR_ACTIVITIES[t.id] ?? ""}`
   ).join("\n\n---\n\n");
 
@@ -104,6 +143,13 @@ ${origenNudge}
 
 TOURS DISPONIBLES (con actividades específicas):
 ${toursInfo}
+
+REGLAS DE SELECCIÓN (haz esto ANTES de redactar):
+- Si el viajero mencionó un DESTINO específico que "no se puede perder" (es decir, distinto de "Abierto a cualquier destino"), el tour PRINCIPAL DEBE ser el que cubra ese destino. Esto manda por encima de todo lo demás. La única excepción es la seguridad: nunca pongas una experiencia de dificultad alta o aventura extrema como principal para una "Familia con niños"; en ese caso elige la alternativa segura más parecida y explícalo.
+- Solo cuando NO haya un destino específico, elige el tour cuya combinación de tipo, dificultad, destinos y actividades encaje mejor con el perfil, ponderando con fuerza los INTERESES.
+- En ausencia de destino, si le emociona la "Aventura extrema" o su nivel es "Intenso", prioriza la experiencia más adrenalínica que encaje (p. ej. el rappel frente a la Cascada de Tamul o el recorrido en RZR) por encima de los tours contemplativos.
+- NUNCA recomiendes una experiencia de dificultad alta o de aventura extrema como opción principal para una "Familia con niños"; para familias prioriza tours seguros y aptos para todos.
+- El catálogo mezcla tours de día completo y actividades enfocadas (como el rappel). Sé HONESTO con lo que cada una incluye: si una experiencia NO incluye transporte o alimentos, no la describas como "todo incluido" ni prometas traslados o comidas que no existen. Apóyate en el campo "Incluye".
 
 REGLAS DE REDACCIÓN:
 1. La "reason" debe tener 5-7 oraciones. ESTRUCTURA OBLIGATORIA:
@@ -159,18 +205,27 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
       body: JSON.stringify({
         model:      "claude-haiku-4-5-20251001",
         max_tokens: 1200,
-        messages:   [{ role: "user", content: prompt }],
+        messages:   [
+          { role: "user",      content: prompt },
+          // Prefill the assistant turn with "{" so the model is forced to
+          // continue valid JSON instead of wrapping it in ```json fences.
+          { role: "assistant", content: "{" },
+        ],
       }),
     });
 
     if (!res.ok) throw new Error(`Anthropic ${res.status}`);
 
     const data   = await res.json();
-    const text   = data.content?.[0]?.text ?? "";
-    const result = JSON.parse(text);
+    // Re-add the prefilled "{" and strip any stray markdown fences, then
+    // slice from the first "{" to the last "}" before parsing — robust to
+    // models that occasionally add prose or code fences around the JSON.
+    const raw    = "{" + (data.content?.[0]?.text ?? "");
+    const result = JSON.parse(extractJson(raw));
 
     return NextResponse.json(result);
-  } catch {
+  } catch (err) {
+    console.error("recomendar-tour: usando respaldo —", err);
     const { primaryId, secondaryId } = fallbackMatch(intereses, grupo, actividad, destino ?? "");
     const primary   = TOURS_DB.find((t) => t.id === primaryId)!;
     const secondary = TOURS_DB.find((t) => t.id === secondaryId)!;

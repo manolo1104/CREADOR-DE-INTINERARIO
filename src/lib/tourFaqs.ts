@@ -5,6 +5,50 @@ export interface FAQ {
 
 /** Keyed by tour.id (from TOURS_DB) */
 export const TOUR_FAQS: Record<string, FAQ[]> = {
+  "tour-rzr-xilitla": [
+    {
+      q: "¿Necesito licencia o experiencia para manejar el RZR?",
+      a: "No necesitas experiencia: te damos un briefing de manejo y el RZR es fácil de controlar. Un guía instructor abre la ruta delante de ti todo el tiempo. El conductor debe ser mayor de edad; si prefieres no manejar, puedes ir de copiloto.",
+    },
+    {
+      q: "¿Pueden ir niños?",
+      a: "Sí, según el vehículo. Algunas unidades permiten llevar a un niño de copiloto con un adulto al volante. Avísanos las edades al reservar para asignarte el vehículo adecuado.",
+    },
+    {
+      q: "¿Está incluido el transporte y la comida?",
+      a: "No. El precio incluye el vehículo con gasolina, el equipo de seguridad y el guía. El punto de encuentro es nuestra base en Xilitla; el transporte hasta allí y los alimentos no están incluidos.",
+    },
+    {
+      q: "¿Qué debo llevar?",
+      a: "Ropa que se pueda ensuciar y mojar, calzado cerrado, bloqueador y una muda de cambio. Vas a salir con barro — es parte de la diversión.",
+    },
+    {
+      q: "¿Cuánto dura el recorrido?",
+      a: "La Ruta Nanacatli dura aproximadamente 2 horas. Es la más popular y la ideal para quienes lo hacen por primera vez.",
+    },
+  ],
+  "tour-rappel-tamul": [
+    {
+      q: "¿Necesito experiencia previa en rappel?",
+      a: "No. El primer descenso es 100% guiado y la mayoría de nuestros visitantes nunca habían hecho rappel. Nuestros guías de alta montaña te dan el briefing de técnica antes de bajar.",
+    },
+    {
+      q: "¿Está incluido el transporte?",
+      a: "No. El precio no incluye transporte ni alimentos. El punto de encuentro es el embarcadero del río; podemos coordinarte el transporte con un costo adicional o puedes llegar por tu cuenta.",
+    },
+    {
+      q: "¿Las fotos y el video tienen costo extra?",
+      a: "No, están incluidos. Te documentamos todo el descenso con fotografía y video con dron, sin costo adicional.",
+    },
+    {
+      q: "¿Qué equipo debo llevar?",
+      a: "Nosotros ponemos todo el equipo de seguridad (arnés, casco, guantes y cuerdas). Tú solo trae ropa deportiva cómoda que se pueda mojar, calzado cerrado con suela firme y bloqueador.",
+    },
+    {
+      q: "¿Cuánto dura la actividad?",
+      a: "Entre 3 y 5 horas, dependiendo del tamaño del grupo y las condiciones del clima.",
+    },
+  ],
   "tour-tamul": [
     {
       q: "¿Se puede hacer si no sé nadar?",

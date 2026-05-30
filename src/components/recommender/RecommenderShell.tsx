@@ -21,6 +21,28 @@ const TOUR_PROOF: Record<string, {
   bestFor:       string;
   reviews:       { name: string; city: string; text: string }[];
 }> = {
+  "tour-rzr-xilitla": {
+    bookingsMonth: 94,
+    bookingsWeek:  21,
+    spotsLeft:     4,
+    trending:      true,
+    bestFor:       "Amigos, familias y primerizos",
+    reviews: [
+      { name: "Andrés P.", city: "Querétaro", text: "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. ¡Repetiría mil veces!" },
+      { name: "Karla M.",  city: "Monterrey", text: "Nunca había manejado un todoterreno y el guía me dio toda la confianza. La cascada Nanacatli al final es un premiazo." },
+    ],
+  },
+  "tour-rappel-tamul": {
+    bookingsMonth: 58,
+    bookingsWeek:  12,
+    spotsLeft:     3,
+    trending:      true,
+    bestFor:       "Aventureros y grupos de amigos",
+    reviews: [
+      { name: "Diego S.",   city: "Querétaro", text: "Nunca había hecho rappel y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo." },
+      { name: "Mariana C.", city: "CDMX",      text: "La experiencia más adrenalínica de mi vida. El video con dron que te dan al final lo he visto como veinte veces." },
+    ],
+  },
   "tour-tamul": {
     bookingsMonth: 127,
     bookingsWeek:  23,
@@ -258,7 +280,13 @@ function TourResultCard({
             <p className="font-cormorant text-verde-profundo font-light" style={{ fontSize: "28px", lineHeight: 1 }}>
               ${tour.precio.toLocaleString()} <span className="text-base text-negro/40">MXN</span>
             </p>
-            <p className="font-dm text-[10px] text-negro/40 mt-0.5">por persona · todo incluido</p>
+            <p className="font-dm text-[10px] text-negro/40 mt-0.5">
+              {tour.id === "tour-rappel-tamul"
+                ? "por persona · equipo y fotos con dron incluidos"
+                : tour.id === "tour-rzr-xilitla"
+                  ? "por persona · vehículo, gasolina y guía incluidos"
+                  : "por persona · todo incluido"}
+            </p>
           </div>
           <Link
             href={`/reservar-tour/${tour.slug}`}
@@ -305,6 +333,7 @@ function TourResultCard({
 // ── Main shell ────────────────────────────────────────────────────────────────
 
 const DESTINOS_BUCKET = [
+  "Recorrido en RZR por Xilitla (off-road)",
   "Cascada de Tamul",
   "Las Pozas de Xilitla (Edward James)",
   "Cascadas del Meco",
@@ -403,7 +432,7 @@ export function RecommenderShell() {
             <div className="absolute inset-2 rounded-full border-2 border-verde-selva animate-spin border-t-transparent" />
           </div>
           <p className="font-cormorant text-crema text-2xl mb-2">Analizando tu perfil…</p>
-          <p className="font-dm text-crema/40 text-sm">Buscando el tour perfecto para ti entre 5 experiencias únicas</p>
+          <p className="font-dm text-crema/40 text-sm">Buscando el tour perfecto para ti entre 7 experiencias únicas</p>
         </div>
       </div>
     );

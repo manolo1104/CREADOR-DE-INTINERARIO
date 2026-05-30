@@ -1,6 +1,22 @@
 // Vivid, first-person activity descriptions per tour — used in the AI recommendation prompt
 
 export const TOUR_ACTIVITIES: Record<string, string> = {
+  "tour-rzr-xilitla": `
+Momentos que vas a vivir:
+- Te subes al RZR en nuestra base de Xilitla, ajustas el casco y, tras un breve briefing, arrancas tú mismo al volante. Desde los primeros metros la selva se cierra a los lados y el camino se convierte en terracería y lodo: estás manejando tu propia aventura.
+- Empiezan los cruces de ríos de agua cristalina. El agua salpica por encima del cofre, las llantas muerden las piedras del fondo y sales del otro lado con el corazón acelerado y una sonrisa enorme. Un guía instructor abre la ruta delante de ti todo el tiempo.
+- El barro, las subidas y las curvas entre la vegetación tropical hacen que cada tramo se sienta distinto. No necesitas experiencia: el RZR es noble y el guía marca el camino, así que solo te concentras en disfrutar la adrenalina.
+- El recorrido termina en la Cascada Nanacatli, un rincón escondido en la selva al que es casi imposible llegar sin estos vehículos. Es el premio perfecto tras el trayecto: agua, verde y la satisfacción de haberlo manejado tú.
+NOTA: Es una actividad off-road autoconducida de ~2 h (Ruta Nanacatli, la más popular y apta para principiantes). Incluye el vehículo con gasolina, casco/goggles y guía; NO incluye transporte hasta Xilitla ni alimentos. Sales con barro: trae ropa que se pueda ensuciar y una muda de cambio.`,
+
+  "tour-rappel-tamul": `
+Momentos que vas a vivir:
+- Llegas al embarcadero del río y, tras el briefing de técnica, te asomas al borde de la pared del cañón del Tampaón. A tu lado, 105 metros de agua se desploman: es la Cascada de Tamul, la caída más alta de México, rugiendo mientras te preparas para descender.
+- El primer paso al vacío es puro vértigo controlado. Los guías de alta montaña te aseguran con equipo profesional y vas bajando poco a poco por la pared tapizada de vegetación, con el río turquesa esperándote abajo y el rocío de la cascada mojándote la cara.
+- A media pared te detienes colgado del arnés y miras alrededor: el cañón abierto, los pájaros cruzando frente a la cortina de agua, el verde de la selva en todas direcciones. Es el tipo de imagen que normalmente solo se ve desde un dron — y aquí estás tú, dentro de ella.
+- Mientras desciendes, un dron te sigue y registra todo en foto y video. Terminas tocando el agua con la adrenalina al máximo y la prueba grabada de que sí lo hiciste. Apto incluso para quienes nunca han hecho rappel.
+NOTA: Es una actividad enfocada (3–5 h), no un tour de día completo. El equipo, los guías y las fotos/video con dron están incluidos; el transporte y los alimentos NO están incluidos (el transporte se coordina con costo adicional y el punto de encuentro es el embarcadero del río).`,
+
   "tour-tamul": `
 Momentos que vas a vivir:
 - Antes de que salga el sol, te asomas al borde del Sótano de las Huahuas: un agujero en la tierra de 512 metros de profundidad. De repente, miles de pericos emergen en espiral desde las profundidades — el ruido, el movimiento, el color verde invadiendo el cielo durante 40 minutos. Es imposible no quedarse sin palabras.
