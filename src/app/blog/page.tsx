@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogFilters } from "@/components/BlogFilters";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -29,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 async function getPosts() {
   try {
-    return await prisma.blogPost.findMany({
+    const posts = await prisma.blogPost.findMany({
       where: { published: true },
       orderBy: { publishedAt: "desc" },
       select: {
@@ -37,6 +38,7 @@ async function getPosts() {
         coverImageAlt: true, tags: true, readingTime: true, publishedAt: true, focusKeyword: true,
       },
     });
+    return posts.map(applyBlogImageEditsPreview);
   } catch {
     return [];
   }

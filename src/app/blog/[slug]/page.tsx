@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { TOURS_DB } from "@/lib/tours";
+import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
 
 export const dynamic = "force-dynamic";
 
@@ -63,14 +64,14 @@ async function getPost(slug: string) {
   try {
     // 1. Exact match (clean slug, after migration)
     const exact = await prisma.blogPost.findUnique({ where: { slug, published: true } });
-    if (exact) return exact;
+    if (exact) return applyBlogImageEditsPreview(exact);
 
     // 2. Fallback: try slug + year suffix (slugs generated before migration)
     for (const year of ["2026", "2025", "2024", "2027"]) {
       const withYear = await prisma.blogPost.findUnique({
         where: { slug: `${slug}-${year}`, published: true },
       });
-      if (withYear) return withYear;
+      if (withYear) return applyBlogImageEditsPreview(withYear);
     }
 
     return null;
@@ -87,14 +88,15 @@ async function getRelatedPosts(slug: string, tags: string[], internalLinks: stri
         take:   3,
         select: { slug: true, title: true, excerpt: true, coverImageUrl: true, readingTime: true, tags: true },
       });
-      if (curated.length >= 2) return curated;
+      if (curated.length >= 2) return curated.map(applyBlogImageEditsPreview);
     }
-    return await prisma.blogPost.findMany({
+    const related = await prisma.blogPost.findMany({
       where:   { published: true, slug: { not: slug }, tags: { hasSome: tags } },
       orderBy: { publishedAt: "desc" },
       take:    3,
       select:  { slug: true, title: true, excerpt: true, coverImageUrl: true, readingTime: true, tags: true },
     });
+    return related.map(applyBlogImageEditsPreview);
   } catch {
     return [];
   }
