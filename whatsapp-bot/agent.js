@@ -4,6 +4,7 @@
 
 const Anthropic = require("@anthropic-ai/sdk");
 const { TOURS, EMPRESA, SALIDA, findTour, calcPrecio } = require("./catalog");
+const { PAQUETES, DESTINOS, DESTINO_TOUR, INFO, findPaquete, findDestino } = require("./knowledge");
 const { getSession, pushHistory } = require("./sessions");
 
 const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5-20251001";
@@ -13,6 +14,19 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // Cliente HTTP al sitio. Se puede inyectar uno falso en pruebas con setApiClient().
 let api = require("./api-client");
 function setApiClient(mock) { api = mock; }
+
+// ── Limpieza de links (WhatsApp no debe llevar asteriscos/markdown pegados) ──
+function sanitizeLinks(text) {
+  if (!text) return text;
+  let t = text;
+  // Markdown [etiqueta](url) → "etiqueta: url"
+  t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1: $2");
+  // Quitar * _ ` < pegados ANTES de una URL
+  t = t.replace(/[*_`<]+(https?:\/\/[^\s*_`<>]+)/g, "$1");
+  // Quitar * _ ` > pegados DESPUÉS de una URL
+  t = t.replace(/(https?:\/\/[^\s*_`<>]+)[*_`>]+/g, "$1");
+  return t;
+}
 
 // ── Detección de petición de humano ───────────────────────────
 const HUMAN_REGEX = /\b(humano|asesor|agente|ejecutivo|persona real|operador|encargad[oa]|due[ñn]o)\b|hablar con (alguien|una persona|un humano)/i;
@@ -133,6 +147,38 @@ const tools = [
       required: ["folio"],
     },
   },
+  {
+    name: "listar_paquetes",
+    description: "Lista los paquetes (tours + hotel) con su precio. Úsala cuando pregunten por paquetes, promociones o planes de varios días.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "obtener_paquete",
+    description: "Detalle de un paquete: qué incluye, tours, duración y precio.",
+    input_schema: {
+      type: "object",
+      properties: { id: { type: "string", description: "id o nombre: esencial, aventura, completo" } },
+      required: ["id"],
+    },
+  },
+  {
+    name: "listar_destinos",
+    description: "Lista los destinos de la Huasteca que conocemos, opcionalmente por zona (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, etc.).",
+    input_schema: {
+      type: "object",
+      properties: { zona: { type: "string", description: "zona para filtrar (opcional)" } },
+      required: [],
+    },
+  },
+  {
+    name: "obtener_destino",
+    description: "Ficha de un destino: entrada, cómo llegar, mejor hora, qué llevar, advertencias y datos curiosos. Incluye qué tour nuestro lo visita (si aplica).",
+    input_schema: {
+      type: "object",
+      properties: { slug: { type: "string", description: "slug o nombre del destino, ej: 'cascada-de-tamul' o 'las pozas'" } },
+      required: ["slug"],
+    },
+  },
 ];
 
 // ══════════════════════════════════════════════════════════════
@@ -201,6 +247,38 @@ async function executeTool(name, input, phone) {
       return res.data;
     }
 
+    case "listar_paquetes":
+      return {
+        paquetes: PAQUETES.map((p) => ({ id: p.id, nombre: p.nombre, duracion: p.duracion, precio: p.precio, precioLabel: p.precioLabel, badge: p.badge || null, perfiles: p.perfiles })),
+        nota: INFO.paquetes,
+      };
+
+    case "obtener_paquete": {
+      const p = findPaquete(input.id);
+      if (!p) return { error: `No existe ese paquete. Opciones: ${PAQUETES.map((x) => x.id).join(", ")}` };
+      return { ...p, nota: INFO.paquetes };
+    }
+
+    case "listar_destinos": {
+      let lista = DESTINOS;
+      if (input.zona) {
+        const z = String(input.zona).toLowerCase();
+        const filtrada = DESTINOS.filter((d) => d.zona.toLowerCase().includes(z));
+        if (filtrada.length) lista = filtrada;
+      }
+      return { destinos: lista.map((d) => ({ slug: d.slug, nombre: d.nombre, zona: d.zona, tipo: d.tipo, precioEntrada: d.precioEntrada })) };
+    }
+
+    case "obtener_destino": {
+      const d = findDestino(input.slug);
+      if (!d) return { error: "No encontré ese destino. Usa listar_destinos para ver las opciones." };
+      const tourSlugs = DESTINO_TOUR[d.slug] || [];
+      const toursQueLoVisitan = tourSlugs
+        .map((s) => { const t = findTour(s); return t ? { slug: t.slug, nombre: t.nombre, precioPorPersona: t.precio } : null; })
+        .filter(Boolean);
+      return { ...d, toursQueLoVisitan, info: { salida: INFO.salida, pagoEntradas: INFO.pagoEntradas } };
+    }
+
     default:
       return { error: `Herramienta desconocida: ${name}` };
   }
@@ -218,6 +296,18 @@ function catalogoTexto() {
     `  NO incluye: ${t.noIncluye.join(", ")}.\n` +
     `  Punto de encuentro: ${t.puntoEncuentro}.`
   ).join("\n\n");
+}
+
+function paquetesTexto() {
+  return PAQUETES.map((p) =>
+    `• *${p.nombre}* — ${p.duracion} — $${p.precio.toLocaleString("es-MX")} ${p.precioLabel}${p.badge ? ` (${p.badge})` : ""}`
+  ).join("\n");
+}
+
+function destinosTexto() {
+  const porZona = {};
+  for (const d of DESTINOS) (porZona[d.zona] = porZona[d.zona] || []).push(d.nombre);
+  return Object.entries(porZona).map(([z, arr]) => `• ${z}: ${arr.join(" · ")}`).join("\n");
 }
 
 function buildSystemPrompt() {
@@ -239,9 +329,21 @@ ${catalogoTexto()}
 • Para precios exactos usa la herramienta *calcular_precio*. Para detalles usa *obtener_tour*. NUNCA inventes montos.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
+🎒 PAQUETES (tours + hotel)
+━━━━━━━━━━━━━━━━━━━━━━━━
+${paquetesTexto()}
+Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla). Para el detalle usa *obtener_paquete* (o *listar_paquetes*). La reserva de paquetes se confirma por aquí según disponibilidad del hotel — NO hay pago automático: toma los datos y ofrece confirmar con el equipo.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+📍 DESTINOS QUE CONOCEMOS
+━━━━━━━━━━━━━━━━━━━━━━━━
+Podemos asesorar sobre estos lugares (entrada, cómo llegar, mejor hora, qué llevar, datos curiosos). Para el detalle usa *obtener_destino*; para la lista usa *listar_destinos*. NUNCA inventes datos de un destino — usa la herramienta. Si el destino tiene un tour nuestro que lo visita, ofrécelo (precio por persona + reserva).
+${destinosTexto()}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
 🎯 FORMAS DE RESERVAR (ofrece las dos)
 ━━━━━━━━━━━━━━━━━━━━━━━━
-1. *Tarjeta en línea* (confirmación instantánea): usa *enviar_link_pago* y manda el link del sitio.
+1. *Tarjeta en línea* (confirmación instantánea): usa *enviar_link_pago* y manda el link del sitio. Escribe el link como URL simple en su propia línea, SIN asteriscos, negritas, paréntesis ni formato — el cliente debe poder tocarlo.
 2. *Transferencia*: usa *crear_cotizacion* (solo cuando ya tengas tour + fecha + personas + nombre). Devuelve un *folio* y datos bancarios; el cliente transfiere y manda su comprobante por este chat. El dueño confirma después.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -258,6 +360,7 @@ ${catalogoTexto()}
 🧭 REGLAS
 ━━━━━━━━━━━━━━━━━━━━━━━━
 • Responde SIEMPRE en español, cálido y breve (es WhatsApp). Usa *negritas* estilo WhatsApp, no markdown.
+• NUNCA afirmes cifras específicas (alturas, profundidades, distancias, precios, horarios) de memoria. Usa exactamente lo que devuelven las herramientas; si no tienes el dato, dilo sin inventar. (Ej.: la altura de la Cascada de Tamul es la que diga la herramienta, no la adivines.)
 • No uses emojis en exceso, solo donde den impacto.
 • Si el cliente pide hablar con un *humano/asesor*, dile con gusto que lo conectas con el equipo y deja de insistir en vender.
 • Si preguntan por el *hotel* o algo que no sea estos tours, acláralo amablemente: aquí solo agendamos tours de la Huasteca.
@@ -307,7 +410,7 @@ async function processMessage(phone, message) {
   const textBlock = response.content.find((b) => b.type === "text");
   const reply = (textBlock && textBlock.text) || "Disculpa, tuve un problemita. ¿Me lo repites? 🙏";
   session.history.push({ role: "assistant", content: response.content });
-  return reply;
+  return sanitizeLinks(reply);
 }
 
-module.exports = { processMessage, buildSystemPrompt, recomendarLocal, executeTool, needsHuman, setApiClient, tools };
+module.exports = { processMessage, buildSystemPrompt, recomendarLocal, executeTool, needsHuman, setApiClient, sanitizeLinks, tools };

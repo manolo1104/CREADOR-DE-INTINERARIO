@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRef } from "react";
+import { usePathname } from "next/navigation";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import type { Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -10,9 +11,9 @@ import { Star, Clock, Users } from "lucide-react";
 import { trackWhatsapp } from "@/lib/analytics";
 
 const dificultadConfig = {
-  alta:  { label: "AVANZADO", bg: "bg-orange-700",  dot: "bg-orange-400"  },
-  media: { label: "MODERADO", bg: "bg-amber-600",   dot: "bg-amber-400"   },
-  baja:  { label: "FÁCIL",    bg: "bg-emerald-600", dot: "bg-emerald-400" },
+  alta:  { label: "AVANZADO", labelEn: "ADVANCED", bg: "bg-orange-700",  dot: "bg-orange-400"  },
+  media: { label: "MODERADO", labelEn: "MODERATE", bg: "bg-amber-600",   dot: "bg-amber-400"   },
+  baja:  { label: "FÁCIL",    labelEn: "EASY",     bg: "bg-emerald-600", dot: "bg-emerald-400" },
 } as const;
 
 interface Props {
@@ -21,6 +22,10 @@ interface Props {
 }
 
 export function TourCard({ tour: t, variant = "default" }: Props) {
+  const pathname = usePathname();
+  const en = pathname === "/en" || pathname.startsWith("/en/");
+  const lp = (p: string) => (en ? `/en${p}` : p);
+  const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   const dif = dificultadConfig[t.dificultad];
   const imageHeight = variant === "compact" ? "h-52 md:h-56" : "h-56 md:h-64";
 
@@ -56,8 +61,8 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
 
       {/* Stretched link — covers entire card */}
       <Link
-        href={`/tours/${t.slug}`}
-        aria-label={`Ver tour: ${t.nombre}`}
+        href={lp(`/tours/${t.slug}`)}
+        aria-label={`${en ? "View tour" : "Ver tour"}: ${t.nombre}`}
         className="absolute inset-0 z-0 rounded-xl"
       />
 
@@ -85,7 +90,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
         {/* Badge dificultad — top right */}
         <span className={`absolute top-3 right-3 z-10 ${dif.bg} text-white text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full flex items-center gap-1`}>
           <span className={`w-1.5 h-1.5 rounded-full ${dif.dot}`} aria-hidden="true" />
-          {dif.label}
+          {en ? dif.labelEn : dif.label}
         </span>
 
         {/* Hover overlay with rotating arrow */}
@@ -104,10 +109,10 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             {t.tagline}
           </p>
           <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
-            <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} reseñas)
+            <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} {en ? "reviews" : "reseñas"})
           </p>
           <p className="text-[10px] font-dm text-verde-vivo/70 mt-0.5 flex items-center gap-1">
-            <Users className="w-3 h-3" aria-hidden="true" /> 492 viajeros lo han completado · 38 reservas este mes
+            <Users className="w-3 h-3" aria-hidden="true" /> {en ? "492 travelers have completed it · 38 bookings this month" : "492 viajeros lo han completado · 38 reservas este mes"}
           </p>
         </div>
       </div>
@@ -118,7 +123,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
         {/* Destinos incluidos */}
         <div className="mb-3">
           <p className="text-[9px] tracking-[2px] uppercase text-crema/30 font-dm mb-2">
-            Visitas incluidas
+            {en ? "Included visits" : "Visitas incluidas"}
           </p>
           <ul className="space-y-1">
             {t.destinos.slice(0, 3).map((d) => (
@@ -129,7 +134,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             ))}
             {t.destinos.length > 3 && (
               <li className="text-[11px] text-crema/35 font-dm pl-3.5">
-                +{t.destinos.length - 3} más…
+                +{t.destinos.length - 3} {en ? "more…" : "más…"}
               </li>
             )}
           </ul>
@@ -140,18 +145,18 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
         {/* Duración + grupo + salidas */}
         <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm flex-wrap">
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" aria-hidden="true" /> {t.duracion_hrs}h</span>
-          <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> máx. {t.groupMax}</span>
-          <span className="text-verde-vivo/70 font-medium">✦ Salidas diarias</span>
+          <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> {en ? "max." : "máx."} {t.groupMax}</span>
+          <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
         </div>
 
         {/* Precio */}
         <div className="mb-4">
           <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-0.5">
-            desde
+            {en ? "from" : "desde"}
           </p>
           <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
-            ${t.precio.toLocaleString("es-MX")}
-            <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN / persona</span>
+            {money(t.precio)}
+            <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN / {en ? "person" : "persona"}</span>
           </p>
         </div>
 
@@ -170,8 +175,8 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
                 <Image src={g.foto} alt={g.nombre} width={32} height={32} className="w-full h-full object-cover object-top" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-dm text-crema/60">Tu guía: <span className="text-crema/85 font-medium">{g.nombre}</span></p>
-                <p className="text-[9px] text-dorado/70 font-dm">★ {g.rating} certificado</p>
+                <p className="text-[10px] font-dm text-crema/60">{en ? "Your guide:" : "Tu guía:"} <span className="text-crema/85 font-medium">{g.nombre}</span></p>
+                <p className="text-[9px] text-dorado/70 font-dm">★ {g.rating} {en ? "certified" : "certificado"}</p>
               </div>
             </div>
           );
@@ -180,19 +185,21 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
         {/* CTA */}
         <div className="mt-auto flex flex-col gap-2">
           <span className="w-full block text-center bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded">
-            Ver tour completo →
+            {en ? "View full tour →" : "Ver tour completo →"}
           </span>
           <a
-            href={waLink(WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
+            href={waLink(en
+              ? `Hi, I'm interested in the "${t.nombre}" tour. Could you share availability and prices?`
+              : WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackWhatsapp("tour_card", t.precio * 2)}
             className="relative z-10 w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
-            Preguntar por WhatsApp
+            {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
           </a>
           <p className="text-center text-[9px] text-crema/25 font-dm pt-1">
-            ✓ Cancelación gratuita con 48h de anticipación
+            {en ? "✓ Free cancellation up to 48h before" : "✓ Cancelación gratuita con 48h de anticipación"}
           </p>
         </div>
       </div>

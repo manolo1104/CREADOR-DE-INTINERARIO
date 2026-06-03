@@ -78,7 +78,7 @@ export default function DashboardClient({
           <p className={`font-cormorant text-3xl font-light leading-none mb-1 ${pendingAmount > 0 ? "text-[#c4882a]" : "text-[#1a2e1a]/30"}`}>
             {pendingAmount > 0 ? fmx(pendingAmount) : "—"}
           </p>
-          <p className="text-[#1a2e1a]/40 font-dm text-xs">reservas pendientes</p>
+          <p className="text-[#1a2e1a]/40 font-dm text-xs">saldo por cobrar</p>
         </div>
 
         <div className="bg-white border border-[#1a2e1a]/10 rounded-sm p-5">

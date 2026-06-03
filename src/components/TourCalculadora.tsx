@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { trackBeginCheckout, trackWhatsapp } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
@@ -52,6 +53,9 @@ function Counter({
 
 
 export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Props) {
+  const pathname = usePathname();
+  const en = pathname === "/en" || pathname.startsWith("/en/");
+  const nf = (n: number) => n.toLocaleString(en ? "en-US" : "es-MX");
   const [adultos,     setAdultos]     = useState(2);
   const [ninosMid,    setNinosMid]    = useState(0); // 6–10 años → 70%
   const [ninosSmall,  setNinosSmall]  = useState(0); // <6 años   → 50%
@@ -63,7 +67,9 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
   const ninos = ninosMid + ninosSmall;
   const total = adultos * precioBase + ninosMid * precioNinoMid + ninosSmall * precioNinoSmall;
 
-  const waMsg = WA_MESSAGES.tour(tourName, adultos, ninos, total);
+  const waMsg = en
+    ? `Hi, I'd like to book the "${tourName}" tour for ${adultos} adult${adultos > 1 ? "s" : ""}${ninos > 0 ? ` and ${ninos} child${ninos > 1 ? "ren" : ""}` : ""} (estimated total $${nf(total)} MXN). Is it available?`
+    : WA_MESSAGES.tour(tourName, adultos, ninos, total);
 
   async function handleStripeCheckout() {
     setCheckoutLoading(true);
@@ -105,13 +111,13 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
         Booking summary
       </p>
 
-      <Counter label="Adultos" value={adultos} min={1} max={15} onChange={(v) => {
+      <Counter label={en ? "Adults" : "Adultos"} value={adultos} min={1} max={15} onChange={(v) => {
         setAdultos(v);
         const newTotal = v * precioBase + ninosMid * precioNinoMid + ninosSmall * precioNinoSmall;
         trackTourEvent("PARTICIPANTS_CHANGED", { tour: tourName, adults: v, children: ninos, total: v + ninos, amount: newTotal });
       }} />
       <Counter
-        label={`Niños 6–10 años ($${precioNinoMid.toLocaleString("es-MX")} c/u · −30%)`}
+        label={en ? `Children 6–10 ($${nf(precioNinoMid)} each · −30%)` : `Niños 6–10 años ($${nf(precioNinoMid)} c/u · −30%)`}
         value={ninosMid} min={0} max={10} onChange={(v) => {
           setNinosMid(v);
           const newTotal = adultos * precioBase + v * precioNinoMid + ninosSmall * precioNinoSmall;
@@ -119,7 +125,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
         }}
       />
       <Counter
-        label={`Menores de 6 ($${precioNinoSmall.toLocaleString("es-MX")} c/u · −50%)`}
+        label={en ? `Under 6 ($${nf(precioNinoSmall)} each · −50%)` : `Menores de 6 ($${nf(precioNinoSmall)} c/u · −50%)`}
         value={ninosSmall} min={0} max={10} onChange={(v) => {
           setNinosSmall(v);
           const newTotal = adultos * precioBase + ninosMid * precioNinoMid + v * precioNinoSmall;
@@ -129,22 +135,28 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
 
       {ninos === 0 && (
         <p className="text-[10px] text-crema/30 font-dm">
-          Bebés menores de 3 años: gratis · Agrega niños para ver descuento
+          {en ? "Infants under 3: free · Add children to see the discount" : "Bebés menores de 3 años: gratis · Agrega niños para ver descuento"}
         </p>
       )}
 
       <div className="border-t border-white/10 pt-3 flex items-end justify-between">
         <div>
-          <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">Total estimado</p>
+          <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">{en ? "Estimated total" : "Total estimado"}</p>
           <p key={total} className="font-cormorant text-dorado text-2xl leading-none animate-price-bump">
-            ${total.toLocaleString("es-MX")}
+            ${nf(total)}
             <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN</span>
           </p>
         </div>
         <p className="text-[9px] text-verde-vivo font-dm">
-          {adultos} adulto{adultos > 1 ? "s" : ""}
-          {ninosMid > 0 ? ` · ${ninosMid} niño${ninosMid > 1 ? "s" : ""} 6–10` : ""}
-          {ninosSmall > 0 ? ` · ${ninosSmall} menor${ninosSmall > 1 ? "es" : ""} <6` : ""}
+          {en ? (
+            <>{adultos} adult{adultos > 1 ? "s" : ""}
+            {ninosMid > 0 ? ` · ${ninosMid} child${ninosMid > 1 ? "ren" : ""} 6–10` : ""}
+            {ninosSmall > 0 ? ` · ${ninosSmall} under 6` : ""}</>
+          ) : (
+            <>{adultos} adulto{adultos > 1 ? "s" : ""}
+            {ninosMid > 0 ? ` · ${ninosMid} niño${ninosMid > 1 ? "s" : ""} 6–10` : ""}
+            {ninosSmall > 0 ? ` · ${ninosSmall} menor${ninosSmall > 1 ? "es" : ""} <6` : ""}</>
+          )}
         </p>
       </div>
 
@@ -152,7 +164,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0" aria-hidden="true">
           <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
         </svg>
-        Pago 100% seguro · Stripe · TLS cifrado
+        {en ? "100% secure payment · Stripe · TLS encrypted" : "Pago 100% seguro · Stripe · TLS cifrado"}
       </p>
 
       {tourSlug ? (
@@ -167,7 +179,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
             <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
           </svg>
-          Reservar con tarjeta
+          {en ? "Book by card" : "Reservar con tarjeta"}
         </Link>
       ) : (
         <button
@@ -178,7 +190,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
             <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
           </svg>
-          {checkoutLoading ? "Redirigiendo..." : "Pagar con tarjeta"}
+          {checkoutLoading ? (en ? "Redirecting..." : "Redirigiendo...") : (en ? "Pay by card" : "Pagar con tarjeta")}
         </button>
       )}
 
@@ -196,7 +208,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
                    transition-all duration-200"
       >
         {WA_SVG}
-        Preguntar por WhatsApp
+        {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
       </a>
 
       {checkoutError && (
@@ -204,7 +216,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
       )}
 
       <p className="text-center text-[10px] text-crema/25 font-dm">
-        ✓ Cancelación gratuita con 48h de anticipación
+        {en ? "✓ Free cancellation up to 48h before" : "✓ Cancelación gratuita con 48h de anticipación"}
       </p>
     </div>
   );

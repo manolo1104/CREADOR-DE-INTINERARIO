@@ -7,8 +7,9 @@
 // ════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
-const { recomendarLocal, needsHuman, processMessage, setApiClient } = require("./agent");
+const { recomendarLocal, needsHuman, processMessage, setApiClient, sanitizeLinks } = require("./agent");
 const { calcPrecio, findTour } = require("./catalog");
+const { PAQUETES, DESTINOS, DESTINO_TOUR, findPaquete, findDestino } = require("./knowledge");
 
 let pass = 0, fail = 0, warn = 0;
 const ok = (cond, name) => { if (cond) { pass++; console.log(`  ✅ ${name}`); } else { fail++; console.log(`  ❌ ${name}`); } };
@@ -48,6 +49,18 @@ async function run() {
   ok(needsHuman("quiero hablar con un humano") === true, "'hablar con un humano' → true");
   ok(needsHuman("me pasas con un asesor?") === true, "'asesor' → true");
   ok(needsHuman("hola quiero info de un tour") === false, "mensaje normal → false");
+
+  console.log("conocimiento (paquetes/destinos):");
+  ok(PAQUETES.length === 3, "hay 3 paquetes");
+  ok(DESTINOS.length === 20, "hay 20 destinos");
+  ok(findPaquete("aventura").precio === 9000, "Paquete Aventura = $9,000");
+  ok(findDestino("las pozas").precioEntrada === "$180 MXN", "Las Pozas entrada $180");
+  ok((DESTINO_TOUR["cascada-de-tamul"] || []).includes("rappel-tamul"), "Tamul → cross-sell tour vendible");
+
+  console.log("sanitizeLinks (links sin asteriscos):");
+  ok(sanitizeLinks("Reserva: *https://www.huasteca-potosina.com/reservar-tour/rzr-xilitla*") === "Reserva: https://www.huasteca-potosina.com/reservar-tour/rzr-xilitla", "quita asteriscos pegados al link");
+  ok(!/\*https?:|https?:[^\s]*\*/.test(sanitizeLinks("ve a *https://x.com/a* ya")), "no queda ningún * pegado a una URL");
+  ok(sanitizeLinks("texto *en negritas* normal").includes("*en negritas*"), "respeta negritas que no son links");
 
   // ─────────────── PARTE 2: CONVERSACIONES ───────────────
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -94,6 +107,32 @@ async function run() {
   await scenario("Link de pago (tarjeta)", "5215555555@c.us", [
     "Quiero las Cascadas del Meco para 2, prefiero pagar con tarjeta en línea",
   ], (last) => soft(/huasteca-potosina\.com\/reservar-tour\/cascadas-del-meco/.test(last), "manda el link de reservar-tour del Meco"));
+
+  // Escenario F: paquetes
+  await scenario("Paquetes", "5216666666@c.us", [
+    "¿Qué paquetes manejan?",
+  ], (last) => {
+    const n = norm(last);
+    soft(n.includes("esencial") || n.includes("aventura") || n.includes("completo"), "menciona algún paquete por nombre");
+    soft(/5[.,]?000|9[.,]?000|12[.,]?200/.test(last), "incluye algún precio de paquete");
+  });
+
+  // Escenario G: destino con datos prácticos
+  await scenario("Destino — Las Pozas", "5217777777@c.us", [
+    "¿cuánto cuesta entrar a Las Pozas de Xilitla y cómo llego?",
+  ], (last) => {
+    soft(/180/.test(last), "da la entrada de $180");
+    soft(/valles|xilitla|1\s?h|hora/i.test(last), "menciona cómo llegar");
+  });
+
+  // Escenario H: destino con cross-sell a tour
+  await scenario("Destino con cross-sell — Tamul", "5218888888@c.us", [
+    "quiero conocer la Cascada de Tamul, ¿qué me recomiendas?",
+  ], (last) => {
+    const n = norm(last);
+    soft(n.includes("tamul"), "habla de la Cascada de Tamul");
+    soft(n.includes("expedicion") || n.includes("rappel") || n.includes("tour"), "ofrece un tour que la visita");
+  });
 
   done();
 }

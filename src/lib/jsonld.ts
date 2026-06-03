@@ -1,16 +1,54 @@
 import { Destino } from "./destinos";
 import { RATING_DESTINO } from "./destinoData";
+import { localePath, type Locale } from "./i18n/config";
 
 const BASE_URL = "https://www.huasteca-potosina.com";
 
-function buildFAQs(d: Destino) {
-  // Use curated FAQs from seo field when available
+function buildFAQs(d: Destino, locale: Locale) {
+  // Use curated FAQs from seo field when available (ya vienen localizadas)
   if (d.seo?.faqPrincipales?.length) {
     return d.seo.faqPrincipales.map((faq) => ({
       "@type": "Question",
       name: faq.pregunta,
       acceptedAnswer: { "@type": "Answer", text: faq.respuesta },
     }));
+  }
+
+  if (locale === "en") {
+    return [
+      {
+        "@type": "Question",
+        name: `How much is admission to ${d.nombre}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `Admission to ${d.nombre} costs ${d.precio_entrada}. ${
+            d.advertencias?.toLowerCase().includes("cash")
+              ? "Cash only — there is no ATM on site."
+              : "Bringing cash is recommended just in case."
+          }`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: `How do I get to ${d.nombre} from Ciudad Valles?`,
+        acceptedAnswer: { "@type": "Answer", text: `${d.como_llegar}. The destination is in ${d.zona}, San Luis Potosí, Mexico.` },
+      },
+      {
+        "@type": "Question",
+        name: `What time of year is best to visit ${d.nombre}?`,
+        acceptedAnswer: { "@type": "Answer", text: `The best season to visit ${d.nombre} is ${d.temporada_ideal}. The best time of day to arrive is ${d.mejor_hora} to make the most of the experience.` },
+      },
+      {
+        "@type": "Question",
+        name: `How much time do you need to tour ${d.nombre}?`,
+        acceptedAnswer: { "@type": "Answer", text: `Plan about ${d.duracion_hrs} hours to enjoy ${d.nombre} at a relaxed pace. The site is open ${d.horario} (${d.dias_abierto}).` },
+      },
+      {
+        "@type": "Question",
+        name: `What should you bring to visit ${d.nombre}?`,
+        acceptedAnswer: { "@type": "Answer", text: `To visit ${d.nombre} we recommend bringing: ${d.que_llevar.join(", ")}. ${d.advertencias ? `Important: ${d.advertencias}` : ""}` },
+      },
+    ];
   }
 
   return [
@@ -85,9 +123,10 @@ function buildOpeningHours(d: Destino) {
   ];
 }
 
-export function buildDestinationJsonLd(d: Destino) {
-  const url = `${BASE_URL}/destinos/${d.slug}`;
+export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
+  const url = `${BASE_URL}${localePath(`/destinos/${d.slug}`, locale)}`;
   const precio = d.precio_entrada.match(/\d+/)?.[0] || "0";
+  const inLanguage = locale === "en" ? "en" : "es-MX";
 
   return {
     "@context": "https://schema.org",
@@ -97,6 +136,7 @@ export function buildDestinationJsonLd(d: Destino) {
         name: d.nombre,
         description: d.descripcion,
         url,
+        inLanguage,
         touristType: d.tipo,
         geo: {
           "@type": "GeoCoordinates",
@@ -141,7 +181,8 @@ export function buildDestinationJsonLd(d: Destino) {
       }] : []),
       {
         "@type": "FAQPage",
-        mainEntity: buildFAQs(d),
+        inLanguage,
+        mainEntity: buildFAQs(d, locale),
       },
       {
         "@type": "BreadcrumbList",
@@ -149,14 +190,14 @@ export function buildDestinationJsonLd(d: Destino) {
           {
             "@type": "ListItem",
             position: 1,
-            name: "Inicio",
-            item: BASE_URL,
+            name: locale === "en" ? "Home" : "Inicio",
+            item: `${BASE_URL}${localePath("/", locale)}`,
           },
           {
             "@type": "ListItem",
             position: 2,
-            name: "Destinos",
-            item: `${BASE_URL}/destinos`,
+            name: locale === "en" ? "Destinations" : "Destinos",
+            item: `${BASE_URL}${localePath("/destinos", locale)}`,
           },
           {
             "@type": "ListItem",

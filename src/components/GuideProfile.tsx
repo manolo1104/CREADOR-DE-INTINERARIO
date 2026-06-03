@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 const WA_SVG = (
@@ -9,6 +10,7 @@ const WA_SVG = (
 );
 
 export function GuideProfile() {
+  const en = headers().get("x-locale") === "en";
   return (
     <section className="max-w-6xl mx-auto px-6 py-10">
       <div className="border border-verde-vivo/20 bg-verde-profundo/30 p-6 md:p-8">
@@ -26,31 +28,31 @@ export function GuideProfile() {
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="font-cormorant text-crema text-lg">
-                Equipo Huasteca Potosina
+                {en ? "Huasteca Potosina Team" : "Equipo Huasteca Potosina"}
               </h3>
               <span className="text-[9px] bg-verde-selva/60 border border-verde-vivo/30 text-verde-vivo px-2 py-0.5 font-dm tracking-[1px] uppercase">
-                ✓ Guía certificado NOM-09 SECTUR
+                {en ? "✓ NOM-09 SECTUR certified guide" : "✓ Guía certificado NOM-09 SECTUR"}
               </span>
             </div>
             <p className="text-[11px] text-crema/40 font-dm mb-2">
-              Más de 8 años recorriendo la Huasteca · Español e inglés básico
+              {en ? "8+ years exploring the Huasteca · Spanish & basic English" : "Más de 8 años recorriendo la Huasteca · Español e inglés básico"}
             </p>
             <p className="text-sm text-crema/60 font-dm leading-relaxed">
-              Somos una familia de guías locales nacidos en la Huasteca. Conocemos cada sendero,
-              cada cascada y cada secreto de la región. Nuestro trabajo es que regreses con las
-              mejores fotos de tu vida y ganas de volver.
+              {en
+                ? "We're a family of local guides born in the Huasteca. We know every trail, every waterfall and every secret of the region. Our job is for you to go home with the best photos of your life — and the urge to come back."
+                : "Somos una familia de guías locales nacidos en la Huasteca. Conocemos cada sendero, cada cascada y cada secreto de la región. Nuestro trabajo es que regreses con las mejores fotos de tu vida y ganas de volver."}
             </p>
           </div>
 
           {/* CTA */}
           <a
-            href={waLink(WA_MESSAGES.tourGeneral)}
+            href={waLink(en ? "Hi, I'd like to talk to the Huasteca Potosina team about a tour." : WA_MESSAGES.tourGeneral)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0 flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] tracking-[1.5px] uppercase font-dm px-5 py-3 transition-colors whitespace-nowrap"
           >
             {WA_SVG}
-            Hablar con el equipo
+            {en ? "Talk to the team" : "Hablar con el equipo"}
           </a>
         </div>
       </div>

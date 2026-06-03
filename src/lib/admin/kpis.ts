@@ -1,10 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import { hoyMX, ymdMX, partsMX, addDaysYMD, weekdayYMD } from "@/lib/dates";
+import type { TourBooking } from "@prisma/client";
+
+type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" | "totalAmount">;
+
+/**
+ * Dinero realmente cobrado de una reserva = el anticipo registrado, o el total si fue
+ * un pago 100% por Stripe (puede no tener anticipo explícito guardado).
+ */
+export function montoCobrado(b: CashFields): number {
+  const dep = b.depositoPagado ?? 0;
+  if (dep > 0) return dep;
+  return b.stripePaymentIntentId ? b.totalAmount : 0;
+}
+
+/** Saldo que falta por cobrar de una reserva (nunca negativo). */
+export function saldoPendiente(b: CashFields): number {
+  return Math.max(0, b.totalAmount - montoCobrado(b));
+}
 
 export async function calcKPIs() {
   const all = await prisma.tourBooking.findMany({ orderBy: { createdAt: "desc" } });
-  // Ingresos = solo reservas pagadas (no contar pendientes como dinero cobrado).
-  const paid = all.filter(b => b.status === "paid");
+  // Ingresos = dinero REALMENTE cobrado (anticipos + pagos completos) de reservas no canceladas.
+  const paid = all.filter(b => b.status !== "cancelled");
 
   // Cortes calculados en horario de México (no UTC).
   const hoy        = hoyMX();
@@ -21,7 +39,7 @@ export async function calcKPIs() {
   const thisSem = paid.filter(b => ymdMX(b.createdAt) >= semStart);
   const thisAño = paid.filter(b => partsMX(b.createdAt).year === añoN);
 
-  const sum = (arr: typeof paid) => arr.reduce((s, b) => s + b.totalAmount, 0);
+  const sum = (arr: typeof paid) => arr.reduce((s, b) => s + montoCobrado(b), 0);
 
   const ingresosMes  = sum(thisMes);
   const ingresosPrev = sum(prevMes);
@@ -29,12 +47,12 @@ export async function calcKPIs() {
     ? Math.round(((ingresosMes - ingresosPrev) / ingresosPrev) * 100)
     : 0;
 
-  // Tour más vendido (solo pagadas)
+  // Tour más vendido (reservas no canceladas; ingresos = lo realmente cobrado)
   const porTour: Record<string, { nombre: string; count: number; ingresos: number }> = {};
   paid.forEach(b => {
     if (!porTour[b.tourSlug]) porTour[b.tourSlug] = { nombre: b.tourName, count: 0, ingresos: 0 };
     porTour[b.tourSlug].count++;
-    porTour[b.tourSlug].ingresos += b.totalAmount;
+    porTour[b.tourSlug].ingresos += montoCobrado(b);
   });
   const toursMasVendidos = Object.values(porTour).sort((a, b) => b.count - a.count).slice(0, 5);
 

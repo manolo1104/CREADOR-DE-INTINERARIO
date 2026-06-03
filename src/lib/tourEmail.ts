@@ -15,6 +15,8 @@ export function buildTourEmailHtml(data: {
   depositoPagado?:   number;
   metodoPago?:       string;
   pickupLugar?:      string;
+  lineItems?:        any[];   // [{tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}, ...] (+ un objeto _meta)
+  packageItems?:     any[];   // [{hotel,habitacion,noches,habitaciones,checkin,checkout,subtotal}, ...]
 }): string {
   const base = "https://www.huasteca-potosina.com";
   const tourUrl = `${base}/tours/${data.tourSlug}`;
@@ -33,6 +35,86 @@ export function buildTourEmailHtml(data: {
   const pendiente = Math.max(0, data.totalAmount - deposito);
   const fmxEmail  = (n: number) => `$${Number(n).toLocaleString("es-MX")} MXN`;
   const pickupText = data.pickupLugar || "Frente a tu hotel. Confirma tu dirección exacta por WhatsApp.";
+
+  // Tours de la reserva (excluye el objeto _meta). Si hay varios, se listan todos con su fecha.
+  const tours = Array.isArray(data.lineItems) ? data.lineItems.filter((l: any) => l && !l._meta) : [];
+  const packages = Array.isArray(data.packageItems) ? data.packageItems.filter(Boolean) : [];
+  const isMultiTour = tours.length > 1;
+  const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
+
+  // Bloque "Detalles del tour": una fila por tour cuando hay varios; si no, el bloque clásico.
+  const detallesHtml = isMultiTour ? `
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+            <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:16px 22px;">
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">Tours reservados (${tours.length})</p>
+            </td></tr>
+            ${tours.map((t: any, i: number) => `
+            <tr>
+              <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${t.tourName || "Tour"}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${formatDate(t.tourDate)} · ${tourParts(t)} persona${tourParts(t) !== 1 ? "s" : ""}</p>
+              </td>
+              <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
+                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${t.subtotal != null ? fmxEmail(t.subtotal) : ""}</p>
+              </td>
+            </tr>`).join("")}
+          </table>` : `
+          <!-- DETALLES DEL TOUR -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+            <tr>
+              <td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:20px 22px;">
+                <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
+                  Tour Reservado
+                </p>
+                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#1a2e1a;font-weight:400;">
+                  ${data.tourName}
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
+                <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
+                  Fecha del Recorrido
+                </p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
+                  ${formatDate(data.tourDate)}
+                </p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Salida: 8:30–9:00 AM desde tu hotel</p>
+              </td>
+              <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
+                <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
+                  Participantes
+                </p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
+                  ${totalParticipants} persona${totalParticipants !== 1 ? "s" : ""}
+                </p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${participantsText}</p>
+              </td>
+            </tr>
+          </table>`;
+
+  // Bloque de hospedaje (si la reserva incluye paquete con noches de hotel).
+  const lodgingHtml = packages.length ? `
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+            <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:16px 22px;">
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">🏨 Hospedaje incluido</p>
+            </td></tr>
+            ${packages.map((p: any) => {
+              const noches = Number(p.noches) || 0;
+              const habs   = Number(p.habitaciones) || 1;
+              const fechas = (p.checkin || p.checkout) ? `${formatDate(p.checkin)} → ${formatDate(p.checkout)}` : "";
+              return `
+            <tr>
+              <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || "Habitación"}${p.hotel ? ` · ${p.hotel}` : ""}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${noches} noche${noches !== 1 ? "s" : ""}${habs > 1 ? ` · ${habs} habitaciones` : ""}${fechas ? ` · ${fechas}` : ""}</p>
+              </td>
+              <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
+                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${p.subtotal != null ? fmxEmail(p.subtotal) : ""}</p>
+              </td>
+            </tr>`;
+            }).join("")}
+          </table>` : "";
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -125,40 +207,8 @@ export function buildTourEmailHtml(data: {
               </table>
             </td></tr>
           </table>
-
-          <!-- DETALLES DEL TOUR -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
-            <tr>
-              <td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:20px 22px;">
-                <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
-                  Tour Reservado
-                </p>
-                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#1a2e1a;font-weight:400;">
-                  ${data.tourName}
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
-                <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
-                  Fecha del Recorrido
-                </p>
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
-                  ${formatDate(data.tourDate)}
-                </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Salida: 8:30–9:00 AM desde tu hotel</p>
-              </td>
-              <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
-                <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
-                  Participantes
-                </p>
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
-                  ${totalParticipants} persona${totalParticipants !== 1 ? "s" : ""}
-                </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${participantsText}</p>
-              </td>
-            </tr>
-          </table>
+          ${detallesHtml}
+          ${lodgingHtml}
 
           <!-- TOTAL -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#1a2e1a;margin:28px 0;">

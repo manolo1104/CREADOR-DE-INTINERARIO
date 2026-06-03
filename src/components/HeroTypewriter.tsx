@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
-const WORDS = ["Potosina", "Aventura", "Naturaleza", "Cascadas", "Magia"];
+const WORDS_ES = ["Potosina", "Aventura", "Naturaleza", "Cascadas", "Magia"];
+const WORDS_EN = ["Potosina", "Adventure", "Nature", "Waterfalls", "Magic"];
 
 const TYPE_SPEED  = 80;   // ms per character typed
 const DELETE_SPEED = 40;  // ms per character deleted (fast backspace)
@@ -10,6 +12,8 @@ const PAUSE_AFTER  = 2000; // ms to show full word before deleting
 const PAUSE_BEFORE = 180; // ms to wait before typing next word
 
 export function HeroTypewriter() {
+  const pathname = usePathname();
+  const WORDS = pathname === "/en" || pathname.startsWith("/en/") ? WORDS_EN : WORDS_ES;
   const [displayed, setDisplayed] = useState("");
   const [showCursor, setShowCursor] = useState(true);
   const wordIndex = useRef(0);

@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       tourId, tourName, tourSlug, tourDate,
       adults, children,
       promoCode, promoDiscount,
+      lineItems, packageItems,
     } = body;
 
     // ── Verificación del pago con Stripe (fuente de verdad del monto) ─────────
@@ -124,6 +125,8 @@ export async function POST(req: NextRequest) {
           promoCode,
           promoDiscount: Number(promoDiscount) || 0,
           pickupLugar,
+          lineItems:     Array.isArray(lineItems) ? lineItems.filter((l: any) => l && !l._meta) : undefined,
+          packageItems:  Array.isArray(packageItems) ? packageItems : undefined,
         });
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";

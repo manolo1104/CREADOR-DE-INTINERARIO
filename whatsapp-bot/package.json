@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "node test-chat.js",
-    "check": "node --check index.js && node --check agent.js && node --check catalog.js && node --check api-client.js && node --check sessions.js"
+    "check": "node --check index.js && node --check agent.js && node --check catalog.js && node --check knowledge.js && node --check api-client.js && node --check sessions.js && node --check test-chat.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",

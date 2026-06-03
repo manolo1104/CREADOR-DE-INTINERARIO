@@ -31,7 +31,7 @@ const fDateL = (d: string) => { if (!d) return "—"; const r = new Date(d + "T1
 const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "" };
 
-function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string } {
+function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string; priceOverride?: number | null; discountType?: "percent" | "fixed"; discountValue?: number | null } {
   return pkgs.find((p: any) => p._meta) || {};
 }
 function cleanPackages(pkgs: any[]): PackageItem[] {
@@ -130,12 +130,19 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setAnticipo(meta.anticipo != null ? String(meta.anticipo) : "");
     setVigencia(meta.vigencia || "7dias");
 
-    // Preservar descuento/precio editado: si el total guardado difiere del calculado,
-    // lo cargamos como precio editado para no perderlo al guardar de nuevo.
+    // Restaurar precio editado y descuento.
     const calc = editLines.reduce((s, l) => s + calcLine(l), 0)
                + editPkgs.reduce((s, p) => s + calcPackageLine(p), 0);
-    setPriceOverride(q.totalAmount !== calc ? String(q.totalAmount) : "");
-    setDiscountValue(""); setDiscountType("percent");
+    if (meta.priceOverride != null || meta.discountValue != null) {
+      // Formato nuevo: descuento y precio editado guardados explícitamente.
+      setPriceOverride(meta.priceOverride != null ? String(meta.priceOverride) : "");
+      setDiscountType(meta.discountType === "fixed" ? "fixed" : "percent");
+      setDiscountValue(meta.discountValue != null ? String(meta.discountValue) : "");
+    } else {
+      // Cotizaciones viejas (sin descuento guardado): preservar el total como precio editado.
+      setPriceOverride(q.totalAmount !== calc ? String(q.totalAmount) : "");
+      setDiscountValue(""); setDiscountType("percent");
+    }
     setStep(1);
     setModal("edit");
   }
@@ -150,7 +157,13 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
     const anticipoNum  = anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5);
     const packageItems = [
-      { _meta: true, anticipo: anticipoNum, vigencia },
+      {
+        _meta: true, anticipo: anticipoNum, vigencia,
+        // Guardar el precio editado y el descuento para restaurarlos al reabrir.
+        priceOverride: priceOverride !== "" ? Number(priceOverride) : null,
+        discountType,
+        discountValue: discountValue !== "" ? Number(discountValue) : null,
+      },
       ...packages.map(p => ({ ...p, subtotal: calcPackageLine(p) })),
     ];
     const payload = {

@@ -44,7 +44,9 @@ export async function middleware(req: NextRequest) {
 
   // ── Analytics públicas ────────────────────────────────────────────────────
   const isTracked =
-    TRACKED_PATHS.includes(pathname) || pathname.startsWith("/destinos/");
+    TRACKED_PATHS.includes(pathname) ||
+    pathname.startsWith("/destinos/") ||
+    pathname.startsWith("/en/destinos/");
   if (isTracked) {
     console.log(JSON.stringify({
       level: "info", event: "page_view",
@@ -55,7 +57,12 @@ export async function middleware(req: NextRequest) {
     }));
   }
 
-  return NextResponse.next();
+  // ── Locale para el render (lo lee el root layout con headers()) ────────────
+  // Español en la raíz; inglés bajo /en. Se inyecta como header de request.
+  const locale = pathname === "/en" || pathname.startsWith("/en/") ? "en" : "es";
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-locale", locale);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

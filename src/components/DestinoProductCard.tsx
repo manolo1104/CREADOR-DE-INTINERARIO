@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import type { Destino } from "@/lib/destinos";
 import { Clock, CloudSun, Calendar, Star } from "lucide-react";
 import { useItinerario } from "@/context/ItinerarioContext";
@@ -11,10 +12,10 @@ import { RATING_DESTINO } from "@/lib/destinoData";
 // ── Colores por nivel de dificultad ──────────────────────────────────────────
 
 const dificultadConfig = {
-  baja:    { label: "FÁCIL",   bg: "bg-emerald-600",  dot: "bg-emerald-400" },
-  media:   { label: "MEDIA",   bg: "bg-amber-600",    dot: "bg-amber-400"   },
-  alta:    { label: "DIFÍCIL", bg: "bg-orange-700",   dot: "bg-orange-400"  },
-  extrema: { label: "EXTREMA", bg: "bg-red-700",      dot: "bg-red-400"     },
+  baja:    { label: "FÁCIL",   labelEn: "EASY",    bg: "bg-emerald-600",  dot: "bg-emerald-400" },
+  media:   { label: "MEDIA",   labelEn: "MEDIUM",  bg: "bg-amber-600",    dot: "bg-amber-400"   },
+  alta:    { label: "DIFÍCIL", labelEn: "HARD",    bg: "bg-orange-700",   dot: "bg-orange-400"  },
+  extrema: { label: "EXTREMA", labelEn: "EXTREME", bg: "bg-red-700",      dot: "bg-red-400"     },
 } as const;
 
 type DificultadKey = keyof typeof dificultadConfig;
@@ -28,19 +29,23 @@ interface Props {
 }
 
 export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
+  const pathname = usePathname();
+  const en = pathname === "/en" || pathname.startsWith("/en/");
+  const lp = (p: string) => (en ? `/en${p}` : p);
   const { agregar, quitar, tieneDestino } = useItinerario();
   const yaAgregado = tieneDestino(d.slug);
 
   const difKey = d.dificultad.toLowerCase() as DificultadKey;
   const difConfig = dificultadConfig[difKey] ?? dificultadConfig.media;
+  const difLabel = en ? difConfig.labelEn : difConfig.label;
 
   return (
     <article className="group flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300">
 
       {/* ── ZONA IMAGEN ────────────────────────────────────────────── */}
       <Link
-        href={`/destinos/${d.slug}`}
-        aria-label={`Ver ${d.nombre}`}
+        href={lp(`/destinos/${d.slug}`)}
+        aria-label={`${en ? "View" : "Ver"} ${d.nombre}`}
         className="block relative h-56 md:h-64 overflow-hidden flex-shrink-0"
       >
         {d.imagen_hero ? (
@@ -69,7 +74,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
           className={`absolute top-3 right-3 z-10 ${difConfig.bg} text-white text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full flex items-center gap-1`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${difConfig.dot}`} aria-hidden="true" />
-          {difConfig.label}
+          {difLabel}
         </span>
 
         {/* Título + zona + rating sobre la imagen */}
@@ -85,12 +90,12 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
             <div className="flex items-center gap-1 mt-1">
               <Star className="w-3 h-3 fill-dorado text-dorado flex-shrink-0" aria-hidden="true" />
               <span className="text-[10px] font-dm text-dorado font-medium">{RATING_DESTINO[d.slug].rating}</span>
-              <span className="text-[9px] font-dm text-crema/35">({RATING_DESTINO[d.slug].count} opiniones)</span>
+              <span className="text-[9px] font-dm text-crema/35">({RATING_DESTINO[d.slug].count} {en ? "reviews" : "opiniones"})</span>
             </div>
           ) : (
             <div className="flex items-center gap-1 mt-1">
               <Star className="w-3 h-3 fill-dorado/60 text-dorado/60 flex-shrink-0" aria-hidden="true" />
-              <span className="text-[9px] font-dm text-dorado/60">Recomendado</span>
+              <span className="text-[9px] font-dm text-dorado/60">{en ? "Recommended" : "Recomendado"}</span>
             </div>
           )}
         </div>
@@ -124,37 +129,43 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
 
         {/* CTA — siempre al fondo */}
         <div className="mt-auto flex flex-col gap-2">
-          {/* Botón principal: Agregar / Ya agregado */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              if (yaAgregado) {
-                quitar(d.slug);
-              } else {
-                agregar(d.slug);
+          {/* Botón principal: Agregar a itinerario (solo español — el itinerario es feature ES) */}
+          {!en && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (yaAgregado) {
+                  quitar(d.slug);
+                } else {
+                  agregar(d.slug);
+                }
+              }}
+              className={`w-full text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded ${
+                yaAgregado
+                  ? "bg-verde-profundo text-crema/60 border border-verde-vivo/30"
+                  : "bg-verde-selva hover:bg-verde-vivo text-crema"
+              }`}
+              aria-label={
+                yaAgregado
+                  ? `Quitar ${d.nombre} de mi itinerario`
+                  : `Agregar ${d.nombre} a mi itinerario`
               }
-            }}
-            className={`w-full text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded ${
-              yaAgregado
-                ? "bg-verde-profundo text-crema/60 border border-verde-vivo/30"
-                : "bg-verde-selva hover:bg-verde-vivo text-crema"
-            }`}
-            aria-label={
-              yaAgregado
-                ? `Quitar ${d.nombre} de mi itinerario`
-                : `Agregar ${d.nombre} a mi itinerario`
-            }
-          >
-            {yaAgregado ? "✓ EN TU ITINERARIO" : "+ AGREGAR A ITINERARIO"}
-          </button>
+            >
+              {yaAgregado ? "✓ EN TU ITINERARIO" : "+ AGREGAR A ITINERARIO"}
+            </button>
+          )}
 
-          {/* Botón secundario: Ver detalles */}
+          {/* Botón: Ver detalles (en EN es el principal) */}
           <Link
-            href={`/destinos/${d.slug}`}
-            className="w-full block text-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
-            aria-label={`Ver detalles de ${d.nombre}`}
+            href={lp(`/destinos/${d.slug}`)}
+            className={`w-full block text-center text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded ${
+              en
+                ? "bg-verde-selva hover:bg-verde-vivo text-crema font-medium py-3"
+                : "border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema"
+            }`}
+            aria-label={`${en ? "View details of" : "Ver detalles de"} ${d.nombre}`}
           >
-            VER DETALLES →
+            {en ? "VIEW DETAILS →" : "VER DETALLES →"}
           </Link>
         </div>
       </div>

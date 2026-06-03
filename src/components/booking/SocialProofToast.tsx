@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
 
 // 15 mensajes únicos — variedad de grupos, ciudades y tours
-const MENSAJES: { texto: string; tiempo: string }[] = [
+const MENSAJES_ES: { texto: string; tiempo: string }[] = [
   { texto: "Una familia de Monterrey acaba de reservar la Expedición Tamul",          tiempo: "hace 8 min" },
   { texto: "Una pareja de CDMX reservó la Ruta Surrealista de Edward James",          tiempo: "hace 23 min" },
   { texto: "Un grupo de amigos de Guadalajara confirmó las Cascadas del Meco",        tiempo: "hace 41 min" },
@@ -23,12 +24,33 @@ const MENSAJES: { texto: string; tiempo: string }[] = [
   { texto: "3 amigos de Morelia confirmaron la Ruta Surrealista de Edward James",     tiempo: "hace 5 h 30 min" },
 ];
 
+const MENSAJES_EN: { texto: string; tiempo: string }[] = [
+  { texto: "A family from Monterrey just booked the Tamul Expedition",                 tiempo: "8 min ago" },
+  { texto: "A couple from Mexico City booked the Edward James Surrealist Route",       tiempo: "23 min ago" },
+  { texto: "A group of friends from Guadalajara confirmed the El Meco Waterfalls",     tiempo: "41 min ago" },
+  { texto: "A family with kids from Querétaro booked the Stepped Paradise",            tiempo: "1 hour ago" },
+  { texto: "A couple from San Luis Potosí confirmed the Water Route",                  tiempo: "1 h 20 min ago" },
+  { texto: "3 friends from Tampico booked the Tamul Expedition for this weekend",      tiempo: "2 hours ago" },
+  { texto: "A family from Puebla chose the El Meco Waterfalls",                        tiempo: "2 h 15 min ago" },
+  { texto: "A couple from León completed their Surrealist Route booking",              tiempo: "2 h 40 min ago" },
+  { texto: "4 friends from Tijuana booked the Tamul Expedition for Saturday",          tiempo: "3 hours ago" },
+  { texto: "A family from Mérida booked the Stepped Paradise with 2 kids",             tiempo: "3 h 10 min ago" },
+  { texto: "A couple from Monterrey confirmed Puente de Dios and the Seven Waterfalls",tiempo: "3 h 45 min ago" },
+  { texto: "A group of 5 friends from Mexico City booked the Tamul Expedition",        tiempo: "4 hours ago" },
+  { texto: "A family from Aguascalientes chose the Minas Viejas Waterfalls",           tiempo: "4 h 20 min ago" },
+  { texto: "A couple from Guadalajara booked the Water Route for their honeymoon",     tiempo: "5 hours ago" },
+  { texto: "3 friends from Morelia confirmed the Edward James Surrealist Route",       tiempo: "5 h 30 min ago" },
+];
+
 interface Props {
   tourId:   string;
   tourName: string;
 }
 
 export function SocialProofToast({ tourId, tourName }: Props) {
+  const pathname = usePathname();
+  const en = pathname === "/en" || pathname.startsWith("/en/");
+  const MENSAJES = en ? MENSAJES_EN : MENSAJES_ES;
   const [visible,   setVisible]   = useState(false);
   const [dismissed, setDismissed] = useState(false);
   // Start from a random index so each session sees a different first message
@@ -88,11 +110,11 @@ export function SocialProofToast({ tourId, tourName }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
         <span className="text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo/70">
-          ✦ Reserva reciente
+          {en ? "✦ Recent booking" : "✦ Reserva reciente"}
         </span>
         <button
           onClick={dismiss}
-          aria-label="Cerrar"
+          aria-label={en ? "Close" : "Cerrar"}
           className="text-crema/30 hover:text-crema/70 transition-colors -mr-1"
         >
           <X className="w-3.5 h-3.5" />

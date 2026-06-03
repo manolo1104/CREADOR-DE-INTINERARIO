@@ -21,35 +21,62 @@ async function getBlogPosts(): Promise<{ slug: string; updatedAt: Date; coverIma
   }
 }
 
+// Rutas bilingües (es en raíz, en bajo /en): genera 2 entradas (es + en) con
+// hreflang recíprocos (es-MX, en, x-default) en cada una.
+function bilingual(
+  path: string,
+  opts: { changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number; lastModified?: Date; images?: string[] },
+): MetadataRoute.Sitemap {
+  const esUrl = path === "/" ? `${BASE}/` : `${BASE}${path}`;
+  const enUrl = path === "/" ? `${BASE}/en` : `${BASE}/en${path}`;
+  const languages = { "es-MX": esUrl, en: enUrl, "x-default": esUrl };
+  const common = {
+    lastModified: opts.lastModified ?? new Date(),
+    changeFrequency: opts.changeFrequency,
+    priority: opts.priority,
+    images: opts.images,
+  };
+  return [
+    { url: esUrl, ...common, alternates: { languages } },
+    { url: enUrl, ...common, alternates: { languages } },
+  ];
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blogPosts = await getBlogPosts();
 
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: `${BASE}/`,              lastModified: new Date(), changeFrequency: "weekly",  priority: 1.0 },
-    { url: `${BASE}/tours`,         lastModified: new Date(), changeFrequency: "weekly",  priority: 0.9 },
-    { url: `${BASE}/destinos`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+  // Páginas bilingües (tienen versión /en)
+  const bilingualStatic: MetadataRoute.Sitemap = [
+    ...bilingual("/",         { changeFrequency: "weekly",  priority: 1.0 }),
+    ...bilingual("/tours",    { changeFrequency: "weekly",  priority: 0.9 }),
+    ...bilingual("/destinos", { changeFrequency: "monthly", priority: 0.8 }),
+  ];
+
+  // Páginas solo en español (aún sin versión /en)
+  const esOnlyStatic: MetadataRoute.Sitemap = [
     { url: `${BASE}/blog`,          lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
     { url: `${BASE}/nosotros`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/info-practica`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/recomendar`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/experiencias`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/paquetes`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
   ];
 
-  const tourPages: MetadataRoute.Sitemap = TOURS_DB.map((t) => ({
-    url: `${BASE}/tours/${t.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.9,
-    images: t.imagen_hero ? [absImg(t.imagen_hero)] : undefined,
-  }));
+  const tourPages: MetadataRoute.Sitemap = TOURS_DB.flatMap((t) =>
+    bilingual(`/tours/${t.slug}`, {
+      changeFrequency: "monthly",
+      priority: 0.9,
+      images: t.imagen_hero ? [absImg(t.imagen_hero)] : undefined,
+    }),
+  );
 
-  const destinoPages: MetadataRoute.Sitemap = DESTINOS_DB.map((d) => ({
-    url: `${BASE}/destinos/${d.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.7,
-    images: d.imagen_hero ? [absImg(d.imagen_hero)] : undefined,
-  }));
+  const destinoPages: MetadataRoute.Sitemap = DESTINOS_DB.flatMap((d) =>
+    bilingual(`/destinos/${d.slug}`, {
+      changeFrequency: "monthly",
+      priority: 0.7,
+      images: d.imagen_hero ? [absImg(d.imagen_hero)] : undefined,
+    }),
+  );
 
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
     url: `${BASE}/blog/${p.slug}`,
@@ -59,5 +86,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
   }));
 
-  return [...staticPages, ...tourPages, ...destinoPages, ...blogPages];
+  return [...bilingualStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages];
 }

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { hoyMX, addDaysYMD, partsMX, mxMonthStart } from "@/lib/dates";
+import { montoCobrado, saldoPendiente } from "@/lib/admin/kpis";
 import DashboardClient from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -25,15 +26,16 @@ export default async function AdminDashboard() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
-    // "Ingresos del mes": solo reservas pagadas creadas este mes
+    // "Ingresos del mes": dinero realmente cobrado de reservas no canceladas creadas este mes
     prisma.tourBooking.findMany({
-      where: { status: "paid", createdAt: { gte: monthStart } },
+      where: { status: { not: "cancelled" }, createdAt: { gte: monthStart } },
     }),
-    prisma.tourBooking.findMany({ where: { status: "pending" } }),
+    // "Pendiente de cobro": saldo que falta de TODAS las reservas no canceladas
+    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" } } }),
   ]);
 
-  const monthIngresos = monthBookings.reduce((s, b) => s + b.totalAmount, 0);
-  const pendingAmount = allPending.reduce((s, b) => s + b.totalAmount, 0);
+  const monthIngresos = monthBookings.reduce((s, b) => s + montoCobrado(b), 0);
+  const pendingAmount = allPending.reduce((s, b) => s + saldoPendiente(b), 0);
 
   return (
     <DashboardClient

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
 
 function parseNum(str: string): { prefix: string; value: number; suffix: string } | null {
   const match = str.match(/^([^\d]*)(\d+(?:\.\d+)?)(.*)$/);
@@ -63,12 +64,21 @@ function AnimatedStat({ num, label }: { num: string; label: string }) {
 }
 
 export function HeroStats({ destinosCount }: { destinosCount: number }) {
-  const stats = [
-    { num: String(destinosCount), label: "Destinos Únicos" },
-    { num: "Salidas",             label: "Todos los días" },
-    { num: "Máx. 12",             label: "Personas por grupo" },
-    { num: "Guías",               label: "Certificados NOM-09" },
-  ];
+  const pathname = usePathname();
+  const en = pathname === "/en" || pathname.startsWith("/en/");
+  const stats = en
+    ? [
+        { num: String(destinosCount), label: "Unique destinations" },
+        { num: "Departures",          label: "Every day" },
+        { num: "Max. 12",             label: "People per group" },
+        { num: "Guides",              label: "NOM-09 certified" },
+      ]
+    : [
+        { num: String(destinosCount), label: "Destinos Únicos" },
+        { num: "Salidas",             label: "Todos los días" },
+        { num: "Máx. 12",             label: "Personas por grupo" },
+        { num: "Guías",               label: "Certificados NOM-09" },
+      ];
 
   return (
     <div className="flex gap-10 md:gap-16 flex-wrap justify-center border-t border-white/10 pt-10">

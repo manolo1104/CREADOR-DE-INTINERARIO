@@ -52,5 +52,7 @@ Requiere una **línea/número de WhatsApp DEDICADO**, distinto del número del b
 hotel y del 524891251458 (un número = una sola sesión de WhatsApp).
 
 ## Mantener en sync
-`catalog.js` es una copia curada de los tours del sitio (`src/lib/tours.ts`). Si
-cambias precios, inclusiones o tours en el sitio, actualiza también `catalog.js`.
+`catalog.js` (7 tours, de `src/lib/tours.ts`) y `knowledge.js` (3 paquetes de
+`src/app/paquetes/page.tsx` + 20 destinos de `src/lib/destinos.ts`) son copias
+curadas del sitio. Si cambias precios, inclusiones, paquetes o destinos en el
+sitio, actualiza también estos dos archivos.

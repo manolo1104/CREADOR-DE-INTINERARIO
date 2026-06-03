@@ -92,6 +92,12 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
     const storedPkgs = (b as any).packageItems as PackageItem[] | null;
 
+    // Preservar el total editado a mano: si el total guardado difiere del
+    // calculado (precio ajustado, descuento de una cotización convertida, etc.)
+    // lo cargamos como total editado para no perderlo al reabrir/guardar.
+    const calcTotal = lines.reduce((s, l) => s + calcLine(l), 0)
+                    + (storedPkgs ?? []).reduce((s, p) => s + calcPackageLine(p), 0);
+
     setForm({
       customerName:   b.customerName,
       customerEmail:  b.customerEmail,
@@ -99,7 +105,7 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       notes:          b.notes || "",
       lines,
       packages:       storedPkgs ?? [],
-      totalOverride:  "",
+      totalOverride:  b.totalAmount !== calcTotal ? String(b.totalAmount) : "",
       depositoPagado: String((b as any).depositoPagado ?? 0),
       metodoPago:     meta.metodoPago  || "Transferencia",
       folioPago:      meta.folioPago   || "",
@@ -191,7 +197,9 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     const fechaInicio = tourDates[0] || b.tourDate;
     const fechaFin   = checkouts.length ? checkouts[checkouts.length - 1] : tourDates[tourDates.length - 1] || b.tourDate;
     const numPersonas = lines.reduce((s, l) => s + l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0) || b.adults + (b.children ?? 0);
-    const tourTitulo = lines.map(l => l.tourName).filter(Boolean).join(" · ") || b.tourName;
+    // Resumen de arriba: NO repetir los nombres (el itinerario de abajo ya los lista).
+    // Con varios tours mostramos el conteo; con uno solo, su nombre.
+    const tourResumen = lines.length > 1 ? `${lines.length} tours` : (lines[0]?.tourName || b.tourName);
     const confirmDate = new Date(b.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
 
     const DIFIC: Record<string, string> = { baja: "Fácil", media: "Moderada", alta: "Difícil" };
@@ -304,7 +312,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   </div>
 
   <div class="summary">
-    <div class="item"><div class="k">Tour</div><div class="v italic">${tourTitulo}</div></div>
+    <div class="item"><div class="k">${lines.length > 1 ? "Tours" : "Tour"}</div><div class="v italic">${tourResumen}</div></div>
     <div class="item"><div class="k">Fechas</div><div class="v mono">${fDate(fechaInicio)} al ${fDate(fechaFin)}</div></div>
     <div class="item"><div class="k">Personas</div><div class="v">${numPersonas}</div></div>
     <div class="item">
@@ -344,7 +352,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div class="row">
       <div><h3>Cancelación</h3><p><strong>Gratis</strong> hasta 48 h antes del primer tour. Después aplica cargo del 50%. Fuerza mayor: reagendamos sin costo.</p></div>
       <div><h3>Saldo</h3><p>El <strong>saldo de $${pendiente.toLocaleString("es-MX")} MXN</strong> se paga el primer día del tour. Efectivo, transferencia o tarjeta (3% comisión).</p></div>
-      <div><h3>El día del tour</h3><p>Espera al guía <strong>10 min antes</strong> de la hora indicada en el lobby de tu hotel. Lleva esta confirmación impresa o en pantalla.</p></div>
+      <div><h3>El día del tour</h3><p>Tu guía coordinará por <strong>WhatsApp</strong> la hora exacta de recogida en tu hotel. Lleva esta confirmación impresa o en pantalla.</p></div>
     </div>
   </div>
 

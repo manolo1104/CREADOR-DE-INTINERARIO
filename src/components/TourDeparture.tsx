@@ -1,24 +1,35 @@
 /* TourDeparture — Punto de salida y transporte (Server Component) */
+import { headers } from "next/headers";
 import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
 
-const WA_LLEGADA =
+const WA_LLEGADA_ES =
   "https://wa.me/524891251458?text=Hola%2C%20tengo%20dudas%20sobre%20c%C3%B3mo%20llegar%20al%20punto%20de%20salida%20del%20tour.";
+const WA_LLEGADA_EN =
+  "https://wa.me/524891251458?text=Hi%2C%20I%20have%20questions%20about%20how%20to%20reach%20the%20tour%20departure%20point.";
 
 const GOOGLE_MAPS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
 
 export function TourDeparture() {
+  const en = headers().get("x-locale") === "en";
+  const WA_LLEGADA = en ? WA_LLEGADA_EN : WA_LLEGADA_ES;
   return (
     <section>
       <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
-        <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> Punto de salida y transporte
+        <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Departure point & transport" : "Punto de salida y transporte"}
       </h2>
 
       <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
         {/* Texto intro */}
         <p className="text-crema/65 font-dm text-sm leading-relaxed">
-          Nuestros tours salen desde el{" "}
-          <strong className="text-crema font-medium">Hotel Paraíso Encantado Xilitla</strong>,
-          nuestro hotel sede ubicado en el corazón de Xilitla, a pasos del Jardín Surrealista.
+          {en ? (
+            <>Our tours depart from the{" "}
+            <strong className="text-crema font-medium">Hotel Paraíso Encantado Xilitla</strong>,
+            our home base in the heart of Xilitla, steps from the Surrealist Garden.</>
+          ) : (
+            <>Nuestros tours salen desde el{" "}
+            <strong className="text-crema font-medium">Hotel Paraíso Encantado Xilitla</strong>,
+            nuestro hotel sede ubicado en el corazón de Xilitla, a pasos del Jardín Surrealista.</>
+          )}
         </p>
 
         {/* Mapa embebido */}
@@ -46,16 +57,23 @@ export function TourDeparture() {
           rel="noopener noreferrer"
           className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors"
         >
-          Ver en Google Maps →
+          {en ? "View on Google Maps →" : "Ver en Google Maps →"}
         </a>
 
         {/* Info de logística */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {([
-            { Icon: Clock,        label: "Horario de salida", value: "5:30 AM (puntual)" },
-            { Icon: Bus,          label: "Transporte",        value: "Desde tu hospedaje en Xilitla" },
-            { Icon: CheckCircle2, label: "Regreso aprox.",    value: "6:00–7:00 PM" },
-          ] as { Icon: typeof Clock; label: string; value: string }[]).map((item) => (
+          {(en
+            ? [
+                { Icon: Clock,        label: "Departure time", value: "5:30 AM (sharp)" },
+                { Icon: Bus,          label: "Transport",      value: "From your stay in Xilitla" },
+                { Icon: CheckCircle2, label: "Approx. return", value: "6:00–7:00 PM" },
+              ]
+            : [
+                { Icon: Clock,        label: "Horario de salida", value: "5:30 AM (puntual)" },
+                { Icon: Bus,          label: "Transporte",        value: "Desde tu hospedaje en Xilitla" },
+                { Icon: CheckCircle2, label: "Regreso aprox.",    value: "6:00–7:00 PM" },
+              ]
+          ).map((item) => (
             <div key={item.label} className="bg-verde-profundo/30 border border-white/8 p-3 rounded">
               <item.Icon className="w-5 h-5 text-verde-vivo/60 mb-1" aria-hidden="true" />
               <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm mb-0.5">
@@ -67,7 +85,9 @@ export function TourDeparture() {
         </div>
 
         <p className="text-[10px] text-crema/40 font-dm">
-          ¿No estás hospedado en Xilitla? Consúltanos — coordinamos tu recogida sin costo adicional.
+          {en
+            ? "Not staying in Xilitla? Ask us — we'll arrange your pickup at no extra cost."
+            : "¿No estás hospedado en Xilitla? Consúltanos — coordinamos tu recogida sin costo adicional."}
         </p>
 
         {/* CTA WhatsApp */}
@@ -82,7 +102,7 @@ export function TourDeparture() {
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
             <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
           </svg>
-          Pregúntanos cómo llegar →
+          {en ? "Ask us how to get there →" : "Pregúntanos cómo llegar →"}
         </a>
       </div>
     </section>

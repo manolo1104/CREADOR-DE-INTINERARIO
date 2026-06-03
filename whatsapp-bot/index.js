@@ -100,18 +100,26 @@ client.on("disconnected", (r) => console.log("⚠️ Desconectado:", r));
 // ── Mensajes ENTRANTES (clientes) ─────────────────────────────
 client.on("message", async (msg) => {
   try {
-    if (msg.fromMe || msg.isGroupMsg || msg.from === "status@broadcast") return;
+    if (msg.fromMe || msg.isStatus || msg.from === "status@broadcast") return;
     if (msg.from.endsWith("@g.us")) return; // grupos
     const body = (msg.body || "").trim();
     if (!body) return;
-    if (isPaused(msg.from)) return; // humano tomó la conversación
+
+    console.log(`📩 Entrante de ${msg.from}: ${body.substring(0, 60)}`);
+    if (isPaused(msg.from)) { console.log("   (chat en pausa — lo tomó un humano)"); return; }
 
     // Corre en número personal: por defecto solo responde a DESCONOCIDOS.
-    if (RESPOND_MODE === "strangers" && !isAlwaysRespond(msg.from)) {
-      try {
-        const contact = await msg.getContact();
-        if (contact && contact.isMyContact) return; // contacto guardado → lo atiendes tú
-      } catch { /* si no se puede leer el contacto, asumimos desconocido y respondemos */ }
+    if (RESPOND_MODE === "strangers") {
+      let contact = null;
+      try { contact = await msg.getContact(); } catch {}
+      const contactNumber = String((contact && (contact.number || (contact.id && contact.id.user))) || "");
+      const always = isAlwaysRespond(msg.from) || isAlwaysRespond(contactNumber);
+      const saved = !!(contact && contact.isMyContact);
+      console.log(`   número=${contactNumber || "?"} · guardado=${saved} · always=${always}`);
+      if (saved && !always) {
+        console.log("   ⏭️  es contacto guardado → no respondo (lo atiendes tú). Para probar, agrega su número a ALWAYS_RESPOND_NUMBERS o usa RESPOND_MODE=all.");
+        return;
+      }
     }
 
     bufferMessage(msg.from, body);
