@@ -39,6 +39,7 @@ export interface ReservaFormState {
   metodoPago:     string;
   folioPago:      string;
   pickupLugar:    string;
+  numPersonas:    string;  // tamaño real del grupo (para el email; evita sumar por tour)
 }
 
 const HABITACIONES_PRESET = [
@@ -63,6 +64,7 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
   lines: [{ ...EMPTY_LINE }], packages: [], totalOverride: "", depositoPagado: "",
   metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
+  numPersonas: "",
 };
 
 export function calcTourLine(l: LineItem): number {
@@ -223,6 +225,21 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
           {/* ── Step 2: Tours + Hospedaje ── */}
           {step === 2 && (
             <div className="space-y-5">
+              {/* Número de personas del grupo (para el email — evita sumar por tour) */}
+              <div className="bg-[#f4edd8]/60 border border-[#1a2e1a]/10 rounded-sm p-3">
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">
+                  Número de personas del grupo
+                </label>
+                <input type="number" min={1} max={40} value={form.numPersonas}
+                  placeholder="Ej. 2"
+                  onChange={e => setForm(f => ({ ...f, numPersonas: e.target.value }))}
+                  className={`${inputCls} max-w-[140px]`} />
+                <p className="text-[10px] font-dm text-[#1a2e1a]/40 mt-1.5">
+                  Cuántas personas son en total (el mismo grupo que va a todos los tours). Así el correo de
+                  confirmación muestra el número correcto y no suma las personas de cada tour.
+                </p>
+              </div>
+
               {/* Tours */}
               <div>
                 <div className="flex items-center justify-between mb-2">

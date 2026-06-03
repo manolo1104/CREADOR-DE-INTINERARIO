@@ -15,6 +15,7 @@ export function buildTourEmailHtml(data: {
   depositoPagado?:   number;
   metodoPago?:       string;
   pickupLugar?:      string;
+  partySize?:        number;  // tamaño real del grupo; tiene prioridad para mostrar participantes
   lineItems?:        any[];   // [{tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}, ...] (+ un objeto _meta)
   packageItems?:     any[];   // [{hotel,habitacion,noches,habitaciones,checkin,checkout,subtotal}, ...]
 }): string {
@@ -38,15 +39,24 @@ export function buildTourEmailHtml(data: {
 
   // Tours de la reserva (excluye el objeto _meta). Si hay varios, se listan todos con su fecha.
   const tours = Array.isArray(data.lineItems) ? data.lineItems.filter((l: any) => l && !l._meta) : [];
-  const packages = Array.isArray(data.packageItems) ? data.packageItems.filter(Boolean) : [];
+  const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p: any) => p && !p._meta) : [];
   const isMultiTour = tours.length > 1;
   const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
+
+  // Tamaño REAL del grupo (no sumar las personas de cada tour: es el mismo grupo).
+  // Prioridad: el número que capturó el dueño (partySize) → si no, el máximo por tour → si no, el total.
+  const perTourMax = tours.length ? Math.max(...tours.map(tourParts)) : 0;
+  const grupo = (data.partySize && data.partySize > 0)
+    ? data.partySize
+    : (perTourMax > 0 ? perTourMax : totalParticipants);
+  const grupoText = grupo === 1 ? "1 persona" : `${grupo} personas`;
 
   // Bloque "Detalles del tour": una fila por tour cuando hay varios; si no, el bloque clásico.
   const detallesHtml = isMultiTour ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
             <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:16px 22px;">
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">Tours reservados (${tours.length})</p>
+              <p style="margin:6px 0 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">Grupo de ${grupoText}</p>
             </td></tr>
             ${tours.map((t: any, i: number) => `
             <tr>
@@ -86,9 +96,9 @@ export function buildTourEmailHtml(data: {
                   Participantes
                 </p>
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
-                  ${totalParticipants} persona${totalParticipants !== 1 ? "s" : ""}
+                  ${grupoText}
                 </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${participantsText}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${data.partySize && data.partySize > 0 ? "Reserva confirmada para tu grupo" : participantsText}</p>
               </td>
             </tr>
           </table>`;

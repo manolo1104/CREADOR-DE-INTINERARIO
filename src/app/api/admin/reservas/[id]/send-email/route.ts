@@ -37,6 +37,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       depositoPagado:     depositoEfectivo,
       metodoPago:         meta.metodoPago || undefined,
       pickupLugar:        meta.pickupLugar || undefined,
+      partySize:          Number(meta.numPersonas) || undefined,
       lineItems:          rawLines.filter((l: any) => l && !l._meta),
       packageItems:       Array.isArray((b as any).packageItems) ? (b as any).packageItems : [],
     });

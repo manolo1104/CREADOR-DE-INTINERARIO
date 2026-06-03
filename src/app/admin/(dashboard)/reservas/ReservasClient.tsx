@@ -110,13 +110,14 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       metodoPago:     meta.metodoPago  || "Transferencia",
       folioPago:      meta.folioPago   || "",
       pickupLugar:    meta.pickupLugar || "Lobby de tu hotel en Xilitla",
+      numPersonas:    meta.numPersonas ? String(meta.numPersonas) : "",
     });
     setModal("edit");
   }
 
   function buildPayload(form: ReservaFormState) {
     const lineItems = [
-      { _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago, pickupLugar: form.pickupLugar },
+      { _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago, pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0 },
       ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
     ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
