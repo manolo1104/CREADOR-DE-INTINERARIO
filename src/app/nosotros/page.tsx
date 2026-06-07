@@ -211,7 +211,7 @@ const HISTORIA = [
   },
   {
     año: "2019",
-    hito: "Fundación formal de Tours Huasteca Potosina. Primera camioneta propia, primera página en WhatsApp Business y primeras reservas en línea. Tres destinos se convierten en cinco.",
+    hito: "Manolo Covarrubias funda formalmente Tours Huasteca Potosina y une al equipo de guías bajo una misma empresa. Primera camioneta propia, primera página en WhatsApp Business y primeras reservas en línea. Tres destinos se convierten en cinco.",
     cta: null,
   },
   {
@@ -392,10 +392,10 @@ export default function NosotrosPage() {
             </h2>
             <div className="space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               <p>
-                La historia no empieza en 2019 con la fundación formal. Empieza en 2010, cuando Carlos Rodríguez tenía 19 años y ya llevaba turistas a la Cascada de Tamul a pie, porque no había carretera asfaltada y él era el único que sabía cómo llegar.
+                Tours Huasteca Potosina nació formalmente en 2019, cuando Manolo Covarrubias la fundó. Pero las raíces de nuestro equipo vienen de mucho antes: de 2010, cuando Carlos Rodríguez — hoy nuestro guía principal — tenía 19 años y ya llevaba turistas a la Cascada de Tamul a pie, porque no había carretera asfaltada y él era el único que sabía cómo llegar.
               </p>
               <p>
-                Lo que siguió fueron años de aprendizaje en el campo — pescando en el Tampaón, haciendo rappel en los cañones, conociendo a los ejidatarios que custodian el acceso a los sitios más espectaculares. Cuando los tres guías se unieron en 2015, tenían lo que ninguna agencia puede comprar: quince años de conocimiento local acumulado.
+                Lo que siguió fueron años de aprendizaje en el campo — pescando en el Tampaón, haciendo rappel en los cañones, conociendo a los ejidatarios que custodian el acceso a los sitios más espectaculares. Cuando los tres guías se unieron en 2015, tenían lo que ninguna agencia puede comprar: quince años de conocimiento local acumulado. En 2019, Manolo — nacido en Xilitla y convencido de que la Huasteca merece ser conocida por el mundo — unió todo ese talento local bajo una misma empresa y una misma misión.
               </p>
               {/* Anécdota emotiva — momento fundacional */}
               <div className="border-l-2 border-dorado/40 pl-5 bg-dorado/5 py-4 pr-4 mt-2">

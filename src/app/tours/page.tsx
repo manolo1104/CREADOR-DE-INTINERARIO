@@ -209,35 +209,11 @@ export default function ToursPage() {
       <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {tours.map((tour, tourIndex) => {
-            const seed = tourIndex * 2654435761;
-            const pseudo = (seed >>> 0) % 100;
-            let urgencyBadge: React.ReactNode;
-            if (pseudo < 30) {
-              const spots = (tourIndex % 3) + 1;
-              urgencyBadge = (
-                <span className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse flex-shrink-0" />
-                  {en ? `Only ${spots} spot${spots > 1 ? "s" : ""} left` : `Solo ${spots} lugar${spots > 1 ? "es" : ""} disponible`}
-                </span>
-              );
-            } else if (pseudo < 60) {
-              urgencyBadge = (
-                <span className="absolute top-3 right-3 bg-amber-500 text-negro text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
-                  {en ? "🔥 High demand on weekends" : "🔥 Alta demanda fines de semana"}
-                </span>
-              );
-            } else {
-              const today = new Date();
-              const daysUntilSat = (6 - today.getDay() + 7) % 7 || 7;
-              const nextSat = new Date(today);
-              nextSat.setDate(today.getDate() + daysUntilSat + (tourIndex % 2 === 0 ? 7 : 0));
-              const dateStr = nextSat.toLocaleDateString(en ? "en-US" : "es-MX", { day: "numeric", month: "short" });
-              urgencyBadge = (
-                <span className="absolute top-3 right-3 bg-verde-selva/90 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
-                  {en ? `Next departure: ${dateStr}` : `Próx. salida: ${dateStr}`}
-                </span>
-              );
-            }
+            const urgencyBadge: React.ReactNode = (
+              <span className="absolute top-3 right-3 bg-verde-selva/90 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
+                {en ? "Daily departures" : "Salidas todos los días"}
+              </span>
+            );
 
             return (
             <article key={tour.id} id={tour.id} className="stagger-reveal relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28" style={{ animationDelay: `${tourIndex * 80}ms` }}>
