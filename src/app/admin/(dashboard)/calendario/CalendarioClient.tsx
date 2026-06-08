@@ -7,7 +7,7 @@ import { TOURS_DB } from "@/lib/tours";
 import { hoyMX } from "@/lib/dates";
 
 // Paleta asignada a cada tour del catálogo (cubre tours nuevos automáticamente).
-const PALETTE = ["#3a6b1a", "#c4882a", "#1a4e8a", "#7a3a6a", "#2a7a6a", "#9a4a1e", "#5a7a2a", "#8a6f1e", "#3a6b6b", "#6a4a8a"];
+const PALETTE = ["#1B4332", "#52B788", "#1a4e8a", "#7a3a6a", "#2a7a6a", "#C9484A", "#5a7a2a", "#40916C", "#3a6b6b", "#6a4a8a"];
 const COLOR_BY_SLUG: Record<string, string> = {};
 TOURS_DB.forEach((t, i) => { COLOR_BY_SLUG[t.slug] = PALETTE[i % PALETTE.length]; });
 function tourColor(slug: string) { return COLOR_BY_SLUG[slug] || "#5a5a5a"; }
@@ -89,32 +89,32 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-cormorant text-[#1a2e1a] text-2xl font-light">Calendario de Reservas</h1>
-          <p className="text-[#1a2e1a]/50 font-dm text-sm mt-1">{thisMonthSalidas.length} salida{thisMonthSalidas.length !== 1 ? "s" : ""} en {MESES[month]} {year}</p>
+          <h1 className="font-cormorant text-[#1B4332] text-2xl font-light">Calendario de Reservas</h1>
+          <p className="text-[#1B4332]/50 font-dm text-sm mt-1">{thisMonthSalidas.length} salida{thisMonthSalidas.length !== 1 ? "s" : ""} en {MESES[month]} {year}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={prevMonth} className="p-2 border border-[#1a2e1a]/15 hover:bg-[#f4edd8] transition-colors rounded-sm">
-            <ChevronLeft className="w-4 h-4 text-[#1a2e1a]" />
+          <button onClick={prevMonth} className="p-2 border border-[#1B4332]/15 hover:bg-[#FAFAF8] transition-colors rounded-sm">
+            <ChevronLeft className="w-4 h-4 text-[#1B4332]" />
           </button>
-          <span className="font-cormorant text-[#1a2e1a] text-lg min-w-[140px] text-center">{MESES[month]} {year}</span>
-          <button onClick={nextMonth} className="p-2 border border-[#1a2e1a]/15 hover:bg-[#f4edd8] transition-colors rounded-sm">
-            <ChevronRight className="w-4 h-4 text-[#1a2e1a]" />
+          <span className="font-cormorant text-[#1B4332] text-lg min-w-[140px] text-center">{MESES[month]} {year}</span>
+          <button onClick={nextMonth} className="p-2 border border-[#1B4332]/15 hover:bg-[#FAFAF8] transition-colors rounded-sm">
+            <ChevronRight className="w-4 h-4 text-[#1B4332]" />
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-[#1a2e1a]/10 rounded-sm overflow-hidden">
+      <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
         {/* Days of week */}
-        <div className="grid grid-cols-7 border-b border-[#1a2e1a]/10">
+        <div className="grid grid-cols-7 border-b border-[#1B4332]/10">
           {DIAS.map(d => (
-            <div key={d} className="py-3 text-center text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/40 font-dm bg-[#f4edd8]">{d}</div>
+            <div key={d} className="py-3 text-center text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm bg-[#FAFAF8]">{d}</div>
           ))}
         </div>
 
         {/* Calendar grid */}
         <div className="grid grid-cols-7">
           {cells.map((day, i) => {
-            if (!day) return <div key={i} className="min-h-[90px] border-b border-r border-[#1a2e1a]/6 bg-[#f4edd8]/30" />;
+            if (!day) return <div key={i} className="min-h-[90px] border-b border-r border-[#1B4332]/6 bg-[#FAFAF8]/30" />;
             const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
             const dayBookings = byDay[dateStr] || [];
             const isToday = dateStr === todayStr;
@@ -122,9 +122,9 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
             return (
               <div key={i}
                 onClick={() => hasBk && setSel(dayBookings)}
-                className={`min-h-[90px] border-b border-r border-[#1a2e1a]/6 p-2 transition-colors ${hasBk?"cursor-pointer hover:bg-[#f4edd8]/70":""}`}
+                className={`min-h-[90px] border-b border-r border-[#1B4332]/6 p-2 transition-colors ${hasBk?"cursor-pointer hover:bg-[#FAFAF8]/70":""}`}
               >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-dm mb-1 ${isToday?"bg-[#3a6b1a] text-white":"text-[#1a2e1a]/70"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-dm mb-1 ${isToday?"bg-[#1B4332] text-white":"text-[#1B4332]/70"}`}>
                   {day}
                 </div>
                 <div className="space-y-0.5">
@@ -137,7 +137,7 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
                     </div>
                   ))}
                   {dayBookings.length > 3 && (
-                    <div className="text-[9px] font-dm text-[#1a2e1a]/40">+{dayBookings.length-3} más</div>
+                    <div className="text-[9px] font-dm text-[#1B4332]/40">+{dayBookings.length-3} más</div>
                   )}
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
         {Array.from(new Set(salidas.map(s => s.tourSlug))).map(slug => (
           <div key={slug} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{background:tourColor(slug)}} />
-            <span className="text-[10px] font-dm text-[#1a2e1a]/50">{tourLabel(slug)}</span>
+            <span className="text-[10px] font-dm text-[#1B4332]/50">{tourLabel(slug)}</span>
           </div>
         ))}
       </div>
@@ -160,24 +160,24 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
       {sel.length > 0 && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/20" onClick={() => setSel([])} />
-          <aside className="relative w-full max-w-xs bg-white border-l border-[#1a2e1a]/10 p-5 overflow-y-auto shadow-xl">
+          <aside className="relative w-full max-w-xs bg-white border-l border-[#1B4332]/10 p-5 overflow-y-auto shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <p className="font-cormorant text-[#1a2e1a] text-lg font-light">
+              <p className="font-cormorant text-[#1B4332] text-lg font-light">
                 {new Date(sel[0].date+"T12:00:00").toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"})}
               </p>
-              <button onClick={() => setSel([])} className="text-[#1a2e1a]/40 hover:text-[#1a2e1a]">✕</button>
+              <button onClick={() => setSel([])} className="text-[#1B4332]/40 hover:text-[#1B4332]">✕</button>
             </div>
             <div className="space-y-3">
               {sel.map(s => (
-                <div key={s.key} className="border border-[#1a2e1a]/10 p-3 rounded-sm"
+                <div key={s.key} className="border border-[#1B4332]/10 p-3 rounded-sm"
                   style={{borderLeft:`3px solid ${tourColor(s.tourSlug)}`}}>
-                  <p className="font-dm text-sm font-medium text-[#1a2e1a]">{s.customerName}</p>
-                  <p className="font-dm text-xs text-[#1a2e1a]/50 mb-1">{s.tourName}</p>
-                  <div className="flex gap-3 text-[10px] font-dm text-[#1a2e1a]/50">
+                  <p className="font-dm text-sm font-medium text-[#1B4332]">{s.customerName}</p>
+                  <p className="font-dm text-xs text-[#1B4332]/50 mb-1">{s.tourName}</p>
+                  <div className="flex gap-3 text-[10px] font-dm text-[#1B4332]/50">
                     <span>{s.personas} persona{s.personas !== 1 ? "s" : ""}</span>
-                    <span className="text-[#c4882a]">${s.monto.toLocaleString("es-MX")}</span>
+                    <span className="text-[#52B788]">${s.monto.toLocaleString("es-MX")}</span>
                   </div>
-                  <p className="font-mono text-[9px] text-[#3a6b1a] mt-1">{s.confirmationNumber}</p>
+                  <p className="font-mono text-[9px] text-[#1B4332] mt-1">{s.confirmationNumber}</p>
                 </div>
               ))}
             </div>

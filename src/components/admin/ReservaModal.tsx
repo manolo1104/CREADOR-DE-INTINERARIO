@@ -94,7 +94,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
 
-  const inputCls = "w-full border border-[#1a2e1a]/15 text-[#1a2e1a] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#3a6b1a] rounded-sm placeholder:text-[#1a2e1a]/25 bg-white";
+  const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
   const toursTotal    = form.lines.reduce((s, l) => s + calcTourLine(l), 0);
   const packagesTotal = form.packages.reduce((s, p) => s + calcPackageLine(p), 0);
@@ -160,26 +160,26 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white border border-[#1a2e1a]/10 w-full max-w-xl shadow-xl rounded-sm flex flex-col max-h-[95vh]">
+      <div className="relative bg-white border border-[#1B4332]/10 w-full max-w-xl shadow-xl rounded-sm flex flex-col max-h-[95vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-0">
-          <h2 className="font-cormorant text-[#1a2e1a] text-xl font-light">{title}</h2>
-          <button onClick={onClose} className="text-[#1a2e1a]/40 hover:text-[#1a2e1a]"><X className="w-5 h-5" /></button>
+          <h2 className="font-cormorant text-[#1B4332] text-xl font-light">{title}</h2>
+          <button onClick={onClose} className="text-[#1B4332]/40 hover:text-[#1B4332]"><X className="w-5 h-5" /></button>
         </div>
 
         {/* Tabs */}
-        <div className="flex px-6 mt-4 border-b border-[#1a2e1a]/10">
+        <div className="flex px-6 mt-4 border-b border-[#1B4332]/10">
           {TABS.map(tab => {
             const done   = tab.n < step;
             const active = step === tab.n;
             return (
               <button key={tab.n} onClick={() => goToTab(tab.n)}
                 className={`flex items-center gap-1.5 px-4 py-2.5 text-[10px] tracking-[1.5px] uppercase font-dm border-b-2 transition-colors -mb-px ${
-                  active ? "border-[#3a6b1a] text-[#3a6b1a]" : "border-transparent text-[#1a2e1a]/40 hover:text-[#1a2e1a]/70"
+                  active ? "border-[#1B4332] text-[#1B4332]" : "border-transparent text-[#1B4332]/40 hover:text-[#1B4332]/70"
                 }`}>
                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${
-                  done || active ? "bg-[#3a6b1a] text-white" : "bg-[#1a2e1a]/12 text-[#1a2e1a]/50"
+                  done || active ? "bg-[#1B4332] text-white" : "bg-[#1B4332]/12 text-[#1B4332]/50"
                 }`}>
                   {done ? <Check className="w-2.5 h-2.5" /> : tab.n}
                 </span>
@@ -196,24 +196,24 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Nombre *</label>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Nombre *</label>
                 <input type="text" value={form.customerName} placeholder="Nombre completo" autoFocus
                   onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Email</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Email</label>
                   <input type="email" value={form.customerEmail} placeholder="email@ejemplo.com"
                     onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Teléfono</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Teléfono</label>
                   <input type="tel" value={form.customerPhone} placeholder="+52 489 000 0000"
                     onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={inputCls} />
                 </div>
               </div>
               <div>
-                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Notas</label>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Notas</label>
                 <textarea value={form.notes} rows={3}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Preferencias, alergias, requerimientos especiales..."
@@ -226,15 +226,15 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
           {step === 2 && (
             <div className="space-y-5">
               {/* Número de personas del grupo (para el email — evita sumar por tour) */}
-              <div className="bg-[#f4edd8]/60 border border-[#1a2e1a]/10 rounded-sm p-3">
-                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">
+              <div className="bg-[#FAFAF8]/60 border border-[#1B4332]/10 rounded-sm p-3">
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
                   Número de personas del grupo
                 </label>
                 <input type="number" min={1} max={40} value={form.numPersonas}
                   placeholder="Ej. 2"
                   onChange={e => setForm(f => ({ ...f, numPersonas: e.target.value }))}
                   className={`${inputCls} max-w-[140px]`} />
-                <p className="text-[10px] font-dm text-[#1a2e1a]/40 mt-1.5">
+                <p className="text-[10px] font-dm text-[#1B4332]/40 mt-1.5">
                   Cuántas personas son en total (el mismo grupo que va a todos los tours). Así el correo de
                   confirmación muestra el número correcto y no suma las personas de cada tour.
                 </p>
@@ -243,20 +243,20 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
               {/* Tours */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Tours</p>
+                  <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Tours</p>
                   <button onClick={() => setForm(f => ({ ...f, lines: [...f.lines, { ...EMPTY_LINE }] }))}
-                    className="flex items-center gap-1 text-xs font-dm text-[#3a6b1a] border border-[#3a6b1a]/30 px-2 py-1 hover:bg-[#3a6b1a]/8 transition-colors rounded-sm">
+                    className="flex items-center gap-1 text-xs font-dm text-[#1B4332] border border-[#1B4332]/30 px-2 py-1 hover:bg-[#1B4332]/8 transition-colors rounded-sm">
                     <Plus className="w-3 h-3" />Agregar tour
                   </button>
                 </div>
                 <div className="space-y-2">
                   {form.lines.map((line, i) => (
-                    <div key={i} className="border border-[#1a2e1a]/10 p-3 rounded-sm bg-white">
+                    <div key={i} className="border border-[#1B4332]/10 p-3 rounded-sm bg-white">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/40 font-dm">Tour {i + 1}</span>
+                        <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm">Tour {i + 1}</span>
                         {form.lines.length > 1 && (
                           <button onClick={() => setForm(f => ({ ...f, lines: f.lines.filter((_, idx) => idx !== i) }))}
-                            className="text-[#1a2e1a]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                            className="text-[#1B4332]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                         )}
                       </div>
                       <div className="space-y-2">
@@ -266,29 +266,29 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                         </select>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Fecha *</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
                             <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Adultos</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Adultos</label>
                             <input type="number" min={1} max={20} value={line.adults}
                               onChange={e => updateLine(i, "adults", Number(e.target.value))} className={inputCls} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
                             <input type="number" min={0} max={12} value={line.childrenMid}
                               onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
                             <input type="number" min={0} max={12} value={line.childrenSmall}
                               onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
                           </div>
                         </div>
                         {line.tourSlug && (
-                          <p className="text-right text-xs font-dm text-[#c4882a]">Subtotal: {fmx(calcTourLine(line))}</p>
+                          <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcTourLine(line))}</p>
                         )}
                       </div>
                     </div>
@@ -299,44 +299,44 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
               {/* Hospedaje */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm flex items-center gap-1.5">
+                  <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm flex items-center gap-1.5">
                     <BedDouble className="w-3 h-3" />Hospedaje (opcional)
                   </p>
                   <button onClick={() => setForm(f => ({ ...f, packages: [...f.packages, { ...EMPTY_PACKAGE }], totalOverride: "" }))}
-                    className="flex items-center gap-1 text-xs font-dm text-[#8a6f1e] border border-[#8a6f1e]/30 px-2 py-1 hover:bg-[#8a6f1e]/8 transition-colors rounded-sm">
+                    className="flex items-center gap-1 text-xs font-dm text-[#40916C] border border-[#40916C]/30 px-2 py-1 hover:bg-[#40916C]/8 transition-colors rounded-sm">
                     <Plus className="w-3 h-3" />Agregar habitación
                   </button>
                 </div>
                 {form.packages.length === 0 && (
-                  <p className="text-[10px] font-dm text-[#1a2e1a]/30 border border-dashed border-[#1a2e1a]/15 rounded-sm py-4 text-center">
+                  <p className="text-[10px] font-dm text-[#1B4332]/30 border border-dashed border-[#1B4332]/15 rounded-sm py-4 text-center">
                     Sin hospedaje — solo tours
                   </p>
                 )}
                 <div className="space-y-2">
                   {form.packages.map((pkg, i) => (
-                    <div key={i} className="border border-[#8a6f1e]/25 p-3 rounded-sm bg-[#faf7ee]">
+                    <div key={i} className="border border-[#40916C]/25 p-3 rounded-sm bg-[#FFFFFF]">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[9px] tracking-[2px] uppercase text-[#8a6f1e]/70 font-dm flex items-center gap-1">
+                        <span className="text-[9px] tracking-[2px] uppercase text-[#40916C]/70 font-dm flex items-center gap-1">
                           <BedDouble className="w-3 h-3" /> Habitación {i + 1}
                         </span>
                         <button onClick={() => setForm(f => ({ ...f, packages: f.packages.filter((_, idx) => idx !== i), totalOverride: "" }))}
-                          className="text-[#1a2e1a]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          className="text-[#1B4332]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                       </div>
                       <div className="space-y-2">
                         <div>
-                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Hotel</label>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Hotel</label>
                           <input type="text" value={pkg.hotel} className={inputCls}
                             onChange={e => updatePackage(i, "hotel", e.target.value)} />
                         </div>
                         <div>
-                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Tipo de habitación</label>
+                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Tipo de habitación</label>
                           <div className="flex gap-1.5 flex-wrap mb-1.5">
                             {HABITACIONES_PRESET.map(h => (
                               <button key={h.label} type="button" onClick={() => updatePackage(i, "habitacion", h.label)}
                                 className={`text-[10px] font-dm px-2 py-1 rounded border transition-colors ${
                                   pkg.habitacion === h.label
-                                    ? "bg-[#8a6f1e] text-white border-[#8a6f1e]"
-                                    : "border-[#8a6f1e]/30 text-[#8a6f1e] hover:bg-[#8a6f1e]/10"
+                                    ? "bg-[#40916C] text-white border-[#40916C]"
+                                    : "border-[#40916C]/30 text-[#40916C] hover:bg-[#40916C]/10"
                                 }`}>{h.label}</button>
                             ))}
                           </div>
@@ -345,36 +345,36 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Noches</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Noches</label>
                             <input type="number" min={1} max={30} value={pkg.noches}
                               onChange={e => updatePackage(i, "noches", Number(e.target.value))} className={inputCls} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Hab.</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Hab.</label>
                             <input type="number" min={1} max={10} value={pkg.habitaciones}
                               onChange={e => updatePackage(i, "habitaciones", Number(e.target.value))} className={inputCls} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">$/noche</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">$/noche</label>
                             <input type="number" min={0} value={pkg.precioPorNoche}
                               onChange={e => updatePackage(i, "precioPorNoche", Number(e.target.value))} className={inputCls} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-in</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Check-in</label>
                             <input type="date" value={pkg.checkin}
                               onChange={e => updatePackage(i, "checkin", e.target.value)} className={inputCls} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-out</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Check-out</label>
                             <input type="date" value={pkg.checkout}
                               onChange={e => updatePackage(i, "checkout", e.target.value)} className={inputCls} />
                           </div>
                         </div>
-                        <p className="text-right text-xs font-dm text-[#8a6f1e] font-medium">
+                        <p className="text-right text-xs font-dm text-[#40916C] font-medium">
                           Subtotal: {fmx(calcPackageLine(pkg))}
-                          <span className="text-[#1a2e1a]/35 font-normal ml-1">
+                          <span className="text-[#1B4332]/35 font-normal ml-1">
                             ({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})
                           </span>
                         </p>
@@ -386,20 +386,20 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
 
               {/* Resumen running */}
               {calcTotal > 0 && (
-                <div className="bg-[#f4edd8]/70 border border-[#c4882a]/20 rounded-sm px-4 py-3">
+                <div className="bg-[#FAFAF8]/70 border border-[#52B788]/20 rounded-sm px-4 py-3">
                   {packagesTotal > 0 && (
                     <>
-                      <div className="flex justify-between text-xs font-dm text-[#1a2e1a]/50 mb-1">
+                      <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1">
                         <span>Tours</span><span>{fmx(toursTotal)}</span>
                       </div>
-                      <div className="flex justify-between text-xs font-dm text-[#8a6f1e] mb-2 pb-2 border-b border-[#c4882a]/15">
+                      <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15">
                         <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Total estimado</span>
-                    <span className="font-cormorant text-[#c4882a] text-xl">{fmx(calcTotal)}</span>
+                    <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Total estimado</span>
+                    <span className="font-cormorant text-[#52B788] text-xl">{fmx(calcTotal)}</span>
                   </div>
                 </div>
               )}
@@ -410,45 +410,45 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
           {step === 3 && (
             <div className="space-y-4">
               {/* Total editable */}
-              <div className="border border-[#c4882a]/30 bg-[#c4882a]/6 px-4 py-3 rounded-sm">
+              <div className="border border-[#52B788]/30 bg-[#52B788]/6 px-4 py-3 rounded-sm">
                 {packagesTotal > 0 && (
                   <>
-                    <div className="flex justify-between text-xs font-dm text-[#1a2e1a]/50 mb-1">
+                    <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1">
                       <span>Tours</span><span>{fmx(toursTotal)}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-dm text-[#8a6f1e] mb-2 pb-2 border-b border-[#c4882a]/15">
+                    <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15">
                       <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
                     </div>
                   </>
                 )}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
-                    <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">
-                      Total {form.totalOverride !== "" && <span className="text-[#c4882a]">(editado)</span>}
+                    <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
+                      Total {form.totalOverride !== "" && <span className="text-[#52B788]">(editado)</span>}
                     </p>
                     {editingTotal ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-[#1a2e1a]/40 font-dm text-sm">$</span>
+                        <span className="text-[#1B4332]/40 font-dm text-sm">$</span>
                         <input type="number" min={0} value={form.totalOverride}
                           onChange={e => setForm(f => ({ ...f, totalOverride: e.target.value }))}
                           placeholder={String(calcTotal)}
-                          className="flex-1 border border-[#c4882a]/50 bg-white text-[#c4882a] font-cormorant text-xl px-2 py-1 focus:outline-none rounded-sm"
+                          className="flex-1 border border-[#52B788]/50 bg-white text-[#52B788] font-cormorant text-xl px-2 py-1 focus:outline-none rounded-sm"
                           autoFocus />
-                        <span className="text-[#1a2e1a]/40 font-dm text-sm">MXN</span>
+                        <span className="text-[#1B4332]/40 font-dm text-sm">MXN</span>
                       </div>
                     ) : (
-                      <p className="font-cormorant text-[#c4882a] text-2xl">{fmx(finalTotal)}</p>
+                      <p className="font-cormorant text-[#52B788] text-2xl">{fmx(finalTotal)}</p>
                     )}
                     {form.totalOverride !== "" && (
                       <button onClick={() => { setForm(f => ({ ...f, totalOverride: "" })); setEditingTotal(false); }}
-                        className="text-[10px] font-dm text-[#1a2e1a]/40 hover:text-[#1a2e1a] mt-1 underline">
+                        className="text-[10px] font-dm text-[#1B4332]/40 hover:text-[#1B4332] mt-1 underline">
                         Restaurar automático ({fmx(calcTotal)})
                       </button>
                     )}
                   </div>
                   <button
                     onClick={() => { if (editingTotal) setEditingTotal(false); else { setEditingTotal(true); if (form.totalOverride === "") setForm(f => ({ ...f, totalOverride: String(calcTotal) })); } }}
-                    className="flex items-center gap-1 border border-[#c4882a]/40 text-[#c4882a] px-2.5 py-1.5 text-xs font-dm hover:bg-[#c4882a]/10 transition-colors rounded-sm">
+                    className="flex items-center gap-1 border border-[#52B788]/40 text-[#52B788] px-2.5 py-1.5 text-xs font-dm hover:bg-[#52B788]/10 transition-colors rounded-sm">
                     {editingTotal ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                     {editingTotal ? "OK" : "Editar"}
                   </button>
@@ -458,16 +458,16 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
               {/* Anticipo */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Anticipo recibido</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Anticipo recibido</label>
                   <div className="flex items-center gap-1">
-                    <span className="text-[#1a2e1a]/40 font-dm text-sm">$</span>
+                    <span className="text-[#1B4332]/40 font-dm text-sm">$</span>
                     <input type="number" min={0} value={form.depositoPagado}
                       onChange={e => setForm(f => ({ ...f, depositoPagado: e.target.value }))}
                       placeholder="0" className={inputCls} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Saldo pendiente</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Saldo pendiente</label>
                   <p className={`font-cormorant text-xl pt-2.5 ${pendiente > 0 ? "text-orange-600" : "text-green-600"}`}>
                     {fmx(pendiente)}
                   </p>
@@ -477,7 +477,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
               {/* Método y folio */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Método de pago</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Método de pago</label>
                   <select value={form.metodoPago}
                     onChange={e => setForm(f => ({ ...f, metodoPago: e.target.value }))}
                     className={inputCls}>
@@ -490,7 +490,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Folio / referencia</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Folio / referencia</label>
                   <input type="text" value={form.folioPago} placeholder="TXN-00000 / —"
                     onChange={e => setForm(f => ({ ...f, folioPago: e.target.value }))} className={inputCls} />
                 </div>
@@ -498,7 +498,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
 
               {/* Pickup */}
               <div>
-                <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Lugar de recogida</label>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Lugar de recogida</label>
                 <input type="text" value={form.pickupLugar} placeholder="Lobby de tu hotel en Xilitla"
                   onChange={e => setForm(f => ({ ...f, pickupLugar: e.target.value }))} className={inputCls} />
               </div>
@@ -507,10 +507,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
         </div>
 
         {/* Footer navigation */}
-        <div className="px-6 pb-5 pt-3 border-t border-[#1a2e1a]/8 flex items-center justify-between gap-3">
+        <div className="px-6 pb-5 pt-3 border-t border-[#1B4332]/8 flex items-center justify-between gap-3">
           {step > 1 ? (
             <button onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
-              className="flex items-center gap-1 text-xs font-dm text-[#1a2e1a]/50 hover:text-[#1a2e1a] px-3 py-2 border border-[#1a2e1a]/15 rounded-sm transition-colors">
+              className="flex items-center gap-1 text-xs font-dm text-[#1B4332]/50 hover:text-[#1B4332] px-3 py-2 border border-[#1B4332]/15 rounded-sm transition-colors">
               <ChevronLeft className="w-3.5 h-3.5" />Atrás
             </button>
           ) : <div />}
@@ -519,12 +519,12 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
             <button
               onClick={() => setStep(s => (s + 1) as 1 | 2 | 3)}
               disabled={step === 1 ? !step1Valid : !step2Valid}
-              className="flex items-center gap-1.5 bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-5 py-2 text-[11px] font-dm uppercase tracking-[1.5px] transition-colors disabled:opacity-40 rounded-sm">
+              className="flex items-center gap-1.5 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-5 py-2 text-[11px] font-dm uppercase tracking-[1.5px] transition-colors disabled:opacity-40 rounded-sm">
               Siguiente <ChevronRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button onClick={onSave} disabled={!canSave}
-              className="bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-40 rounded-sm">
+              className="bg-[#1B4332] hover:bg-[#2D5A45] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-40 rounded-sm">
               {saving ? "Guardando..." : "Guardar reserva"}
             </button>
           )}

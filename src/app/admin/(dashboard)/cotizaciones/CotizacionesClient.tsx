@@ -5,6 +5,7 @@ import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { type PackageItem, calcPackageLine } from "@/components/admin/ReservaModal";
+import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   borrador: { label: "Borrador",  cls: "bg-gray-100 text-gray-600"     },
@@ -48,7 +49,7 @@ function calcLine(item: LineItem): number {
   );
 }
 
-const inputCls = "w-full border border-[#1a2e1a]/15 text-[#1a2e1a] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#3a6b1a] rounded-sm placeholder:text-[#1a2e1a]/25 bg-white";
+const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
 export default function CotizacionesClient({ initialQuotes }: { initialQuotes: TourQuote[] }) {
   const [quotes,         setQuotes]         = useState(initialQuotes);
@@ -69,6 +70,8 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
+  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "aceptada" | "expirada">("all");
+  const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto">("reciente");
 
   const toursTotal = lines.reduce((s, l) => s + calcLine(l), 0);
   const pkgsTotal  = packages.reduce((s, p) => s + calcPackageLine(p), 0);
@@ -98,7 +101,12 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   function addLine()         { setLines(ls => [...ls, { ...EMPTY_LINE }]); }
   function removeLine(i: number) { if (lines.length > 1) setLines(ls => ls.filter((_, idx) => idx !== i)); }
 
-  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(""), 5000); }
+  function flash(m: string) {
+    setMsg(m);
+    if (m.startsWith("✅")) playSuccess();
+    else if (m.startsWith("❌")) playError();
+    setTimeout(() => setMsg(""), 5000);
+  }
 
   function openNew() {
     setEditTarget(null);
@@ -489,8 +497,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return quotes.filter(c => !q || [c.customerName, c.customerEmail, c.quoteNumber, c.tourName].some(v => v?.toLowerCase().includes(q)));
-  }, [quotes, search]);
+    const list = quotes.filter(c => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      return !q || [c.customerName, c.customerEmail, c.quoteNumber, c.tourName].some(v => v?.toLowerCase().includes(q));
+    });
+    return [...list].sort((a, b) => {
+      if (sortBy === "monto") return b.totalAmount - a.totalAmount;
+      if (sortBy === "tourDate") return (b.tourDate || "").localeCompare(a.tourDate || "");
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // más recientes
+    });
+  }, [quotes, search, statusFilter, sortBy]);
 
   const isEditMode = modal === "edit";
 
@@ -498,66 +514,139 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-cormorant text-[#1a2e1a] text-2xl font-light">Cotizaciones</h1>
-          <p className="text-[#1a2e1a]/50 font-dm text-sm mt-1">{quotes.length} cotizaciones · {quotes.filter(q => q.status === "aceptada").length} aceptadas</p>
+          <h1 className="font-cormorant text-[#1B4332] text-2xl font-light">Cotizaciones</h1>
+          <p className="text-[#1B4332]/50 font-dm text-sm mt-1">{quotes.length} cotizaciones · {quotes.filter(q => q.status === "aceptada").length} aceptadas</p>
         </div>
-        <button onClick={openNew}
-          className="flex items-center gap-2 bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-4 py-2.5 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
-          <Plus className="w-4 h-4" />Nueva Cotización
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <select value={sortBy} onChange={e => { playClick(); setSortBy(e.target.value as any); }}
+            className="bg-white border border-[#1B4332]/20 text-[#1B4332]/70 text-xs font-dm px-2.5 py-2 rounded-sm focus:outline-none focus:border-[#1B4332] cursor-pointer">
+            <option value="reciente">Más recientes</option>
+            <option value="tourDate">Fecha de tour</option>
+            <option value="monto">Mayor monto</option>
+          </select>
+          <button onClick={() => { playClick(); openNew(); }}
+            className="flex items-center gap-2 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-4 py-2.5 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
+            <Plus className="w-4 h-4" />Nueva Cotización
+          </button>
+        </div>
       </div>
 
       {msg && (
-        <div className={`mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
+        <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
       )}
 
+      {/* Tabs de estado */}
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+        {([
+          { key: "all",      label: "Todas"     },
+          { key: "borrador", label: "Borrador"  },
+          { key: "enviada",  label: "Enviadas"  },
+          { key: "aceptada", label: "Aceptadas" },
+          { key: "expirada", label: "Expiradas" },
+        ] as const).map(tab => {
+          const count = tab.key === "all" ? quotes.length : quotes.filter(q => q.status === tab.key).length;
+          return (
+            <button key={tab.key} onClick={() => { playClick(); setStatusFilter(tab.key); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm whitespace-nowrap rounded-sm transition-colors ${
+                statusFilter === tab.key ? "bg-[#1B4332] text-white" : "border border-[#1B4332]/15 text-[#1B4332]/60 hover:text-[#1B4332] hover:border-[#1B4332]/30"
+              }`}>
+              {tab.label}
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusFilter === tab.key ? "bg-white/20 text-white" : "bg-[#1B4332]/8 text-[#1B4332]/50"}`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1a2e1a]/30" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1B4332]/30" />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por cliente, tour o número..."
-          className="w-full bg-white border border-[#1a2e1a]/15 text-[#1a2e1a] font-dm text-sm pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#3a6b1a] placeholder:text-[#1a2e1a]/30 rounded-sm"
+          className="w-full bg-white border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#1B4332] placeholder:text-[#1B4332]/30 rounded-sm"
         />
       </div>
 
-      <div className="bg-white border border-[#1a2e1a]/10 rounded-sm overflow-hidden">
+      {/* ── Tarjetas (móvil) ── */}
+      <div className="md:hidden space-y-2.5">
+        {filtered.length === 0 && <p className="py-10 text-center text-[#1B4332]/30 font-dm text-sm">Sin cotizaciones</p>}
+        {filtered.map(q => {
+          const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
+          const sinEnviar = q.status === "borrador" && !!q.customerEmail;
+          return (
+            <div key={q.id} className="bg-white border border-[#1B4332]/10 rounded-md p-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</span>
+                <div className="flex items-center gap-1.5">
+                  {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
+                  <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${s.cls}`}>{s.label}</span>
+                </div>
+              </div>
+              <p className="text-[#1B4332] font-medium">{q.customerName}</p>
+              <p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p>
+              <div className="flex items-center justify-between mt-1.5">
+                <p className="text-[#1B4332]/70 text-sm truncate max-w-[60%]">{q.tourName}</p>
+                <span className="text-[#52B788] font-medium text-sm">{fmx(q.totalAmount)}</span>
+              </div>
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8">
+                {q.status !== "aceptada" && q.status !== "expirada" && (
+                  <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
+                )}
+                <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => playClick()} className="text-[#1B4332]/50 hover:text-[#25D366]"><MessageCircle className="w-4 h-4" /></a>
+                <button onClick={() => { playClick(); downloadPDF(q); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); hardDeleteQ(q.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Tabla (escritorio) ── */}
+      <div className="hidden md:block bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
-            <thead className="bg-[#f4edd8]">
-              <tr className="border-b border-[#1a2e1a]/10 text-[#1a2e1a]/50 text-[10px] tracking-[1.5px] uppercase">
+            <thead className="bg-[#FAFAF8]">
+              <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
                 {["Número","Cliente","Tour(s)","Total","Estado","Acciones"].map(h => (
                   <th key={h} className="py-3 px-4 text-left font-dm">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={6} className="py-12 text-center text-[#1a2e1a]/30 font-dm">Sin cotizaciones</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={6} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin cotizaciones</td></tr>}
               {filtered.map(q => {
                 const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
+                const sinEnviar = q.status === "borrador" && !!q.customerEmail;
                 return (
-                  <tr key={q.id} className="border-b border-[#1a2e1a]/6 hover:bg-[#f4edd8]/50 transition-colors">
-                    <td className="py-3 px-4 text-[#3a6b1a] font-mono text-xs font-medium">{q.quoteNumber}</td>
-                    <td className="py-3 px-4"><p className="text-[#1a2e1a] font-medium">{q.customerName}</p><p className="text-[#1a2e1a]/40 text-xs">{q.customerEmail || "—"}</p></td>
-                    <td className="py-3 px-4 text-[#1a2e1a]/70 max-w-[200px]"><p className="truncate text-xs">{q.tourName}</p><p className="text-xs text-[#1a2e1a]/40">{fDate(q.tourDate)}</p></td>
-                    <td className="py-3 px-4 text-[#c4882a] font-medium whitespace-nowrap">{fmx(q.totalAmount)}</td>
-                    <td className="py-3 px-4"><span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${s.cls}`}>{s.label}</span></td>
+                  <tr key={q.id} className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors">
+                    <td className="py-3 px-4 text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</td>
+                    <td className="py-3 px-4"><p className="text-[#1B4332] font-medium">{q.customerName}</p><p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p></td>
+                    <td className="py-3 px-4 text-[#1B4332]/70 max-w-[200px]"><p className="truncate text-xs">{q.tourName}</p><p className="text-xs text-[#1B4332]/40">{fDate(q.tourDate)}</p></td>
+                    <td className="py-3 px-4 text-[#52B788] font-medium whitespace-nowrap">{fmx(q.totalAmount)}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${s.cls}`}>{s.label}</span>
+                        {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
+                      </div>
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         {q.status !== "aceptada" && q.status !== "expirada" && (
-                          <button onClick={() => convertToReserva(q)} title="Convertir a reserva"
-                            className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors"><BookCheck className="w-4 h-4" /></button>
+                          <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva"
+                            className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
                         )}
-                        <button onClick={() => openEdit(q)} title="Editar"
-                          className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => sendEmail(q.id)} disabled={sending === q.id} title="Enviar email"
-                          className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                        <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" title="WhatsApp"
-                          className="text-[#1a2e1a]/40 hover:text-[#25D366] transition-colors"><MessageCircle className="w-4 h-4" /></a>
-                        <button onClick={() => downloadPDF(q)} title="PDF"
-                          className="text-[#1a2e1a]/40 hover:text-[#c4882a] transition-colors"><Download className="w-4 h-4" /></button>
-                        <button onClick={() => expireQ(q.id)} title="Marcar expirada"
-                          className="text-[#1a2e1a]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
-                        <button onClick={() => hardDeleteQ(q.id)} title="Eliminar"
-                          className="text-[#1a2e1a]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); openEdit(q); }} title="Editar"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title="Enviar email"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                        <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => playClick()} title="WhatsApp"
+                          className="text-[#1B4332]/40 hover:text-[#25D366] transition-colors"><MessageCircle className="w-4 h-4" /></a>
+                        <button onClick={() => { playClick(); downloadPDF(q); }} title="PDF"
+                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar expirada"
+                          className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); hardDeleteQ(q.id); }} title="Eliminar"
+                          className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -585,29 +674,29 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={closeModal} />
-          <div className="relative bg-white border border-[#1a2e1a]/10 w-full max-w-xl shadow-xl rounded-sm flex flex-col max-h-[95vh]">
+          <div className="relative bg-white border border-[#1B4332]/10 w-full max-w-xl shadow-xl rounded-sm flex flex-col max-h-[95vh]">
 
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-0">
-              <h2 className="font-cormorant text-[#1a2e1a] text-xl font-light">
+              <h2 className="font-cormorant text-[#1B4332] text-xl font-light">
                 {isEditMode ? "Editar Cotización" : "Nueva Cotización"}
-                {isEditMode && editTarget && <span className="text-[#3a6b1a] text-sm font-dm ml-2">{editTarget.quoteNumber}</span>}
+                {isEditMode && editTarget && <span className="text-[#1B4332] text-sm font-dm ml-2">{editTarget.quoteNumber}</span>}
               </h2>
-              <button onClick={closeModal} className="text-[#1a2e1a]/40 hover:text-[#1a2e1a]"><X className="w-5 h-5" /></button>
+              <button onClick={closeModal} className="text-[#1B4332]/40 hover:text-[#1B4332]"><X className="w-5 h-5" /></button>
             </div>
 
             {/* Tabs */}
-            <div className="flex px-6 mt-4 border-b border-[#1a2e1a]/10">
+            <div className="flex px-6 mt-4 border-b border-[#1B4332]/10">
               {TABS.map(tab => {
                 const done   = tab.n < step;
                 const active = step === tab.n;
                 return (
                   <button key={tab.n} onClick={() => goToTab(tab.n)}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-[10px] tracking-[1.5px] uppercase font-dm border-b-2 transition-colors -mb-px ${
-                      active ? "border-[#3a6b1a] text-[#3a6b1a]" : "border-transparent text-[#1a2e1a]/40 hover:text-[#1a2e1a]/70"
+                      active ? "border-[#1B4332] text-[#1B4332]" : "border-transparent text-[#1B4332]/40 hover:text-[#1B4332]/70"
                     }`}>
                     <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0 ${
-                      done || active ? "bg-[#3a6b1a] text-white" : "bg-[#1a2e1a]/12 text-[#1a2e1a]/50"
+                      done || active ? "bg-[#1B4332] text-white" : "bg-[#1B4332]/12 text-[#1B4332]/50"
                     }`}>
                       {done ? <Check className="w-2.5 h-2.5" /> : tab.n}
                     </span>
@@ -624,24 +713,24 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             {step === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Nombre *</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Nombre *</label>
                   <input type="text" value={form.customerName} placeholder="Nombre completo" autoFocus
                     onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} className={inputCls} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Email</label>
+                    <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Email</label>
                     <input type="email" value={form.customerEmail} placeholder="email@ejemplo.com"
                       onChange={e => setForm(f => ({ ...f, customerEmail: e.target.value }))} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Teléfono</label>
+                    <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Teléfono</label>
                     <input type="tel" value={form.customerPhone} placeholder="+52 489 000 0000"
                       onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={inputCls} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Notas</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Notas</label>
                   <textarea value={form.notes} rows={3} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                     placeholder="Preferencias, alergias, requerimientos especiales..."
                     className={`${inputCls} resize-none`} />
@@ -655,18 +744,18 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 {/* Tours */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Tours del paquete</p>
+                    <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Tours del paquete</p>
                     <button onClick={addLine}
-                      className="flex items-center gap-1 text-xs font-dm text-[#3a6b1a] border border-[#3a6b1a]/30 px-2 py-1 hover:bg-[#3a6b1a]/8 transition-colors rounded-sm">
+                      className="flex items-center gap-1 text-xs font-dm text-[#1B4332] border border-[#1B4332]/30 px-2 py-1 hover:bg-[#1B4332]/8 transition-colors rounded-sm">
                       <Plus className="w-3 h-3" />Agregar tour
                     </button>
                   </div>
                   <div className="space-y-2">
                     {lines.map((line, i) => (
-                      <div key={i} className="border border-[#1a2e1a]/10 p-3 rounded-sm bg-white">
+                      <div key={i} className="border border-[#1B4332]/10 p-3 rounded-sm bg-white">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/40 font-dm">Tour {i + 1}</span>
-                          {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-[#1a2e1a]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>}
+                          <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm">Tour {i + 1}</span>
+                          {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-[#1B4332]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>}
                         </div>
                         <div className="space-y-2">
                           <select value={line.tourSlug} onChange={e => updateLine(i, "tourSlug", e.target.value)} className={inputCls}>
@@ -675,25 +764,25 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           </select>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Fecha *</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
                               <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
                             </div>
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Adultos</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Adultos</label>
                               <input type="number" min={1} max={20} value={line.adults} onChange={e => updateLine(i, "adults", Number(e.target.value))} className={inputCls} />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
                               <input type="number" min={0} max={12} value={line.childrenMid} onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
                             </div>
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
                               <input type="number" min={0} max={12} value={line.childrenSmall} onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
                             </div>
                           </div>
-                          {line.tourSlug && <p className="text-right text-xs font-dm text-[#c4882a]">Subtotal: {fmx(calcLine(line))}</p>}
+                          {line.tourSlug && <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcLine(line))}</p>}
                         </div>
                       </div>
                     ))}
@@ -703,42 +792,42 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 {/* Hospedaje */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm flex items-center gap-1.5">
+                    <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm flex items-center gap-1.5">
                       <BedDouble className="w-3 h-3" />Hospedaje (opcional)
                     </p>
                     <button type="button" onClick={() => setPackages(ps => [...ps, { ...EMPTY_PACKAGE }])}
-                      className="flex items-center gap-1 text-xs font-dm text-[#8a6f1e] border border-[#8a6f1e]/30 px-2 py-1 hover:bg-[#8a6f1e]/8 transition-colors rounded-sm">
+                      className="flex items-center gap-1 text-xs font-dm text-[#40916C] border border-[#40916C]/30 px-2 py-1 hover:bg-[#40916C]/8 transition-colors rounded-sm">
                       <Plus className="w-3 h-3" />Agregar habitación
                     </button>
                   </div>
                   {packages.length === 0 && (
-                    <p className="text-[10px] font-dm text-[#1a2e1a]/30 border border-dashed border-[#1a2e1a]/15 rounded-sm py-4 text-center">
+                    <p className="text-[10px] font-dm text-[#1B4332]/30 border border-dashed border-[#1B4332]/15 rounded-sm py-4 text-center">
                       Sin hospedaje — solo tours
                     </p>
                   )}
                   <div className="space-y-2">
                     {packages.map((pkg, i) => (
-                      <div key={i} className="border border-[#8a6f1e]/25 p-3 rounded-sm bg-[#faf7ee]">
+                      <div key={i} className="border border-[#40916C]/25 p-3 rounded-sm bg-[#FFFFFF]">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[9px] tracking-[2px] uppercase text-[#8a6f1e]/70 font-dm flex items-center gap-1">
+                          <span className="text-[9px] tracking-[2px] uppercase text-[#40916C]/70 font-dm flex items-center gap-1">
                             <BedDouble className="w-3 h-3" /> Habitación {i + 1}
                           </span>
                           <button type="button" onClick={() => setPackages(ps => ps.filter((_, idx) => idx !== i))}
-                            className="text-[#1a2e1a]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                            className="text-[#1B4332]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                         </div>
                         <div className="space-y-2">
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Hotel</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Hotel</label>
                             <input type="text" value={pkg.hotel} className={inputCls}
                               onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, hotel: e.target.value } : p))} />
                           </div>
                           <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Tipo de habitación</label>
+                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Tipo de habitación</label>
                             <div className="flex gap-1.5 flex-wrap mb-1.5">
                               {HABITACIONES_PRESET.map(h => (
                                 <button key={h.label} type="button"
                                   onClick={() => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, habitacion: h.label, precioPorNoche: h.precio, subtotal: calcPackageLine({ ...p, habitacion: h.label, precioPorNoche: h.precio }) } : p))}
-                                  className={`text-[10px] font-dm px-2 py-1 rounded border transition-colors ${pkg.habitacion === h.label ? "bg-[#8a6f1e] text-white border-[#8a6f1e]" : "border-[#8a6f1e]/30 text-[#8a6f1e] hover:bg-[#8a6f1e]/10"}`}>
+                                  className={`text-[10px] font-dm px-2 py-1 rounded border transition-colors ${pkg.habitacion === h.label ? "bg-[#40916C] text-white border-[#40916C]" : "border-[#40916C]/30 text-[#40916C] hover:bg-[#40916C]/10"}`}>
                                   {h.label}
                                 </button>
                               ))}
@@ -748,36 +837,36 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Noches</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Noches</label>
                               <input type="number" min={1} max={30} value={pkg.noches} className={inputCls}
                                 onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, noches: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
                             </div>
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Hab.</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Hab.</label>
                               <input type="number" min={1} max={10} value={pkg.habitaciones} className={inputCls}
                                 onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, habitaciones: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
                             </div>
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">$/noche</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">$/noche</label>
                               <input type="number" min={0} value={pkg.precioPorNoche} className={inputCls}
                                 onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, precioPorNoche: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-in</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Check-in</label>
                               <input type="date" value={pkg.checkin} className={inputCls}
                                 onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, checkin: e.target.value } : p))} />
                             </div>
                             <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Check-out</label>
+                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Check-out</label>
                               <input type="date" value={pkg.checkout} className={inputCls}
                                 onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, checkout: e.target.value } : p))} />
                             </div>
                           </div>
-                          <p className="text-right text-xs font-dm text-[#8a6f1e] font-medium">
+                          <p className="text-right text-xs font-dm text-[#40916C] font-medium">
                             Subtotal: {fmx(calcPackageLine(pkg))}
-                            <span className="text-[#1a2e1a]/35 font-normal ml-1">({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})</span>
+                            <span className="text-[#1B4332]/35 font-normal ml-1">({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})</span>
                           </p>
                         </div>
                       </div>
@@ -787,16 +876,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
                 {/* Running total */}
                 {calcTotal > 0 && (
-                  <div className="bg-[#f4edd8]/70 border border-[#c4882a]/20 rounded-sm px-4 py-3">
+                  <div className="bg-[#FAFAF8]/70 border border-[#52B788]/20 rounded-sm px-4 py-3">
                     {pkgsTotal > 0 && (
                       <>
-                        <div className="flex justify-between text-xs font-dm text-[#1a2e1a]/50 mb-1"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
-                        <div className="flex justify-between text-xs font-dm text-[#8a6f1e] mb-2 pb-2 border-b border-[#c4882a]/15"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>
+                        <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
+                        <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>
                       </>
                     )}
                     <div className="flex justify-between items-center">
-                      <span className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Total estimado</span>
-                      <span className="font-cormorant text-[#c4882a] text-xl">{fmx(calcTotal)}</span>
+                      <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Total estimado</span>
+                      <span className="font-cormorant text-[#52B788] text-xl">{fmx(calcTotal)}</span>
                     </div>
                   </div>
                 )}
@@ -808,7 +897,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               <div className="space-y-4">
                 {/* Vigencia */}
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">Vigencia de la cotización</label>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Vigencia de la cotización</label>
                   <select value={vigencia} onChange={e => setVigencia(e.target.value)} className={inputCls}>
                     <option value="48h">48 horas</option>
                     <option value="7dias">7 días</option>
@@ -818,40 +907,40 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 </div>
 
                 {/* Precio editable */}
-                <div className="border border-[#c4882a]/30 bg-[#c4882a]/6 px-4 py-3 rounded-sm">
+                <div className="border border-[#52B788]/30 bg-[#52B788]/6 px-4 py-3 rounded-sm">
                   {pkgsTotal > 0 && (
                     <>
-                      <div className="flex justify-between text-xs font-dm text-[#1a2e1a]/50 mb-1"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
-                      <div className="flex justify-between text-xs font-dm text-[#8a6f1e] mb-2 pb-2 border-b border-[#c4882a]/15"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>
+                      <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
+                      <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>
                     </>
                   )}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1">
-                      <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-1">
-                        Subtotal {priceOverride !== "" ? <span className="text-[#c4882a]">(editado)</span> : "(calculado)"}
+                      <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
+                        Subtotal {priceOverride !== "" ? <span className="text-[#52B788]">(editado)</span> : "(calculado)"}
                       </p>
                       {editingPrice ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-[#1a2e1a]/40 font-dm text-sm">$</span>
+                          <span className="text-[#1B4332]/40 font-dm text-sm">$</span>
                           <input type="number" min={0} value={priceOverride}
                             onChange={e => setPriceOverride(e.target.value)}
                             placeholder={String(calcTotal)}
-                            className="flex-1 border border-[#c4882a]/50 bg-white text-[#c4882a] font-cormorant text-xl px-2 py-1 focus:outline-none rounded-sm"
+                            className="flex-1 border border-[#52B788]/50 bg-white text-[#52B788] font-cormorant text-xl px-2 py-1 focus:outline-none rounded-sm"
                             autoFocus />
-                          <span className="text-[#1a2e1a]/40 font-dm text-sm">MXN</span>
+                          <span className="text-[#1B4332]/40 font-dm text-sm">MXN</span>
                         </div>
                       ) : (
-                        <p className="font-cormorant text-[#c4882a] text-2xl">{fmx(baseTotal)}</p>
+                        <p className="font-cormorant text-[#52B788] text-2xl">{fmx(baseTotal)}</p>
                       )}
                       {priceOverride !== "" && (
                         <button onClick={() => { setPriceOverride(""); setEditingPrice(false); }}
-                          className="text-[10px] font-dm text-[#1a2e1a]/40 hover:text-[#1a2e1a] mt-1 underline">
+                          className="text-[10px] font-dm text-[#1B4332]/40 hover:text-[#1B4332] mt-1 underline">
                           Restaurar ({fmx(calcTotal)})
                         </button>
                       )}
                     </div>
                     <button onClick={() => { if (editingPrice) setEditingPrice(false); else { setEditingPrice(true); if (priceOverride === "") setPriceOverride(String(calcTotal)); } }}
-                      className="flex items-center gap-1 border border-[#c4882a]/40 text-[#c4882a] px-2.5 py-1.5 text-xs font-dm hover:bg-[#c4882a]/10 transition-colors rounded-sm">
+                      className="flex items-center gap-1 border border-[#52B788]/40 text-[#52B788] px-2.5 py-1.5 text-xs font-dm hover:bg-[#52B788]/10 transition-colors rounded-sm">
                       {editingPrice ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                       {editingPrice ? "OK" : "Editar"}
                     </button>
@@ -859,23 +948,23 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 </div>
 
                 {/* Descuento */}
-                <div className="border border-[#3a6b1a]/20 bg-[#3a6b1a]/5 px-4 py-3 rounded-sm">
-                  <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm mb-3">Descuento (opcional)</p>
+                <div className="border border-[#1B4332]/20 bg-[#1B4332]/5 px-4 py-3 rounded-sm">
+                  <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-3">Descuento (opcional)</p>
                   <div className="flex gap-2 items-center">
-                    <div className="flex border border-[#1a2e1a]/15 rounded-sm overflow-hidden">
+                    <div className="flex border border-[#1B4332]/15 rounded-sm overflow-hidden">
                       <button onClick={() => setDiscountType("percent")}
-                        className={`px-3 py-2 text-xs font-dm transition-colors ${discountType === "percent" ? "bg-[#3a6b1a] text-white" : "bg-white text-[#1a2e1a]/60 hover:bg-[#f4edd8]"}`}>%</button>
+                        className={`px-3 py-2 text-xs font-dm transition-colors ${discountType === "percent" ? "bg-[#1B4332] text-white" : "bg-white text-[#1B4332]/60 hover:bg-[#FAFAF8]"}`}>%</button>
                       <button onClick={() => setDiscountType("fixed")}
-                        className={`px-3 py-2 text-xs font-dm transition-colors ${discountType === "fixed" ? "bg-[#3a6b1a] text-white" : "bg-white text-[#1a2e1a]/60 hover:bg-[#f4edd8]"}`}>$</button>
+                        className={`px-3 py-2 text-xs font-dm transition-colors ${discountType === "fixed" ? "bg-[#1B4332] text-white" : "bg-white text-[#1B4332]/60 hover:bg-[#FAFAF8]"}`}>$</button>
                     </div>
                     <input type="number" min={0} value={discountValue}
                       onChange={e => setDiscountValue(e.target.value)}
                       placeholder={discountType === "percent" ? "ej. 10" : "ej. 500"}
                       className={`flex-1 ${inputCls}`} />
-                    {discountValue !== "" && <button onClick={() => setDiscountValue("")} className="text-[#1a2e1a]/30 hover:text-red-500"><X className="w-4 h-4" /></button>}
+                    {discountValue !== "" && <button onClick={() => setDiscountValue("")} className="text-[#1B4332]/30 hover:text-red-500"><X className="w-4 h-4" /></button>}
                   </div>
                   {discountAmt > 0 && (
-                    <p className="mt-2 text-xs font-dm text-[#3a6b1a]">
+                    <p className="mt-2 text-xs font-dm text-[#1B4332]">
                       Descuento: −{fmx(discountAmt)}{discountType === "percent" && ` (${discountValue}%)`}
                     </p>
                   )}
@@ -883,31 +972,31 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
                 {/* Total final */}
                 {(discountAmt > 0 || baseTotal > 0) && (
-                  <div className="border border-[#1a2e1a]/15 bg-[#1a2e1a] px-4 py-3 rounded-sm flex justify-between items-center">
+                  <div className="border border-[#1B4332]/15 bg-[#1B4332] px-4 py-3 rounded-sm flex justify-between items-center">
                     <span className="text-[9px] tracking-[2px] uppercase text-white/50 font-dm">Total final</span>
-                    <span className="font-cormorant text-[#c4882a] text-2xl">{fmx(finalTotal)}</span>
+                    <span className="font-cormorant text-[#52B788] text-2xl">{fmx(finalTotal)}</span>
                   </div>
                 )}
 
                 {/* Anticipo */}
-                <div className="border border-[#9a4a1e]/20 bg-[#9a4a1e]/5 px-4 py-3 rounded-sm">
+                <div className="border border-[#C9484A]/20 bg-[#C9484A]/5 px-4 py-3 rounded-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] tracking-[2px] uppercase text-[#1a2e1a]/50 font-dm">Anticipo para reservar</p>
+                    <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Anticipo para reservar</p>
                     <button type="button" onClick={() => setAnticipo(String(Math.round(finalTotal * 0.5)))}
-                      className="text-[9px] font-dm text-[#9a4a1e] border border-[#9a4a1e]/30 px-2 py-1 rounded-sm hover:bg-[#9a4a1e]/10 transition-colors">
+                      className="text-[9px] font-dm text-[#C9484A] border border-[#C9484A]/30 px-2 py-1 rounded-sm hover:bg-[#C9484A]/10 transition-colors">
                       50% = {fmx(Math.round(finalTotal * 0.5))}
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[#1a2e1a]/50 font-dm text-sm">$</span>
+                    <span className="text-[#1B4332]/50 font-dm text-sm">$</span>
                     <input type="number" min={0} value={anticipo}
                       onChange={e => setAnticipo(e.target.value)}
                       placeholder={String(Math.round(finalTotal * 0.5))}
                       className={inputCls} />
-                    <span className="text-[#1a2e1a]/50 font-dm text-sm">MXN</span>
+                    <span className="text-[#1B4332]/50 font-dm text-sm">MXN</span>
                   </div>
                   {finalTotal > 0 && (
-                    <p className="mt-1.5 text-[10px] font-dm text-[#1a2e1a]/50">
+                    <p className="mt-1.5 text-[10px] font-dm text-[#1B4332]/50">
                       Saldo al tour: {fmx(Math.max(0, finalTotal - (anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5))))}
                     </p>
                   )}
@@ -918,10 +1007,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             </div>{/* end scrollable */}
 
             {/* Footer navigation */}
-            <div className="px-6 pb-5 pt-3 border-t border-[#1a2e1a]/8 flex items-center justify-between gap-3">
+            <div className="px-6 pb-5 pt-3 border-t border-[#1B4332]/8 flex items-center justify-between gap-3">
               {step > 1 ? (
                 <button onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
-                  className="flex items-center gap-1 text-xs font-dm text-[#1a2e1a]/50 hover:text-[#1a2e1a] px-3 py-2 border border-[#1a2e1a]/15 rounded-sm transition-colors">
+                  className="flex items-center gap-1 text-xs font-dm text-[#1B4332]/50 hover:text-[#1B4332] px-3 py-2 border border-[#1B4332]/15 rounded-sm transition-colors">
                   <ChevronLeft className="w-3.5 h-3.5" />Atrás
                 </button>
               ) : <div />}
@@ -929,13 +1018,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               {step < 3 ? (
                 <button onClick={() => setStep(s => (s + 1) as 1 | 2 | 3)}
                   disabled={step === 1 ? !step1Valid : !step2Valid}
-                  className="flex items-center gap-1.5 bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-5 py-2 text-[11px] font-dm uppercase tracking-[1.5px] transition-colors disabled:opacity-40 rounded-sm">
+                  className="flex items-center gap-1.5 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-5 py-2 text-[11px] font-dm uppercase tracking-[1.5px] transition-colors disabled:opacity-40 rounded-sm">
                   Siguiente <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               ) : (
                 <button onClick={saveQuote}
                   disabled={saving || !form.customerName || lines.some(l => !l.tourSlug || !l.tourDate)}
-                  className="bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-40 rounded-sm">
+                  className="bg-[#1B4332] hover:bg-[#2D5A45] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-40 rounded-sm">
                   {saving ? "Guardando..." : isEditMode ? "Actualizar cotización" : "Guardar cotización"}
                 </button>
               )}

@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil } from "lucide-react";
+import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine } from "@/components/admin/ReservaModal";
+import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -23,6 +24,23 @@ const fDateL = (d: string) => {
 
 function calcLine(l: LineItem): number { return calcTourLine(l); }
 
+// ── Estado operativo por fecha de tour (zona horaria de México) ──────────────
+const todayMX = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+function daysToTour(tourDate: string, today: string): number {
+  if (!tourDate) return 9999;
+  return Math.round((new Date(tourDate + "T00:00:00").getTime() - new Date(today + "T00:00:00").getTime()) / 86400000);
+}
+function DaysChip({ d }: { d: number }) {
+  const base = "inline-block text-[10px] font-dm font-medium px-2 py-0.5 rounded-full whitespace-nowrap";
+  if (d === 9999) return <span className={`${base} bg-[#1B4332]/5 text-[#1B4332]/40`}>—</span>;
+  if (d < 0)      return <span className={`${base} bg-gray-100 text-gray-400`}>Pasado</span>;
+  if (d === 0)    return <span className={`${base} bg-[#52B788]/20 text-[#1B4332] font-bold`}>Hoy</span>;
+  if (d === 1)    return <span className={`${base} bg-amber-100 text-amber-800 font-bold`}>Mañana</span>;
+  if (d <= 3)     return <span className={`${base} bg-amber-50 text-amber-700`}>{d}d</span>;
+  if (d <= 7)     return <span className={`${base} bg-[#52B788]/12 text-[#2D5A45]`}>{d}d</span>;
+  return <span className={`${base} bg-[#1B4332]/5 text-[#1B4332]/50`}>{d}d</span>;
+}
+
 export default function ReservasClient({ initialBookings }: { initialBookings: TourBooking[] }) {
   const [bookings,      setBookings]      = useState(initialBookings);
   const [search,        setSearch]        = useState("");
@@ -35,8 +53,19 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
   const [editTarget,    setEditTarget]    = useState<TourBooking | null>(null);
   const [form,          setForm]          = useState<ReservaFormState>(EMPTY_RESERVA_FORM);
   const [saving,        setSaving]        = useState(false);
+  const [sortBy,        setSortBy]        = useState<"reciente" | "porLlegar" | "tourDate">("reciente");
+  const [vistaHoy,      setVistaHoy]      = useState(false);
+  const [showFilters,   setShowFilters]   = useState(false);
+  const [dateFrom,      setDateFrom]      = useState("");
+  const [dateTo,        setDateTo]        = useState("");
+  const today = useMemo(() => todayMX(), []);
 
-  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(""), 4000); }
+  function flash(m: string) {
+    setMsg(m);
+    if (m.startsWith("✅")) playSuccess();
+    else if (m.startsWith("❌")) playError();
+    setTimeout(() => setMsg(""), 4000);
+  }
 
   async function refresh() {
     setLoading(true);
@@ -369,38 +398,80 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return bookings.filter(b => {
+    const list = bookings.filter(b => {
       if (statusFilter !== "all" && b.status !== statusFilter) return false;
+      if (vistaHoy) {
+        const dd = daysToTour(b.tourDate, today);
+        if (b.status === "cancelled" || !(dd === 0 || dd === 1)) return false;
+      }
+      if (dateFrom && b.tourDate < dateFrom) return false;
+      if (dateTo && b.tourDate > dateTo) return false;
       return !q || [b.customerName, b.customerEmail, b.confirmationNumber, b.tourName].some(v => v?.toLowerCase().includes(q));
     });
-  }, [bookings, search, statusFilter]);
+    return [...list].sort((a, b) => {
+      if (sortBy === "reciente") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === "tourDate") return (b.tourDate || "").localeCompare(a.tourDate || "");
+      // "porLlegar": próximos primero (futuros ascendente), pasados al final
+      const da = daysToTour(a.tourDate, today), db = daysToTour(b.tourDate, today);
+      const fa = da < 0 ? 1 : 0, fb = db < 0 ? 1 : 0;
+      return fa !== fb ? fa - fb : da - db;
+    });
+  }, [bookings, search, statusFilter, vistaHoy, dateFrom, dateTo, sortBy, today]);
 
+  const hoyCount = useMemo(
+    () => bookings.filter(b => b.status !== "cancelled" && [0, 1].includes(daysToTour(b.tourDate, today))).length,
+    [bookings, today]
+  );
+  const hasDateFilter = !!(dateFrom || dateTo);
   const totalIngresos = bookings.filter(b => b.status !== "cancelled").reduce((s, b) => s + b.totalAmount, 0);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-cormorant text-[#1a2e1a] text-2xl font-light">Reservas de Tours</h1>
-          <p className="text-[#1a2e1a]/50 font-dm text-sm mt-1">
+          <h1 className="font-cormorant text-[#1B4332] text-2xl font-light">Reservas de Tours</h1>
+          <p className="text-[#1B4332]/50 font-dm text-sm mt-1">
             {bookings.filter(b => b.status !== "cancelled").length} activas ·{" "}
-            <span className="text-[#3a6b1a] font-medium">{fmx(totalIngresos)}</span>
+            <span className="text-[#1B4332] font-medium">{fmx(totalIngresos)}</span>
           </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={refresh} disabled={loading}
-            className="flex items-center gap-2 border border-[#1a2e1a]/20 text-[#1a2e1a]/60 hover:text-[#1a2e1a] px-3 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors disabled:opacity-40 rounded-sm">
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => { playClick(); setVistaHoy(v => !v); }}
+            title="Tours de hoy y mañana"
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm border ${
+              vistaHoy ? "bg-[#1B4332] text-white border-[#1B4332]" : "border-[#1B4332]/20 text-[#1B4332]/70 hover:text-[#1B4332] hover:border-[#1B4332]/40"
+            }`}>
+            <Sun className="w-3.5 h-3.5" />Hoy
+            {hoyCount > 0 && (
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${vistaHoy ? "bg-white/20 text-white" : "bg-[#52B788]/20 text-[#1B4332] font-bold"}`}>{hoyCount}</span>
+            )}
+          </button>
+          <select value={sortBy} onChange={e => { playClick(); setSortBy(e.target.value as any); }}
+            className="bg-white border border-[#1B4332]/20 text-[#1B4332]/70 text-xs font-dm px-2.5 py-2 rounded-sm focus:outline-none focus:border-[#1B4332] cursor-pointer">
+            <option value="reciente">Más recientes</option>
+            <option value="porLlegar">Por llegar</option>
+            <option value="tourDate">Fecha de tour</option>
+          </select>
+          <button onClick={() => { playClick(); setShowFilters(s => !s); }}
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm border ${
+              showFilters || hasDateFilter ? "bg-[#1B4332]/8 border-[#1B4332]/40 text-[#1B4332]" : "border-[#1B4332]/20 text-[#1B4332]/60 hover:text-[#1B4332]"
+            }`}>
+            <SlidersHorizontal className="w-3.5 h-3.5" />Filtros
+            {showFilters ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          <button onClick={() => { playClick(); refresh(); }} disabled={loading}
+            className="flex items-center gap-2 border border-[#1B4332]/20 text-[#1B4332]/60 hover:text-[#1B4332] px-3 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors disabled:opacity-40 rounded-sm">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />Actualizar
           </button>
-          <button onClick={() => { setForm(EMPTY_RESERVA_FORM); setModal("new"); }}
-            className="flex items-center gap-2 bg-[#3a6b1a] hover:bg-[#5a9e2a] text-white px-4 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
+          <button onClick={() => { playClick(); setForm(EMPTY_RESERVA_FORM); setModal("new"); }}
+            className="flex items-center gap-2 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-4 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
             <Plus className="w-4 h-4" />Nueva Reserva
           </button>
         </div>
       </div>
 
       {msg && (
-        <div className={`mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>
+        <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>
           {msg}
         </div>
       )}
@@ -415,14 +486,14 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         ] as const).map(tab => {
           const count = tab.key === "all" ? bookings.length : bookings.filter(b => b.status === tab.key).length;
           return (
-            <button key={tab.key} onClick={() => setStatusFilter(tab.key)}
+            <button key={tab.key} onClick={() => { playClick(); setStatusFilter(tab.key); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm whitespace-nowrap rounded-sm transition-colors ${
                 statusFilter === tab.key
-                  ? "bg-[#1a2e1a] text-white"
-                  : "border border-[#1a2e1a]/15 text-[#1a2e1a]/60 hover:text-[#1a2e1a] hover:border-[#1a2e1a]/30"
+                  ? "bg-[#1B4332] text-white"
+                  : "border border-[#1B4332]/15 text-[#1B4332]/60 hover:text-[#1B4332] hover:border-[#1B4332]/30"
               }`}>
               {tab.label}
-              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusFilter === tab.key ? "bg-white/20 text-white" : "bg-[#1a2e1a]/8 text-[#1a2e1a]/50"}`}>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusFilter === tab.key ? "bg-white/20 text-white" : "bg-[#1B4332]/8 text-[#1B4332]/50"}`}>
                 {count}
               </span>
             </button>
@@ -430,62 +501,121 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         })}
       </div>
 
+      {/* Panel de filtros (rango de fechas) */}
+      {showFilters && (
+        <div className="animate-slide-up bg-white border border-[#1B4332]/12 rounded-sm p-4 mb-3 flex flex-wrap items-end gap-4">
+          <label className="flex flex-col gap-1 text-[10px] tracking-[1px] uppercase text-[#1B4332]/50 font-dm">
+            Fecha de tour desde
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="border border-[#1B4332]/15 text-[#1B4332] text-sm px-3 py-2 rounded-sm focus:outline-none focus:border-[#1B4332]" />
+          </label>
+          <label className="flex flex-col gap-1 text-[10px] tracking-[1px] uppercase text-[#1B4332]/50 font-dm">
+            Hasta
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="border border-[#1B4332]/15 text-[#1B4332] text-sm px-3 py-2 rounded-sm focus:outline-none focus:border-[#1B4332]" />
+          </label>
+          {hasDateFilter && (
+            <button onClick={() => { playClick(); setDateFrom(""); setDateTo(""); }}
+              className="text-xs font-dm text-[#1B4332]/60 hover:text-[#C9484A] underline underline-offset-2 transition-colors pb-2">
+              Limpiar fechas
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1a2e1a]/30" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1B4332]/30" />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar por nombre, email o confirmación..."
-          className="w-full bg-white border border-[#1a2e1a]/15 text-[#1a2e1a] font-dm text-sm pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#3a6b1a] placeholder:text-[#1a2e1a]/30 rounded-sm"
+          className="w-full bg-white border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#1B4332] placeholder:text-[#1B4332]/30 rounded-sm"
         />
       </div>
 
-      <div className="bg-white border border-[#1a2e1a]/10 rounded-sm overflow-hidden">
+      {/* ── Tarjetas (móvil) ── */}
+      <div className="md:hidden space-y-2.5">
+        {filtered.length === 0 && <p className="py-10 text-center text-[#1B4332]/30 font-dm text-sm">Sin resultados</p>}
+        {filtered.map(b => {
+          const rawDeposito = (b as any).depositoPagado ?? 0;
+          const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+          const pendiente = Math.max(0, b.totalAmount - deposito);
+          return (
+            <div key={b.id} className="bg-white border border-[#1B4332]/10 rounded-md p-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[#1B4332] font-mono text-xs font-medium">{b.confirmationNumber}</span>
+                <div className="flex items-center gap-2">
+                  <DaysChip d={daysToTour(b.tourDate, today)} />
+                  <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>{STATUS_LABEL[b.status] || b.status}</span>
+                </div>
+              </div>
+              <p className="text-[#1B4332] font-medium">{b.customerName}</p>
+              <p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p>
+              <p className="text-[#1B4332]/70 text-sm mt-1">{b.tourName}</p>
+              <div className="flex items-center justify-between mt-2 text-xs">
+                <span className="text-[#1B4332]/60">{fDate(b.tourDate)} · {b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</span>
+                <span className="text-[#52B788] font-medium">{fmx(b.totalAmount)}</span>
+              </div>
+              {pendiente > 0 && <p className="text-orange-600 text-[10px] mt-1">Saldo pendiente: {fmx(pendiente)}</p>}
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8">
+                <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Tabla (escritorio) ── */}
+      <div className="hidden md:block bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
-            <thead className="bg-[#f4edd8]">
-              <tr className="border-b border-[#1a2e1a]/10 text-[#1a2e1a]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Confirmación","Cliente","Tour","Fecha","Personas","Total","Anticipo","Estado","Acciones"].map(h => (
+            <thead className="bg-[#FAFAF8]">
+              <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
+                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Total","Anticipo","Estado","Acciones"].map(h => (
                   <th key={h} className="py-3 px-3 text-left font-dm">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={9} className="py-12 text-center text-[#1a2e1a]/30 font-dm">Sin resultados</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={10} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
                 const rawDeposito = (b as any).depositoPagado ?? 0;
                 const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
                 const pendiente = Math.max(0, b.totalAmount - deposito);
                 return (
-                  <tr key={b.id} className="border-b border-[#1a2e1a]/6 hover:bg-[#f4edd8]/50 transition-colors">
-                    <td className="py-3 px-3 text-[#3a6b1a] font-mono text-xs font-medium">{b.confirmationNumber}</td>
-                    <td className="py-3 px-3"><p className="text-[#1a2e1a] font-medium">{b.customerName}</p><p className="text-[#1a2e1a]/40 text-xs">{b.customerEmail}</p></td>
-                    <td className="py-3 px-3 text-[#1a2e1a]/70 max-w-[140px] truncate text-xs">{b.tourName}</td>
-                    <td className="py-3 px-3 text-[#1a2e1a]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
-                    <td className="py-3 px-3 text-[#1a2e1a]/70 text-xs">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</td>
-                    <td className="py-3 px-3 text-[#c4882a] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
+                  <tr key={b.id} className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors">
+                    <td className="py-3 px-3 text-[#1B4332] font-mono text-xs font-medium">{b.confirmationNumber}</td>
+                    <td className="py-3 px-3"><p className="text-[#1B4332] font-medium">{b.customerName}</p><p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p></td>
+                    <td className="py-3 px-3 text-[#1B4332]/70 max-w-[140px] truncate text-xs">{b.tourName}</td>
+                    <td className="py-3 px-3 text-[#1B4332]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
+                    <td className="py-3 px-3">{b.status !== "cancelled" ? <DaysChip d={daysToTour(b.tourDate, today)} /> : <span className="text-[#1B4332]/20 text-xs">—</span>}</td>
+                    <td className="py-3 px-3 text-[#1B4332]/70 text-xs">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</td>
+                    <td className="py-3 px-3 text-[#52B788] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
                     <td className="py-3 px-3 text-xs">
                       {deposito > 0 ? (
                         <div>
                           <p className="text-green-700 font-medium">{fmx(deposito)}</p>
                           {pendiente > 0 && <p className="text-orange-600 text-[10px]">Pend: {fmx(pendiente)}</p>}
                         </div>
-                      ) : <span className="text-[#1a2e1a]/30">—</span>}
+                      ) : <span className="text-[#1B4332]/30">—</span>}
                     </td>
                     <td className="py-3 px-3 relative">
                       {statusEditing === b.id && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setStatusEditing(null)} />
-                          <div className="absolute left-0 top-8 z-20 bg-white border border-[#1a2e1a]/15 shadow-lg rounded-sm overflow-hidden min-w-[120px]">
+                          <div className="absolute left-0 top-8 z-20 bg-white border border-[#1B4332]/15 shadow-lg rounded-sm overflow-hidden min-w-[120px]">
                             {(["paid", "pending", "cancelled"] as const).map(s => (
-                              <button key={s} onClick={() => changeStatus(b.id, s)}
-                                className={`w-full text-left px-3 py-2 text-[10px] font-dm tracking-[1px] uppercase hover:bg-[#f4edd8] transition-colors flex items-center gap-2 ${b.status === s ? "text-[#3a6b1a] font-semibold" : "text-[#1a2e1a]/60"}`}>
-                                {b.status === s && <span className="text-[#3a6b1a]">✓</span>}
+                              <button key={s} onClick={() => { playClick(); changeStatus(b.id, s); }}
+                                className={`w-full text-left px-3 py-2 text-[10px] font-dm tracking-[1px] uppercase hover:bg-[#FAFAF8] transition-colors flex items-center gap-2 ${b.status === s ? "text-[#1B4332] font-semibold" : "text-[#1B4332]/60"}`}>
+                                {b.status === s && <span className="text-[#1B4332]">✓</span>}
                                 {STATUS_LABEL[s]}
                               </button>
                             ))}
                           </div>
                         </>
                       )}
-                      <button onClick={() => setStatusEditing(statusEditing === b.id ? null : b.id)}
+                      <button onClick={() => { playClick(); setStatusEditing(statusEditing === b.id ? null : b.id); }}
                         title="Cambiar estado"
                         className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm cursor-pointer hover:opacity-75 transition-opacity ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
                         {STATUS_LABEL[b.status] || b.status}
@@ -493,14 +623,14 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => sendEmail(b.id)} disabled={sending === b.id} title="Enviar email"
-                          className="text-[#1a2e1a]/40 hover:text-[#3a6b1a] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                        <button onClick={() => downloadPDF(b)} title="Descargar PDF"
-                          className="text-[#1a2e1a]/40 hover:text-[#c4882a] transition-colors"><Download className="w-4 h-4" /></button>
-                        <button onClick={() => openEdit(b)} title="Editar"
-                          className="text-[#1a2e1a]/40 hover:text-[#1a2e1a] transition-colors"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => hardDelete(b.id)} title="Eliminar"
-                          className="text-[#1a2e1a]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} title="Enviar email"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); downloadPDF(b); }} title="Descargar PDF"
+                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); openEdit(b); }} title="Editar"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); hardDelete(b.id); }} title="Eliminar"
+                          className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
