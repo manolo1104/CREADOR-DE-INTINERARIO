@@ -22,6 +22,16 @@ export function HeroTypewriter() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Accesibilidad: sin animación de tipeo si el usuario pide menos movimiento.
+    const prefersReduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      setDisplayed(WORDS[0]);
+      setShowCursor(false);
+      return;
+    }
+
     const tick = () => {
       const word = WORDS[wordIndex.current];
 
@@ -59,8 +69,12 @@ export function HeroTypewriter() {
     };
   }, []);
 
-  // Blinking cursor
+  // Blinking cursor (se desactiva con prefers-reduced-motion)
   useEffect(() => {
+    const prefersReduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
     const blink = setInterval(() => setShowCursor((v) => !v), 530);
     return () => clearInterval(blink);
   }, []);

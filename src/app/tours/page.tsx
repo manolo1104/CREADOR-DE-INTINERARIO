@@ -72,13 +72,13 @@ const BADGES_EN: { Icon: LucideIcon; title: string; sub: string }[] = [
 ];
 
 const COMO_FUNCIONA_ES = [
-  { num: "01", titulo: "Reserva en línea en 2 minutos", detalle: "Elige tu tour, fecha y número de personas, y paga seguro con tarjeta. Tu lugar queda apartado al instante, sin esperas. ¿Prefieres que te asesoremos? También puedes escribirnos por WhatsApp." },
-  { num: "02", titulo: "Recibes tu confirmación al instante", detalle: "Te llega de inmediato por correo con tu número de confirmación, punto de encuentro y la lista de qué llevar. Sin trámites ni esperas." },
+  { num: "01", titulo: "Escríbenos por WhatsApp", detalle: "Cuéntanos cuántas personas son, qué fechas manejan y qué tours te interesan. Respondemos en menos de una hora." },
+  { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: punto de encuentro, hora de salida, lista de qué llevar y el link de pago." },
   { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate de llegar. Todo lo demás —transporte, entradas, desayuno, guía— ya está incluido." },
 ];
 const COMO_FUNCIONA_EN = [
-  { num: "01", titulo: "Book online in 2 minutes", detalle: "Choose your tour, date and group size, and pay securely by card. Your spot is reserved instantly, no waiting. Prefer some guidance? You can also message us on WhatsApp." },
-  { num: "02", titulo: "Get your confirmation instantly", detalle: "It arrives right away by email with your confirmation number, meeting point and a what-to-bring list. No paperwork, no waiting." },
+  { num: "01", titulo: "Message us on WhatsApp", detalle: "Tell us how many people you are, what dates work for you and which tours you're interested in. We reply in under an hour." },
+  { num: "02", titulo: "We confirm and reserve your spot", detalle: "We send you the tour details: meeting point, departure time, a what-to-bring list and the payment link." },
   { num: "03", titulo: "Enjoy, worry-free", detalle: "On tour day, all you have to do is show up. Everything else — transport, entrance fees, breakfast, guide — is already included." },
 ];
 
@@ -350,6 +350,13 @@ export default function ToursPage() {
                 <p className="text-crema/50 font-dm text-sm leading-relaxed">{step.detalle}</p>
               </div>
             ))}
+          </div>
+          <div className="reveal-up text-center mt-14">
+            <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
+              {WA_SVG}
+              {en ? "Book on WhatsApp" : "Reservar por WhatsApp"}
+            </a>
+            <p className="text-crema/40 font-dm text-[11px] mt-3">{en ? "We reply in under an hour · Mon–Sun" : "Respondemos en menos de una hora · Lun–Dom"}</p>
           </div>
         </div>
       </section>

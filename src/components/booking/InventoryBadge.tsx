@@ -1,47 +1,32 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { trackTourEvent } from "@/lib/tourTracker";
-
-/** Pseudo-deterministic spots: changes weekly, consistent for same tourId+week */
-function spotsThisWeek(tourId: string): number {
-  const weekNum = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
-  const seed    = tourId.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const hash    = ((seed * 2654435761 + weekNum * 1234567) >>> 0) % 1000;
-  return (hash % 6) + 2; // 2–7 spots
-}
 
 interface Props {
   tourId:   string;
   tourName: string;
+  groupMax: number;
 }
 
-export function InventoryBadge({ tourId, tourName }: Props) {
-  const spots = spotsThisWeek(tourId);
-  const isLow = spots <= 3;
+// Escasez REAL y verificable: los grupos son pequeños (máximo groupMax por salida).
+// No inventa "lugares disponibles esta semana".
+export function InventoryBadge({ tourId, tourName, groupMax }: Props) {
+  const pathname = usePathname();
+  const en = pathname === "/en" || pathname.startsWith("/en/");
 
   useEffect(() => {
-    trackTourEvent("INVENTORY_BADGE_SHOWN", { tour: tourId, tour_name: tourName, spots_left: spots });
+    trackTourEvent("INVENTORY_BADGE_SHOWN", { tour: tourId, tour_name: tourName, group_max: groupMax });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourId]);
 
   return (
-    <div
-      className={`flex items-center gap-2 px-3 py-2 text-[11px] font-dm font-medium ${
-        isLow
-          ? "bg-red-500/12 border border-red-500/25 text-red-400"
-          : "bg-amber-500/12 border border-amber-500/25 text-amber-400"
-      }`}
-    >
-      <span
-        className={`w-2 h-2 rounded-full flex-shrink-0 ${
-          isLow ? "bg-red-500 animate-pulse" : "bg-amber-400"
-        }`}
-        aria-hidden="true"
-      />
-      {isLow
-        ? `Solo ${spots} lugares disponibles esta semana`
-        : `${spots} cupos disponibles · Alta demanda`}
+    <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-dm font-medium bg-amber-500/12 border border-amber-500/25 text-amber-400">
+      <span className="w-2 h-2 rounded-full flex-shrink-0 bg-amber-400" aria-hidden="true" />
+      {en
+        ? `Small group · max. ${groupMax} people per departure`
+        : `Grupo pequeño · máximo ${groupMax} personas por salida`}
     </div>
   );
 }

@@ -15,7 +15,10 @@ export function FloatingReservarButton() {
   const pathname = usePathname();
   if (pathname === "/planear" || pathname === "/recomendar") return null;
 
-  const tourSlugMatch = pathname.match(/^\/tours\/([^/]+)$/);
+  // Detecta páginas de detalle de tour (ES y EN). Ahí ya existe la MobileBookingBar
+  // fija abajo en móvil, así que ocultamos el flotante en móvil para no encimarlos.
+  const tourSlugMatch = pathname.match(/^\/(?:en\/)?tours\/([^/]+)$/);
+  const isTourDetail = !!tourSlugMatch;
   const href = tourSlugMatch
     ? `/reservar-tour/${tourSlugMatch[1]}`
     : "/tours";
@@ -25,10 +28,11 @@ export function FloatingReservarButton() {
       href={href}
       aria-label="Reservar tour"
       onClick={() => trackCtaClick("floating_button", href)}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5
+      className={`fixed bottom-6 right-6 z-50 items-center gap-2.5
                  bg-dorado hover:bg-terracota text-negro hover:text-crema
                  pl-4 pr-5 py-3.5 rounded-full shadow-xl shadow-black/40
-                 transition-all duration-300 hover:scale-105"
+                 transition-all duration-300 hover:scale-105
+                 ${isTourDetail ? "hidden lg:flex" : "flex"}`}
     >
       {LOCK_SVG}
       <span className="hidden sm:block text-[11px] tracking-[1.5px] uppercase font-dm font-medium">

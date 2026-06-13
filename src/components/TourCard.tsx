@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { motion, useMotionValue, useSpring } from "framer-motion";
 import type { Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
@@ -29,31 +28,45 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
   const dif = dificultadConfig[t.dificultad];
   const imageHeight = variant === "compact" ? "h-52 md:h-56" : "h-56 md:h-64";
 
-  const rotateXRaw = useMotionValue(0);
-  const rotateYRaw = useMotionValue(0);
-  const rotateX = useSpring(rotateXRaw, { stiffness: 280, damping: 22 });
-  const rotateY = useSpring(rotateYRaw, { stiffness: 280, damping: 22 });
+  // Tilt 3D sin framer-motion: variables CSS (--rx/--ry) + transición para el "settle".
+  const cardRef = useRef<HTMLElement>(null);
   const isTouchRef = useRef(false);
+  const reducedRef = useRef(false);
+
+  useEffect(() => {
+    reducedRef.current =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (isTouchRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (isTouchRef.current || reducedRef.current) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    rotateXRaw.set(-y * 6);
-    rotateYRaw.set(x * 6);
+    el.style.setProperty("--rx", `${-y * 6}deg`);
+    el.style.setProperty("--ry", `${x * 6}deg`);
   };
 
   const handleMouseLeave = () => {
-    rotateXRaw.set(0);
-    rotateYRaw.set(0);
+    const el = cardRef.current;
+    if (!el) return;
+    el.style.setProperty("--rx", "0deg");
+    el.style.setProperty("--ry", "0deg");
   };
 
   return (
     <div style={{ perspective: "1000px" }} className="h-full">
-    <motion.article
+    <article
+      ref={cardRef}
       className="group relative flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300 tour-card-shimmer"
-      style={{ rotateX, rotateY, willChange: "transform" }}
+      style={{
+        transform: "rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))",
+        transition: "transform 0.3s cubic-bezier(0.23,1,0.32,1), border-color 0.3s",
+        willChange: "transform",
+      }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onTouchStart={() => { isTouchRef.current = true; }}
@@ -109,10 +122,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             {t.tagline}
           </p>
           <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
-            <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} {en ? "reviews" : "reseñas"})
-          </p>
-          <p className="text-[10px] font-dm text-verde-vivo/70 mt-0.5 flex items-center gap-1">
-            <Users className="w-3 h-3" aria-hidden="true" /> {en ? "492 travelers have completed it · 38 bookings this month" : "492 viajeros lo han completado · 38 reservas este mes"}
+            <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} {en ? "real reviews" : "reseñas reales"})
           </p>
         </div>
       </div>
@@ -203,7 +213,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           </p>
         </div>
       </div>
-    </motion.article>
+    </article>
     </div>
   );
 }

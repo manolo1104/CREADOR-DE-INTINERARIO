@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Calendar, Users, Clock, MessageCircle, Share2, Mail, Copy } from "lucide-react";
+import { CheckCircle2, Calendar, Users, Clock, MessageCircle, Share2, CalendarPlus, Copy } from "lucide-react";
 import { formatTourDate, formatMXN } from "@/lib/tourBooking";
 
 interface ConfirmationData {
@@ -74,6 +74,41 @@ export default function ConfirmacionTourPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
+  }
+
+  function downloadIcs() {
+    if (!data) return;
+    // Evento de día completo en la fecha del tour (la hora exacta se coordina por WhatsApp).
+    const start = data.tourDate.replace(/-/g, "");
+    const [y, m, d] = data.tourDate.split("-").map(Number);
+    const end = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10).replace(/-/g, "");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Tours Huasteca Potosina//ES",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:${data.confirmationNumber}@huasteca-potosina.com`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${start}`,
+      `DTEND;VALUE=DATE:${end}`,
+      `SUMMARY:Tour ${data.tourName} — Huasteca Potosina`,
+      `DESCRIPTION:Confirmación ${data.confirmationNumber}. ${data.adults + data.children} participante(s). Te contactaremos por WhatsApp (+52 489 125 1458) un día antes para coordinar la hora exacta de recogida.`,
+      "LOCATION:Huasteca Potosina, San Luis Potosí, México",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tour-huasteca-${data.confirmationNumber}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   async function handleShare() {
@@ -228,13 +263,13 @@ export default function ConfirmacionTourPage() {
           </button>
 
           <div className="grid grid-cols-2 gap-3">
-            <a
-              href="mailto:"
-              className="flex items-center justify-center gap-2 border border-negro/15 hover:border-negro/30 text-negro/55 hover:text-negro/80 py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+            <button
+              onClick={downloadIcs}
+              className="flex items-center justify-center gap-2 border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
             >
-              <Mail className="w-3.5 h-3.5" />
-              Ver correo
-            </a>
+              <CalendarPlus className="w-3.5 h-3.5" />
+              Agregar al calendario
+            </button>
             <Link
               href="/tours"
               className="flex items-center justify-center border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-all"

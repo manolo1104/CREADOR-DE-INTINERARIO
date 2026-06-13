@@ -307,7 +307,9 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
           <Lock className="w-4 h-4 text-verde-selva" />
           <h2 className="font-cormorant text-verde-profundo text-xl">Información de pago</h2>
         </div>
-        <PaymentElement options={{ layout: "tabs" }} />
+        {/* Apple Pay / Google Pay aparecen aquí automáticamente si están habilitados en
+            el panel de Stripe y el dominio está verificado (Settings → Payment methods). */}
+        <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
       </section>
 
       {error && (

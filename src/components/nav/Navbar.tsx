@@ -75,6 +75,24 @@ export default function Navbar() {
     setDestinosOpen(false);
   }, [pathname]);
 
+  // Menú móvil abierto: bloquea el scroll del body y permite cerrar con Escape.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        setDestinosOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (destinosRef.current && !destinosRef.current.contains(e.target as Node)) {
@@ -168,7 +186,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu Panel */}
-        <div className={`lg:hidden overflow-hidden transition-all duration-300 border-t border-white/8 ${mobileOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}>
+        <div className={`lg:hidden transition-all duration-300 border-t border-white/8 ${mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto opacity-100" : "max-h-0 overflow-hidden opacity-0"}`}>
           <div className="px-6 py-6 space-y-1 bg-negro/98">
             <Link href={lp("/")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {locale === "en" ? "Home" : "Inicio"}

@@ -324,7 +324,7 @@ export default function TourDetailPage({ params }: Props) {
                   <Lock className="w-3 h-3" aria-hidden="true" /> {t.privateTour}
                 </a>
               )}
-              <InventoryBadge tourId={tour.id} tourName={tour.nombre} />
+              <InventoryBadge tourId={tour.id} tourName={tour.nombre} groupMax={tour.groupMax} />
               {tour.urgencia && (
                 <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">
                   {tour.urgencia}
@@ -444,6 +444,9 @@ export default function TourDetailPage({ params }: Props) {
           </section>
         );
       })()}
+
+      {/* Espaciador móvil: evita que la MobileBookingBar fija tape el contenido final */}
+      <div className="h-20 lg:hidden" aria-hidden="true" />
 
       <SocialProofToast tourId={tour.id} tourName={tour.nombre} />
     </main>

@@ -91,7 +91,9 @@ export function FloatingLeaves({ count = 22 }: { count?: number }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animId: number;
+    let animId = 0;
+    let running = false;
+    let inView = false;
     let t = 0;
     let leaves: Leaf[] = [];
 
@@ -106,39 +108,67 @@ export function FloatingLeaves({ count = 22 }: { count?: number }) {
       leaves.push(spawnLeaf(canvas.width, canvas.height, true));
     }
 
-    const draw = () => {
-      if (!ctx || !canvas) return;
+    const paint = (animate: boolean) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      t++;
-
+      if (animate) t++;
       for (const leaf of leaves) {
-        leaf.y -= leaf.speed;
-        leaf.rotation += leaf.rotationSpeed;
-        leaf.driftX = Math.sin(t * leaf.driftSpeed + leaf.driftOffset) * 28;
-
-        if (leaf.y < -leaf.size * 3) {
-          Object.assign(leaf, spawnLeaf(canvas.width, canvas.height, false));
+        if (animate) {
+          leaf.y -= leaf.speed;
+          leaf.rotation += leaf.rotationSpeed;
+          leaf.driftX = Math.sin(t * leaf.driftSpeed + leaf.driftOffset) * 28;
+          if (leaf.y < -leaf.size * 3) {
+            Object.assign(leaf, spawnLeaf(canvas.width, canvas.height, false));
+          }
         }
-
-        drawLeaf(
-          ctx,
-          leaf.x + leaf.driftX,
-          leaf.y,
-          leaf.size,
-          leaf.rotation,
-          COLORS[leaf.colorIdx],
-          leaf.opacity
-        );
+        drawLeaf(ctx, leaf.x + leaf.driftX, leaf.y, leaf.size, leaf.rotation, COLORS[leaf.colorIdx], leaf.opacity);
       }
-
-      animId = requestAnimationFrame(draw);
     };
 
-    animId = requestAnimationFrame(draw);
+    // Accesibilidad: con reduced-motion pintamos un único frame estático, sin loop.
+    const prefersReduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      paint(false);
+      return () => window.removeEventListener("resize", resize);
+    }
+
+    const draw = () => {
+      paint(true);
+      animId = requestAnimationFrame(draw);
+    };
+    const start = () => {
+      if (running) return;
+      running = true;
+      animId = requestAnimationFrame(draw);
+    };
+    const stop = () => {
+      running = false;
+      if (animId) cancelAnimationFrame(animId);
+    };
+
+    // Pausa cuando el canvas sale del viewport o la pestaña queda oculta (ahorra CPU/batería).
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView && !document.hidden) start();
+        else stop();
+      },
+      { rootMargin: "120px" }
+    );
+    io.observe(canvas);
+
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else if (inView) start();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      cancelAnimationFrame(animId);
+      stop();
+      io.disconnect();
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibility);
       leaves = [];
     };
   }, [count]);

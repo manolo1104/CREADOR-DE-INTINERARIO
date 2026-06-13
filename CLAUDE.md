@@ -62,7 +62,7 @@ Tailwind with custom tokens in `tailwind.config.ts`:
 - Keyframes: `slide-up`, `shrink`
 - Glass utility classes: `gloss-surface-light`, `gloss-selector-light`
 
-`framer-motion` is installed but **not used** in public-facing components — use Tailwind CSS animations only for new public UI work.
+`framer-motion` is installed but **no longer used in public-facing components** (TourCard tilt and MagneticButton were migrated to CSS-variable transforms + transitions). Keep public UI on Tailwind/CSS animations only — do not reintroduce `framer-motion` into public components, to keep the home/tours bundles light.
 
 ## Page Generation
 
