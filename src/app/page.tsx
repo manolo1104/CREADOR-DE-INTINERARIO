@@ -6,12 +6,13 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
-import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
 import { StatTile } from "@/components/StatTile";
 import { MagneticButton } from "@/components/MagneticButton";
 import { HeroStats } from "@/components/HeroStats";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { CountdownViaje } from "@/components/CountdownViaje";
+import { GuiaMockup } from "@/components/GuiaMockup";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
@@ -271,6 +272,37 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── VIAJE PROGRAMADO SEPTIEMBRE ── */}
+      <section aria-label={en ? "September scheduled trip from Mexico City" : "Viaje programado de septiembre desde CDMX"} className="relative px-6 py-20 overflow-hidden border-y border-white/10">
+        <Image src="/imagenes/cascadas-de-micos/hero.jpg" alt="" fill className="object-cover object-center" sizes="100vw" />
+        <div className="absolute inset-0 bg-gradient-to-r from-negro/95 via-negro/88 to-negro/70" />
+        <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+              ✦ {en ? "Scheduled group trip · September long weekend" : "Viaje grupal · Puente de Septiembre"}
+            </p>
+            <h2 className="font-cormorant font-light text-crema leading-tight mb-3" style={{ fontSize: "clamp(30px,4.5vw,52px)" }}>
+              {en ? "The Huasteca from " : "La Huasteca desde "}<em className="shimmer-gold not-italic">CDMX</em>
+            </h2>
+            <p className="text-crema/75 font-dm text-sm leading-relaxed mb-6 max-w-md">
+              {en
+                ? "4 days / 3 nights · Sep 16–19, 2026. Round-trip transport, lodging and 3 guided all-inclusive tours. You just show up."
+                : "4 días / 3 noches · 16–19 sep 2026. Transporte redondo, hospedaje y 3 recorridos guiados todo incluido. Tú solo llega."}
+            </p>
+            <div className="mb-7">
+              <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">{en ? "from" : "desde"}</p>
+              <p className="font-cormorant text-dorado text-4xl leading-none">$7,900 <span className="font-dm text-[11px] text-crema/45">MXN / {en ? "person" : "persona"}</span></p>
+            </div>
+            <Link href={lp("/viaje-septiembre")} className="inline-flex items-center gap-2 bg-dorado text-negro px-9 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-200">
+              {en ? "See the trip →" : "Ver el viaje →"}
+            </Link>
+          </div>
+          <div className="flex md:justify-end">
+            <CountdownViaje target="2026-09-16T07:00:00-06:00" en={en} variant="hero" />
+          </div>
+        </div>
+      </section>
+
       {/* ── TESTIMONIOS ── */}
       <section aria-label={en ? "Traveler reviews" : "Reseñas de viajeros"} className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-7xl mx-auto">
@@ -424,25 +456,35 @@ export default async function HomePage() {
             </div>
           </section>
 
-          <section aria-label="Descarga la guía gratuita de la Huasteca Potosina" className="relative py-20 px-6 bg-verde-profundo overflow-hidden">
+          <section aria-label="Guía Definitiva de la Huasteca Potosina" className="relative py-20 px-6 bg-verde-profundo overflow-hidden">
             <FloatingLeaves />
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="relative z-10">
-                <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Guía PDF Gratuita</span>
-                <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
-                  Los 5 mejores días para visitar{" "}<em className="shimmer-gold">la Huasteca Potosina en 2026</em>
+            <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+              <div className="text-center md:text-left">
+                <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Guía Definitiva · PDF descargable</span>
+                <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+                  Todo lo que necesitas para{" "}<em className="shimmer-gold">viajar solo por la Huasteca</em>
                 </h2>
-                <p className="text-crema/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
-                  Con itinerarios detallados, precios actualizados y consejos locales que no encontrarás en ningún blog. Más de 2,000 viajeros ya la descargaron.
+                <p className="text-crema/55 font-dm text-sm leading-relaxed mb-6 max-w-md mx-auto md:mx-0">
+                  Cómo llegar, dónde quedarte, presupuesto real, 3 itinerarios probados (3, 5 y 7 días), checklist y los tips locales que no encontrarás en ningún blog. Edición 2026.
                 </p>
-                <div className="flex flex-wrap gap-4 justify-center mb-10 text-[10px] tracking-[2px] uppercase font-dm text-crema/40">
-                  <span className="flex items-center gap-1.5">✓ Itinerario día a día</span>
-                  <span className="flex items-center gap-1.5">✓ Precios 2026</span>
-                  <span className="flex items-center gap-1.5">✓ Checklist de viaje</span>
+                <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8 text-[10px] tracking-[2px] uppercase font-dm text-crema/40">
+                  <span>✓ 8 destinos esenciales</span>
+                  <span>✓ Precios 2026</span>
+                  <span>✓ 3 itinerarios</span>
                 </div>
-                <div className="max-w-lg mx-auto">
-                  <LeadMagnetForm withName={true} fuente="Guía PDF homepage" />
+                <div className="flex items-baseline justify-center md:justify-start gap-3 mb-6">
+                  <span className="font-cormorant font-light text-crema/40 line-through text-xl">$199</span>
+                  <span className="font-cormorant font-light text-dorado text-4xl">$49 <span className="text-[11px] font-dm text-crema/40">MXN</span></span>
                 </div>
+                <MagneticButton className="inline-block mb-4">
+                  <Link href="/guia" className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
+                    Descargar la guía → $49
+                  </Link>
+                </MagneticButton>
+                <p className="text-[11px] text-crema/30 tracking-wide font-dm">Pago seguro · Descarga inmediata · 🛡️ Garantía 7 días</p>
+              </div>
+              <div className="relative z-10">
+                <GuiaMockup />
               </div>
             </div>
           </section>

@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 // Precios fijos por producto (MXN). El cliente NO decide el monto.
 const PRECIOS_FIJOS: Record<string, number> = {
-  guia_pdf: 50,
+  guia_pdf: 49,
 };
 
 export async function POST(req: NextRequest) {
@@ -72,7 +72,9 @@ export async function POST(req: NextRequest) {
         },
       ],
       customer_email: email_cliente ?? undefined,
-      metadata: metadata ?? undefined,
+      // Incluimos `producto` en metadata para que el webhook identifique la compra
+      // (p. ej. guia_pdf) y dispare el correo de entrega.
+      metadata: { ...(metadata ?? {}), ...(producto ? { producto } : {}) },
       success_url: producto === "guia_pdf"
         ? `${appUrl}/guia/descarga?session_id={CHECKOUT_SESSION_ID}`
         : producto === "itinerario"

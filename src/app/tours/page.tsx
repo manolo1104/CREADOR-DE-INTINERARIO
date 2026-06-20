@@ -3,14 +3,10 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import { TOURS_DB } from "@/lib/tours";
-import { TOUR_FAQS } from "@/lib/tourFaqs";
-import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
-import { TourCalculadora } from "@/components/TourCalculadora";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
-import { Award, Bus, Calendar, Camera, CheckCircle2, MessageCircle, Star, Users } from "lucide-react";
-import { DestinoIcon } from "@/components/icons/DestinoIcon";
+import { Award, Bus, Calendar, Camera, CheckCircle2, Clock, MessageCircle, Star, Users } from "lucide-react";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
@@ -208,129 +204,87 @@ export default function ToursPage() {
       {/* ── TOURS GRID ── */}
       <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {tours.map((tour, tourIndex) => {
-            const urgencyBadge: React.ReactNode = (
-              <span className="absolute top-3 right-3 bg-verde-selva/90 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
-                {en ? "Daily departures" : "Salidas todos los días"}
-              </span>
-            );
-
-            return (
-            <article key={tour.id} id={tour.id} className="stagger-reveal relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28" style={{ animationDelay: `${tourIndex * 80}ms` }}>
+          {tours.map((tour, tourIndex) => (
+            <article key={tour.id} id={tour.id} className="stagger-reveal group relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28 overflow-hidden" style={{ animationDelay: `${tourIndex * 80}ms` }}>
               <Link href={lp(`/tours/${tour.slug}`)} aria-label={`${en ? "View full tour" : "Ver tour completo"}: ${tour.nombre}`} className="absolute inset-0 z-0" />
+
+              {/* ── IMAGEN ── */}
               {tour.imagen_hero && (
-                <div className="relative h-52 overflow-hidden flex-shrink-0">
-                  <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/20 to-transparent" />
-                  {tour.urgencia && (
-                    <span className="absolute top-3 left-3 bg-dorado/90 text-negro text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">{tour.urgencia}</span>
-                  )}
-                  {urgencyBadge}
+                <div className="relative h-56 overflow-hidden flex-shrink-0">
+                  <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover transition-transform duration-500 ease-out group-hover:scale-105" sizes="(max-width: 1024px) 100vw, 50vw" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-negro/30" />
+                  <span className={`absolute top-3 left-3 text-[9px] tracking-[1px] uppercase border px-2 py-0.5 font-dm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
+                    {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
+                  </span>
+                  <span className="absolute top-3 right-3 bg-verde-selva/90 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
+                    {en ? "Daily departures" : "Salidas todos los días"}
+                  </span>
                   <span className="absolute bottom-3 left-3 bg-negro/70 text-crema/80 text-[9px] font-dm tracking-[1px] px-2 py-1">
                     ⏱ {tour.duracion_hrs} {en ? "hours" : "horas"}
                   </span>
                 </div>
               )}
 
-              <div className="p-7 border-b border-white/6">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <DestinoIcon name={tour.icon} className="w-8 h-8 text-verde-selva flex-shrink-0" />
-                    <div>
-                      <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{tour.tipo}</p>
-                      <span className={`text-[9px] tracking-[1px] uppercase border px-2 py-0.5 font-dm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
-                        {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm">{en ? "from" : "desde"}</p>
-                    <p className="text-[11px] text-crema/35 font-dm line-through">{money(tour.precioOriginal)}</p>
-                    <p className="font-cormorant text-dorado text-2xl font-light leading-none">{money(tour.precio)}</p>
-                    <p className="text-[9px] text-crema/35 font-dm mt-0.5">MXN {en ? "per person" : "por persona"}</p>
-                  </div>
-                </div>
+              {/* ── INFO ── */}
+              <div className="flex flex-col flex-1 p-7">
+                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{tour.tipo}</p>
+                <h2 className="font-cormorant text-crema text-2xl leading-tight mb-1">{tour.nombre}</h2>
+                <p className="text-[10px] tracking-[1px] uppercase text-dorado/70 font-dm mb-3">{tour.tagline}</p>
 
-                <h2 className="font-cormorant text-crema text-xl leading-tight mb-1">{tour.nombre}</h2>
-                <p className="text-[10px] tracking-[1px] uppercase text-dorado/70 font-dm mb-4">{tour.tagline}</p>
-                <p className="text-crema/60 text-sm font-dm leading-relaxed">{tour.descripcion}</p>
-              </div>
+                {/* Breve descripción de lo que se hace en el recorrido */}
+                <p className="text-[12.5px] text-crema/60 font-dm leading-relaxed mb-4 line-clamp-3">{tour.descripcion}</p>
 
-              <div className="px-7 py-5 border-b border-white/6">
-                <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">{en ? "On this tour" : "Destinos del recorrido"}</p>
-                <ul className="space-y-1.5">
-                  {tour.destinos.map((d) => (
-                    <li key={d} className="flex items-start gap-2 text-xs text-crema/65 font-dm"><span className="text-verde-vivo mt-0.5 flex-shrink-0">→</span>{d}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="px-7 py-5 border-b border-white/6">
-                <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">{en ? "All included" : "Todo incluido"}</p>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {tour.incluye.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-xs text-crema/65 font-dm"><span className="text-dorado mt-0.5 flex-shrink-0">✦</span>{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {TOUR_FAQS[tour.id] && TOUR_FAQS[tour.id].length > 0 && (
-                <div className="relative z-10 px-7 py-5 border-t border-white/6">
-                  <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">{en ? "Frequently asked questions" : "Preguntas frecuentes"}</p>
-                  <div className="space-y-0">
-                    {TOUR_FAQS[tour.id].map((faq, i) => (
-                      <details key={i} className="border-b border-white/6 last:border-0 group">
-                        <summary className="flex items-center justify-between gap-3 py-3 cursor-pointer list-none text-sm text-crema/70 font-dm hover:text-crema transition-colors">
-                          {faq.q}
-                          <span className="text-crema/30 group-open:rotate-45 transition-transform text-lg flex-shrink-0">+</span>
-                        </summary>
-                        <p className="text-xs text-crema/50 font-dm pb-3 leading-relaxed">{faq.a}</p>
-                      </details>
-                    ))}
-                  </div>
-                  {en && (
-                    <p className="text-[9px] text-crema/30 font-dm mt-2 italic">Note: some traveler FAQs are shown in Spanish.</p>
-                  )}
-                </div>
-              )}
-
-              {TOUR_REVIEWS[tour.id]?.length > 0 && (
-                <div className="px-7 py-5 border-t border-white/6">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[9px] tracking-[2px] uppercase text-crema/50 font-dm flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-dorado/60 text-dorado/60" aria-hidden="true" /> {en ? "Reviews" : "Reseñas"}
-                    </p>
-                    <a href={GOOGLE_MAPS_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="text-[9px] text-verde-vivo hover:text-lima font-dm underline underline-offset-2 transition-colors">
-                      {en ? "View on Google Maps →" : "Ver en Google Maps →"}
-                    </a>
-                  </div>
-                  <div className="space-y-3">
-                    {TOUR_REVIEWS[tour.id].slice(0, 2).map((r) => (
-                      <div key={r.nombre} className="flex gap-3">
-                        <img src={r.foto} alt={r.nombre} className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-crema/20" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex gap-0.5 mb-0.5">
-                            {[...Array(r.rating ?? 5)].map((_, i) => (<Star key={i} className="w-2.5 h-2.5 fill-dorado text-dorado" aria-hidden="true" />))}
-                          </div>
-                          <p className="text-[10px] text-crema/70 font-dm font-medium leading-none mb-0.5">{r.nombre} <span className="text-crema/35 font-normal">· {r.ciudad}</span></p>
-                          <p className="text-[10px] text-crema/50 font-dm leading-relaxed line-clamp-2">&ldquo;{r.texto}&rdquo;</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="relative z-10 px-7 py-5 border-t border-white/6">
-                <p className="flex items-center gap-1.5 text-[10px] text-verde-vivo font-dm mb-3">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  {en ? "Free cancellation up to 48h before" : "Cancelación gratuita con 48h de anticipación"}
+                <p className="flex items-center gap-1.5 text-[11px] text-crema/55 font-dm mb-4">
+                  <span className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (<Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />))}
+                  </span>
+                  4.9 · {tour.reviewCount} {en ? "reviews" : "reseñas"}
                 </p>
-                <TourCalculadora tourName={tour.nombre} precioBase={tour.precio} tourSlug={tour.slug} />
+
+                {/* Todos los destinos que se visitan en el recorrido */}
+                <div className="mb-5">
+                  <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">{en ? "Stops on this tour" : "Visitas en este recorrido"}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tour.destinos.map((d) => (
+                      <span key={d} className="text-[10px] font-dm text-crema/60 border border-white/10 bg-white/[0.03] px-2 py-0.5 rounded-sm">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 mb-5 text-[11px] text-crema/45 font-dm flex-wrap border-t border-white/8 pt-5">
+                  <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" aria-hidden="true" /> {tour.duracion_hrs}h</span>
+                  <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "max." : "máx."} {tour.groupMax}</span>
+                  <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
+                </div>
+
+                <div className="mb-5">
+                  <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-1">{en ? "from" : "desde"}</p>
+                  <p className="flex items-baseline gap-2">
+                    <span className="font-cormorant text-dorado text-3xl font-light leading-none">{money(tour.precio)}</span>
+                    {tour.precioOriginal > tour.precio && (
+                      <span className="text-[11px] text-crema/30 font-dm line-through">{money(tour.precioOriginal)}</span>
+                    )}
+                  </p>
+                  <p className="text-[9px] text-crema/35 font-dm mt-1">MXN {en ? "per person" : "por persona"}</p>
+                </div>
+
+                {/* Señal de urgencia honesta (campo real por tour) + CTA */}
+                <div className="mt-auto">
+                  {tour.urgencia && (
+                    <p className="flex items-start gap-1.5 text-[10px] text-dorado/85 font-dm mb-3 leading-snug">
+                      <span aria-hidden="true" className="mt-px">⚡</span>
+                      <span>{tour.urgencia}</span>
+                    </p>
+                  )}
+                  <span className="block text-center bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3.5 transition-colors duration-200">
+                    {en ? "View full tour →" : "Ver tour completo →"}
+                  </span>
+                </div>
               </div>
             </article>
-            );
-          })}
+          ))}
         </div>
       </section>
 

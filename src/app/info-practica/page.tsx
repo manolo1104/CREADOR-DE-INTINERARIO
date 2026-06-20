@@ -5,7 +5,6 @@ import { FAQAccordion } from "@/components/FAQAccordion";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import type { FAQCategory } from "@/components/FAQAccordion";
 import { ClimaWidget } from "@/components/ClimaWidget";
-import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import type { LucideIcon } from "lucide-react";
 import {
   Bus, Plane, Car, Bike,
@@ -1181,7 +1180,7 @@ export default function InfoPracticaPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div>
               <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3">
-                ✦ Guía descargable gratuita
+                ✦ Guía Definitiva · PDF descargable
               </p>
               <h2
                 className="reveal-up font-cormorant font-light text-crema mb-4"
@@ -1208,14 +1207,17 @@ export default function InfoPracticaPage() {
                 ))}
               </ul>
             </div>
-            <div className="bg-negro/40 border border-white/10 p-6">
-              <p className="font-dm text-sm font-medium text-crema/80 mb-1">
-                Ingresa tu email y te lo enviamos al instante
-              </p>
+            <div className="bg-negro/40 border border-white/10 p-6 text-center">
+              <div className="flex items-baseline justify-center gap-3 mb-1">
+                <span className="font-cormorant font-light text-crema/40 line-through text-lg">$199</span>
+                <span className="font-cormorant font-light text-dorado text-3xl">$49 <span className="text-[11px] font-dm text-crema/40">MXN</span></span>
+              </div>
               <p className="font-dm text-[11px] text-crema/40 mb-5">
-                Completamente gratuito · Sin spam · Descarga inmediata
+                Pago seguro · Descarga inmediata · Garantía 7 días
               </p>
-              <LeadMagnetForm />
+              <Link href="/guia" className="block w-full text-center bg-dorado text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
+                Descargar la guía → $49
+              </Link>
             </div>
           </div>
         </div>

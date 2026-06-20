@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { GuiaHeroMockup } from "@/components/GuiaHeroMockup";
 import type { LucideIcon } from "lucide-react";
 import { MapPin, Calendar, DollarSign, Car, ClipboardList, Utensils, Zap, Phone } from "lucide-react";
 
@@ -33,8 +34,8 @@ export default function GuiaPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          monto: "50",
-          descripcion: "Guía Huasteca Potosina 2026 — PDF completo",
+          monto: "49",
+          descripcion: "Guía Definitiva Huasteca Potosina 2026 — PDF completo",
           producto: "guia_pdf",
         }),
       });
@@ -54,46 +55,88 @@ export default function GuiaPage() {
   return (
     <main className="min-h-screen">
       {/* Hero */}
-      <section className="relative bg-gradient-to-br from-verde-profundo via-negro to-negro px-6 py-24 text-center overflow-hidden border-b border-white/6">
+      <section className="relative bg-gradient-to-br from-verde-profundo via-negro to-negro px-6 py-20 md:py-24 overflow-hidden border-b border-white/6">
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-verde-selva/10 rounded-full blur-3xl" />
         </div>
-        <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-6">✦ PDF · 15–20 páginas · Actualizada 2026</p>
-        <h1 className="font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(40px,7vw,80px)" }}>
-          Guía Huasteca Potosina<br />
-          <em className="text-dorado">La guía que sí funciona</em>
-        </h1>
-        <p className="font-cormorant italic text-crema/55 max-w-xl mx-auto mb-10 text-xl leading-relaxed">
-          No es un folleto turístico. Es la guía que un amigo local te daría: con los horarios reales,
-          los precios actualizados y los errores que cometen casi todos los turistas.
-        </p>
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Columna texto */}
+          <div className="text-center md:text-left">
+            <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-5">✦ PDF · 15–20 páginas · Actualizada 2026</p>
+            <h1 className="font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(38px,5.5vw,68px)" }}>
+              Guía Huasteca Potosina<br />
+              <em className="text-dorado">La guía que sí funciona</em>
+            </h1>
+            <p className="font-cormorant italic text-crema/55 max-w-xl mx-auto md:mx-0 mb-7 text-lg leading-relaxed">
+              No es un folleto turístico. Es la guía que un amigo local te daría: con los horarios reales,
+              los precios actualizados y los errores que cometen casi todos los turistas.
+            </p>
 
-        {/* Price + CTA */}
-        <div className="inline-flex flex-col items-center gap-4 mb-8">
-          <div className="flex items-baseline gap-3">
-            <span className="font-cormorant font-light text-crema/40 line-through text-2xl">$150 MXN</span>
-            <span className="font-cormorant font-light text-dorado" style={{ fontSize: "clamp(48px,6vw,72px)" }}>$50 MXN</span>
+            {/* Urgencia (precio de lanzamiento) */}
+            <div className="inline-flex items-center gap-2.5 bg-dorado/10 border border-dorado/30 px-4 py-2 mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-dorado/70" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-dorado" />
+              </span>
+              <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm">Precio de lanzamiento · sube pronto</p>
+            </div>
+
+            {/* Price + CTA */}
+            <div className="flex flex-col items-center md:items-start gap-4 mb-6">
+              <div className="flex items-baseline gap-3">
+                <span className="font-cormorant font-light text-crema/40 line-through text-2xl">$199 MXN</span>
+                <span className="font-cormorant font-light text-dorado" style={{ fontSize: "clamp(44px,6vw,68px)" }}>$49 MXN</span>
+              </div>
+              <button
+                onClick={handleComprar}
+                disabled={loading}
+                className="w-full sm:w-auto bg-dorado text-negro px-14 py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? "Redirigiendo..." : "Descargar Guía — $49 MXN"}
+              </button>
+              {error && <p className="text-terracota text-sm">{error}</p>}
+              <div className="space-y-1">
+                <p className="text-[10px] text-crema/30 tracking-wide">Pago seguro con Stripe · PDF en tu correo al instante</p>
+                <p className="text-[11px] text-verde-vivo/90 tracking-wide">🛡️ Garantía de 7 días — si no te sirve, te devolvemos tu dinero</p>
+              </div>
+            </div>
+
+            {/* Preview badges */}
+            <div className="flex flex-wrap gap-2.5 justify-center md:justify-start">
+              {["8 destinos", "3 itinerarios", "Precios 2026", "Tips insider", "Checklist empaque"].map((tag) => (
+                <span key={tag} className="text-[10px] tracking-[2px] uppercase border border-verde-vivo/30 text-verde-vivo px-3 py-1">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-          <p className="text-[10px] tracking-[3px] uppercase text-crema/30">Precio de lanzamiento · Descarga inmediata</p>
-          <button
-            onClick={handleComprar}
-            disabled={loading}
-            className="bg-dorado text-negro px-16 py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? "Redirigiendo..." : "Descargar Guía — $50 MXN"}
-          </button>
-          {error && <p className="text-terracota text-sm">{error}</p>}
-          <p className="text-[10px] text-crema/25 tracking-wide">Pago seguro con Stripe · PDF en tu correo al instante</p>
-        </div>
 
-        {/* Preview badges */}
-        <div className="flex flex-wrap gap-3 justify-center max-w-lg mx-auto">
-          {["8 destinos", "3 itinerarios", "Precios 2026", "Tips insider", "Checklist empaque"].map((tag) => (
-            <span key={tag} className="text-[10px] tracking-[2px] uppercase border border-verde-vivo/30 text-verde-vivo px-3 py-1">
-              {tag}
-            </span>
-          ))}
+          {/* Columna mockup */}
+          <div className="flex justify-center md:justify-end">
+            <GuiaHeroMockup />
+          </div>
         </div>
+      </section>
+
+      {/* Social proof bar — credenciales reales */}
+      <section aria-label="Reseñas y credenciales" className="bg-negro border-b border-white/6 py-6 px-6">
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-center">
+          <span className="flex items-center gap-2">
+            <span className="text-dorado text-sm tracking-tight">★★★★★</span>
+            <span className="text-[11px] text-crema/65 font-dm">4.9 · 492 reseñas Google</span>
+          </span>
+          <span className="text-crema/15 hidden sm:inline">·</span>
+          <span className="text-[11px] text-crema/55 font-dm">+10,000 viajeros guiados</span>
+          <span className="text-crema/15 hidden sm:inline">·</span>
+          <span className="text-[11px] text-crema/55 font-dm">Premio Arival 2023</span>
+          <span className="text-crema/15 hidden sm:inline">·</span>
+          <span className="text-[11px] text-crema/55 font-dm">Guías NOM-09 SECTUR</span>
+          <span className="text-crema/15 hidden sm:inline">·</span>
+          <span className="text-[11px] text-crema/55 font-dm">Operando desde 2019</span>
+        </div>
+        <p className="text-center text-[11px] text-crema/35 font-dm mt-3">
+          Escrita por el equipo detrás de los tours #1 de la Huasteca Potosina.
+        </p>
       </section>
 
       {/* Qué incluye */}
@@ -158,6 +201,32 @@ export default function GuiaPage() {
         </div>
       </section>
 
+      {/* FAQ del producto */}
+      <section className="max-w-3xl mx-auto px-6 py-16">
+        <h2 className="font-cormorant font-light text-crema text-center mb-10" style={{ fontSize: "clamp(24px,3.5vw,40px)" }}>
+          Preguntas <em className="text-dorado">frecuentes</em>
+        </h2>
+        <div className="space-y-4">
+          {[
+            { q: "¿En qué formato la recibo?", a: "Es un documento digital que abres en cualquier celular o computadora. Para guardarlo como PDF usa Ctrl/Cmd + P → Guardar como PDF." },
+            { q: "¿Cómo me llega después de pagar?", a: "Al instante: la descargas en la pantalla de confirmación y además te enviamos el enlace de descarga a tu correo para que la tengas siempre." },
+            { q: "Nunca he ido a la Huasteca, ¿me sirve?", a: "Está hecha justo para eso. Te lleva de la mano desde cómo llegar y cuánto gastar hasta qué hacer cada día, con horarios y errores que debes evitar." },
+            { q: "¿Tiene garantía?", a: "Sí, 7 días. Si no te sirve, escríbenos y te devolvemos tu dinero, sin preguntas." },
+            { q: "¿Está actualizada?", a: "Es la edición 2026, con precios, horarios y contactos vigentes." },
+          ].map((faq) => (
+            <details key={faq.q} className="border border-white/10 bg-negro/40">
+              <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
+                {faq.q}
+                <span className="text-verde-vivo flex-shrink-0 text-lg leading-none">+</span>
+              </summary>
+              <div className="px-5 pb-5 border-t border-white/8 pt-4">
+                <p className="text-crema/55 font-dm text-sm leading-relaxed">{faq.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* CTA final */}
       <section className="bg-verde-profundo/40 border-t border-white/6 px-6 py-20 text-center">
         <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
@@ -171,10 +240,13 @@ export default function GuiaPage() {
           disabled={loading}
           className="inline-block bg-dorado text-negro px-16 py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? "Redirigiendo..." : "✦ Descargar Guía — $50 MXN"}
+          {loading ? "Redirigiendo..." : "✦ Descargar Guía — $49 MXN"}
         </button>
         <p className="mt-4 text-[11px] text-crema/25 tracking-wide">
           Pago seguro · Descarga inmediata · PDF en tu correo
+        </p>
+        <p className="mt-2 text-[11px] text-verde-vivo/90 tracking-wide">
+          🛡️ Garantía de 7 días — si no te sirve, te devolvemos tu dinero
         </p>
         <p className="mt-6 text-[11px] text-crema/20">
           ¿Prefieres un itinerario personalizado?{" "}

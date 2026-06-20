@@ -47,9 +47,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Páginas bilingües (tienen versión /en)
   const bilingualStatic: MetadataRoute.Sitemap = [
-    ...bilingual("/",         { changeFrequency: "weekly",  priority: 1.0 }),
-    ...bilingual("/tours",    { changeFrequency: "weekly",  priority: 0.9 }),
-    ...bilingual("/destinos", { changeFrequency: "monthly", priority: 0.8 }),
+    ...bilingual("/",                 { changeFrequency: "weekly",  priority: 1.0 }),
+    ...bilingual("/tours",            { changeFrequency: "weekly",  priority: 0.9 }),
+    ...bilingual("/viaje-septiembre", { changeFrequency: "weekly",  priority: 0.9 }),
+    ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8 }),
   ];
 
   // Páginas solo en español (aún sin versión /en)

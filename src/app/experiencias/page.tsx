@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { LeadMagnetForm } from "@/components/LeadMagnetForm";
 import ExperienciasClient from "./ExperienciasClient";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 
@@ -210,11 +209,17 @@ export default function ExperienciasPage() {
             <em className="text-dorado">la Huasteca en 2026</em>
           </h2>
           <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto leading-relaxed">
-            Itinerarios reales, precios actualizados y consejos de guías locales.
-            Descárgala gratis.
+            Itinerarios reales, precios actualizados y consejos de guías locales — todo en un PDF descargable.
           </p>
-          <div className="max-w-lg mx-auto">
-            <LeadMagnetForm withName={true} fuente="Guía PDF experiencias" />
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-baseline gap-3">
+              <span className="font-cormorant font-light text-crema/40 line-through text-xl">$199</span>
+              <span className="font-cormorant font-light text-dorado text-3xl">$49 <span className="text-[11px] font-dm text-crema/40">MXN</span></span>
+            </div>
+            <Link href="/guia" className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
+              Descargar la guía → $49
+            </Link>
+            <p className="text-[11px] text-crema/30 tracking-wide font-dm">Pago seguro · Descarga inmediata · 🛡️ Garantía 7 días</p>
           </div>
         </div>
       </section>
