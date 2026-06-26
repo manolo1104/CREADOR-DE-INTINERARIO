@@ -2,6 +2,13 @@ import type { MetadataRoute } from "next";
 import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { prisma } from "@/lib/prisma";
+import { PAQUETES_DB } from "@/lib/paquetes";
+
+// El sitemap consulta los artículos del blog (BD) en cada request. Si fuera
+// estático, el build lo "congela" sin posts (justo lo que pasaba: 0 artículos
+// en el sitemap de producción). Dinámico garantiza que SIEMPRE incluya todos
+// los artículos publicados.
+export const dynamic = "force-dynamic";
 
 const BASE = "https://www.huasteca-potosina.com";
 
@@ -87,5 +94,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
   }));
 
-  return [...bilingualStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages];
+  const paquetePages: MetadataRoute.Sitemap = PAQUETES_DB.map((p) => ({
+    url: `${BASE}/paquetes/${p.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.7,
+    images: p.imagen ? [absImg(p.imagen)] : undefined,
+  }));
+
+  return [...bilingualStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages, ...paquetePages];
 }
