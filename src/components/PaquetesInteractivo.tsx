@@ -2,25 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Check, Moon, MapPin, Star } from "lucide-react";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
+import type { Paquete } from "@/lib/paquetes";
 
-export interface Paquete {
-  id: string;
-  nombre: string;
-  subtitulo: string;
-  duracion: string;
-  precio: number;
-  precioLabel: string;
-  badge?: string;
-  destacado?: boolean;
-  imagen: string;
-  urgencia: string;
-  tours: string[];
-  incluye: string[];
-  valor: { item: string; precio: string }[];
-  perfiles: string[];
-}
+export type { Paquete };
 
 // ── Savings counter ──────────────────────────────────────────────
 
@@ -206,6 +193,12 @@ function PaqueteCard({
       </div>
 
       <div className="mt-auto px-6 pb-6">
+        <Link
+          href={`/paquetes/${p.slug}`}
+          className="flex items-center justify-center gap-2 w-full mb-3 py-3 text-[10px] tracking-[2px] uppercase font-dm border border-verde-selva/40 text-verde-vivo hover:border-verde-vivo hover:bg-verde-selva/10 transition-colors"
+        >
+          Ver el paquete día por día →
+        </Link>
         <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} />
         <p className="text-center text-[9px] text-crema/25 font-dm mt-3">
           Sin pago anticipado · Confirmas disponibilidad antes de reservar
@@ -217,21 +210,21 @@ function PaqueteCard({
 
 // ── Quiz — idea 4 ─────────────────────────────────────────────────
 
-const NOCHES_OPTS = ["1 noche", "2 noches", "3+ noches"] as const;
+const NOCHES_OPTS = ["2 noches", "3 noches", "4 noches"] as const;
 const VIBE_OPTS   = ["Arte & naturaleza", "Aventura extrema", "Todo incluido"] as const;
 
-function getRecomendado(noches: string | null, vibe: string | null): string | null {
+function getRecomendado(noches: string | null, _vibe: string | null): string | null {
   if (!noches) return null;
-  if (noches === "1 noche")   return "esencial";
-  if (noches === "3+ noches") return "completo";
-  if (!vibe) return null;
-  return vibe === "Arte & naturaleza" ? "esencial" : "aventura";
+  if (noches === "2 noches") return "aventura";
+  if (noches === "3 noches") return "completo";
+  if (noches === "4 noches") return "gran-huasteca";
+  return null;
 }
 
 const NOMBRE_PAQUETE: Record<string, string> = {
-  esencial: "Paquete Esencial",
   aventura: "Paquete Aventura",
   completo: "Paquete Completo Huasteca",
+  "gran-huasteca": "Paquete Gran Huasteca",
 };
 
 // ── Main ─────────────────────────────────────────────────────────
@@ -243,7 +236,7 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
   const gridRef = useRef<HTMLDivElement>(null);
 
   const recomendado = getRecomendado(noches, vibe);
-  const needsVibe   = noches === "2 noches" && !vibe;
+  const needsVibe   = false; // la recomendación depende solo de las noches
 
   useEffect(() => {
     const el = gridRef.current;

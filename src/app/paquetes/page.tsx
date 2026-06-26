@@ -1,18 +1,19 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import { Star, TreePine, UtensilsCrossed, MapPin } from "lucide-react";
-import { PaquetesInteractivo, type Paquete } from "@/components/PaquetesInteractivo";
+import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { PAQUETES_DB, RESENAS_PAQUETES, FAQS_PAQUETES } from "@/lib/paquetes";
 
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
   title: "Paquetes Todo Incluido — Tours + Hotel Paraíso Encantado Xilitla | Huasteca Potosina",
   description:
-    "Paquetes que combinan nuestros tours guiados con hospedaje en Hotel Paraíso Encantado Xilitla. Todo incluido: transporte, desayunos, entradas y guías certificados.",
+    "Paquetes que combinan nuestros tours guiados con hospedaje en Hotel Paraíso Encantado Xilitla. Todo incluido: transporte local, desayunos, entradas y guías certificados.",
   openGraph: {
     title: "Paquetes Todo Incluido — Huasteca Potosina",
-    description: "Tours + Hotel Paraíso Encantado Xilitla. Desde $3,200 MXN/persona.",
+    description: "Tours + Hotel Paraíso Encantado Xilitla. 3, 4 o 5 días todo coordinado.",
     url: `${SITE}/paquetes`,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
@@ -20,129 +21,6 @@ export const metadata: Metadata = {
     images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Paquetes Huasteca Potosina" }],
   },
 };
-
-// ── Data ────────────────────────────────────────────────────────────────────
-
-const PAQUETES: Paquete[] = [
-  {
-    id:          "esencial",
-    nombre:      "Paquete Esencial",
-    subtitulo:   "Tu primera noche en la Huasteca",
-    duracion:    "2 días / 1 noche",
-    precio:      5000,
-    precioLabel: "por pareja",
-    imagen:      "/imagenes/tours/ruta-surrealista-hero.webp",
-    urgencia:    "Quedan 4 cupos para el siguiente fin de semana largo",
-    perfiles:    ["Parejas", "Primera visita", "Fin de semana"],
-    tours:       ["Ruta Surrealista — Edward James, Manantiales & Selva (Día 1)"],
-    incluye: [
-      "1 noche en Hotel Paraíso Encantado Xilitla",
-      "Desayuno incluido (Día 2)",
-      "Tour Ruta Surrealista completo",
-      "Transporte desde tu hotel al tour",
-      "Guía certificado NOM-09 SECTUR",
-      "Entradas a todas las atracciones",
-    ],
-    valor: [
-      { item: "1 noche hotel (2 pax)",  precio: "$2,800" },
-      { item: "Tour Ruta Surrealista",  precio: "$2,600" },
-      { item: "Transporte privado",     precio: "$500"   },
-      { item: "Entradas + guía",        precio: "$700"   },
-    ],
-  },
-  {
-    id:          "aventura",
-    nombre:      "Paquete Aventura",
-    subtitulo:   "El mejor dúo de la región",
-    duracion:    "3 días / 2 noches",
-    precio:      9000,
-    precioLabel: "por pareja",
-    badge:       "Más popular",
-    destacado:   true,
-    imagen:      "/imagenes/cascada-de-tamul/hero.jpg",
-    urgencia:    "Alta demanda — solo 3 lugares disponibles",
-    perfiles:    ["Amigos aventureros", "Parejas activas", "El clásico"],
-    tours: [
-      "Expedición Tamul — Sótano, Cañón & Cueva del Agua (Día 2)",
-      "Cascadas del Meco — Turquesas, Mirador & El Gran Salto (Día 3)",
-    ],
-    incluye: [
-      "2 noches en Hotel Paraíso Encantado Xilitla",
-      "Desayunos ambos días",
-      "Tour Expedición Tamul completo",
-      "Tour Cascadas del Meco completo",
-      "Transporte desde tu hotel a cada tour",
-      "Guías certificados NOM-09 SECTUR",
-      "Entradas a todas las atracciones",
-    ],
-    valor: [
-      { item: "2 noches hotel (2 pax)", precio: "$5,600" },
-      { item: "Expedición Tamul",       precio: "$2,900" },
-      { item: "Cascadas del Meco",      precio: "$3,200" },
-      { item: "Transporte 2 días",      precio: "$800"   },
-      { item: "Entradas + guías",       precio: "$900"   },
-    ],
-  },
-  {
-    id:          "completo",
-    nombre:      "Paquete Completo Huasteca",
-    subtitulo:   "La experiencia definitiva",
-    duracion:    "4 días / 3 noches",
-    precio:      12200,
-    precioLabel: "por pareja",
-    imagen:      "/imagenes/cascadas-minas-viejas/hero.jpg",
-    urgencia:    "Cupos limitados — confirma tu fecha hoy",
-    perfiles:    ["Familias", "Grupos", "Experiencia total"],
-    tours: [
-      "Ruta Surrealista — Edward James (Día 1)",
-      "Expedición Tamul — Sótano & Cascada (Día 2)",
-      "Paraíso Escalonado o Ruta Acuática (Día 3)",
-    ],
-    incluye: [
-      "3 noches en Hotel Paraíso Encantado Xilitla",
-      "Desayunos los 3 días",
-      "3 tours completos a elegir",
-      "Transporte desde tu hotel a cada tour",
-      "Guías certificados NOM-09 SECTUR",
-      "Entradas a todas las atracciones",
-      "Fotografías y video de cada recorrido",
-    ],
-    valor: [
-      { item: "3 noches hotel (2 pax)",    precio: "$8,400" },
-      { item: "3 tours completos",         precio: "$5,800" },
-      { item: "Transporte 3 días",         precio: "$1,200" },
-      { item: "Fotos + video profesional", precio: "$1,600" },
-      { item: "Entradas + guías",          precio: "$1,200" },
-    ],
-  },
-];
-
-const RESENAS = [
-  {
-    nombre: "Claudia M.",
-    ciudad: "CDMX",
-    foto:   "/imagenes/reviews/reviewer-30.jpg",
-    texto:  "El Paquete Aventura superó todas mis expectativas. La Expedición Tamul al amanecer es algo que nunca voy a olvidar — ver los pericos salir del sótano con mis propios ojos fue mágico. El hotel es perfecto, y los guías saben exactamente cuándo llegar a cada lugar para la mejor luz.",
-    estrellas: 5,
-    tour:   "Paquete Aventura",
-  },
-  {
-    nombre: "Roberto & Ana",
-    ciudad: "Guadalajara",
-    foto:   "/imagenes/reviews/reviewer-31.jpg",
-    texto:  "Fuimos con el Paquete Esencial y fue el mejor viaje que hemos hecho en pareja. El Puente de Dios con la luz entrando por el arco... no se puede describir. El hotel Paraíso Encantado tiene un desayuno increíble. Definitivamente volvemos con el Paquete Completo.",
-    estrellas: 5,
-    tour:   "Paquete Esencial",
-  },
-  {
-    nombre: "La familia Herrera",
-    ciudad: "Monterrey",
-    foto:   "/imagenes/reviews/reviewer-32.jpg",
-    texto:  "Viajamos con dos niños de 8 y 11 años. Todo estuvo perfectamente coordinado — los guías son pacientes, el ritmo fue ideal para los niños. Las Cascadas del Meco los dejó boquiabiertos. El hotel los trató como reyes. Ya estamos planeando el regreso.",
-    estrellas: 5,
-    tour:   "Paquete Esencial + extensión",
-  },
-];
 
 export default function PaquetesPage() {
   return (
@@ -200,7 +78,7 @@ export default function PaquetesPage() {
             Lo que dicen quienes ya vivieron la experiencia
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {RESENAS.map((r) => (
+            {RESENAS_PAQUETES.map((r) => (
               <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
                 <div className="flex gap-0.5 mb-3">
                   {[...Array(r.estrellas)].map((_, i) => (
@@ -233,7 +111,7 @@ export default function PaquetesPage() {
       </div>
 
       {/* ── QUIZ + PAQUETES + STICKY BAR ── */}
-      <PaquetesInteractivo paquetes={PAQUETES} />
+      <PaquetesInteractivo paquetes={PAQUETES_DB} />
 
       {/* ── HOTEL INFO ── */}
       <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
@@ -267,12 +145,7 @@ export default function PaquetesPage() {
       <section className="max-w-3xl mx-auto px-6 py-16">
         <h2 className="font-cormorant text-crema text-2xl mb-8 text-center">Preguntas <em className="text-dorado">frecuentes</em></h2>
         <div className="space-y-4">
-          {[
-            { q: "¿Puedo reservar los tours sin el hotel?", a: "Sí. Todos nuestros tours están disponibles de forma individual en la sección /tours. Los paquetes son para quienes quieren combinar tour + hospedaje sin complicaciones." },
-            { q: "¿Cómo confirman la disponibilidad del hotel?", a: "Al enviarnos tu consulta por WhatsApp, verificamos la disponibilidad de Paraíso Encantado Xilitla en tiempo real. Te respondemos en menos de 1 hora." },
-            { q: "¿El precio incluye el traslado al hotel?", a: "El traslado incluido es del hotel al punto de inicio del tour y de regreso. El traslado hasta Xilitla no está incluido en el precio base." },
-            { q: "¿Puedo personalizar los tours del paquete?", a: "Completamente. Escríbenos con tus fechas y preferencias y armamos el paquete ideal para tu grupo, incluyendo tours no listados aquí." },
-          ].map((faq) => (
+          {FAQS_PAQUETES.map((faq) => (
             <details key={faq.q} className="border border-white/10 bg-negro/40">
               <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
                 {faq.q}

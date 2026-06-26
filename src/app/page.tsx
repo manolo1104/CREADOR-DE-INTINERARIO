@@ -4,6 +4,7 @@ import Image from "next/image";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
+import { PAQUETES_DB } from "@/lib/paquetes";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
@@ -79,6 +80,9 @@ export default async function HomePage() {
   // El blog solo existe en español: en EN no se hace fetch ni se muestra.
   const recentPosts = en ? [] : await getRandomPosts();
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
+  // En el inicio mostramos solo 3 tours destacados; el botón lleva al catálogo completo.
+  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "paraiso-escalonado-minas-micos"];
+  const toursHome = HOME_TOUR_SLUGS.map((s) => tours.find((t) => t.slug === s)).filter(Boolean) as typeof tours;
 
   const CATEGORIAS = [
     { Icon: Droplet,     label: en ? "Waterfalls & Pools" : "Cascadas & Pozas",  href: lp("/experiencias?tipo=cascadas") },
@@ -258,7 +262,7 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tours.map((t) => (
+          {toursHome.map((t) => (
             <TourCard key={t.slug} tour={t} variant="compact" />
           ))}
         </div>
@@ -272,12 +276,72 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── PAQUETES TODO INCLUIDO ── */}
+      {!en && (
+        <section aria-label="Paquetes todo incluido: tours + hospedaje" className="bg-arena/40 border-y border-negro/8 py-24 px-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
+              <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
+                Paquetes <em className="shimmer-gold">Todo Incluido</em>
+              </h2>
+              <div className="heading-underline" aria-hidden="true" />
+              <p className="text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
+                Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {PAQUETES_DB.map((p) => {
+                const ahorro = p.valor.reduce((a, v) => a + parseInt(v.precio.replace(/[^0-9]/g, ""), 10), 0) - p.precio;
+                return (
+                  <Link key={p.id} href={`/paquetes/${p.slug}`} className="group block border border-negro/10 bg-white overflow-hidden rounded-xl shadow-sm hover:border-verde-selva/40 transition-colors">
+                    <div className="relative h-44 overflow-hidden">
+                      <Image src={p.imagen} alt={p.nombre} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-negro/75 to-transparent" />
+                      {p.badge && (
+                        <span className="absolute top-3 right-3 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1">{p.badge}</span>
+                      )}
+                      <p className="absolute bottom-3 left-4 text-[9px] tracking-[3px] uppercase text-crema font-dm flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3" aria-hidden="true" /> {p.duracion}
+                      </p>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="font-cormorant text-verde-profundo text-xl leading-tight mb-1">{p.nombre}</h3>
+                      <p className="text-negro/45 font-dm text-xs mb-4">{p.subtitulo}</p>
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="font-cormorant text-dorado text-3xl leading-none">${p.precio.toLocaleString("es-MX")}</span>
+                        <span className="text-negro/40 font-dm text-[10px]">MXN {p.precioLabel}</span>
+                      </div>
+                      {ahorro > 0 && (
+                        <p className="text-[10px] font-dm text-verde-selva font-medium mb-4">✓ Ahorras ${ahorro.toLocaleString("es-MX")} MXN vs. por separado</p>
+                      )}
+                      <span className="inline-flex items-center gap-1.5 text-[10px] tracking-[2px] uppercase text-verde-selva group-hover:text-verde-vivo font-dm font-medium transition-colors">
+                        Ver el paquete día por día →
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="text-center mt-10">
+              <MagneticButton className="inline-block">
+                <Link href="/paquetes" className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200">
+                  Ver todos los paquetes
+                </Link>
+              </MagneticButton>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── VIAJE PROGRAMADO SEPTIEMBRE ── */}
       <section aria-label={en ? "September scheduled trip from Mexico City" : "Viaje programado de septiembre desde CDMX"} className="relative px-6 py-20 overflow-hidden border-y border-white/10">
-        <Image src="/imagenes/cascadas-de-micos/hero.jpg" alt="" fill className="object-cover object-center" sizes="100vw" />
+        <Image src="/imagenes/viaje-septiembre/fondo-cascada.jpg" alt="" fill className="object-cover object-center" sizes="100vw" />
         <div className="absolute inset-0 bg-gradient-to-r from-negro/95 via-negro/88 to-negro/70" />
         <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
-          <div>
+          <div className="bg-negro/55 backdrop-blur-md border border-white/10 p-6 md:p-8 rounded-lg">
             <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
               ✦ {en ? "Scheduled group trip · September long weekend" : "Viaje grupal · Puente de Septiembre"}
             </p>
