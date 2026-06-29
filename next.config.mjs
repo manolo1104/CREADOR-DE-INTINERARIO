@@ -1,11 +1,42 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["leaflet", "react-leaflet"],
+  compress: true,
   images: {
+    // AVIF/WebP reducen peso de imágenes ~30-50% → mejor LCP (factor de ranking).
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     remotePatterns: [
       { protocol: 'https', hostname: '**.unsplash.com' },
       { protocol: 'https', hostname: '**.githubusercontent.com' },
     ],
+  },
+  async headers() {
+    return [
+      {
+        // Cabeceras de seguridad/rendimiento para todo el sitio.
+        source: "/:path*",
+        headers: [
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+        ],
+      },
+      {
+        // Caché agresiva e inmutable para imágenes estáticas (1 año).
+        source: "/imagenes/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // Caché para logos y favicon.
+        source: "/logos/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+    ];
   },
   async redirects() {
     return [
