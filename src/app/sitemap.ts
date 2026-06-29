@@ -62,7 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Páginas solo en español (aún sin versión /en)
   const esOnlyStatic: MetadataRoute.Sitemap = [
-    { url: `${BASE}/blog`,          lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
+    { url: `${BASE}/blog`,                  lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
+    { url: `${BASE}/preguntas-frecuentes`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/nosotros`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/info-practica`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/recomendar`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
