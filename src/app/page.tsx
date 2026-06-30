@@ -249,12 +249,12 @@ export default async function HomePage() {
       {/* ── TOURS ── */}
       <section aria-label={en ? "Discover the region's tours" : "Descubre los destinos de la región"} className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Explore the region" : "Explora la región"}</p>
-          <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Explore the region" : "Explora la región"}</p>
+          <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
             {en ? <>Our <em className="shimmer-gold">Tours</em></> : <>Nuestros <em className="shimmer-gold">Tours</em></>}
           </h2>
           <div className="heading-underline" aria-hidden="true" />
-          <p className="text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
+          <p className="reveal-up reveal-d1 text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
             {en
               ? `${TOURS_DB.length} guided tours with transport, breakfast and a certified guide included`
               : `${TOURS_DB.length} recorridos guiados con transporte, desayuno y guía certificado incluidos`}
@@ -281,12 +281,12 @@ export default async function HomePage() {
         <section aria-label="Paquetes todo incluido: tours + hospedaje" className="bg-arena/40 border-y border-negro/8 py-24 px-6">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
-              <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
+              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
+              <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
                 Paquetes <em className="shimmer-gold">Todo Incluido</em>
               </h2>
               <div className="heading-underline" aria-hidden="true" />
-              <p className="text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
+              <p className="reveal-up reveal-d1 text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
                 Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
               </p>
             </div>
@@ -342,13 +342,13 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-negro/95 via-negro/88 to-negro/70" />
         <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
           <div className="bg-negro/55 backdrop-blur-md border border-white/10 p-6 md:p-8 rounded-lg">
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
               ✦ {en ? "Scheduled group trip · September long weekend" : "Viaje grupal · Puente de Septiembre"}
             </p>
-            <h2 className="font-cormorant font-light text-crema leading-tight mb-3" style={{ fontSize: "clamp(30px,4.5vw,52px)" }}>
+            <h2 className="reveal-up font-cormorant font-light text-crema leading-tight mb-3" style={{ fontSize: "clamp(30px,4.5vw,52px)" }}>
               {en ? "The Huasteca from " : "La Huasteca desde "}<em className="shimmer-gold not-italic">CDMX</em>
             </h2>
-            <p className="text-crema/75 font-dm text-sm leading-relaxed mb-6 max-w-md">
+            <p className="reveal-up reveal-d1 text-crema/75 font-dm text-sm leading-relaxed mb-6 max-w-md">
               {en
                 ? "4 days / 3 nights · Sep 16–19, 2026. Round-trip transport, lodging and 3 guided all-inclusive tours. You just show up."
                 : "4 días / 3 noches · 16–19 sep 2026. Transporte redondo, hospedaje y 3 recorridos guiados todo incluido. Tú solo llega."}
@@ -371,8 +371,8 @@ export default async function HomePage() {
       <section aria-label={en ? "Traveler reviews" : "Reseñas de viajeros"} className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "What travelers say" : "Lo que dicen los viajeros"}</p>
-            <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "What travelers say" : "Lo que dicen los viajeros"}</p>
+            <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
               {en ? <>492 Reviews · <em className="shimmer-gold">4.9 stars</em></> : <>492 Reseñas · <em className="shimmer-gold">4.9 estrellas</em></>}
             </h2>
             <div className="flex justify-center gap-1 mt-3 star-group">
@@ -417,8 +417,8 @@ export default async function HomePage() {
         <section aria-label="Artículos recientes del blog" className="bg-arena/30 border-y border-negro/8 py-20 px-6">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
-              <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Del blog</p>
-              <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
+              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Del blog</p>
+              <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
                 Guías & <em className="shimmer-gold">Rutas de Viaje</em>
               </h2>
               <div className="heading-underline" aria-hidden="true" />
@@ -458,11 +458,11 @@ export default async function HomePage() {
       <section aria-label={en ? "Why visit the Huasteca Potosina" : "Por qué visitar la Huasteca Potosina"} className="bg-white border-b border-negro/8 py-24 px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Why the Huasteca?" : "¿Por qué la Huasteca?"}</p>
-            <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Why the Huasteca?" : "¿Por qué la Huasteca?"}</p>
+            <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
               {en ? <>A region that <em className="shimmer-gold">changes you</em></> : <>Una región que{" "}<em className="shimmer-gold">te cambia</em></>}
             </h2>
-            <div className="space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
+            <div className="reveal-up reveal-d1 space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               {en ? (
                 <>
                   <p>The Huasteca Potosina is one of Mexico's most biodiverse regions, where tropical jungle coexists with karst canyons, turquoise waterfalls and the millennia-old traditions of the Huastec culture, recognized by UNESCO.</p>
@@ -499,11 +499,11 @@ export default async function HomePage() {
         <>
           <section aria-label="Planea tu viaje con IA" className="py-24 px-6 bg-crema">
             <div className="max-w-3xl mx-auto text-center border border-verde-selva/20 bg-white p-12 md:p-16 shadow-sm">
-              <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-selva border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">✦ Tecnología IA</span>
-              <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
+              <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-selva border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">✦ Tecnología IA</span>
+              <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
                 Tu viaje perfecto,{" "}<em className="shimmer-gold">diseñado en 2 minutos</em>
               </h2>
-              <p className="text-negro/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
+              <p className="reveal-up reveal-d1 text-negro/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
                 Dinos cuántos días tienes, tu presupuesto y qué te emociona. La IA genera un itinerario personalizado con rutas reales, tiempos de traslado y precios 2026.
               </p>
               <div className="flex flex-wrap gap-3 justify-center mb-10">
@@ -524,11 +524,11 @@ export default async function HomePage() {
             <FloatingLeaves />
             <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
-                <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Guía Definitiva · PDF descargable</span>
-                <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
+                <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Guía Definitiva · PDF descargable</span>
+                <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
                   Todo lo que necesitas para{" "}<em className="shimmer-gold">viajar solo por la Huasteca</em>
                 </h2>
-                <p className="text-crema/55 font-dm text-sm leading-relaxed mb-6 max-w-md mx-auto md:mx-0">
+                <p className="reveal-up reveal-d1 text-crema/55 font-dm text-sm leading-relaxed mb-6 max-w-md mx-auto md:mx-0">
                   Cómo llegar, dónde quedarte, presupuesto real, 3 itinerarios probados (3, 5 y 7 días), checklist y los tips locales que no encontrarás en ningún blog. Edición 2026.
                 </p>
                 <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8 text-[10px] tracking-[2px] uppercase font-dm text-crema/40">
@@ -556,7 +556,7 @@ export default async function HomePage() {
           <section aria-label="Información práctica para tu viaje" className="bg-white border-y border-negro/8 py-16 px-6">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
+                <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
                   Antes de <em className="text-dorado">viajar</em>
                 </h2>
               </div>
@@ -582,7 +582,7 @@ export default async function HomePage() {
       {/* ── BADGES DE CERTIFICACIÓN ── */}
       <section aria-label={en ? "Official certifications and recognition" : "Certificaciones y reconocimientos oficiales"} className="bg-white border-t border-negro/8 py-10 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-center text-[9px] tracking-[3px] uppercase text-negro/30 font-dm mb-8">{en ? "Certified and recognized by" : "Certificados y reconocidos por"}</p>
+          <p className="reveal-fade text-center text-[9px] tracking-[3px] uppercase text-negro/30 font-dm mb-8">{en ? "Certified and recognized by" : "Certificados y reconocidos por"}</p>
           <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
             <img src="/badges/sectur.png" alt="SECTUR — Mexico Ministry of Tourism" loading="lazy" className="h-12 w-auto opacity-75 hover:opacity-100 transition-opacity" />
             <img src="/badges/tripadvisor-full.png" alt="Tripadvisor" loading="lazy" className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity" />

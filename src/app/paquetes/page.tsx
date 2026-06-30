@@ -74,7 +74,7 @@ export default function PaquetesPage() {
       <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
         <FloatingLeaves count={12} />
         <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
             Lo que dicen quienes ya vivieron la experiencia
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -117,7 +117,7 @@ export default function PaquetesPage() {
       <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
         <FloatingLeaves count={14} />
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">El hotel de los paquetes</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">El hotel de los paquetes</p>
           <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
             Hotel Paraíso Encantado <em className="shimmer-gold">Xilitla</em>
           </h2>
@@ -143,7 +143,7 @@ export default function PaquetesPage() {
 
       {/* ── FAQ ── */}
       <section className="max-w-3xl mx-auto px-6 py-16">
-        <h2 className="font-cormorant text-crema text-2xl mb-8 text-center">Preguntas <em className="text-dorado">frecuentes</em></h2>
+        <h2 className="reveal-up font-cormorant text-crema text-2xl mb-8 text-center">Preguntas <em className="text-dorado">frecuentes</em></h2>
         <div className="space-y-4">
           {FAQS_PAQUETES.map((faq) => (
             <details key={faq.q} className="border border-white/10 bg-negro/40">
@@ -163,7 +163,7 @@ export default function PaquetesPage() {
       <section className="relative bg-verde-profundo/40 border-t border-white/6 py-16 px-6 text-center overflow-hidden">
         <FloatingLeaves count={14} />
         <div className="relative z-10">
-          <h2 className="font-cormorant text-crema text-2xl mb-3">¿No encuentras el paquete ideal?</h2>
+          <h2 className="reveal-up font-cormorant text-crema text-2xl mb-3">¿No encuentras el paquete ideal?</h2>
           <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
             Armamos el itinerario exacto que necesitas. Escríbenos y en menos de 1 hora tienes tu propuesta.
           </p>

@@ -146,7 +146,7 @@ export default function ExperienciasPage() {
       <section className="relative py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6 overflow-hidden">
         <FloatingLeaves count={12} />
         <div className="relative z-10">
-        <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
+        <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
           ✦ Tours con todo incluido
         </span>
         <h2
@@ -172,7 +172,7 @@ export default function ExperienciasPage() {
       <section className="py-16 px-6 border-t border-white/6">
         <div className="max-w-3xl mx-auto">
           <h2
-            className="font-cormorant font-light text-crema text-center mb-10"
+            className="reveal-up font-cormorant font-light text-crema text-center mb-10"
             style={{ fontSize: "clamp(28px,4vw,44px)" }}
           >
             Preguntas <em className="text-dorado">frecuentes</em>
@@ -198,11 +198,11 @@ export default function ExperienciasPage() {
       <section className="relative py-20 px-6 bg-verde-profundo border-t border-white/8 overflow-hidden">
         <FloatingLeaves count={18} />
         <div className="relative z-10 max-w-2xl mx-auto text-center">
-          <span className="inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
+          <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
             ✦ Guía PDF Gratuita
           </span>
           <h2
-            className="font-cormorant font-light text-crema mb-4"
+            className="reveal-up font-cormorant font-light text-crema mb-4"
             style={{ fontSize: "clamp(26px,4vw,44px)" }}
           >
             Los 5 mejores días para visitar{" "}
