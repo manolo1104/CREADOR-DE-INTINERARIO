@@ -134,14 +134,17 @@ export default function ToursPage() {
       }) }} />
 
       {/* ── HERO ── */}
-      <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
+      <section className="relative overflow-hidden bg-verde-profundo px-6 pt-32 pb-16 text-center">
+        <Image src="/imagenes/guias/equipo-guias.jpg" alt="Equipo de guías certificados de Tours Huasteca Potosina recorriendo la región" fill className="object-cover object-center" priority quality={85} />
+        <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/70 to-negro/65" />
+        <div className="relative z-10 max-w-3xl mx-auto">
         <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           {en ? "All-inclusive tours" : "Tours con todo incluido"}
         </p>
         <h1 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(42px,7vw,80px)" }}>
           {en ? <>Guided <em className="shimmer-gold">Tours</em></> : <>Recorridos <em className="shimmer-gold">Guiados</em></>}
         </h1>
-        <p className="text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
+        <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
           {en
             ? `${tours.length} tours designed to experience the Huasteca worry-free. Transport, breakfast, entrance fees and a certified guide included in every trip.`
             : `${tours.length} tours diseñados para vivir la Huasteca sin preocupaciones. Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.`}
@@ -158,14 +161,15 @@ export default function ToursPage() {
             </span>
             <span className="font-dm text-sm text-crema/85 group-hover:text-crema transition-colors">{en ? "4.9 · 492 Google reviews" : "4.9 · 492 reseñas Google"}</span>
           </a>
-          <span className="text-crema/25 font-dm text-xs hidden sm:block">·</span>
-          <span className="font-dm text-xs text-crema/45 hidden sm:block">{en ? "+10,000 happy travelers" : "+10,000 viajeros satisfechos"}</span>
+          <span className="text-crema/40 font-dm text-xs hidden sm:block">·</span>
+          <span className="font-dm text-xs text-crema/70 hidden sm:block">{en ? "+10,000 happy travelers" : "+10,000 viajeros satisfechos"}</span>
         </div>
 
         <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
           {WA_SVG}
           {en ? "Book on WhatsApp" : "Reservar por WhatsApp"}
         </a>
+        </div>
       </section>
 
       {/* ── ANCLAS ── */}
@@ -342,8 +346,8 @@ export default function ToursPage() {
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border border-white/10 overflow-hidden">
           <div className="p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-white/10">
-            <span className="inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">{en ? "Groups · 2–12 people" : "Grupos · 2–12 personas"}</span>
-            <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>{en ? "Shared group tours" : "Tours en grupo compartido"}</h2>
+            <span className="reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">{en ? "Groups · 2–12 people" : "Grupos · 2–12 personas"}</span>
+            <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>{en ? "Shared group tours" : "Tours en grupo compartido"}</h2>
             <p className="text-crema/60 font-dm text-sm leading-relaxed mb-6">
               {en
                 ? "Experience it with other travelers. Small groups of max. 12 people to guarantee personal attention, access to exclusive corners and a pace no tour bus can offer."
@@ -361,8 +365,8 @@ export default function ToursPage() {
           </div>
 
           <div className="p-8 md:p-10 bg-dorado/8">
-            <span className="inline-block text-[9px] tracking-[3px] uppercase text-dorado border border-dorado/40 px-3 py-1 font-dm mb-5">{en ? "Private Tour · Exclusive" : "Tour Privado · Exclusivo"}</span>
-            <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
+            <span className="reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-dorado border border-dorado/40 px-3 py-1 font-dm mb-5">{en ? "Private Tour · Exclusive" : "Tour Privado · Exclusivo"}</span>
+            <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
               {en ? <>Your group, your pace,<br/><em className="text-dorado">your experience</em></> : <>Tu grupo, tu ritmo,<br/><em className="text-dorado">tu experiencia</em></>}
             </h2>
             <p className="text-crema/60 font-dm text-sm leading-relaxed mb-6">
@@ -390,8 +394,8 @@ export default function ToursPage() {
       <section className="relative py-20 px-6 text-center bg-verde-profundo overflow-hidden">
         <FloatingLeaves count={18} />
         <div className="relative z-10">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">{en ? "Have questions?" : "¿Tienes dudas?"}</p>
-          <h2 className="font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">{en ? "Have questions?" : "¿Tienes dudas?"}</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
             {en ? <>Message us and we'll <em className="text-dorado">advise you</em></> : <>Escríbenos y te <em className="text-dorado">asesoramos</em></>}
           </h2>
           <p className="text-crema/70 font-dm text-sm max-w-md mx-auto mb-8">

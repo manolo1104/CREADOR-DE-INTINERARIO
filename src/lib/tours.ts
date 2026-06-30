@@ -66,11 +66,10 @@ export const TOURS_DB: Tour[] = [
     imagen_hero: "/imagenes/tours/rzr-xilitla/hero.jpg",
     imagenes: ["/imagenes/tours/rzr-xilitla/hero.jpg", "/imagenes/tours/rzr-xilitla/gallery-1.jpg"],
     gallery: [
-      { src: "/imagenes/tours/rzr-xilitla/hero.jpg",      alt: "Vehículo RZR todoterreno avanzando por un camino de terracería entre la selva, levantando polvo durante el recorrido off-road en Xilitla", hasRealPeople: true },
-      { src: "/imagenes/tours/rzr-xilitla/gallery-1.jpg", alt: "RZR derrapando y levantando tierra en pleno campo verde durante la aventura off-road en la Huasteca Potosina", hasRealPeople: true },
-      { src: "/imagenes/tours/rzr-xilitla/gallery-2.jpg", alt: "Vehículo todoterreno RZR de frente sobre un camino de terracería rodeado de naturaleza", hasRealPeople: false },
-      { src: "/imagenes/tours/rzr-xilitla/gallery-3.jpg", alt: "Cascada alta cayendo entre las paredes verdes de un cañón selvático de la Huasteca Potosina", hasRealPeople: false },
-      { src: "/imagenes/tours/rzr-xilitla/gallery-4.jpg", alt: "Cascada escondida entre la selva con su poza al pie, premio final del recorrido en RZR", hasRealPeople: false },
+      { src: "/imagenes/tours/rzr-xilitla/gallery-1.jpg", alt: "Grupo de amigos posando sobre un RZR Pro en un mirador de montaña durante el recorrido off-road en Xilitla", hasRealPeople: true },
+      { src: "/imagenes/tours/rzr-xilitla/gallery-2.jpg", alt: "Vehículo todoterreno RZR Pro de perfil con las montañas verdes de Xilitla al fondo", hasRealPeople: false },
+      { src: "/imagenes/tours/rzr-xilitla/gallery-3.jpg", alt: "Vehículo todoterreno Polaris en el punto de salida del recorrido off-road, con guías y banderas de la base en Xilitla", hasRealPeople: true },
+      { src: "/imagenes/tours/rzr-xilitla/gallery-4.jpg", alt: "Vehículo Can-Am Maverick X3 con neumáticos de barro listo en el punto de encuentro del tour off-road", hasRealPeople: false },
     ],
   },
   {
