@@ -4,23 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useItinerario } from "@/context/ItinerarioContext";
-import {
-  Landmark, Waves, Bird, Droplets, MountainSnow, BookOpen, Droplet, Thermometer, Globe,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Globe } from "lucide-react";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
-
-const DESTINOS_NAV: { Icon: LucideIcon; nombre: string; nombreEn: string; slug: string }[] = [
-  { Icon: Landmark,    nombre: "Las Pozas (Jardín Surrealista)", nombreEn: "Las Pozas (Surrealist Garden)", slug: "las-pozas-jardin-surrealista" },
-  { Icon: Waves,       nombre: "Cascada de Tamul",               nombreEn: "Tamul Waterfall",               slug: "cascada-de-tamul" },
-  { Icon: Bird,        nombre: "Sótano de las Golondrinas",       nombreEn: "Cave of Swallows",              slug: "sotano-de-las-golondrinas" },
-  { Icon: Droplets,    nombre: "Cascadas de Micos",               nombreEn: "Micos Waterfalls",              slug: "cascadas-de-micos" },
-  { Icon: MountainSnow,nombre: "Puente de Dios",                  nombreEn: "Puente de Dios",                slug: "puente-de-dios-tamasopo" },
-  { Icon: BookOpen,    nombre: "Zona Arqueológica Tamtoc",        nombreEn: "Tamtoc Archaeological Site",    slug: "zona-arqueologica-tamtoc" },
-  { Icon: Droplet,     nombre: "Cascadas de Tamasopo",            nombreEn: "Tamasopo Waterfalls",           slug: "cascadas-de-tamasopo" },
-  { Icon: Thermometer, nombre: "Balneario Taninul",               nombreEn: "Taninul Hot Springs",           slug: "balneario-taninul" },
-];
 
 // Contraparte de idioma para el selector (evita 404: solo rutas core tienen /en).
 function counterpartHref(pathname: string, locale: Locale): string {
@@ -108,7 +94,6 @@ export default function Navbar() {
     `text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 nav-link-shimmer ${
       isActive(href) ? "text-lima" : "text-crema/70 hover:text-crema"
     }`;
-  const destNombre = (d: typeof DESTINOS_NAV[number]) => (locale === "en" ? d.nombreEn : d.nombre);
 
   return (
     <>
@@ -121,38 +106,14 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={lp("/")} className="flex-shrink-0 group" aria-label="Tours Huasteca Potosina">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logos/huasteca-logo-dark.svg" alt="Tours Huasteca Potosina" width={44} height={44} className="h-11 w-11 transition-opacity duration-200 group-hover:opacity-85" />
+            <img src="/logos/huasteca-logo.svg" alt="Tours Huasteca Potosina" width={942} height={267} className="h-11 w-auto transition-opacity duration-200 group-hover:opacity-85" />
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-8">
             <Link href={lp("/")} className={navLinkClass(lp("/"))}>{dict.nav.tours && (locale === "en" ? "Home" : "Inicio")}</Link>
 
-            <div ref={destinosRef} className="relative">
-              <button onClick={() => setDestinosOpen(!destinosOpen)} aria-expanded={destinosOpen} aria-controls="destinos-menu" aria-haspopup="true"
-                className={`text-xs tracking-[2px] uppercase font-dm transition-colors duration-200 flex items-center gap-1.5 ${isActive(lp("/destinos")) ? "text-lima" : "text-crema/70 hover:text-crema"}`}>
-                {dict.nav.destinos}
-                <svg className={`w-3 h-3 transition-transform duration-200 ${destinosOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {destinosOpen && (
-                <div id="destinos-menu" role="menu" className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-72 rounded-2xl gloss-dropdown">
-                  <div className="relative z-10 px-4 py-3 border-b border-verde-selva/20 mb-1">
-                    <Link href={lp("/destinos")} className="text-[9px] tracking-[3px] uppercase text-verde-selva font-dm font-semibold hover:text-verde-bosque transition-colors">
-                      {locale === "en" ? "View all destinations →" : "Ver todos los destinos →"}
-                    </Link>
-                  </div>
-                  {DESTINOS_NAV.map(({ Icon, slug, ...rest }) => (
-                    <Link key={slug} href={lp(`/destinos/${slug}`)} className="relative z-10 flex items-center gap-3 px-4 py-2.5 hover:bg-verde-selva/10 transition-colors group">
-                      <Icon className="w-4 h-4 text-verde-selva/70 flex-shrink-0 group-hover:text-verde-selva transition-colors" aria-hidden="true" />
-                      <span className="text-[12px] text-verde-profundo font-dm group-hover:text-verde-selva transition-colors">{destNombre({ Icon, slug, ...rest })}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Link href={lp("/destinos")} className={navLinkClass(lp("/destinos"))}>{dict.nav.destinos}</Link>
 
             <Link href={lp("/tours")} className={navLinkClass(lp("/tours"))}>{dict.nav.tours}</Link>
 
@@ -192,27 +153,9 @@ export default function Navbar() {
               {locale === "en" ? "Home" : "Inicio"}
             </Link>
 
-            <div className="border-b border-white/6">
-              <button onClick={() => setDestinosOpen(!destinosOpen)} className="flex items-center justify-between w-full py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema">
-                {dict.nav.destinos}
-                <svg className={`w-3 h-3 transition-transform ${destinosOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {destinosOpen && (
-                <div className="gloss-dropdown pb-3 space-y-0.5 pl-3 mt-1 mr-1 rounded-xl">
-                  <Link href={lp("/destinos")} className="relative z-10 block py-2 text-[10px] tracking-[2px] uppercase text-verde-selva font-dm font-semibold hover:text-verde-bosque transition-colors">
-                    {locale === "en" ? "View all →" : "Ver todos →"}
-                  </Link>
-                  {DESTINOS_NAV.map(({ Icon, slug, ...rest }) => (
-                    <Link key={slug} href={lp(`/destinos/${slug}`)} className="relative z-10 flex items-center gap-2.5 py-2 pr-3 text-sm text-verde-profundo font-dm hover:text-verde-selva transition-colors">
-                      <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                      <span>{destNombre({ Icon, slug, ...rest })}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Link href={lp("/destinos")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
+              {dict.nav.destinos}
+            </Link>
 
             <Link href={lp("/tours")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.tours}
