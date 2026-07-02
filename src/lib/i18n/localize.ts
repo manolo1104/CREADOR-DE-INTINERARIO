@@ -24,6 +24,13 @@ export function localizeTour(tour: Tour, locale: Locale): Tour {
     gallery: t.gallery
       ? tour.gallery.map((g, i) => ({ ...g, alt: t.gallery![i] ?? g.alt }))
       : tour.gallery,
+    // rutas/flota: solo se traducen los textos; duración y precios vienen del registro ES.
+    rutas: t.rutas
+      ? tour.rutas?.map((r, i) => ({ ...r, ...(t.rutas![i] ?? {}) }))
+      : tour.rutas,
+    flota: t.flota
+      ? tour.flota?.map((v, i) => ({ ...v, ...(t.flota![i] ?? {}) }))
+      : tour.flota,
   };
 }
 

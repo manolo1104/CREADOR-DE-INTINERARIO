@@ -5,6 +5,22 @@ export interface GalleryImage {
   caption?: string;
 }
 
+/** Ruta off-road disponible en tours cobrados por vehículo (ej. RZR). */
+export interface TourRuta {
+  nombre:       string;
+  duracion_hrs: number;
+  descripcion:  string;
+  desde:        number; // precio del vehículo más accesible en esta ruta (MXN)
+}
+
+/** Vehículo de la flota; `precios` va en el MISMO orden que el array `rutas` del tour. */
+export interface TourVehiculo {
+  nombre:      string;
+  capacidad:   string;
+  descripcion: string;
+  precios:     number[];
+}
+
 export interface Tour {
   id:               string;
   nombre:           string;
@@ -15,7 +31,11 @@ export interface Tour {
   destinos:         string[];
   incluye:          string[];
   precio:           number;
-  precioOriginal:   number;
+  precioOriginal?:  number;
+  /** "persona" (default) usa el flujo de reserva online; "vehiculo" se reserva por WhatsApp. */
+  precioUnidad?:    "persona" | "vehiculo";
+  rutas?:           TourRuta[];
+  flota?:           TourVehiculo[];
   duracion_hrs:     number;
   icon:             string;
   tipo:             string;
@@ -43,25 +63,41 @@ export const TOURS_DB: Tour[] = [
     groupMin:         2,
     groupMax:         6,
     privateAvailable: false,
-    nombre:           "Recorrido en RZR por Xilitla — Ruta Nanacatli",
-    tagline:          "Maneja tu propio todoterreno entre selva, ríos y barro hasta una cascada escondida",
-    precio:           800,
-    precioOriginal:   1100,
+    nombre:           "Recorrido en RZR por Xilitla — Elige tu Ruta Off-Road",
+    tagline:          "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 4 horas",
+    precio:           1600,
+    precioUnidad:     "vehiculo",
     urgencia:         "Flota limitada — los fines de semana se aparta con anticipación",
-    descripcion:      "Maneja tu propio RZR por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y llega a la escondida Cascada Nanacatli. La aventura off-road favorita de quienes visitan la Huasteca por primera vez — adrenalina pura, sin necesidad de experiencia.",
-    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. La Ruta Nanacatli es nuestra más popular y la favorita de quienes llegan por primera vez: dos horas de selva húmeda, ríos cristalinos y barro, con la adrenalina garantizada de principio a fin.\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: el RZR es fácil de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nDesde los primeros metros te adentras en la selva: el verde se cierra a los lados, el camino se vuelve terracería y lodo, y empiezan los cruces de ríos de agua cristalina donde el agua salpica por todos lados. El recorrido termina en la Cascada Nanacatli, un rincón al que es casi imposible llegar sin estos vehículos — el premio perfecto después del trayecto.\n\nLa actividad dura aproximadamente 2 horas e incluye el vehículo con gasolina, el equipo de seguridad y el guía. No incluye transporte hasta Xilitla ni alimentos. Te recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
+    descripcion:      "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Cascada Nanacatli, los miradores de la sierra, un nacimiento escondido en la selva o el pueblo de La Trinidad. El precio es por vehículo (desde $1,600), no por persona.",
+    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, termina en una cascada escondida), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (4 h, un nacimiento de agua cristalina en lo profundo de la selva) y la de Trinidad (4 h, historia y cultura hasta un pueblo indígena preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ($1,600 la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
+    rutas: [
+      { nombre: "Ruta Nanacatli",  duracion_hrs: 2, desde: 1600, descripcion: "La más popular de Xilitla. Te adentras en la selva húmeda, cruzas ríos de agua cristalina y llegas a la impresionante Cascada Nanacatli. Barro, naturaleza pura y adrenalina garantizada — la favorita de quienes vienen por primera vez." },
+      { nombre: "Ruta Miradores",  duracion_hrs: 3, desde: 2600, descripcion: "Sube a los puntos más altos de la sierra y contempla vistas panorámicas que te quitarán el aliento. La Huasteca Potosina desde las alturas, con la selva extendiéndose hasta donde alcanza la vista. Perfecta para fotos épicas." },
+      { nombre: "Ruta Nacimiento", duracion_hrs: 4, desde: 3800, descripcion: "La aventura más completa. Llegas a un nacimiento de agua cristalina escondido profundamente en la selva, rodeado de vegetación que parece de película. Un paraíso secreto al que es imposible llegar sin estos vehículos." },
+      { nombre: "Ruta Trinidad",   duracion_hrs: 4, desde: 3800, descripcion: "Historia, cultura y naturaleza en un solo recorrido. Caminos de sierra entre cascadas y ríos hasta el pintoresco pueblo de La Trinidad, una comunidad indígena preservada en el tiempo, con paradas en miradores naturales." },
+    ],
+    flota: [
+      { nombre: "RZR 500",           capacidad: "2 adultos + 1 niño",  descripcion: "Ágil, deportivo y lleno de carácter. Ideal para parejas o familia pequeña.",                          precios: [1600, 2600, 3800, 3800] },
+      { nombre: "Can-Am 800",        capacidad: "2 adultos",           descripcion: "La bestia canadiense. Potencia brutal para dos aventureros que buscan emociones extremas.",          precios: [1600, 2600, 3800, 3800] },
+      { nombre: "RZR 900",           capacidad: "4 adultos",           descripcion: "El doble de potencia, el doble de emoción. Para grupos de 4 que no le temen a nada.",                precios: [1900, 2800, 4500, 4500] },
+      { nombre: "Defender",          capacidad: "6 adultos",           descripcion: "Robusto, confiable y espacioso. Comodidad sin sacrificar aventura.",                                 precios: [2200, 3000, 5000, 5000] },
+      { nombre: "Defender Familiar", capacidad: "6 adultos + 2 niños", descripcion: "El más grande de la flota. Diseñado para familias completas o grupos.",                              precios: [2500, 3400, 6000, 6000] },
+      { nombre: "Maverick X3",       capacidad: "4 adultos",           descripcion: "El más rápido y adrenalínico. Suspensión de competencia para amantes de la velocidad.",              precios: [2500, 3500, 5500, 5500] },
+      { nombre: "Polaris Pro S",     capacidad: "4 adultos",           descripcion: "La experiencia premium. Tecnología de punta, potencia extraordinaria y acabados de lujo.",           precios: [3500, 4500, 7000, 7000] },
+    ],
     destinos: [
       "Base en Xilitla (punto de encuentro)",
-      "Selva húmeda y terracería de Xilitla",
-      "Cruces de ríos de agua cristalina",
-      "Cascada Nanacatli",
+      "Cascada Nanacatli (Ruta Nanacatli · 2 h)",
+      "Miradores de la sierra (Ruta Miradores · 3 h)",
+      "Nacimiento escondido en la selva (Ruta Nacimiento · 4 h)",
+      "Pueblo de La Trinidad (Ruta Trinidad · 4 h)",
     ],
     incluye: [
-      "Vehículo RZR todoterreno con gasolina incluida",
+      "Vehículo todoterreno con gasolina incluida",
       "Casco y goggles de seguridad para cada tripulante",
       "Guía instructor que abre y marca la ruta",
       "Briefing de manejo — apto para principiantes",
-      "Recorrido por selva, cruce de ríos y llegada a la Cascada Nanacatli",
+      "4 rutas a elegir: Nanacatli, Miradores, Nacimiento o Trinidad",
     ],
     imagen_hero: "/imagenes/tours/rzr-xilitla/hero.jpg",
     imagenes: ["/imagenes/tours/rzr-xilitla/hero.jpg", "/imagenes/tours/rzr-xilitla/gallery-1.jpg"],
@@ -117,6 +153,58 @@ export const TOURS_DB: Tour[] = [
       { src: "/imagenes/tours/rappel-tamul/gallery-4.jpg", alt: "Vista amplia del descenso en rappel sobre la imponente Cascada de Tamul — la caída más alta de México", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-5.jpg", alt: "Rapelista de espaldas descendiendo la pared del cañón del Tampaón junto a la cortina de agua de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-6.jpg", alt: "Mujer con casco sonriendo y haciendo pulgar arriba en rappel, con pájaros volando frente a la Cascada de Tamul", hasRealPeople: true },
+    ],
+  },
+  {
+    id:               "tour-rafting-tampaon",
+    slug:             "rafting-rio-tampaon",
+    icon:             "Waves",
+    tipo:             "Rafting & Adrenalina",
+    dificultad:       "media",
+    duracion_hrs:     7,
+    reviewCount:      47,
+    groupMin:         2,
+    groupMax:         8,
+    privateAvailable: false,
+    nombre:           "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
+    tagline:          "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
+    precio:           1850,
+    urgencia:         "Sujeto al nivel del río — la salida se confirma al reservar",
+    descripcion:
+      "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
+    descripcionLarga:
+      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Y como remar abre el apetito, tu reserva incluye comida — antes o después de la actividad, como prefieras.\n\nLa mejor temporada es de noviembre a marzo, cuando el agua alcanza su color más intenso. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
+    destinos: [
+      "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
+      "Embarcadero del Río Tampaón",
+      "14 km de rápidos Clase III por el Río Tampaón",
+      "Cañón del Tampaón — paredes de roca y agua turquesa",
+      "Rápido 'La Tumba' — el más técnico del descenso",
+      "Tramos tranquilos para nadar en el río",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla",
+      "Balsa profesional, remo, casco y chaleco salvavidas",
+      "Guía certificado en aguas rápidas dentro de tu balsa",
+      "Briefing de seguridad y técnica de remado — rutas para principiantes y avanzados",
+      "Comida incluida — antes o después de la actividad",
+      "Descenso de 14 km por los rápidos del Tampaón",
+      "Paradas para nadar en los tramos tranquilos del cañón",
+    ],
+    imagen_hero: "/imagenes/rio-tampaon-rafting/gallery-5.webp",
+    imagenes: [
+      "/imagenes/rio-tampaon-rafting/gallery-5.webp",
+      "/imagenes/rio-tampaon-rafting/tour-1.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/rio-tampaon-rafting/tour-1.jpg",     alt: "Tripulación celebrando con el puño en alto mientras su balsa roja cruza un rápido del Río Tampaón", hasRealPeople: true },
+      { src: "/imagenes/rio-tampaon-rafting/tour-2.jpg",     alt: "Balsa roja con su tripulación posando bajo la cortina de una cascada en el Río Tampaón", hasRealPeople: true },
+      { src: "/imagenes/rio-tampaon-rafting/tour-3.jpg",     alt: "Grupo levantando los remos para celebrar tras superar un rápido del Río Tampaón", hasRealPeople: true },
+      { src: "/imagenes/rio-tampaon-rafting/tour-4.jpg",     alt: "Balsa azul cubierta por la salpicadura de un rápido Clase III en el Río Tampaón", hasRealPeople: true },
+      { src: "/imagenes/rio-tampaon-rafting/gallery-8.jpg",  alt: "Balsas rojas descendiendo los rápidos turquesa del Río Tampaón entre las paredes del cañón", hasRealPeople: true },
+      { src: "/imagenes/rio-tampaon-rafting/gallery-4.jpg",  alt: "Familia remando en una balsa amarilla sobre el agua turquesa del Río Tampaón", hasRealPeople: true },
+      { src: "/imagenes/rio-tampaon-rafting/gallery-9.jpg",  alt: "Flotilla de balsas navegando el agua turquesa del Cañón del Tampaón bajo las paredes de roca" },
+      { src: "/imagenes/rio-tampaon-rafting/gallery-1.jpg",  alt: "Balsa de rafting entrando a un rápido de agua turquesa vista desde arriba — Río Tampaón", hasRealPeople: true },
     ],
   },
   {

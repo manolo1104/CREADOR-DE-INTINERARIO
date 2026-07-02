@@ -73,6 +73,23 @@ export default function TourDetailPage({ params }: Props) {
   const toursHref = localePath("/tours", locale);
   const money = (n: number) => `$${fmtNumber(n, locale)}`;
 
+  // Precio por vehículo (ej. RZR): se reserva por WhatsApp, no por el flujo por persona.
+  const esVehiculo = tour.precioUnidad === "vehiculo";
+  const pctOff = tour.precioOriginal && tour.precioOriginal > tour.precio
+    ? Math.round((1 - tour.precio / tour.precioOriginal) * 100)
+    : 0;
+  const durMin = tour.rutas ? Math.min(...tour.rutas.map((r) => r.duracion_hrs)) : tour.duracion_hrs;
+  const durMax = tour.rutas ? Math.max(...tour.rutas.map((r) => r.duracion_hrs)) : tour.duracion_hrs;
+  const durLabel = durMin === durMax
+    ? t.durationApprox(tour.duracion_hrs)
+    : (locale === "en" ? `${durMin}–${durMax} hours depending on route` : `${durMin}–${durMax} horas según la ruta`);
+  const priceUnitShort = esVehiculo
+    ? (locale === "en" ? "MXN per vehicle" : "MXN por vehículo")
+    : t.perPerson;
+  const priceUnitHero = esVehiculo
+    ? (locale === "en" ? "MXN / vehicle · Fuel & guide included" : "MXN / vehículo · Gasolina y guía incluidos")
+    : t.perPersonIncluded;
+
   const tourSchema = {
     "@context": "https://schema.org",
     "@type": "TouristTrip",
@@ -98,17 +115,33 @@ export default function TourDetailPage({ params }: Props) {
   const faqEntries = locale === "en"
     ? [
         { q: `What's included in the ${tour.nombre}?`, a: tour.incluye.join(", ") + ". Everything is included in the price." },
-        { q: `How long is the ${tour.nombre}?`, a: `The tour lasts approximately ${tour.duracion_hrs} hours and includes transportation, a certified guide and all entrance fees.` },
+        { q: `How long is the ${tour.nombre}?`, a: durMin === durMax
+            ? `The tour lasts approximately ${tour.duracion_hrs} hours.`
+            : `It depends on the route you choose: between ${durMin} and ${durMax} hours.` },
         { q: "Can I cancel my booking?", a: "Yes. Free cancellation up to 48 hours before the tour. Full refund, no questions asked." },
-        { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children (4–12) get 40% off. Under 4 are free.` },
-        { q: "Where does the tour depart from?", a: "The tour departs from Ciudad Valles, San Luis Potosí. We include pickup at your hotel or an agreed meeting point." },
+        esVehiculo
+          ? { q: "Is the price per person or per vehicle?", a: `Pricing is per vehicle, starting at ${money(tour.precio)} MXN depending on the route and unit you choose. Every vehicle includes fuel, safety gear and the guide.` }
+          : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children (4–12) get 40% off. Under 4 are free.` },
+        esVehiculo
+          ? { q: "Where does the tour depart from?", a: "We meet at our base in Xilitla, San Luis Potosí. Transportation to Xilitla is not included." }
+          : tour.id === "tour-rafting-tampaon"
+            ? { q: "Where does the tour depart from?", a: "We pick you up at your lodging in Ciudad Valles or Xilitla — round-trip transport included." }
+            : { q: "Where does the tour depart from?", a: "The tour departs from Ciudad Valles, San Luis Potosí. We include pickup at your hotel or an agreed meeting point." },
       ]
     : [
         { q: `¿Qué incluye el ${tour.nombre}?`, a: tour.incluye.join(", ") + ". Todo incluido en el precio." },
-        { q: `¿Cuánto dura el ${tour.nombre}?`, a: `El tour tiene una duración aproximada de ${tour.duracion_hrs} horas e incluye transporte, guía certificado y todas las entradas.` },
+        { q: `¿Cuánto dura el ${tour.nombre}?`, a: durMin === durMax
+            ? `El tour tiene una duración aproximada de ${tour.duracion_hrs} horas.`
+            : `Depende de la ruta que elijas: entre ${durMin} y ${durMax} horas.` },
         { q: "¿Puedo cancelar mi reserva?", a: "Sí. Cancelación gratuita hasta 48 horas antes del tour. Reembolso completo sin preguntas." },
-        { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Niños (4–12 años) tienen un 40% de descuento. Menores de 4 años entran gratis.` },
-        { q: "¿Dónde es el punto de salida?", a: "El tour sale desde Ciudad Valles, San Luis Potosí. Incluimos recogida en tu hotel o punto de encuentro acordado." },
+        esVehiculo
+          ? { q: "¿El precio es por persona o por vehículo?", a: `El precio es por vehículo, desde ${money(tour.precio)} MXN según la ruta y la unidad que elijas. Todos los vehículos incluyen gasolina, equipo de seguridad y guía.` }
+          : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Niños (4–12 años) tienen un 40% de descuento. Menores de 4 años entran gratis.` },
+        esVehiculo
+          ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es nuestra base en Xilitla, San Luis Potosí. El transporte hasta Xilitla no está incluido." }
+          : tour.id === "tour-rafting-tampaon"
+            ? { q: "¿Dónde es el punto de salida?", a: "Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla — traslado redondo incluido." }
+            : { q: "¿Dónde es el punto de salida?", a: "El tour sale desde Ciudad Valles, San Luis Potosí. Incluimos recogida en tu hotel o punto de encuentro acordado." },
       ];
 
   const faqSchema = {
@@ -146,7 +179,9 @@ export default function TourDetailPage({ params }: Props) {
 
   const waTour = locale === "en"
     ? `Hi, I'm interested in the "${tour.nombre}" tour. Could you share availability and prices?`
-    : WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2);
+    : esVehiculo
+      ? `Hola, me interesa el tour "${tour.nombre}". ¿Me ayudas a elegir ruta y vehículo? ¿Qué disponibilidad tienen?`
+      : WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2);
   const waPrivate = locale === "en"
     ? `Hi, I'd like a private "${tour.nombre}" tour for my group. What would the cost be?`
     : `Hola, me interesa hacer el tour "${tour.nombre}" de forma privada. ¿Cuál sería el costo?`;
@@ -192,19 +227,25 @@ export default function TourDetailPage({ params }: Props) {
           </h1>
           <p className="text-dorado/80 font-dm text-sm italic mb-4">{tour.tagline}</p>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-sm">30% OFF</span>
+            {pctOff > 0 && (
+              <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-sm">{pctOff}% OFF</span>
+            )}
             <div className="flex items-baseline gap-2">
+              {esVehiculo && (
+                <span className="text-crema/50 font-dm text-xs uppercase tracking-[1px]">{tcommon.desde}</span>
+              )}
               <span className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(24px,3.5vw,36px)" }}>
                 {money(tour.precio)}
               </span>
-              <span className="text-crema/50 font-dm text-xs">{t.perPersonIncluded}</span>
+              <span className="text-crema/50 font-dm text-xs">{priceUnitHero}</span>
             </div>
           </div>
         </div>
       </section>
 
       <TourPageTracker tourId={tour.id} nombre={tour.nombre} precio={tour.precio} tipo={tour.tipo} />
-      <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} tourId={tour.id} tourName={tour.nombre} />
+      <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} tourId={tour.id} tourName={tour.nombre}
+        precioUnidad={tour.precioUnidad} waHref={esVehiculo ? waLink(waTour) : undefined} />
 
       {/* ── CONTENIDO ── */}
       <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -234,6 +275,74 @@ export default function TourDetailPage({ params }: Props) {
               ))}
             </ul>
           </section>
+
+          {/* ── RUTAS Y PRECIOS POR VEHÍCULO (solo tours cobrados por vehículo, ej. RZR) ── */}
+          {tour.rutas && tour.flota && (
+            <section>
+              <h2 className="font-cormorant text-crema text-2xl mb-2">
+                {locale === "en" ? "Pick your route" : "Elige tu ruta"}
+              </h2>
+              <p className="text-crema/45 font-dm text-xs mb-5">
+                {locale === "en"
+                  ? "All prices are per vehicle (not per person) and include fuel, safety gear and guide."
+                  : "Todos los precios son por vehículo (no por persona) e incluyen gasolina, equipo de seguridad y guía."}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                {tour.rutas.map((r) => (
+                  <div key={r.nombre} className="border border-white/10 bg-negro/40 p-5">
+                    <div className="flex items-baseline justify-between gap-2 mb-2">
+                      <h3 className="font-cormorant text-crema text-lg leading-tight">{r.nombre}</h3>
+                      <span className="text-[10px] text-crema/40 font-dm flex-shrink-0">{r.duracion_hrs} h</span>
+                    </div>
+                    <p className="text-crema/55 font-dm text-xs leading-relaxed mb-3">{r.descripcion}</p>
+                    <p className="text-[10px] text-crema/40 font-dm">
+                      {tcommon.desde}{" "}
+                      <span className="font-cormorant text-dorado text-base">{money(r.desde)}</span>{" "}
+                      {locale === "en" ? "MXN per vehicle" : "MXN por vehículo"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="font-cormorant text-crema text-xl mb-2">
+                {locale === "en" ? "Our fleet — price per vehicle" : "Nuestra flota — precio por vehículo"}
+              </h3>
+              <div className="overflow-x-auto border border-white/10">
+                <table className="w-full text-left font-dm text-xs min-w-[560px]">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-negro/60">
+                      <th className="px-4 py-3 text-[9px] tracking-[1.5px] uppercase text-crema/40 font-medium">
+                        {locale === "en" ? "Vehicle" : "Vehículo"}
+                      </th>
+                      {tour.rutas.map((r) => (
+                        <th key={r.nombre} className="px-3 py-3 text-[9px] tracking-[1px] uppercase text-crema/40 font-medium whitespace-nowrap">
+                          {r.nombre.replace(/^(Ruta|Route)\s/i, "")} · {r.duracion_hrs}h
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tour.flota.map((v) => (
+                      <tr key={v.nombre} className="border-b border-white/5 last:border-b-0">
+                        <td className="px-4 py-3">
+                          <p className="text-crema/85 font-medium">{v.nombre}</p>
+                          <p className="text-[10px] text-crema/40">{v.capacidad}</p>
+                        </td>
+                        {v.precios.map((p, i) => (
+                          <td key={i} className="px-3 py-3 text-dorado whitespace-nowrap">{money(p)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[10px] text-crema/35 font-dm mt-3">
+                {locale === "en"
+                  ? "Book via WhatsApp: tell us your route, group size and date, and we'll assign the right vehicle."
+                  : "Se reserva por WhatsApp: dinos tu ruta, cuántos son y la fecha, y te asignamos el vehículo ideal."}
+              </p>
+            </section>
+          )}
 
           {tour.gallery.length > 0 && (
             <section>
@@ -301,22 +410,29 @@ export default function TourDetailPage({ params }: Props) {
         <aside className="lg:col-span-1">
           <div className="sticky top-24 space-y-4">
             <div className="border border-white/10 bg-negro/60 p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">30% OFF</span>
-                <span className="text-[9px] text-crema/35 font-dm">{t.specialPrice}</span>
-              </div>
+              {pctOff > 0 && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">{pctOff}% OFF</span>
+                  <span className="text-[9px] text-crema/35 font-dm">{t.specialPrice}</span>
+                </div>
+              )}
               <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">{tcommon.desde.toLowerCase()}</p>
-              <p className="text-[12px] text-crema/35 font-dm line-through leading-none">{money(tour.precioOriginal)}</p>
+              {tour.precioOriginal && tour.precioOriginal > tour.precio && (
+                <p className="text-[12px] text-crema/35 font-dm line-through leading-none">{money(tour.precioOriginal)}</p>
+              )}
               <p className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(32px,4vw,48px)" }}>{money(tour.precio)}</p>
-              <p className="text-[11px] text-crema/40 font-dm mt-1">{t.perPerson}</p>
+              <p className="text-[11px] text-crema/40 font-dm mt-1">{priceUnitShort}</p>
               <p className="text-[10px] text-dorado/80 font-dm mt-2 flex items-center gap-1">
                 <Star className="w-3 h-3 fill-dorado/80" aria-hidden="true" /> 4.9 · ({t.reviewsCount(tour.reviewCount)})
               </p>
               <p className="text-[10px] text-crema/40 font-dm mt-1 flex items-center gap-1">
-                <Clock className="w-3 h-3" aria-hidden="true" /> {t.durationApprox(tour.duracion_hrs)}
+                <Clock className="w-3 h-3" aria-hidden="true" /> {durLabel}
               </p>
               <p className="text-[10px] text-crema/40 font-dm mt-1 flex items-center gap-1">
-                <Users className="w-3 h-3" aria-hidden="true" /> {t.groupMax(tour.groupMax)}
+                <Users className="w-3 h-3" aria-hidden="true" />{" "}
+                {esVehiculo
+                  ? (locale === "en" ? "2 to 8 people per vehicle" : "De 2 a 8 personas por vehículo")
+                  : t.groupMax(tour.groupMax)}
               </p>
               {tour.privateAvailable && (
                 <a href={waLink(waPrivate)} target="_blank" rel="noopener noreferrer"
@@ -324,7 +440,9 @@ export default function TourDetailPage({ params }: Props) {
                   <Lock className="w-3 h-3" aria-hidden="true" /> {t.privateTour}
                 </a>
               )}
-              <InventoryBadge tourId={tour.id} tourName={tour.nombre} groupMax={tour.groupMax} />
+              {!esVehiculo && (
+                <InventoryBadge tourId={tour.id} tourName={tour.nombre} groupMax={tour.groupMax} />
+              )}
               {tour.urgencia && (
                 <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">
                   {tour.urgencia}
@@ -333,16 +451,26 @@ export default function TourDetailPage({ params }: Props) {
             </div>
 
             <div className="space-y-2.5">
-              <Link href={`/reservar-tour/${tour.slug}`}
-                className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
-                <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-                {t.bookThisTour}
-              </Link>
-              <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
-                {t.askWhatsapp}
-              </a>
+              {esVehiculo ? (
+                <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+                  <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                  {locale === "en" ? "Book via WhatsApp" : "Reservar por WhatsApp"}
+                </a>
+              ) : (
+                <Link href={`/reservar-tour/${tour.slug}`}
+                  className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+                  <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                  {t.bookThisTour}
+                </Link>
+              )}
+              {!esVehiculo && (
+                <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
+                  {t.askWhatsapp}
+                </a>
+              )}
               <p className="text-center text-[9px] text-crema/25 font-dm">{t.freeCancel48}</p>
             </div>
 
@@ -378,12 +506,15 @@ export default function TourDetailPage({ params }: Props) {
 
       {/* ── TOURS SIMILARES / CROSS-SELL ── */}
       {(() => {
+        // OJO: `slug` debe ser el slug REAL del tour (no el id) — se busca con tr.slug === combo.slug
         const COMBOS: Record<string, { slug: string; msg: string }> = {
-          "tour-tamul":       { slug: "tour-edward-james", msg: "Si tienes un día más: Las Pozas de Edward James es el complemento perfecto — arte surrealista después de la naturaleza bruta." },
-          "tour-edward-james":{ slug: "tour-tamul",        msg: "Combínalo con la Expedición Tamul — cascada + selva al día siguiente. El clásico de 2 días de la Huasteca." },
-          "tour-meco":        { slug: "tour-minas-micos",  msg: "Combínalo con el Tour Minas + Micos para un segundo día de aguas turquesas con más cascadas y tirolesas." },
-          "tour-minas-micos": { slug: "tour-meco",         msg: "Combínalo con Cascada El Meco — aguas turquesas reales con luz perfecta. Dos días, dos experiencias únicas." },
-          "tour-puente-dios": { slug: "tour-minas-micos",  msg: "Combínalo con Minas + Micos al día siguiente — más cascadas, más pozas, la ruta de aguas completa." },
+          "tour-tamul":       { slug: "ruta-surrealista-edward-james",   msg: "Si tienes un día más: Las Pozas de Edward James es el complemento perfecto — arte surrealista después de la naturaleza bruta." },
+          "tour-edward-james":{ slug: "expedicion-tamul",                msg: "Combínalo con la Expedición Tamul — cascada + selva al día siguiente. El clásico de 2 días de la Huasteca." },
+          "tour-meco":        { slug: "paraiso-escalonado-minas-micos",  msg: "Combínalo con el Tour Minas + Micos para un segundo día de aguas turquesas con más cascadas y tirolesas." },
+          "tour-minas-micos": { slug: "cascadas-del-meco",               msg: "Combínalo con Cascada El Meco — aguas turquesas reales con luz perfecta. Dos días, dos experiencias únicas." },
+          "tour-puente-dios": { slug: "paraiso-escalonado-minas-micos",  msg: "Combínalo con Minas + Micos al día siguiente — más cascadas, más pozas, la ruta de aguas completa." },
+          "tour-rafting-tampaon": { slug: "rappel-tamul",  msg: "Combínalo con el Rappel en Tamul — dos días de adrenalina en el mismo cañón: un día remando los rápidos y otro descendiendo frente a la cascada más alta de México." },
+          "tour-rappel-tamul": { slug: "rafting-rio-tampaon", msg: "Combínalo con el Rafting en el Tampaón — después de descender la pared, domina los rápidos del mismo río. El fin de semana de adrenalina completo." },
         };
         const combo = COMBOS[tour.id];
         const comboBase = combo ? TOURS_DB.find((tr) => tr.slug === combo.slug) : null;

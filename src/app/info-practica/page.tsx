@@ -153,7 +153,7 @@ const FAQ_DATA: FAQCategory[] = [
       },
       {
         q: "¿A qué hora es la salida?",
-        a: "La mayoría de tours salen a las 5:30 AM para aprovechar la luz del amanecer y los momentos más mágicos (como el vuelo de los pericos en el Sótano). Regreso aproximado entre 6:00 y 7:00 PM.",
+        a: "Los tours salen entre las 8:00 y las 9:00 AM; confirmamos tu hora exacta al reservar. Regreso aproximado entre 6:00 y 7:00 PM.",
       },
       {
         q: "¿Qué debo llevar?",
@@ -537,11 +537,11 @@ export default function InfoPracticaPage() {
               <p className="text-crema/65 font-dm text-xs leading-relaxed mb-3">
                 Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín
                 Surrealista, con piscina, restaurante de cocina huasteca y punto de salida de todos
-                nuestros tours. Hospedarte aquí elimina cualquier traslado de madrugada.
+                nuestros tours. Hospedarte aquí elimina cualquier traslado extra.
               </p>
               <ul className="space-y-1 mb-3">
                 {[
-                  "Punto de salida oficial de los tours — salida a las 5:30 AM sin traslados",
+                  "Punto de salida oficial de los tours — salida entre 8:00 y 9:00 AM sin traslados",
                   "Piscina con vista al cañón · Restaurante propio · AC y WiFi",
                   "Tarifa especial para viajeros que reservan tours con nosotros",
                   "Desde $1,200 MXN/noche (habitación doble)",
@@ -608,7 +608,7 @@ export default function InfoPracticaPage() {
           Todos nuestros tours salen desde el{" "}
           <strong className="text-crema">Hotel Paraíso Encantado Xilitla</strong>,
           a pasos del Jardín Surrealista de Edward James. Hospedarte aquí simplifica la
-          logística y garantiza la salida puntual a las 5:30 AM.
+          logística y garantiza la salida puntual entre 8:00 y 9:00 AM.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -655,7 +655,7 @@ export default function InfoPracticaPage() {
             <InfoCard title="¿Por qué hospedarte aquí?" accent="dorado">
               <BulletList
                 items={[
-                  "Punto de salida oficial de todos los tours — sin traslados de madrugada",
+                  "Punto de salida oficial de todos los tours — sin traslados extra",
                   "A 50 metros del Jardín Surrealista de Edward James",
                   "Desayuno de cocina huasteca incluido en los tours",
                   "Piscina con vista al cañón y zona de selva",
@@ -898,7 +898,7 @@ export default function InfoPracticaPage() {
             <ol className="space-y-3">
               {[
                 { dia: "Día 1", lugar: "Llegada a Ciudad Valles · Noche en Valles o Xilitla" },
-                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 5:30am · Noche Xilitla" },
+                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 8:00–9:00 am · Noche Xilitla" },
                 { dia: "Día 3", lugar: "Las Pozas (Edward James) · Regreso tarde" },
               ].map((d) => (
                 <li key={d.dia} className="flex gap-3">

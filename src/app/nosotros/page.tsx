@@ -647,9 +647,20 @@ export default function NosotrosPage() {
                 <div className="flex flex-col flex-1 p-4">
                   <h3 className="font-cormorant text-crema text-sm leading-snug mb-2 line-clamp-2">{tour.nombre}</h3>
                   <div className="mt-auto space-y-2">
-                    <p className="font-cormorant text-dorado text-lg leading-none">${tour.precio.toLocaleString("es-MX")}<span className="font-dm text-[9px] text-crema/40 ml-1">MXN</span></p>
-                    <Link href={`/reservar-tour/${tour.slug}`} className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">Reservar</Link>
-                    <a href={waLink(WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2))} target="_blank" rel="noopener noreferrer" className="block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all">Preguntar vía WhatsApp</a>
+                    <p className="font-cormorant text-dorado text-lg leading-none">
+                      ${tour.precio.toLocaleString("es-MX")}
+                      <span className="font-dm text-[9px] text-crema/40 ml-1">
+                        {tour.precioUnidad === "vehiculo" ? "MXN/vehículo" : "MXN"}
+                      </span>
+                    </p>
+                    <Link
+                      href={tour.precioUnidad === "vehiculo" ? `/tours/${tour.slug}` : `/reservar-tour/${tour.slug}`}
+                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">Reservar</Link>
+                    <a
+                      href={waLink(tour.precioUnidad === "vehiculo"
+                        ? `Hola, me interesa el tour "${tour.nombre}". ¿Me ayudas a elegir ruta y vehículo?`
+                        : WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2))}
+                      target="_blank" rel="noopener noreferrer" className="block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all">Preguntar vía WhatsApp</a>
                   </div>
                 </div>
               </article>

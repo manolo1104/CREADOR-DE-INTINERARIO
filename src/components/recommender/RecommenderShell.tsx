@@ -43,6 +43,17 @@ const TOUR_PROOF: Record<string, {
       { name: "Mariana C.", city: "CDMX",      text: "La experiencia más adrenalínica de mi vida. El video con dron que te dan al final lo he visto como veinte veces." },
     ],
   },
+  "tour-rafting-tampaon": {
+    bookingsMonth: 47,
+    bookingsWeek:  9,
+    spotsLeft:     6,
+    trending:      true,
+    bestFor:       "Grupos de amigos y amantes de la adrenalina",
+    reviews: [
+      { name: "Fernando R.", city: "Monterrey", text: "Los rápidos del Tampaón son otra cosa: agua turquesa de verdad y adrenalina sin parar. El guía dentro de la balsa te da toda la confianza." },
+      { name: "Alejandra M.", city: "CDMX",     text: "No sé nadar y aun así lo disfruté muchísimo. El chaleco y el briefing te dan mucha seguridad. El rápido de La Tumba es impresionante." },
+    ],
+  },
   "tour-tamul": {
     bookingsMonth: 127,
     bookingsWeek:  23,
@@ -197,7 +208,9 @@ function TourResultCard({
   origen:    string;
 }) {
   const proof = TOUR_PROOF[tour.id];
-  const savings = tour.precioOriginal - tour.precio;
+  const savings = (tour.precioOriginal ?? tour.precio) - tour.precio;
+  const esVehiculo = tour.precioUnidad === "vehiculo";
+  const bookHref = esVehiculo ? `/tours/${tour.slug}` : `/reservar-tour/${tour.slug}`;
 
   return (
     <div className={`bg-white border ${isPrimary ? "border-verde-selva shadow-lg shadow-verde-selva/10" : "border-negro/10"} overflow-hidden`}>
@@ -274,29 +287,32 @@ function TourResultCard({
         {/* Price + CTA */}
         <div className="flex items-end justify-between gap-4 mt-4">
           <div>
-            {tour.precioOriginal > tour.precio && (
+            {tour.precioOriginal && tour.precioOriginal > tour.precio && (
               <p className="font-dm text-[11px] text-negro/30 line-through">${tour.precioOriginal.toLocaleString()} MXN</p>
             )}
             <p className="font-cormorant text-verde-profundo font-light" style={{ fontSize: "28px", lineHeight: 1 }}>
+              {esVehiculo && <span className="text-base text-negro/40">desde </span>}
               ${tour.precio.toLocaleString()} <span className="text-base text-negro/40">MXN</span>
             </p>
             <p className="font-dm text-[10px] text-negro/40 mt-0.5">
               {tour.id === "tour-rappel-tamul"
                 ? "por persona · equipo y fotos con dron incluidos"
                 : tour.id === "tour-rzr-xilitla"
-                  ? "por persona · vehículo, gasolina y guía incluidos"
-                  : "por persona · todo incluido"}
+                  ? "por vehículo · gasolina, equipo y guía incluidos"
+                  : tour.id === "tour-rafting-tampaon"
+                    ? "por persona · traslado, equipo, guía y comida incluidos"
+                    : "por persona · todo incluido"}
             </p>
           </div>
           <Link
-            href={`/reservar-tour/${tour.slug}`}
+            href={bookHref}
             className={`flex-shrink-0 flex items-center gap-2 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-all ${
               isPrimary
                 ? "bg-verde-selva hover:bg-verde-vivo text-white"
                 : "border border-verde-selva/50 hover:bg-verde-selva/8 text-verde-selva"
             }`}
           >
-            {isPrimary ? "Reservar ahora" : "Ver tour"}
+            {isPrimary ? (esVehiculo ? "Ver rutas y reservar" : "Reservar ahora") : "Ver tour"}
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -432,7 +448,7 @@ export function RecommenderShell() {
             <div className="absolute inset-2 rounded-full border-2 border-verde-selva animate-spin border-t-transparent" />
           </div>
           <p className="font-cormorant text-crema text-2xl mb-2">Analizando tu perfil…</p>
-          <p className="font-dm text-crema/40 text-sm">Buscando el tour perfecto para ti entre 7 experiencias únicas</p>
+          <p className="font-dm text-crema/40 text-sm">Buscando el tour perfecto para ti entre 8 experiencias únicas</p>
         </div>
       </div>
     );

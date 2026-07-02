@@ -7,12 +7,12 @@
 
 ## Sobre nosotros
 Somos una operadora turística local fundada por gente nacida en la Huasteca Potosina.
-Operamos 7 tours guiados de un día con grupos pequeños (máximo 6 a 12 personas según el
+Operamos 8 tours guiados de un día con grupos pequeños (máximo 6 a 12 personas según el
 tour) y salidas todos los días del año. Punto de salida principal: Ciudad Valles, S.L.P.
 También armamos paquetes de varios días con hospedaje. Todo lo que ves en cascadas, sótanos
 y jardines surrealistas se recorre con guía certificado y todo incluido en el precio.
 
-## Tours disponibles (precios por persona, en pesos mexicanos MXN)
+## Tours disponibles (precios en pesos mexicanos MXN; por persona salvo donde se indique)
 - Expedición Tamul — Sótano, Cañón & Cueva del Agua: $1,450 MXN · ~9 h · grupo 2–12 personas
   https://www.huasteca-potosina.com/tours/expedicion-tamul
   Incluye: Cascada de Tamul (paseo en canoa), Sótano de las Huahuas (mirador al abismo de 512 m), Cenote Cueva del Agua.
@@ -31,9 +31,12 @@ y jardines surrealistas se recorre con guía certificado y todo incluido en el p
 - Rappel en la Cascada de Tamul — descenso frente a la caída más alta de México: $1,700 MXN · ~5 h · grupo 2–8 personas
   https://www.huasteca-potosina.com/tours/rappel-tamul
   Actividad extrema. Incluye: rappel frente a la Cascada de Tamul, Cañón del Río Tampaón.
-- Recorrido en RZR por Xilitla — Ruta Nanacatli: $800 MXN · ~2 h · grupo 2–6 personas
+- Rafting en el Río Tampaón — rápidos Clase III en agua turquesa: $1,850 MXN · ~7 h · hasta 8 personas por balsa
+  https://www.huasteca-potosina.com/tours/rafting-rio-tampaon
+  14 km de rápidos por el Cañón del Tampaón. Incluye traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla, balsa, remo, casco, chaleco, guía certificado y comida (antes o después). Rutas para principiantes y avanzados; no hace falta saber nadar. Sujeto al nivel del río.
+- Recorrido en RZR por Xilitla — 4 rutas off-road: DESDE $1,600 MXN POR VEHÍCULO (no por persona) · 2–4 h según ruta
   https://www.huasteca-potosina.com/tours/rzr-xilitla
-  Aventura off-road. Maneja tu propio todoterreno por selva, ríos y barro hasta la Cascada Nanacatli.
+  Aventura off-road autoconducida. Rutas: Nanacatli (2 h, cascada), Miradores (3 h), Nacimiento (4 h) y Trinidad (4 h). Vehículos de 2 a 6 adultos (RZR 500 $1,600–$3,800 según ruta; Defender, Maverick X3, Polaris Pro S). Incluye gasolina, equipo y guía. Se reserva por WhatsApp.
 
 ## Paquetes de varios días (con hospedaje, por persona en MXN)
 - Paquete Aventura — 3 días / 2 noches: $9,000 MXN
@@ -46,8 +49,8 @@ Detalle día por día: https://www.huasteca-potosina.com/paquetes
 - Sitio web: https://www.huasteca-potosina.com
 - Reserva: en línea con pago seguro (Stripe) o por WhatsApp con anticipo.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo).
-- Salidas: todos los días del año desde Ciudad Valles, San Luis Potosí.
-- Precio por persona. Niños de 6 a 10 años pagan ~70 % y menores de 6 ~50 % del precio adulto.
+- Salidas: todos los días del año, entre 8:00 y 9:00 AM.
+- Precio por persona (el RZR se cobra por vehículo). Niños de 6 a 10 años pagan ~70 % y menores de 6 ~50 % del precio adulto.
 
 ## Destinos que cubrimos (más de 40 documentados)
 Cascada de Tamul, Sótano de las Golondrinas, Las Pozas (Jardín Surrealista de Edward James, Xilitla),

@@ -48,6 +48,23 @@ export default function ReservarTourPage() {
     );
   }
 
+  // Tours cobrados POR VEHÍCULO (ej. RZR) no usan el flujo por persona: se reservan por WhatsApp.
+  if (tour.precioUnidad === "vehiculo") {
+    return (
+      <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
+        <div className="text-center max-w-md">
+          <p className="font-cormorant text-verde-profundo text-2xl mb-3">Este tour se reserva por WhatsApp</p>
+          <p className="font-dm text-sm text-negro/60 mb-6">
+            El precio es por vehículo (según la ruta y la unidad que elijas), así que te ayudamos a armarlo directo por WhatsApp.
+          </p>
+          <Link href={`/tours/${tour.slug}`} className="text-verde-selva underline font-dm text-sm">
+            Ver rutas, vehículos y precios
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   function applyPromo() {
     setPromoError(""); setPromoMsg("");
     const result = validatePromoCode(promoInput);

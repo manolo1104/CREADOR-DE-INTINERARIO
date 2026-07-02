@@ -442,7 +442,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     nombre: "Tampaón River — Class III Rafting",
     descripcion: "14 km of Class III rapids in turquoise water through a 500m canyon — one of the 10 most scenic rivers in North America.",
     tipo: "Adventure",
-    precio_entrada: "$1,670 MXN (full tour)",
+    precio_entrada: "$1,850 MXN (full tour, transport & meal included)",
     dias_abierto: "Monday to Sunday (reservation required)",
     mejor_hora: "11:00–13:00",
     temporada_ideal: "Nov–Mar",

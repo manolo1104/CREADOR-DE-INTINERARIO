@@ -12,37 +12,93 @@ export interface TourTranslation {
   destinos?: string[];
   incluye?: string[];
   gallery?: string[];
+  /** Textos de rutas/flota en el MISMO orden que tours.ts; duración y precios NO se traducen. */
+  rutas?: { nombre?: string; descripcion?: string }[];
+  flota?: { nombre?: string; capacidad?: string; descripcion?: string }[];
 }
 
 export const TOURS_EN: Record<string, TourTranslation> = {
   "rzr-xilitla": {
-    nombre: "RZR Off-Road Ride in Xilitla — The Nanacatli Route",
-    tagline: "Drive your own off-road buggy through jungle, rivers and mud to a hidden waterfall",
+    nombre: "RZR Off-Road Ride in Xilitla — Pick Your Route",
+    tagline: "Drive your own off-road buggy through jungle, rivers and mud — 4 routes, 2 to 4 hours",
     tipo: "Off-Road Adventure",
     urgencia: "Limited fleet — weekends book up in advance",
     descripcion:
-      "Drive your own RZR through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and reach the hidden Nanacatli Waterfall. The favorite off-road adventure for first-time visitors to the Huasteca — pure adrenaline, no experience needed.",
+      "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Waterfall, the mountain lookouts, a hidden spring deep in the jungle or the village of La Trinidad. Pricing is per vehicle (from $1,600 MXN), not per person.",
     descripcionLarga:
-      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. The Nanacatli Route is our most popular ride and a favorite among first-timers: two hours of humid jungle, crystal-clear rivers and mud, with guaranteed adrenaline from start to finish.\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the RZR is easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nFrom the very first meters you head into the jungle: the green closes in on both sides, the track turns to dirt and mud, and the river crossings begin — clear water splashing everywhere. The ride ends at Nanacatli Waterfall, a spot that's nearly impossible to reach without these vehicles — the perfect reward after the journey.\n\nThe activity lasts about 2 hours and includes the vehicle with fuel, safety gear and the guide. It does not include transportation to Xilitla or meals. We recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
+      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, ending at a hidden waterfall), Miradores (3 h, panoramic mountain lookouts), Nacimiento (4 h, a crystal-clear spring deep in the jungle) and Trinidad (4 h, history and culture up to an indigenous village preserved in time).\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ($1,600 MXN for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
     destinos: [
       "Base in Xilitla (meeting point)",
-      "Humid jungle and dirt tracks of Xilitla",
-      "Crystal-clear river crossings",
-      "Nanacatli Waterfall",
+      "Nanacatli Waterfall (Nanacatli Route · 2 h)",
+      "Mountain lookouts (Miradores Route · 3 h)",
+      "Hidden jungle spring (Nacimiento Route · 4 h)",
+      "Village of La Trinidad (Trinidad Route · 4 h)",
     ],
     incluye: [
-      "Off-road RZR vehicle with fuel included",
+      "Off-road vehicle with fuel included",
       "Safety helmet and goggles for every rider",
       "Instructor-guide who leads and marks the route",
       "Driving briefing — beginner-friendly",
-      "Ride through jungle, river crossings and arrival at Nanacatli Waterfall",
+      "4 routes to choose from: Nanacatli, Miradores, Nacimiento or Trinidad",
+    ],
+    rutas: [
+      { nombre: "Nanacatli Route",  descripcion: "Xilitla's most popular ride. You head into the humid jungle, cross crystal-clear rivers and reach the impressive Nanacatli Waterfall. Mud, pure nature and guaranteed adrenaline — the first-timers' favorite." },
+      { nombre: "Miradores Route",  descripcion: "Climb to the highest points of the sierra and take in panoramic views that will leave you breathless. The Huasteca Potosina from above, with the jungle stretching as far as the eye can see. Perfect for epic photos." },
+      { nombre: "Nacimiento Route", descripcion: "Our most complete adventure. You reach a crystal-clear spring hidden deep in the jungle, surrounded by vegetation straight out of a movie. A secret paradise that's impossible to reach without these vehicles." },
+      { nombre: "Trinidad Route",   descripcion: "History, culture and nature in a single ride. Mountain trails between waterfalls and rivers up to the picturesque village of La Trinidad, an indigenous community preserved in time, with stops at natural lookouts." },
+    ],
+    flota: [
+      { nombre: "RZR 500",         capacidad: "2 adults + 1 child",  descripcion: "Agile, sporty and full of character. Ideal for couples or a small family." },
+      { nombre: "Can-Am 800",      capacidad: "2 adults",            descripcion: "The Canadian beast. Brutal power for two adventurers chasing extreme thrills." },
+      { nombre: "RZR 900",         capacidad: "4 adults",            descripcion: "Twice the power, twice the excitement. For groups of 4 who fear nothing." },
+      { nombre: "Defender",        capacidad: "6 adults",            descripcion: "Sturdy, reliable and roomy. Comfort without giving up the adventure." },
+      { nombre: "Family Defender", capacidad: "6 adults + 2 kids",   descripcion: "The biggest in our fleet. Built for whole families or groups." },
+      { nombre: "Maverick X3",     capacidad: "4 adults",            descripcion: "The fastest, most adrenaline-fueled unit. Competition suspension for speed lovers." },
+      { nombre: "Polaris Pro S",   capacidad: "4 adults",            descripcion: "The premium experience. Cutting-edge tech, extraordinary power and luxury finishes." },
     ],
     gallery: [
-      "Off-road RZR vehicle driving down a dirt track through the jungle, kicking up dust during the off-road ride in Xilitla",
-      "RZR drifting and throwing up dirt across a green field during the off-road adventure in the Huasteca Potosina",
-      "Front view of an off-road RZR vehicle on a dirt road surrounded by nature",
-      "Tall waterfall dropping between the green walls of a jungle canyon in the Huasteca Potosina",
-      "Hidden waterfall in the jungle with its pool below, the final reward of the RZR ride",
+      "Group of friends posing on an RZR Pro at a mountain lookout during the off-road ride in Xilitla",
+      "Side view of an RZR Pro off-road vehicle with the green mountains of Xilitla in the background",
+      "Polaris off-road vehicle at the starting point of the ride, with guides and flags at the Xilitla base",
+      "Can-Am Maverick X3 with mud tires ready at the meeting point of the off-road tour",
+    ],
+  },
+
+  "rafting-rio-tampaon": {
+    nombre: "Rafting on the Tampaón River — Class III Rapids on Turquoise Water",
+    tagline: "14 km of rapids between canyon walls, on one of North America's most scenic rivers",
+    tipo: "Rafting & Adrenaline",
+    urgencia: "Subject to river level — departure is confirmed when you book",
+    descripcion:
+      "Paddle 14 kilometers of Class III rapids on the turquoise water of the Tampaón River, flanked by towering canyon walls. We pick you up at your lodging in Ciudad Valles or Xilitla (round-trip transport), with full gear, certified guide and a meal included. No experience or swimming skills needed — there are routes for beginners and advanced paddlers.",
+    descripcionLarga:
+      "The Tampaón River is considered one of the 10 most scenic rivers in North America, and the first rapid is all it takes to understand why: turquoise water — colored by the same karstic minerals that paint Tamul Waterfall —, canyon walls closing in over the river and jungle peeking over the top of the rock.\n\nThe day starts at your door: we pick you up at your lodging in Ciudad Valles or Xilitla, round-trip transport included. At the river dock we hand you the full gear — professional raft, paddle, helmet and life jacket — and your guide runs the safety and paddling briefing. You don't need experience or even to know how to swim: there are routes for different levels, Class III rapids are the sweet spot between real excitement and beginner-friendly safety, and the guide rides in the raft with you for the whole descent.\n\nIt's a 14-kilometer run alternating rapids with calm stretches where you can swim and take in the canyon. The most anticipated moment is 'La Tumba' rapid, where the walls close in so tightly that the echo disappears — absolute silence right before the river's most technical stretch. You'll come out soaked, with tired arms and wanting to get right back on. And since paddling works up an appetite, your booking includes a meal — before or after the activity, your call.\n\nThe best season is November through March, when the water reaches its most intense color. During the rainy season (July–September) departure depends on the river level: if it's not safe to navigate, we let you know in advance and reschedule or offer an alternative activity. Your safety always comes first.",
+    destinos: [
+      "Round-trip transport from your lodging (Ciudad Valles or Xilitla)",
+      "Tampaón River dock",
+      "14 km of Class III rapids on the Tampaón River",
+      "Tampaón Canyon — rock walls and turquoise water",
+      "'La Tumba' rapid — the most technical of the descent",
+      "Calm stretches for swimming in the river",
+    ],
+    incluye: [
+      "Round-trip transport from your lodging in Ciudad Valles or Xilitla",
+      "Professional raft, paddle, helmet and life jacket",
+      "Whitewater-certified guide riding in your raft",
+      "Safety and paddling briefing — routes for beginners and advanced paddlers",
+      "Meal included — before or after the activity",
+      "14 km descent down the Tampaón rapids",
+      "Swimming stops in the calm stretches of the canyon",
+    ],
+    gallery: [
+      "Raft crew celebrating with a raised fist while their red raft crosses a Tampaón River rapid",
+      "Red raft with its crew posing under a waterfall curtain on the Tampaón River",
+      "Group raising their paddles to celebrate after clearing a Tampaón River rapid",
+      "Blue raft covered by the splash of a Class III rapid on the Tampaón River",
+      "Red rafts descending the turquoise rapids of the Tampaón River between the canyon walls",
+      "Family paddling a yellow raft on the turquoise water of the Tampaón River",
+      "Fleet of rafts navigating the turquoise water of the Tampaón Canyon under the rock walls",
+      "Rafting boat entering a turquoise rapid seen from above — Tampaón River",
     ],
   },
 

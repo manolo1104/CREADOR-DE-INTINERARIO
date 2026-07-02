@@ -64,12 +64,12 @@ export function TourDeparture() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {(en
             ? [
-                { Icon: Clock,        label: "Departure time", value: "5:30 AM (sharp)" },
+                { Icon: Clock,        label: "Departure time", value: "Between 8:00 and 9:00 AM" },
                 { Icon: Bus,          label: "Transport",      value: "From your stay in Xilitla" },
                 { Icon: CheckCircle2, label: "Approx. return", value: "6:00–7:00 PM" },
               ]
             : [
-                { Icon: Clock,        label: "Horario de salida", value: "5:30 AM (puntual)" },
+                { Icon: Clock,        label: "Horario de salida", value: "Entre 8:00 y 9:00 AM" },
                 { Icon: Bus,          label: "Transporte",        value: "Desde tu hospedaje en Xilitla" },
                 { Icon: CheckCircle2, label: "Regreso aprox.",    value: "6:00–7:00 PM" },
               ]

@@ -258,7 +258,11 @@ export default function ToursPage() {
                 </div>
 
                 <div className="flex items-center gap-4 mb-5 text-[11px] text-crema/45 font-dm flex-wrap border-t border-white/8 pt-5">
-                  <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" aria-hidden="true" /> {tour.duracion_hrs}h</span>
+                  <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" aria-hidden="true" />{" "}
+                    {tour.rutas && tour.rutas.length > 0
+                      ? `${Math.min(...tour.rutas.map((r) => r.duracion_hrs))}–${Math.max(...tour.rutas.map((r) => r.duracion_hrs))}h`
+                      : `${tour.duracion_hrs}h`}
+                  </span>
                   <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "max." : "máx."} {tour.groupMax}</span>
                   <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
                 </div>
@@ -267,11 +271,13 @@ export default function ToursPage() {
                   <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-1">{en ? "from" : "desde"}</p>
                   <p className="flex items-baseline gap-2">
                     <span className="font-cormorant text-dorado text-3xl font-light leading-none">{money(tour.precio)}</span>
-                    {tour.precioOriginal > tour.precio && (
+                    {tour.precioOriginal && tour.precioOriginal > tour.precio && (
                       <span className="text-[11px] text-crema/30 font-dm line-through">{money(tour.precioOriginal)}</span>
                     )}
                   </p>
-                  <p className="text-[9px] text-crema/35 font-dm mt-1">MXN {en ? "per person" : "por persona"}</p>
+                  <p className="text-[9px] text-crema/35 font-dm mt-1">
+                    MXN {tour.precioUnidad === "vehiculo" ? (en ? "per vehicle" : "por vehículo") : (en ? "per person" : "por persona")}
+                  </p>
                 </div>
 
                 {/* Señal de urgencia honesta (campo real por tour) + CTA */}

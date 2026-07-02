@@ -45,12 +45,14 @@ function splitAtMidpoint(html: string): [string, string] {
 /** Infer the most relevant tour from tags/keyword */
 function inferTour(tags: string[], keyword: string) {
   const text = (tags.join(" ") + " " + keyword).toLowerCase();
+  if (/rafting|r[aá]pidos/.test(text))                        return TOURS_DB.find((t) => t.id === "tour-rafting-tampaon");
+  if (/rzr|off.?road|todoterreno|nanacatli/.test(text))       return TOURS_DB.find((t) => t.id === "tour-rzr-xilitla");
   if (/tamul|tampaon|tampa[oó]n|s[oó]tano.*huah/.test(text)) return TOURS_DB.find((t) => t.id === "tour-tamul");
   if (/edward|pozas|xilitla|surrealista/.test(text))          return TOURS_DB.find((t) => t.id === "tour-edward-james");
   if (/meco|turquesa/.test(text))                             return TOURS_DB.find((t) => t.id === "tour-meco");
   if (/puente de dios|tamasopo/.test(text))                   return TOURS_DB.find((t) => t.id === "tour-puente-dios");
   if (/minas.*viejas|micos/.test(text))                       return TOURS_DB.find((t) => t.id === "tour-minas-micos");
-  return TOURS_DB[0];
+  return TOURS_DB.find((t) => t.id === "tour-tamul") ?? TOURS_DB[0];
 }
 
 function isPromocional(tags: string[], title: string) {
@@ -375,10 +377,14 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   </div>
                   <p className="font-cormorant text-dorado text-lg leading-none mb-3">
                     ${relevantTour.precio.toLocaleString("es-MX")}
-                    <span className="font-dm text-[10px] text-crema/40 ml-1">MXN/persona</span>
+                    <span className="font-dm text-[10px] text-crema/40 ml-1">
+                      {relevantTour.precioUnidad === "vehiculo" ? "MXN/vehículo" : "MXN/persona"}
+                    </span>
                   </p>
                   <div className="space-y-2">
-                    <Link href={`/reservar-tour/${relevantTour.slug}`} className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
+                    <Link
+                      href={relevantTour.precioUnidad === "vehiculo" ? `/tours/${relevantTour.slug}` : `/reservar-tour/${relevantTour.slug}`}
+                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
                       Reservar →
                     </Link>
                     <Link href={`/tours/${relevantTour.slug}`} className="block text-center border border-white/15 hover:border-verde-selva/40 text-crema/50 hover:text-crema text-[9px] tracking-[2px] uppercase font-dm py-2 transition-colors">

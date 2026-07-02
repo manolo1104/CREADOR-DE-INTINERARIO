@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
   if (!tour) {
     return NextResponse.json({ error: `Tour no encontrado: ${tourSlug}` }, { status: 400 });
   }
+  if (tour.precioUnidad === "vehiculo") {
+    return NextResponse.json(
+      { error: "Este tour se cobra por vehículo (según ruta y unidad) y se cotiza por WhatsApp, no por persona." },
+      { status: 400 }
+    );
+  }
 
   const nAdults = Math.max(0, parseInt(String(adults), 10) || 0);
   const nMid    = Math.max(0, parseInt(String(childrenMid), 10) || 0);

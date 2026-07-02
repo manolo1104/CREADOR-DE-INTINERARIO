@@ -11,8 +11,12 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
       a: "No necesitas experiencia: te damos un briefing de manejo y el RZR es fácil de controlar. Un guía instructor abre la ruta delante de ti todo el tiempo. El conductor debe ser mayor de edad; si prefieres no manejar, puedes ir de copiloto.",
     },
     {
+      q: "¿El precio es por persona o por vehículo?",
+      a: "Por vehículo. Cada unidad tiene su precio según la ruta: desde $1,600 MXN el RZR 500 (2 adultos + 1 niño) en la Ruta Nanacatli, hasta el Defender Familiar (6 adultos + 2 niños) o el Polaris Pro S premium. Todos incluyen gasolina, equipo de seguridad y guía.",
+    },
+    {
       q: "¿Pueden ir niños?",
-      a: "Sí, según el vehículo. Algunas unidades permiten llevar a un niño de copiloto con un adulto al volante. Avísanos las edades al reservar para asignarte el vehículo adecuado.",
+      a: "Sí, según el vehículo. El RZR 500 lleva 2 adultos y 1 niño, y el Defender Familiar lleva 6 adultos y 2 niños. Avísanos las edades al reservar para asignarte la unidad adecuada.",
     },
     {
       q: "¿Está incluido el transporte y la comida?",
@@ -24,7 +28,37 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Cuánto dura el recorrido?",
-      a: "La Ruta Nanacatli dura aproximadamente 2 horas. Es la más popular y la ideal para quienes lo hacen por primera vez.",
+      a: "Depende de la ruta: Nanacatli 2 horas (la más popular, ideal para primerizos), Miradores 3 horas, y Nacimiento o Trinidad 4 horas cada una.",
+    },
+  ],
+  "tour-rafting-tampaon": [
+    {
+      q: "¿Es seguro hacer rafting si no sé nadar?",
+      a: "Sí. Vas con chaleco salvavidas y casco todo el descenso, y el guía certificado va dentro de la balsa contigo. Solo avísale antes de subir para ubicarte en el mejor lugar de la balsa.",
+    },
+    {
+      q: "¿Necesito experiencia previa?",
+      a: "No. Los rápidos Clase III son el punto perfecto entre emoción real y seguridad para principiantes. Antes de tocar el agua recibes un briefing completo de seguridad y técnica de remado.",
+    },
+    {
+      q: "¿Qué pasa si el nivel del río no permite navegar?",
+      a: "Tu seguridad va primero: si el río no está en condiciones (sobre todo en temporada de lluvias, julio–septiembre), te avisamos con anticipación y reprogramamos la salida o te proponemos una actividad alternativa.",
+    },
+    {
+      q: "¿Puedo llevar mi GoPro?",
+      a: "Sí, pero únicamente con soporte de pecho o casco. No se permite llevarla en la mano: las dos manos deben quedar libres para remar y sujetarte de las cuerdas de seguridad.",
+    },
+    {
+      q: "¿Qué debo llevar?",
+      a: "Traje de baño o ropa que se pueda mojar, calzado acuático o tenis que se puedan mojar (con calcetines para evitar ampollas), bloqueador biodegradable y una muda completa de ropa seca para el regreso.",
+    },
+    {
+      q: "¿Dónde es el punto de salida? ¿Incluye transporte?",
+      a: "Sí: pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla, con traslado redondo incluido. Tú solo prepárate para remar.",
+    },
+    {
+      q: "¿Incluye comida?",
+      a: "Sí, tu reserva incluye una comida — antes o después de la actividad, como prefieras.",
     },
   ],
   "tour-rappel-tamul": [
@@ -56,7 +90,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿A qué hora es la salida?",
-      a: "Salimos entre las 8:30 y las 9:00 AM desde Ciudad Valles. Confirmamos la hora exacta de tu recogida al reservar.",
+      a: "Salimos entre las 8:00 y las 9:00 AM. Confirmamos la hora exacta de tu recogida al reservar.",
     },
     {
       q: "¿Qué pasa si llueve?",

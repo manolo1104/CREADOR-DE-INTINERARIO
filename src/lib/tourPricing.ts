@@ -34,6 +34,10 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const tour = TOURS_DB.find((t) => t.id === input.tourId || t.slug === input.tourSlug);
   if (!tour) return null;
 
+  // Tours cobrados POR VEHÍCULO (ej. RZR) no se venden por el flujo por persona:
+  // el precio depende de ruta + unidad y se cotiza por WhatsApp.
+  if (tour.precioUnidad === "vehiculo") return null;
+
   const adults        = clampInt(input.adults, 1, tour.groupMax);
   const childrenMid   = clampInt(input.childrenMid, 0, tour.groupMax);
   const childrenSmall = clampInt(input.childrenSmall, 0, tour.groupMax);

@@ -18,7 +18,7 @@ const REVIEWS: Review[] = [
     fecha:  "Febrero 2025",
     foto:   "/imagenes/reviews/reviewer-1.jpg",
     texto:
-      "Salimos a las 5:30 AM y valió cada minuto de sueño perdido. El guía conocía cada rincón y nos llevó al mirador perfecto para la foto. 10/10, sin duda el mejor tour que he hecho en México.",
+      "Salimos temprano y valió cada minuto. El guía conocía cada rincón y nos llevó al mirador perfecto para la foto. 10/10, sin duda el mejor tour que he hecho en México.",
   },
   {
     nombre: "Andrés y Valeria",

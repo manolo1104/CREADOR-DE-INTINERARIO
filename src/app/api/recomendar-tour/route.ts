@@ -22,6 +22,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   const scores: Record<string, number> = {
     "tour-rzr-xilitla":  0,
     "tour-rappel-tamul": 0,
+    "tour-rafting-tampaon": 0,
     "tour-tamul":        0,
     "tour-edward-james": 0,
     "tour-meco":         0,
@@ -33,9 +34,11 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-meco"]         += 3;
     scores["tour-minas-micos"]  += 2;
     scores["tour-rappel-tamul"] += 1;
+    scores["tour-rafting-tampaon"] += 1;
   }
   if (intereses.includes("Aventura extrema")) {
     scores["tour-rappel-tamul"] += 4;
+    scores["tour-rafting-tampaon"] += 4;
     scores["tour-tamul"]        += 3;
     scores["tour-rzr-xilitla"]  += 3;
     scores["tour-puente-dios"]  += 2;
@@ -47,6 +50,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-minas-micos"]  += 2;
     scores["tour-meco"]         += 1;
     scores["tour-rappel-tamul"] -= 2;
+    scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
   }
   if (grupo === "Familia con niños") {
@@ -55,9 +59,11 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-meco"]         += 1;
     scores["tour-tamul"]        -= 1;
     scores["tour-rappel-tamul"] -= 3;
+    scores["tour-rafting-tampaon"] -= 2;
   }
   if (grupo === "Con amigos") {
     scores["tour-rzr-xilitla"]  += 3;
+    scores["tour-rafting-tampaon"] += 3;
     scores["tour-rappel-tamul"] += 2;
     scores["tour-tamul"]        += 2;
     scores["tour-puente-dios"]  += 1;
@@ -73,6 +79,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   }
   if (actividad === "Intenso") {
     scores["tour-rappel-tamul"] += 3;
+    scores["tour-rafting-tampaon"] += 3;
     scores["tour-rzr-xilitla"]  += 2;
     scores["tour-tamul"]        += 2;
     scores["tour-puente-dios"]  += 1;
@@ -84,11 +91,13 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-minas-micos"]  += 2;
     scores["tour-edward-james"] += 1;
     scores["tour-rappel-tamul"] -= 2;
+    scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
   }
   // Bonus for matching destino
   if (destino.includes("RZR") || destino.includes("off-road") || destino.includes("Nanacatli")) scores["tour-rzr-xilitla"] += 4;
   if (destino.includes("Tamul"))                                  { scores["tour-tamul"] += 4; scores["tour-rappel-tamul"] += 3; }
+  if (destino.includes("Tampaón") || destino.toLowerCase().includes("rafting")) scores["tour-rafting-tampaon"] += 4;
   if (destino.includes("Huahuas") || destino.includes("Golondrinas")) scores["tour-tamul"] += 4;
   if (destino.includes("Pozas") || destino.includes("Edward"))     scores["tour-edward-james"]+= 4;
   if (destino.includes("Meco"))                                    scores["tour-meco"]        += 4;
@@ -109,7 +118,7 @@ export async function POST(req: NextRequest) {
     (t) =>
       `ID: ${t.id}
   Nombre: ${t.nombre}
-  Tipo: ${t.tipo} | Dificultad: ${t.dificultad} | Duración: ${t.duracion_hrs}h | Precio: $${t.precio} MXN
+  Tipo: ${t.tipo} | Dificultad: ${t.dificultad} | Duración: ${t.duracion_hrs}h | Precio: $${t.precio} MXN ${t.precioUnidad === "vehiculo" ? "POR VEHÍCULO (desde; según ruta y unidad)" : "por persona"}
   Destinos: ${t.destinos.join(", ")}
   Incluye: ${t.incluye.join("; ")}
   ${TOUR_ACTIVITIES[t.id] ?? ""}`

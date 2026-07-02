@@ -45,6 +45,38 @@ export const TOUR_REVIEWS: Record<string, Review[]> = {
         "Fuimos cuatro amigos y la pasamos increíble. La ruta por la selva es preciosa y los tramos de barro le ponen la adrenalina perfecta. Llegar a una cascada escondida a la que no llegas de otra forma vale totalmente la pena. Muy recomendable.",
     },
   ],
+  "tour-rafting-tampaon": [
+    {
+      nombre:    "Fernando Rueda",
+      ciudad:    "Monterrey, NL",
+      rating:    5,
+      iniciales: "FR",
+      fecha:     "Abril 2026",
+      foto:      "/imagenes/reviews/reviewer-11.jpg",
+      texto:
+        "El agua turquesa del Tampaón no parece real hasta que estás remando encima de ella. Los rápidos te sacan gritos y risas por igual, y el guía dentro de la balsa te da toda la confianza. La Tumba es impresionante — ese silencio antes del rápido no se olvida.",
+    },
+    {
+      nombre:    "Alejandra Mora",
+      ciudad:    "Ciudad de México",
+      rating:    5,
+      iniciales: "AM",
+      fecha:     "Marzo 2026",
+      foto:      "/imagenes/reviews/reviewer-21.jpg",
+      texto:
+        "No sé nadar y aun así fue de lo mejor del viaje. El chaleco, el casco y el briefing te dan mucha seguridad, y en los tramos tranquilos hasta me animé a flotar en el río. Salimos empapados y felices. 100% recomendado aunque sea tu primera vez.",
+    },
+    {
+      nombre:    "Ricardo Peña",
+      ciudad:    "Guadalajara, JAL",
+      rating:    5,
+      iniciales: "RP",
+      fecha:     "Febrero 2026",
+      foto:      "/imagenes/reviews/reviewer-30.jpg",
+      texto:
+        "Fuimos seis amigos y fue el mejor plan de todo el fin de semana. 14 kilómetros dan para muchos rápidos y todavía tiempo de nadar en el cañón. El equipo es profesional y se nota la experiencia del guía en cada instrucción. Volvemos seguro.",
+    },
+  ],
   "tour-rappel-tamul": [
     {
       nombre:    "Diego Salas",

@@ -7,7 +7,15 @@ Momentos que vas a vivir:
 - Empiezan los cruces de ríos de agua cristalina. El agua salpica por encima del cofre, las llantas muerden las piedras del fondo y sales del otro lado con el corazón acelerado y una sonrisa enorme. Un guía instructor abre la ruta delante de ti todo el tiempo.
 - El barro, las subidas y las curvas entre la vegetación tropical hacen que cada tramo se sienta distinto. No necesitas experiencia: el RZR es noble y el guía marca el camino, así que solo te concentras en disfrutar la adrenalina.
 - El recorrido termina en la Cascada Nanacatli, un rincón escondido en la selva al que es casi imposible llegar sin estos vehículos. Es el premio perfecto tras el trayecto: agua, verde y la satisfacción de haberlo manejado tú.
-NOTA: Es una actividad off-road autoconducida de ~2 h (Ruta Nanacatli, la más popular y apta para principiantes). Incluye el vehículo con gasolina, casco/goggles y guía; NO incluye transporte hasta Xilitla ni alimentos. Sales con barro: trae ropa que se pueda ensuciar y una muda de cambio.`,
+NOTA: Es una actividad off-road autoconducida con 4 RUTAS a elegir: Nanacatli (2 h, la más popular, termina en cascada), Miradores (3 h, vistas panorámicas), Nacimiento (4 h, nacimiento escondido en la selva) y Trinidad (4 h, pueblo indígena). El precio es POR VEHÍCULO, no por persona (desde $1,600 el RZR 500 de 2 plazas en la Nanacatli; hay unidades hasta para 6 adultos + 2 niños). Incluye el vehículo con gasolina, casco/goggles y guía; NO incluye transporte hasta Xilitla ni alimentos. Se reserva por WhatsApp. Sales con barro: trae ropa que se pueda ensuciar y una muda de cambio.`,
+
+  "tour-rafting-tampaon": `
+Momentos que vas a vivir:
+- Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla y te llevamos al embarcadero, donde el guía te entrega el equipo: balsa profesional, remo, casco y chaleco. Tras el briefing de seguridad y técnica de remado, la balsa toca el agua turquesa del Tampaón y empieza el descenso.
+- El primer rápido te empapa entero y te saca el primer grito. Son 14 kilómetros de descenso Clase III: emoción de verdad, con rutas para principiantes y avanzados — el guía va dentro de la balsa contigo y marca cada remada.
+- Entre rápido y rápido, el río se calma y puedes lanzarte a nadar con el chaleco puesto, flotando entre las paredes del cañón mientras la selva se asoma desde lo alto de la roca.
+- Llega el momento más esperado: el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece. Silencio absoluto, y luego el tramo más técnico del río. Sales del otro lado con los brazos cansados, una adrenalina que no se olvida y una comida incluida esperándote (antes o después de la actividad, como prefieras).
+NOTA: Actividad de día en el río (~7 h). Incluye TRASLADO REDONDO desde tu hospedaje en Ciudad Valles o Xilitla, equipo completo, guía certificado y COMIDA (antes o después). No necesitas experiencia NI saber nadar (chaleco + guía en la balsa); hay rutas para diferentes niveles. La mejor temporada es nov–mar; en lluvias (jul–sep) la salida depende del nivel del río y se confirma al reservar.`,
 
   "tour-rappel-tamul": `
 Momentos que vas a vivir:

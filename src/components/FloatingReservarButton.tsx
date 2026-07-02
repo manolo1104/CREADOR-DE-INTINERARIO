@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackCtaClick } from "@/lib/analytics";
 
+// Slugs de tours cobrados POR VEHÍCULO (mantener en sync con precioUnidad en lib/tours.ts).
+// No se importa TOURS_DB aquí para no meter todo el catálogo al bundle global del cliente.
+const VEHICLE_PRICED_SLUGS = new Set(["rzr-xilitla"]);
+
 const LOCK_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
     className="w-5 h-5 flex-shrink-0" aria-hidden="true">
@@ -19,6 +23,9 @@ export function FloatingReservarButton() {
   // fija abajo en móvil, así que ocultamos el flotante en móvil para no encimarlos.
   const tourSlugMatch = pathname.match(/^\/(?:en\/)?tours\/([^/]+)$/);
   const isTourDetail = !!tourSlugMatch;
+  // Tours cobrados por vehículo (ej. RZR) no usan el flujo por persona:
+  // el flotante no debe deep-linkear a /reservar-tour (la página ya ofrece WhatsApp).
+  if (tourSlugMatch && VEHICLE_PRICED_SLUGS.has(tourSlugMatch[1])) return null;
   const href = tourSlugMatch
     ? `/reservar-tour/${tourSlugMatch[1]}`
     : "/tours";
