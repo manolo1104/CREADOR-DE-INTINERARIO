@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 const FAQS: { q: string; a: string }[] = [
   {
     q: "¿Cuánto cuesta un tour en la Huasteca Potosina?",
-    a: "Nuestros tours guiados de un día cuestan entre $800 y $1,700 MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) $1,300, Expedición Tamul $1,450, Cascadas del Meco $1,600. Si prefieres varios días con hospedaje, los paquetes van de $9,000 (3 días) a $15,500 MXN (5 días) por persona.",
+    a: "Nuestros tours guiados de un día cuestan entre $1,300 y $1,850 MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) $1,300, Expedición Tamul $1,450, Cascadas del Meco $1,600. Si prefieres varios días con hospedaje, los paquetes van de $9,000 (3 días) a $15,500 MXN (5 días) por pareja.",
   },
   {
     q: "¿Qué incluyen los tours?",

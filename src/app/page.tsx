@@ -145,11 +145,11 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-negro/60 via-negro/50 to-negro/85" />
 
         <div className="relative z-10 flex flex-col items-center">
-          <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm drop-shadow-lg">
-            ✦ San Luis Potosí · {en ? "Mexico" : "México"} ✦
-          </p>
-
           <h1 className="font-cormorant font-light leading-[0.9] tracking-tight mb-8 drop-shadow-2xl">
+            {/* Eyebrow dentro del h1: misma estética, pero el heading lleva la keyword principal */}
+            <span className="block text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm font-normal drop-shadow-lg">
+              ✦ {en ? "Huasteca Potosina Tours" : "Tours Huasteca Potosina"} · San Luis Potosí ✦
+            </span>
             <span className="block text-white" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
               {en ? "The Huasteca" : "La Huasteca"}
             </span>
@@ -635,6 +635,9 @@ export default async function HomePage() {
                       { label: "Destinations", href: lp("/destinos") },
                     ]
                   : [
+                      { label: "Qué hacer en la Huasteca", href: "/que-hacer-en-la-huasteca-potosina" },
+                      { label: "Precios de tours",     href: "/precios" },
+                      { label: "Tours en Ciudad Valles", href: "/tours-en-ciudad-valles" },
                       { label: "Experiencias",         href: "/experiencias" },
                       { label: "Info Práctica",        href: "/info-practica" },
                       { label: "¿Qué tour es para mí?", href: "/recomendar" },

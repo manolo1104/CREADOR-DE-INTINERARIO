@@ -12,13 +12,15 @@ export type { Paquete };
 // ── Savings counter ──────────────────────────────────────────────
 
 function SavingsCounter({ ahorro }: { ahorro: number }) {
-  const [count, setCount] = useState(0);
+  // Arranca en el ahorro real: sin JS (o antes de hidratar) nunca se ve "Ahorras $0".
+  const [count, setCount] = useState(ahorro);
   const ref = useRef<HTMLSpanElement>(null);
   const animated = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !animated.current) {

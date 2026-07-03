@@ -8,9 +8,9 @@ import { PAQUETES_DB, RESENAS_PAQUETES, FAQS_PAQUETES } from "@/lib/paquetes";
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
-  title: "Paquetes Todo Incluido — Tours + Hotel Paraíso Encantado Xilitla | Huasteca Potosina",
+  title: "Paquetes Huasteca Potosina — Tours + Hotel Todo Incluido",
   description:
-    "Paquetes que combinan nuestros tours guiados con hospedaje en Hotel Paraíso Encantado Xilitla. Todo incluido: transporte local, desayunos, entradas y guías certificados.",
+    "Paquetes de 3, 4 o 5 días: tours guiados + hotel en Xilitla, todo incluido. Transporte, desayunos, entradas y guías certificados NOM-09. Precios por pareja.",
   openGraph: {
     title: "Paquetes Todo Incluido — Huasteca Potosina",
     description: "Tours + Hotel Paraíso Encantado Xilitla. 3, 4 o 5 días todo coordinado.",
@@ -23,8 +23,48 @@ export const metadata: Metadata = {
 };
 
 export default function PaquetesPage() {
+  const paquetesSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Paquetes Todo Incluido", item: `${SITE}/paquetes` },
+        ],
+      },
+      ...PAQUETES_DB.map((p) => ({
+        "@type": "Product",
+        name: p.nombre,
+        description: `${p.subtitulo} · ${p.duracion} · Tours + hotel en Xilitla, todo incluido. Precio por pareja (2 personas).`,
+        image: `${SITE}${p.imagen}`,
+        url: `${SITE}/paquetes/${p.slug}`,
+        brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
+        offers: {
+          "@type": "Offer",
+          price: p.precio,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url: `${SITE}/paquetes/${p.slug}`,
+        },
+      })),
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQS_PAQUETES.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
+
   return (
     <main id="main-content" className="min-h-screen bg-negro">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(paquetesSchema) }}
+      />
 
       {/* ── HERO ── */}
       <section className="relative px-6 pt-36 pb-28 overflow-hidden min-h-[520px] flex items-center">

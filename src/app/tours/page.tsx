@@ -15,11 +15,11 @@ export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const en = locale === "en";
   const title = en
-    ? "Huasteca Potosina Tours 2026 — All-Inclusive Trips from $1,300 MXN"
-    : "Tours Huasteca Potosina 2026 — Recorridos Todo Incluido desde $1,300 MXN";
+    ? "Huasteca Potosina Tours 2026 · All-Inclusive from $1,300"
+    : "Tours Huasteca Potosina 2026 · Todo Incluido desde $1,300";
   const description = en
-    ? "Guided tours with transport, breakfast, entrance fees and a NOM-09 certified guide. Groups of max. 12. Free cancellation 48h before. Book by card or WhatsApp."
-    : "5 tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas. Cancela gratis con 48h. Reserva con tarjeta o WhatsApp.";
+    ? "8 guided tours with transport, breakfast, entrance fees and a NOM-09 certified guide. Groups of max. 12. Free cancellation 48h before. Book by card or WhatsApp."
+    : "8 tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas. Cancela gratis con 48h. Reserva con tarjeta o WhatsApp.";
   return {
     title,
     description,
@@ -142,7 +142,7 @@ export default function ToursPage() {
           {en ? "All-inclusive tours" : "Tours con todo incluido"}
         </p>
         <h1 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(42px,7vw,80px)" }}>
-          {en ? <>Guided <em className="shimmer-gold">Tours</em></> : <>Recorridos <em className="shimmer-gold">Guiados</em></>}
+          {en ? <>Guided <em className="shimmer-gold">Tours</em> in the Huasteca</> : <>Tours <em className="shimmer-gold">Guiados</em> por la Huasteca</>}
         </h1>
         <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
           {en
@@ -296,6 +296,14 @@ export default function ToursPage() {
             </article>
           ))}
         </div>
+        {!en && (
+          <p className="text-center text-crema/50 font-dm text-xs mt-10">
+            ¿Comparando opciones? Consulta la{" "}
+            <Link href="/precios" className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2">
+              lista completa de precios de tours y paquetes →
+            </Link>
+          </p>
+        )}
       </section>
 
       {/* ── CÓMO FUNCIONA ── */}

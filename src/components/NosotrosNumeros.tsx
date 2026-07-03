@@ -6,6 +6,8 @@ type NumeroItem = {
   decimals: number;
   format: (n: number) => string;
   label: string;
+  /** solo los números grandes cuentan hacia arriba; rating e incidentes se muestran fijos */
+  anima?: boolean;
 };
 
 const NUMEROS: NumeroItem[] = [
@@ -14,12 +16,14 @@ const NUMEROS: NumeroItem[] = [
     decimals: 0,
     format: (n) => `+${Math.floor(n).toLocaleString("es-MX")}`,
     label: "Viajeros guiados",
+    anima: true,
   },
   {
     target: 15,
     decimals: 0,
     format: (n) => `${Math.floor(n)}+`,
     label: "Años de experiencia local",
+    anima: true,
   },
   {
     target: 4.9,
@@ -35,20 +39,22 @@ const NUMEROS: NumeroItem[] = [
   },
 ];
 
-function CounterItem({ target, decimals, format, label }: NumeroItem) {
-  const [val, setVal] = useState(0);
+function CounterItem({ target, decimals, format, label, anima }: NumeroItem) {
+  // Arranca en el valor final: sin JS (o antes de hidratar) siempre se ve el dato real,
+  // nunca "0.0 ★" ni "+0 viajeros".
+  const [val, setVal] = useState(target);
   const ref = useRef<HTMLDivElement>(null);
   const didRun = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !anima || target === 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting || didRun.current) return;
         didRun.current = true;
         observer.disconnect();
-        if (target === 0) return;
         const duration = 1800;
         const start = performance.now();
         const tick = (now: number) => {
@@ -65,7 +71,7 @@ function CounterItem({ target, decimals, format, label }: NumeroItem) {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [target, decimals]);
+  }, [target, decimals, anima]);
 
   return (
     <div ref={ref} className="p-4">

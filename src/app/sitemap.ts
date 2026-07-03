@@ -69,6 +69,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/recomendar`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/experiencias`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/paquetes`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/precios`,       lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tours-en-ciudad-valles`,            lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
   ];
 
   const tourPages: MetadataRoute.Sitemap = TOURS_DB.flatMap((t) =>

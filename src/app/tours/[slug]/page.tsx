@@ -24,6 +24,14 @@ export function generateStaticParams() {
   return TOURS_DB.map((t) => ({ slug: t.slug }));
 }
 
+/** Recorta a ~155 chars en frontera de palabra: Google corta el snippet ~160. OG/Twitter conservan la versión larga. */
+function metaDesc(txt: string, max = 155): string {
+  if (txt.length <= max) return txt;
+  const cut = txt.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace > 100 ? lastSpace : max).replace(/[\s,;:.—–-]+$/, "")}…`;
+}
+
 export function generateMetadata({ params }: Props): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const base = TOURS_DB.find((t) => t.slug === params.slug);
@@ -31,10 +39,11 @@ export function generateMetadata({ params }: Props): Metadata {
   const tour = localizeTour(base, locale);
   const url = `${SITE}${localePath(`/tours/${tour.slug}`, locale)}`;
   const image = tour.imagen_hero?.startsWith("http") ? tour.imagen_hero : `${SITE}${tour.imagen_hero}`;
-  const title = `${tour.nombre} | Tours Huasteca Potosina`;
+  // Sufijo corto cuando el nombre del tour ya es largo, para no pasar de ~65 chars en el SERP.
+  const title = `${tour.nombre} | ${tour.nombre.length > 40 ? "Huasteca Potosina" : "Tours Huasteca Potosina"}`;
   return {
     title,
-    description: tour.descripcion,
+    description: metaDesc(tour.descripcion),
     openGraph: {
       title,
       description: tour.descripcion,
