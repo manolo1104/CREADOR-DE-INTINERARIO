@@ -161,7 +161,8 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       tourName:       tourNames || TOURS_DB.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
       tourSlug:       primaryLine.tourSlug,
       tourDate:       primaryLine.tourDate,
-      adults:         form.lines.reduce((s, l) => s + l.adults, 0),
+      // Las líneas por vehículo (RZR) llevan adults=0 → usa el tamaño real del grupo como respaldo.
+      adults:         form.lines.reduce((s, l) => s + l.adults, 0) || Number(form.numPersonas) || 1,
       children:       form.lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
       totalAmount,
       lineItems,

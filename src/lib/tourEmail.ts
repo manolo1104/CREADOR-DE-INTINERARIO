@@ -42,6 +42,14 @@ export function buildTourEmailHtml(data: {
   const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p: any) => p && !p._meta) : [];
   const isMultiTour = tours.length > 1;
   const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
+  // Líneas por vehículo (ej. RZR): se muestra "N vehículo(s)" en vez de contar personas (adults=0).
+  const lineDetail = (t: any) => {
+    if (t.vehiculo) {
+      const un = Math.max(1, Number(t.unidades) || 1);
+      return `${formatDate(t.tourDate)} · ${un} vehículo${un !== 1 ? "s" : ""}`;
+    }
+    return `${formatDate(t.tourDate)} · ${tourParts(t)} persona${tourParts(t) !== 1 ? "s" : ""}`;
+  };
 
   // Tamaño REAL del grupo (no sumar las personas de cada tour: es el mismo grupo).
   // Prioridad: el número que capturó el dueño (partySize) → si no, el máximo por tour → si no, el total.
@@ -62,7 +70,7 @@ export function buildTourEmailHtml(data: {
             <tr>
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${t.tourName || "Tour"}</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${formatDate(t.tourDate)} · ${tourParts(t)} persona${tourParts(t) !== 1 ? "s" : ""}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${lineDetail(t)}</p>
               </td>
               <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
                 <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${t.subtotal != null ? fmxEmail(t.subtotal) : ""}</p>
@@ -395,7 +403,7 @@ export function buildTourQuoteEmailHtml(data: {
   children:      number;  // total (childrenMid + childrenSmall)
   totalAmount:   number;
   notes?:        string;
-  lineItems?:    { tourName: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number }[];
+  lineItems?:    { tourName: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number }[];
 }): string {
   const base     = "https://www.huasteca-potosina.com";
   const waUrl    = "https://wa.me/524891251458";
@@ -419,7 +427,7 @@ export function buildTourQuoteEmailHtml(data: {
       <tr>
         <td style="padding:14px 0;vertical-align:top;width:65%">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
-          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(it.tourDate)} · ${it.adults} adulto${it.adults !== 1 ? "s" : ""}${(it.childrenMid ?? 0) > 0 ? ` · ${it.childrenMid} niño${it.childrenMid !== 1 ? "s" : ""} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${it.childrenSmall} niño${it.childrenSmall !== 1 ? "s" : ""} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${it.children} niño${it.children !== 1 ? "s" : ""}` : ""}</p>
+          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${it.vehiculo ? `${formatDate(it.tourDate)} · ${Math.max(1, Number(it.unidades) || 1)} vehículo${(Number(it.unidades) || 1) !== 1 ? "s" : ""}` : `${formatDate(it.tourDate)} · ${it.adults} adulto${it.adults !== 1 ? "s" : ""}${(it.childrenMid ?? 0) > 0 ? ` · ${it.childrenMid} niño${it.childrenMid !== 1 ? "s" : ""} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${it.childrenSmall} niño${it.childrenSmall !== 1 ? "s" : ""} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${it.children} niño${it.children !== 1 ? "s" : ""}` : ""}`}</p>
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(it.subtotal)}</p>

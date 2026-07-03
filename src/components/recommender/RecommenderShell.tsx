@@ -8,8 +8,10 @@ import {
   Camera, Waves, Zap, Leaf, Sunset,
   Star, Clock, MapPin, Shield, ChevronRight,
   MessageCircle, ArrowRight, Flame, TrendingUp,
+  CalendarDays, Moon,
 } from "lucide-react";
 import { TOURS_DB, type Tour } from "@/lib/tours";
+import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 
 // ── Social proof & urgency data per tour ──────────────────────────────────────
 
@@ -137,6 +139,15 @@ const ACTIVIDADES = [
   { key: "Tranquilo", label: "Tranquilo", sub: "Caminar poco, disfrutar mucho" },
   { key: "Moderado",  label: "Moderado",  sub: "Algo de caminata, sin exigir" },
   { key: "Intenso",   label: "Intenso",   sub: "Quiero moverme y sentir la aventura" },
+];
+
+// Con 3+ días la recomendación incluye el paquete con hospedaje (la API lo decide).
+const DIAS_OPCIONES = [
+  { key: "1 día",         sub: "Un tour de día completo" },
+  { key: "2 días",        sub: "Dos tours, dos aventuras" },
+  { key: "3 días",        sub: "Lo esencial con hospedaje" },
+  { key: "4 días",        sub: "La Huasteca con calma" },
+  { key: "5 o más días",  sub: "La experiencia completa" },
 ];
 
 // ── Result components ────────────────────────────────────────────────────────
@@ -346,6 +357,92 @@ function TourResultCard({
   );
 }
 
+function PaqueteResultCard({
+  paquete,
+  reason,
+  dias,
+  grupo,
+  origen,
+}: {
+  paquete: Paquete;
+  reason:  string;
+  dias:    string;
+  grupo:   string;
+  origen:  string;
+}) {
+  return (
+    <div className="bg-white border border-dorado shadow-lg shadow-dorado/10 overflow-hidden">
+      {/* Image */}
+      <div className="relative h-52 sm:h-64 overflow-hidden bg-negro/5">
+        <img src={paquete.imagen} alt={paquete.nombre} className="w-full h-full object-cover" />
+        <div className="absolute top-3 left-3 bg-dorado text-negro text-[9px] tracking-[2px] uppercase font-dm px-3 py-1.5 font-bold">
+          ✦ Tu plan completo para {dias}
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="flex flex-wrap gap-3 mb-3 text-[10px] font-dm text-negro/45 uppercase tracking-wide">
+          <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{paquete.duracion}</span>
+          <span className="flex items-center gap-1"><Moon className="w-3 h-3" />Hotel Paraíso Encantado, Xilitla</span>
+          <span className="flex items-center gap-1"><Shield className="w-3 h-3" />Todo coordinado</span>
+        </div>
+
+        <h3 className="font-cormorant text-verde-profundo text-xl font-light mb-1">{paquete.nombre}</h3>
+        <p className="font-dm text-[11px] text-negro/50 italic mb-3">{paquete.subtitulo}</p>
+
+        {/* Tours del paquete */}
+        <div className="mb-4">
+          <p className="text-[9px] tracking-[2px] uppercase text-negro/35 font-dm mb-2">Lo que vivirás</p>
+          <ul className="space-y-1">
+            {paquete.tours.slice(0, 4).map((t) => (
+              <li key={t} className="flex items-start gap-1.5 text-[11px] font-dm text-negro/65">
+                <span className="text-dorado flex-shrink-0 mt-0.5">→</span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Personalized reason */}
+        <div className="bg-dorado/8 border-l-2 border-dorado px-4 py-3 mb-4">
+          <p className="font-dm text-sm text-negro/75 leading-relaxed">{reason}</p>
+        </div>
+
+        {/* Price + CTA */}
+        <div className="flex items-end justify-between gap-4 mt-4">
+          <div>
+            <p className="font-cormorant text-verde-profundo font-light" style={{ fontSize: "28px", lineHeight: 1 }}>
+              ${paquete.precio.toLocaleString()} <span className="text-base text-negro/40">MXN</span>
+            </p>
+            <p className="font-dm text-[10px] text-negro/40 mt-0.5">
+              {paquete.precioLabel} (2 personas) · tours + hotel + transporte local
+            </p>
+          </div>
+          <Link
+            href={`/paquetes/${paquete.slug}`}
+            className="flex-shrink-0 flex items-center gap-2 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium bg-dorado hover:bg-verde-selva text-negro hover:text-white transition-all"
+          >
+            Ver día por día
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <a
+          href={`https://wa.me/524891251458?text=${encodeURIComponent(
+            `Hola, el recomendador IA me sugirió el ${paquete.nombre} (${paquete.duracion}) para ${grupo} desde ${origen}, con ${dias} disponibles. ¿Tienen disponibilidad?`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:bg-[#25D366]/8 text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Cotizar este plan por WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ── Main shell ────────────────────────────────────────────────────────────────
 
 const DESTINOS_BUCKET = [
@@ -360,10 +457,11 @@ const DESTINOS_BUCKET = [
   "Sin preferencia — sorpréndeme",
 ];
 
-type WizardStep = "origen" | "grupo" | "intereses" | "actividad" | "destino" | "loading" | "result";
+type WizardStep = "origen" | "dias" | "grupo" | "intereses" | "actividad" | "destino" | "loading" | "result";
 
 interface WizardState {
   origen:    string;
+  dias:      string;
   grupo:     string;
   intereses: string[];
   actividad: string;
@@ -373,11 +471,12 @@ interface WizardState {
 interface AIResult {
   primary:   { tourId: string; reason: string; highlight: string };
   secondary: { tourId: string; reason: string };
+  paquete?:  { slug: string; reason: string } | null;
 }
 
 export function RecommenderShell() {
   const [step,   setStep]   = useState<WizardStep>("origen");
-  const [state,  setState]  = useState<WizardState>({ origen: "", grupo: "", intereses: [], actividad: "", destino: "" });
+  const [state,  setState]  = useState<WizardState>({ origen: "", dias: "", grupo: "", intereses: [], actividad: "", destino: "" });
   const [result, setResult] = useState<AIResult | null>(null);
   const [origenInput, setOrigenInput] = useState("");
   const [showInput, setShowInput]     = useState(false);
@@ -403,6 +502,7 @@ export function RecommenderShell() {
     setStep("loading");
     trackTourEvent("RECOMMENDER_STARTED", {
       origen:    state.origen,
+      dias:      state.dias,
       grupo:     state.grupo,
       intereses: state.intereses,
       actividad: state.actividad,
@@ -414,6 +514,7 @@ export function RecommenderShell() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           origen:    state.origen,
+          dias:      state.dias,
           grupo:     state.grupo,
           intereses: state.intereses,
           actividad: state.actividad,
@@ -437,6 +538,7 @@ export function RecommenderShell() {
 
   const primaryTour   = result ? TOURS_DB.find((t) => t.id === result.primary.tourId)   : null;
   const secondaryTour = result ? TOURS_DB.find((t) => t.id === result.secondary.tourId) : null;
+  const paqueteRec    = result?.paquete ? PAQUETES_DB.find((p) => p.slug === result.paquete!.slug) : null;
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (step === "loading") {
@@ -470,15 +572,36 @@ export function RecommenderShell() {
           <div className="text-center mb-8">
             <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-2">Tu recomendación personalizada</p>
             <h1 className="font-cormorant font-light text-verde-profundo mb-3" style={{ fontSize: "clamp(28px,5vw,42px)" }}>
-              Encontramos tu tour <em className="text-dorado">perfecto</em>
+              {paqueteRec
+                ? <>Encontramos tu plan <em className="text-dorado">perfecto</em></>
+                : <>Encontramos tu tour <em className="text-dorado">perfecto</em></>}
             </h1>
             <p className="font-dm text-sm text-negro/50 max-w-sm mx-auto">
               Basado en tu perfil de {state.grupo.toLowerCase()} desde {state.origen}
+              {state.dias ? ` · ${state.dias}` : ""}
             </p>
           </div>
 
+          {/* Paquete recomendado (3+ días): el plan completo con hospedaje */}
+          {paqueteRec && result.paquete && (
+            <div className="mb-8">
+              <PaqueteResultCard
+                paquete={paqueteRec}
+                reason={result.paquete.reason}
+                dias={state.dias}
+                grupo={state.grupo}
+                origen={state.origen}
+              />
+            </div>
+          )}
+
           {/* Primary tour */}
           <div className="mb-6">
+            {paqueteRec && (
+              <p className="text-[9px] tracking-[3px] uppercase font-dm text-negro/35 mb-3">
+                ¿Prefieres armar tu viaje por día? Tu tour ideal:
+              </p>
+            )}
             <TourResultCard
               tour={primaryTour}
               reason={result.primary.reason}
@@ -492,7 +615,9 @@ export function RecommenderShell() {
           {/* Secondary tour */}
           {secondaryTour && (
             <div className="mb-8">
-              <p className="text-[9px] tracking-[3px] uppercase font-dm text-negro/35 mb-3">También podría gustarte</p>
+              <p className="text-[9px] tracking-[3px] uppercase font-dm text-negro/35 mb-3">
+                {state.dias === "2 días" ? "Tu segundo día perfecto" : "También podría gustarte"}
+              </p>
               <TourResultCard
                 tour={secondaryTour}
                 reason={result.secondary.reason}
@@ -519,7 +644,7 @@ export function RecommenderShell() {
           </div>
 
           <button
-            onClick={() => { setResult(null); setStep("origen"); setState({ origen: "", grupo: "", intereses: [], actividad: "", destino: "" }); }}
+            onClick={() => { setResult(null); setStep("origen"); setState({ origen: "", dias: "", grupo: "", intereses: [], actividad: "", destino: "" }); }}
             className="text-xs font-dm text-negro/35 hover:text-negro/60 underline text-center block mx-auto transition-colors"
           >
             ← Volver a empezar con otro perfil
@@ -531,9 +656,9 @@ export function RecommenderShell() {
 
   // ── Wizard ───────────────────────────────────────────────────────────────
 
-  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, grupo: 2, intereses: 3, actividad: 4, destino: 5 };
+  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, intereses: 4, actividad: 5, destino: 6 };
   const stepNum = STEP_NUMS[step] ?? 1;
-  const progress = (stepNum / 5) * 100;
+  const progress = (stepNum / 6) * 100;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#0e1710" }}>
@@ -563,7 +688,7 @@ export function RecommenderShell() {
         {/* STEP 1: ORIGEN */}
         {step === "origen" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 01 · 05</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 01 · 06</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿De dónde nos <em className="text-dorado">visitas?</em>
             </h2>
@@ -607,7 +732,7 @@ export function RecommenderShell() {
             )}
 
             <button
-              onClick={() => setStep("grupo")}
+              onClick={() => setStep("dias")}
               disabled={!state.origen}
               className="mt-4 bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
             >
@@ -616,10 +741,57 @@ export function RecommenderShell() {
           </div>
         )}
 
-        {/* STEP 2: GRUPO */}
+        {/* STEP 2: DÍAS DISPONIBLES */}
+        {step === "dias" && (
+          <div>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 02 · 06</p>
+            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
+              ¿Cuántos <em className="text-dorado">días</em> tienen para<br />visitar la Huasteca?
+            </h2>
+            <p className="font-dm text-crema/40 text-sm mb-8">Con 3 o más días te armamos un plan completo con hospedaje</p>
+
+            <div className="space-y-3 mb-10">
+              {DIAS_OPCIONES.map(({ key, sub }) => (
+                <button
+                  key={key}
+                  onClick={() => setState((s) => ({ ...s, dias: key }))}
+                  className={`w-full flex items-center justify-between border px-6 py-4 text-left transition-all ${
+                    state.dias === key
+                      ? "border-verde-vivo bg-verde-vivo/10"
+                      : "border-crema/20 hover:border-verde-selva/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <CalendarDays className="w-5 h-5 text-verde-selva flex-shrink-0" />
+                    <div>
+                      <div className="text-sm font-dm text-crema font-medium">{key}</div>
+                      <div className="text-[11px] text-crema/40 mt-0.5">{sub}</div>
+                    </div>
+                  </div>
+                  <div className={`w-4 h-4 rounded-full border-2 transition-all flex-shrink-0 ${
+                    state.dias === key ? "bg-verde-vivo border-verde-vivo" : "border-crema/25"
+                  }`} />
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setStep("origen")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button
+                onClick={() => setStep("grupo")}
+                disabled={!state.dias}
+                className="flex-1 bg-verde-selva text-crema py-3.5 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continuar →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: GRUPO */}
         {step === "grupo" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 02 · 05</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 03 · 06</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Cómo <em className="text-dorado">viajas?</em>
             </h2>
@@ -644,7 +816,7 @@ export function RecommenderShell() {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setStep("origen")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setStep("dias")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
               <button
                 onClick={() => setStep("intereses")}
                 disabled={!state.grupo}
@@ -656,10 +828,10 @@ export function RecommenderShell() {
           </div>
         )}
 
-        {/* STEP 3: INTERESES */}
+        {/* STEP 4: INTERESES */}
         {step === "intereses" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 03 · 05</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 04 · 06</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Qué te <em className="text-dorado">emociona?</em>
             </h2>
@@ -703,10 +875,10 @@ export function RecommenderShell() {
           </div>
         )}
 
-        {/* STEP 4: ACTIVIDAD */}
+        {/* STEP 5: ACTIVIDAD */}
         {step === "actividad" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 04 · 05</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 05 · 06</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Cuánta <em className="text-dorado">energía</em> tienes?
             </h2>
@@ -747,10 +919,10 @@ export function RecommenderShell() {
           </div>
         )}
 
-        {/* STEP 5: DESTINO SOÑADO */}
+        {/* STEP 6: DESTINO SOÑADO */}
         {step === "destino" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 05 · 05</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 06 · 06</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿Hay un lugar que no te<br />
               puedes <em className="text-dorado">perder?</em>
@@ -795,7 +967,7 @@ export function RecommenderShell() {
                 disabled={!state.destino}
                 className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                ✦ Ver mi tour perfecto
+                ✦ Ver mi plan perfecto
               </button>
             </div>
           </div>

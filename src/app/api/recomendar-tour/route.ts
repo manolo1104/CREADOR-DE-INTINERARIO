@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TOURS_DB } from "@/lib/tours";
+import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 import { TOUR_ACTIVITIES } from "@/lib/tourActivities";
 import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
+
+/**
+ * Selección DETERMINÍSTICA del paquete por días disponibles (la IA solo redacta el porqué):
+ * 1-2 días → sin paquete (tours sueltos) · 3 → Aventura · 4 → Completo · 5+ → Gran Huasteca.
+ * `dias` llega como texto del wizard ("3 días", "5 o más días").
+ */
+function paqueteForDias(dias: string | undefined): Paquete | null {
+  if (!dias) return null;
+  const n = parseInt(dias, 10);
+  if (!Number.isFinite(n) || n < 3) return null;
+  // Paquete con `dias` más cercano sin pasarse; 5+ cae al más largo.
+  const sorted = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias);
+  let mejor = sorted[0];
+  for (const p of sorted) if (p.dias <= n) mejor = p;
+  return mejor;
+}
 
 /** Pulls clean JSON out of a model response that may include ```json fences or prose. */
 function extractJson(raw: string): string {
@@ -112,7 +129,16 @@ export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { key: "recomendar-tour", limit: 15, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { origen, grupo, intereses, actividad, destino } = await req.json();
+  const { origen, grupo, intereses, actividad, destino, dias } = await req.json();
+
+  const paquete = paqueteForDias(dias);
+  // Texto de respaldo del paquete (se usa si no hay IA o si la IA no redacta el suyo).
+  const paqueteFallback = paquete
+    ? {
+        slug:   paquete.slug,
+        reason: `${paquete.subtitulo}. Con ${dias} te alcanza perfecto para este plan: ${paquete.duracion} con hospedaje en el Hotel Paraíso Encantado de Xilitla, tours guiados y transporte coordinado — tú solo te preocupas por llegar.`,
+      }
+    : null;
 
   const toursInfo = TOURS_DB.map(
     (t) =>
@@ -143,6 +169,7 @@ export async function POST(req: NextRequest) {
 PERFIL COMPLETO DEL VIAJERO:
 - Origen: ${origen}
 - Viaja: ${grupo}
+- Días disponibles para el viaje: ${dias || "no especificado"}
 - Le emociona: ${intereses.join(", ")}
 - Nivel de actividad: ${actividad}
 ${destinoLine}
@@ -152,6 +179,14 @@ ${origenNudge}
 
 TOURS DISPONIBLES (con actividades específicas):
 ${toursInfo}
+${paquete ? `
+PAQUETE RECOMENDADO PARA SUS DÍAS (ya seleccionado, NO lo cambies):
+- Nombre: ${paquete.nombre} (${paquete.duracion})
+- Slug: ${paquete.slug}
+- Precio: $${paquete.precio.toLocaleString("es-MX")} MXN ${paquete.precioLabel} (2 personas)
+- Incluye: ${paquete.incluye.slice(0, 6).join("; ")}
+- Itinerario: ${paquete.itinerario.map((d, i) => `Día ${i + 1}: ${d.titulo}`).join(" · ")}
+- Hospedaje: Hotel Paraíso Encantado, Xilitla` : ""}
 
 REGLAS DE SELECCIÓN (haz esto ANTES de redactar):
 - Si el viajero mencionó un DESTINO específico que "no se puede perder" (es decir, distinto de "Abierto a cualquier destino"), el tour PRINCIPAL DEBE ser el que cubra ese destino. Esto manda por encima de todo lo demás. La única excepción es la seguridad: nunca pongas una experiencia de dificultad alta o aventura extrema como principal para una "Familia con niños"; en ese caso elige la alternativa segura más parecida y explícalo.
@@ -169,7 +204,8 @@ REGLAS DE REDACCIÓN:
    - Oración 6-7: Cierre emocional + urgencia sutil ("Este es uno de los tours que más se llenan los fines de semana — reservar con anticipación garantiza tu lugar").
 2. El "highlight" es una frase de máximo 10 palabras que capture POR QUÉ es perfecto PARA ELLOS.
 3. Para el tour secundario: 2-3 oraciones explicando qué lo diferencia y por qué también encaja.
-4. Tono: cálido, experto, como un amigo local — no un folleto turístico. Nada genérico.
+4. Tono: cálido, experto, como un amigo local — no un folleto turístico. Nada genérico.${paquete ? `
+5. Como el viajero tiene ${dias}, TAMBIÉN redacta "paqueteReason": 3-4 oraciones vendiendo el paquete indicado arriba como EL plan completo para sus días — conecta su perfil (grupo, intereses, origen) con el itinerario día por día y el hospedaje en Xilitla, y menciona que todo va coordinado (tours + hotel + transporte local). Sé honesto: el precio es por pareja. Los tours primary/secondary deben ser los que más encajen con su perfil DE ENTRE los incluidos en el itinerario del paquete cuando sea posible.` : ""}
 
 Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después):
 {
@@ -181,7 +217,8 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
   "secondary": {
     "tourId": "<id del segundo mejor tour>",
     "reason": "<2-3 oraciones diferenciando y conectando con su perfil>"
-  }
+  }${paquete ? `,
+  "paqueteReason": "<3-4 oraciones vendiendo el paquete como plan completo para sus días>"` : ""}
 }`;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -200,6 +237,7 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
         tourId: secondaryId,
         reason: secondary.descripcion,
       },
+      paquete: paqueteFallback,
     });
   }
 
@@ -232,7 +270,30 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
     const raw    = "{" + (data.content?.[0]?.text ?? "");
     const result = JSON.parse(extractJson(raw));
 
-    return NextResponse.json(result);
+    // La IA a veces alucina IDs (p. ej. "tour-micos" en vez de "tour-minas-micos").
+    // Se validan contra TOURS_DB: exacto → corrección difusa → respaldo por puntajes.
+    const fb = fallbackMatch(intereses, grupo, actividad, destino ?? "");
+    const resolveTourId = (id: unknown, respaldo: string): string => {
+      if (typeof id !== "string" || !id) return respaldo;
+      if (TOURS_DB.some((t) => t.id === id)) return id;
+      const stem = id.replace(/^tour-/, "");
+      const fuzzy = TOURS_DB.find((t) => t.id.includes(stem) || stem.includes(t.id.replace(/^tour-/, "")));
+      return fuzzy?.id ?? respaldo;
+    };
+    const primaryId = resolveTourId(result?.primary?.tourId, fb.primaryId);
+    let secondaryId = resolveTourId(result?.secondary?.tourId, fb.secondaryId);
+    if (secondaryId === primaryId) secondaryId = fb.secondaryId !== primaryId ? fb.secondaryId : fb.primaryId;
+
+    // El slug del paquete lo decide el servidor (determinístico por días);
+    // la IA solo aporta la redacción personalizada.
+    return NextResponse.json({
+      ...result,
+      primary:   { ...result.primary,   tourId: primaryId },
+      secondary: { ...result.secondary, tourId: secondaryId },
+      paquete: paquete
+        ? { slug: paquete.slug, reason: result.paqueteReason || paqueteFallback!.reason }
+        : null,
+    });
   } catch (err) {
     console.error("recomendar-tour: usando respaldo —", err);
     const { primaryId, secondaryId } = fallbackMatch(intereses, grupo, actividad, destino ?? "");
@@ -248,6 +309,7 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
         tourId: secondaryId,
         reason: secondary.descripcion,
       },
+      paquete: paqueteFallback,
     });
   }
 }

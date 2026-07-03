@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { type PackageItem, calcPackageLine } from "@/components/admin/ReservaModal";
+import { type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
@@ -13,8 +13,6 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   aceptada: { label: "Aceptada",  cls: "bg-green-100 text-green-800"   },
   expirada: { label: "Expirada",  cls: "bg-red-100 text-red-700"       },
 };
-
-interface LineItem { tourSlug: string; tourName: string; tourDate: string; adults: number; childrenMid: number; childrenSmall: number; subtotal: number; }
 
 const HABITACIONES_PRESET = [
   { label: "Vista Montañas",           precio: 1800 },
@@ -39,15 +37,8 @@ function cleanPackages(pkgs: any[]): PackageItem[] {
   return pkgs.filter((p: any) => !p._meta);
 }
 
-function calcLine(item: LineItem): number {
-  const t = TOURS_DB.find(t => t.slug === item.tourSlug);
-  if (!t) return 0;
-  return (
-    t.precio * item.adults +
-    Math.round(t.precio * 0.7) * (item.childrenMid   ?? 0) +
-    Math.round(t.precio * 0.5) * (item.childrenSmall ?? 0)
-  );
-}
+// Mismo cálculo que las reservas (incluye tours por vehículo como el RZR).
+const calcLine = calcTourLine;
 
 const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
@@ -88,10 +79,22 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setLines(ls => ls.map((l, idx) => {
       if (idx !== i) return l;
       const up = { ...l, [field]: val };
-      if (field === "tourSlug") { const t = TOURS_DB.find(t => t.slug === val); up.tourName = t?.nombre || ""; }
+      if (field === "tourSlug") {
+        const t = TOURS_DB.find(t => t.slug === val);
+        up.tourName = t?.nombre || "";
+        if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
+          up.ruta = t.rutas[0].nombre; up.vehiculo = t.flota[0].nombre; up.unidades = 1;
+          up.adults = 0; up.childrenMid = 0; up.childrenSmall = 0;
+        } else {
+          delete up.ruta; delete up.vehiculo; delete up.unidades;
+          up.adults = Math.max(1, up.adults || 2);
+        }
+      }
       if (field === "adults")        up.adults        = Math.max(1, Number(val) || 1);
       if (field === "childrenMid")   up.childrenMid   = Math.max(0, Number(val) || 0);
       if (field === "childrenSmall") up.childrenSmall = Math.max(0, Number(val) || 0);
+      if (field === "unidades")      up.unidades      = Math.max(1, Number(val) || 1);
+      if (esTourVehiculo(up.tourSlug)) up.tourName = vehiculoLineName(up);
       up.subtotal = calcLine(up);
       return up;
     }));
@@ -177,7 +180,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const payload = {
       tourName: lines.map(l => l.tourName).join(" + "), tourSlug: lines[0].tourSlug,
       tourDate: lines[0].tourDate,
-      adults: lines.reduce((s, l) => s + l.adults, 0),
+      adults: lines.reduce((s, l) => s + l.adults, 0) || 1, // líneas por vehículo llevan adults=0
       children: lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
       totalAmount: finalTotal, lineItems, packageItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
@@ -325,14 +328,18 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const hospNombre   = pkgs.length ? pkgs[0].hotel : "No incluye";
 
     const tourRows = items.map(l => {
+      const esVeh = !!l.vehiculo; // línea por vehículo (RZR): sin conteo de personas
+      const un    = Math.max(1, Number(l.unidades) || 1);
       const total = l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
-      const sub   = [
-        l.adults > 0 ? `${l.adults} adulto${l.adults !== 1 ? "s" : ""}` : "",
-        (l.childrenMid ?? 0) > 0 ? `${l.childrenMid} niño${l.childrenMid !== 1 ? "s" : ""} (6-10)` : "",
-        (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (<6)` : "",
-      ].filter(Boolean).join(" · ");
+      const sub   = esVeh
+        ? "Precio por vehículo · gasolina, equipo y guía incluidos"
+        : [
+            l.adults > 0 ? `${l.adults} adulto${l.adults !== 1 ? "s" : ""}` : "",
+            (l.childrenMid ?? 0) > 0 ? `${l.childrenMid} niño${l.childrenMid !== 1 ? "s" : ""} (6-10)` : "",
+            (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (<6)` : "",
+          ].filter(Boolean).join(" · ");
       const fd = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
-      return `<div class="row"><div><div class="tour-name">${l.tourName}</div><div class="tour-sub">${sub}</div></div><div class="num">${fd}</div><div class="num right">${total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
+      return `<div class="row"><div><div class="tour-name">${l.tourName}</div><div class="tour-sub">${sub}</div></div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const hospRows = pkgs.map(p => {
@@ -760,28 +767,71 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         <div className="space-y-2">
                           <select value={line.tourSlug} onChange={e => updateLine(i, "tourSlug", e.target.value)} className={inputCls}>
                             <option value="">Seleccionar tour...</option>
-                            {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}</option>)}
+                            {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
                           </select>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
-                              <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Adultos</label>
-                              <input type="number" min={1} max={20} value={line.adults} onChange={e => updateLine(i, "adults", Number(e.target.value))} className={inputCls} />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
-                              <input type="number" min={0} max={12} value={line.childrenMid} onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
-                              <input type="number" min={0} max={12} value={line.childrenSmall} onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
-                            </div>
-                          </div>
+                          {esTourVehiculo(line.tourSlug) ? (
+                            (() => {
+                              const t = TOURS_DB.find(t => t.slug === line.tourSlug)!;
+                              const rutaIdx = Math.max(0, t.rutas!.findIndex(r => r.nombre === line.ruta));
+                              return (
+                                <>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
+                                      <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Ruta</label>
+                                      <select value={line.ruta} onChange={e => updateLine(i, "ruta", e.target.value)} className={inputCls}>
+                                        {t.rutas!.map(r => <option key={r.nombre} value={r.nombre}>{r.nombre} · {r.duracion_hrs}h</option>)}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Vehículo</label>
+                                      <select value={line.vehiculo} onChange={e => updateLine(i, "vehiculo", e.target.value)} className={inputCls}>
+                                        {t.flota!.map(v => (
+                                          <option key={v.nombre} value={v.nombre}>{v.nombre} ({v.capacidad}) — {fmx(v.precios[rutaIdx])}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1" title="Cuántos vehículos de este modelo">Unidades</label>
+                                      <input type="number" min={1} max={10} value={line.unidades ?? 1}
+                                        onChange={e => updateLine(i, "unidades", Number(e.target.value))} className={inputCls} />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] font-dm text-[#1B4332]/40">
+                                    Precio por vehículo — los ocupantes no cambian el precio. ¿Otro modelo? Agrega otra línea.
+                                  </p>
+                                </>
+                              );
+                            })()
+                          ) : (
+                            <>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
+                                  <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Adultos</label>
+                                  <input type="number" min={1} max={20} value={line.adults} onChange={e => updateLine(i, "adults", Number(e.target.value))} className={inputCls} />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
+                                  <input type="number" min={0} max={12} value={line.childrenMid} onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
+                                  <input type="number" min={0} max={12} value={line.childrenSmall} onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
+                                </div>
+                              </div>
+                            </>
+                          )}
                           {line.tourSlug && <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcLine(line))}</p>}
                         </div>
                       </div>
