@@ -30,7 +30,7 @@ const fDateL = (d: string) => { if (!d) return "—"; const r = new Date(d + "T1
 const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "" };
 
-function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string; priceOverride?: number | null; discountType?: "percent" | "fixed"; discountValue?: number | null } {
+function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string; numPersonas?: number | null; priceOverride?: number | null; discountType?: "percent" | "fixed"; discountValue?: number | null } {
   return pkgs.find((p: any) => p._meta) || {};
 }
 function cleanPackages(pkgs: any[]): PackageItem[] {
@@ -57,6 +57,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   const [discountValue,  setDiscountValue]  = useState<string>("");
   const [anticipo,       setAnticipo]       = useState<string>("");
   const [vigencia,       setVigencia]       = useState<string>("7dias");
+  const [numPersonas,    setNumPersonas]    = useState<string>("");
   const [saving,         setSaving]         = useState(false);
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
@@ -117,7 +118,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setLines([{ ...EMPTY_LINE }]);
     setPackages([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
-    setAnticipo(""); setVigencia("7dias");
+    setAnticipo(""); setVigencia("7dias"); setNumPersonas("");
     setStep(1);
     setModal("new");
   }
@@ -140,6 +141,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setPackages(editPkgs);
     setAnticipo(meta.anticipo != null ? String(meta.anticipo) : "");
     setVigencia(meta.vigencia || "7dias");
+    setNumPersonas(meta.numPersonas ? String(meta.numPersonas) : "");
 
     // Restaurar precio editado y descuento.
     const calc = editLines.reduce((s, l) => s + calcLine(l), 0)
@@ -170,6 +172,8 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const packageItems = [
       {
         _meta: true, anticipo: anticipoNum, vigencia,
+        // Tamaño real del grupo (el mismo grupo va a todos los tours; no se suma por tour).
+        numPersonas: numPersonas !== "" ? Number(numPersonas) : null,
         // Guardar el precio editado y el descuento para restaurarlos al reabrir.
         priceOverride: priceOverride !== "" ? Number(priceOverride) : null,
         discountType,
@@ -180,7 +184,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const payload = {
       tourName: lines.map(l => l.tourName).join(" + "), tourSlug: lines[0].tourSlug,
       tourDate: lines[0].tourDate,
-      adults: lines.reduce((s, l) => s + l.adults, 0) || 1, // líneas por vehículo llevan adults=0
+      adults: lines.reduce((s, l) => s + l.adults, 0) || Number(numPersonas) || 1, // líneas por vehículo llevan adults=0
       children: lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
       totalAmount: finalTotal, lineItems, packageItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
@@ -242,7 +246,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     // Conservar el _meta de la reserva (método de pago / pickup) en lineItems.
     const tourLines    = Array.isArray((q as any).lineItems) ? (q as any).lineItems : [];
     const lineItems    = [
-      { _meta: true, metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla" },
+      { _meta: true, metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla", numPersonas: Number(meta.numPersonas) || 0 },
       ...tourLines,
     ];
 
@@ -324,7 +328,12 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const d1 = new Date(fechaInicio + "T12:00:00");
     const d2 = new Date(fechaFin + "T12:00:00");
     const duracion     = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / 86400000) + 1);
-    const numPersonas  = items.reduce((s, l) => s + l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0) || q.adults + (q.children ?? 0);
+    // Tamaño REAL del grupo (no sumar por tour: es el mismo grupo en todos los tours).
+    // Prioridad: el número capturado en la cotización → máximo por tour → total guardado.
+    const perTourMax   = items.length ? Math.max(...items.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0))) : 0;
+    const numPersonas  = Number(meta.numPersonas) > 0
+      ? Number(meta.numPersonas)
+      : (perTourMax > 0 ? perTourMax : q.adults + (q.children ?? 0));
     const hospNombre   = pkgs.length ? pkgs[0].hotel : "No incluye";
 
     const tourRows = items.map(l => {
@@ -748,6 +757,21 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             {/* ── Step 2: Tours + Hospedaje ── */}
             {step === 2 && (
               <div className="space-y-5">
+                {/* Número de personas del grupo (para el PDF y el email — evita sumar por tour) */}
+                <div className="bg-[#FAFAF8]/60 border border-[#1B4332]/10 rounded-sm p-3">
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
+                    Número de personas del grupo
+                  </label>
+                  <input type="number" min={1} max={40} value={numPersonas}
+                    placeholder="Ej. 2"
+                    onChange={e => setNumPersonas(e.target.value)}
+                    className={`${inputCls} max-w-[140px]`} />
+                  <p className="text-[10px] font-dm text-[#1B4332]/40 mt-1.5">
+                    Cuántas personas son en total (el mismo grupo que va a todos los tours). Así la
+                    cotización en PDF muestra el número correcto y no suma las personas de cada tour.
+                  </p>
+                </div>
+
                 {/* Tours */}
                 <div>
                   <div className="flex items-center justify-between mb-2">

@@ -227,7 +227,12 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     const checkouts  = pkgs.map(p => p.checkout).filter(Boolean).sort();
     const fechaInicio = tourDates[0] || b.tourDate;
     const fechaFin   = checkouts.length ? checkouts[checkouts.length - 1] : tourDates[tourDates.length - 1] || b.tourDate;
-    const numPersonas = lines.reduce((s, l) => s + l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0) || b.adults + (b.children ?? 0);
+    // Tamaño REAL del grupo (no sumar por tour: es el mismo grupo en todos los tours).
+    // Prioridad: el número capturado en la reserva → máximo por tour → total guardado.
+    const perTourMax  = lines.length ? Math.max(...lines.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0))) : 0;
+    const numPersonas = Number(meta.numPersonas) > 0
+      ? Number(meta.numPersonas)
+      : (perTourMax > 0 ? perTourMax : b.adults + (b.children ?? 0));
     // Resumen de arriba: NO repetir los nombres (el itinerario de abajo ya los lista).
     // Con varios tours mostramos el conteo; con uno solo, su nombre.
     const tourResumen = lines.length > 1 ? `${lines.length} tours` : (lines[0]?.tourName || b.tourName);

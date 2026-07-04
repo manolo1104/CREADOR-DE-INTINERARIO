@@ -9,6 +9,10 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   try {
     const q = await prisma.tourQuote.findUniqueOrThrow({ where: { id: params.id } });
 
+    // El _meta de la cotización (anticipo, vigencia, numPersonas) vive en packageItems.
+    const rawPkgs = Array.isArray((q as any).packageItems) ? (q as any).packageItems : [];
+    const meta    = rawPkgs.find((p: any) => p && p._meta) || {};
+
     const html = buildTourQuoteEmailHtml({
       customerName: q.customerName,
       quoteNumber:  q.quoteNumber,
@@ -19,6 +23,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       children:     q.children,
       totalAmount:  q.totalAmount,
       notes:        q.notes || undefined,
+      partySize:    Number(meta.numPersonas) || undefined,
       lineItems:    Array.isArray((q as any).lineItems) ? (q as any).lineItems : undefined,
     });
 

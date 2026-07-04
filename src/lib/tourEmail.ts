@@ -403,6 +403,7 @@ export function buildTourQuoteEmailHtml(data: {
   children:      number;  // total (childrenMid + childrenSmall)
   totalAmount:   number;
   notes?:        string;
+  partySize?:    number;  // tamaño real del grupo (evita sumar las personas de cada tour)
   lineItems?:    { tourName: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number }[];
 }): string {
   const base     = "https://www.huasteca-potosina.com";
@@ -524,6 +525,8 @@ export function buildTourQuoteEmailHtml(data: {
 
           <!-- TOURS COTIZADOS -->
           <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">Tours cotizados</p>
+          ${data.partySize && data.partySize > 0 && data.lineItems && data.lineItems.length > 1 ? `
+          <p style="margin:-8px 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">Grupo de ${data.partySize} persona${data.partySize !== 1 ? "s" : ""}</p>` : ""}
           ${itemsRows}
 
           <!-- TOTAL -->
