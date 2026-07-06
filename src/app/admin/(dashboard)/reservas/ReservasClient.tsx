@@ -280,6 +280,33 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       </div>`;
     }).join("");
 
+    // Hospedaje: se ve claramente si la reserva lo incluye (habitación/es, hotel,
+    // noches y fechas) o si es solo de tours. Los packageItems vienen de la cotización.
+    const noche = (n: number) => `${n} noche${n !== 1 ? "s" : ""}`;
+    const BED_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></svg>`;
+    const lodgingRows = pkgs.length
+      ? pkgs.map(p => {
+          const ci = p.checkin  ? fDate(p.checkin)  : "";
+          const co = p.checkout ? fDate(p.checkout) : "";
+          const fechas = ci && co ? `${ci} → ${co}` : (ci || co || "");
+          const nHab   = p.habitaciones ?? 1;
+          const habTxt = `${nHab} ${nHab === 1 ? "habitación" : "habitaciones"}`;
+          return `<div class="stay">
+            <div class="stay-ico">${BED_SVG}</div>
+            <div>
+              <h4 class="name">${p.habitacion}</h4>
+              <div class="meta">
+                ${p.hotel ? `<span><span class="k">Hotel</span> ${p.hotel}</span>` : ""}
+                <span><span class="k">Habitaciones</span> ${habTxt}</span>
+                <span><span class="k">Noches</span> ${noche(p.noches)}</span>
+                ${fechas ? `<span><span class="k">Estancia</span> ${fechas}</span>` : ""}
+              </div>
+            </div>
+          </div>`;
+        }).join("")
+      : `<div class="stay-none">Sin hospedaje — esta reserva es solo de tours.</div>`;
+    const lodgingBlock = `<div class="lodging"><h3>Hospedaje</h3>${lodgingRows}</div>`;
+
     win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Confirmación ${b.confirmationNumber}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
@@ -318,6 +345,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 .pickup .k{font-size:6.5pt;letter-spacing:1.5px;text-transform:uppercase;color:var(--lima);line-height:1;}
 .pickup .v{font-family:var(--display);font-style:italic;font-size:12pt;color:var(--dorado);margin-top:.5mm;line-height:1;}
 .pickup .where{font-size:6.5pt;opacity:.7;margin-top:.5mm;line-height:1.2;}
+.lodging{margin-top:4mm;}
+.lodging h3{font-family:var(--display);font-weight:300;font-size:13pt;margin:0 0 2mm;line-height:1;}
+.stay{display:grid;grid-template-columns:10mm 1fr;gap:3mm;padding:2.5mm 0;border-bottom:1px solid rgba(14,23,16,.12);align-items:start;}
+.stay:last-child{border-bottom:none;}
+.stay-ico{color:var(--dorado);display:flex;justify-content:center;padding-top:.8mm;}
+.stay-ico svg{width:7mm;height:7mm;}
+.stay .name{font-family:var(--display);font-size:11pt;line-height:1.15;margin:0;}
+.stay .meta{font-size:7.5pt;color:rgba(14,23,16,.62);margin-top:.8mm;display:flex;gap:3mm;flex-wrap:wrap;}
+.stay .meta .k{color:rgba(14,23,16,.4);text-transform:uppercase;letter-spacing:1px;font-size:6.5pt;}
+.stay-none{font-style:italic;font-size:8.5pt;color:rgba(14,23,16,.55);padding:1.5mm 0;}
 .right-col{display:flex;flex-direction:column;gap:5mm;}
 .keyinfo{background:var(--arena);padding:4mm 5mm;}
 .keyinfo .row{display:flex;justify-content:space-between;padding:1mm 0;border-bottom:1px dashed rgba(14,23,16,.2);font-size:8.5pt;line-height:1.3;}
@@ -378,6 +415,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div class="itin">
       <h3>Itinerario <em style="font-style:italic;color:var(--dorado)">día por día</em></h3>
       ${dayRows}
+      ${lodgingBlock}
     </div>
     <div class="right-col">
       <div class="keyinfo">
