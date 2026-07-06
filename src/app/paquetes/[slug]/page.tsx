@@ -248,7 +248,7 @@ export default function PaqueteDetallePage({ params }: Props) {
           <div className="border border-white/10 bg-negro/50 p-6">
             <h2 className="font-cormorant text-crema text-2xl mb-1">Reserva tu {p.nombre}</h2>
             <p className="text-crema/50 font-dm text-xs mb-5">Sin pago anticipado · Confirmamos disponibilidad en &lt;1 hora</p>
-            <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} />
+            <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
           </div>
           <div className="border border-white/10 bg-negro/40 p-6">
             <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-3">Lo que pagarías por separado</p>

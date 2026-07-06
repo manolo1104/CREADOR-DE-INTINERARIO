@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, Send } from "lucide-react";
+import Link from "next/link";
+import { MessageCircle, Send, CreditCard } from "lucide-react";
 import { trackPackageInquiry, trackWhatsapp } from "@/lib/analytics";
 
 const WA_NUMBER = "524891251458";
@@ -10,9 +11,11 @@ interface Props {
   packageName: string;
   price:       number;
   destacado?:  boolean;
+  /** slug del paquete para el flujo de pago con tarjeta (/reservar-paquete/[slug]) */
+  slug?:       string;
 }
 
-export function PaqueteFormCta({ packageName, price, destacado }: Props) {
+export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
   const [nombre,   setNombre]   = useState("");
   const [fecha,    setFecha]    = useState("");
   const [personas, setPersonas] = useState("");
@@ -91,6 +94,24 @@ export function PaqueteFormCta({ packageName, price, destacado }: Props) {
           </>
         )}
       </button>
+
+      {slug && (
+        <>
+          <div className="flex items-center gap-2 py-0.5">
+            <span className="h-px flex-1 bg-crema/15" />
+            <span className="text-[9px] tracking-[1.5px] uppercase text-crema/30 font-dm">o</span>
+            <span className="h-px flex-1 bg-crema/15" />
+          </div>
+          <Link
+            href={`/reservar-paquete/${slug}`}
+            onClick={() => trackPackageInquiry(packageName, price)}
+            className="flex items-center justify-center gap-2.5 w-full py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium border border-crema/25 text-crema hover:border-verde-vivo hover:text-verde-vivo transition-colors"
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            Reservar con tarjeta (10/50/100%)
+          </Link>
+        </>
+      )}
     </form>
   );
 }

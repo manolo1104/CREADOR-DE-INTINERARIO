@@ -304,6 +304,29 @@ export default function TourDetailPage({ params }: Props) {
                       <span className="text-[10px] text-crema/40 font-dm flex-shrink-0">{r.duracion_hrs} h</span>
                     </div>
                     <p className="text-crema/55 font-dm text-xs leading-relaxed mb-3">{r.descripcion}</p>
+                    {r.destinos && r.destinos.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-1.5">
+                          {locale === "en" ? "We visit" : "Visitamos"}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {r.destinos.map((d) => (
+                            <span key={d} className="text-[10px] font-dm text-crema/70 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+                              {d}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {r.incluye && r.incluye.length > 0 && (
+                      <ul className="mb-3 space-y-1">
+                        {r.incluye.map((it) => (
+                          <li key={it} className="flex items-start gap-1.5 text-[10px] font-dm text-lima/80">
+                            <span className="flex-shrink-0">✓</span>{it}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <p className="text-[10px] text-crema/40 font-dm">
                       {tcommon.desde}{" "}
                       <span className="font-cormorant text-dorado text-base">{money(r.desde)}</span>{" "}
@@ -347,8 +370,8 @@ export default function TourDetailPage({ params }: Props) {
               </div>
               <p className="text-[10px] text-crema/35 font-dm mt-3">
                 {locale === "en"
-                  ? "Book via WhatsApp: tell us your route, group size and date, and we'll assign the right vehicle."
-                  : "Se reserva por WhatsApp: dinos tu ruta, cuántos son y la fecha, y te asignamos el vehículo ideal."}
+                  ? "Book online with card — pick your route, vehicle and date — or message us on WhatsApp and we'll help you set it up."
+                  : "Resérvalo en línea con tarjeta —eliges ruta, vehículo y fecha— o escríbenos por WhatsApp y te ayudamos a armarlo."}
               </p>
             </section>
           )}
@@ -460,26 +483,16 @@ export default function TourDetailPage({ params }: Props) {
             </div>
 
             <div className="space-y-2.5">
-              {esVehiculo ? (
-                <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
-                  <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-                  {locale === "en" ? "Book via WhatsApp" : "Reservar por WhatsApp"}
-                </a>
-              ) : (
-                <Link href={`/reservar-tour/${tour.slug}`}
-                  className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
-                  <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-                  {t.bookThisTour}
-                </Link>
-              )}
-              {!esVehiculo && (
-                <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
-                  {t.askWhatsapp}
-                </a>
-              )}
+              <Link href={`/reservar-tour/${tour.slug}`}
+                className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                {esVehiculo ? (locale === "en" ? "Book with card" : "Reservar con tarjeta") : t.bookThisTour}
+              </Link>
+              <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
+                {t.askWhatsapp}
+              </a>
               <p className="text-center text-[9px] text-crema/25 font-dm">{t.freeCancel48}</p>
             </div>
 

@@ -116,7 +116,10 @@ export async function POST(req: NextRequest) {
         });
 
         if (!existing) {
-          const totalAmount = Math.round((pi.amount_received || pi.amount) / 100);
+          const cobrado = Math.round((pi.amount_received || pi.amount) / 100);
+          // El precio completo llega en metadata (para paquetes con anticipo parcial);
+          // en tours de pago 100% totalCompleto == cobrado.
+          const totalAmount = Number(meta.totalCompleto) > 0 ? Number(meta.totalCompleto) : cobrado;
           const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
           await prisma.tourBooking.create({
@@ -129,7 +132,7 @@ export async function POST(req: NextRequest) {
               adults:                Number(meta.adults) || 1,
               children:              Number(meta.children) || 0,
               totalAmount,
-              depositoPagado:        totalAmount, // pago 100% online = liquidado
+              depositoPagado:        cobrado, // lo realmente cobrado (100% en tours, parcial en paquetes)
               stripePaymentIntentId: pi.id,
               customerName:          meta.customerName || "Pendiente (vía webhook)",
               customerEmail:         meta.customerEmail || pi.receipt_email || "pendiente@desconocido",

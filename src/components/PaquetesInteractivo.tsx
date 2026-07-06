@@ -201,9 +201,9 @@ function PaqueteCard({
         >
           Ver el paquete día por día →
         </Link>
-        <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} />
+        <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
         <p className="text-center text-[9px] text-crema/25 font-dm mt-3">
-          Sin pago anticipado · Confirmas disponibilidad antes de reservar
+          Reserva por WhatsApp o con tarjeta · Cancelación flexible
         </p>
       </div>
     </article>

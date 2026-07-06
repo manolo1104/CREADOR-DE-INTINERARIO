@@ -15,7 +15,7 @@ interface Props {
   waHref?:  string;
 }
 
-export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref }: Props) {
+export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
   const track = () => {
     trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source: "mobile_bar" });
@@ -34,17 +34,10 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           </span>
         </p>
       </div>
-      {esVehiculo && waHref ? (
-        <a href={waHref} target="_blank" rel="noopener noreferrer" onClick={track} className={ctaClass}>
-          <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          Reservar
-        </a>
-      ) : (
-        <Link href={`/reservar-tour/${tourSlug}`} onClick={track} className={ctaClass}>
-          <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          Reservar
-        </Link>
-      )}
+      <Link href={`/reservar-tour/${tourSlug}`} onClick={track} className={ctaClass}>
+        <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+        Reservar
+      </Link>
     </div>
   );
 }

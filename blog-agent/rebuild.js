@@ -257,10 +257,10 @@ async function writeArticle(topic, researchContext, images, allPosts) {
 
   const verifiedSlugs = allPosts.map(p => `/blog/${p.slug}`).join(", ") || "(ninguno)";
   const kwWordCount = topic.focusKeyword.split(/\s+/).length;
-  const keywordTargetCount = kwWordCount >= 2 ? Math.round(1000 * 0.012) : Math.round(1000 * 0.014);
+  const keywordTargetCount = kwWordCount >= 2 ? Math.round(2300 * 0.009) : Math.round(2300 * 0.010);
   const lsiList = (topic.secondaryKeywords || []).join(", ");
 
-  const prompt = `Escribe un artículo HTML para huasteca-potosina.com. ESTRICTAMENTE 950–1100 palabras.
+  const prompt = `Escribe un artículo HTML para huasteca-potosina.com. ESTRICTAMENTE 2100–2500 palabras (artículo largo y profundo).
 
 TEMA: ${topic.title}
 KEYWORD: ${topic.focusKeyword}
@@ -283,7 +283,7 @@ Antes de entregar, cuenta las ocurrencias. Si <8 o >14, ajusta.
 
 WORD COUNT:
 Antes de entregar, cuenta palabras sin tags HTML.
-Si >1100: recorta párrafos redundantes. Si <950: añade dato concreto.
+Si >2500: recorta párrafos redundantes. Si <2100: profundiza con datos concretos y ejemplos (no relleno).
 NUNCA recortes: intro, FAQ, bloques class="cta-block".
 
 ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
@@ -357,7 +357,7 @@ Respuesta: JSON puro sin markdown.
 
   const response = await callWithRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 5000,
+    max_tokens: 18000,
     messages: [{ role: "user", content: prompt }],
   }));
 
@@ -508,13 +508,13 @@ async function publishPost(post) {
 // ── Print quality log ─────────────────────────────────────────
 function printQualityLog(post) {
   const m = post._metrics;
-  const wcOk = m.wordCount >= 950 && m.wordCount <= 1100;
+  const wcOk = m.wordCount >= 2100 && m.wordCount <= 2500;
   const kdOk = m.keywordOccurrences >= 8 && m.keywordOccurrences <= 14;
   const ctaOk = m.ctaCount >= 3;
   const faqOk = m.faqCount >= 4;
   const issues = [];
 
-  console.log(`   ${wcOk ? "✅" : "❌"} Words: ${m.wordCount} (${wcOk ? "OK" : "FUERA de 950-1100"})`);
+  console.log(`   ${wcOk ? "✅" : "❌"} Words: ${m.wordCount} (${wcOk ? "OK" : "FUERA de 2100-2500"})`);
   console.log(`   ${kdOk ? "✅" : "❌"} KW density: ${m.keywordOccurrences} occ (${kdOk ? "OK" : "FUERA de 8-14"})`);
   console.log(`   ${faqOk ? "✅" : "❌"} FAQ: ${m.faqCount} preguntas (${faqOk ? "OK" : "necesita ≥4"})`);
   console.log(`   ${ctaOk ? "✅" : "❌"} CTAs: ${m.ctaCount} bloques (${ctaOk ? "OK" : "necesita ≥3"})`);

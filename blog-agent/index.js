@@ -2,7 +2,7 @@
  * blog-agent/index.js
  * ─────────────────────────────────────────────────────────
  * Agente de contenido diario para Huasteca Potosina.
- * Framework: E-E-A-T · Plataforma Regional · 950–1,100 palabras
+ * Framework: E-E-A-T · Plataforma Regional · 2,100–2,500 palabras
  *
  * Uso:
  *   node index.js                          ← publica el post del día
@@ -390,11 +390,11 @@ function validateWordCount(contentHtml) {
     .filter(w => w.length > 0);
   const wordCount = text.length;
 
-  if (wordCount > 1100) {
-    return { valid: false, wordCount, excess: wordCount - 1100, action: "trim_required" };
+  if (wordCount > 2500) {
+    return { valid: false, wordCount, excess: wordCount - 2500, action: "trim_required" };
   }
-  if (wordCount < 950) {
-    return { valid: false, wordCount, deficit: 950 - wordCount, action: "expand_required" };
+  if (wordCount < 2100) {
+    return { valid: false, wordCount, deficit: 2100 - wordCount, action: "expand_required" };
   }
   return { valid: true, wordCount };
 }
@@ -406,14 +406,14 @@ async function correctWordCount(contentHtml, validation, topic) {
 
   let instruction;
   if (action === "trim_required") {
-    instruction = `El artículo tiene ${wordCount} palabras. Necesito que lo recortes a máximo 1,100 palabras. Elimina texto en este orden de prioridad:
+    instruction = `El artículo tiene ${wordCount} palabras. Necesito que lo recortes a máximo 2,500 palabras. Elimina texto en este orden de prioridad:
 1. Frases adjetivas no esenciales en el cuerpo
 2. Párrafos que repitan información ya dicha en otra sección
 3. Detalles secundarios dentro de H3
 Nunca elimines: los primeros 3 párrafos del intro, secciones FAQ, bloques con class="cta-block".
 Devuelve SOLO el HTML corregido, sin explicaciones ni markdown fences.`;
   } else {
-    instruction = `El artículo tiene ${wordCount} palabras. Necesito expandirlo a mínimo 950 palabras añadiendo contenido útil. Añade en este orden:
+    instruction = `El artículo tiene ${wordCount} palabras. Necesito expandirlo a mínimo 2,100 palabras añadiendo contenido útil. Añade en este orden:
 1. Un dato concreto adicional (precio, horario o distancia) en la sección más corta
 2. Una frase de contexto local en el intro
 3. Una pregunta adicional en el FAQ con formato <details><summary><strong>pregunta</strong></summary><p>respuesta</p></details>
@@ -425,7 +425,7 @@ Devuelve SOLO el HTML corregido, sin explicaciones ni markdown fences.`;
 
   const response = await callWithRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 5000,
+    max_tokens: 9000,
     messages: [{
       role: "user",
       content: `${instruction}\n\n---\n\n${contentHtml}`,
@@ -517,7 +517,7 @@ function extractBlogJSON(raw) {
 // ── Redactar artículo ───────────────────────────────────────
 
 async function writeArticle(topic, researchContext, images, postsExistentes) {
-  console.log(`\n✍️  Redactando artículo E-E-A-T (950–1,100 palabras)...`);
+  console.log(`\n✍️  Redactando artículo E-E-A-T (2,100–2,500 palabras)...`);
 
   const year = new Date().getFullYear();
   const slug = generateSlug(topic.title, topic.focusKeyword, year);
@@ -531,16 +531,20 @@ async function writeArticle(topic, researchContext, images, postsExistentes) {
 
   // Corrección 1: Calcular keyword target count
   const kwWordCount = topic.focusKeyword.split(/\s+/).length;
+  // Densidad ~0.9-1.0% sobre un artículo de ~2300 palabras (evita keyword stuffing;
+  // el modelo suele sobrepasar el objetivo, así que apuntamos bajo).
   const keywordTargetCount = kwWordCount >= 2
-    ? Math.round(1000 * 0.012)  // 12 para multi-word
-    : Math.round(1000 * 0.014); // 14 para single-word
+    ? Math.round(2300 * 0.009)  // ~21 para multi-word
+    : Math.round(2300 * 0.010); // ~23 para single-word
+  const kwMin = Math.round(keywordTargetCount * 0.7);
+  const kwMax = Math.round(keywordTargetCount * 1.3);
   const lsiList = (topic.secondaryKeywords || []).join(", ");
 
   const bodyImgTag = images
     ? `<img src="${images.body.url}" alt="${images.body.alt}" loading="lazy" width="900" height="500" />`
     : `<!-- SIN IMAGEN — se asignará manualmente con assign-image.js -->`;
 
-  const prompt = `Escribe un artículo HTML para huasteca-potosina.com. ESTRICTAMENTE 950–1100 palabras.
+  const prompt = `Escribe un artículo HTML para huasteca-potosina.com. ESTRICTAMENTE 2100–2500 palabras (artículo largo y profundo, tipo guía completa). Desarrolla cada sección a fondo con ejemplos concretos, datos y experiencia real — nada de relleno vacío.
 
 TEMA: ${topic.title}
 KEYWORD: ${topic.focusKeyword}
@@ -570,12 +574,12 @@ Para las demás apariciones, usa estas variantes y sinónimos:
 ${lsiList}
 
 Antes de terminar, cuenta las ocurrencias de "${topic.focusKeyword}".
-Si el conteo es menor a 8 o mayor a 14, ajusta el texto antes de entregar.
+Si el conteo es menor a ${kwMin} o mayor a ${kwMax}, ajusta el texto antes de entregar.
 
 WORD COUNT — INSTRUCCIÓN DURANTE REDACCIÓN:
-Antes de entregar el artículo, cuenta las palabras del HTML (sin tags).
-Si supera 1100, recorta párrafos redundantes del cuerpo. NUNCA recortes intro, FAQ ni schema.
-Si es menor a 950, añade un dato concreto en la sección más corta.
+Antes de entregar el artículo, cuenta las palabras del HTML (sin tags). El objetivo es 2100–2500 palabras.
+Si supera 2500, recorta párrafos redundantes del cuerpo. NUNCA recortes intro, FAQ ni schema.
+Si es menor a 2100, profundiza las secciones más cortas con datos concretos, ejemplos y contexto local (no relleno).
 
 ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 
@@ -619,7 +623,23 @@ ${images ? `<figure>
   <li><strong>[Consejo 2]:</strong> [explicación. Si existe slug verificado, enlaza aquí con Tipo A.]</li>
   <li><strong>[Consejo 3]:</strong> [explicación con link Tipo A a post relacionado si existe.]</li>
   <li><strong>[Consejo 4]:</strong> [equipamiento, ropa o seguridad.]</li>
+  <li><strong>[Consejo 5]:</strong> [presupuesto o dinero en efectivo con cifra concreta.]</li>
 </ul>
+
+━━━ SECCIÓN 4 ━━━
+<h2>[Cuarto título — ángulo NUEVO no cubierto arriba. Elige el más útil según el tema: "¿Cómo llegar a ${topic.focusKeyword} desde Ciudad Valles?" (con distancias y tiempos), "Itinerario sugerido de 2 días" (día por día), "Dónde hospedarse y comer cerca" o "Mejor época del año para visitar (mes por mes)". Formulado como pregunta si aplica.]</h2>
+<p>[Párrafo introductorio de 3-4 oraciones con un dato concreto y experiencia real de los grupos que atendemos.]</p>
+
+<h3>[Subtema del ángulo elegido — extractable como featured snippet]</h3>
+<p>[3-4 oraciones autocontenidas. Datos concretos con <strong>cifras/tiempos/meses</strong> y año. Enlaza a <a href="${SITE_URL}/tours">tours de ${topic.focusKeyword}</a> o a ${SITE_URL}/itinerarios donde sea natural.]</p>
+
+<h3>[Segundo subtema del ángulo]</h3>
+<p>[3-4 oraciones. Detalle práctico accionable + advertencia honesta. Link interno Tipo A a post verificado si existe, si no a ${SITE_URL}/tours.]</p>
+<table><thead><tr><th>Opción</th><th>Precio / tiempo</th><th>Detalle</th></tr></thead><tbody>
+<tr><td>[opción 1]</td><td>[dato]</td><td>[detalle]</td></tr>
+<tr><td>[opción 2]</td><td>[dato]</td><td>[detalle]</td></tr>
+<tr><td>[opción 3]</td><td>[dato]</td><td>[detalle]</td></tr>
+</tbody></table>
 
 ━━━ FAQ ━━━
 <h2>Preguntas frecuentes sobre ${topic.focusKeyword}</h2>
@@ -657,14 +677,14 @@ TABLAS DE COMPARACIÓN (cuando aplique): Si el tema involucra opciones (tours, h
 - KEYWORD STUFFING: NO repitas la keyword de forma forzada — el keyword stuffing reduce visibilidad AI en -10%
 
 Respuesta: JSON puro sin markdown.
-{"slug":"${slug}","metaTitle":"máx 60 chars con keyword y ${year}","title":"H1 completo","metaDescription":"140-155 chars","focusKeyword":"${topic.focusKeyword}","secondaryKeywords":${JSON.stringify(topic.secondaryKeywords)},"excerpt":"2 líneas","content":"HTML completo sin CTAs","tags":["Huasteca Potosina","${topic.category}","tag3"],"readingTime":7}`;
+{"slug":"${slug}","metaTitle":"máx 60 chars con keyword y ${year}","title":"H1 completo","metaDescription":"140-155 chars","focusKeyword":"${topic.focusKeyword}","secondaryKeywords":${JSON.stringify(topic.secondaryKeywords)},"excerpt":"2 líneas","content":"HTML completo sin CTAs","tags":["Huasteca Potosina","${topic.category}","tag3"],"readingTime":11}`;
 
   console.log(`   ⏳ Pausa de 15s antes de redactar...`);
   await sleep(15000);
 
   const response = await callWithRetry(() => anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 10000,
+    max_tokens: 18000,
     messages: [{ role: "user", content: prompt }],
   }));
 
@@ -954,8 +974,8 @@ function printQualityLog(post, publishResult) {
   console.log("📊 MÉTRICAS DE CALIDAD");
   console.log("─".repeat(55));
 
-  const wcOk = m.wordCount >= 950 && m.wordCount <= 1100;
-  console.log(`${wcOk ? "✅" : "❌"} Word count: ${m.wordCount} palabras (${wcOk ? "dentro de rango 950-1100" : "FUERA de rango 950-1100"})`);
+  const wcOk = m.wordCount >= 2100 && m.wordCount <= 2500;
+  console.log(`${wcOk ? "✅" : "❌"} Word count: ${m.wordCount} palabras (${wcOk ? "dentro de rango 2100-2500" : "FUERA de rango 2100-2500"})`);
   if (!wcOk) issues.push(`Word count ${m.wordCount}`);
 
   const kdOk = m.keywordOccurrences >= 8 && m.keywordOccurrences <= 14;
@@ -1012,7 +1032,7 @@ function printQualityLog(post, publishResult) {
 
 async function main() {
   console.log("\n📝  BLOG AGENT — huasteca-potosina.com");
-  console.log(`    E-E-A-T · Plataforma Regional · 950–1,100 palabras`);
+  console.log(`    E-E-A-T · Plataforma Regional · 2,100–2,500 palabras`);
   console.log(`    Modo: ${DRY_RUN ? "🧪 DRY-RUN" : "🚀 LIVE"}`);
   console.log("═".repeat(55));
 

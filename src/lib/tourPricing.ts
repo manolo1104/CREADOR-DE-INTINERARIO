@@ -1,7 +1,7 @@
 // Cálculo de precios AUTORITATIVO en el servidor.
 // El cliente nunca decide el monto a cobrar: aquí se recalcula desde TOURS_DB.
 
-import { TOURS_DB, type Tour } from "./tours";
+import { TOURS_DB, type Tour, type TourRuta, type TourVehiculo } from "./tours";
 import { calcTourTotal, validatePromoCode } from "./tourBooking";
 
 export interface TourChargeInput {
@@ -51,4 +51,54 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
 
   // Pago 100%: siempre se cobra el total completo (ya no hay opción de depósito).
   return { tour, total, charge: total, promoDiscount };
+}
+
+// ── Tours cobrados POR VEHÍCULO (ej. RZR) ────────────────────────────────────
+
+export interface VehiculoChargeInput {
+  tourId?:   string;
+  tourSlug?: string;
+  ruta?:     string;
+  vehiculo?: string;
+  unidades?: number;
+}
+
+export interface VehiculoChargeResult {
+  tour:     Tour;
+  ruta:     TourRuta;
+  vehiculo: TourVehiculo;
+  unidades: number;
+  total:    number; // precio del vehículo × unidades (MXN)
+  charge:   number; // se cobra el total completo (100%)
+}
+
+/**
+ * Recalcula el cargo de un tour por vehículo (RZR) desde la matriz flota×ruta
+ * del catálogo del servidor. El precio depende de la ruta y de la unidad
+ * elegida — el cliente nunca decide el monto. Devuelve null si algo no cuadra.
+ */
+export function computeVehiculoCharge(input: VehiculoChargeInput): VehiculoChargeResult | null {
+  const tour = TOURS_DB.find((t) => t.id === input.tourId || t.slug === input.tourSlug);
+  if (!tour || tour.precioUnidad !== "vehiculo" || !tour.rutas || !tour.flota) return null;
+
+  const rutaIdx = tour.rutas.findIndex((r) => r.nombre === input.ruta);
+  if (rutaIdx < 0) return null;
+
+  const vehiculo = tour.flota.find((v) => v.nombre === input.vehiculo);
+  if (!vehiculo) return null;
+
+  const precio = vehiculo.precios[rutaIdx];
+  if (!precio || precio <= 0) return null;
+
+  const unidades = clampInt(input.unidades, 1, 10);
+  const total = precio * unidades;
+
+  return { tour, ruta: tour.rutas[rutaIdx], vehiculo, unidades, total, charge: total };
+}
+
+/** Nombre descriptivo de una reserva por vehículo: "RZR — Ruta Nacimiento · Defender ×2". */
+export function vehiculoBookingName(tour: Tour, rutaNombre: string, vehiculoNombre: string, unidades: number): string {
+  const base = tour.nombre.split(" — ")[0];
+  const uni  = unidades > 1 ? ` ×${unidades}` : "";
+  return `${base} — ${rutaNombre} · ${vehiculoNombre}${uni}`;
 }

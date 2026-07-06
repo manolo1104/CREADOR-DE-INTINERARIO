@@ -10,6 +10,7 @@ import {
 } from "@/lib/tourBooking";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { ViewersCounter } from "@/components/booking/ViewersCounter";
+import { RzrBookingForm } from "@/components/booking/RzrBookingForm";
 import { ChevronLeft, Clock, Users, Shield, Star, Lock } from "lucide-react";
 import { trackDateSelected, trackPromoApplied } from "@/lib/analytics";
 
@@ -28,6 +29,7 @@ export default function ReservarTourPage() {
   const [promoMsg,       setPromoMsg]       = useState("");
   const [promoError,     setPromoError]     = useState("");
   const [promoShake,     setPromoShake]     = useState(false);
+  const [showPromo,      setShowPromo]      = useState(false);
 
   const children = childrenMid + childrenSmall;
   const notFound = !tour;
@@ -48,19 +50,33 @@ export default function ReservarTourPage() {
     );
   }
 
-  // Tours cobrados POR VEHÍCULO (ej. RZR) no usan el flujo por persona: se reservan por WhatsApp.
+  // Tours cobrados POR VEHÍCULO (ej. RZR): flujo de reserva por ruta + vehículo + unidades.
   if (tour.precioUnidad === "vehiculo") {
     return (
-      <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
-        <div className="text-center max-w-md">
-          <p className="font-cormorant text-verde-profundo text-2xl mb-3">Este tour se reserva por WhatsApp</p>
-          <p className="font-dm text-sm text-negro/60 mb-6">
-            El precio es por vehículo (según la ruta y la unidad que elijas), así que te ayudamos a armarlo directo por WhatsApp.
-          </p>
-          <Link href={`/tours/${tour.slug}`} className="text-verde-selva underline font-dm text-sm">
-            Ver rutas, vehículos y precios
+      <main className="min-h-screen bg-crema pt-24 pb-20">
+        <div className="max-w-5xl mx-auto px-6 mb-8">
+          <Link href={`/tours/${tour.slug}`} className="inline-flex items-center gap-1.5 text-negro/50 hover:text-verde-selva text-xs font-dm tracking-[1px] uppercase transition-colors">
+            <ChevronLeft className="w-3 h-3" />
+            Volver al tour
           </Link>
         </div>
+        {/* Stepper */}
+        <div className="max-w-5xl mx-auto px-6 mb-10">
+          <div className="flex items-center gap-3">
+            {["Seleccionar", "Pagar", "Confirmado"].map((s, i) => (
+              <div key={s} className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 ${i === 0 ? "text-verde-selva" : "text-negro/30"}`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-dm font-medium ${i === 0 ? "bg-verde-selva text-white" : "border border-negro/20 text-negro/30"}`}>
+                    {i + 1}
+                  </span>
+                  <span className="text-[11px] tracking-[1px] uppercase font-dm hidden sm:block">{s}</span>
+                </div>
+                {i < 2 && <div className="h-px w-8 bg-negro/15" />}
+              </div>
+            ))}
+          </div>
+        </div>
+        <RzrBookingForm tour={tour} />
       </main>
     );
   }
@@ -216,7 +232,13 @@ export default function ReservarTourPage() {
             </div>
           </section>
 
-          {/* Código de descuento */}
+          {/* Código de descuento — colapsado tras un enlace para aligerar */}
+          {!showPromo && !promoCode ? (
+            <button type="button" onClick={() => setShowPromo(true)}
+              className="text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors underline underline-offset-2">
+              ¿Tienes un código de descuento?
+            </button>
+          ) : (
           <section className="bg-white border border-negro/8 p-6">
             <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Código de descuento</h2>
             {promoCode ? (
@@ -242,6 +264,7 @@ export default function ReservarTourPage() {
             )}
             {promoError && <p className="mt-2 text-terracota text-xs font-dm" role="alert">{promoError}</p>}
           </section>
+          )}
 
         </div>
 

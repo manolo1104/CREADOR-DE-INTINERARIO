@@ -96,6 +96,9 @@ export async function POST(req: NextRequest) {
           customerEmail:  email,
           customerPhone:  customerPhone || null,
           notes:          notes         || null,
+          // Tours por vehículo (RZR): guarda la línea con ruta/vehículo/unidades
+          // para que /reservas, el PDF y el modal del admin la reconstruyan.
+          lineItems:      Array.isArray(lineItems) && lineItems.length ? lineItems : undefined,
           status:         "paid",
         },
       });

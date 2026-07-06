@@ -1,9 +1,10 @@
 name: Blog Agent — Publicación Diaria
 
 on:
-  # schedule y push desactivados — reactivar cuando se quiera reanudar publicación automática
-  # schedule:
-  #   - cron: "0 14 * * *"  # 8:00 AM hora CDMX (UTC-6) todos los días
+  schedule:
+    # Cada 5 días a las 8:00 AM CDMX (UTC-6): días 1, 6, 11, 16, 21, 26 del mes.
+    # (cron no tiene "cada N días" exacto; el paso */5 se reinicia al cambiar de mes.)
+    - cron: "0 14 */5 * *"
   workflow_dispatch:
     inputs:
       topic:

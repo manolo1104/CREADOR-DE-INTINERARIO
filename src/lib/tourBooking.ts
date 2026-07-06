@@ -19,6 +19,10 @@ export interface TourBookingState {
   chargeAmount:  number;  // monto real a cobrar (depósito o total)
   paymentMode:   "deposit" | "full";
   sessionId:     string;
+  // Tours cobrados por vehículo (RZR): ruta + unidad elegida
+  ruta?:         string;
+  vehiculo?:     string;
+  unidades?:     number;
 }
 
 const KEY = "hp_tour_booking_state";

@@ -5,10 +5,6 @@ import { usePathname } from "next/navigation";
 import { trackCtaClick } from "@/lib/analytics";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
-// Slugs de tours cobrados POR VEHÍCULO (mantener en sync con precioUnidad en lib/tours.ts).
-// No se importa TOURS_DB aquí para no meter todo el catálogo al bundle global del cliente.
-const VEHICLE_PRICED_SLUGS = new Set(["rzr-xilitla"]);
-
 const LOCK_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
     className="w-5 h-5 flex-shrink-0" aria-hidden="true">
@@ -33,9 +29,6 @@ export function FloatingReservarButton() {
   // en móvil para no encimarlos.
   const tourSlugMatch = pathname.match(/^\/(?:en\/)?tours\/([^/]+)$/);
   const isTourDetail = !!tourSlugMatch;
-  // Tours cobrados por vehículo (ej. RZR) no usan el flujo por persona:
-  // el flotante no debe deep-linkear a /reservar-tour (la página ya ofrece WhatsApp).
-  const esVehiculo = !!tourSlugMatch && VEHICLE_PRICED_SLUGS.has(tourSlugMatch[1]);
   const href = tourSlugMatch
     ? `/reservar-tour/${tourSlugMatch[1]}`
     : "/tours";
@@ -44,7 +37,7 @@ export function FloatingReservarButton() {
 
   return (
     <>
-      {/* WhatsApp: el canal #1 de conversión, siempre a un tap */}
+      {/* WhatsApp: el canal #1 de conversión, siempre a un tap (encima del botón Reservar) */}
       <a
         href={waHref}
         target="_blank"
@@ -55,27 +48,25 @@ export function FloatingReservarButton() {
                    bg-[#25D366] hover:bg-[#1ebe5b] text-white
                    w-[52px] h-[52px] rounded-full shadow-xl shadow-black/40
                    transition-all duration-300 hover:scale-105
-                   ${esVehiculo ? `bottom-6 ${visibility}` : `bottom-[86px] ${visibility}`}`}
+                   bottom-[86px] ${visibility}`}
       >
         {WA_SVG}
       </a>
-      {!esVehiculo && (
-        <Link
-          href={href}
-          aria-label="Reservar tour"
-          onClick={() => trackCtaClick("floating_button", href)}
-          className={`fixed bottom-6 right-6 z-50 items-center gap-2.5
-                     bg-dorado hover:bg-terracota text-negro hover:text-crema
-                     pl-4 pr-5 py-3.5 rounded-full shadow-xl shadow-black/40
-                     transition-all duration-300 hover:scale-105
-                     ${visibility}`}
-        >
-          {LOCK_SVG}
-          <span className="hidden sm:block text-[11px] tracking-[1.5px] uppercase font-dm font-medium">
-            Reservar tour
-          </span>
-        </Link>
-      )}
+      <Link
+        href={href}
+        aria-label="Reservar tour"
+        onClick={() => trackCtaClick("floating_button", href)}
+        className={`fixed bottom-6 right-6 z-50 items-center gap-2.5
+                   bg-dorado hover:bg-terracota text-negro hover:text-crema
+                   pl-4 pr-5 py-3.5 rounded-full shadow-xl shadow-black/40
+                   transition-all duration-300 hover:scale-105
+                   ${visibility}`}
+      >
+        {LOCK_SVG}
+        <span className="hidden sm:block text-[11px] tracking-[1.5px] uppercase font-dm font-medium">
+          Reservar tour
+        </span>
+      </Link>
     </>
   );
 }

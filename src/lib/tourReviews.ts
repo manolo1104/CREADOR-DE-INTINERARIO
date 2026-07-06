@@ -22,7 +22,7 @@ export const TOUR_REVIEWS: Record<string, Review[]> = {
       fecha:     "Marzo 2025",
       foto:      "/imagenes/reviews/reviewer-2.jpg",
       texto:
-        "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. El guía nos abrió la ruta todo el tiempo y nunca sentimos inseguridad. La cascada Nanacatli al final es un premiazo. ¡Repetiría mil veces!",
+        "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. El guía nos abrió la ruta todo el tiempo y nunca sentimos inseguridad. La Aldea Nanacatli, con sus casitas de hongos, al final es un premiazo. ¡Repetiría mil veces!",
     },
     {
       nombre:    "Karla Méndez",

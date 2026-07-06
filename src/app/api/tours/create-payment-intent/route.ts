@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { computeTourCharge } from "@/lib/tourPricing";
+import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
 
@@ -17,6 +17,48 @@ export async function POST(req: NextRequest) {
 
   try {
     const { customerEmail, customerName, tourDetails } = await req.json();
+
+    // ── Tours cobrados POR VEHÍCULO (RZR): precio desde la matriz flota×ruta ──
+    if (tourDetails?.ruta && tourDetails?.vehiculo) {
+      const veh = computeVehiculoCharge({
+        tourId:   tourDetails?.tourId,
+        tourSlug: tourDetails?.tourSlug,
+        ruta:     tourDetails?.ruta,
+        vehiculo: tourDetails?.vehiculo,
+        unidades: tourDetails?.unidades,
+      });
+      if (!veh) {
+        logger.warn("payment_intent_vehiculo_invalid", { tourSlug: tourDetails?.tourSlug, ruta: tourDetails?.ruta, vehiculo: tourDetails?.vehiculo });
+        return NextResponse.json({ error: "Ruta o vehículo inválido." }, { status: 400 });
+      }
+      const bookingName = vehiculoBookingName(veh.tour, veh.ruta.nombre, veh.vehiculo.nombre, veh.unidades);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount:        Math.round(veh.charge * 100),
+        currency:      "mxn",
+        description:   `Tour Huasteca Potosina — ${bookingName} · ${customerName || ""}`,
+        receipt_email: customerEmail || undefined,
+        metadata: {
+          customerEmail: customerEmail || "",
+          customerName:  customerName  || "",
+          tourId:        veh.tour.id,
+          tourName:      bookingName,
+          tourSlug:      veh.tour.slug,
+          tourDate:      tourDetails?.tourDate || "",
+          adults:        String(tourDetails?.adults || veh.unidades),
+          children:      "0",
+          ruta:          veh.ruta.nombre,
+          vehiculo:      veh.vehiculo.nombre,
+          unidades:      String(veh.unidades),
+          totalCompleto: String(veh.total),
+          source:        "huasteca-potosina.com",
+        },
+      });
+      return NextResponse.json({
+        clientSecret:    paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount:          veh.charge,
+      });
+    }
 
     // El monto es AUTORITATIVO desde el servidor: se ignora cualquier amount del cliente.
     const charge = computeTourCharge({

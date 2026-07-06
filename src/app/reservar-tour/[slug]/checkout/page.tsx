@@ -12,9 +12,7 @@ import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate 
 import type { TourBookingState } from "@/lib/tourBooking";
 import { TOURS_DB } from "@/lib/tours";
 import { trackPurchase } from "@/lib/analytics";
-import { ReviewsCarousel } from "@/components/booking/ReviewsCarousel";
-import { GuideCard } from "@/components/booking/GuideCard";
-import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Phone, Mail } from "lucide-react";
+import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
@@ -37,19 +35,14 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
   const [name,           setName]           = useState("");
   const [email,          setEmail]          = useState("");
   const [phone,          setPhone]          = useState("");
-  const [hotelOption,    setHotelOption]    = useState<"paraiso" | "otro" | "pordefinir">("paraiso");
-  const [otroHotel,      setOtroHotel]      = useState("");
+  const [pickup,         setPickup]         = useState("");
   const [notes,          setNotes]          = useState("");
+  const [showNotes,      setShowNotes]      = useState(false);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState("");
-  const [pickupError,    setPickupError]    = useState("");
 
-  // Construye el texto de pickup según la opción
-  const pickupLocation = hotelOption === "paraiso"
-    ? "Hotel Paraíso Encantado Xilitla"
-    : hotelOption === "pordefinir"
-    ? "Por definir — te contactaremos para coordinarlo"
-    : otroHotel.trim();
+  // Hotel de recogida (opcional). Si se deja vacío, coordinamos por WhatsApp.
+  const pickupLocation = pickup.trim() || "Por definir — te contactaremos por WhatsApp";
 
   const chargeAmt   = booking.total;
 
@@ -61,13 +54,8 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
     e.preventDefault();
     if (!stripe || !elements) return;
 
-    setPickupError("");
     if (!name.trim() || !email.trim()) {
       setError("Nombre y correo son obligatorios.");
-      return;
-    }
-    if (hotelOption === "otro" && !otroHotel.trim()) {
-      setPickupError("Por favor indícanos el nombre de tu hotel o dirección 🙂");
       return;
     }
 
@@ -111,6 +99,22 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
             children:         booking.children,
             promoCode:        booking.promoCode || null,
             promoDiscount:    booking.promoDiscount || 0,
+            // Tours por vehículo (RZR): datos de ruta/vehículo + línea para /reservas
+            ruta:             booking.ruta || null,
+            vehiculo:         booking.vehiculo || null,
+            unidades:         booking.unidades || null,
+            lineItems:        booking.vehiculo ? [{
+              tourSlug: booking.tourSlug,
+              tourName: booking.tourName,
+              tourDate: booking.tourDate,
+              ruta:     booking.ruta,
+              vehiculo: booking.vehiculo,
+              unidades: booking.unidades,
+              adults:   booking.adults,
+              childrenMid: 0,
+              childrenSmall: 0,
+              subtotal: chargeAmt,
+            }] : undefined,
           }),
         });
         const data = await res.json();
@@ -146,25 +150,6 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
 
-      {/* Mejora 13A — WhatsApp strip encima del form */}
-      <div className="flex items-center justify-between bg-verde-selva/8 border border-verde-selva/20 px-4 py-3">
-        <div>
-          <p className="text-[10px] tracking-[1px] uppercase text-negro/45 font-dm">¿Dudas antes de pagar?</p>
-          <a
-            href={`https://wa.me/${WA_NUMBER}?text=${waDoubtsMsg}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm font-dm text-verde-selva hover:text-verde-vivo transition-colors font-medium"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Escríbenos · +52 489 125 1458
-          </a>
-        </div>
-        <p className="text-[10px] text-negro/35 font-dm text-right hidden sm:block">
-          Respuesta en menos<br />de 1 hora · Lun–Dom
-        </p>
-      </div>
-
       {/* Datos del contacto */}
       <section className="bg-white border border-negro/8 p-6">
         <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Datos de contacto</h2>
@@ -198,106 +183,40 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
             />
           </div>
 
-          {/* Mejora 7 — Hotel de recogida con selector */}
-          <div>
-            <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-2">
-              Hotel de recogida *
-            </label>
-
-            {/* Opción rápida: Paraíso Encantado */}
-            <button
-              type="button"
-              onClick={() => { setHotelOption("paraiso"); setPickupError(""); }}
-              className={`w-full flex items-center gap-3 border px-4 py-3 mb-2 text-left transition-colors ${
-                hotelOption === "paraiso"
-                  ? "border-verde-selva bg-verde-selva/5"
-                  : "border-negro/15 hover:border-negro/30"
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                hotelOption === "paraiso" ? "border-verde-selva" : "border-negro/25"
-              }`}>
-                {hotelOption === "paraiso" && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
-              </div>
-              <div>
-                <p className="font-dm text-sm text-negro/85 font-medium leading-none">Hotel Paraíso Encantado Xilitla</p>
-                <p className="text-[10px] text-negro/45 font-dm mt-0.5">Xilitla, San Luis Potosí</p>
-              </div>
-            </button>
-
-            {/* Opción: otro hotel */}
-            <button
-              type="button"
-              onClick={() => { setHotelOption("otro"); setPickupError(""); }}
-              className={`w-full flex items-center gap-3 border px-4 py-3 text-left transition-colors ${
-                hotelOption === "otro"
-                  ? "border-verde-selva bg-verde-selva/5"
-                  : "border-negro/15 hover:border-negro/30"
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                hotelOption === "otro" ? "border-verde-selva" : "border-negro/25"
-              }`}>
-                {hotelOption === "otro" && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
-              </div>
-              <p className="font-dm text-sm text-negro/85">Otro hotel o dirección</p>
-            </button>
-
-            {/* Opción: por definir */}
-            <button
-              type="button"
-              onClick={() => { setHotelOption("pordefinir"); setPickupError(""); }}
-              className={`w-full flex items-center gap-3 border px-4 py-3 text-left transition-colors ${
-                hotelOption === "pordefinir"
-                  ? "border-verde-selva bg-verde-selva/5"
-                  : "border-negro/15 hover:border-negro/30"
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                hotelOption === "pordefinir" ? "border-verde-selva" : "border-negro/25"
-              }`}>
-                {hotelOption === "pordefinir" && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
-              </div>
-              <div>
-                <p className="font-dm text-sm text-negro/85">Por definir</p>
-                <p className="text-[10px] text-negro/45 font-dm mt-0.5">Te contactaremos para coordinarlo</p>
-              </div>
-            </button>
-
-            {hotelOption === "otro" && (
-              <textarea
-                value={otroHotel}
-                onChange={(e) => { setOtroHotel(e.target.value); setPickupError(""); }}
-                placeholder="Nombre del hotel y ciudad · Ej. Hotel Valles, Ciudad Valles SLP"
-                rows={2}
-                className={`mt-2 w-full border px-4 py-3 font-dm text-sm text-negro focus:outline-none transition-colors resize-none bg-crema ${
-                  pickupError ? "border-terracota" : "border-negro/20 focus:border-verde-selva"
-                }`}
-              />
-            )}
-
-            {pickupError ? (
-              <p className="mt-1.5 text-xs text-terracota font-dm" role="alert">{pickupError}</p>
-            ) : (
-              <p className="mt-2 text-[10px] text-negro/40 font-dm">
-                Pasamos a recogerte a tu hospedaje. Respuesta por WhatsApp para coordinar hora exacta.
-              </p>
-            )}
-          </div>
-
-          {/* Notas especiales */}
+          {/* Hotel de recogida — un solo campo opcional */}
           <div>
             <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">
-              Notas especiales
+              Hotel de recogida <span className="text-negro/35 normal-case tracking-normal">(opcional)</span>
             </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Alergias, restricciones alimentarias, necesidades especiales..."
-              rows={3}
-              className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors resize-none"
+            <input type="text" value={pickup} onChange={(e) => setPickup(e.target.value)}
+              placeholder="Ej. Hotel Paraíso Encantado, Xilitla"
+              className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
+            <p className="mt-1.5 text-[10px] text-negro/40 font-dm">
+              Pasamos por ti a tu hospedaje. Si lo dejas en blanco, coordinamos la recogida por WhatsApp.
+            </p>
           </div>
+
+          {/* Notas especiales — colapsadas */}
+          {showNotes ? (
+            <div>
+              <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">
+                Notas especiales
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Alergias, restricciones alimentarias, necesidades especiales..."
+                rows={3}
+                className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors resize-none"
+              />
+            </div>
+          ) : (
+            <button type="button" onClick={() => setShowNotes(true)}
+              className="text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors underline underline-offset-2">
+              + Agregar una nota (alergias, necesidades especiales…)
+            </button>
+          )}
         </div>
       </section>
 
@@ -390,6 +309,10 @@ export default function CheckoutTourPage() {
           childrenMid:   state.childrenMid,
           childrenSmall: state.childrenSmall,
           promoCode:     state.promoCode,
+          // Tours por vehículo (RZR): el servidor cobra desde la matriz flota×ruta.
+          ruta:          state.ruta,
+          vehiculo:      state.vehiculo,
+          unidades:      state.unidades,
         },
       }),
     })
@@ -503,31 +426,48 @@ export default function CheckoutTourPage() {
               <p className="text-negro/50">{formatTourDate(booking.tourDate)}</p>
               <div className="flex gap-4 text-negro/50 text-xs">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.tourDuration}h</span>
-                <span className="flex items-center gap-1"><Users className="w-3 h-3" />{booking.adults + booking.children} personas</span>
+                {booking.vehiculo ? (
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{booking.unidades} vehículo{(booking.unidades ?? 1) !== 1 ? "s" : ""}</span>
+                ) : (
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{booking.adults + booking.children} personas</span>
+                )}
               </div>
             </div>
             <div className="border-t border-negro/8 pt-4 space-y-2 text-sm font-dm">
-              <div className="flex justify-between text-negro/60">
-                <span>{booking.adults} adulto{booking.adults !== 1 ? "s" : ""}</span>
-                <span>{formatMXN(booking.priceAdult * booking.adults)}</span>
-              </div>
-              {booking.childrenMid > 0 && (
-                <div className="flex justify-between text-negro/60">
-                  <span>{booking.childrenMid} niño{booking.childrenMid !== 1 ? "s" : ""} 6–10 años</span>
-                  <span>{formatMXN(Math.round(booking.priceAdult * 0.7) * booking.childrenMid)}</span>
-                </div>
-              )}
-              {booking.childrenSmall > 0 && (
-                <div className="flex justify-between text-negro/60">
-                  <span>{booking.childrenSmall} menor{booking.childrenSmall !== 1 ? "es" : ""} de 6</span>
-                  <span>{formatMXN(Math.round(booking.priceAdult * 0.5) * booking.childrenSmall)}</span>
-                </div>
-              )}
-              {booking.promoDiscount > 0 && (
-                <div className="flex justify-between text-verde-selva">
-                  <span>Descuento {booking.promoDiscount}%</span>
-                  <span>−{formatMXN(booking.subtotal - booking.total)}</span>
-                </div>
+              {booking.vehiculo ? (
+                <>
+                  <div className="flex justify-between text-negro/60"><span>Ruta</span><span className="text-right">{(booking.ruta ?? "").replace(/^Ruta\s/, "")}</span></div>
+                  <div className="flex justify-between text-negro/60"><span>Vehículo</span><span className="text-right">{booking.vehiculo}</span></div>
+                  <div className="flex justify-between text-negro/60">
+                    <span>{booking.unidades} vehículo{(booking.unidades ?? 1) !== 1 ? "s" : ""} × {formatMXN(booking.priceAdult)}</span>
+                    <span>{formatMXN(booking.total)}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-negro/60">
+                    <span>{booking.adults} adulto{booking.adults !== 1 ? "s" : ""}</span>
+                    <span>{formatMXN(booking.priceAdult * booking.adults)}</span>
+                  </div>
+                  {booking.childrenMid > 0 && (
+                    <div className="flex justify-between text-negro/60">
+                      <span>{booking.childrenMid} niño{booking.childrenMid !== 1 ? "s" : ""} 6–10 años</span>
+                      <span>{formatMXN(Math.round(booking.priceAdult * 0.7) * booking.childrenMid)}</span>
+                    </div>
+                  )}
+                  {booking.childrenSmall > 0 && (
+                    <div className="flex justify-between text-negro/60">
+                      <span>{booking.childrenSmall} menor{booking.childrenSmall !== 1 ? "es" : ""} de 6</span>
+                      <span>{formatMXN(Math.round(booking.priceAdult * 0.5) * booking.childrenSmall)}</span>
+                    </div>
+                  )}
+                  {booking.promoDiscount > 0 && (
+                    <div className="flex justify-between text-verde-selva">
+                      <span>Descuento {booking.promoDiscount}%</span>
+                      <span>−{formatMXN(booking.subtotal - booking.total)}</span>
+                    </div>
+                  )}
+                </>
               )}
               <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-2">
                 <span>Total</span>
@@ -554,16 +494,7 @@ export default function CheckoutTourPage() {
             </div>
           </div>
 
-          {/* Mejora 9 — Foto del guía */}
-          <GuideCard guiaIndex={
-            booking.tourId === "tour-tamul" || booking.tourId === "tour-puente-dios" ? 1 :
-            booking.tourId === "tour-meco"  || booking.tourId === "tour-minas-micos" ? 2 : 0
-          } />
-
-          {/* Mejora 6 — Reviews en rotación */}
-          <ReviewsCarousel />
-
-          {/* Garantías */}
+          {/* Garantías — versión compacta */}
           <div className="bg-white border border-negro/8 p-5">
             <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Reserva con confianza</p>
             <ul className="space-y-2">
@@ -571,7 +502,6 @@ export default function CheckoutTourPage() {
                 { Icon: CreditCard,    text: "Pago 100% seguro · Stripe" },
                 { Icon: CalendarCheck, text: "Cancelación gratuita con 48h" },
                 { Icon: Award,         text: "Guías NOM-09 SECTUR" },
-                { Icon: Phone,         text: "Respuesta en menos de 1 hora" },
                 { Icon: Mail,          text: "Confirmación por correo inmediata" },
               ].map(({ Icon, text }) => (
                 <li key={text} className="flex items-center gap-2 text-xs font-dm text-negro/65">
@@ -580,13 +510,6 @@ export default function CheckoutTourPage() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          {/* Badges */}
-          <div className="flex items-center justify-center gap-5 py-1 opacity-65">
-            <img src="/badges/tripadvisor.svg" alt="TripAdvisor" loading="lazy" className="h-6 w-auto" />
-            <img src="/badges/travellers-choice.svg" alt="Travellers Choice" loading="lazy" className="h-6 w-auto" />
-            <img src="/badges/top-rated-google.svg" alt="Top Rated Google" loading="lazy" className="h-6 w-auto" />
           </div>
 
         </aside>

@@ -28,7 +28,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Cuánto dura el recorrido?",
-      a: "Depende de la ruta: Nanacatli 2 horas (la más popular, ideal para primerizos), Miradores 3 horas, y Nacimiento o Trinidad 4 horas cada una.",
+      a: "Depende de la ruta: Nanacatli 2 horas (la más popular, ideal para primerizos), Miradores 3 horas, y Nacimiento o Trinidad 5 horas cada una. En la Ruta Nacimiento te prestamos kayak y chaleco salvavidas para la actividad en el nacimiento.",
     },
   ],
   "tour-rafting-tampaon": [

@@ -31,7 +31,7 @@ const TOUR_PROOF: Record<string, {
     bestFor:       "Amigos, familias y primerizos",
     reviews: [
       { name: "Andrés P.", city: "Querétaro", text: "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. ¡Repetiría mil veces!" },
-      { name: "Karla M.",  city: "Monterrey", text: "Nunca había manejado un todoterreno y el guía me dio toda la confianza. La cascada Nanacatli al final es un premiazo." },
+      { name: "Karla M.",  city: "Monterrey", text: "Nunca había manejado un todoterreno y el guía me dio toda la confianza. La Aldea Nanacatli, con sus casitas de hongos, al final es un premiazo." },
     ],
   },
   "tour-rappel-tamul": {

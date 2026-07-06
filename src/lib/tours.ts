@@ -10,7 +10,9 @@ export interface TourRuta {
   nombre:       string;
   duracion_hrs: number;
   descripcion:  string;
-  desde:        number; // precio del vehículo más accesible en esta ruta (MXN)
+  desde:        number;     // precio del vehículo más accesible en esta ruta (MXN)
+  destinos?:    string[];   // lugares que se visitan en este recorrido
+  incluye?:     string[];   // extras específicos de esta ruta (ej. kayak en Nacimiento)
 }
 
 /** Vehículo de la flota; `precios` va en el MISMO orden que el array `rutas` del tour. */
@@ -64,17 +66,22 @@ export const TOURS_DB: Tour[] = [
     groupMax:         6,
     privateAvailable: false,
     nombre:           "Recorrido en RZR por Xilitla — Elige tu Ruta Off-Road",
-    tagline:          "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 4 horas",
+    tagline:          "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
     precio:           1600,
     precioUnidad:     "vehiculo",
     urgencia:         "Flota limitada — los fines de semana se aparta con anticipación",
-    descripcion:      "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Cascada Nanacatli, los miradores de la sierra, un nacimiento escondido en la selva o el pueblo de La Trinidad. El precio es por vehículo (desde $1,600), no por persona.",
-    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, termina en una cascada escondida), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (4 h, un nacimiento de agua cristalina en lo profundo de la selva) y la de Trinidad (4 h, historia y cultura hasta un pueblo indígena preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ($1,600 la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
+    descripcion:      "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600), no por persona.",
+    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, llega a la Aldea Nanacatli, un pueblo de casitas de hongos gigantes conocido como 'la aldea de los pitufos'), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (5 h, un nacimiento de agua cristalina en lo profundo de la selva donde te prestamos kayak y chaleco salvavidas) y la de Trinidad (5 h, sube al bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ($1,600 la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
     rutas: [
-      { nombre: "Ruta Nanacatli",  duracion_hrs: 2, desde: 1600, descripcion: "La más popular de Xilitla. Te adentras en la selva húmeda, cruzas ríos de agua cristalina y llegas a la impresionante Cascada Nanacatli. Barro, naturaleza pura y adrenalina garantizada — la favorita de quienes vienen por primera vez." },
-      { nombre: "Ruta Miradores",  duracion_hrs: 3, desde: 2600, descripcion: "Sube a los puntos más altos de la sierra y contempla vistas panorámicas que te quitarán el aliento. La Huasteca Potosina desde las alturas, con la selva extendiéndose hasta donde alcanza la vista. Perfecta para fotos épicas." },
-      { nombre: "Ruta Nacimiento", duracion_hrs: 4, desde: 3800, descripcion: "La aventura más completa. Llegas a un nacimiento de agua cristalina escondido profundamente en la selva, rodeado de vegetación que parece de película. Un paraíso secreto al que es imposible llegar sin estos vehículos." },
-      { nombre: "Ruta Trinidad",   duracion_hrs: 4, desde: 3800, descripcion: "Historia, cultura y naturaleza en un solo recorrido. Caminos de sierra entre cascadas y ríos hasta el pintoresco pueblo de La Trinidad, una comunidad indígena preservada en el tiempo, con paradas en miradores naturales." },
+      { nombre: "Ruta Nanacatli",  duracion_hrs: 2, desde: 1600, descripcion: "La más popular de Xilitla y perfecta para primerizos. Te adentras en la selva húmeda, cruzas ríos de agua cristalina y llegas a la Aldea Nanacatli, un pintoresco pueblo de casitas de hongos gigantes —la famosa 'aldea de los pitufos'—, ideal para fotos. Barro, naturaleza y adrenalina en dos horas.",
+        destinos: ["Aldea Nanacatli (aldea de los pitufos)", "Mirador Xilitla", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
+      { nombre: "Ruta Miradores",  duracion_hrs: 3, desde: 2600, descripcion: "Sube a los puntos más altos de la sierra y contempla vistas panorámicas que te quitarán el aliento. La Huasteca Potosina desde las alturas, con la selva extendiéndose hasta donde alcanza la vista, pasando también por la Aldea Nanacatli. Perfecta para fotos épicas.",
+        destinos: ["Aldea Nanacatli (aldea de los pitufos)", "Mirador Xilitla", "Mirador Cerro Quebrado", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
+      { nombre: "Ruta Nacimiento", duracion_hrs: 5, desde: 3800, descripcion: "La aventura más completa. Llegas a un nacimiento de agua cristalina escondido en lo profundo de la selva —el Nacimiento Xilitla-Huichihuayán— y ahí te prestamos kayak y chaleco salvavidas para que disfrutes el agua. En el camino visitas la Cueva de las Quilas y varios miradores. Un paraíso secreto imposible de alcanzar sin estos vehículos.",
+        incluye: ["Préstamo de kayak y chaleco salvavidas para la actividad en el nacimiento"],
+        destinos: ["Nacimiento Xilitla-Huichihuayán", "Cueva de las Quilas", "Mirador Xilitla", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
+      { nombre: "Ruta Trinidad",   duracion_hrs: 5, desde: 3800, descripcion: "Historia, cultura y naturaleza en un solo recorrido. Caminos de sierra que suben hasta el bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo, con parada en la Aldea Nanacatli (la aldea de los pitufos) y en varios miradores. El recorrido más alto y verde de Xilitla.",
+        destinos: ["Bosque de niebla La Trinidad", "Aldea Nanacatli (aldea de los pitufos)", "Mirador Xilitla", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
     ],
     flota: [
       { nombre: "RZR 500",           capacidad: "2 adultos + 1 niño",  descripcion: "Ágil, deportivo y lleno de carácter. Ideal para parejas o familia pequeña.",                          precios: [1600, 2600, 3800, 3800] },
@@ -87,10 +94,10 @@ export const TOURS_DB: Tour[] = [
     ],
     destinos: [
       "Base en Xilitla (punto de encuentro)",
-      "Cascada Nanacatli (Ruta Nanacatli · 2 h)",
+      "Aldea Nanacatli — casitas de hongos (Ruta Nanacatli · 2 h)",
       "Miradores de la sierra (Ruta Miradores · 3 h)",
-      "Nacimiento escondido en la selva (Ruta Nacimiento · 4 h)",
-      "Pueblo de La Trinidad (Ruta Trinidad · 4 h)",
+      "Nacimiento escondido con kayak (Ruta Nacimiento · 5 h)",
+      "Bosque de niebla de La Trinidad (Ruta Trinidad · 5 h)",
     ],
     incluye: [
       "Vehículo todoterreno con gasolina incluida",

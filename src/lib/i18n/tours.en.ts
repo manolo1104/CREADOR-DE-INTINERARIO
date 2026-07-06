@@ -13,26 +13,26 @@ export interface TourTranslation {
   incluye?: string[];
   gallery?: string[];
   /** Textos de rutas/flota en el MISMO orden que tours.ts; duración y precios NO se traducen. */
-  rutas?: { nombre?: string; descripcion?: string }[];
+  rutas?: { nombre?: string; descripcion?: string; destinos?: string[]; incluye?: string[] }[];
   flota?: { nombre?: string; capacidad?: string; descripcion?: string }[];
 }
 
 export const TOURS_EN: Record<string, TourTranslation> = {
   "rzr-xilitla": {
     nombre: "RZR Off-Road Ride in Xilitla — Pick Your Route",
-    tagline: "Drive your own off-road buggy through jungle, rivers and mud — 4 routes, 2 to 4 hours",
+    tagline: "Drive your own off-road buggy through jungle, rivers and mud — 4 routes, 2 to 5 hours",
     tipo: "Off-Road Adventure",
     urgencia: "Limited fleet — weekends book up in advance",
     descripcion:
-      "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Waterfall, the mountain lookouts, a hidden spring deep in the jungle or the village of La Trinidad. Pricing is per vehicle (from $1,600 MXN), not per person.",
+      "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Village (a hamlet of giant mushroom houses), the mountain lookouts, a hidden jungle spring (with kayak) or the cloud forest of La Trinidad. Pricing is per vehicle (from $1,600 MXN), not per person.",
     descripcionLarga:
-      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, ending at a hidden waterfall), Miradores (3 h, panoramic mountain lookouts), Nacimiento (4 h, a crystal-clear spring deep in the jungle) and Trinidad (4 h, history and culture up to an indigenous village preserved in time).\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ($1,600 MXN for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
+      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, reaching the Nanacatli Village, a hamlet of giant mushroom houses known as 'the smurf village'), Miradores (3 h, panoramic mountain lookouts), Nacimiento (5 h, a crystal-clear spring deep in the jungle where we lend you a kayak and life vest) and Trinidad (5 h, climbing to the cloud forest of La Trinidad, a mountain village preserved in time).\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ($1,600 MXN for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
     destinos: [
       "Base in Xilitla (meeting point)",
-      "Nanacatli Waterfall (Nanacatli Route · 2 h)",
+      "Nanacatli Village — mushroom houses (Nanacatli Route · 2 h)",
       "Mountain lookouts (Miradores Route · 3 h)",
-      "Hidden jungle spring (Nacimiento Route · 4 h)",
-      "Village of La Trinidad (Trinidad Route · 4 h)",
+      "Hidden jungle spring with kayak (Nacimiento Route · 5 h)",
+      "Cloud forest of La Trinidad (Trinidad Route · 5 h)",
     ],
     incluye: [
       "Off-road vehicle with fuel included",
@@ -42,10 +42,15 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "4 routes to choose from: Nanacatli, Miradores, Nacimiento or Trinidad",
     ],
     rutas: [
-      { nombre: "Nanacatli Route",  descripcion: "Xilitla's most popular ride. You head into the humid jungle, cross crystal-clear rivers and reach the impressive Nanacatli Waterfall. Mud, pure nature and guaranteed adrenaline — the first-timers' favorite." },
-      { nombre: "Miradores Route",  descripcion: "Climb to the highest points of the sierra and take in panoramic views that will leave you breathless. The Huasteca Potosina from above, with the jungle stretching as far as the eye can see. Perfect for epic photos." },
-      { nombre: "Nacimiento Route", descripcion: "Our most complete adventure. You reach a crystal-clear spring hidden deep in the jungle, surrounded by vegetation straight out of a movie. A secret paradise that's impossible to reach without these vehicles." },
-      { nombre: "Trinidad Route",   descripcion: "History, culture and nature in a single ride. Mountain trails between waterfalls and rivers up to the picturesque village of La Trinidad, an indigenous community preserved in time, with stops at natural lookouts." },
+      { nombre: "Nanacatli Route",  descripcion: "Xilitla's most popular ride and perfect for first-timers. You head into the humid jungle, cross crystal-clear rivers and reach Nanacatli Village, a charming hamlet of giant mushroom houses — the famous 'smurf village' — perfect for photos. Mud, nature and adrenaline in two hours.",
+        destinos: ["Nanacatli Village (the smurf village)", "Xilitla Lookout", "Tlahuilapa Tunnel", "Old Road to Las Pozas", "Xilitla Magic Town", "Surrealist Garden (from outside)"] },
+      { nombre: "Miradores Route",  descripcion: "Climb to the highest points of the sierra and take in panoramic views that will leave you breathless. The Huasteca Potosina from above, with the jungle stretching as far as the eye can see, also passing through Nanacatli Village. Perfect for epic photos.",
+        destinos: ["Nanacatli Village (the smurf village)", "Xilitla Lookout", "Cerro Quebrado Lookout", "Tlahuilapa Tunnel", "Old Road to Las Pozas", "Xilitla Magic Town", "Surrealist Garden (from outside)"] },
+      { nombre: "Nacimiento Route", descripcion: "Our most complete adventure. You reach a crystal-clear spring hidden deep in the jungle — the Xilitla-Huichihuayán Spring — and there we lend you a kayak and life vest to enjoy the water. Along the way you visit the Cueva de las Quilas and several lookouts. A secret paradise impossible to reach without these vehicles.",
+        incluye: ["Kayak and life vest provided for the activity at the spring"],
+        destinos: ["Xilitla-Huichihuayán Spring", "Cueva de las Quilas", "Xilitla Lookout", "Tlahuilapa Tunnel", "Old Road to Las Pozas", "Xilitla Magic Town", "Surrealist Garden (from outside)"] },
+      { nombre: "Trinidad Route",   descripcion: "History, culture and nature in a single ride. Mountain trails climbing up to the cloud forest of La Trinidad, a mountain village preserved in time, with a stop at Nanacatli Village (the smurf village) and several lookouts. The highest and greenest ride in Xilitla.",
+        destinos: ["La Trinidad Cloud Forest", "Nanacatli Village (the smurf village)", "Xilitla Lookout", "Tlahuilapa Tunnel", "Old Road to Las Pozas", "Xilitla Magic Town", "Surrealist Garden (from outside)"] },
     ],
     flota: [
       { nombre: "RZR 500",         capacidad: "2 adults + 1 child",  descripcion: "Agile, sporty and full of character. Ideal for couples or a small family." },
