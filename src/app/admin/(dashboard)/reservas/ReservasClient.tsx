@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
@@ -23,6 +23,22 @@ const fDateL = (d: string) => {
 };
 
 function calcLine(l: LineItem): number { return calcTourLine(l); }
+
+// Resumen corto del hospedaje para la lista (cada packageItem es una habitación
+// que llega desde la cotización al convertirla a reserva).
+function hospedajeSummary(b: TourBooking): string | null {
+  const pkgs = (b as any).packageItems as PackageItem[] | null;
+  if (!Array.isArray(pkgs) || pkgs.length === 0) return null;
+  const noche = (n: number) => `${n} noche${n !== 1 ? "s" : ""}`;
+  if (pkgs.length === 1) {
+    const p = pkgs[0];
+    const hab = (p.habitaciones ?? 1) > 1 ? ` · ${p.habitaciones} hab` : "";
+    return `${p.habitacion} · ${noche(p.noches)}${hab}`;
+  }
+  const totalHab  = pkgs.reduce((s, p) => s + (p.habitaciones ?? 1), 0);
+  const maxNoches = Math.max(...pkgs.map(p => p.noches ?? 0));
+  return `${totalHab} habitaciones · ${noche(maxNoches)}`;
+}
 
 // ── Estado operativo por fecha de tour (zona horaria de México) ──────────────
 const todayMX = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
@@ -544,6 +560,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           const rawDeposito = (b as any).depositoPagado ?? 0;
           const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
           const pendiente = Math.max(0, b.totalAmount - deposito);
+          const hosp = hospedajeSummary(b);
           return (
             <div key={b.id} className="bg-white border border-[#1B4332]/10 rounded-md p-4">
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -556,6 +573,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               <p className="text-[#1B4332] font-medium">{b.customerName}</p>
               <p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p>
               <p className="text-[#1B4332]/70 text-sm mt-1">{b.tourName}</p>
+              {hosp && (
+                <p className="flex items-center gap-1 text-[#52B788] text-xs mt-0.5">
+                  <BedDouble className="w-3 h-3 shrink-0" />{hosp}
+                </p>
+              )}
               <div className="flex items-center justify-between mt-2 text-xs">
                 <span className="text-[#1B4332]/60">{fDate(b.tourDate)} · {b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</span>
                 <span className="text-[#52B788] font-medium">{fmx(b.totalAmount)}</span>
@@ -589,11 +611,19 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 const rawDeposito = (b as any).depositoPagado ?? 0;
                 const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
                 const pendiente = Math.max(0, b.totalAmount - deposito);
+                const hosp = hospedajeSummary(b);
                 return (
                   <tr key={b.id} className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors">
                     <td className="py-3 px-3 text-[#1B4332] font-mono text-xs font-medium">{b.confirmationNumber}</td>
                     <td className="py-3 px-3"><p className="text-[#1B4332] font-medium">{b.customerName}</p><p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p></td>
-                    <td className="py-3 px-3 text-[#1B4332]/70 max-w-[140px] truncate text-xs">{b.tourName}</td>
+                    <td className="py-3 px-3 max-w-[170px]">
+                      <p className="text-[#1B4332]/70 truncate text-xs">{b.tourName}</p>
+                      {hosp && (
+                        <p className="flex items-center gap-1 text-[#52B788] text-[10px] mt-0.5" title={hosp}>
+                          <BedDouble className="w-3 h-3 shrink-0" /><span className="truncate">{hosp}</span>
+                        </p>
+                      )}
+                    </td>
                     <td className="py-3 px-3 text-[#1B4332]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
                     <td className="py-3 px-3">{b.status !== "cancelled" ? <DaysChip d={daysToTour(b.tourDate, today)} /> : <span className="text-[#1B4332]/20 text-xs">—</span>}</td>
                     <td className="py-3 px-3 text-[#1B4332]/70 text-xs">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</td>
