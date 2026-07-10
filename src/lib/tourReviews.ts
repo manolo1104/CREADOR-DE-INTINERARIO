@@ -273,4 +273,36 @@ export const TOUR_REVIEWS: Record<string, Review[]> = {
         "El agua a 20°C es perfecta para nadar incluso en diciembre. Todo incluido como prometieron, sin costos extra en el camino. El desayuno buffet estaba delicioso. Mejor tour de los 3 que hicimos en la región.",
     },
   ],
+  "tour-buceo-media-luna": [
+    {
+      nombre:    "Mariana Escobedo",
+      ciudad:    "San Luis Potosí, SLP",
+      rating:    5,
+      iniciales: "ME",
+      fecha:     "Mayo 2025",
+      foto:      "/imagenes/reviews/reviewer-11.jpg",
+      texto:
+        "Nunca había buceado y estaba nerviosa, pero el instructor me dio toda la confianza. El agua de la Media Luna es tan clara que parece una alberca gigante, y ver el fondo con las figuras sumergidas fue impresionante. Las fotos que nos dieron quedaron increíbles. ¡Repetiría sin pensarlo!",
+    },
+    {
+      nombre:    "Diego Fuentes",
+      ciudad:    "Querétaro, QRO",
+      rating:    5,
+      iniciales: "DF",
+      fecha:     "Abril 2025",
+      foto:      "/imagenes/reviews/reviewer-19.jpg",
+      texto:
+        "Mi primera inmersión y no pudo ser mejor lugar. El agua fresca y cristalina, la visibilidad brutal y el instructor súper paciente explicando todo antes de bajar. En cuatro horas pasas de no saber nada a estar respirando bajo el agua. Una experiencia que no olvidas.",
+    },
+    {
+      nombre:    "Alejandra Ríos",
+      ciudad:    "Monterrey, NL",
+      rating:    5,
+      iniciales: "AR",
+      fecha:     "Junio 2025",
+      foto:      "/imagenes/reviews/reviewer-25.jpg",
+      texto:
+        "Fuimos en pareja y nos encantó. Todo muy profesional, el equipo en buen estado y la seguridad siempre primero. La Media Luna es un lugar mágico para descubrir el buceo. Solo tomen en cuenta que la entrada al parque se paga aparte, pero vale cada peso.",
+    },
+  ],
 };

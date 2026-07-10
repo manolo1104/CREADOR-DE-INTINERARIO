@@ -50,6 +50,8 @@ export interface Tour {
   groupMax:         number;
   privateAvailable: boolean;
   privateMinPrice?: number;
+  /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
+  soloAdultos?:     boolean;
   gallery:          GalleryImage[];
 }
 
@@ -485,6 +487,51 @@ export const TOURS_DB: Tour[] = [
       { src: "/imagenes/puente-de-dios-tamasopo/gallery-new-15.jpg", alt: "Turista en el tobogán natural de travertino de Tamasopo", hasRealPeople: true },
       { src: "/imagenes/puente-de-dios-tamasopo/gallery-new-16.jpg", alt: "Dos chicas en la poza circular de Tamasopo — pozas escalonadas con selva", hasRealPeople: true },
       { src: "/imagenes/puente-de-dios-tamasopo/gallery-new-17.jpg", alt: "Hombre saltando al vacío sobre poza azul del Puente de Dios — aventura extrema", hasRealPeople: true },
+    ],
+  },
+  {
+    id:               "tour-buceo-media-luna",
+    slug:             "buceo-media-luna",
+    icon:             "Anchor",
+    tipo:             "Buceo & Naturaleza",
+    dificultad:       "baja",
+    duracion_hrs:     4,
+    reviewCount:      31,
+    groupMin:         1,
+    groupMax:         8,
+    privateAvailable: false,
+    soloAdultos:      true,
+    nombre:           "Descubre el Buceo en la Laguna de la Media Luna — Tu Primera Inmersión con Instructor PADI",
+    tagline:          "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
+    precio:           1200,
+    urgencia:         "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
+    descripcion:
+      "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,200 MXN por persona.",
+    descripcionLarga:
+      "Respirar bajo el agua nunca había sido tan fácil y accesible: el requisito más importante es tu deseo de hacerlo, el resto corre por nuestra cuenta. Este es un programa 'Descubre el Buceo' (Discover Scuba Diving) diseñado para que logres tu sueño de descubrir el buceo aunque nunca hayas puesto un tanque en la espalda.\n\nLo hacemos en la Laguna de la Media Luna, en Rioverde, San Luis Potosí, de aguas frescas y cristalinas — un lugar ideal para vivir tu primera inmersión con calma y seguridad.\n\nSe requieren solamente 4 horas de capacitación. Durante ese tiempo aprendes los principios básicos del buceo con equipo SCUBA, incluyendo el equipo y las técnicas de buceo. Primero recibes una breve orientación de un instructor certificado PADI; después pones a prueba tus habilidades en aguas poco profundas, ganando confianza y seguridad, y cuando estés listo desciendes entre 5 y 10 metros por debajo de la superficie, siempre acompañado.\n\nTu día incluye el instructor PADI, el equipo de buceo y las fotografías digitales del recuerdo. Solo necesitas traer traje de baño, toalla y dinero para la entrada al parque. Es una actividad para mayores de 10 años con buena salud; no es apta para personas con problemas respiratorios, cardiovasculares o afecciones de oído, ni para mujeres embarazadas, y no puedes bucear bajo efectos de alcohol o drogas.\n\n¡Diversión y aventura bajo el agua! Si siempre quisiste saber qué se siente respirar bajo el agua, este es tu momento.",
+    destinos: [
+      "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
+      "Orientación con instructor certificado PADI",
+      "Práctica de habilidades en aguas poco profundas",
+      "Inmersión de 5 a 10 metros por debajo de la superficie",
+    ],
+    incluye: [
+      "Instructor certificado PADI",
+      "Equipo completo de buceo (SCUBA)",
+      "4 horas de capacitación y práctica",
+      "Fotografías digitales de tu inmersión",
+      "Inmersión guiada de 5 a 10 metros de profundidad",
+    ],
+    imagen_hero: "/imagenes/tours/buceo-media-luna/hero.jpg",
+    imagenes: [
+      "/imagenes/tours/buceo-media-luna/hero.jpg",
+      "/imagenes/tours/buceo-media-luna/gallery-1.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/tours/buceo-media-luna/hero.jpg",      alt: "Grupo de buzos con equipo SCUBA junto a una escultura sumergida en las aguas cristalinas de la Laguna de la Media Luna, uno haciendo la señal de OK", hasRealPeople: true },
+      { src: "/imagenes/tours/buceo-media-luna/gallery-1.jpg", alt: "Tres buzos posando junto a una figura sumergida entre la vegetación acuática de la Laguna de la Media Luna en Rioverde", hasRealPeople: true },
+      { src: "/imagenes/tours/buceo-media-luna/gallery-2.jpg", alt: "Dos buzos haciendo pulgar arriba mientras flotan sobre el fondo cristalino de la Laguna de la Media Luna", hasRealPeople: true },
+      { src: "/imagenes/tours/buceo-media-luna/gallery-3.jpg", alt: "Buceadores en la superficie de la Laguna de la Media Luna rodeados de sabinos y cielo abierto tras su inmersión", hasRealPeople: true },
     ],
   },
 ];

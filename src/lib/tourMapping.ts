@@ -12,4 +12,5 @@ export const DESTINO_EN_TOURS: Record<string, { nombre: string; slug: string }[]
   "cascadas-minas-viejas":          [{ nombre: "Paraíso Escalonado",  slug: "paraiso-escalonado-minas-micos" }],
   "puente-de-dios-tamasopo":        [{ nombre: "Ruta Acuática",       slug: "ruta-acuatica-puente-de-dios" }],
   "cascadas-de-tamasopo":           [{ nombre: "Ruta Acuática",       slug: "ruta-acuatica-puente-de-dios" }],
+  "laguna-media-luna":              [{ nombre: "Descubre el Buceo",   slug: "buceo-media-luna" }],
 };

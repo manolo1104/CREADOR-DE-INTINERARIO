@@ -334,4 +334,33 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Man leaping into the blue pool of Puente de Dios — extreme adventure",
     ],
   },
+  "buceo-media-luna": {
+    nombre: "Discover Scuba Diving at the Media Luna Lagoon — Your First Dive with a PADI Instructor",
+    tagline: "Breathe underwater for the first time in the fresh, crystal-clear water of Media Luna — no experience needed",
+    tipo: "Scuba Diving & Nature",
+    urgencia: "Limited spots per instructor — book ahead, especially on weekends",
+    descripcion:
+      "Take your first SCUBA dive at the Media Luna Lagoon in Rioverde, with its fresh, crystal-clear water. Breathing underwater has never been this easy: no previous experience needed, just the desire to try. A PADI-certified instructor guides you every step of the way — first you practice in shallow water and, when you're ready, you descend between 5 and 10 meters. It's 4 hours of training and includes the diving gear and digital photos of your dive. $1,200 MXN per person.",
+    descripcionLarga:
+      "Breathing underwater has never been this easy or accessible: the most important requirement is your desire to do it — we take care of the rest. This is a 'Discover Scuba Diving' program designed so you can live your dream of trying scuba even if you've never worn a tank before.\n\nWe do it at the Media Luna Lagoon in Rioverde, San Luis Potosí, with its fresh, crystal-clear water — an ideal place to make your first dive calmly and safely.\n\nAll it takes is 4 hours of training. During that time you learn the basics of diving with SCUBA gear, including the equipment and diving techniques. First you get a short briefing from a PADI-certified instructor; then you practice your skills in shallow water, building confidence and comfort, and when you're ready you descend between 5 and 10 meters below the surface, always accompanied.\n\nYour day includes the PADI instructor, the diving gear and digital photos to remember it by. You only need to bring a swimsuit, a towel and cash for the park entrance. It's an activity for ages 10 and up in good health; it's not suitable for people with respiratory, cardiovascular or ear conditions, nor for pregnant women, and you can't dive under the influence of alcohol or drugs.\n\nFun and adventure underwater! If you've always wondered what it feels like to breathe underwater, this is your moment.",
+    destinos: [
+      "Media Luna Lagoon (Rioverde, San Luis Potosí)",
+      "Briefing with a PADI-certified instructor",
+      "Skills practice in shallow water",
+      "5-to-10-meter dive below the surface",
+    ],
+    incluye: [
+      "PADI-certified instructor",
+      "Full scuba diving gear (SCUBA)",
+      "4 hours of training and practice",
+      "Digital photos of your dive",
+      "Guided dive 5 to 10 meters deep",
+    ],
+    gallery: [
+      "Group of scuba divers with SCUBA gear next to a submerged statue in the crystal-clear water of the Media Luna Lagoon, one giving the OK sign",
+      "Three divers posing next to a submerged figure among the aquatic plants of the Media Luna Lagoon in Rioverde",
+      "Two divers giving a thumbs up as they float over the crystal-clear bottom of the Media Luna Lagoon",
+      "Divers at the surface of the Media Luna Lagoon surrounded by cypress trees and open sky after their dive",
+    ],
+  },
 };

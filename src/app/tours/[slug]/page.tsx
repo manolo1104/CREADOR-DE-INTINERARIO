@@ -130,9 +130,13 @@ export default function TourDetailPage({ params }: Props) {
         { q: "Can I cancel my booking?", a: "Yes. Free cancellation up to 48 hours before the tour. Full refund, no questions asked." },
         esVehiculo
           ? { q: "Is the price per person or per vehicle?", a: `Pricing is per vehicle, starting at ${money(tour.precio)} MXN depending on the route and unit you choose. Every vehicle includes fuel, safety gear and the guide.` }
-          : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children (4–12) get 40% off. Under 4 are free.` },
+          : tour.soloAdultos
+            ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This activity is for ages 10 and up, so there is no children's discount. The park admission is paid separately on site.` }
+            : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children (4–12) get 40% off. Under 4 are free.` },
         esVehiculo
           ? { q: "Where does the tour depart from?", a: "We meet at our base in Xilitla, San Luis Potosí. Transportation to Xilitla is not included." }
+          : tour.id === "tour-buceo-media-luna"
+            ? { q: "Where does the tour depart from?", a: "We meet at the entrance of the Media Luna Lagoon, in Rioverde — about 2 hours from Ciudad Valles. You make your own way there; transportation and the park admission are not included." }
           : tour.id === "tour-rafting-tampaon"
             ? { q: "Where does the tour depart from?", a: "We pick you up at your lodging in Ciudad Valles or Xilitla — round-trip transport included." }
             : { q: "Where does the tour depart from?", a: "The tour departs from Ciudad Valles, San Luis Potosí. We include pickup at your hotel or an agreed meeting point." },
@@ -145,9 +149,13 @@ export default function TourDetailPage({ params }: Props) {
         { q: "¿Puedo cancelar mi reserva?", a: "Sí. Cancelación gratuita hasta 48 horas antes del tour. Reembolso completo sin preguntas." },
         esVehiculo
           ? { q: "¿El precio es por persona o por vehículo?", a: `El precio es por vehículo, desde ${money(tour.precio)} MXN según la ruta y la unidad que elijas. Todos los vehículos incluyen gasolina, equipo de seguridad y guía.` }
-          : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Niños (4–12 años) tienen un 40% de descuento. Menores de 4 años entran gratis.` },
+          : tour.soloAdultos
+            ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona. Es una actividad para mayores de 10 años, por lo que no aplica descuento de niños. La entrada al parque se paga aparte en sitio.` }
+            : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Niños (4–12 años) tienen un 40% de descuento. Menores de 4 años entran gratis.` },
         esVehiculo
           ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es nuestra base en Xilitla, San Luis Potosí. El transporte hasta Xilitla no está incluido." }
+          : tour.id === "tour-buceo-media-luna"
+            ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es la entrada de la Laguna de la Media Luna, en Rioverde — a unas 2 horas de Ciudad Valles. Llegas por tu cuenta; el transporte y la entrada al parque no están incluidos." }
           : tour.id === "tour-rafting-tampaon"
             ? { q: "¿Dónde es el punto de salida?", a: "Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla — traslado redondo incluido." }
             : { q: "¿Dónde es el punto de salida?", a: "El tour sale desde Ciudad Valles, San Luis Potosí. Incluimos recogida en tu hotel o punto de encuentro acordado." },
@@ -395,7 +403,7 @@ export default function TourDetailPage({ params }: Props) {
             </ul>
           </section>
 
-          <TourDeparture />
+          <TourDeparture tourId={tour.id} />
 
           {reviews.length > 0 && (
             <section>

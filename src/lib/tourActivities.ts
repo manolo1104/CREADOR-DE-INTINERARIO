@@ -59,4 +59,12 @@ Momentos que vas a vivir:
 - La Hacienda Los Gómez: ruinas coloniales que la selva va recuperando poco a poco. Los muros cubiertos de plantas y el silencio crean una atmósfera completamente diferente.
 - Las Siete Cascadas de Tamasopo en secuencia: cada una tiene su carácter — una es para nadar, otra para asomarse desde arriba, otra tiene una cueva detrás de la caída. Los guías conocen la ruta exacta para no perderte ninguna.
 - En la última poza, hay una roca plana con vista al cañón. Los que quieren se quedan ahí una hora extra sin apuro.`,
+
+  "tour-buceo-media-luna": `
+Momentos que vas a vivir:
+- Llegas a la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Un instructor certificado PADI te recibe y te da una orientación breve — no necesitas experiencia previa, solo ganas.
+- Te colocan el equipo SCUBA completo y practicas los primeros ejercicios en aguas poco profundas. La primera vez que respiras bajo el agua es una sensación que no se olvida: descubres que puedes hacerlo y la confianza llega sola.
+- Cuando el instructor te ve listo, desciendes poco a poco entre 5 y 10 metros por debajo de la superficie, siempre acompañado.
+- Sales del agua con la adrenalina tranquila de haber cumplido algo que parecía imposible, y con las fotografías digitales de tu inmersión como recuerdo.
+NOTA: Es un programa 'Descubre el Buceo' (Discover Scuba Diving) de 4 horas de capacitación para descubrir el buceo desde cero, en la Laguna de la Media Luna (Rioverde, SLP) — NO en la zona de Xilitla/Ciudad Valles. Punto de encuentro en el acceso a la laguna; llegas por tu cuenta (~2 h desde Cd. Valles). Incluye instructor PADI, equipo de buceo y fotos digitales; NO incluye transporte ni la entrada al parque (se paga aparte). Actividad para mayores de 10 años con buena salud; no apta para embarazadas ni personas con problemas respiratorios, cardiovasculares o afecciones de oído. Se cobra POR PERSONA ($1,200 MXN).`,
 };

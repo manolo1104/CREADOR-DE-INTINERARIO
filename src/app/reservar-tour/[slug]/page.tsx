@@ -193,41 +193,48 @@ export default function ReservarTourPage() {
                     aria-label="Aumentar adultos">+</button>
                 </div>
               </div>
-              {/* Niños */}
-              {/* Niños 6–10 años */}
-              <div className="flex items-center justify-between border-t border-negro/6 pt-5">
-                <div>
-                  <p className="font-dm text-sm text-negro/80">Niños 6–10 años</p>
-                  <p className="font-dm text-xs text-negro/40">{formatMXN(childPriceMid)} por persona · 70 % del precio</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setChildrenMid(Math.max(0, childrenMid - 1))}
-                    className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Reducir niños 6–10">−</button>
-                  <span className="w-8 text-center font-dm text-negro">{childrenMid}</span>
-                  <button onClick={() => setChildrenMid(Math.min(tour.groupMax - adults - childrenSmall, childrenMid + 1))}
-                    className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Aumentar niños 6–10">+</button>
-                </div>
-              </div>
+              {/* Niños — ocultos en actividades solo para adultos (ej. buceo, edad mínima 10) */}
+              {!tour.soloAdultos && (
+                <>
+                  {/* Niños 6–10 años */}
+                  <div className="flex items-center justify-between border-t border-negro/6 pt-5">
+                    <div>
+                      <p className="font-dm text-sm text-negro/80">Niños 6–10 años</p>
+                      <p className="font-dm text-xs text-negro/40">{formatMXN(childPriceMid)} por persona · 70 % del precio</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setChildrenMid(Math.max(0, childrenMid - 1))}
+                        className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
+                        aria-label="Reducir niños 6–10">−</button>
+                      <span className="w-8 text-center font-dm text-negro">{childrenMid}</span>
+                      <button onClick={() => setChildrenMid(Math.min(tour.groupMax - adults - childrenSmall, childrenMid + 1))}
+                        className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
+                        aria-label="Aumentar niños 6–10">+</button>
+                    </div>
+                  </div>
 
-              {/* Niños menores de 6 */}
-              <div className="flex items-center justify-between border-t border-negro/6 pt-5">
-                <div>
-                  <p className="font-dm text-sm text-negro/80">Niños menores de 6</p>
-                  <p className="font-dm text-xs text-negro/40">{formatMXN(childPriceSmall)} por persona · 50 % del precio</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setChildrenSmall(Math.max(0, childrenSmall - 1))}
-                    className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Reducir niños menores de 6">−</button>
-                  <span className="w-8 text-center font-dm text-negro">{childrenSmall}</span>
-                  <button onClick={() => setChildrenSmall(Math.min(tour.groupMax - adults - childrenMid, childrenSmall + 1))}
-                    className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                    aria-label="Aumentar niños menores de 6">+</button>
-                </div>
-              </div>
-              <p className="text-xs text-negro/40 font-dm">Bebés menores de 3 años: entrada gratuita (no cuentan como participantes)</p>
+                  {/* Niños menores de 6 */}
+                  <div className="flex items-center justify-between border-t border-negro/6 pt-5">
+                    <div>
+                      <p className="font-dm text-sm text-negro/80">Niños menores de 6</p>
+                      <p className="font-dm text-xs text-negro/40">{formatMXN(childPriceSmall)} por persona · 50 % del precio</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setChildrenSmall(Math.max(0, childrenSmall - 1))}
+                        className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
+                        aria-label="Reducir niños menores de 6">−</button>
+                      <span className="w-8 text-center font-dm text-negro">{childrenSmall}</span>
+                      <button onClick={() => setChildrenSmall(Math.min(tour.groupMax - adults - childrenMid, childrenSmall + 1))}
+                        className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
+                        aria-label="Aumentar niños menores de 6">+</button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-negro/40 font-dm">Bebés menores de 3 años: entrada gratuita (no cuentan como participantes)</p>
+                </>
+              )}
+              {tour.soloAdultos && (
+                <p className="text-xs text-negro/40 font-dm border-t border-negro/6 pt-5">Actividad para mayores de 10 años en buena salud. La entrada al parque se paga aparte en sitio.</p>
+              )}
               <p className="text-xs text-negro/40 font-dm">Máximo {tour.groupMax} participantes por tour</p>
             </div>
           </section>

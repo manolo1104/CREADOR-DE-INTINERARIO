@@ -45,6 +45,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     "tour-meco":         0,
     "tour-minas-micos":  0,
     "tour-puente-dios":  0,
+    "tour-buceo-media-luna": 0,
   };
 
   if (intereses.some((i) => ["Fotografía perfecta", "Cascadas turquesas"].includes(i))) {
@@ -52,6 +53,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-minas-micos"]  += 2;
     scores["tour-rappel-tamul"] += 1;
     scores["tour-rafting-tampaon"] += 1;
+    scores["tour-buceo-media-luna"] += 1;
   }
   if (intereses.includes("Aventura extrema")) {
     scores["tour-rappel-tamul"] += 4;
@@ -66,6 +68,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   if (intereses.includes("Relax total")) {
     scores["tour-minas-micos"]  += 2;
     scores["tour-meco"]         += 1;
+    scores["tour-buceo-media-luna"] += 2;
     scores["tour-rappel-tamul"] -= 2;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
@@ -77,6 +80,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-tamul"]        -= 1;
     scores["tour-rappel-tamul"] -= 3;
     scores["tour-rafting-tampaon"] -= 2;
+    scores["tour-buceo-media-luna"] -= 2;  // edad mínima 10 años
   }
   if (grupo === "Con amigos") {
     scores["tour-rzr-xilitla"]  += 3;
@@ -90,9 +94,11 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-meco"]         += 1;
     scores["tour-rappel-tamul"] += 1;
     scores["tour-rzr-xilitla"]  += 1;
+    scores["tour-buceo-media-luna"] += 2;
   }
   if (grupo === "Solo/Sola") {
     scores["tour-rappel-tamul"] += 1;
+    scores["tour-buceo-media-luna"] += 2;
   }
   if (actividad === "Intenso") {
     scores["tour-rappel-tamul"] += 3;
@@ -103,10 +109,12 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   }
   if (actividad === "Moderado") {
     scores["tour-rzr-xilitla"]  += 1;
+    scores["tour-buceo-media-luna"] += 1;
   }
   if (actividad === "Tranquilo") {
     scores["tour-minas-micos"]  += 2;
     scores["tour-edward-james"] += 1;
+    scores["tour-buceo-media-luna"] += 2;
     scores["tour-rappel-tamul"] -= 2;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
@@ -120,6 +128,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   if (destino.includes("Meco"))                                    scores["tour-meco"]        += 4;
   if (destino.includes("Minas") || destino.includes("Micos"))      scores["tour-minas-micos"] += 4;
   if (destino.includes("Puente") || destino.includes("Tamasopo"))  scores["tour-puente-dios"] += 4;
+  if (destino.includes("Media Luna") || destino.toLowerCase().includes("buceo") || destino.includes("Rioverde")) scores["tour-buceo-media-luna"] += 4;
 
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   return { primaryId: sorted[0][0], secondaryId: sorted[1][0] };

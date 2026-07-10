@@ -111,6 +111,17 @@ const TOUR_PROOF: Record<string, {
       { name: "Valeria C.", city: "CDMX",         text: "Las Siete Cascadas en secuencia son increíbles. ¡Fuimos cinco amigos y quedamos todos maravillados!" },
     ],
   },
+  "tour-buceo-media-luna": {
+    bookingsMonth: 31,
+    bookingsWeek:  6,
+    spotsLeft:     4,
+    trending:      false,
+    bestFor:       "Primerizos, parejas y curiosos del buceo",
+    reviews: [
+      { name: "Mariana E.", city: "San Luis Potosí", text: "Nunca había buceado y el instructor me dio toda la confianza. El agua de la Media Luna es tan clara que parece una alberca gigante. ¡Repetiría sin pensarlo!" },
+      { name: "Diego F.",   city: "Querétaro",        text: "Mi primera inmersión y no pudo ser mejor lugar. Agua fresca y cristalina, visibilidad brutal y en cuatro horas pasas de no saber nada a respirar bajo el agua." },
+    ],
+  },
 };
 
 // ── Wizard data ──────────────────────────────────────────────────────────────
@@ -312,7 +323,9 @@ function TourResultCard({
                   ? "por vehículo · gasolina, equipo y guía incluidos"
                   : tour.id === "tour-rafting-tampaon"
                     ? "por persona · traslado, equipo, guía y comida incluidos"
-                    : "por persona · todo incluido"}
+                    : tour.id === "tour-buceo-media-luna"
+                      ? "por persona · instructor PADI, equipo y fotos (entrada al parque aparte)"
+                      : "por persona · todo incluido"}
             </p>
           </div>
           <Link
@@ -454,6 +467,7 @@ const DESTINOS_BUCKET = [
   "Puente de Dios",
   "Sótano de las Huahuas",
   "Cascadas de Micos",
+  "Laguna de la Media Luna (buceo)",
   "Sin preferencia — sorpréndeme",
 ];
 
@@ -550,7 +564,7 @@ export function RecommenderShell() {
             <div className="absolute inset-2 rounded-full border-2 border-verde-selva animate-spin border-t-transparent" />
           </div>
           <p className="font-cormorant text-crema text-2xl mb-2">Analizando tu perfil…</p>
-          <p className="font-dm text-crema/40 text-sm">Buscando el tour perfecto para ti entre 8 experiencias únicas</p>
+          <p className="font-dm text-crema/40 text-sm">Buscando el tour perfecto para ti entre 9 experiencias únicas</p>
         </div>
       </div>
     );
