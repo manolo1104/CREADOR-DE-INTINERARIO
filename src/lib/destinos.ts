@@ -273,7 +273,7 @@ export const DESTINOS_DB: Destino[] = [
     zona: "Rioverde",
     tipo: "Bienestar",
     icon: "Droplet",
-    descripcion: "Manantial termal cristalino con visibilidad de 30 m y vestigios prehispánicos sumergidos.",
+    descripcion: "Manantial de aguas frescas y cristalinas de un azul intenso — uno de los mejores destinos de buceo y snorkel en agua dulce de México.",
     duracion_hrs: 6,
     precio_entrada: "$150 MXN",
     dificultad: "baja",
@@ -286,8 +286,8 @@ export const DESTINOS_DB: Destino[] = [
     como_llegar: "120 min desde Valles · Carretera 70 poniente hasta Rioverde → señales al Ejido El Jabalí",
     que_llevar: ["equipo de snorkel (o rentar en sitio)", "traje de baño", "toalla", "googles de natación", "efectivo"],
     datos_curiosos: [
-      "Se han encontrado ofrendas prehispánicas y posibles restos de mamut en el fondo del manantial.",
       "El nombre 'Media Luna' viene de la forma semicircular perfecta del espejo de agua.",
+      "Es uno de los pocos lugares de México donde puedes hacer tu primera inmersión de buceo en agua dulce cristalina.",
     ],
     errores_comunes: ["No reservar en temporada alta (cupo limitado)", "Llevar bloqueador químico"],
     lat: 21.859722,
@@ -299,10 +299,10 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Laguna Media Luna Rioverde 2026 | Guía de Viaje",
-      metaDescription: "Visita el Manantial de la Media Luna en 2026: buceo, snorkel y aguas termales a 27°C en San Luis Potosí. Precios, reservaciones y cómo llegar desde Ciudad Valles.",
+      metaDescription: "Visita el Manantial de la Media Luna en 2026: buceo, snorkel y aguas frescas y cristalinas en Rioverde, San Luis Potosí. Precios, reservaciones y cómo llegar desde Ciudad Valles.",
       keywords: ["laguna media luna rioverde", "manantial san luis potosi", "buceo media luna", "que hacer en rioverde", "media luna 2026"],
       faqPrincipales: [
-        { pregunta: "¿Qué temperatura tiene el agua de la Media Luna?", respuesta: "El agua se mantiene constante entre 27°C y 29°C durante todo el año, independientemente de la temporada." },
+        { pregunta: "¿El agua de la Media Luna es fría o templada?", respuesta: "Es un manantial de aguas frescas y cristalinas, no un balneario de aguas termales calientes. Para inmersiones largas de buceo se recomienda traje de neopreno." },
         { pregunta: "¿Es necesario saber bucear para disfrutar la Media Luna?", respuesta: "No, puedes practicar snorkel o nadar con googles y ver el fondo cristalino desde la superficie." },
         { pregunta: "¿Hay límite de personas en la Media Luna?", respuesta: "Sí, el acceso está controlado para preservar el ecosistema. Se recomienda reservar en temporada alta." },
       ],

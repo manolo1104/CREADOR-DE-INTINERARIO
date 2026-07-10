@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger } from "@/lib/logger";
+import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -53,6 +53,15 @@ export async function POST(req: NextRequest) {
           source:        "huasteca-potosina.com",
         },
       });
+      actividad(
+        "💳  LLEGÓ AL PAGO (RZR)",
+        bookingName,
+        mxn(veh.charge),
+        customerName,
+        customerEmail,
+        tourDetails?.tourDate,
+        paymentIntent.id,
+      );
       return NextResponse.json({
         clientSecret:    paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
@@ -96,6 +105,23 @@ export async function POST(req: NextRequest) {
         source:        "huasteca-potosina.com",
       },
     });
+
+    const quienes = [
+      `${Number(tourDetails?.adults || 1)} adulto${Number(tourDetails?.adults || 1) > 1 ? "s" : ""}`,
+      childrenTotal ? `${childrenTotal} niño${childrenTotal > 1 ? "s" : ""}` : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+    actividad(
+      "💳  LLEGÓ AL PAGO",
+      nombreCorto(charge.tour.nombre),
+      quienes,
+      mxn(charge.charge),
+      customerName,
+      customerEmail,
+      tourDetails?.tourDate,
+      paymentIntent.id,
+    );
 
     return NextResponse.json({
       clientSecret:    paymentIntent.client_secret,

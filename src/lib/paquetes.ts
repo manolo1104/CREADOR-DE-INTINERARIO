@@ -282,7 +282,7 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     itinerario: [
       { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista (Edward James)", descripcion: "Te recibimos y haces check-in en el hotel. Como Las Pozas está a minutos, ese mismo día visitamos el jardín surrealista de Edward James." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: Sótano de las Golondrinas, Cascada de Tamul en lancha y Cueva del Agua." },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua." },
       { dia: 3, tipo: "tour", tourSlug: "paraiso-escalonado-minas-micos", titulo: "Paraíso Escalonado (o Ruta Acuática, a elegir)", descripcion: "Minas Viejas y Cascadas de Micos. Si prefieres, lo cambiamos por la Ruta Acuática del Puente de Dios." },
       { dia: 4, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y regreso a casa con la memoria llena." },
     ],
@@ -331,7 +331,7 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     itinerario: [
       { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista (Edward James)", descripcion: "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), arrancamos ese mismo día con Las Pozas, a minutos del hotel." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "Sótano de las Golondrinas al amanecer, Cascada de Tamul en lancha de remo y Cueva del Agua." },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "Mirador al Sótano de las Huahuas, Cascada de Tamul en lancha de remo y Cueva del Agua." },
       { dia: 3, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Cascadas del Meco", descripcion: "Las cascadas turquesa de El Naranjo, miradores y pozas para nadar." },
       { dia: 4, tipo: "tour", tourSlug: "ruta-acuatica-puente-de-dios", titulo: "Ruta Acuática Puente de Dios", descripcion: "El arco de luz del Puente de Dios en Tamasopo, hacienda y siete cascadas." },
       { dia: 5, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y regreso a casa con la memoria llena de la Huasteca completa." },

@@ -132,7 +132,7 @@ export default function TourDetailPage({ params }: Props) {
           ? { q: "Is the price per person or per vehicle?", a: `Pricing is per vehicle, starting at ${money(tour.precio)} MXN depending on the route and unit you choose. Every vehicle includes fuel, safety gear and the guide.` }
           : tour.soloAdultos
             ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This activity is for ages 10 and up, so there is no children's discount. The park admission is paid separately on site.` }
-            : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children (4–12) get 40% off. Under 4 are free.` },
+            : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children ages 6 to 10 pay 70% of the adult price and ages 3 to 5 pay 50%. Babies under 3 go free.` },
         esVehiculo
           ? { q: "Where does the tour depart from?", a: "We meet at our base in Xilitla, San Luis Potosí. Transportation to Xilitla is not included." }
           : tour.id === "tour-buceo-media-luna"
@@ -151,7 +151,7 @@ export default function TourDetailPage({ params }: Props) {
           ? { q: "¿El precio es por persona o por vehículo?", a: `El precio es por vehículo, desde ${money(tour.precio)} MXN según la ruta y la unidad que elijas. Todos los vehículos incluyen gasolina, equipo de seguridad y guía.` }
           : tour.soloAdultos
             ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona. Es una actividad para mayores de 10 años, por lo que no aplica descuento de niños. La entrada al parque se paga aparte en sitio.` }
-            : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Niños (4–12 años) tienen un 40% de descuento. Menores de 4 años entran gratis.` },
+            : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Los niños de 6 a 10 años pagan el 70% del precio de adulto y los de 3 a 5 años el 50%. Los bebés menores de 3 años no pagan.` },
         esVehiculo
           ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es nuestra base en Xilitla, San Luis Potosí. El transporte hasta Xilitla no está incluido." }
           : tour.id === "tour-buceo-media-luna"

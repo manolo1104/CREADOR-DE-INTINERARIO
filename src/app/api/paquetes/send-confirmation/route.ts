@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { getPaquete } from "@/lib/paquetes";
+import { actividad, mxn } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -78,6 +79,20 @@ export async function POST(req: NextRequest) {
           status:                "paid",
         },
       });
+      const anticipo = pctNum === 100 ? "pago completo" : `anticipo ${pctNum}%`;
+      actividad(
+        "✅  RESERVÓ PAQUETE",
+        paquete.nombre,
+        personas ? `${personas} personas` : "",
+        anticipo,
+        `${mxn(cobrado)} de ${mxn(totalFull)}`,
+        pendiente > 0 ? `saldo ${mxn(pendiente)}` : "liquidado",
+        customerName,
+        email,
+        customerPhone,
+        fecha,
+        confirmationNumber,
+      );
     } catch (e: any) {
       console.error("❌ prisma paquete booking:", e.message);
     }
@@ -107,6 +122,7 @@ export async function POST(req: NextRequest) {
           subject: `Tu paquete está reservado — ${confirmationNumber}`,
           htmlContent: html,
         });
+        actividad("📧  CORREO PAQUETE ENVIADO", paquete.nombre, email, confirmationNumber);
       } catch (e: any) {
         console.error("❌ Brevo paquete email:", e.message);
       }

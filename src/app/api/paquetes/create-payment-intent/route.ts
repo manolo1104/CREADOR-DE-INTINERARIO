@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getPaquete } from "@/lib/paquetes";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger } from "@/lib/logger";
+import { logger, actividad, mxn } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,6 +61,19 @@ export async function POST(req: NextRequest) {
         source:        "huasteca-potosina.com",
       },
     });
+
+    const anticipo = pct === 100 ? "pago completo" : `anticipo ${pct}%`;
+    actividad(
+      "💳  LLEGÓ AL PAGO (PAQUETE)",
+      paquete.nombre,
+      anticipo,
+      `${mxn(charge)} de ${mxn(paquete.precio)}`,
+      personas ? `${personas} personas` : "",
+      customerName,
+      customerEmail,
+      fecha,
+      paymentIntent.id,
+    );
 
     return NextResponse.json({
       clientSecret:    paymentIntent.client_secret,

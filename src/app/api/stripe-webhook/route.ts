@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { logger } from "@/lib/logger";
+import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
       const downloadUrl = `${appUrl}/guia/descarga?session_id=${session.id}`;
       const tripUrl = `${appUrl}/viaje-septiembre`;
       const toursUrl = `${appUrl}/tours`;
+
+      actividad("💰  GUÍA PDF PAGADA", mxn((session.amount_total ?? 0) / 100), email);
 
       if (email) {
         try {
@@ -146,6 +148,24 @@ export async function POST(req: NextRequest) {
             payment_intent: pi.id,
             confirmation: confirmationNumber,
           });
+
+          const quienes = [
+            `${Number(meta.adults) || 1} adulto${(Number(meta.adults) || 1) > 1 ? "s" : ""}`,
+            Number(meta.children) ? `${Number(meta.children)} niño${Number(meta.children) > 1 ? "s" : ""}` : "",
+          ]
+            .filter(Boolean)
+            .join(", ");
+          actividad(
+            "⚠️  RESERVÓ (recuperada por webhook)",
+            nombreCorto(meta.tourName || meta.tourId),
+            quienes,
+            mxn(totalAmount),
+            meta.customerName,
+            meta.customerEmail || pi.receipt_email,
+            meta.tourDate,
+            confirmationNumber,
+            "el cliente no completó la pantalla",
+          );
 
           // Aviso al administrador para que dé seguimiento manual.
           const adminTo = process.env.ADMIN_EMAIL_TOURS;

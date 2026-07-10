@@ -471,7 +471,7 @@ const DESTINOS_BUCKET = [
   "Sin preferencia — sorpréndeme",
 ];
 
-type WizardStep = "origen" | "dias" | "grupo" | "intereses" | "actividad" | "destino" | "loading" | "result";
+type WizardStep = "origen" | "dias" | "grupo" | "intereses" | "actividad" | "destino" | "correo" | "loading" | "result";
 
 interface WizardState {
   origen:    string;
@@ -495,6 +495,8 @@ export function RecommenderShell() {
   const [origenInput, setOrigenInput] = useState("");
   const [showInput, setShowInput]     = useState(false);
   const [viewers, setViewers]         = useState(12);
+  const [email,      setEmail]      = useState("");
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -512,7 +514,24 @@ export function RecommenderShell() {
     }));
   }
 
-  async function submit() {
+  // Compuerta de correo: se pide el email ANTES de correr el agente. Se guarda
+  // el lead (aunque falle no bloquea la recomendación) y luego se genera el plan.
+  async function submitCorreo() {
+    const e = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+      setEmailError("Escribe un correo válido para ver tu recomendación.");
+      return;
+    }
+    setEmailError("");
+    fetch("/api/guardar-email", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ email: e, fuente: "Recomendador" }),
+    }).catch(() => {});
+    submit(e);
+  }
+
+  async function submit(email: string) {
     setStep("loading");
     trackTourEvent("RECOMMENDER_STARTED", {
       origen:    state.origen,
@@ -521,6 +540,7 @@ export function RecommenderShell() {
       intereses: state.intereses,
       actividad: state.actividad,
       destino:   state.destino,
+      email,
     });
     try {
       const res = await fetch("/api/recomendar-tour", {
@@ -533,6 +553,7 @@ export function RecommenderShell() {
           intereses: state.intereses,
           actividad: state.actividad,
           destino:   state.destino,
+          email,
         }),
       });
       const data: AIResult = await res.json();
@@ -658,7 +679,7 @@ export function RecommenderShell() {
           </div>
 
           <button
-            onClick={() => { setResult(null); setStep("origen"); setState({ origen: "", dias: "", grupo: "", intereses: [], actividad: "", destino: "" }); }}
+            onClick={() => { setResult(null); setStep("origen"); setState({ origen: "", dias: "", grupo: "", intereses: [], actividad: "", destino: "" }); setEmail(""); setEmailError(""); }}
             className="text-xs font-dm text-negro/35 hover:text-negro/60 underline text-center block mx-auto transition-colors"
           >
             ← Volver a empezar con otro perfil
@@ -670,7 +691,7 @@ export function RecommenderShell() {
 
   // ── Wizard ───────────────────────────────────────────────────────────────
 
-  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, intereses: 4, actividad: 5, destino: 6 };
+  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, intereses: 4, actividad: 5, destino: 6, correo: 6 };
   const stepNum = STEP_NUMS[step] ?? 1;
   const progress = (stepNum / 6) * 100;
 
@@ -977,11 +998,55 @@ export function RecommenderShell() {
             <div className="flex gap-3">
               <button onClick={() => setStep("actividad")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
               <button
-                onClick={submit}
+                onClick={() => setStep("correo")}
                 disabled={!state.destino}
                 className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 ✦ Ver mi plan perfecto
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* GATE: CORREO — se pide antes de mostrar la recomendación */}
+        {step === "correo" && (
+          <div>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Último paso</p>
+            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
+              Tu plan ya está <em className="text-dorado">listo</em>
+            </h2>
+            <p className="font-dm text-crema/40 text-sm mb-8">
+              Déjanos tu correo y te mostramos tu recomendación personalizada — también te enviamos los mejores tips para tu viaje a la Huasteca.
+            </p>
+
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") submitCorreo(); }}
+              placeholder="tucorreo@ejemplo.com"
+              aria-label="Tu correo electrónico"
+              className="w-full bg-white/5 border border-crema/20 text-crema placeholder:text-crema/30 px-4 py-4 font-dm text-sm focus:border-verde-vivo focus:outline-none transition-colors"
+            />
+            {emailError && <p role="alert" className="text-terracota text-xs font-dm mt-2">{emailError}</p>}
+
+            <div className="flex items-center gap-3 bg-white/5 border border-white/8 px-4 py-3 mb-6 mt-5">
+              <Shield className="w-4 h-4 text-verde-selva flex-shrink-0" />
+              <p className="text-[11px] font-dm text-crema/50 leading-snug">
+                Solo lo usamos para enviarte tu plan. Sin spam · Te das de baja cuando quieras.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setStep("destino")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button
+                onClick={submitCorreo}
+                disabled={!email.trim()}
+                className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ✦ Ver mi recomendación
               </button>
             </div>
           </div>

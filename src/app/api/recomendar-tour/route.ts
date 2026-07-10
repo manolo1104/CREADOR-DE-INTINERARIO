@@ -3,8 +3,14 @@ import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 import { TOUR_ACTIVITIES } from "@/lib/tourActivities";
 import { rateLimit } from "@/lib/rateLimit";
+// alias: en este archivo `actividad` ya es el nivel de actividad del formulario
+import { actividad as logActividad, nombreCorto } from "@/lib/logger";
 
 export const runtime = "nodejs";
+
+// id del tour → nombre legible (corto) para el log
+const nombreDe = (id: string): string =>
+  nombreCorto(TOURS_DB.find((t) => t.id === id)?.nombre) || id;
 
 /**
  * Selección DETERMINÍSTICA del paquete por días disponibles (la IA solo redacta el porqué):
@@ -138,7 +144,7 @@ export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { key: "recomendar-tour", limit: 15, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { origen, grupo, intereses, actividad, destino, dias } = await req.json();
+  const { origen, grupo, intereses, actividad, destino, dias, email } = await req.json();
 
   const paquete = paqueteForDias(dias);
   // Texto de respaldo del paquete (se usa si no hay IA o si la IA no redacta el suyo).
@@ -295,6 +301,18 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
 
     // El slug del paquete lo decide el servidor (determinístico por días);
     // la IA solo aporta la redacción personalizada.
+    logActividad(
+      "✨  RECOMENDACIÓN LISTA",
+      grupo,
+      origen ? `desde ${origen}` : undefined,
+      dias,
+      Array.isArray(intereses) ? `quiere: ${intereses.join(", ")}` : undefined,
+      actividad,
+      `→ ${nombreDe(primaryId)}`,
+      `(2º ${nombreDe(secondaryId)})`,
+      paquete ? `+ ${paquete.nombre}` : undefined,
+      typeof email === "string" && email ? email : undefined,
+    );
     return NextResponse.json({
       ...result,
       primary:   { ...result.primary,   tourId: primaryId },
@@ -308,6 +326,18 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
     const { primaryId, secondaryId } = fallbackMatch(intereses, grupo, actividad, destino ?? "");
     const primary   = TOURS_DB.find((t) => t.id === primaryId)!;
     const secondary = TOURS_DB.find((t) => t.id === secondaryId)!;
+    logActividad(
+      "✨  RECOMENDACIÓN LISTA",
+      grupo,
+      origen ? `desde ${origen}` : undefined,
+      dias,
+      Array.isArray(intereses) ? `quiere: ${intereses.join(", ")}` : undefined,
+      actividad,
+      `→ ${nombreDe(primaryId)}`,
+      `(2º ${nombreDe(secondaryId)})`,
+      paquete ? `+ ${paquete.nombre}` : undefined,
+      typeof email === "string" && email ? email : undefined,
+    );
     return NextResponse.json({
       primary: {
         tourId:    primaryId,

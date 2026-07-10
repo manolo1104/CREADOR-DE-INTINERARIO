@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { rateLimit } from "@/lib/rateLimit";
+import { actividad } from "@/lib/logger";
 
 const SHEET_ID  = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_TAB = "Leads"; // nombre de la pestaña en tu Sheet
@@ -31,11 +32,16 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { email } = await req.json();
+    const { email, fuente } = await req.json();
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
     }
+
+    const fuenteTxt =
+      typeof fuente === "string" && fuente.trim()
+        ? fuente.trim().slice(0, 40)
+        : "Planificador IA";
 
     const sheets = await getSheetsClient();
     const fecha  = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
@@ -45,9 +51,11 @@ export async function POST(req: NextRequest) {
       range:         `${SHEET_TAB}!A:C`,
       valueInputOption: "RAW", // RAW evita que un email tipo "=FORMULA()" se ejecute en Sheets
       requestBody: {
-        values: [[email, fecha, "Planificador IA"]],
+        values: [[email, fecha, fuenteTxt]],
       },
     });
+
+    actividad("📩  NUEVO EMAIL", email, `fuente: ${fuenteTxt}`);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

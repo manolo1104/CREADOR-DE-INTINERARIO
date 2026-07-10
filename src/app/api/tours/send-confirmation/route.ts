@@ -5,6 +5,7 @@ import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
+import { actividad, mxn, nombreCorto } from "@/lib/logger";
 import fs from "fs";
 import path from "path";
 
@@ -102,7 +103,23 @@ export async function POST(req: NextRequest) {
           status:         "paid",
         },
       });
-      console.log(`✅ TourBooking guardado — ${confirmationNumber}`);
+      const quienes = [
+        `${Number(adults) || 1} adulto${(Number(adults) || 1) > 1 ? "s" : ""}`,
+        Number(children) ? `${Number(children)} niño${Number(children) > 1 ? "s" : ""}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      actividad(
+        "✅  RESERVÓ",
+        nombreCorto(tourName),
+        quienes,
+        mxn(totalAmount),
+        customerName,
+        email,
+        customerPhone,
+        tourDate,
+        confirmationNumber,
+      );
     } catch (e: any) {
       console.error("❌ prisma.tourBooking.create:", e.message);
     }
@@ -151,7 +168,7 @@ export async function POST(req: NextRequest) {
           attachments: pdfAttachment,
         });
 
-        console.log(`✅ Email Brevo enviado | to=${email} | cn=${confirmationNumber}`);
+        actividad("📧  CORREO ENVIADO", nombreCorto(tourName), email, confirmationNumber);
       } catch (e: any) {
         console.error("❌ Brevo email exception:", e.message);
       }

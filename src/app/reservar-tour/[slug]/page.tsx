@@ -13,6 +13,7 @@ import { ViewersCounter } from "@/components/booking/ViewersCounter";
 import { RzrBookingForm } from "@/components/booking/RzrBookingForm";
 import { ChevronLeft, Clock, Users, Shield, Star, Lock } from "lucide-react";
 import { trackDateSelected, trackPromoApplied } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 export default function ReservarTourPage() {
   const router = useRouter();
@@ -94,6 +95,7 @@ export default function ReservarTourPage() {
     setPromoDiscount(result.discount);
     setPromoMsg(result.msg);
     trackPromoApplied(promoInput.trim().toUpperCase(), result.discount);
+    trackTourEvent("PROMO_APPLIED", { code: promoInput.trim().toUpperCase(), discountPct: result.discount });
   }
 
   function removePromo() {
@@ -169,6 +171,7 @@ export default function ReservarTourPage() {
               onChange={(ymd) => {
                 setTourDate(ymd);
                 if (ymd) trackDateSelected(tour.nombre, ymd);
+                if (ymd) trackTourEvent("DATE_SELECTED", { fecha: ymd, tour: tour.slug, tour_name: tour.nombre });
               }}
             />
           </section>

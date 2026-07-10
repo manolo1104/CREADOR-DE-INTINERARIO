@@ -197,7 +197,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
   },
   "laguna-media-luna": {
     nombre: "Media Luna Spring",
-    descripcion: "A crystal-clear thermal spring with 30m visibility and submerged pre-Hispanic remains.",
+    descripcion: "A spring of fresh, crystal-clear deep-blue water — one of Mexico's best freshwater diving and snorkeling spots.",
     tipo: "Wellness",
     precio_entrada: "$150 MXN",
     dias_abierto: "Monday to Sunday",
@@ -207,16 +207,16 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     como_llegar: "120 min from Ciudad Valles · Highway 70 west to Rioverde → signs to Ejido El Jabalí",
     que_llevar: ["snorkel gear (or rent on site)", "swimsuit", "towel", "swim goggles", "cash"],
     datos_curiosos: [
-      "Pre-Hispanic offerings and possible mammoth remains have been found at the bottom of the spring.",
       "The name 'Media Luna' (Half Moon) comes from the perfect semicircular shape of the water.",
+      "It's one of the few places in Mexico where you can do your first scuba dive in crystal-clear freshwater.",
     ],
     errores_comunes: ["Not booking in high season (limited capacity)", "Bringing chemical sunscreen"],
     seo: {
       metaTitle: "Media Luna Lagoon Rioverde 2026 | Travel Guide",
-      metaDescription: "Visit the Media Luna Spring in 2026: diving, snorkeling and 27°C thermal waters in San Luis Potosí. Prices, reservations and how to get there from Ciudad Valles.",
+      metaDescription: "Visit the Media Luna Spring in 2026: diving, snorkeling and fresh, crystal-clear waters in Rioverde, San Luis Potosí. Prices, reservations and how to get there from Ciudad Valles.",
       keywords: ["media luna lagoon rioverde", "spring san luis potosi", "media luna diving", "things to do in rioverde", "media luna 2026"],
       faqPrincipales: [
-        { pregunta: "What temperature is the water at Media Luna?", respuesta: "The water stays a constant 27°C to 29°C all year, regardless of the season." },
+        { pregunta: "Is the water at Media Luna cold or warm?", respuesta: "It's a spring of fresh, crystal-clear water — not a hot thermal bath. For longer dives we recommend a wetsuit." },
         { pregunta: "Do you need to know how to scuba dive to enjoy Media Luna?", respuesta: "No — you can snorkel or swim with goggles and see the crystal-clear bottom from the surface." },
         { pregunta: "Is there a visitor limit at Media Luna?", respuesta: "Yes, access is controlled to preserve the ecosystem. Booking is recommended in high season." },
       ],

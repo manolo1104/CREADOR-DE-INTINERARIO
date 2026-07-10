@@ -35,7 +35,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "El agua de Minas Viejas tiene un color que no existe en ninguna paleta de colores que hayas visto: entre el jade y el turquesa, con reflejos blancos donde se rompe sobre las terrazas de travertino. Las cascadas caen en 5 niveles distintos, cada uno con una poza diferente. Es uno de esos lugares que produces en fotografía pero que no te crees del todo hasta que estás dentro.",
 
   "laguna-media-luna":
-    "La Laguna de la Media Luna tiene una característica única en el mundo: el agua nace directamente del fondo de la laguna a temperatura constante de 27°C, todo el año, todos los días. La visibilidad llega a 18 metros bajo el agua. Los buzos la conocen como uno de los mejores spots de buceo en agua dulce de toda Latinoamérica. Sin escafandra, simplemente nadas sobre un cristal azul que nunca cambia de color.",
+    "La Laguna de la Media Luna tiene una característica única: el agua nace directamente del fondo de la laguna, fresca y de un azul cristalino que se mantiene igual todo el año. Los buzos la conocen como uno de los mejores spots de buceo en agua dulce de toda Latinoamérica. Sin escafandra, simplemente nadas sobre un cristal azul que nunca cambia de color.",
 
   "cascada-el-aguacate":
     "La Cascada El Aguacate es el secreto mejor guardado de la ruta de cascadas. Menos visitada que sus vecinas, llega al final de un sendero entre helechos gigantes que huele a tierra húmeda y selva fresca. La poza que forma es perfecta para nadar: profunda, azul y a temperatura ideal. Para quienes prefieren el descubrimiento sobre el Instagram, esta es la cascada.",
