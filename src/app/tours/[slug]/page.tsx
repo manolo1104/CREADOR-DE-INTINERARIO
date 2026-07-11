@@ -262,7 +262,7 @@ export default function TourDetailPage({ params }: Props) {
 
       <TourPageTracker tourId={tour.id} nombre={tour.nombre} precio={tour.precio} tipo={tour.tipo} />
       <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} tourId={tour.id} tourName={tour.nombre}
-        precioUnidad={tour.precioUnidad} waHref={esVehiculo ? waLink(waTour) : undefined} />
+        precioUnidad={tour.precioUnidad} waHref={waLink(waTour)} />
 
       {/* ── CONTENIDO ── */}
       <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">

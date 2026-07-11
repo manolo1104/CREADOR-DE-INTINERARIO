@@ -37,14 +37,15 @@ export async function POST(req: NextRequest) {
       metadata?: Record<string, string>;
     } = await req.json();
 
-    // Si el producto tiene precio fijo en el servidor, se usa ese (ignora monto del cliente).
-    const precioFijo = producto ? PRECIOS_FIJOS[producto] : undefined;
-    const montoSolicitado = parseFloat(String(monto ?? ""));
-    const montoFinal = precioFijo ?? montoSolicitado;
+    // SOLO productos con precio FIJO del servidor. El campo `monto` del cliente
+    // se IGNORA por completo: así no se pueden crear sesiones baratas ($1) que
+    // luego se usen para desbloquear la Guía de $49.
+    void monto;
+    const montoFinal = producto ? PRECIOS_FIJOS[producto] : undefined;
 
     if (!montoFinal || montoFinal <= 0) {
-      logger.warn("payment_invalid_amount", { producto });
-      return NextResponse.json({ error: "Monto inválido." }, { status: 400 });
+      logger.warn("payment_invalid_product", { producto: producto ?? null });
+      return NextResponse.json({ error: "Producto no disponible." }, { status: 400 });
     }
 
     logger.info("payment_session_creating", {

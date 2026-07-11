@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ok", confirmationNumber: existing.confirmationNumber });
     }
 
-    const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
+    let confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
     try {
       await addTourToSheet({
@@ -121,7 +121,25 @@ export async function POST(req: NextRequest) {
         confirmationNumber,
       );
     } catch (e: any) {
-      console.error("❌ prisma.tourBooking.create:", e.message);
+      if (e?.code === "P2002") {
+        // Carrera con el webhook: ya existe una reserva para este pago. El @unique
+        // impidió el duplicado; reusamos su número real para que el correo coincida.
+        const ya = await prisma.tourBooking.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
+        if (ya) confirmationNumber = ya.confirmationNumber;
+      } else {
+        console.error("❌ prisma.tourBooking.create:", e.message);
+      }
+    }
+
+    // El cliente pagó: marca su carrito abandonado como convertido para que el
+    // cron de recuperación deje de mandarle recordatorios.
+    if (email?.includes("@") && tourSlug) {
+      try {
+        await prisma.abandonedCart.updateMany({
+          where: { customerEmail: email, tourSlug, tourDate: tourDate || "", status: { in: ["open", "recovered"] } },
+          data:  { status: "converted" },
+        });
+      } catch { /* no bloquear la confirmación si falla */ }
     }
 
     if (!email?.includes("@")) {

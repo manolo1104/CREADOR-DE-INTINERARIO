@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
   // Verificar pago con Stripe
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    if (session.payment_status !== "paid") {
+    // Debe ser un pago COMPLETADO y del producto correcto: una sesión pagada de
+    // otro producto (p. ej. un itinerario barato) NO desbloquea la Guía.
+    if (session.payment_status !== "paid" || session.metadata?.producto !== "guia_pdf") {
       return NextResponse.json({ error: "Pago no completado" }, { status: 403 });
     }
   } catch {

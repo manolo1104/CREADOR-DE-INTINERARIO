@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -124,6 +125,19 @@ export async function POST(req: NextRequest) {
           const totalAmount = Number(meta.totalCompleto) > 0 ? Number(meta.totalCompleto) : cobrado;
           const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
+          // Recupera el correo del cliente: metadata → receipt_email → billing_details
+          // del cargo (el cliente lo escribió al confirmar el pago aunque no
+          // completara la pantalla). Así podemos enviarle su confirmación.
+          let clienteEmail = meta.customerEmail || pi.receipt_email || "";
+          if (!clienteEmail && pi.latest_charge) {
+            try {
+              const chId = typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge.id;
+              const charge = await stripe.charges.retrieve(chId);
+              clienteEmail = charge.billing_details?.email || charge.receipt_email || "";
+            } catch { /* si no se puede leer el cargo, seguimos sin correo */ }
+          }
+          const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail);
+
           await prisma.tourBooking.create({
             data: {
               confirmationNumber,
@@ -137,7 +151,7 @@ export async function POST(req: NextRequest) {
               depositoPagado:        cobrado, // lo realmente cobrado (100% en tours, parcial en paquetes)
               stripePaymentIntentId: pi.id,
               customerName:          meta.customerName || "Pendiente (vía webhook)",
-              customerEmail:         meta.customerEmail || pi.receipt_email || "pendiente@desconocido",
+              customerEmail:         emailValido ? clienteEmail : "pendiente@desconocido",
               customerPhone:         null,
               notes:                 "Reserva registrada automáticamente por webhook — el cliente no completó la pantalla de confirmación.",
               status:                "paid",
@@ -161,15 +175,45 @@ export async function POST(req: NextRequest) {
             quienes,
             mxn(totalAmount),
             meta.customerName,
-            meta.customerEmail || pi.receipt_email,
+            emailValido ? clienteEmail : undefined,
             meta.tourDate,
             confirmationNumber,
             "el cliente no completó la pantalla",
           );
 
-          // Aviso al administrador para que dé seguimiento manual.
+          // El cliente cerró la pestaña tras pagar: le enviamos IGUAL su
+          // confirmación (antes solo se avisaba al admin y el cliente se quedaba
+          // sin correo ni número de reserva).
+          if (emailValido) {
+            try {
+              const html = buildTourEmailHtml({
+                customerName:  meta.customerName || "",
+                confirmationNumber,
+                paymentIntentId: pi.id,
+                tourName:      meta.tourName || "Tour Huasteca",
+                tourDate:      meta.tourDate || "",
+                tourSlug:      meta.tourSlug || "",
+                adults:        Number(meta.adults) || 1,
+                children:      Number(meta.children) || 0,
+                totalAmount,
+                promoDiscount: 0,
+              });
+              await sendBrevoEmail({
+                to:  [{ email: clienteEmail, name: meta.customerName || undefined }],
+                bcc: process.env.ADMIN_EMAIL_TOURS ? [{ email: process.env.ADMIN_EMAIL_TOURS }] : undefined,
+                subject: `Tu tour está confirmado — ${confirmationNumber}`,
+                htmlContent: html,
+              });
+              actividad("📧  CORREO ENVIADO (recuperado)", nombreCorto(meta.tourName || ""), clienteEmail, confirmationNumber);
+            } catch (e) {
+              logger.error("stripe_webhook_customer_email_failed", { reason: e instanceof Error ? e.message : "unknown" });
+            }
+          }
+
+          // Solo si NO pudimos enviarle al cliente su confirmación, avisamos al
+          // admin para seguimiento manual (si sí se envió, el admin ya va en BCC).
           const adminTo = process.env.ADMIN_EMAIL_TOURS;
-          if (adminTo) {
+          if (adminTo && !emailValido) {
             try {
               await sendBrevoEmail({
                 to: [{ email: adminTo }],
@@ -193,9 +237,13 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (e) {
-        logger.error("stripe_webhook_booking_recovery_failed", {
-          reason: e instanceof Error ? e.message : "unknown",
-        });
+        // P2002 = el cliente ya registró la reserva (carrera normal, no es fallo):
+        // el @unique en stripePaymentIntentId impidió la doble reserva.
+        if ((e as { code?: string })?.code !== "P2002") {
+          logger.error("stripe_webhook_booking_recovery_failed", {
+            reason: e instanceof Error ? e.message : "unknown",
+          });
+        }
       }
     }
   }

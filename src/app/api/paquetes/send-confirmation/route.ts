@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ok", confirmationNumber: existing.confirmationNumber });
     }
 
-    const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
+    let confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
     const notesFull = [
       `Paquete: ${paquete.nombre} (${paquete.duracion})`,
       personas ? `Personas: ${personas}` : null,
@@ -94,7 +94,14 @@ export async function POST(req: NextRequest) {
         confirmationNumber,
       );
     } catch (e: any) {
-      console.error("❌ prisma paquete booking:", e.message);
+      if (e?.code === "P2002") {
+        // Carrera con el webhook: ya existe la reserva de este pago. Reusamos su
+        // número real; el @unique impidió el duplicado.
+        const ya = await prisma.tourBooking.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
+        if (ya) confirmationNumber = ya.confirmationNumber;
+      } else {
+        console.error("❌ prisma paquete booking:", e.message);
+      }
     }
 
     if (email?.includes("@")) {

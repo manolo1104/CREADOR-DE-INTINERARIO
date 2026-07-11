@@ -44,6 +44,11 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
 
   if (adults + childrenMid + childrenSmall > tour.groupMax) return null;
 
+  // Tours solo para adultos (ej. buceo Media Luna, edad mínima 10): el servidor
+  // RECHAZA cualquier reserva con niños aunque la UI los oculte. Sin esta guarda
+  // se podía pagar con descuento de niño manipulando el sessionStorage.
+  if (tour.soloAdultos && childrenMid + childrenSmall > 0) return null;
+
   const promo = input.promoCode ? validatePromoCode(input.promoCode) : { valid: false, discount: 0 };
   const promoDiscount = promo.valid ? promo.discount : 0;
 

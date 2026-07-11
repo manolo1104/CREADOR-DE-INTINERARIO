@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    const paid = session.payment_status === "paid";
+    // Si se pide un producto específico, la sesión debe corresponder a ESE
+    // producto (evita reusar una sesión pagada de otro producto más barato).
+    const productoOk = !producto || session.metadata?.producto === producto;
+    const paid = session.payment_status === "paid" && productoOk;
 
     if (paid) {
       logger.info("pdf_access_granted", {

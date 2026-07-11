@@ -145,6 +145,33 @@ model TourQuote {
   @@index([status])
 }
 
+// Carrito abandonado: el cliente eligió tour/fecha y dejó su correo pero no pagó.
+// Un cron manda 1-2 correos de recuperación con un link que restaura la reserva.
+model AbandonedCart {
+  id            String    @id @default(cuid())
+  token         String    @unique @default(cuid()) // link de recuperación
+  tourId        String
+  tourSlug      String
+  tourName      String
+  tourDate      String
+  adults        Int       @default(1)
+  childrenMid   Int       @default(0)
+  childrenSmall Int       @default(0)
+  promoCode     String?
+  promoDiscount Int       @default(0)
+  total         Int
+  customerEmail String
+  customerPhone String?
+  status        String    @default("open") // open | recovered | converted | expired
+  emailsSent    Int       @default(0)
+  lastEmailAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([customerEmail])
+  @@index([status])
+}
+
 model TourBooking {
   id                    String   @id @default(cuid())
   confirmationNumber    String   @unique
@@ -157,7 +184,7 @@ model TourBooking {
   totalAmount           Int
   promoCode             String?
   promoDiscount         Int      @default(0)
-  stripePaymentIntentId String?
+  stripePaymentIntentId String?  @unique // evita 2 reservas para el mismo pago (carrera cliente/webhook)
   customerName          String
   customerEmail         String
   customerPhone         String?

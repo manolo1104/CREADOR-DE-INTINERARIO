@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { actividad } from "@/lib/logger";
+
+// Bots, crawlers y escáneres: no son visitantes reales, no ensucian el feed.
+function esBot(ua: string | null): boolean {
+  if (!ua) return true;
+  return /bot|crawl|spider|slurp|gptbot|chatgpt|headless|python-|curl|wget|scrapy|facebookexternalhit|whatsapp|preview|wp-admin|scan/i.test(ua);
+}
+
+// Origen legible de la visita (de dónde llegó).
+function fuenteReferrer(ref: string | null): string {
+  if (!ref) return "directo";
+  try {
+    const host = new URL(ref).hostname.replace(/^www\./, "");
+    if (host.endsWith("huasteca-potosina.com")) return ""; // navegación interna
+    if (host.includes("google"))    return "desde Google";
+    if (host.includes("facebook") || host.includes("fb.")) return "desde Facebook";
+    if (host.includes("instagram")) return "desde Instagram";
+    if (host.includes("bing"))      return "desde Bing";
+    if (host.includes("chatgpt") || host.includes("openai")) return "desde ChatGPT";
+    return `desde ${host}`;
+  } catch {
+    return "";
+  }
+}
 
 // El secreto NO tiene fallback: si falta la env var, fallamos cerrado (denegar acceso)
 const rawSecret = process.env.ADMIN_JWT_SECRET;
@@ -47,14 +71,8 @@ export async function middleware(req: NextRequest) {
     TRACKED_PATHS.includes(pathname) ||
     pathname.startsWith("/destinos/") ||
     pathname.startsWith("/en/destinos/");
-  if (isTracked) {
-    console.log(JSON.stringify({
-      level: "info", event: "page_view",
-      ts: new Date().toISOString(), path: pathname,
-      referrer: req.headers.get("referer") ?? null,
-      ua: req.headers.get("user-agent")?.slice(0, 80) ?? null,
-      country: req.headers.get("x-vercel-ip-country") ?? req.headers.get("cf-ipcountry") ?? null,
-    }));
+  if (isTracked && !esBot(req.headers.get("user-agent"))) {
+    actividad("🌐  VISITÓ", pathname, fuenteReferrer(req.headers.get("referer")));
   }
 
   // ── Locale para el render (lo lee el root layout con headers()) ────────────

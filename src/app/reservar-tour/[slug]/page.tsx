@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { TOURS_DB } from "@/lib/tours";
@@ -31,6 +31,29 @@ export default function ReservarTourPage() {
   const [promoError,     setPromoError]     = useState("");
   const [promoShake,     setPromoShake]     = useState(false);
   const [showPromo,      setShowPromo]      = useState(false);
+  // Captura de correo / carrito abandonado
+  const [cartEmail,   setCartEmail]   = useState("");
+  const [cartSaved,   setCartSaved]   = useState(false);
+  const [savingCart,  setSavingCart]  = useState(false);
+  const [cartError,   setCartError]   = useState("");
+
+  // Restaurar desde el link del correo de recuperación (?recuperar=<token>).
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("recuperar");
+    if (!token) return;
+    fetch(`/api/tours/carrito/${token}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        if (!c || c.error) return;
+        if (c.tourDate) setTourDate(c.tourDate);
+        if (typeof c.adults === "number") setAdults(c.adults);
+        if (typeof c.childrenMid === "number") setChildrenMid(c.childrenMid);
+        if (typeof c.childrenSmall === "number") setChildrenSmall(c.childrenSmall);
+        if (c.promoCode) { setPromoCode(c.promoCode); setPromoDiscount(c.promoDiscount || 0); setPromoMsg("Código aplicado"); }
+        if (c.email) setCartEmail(c.email);
+      })
+      .catch(() => {});
+  }, []);
 
   const children = childrenMid + childrenSmall;
   const notFound = !tour;
@@ -126,6 +149,41 @@ export default function ReservarTourPage() {
       sessionId: crypto.randomUUID(),
     });
     router.push(`/reservar-tour/${tour.slug}/checkout`);
+  }
+
+  // Guarda la cotización (carrito) y la envía por correo, para poder retomarla
+  // después. Captura el lead aunque el cliente no pague ahora.
+  async function saveCart() {
+    if (!tour) return;
+    const e = cartEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+      setCartError("Escribe un correo válido.");
+      return;
+    }
+    setCartError("");
+    setSavingCart(true);
+    try {
+      const res = await fetch("/api/tours/guardar-carrito", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tourSlug: tour.slug, tourId: tour.id, tourDate,
+          adults, childrenMid, childrenSmall,
+          promoCode: promoCode || undefined,
+          email: e,
+        }),
+      });
+      if (res.ok) {
+        setCartSaved(true);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setCartError(d.error || "No se pudo guardar. Intenta de nuevo.");
+      }
+    } catch {
+      setCartError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setSavingCart(false);
+    }
   }
 
   const canContinue = !!tourDate && adults >= 1;
@@ -375,6 +433,41 @@ export default function ReservarTourPage() {
 
           {!canContinue && !tourDate && (
             <p className="text-center text-xs text-negro/40 font-dm">Elige la fecha del tour para continuar</p>
+          )}
+
+          {/* Guardar cotización — captura el correo para retomar la reserva después */}
+          {tourDate && (
+            cartSaved ? (
+              <div className="bg-verde-selva/10 border border-verde-selva/25 p-4 text-center">
+                <p className="font-dm text-sm text-verde-profundo">
+                  ✓ Te enviamos tu cotización a <strong>{cartEmail}</strong>
+                </p>
+                <p className="font-dm text-xs text-negro/50 mt-1">Retómala cuando quieras desde el enlace del correo.</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-negro/8 p-4">
+                <p className="font-dm text-sm text-negro/70 mb-1 font-medium">¿Aún no decides?</p>
+                <p className="font-dm text-xs text-negro/45 mb-3">Te enviamos tu cotización y la retomas cuando quieras — sin compromiso.</p>
+                <div className="flex gap-2">
+                  <input
+                    type="email" inputMode="email" autoComplete="email"
+                    value={cartEmail}
+                    onChange={(e) => { setCartEmail(e.target.value); if (cartError) setCartError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && saveCart()}
+                    placeholder="tucorreo@ejemplo.com"
+                    aria-label="Tu correo para guardar la cotización"
+                    className="flex-1 min-w-0 border border-negro/20 bg-crema px-3 py-2.5 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+                  />
+                  <button
+                    type="button" onClick={saveCart} disabled={savingCart}
+                    className="px-4 py-2.5 bg-verde-profundo text-crema text-xs font-dm tracking-[1px] uppercase hover:bg-verde-selva transition-colors disabled:opacity-50 flex-shrink-0"
+                  >
+                    {savingCart ? "…" : "Enviar"}
+                  </button>
+                </div>
+                {cartError && <p className="mt-2 text-terracota text-xs font-dm" role="alert">{cartError}</p>}
+              </div>
+            )
           )}
         </aside>
       </div>
