@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Navbar from "@/components/nav/Navbar";
 import { FloatingReservarButton } from "@/components/FloatingReservarButton";
 import { CookieBanner } from "@/components/CookieBanner";
+import { PresenceBeacon } from "@/components/PresenceBeacon";
 
 function ScrollProgressBar() {
   const barRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!isAdmin && <ScrollProgressBar />}
+      {!isAdmin && <PresenceBeacon />}
       {!isAdmin && <Navbar />}
       {children}
       {!isAdmin && <FloatingReservarButton />}

@@ -11,6 +11,8 @@ import { HeroTypewriter } from "@/components/HeroTypewriter";
 import { StatTile } from "@/components/StatTile";
 import { MagneticButton } from "@/components/MagneticButton";
 import { HeroStats } from "@/components/HeroStats";
+import { ClimaHero } from "@/components/ClimaHero";
+import { VisitantesEnVivo } from "@/components/VisitantesEnVivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { CountdownViaje } from "@/components/CountdownViaje";
 import { GuiaMockup } from "@/components/GuiaMockup";
@@ -173,6 +175,8 @@ export default async function HomePage() {
             </span>
           </div>
 
+          <VisitantesEnVivo en={en} />
+
           <div className="flex flex-wrap gap-4 justify-center mb-10">
             <MagneticButton>
               <Link href={lp("/destinos")} className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300 block">
@@ -193,6 +197,8 @@ export default async function HomePage() {
               )}
             </MagneticButton>
           </div>
+
+          <ClimaHero en={en} />
 
           <div className="mb-10 bg-white/10 backdrop-blur-sm border border-white/20 px-5 py-2.5 rounded-full">
             <UrgencyWidget />
