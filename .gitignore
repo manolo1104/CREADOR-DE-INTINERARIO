@@ -21,3 +21,4 @@ npm-debug.log*
 .next/
 tsbuildinfo
 tsconfig.tsbuildinfo
+backups-imagenes/

@@ -126,6 +126,8 @@ function buildOpeningHours(d: Destino) {
 export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
   const url = `${BASE_URL}${localePath(`/destinos/${d.slug}`, locale)}`;
   const precio = d.precio_entrada.match(/\d+/)?.[0] || "0";
+  const esGratis = /libre|gratis|free/i.test(d.precio_entrada);
+  const imagen = d.imagen_hero || d.imagen_galeria[0];
   const inLanguage = locale === "en" ? "en" : "es-MX";
 
   return {
@@ -150,19 +152,24 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
           addressCountry: "MX",
         },
         openingHoursSpecification: buildOpeningHours(d),
-        offers: {
-          "@type": "Offer",
-          price: precio,
-          priceCurrency: "MXN",
-          availability: "https://schema.org/InStock",
-        },
+        // Sin Offer cuando no hay tarifa publicada ni es gratuito ("Consultar")
+        ...(esGratis || precio !== "0"
+          ? {
+              offers: {
+                "@type": "Offer",
+                price: esGratis ? "0" : precio,
+                priceCurrency: "MXN",
+                availability: "https://schema.org/InStock",
+              },
+            }
+          : {}),
         amenityFeature: d.que_llevar.map((item) => ({
           "@type": "LocationFeatureSpecification",
           name: item,
           value: true,
         })),
-        isAccessibleForFree: false,
-        image: d.imagen_hero ? `${BASE_URL}${d.imagen_hero}` : undefined,
+        isAccessibleForFree: esGratis,
+        image: imagen ? `${BASE_URL}${imagen}` : undefined,
         // aggregateRating movido a Product — TouristAttraction no soportado por Google para rich snippets de reseñas
       },
       // Product: único tipo soportado por Google para AggregateRating rich snippets
@@ -170,7 +177,7 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
         "@type": "Product",
         name: d.nombre,
         description: d.descripcion,
-        image: d.imagen_hero ? `${BASE_URL}${d.imagen_hero}` : undefined,
+        image: imagen ? `${BASE_URL}${imagen}` : undefined,
         aggregateRating: {
           "@type":      "AggregateRating",
           ratingValue:  RATING_DESTINO[d.slug].rating,

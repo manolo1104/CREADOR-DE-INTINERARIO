@@ -6,29 +6,19 @@ import { usePathname } from "next/navigation";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { DestinoProductCard } from "@/components/DestinoProductCard";
 
-// Grupos por tipo de experiencia. El orden importa: cada destino se asigna al PRIMER
-// grupo que coincida (sin repetir). Se agrupa por el `tipo` ORIGINAL (español).
-const GRUPOS: { key: string; label: string; labelEn: string; match: (tipo: string) => boolean }[] = [
-  { key: "aventura",    label: "Aventura en agua y cañones",     labelEn: "Adventure in water & canyons", match: t => t === "Aventura" },
-  { key: "extrema",     label: "Adrenalina extrema",             labelEn: "Extreme adrenaline",           match: t => t === "Extrema" },
-  { key: "naturaleza",  label: "Naturaleza, pozas y nacimientos",labelEn: "Nature, pools & springs",      match: t => t === "Naturaleza" },
-  { key: "cultura",     label: "Arte & cultura",                 labelEn: "Art & culture",                match: t => t.includes("Arte") },
-  { key: "arqueologia", label: "Arqueología",                    labelEn: "Archaeology",                  match: t => t.includes("Arqueolog") },
-  { key: "bienestar",   label: "Bienestar & relax",              labelEn: "Wellness & relaxation",        match: t => t === "Bienestar" },
-];
+// Agrupación por MUNICIPIO (campo `zona`). Orden: los municipios con más destinos
+// primero y luego alfabético. Los nombres de municipio NO se traducen (place names),
+// así que la etiqueta es la misma en español e inglés.
+type GrupoMuni = { key: string; label: string; destinos: typeof DESTINOS_DB };
 
-function grupoDe(tipo: string): string {
-  const g = GRUPOS.find(g => g.match(tipo));
-  return g ? g.key : "otros";
-}
-
-const DESTINOS_POR_GRUPO: Record<string, typeof DESTINOS_DB> = {};
+const POR_MUNICIPIO: Record<string, typeof DESTINOS_DB> = {};
 for (const d of DESTINOS_DB) {
-  const k = grupoDe(d.tipo);
-  (DESTINOS_POR_GRUPO[k] ||= []).push(d);
+  (POR_MUNICIPIO[d.zona] ||= []).push(d);
 }
 
-const GRUPOS_CON_DATOS = GRUPOS.filter(g => (DESTINOS_POR_GRUPO[g.key]?.length ?? 0) > 0);
+const GRUPOS_CON_DATOS: GrupoMuni[] = Object.entries(POR_MUNICIPIO)
+  .map(([zona, destinos]) => ({ key: zona, label: zona, destinos }))
+  .sort((a, b) => b.destinos.length - a.destinos.length || a.label.localeCompare(b.label, "es"));
 
 export default function DestinosClient() {
   const pathname = usePathname();
@@ -40,15 +30,14 @@ export default function DestinosClient() {
       ? GRUPOS_CON_DATOS
       : GRUPOS_CON_DATOS.filter(g => g.key === grupoActivo);
 
-  const grupoLabel = (g: typeof GRUPOS[number]) => (en ? g.labelEn : g.label);
   let idx = 0;
 
   return (
     <>
       {/* Barra de filtros */}
       <div className="sticky sticky-subnav z-30 bg-negro/90 backdrop-blur-md border-b border-white/8 py-4 px-6" style={{ top: "var(--navbar-offset, 64px)" }}>
-        <div className="max-w-6xl mx-auto flex gap-2 overflow-x-auto scrollbar-none justify-start md:justify-center">
-          {[{ key: "todos", label: en ? "All" : "Todos" }, ...GRUPOS_CON_DATOS.map(g => ({ key: g.key, label: grupoLabel(g) }))].map((f) => (
+        <div className="max-w-6xl mx-auto flex gap-2 overflow-x-auto scrollbar-none justify-start">
+          {[{ key: "todos", label: en ? "All" : "Todos" }, ...GRUPOS_CON_DATOS.map(g => ({ key: g.key, label: g.label }))].map((f) => (
             <button
               key={f.key}
               onClick={() => setGrupoActivo(f.key)}
@@ -67,12 +56,12 @@ export default function DestinosClient() {
       {/* Secciones agrupadas */}
       <section className="max-w-6xl mx-auto px-6 py-16">
         {gruposVisibles.map((g) => {
-          const destinos = DESTINOS_POR_GRUPO[g.key] ?? [];
+          const destinos = g.destinos;
           return (
             <div key={g.key} className="mb-16 last:mb-0">
               <div className="flex items-baseline gap-3 mb-8 border-b border-white/8 pb-3">
-                <h2 className="font-cormorant font-light text-crema" style={{ fontSize: "clamp(22px,3vw,32px)" }}>
-                  {grupoLabel(g)}
+                <h2 className="reveal-up font-cormorant font-light text-crema" style={{ fontSize: "clamp(22px,3vw,32px)" }}>
+                  {g.label}
                 </h2>
                 <span className="text-[11px] tracking-[2px] uppercase text-crema/30 font-dm">
                   {destinos.length} {en ? `destination${destinos.length !== 1 ? "s" : ""}` : `destino${destinos.length !== 1 ? "s" : ""}`}
@@ -93,7 +82,7 @@ export default function DestinosClient() {
 
       {/* CTA final — ES: planificador IA · EN: WhatsApp (el recomendador es solo-ES) */}
       <section className="bg-verde-profundo/30 border-t border-white/6 py-16 px-6 text-center">
-        <h2 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3.5vw,40px)" }}>
+        <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3.5vw,40px)" }}>
           {en ? "Not sure where to start?" : "¿No sabes por dónde empezar?"}
         </h2>
         <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">

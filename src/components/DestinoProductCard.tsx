@@ -48,9 +48,9 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
         aria-label={`${en ? "View" : "Ver"} ${d.nombre}`}
         className="block relative h-56 md:h-64 overflow-hidden flex-shrink-0"
       >
-        {d.imagen_hero ? (
+        {(d.imagen_hero || d.imagen_galeria?.[0]) ? (
           <Image
-            src={d.imagen_hero}
+            src={d.imagen_hero || d.imagen_galeria[0]}
             alt={d.nombre}
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"

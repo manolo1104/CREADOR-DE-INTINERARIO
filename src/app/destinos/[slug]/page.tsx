@@ -40,11 +40,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const base = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!base) return { title: locale === "en" ? "Destination not found" : "Destino no encontrado" };
   const destino = localizeDestino(base, locale);
+  const ogImagen = destino.imagen_hero || destino.imagen_galeria[0];
   return {
     title: destino.seo?.metaTitle ?? `${destino.nombre} — Huasteca Potosina`,
     description: destino.seo?.metaDescription ?? destino.descripcion,
     keywords: destino.seo?.keywords ?? ["Huasteca Potosina", destino.zona, destino.nombre, "tourism Mexico"],
-    openGraph: destino.imagen_hero ? { images: [{ url: `${SITE}${destino.imagen_hero}` }] } : undefined,
+    openGraph: ogImagen ? { images: [{ url: `${SITE}${ogImagen}` }] } : undefined,
     alternates: buildAlternates(`/destinos/${destino.slug}`, locale),
   };
 }
@@ -139,7 +140,7 @@ export default function DestinoPage({ params }: Props) {
           </div>
         </div>
 
-        {allImages.length > 1 && (
+        {(allImages.length > 1 || (!destino.imagen_hero && allImages.length > 0)) && (
           <DestinoGallery images={allImages} nombre={destino.nombre} />
         )}
 

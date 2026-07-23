@@ -14,7 +14,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "La Cascada de Tamul no te avisa cuándo aparece. Remas por el Cañón del Tampaón durante 30 minutos, con paredes de roca a cada lado y el silencio amplificado por el agua, y de repente el río dobla y ahí está: 105 metros de caída libre, tan ancha que no cabe en ninguna foto que hayas tomado antes. Es el tipo de lugar que te hace entender por qué la gente llora de emoción en los viajes.",
 
   "sotano-de-las-golondrinas":
-    "Las 5:45 AM en el borde del Sótano de las Golondrinas es una de las experiencias más extrañas que puede vivir un ser humano. Abajo: oscuridad absoluta a 333 metros. Luego empieza el sonido, antes de que veas nada. Después salen ellos: miles de vencejos en espiral ascendente, como un tornado de alas que dura veinte minutos. No es naturaleza. Es un ritual.",
+    "Las 5:45 AM en el borde del Sótano de las Golondrinas es una de las experiencias más extrañas que puede vivir un ser humano. Abajo: oscuridad absoluta a más de 370 metros. Luego empieza el sonido, antes de que veas nada. Después salen ellos: miles de vencejos en espiral ascendente, como un tornado de alas que dura veinte minutos. No es naturaleza. Es un ritual.",
 
   "cascadas-de-micos":
     "Las Cascadas de Micos son la respuesta perfecta a la pregunta '¿qué hacemos hoy?' en la Huasteca. Siete cascadas en circuito, tirolesa, kayak, bicicleta aérea y saltos a pozas de agua cristalina —todo en un solo lugar. Es el parque de aventuras más hermoso que hayas pisado, con la diferencia de que fue diseñado por la naturaleza hace millones de años.",
@@ -66,6 +66,63 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
 
   "xilitla-pueblo-magico":
     "Xilitla no es solo el municipio donde viven Las Pozas de Edward James. Es un pueblo donde la sierra Huasteca cae hacia la selva en cascada de vegetación, donde el café de altura se tuesta en fogones de leña y donde los artesanos indígenas trabajan con técnicas de 800 años de antigüedad. El centro tiene una tranquilidad que las ciudades perdieron hace décadas. Quedarte una noche aquí cambia la perspectiva del viaje entero.",
+
+  "aquismon-pueblo-magico":
+    "Casi nadie viene a Aquismón a quedarse en Aquismón, y ahí está parte de su encanto: es la puerta de entrada tének a la Cascada de Tamul, a los sótanos y al río Tampaón. Pero antes de salir a la aventura vale la pena mirar su Parroquia de San Miguel Arcángel, levantada sobre un antiguo basamento huasteco. Nombrado Pueblo Mágico en 2018, su nombre en tének significa 'árbol al pie de un pozo': un buen resumen de un lugar donde la sierra y el agua se encuentran.",
+
+  "rio-axtla-el-chalan":
+    "El Río Axtla guarda un personaje: 'el chalán', una vieja balsa de fierro que desde hace más de medio siglo cruza el río jalada a mano, sin motor ni prisa. Alrededor, aguas cristalinas y pozas para nadar donde la vida del pueblo y el río se confunden. Es la Huasteca cotidiana, la que sucede lejos de las filas y los torniquetes.",
+
+  "castillo-de-la-salud":
+    "Si Xilitla tiene su jardín surrealista, Axtla tiene el suyo en clave de medicina tradicional. El Castillo de la Salud lo levantó en 1974 el herbolario náhuatl Don Beto Ramón, mezclando símbolos prehispánicos con pasajes bíblicos —la Torre de Babel, el Arca de Noé— alrededor de un jardín con cientos de plantas medicinales. Don Beto murió en 2004, pero dejó más de 150 fórmulas de herbolaria que aquí se siguen usando.",
+
+  "cascada-los-comales":
+    "A apenas unos pasos de la entrada de Las Pozas, Los Comales es el chapuzón perfecto para cerrar el día surrealista. Sus aguas semicálidas caen entre la selva en pozas donde nadar sin multitudes, y un temazcal de uso medicinal recibe grupos pequeños para quien quiera algo más que un baño. Está tan cerca de Edward James que sería un error no combinarlos.",
+
+  "cascada-el-trampolin-tamasopo":
+    "El Trampolín es el secreto a voces de Tamasopo: un tramo gratuito y público del río Agua Buena —no el parque de pago— donde el agua turquesa forma pozas, mini cascadas y, sí, cuerdas colgadas de los árboles para lanzarse de clavado. Se extiende unos dos kilómetros de río, así que siempre hay una poza para ti. La entrada cuesta cero y el recuerdo, mucho.",
+
+  "zona-arqueologica-tamohi-el-consuelo":
+    "Tamohí —'lugar de la efervescencia' en tének— es el otro gran sitio huasteco de Tamuín, distinto y a veces confundido con Tamtoc. En sus cerca de 210 hectáreas a orillas del Tampaón se levantan plataformas y basamentos de una ciudad prehispánica, y aquí, en 1917, se descubrió 'El Adolescente Huasteco', hoy una joya del Museo Nacional de Antropología. Caminarlo es pisar una de las cunas de la cultura huasteca.",
+
+  "templo-san-juan-bautista-coxcatlan":
+    "Frente a la plaza de Coxcatlán se alza uno de los templos más antiguos de la Huasteca Potosina: San Juan Bautista, templo y ex convento del siglo XVI. La tradición constructiva lo hace aún más memorable: sus muros se habrían levantado con piedra unida con una mezcla que incluía conchas marinas molidas. Es historia colonial en estado puro, lejos del circuito turístico.",
+
+  "cascada-rancho-el-zapote-poza-azul-coxcatlan":
+    "Los locales la llaman simplemente 'la poza azul', y el nombre le hace justicia: una cascada y poza de un turquesa vibrante a solo unos once minutos de la cabecera de Coxcatlán. Es de los rincones menos masificados de la Huasteca, justo el tipo de lugar que buscas cuando quieres el agua turquesa para ti solo. Un secreto que el estado apenas empieza a presumir.",
+
+  "ruinas-de-el-jopoy-coxcatlan":
+    "El Jopoy es ruina y memoria a la vez: los restos de una de las primeras ermitas españolas de la Huasteca, con muros de piedra y grandes arcos que el tiempo dejó a cielo abierto. Hoy la comunidad la usa como panteón, así que el silencio entre sus arcos tiene algo más íntimo. El INAH hizo aquí exploraciones preliminares hacia 2009, pero el lugar sigue siendo, sobre todo, de su gente.",
+
+  "tancanhuitz":
+    "Tancanhuitz se gana el corazón a pie: su parroquia de San Miguel Arcángel, encaramada al final de una larga escalinata, es famosa como la 'Iglesia de los 149 Escalones'. Pero lo que de verdad late aquí es la tradición tének-nahua —el huapango, las danzas y un Xantolo intenso que la vuelve parada obligada de la Ruta de Día de Muertos de la Huasteca. Subir esos escalones es solo el principio.",
+
+  "san-martin-chalchicuautla":
+    "A San Martín Chalchicuautla lo llaman la 'Cuna del Xantolo', y no es exageración: entre el 31 de octubre y el 2 de noviembre sus calles se llenan de comparsas de 'viejos' enmascarados que bailan huapango con una devoción que pone la piel de gallina. Si vas en temporada, el zacahuil, los bocoles y el queso de bola completan la fiesta; y cerca espera la Cascada del Manantial para el día siguiente. Es la Huasteca más ritual y viva.",
+
+  "san-vicente-tancuayalab":
+    "San Vicente Tancuayalab carga un título grande: el de 'cuna del Día de Muertos' en San Luis Potosí. Fundado por franciscanos en el siglo XVI cerca del río Moctezuma —y reubicado en 1767—, su nombre huasteco significa 'lugar del bastón de mando', y su Xantolo conserva esa autoridad ancestral. Es un destino para entender de dónde viene la tradición que el resto de México celebra.",
+
+  "tanlajas":
+    "Tanlajás —'lugar de lajas' en tének— guarda uno de los rituales más impactantes de la Huasteca: la 'Toreada de los Diablos', donde hombres enmascarados con cuernos, pieles y chirrión recrean la eterna lucha entre el bien y el mal. Las máscaras, talladas a mano en madera, valen el viaje por sí solas. Y entre danza y danza, la cocina tének —zacahuiles, bocoles, cecina— hace el resto.",
+
+  "texquitote":
+    "Si alguna vez has bailado un huapango, parte de su sonido nació aquí. Texquitote es la cuna de la laudería del son huasteco: cerca de cuarenta lauderos construyen a mano jaranas, quintas huapangueras, violines y arpas, y fue aquí donde nació la 'quinta huapanguera', la guitarra de cinco cuerdas del género. Entrar a un taller, con respeto y aviso previo, es ver nacer la música con las manos.",
+
+  "laguna-de-los-suspiros":
+    "El alma de la Laguna de los Suspiros no es el agua sino un árbol: un higuerón de unos doscientos años cuyas raíces gigantes se abren en dos 'puertas' naturales, el rincón más fotografiado del lugar. Es un paseo sencillo y tranquilo en el ejido de Plan de Iguala, de esos que premian al viajero curioso que se sale del mapa de siempre. Naturaleza sin prisa, en la Huasteca más callada.",
+
+  "la-trinidad-xilitla":
+    "Subir a La Trinidad es cambiar de mundo en una hora: del calor de Xilitla al frío y la neblina de uno de los bosques mejor conservados de la Huasteca, a casi dos mil metros. Es una comunidad náhuatl de apenas un centenar de habitantes donde puedes dormir en cabaña, acampar, encender una fogata, asar tu comida y caminar entre madroños enormes hasta miradores, pozas y sótanos. Lo mejor no es un atractivo en particular, sino la sensación de estar muy lejos de todo.",
+
+  "olla-de-la-luz":
+    "Coronando el punto más alto del municipio de Xilitla, la Olla de la Luz es un abismo que impone: un sótano de casi 800 metros de diámetro y más de 120 de caída vertical, escondido en lo alto del bosque de niebla. Llegar es parte del premio —una caminata guiada desde La Trinidad, entre pinos y madroños— y asomarse a su boca es una de esas vistas que recalibran la escala de las cosas. No es para ir solo: aquí el guía es tu seguro de vida.",
+
+  "cueva-del-salitre":
+    "A pocos minutos del centro surrealista de Xilitla, la Cueva del Salitre es el lado de adrenalina del Pueblo Mágico: cien metros de boca por trescientos de fondo, con paredes que los escaladores han convertido en cinco rutas y un interior hecho para la espeleología y el rappel. Su nombre viene del salitre que escurre por la roca húmeda. Es la prueba de que en Xilitla la aventura empieza casi en la plaza.",
+
+  "museo-leonora-carrington-xilitla":
+    "Xilitla no se entiende solo con Edward James: su amiga, la pintora surrealista Leonora Carrington, tiene aquí su propio museo en pleno centro. Entre escultura, litografía y dibujo, sus criaturas oníricas dialogan a la perfección con el jardín de Las Pozas que está a unos minutos; de hecho, verlos el mismo día es la ruta surrealista perfecta. Un remanso de arte para equilibrar tanta naturaleza.",
 };
 
 // ── Combinaciones sugeridas ("los viajeros también visitan") ─────────────────

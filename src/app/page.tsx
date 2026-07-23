@@ -650,6 +650,7 @@ export default async function HomePage() {
                       { label: "Blog",                 href: "/blog" },
                       { label: "Sobre la Huasteca",    href: "/sobre-la-huasteca-potosina" },
                       { label: "Sustentabilidad",      href: "/sustentabilidad-y-conservacion" },
+                      { label: "Créditos de fotos",    href: "/creditos" },
                     ]
                 ).map((link) => (
                   <li key={link.label}>
