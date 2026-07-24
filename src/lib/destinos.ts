@@ -57,6 +57,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/las-pozas-jardin-surrealista/gallery-6.jpg",
       "/imagenes/las-pozas-jardin-surrealista/gallery-8.jpg",
     ],
+    seo: {
+      metaTitle: "Las Pozas de Xilitla 2026 | Horarios, Precio y Cómo Llegar",
+      metaDescription: "El jardín surrealista de Edward James en Xilitla: entrada $180 MXN, abre de miércoles a lunes 09:00–18:00 (cerrado martes). Cómo llegar desde Ciudad Valles, mejor hora y qué llevar.",
+      keywords: ["las pozas xilitla", "jardín surrealista edward james", "las pozas precio", "las pozas horario", "qué hacer en xilitla"],
+      faqPrincipales: [
+        { pregunta: "¿Qué días abre Las Pozas y cuánto cuesta?", respuesta: "Abre de miércoles a lunes de 09:00 a 18:00 y cierra los martes. La entrada cuesta $180 MXN. Conviene comprar el boleto digital antes de llegar." },
+        { pregunta: "¿Cuánto tiempo se necesita para recorrer Las Pozas?", respuesta: "Unas 4 horas para recorrerlo con calma. La mejor hora para entrar es entre 09:00 y 11:00, cuando hay menos gente y mejor luz para fotos." },
+        { pregunta: "¿Quién construyó Las Pozas?", respuesta: "El poeta británico Edward James, que levantó las estructuras de concreto entre cascadas y selva. El terreno antes era una plantación de orquídeas y él nunca vivió dentro de las estructuras." },
+      ],
+    },
   },
   {
     id: "cascada_tamul", slug: "cascada-de-tamul",
@@ -81,6 +91,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascada-de-tamul/grupo-cascada.jpg",
       "/imagenes/cascada-de-tamul/cascada-lateral.jpg",
     ],
+    seo: {
+      metaTitle: "Cascada de Tamul 2026 | Precio, Horarios y Cómo Llegar en Panga",
+      metaDescription: "La cascada más alta de San Luis Potosí (105 m), a la que se llega remando por el río Tampaón. Entrada $220 MXN + $300 por persona la panga, solo efectivo. Salidas hasta las 2 PM.",
+      keywords: ["cascada de tamul", "tamul precio", "cómo llegar a tamul", "tamul huasteca potosina", "paseo en panga tamul"],
+      faqPrincipales: [
+        { pregunta: "¿Cuánto cuesta ir a la Cascada de Tamul?", respuesta: "La entrada cuesta $220 MXN más $300 MXN por persona por la panga (lancha). Solo se acepta EFECTIVO: no hay cajero en el embarcadero." },
+        { pregunta: "¿A qué hora hay que llegar a Tamul?", respuesta: "Lo ideal es llegar a las 08:00. Los lancheros dejan de salir a las 2 PM, así que llegar tarde significa quedarse sin paseo." },
+        { pregunta: "¿Qué tan alta es la Cascada de Tamul?", respuesta: "Tiene 105 metros de caída, la más alta de San Luis Potosí. En octubre el agua turquesa contrasta con el follaje naranja del cañón." },
+      ],
+    },
   },
   {
     id: "sotano_golondrinas", slug: "sotano-de-las-golondrinas",
@@ -105,6 +125,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/sotano-de-las-golondrinas/interior.jpg",
       "/imagenes/sotano-de-las-golondrinas/aves-cielo.jpg",
     ],
+    seo: {
+      metaTitle: "Sótano de las Golondrinas 2026 | Horario del Vuelo de las Aves",
+      metaDescription: "Abismo de 376 m de caída libre (hasta 512 m de profundidad) en Aquismón. Entrada $100 MXN. Llega a las 5:45 AM para ver salir a los vencejos en espiral. 568 escalones de bajada.",
+      keywords: ["sótano de las golondrinas", "golondrinas horario", "sótano de las golondrinas precio", "vuelo de las aves aquismón", "qué hora ver las golondrinas"],
+      faqPrincipales: [
+        { pregunta: "¿A qué hora salen las aves del Sótano de las Golondrinas?", respuesta: "El vuelo en espiral es al amanecer: hay que estar en el borde alrededor de las 5:45 AM. Si llegas a las 9 AM las aves ya salieron y te pierdes el espectáculo." },
+        { pregunta: "¿Qué tan profundo es el Sótano de las Golondrinas?", respuesta: "Tiene 376 metros de caída libre y hasta 512 metros de profundidad total. El fondo mide alrededor de tres campos de fútbol." },
+        { pregunta: "¿Qué tan pesada es la bajada?", respuesta: "Son 568 escalones para bajar al mirador; la subida de regreso es agotadora. Lleva calzado de tenis, chamarra y lámpara para la hora del amanecer." },
+      ],
+    },
   },
   {
     id: "cascada_micos", slug: "cascadas-de-micos",
@@ -128,6 +158,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascadas-de-micos/gallery-4.jpg",
       "/imagenes/cascadas-de-micos/gallery-5.jpg",
     ],
+    seo: {
+      metaTitle: "Cascadas de Micos 2026 | Precio, Saltos y Cómo Llegar",
+      metaDescription: "Siete cascadas con circuito de saltos, tirolesa, kayak y skybike a 20 min de Ciudad Valles. Entrada $100 MXN, abre todos los días 08:00–18:00. Chaleco y casco obligatorios.",
+      keywords: ["cascadas de micos", "micos precio", "saltos en micos", "cascadas de micos ciudad valles", "qué hacer en ciudad valles"],
+      faqPrincipales: [
+        { pregunta: "¿Cuánto cuesta entrar a las Cascadas de Micos?", respuesta: "La entrada cuesta $100 MXN y abre todos los días de 08:00 a 18:00. Las actividades (saltos, tirolesa, kayak, skybike) se contratan aparte en el lugar." },
+        { pregunta: "¿Son seguros los saltos de Micos?", respuesta: "Sí, siempre que se hagan con el equipo puesto: chaleco y casco son OBLIGATORIOS. El error más común es no ajustar bien el chaleco antes de saltar." },
+        { pregunta: "¿Cómo llegar a Micos desde Ciudad Valles?", respuesta: "Está a 20 minutos de Ciudad Valles. Hay combis que salen cada 30 minutos por unos $35 MXN." },
+      ],
+    },
   },
   {
     id: "cascada_puente_dios", slug: "puente-de-dios-tamasopo",
@@ -218,6 +258,16 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascadas-de-tamasopo/gallery-14.jpg",
       "/imagenes/cascadas-de-tamasopo/gallery-15.jpg",
     ],
+    seo: {
+      metaTitle: "Cascadas de Tamasopo 2026 | Precio, Horarios y Pozas para Nadar",
+      metaDescription: "Pozas de agua azul turquesa para nadar en Tamasopo, ideales para familias. Entrada $60 MXN, abre todos los días 08:00–17:00, a 45 min de Ciudad Valles. Solo bloqueador biodegradable.",
+      keywords: ["cascadas de tamasopo", "tamasopo precio", "cascadas de tamasopo horario", "qué hacer en tamasopo", "pozas para nadar huasteca potosina"],
+      faqPrincipales: [
+        { pregunta: "¿Cuánto cuesta la entrada a las Cascadas de Tamasopo?", respuesta: "La entrada cuesta $60 MXN y el parque abre todos los días de 08:00 a 17:00. Es uno de los accesos más económicos de la Huasteca Potosina." },
+        { pregunta: "¿Se puede nadar en las Cascadas de Tamasopo?", respuesta: "Sí, las pozas son aptas para nadar y es un lugar tranquilo para ir en familia. La mejor hora es entre las 10:00 y las 14:00, cuando el agua luce más azul." },
+        { pregunta: "¿Por qué solo se permite bloqueador biodegradable?", respuesta: "El bloqueador químico contamina las pozas y daña el ecosistema del río. En Tamasopo solo se permite bloqueador biodegradable; es el error más común de los visitantes." },
+      ],
+    },
   },
 
   {
@@ -897,6 +947,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["traje de baño", "sandalias acuáticas", "efectivo", "bloqueador biodegradable"],
     datos_curiosos: ["El 'chalán' de fierro opera desde hace más de 50 años y es símbolo de Axtla.", "El río se forma por la unión de los ríos Huichihuayán y Tancuilín."],
     errores_comunes: ["Nadar con el río crecido", "No llevar efectivo para el chalán"],
+    seo: {
+      metaTitle: "Río Axtla y 'el Chalán' | Pozas para Nadar en Axtla de Terrazas",
+      metaDescription: "Río de aguas cristalinas en Axtla de Terrazas con pozas para nadar y 'el chalán', la balsa de fierro que cruza el río jalada a mano desde hace más de 50 años. Acceso libre.",
+      keywords: ["río axtla", "el chalán axtla", "qué hacer en axtla de terrazas", "pozas para nadar huasteca potosina"],
+      faqPrincipales: [],
+    },
     lat: 21.4333, lng: -98.8833,
     imagen_hero: "/imagenes/rio-axtla-el-chalan/hero.jpg", imagen_galeria: ["/imagenes/rio-axtla-el-chalan/gallery-1.jpg", "/imagenes/rio-axtla-el-chalan/gallery-2.jpg", "/imagenes/rio-axtla-el-chalan/gallery-3.jpg", "/imagenes/rio-axtla-el-chalan/gallery-4.jpg"],
   },
@@ -973,6 +1029,14 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["traje de baño", "calzado acuático", "chaleco salvavidas", "efectivo"],
     datos_curiosos: ["Es un tramo gratuito del río Agua Buena, no el parque de pago de las Cascadas de Tamasopo.", "El paraje se extiende unos 2 km a lo largo del río."],
     errores_comunes: ["Confundirlo con el parque de pago de Tamasopo", "Saltar sin medir la profundidad"],
+    seo: {
+      metaTitle: "El Trampolín, Tamasopo | Río Gratuito con Pozas Turquesa",
+      metaDescription: "Tramo público y gratuito del río Agua Buena en Tamasopo: agua turquesa, mini cascadas, pozas y cuerdas para lanzarse. Es DISTINTO del parque de pago Cascadas de Tamasopo.",
+      keywords: ["el trampolín tamasopo", "río agua buena tamasopo", "cascadas gratis huasteca potosina", "qué hacer en tamasopo"],
+      faqPrincipales: [
+        { pregunta: "¿El Trampolín es lo mismo que las Cascadas de Tamasopo?", respuesta: "No. El Trampolín es un tramo público y gratuito del río Agua Buena; las Cascadas de Tamasopo son un parque de pago distinto. Es la confusión más común de los visitantes." },
+      ],
+    },
     lat: 21.9163, lng: -99.4090,
     imagen_hero: "/imagenes/cascada-el-trampolin-tamasopo/hero.jpg", imagen_galeria: ["/imagenes/cascada-el-trampolin-tamasopo/gallery-1.jpg", "/imagenes/cascada-el-trampolin-tamasopo/gallery-2.jpg", "/imagenes/cascada-el-trampolin-tamasopo/gallery-3.jpg", "/imagenes/cascada-el-trampolin-tamasopo/gallery-4.jpg", "/imagenes/cascada-el-trampolin-tamasopo/gallery-5.jpg", "/imagenes/cascada-el-trampolin-tamasopo/gallery-6.jpg"],
   },
@@ -1016,6 +1080,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["calzado cómodo", "cámara", "efectivo"],
     datos_curiosos: ["Se le considera una de las construcciones religiosas más antiguas de la Huasteca Potosina.", "Su construcción habría usado piedra unida con mezcla que incluía conchas marinas molidas."],
     errores_comunes: ["Dar por hecho horarios de visita", "Ir esperando un museo (es templo en uso)"],
+    seo: {
+      metaTitle: "Templo de San Juan Bautista, Coxcatlán | Uno de los Más Antiguos",
+      metaDescription: "Templo y ex convento del siglo XVI frente a la plaza de Coxcatlán, considerado uno de los más antiguos de la Huasteca Potosina. Acceso libre; es un templo en uso, no un museo.",
+      keywords: ["templo san juan bautista coxcatlán", "ex convento coxcatlán", "qué ver en coxcatlán", "iglesias antiguas huasteca potosina"],
+      faqPrincipales: [],
+    },
     lat: 21.53861, lng: -98.90528,
     imagen_hero: "/imagenes/templo-san-juan-bautista-coxcatlan/hero.jpg", imagen_galeria: [],
   },
@@ -1033,6 +1103,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["traje de baño", "calzado acuático", "efectivo", "agua"],
     datos_curiosos: ["El estado la promociona por su 'vibrante color turquesa' y por estar a solo ~11 min de la cabecera."],
     errores_comunes: ["Confundirla con la Poza de Rosendo (otro sitio)", "Ir en lluvias (agua turbia)"],
+    seo: {
+      metaTitle: "Cascada del Rancho El Zapote (Poza Azul), Coxcatlán",
+      metaDescription: "Cascada y poza turquesa en Coxcatlán conocida como 'poza azul', de los rincones menos masificados de la Huasteca Potosina. Sitio poco documentado: confirma acceso y tarifa localmente.",
+      keywords: ["poza azul coxcatlán", "cascada rancho el zapote", "qué hacer en coxcatlán", "cascadas poco conocidas huasteca potosina"],
+      faqPrincipales: [],
+    },
     lat: 21.53861, lng: -98.90528,
     imagen_hero: "/imagenes/cascada-rancho-el-zapote-poza-azul-coxcatlan/hero.jpg", imagen_galeria: ["/imagenes/cascada-rancho-el-zapote-poza-azul-coxcatlan/gallery-1.jpg", "/imagenes/cascada-rancho-el-zapote-poza-azul-coxcatlan/gallery-2.jpg"],
   },
@@ -1050,6 +1126,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["calzado de campo", "agua", "efectivo", "respeto (es panteón)"],
     datos_curiosos: ["Se le señala como una de las primeras ermitas de la Huasteca Potosina.", "El INAH realizó exploraciones preliminares hacia 2009."],
     errores_comunes: ["Faltar al respeto (es cementerio activo)", "Ir sin guía local"],
+    seo: {
+      metaTitle: "Ruinas de El Jopoy, Coxcatlán | Ermita Colonial en Ruinas",
+      metaDescription: "Restos de una ermita colonial de muros de piedra y grandes arcos en Coxcatlán, hoy usada como panteón comunitario. Acceso libre; cobra vida el 1 y 2 de noviembre.",
+      keywords: ["ruinas de el jopoy", "el jopoy coxcatlán", "ermita colonial huasteca potosina", "qué hacer en coxcatlán"],
+      faqPrincipales: [],
+    },
     lat: 21.53861, lng: -98.90528,
     imagen_hero: "/imagenes/ruinas-de-el-jopoy-coxcatlan/hero.jpg", imagen_galeria: ["/imagenes/ruinas-de-el-jopoy-coxcatlan/gallery-1.jpg", "/imagenes/ruinas-de-el-jopoy-coxcatlan/gallery-2.jpg", "/imagenes/ruinas-de-el-jopoy-coxcatlan/gallery-3.jpg"],
   },
@@ -1067,6 +1149,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["calzado cómodo", "agua", "cámara", "efectivo"],
     datos_curiosos: ["Su parroquia se popularizó como la 'Iglesia de los 149 Escalones'.", "Forma parte de la Ruta Xantolo de la Huasteca Potosina."],
     errores_comunes: ["Ir fuera de temporada esperando las danzas", "Subestimar la escalinata"],
+    seo: {
+      metaTitle: "Tancanhuitz | La Iglesia de los 149 Escalones y el Xantolo",
+      metaDescription: "Cabecera tének-nahua con su parroquia de San Miguel Arcángel en lo alto de una larga escalinata, y una de las tradiciones de Xantolo, huapango y danzas más fuertes de la Huasteca.",
+      keywords: ["tancanhuitz", "iglesia 149 escalones", "xantolo tancanhuitz", "ciudad santos san luis potosí"],
+      faqPrincipales: [],
+    },
     lat: 21.5972, lng: -98.9667,
     imagen_hero: "/imagenes/tancanhuitz/hero.jpg", imagen_galeria: [],
   },
@@ -1084,6 +1172,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["calzado cómodo", "cámara", "efectivo", "agua"],
     datos_curiosos: ["Reconocido como la 'Cuna del Xantolo' potosino: comparsas de 'viejos' enmascarados bailan huapango.", "Su gastronomía de temporada incluye zacahuil, bocoles y queso de bola."],
     errores_comunes: ["Visitar fuera del Xantolo esperando las comparsas", "Dar por segura la apertura de la cascada"],
+    seo: {
+      metaTitle: "San Martín Chalchicuautla | La Cuna del Xantolo",
+      metaDescription: "Municipio conocido como la 'Cuna del Xantolo': del 31 de octubre al 2 de noviembre el Día de Muertos se vive con hondas raíces nahuas. Cerca está la Cascada del Manantial.",
+      keywords: ["san martín chalchicuautla", "cuna del xantolo", "xantolo huasteca potosina", "día de muertos san luis potosí"],
+      faqPrincipales: [],
+    },
     lat: 21.3833, lng: -98.6500,
     imagen_hero: "/imagenes/san-martin-chalchicuautla/hero.jpg", imagen_galeria: [],
   },
@@ -1101,6 +1195,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["calzado cómodo", "cámara", "efectivo", "agua"],
     datos_curiosos: ["'Tancuayalab' significa en huasteco 'lugar del bastón de mando'.", "Se fundó como 'San Francisco Tancuayalab' en el siglo XVI y se trasladó a su ubicación actual en 1767."],
     errores_comunes: ["Ir fuera del Xantolo esperando las festividades", "Subestimar el calor"],
+    seo: {
+      metaTitle: "San Vicente Tancuayalab | Cuna del Día de Muertos en SLP",
+      metaDescription: "Pueblo huasteco reconocido como 'cuna del Día de Muertos' en San Luis Potosí, fundado por misioneros franciscanos en el siglo XVI cerca del río Moctezuma. Acceso libre.",
+      keywords: ["san vicente tancuayalab", "cuna del día de muertos san luis potosí", "xantolo huasteca potosina", "pueblos de la huasteca potosina"],
+      faqPrincipales: [],
+    },
     lat: 21.71806, lng: -98.58806,
     imagen_hero: "/imagenes/san-vicente-tancuayalab/hero.jpg", imagen_galeria: [],
   },
@@ -1118,6 +1218,14 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["calzado cómodo", "efectivo", "cámara", "apetito (gastronomía local)"],
     datos_curiosos: ["Su nombre tének significa 'lugar de lajas' (piedras planas).", "En la Toreada los 'diablos' usan máscaras de madera talladas a mano y un chirrión (látigo de cuero)."],
     errores_comunes: ["Ir esperando la Toreada en Día de Muertos (es Semana Santa)"],
+    seo: {
+      metaTitle: "Tanlajás | La Toreada de los Diablos y Cocina Tének",
+      metaDescription: "Pueblo de raíces tének conocido por sus zacahuiles, bocoles y cecina, y por la 'Toreada de los Diablos', ritual de enmascarados que se celebra en Semana Santa (no en Día de Muertos).",
+      keywords: ["tanlajás", "toreada de los diablos", "zacahuil huasteca potosina", "cultura tének"],
+      faqPrincipales: [
+        { pregunta: "¿Cuándo es la Toreada de los Diablos de Tanlajás?", respuesta: "Se celebra en Semana Santa, no en Día de Muertos. Es el error más común al planear la visita." },
+      ],
+    },
     lat: 21.665833, lng: -98.887778,
     imagen_hero: "/imagenes/tanlajas/hero.jpg", imagen_galeria: [],
   },
@@ -1135,6 +1243,14 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["efectivo", "calzado de campo", "cámara", "respeto por la comunidad"],
     datos_curiosos: ["En Texquitote se originó la 'quinta huapanguera', la guitarra de cinco cuerdas del huapango huasteco.", "Las conchas para el son aún se elaboran con caparazón de armadillo."],
     errores_comunes: ["Llegar sin contactar a un laudero", "Confundir Texquitote Primero con Segundo"],
+    seo: {
+      metaTitle: "Texquitote, Matlapa | Cuna de la Laudería del Son Huasteco",
+      metaDescription: "Comunidad nahua donde unos 40 lauderos construyen a mano jaranas, quintas huapangueras, violines y arpas del son huasteco. Los talleres son particulares: contacta antes de ir.",
+      keywords: ["texquitote", "laudería son huasteco", "jarana huasteca", "quinta huapanguera", "artesanías huasteca potosina"],
+      faqPrincipales: [
+        { pregunta: "¿Se puede visitar un taller de lauderos en Texquitote?", respuesta: "Sí, pero los talleres son particulares y no tienen horario formal: hay que contactar antes a un laudero para acordar la visita." },
+      ],
+    },
     lat: 21.295278, lng: -98.816667,
     imagen_hero: "/imagenes/texquitote/hero.jpg", imagen_galeria: [],
   },
@@ -1152,6 +1268,12 @@ export const DESTINOS_DB: Destino[] = [
     que_llevar: ["repelente", "agua", "cámara", "efectivo"],
     datos_curiosos: ["Su higuerón tiene unos 200 años y sus raíces forman dos grandes 'puertas' naturales, su rasgo más fotografiado.", "La Secretaría de Turismo de SLP ha promovido la laguna como opción de paseo."],
     errores_comunes: ["Esperar servicios turísticos formales", "Confundirla con la Laguna Marland"],
+    seo: {
+      metaTitle: "Laguna de los Suspiros, Ébano | El Higuerón de 200 Años",
+      metaDescription: "Laguna en el ejido de Plan de Iguala (Ébano) cuyo emblema es un higuerón de unos 200 años, con enormes raíces que forman dos 'puertas' naturales. Sin servicios turísticos formales.",
+      keywords: ["laguna de los suspiros", "ébano san luis potosí", "higuerón laguna de los suspiros", "qué hacer en ébano"],
+      faqPrincipales: [],
+    },
     lat: 22.0375, lng: -98.464167,
     imagen_hero: "/imagenes/laguna-de-los-suspiros/hero.jpg", imagen_galeria: ["/imagenes/laguna-de-los-suspiros/gallery-1.jpg", "/imagenes/laguna-de-los-suspiros/gallery-2.jpg", "/imagenes/laguna-de-los-suspiros/gallery-3.jpg", "/imagenes/laguna-de-los-suspiros/gallery-4.jpg"],
   },

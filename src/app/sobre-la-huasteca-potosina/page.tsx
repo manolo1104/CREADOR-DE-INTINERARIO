@@ -7,6 +7,15 @@ const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
   description: "Todo lo que necesitas saber sobre la Huasteca Potosina: geografía, clima, cultura Teenek, gastronomía, historia y los mejores momentos para visitar.",
+  keywords: [
+    "huasteca potosina",
+    "qué es la huasteca potosina",
+    "cultura teenek",
+    "clima huasteca potosina",
+    "geografía huasteca potosina",
+    "historia de la huasteca",
+  ],
+  alternates: { canonical: `${SITE}/sobre-la-huasteca-potosina` },
   openGraph: {
     title: "La Huasteca Potosina — Historia, Cultura y Geografía",
     description: "Descubre la geografía, historia Teenek, gastronomía y los mejores destinos de la Huasteca Potosina, San Luis Potosí.",
@@ -75,9 +84,46 @@ const SECCIONES = [
   },
 ];
 
+// Página de referencia sobre la región: se declara como Article para que los
+// buscadores (y los asistentes de IA) puedan citarla como fuente.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      headline: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
+      description:
+        "Geografía, clima, cultura Teenek, gastronomía, historia y mejores épocas para visitar la Huasteca Potosina, San Luis Potosí, México.",
+      url: `${SITE}/sobre-la-huasteca-potosina`,
+      image: `${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`,
+      inLanguage: "es-MX",
+      author: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+      publisher: {
+        "@type": "Organization",
+        name: "Tours Huasteca Potosina",
+        url: SITE,
+        logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo.svg` },
+      },
+      about: {
+        "@type": "Place",
+        name: "Huasteca Potosina",
+        address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+      },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+        { "@type": "ListItem", position: 2, name: "Sobre la Huasteca Potosina", item: `${SITE}/sobre-la-huasteca-potosina` },
+      ],
+    },
+  ],
+};
+
 export default function SobreLaHuastecaPage() {
   return (
     <main id="main-content" className="min-h-screen bg-crema">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* ── HERO ── */}
       <section className="relative min-h-[65vh] flex items-end overflow-hidden">

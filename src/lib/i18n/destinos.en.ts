@@ -144,6 +144,66 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["The pools change color with the season"],
     errores_comunes: ["Using chemical sunscreen"],
   },
+  "siete-cascadas-tamasopo": {
+    nombre: "Seven Waterfalls of Tamasopo",
+    descripcion:
+      "A natural staircase of seven turquoise waterfalls where you jump from pool to pool with a life jacket, helmet and guide. There are jumps for every level — and anyone who would rather not jump can simply swim in the crystal-clear pools.",
+    tipo: "Nature & Adventure",
+    precio_entrada: "Visited with a guide and gear (life jacket/helmet) — ask for the rate",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Mid-morning",
+    temporada_ideal: "Year-round; highest flow during the rainy season",
+    advertencias:
+      "Jumps are ALWAYS done with a life jacket, helmet and guide. Slippery rocks: water shoes are required. If you'd rather not jump, you can still swim. Coordinates are approximate — check GPS before going.",
+    como_llegar:
+      "In Tamasopo, alongside the Puente de Dios route (about 1 h from Ciudad Valles via the San Luis Potosí highway)",
+    que_llevar: ["water shoes (required)", "swimsuit", "a dry change of clothes", "cash", "biodegradable sunscreen"],
+    datos_curiosos: [
+      "Seven drops in a row that you cover by jumping from pool to pool.",
+      "Usually combined with Puente de Dios and Hacienda Los Gómez on the Tamasopo Water Route.",
+    ],
+    errores_comunes: ["Attempting the jumps without a guide or gear", "Wearing smooth-soled shoes"],
+    seo: {
+      metaTitle: "Seven Waterfalls of Tamasopo 2026 | Jumps & Turquoise Pools",
+      metaDescription:
+        "A natural staircase of seven turquoise waterfalls in Tamasopo where you jump from pool to pool with a life jacket, helmet and guide. Jumps for every level and clear pools for swimming.",
+      keywords: ["seven waterfalls tamasopo", "7 cascadas tamasopo", "cliff jumping huasteca potosina", "what to do in tamasopo"],
+      faqPrincipales: [
+        { pregunta: "What are the Seven Waterfalls of Tamasopo?", respuesta: "A natural staircase of seven turquoise waterfalls in a row, where you jump from pool to pool with a life jacket, helmet and guide. There are jumps for every level and clear pools for anyone who prefers to just swim." },
+        { pregunta: "Do I have to jump?", respuesta: "No. The jumps are optional and always done with gear (life jacket and helmet) and a guide; if you'd rather not jump you can swim and walk between the pools." },
+      ],
+    },
+  },
+  "hacienda-los-gomez-tamasopo": {
+    nombre: "Hacienda Los Gómez",
+    descripcion:
+      "A natural spot on the riverbank in Tamasopo, with small waterfalls, turquoise pools and huge cypress trees for shade; a quiet corner to swim and rest, part of the Puente de Dios Water Route.",
+    tipo: "Nature",
+    precio_entrada: "Ask locally about access",
+    dias_abierto: "Ask locally",
+    mejor_hora: "Afternoon (golden light through the trees)",
+    temporada_ideal: "Year-round; highest flow during the rainy season",
+    advertencias:
+      "It is a natural spot with simple facilities; access and rates are confirmed locally. Slippery rocks near the water. Coordinates are approximate — check GPS before going.",
+    como_llegar:
+      "In Tamasopo, on the Puente de Dios Water Route (about 1 h from Ciudad Valles via the San Luis Potosí highway)",
+    que_llevar: ["swimsuit", "water shoes", "towel", "cash", "biodegradable sunscreen"],
+    datos_curiosos: [
+      "Huge ahuehuete cypress trees shade the pools and grow right in the water.",
+      "Usually visited together with Puente de Dios and the Seven Waterfalls on the Tamasopo Water Route.",
+    ],
+    errores_comunes: ["Going without confirming access and hours locally", "Forgetting water shoes"],
+    seo: {
+      metaTitle: "Hacienda Los Gómez, Tamasopo 2026 | Waterfalls & Turquoise Pools",
+      metaDescription:
+        "A natural spot in Tamasopo with small waterfalls, turquoise pools and huge cypress trees, part of the Puente de Dios Water Route. What it is and how to visit.",
+      keywords: ["hacienda los gomez tamasopo", "tamasopo water route", "turquoise pools tamasopo", "what to do in tamasopo"],
+      faqPrincipales: [
+        { pregunta: "What is Hacienda Los Gómez?", respuesta: "A natural spot on the riverbank in Tamasopo, with small waterfalls, turquoise pools and big shade-giving cypress trees — ideal for swimming and resting." },
+        { pregunta: "Where is it and how do you visit?", respuesta: "It is in Tamasopo, on the Puente de Dios Water Route (about 1 h from Ciudad Valles). It is usually visited on the same outing as Puente de Dios and the Seven Waterfalls." },
+      ],
+    },
+  },
   "balneario-taninul": {
     nombre: "Taninul Hot Springs",
     descripcion: "Sulfurous hot springs (a constant 36°C) and therapeutic mud.",

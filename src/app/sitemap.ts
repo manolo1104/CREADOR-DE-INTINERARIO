@@ -12,6 +12,9 @@ export const dynamic = "force-dynamic";
 
 const BASE = "https://www.huasteca-potosina.com";
 
+// OJO: el campo `images` de MetadataRoute.Sitemap NO lo emite Next 14 (se ignora
+// en silencio; verificado en producción: 0 etiquetas <image:image>). Las imágenes
+// se publican en un sitemap aparte: /sitemap-imagenes.xml (ver esa ruta y robots.ts).
 function absImg(path: string): string {
   if (!path) return "";
   return path.startsWith("http") ? path : `${BASE}${path}`;
@@ -60,7 +63,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8 }),
   ];
 
-  // Páginas solo en español (aún sin versión /en)
+  // Páginas solo en español (aún sin versión /en).
+  // Regla: toda página pública e indexable debe estar aquí. Se excluyen a propósito
+  // las transaccionales (/reservar-*, /guia/descarga, /confirmacion-tour), el panel
+  // /admin, /planear (bloqueada en robots.ts) y /aviso-de-privacidad (noindex).
   const esOnlyStatic: MetadataRoute.Sitemap = [
     { url: `${BASE}/blog`,                  lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
     { url: `${BASE}/preguntas-frecuentes`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
@@ -71,6 +77,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/experiencias`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/paquetes`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/precios`,       lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/guia`,          lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/sobre-la-huasteca-potosina`,        lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/sustentabilidad-y-conservacion`,    lastModified: new Date(), changeFrequency: "yearly",  priority: 0.4 },
     { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tours-en-ciudad-valles`,            lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
   ];

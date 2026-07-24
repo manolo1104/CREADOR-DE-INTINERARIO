@@ -6,6 +6,13 @@ const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sustentabilidad y Conservación — Tours Huasteca Potosina",
   description: "Nuestro compromiso con la conservación de la Huasteca Potosina: turismo responsable, apoyo a comunidades locales y protección de ecosistemas únicos de México.",
+  keywords: [
+    "turismo responsable huasteca potosina",
+    "turismo sustentable méxico",
+    "conservación huasteca potosina",
+    "ecoturismo san luis potosí",
+  ],
+  alternates: { canonical: `${SITE}/sustentabilidad-y-conservacion` },
   openGraph: {
     title: "Sustentabilidad y Conservación — Tours Huasteca Potosina",
     description: "Turismo responsable, cero plásticos, empleo local 100% y fondo de conservación activo en la Huasteca Potosina.",
@@ -66,9 +73,33 @@ const ACCIONES = [
   { año: "2025", accion: "Certificación de guías en primeros auxilios para vida silvestre" },
 ];
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: "Sustentabilidad y Conservación — Tours Huasteca Potosina",
+      description:
+        "Compromiso con la conservación de la Huasteca Potosina: turismo responsable, empleo local, cero plásticos y protección de ecosistemas.",
+      url: `${SITE}/sustentabilidad-y-conservacion`,
+      inLanguage: "es-MX",
+      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+      publisher: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+        { "@type": "ListItem", position: 2, name: "Sustentabilidad y conservación", item: `${SITE}/sustentabilidad-y-conservacion` },
+      ],
+    },
+  ],
+};
+
 export default function SustentabilidadPage() {
   return (
     <main id="main-content" className="min-h-screen bg-crema">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* ── HERO ── */}
       <section className="relative bg-verde-profundo px-6 pt-36 pb-28 text-center overflow-hidden">

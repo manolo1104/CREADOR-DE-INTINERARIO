@@ -36,7 +36,11 @@ export default function robots(): MetadataRoute.Robots {
         disallow: PRIVATE_PATHS,
       },
     ],
-    sitemap: "https://www.huasteca-potosina.com/sitemap.xml",
+    sitemap: [
+      "https://www.huasteca-potosina.com/sitemap.xml",
+      // Imágenes aparte: Next 14 no emite el campo `images` del sitemap principal.
+      "https://www.huasteca-potosina.com/sitemap-imagenes.xml",
+    ],
     host: "https://www.huasteca-potosina.com",
   };
 }

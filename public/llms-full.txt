@@ -105,12 +105,75 @@ hasta 48 horas antes del tour.
 
 ---
 
-## PAQUETES DE VARIOS DÍAS (con hospedaje)
-- Paquete Aventura — 3 días / 2 noches: $9,000 MXN/persona
-- Paquete Completo Huasteca — 4 días / 3 noches: $12,200 MXN/persona
-- Paquete Gran Huasteca — 5 días / 4 noches: $15,500 MXN/persona
-Incluyen hospedaje, varios tours, desayunos y logística. Detalle día por día e itinerarios:
+## PAQUETES DE VARIOS DÍAS (con hospedaje; precio POR PAREJA)
+- Paquete Aventura — 3 días / 2 noches: $9,000 MXN
+  https://www.huasteca-potosina.com/paquetes/aventura
+- Paquete Completo Huasteca — 4 días / 3 noches: $12,200 MXN
+  https://www.huasteca-potosina.com/paquetes/completo
+- Paquete Gran Huasteca — 5 días / 4 noches: $15,500 MXN
+  https://www.huasteca-potosina.com/paquetes/gran-huasteca
+Incluyen hospedaje en el Hotel Paraíso Encantado (Xilitla), varios tours, desayunos, transporte
+local, entradas y guías. NO incluyen el traslado hasta Xilitla. Comparativa de los tres:
 https://www.huasteca-potosina.com/paquetes
+
+---
+
+## DESTINOS: 41 FICHAS EN 16 MUNICIPIOS
+
+Cada destino tiene su propia ficha con precio de entrada, horario, cómo llegar, mejor época,
+qué llevar, errores comunes y preguntas frecuentes. Índice completo:
+https://www.huasteca-potosina.com/destinos
+
+Los precios indicados son la ENTRADA al sitio, no el tour guiado. Donde no hay tarifa oficial
+publicada se indica "consultar": no publicamos precios ni horarios sin fuente confirmada.
+
+**Los 6 más buscados**
+- Cascada de Tamul (Aquismón) — la más alta de San Luis Potosí, 105 m; se llega remando por el
+  río Tampaón. Entrada $220 MXN + $300 por persona la panga, SOLO efectivo; los lancheros dejan
+  de salir a las 2 PM. https://www.huasteca-potosina.com/destinos/cascada-de-tamul
+- Sótano de las Golondrinas (Aquismón) — abismo de 376 m de caída libre (hasta 512 m). Entrada
+  $100 MXN; hay que estar en el borde ~5:45 AM para el vuelo de los vencejos; 568 escalones de
+  bajada. https://www.huasteca-potosina.com/destinos/sotano-de-las-golondrinas
+- Las Pozas / Jardín Surrealista de Edward James (Xilitla) — entrada $180 MXN, abre de miércoles
+  a lunes 09:00–18:00, CERRADO los martes.
+  https://www.huasteca-potosina.com/destinos/las-pozas-jardin-surrealista
+- Cascadas de Micos (Ciudad Valles) — 7 cascadas con saltos, tirolesa, kayak y skybike. Entrada
+  $100 MXN, 08:00–18:00; chaleco y casco obligatorios.
+  https://www.huasteca-potosina.com/destinos/cascadas-de-micos
+- Puente de Dios (Tamasopo) — arco de roca natural; el azul cobalto se ve entre las 11 y las 13 h.
+  Entrada $150 MXN. https://www.huasteca-potosina.com/destinos/puente-de-dios-tamasopo
+- Cascadas de Tamasopo (Tamasopo) — pozas turquesa para nadar, ideal en familia. Entrada $60 MXN,
+  08:00–17:00; solo bloqueador biodegradable.
+  https://www.huasteca-potosina.com/destinos/cascadas-de-tamasopo
+
+**Por municipio** (todas las fichas)
+- Xilitla (8): Las Pozas · Xilitla Pueblo Mágico · Nacimiento de Huichihuayán · Cascada Los
+  Comales · La Trinidad · Olla de la Luz · Cueva del Salitre · Museo Leonora Carrington
+- Aquismón (7): Cascada de Tamul · Sótano de las Golondrinas · Sótano de las Huahuas · Cuevas de
+  Mantetzulel · Nacimiento de Tambaque · Río Tampaón (rafting) · Aquismón Pueblo Mágico
+- Tamasopo (6): Puente de Dios · Cascadas de Tamasopo · Siete Cascadas · Hacienda Los Gómez ·
+  Cascada El Aguacate · El Trampolín
+- El Naranjo (3): Cascadas de Minas Viejas · Cascada El Meco · Cascada El Salto
+- Coxcatlán (3): Templo de San Juan Bautista · Cascada El Zapote "Poza Azul" · Ruinas de El Jopoy
+- Ciudad Valles (2): Cascadas de Micos · Balneario Taninul
+- Tamuín (2): Zona Arqueológica Tamtoc · Zona Arqueológica Tamohí (El Consuelo)
+- Tancanhuitz (2): Voladores de Tamaletón · Tancanhuitz (Ciudad Santos)
+- Axtla de Terrazas (2): Castillo de la Salud "Beto Ramón" · Río Axtla y "el Chalán"
+- Otros (6): Manantial de la Media Luna (Rioverde) · San Martín Chalchicuautla · San Vicente
+  Tancuayalab · Tanlajás · Texquitote (Matlapa) · Laguna de los Suspiros (Ébano)
+
+La URL de cada ficha sigue el patrón https://www.huasteca-potosina.com/destinos/<slug>
+La lista con precio y URL de las 41 está en https://www.huasteca-potosina.com/llms.txt
+
+**Correcciones de datos que suelen circular mal**
+- Zona Arqueológica Tamtoc abre SOLO los domingos (9–18 h), no de martes a domingo.
+- La Cascada El Aguacate está en el municipio de Tamasopo, no en Aquismón.
+- El Sótano de las Golondrinas tiene 376 m de caída libre (hasta 512 m de profundidad); el dato
+  de "333 m" que circula es incorrecto.
+- El Trampolín (Tamasopo) es un tramo de río público y gratuito, DISTINTO del parque de pago
+  "Cascadas de Tamasopo".
+- La Toreada de los Diablos de Tanlajás es en Semana Santa, no en Día de Muertos.
+- El Manantial de la Media Luna es de aguas frescas y cristalinas (no termales).
 
 ---
 

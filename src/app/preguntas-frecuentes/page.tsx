@@ -25,6 +25,13 @@ export const metadata: Metadata = {
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: "Preguntas frecuentes sobre la Huasteca Potosina" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Preguntas Frecuentes — Tours Huasteca Potosina",
+    description: "Precios, mejor época, cómo llegar, seguridad y consejos para visitar la Huasteca Potosina.",
+    images: [`${SITE}/og-image.jpg`],
   },
 };
 

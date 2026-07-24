@@ -22,6 +22,12 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
   "puente-de-dios-tamasopo":
     "Existe un arco de roca natural en Tamasopo por donde fluye un río, y entre las 11 y las 13 horas el sol entra perpendicular y convierte el agua en cristal líquido de color azul cobalto. Ese efecto de luz dura dos horas. Nuestros guías conocen exactamente cuándo llegarte para que lo veas. Puente de Dios no es un destino de paso — es una cita que hay que llegar a tiempo.",
 
+  "siete-cascadas-tamasopo":
+    "Son siete caídas de agua turquesa una tras otra, como una escalera que la roca fue tallando durante siglos. Se recorren saltando de poza en poza —con chaleco, casco y guía— y cada salto es distinto: hay uno para quien nunca ha saltado y hay otro para quien ya se está retando. Y si no quieres saltar ninguno, no pasa nada: el agua está igual de clara para quien solo quiere nadar y mirar hacia arriba.",
+
+  "hacienda-los-gomez-tamasopo":
+    "Después de un día de saltos y adrenalina, Hacienda Los Gómez es donde el cuerpo pide quedarse. Pequeñas cascadas cayendo sobre pozas turquesa, sabinos enormes que crecen dentro del agua y una sombra que baja la temperatura varios grados. No hay fila, no hay prisa, no hay nada que conquistar. Solo un río bonito y tiempo para no hacer nada — que en un viaje a la Huasteca es más raro de lo que parece.",
+
   "zona-arqueologica-tamtoc":
     "En Tamtoc, el tiempo se mide diferente. Aquí vivió, construyó y gobernó la cultura Huasteca durante más de 2,000 años antes de que existiera cualquier ciudad que hoy conoces. El Monumento 32 —una figura femenina de 30 toneladas— sigue mirando el horizonte desde el mismo punto donde la colocaron hace siglos. Visitarla al amanecer, cuando la niebla cubre el río Tampaón al fondo, es entender qué significa la antigüedad.",
 
@@ -148,6 +154,49 @@ export const COMBINACION_DESTINO: Record<string, { nombre: string; slug: string 
   "balneario-taninul":            [{ nombre: "Cascadas de Micos",          slug: "cascadas-de-micos"          }, { nombre: "Laguna Media Luna",         slug: "laguna-media-luna"           }],
   "cuevas-de-mantetzulel":        [{ nombre: "Cascadas de Micos",          slug: "cascadas-de-micos"          }, { nombre: "Puente de Dios",            slug: "puente-de-dios-tamasopo"     }],
   "nacimiento-tambaque":          [{ nombre: "Nacimiento de Huichihuayán", slug: "nacimiento-huichihuayan"    }, { nombre: "Las Pozas (Edward James)",  slug: "las-pozas-jardin-surrealista" }],
+
+  // ── Lote de la expansión por municipio ──────────────────────────────────────
+  // Se combinan por cercanía real (mismo municipio o ruta natural del día), para
+  // que cada ficha enlace con otras dos y ninguna quede aislada.
+
+  // Tamasopo — Ruta Acuática
+  "siete-cascadas-tamasopo":      [{ nombre: "Puente de Dios",             slug: "puente-de-dios-tamasopo"    }, { nombre: "Hacienda Los Gómez",        slug: "hacienda-los-gomez-tamasopo" }],
+  "hacienda-los-gomez-tamasopo":  [{ nombre: "Puente de Dios",             slug: "puente-de-dios-tamasopo"    }, { nombre: "Siete Cascadas de Tamasopo", slug: "siete-cascadas-tamasopo"    }],
+  "cascada-el-trampolin-tamasopo":[{ nombre: "Cascadas de Tamasopo",       slug: "cascadas-de-tamasopo"       }, { nombre: "Puente de Dios",            slug: "puente-de-dios-tamasopo"     }],
+
+  // Xilitla
+  "la-trinidad-xilitla":          [{ nombre: "Xilitla — Pueblo Mágico",    slug: "xilitla-pueblo-magico"      }, { nombre: "Las Pozas (Edward James)",  slug: "las-pozas-jardin-surrealista" }],
+  "olla-de-la-luz":               [{ nombre: "Xilitla — Pueblo Mágico",    slug: "xilitla-pueblo-magico"      }, { nombre: "Cueva del Salitre",         slug: "cueva-del-salitre"           }],
+  "cueva-del-salitre":            [{ nombre: "Xilitla — Pueblo Mágico",    slug: "xilitla-pueblo-magico"      }, { nombre: "Olla de la Luz",            slug: "olla-de-la-luz"              }],
+  "museo-leonora-carrington-xilitla": [{ nombre: "Las Pozas (Edward James)", slug: "las-pozas-jardin-surrealista" }, { nombre: "Xilitla — Pueblo Mágico", slug: "xilitla-pueblo-magico"    }],
+  "cascada-los-comales":          [{ nombre: "Xilitla — Pueblo Mágico",    slug: "xilitla-pueblo-magico"      }, { nombre: "Nacimiento de Huichihuayán", slug: "nacimiento-huichihuayan"   }],
+
+  // Aquismón
+  "aquismon-pueblo-magico":       [{ nombre: "Sótano de las Golondrinas",  slug: "sotano-de-las-golondrinas"  }, { nombre: "Cascada de Tamul",          slug: "cascada-de-tamul"            }],
+
+  // Axtla de Terrazas
+  "castillo-de-la-salud":         [{ nombre: "Río Axtla y 'el Chalán'",    slug: "rio-axtla-el-chalan"        }, { nombre: "Xilitla — Pueblo Mágico",   slug: "xilitla-pueblo-magico"       }],
+  "rio-axtla-el-chalan":          [{ nombre: "Castillo de la Salud",       slug: "castillo-de-la-salud"       }, { nombre: "Xilitla — Pueblo Mágico",   slug: "xilitla-pueblo-magico"       }],
+
+  // Tamuín
+  "zona-arqueologica-tamohi-el-consuelo": [{ nombre: "Zona Arqueológica Tamtoc", slug: "zona-arqueologica-tamtoc" }, { nombre: "Balneario Taninul",   slug: "balneario-taninul"           }],
+
+  // Coxcatlán
+  "templo-san-juan-bautista-coxcatlan": [{ nombre: "Ruinas de El Jopoy",   slug: "ruinas-de-el-jopoy-coxcatlan" }, { nombre: "Cascada del Rancho El Zapote", slug: "cascada-rancho-el-zapote-poza-azul-coxcatlan" }],
+  "cascada-rancho-el-zapote-poza-azul-coxcatlan": [{ nombre: "Templo de San Juan Bautista", slug: "templo-san-juan-bautista-coxcatlan" }, { nombre: "Ruinas de El Jopoy", slug: "ruinas-de-el-jopoy-coxcatlan" }],
+  "ruinas-de-el-jopoy-coxcatlan": [{ nombre: "Templo de San Juan Bautista", slug: "templo-san-juan-bautista-coxcatlan" }, { nombre: "Cascada del Rancho El Zapote", slug: "cascada-rancho-el-zapote-poza-azul-coxcatlan" }],
+
+  // Zona Teenek (Tancanhuitz, Tanlajás, Aquismón)
+  "tancanhuitz":                  [{ nombre: "Voladores de Tamaletón",     slug: "voladores-tamaleton"        }, { nombre: "Tanlajás",                  slug: "tanlajas"                    }],
+  "tanlajas":                     [{ nombre: "Tancanhuitz (Ciudad Santos)", slug: "tancanhuitz"               }, { nombre: "Voladores de Tamaletón",    slug: "voladores-tamaleton"         }],
+
+  // Sur de la Huasteca
+  "san-martin-chalchicuautla":    [{ nombre: "Tancanhuitz (Ciudad Santos)", slug: "tancanhuitz"               }, { nombre: "Xilitla — Pueblo Mágico",   slug: "xilitla-pueblo-magico"       }],
+  "texquitote":                   [{ nombre: "Xilitla — Pueblo Mágico",    slug: "xilitla-pueblo-magico"      }, { nombre: "Tancanhuitz (Ciudad Santos)", slug: "tancanhuitz"               }],
+
+  // Planicie huasteca (Ébano, San Vicente Tancuayalab)
+  "san-vicente-tancuayalab":      [{ nombre: "Zona Arqueológica Tamtoc",   slug: "zona-arqueologica-tamtoc"   }, { nombre: "Laguna de los Suspiros",    slug: "laguna-de-los-suspiros"      }],
+  "laguna-de-los-suspiros":       [{ nombre: "Zona Arqueológica Tamtoc",   slug: "zona-arqueologica-tamtoc"   }, { nombre: "Balneario Taninul",         slug: "balneario-taninul"           }],
 };
 
 // ── Reseñas mapeadas por destino ─────────────────────────────────────────────

@@ -26,6 +26,13 @@ export const metadata: Metadata = {
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
     type: "website",
+    images: [{ url: `${SITE}/imagenes/cascadas-de-micos/hero.jpg`, width: 1600, height: 960, alt: "Cascadas de Micos, Ciudad Valles — Huasteca Potosina" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tours en Ciudad Valles — Salidas Diarias",
+    description: "Tours todo incluido con pickup en tu hotel de Ciudad Valles.",
+    images: [`${SITE}/imagenes/cascadas-de-micos/hero.jpg`],
   },
 };
 

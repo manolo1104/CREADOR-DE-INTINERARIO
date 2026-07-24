@@ -29,9 +29,32 @@ const CREDITOS_CC: { destino: string; slug: string; autor: string; licencia: str
   { destino: "Texquitote (imagen representativa)", slug: "texquitote", autor: "Wikimedia Commons", licencia: "CC0 (dominio público)", licenciaUrl: "https://creativecommons.org/publicdomain/zero/1.0/" },
 ];
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: "Créditos de fotografía",
+      description:
+        "Atribución de las fotografías con licencia Creative Commons utilizadas en las páginas de destinos de la Huasteca Potosina.",
+      url: URL,
+      inLanguage: "es-MX",
+      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+        { "@type": "ListItem", position: 2, name: "Créditos de fotografía", item: URL },
+      ],
+    },
+  ],
+};
+
 export default function CreditosPage() {
   return (
     <main id="main-content" className="min-h-screen bg-negro pt-28 pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-3xl mx-auto px-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-[9px] tracking-[3px] uppercase font-dm text-crema/30 mb-8">

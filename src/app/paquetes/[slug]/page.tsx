@@ -28,12 +28,28 @@ export function generateMetadata({ params }: Props): Metadata {
   return {
     title: `${p.nombre} — ${p.duracion} | Tours + Hotel Xilitla`,
     description: `${p.nombre}: ${p.subtitulo}. ${p.duracion} con tours guiados, hospedaje en Hotel Paraíso Encantado Xilitla, desayunos, transporte local y guías certificados. Itinerario día por día, logística y precios.`,
+    keywords: [
+      p.nombre.toLowerCase(),
+      "paquetes huasteca potosina",
+      `huasteca potosina ${p.dias} días`,
+      "tour huasteca potosina con hotel",
+      "viaje a xilitla todo incluido",
+    ],
     alternates: { canonical: `${SITE}/paquetes/${p.slug}` },
     openGraph: {
       title: `${p.nombre} — Huasteca Potosina`,
       description: `${p.duracion} · ${p.subtitulo}`,
       url: `${SITE}/paquetes/${p.slug}`,
-      images: [{ url: `${SITE}${p.imagen}` }],
+      siteName: "Tours Huasteca Potosina",
+      locale: "es_MX",
+      type: "website",
+      images: [{ url: `${SITE}${p.imagen}`, alt: `${p.nombre} — Huasteca Potosina` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${p.nombre} — Huasteca Potosina`,
+      description: `${p.duracion} · ${p.subtitulo}`,
+      images: [`${SITE}${p.imagen}`],
     },
   };
 }
@@ -47,8 +63,70 @@ export default function PaqueteDetallePage({ params }: Props) {
   const waMsg = `Hola, me interesa el ${p.nombre} (${p.duracion}, $${p.precio.toLocaleString("es-MX")} MXN). ¿Tienen disponibilidad?`;
   const resenas = RESENAS_POR_PAQUETE[p.slug] ?? RESENAS_PAQUETES;
 
+  const url = `${SITE}/paquetes/${p.slug}`;
+
+  // Schema.org del paquete. A propósito SIN aggregateRating/Review: las reseñas
+  // de paquetes no son verificables una por una (ver regla de honestidad de cifras).
+  const paqueteSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TouristTrip",
+        name: p.nombre,
+        description: `${p.subtitulo}. ${p.duracion} con tours guiados, hospedaje en el Hotel Paraíso Encantado (Xilitla), desayunos, transporte local y guías certificados NOM-09.`,
+        url,
+        image: `${SITE}${p.imagen}`,
+        inLanguage: "es-MX",
+        touristType: p.perfiles,
+        provider: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        itinerary: {
+          "@type": "ItemList",
+          numberOfItems: p.itinerario.length,
+          itemListElement: p.itinerario.map((d) => ({
+            "@type": "ListItem",
+            position: d.dia,
+            item: {
+              "@type": "TouristAttraction",
+              name: d.titulo,
+              description: d.descripcion,
+              address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+            },
+          })),
+        },
+        offers: {
+          "@type": "Offer",
+          price: p.precio,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url,
+          // El precio publicado es POR PAREJA (2 personas), no por persona.
+          description: `Precio ${p.precioLabel} · ${p.duracion}`,
+          seller: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        },
+      },
+      {
+        "@type": "FAQPage",
+        inLanguage: "es-MX",
+        mainEntity: FAQS_PAQUETES.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+          { "@type": "ListItem", position: 2, name: "Paquetes", item: `${SITE}/paquetes` },
+          { "@type": "ListItem", position: 3, name: p.nombre, item: url },
+        ],
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-negro">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(paqueteSchema) }} />
 
       {/* ── HERO ── */}
       <section className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">

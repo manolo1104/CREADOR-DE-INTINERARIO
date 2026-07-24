@@ -9,7 +9,7 @@ import {
   AlertTriangle, Car, Backpack, Lightbulb, Map, Zap, Lock, Star, ExternalLink,
 } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { buildDestinationJsonLd } from "@/lib/jsonld";
+import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
 import { DESTINO_EN_TOURS } from "@/lib/tourMapping";
 import { TOURS_DB } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -58,6 +58,7 @@ export default function DestinoPage({ params }: Props) {
   const destino = localizeDestino(base, locale);
 
   const jsonLd            = buildDestinationJsonLd(destino, locale);
+  const faqs              = getDestinoFaqs(destino, locale);
   const toursRelacionados = (DESTINO_EN_TOURS[destino.slug] ?? []).map((t) => {
     const b = TOURS_DB.find((tour) => tour.slug === t.slug);
     return b ? localizeTour(b, locale) : { slug: t.slug, nombre: t.nombre };
@@ -238,6 +239,29 @@ export default function DestinoPage({ params }: Props) {
             <ExternalLink className="w-3 h-3" /> {dd.openInMaps}
           </a>
         </div>
+
+        {/* ── PREGUNTAS FRECUENTES ──
+            Mismo contenido que el JSON-LD (getDestinoFaqs): Google exige que lo
+            que se marca como FAQPage esté visible en la página, y los buscadores
+            de IA citan este texto. */}
+        {faqs.length > 0 && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
+            <h2 className="font-cormorant text-crema text-xl mb-4">{dd.faqTitulo}</h2>
+            <div className="space-y-3">
+              {faqs.map((faq) => (
+                <details key={faq.pregunta} className="border border-white/10 bg-negro/30 group">
+                  <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
+                    {faq.pregunta}
+                    <span className="text-verde-vivo flex-shrink-0 text-lg leading-none group-open:rotate-45 transition-transform">+</span>
+                  </summary>
+                  <div className="px-5 pb-5 border-t border-white/8 pt-4">
+                    <p className="text-crema/55 font-dm text-sm leading-relaxed">{faq.respuesta}</p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── RESEÑAS ── */}
         {reviewsDestino.length > 0 && (

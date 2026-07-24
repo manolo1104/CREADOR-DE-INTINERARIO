@@ -173,8 +173,97 @@ export default function ViajeSeptiembrePage() {
     : "¡Hola! Quiero apartar mi lugar en el Viaje a la Huasteca del 16 al 19 de septiembre (3 noches, salida desde CDMX). ¿Cómo doy el anticipo?";
   const fechasTxt = en ? "September 16–19, 2026 · 4 days / 3 nights" : "16–19 de septiembre 2026 · 4 días / 3 noches";
 
+  const url = `${SITE}${lp("/viaje-septiembre")}`;
+
+  // Schema.org del viaje programado: es un producto con fecha fija, así que se
+  // declara como TouristTrip + Event (Google entiende mejor las fechas de salida).
+  const viajeSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TouristTrip",
+        name: en ? "September Trip: Mexico City → Huasteca Potosina 2026" : "Viaje a la Huasteca Potosina desde CDMX — Puente de Septiembre 2026",
+        description: en
+          ? "Scheduled group trip from Mexico City to Xilitla, September 16–19, 2026: round-trip transport, 3 nights at Hotel Paraíso Encantado, breakfasts and 3 guided all-inclusive tours."
+          : "Viaje grupal programado de CDMX a Xilitla, 16–19 de septiembre de 2026: transporte redondo, 3 noches en el Hotel Paraíso Encantado, desayunos y 3 recorridos guiados todo incluido.",
+        url,
+        image: `${SITE}${HERO_IMG}`,
+        inLanguage: en ? "en" : "es-MX",
+        provider: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        itinerary: {
+          "@type": "ItemList",
+          numberOfItems: ITINERARIO.length,
+          itemListElement: ITINERARIO.map((d, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            item: {
+              "@type": "TouristAttraction",
+              name: d.titulo,
+              description: d.detalle,
+              address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+            },
+          })),
+        },
+        offers: {
+          "@type": "Offer",
+          price: PRECIO,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url,
+          description: en ? "Per person, double occupancy" : "Por persona en ocupación doble",
+          validThrough: "2026-09-16",
+          seller: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        },
+      },
+      {
+        "@type": "Event",
+        name: en ? "September Trip: Mexico City → Huasteca Potosina" : "Viaje a la Huasteca Potosina desde CDMX (Puente de Septiembre)",
+        startDate: "2026-09-16T07:00:00-06:00",
+        endDate: "2026-09-19T22:00:00-06:00",
+        eventStatus: "https://schema.org/EventScheduled",
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        image: `${SITE}${HERO_IMG}`,
+        url,
+        description: en
+          ? "4 days / 3 nights in the Huasteca Potosina departing from Mexico City. Transport, lodging, breakfasts and 3 guided tours included."
+          : "4 días / 3 noches en la Huasteca Potosina con salida desde CDMX. Transporte, hospedaje, desayunos y 3 recorridos guiados incluidos.",
+        location: {
+          "@type": "Place",
+          name: "Xilitla, Huasteca Potosina",
+          address: { "@type": "PostalAddress", addressLocality: "Xilitla", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+        },
+        organizer: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        offers: {
+          "@type": "Offer",
+          price: PRECIO,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url,
+          validFrom: "2026-06-20",
+        },
+      },
+      {
+        "@type": "FAQPage",
+        inLanguage: en ? "en" : "es-MX",
+        mainEntity: FAQ.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: en ? "Home" : "Inicio", item: `${SITE}${lp("/")}` },
+          { "@type": "ListItem", position: 2, name: en ? "September trip" : "Viaje de septiembre", item: url },
+        ],
+      },
+    ],
+  };
+
   return (
     <main id="main-content" className="min-h-screen bg-negro">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(viajeSchema) }} />
 
       {/* ── HERO ── */}
       <section className="relative px-6 pt-36 pb-24 overflow-hidden min-h-[640px] flex items-center">

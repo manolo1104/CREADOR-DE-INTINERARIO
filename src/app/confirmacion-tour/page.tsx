@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe";
 import { waLink } from "@/lib/whatsapp";
+
+// Pantalla post-pago: transaccional, fuera del índice de Google.
+export const metadata: Metadata = {
+  title: "Confirmación de reserva",
+  robots: { index: false, follow: true },
+};
 
 interface Props {
   searchParams: { session_id?: string; status?: string };

@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   title: "Paquetes Huasteca Potosina — Tours + Hotel Todo Incluido",
   description:
     "Paquetes de 3, 4 o 5 días: tours guiados + hotel en Xilitla, todo incluido. Transporte, desayunos, entradas y guías certificados NOM-09. Precios por pareja.",
+  keywords: [
+    "paquetes huasteca potosina",
+    "paquetes todo incluido huasteca potosina",
+    "tour huasteca potosina con hotel",
+    "viaje a la huasteca potosina 3 días",
+    "paquete xilitla con hospedaje",
+  ],
+  alternates: { canonical: `${SITE}/paquetes` },
   openGraph: {
     title: "Paquetes Todo Incluido — Huasteca Potosina",
     description: "Tours + Hotel Paraíso Encantado Xilitla. 3, 4 o 5 días todo coordinado.",
