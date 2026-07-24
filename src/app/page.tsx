@@ -179,8 +179,8 @@ export default async function HomePage() {
 
           <div className="flex flex-wrap gap-4 justify-center mb-10">
             <MagneticButton>
-              <Link href={lp("/destinos")} className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300 block">
-                {en ? "Explore Destinations" : "Explorar Destinos"}
+              <Link href={lp("/paquetes")} className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300 block">
+                {en ? "See the packages" : "Ver Paquetes"}
               </Link>
             </MagneticButton>
             <MagneticButton>
