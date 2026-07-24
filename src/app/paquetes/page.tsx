@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Image from "next/image";
-import { Star, TreePine, UtensilsCrossed, MapPin } from "lucide-react";
+import { Star, TreePine, UtensilsCrossed, MapPin, Bus } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { PAQUETES_DB, RESENAS_PAQUETES, FAQS_PAQUETES } from "@/lib/paquetes";
@@ -64,6 +64,22 @@ export default function PaquetesPage() {
           acceptedAnswer: { "@type": "Answer", text: f.a },
         })),
       },
+      {
+        // HowTo — refleja la sección visible "Si vienes de CDMX". Alta intención
+        // para "cómo llegar a Xilitla desde CDMX" en buscadores de IA.
+        "@type": "HowTo",
+        name: "Cómo llegar a Xilitla desde la Ciudad de México",
+        description:
+          "Ruta recomendada en autobús nocturno desde CDMX para aprovechar el primer día completo de tour en la Huasteca Potosina.",
+        totalTime: "PT8H",
+        estimatedCost: { "@type": "MonetaryAmount", currency: "MXN", value: 650 },
+        step: [
+          { "@type": "HowToStep", position: 1, name: "Autobús nocturno", text: "Sal de la Terminal Central del Norte de CDMX alrededor de las 10:15 PM (líneas Servicios Coordinados / ETN). Boleto aproximado $650 por persona.", url: `${SITE}/paquetes#si-vienes-de-cdmx` },
+          { "@type": "HowToStep", position: 2, name: "Amaneces en Xilitla", text: "Llegas a la central de Xilitla cerca de las 6:30 AM. Un taxi de ~$60 te deja en el Hotel Paraíso Encantado en unos 7 minutos.", url: `${SITE}/paquetes#si-vienes-de-cdmx` },
+          { "@type": "HowToStep", position: 3, name: "Descansas al llegar", text: "Te entregamos la habitación temprano para que duermas un rato antes de salir. El desayuno va incluido en tu tour.", url: `${SITE}/paquetes#si-vienes-de-cdmx` },
+          { "@type": "HowToStep", position: 4, name: "Tour completo el Día 1", text: "Esa misma mañana pasa por ti nuestra camioneta y arranca tu primer tour. No pierdes el día de llegada.", url: `${SITE}/paquetes#si-vienes-de-cdmx` },
+        ],
+      },
     ],
   };
 
@@ -114,6 +130,55 @@ export default function PaquetesPage() {
               <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
               <p className="text-[9px] font-dm text-crema/50">Booking · 180 op.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SI VIENES DE CDMX ── */}
+      <section id="si-vienes-de-cdmx" className="relative border-b border-white/6 bg-gradient-to-b from-verde-profundo/45 to-negro py-16 px-6 overflow-hidden scroll-mt-24">
+        <FloatingLeaves count={10} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-3 flex items-center justify-center gap-1.5">
+              <Bus className="w-3.5 h-3.5" aria-hidden="true" /> Si vienes de CDMX
+            </p>
+            <h2 className="reveal-up font-cormorant font-light text-crema leading-tight mb-3" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
+              Llegas de noche y <em className="shimmer-gold">tu tour empieza el Día 1</em>
+            </h2>
+            <p className="text-crema/60 font-dm text-sm leading-relaxed max-w-2xl mx-auto">
+              Con el autobús nocturno desde la Ciudad de México aprovechas el primer día completo:
+              llegas al amanecer, descansas en el hotel y esa misma mañana sales a tu primer tour.
+            </p>
+          </div>
+
+          <ol className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              { n: "1", t: "Autobús nocturno", d: "Sales de la Terminal Central del Norte alrededor de las 10:15 PM (Servicios Coordinados / ETN). Aprox. $650 por persona." },
+              { n: "2", t: "Amaneces en Xilitla", d: "Llegas a la central de Xilitla cerca de las 6:30 AM. Un taxi de ~$60 te deja en el hotel en unos 7 minutos." },
+              { n: "3", t: "Descansas al llegar", d: "Te entregamos la habitación temprano para que duermas un rato antes de salir. El desayuno ya va incluido en tu tour." },
+              { n: "4", t: "Tour completo el Día 1", d: "Esa misma mañana pasa por ti nuestra camioneta y arranca tu primer tour. No pierdes el día de llegada." },
+            ].map((s) => (
+              <li key={s.n} className="relative border border-white/10 bg-negro/40 p-5 list-none">
+                <span className="font-cormorant text-dorado text-3xl leading-none" aria-hidden="true">{s.n}</span>
+                <p className="font-dm text-crema/90 text-sm font-medium mt-3 mb-1.5">{s.t}</p>
+                <p className="font-dm text-crema/55 text-[12px] leading-relaxed">{s.d}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
+            <a
+              href="https://coordinados.conectagfa.com.mx/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-verde-vivo/50 text-verde-vivo hover:bg-verde-vivo/10 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+            >
+              Comprar boletos de autobús →
+            </a>
+            <p className="text-crema/40 font-dm text-[11px] max-w-xs">
+              ¿Vienes en auto o avión? En cada paquete tienes la sección{" "}
+              <span className="text-crema/60">&ldquo;Cómo llegar&rdquo;</span> con todas las opciones.
+            </p>
           </div>
         </div>
       </section>

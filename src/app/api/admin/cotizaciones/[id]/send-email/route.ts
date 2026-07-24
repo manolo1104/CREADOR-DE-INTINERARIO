@@ -25,6 +25,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       notes:        q.notes || undefined,
       partySize:    Number(meta.numPersonas) || undefined,
       lineItems:    Array.isArray((q as any).lineItems) ? (q as any).lineItems : undefined,
+      packageItems: Array.isArray((q as any).packageItems) ? (q as any).packageItems : undefined,
     });
 
     const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";

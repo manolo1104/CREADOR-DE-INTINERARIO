@@ -12,9 +12,14 @@ const LLM_BOTS = [
   "Claude-Web",        // Claude web
   "PerplexityBot",     // Perplexity
   "Perplexity-User",   // Perplexity browsing
-  "Google-Extended",   // Gemini / Vertex (entrenamiento)
-  "Applebot-Extended", // Apple Intelligence
-  "CCBot",             // Common Crawl (alimenta a varios LLMs)
+  "Google-Extended",     // Gemini / Vertex (entrenamiento)
+  "Applebot-Extended",   // Apple Intelligence
+  "meta-externalagent",  // Meta AI (Llama / Meta AI en WhatsApp e Instagram)
+  "Bytespider",          // ByteDance / TikTok AI
+  "Amazonbot",           // Amazon (Alexa / Rufus)
+  "YouBot",              // You.com
+  "cohere-ai",           // Cohere
+  "CCBot",               // Common Crawl (alimenta a varios LLMs)
 ];
 
 // Rutas privadas/sin valor SEO que ningún bot debe rastrear.

@@ -405,6 +405,9 @@ export function buildTourQuoteEmailHtml(data: {
   notes?:        string;
   partySize?:    number;  // tamaño real del grupo (evita sumar las personas de cada tour)
   lineItems?:    { tourName: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number }[];
+  // Hospedaje cotizado. Antes no llegaba al correo aunque la cotización del
+  // sistema sí lo incluye → el cliente no veía el hotel/noches ni su subtotal.
+  packageItems?: { hotel?: string; habitacion?: string; noches?: number; habitaciones?: number; checkin?: string; checkout?: string; subtotal?: number; _meta?: unknown }[];
 }): string {
   const base     = "https://www.huasteca-potosina.com";
   const waUrl    = "https://wa.me/524891251458";
@@ -447,6 +450,33 @@ export function buildTourQuoteEmailHtml(data: {
         </td>
       </tr>
     </table>`;
+
+  // Bloque de hospedaje (si la cotización incluye paquete con noches de hotel).
+  // El _meta viaja dentro de packageItems, se excluye.
+  const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p) => p && !p._meta) : [];
+  const lodgingHtml = packages.length ? `
+          <!-- HOSPEDAJE COTIZADO -->
+          <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">Hospedaje incluido</p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #c4882a;background-color:#fdf9f0;">
+            <tr><td colspan="2" style="border-bottom:1px solid #e4ddd3;padding:14px 22px;">
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">🏨 Noches de hotel</p>
+            </td></tr>
+            ${packages.map((p) => {
+              const noches = Number(p.noches) || 0;
+              const habs   = Number(p.habitaciones) || 1;
+              const fechas = (p.checkin || p.checkout) ? `${formatDate(p.checkin || "")} → ${formatDate(p.checkout || "")}` : "";
+              return `
+            <tr>
+              <td style="width:62%;padding:16px 22px;vertical-align:top;">
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || "Habitación"}${p.hotel ? ` · ${p.hotel}` : ""}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${noches} noche${noches !== 1 ? "s" : ""}${habs > 1 ? ` · ${habs} habitaciones` : ""}${fechas ? ` · ${fechas}` : ""}</p>
+              </td>
+              <td style="width:38%;padding:16px 22px;vertical-align:top;text-align:right;white-space:nowrap;">
+                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${p.subtotal != null ? fmx(p.subtotal) : ""}</p>
+              </td>
+            </tr>`;
+            }).join("")}
+          </table>` : "";
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -528,6 +558,7 @@ export function buildTourQuoteEmailHtml(data: {
           ${data.partySize && data.partySize > 0 && data.lineItems && data.lineItems.length > 1 ? `
           <p style="margin:-8px 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">Grupo de ${data.partySize} persona${data.partySize !== 1 ? "s" : ""}</p>` : ""}
           ${itemsRows}
+          ${lodgingHtml}
 
           <!-- TOTAL -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#1a2e1a;margin:24px 0">

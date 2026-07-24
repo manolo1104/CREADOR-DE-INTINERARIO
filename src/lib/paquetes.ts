@@ -199,6 +199,10 @@ export const FAQS_PAQUETES = [
     a: "Puedes llegar en auto, en avión (Tampico es el aeropuerto más práctico) o en autobús nocturno desde CDMX (Terminal Norte, ~10:15 PM, llega ~6:30 AM). En la sección 'Cómo llegar' arriba te explicamos cada opción a detalle.",
   },
   {
+    q: "¿Cómo llego a Xilitla desde CDMX?",
+    a: "La forma más práctica es el autobús nocturno desde la Terminal Central del Norte (~10:15 PM, líneas Servicios Coordinados / ETN), que llega a Xilitla cerca de las 6:30 AM por unos $650 por persona. Un taxi de ~$60 te deja en el hotel en 7 minutos. Como llegas al amanecer, te entregamos la habitación temprano para descansar y ese mismo día arranca tu primer tour: no pierdes el Día 1.",
+  },
+  {
     q: "¿Puedo elegir mi habitación?",
     a: "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la habitación Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche.",
   },
@@ -231,13 +235,13 @@ export const PAQUETES_DB: Paquete[] = [
     urgencia: "El clásico — combina los dos tours estrella de la región",
     perfiles: ["Amigos aventureros", "Parejas activas", "El clásico"],
     tours: [
+      "Cascadas del Meco — Turquesas, Mirador & El Gran Salto (Día 1)",
       "Expedición Tamul — Sótano, Cañón & Cueva del Agua (Día 2)",
-      "Cascadas del Meco — Turquesas, Mirador & El Gran Salto (Día 3)",
     ],
     itinerario: [
-      { dia: 1, tipo: "llegada", titulo: "Llegada y bienvenida", descripcion: "Llegada a Xilitla y check-in en el Hotel Paraíso Encantado. Tarde libre para conocer el Pueblo Mágico y descansar antes de la aventura." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día más completo de aventura: salimos temprano para aprovechar la mejor luz y el caudal del río." },
-      { dia: 3, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Cascadas del Meco", descripcion: "Las cascadas turquesa de El Naranjo. Por la tarde, check-out y salida con destino a casa." },
+      { dia: 1, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Llegada + Cascadas del Meco", descripcion: "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), te entregamos la habitación temprano para descansar y ese mismo día arrancamos con las cascadas turquesa de El Naranjo — un primer día suave y espectacular." },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día más completo de aventura: ya descansado, salimos temprano para aprovechar la mejor luz y el caudal del río — mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua." },
+      { dia: 3, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y regreso a casa con la memoria llena de la Huasteca." },
     ],
     incluye: [
       "2 noches en Hotel Paraíso Encantado Xilitla",

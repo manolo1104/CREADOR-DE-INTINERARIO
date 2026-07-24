@@ -24,6 +24,33 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── Lote 24-jul-2026 ──────────────────────────────────────────────────────
+  // Xilitla en Pareja — hero: pareja brindando con vino en la terraza; imagen dos: cena romántica a la luz de velas. Archivos nuevos en public/imagenes/blog/xilitla-en-pareja/.
+  "xilitla-en-pareja-escapada-romantica-planes-para-parejas-en-la-huastec": {
+    coverImageUrl: "/imagenes/blog/xilitla-en-pareja/hero.jpg",
+    coverImageAlt:
+      "Pareja brindando con copas de vino tinto en la terraza de un hotel boutique con vista a la sierra de Xilitla, Huasteca Potosina",
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/papan-huasteco/gallery-1.jpg",
+        to: "/imagenes/blog/xilitla-en-pareja/imagen-2.jpg",
+      },
+    ],
+  },
+
+  // Leonora Carrington en Xilitla — hero y imagen dos: esculturas del Museo Leonora Carrington (archivos ya existentes en el repo).
+  "museo-leonora-carrington-leonora-carrington-en-xilitla-guia-para-visit": {
+    coverImageUrl: "/imagenes/museo-leonora-carrington-xilitla/gallery-3.jpg",
+    coverImageAlt:
+      "Esculturas surrealistas de bronce de Leonora Carrington en el interior del Museo Leonora Carrington de Xilitla",
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/cultura-huasteca/gallery-1.webp",
+        to: "/imagenes/museo-leonora-carrington-xilitla/gallery-1.jpg",
+      },
+    ],
+  },
+
   // Gastronomía Potosina (Papán Huasteco) — solo cambia el hero (mismo archivo).
   "restaurantes-en-xilitla-gastronomia-potosina-los-mejores-pla-2026": {
     coverImageUrl: "/imagenes/blog/gastronomia/hero.jpg",
