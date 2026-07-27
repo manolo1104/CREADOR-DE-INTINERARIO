@@ -110,7 +110,7 @@ export default function DestinoPage({ params }: Props) {
               {dd.allDestinations}
             </Link>
             <DestinoIcon name={destino.icon} className="w-12 h-12 text-crema/60 mb-4" />
-            <h1 className="font-cormorant font-light text-crema mb-3" style={{ fontSize: "clamp(40px,6vw,64px)" }}>
+            <h1 className="font-cormorant font-light text-crema mb-3 break-words max-w-full" style={{ fontSize: "clamp(34px,6vw,64px)" }}>
               {destino.nombre}
             </h1>
             <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-2">{destino.zona} · {destino.tipo}</p>

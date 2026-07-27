@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
 
 interface Props {
   images:   { src: string; alt: string }[];
@@ -11,6 +11,7 @@ interface Props {
 
 export function DestinoGallery({ images, nombre }: Props) {
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const touchX = useRef<number | null>(null);
 
   const close  = useCallback(() => setLightbox(null), []);
   const prev   = useCallback(() => setLightbox(i => i !== null ? (i - 1 + images.length) % images.length : null), [images.length]);
@@ -35,17 +36,27 @@ export function DestinoGallery({ images, nombre }: Props) {
 
   if (images.length === 0) return null;
 
+  // Deslizar (swipe) en móvil dentro del lightbox.
+  const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (Math.abs(dx) > 45) (dx < 0 ? next() : prev());
+    touchX.current = null;
+  };
+
   return (
     <>
-      {/* Gallery grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+      {/* Bento editorial: la primera foto grande, el resto en cuadrícula.
+          `grid-auto-rows` fijo da la altura que necesita <Image fill>; en móvil
+          es proporcional al ancho (vw), en desktop una altura fija. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 [grid-auto-rows:34vw] md:[grid-auto-rows:190px]">
         {images.map((img, i) => (
           <button
             key={img.src}
             onClick={() => setLightbox(i)}
-            className="relative overflow-hidden bg-verde-profundo/40 group cursor-zoom-in"
-            style={{ minHeight: "200px", aspectRatio: "16/10" }}
-            aria-label={`Ver foto ${i + 1} de ${nombre}`}
+            className={`reveal-up group relative overflow-hidden bg-verde-profundo/40 cursor-zoom-in ${i === 0 ? "col-span-2 row-span-2" : ""}`}
+            aria-label={`Ampliar foto ${i + 1} de ${nombre}`}
           >
             {/* Skeleton mientras carga */}
             <div className="absolute inset-0 bg-gradient-to-br from-verde-profundo/60 to-verde-selva/20 animate-pulse" />
@@ -53,15 +64,18 @@ export function DestinoGallery({ images, nombre }: Props) {
               src={img.src}
               alt={img.alt}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500 relative z-10"
-              sizes="(max-width: 640px) 50vw, 33vw"
-              loading={i < 2 ? "eager" : "lazy"}
+              className="object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.04] relative z-10"
+              sizes={i === 0 ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
+              loading={i < 3 ? "eager" : "lazy"}
             />
-            <div className="absolute inset-0 z-20 bg-negro/0 group-hover:bg-negro/20 transition-colors duration-300" />
-            {/* Número de foto */}
-            <span className="absolute bottom-2 right-2 z-30 bg-negro/60 text-crema/80 text-[9px] font-dm px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              {i + 1}/{images.length}
-            </span>
+            {/* Velo inferior sutil, más notorio en hover */}
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-negro/35 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
+            {/* Cue de ampliar en hover (solo la primera, para no saturar) */}
+            {i === 0 && (
+              <span className="absolute bottom-3 right-3 z-30 flex items-center gap-1.5 bg-negro/55 backdrop-blur-sm text-crema/90 text-[10px] tracking-[1.5px] uppercase font-dm px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <Expand className="w-3 h-3" strokeWidth={1.8} /> Ver galería
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -71,6 +85,8 @@ export function DestinoGallery({ images, nombre }: Props) {
         <div
           className="fixed inset-0 z-[999] bg-negro/95 backdrop-blur-sm flex items-center justify-center"
           onClick={close}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
           {/* Close */}
           <button
@@ -86,10 +102,10 @@ export function DestinoGallery({ images, nombre }: Props) {
             {lightbox + 1} / {images.length}
           </span>
 
-          {/* Prev */}
+          {/* Prev — oculto en móvil (se usa swipe) */}
           <button
             onClick={(e) => { e.stopPropagation(); prev(); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-3 transition-colors"
+            className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-3 transition-colors"
             aria-label="Foto anterior"
           >
             <ChevronLeft className="w-6 h-6" />
@@ -97,17 +113,17 @@ export function DestinoGallery({ images, nombre }: Props) {
 
           {/* Image */}
           <div
-            className="relative max-w-[90vw] max-h-[85vh] w-full"
+            className="relative max-w-[92vw] max-h-[82vh] w-full"
             style={{ aspectRatio: "16/9" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="absolute inset-0 bg-verde-profundo/30 animate-pulse rounded" />
+            <div className="absolute inset-0 bg-verde-profundo/30 animate-pulse" />
             <Image
               src={images[lightbox].src}
               alt={images[lightbox].alt}
               fill
               className="object-contain relative z-10"
-              sizes="90vw"
+              sizes="92vw"
               priority
             />
           </div>
@@ -117,10 +133,10 @@ export function DestinoGallery({ images, nombre }: Props) {
             {images[lightbox].alt}
           </p>
 
-          {/* Next */}
+          {/* Next — oculto en móvil (se usa swipe) */}
           <button
             onClick={(e) => { e.stopPropagation(); next(); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-3 transition-colors"
+            className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-3 transition-colors"
             aria-label="Foto siguiente"
           >
             <ChevronRight className="w-6 h-6" />

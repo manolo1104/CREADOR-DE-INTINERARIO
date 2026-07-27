@@ -29,6 +29,15 @@ body {
   font-family: var(--font-dm-sans), sans-serif;
 }
 
+/* Sin scroll horizontal en móvil ni desktop: ningún desborde debe permitir
+   deslizar de lado. `clip` (no `hidden`) no crea un contenedor de scroll, así
+   que no rompe el `position: sticky` del subnav. */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 @layer utilities {
   .text-gradient-dorado {
     background: linear-gradient(135deg, #c4882a, #8fbe3a);
