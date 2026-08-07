@@ -15,6 +15,17 @@ for (const t of TOURS_DB) {
 
 type Datos = Record<string, unknown>;
 
+// id o slug → SLUG canónico (para que el embudo cuente un tour una sola vez).
+const SLUG_POR_CLAVE: Record<string, string> = {};
+for (const t of TOURS_DB) {
+  SLUG_POR_CLAVE[t.id] = t.slug;
+  SLUG_POR_CLAVE[t.slug] = t.slug;
+}
+function aSlug(v: unknown): string | null {
+  if (typeof v !== "string" || !v) return null;
+  return SLUG_POR_CLAVE[v] ?? null;
+}
+
 function resolver(v: unknown): string | undefined {
   if (typeof v !== "string" || v === "") return undefined;
   return nombreCorto(NOMBRE_POR_CLAVE[v] ?? v);
@@ -107,9 +118,10 @@ async function persistir(event: string, d: Datos, path?: string, sid?: string, d
         event,
         sid:      sid && sid !== "anonymous" && sid !== "ssr" ? sid : null,
         path:     path ?? null,
-        tourSlug: typeof d.tourSlug === "string" ? d.tourSlug
-                : typeof d.tour === "string"     ? d.tour
-                : null,
+        // Siempre el SLUG. Unos eventos mandan el id ("tour-edward-james") y
+        // otros el slug: sin normalizar, el mismo tour salía dos veces en el
+        // reporte del embudo y las cuentas quedaban partidas a la mitad.
+        tourSlug: aSlug(d.tourSlug) ?? aSlug(d.tour) ?? aSlug(d.tourId) ?? null,
         amount:   Number.isFinite(monto) && monto > 0 ? Math.round(monto) : null,
         device:   device ?? null,
         referrer: referrer ?? null,
