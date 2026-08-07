@@ -4,9 +4,40 @@ import { checkAgentAuth } from "@/lib/agentAuth";
 import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { HABITACIONES } from "@/lib/paquetes";
+import { sendBrevoEmail } from "@/lib/brevo";
+import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+/** Envía por correo la cotización. Devuelve true si se envió. */
+async function enviarCorreoCotizacion(data: {
+  customerEmail?: string; customerName: string; folio: string;
+  tourName: string; tourSlug: string; tourDate: string;
+  adults: number; totalAmount: number; notes?: string;
+  lineItems?: any[]; packageItems?: any[];
+}): Promise<boolean> {
+  if (!data.customerEmail) return false;
+  try {
+    const html = buildTourQuoteEmailHtml({
+      customerName: data.customerName, quoteNumber: data.folio,
+      tourName: data.tourName, tourDate: data.tourDate, tourSlug: data.tourSlug,
+      adults: data.adults, children: 0, totalAmount: data.totalAmount,
+      notes: data.notes, lineItems: data.lineItems, packageItems: data.packageItems,
+    });
+    const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
+    await sendBrevoEmail({
+      to:  [{ email: data.customerEmail, name: data.customerName }],
+      bcc: data.customerEmail !== adminTo ? [{ email: adminTo }] : [],
+      subject: `Tu cotización está lista — ${data.folio}`,
+      htmlContent: html,
+    });
+    return true;
+  } catch (e: any) {
+    console.error("❌ correo cotización (lead):", e?.message);
+    return false;
+  }
+}
 
 /**
  * POST /api/bot/lead
@@ -102,7 +133,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se pudo registrar la cotización." }, { status: 500 });
     }
 
-    return NextResponse.json({ folio, total, moneda: "MXN", tipo: "rzr", ruta: tour.rutas[ri].nombre, vehiculo: veh.nombre });
+    const emailEnviado = await enviarCorreoCotizacion({
+      customerEmail: baseData.customerEmail || undefined,
+      customerName: baseData.customerName, folio,
+      tourName: `${tour.nombre} — ${tour.rutas[ri].nombre} · ${veh.nombre}`,
+      tourSlug: tour.slug, tourDate: tourDate ? String(tourDate) : "",
+      adults: nPersonas, totalAmount: total,
+      notes: `Cobro por vehículo. Ruta: ${tour.rutas[ri].nombre}. Vehículo: ${veh.nombre}.`,
+    });
+    return NextResponse.json({ folio, total, moneda: "MXN", tipo: "rzr", ruta: tour.rutas[ri].nombre, vehiculo: veh.nombre, emailEnviado });
   }
 
   // ── PAQUETE (tours + hotel) ────────────────────────────────────
@@ -153,7 +192,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se pudo registrar la cotización." }, { status: 500 });
     }
 
-    return NextResponse.json({ folio, total, moneda: "MXN", tipo: "paquete", paquete: paq.nombre, habitacion: hab?.nombre ?? null, noches: paq.noches });
+    const emailEnviado = await enviarCorreoCotizacion({
+      customerEmail: baseData.customerEmail || undefined,
+      customerName: baseData.customerName, folio,
+      tourName: `Paquete ${paq.nombre}`, tourSlug: `paquete-${paq.slug}`,
+      tourDate: checkin ? String(checkin) : "",
+      adults: nPersonas, totalAmount: total,
+      packageItems: [
+        { paquete: paq.nombre, habitacion: hab?.nombre ?? "por definir", hotel: "Hotel Paraíso Encantado", noches: paq.noches, checkin: checkin ? String(checkin) : "", checkout: checkout ? String(checkout) : "", subtotal: total },
+      ],
+    });
+    return NextResponse.json({ folio, total, moneda: "MXN", tipo: "paquete", paquete: paq.nombre, habitacion: hab?.nombre ?? null, noches: paq.noches, emailEnviado });
   }
 
   return NextResponse.json({ error: "tipo inválido (usa 'rzr' o 'paquete')." }, { status: 400 });

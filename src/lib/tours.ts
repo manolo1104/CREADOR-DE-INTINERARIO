@@ -177,7 +177,7 @@ export const TOURS_DB: Tour[] = [
     privateAvailable: false,
     nombre:           "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
     tagline:          "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
-    precio:           1850,
+    precio:           1950,
     urgencia:         "Sujeto al nivel del río — la salida se confirma al reservar",
     descripcion:
       "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
@@ -230,7 +230,7 @@ export const TOURS_DB: Tour[] = [
     privateMinPrice:  8500,
     nombre:           "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
     tagline:          "El tour más completo de la Huasteca en un solo día",
-    precio:           1450,
+    precio:           1550,
     precioOriginal:   2100,
     urgencia:         "El más reservado — se llena los fines de semana",
     descripcion:
@@ -283,7 +283,7 @@ export const TOURS_DB: Tour[] = [
     privateMinPrice:  7500,
     nombre:           "Ruta Surrealista — Edward James, Manantiales & Selva",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
-    precio:           1300,
+    precio:           1400,
     precioOriginal:   1900,
     urgencia:         "Alta demanda en temporada nov–mar",
     descripcion:
@@ -336,7 +336,7 @@ export const TOURS_DB: Tour[] = [
     privateMinPrice:  7000,
     nombre:           "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
     tagline:          "Tres caídas de agua, tres emociones distintas",
-    precio:           1600,
+    precio:           1700,
     precioOriginal:   2300,
     urgencia:         "Favorito de fotógrafos — cupos limitados",
     descripcion:
@@ -389,7 +389,7 @@ export const TOURS_DB: Tour[] = [
     privateMinPrice:  8000,
     nombre:           "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
     tagline:          "Dos joyas naturales, un día perfecto para desconectar",
-    precio:           1500,
+    precio:           1600,
     precioOriginal:   2200,
     urgencia:         "Ideal para familias — reserva con anticipación",
     descripcion:
@@ -442,7 +442,7 @@ export const TOURS_DB: Tour[] = [
     privateMinPrice:  8500,
     nombre:           "Ruta Acuática — Puente de Dios, Hacienda & Siete Cascadas",
     tagline:          "El recorrido más refrescante y completo de la región",
-    precio:           1500,
+    precio:           1600,
     precioOriginal:   2200,
     urgencia:         "El más completo — últimos lugares disponibles",
     descripcion:
@@ -503,7 +503,7 @@ export const TOURS_DB: Tour[] = [
     soloAdultos:      true,
     nombre:           "Descubre el Buceo en la Laguna de la Media Luna — Tu Primera Inmersión con Instructor PADI",
     tagline:          "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
-    precio:           1200,
+    precio:           1300,
     urgencia:         "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
     descripcion:
       "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,200 MXN por persona.",

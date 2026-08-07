@@ -4,6 +4,44 @@ import { checkAgentAuth } from "@/lib/agentAuth";
 import { TOURS_DB } from "@/lib/tours";
 import { calcTourTotal, validatePromoCode, minBookingDate } from "@/lib/tourBooking";
 import { DATOS_BANCO } from "@/lib/bot/bankData";
+import { sendBrevoEmail } from "@/lib/brevo";
+import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
+
+/** Envía por correo la cotización del bot. Devuelve true si se envió. */
+async function enviarCorreoCotizacion(data: {
+  customerEmail?: string; customerName: string; folio: string;
+  tourName: string; tourSlug: string; tourDate: string;
+  adults: number; children: number; totalAmount: number; notes?: string;
+  lineItems?: any[]; packageItems?: any[];
+}): Promise<boolean> {
+  if (!data.customerEmail) return false;
+  try {
+    const html = buildTourQuoteEmailHtml({
+      customerName: data.customerName,
+      quoteNumber:  data.folio,
+      tourName:     data.tourName,
+      tourDate:     data.tourDate,
+      tourSlug:     data.tourSlug,
+      adults:       data.adults,
+      children:     data.children,
+      totalAmount:  data.totalAmount,
+      notes:        data.notes,
+      lineItems:    data.lineItems,
+      packageItems: data.packageItems,
+    });
+    const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
+    await sendBrevoEmail({
+      to:  [{ email: data.customerEmail, name: data.customerName }],
+      bcc: data.customerEmail !== adminTo ? [{ email: adminTo }] : [],
+      subject: `Tu cotización de tour está lista — ${data.folio}`,
+      htmlContent: html,
+    });
+    return true;
+  } catch (e: any) {
+    console.error("❌ correo cotización bot:", e?.message);
+    return false;
+  }
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -133,6 +171,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No se pudo crear la cotización." }, { status: 500 });
   }
 
+  const emailEnviado = await enviarCorreoCotizacion({
+    customerEmail: customerEmail ? String(customerEmail).trim() : undefined,
+    customerName: String(customerName).trim(),
+    folio, tourName: tour.nombre, tourSlug: tour.slug, tourDate: String(tourDate),
+    adults: nAdults, children: nMid + nSmall, totalAmount: total,
+    notes: notes ? String(notes) : undefined,
+  });
+
   return NextResponse.json({
     folio,
     total,
@@ -142,5 +188,6 @@ export async function POST(req: NextRequest) {
     tourDate,
     datosBanco: DATOS_BANCO,
     linkPago: `${appUrl}/reservar-tour/${tour.slug}`,
+    emailEnviado,
   });
 }
