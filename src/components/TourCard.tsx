@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import type { Tour } from "@/lib/tours";
+import { tourDurTexto, type Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
 import { trackWhatsapp } from "@/lib/analytics";
@@ -154,7 +154,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
 
         {/* Duración + grupo + salidas */}
         <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm flex-wrap">
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" aria-hidden="true" /> {t.duracion_hrs}h</span>
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" aria-hidden="true" /> {tourDurTexto(t)}</span>
           <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> {en ? "max." : "máx."} {t.groupMax}</span>
           <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
         </div>

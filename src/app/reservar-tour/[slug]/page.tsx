@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto } from "@/lib/tours";
 import {
   saveTourBookingState, formatMXN, calcTourTotal,
   validatePromoCode, formatTourDate,
@@ -356,7 +356,7 @@ export default function ReservarTourPage() {
               </div>
 
               <div className="flex flex-wrap gap-3 text-xs font-dm text-negro/50">
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{tour.duracion_hrs}h</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{tourDurTexto(tour)}</span>
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" />Máx. {tour.groupMax}</span>
                 <span className="flex items-center gap-1"><Star className="w-3 h-3 text-dorado" />4.9</span>
               </div>

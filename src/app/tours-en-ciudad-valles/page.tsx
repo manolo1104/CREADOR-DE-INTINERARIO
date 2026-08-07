@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto } from "@/lib/tours";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
 
@@ -139,7 +139,7 @@ export default function ToursCiudadVallesPage() {
                 className="border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
-                  {t.tipo} · {t.duracion_hrs} h
+                  {t.tipo} · {tourDurTexto(t, " h")}
                 </p>
                 <h3 className="font-cormorant text-crema text-xl leading-snug mb-3 group-hover:text-dorado transition-colors flex-1">
                   {t.nombre}

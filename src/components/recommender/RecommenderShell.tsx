@@ -10,7 +10,7 @@ import {
   MessageCircle, ArrowRight, Flame, TrendingUp,
   CalendarDays, Moon,
 } from "lucide-react";
-import { TOURS_DB, type Tour } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
 import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 
 // ── Social proof & urgency data per tour ──────────────────────────────────────
@@ -263,7 +263,7 @@ function TourResultCard({
       <div className="p-5">
         {/* Tour meta */}
         <div className="flex flex-wrap gap-3 mb-3 text-[10px] font-dm text-negro/45 uppercase tracking-wide">
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{tour.duracion_hrs}h</span>
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{tourDurTexto(tour)}</span>
           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{tour.tipo}</span>
           <span className="flex items-center gap-1"><Shield className="w-3 h-3" />Guía certificado</span>
         </div>

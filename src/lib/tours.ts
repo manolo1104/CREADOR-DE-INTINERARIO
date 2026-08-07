@@ -33,6 +33,8 @@ export interface Tour {
   destinos:         string[];
   incluye:          string[];
   precio:           number;
+  /** Rango de duración a mostrar (ej. [8,10] → "8–10 horas"). Si no, se usa duracion_hrs. */
+  duracionRango?:   [number, number];
   precioOriginal?:  number;
   /** "persona" (default) usa el flujo de reserva online; "vehiculo" se reserva por WhatsApp. */
   precioUnidad?:    "persona" | "vehiculo";
@@ -53,6 +55,22 @@ export interface Tour {
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
   soloAdultos?:     boolean;
   gallery:          GalleryImage[];
+}
+
+/** [min, max] de duración para mostrar: usa duracionRango, o el rango de las rutas (RZR), o el número. */
+export function tourDurRange(t: Pick<Tour, "duracionRango" | "rutas" | "duracion_hrs">): [number, number] {
+  if (t.duracionRango) return t.duracionRango;
+  if (t.rutas && t.rutas.length) {
+    const hs = t.rutas.map((r) => r.duracion_hrs);
+    return [Math.min(...hs), Math.max(...hs)];
+  }
+  return [t.duracion_hrs, t.duracion_hrs];
+}
+
+/** Texto corto de duración: "9h" o "8–10h". */
+export function tourDurTexto(t: Pick<Tour, "duracionRango" | "rutas" | "duracion_hrs">, unidad = "h"): string {
+  const [a, b] = tourDurRange(t);
+  return a === b ? `${a}${unidad}` : `${a}–${b}${unidad}`;
 }
 
 export const TOURS_DB: Tour[] = [
@@ -219,6 +237,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-tamul",
     slug:             "expedicion-tamul",
+    duracionRango:    [8, 10],
     icon:             "Waves",
     tipo:             "Aventura & Naturaleza",
     dificultad:       "media",
@@ -272,6 +291,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-edward-james",
     slug:             "ruta-surrealista-edward-james",
+    duracionRango:    [8, 10],
     icon:             "Leaf",
     tipo:             "Cultura & Naturaleza",
     dificultad:       "baja",
@@ -325,6 +345,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-meco",
     slug:             "cascadas-del-meco",
+    duracionRango:    [8, 10],
     icon:             "Droplet",
     tipo:             "Cascadas & Fotografía",
     dificultad:       "baja",
@@ -378,6 +399,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-minas-micos",
     slug:             "paraiso-escalonado-minas-micos",
+    duracionRango:    [8, 10],
     icon:             "Mountain",
     tipo:             "Cascadas & Bienestar",
     dificultad:       "baja",
@@ -431,6 +453,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-puente-dios",
     slug:             "ruta-acuatica-puente-de-dios",
+    duracionRango:    [8, 10],
     icon:             "Anchor",
     tipo:             "Aventura Acuática",
     dificultad:       "media",

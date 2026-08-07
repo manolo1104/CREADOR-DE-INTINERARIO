@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto } from "@/lib/tours";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
@@ -224,7 +224,7 @@ export default function ToursPage() {
                     {en ? "Daily departures" : "Salidas todos los días"}
                   </span>
                   <span className="absolute bottom-3 left-3 bg-negro/70 text-crema/80 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                    ⏱ {tour.duracion_hrs} {en ? "hours" : "horas"}
+                    ⏱ {tourDurTexto(tour, en ? " hours" : " horas")}
                   </span>
                 </div>
               )}
@@ -259,9 +259,7 @@ export default function ToursPage() {
 
                 <div className="flex items-center gap-4 mb-5 text-[11px] text-crema/45 font-dm flex-wrap border-t border-white/8 pt-5">
                   <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" aria-hidden="true" />{" "}
-                    {tour.rutas && tour.rutas.length > 0
-                      ? `${Math.min(...tour.rutas.map((r) => r.duracion_hrs))}–${Math.max(...tour.rutas.map((r) => r.duracion_hrs))}h`
-                      : `${tour.duracion_hrs}h`}
+                    {tourDurTexto(tour)}
                   </span>
                   <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "max." : "máx."} {tour.groupMax}</span>
                   <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, tourDurRange } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TourGallery } from "@/components/TourGallery";
 import { TourDeparture } from "@/components/TourDeparture";
@@ -87,11 +87,12 @@ export default function TourDetailPage({ params }: Props) {
   const pctOff = tour.precioOriginal && tour.precioOriginal > tour.precio
     ? Math.round((1 - tour.precio / tour.precioOriginal) * 100)
     : 0;
-  const durMin = tour.rutas ? Math.min(...tour.rutas.map((r) => r.duracion_hrs)) : tour.duracion_hrs;
-  const durMax = tour.rutas ? Math.max(...tour.rutas.map((r) => r.duracion_hrs)) : tour.duracion_hrs;
+  const [durMin, durMax] = tourDurRange(tour);
   const durLabel = durMin === durMax
     ? t.durationApprox(tour.duracion_hrs)
-    : (locale === "en" ? `${durMin}–${durMax} hours depending on route` : `${durMin}–${durMax} horas según la ruta`);
+    : tour.rutas
+      ? (locale === "en" ? `${durMin}–${durMax} hours depending on route` : `${durMin}–${durMax} horas según la ruta`)
+      : (locale === "en" ? `${durMin}–${durMax} hours` : `${durMin}–${durMax} horas`);
   const priceUnitShort = esVehiculo
     ? (locale === "en" ? "MXN per vehicle" : "MXN por vehículo")
     : t.perPerson;
@@ -126,7 +127,9 @@ export default function TourDetailPage({ params }: Props) {
         { q: `What's included in the ${tour.nombre}?`, a: tour.incluye.join(", ") + ". Everything is included in the price." },
         { q: `How long is the ${tour.nombre}?`, a: durMin === durMax
             ? `The tour lasts approximately ${tour.duracion_hrs} hours.`
-            : `It depends on the route you choose: between ${durMin} and ${durMax} hours.` },
+            : tour.rutas
+              ? `It depends on the route you choose: between ${durMin} and ${durMax} hours.`
+              : `The tour lasts between ${durMin} and ${durMax} hours.` },
         { q: "Can I cancel my booking?", a: "Yes. Free cancellation up to 48 hours before the tour. Full refund, no questions asked." },
         esVehiculo
           ? { q: "Is the price per person or per vehicle?", a: `Pricing is per vehicle, starting at ${money(tour.precio)} MXN depending on the route and unit you choose. Every vehicle includes fuel, safety gear and the guide.` }
@@ -145,7 +148,9 @@ export default function TourDetailPage({ params }: Props) {
         { q: `¿Qué incluye el ${tour.nombre}?`, a: tour.incluye.join(", ") + ". Todo incluido en el precio." },
         { q: `¿Cuánto dura el ${tour.nombre}?`, a: durMin === durMax
             ? `El tour tiene una duración aproximada de ${tour.duracion_hrs} horas.`
-            : `Depende de la ruta que elijas: entre ${durMin} y ${durMax} horas.` },
+            : tour.rutas
+              ? `Depende de la ruta que elijas: entre ${durMin} y ${durMax} horas.`
+              : `El tour dura entre ${durMin} y ${durMax} horas.` },
         { q: "¿Puedo cancelar mi reserva?", a: "Sí. Cancelación gratuita hasta 48 horas antes del tour. Reembolso completo sin preguntas." },
         esVehiculo
           ? { q: "¿El precio es por persona o por vehículo?", a: `El precio es por vehículo, desde ${money(tour.precio)} MXN según la ruta y la unidad que elijas. Todos los vehículos incluyen gasolina, equipo de seguridad y guía.` }

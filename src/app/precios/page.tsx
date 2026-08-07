@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
@@ -136,7 +136,7 @@ export default function PreciosPage() {
                         {t.nombre}
                       </Link>
                     </td>
-                    <td className="px-4 py-4 text-crema/60 whitespace-nowrap">{t.duracion_hrs} h aprox.</td>
+                    <td className="px-4 py-4 text-crema/60 whitespace-nowrap">{tourDurTexto(t, " h")} aprox.</td>
                     <td className="px-4 py-4 text-crema/60">{DIF_LABEL[t.dificultad]}</td>
                     <td className="px-4 py-4 text-right whitespace-nowrap">
                       <span className="font-cormorant text-dorado text-xl">{money(t.precio)}</span>
@@ -152,7 +152,7 @@ export default function PreciosPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-4 text-crema/60 whitespace-nowrap">
-                      {t.rutas ? `${Math.min(...t.rutas.map((r) => r.duracion_hrs))}–${Math.max(...t.rutas.map((r) => r.duracion_hrs))} h` : `${t.duracion_hrs} h`}
+                      {tourDurTexto(t, " h")}
                     </td>
                     <td className="px-4 py-4 text-crema/60">{DIF_LABEL[t.dificultad]}</td>
                     <td className="px-4 py-4 text-right whitespace-nowrap">
