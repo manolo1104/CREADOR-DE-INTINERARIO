@@ -1,0 +1,2763 @@
+{
+  "generatedAt": "2026-08-07T20:35:29.222Z",
+  "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
+  "empresa": {
+    "nombre": "Tours Huasteca Potosina",
+    "sitio": "https://www.huasteca-potosina.com",
+    "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
+    "salida": "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",
+    "cancelacion": "Cancela gratis hasta 48 h antes.",
+    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)"
+  },
+  "tours": [
+    {
+      "id": "tour-rzr-xilitla",
+      "slug": "rzr-xilitla",
+      "nombre": "Recorrido en RZR por Xilitla — Elige tu Ruta Off-Road",
+      "tipo": "Aventura Off-Road",
+      "dificultad": "media",
+      "duracionHrs": 2,
+      "duracionTexto": "2–5 h",
+      "precio": 1600,
+      "precioUnidad": "vehiculo",
+      "groupMin": 2,
+      "groupMax": 6,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateMinPrice": null,
+      "tagline": "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
+      "pitch": "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600), no por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/rzr-xilitla",
+      "destinos": [
+        "Base en Xilitla (punto de encuentro)",
+        "Aldea Nanacatli — casitas de hongos (Ruta Nanacatli · 2 h)",
+        "Miradores de la sierra (Ruta Miradores · 3 h)",
+        "Nacimiento escondido con kayak (Ruta Nacimiento · 5 h)",
+        "Bosque de niebla de La Trinidad (Ruta Trinidad · 5 h)"
+      ],
+      "incluye": [
+        "Vehículo todoterreno con gasolina incluida",
+        "Casco y goggles de seguridad para cada tripulante",
+        "Guía instructor que abre y marca la ruta",
+        "Briefing de manejo — apto para principiantes",
+        "4 rutas a elegir: Nanacatli, Miradores, Nacimiento o Trinidad"
+      ],
+      "noIncluye": [
+        "Transporte hasta Xilitla",
+        "Alimentos"
+      ],
+      "puntoEncuentro": "Base en Xilitla",
+      "horario": "Inicia por la mañana (aprox. 8:30–9:00 AM); la hora de término depende de la ruta: Nanacatli ~2 h, Miradores ~3 h, Nacimiento y Trinidad ~5 h.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "amigos",
+        "familias",
+        "primerizos",
+        "aventura off-road"
+      ],
+      "urgencia": "Flota limitada — los fines de semana se aparta con anticipación",
+      "rutas": [
+        {
+          "nombre": "Ruta Nanacatli",
+          "duracionHrs": 2,
+          "desde": 1600,
+          "descripcion": "La más popular de Xilitla y perfecta para primerizos. Te adentras en la selva húmeda, cruzas ríos de agua cristalina y llegas a la Aldea Nanacatli, un pintoresco pueblo de casitas de hongos gigantes —la famosa 'aldea de los pitufos'—, ideal para fotos. Barro, naturaleza y adrenalina en dos horas.",
+          "destinos": [
+            "Aldea Nanacatli (aldea de los pitufos)",
+            "Mirador Xilitla",
+            "Túnel Tlahuilapa",
+            "Camino Antiguo a las Pozas",
+            "Xilitla Pueblo Mágico",
+            "Jardín Surrealista (por fuera)"
+          ],
+          "incluye": []
+        },
+        {
+          "nombre": "Ruta Miradores",
+          "duracionHrs": 3,
+          "desde": 2600,
+          "descripcion": "Sube a los puntos más altos de la sierra y contempla vistas panorámicas que te quitarán el aliento. La Huasteca Potosina desde las alturas, con la selva extendiéndose hasta donde alcanza la vista, pasando también por la Aldea Nanacatli. Perfecta para fotos épicas.",
+          "destinos": [
+            "Aldea Nanacatli (aldea de los pitufos)",
+            "Mirador Xilitla",
+            "Mirador Cerro Quebrado",
+            "Túnel Tlahuilapa",
+            "Camino Antiguo a las Pozas",
+            "Xilitla Pueblo Mágico",
+            "Jardín Surrealista (por fuera)"
+          ],
+          "incluye": []
+        },
+        {
+          "nombre": "Ruta Nacimiento",
+          "duracionHrs": 5,
+          "desde": 3800,
+          "descripcion": "La aventura más completa. Llegas a un nacimiento de agua cristalina escondido en lo profundo de la selva —el Nacimiento Xilitla-Huichihuayán— y ahí te prestamos kayak y chaleco salvavidas para que disfrutes el agua. En el camino visitas la Cueva de las Quilas y varios miradores. Un paraíso secreto imposible de alcanzar sin estos vehículos.",
+          "destinos": [
+            "Nacimiento Xilitla-Huichihuayán",
+            "Cueva de las Quilas",
+            "Mirador Xilitla",
+            "Túnel Tlahuilapa",
+            "Camino Antiguo a las Pozas",
+            "Xilitla Pueblo Mágico",
+            "Jardín Surrealista (por fuera)"
+          ],
+          "incluye": [
+            "Préstamo de kayak y chaleco salvavidas para la actividad en el nacimiento"
+          ]
+        },
+        {
+          "nombre": "Ruta Trinidad",
+          "duracionHrs": 5,
+          "desde": 3800,
+          "descripcion": "Historia, cultura y naturaleza en un solo recorrido. Caminos de sierra que suben hasta el bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo, con parada en la Aldea Nanacatli (la aldea de los pitufos) y en varios miradores. El recorrido más alto y verde de Xilitla.",
+          "destinos": [
+            "Bosque de niebla La Trinidad",
+            "Aldea Nanacatli (aldea de los pitufos)",
+            "Mirador Xilitla",
+            "Túnel Tlahuilapa",
+            "Camino Antiguo a las Pozas",
+            "Xilitla Pueblo Mágico",
+            "Jardín Surrealista (por fuera)"
+          ],
+          "incluye": []
+        }
+      ],
+      "flota": [
+        {
+          "nombre": "RZR 500",
+          "capacidad": "2 adultos + 1 niño",
+          "descripcion": "Ágil, deportivo y lleno de carácter. Ideal para parejas o familia pequeña.",
+          "precios": [
+            1600,
+            2600,
+            3800,
+            3800
+          ]
+        },
+        {
+          "nombre": "Can-Am 800",
+          "capacidad": "2 adultos",
+          "descripcion": "La bestia canadiense. Potencia brutal para dos aventureros que buscan emociones extremas.",
+          "precios": [
+            1600,
+            2600,
+            3800,
+            3800
+          ]
+        },
+        {
+          "nombre": "RZR 900",
+          "capacidad": "4 adultos",
+          "descripcion": "El doble de potencia, el doble de emoción. Para grupos de 4 que no le temen a nada.",
+          "precios": [
+            1900,
+            2800,
+            4500,
+            4500
+          ]
+        },
+        {
+          "nombre": "Defender",
+          "capacidad": "6 adultos",
+          "descripcion": "Robusto, confiable y espacioso. Comodidad sin sacrificar aventura.",
+          "precios": [
+            2200,
+            3000,
+            5000,
+            5000
+          ]
+        },
+        {
+          "nombre": "Defender Familiar",
+          "capacidad": "6 adultos + 2 niños",
+          "descripcion": "El más grande de la flota. Diseñado para familias completas o grupos.",
+          "precios": [
+            2500,
+            3400,
+            6000,
+            6000
+          ]
+        },
+        {
+          "nombre": "Maverick X3",
+          "capacidad": "4 adultos",
+          "descripcion": "El más rápido y adrenalínico. Suspensión de competencia para amantes de la velocidad.",
+          "precios": [
+            2500,
+            3500,
+            5500,
+            5500
+          ]
+        },
+        {
+          "nombre": "Polaris Pro S",
+          "capacidad": "4 adultos",
+          "descripcion": "La experiencia premium. Tecnología de punta, potencia extraordinaria y acabados de lujo.",
+          "precios": [
+            3500,
+            4500,
+            7000,
+            7000
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tour-rappel-tamul",
+      "slug": "rappel-tamul",
+      "nombre": "Rappel en la Cascada de Tamul — Descenso Frente a la Caída Más Alta de México",
+      "tipo": "Aventura Extrema",
+      "dificultad": "alta",
+      "duracionHrs": 5,
+      "duracionTexto": "5 h",
+      "precio": 1700,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 8,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateMinPrice": null,
+      "tagline": "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
+      "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
+      "url": "https://www.huasteca-potosina.com/tours/rappel-tamul",
+      "destinos": [
+        "Embarcadero del Río Tampaón (punto de encuentro)",
+        "Pared de rappel frente a la Cascada de Tamul",
+        "Cañón del Río Tampaón"
+      ],
+      "incluye": [
+        "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
+        "Guías de alta montaña certificados",
+        "Briefing y técnica de descenso — apto para principiantes",
+        "Fotografías y video con dron del descenso",
+        "Punto de encuentro en el embarcadero del río"
+      ],
+      "noIncluye": [
+        "Transporte hasta el embarcadero del Río Tampaón (se coordina aparte, con costo adicional)",
+        "Alimentos"
+      ],
+      "puntoEncuentro": "Embarcadero del Río Tampaón",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 1:30 PM (~5 h). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "aventura extrema",
+        "adrenalina",
+        "amigos"
+      ],
+      "urgencia": "Cupo muy limitado — máximo 8 personas por día",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-rafting-tampaon",
+      "slug": "rafting-rio-tampaon",
+      "nombre": "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
+      "tipo": "Rafting & Adrenalina",
+      "dificultad": "media",
+      "duracionHrs": 7,
+      "duracionTexto": "7 h",
+      "precio": 1950,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 8,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateMinPrice": null,
+      "tagline": "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
+      "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
+      "url": "https://www.huasteca-potosina.com/tours/rafting-rio-tampaon",
+      "destinos": [
+        "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
+        "Embarcadero del Río Tampaón",
+        "14 km de rápidos Clase III por el Río Tampaón",
+        "Cañón del Tampaón — paredes de roca y agua turquesa",
+        "Rápido 'La Tumba' — el más técnico del descenso",
+        "Tramos tranquilos para nadar en el río"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla",
+        "Balsa profesional, remo, casco y chaleco salvavidas",
+        "Guía certificado en aguas rápidas dentro de tu balsa",
+        "Briefing de seguridad y técnica de remado — rutas para principiantes y avanzados",
+        "Comida incluida — antes o después de la actividad",
+        "Descenso de 14 km por los rápidos del Tampaón",
+        "Paradas para nadar en los tramos tranquilos del cañón"
+      ],
+      "noIncluye": [
+        "Bebidas alcohólicas",
+        "Propinas y gastos personales"
+      ],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 3:30 PM (~7 h). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "aventura",
+        "amigos",
+        "grupos",
+        "adrenalina moderada"
+      ],
+      "urgencia": "Sujeto al nivel del río — la salida se confirma al reservar",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-tamul",
+      "slug": "expedicion-tamul",
+      "nombre": "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
+      "tipo": "Aventura & Naturaleza",
+      "dificultad": "media",
+      "duracionHrs": 9,
+      "duracionTexto": "8–10 h",
+      "precio": 1550,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 12,
+      "soloAdultos": false,
+      "privateAvailable": true,
+      "privateMinPrice": 8500,
+      "tagline": "El tour más completo de la Huasteca en un solo día",
+      "pitch": "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, asómate al imponente abismo del Sótano de las Huahuas y termina sumergiéndote en la magia subterránea de la Cueva del Agua. Una jornada que redefine lo que la naturaleza puede ofrecerte.",
+      "url": "https://www.huasteca-potosina.com/tours/expedicion-tamul",
+      "destinos": [
+        "Cascada de Tamul (paseo en canoa)",
+        "Sótano de las Huahuas (mirador al abismo de 512 m)",
+        "Cenote Cueva del Agua"
+      ],
+      "incluye": [
+        "Desayuno con platillos típicos de la región",
+        "Entradas a todos los parques",
+        "Paseo en canoa por el Cañón del Tampaón",
+        "Guía certificado NOM-09",
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Equipo de seguridad completo",
+        "Fotografías y video del recorrido",
+        "Botiquín de primeros auxilios"
+      ],
+      "noIncluye": [
+        "Comida de mediodía",
+        "Propinas y gastos personales"
+      ],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "el más completo",
+        "parejas",
+        "primera vez",
+        "naturaleza"
+      ],
+      "urgencia": "El más reservado — se llena los fines de semana",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-edward-james",
+      "slug": "ruta-surrealista-edward-james",
+      "nombre": "Ruta Surrealista — Edward James, Manantiales & Selva",
+      "tipo": "Cultura & Naturaleza",
+      "dificultad": "baja",
+      "duracionHrs": 8,
+      "duracionTexto": "8–10 h",
+      "precio": 1400,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 10,
+      "soloAdultos": false,
+      "privateAvailable": true,
+      "privateMinPrice": 7500,
+      "tagline": "Arte, agua y misterio en un recorrido de contrastes únicos",
+      "pitch": "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y la arquitectura colonial del Castillo de la Salud. Cultura y naturaleza que se funden en un solo día extraordinario.",
+      "url": "https://www.huasteca-potosina.com/tours/ruta-surrealista-edward-james",
+      "destinos": [
+        "Jardín Surrealista Edward James (Las Pozas)",
+        "Nacimiento de Huichihuayán",
+        "Cueva de las Quilas",
+        "Castillo de la Salud"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Entradas a todas las atracciones",
+        "Desayuno buffet",
+        "Guías especializados en historia y cultura",
+        "Equipo de seguridad",
+        "Fotografías del tour"
+      ],
+      "noIncluye": [
+        "Comida de mediodía",
+        "Propinas y gastos personales"
+      ],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "arte y cultura",
+        "parejas",
+        "fotografía",
+        "ritmo tranquilo"
+      ],
+      "urgencia": "Alta demanda en temporada nov–mar",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-meco",
+      "slug": "cascadas-del-meco",
+      "nombre": "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
+      "tipo": "Cascadas & Fotografía",
+      "dificultad": "baja",
+      "duracionHrs": 7,
+      "duracionTexto": "8–10 h",
+      "precio": 1700,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 8,
+      "soloAdultos": false,
+      "privateAvailable": true,
+      "privateMinPrice": 7000,
+      "tagline": "Tres caídas de agua, tres emociones distintas",
+      "pitch": "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
+      "url": "https://www.huasteca-potosina.com/tours/cascadas-del-meco",
+      "destinos": [
+        "Cascada del Meco",
+        "Mirador Panorámico del Meco",
+        "Cascada del Salto"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Entradas a todas las atracciones",
+        "Desayuno buffet",
+        "Guías especializados",
+        "Equipo de seguridad",
+        "Fotografías del tour"
+      ],
+      "noIncluye": [
+        "Comida de mediodía",
+        "Propinas y gastos personales"
+      ],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "fotografía",
+        "cascadas turquesas",
+        "parejas",
+        "familias"
+      ],
+      "urgencia": "Favorito de fotógrafos — cupos limitados",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-minas-micos",
+      "slug": "paraiso-escalonado-minas-micos",
+      "nombre": "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
+      "tipo": "Cascadas & Bienestar",
+      "dificultad": "baja",
+      "duracionHrs": 8,
+      "duracionTexto": "8–10 h",
+      "precio": 1600,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 12,
+      "soloAdultos": false,
+      "privateAvailable": true,
+      "privateMinPrice": 8000,
+      "tagline": "Dos joyas naturales, un día perfecto para desconectar",
+      "pitch": "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
+      "url": "https://www.huasteca-potosina.com/tours/paraiso-escalonado-minas-micos",
+      "destinos": [
+        "Cascadas de Minas Viejas",
+        "Cascadas de Micos"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Entradas a todas las atracciones",
+        "Desayuno buffet",
+        "Guías especializados",
+        "Equipo de seguridad",
+        "Fotografías del tour"
+      ],
+      "noIncluye": [
+        "Comida de mediodía",
+        "Propinas y gastos personales"
+      ],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "familias con niños",
+        "relax",
+        "cascadas turquesas",
+        "ritmo tranquilo"
+      ],
+      "urgencia": "Ideal para familias — reserva con anticipación",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-puente-dios",
+      "slug": "ruta-acuatica-puente-de-dios",
+      "nombre": "Ruta Acuática — Puente de Dios, Hacienda & Siete Cascadas",
+      "tipo": "Aventura Acuática",
+      "dificultad": "media",
+      "duracionHrs": 10,
+      "duracionTexto": "8–10 h",
+      "precio": 1600,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 10,
+      "soloAdultos": false,
+      "privateAvailable": true,
+      "privateMinPrice": 8500,
+      "tagline": "El recorrido más refrescante y completo de la región",
+      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies, explora la Hacienda Los Gómez y desciende por las Siete Cascadas en secuencia. Las pozas cristalinas de Tamasopo esperan a quienes quieran prolongar la aventura.",
+      "url": "https://www.huasteca-potosina.com/tours/ruta-acuatica-puente-de-dios",
+      "destinos": [
+        "Puente de Dios",
+        "Hacienda Los Gómez",
+        "Siete Cascadas",
+        "Cascadas de Tamasopo (opcional)"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Entradas a todas las atracciones",
+        "Desayuno buffet",
+        "Guías especializados",
+        "Equipo de seguridad",
+        "Fotografías del tour"
+      ],
+      "noIncluye": [
+        "Comida de mediodía",
+        "Propinas y gastos personales"
+      ],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "aventura",
+        "amigos",
+        "nadar",
+        "cascadas"
+      ],
+      "urgencia": "El más completo — últimos lugares disponibles",
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-buceo-media-luna",
+      "slug": "buceo-media-luna",
+      "nombre": "Descubre el Buceo en la Laguna de la Media Luna — Tu Primera Inmersión con Instructor PADI",
+      "tipo": "Buceo & Naturaleza",
+      "dificultad": "baja",
+      "duracionHrs": 4,
+      "duracionTexto": "4 h",
+      "precio": 1300,
+      "precioUnidad": "persona",
+      "groupMin": 1,
+      "groupMax": 8,
+      "soloAdultos": true,
+      "privateAvailable": false,
+      "privateMinPrice": null,
+      "tagline": "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
+      "pitch": "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,200 MXN por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/buceo-media-luna",
+      "destinos": [
+        "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
+        "Orientación con instructor certificado PADI",
+        "Práctica de habilidades en aguas poco profundas",
+        "Inmersión de 5 a 10 metros por debajo de la superficie"
+      ],
+      "incluye": [
+        "Instructor certificado PADI",
+        "Equipo completo de buceo (SCUBA)",
+        "4 horas de capacitación y práctica",
+        "Fotografías digitales de tu inmersión",
+        "Inmersión guiada de 5 a 10 metros de profundidad"
+      ],
+      "noIncluye": [
+        "Transporte hasta la Laguna de la Media Luna (Rioverde)",
+        "Entrada al parque (se paga allá)",
+        "Traje de baño y toalla"
+      ],
+      "puntoEncuentro": "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 12:30 PM (~4 h). Los horarios exactos se confirman al reservar.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido"
+      ],
+      "idealPara": [
+        "primera vez buceando",
+        "mayores de 10 años",
+        "aventura acuática"
+      ],
+      "urgencia": "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
+      "rutas": null,
+      "flota": null
+    }
+  ],
+  "paquetes": [
+    {
+      "id": "aventura",
+      "slug": "aventura",
+      "nombre": "Paquete Aventura",
+      "subtitulo": "El mejor dúo de la región",
+      "duracion": "3 días / 2 noches",
+      "dias": 3,
+      "noches": 2,
+      "precio": 9000,
+      "precioLabel": "por pareja",
+      "badge": "Más popular",
+      "perfiles": [
+        "Amigos aventureros",
+        "Parejas activas",
+        "El clásico"
+      ],
+      "tours": [
+        "Cascadas del Meco — Turquesas, Mirador & El Gran Salto (Día 1)",
+        "Expedición Tamul — Sótano, Cañón & Cueva del Agua (Día 2)"
+      ],
+      "itinerario": [
+        {
+          "dia": 1,
+          "tipo": "tour",
+          "titulo": "Llegada + Cascadas del Meco",
+          "tourSlug": "cascadas-del-meco",
+          "descripcion": "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), te entregamos la habitación temprano para descansar y ese mismo día arrancamos con las cascadas turquesa de El Naranjo — un primer día suave y espectacular."
+        },
+        {
+          "dia": 2,
+          "tipo": "tour",
+          "titulo": "Expedición Tamul",
+          "tourSlug": "expedicion-tamul",
+          "descripcion": "El día más completo de aventura: ya descansado, salimos temprano para aprovechar la mejor luz y el caudal del río — mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua."
+        },
+        {
+          "dia": 3,
+          "tipo": "salida",
+          "titulo": "Salida",
+          "tourSlug": null,
+          "descripcion": "Desayuno, check-out y regreso a casa con la memoria llena de la Huasteca."
+        }
+      ],
+      "incluye": [
+        "2 noches en Hotel Paraíso Encantado Xilitla",
+        "Desayunos ambos días",
+        "Tour Expedición Tamul completo",
+        "Tour Cascadas del Meco completo",
+        "Transporte del hotel al inicio de cada tour y de regreso",
+        "Guías certificados NOM-09 SECTUR",
+        "Entradas a todas las atracciones"
+      ],
+      "noIncluye": [
+        "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
+        "Comidas y cenas (excepto desayunos)",
+        "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Propinas y gastos personales"
+      ],
+      "valor": [
+        {
+          "item": "2 noches hotel (2 pax)",
+          "precio": "$5,600"
+        },
+        {
+          "item": "Expedición Tamul",
+          "precio": "$2,900"
+        },
+        {
+          "item": "Cascadas del Meco",
+          "precio": "$3,200"
+        },
+        {
+          "item": "Transporte 2 días",
+          "precio": "$800"
+        },
+        {
+          "item": "Entradas + guías",
+          "precio": "$900"
+        }
+      ]
+    },
+    {
+      "id": "completo",
+      "slug": "completo",
+      "nombre": "Paquete Completo Huasteca",
+      "subtitulo": "La experiencia definitiva",
+      "duracion": "4 días / 3 noches",
+      "dias": 4,
+      "noches": 3,
+      "precio": 12200,
+      "precioLabel": "por pareja",
+      "badge": null,
+      "perfiles": [
+        "Familias",
+        "Grupos",
+        "Experiencia total"
+      ],
+      "tours": [
+        "Ruta Surrealista — Edward James (Día 1)",
+        "Expedición Tamul — Sótano & Cascada (Día 2)",
+        "Paraíso Escalonado o Ruta Acuática (Día 3)"
+      ],
+      "itinerario": [
+        {
+          "dia": 1,
+          "tipo": "tour",
+          "titulo": "Llegada + Ruta Surrealista (Edward James)",
+          "tourSlug": "ruta-surrealista-edward-james",
+          "descripcion": "Te recibimos y haces check-in en el hotel. Como Las Pozas está a minutos, ese mismo día visitamos el jardín surrealista de Edward James."
+        },
+        {
+          "dia": 2,
+          "tipo": "tour",
+          "titulo": "Expedición Tamul",
+          "tourSlug": "expedicion-tamul",
+          "descripcion": "El día grande: mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua."
+        },
+        {
+          "dia": 3,
+          "tipo": "tour",
+          "titulo": "Paraíso Escalonado (o Ruta Acuática, a elegir)",
+          "tourSlug": "paraiso-escalonado-minas-micos",
+          "descripcion": "Minas Viejas y Cascadas de Micos. Si prefieres, lo cambiamos por la Ruta Acuática del Puente de Dios."
+        },
+        {
+          "dia": 4,
+          "tipo": "salida",
+          "titulo": "Salida",
+          "tourSlug": null,
+          "descripcion": "Desayuno, check-out y regreso a casa con la memoria llena."
+        }
+      ],
+      "incluye": [
+        "3 noches en Hotel Paraíso Encantado Xilitla",
+        "Desayunos los 3 días",
+        "3 tours completos (a elegir)",
+        "Transporte del hotel al inicio de cada tour y de regreso",
+        "Guías certificados NOM-09 SECTUR",
+        "Entradas a todas las atracciones",
+        "Fotografías y video de cada recorrido"
+      ],
+      "noIncluye": [
+        "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
+        "Comidas y cenas (excepto desayunos)",
+        "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Propinas y gastos personales"
+      ],
+      "valor": [
+        {
+          "item": "3 noches hotel (2 pax)",
+          "precio": "$8,400"
+        },
+        {
+          "item": "3 tours completos",
+          "precio": "$5,800"
+        },
+        {
+          "item": "Transporte 3 días",
+          "precio": "$1,200"
+        },
+        {
+          "item": "Fotos + video profesional",
+          "precio": "$1,600"
+        },
+        {
+          "item": "Entradas + guías",
+          "precio": "$1,200"
+        }
+      ]
+    },
+    {
+      "id": "gran-huasteca",
+      "slug": "gran-huasteca",
+      "nombre": "Paquete Gran Huasteca",
+      "subtitulo": "Lo ves todo — la Huasteca completa",
+      "duracion": "5 días / 4 noches",
+      "dias": 5,
+      "noches": 4,
+      "precio": 15500,
+      "precioLabel": "por pareja",
+      "badge": "El más completo",
+      "perfiles": [
+        "Lo ven todo",
+        "Grupos",
+        "Experiencia total"
+      ],
+      "tours": [
+        "Ruta Surrealista — Edward James (Día 1)",
+        "Expedición Tamul — Sótano & Cascada (Día 2)",
+        "Cascadas del Meco — Turquesas (Día 3)",
+        "Ruta Acuática Puente de Dios (Día 4)"
+      ],
+      "itinerario": [
+        {
+          "dia": 1,
+          "tipo": "tour",
+          "titulo": "Llegada + Ruta Surrealista (Edward James)",
+          "tourSlug": "ruta-surrealista-edward-james",
+          "descripcion": "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), arrancamos ese mismo día con Las Pozas, a minutos del hotel."
+        },
+        {
+          "dia": 2,
+          "tipo": "tour",
+          "titulo": "Expedición Tamul",
+          "tourSlug": "expedicion-tamul",
+          "descripcion": "Mirador al Sótano de las Huahuas, Cascada de Tamul en lancha de remo y Cueva del Agua."
+        },
+        {
+          "dia": 3,
+          "tipo": "tour",
+          "titulo": "Cascadas del Meco",
+          "tourSlug": "cascadas-del-meco",
+          "descripcion": "Las cascadas turquesa de El Naranjo, miradores y pozas para nadar."
+        },
+        {
+          "dia": 4,
+          "tipo": "tour",
+          "titulo": "Ruta Acuática Puente de Dios",
+          "tourSlug": "ruta-acuatica-puente-de-dios",
+          "descripcion": "El arco de luz del Puente de Dios en Tamasopo, hacienda y siete cascadas."
+        },
+        {
+          "dia": 5,
+          "tipo": "salida",
+          "titulo": "Salida",
+          "tourSlug": null,
+          "descripcion": "Desayuno, check-out y regreso a casa con la memoria llena de la Huasteca completa."
+        }
+      ],
+      "incluye": [
+        "4 noches en Hotel Paraíso Encantado Xilitla",
+        "Desayunos los 4 días",
+        "4 tours completos (Edward James, Expedición Tamul, Cascadas del Meco y Ruta Acuática Puente de Dios)",
+        "Transporte del hotel al inicio de cada tour y de regreso",
+        "Guías certificados NOM-09 SECTUR",
+        "Entradas a todas las atracciones",
+        "Fotografías y video de cada recorrido"
+      ],
+      "noIncluye": [
+        "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
+        "Comidas y cenas (excepto desayunos)",
+        "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Propinas y gastos personales"
+      ],
+      "valor": [
+        {
+          "item": "4 noches hotel (2 pax)",
+          "precio": "$11,200"
+        },
+        {
+          "item": "4 tours completos",
+          "precio": "$7,700"
+        },
+        {
+          "item": "Transporte 4 días",
+          "precio": "$1,600"
+        },
+        {
+          "item": "Fotos + video profesional",
+          "precio": "$1,600"
+        },
+        {
+          "item": "Entradas + guías",
+          "precio": "$1,600"
+        }
+      ]
+    }
+  ],
+  "habitaciones": [
+    {
+      "nombre": "Orquídeas 2",
+      "vista": "Selva / jardín",
+      "suplemento": 0,
+      "descripcion": "Una de nuestras habitaciones más solicitadas: tranquila y rodeada de la vegetación del hotel.",
+      "url": "https://www.paraisoencantado.com/habitaciones/orquideas-2",
+      "hotelNombre": "Orquídeas 2"
+    },
+    {
+      "nombre": "Bromelias 1",
+      "vista": "Selva / jardín",
+      "suplemento": 0,
+      "descripcion": "Habitación cómoda con el ambiente selvático característico de Paraíso Encantado.",
+      "url": "https://www.paraisoencantado.com/habitaciones/bromelias",
+      "hotelNombre": "Bromelias"
+    },
+    {
+      "nombre": "Lirios 2",
+      "vista": "Selva / jardín",
+      "suplemento": 0,
+      "descripcion": "Espacio luminoso y acogedor para descansar después de un día de tours.",
+      "url": "https://www.paraisoencantado.com/habitaciones/lirios-2",
+      "hotelNombre": "Lirios 2"
+    },
+    {
+      "nombre": "Jungla",
+      "vista": "Montaña",
+      "suplemento": 400,
+      "descripcion": "Habitación con vista directa a la montaña — la favorita para despertar con el paisaje de la sierra.",
+      "url": "https://www.paraisoencantado.com/habitaciones/jungla",
+      "hotelNombre": "Jungla"
+    }
+  ],
+  "logistica": {
+    "nota": "Los horarios y tarifas de transporte público son aproximados y cambian por temporada — confírmalos al momento de reservar.",
+    "modos": [
+      {
+        "id": "auto",
+        "icon": "Car",
+        "titulo": "En auto",
+        "puntos": [
+          "Desde la Ciudad de México: ~5.5 horas (aprox. 339 km).",
+          "Desde la ciudad de San Luis Potosí: ~5 horas.",
+          "El acceso a Xilitla es carretera de sierra, con curvas cerradas y neblina: te recomendamos manejar de día, despacio y con el tanque lleno."
+        ]
+      },
+      {
+        "id": "avion",
+        "icon": "Plane",
+        "titulo": "En avión",
+        "puntos": [
+          "El aeropuerto más práctico es Tampico (TAM): ~2.5 h a Xilitla y ~2 h a Ciudad Valles.",
+          "Alternativas: San Luis Potosí (~5 h), Querétaro (vía Jalpan) o Ciudad de México / AIFA (más lejos).",
+          "Desde el aeropuerto conviene renta de auto o transfer privado, ya que los autobuses salen de las centrales urbanas, no de la terminal aérea."
+        ]
+      },
+      {
+        "id": "autobus",
+        "icon": "Bus",
+        "titulo": "En autobús",
+        "puntos": [
+          "Desde CDMX hay salida nocturna de la Terminal Central del Norte alrededor de las 10:15 PM (líneas Servicios Coordinados, Transportes Frontera y ETN).",
+          "Llega a Xilitla por la mañana (aprox. 6:30 AM); el trayecto dura ~9–10 h. Tarifa aproximada $520–$900 MXN por persona.",
+          "Si llegas en ese autobús de la mañana, podemos arrancar el primer tour ese mismo día."
+        ]
+      }
+    ],
+    "intra": "Ya en la zona, nuestro transporte te lleva del hotel al inicio de cada tour y de regreso. Como referencia: Xilitla está a ~40 min de Aquismón y ~1 h de Ciudad Valles; Ciudad Valles a ~50 min de Tamasopo."
+  },
+  "faqsPaquetes": [
+    {
+      "q": "¿El precio es por persona o por pareja?",
+      "a": "Los precios de los paquetes son por pareja (2 personas). Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
+    },
+    {
+      "q": "¿Cómo llego a Xilitla?",
+      "a": "Puedes llegar en auto, en avión (Tampico es el aeropuerto más práctico) o en autobús nocturno desde CDMX (Terminal Norte, ~10:15 PM, llega ~6:30 AM). En la sección 'Cómo llegar' arriba te explicamos cada opción a detalle."
+    },
+    {
+      "q": "¿Cómo llego a Xilitla desde CDMX?",
+      "a": "La forma más práctica es el autobús nocturno desde la Terminal Central del Norte (~10:15 PM, líneas Servicios Coordinados / ETN), que llega a Xilitla cerca de las 6:30 AM por unos $650 por persona. Un taxi de ~$60 te deja en el hotel en 7 minutos. Como llegas al amanecer, te entregamos la habitación temprano para descansar y ese mismo día arranca tu primer tour: no pierdes el Día 1."
+    },
+    {
+      "q": "¿Puedo elegir mi habitación?",
+      "a": "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la habitación Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche."
+    },
+    {
+      "q": "¿El precio incluye el traslado hasta Xilitla?",
+      "a": "No. El precio del paquete incluye el traslado del hotel al punto de inicio de cada tour y de regreso, pero no el traslado hasta Xilitla. Llegas por tu cuenta; en la sección 'Cómo llegar' te mostramos las opciones (auto, avión y autobús)."
+    },
+    {
+      "q": "¿Cómo confirman la disponibilidad?",
+      "a": "Al enviarnos tu consulta por WhatsApp verificamos la disponibilidad del hotel y las fechas en tiempo real. Te respondemos en menos de 1 hora y no necesitas pago anticipado para apartar."
+    }
+  ],
+  "destinos": [
+    {
+      "slug": "las-pozas-jardin-surrealista",
+      "nombre": "Las Pozas (Jardín Surrealista)",
+      "zona": "Xilitla",
+      "tipo": "Arte & Naturaleza",
+      "descripcion": "El icónico jardín surrealista de Edward James: esculturas de concreto entre cascadas y selva tropical.",
+      "precioEntrada": "$180 MXN",
+      "dificultad": "media",
+      "duracionHrs": 4,
+      "horario": "09:00–18:00",
+      "diasAbierto": "Miércoles a Lunes (cerrado martes)",
+      "mejorHora": "09:00–11:00",
+      "temporadaIdeal": "Nov–Mar",
+      "comoLlegar": "1h 45min desde Valles · Taxi $1,200 · Bus $110",
+      "queLlevar": [
+        "calzado antiderrapante",
+        "repelente biodegradable"
+      ],
+      "advertencias": "Comprar ticket digital antes. Cerrado martes.",
+      "datosCuriosos": [
+        "Fue plantación de orquídeas",
+        "Edward James nunca vivió en las estructuras"
+      ],
+      "erroresComunes": [
+        "Llegar sin reservación",
+        "Calzado liso"
+      ],
+      "idealPara": [
+        "fotografia",
+        "pareja",
+        "solo",
+        "cultura"
+      ]
+    },
+    {
+      "slug": "cascada-de-tamul",
+      "nombre": "Cascada de Tamul",
+      "zona": "Aquismón",
+      "tipo": "Aventura",
+      "descripcion": "La cascada más alta de SLP (105m), accesible remando por el río Tampaón. Espectacular caída turquesa.",
+      "precioEntrada": "$220 MXN + $300 panga p/p",
+      "dificultad": "alta",
+      "duracionHrs": 5,
+      "horario": "08:00–17:00",
+      "diasAbierto": "Lun-Dom",
+      "mejorHora": "08:00",
+      "temporadaIdeal": "Ene–Abr",
+      "comoLlegar": "45 min desde Valles → Tanchachín + lancha",
+      "queLlevar": [
+        "chaleco salvavidas",
+        "aqua shoes",
+        "agua 2L"
+      ],
+      "advertencias": "Lancheros dejan de salir a las 2 PM. SOLO EFECTIVO.",
+      "datosCuriosos": [
+        "105m de caída",
+        "En octubre: agua turquesa + follaje naranja"
+      ],
+      "erroresComunes": [
+        "Llegar tarde",
+        "No llevar efectivo"
+      ],
+      "idealPara": [
+        "aventura",
+        "fotografia",
+        "amigos"
+      ]
+    },
+    {
+      "slug": "sotano-de-las-golondrinas",
+      "nombre": "Sótano de las Golondrinas",
+      "zona": "Aquismón",
+      "tipo": "Extrema",
+      "descripcion": "Abismo kárstico de 376 m de caída libre (hasta 512 m de profundidad). Santuario de vencejos con vuelo espiral al amanecer.",
+      "precioEntrada": "$100 MXN",
+      "dificultad": "media",
+      "duracionHrs": 3,
+      "horario": "06:00–18:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "05:45 AM",
+      "temporadaIdeal": "Nov–Mar",
+      "comoLlegar": "1h 15min desde Valles por sierra",
+      "queLlevar": [
+        "chamarra",
+        "lámpara",
+        "calzado tenis"
+      ],
+      "advertencias": "568 escalones para bajar; subida AGOTADORA.",
+      "datosCuriosos": [
+        "Las aves son VENCEJOS, no golondrinas",
+        "Fondo = 3 campos de fútbol"
+      ],
+      "erroresComunes": [
+        "Llegar a las 9 AM cuando aves ya salieron"
+      ],
+      "idealPara": [
+        "fotografia",
+        "naturaleza",
+        "solo"
+      ]
+    },
+    {
+      "slug": "cascadas-de-micos",
+      "nombre": "Cascadas de Micos",
+      "zona": "Ciudad Valles",
+      "tipo": "Aventura",
+      "descripcion": "Serie de 7 cascadas con circuito de saltos, tirolesa, kayak y skybike.",
+      "precioEntrada": "$100 MXN",
+      "dificultad": "media",
+      "duracionHrs": 4,
+      "horario": "08:00–18:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "09:00 AM",
+      "temporadaIdeal": "Todo el año",
+      "comoLlegar": "20 min desde Valles · Combis $35 MXN c/30 min",
+      "queLlevar": [
+        "aqua shoes",
+        "ropa dry-fit"
+      ],
+      "advertencias": "Chaleco y casco OBLIGATORIO.",
+      "datosCuriosos": [
+        "El río más versátil de la zona"
+      ],
+      "erroresComunes": [
+        "No ajustar bien el chaleco"
+      ],
+      "idealPara": [
+        "amigos",
+        "aventura"
+      ]
+    },
+    {
+      "slug": "puente-de-dios-tamasopo",
+      "nombre": "Puente de Dios (Tamasopo)",
+      "zona": "Tamasopo",
+      "tipo": "Naturaleza",
+      "descripcion": "Poza azul cobalto bajo puente natural. La luz entra a la cueva entre 11:00–13:00.",
+      "precioEntrada": "$150 MXN",
+      "dificultad": "media",
+      "duracionHrs": 3.5,
+      "horario": "08:00–17:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "11:00–13:00",
+      "temporadaIdeal": "Ene–May",
+      "comoLlegar": "1h desde Valles por autopista a SLP",
+      "queLlevar": [
+        "aqua shoes OBLIGATORIOS",
+        "chaleco"
+      ],
+      "advertencias": "Corrientes fuertes; seguir cuerda de seguridad.",
+      "datosCuriosos": [
+        "Efecto de luz en la cueva único en México"
+      ],
+      "erroresComunes": [
+        "No usar aqua shoes (piedras MUY resbalosas)"
+      ],
+      "idealPara": [
+        "pareja",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "zona-arqueologica-tamtoc",
+      "nombre": "Zona Arqueológica Tamtoc",
+      "zona": "Tamuín",
+      "tipo": "Arqueología",
+      "descripcion": "El asentamiento prehispánico más importante de la cultura Huasteca.",
+      "precioEntrada": "Domingos gratis (mexicanos) · extranjeros ~$95",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "09:00–18:00",
+      "diasAbierto": "Solo domingos",
+      "mejorHora": "09:00 AM",
+      "temporadaIdeal": "Dic–Feb",
+      "comoLlegar": "45 min desde Valles",
+      "queLlevar": [
+        "sombrero",
+        "agua abundante",
+        "protector solar"
+      ],
+      "advertencias": "IMPORTANTE: tras las lluvias de 2024 reabrió y por ahora SOLO abre los DOMINGOS de 9:00 a 18:00 (último acceso 17:00). Confirma con el Centro INAH SLP (444 813 4831). Poca sombra; puede superar 45°C en mayo.",
+      "datosCuriosos": [
+        "Monumento 32 pesa 30 toneladas"
+      ],
+      "erroresComunes": [
+        "No llevar agua",
+        "Ir sin guía"
+      ],
+      "idealPara": [
+        "historia",
+        "cultura",
+        "familia"
+      ]
+    },
+    {
+      "slug": "cascadas-de-tamasopo",
+      "nombre": "Cascadas de Tamasopo",
+      "zona": "Tamasopo",
+      "tipo": "Naturaleza",
+      "descripcion": "Paraíso de agua azul turquesa con pozas para nadar, ideal para familias.",
+      "precioEntrada": "$60 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 4,
+      "horario": "08:00–17:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "10:00–14:00",
+      "temporadaIdeal": "Nov–May",
+      "comoLlegar": "45 min desde Valles por autopista",
+      "queLlevar": [
+        "traje de baño",
+        "bloqueador biodegradable"
+      ],
+      "advertencias": "SOLO bloqueador biodegradable.",
+      "datosCuriosos": [
+        "Las pozas cambian de color según la estación"
+      ],
+      "erroresComunes": [
+        "Usar bloqueador químico"
+      ],
+      "idealPara": [
+        "familia",
+        "relajacion",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "siete-cascadas-tamasopo",
+      "nombre": "Siete Cascadas de Tamasopo",
+      "zona": "Tamasopo",
+      "tipo": "Naturaleza & Aventura",
+      "descripcion": "Escalera natural de siete cascadas turquesas en secuencia, donde se salta de poza en poza con chaleco, casco y guía. Hay saltos para todos los niveles — y quien no quiere saltar disfruta nadando en las pozas cristalinas.",
+      "precioEntrada": "Se visita con guía y equipo (chaleco/casco) — consultar tarifa",
+      "dificultad": "media",
+      "duracionHrs": 3,
+      "horario": "Visita de día con guía",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Media mañana",
+      "temporadaIdeal": "Todo el año; mayor caudal en temporada de lluvias",
+      "comoLlegar": "En Tamasopo, junto a la ruta del Puente de Dios (~1 h de Ciudad Valles por la autopista a San Luis Potosí)",
+      "queLlevar": [
+        "calzado acuático (obligatorio)",
+        "traje de baño",
+        "cambio de ropa seca",
+        "efectivo",
+        "bloqueador biodegradable"
+      ],
+      "advertencias": "Los saltos se hacen SIEMPRE con chaleco, casco y guía. Rocas resbalosas: calzado acuático obligatorio. Quien no quiera saltar puede disfrutar nadando. Coordenadas aproximadas — verificar GPS antes de ir.",
+      "datosCuriosos": [
+        "Son siete caídas en secuencia que se recorren saltando de poza en poza.",
+        "Suele combinarse con el Puente de Dios y la Hacienda Los Gómez en la Ruta Acuática de Tamasopo."
+      ],
+      "erroresComunes": [
+        "Intentar los saltos sin guía o sin equipo",
+        "Ir con calzado liso"
+      ],
+      "idealPara": [
+        "aventura",
+        "natacion",
+        "familia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "hacienda-los-gomez-tamasopo",
+      "nombre": "Hacienda Los Gómez",
+      "zona": "Tamasopo",
+      "tipo": "Naturaleza",
+      "descripcion": "Paraje natural de Tamasopo a orillas del río, con pequeñas cascadas, pozas de agua turquesa y grandes sabinos que dan sombra; un rincón tranquilo para nadar y descansar, parte de la Ruta Acuática del Puente de Dios.",
+      "precioEntrada": "Consultar acceso localmente",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "Visita de día",
+      "diasAbierto": "Consultar localmente",
+      "mejorHora": "Tarde (luz dorada entre los árboles)",
+      "temporadaIdeal": "Todo el año; mayor caudal en temporada de lluvias",
+      "comoLlegar": "En Tamasopo, dentro de la Ruta Acuática del Puente de Dios (~1 h de Ciudad Valles por la autopista a San Luis Potosí)",
+      "queLlevar": [
+        "traje de baño",
+        "calzado acuático",
+        "toalla",
+        "efectivo",
+        "bloqueador biodegradable"
+      ],
+      "advertencias": "Es un paraje natural con infraestructura sencilla; los datos de acceso y tarifa se confirman localmente. Rocas resbalosas cerca del agua. Coordenadas aproximadas — verificar GPS antes de ir.",
+      "datosCuriosos": [
+        "Grandes sabinos (ahuehuetes) dan sombra a las pozas y crecen dentro del agua.",
+        "Suele visitarse junto al Puente de Dios y las Siete Cascadas en la Ruta Acuática de Tamasopo."
+      ],
+      "erroresComunes": [
+        "Ir sin confirmar acceso y horario localmente",
+        "Olvidar el calzado acuático"
+      ],
+      "idealPara": [
+        "natacion",
+        "relajacion",
+        "familia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "balneario-taninul",
+      "nombre": "Balneario Taninul",
+      "zona": "Ciudad Valles",
+      "tipo": "Naturaleza",
+      "descripcion": "Aguas termales sulfurosas (36°C constante) y lodo terapéutico.",
+      "precioEntrada": "$150 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 4,
+      "horario": "07:00–20:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "08:00 o 18:00",
+      "temporadaIdeal": "Dic–Ene",
+      "comoLlegar": "15 min desde Valles",
+      "queLlevar": [
+        "traje de baño",
+        "sandalias",
+        "toalla"
+      ],
+      "advertencias": "NO llevar joyería de plata (azufre la oscurece).",
+      "datosCuriosos": [
+        "Agua mantiene 36°C constante todo el año"
+      ],
+      "erroresComunes": [
+        "Llevar joyería de plata"
+      ],
+      "idealPara": [
+        "familia",
+        "pareja",
+        "relajacion"
+      ]
+    },
+    {
+      "slug": "cascadas-minas-viejas",
+      "nombre": "Cascadas de Minas Viejas",
+      "zona": "El Naranjo",
+      "tipo": "Aventura",
+      "descripcion": "Dos caídas gemelas de 50 m con pozas color turquesa rodeadas de selva preservada.",
+      "precioEntrada": "$100 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 4,
+      "horario": "08:00–18:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "08:00–10:00",
+      "temporadaIdeal": "Oct–May",
+      "comoLlegar": "105 min desde Valles · Carretera 70 norte → desvío El Naranjo por Carr. 80",
+      "queLlevar": [
+        "calzado acuático o tenis que puedan mojarse",
+        "bloqueador solar biodegradable (obligatorio)",
+        "cambio de ropa seca",
+        "efectivo (sin cajero en la zona)",
+        "repelente natural"
+      ],
+      "advertencias": "Respetar las zonas de nado señalizadas — hay corrientes fuertes en el canal central. El camino de acceso puede ser lodoso en temporada de lluvias. Solo efectivo.",
+      "datosCuriosos": [
+        "Consideradas de las cascadas con el agua más azul de toda la región por alta concentración de minerales kársticos.",
+        "El nombre viene de una antigua explotación minera del siglo XIX en el ejido."
+      ],
+      "erroresComunes": [
+        "Llegar sin efectivo",
+        "Ir en temporada de lluvias sin verificar acceso"
+      ],
+      "idealPara": [
+        "natacion",
+        "aventura",
+        "familia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "laguna-media-luna",
+      "nombre": "Manantial de la Media Luna",
+      "zona": "Rioverde",
+      "tipo": "Bienestar",
+      "descripcion": "Manantial de aguas frescas y cristalinas de un azul intenso — uno de los mejores destinos de buceo y snorkel en agua dulce de México.",
+      "precioEntrada": "$150 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 6,
+      "horario": "08:00–18:30",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "09:00–11:00",
+      "temporadaIdeal": "Todo el año",
+      "comoLlegar": "120 min desde Valles · Carretera 70 poniente hasta Rioverde → señales al Ejido El Jabalí",
+      "queLlevar": [
+        "equipo de snorkel (o rentar en sitio)",
+        "traje de baño",
+        "toalla",
+        "googles de natación",
+        "efectivo"
+      ],
+      "advertencias": "No tocar el fondo para no levantar sedimentos. Chaleco salvavidas obligatorio para no-buceadores. Bloqueador no biodegradable estrictamente prohibido.",
+      "datosCuriosos": [
+        "El nombre 'Media Luna' viene de la forma semicircular perfecta del espejo de agua.",
+        "Es uno de los pocos lugares de México donde puedes hacer tu primera inmersión de buceo en agua dulce cristalina."
+      ],
+      "erroresComunes": [
+        "No reservar en temporada alta (cupo limitado)",
+        "Llevar bloqueador químico"
+      ],
+      "idealPara": [
+        "buceo",
+        "snorkel",
+        "fotografia",
+        "pareja"
+      ]
+    },
+    {
+      "slug": "cascada-el-aguacate",
+      "nombre": "Cascada El Aguacate",
+      "zona": "Tamasopo",
+      "tipo": "Aventura",
+      "descripcion": "Caída de ~75 m entre cañones de selva densa — la segunda cascada más alta de la Huasteca y uno de los secretos mejor guardados de Tamasopo.",
+      "precioEntrada": "$50 MXN",
+      "dificultad": "media",
+      "duracionHrs": 3,
+      "horario": "09:00–17:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "15:00–16:30",
+      "temporadaIdeal": "Dic–Abr",
+      "comoLlegar": "75 min desde Valles · Autopista a SLP → Tamasopo → Ejido El Aguacate (~3 km al norte del pueblo)",
+      "queLlevar": [
+        "calzado de montaña con suela de agarre (obligatorio)",
+        "bastones de trekking (recomendado)",
+        "agua suficiente para 4 horas",
+        "repelente natural",
+        "bloqueador biodegradable"
+      ],
+      "advertencias": "Senderos resbaladizos — especialmente en el descenso hacia la poza. Sin señal de celular en toda la ruta. Guía local obligatorio. Coordenadas aproximadas — verificar GPS antes de ir.",
+      "datosCuriosos": [
+        "Es la segunda cascada más alta de la Huasteca (~75 m), solo después de Tamul, y de las menos documentadas de Tamasopo.",
+        "Los guías locales la llaman 'la cascada que los turistas aún no descubrieron'."
+      ],
+      "erroresComunes": [
+        "No contratar guía local",
+        "Ir con calzado inadecuado"
+      ],
+      "idealPara": [
+        "senderismo",
+        "fotografia",
+        "naturaleza",
+        "aventura"
+      ]
+    },
+    {
+      "slug": "cascada-el-salto",
+      "nombre": "Cascada El Salto",
+      "zona": "El Naranjo",
+      "tipo": "Naturaleza",
+      "descripcion": "Pared de roca kárstica de 70 m con pozas turquesas permanentes — con o sin cascada es espectacular.",
+      "precioEntrada": "$50 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "08:00–17:30",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana temprana",
+      "temporadaIdeal": "Sep–Oct (cascada activa) · pozas todo el año",
+      "comoLlegar": "110 min desde Valles · Desde El Naranjo, carretera hacia Ciudad del Maíz · 8 km pavimentado",
+      "queLlevar": [
+        "calzado acuático — piso muy resbaladizo",
+        "ropa ligera y traje de baño",
+        "protección solar",
+        "comida (sin restaurantes en el sitio)",
+        "efectivo"
+      ],
+      "advertencias": "Piso extremadamente resbaladizo en las pozas — accidentes frecuentes sin calzado adecuado. La cascada principal puede estar completamente seca la mayor parte del año.",
+      "datosCuriosos": [
+        "El flujo se desvía artificialmente hacia una planta hidroeléctrica — por eso la cascada 'desaparece' en temporada seca.",
+        "En septiembre de 2024, las lluvias excepcionales la activaron por 3 semanas continuas."
+      ],
+      "erroresComunes": [
+        "Ir esperando ver la cascada sin verificar antes",
+        "No llevar calzado antiderrapante"
+      ],
+      "idealPara": [
+        "natacion",
+        "fotografia",
+        "familia"
+      ]
+    },
+    {
+      "slug": "cascada-el-meco",
+      "nombre": "Cascada El Meco",
+      "zona": "El Naranjo",
+      "tipo": "Aventura",
+      "descripcion": "Cascada constante de 35 m sobre roca caliza — la única de El Naranjo que cae todo el año.",
+      "precioEntrada": "$60 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "08:00–18:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "17:00–18:00",
+      "temporadaIdeal": "Nov–May",
+      "comoLlegar": "105 min desde Valles · Desde El Naranjo, 5 km señalizados hasta el embarcadero",
+      "queLlevar": [
+        "cámara o teléfono con funda impermeable",
+        "repelente natural",
+        "ropa cómoda",
+        "efectivo para panga y restaurantes"
+      ],
+      "advertencias": "Corrientes fuertes en el centro del río — no nadar fuera de las zonas permitidas. La panga no opera si el río está crecido.",
+      "datosCuriosos": [
+        "Su nombre proviene de los monos 'mecos' (monos araña) que habitaban la zona antes de la deforestación del siglo XX.",
+        "Es la única cascada permanente del municipio de El Naranjo — cae todo el año sin importar la temporada."
+      ],
+      "erroresComunes": [
+        "Ir sin efectivo para la panga (~$150 MXN)",
+        "No preguntar si la panga opera ese día"
+      ],
+      "idealPara": [
+        "fotografia",
+        "familia",
+        "pareja"
+      ]
+    },
+    {
+      "slug": "sotano-de-las-huahuas",
+      "nombre": "Sótano de las Huahuas",
+      "zona": "Aquismón",
+      "tipo": "Extrema",
+      "descripcion": "Abismo de 478 m donde miles de loros y vencejos dibujan espirales al amanecer y atardecer.",
+      "precioEntrada": "$60 MXN",
+      "dificultad": "media",
+      "duracionHrs": 3,
+      "horario": "06:00–19:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "17:30–18:30",
+      "temporadaIdeal": "Mar–Oct",
+      "comoLlegar": "75 min desde Valles · Carretera 85 sur → desvío San Pedro de las Anonas · Terracería final",
+      "queLlevar": [
+        "lámpara de mano o frontal",
+        "calzado de montaña con agarre",
+        "binoculares",
+        "cámara con teleobjetivo",
+        "agua y snacks",
+        "ropa abrigadora para el amanecer"
+      ],
+      "advertencias": "Caminata de subida intensa — no apta para personas con problemas de rodillas. No acercarse al borde sin guía. Sin señal de celular en todo el trayecto.",
+      "datosCuriosos": [
+        "Con 478 metros de profundidad, es uno de los abismos kársticos más profundos de México.",
+        "Los lugareños llaman 'huahuas' a los loros verdes en lengua Tének — de ahí el nombre."
+      ],
+      "erroresComunes": [
+        "Llegar tarde sin tiempo para ver el vuelo",
+        "No llevar guía — el borde no tiene barandales"
+      ],
+      "idealPara": [
+        "fotografia",
+        "naturaleza",
+        "aventura"
+      ]
+    },
+    {
+      "slug": "cuevas-de-mantetzulel",
+      "nombre": "Cuevas de Mantetzulel",
+      "zona": "Aquismón",
+      "tipo": "Naturaleza",
+      "descripcion": "Cuatro cuevas sagradas con techos colapsados — la luz entra desde arriba como columnas sólidas.",
+      "precioEntrada": "$70 MXN",
+      "dificultad": "media",
+      "duracionHrs": 4,
+      "horario": "09:00–17:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "11:00–13:00",
+      "temporadaIdeal": "Oct–May",
+      "comoLlegar": "70 min desde Valles · Desde Aquismón, 12 km hacia comunidad Mantetzulel · Últimos 5 km terracería",
+      "queLlevar": [
+        "calzado con suela antideslizante (obligatorio)",
+        "linterna o frontal",
+        "repelente natural",
+        "ropa que no importe ensuciar",
+        "agua para 4 horas"
+      ],
+      "advertencias": "Senderos muy resbaladizos después de lluvia — posponer si hubo lluvia reciente. Sin señal de celular. Guía comunitario obligatorio. Coordenadas aproximadas — verificar GPS antes de ir.",
+      "datosCuriosos": [
+        "Los habitantes Tének consideran estas cuevas como portales de curación — aún se realizan ceremonias tradicionales.",
+        "La Cueva del Espíritu Santo no es un túnel: es una bóveda abierta al cielo con 30 metros de altura."
+      ],
+      "erroresComunes": [
+        "Ir sin guía comunitario",
+        "Visitar después de lluvia reciente (senderos peligrosos)"
+      ],
+      "idealPara": [
+        "fotografia",
+        "cultura",
+        "naturaleza"
+      ]
+    },
+    {
+      "slug": "nacimiento-huichihuayan",
+      "nombre": "Nacimiento de Huichihuayán",
+      "zona": "Xilitla",
+      "tipo": "Naturaleza",
+      "descripcion": "Río cristalino que nace de una cueva — tan claro que se ven los peces en el fondo desde la orilla.",
+      "precioEntrada": "$30 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "08:30–18:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "15:00–17:00",
+      "temporadaIdeal": "Todo el año",
+      "comoLlegar": "80 min desde Valles · Carretera 85 sur hacia Tamazunchale · Desvío a Huehuetlán",
+      "queLlevar": [
+        "traje de baño",
+        "sandalias acuáticas",
+        "alimentos (opciones limitadas en el sitio)",
+        "googles de natación"
+      ],
+      "advertencias": "Hay zonas profundas cerca del nacimiento — precaución con niños. Destino poco documentado — verificar condiciones antes de ir.",
+      "datosCuriosos": [
+        "Huichihuayán es uno de los pueblos más activos en la preservación de la danza de los Voladores de Palo.",
+        "El agua es tan cristalina que la comunidad local la usa directamente para consumo humano."
+      ],
+      "erroresComunes": [
+        "No preguntar en el pueblo sobre la danza de Voladores",
+        "No llevar googles para ver los peces"
+      ],
+      "idealPara": [
+        "natacion",
+        "familia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "nacimiento-tambaque",
+      "nombre": "Nacimiento de Tambaque",
+      "zona": "Aquismón",
+      "tipo": "Naturaleza",
+      "descripcion": "Oasis donde el río Coy brota de la Sierra de Tanchanaco en pozas de azul cristalino, con corriente casi nula.",
+      "precioEntrada": "$10 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "09:00–18:00",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "09:00–11:00",
+      "temporadaIdeal": "Oct–May",
+      "comoLlegar": "55 min desde Valles · Carretera 85 sur → Crucero San Pedro de las Anonas · 100% pavimentado",
+      "queLlevar": [
+        "aquashoes o calzado acuático",
+        "efectivo en denominaciones bajas (sin cajero ni terminal)",
+        "comida propia (opciones solo fines de semana)",
+        "protector solar biodegradable",
+        "repelente natural"
+      ],
+      "advertencias": "Temperatura del agua muy fría (nace de acuífero subterráneo) — choque térmico si entras rápido. Piso resbaladizo dentro del agua — calzado acuático obligatorio. Estacionamiento $30 MXN adicional.",
+      "datosCuriosos": [
+        "En 1950 el nacimiento se secó completamente. El 10 de mayo de 1951, tras una gran tormenta, brotó con tal fuerza que llenó el balneario en una sola noche — los locales lo recuerdan como 'el milagro de Tambaque'.",
+        "Tambaque significa 'lugar de agua bajita' en lengua Tének, referencia a la poca profundidad de sus pozas."
+      ],
+      "erroresComunes": [
+        "No llevar calzado acuático (piso con algas muy resbaladizo)",
+        "Entrar al agua rápido sin aclimatarse (choque térmico)"
+      ],
+      "idealPara": [
+        "natacion",
+        "familia",
+        "relajacion"
+      ]
+    },
+    {
+      "slug": "voladores-tamaleton",
+      "nombre": "Voladores de Tamaletón",
+      "zona": "Tancanhuitz",
+      "tipo": "Arte & Cultura",
+      "descripcion": "El ritual prehispánico más antiguo de la Huasteca — 5 hombres vuelan desde un mástil de 30 m en honor al sol.",
+      "precioEntrada": "$100 MXN",
+      "dificultad": "baja",
+      "duracionHrs": 4,
+      "horario": "09:00–17:00",
+      "diasAbierto": "Jueves a Domingo (mayor actividad) · Lun-Mié menor actividad",
+      "mejorHora": "11:30–13:30",
+      "temporadaIdeal": "Dic–Feb",
+      "comoLlegar": "52 min desde Valles · Carretera 85 sur → Crucero Aquismón → Tancanhuitz → Centro Ceremonial",
+      "queLlevar": [
+        "efectivo (sin cajeros en Tamaletón)",
+        "ropa cómoda para calor",
+        "cámara fotográfica",
+        "agua suficiente",
+        "respeto y disposición para el silencio durante los rezos"
+      ],
+      "advertencias": "El vuelo se cancela con lluvia o viento — no garantizado para visitantes individuales sin grupo de 30+. Sin señal telefónica en la parte alta de Tamaletón. No conducir de noche hacia Tancanhuitz.",
+      "datosCuriosos": [
+        "El ritual suma exactamente 52 vueltas (13 × 4 danzantes) — el número del 'Siglo Indígena' o ciclo del Fuego Nuevo mesoamericano.",
+        "Bajudh (Jacinta) fue la primera mujer en convertirse en voladora oficial de Tamaletón, rompiendo siglos de prohibición."
+      ],
+      "erroresComunes": [
+        "Llegar esperando vuelo garantizado sin grupo previo",
+        "No llevar efectivo"
+      ],
+      "idealPara": [
+        "cultura",
+        "fotografia",
+        "historia"
+      ]
+    },
+    {
+      "slug": "rio-tampaon-rafting",
+      "nombre": "Río Tampaón — Rafting Clase III",
+      "zona": "Aquismón",
+      "tipo": "Aventura",
+      "descripcion": "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
+      "precioEntrada": "$1,850 MXN (tour completo, con traslado y comida)",
+      "dificultad": "media",
+      "duracionHrs": 7,
+      "horario": "09:00–18:00",
+      "diasAbierto": "Lunes a Domingo (reservación requerida)",
+      "mejorHora": "11:00–13:00",
+      "temporadaIdeal": "Nov–Mar",
+      "comoLlegar": "45 min desde Valles · Carretera 70 → desvío Ejido Tanchachín · Últimos 18 km terracería transitable",
+      "queLlevar": [
+        "calcetines de algodón dentro del calzado acuático (evitan ampollas)",
+        "doble muda de ropa seca en el vehículo",
+        "bloqueador 100% biodegradable (obligatorio)",
+        "GoPro con soporte de pecho o casco únicamente",
+        "medicamentos propios"
+      ],
+      "advertencias": "Nunca navegar por cuenta propia en jul-ago — crecidas repentinas de varios metros en minutos. Guías NO pueden suministrar medicamentos — llevar los propios. Solo efectivo en Tanchachín.",
+      "datosCuriosos": [
+        "El agua turquesa proviene de la alta concentración de minerales kársticos en el lecho — el mismo mecanismo que colorea las cascadas de Tamul.",
+        "El rápido 'La Tumba' ocurre donde las paredes del cañón se cierran tanto que el eco desaparece — el silencio absoluto antes del rápido más técnico del descenso."
+      ],
+      "erroresComunes": [
+        "Ir sin reservación en temporada alta",
+        "Llevar bloqueador convencional (prohibido y multa)"
+      ],
+      "idealPara": [
+        "aventura",
+        "amigos",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "xilitla-pueblo-magico",
+      "nombre": "Xilitla — Pueblo Mágico Surrealista",
+      "zona": "Xilitla",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Donde el concreto cobra vida y la selva se vuelve geométrica — Las Pozas de Edward James y 3 museos de clase mundial.",
+      "precioEntrada": "$180 MXN (Las Pozas adulto)",
+      "dificultad": "media",
+      "duracionHrs": 8,
+      "horario": "09:00–18:00",
+      "diasAbierto": "Miércoles a Lunes — Las Pozas CIERRA los martes",
+      "mejorHora": "08:30–10:00",
+      "temporadaIdeal": "Nov–Mar",
+      "comoLlegar": "90 min desde Valles · Carretera 85 sur → desvío Carr. 120 hacia Xilitla · 100% pavimentado",
+      "queLlevar": [
+        "calzado suela de goma con tracción profunda (trail running)",
+        "ropa oscura o colores tierra (musgo mancha permanentemente)",
+        "efectivo suficiente (cajeros pueden vaciarse)",
+        "reservación anticipada de Las Pozas",
+        "paraguas o impermeable ligero"
+      ],
+      "advertencias": "No manejar hacia Xilitla después de las 18:00 — carreteras sin iluminación y neblina densa. Cajeros pueden quedarse sin fondos en puentes. Reservación hasta 60 días antes en temporada alta. Guía obligatorio en Las Pozas (+$30 MXN).",
+      "datosCuriosos": [
+        "La helada de 1962 mató miles de orquídeas de Edward James — decidió construir flores de concreto que 'nunca morirían'. De ahí nacieron Las Pozas.",
+        "Edward James financió a Salvador Dalí y René Magritte, y mantuvo correspondencia con Frank Lloyd Wright — influencias visibles en la escala y fantasía de Las Pozas."
+      ],
+      "erroresComunes": [
+        "Llegar martes (Las Pozas CERRADO — error muy frecuente)",
+        "No reservar con anticipación en temporada alta"
+      ],
+      "idealPara": [
+        "cultura",
+        "fotografia",
+        "pareja"
+      ]
+    },
+    {
+      "slug": "aquismon-pueblo-magico",
+      "nombre": "Aquismón — Pueblo Mágico",
+      "zona": "Aquismón",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Pueblo Mágico de mayoría tének y puerta de entrada a Tamul, los sótanos y el río Tampaón. Su Parroquia de San Miguel Arcángel se levanta sobre un basamento huasteco.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "Abierto todo el día",
+      "diasAbierto": "Lunes a Domingo (tianguis los sábados)",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Oct–Mar",
+      "comoLlegar": "~1 h desde Ciudad Valles (~55 km al sur) por la Carr. 85",
+      "queLlevar": [
+        "efectivo",
+        "sombrero",
+        "calzado cómodo",
+        "cámara"
+      ],
+      "advertencias": "El pueblo es la base; los grandes atractivos (Tamul, Sótano de las Golondrinas y de las Huahuas, Cueva del Agua) están a varios km y requieren transporte, guía o lancha aparte.",
+      "datosCuriosos": [
+        "Nombrado Pueblo Mágico el 11 de octubre de 2018, el tercero de San Luis Potosí.",
+        "Su nombre tének significa 'árbol al pie de un pozo'."
+      ],
+      "erroresComunes": [
+        "Creer que Tamul o las cuevas están en el pueblo (están a varios km)",
+        "No confirmar el día del tianguis"
+      ],
+      "idealPara": [
+        "cultura",
+        "fotografia",
+        "familia"
+      ]
+    },
+    {
+      "slug": "rio-axtla-el-chalan",
+      "nombre": "Río Axtla y 'el Chalán'",
+      "zona": "Axtla de Terrazas",
+      "tipo": "Naturaleza",
+      "descripcion": "Río de aguas cristalinas con pozas para nadar, cuyo emblema es 'el chalán': una vieja balsa de fierro que cruza el río jalada a mano desde hace más de 50 años.",
+      "precioEntrada": "Acceso libre (cruce en chalán: cuota simbólica)",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "Visita de día",
+      "diasAbierto": "Lunes a Domingo (tianguis dominicales en la ribera)",
+      "mejorHora": "Media mañana",
+      "temporadaIdeal": "Mar–Jun (aguas claras)",
+      "comoLlegar": "~1h 30 desde Ciudad Valles (~82 km) por la federal 85 sur; desde el centro de Axtla, ~15 min al río",
+      "queLlevar": [
+        "traje de baño",
+        "sandalias acuáticas",
+        "efectivo",
+        "bloqueador biodegradable"
+      ],
+      "advertencias": "En temporada de lluvias (~jun–oct) el río crece y se vuelve peligroso: evita nadar con el río crecido. Sin horarios ni precios oficiales; confirma con turismo municipal.",
+      "datosCuriosos": [
+        "El 'chalán' de fierro opera desde hace más de 50 años y es símbolo de Axtla.",
+        "El río se forma por la unión de los ríos Huichihuayán y Tancuilín."
+      ],
+      "erroresComunes": [
+        "Nadar con el río crecido",
+        "No llevar efectivo para el chalán"
+      ],
+      "idealPara": [
+        "natacion",
+        "familia",
+        "relajacion"
+      ]
+    },
+    {
+      "slug": "castillo-de-la-salud",
+      "nombre": "Castillo de la Salud 'Beto Ramón'",
+      "zona": "Axtla de Terrazas",
+      "tipo": "Bienestar",
+      "descripcion": "Recinto surrealista de medicina tradicional construido en 1974 por el herbolario náhuatl Don Beto Ramón, con un jardín de cientos de plantas medicinales y espacios para limpias y consultas.",
+      "precioEntrada": "$20 general / $10 niños y adultos mayores (guiada $30/$20)",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "08:00–18:00 (limpias y masajes hasta las 16:00)",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Todo el año",
+      "comoLlegar": "~1h 30 desde Ciudad Valles (~83 km); el castillo está a ~4 km de la plaza de Axtla, en Aguacatitla. Desde Xilitla, ~25 km",
+      "queLlevar": [
+        "efectivo",
+        "calzado cómodo",
+        "cámara",
+        "agua"
+      ],
+      "advertencias": "Es medicina tradicional y herbolaria, NO una clínica certificada: no sustituye la atención médica profesional. Confirma precios y horarios antes de ir. Tramo final por caminos rurales.",
+      "datosCuriosos": [
+        "Su arquitectura mezcla simbolismo náhuatl con pasajes bíblicos (Torre de Babel, Arca de Noé, Ojo de Dios).",
+        "Don Beto Ramón falleció en 2004 y dejó más de 150 fórmulas de herbolaria que aún se usan."
+      ],
+      "erroresComunes": [
+        "Tomarlo como sustituto de un médico",
+        "No confirmar horario de limpias y masajes"
+      ],
+      "idealPara": [
+        "bienestar",
+        "cultura",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "cascada-los-comales",
+      "nombre": "Cascada Los Comales",
+      "zona": "Xilitla",
+      "tipo": "Naturaleza",
+      "descripcion": "Cascada de aguas semicálidas entre selva tropical, a unos pasos de la entrada de Las Pozas, con pozas para nadar y temazcal medicinal.",
+      "precioEntrada": "Cuota local (~$20 MXN, confirmar en sitio)",
+      "dificultad": "media",
+      "duracionHrs": 2,
+      "horario": "Visita de día",
+      "diasAbierto": "Cierra martes (igual que Las Pozas)",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Nov–May",
+      "comoLlegar": "~1h 45min desde Ciudad Valles por la Carr. 120 a Xilitla; la cascada está junto a la entrada de Las Pozas",
+      "queLlevar": [
+        "traje de baño",
+        "calzado antiderrapante",
+        "repelente biodegradable",
+        "efectivo"
+      ],
+      "advertencias": "Se suele visitar el mismo día que Las Pozas (está a ~50 m de su entrada). Senderos resbalosos en lluvia. El temazcal requiere reservación. Precio y horarios no publicados oficialmente: confirma por teléfono.",
+      "datosCuriosos": [
+        "Está a unos 50 m de la entrada de Las Pozas: muchos la visitan el mismo día.",
+        "Su temazcal de uso medicinal recibe grupos pequeños (cupo limitado)."
+      ],
+      "erroresComunes": [
+        "Ir en martes (zona de Las Pozas con cierres)",
+        "No llevar efectivo"
+      ],
+      "idealPara": [
+        "naturaleza",
+        "fotografia",
+        "bienestar"
+      ]
+    },
+    {
+      "slug": "cascada-el-trampolin-tamasopo",
+      "nombre": "El Trampolín (Tamasopo)",
+      "zona": "Tamasopo",
+      "tipo": "Naturaleza",
+      "descripcion": "Tramo público y gratuito del río Agua Buena, con agua turquesa, mini cascadas, pozas y cuerdas en los árboles para lanzarse al agua.",
+      "precioEntrada": "Acceso libre (posible cuota de estacionamiento)",
+      "dificultad": "media",
+      "duracionHrs": 3,
+      "horario": "Visita de día (sin horario formal)",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Media mañana",
+      "temporadaIdeal": "Nov–May",
+      "comoLlegar": "~1 h–1h 15 desde Ciudad Valles; ~4–5 km del centro de Tamasopo por la carretera a Agua Buena",
+      "queLlevar": [
+        "traje de baño",
+        "calzado acuático",
+        "chaleco salvavidas",
+        "efectivo"
+      ],
+      "advertencias": "Es DISTINTO del parque de pago 'Cascadas de Tamasopo'. Sin vigilancia formal: verifica la profundidad antes de saltar. Terreno lodoso y resbaloso. Usa chaleco.",
+      "datosCuriosos": [
+        "Es un tramo gratuito del río Agua Buena, no el parque de pago de las Cascadas de Tamasopo.",
+        "El paraje se extiende unos 2 km a lo largo del río."
+      ],
+      "erroresComunes": [
+        "Confundirlo con el parque de pago de Tamasopo",
+        "Saltar sin medir la profundidad"
+      ],
+      "idealPara": [
+        "natacion",
+        "aventura",
+        "amigos"
+      ]
+    },
+    {
+      "slug": "zona-arqueologica-tamohi-el-consuelo",
+      "nombre": "Zona Arqueológica Tamohí (El Consuelo)",
+      "zona": "Tamuín",
+      "tipo": "Arqueología",
+      "descripcion": "Centro huasteco prehispánico de ~210 hectáreas a orillas del río Tampaón, con plataformas y basamentos. Aquí se halló en 1917 'El Adolescente Huasteco'.",
+      "precioEntrada": "Acceso libre (uso de videocámara $45)",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "09:00–18:00 (último acceso 17:00)",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "09:00 AM",
+      "temporadaIdeal": "Nov–Mar",
+      "comoLlegar": "~40–50 min desde Ciudad Valles por la federal 70 hacia El Consuelo (sitio a ~5.75 km de la carretera)",
+      "queLlevar": [
+        "sombrero",
+        "agua abundante",
+        "protector solar",
+        "calzado cómodo"
+      ],
+      "advertencias": "El 'Adolescente Huasteco' original NO está en el sitio: se exhibe en el Museo Nacional de Antropología (CDMX). Clima caluroso y húmedo; menos equipado que Tamtoc.",
+      "datosCuriosos": [
+        "'Tamohí' significa 'lugar de la efervescencia' en tének; es un sitio DISTINTO de Tamtoc.",
+        "Aquí se descubrió en 1917 'El Adolescente Huasteco', hoy en el Museo Nacional de Antropología."
+      ],
+      "erroresComunes": [
+        "Confundirlo con Tamtoc",
+        "Esperar ver el 'Adolescente' original en el sitio"
+      ],
+      "idealPara": [
+        "historia",
+        "cultura",
+        "familia"
+      ]
+    },
+    {
+      "slug": "templo-san-juan-bautista-coxcatlan",
+      "nombre": "Templo de San Juan Bautista (Coxcatlán)",
+      "zona": "Coxcatlán",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Templo y ex convento del siglo XVI, considerado uno de los más antiguos de la Huasteca Potosina, frente a la plaza principal de Coxcatlán.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 1,
+      "horario": "Abierto todo el día (templo en uso)",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Todo el año (más animado en Xantolo, 1–2 nov)",
+      "comoLlegar": "~1.5–2 h al sur de Ciudad Valles; en el centro de la cabecera de Coxcatlán, frente a la plaza",
+      "queLlevar": [
+        "calzado cómodo",
+        "cámara",
+        "efectivo"
+      ],
+      "advertencias": "Las fechas de construcción (1522–1523) provienen de tradición local y prensa, no de cédula INAH verificada. Horarios de visita no publicados: confirma localmente.",
+      "datosCuriosos": [
+        "Se le considera una de las construcciones religiosas más antiguas de la Huasteca Potosina.",
+        "Su construcción habría usado piedra unida con mezcla que incluía conchas marinas molidas."
+      ],
+      "erroresComunes": [
+        "Dar por hecho horarios de visita",
+        "Ir esperando un museo (es templo en uso)"
+      ],
+      "idealPara": [
+        "cultura",
+        "historia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "cascada-rancho-el-zapote-poza-azul-coxcatlan",
+      "nombre": "Cascada del Rancho El Zapote (Poza Azul)",
+      "zona": "Coxcatlán",
+      "tipo": "Naturaleza",
+      "descripcion": "Cascada y poza de aguas turquesa conocida localmente como 'poza azul', uno de los rincones naturales menos masificados de la Huasteca Potosina.",
+      "precioEntrada": "Sin tarifa oficial publicada (confirmar en sitio)",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "Visita de día (sin horario formal)",
+      "diasAbierto": "Consultar localmente",
+      "mejorHora": "Media mañana",
+      "temporadaIdeal": "Secas (el agua se enturbia con las lluvias)",
+      "comoLlegar": "A ~11 min de la cabecera de Coxcatlán, que está ~1.5–2 h al sur de Ciudad Valles",
+      "queLlevar": [
+        "traje de baño",
+        "calzado acuático",
+        "efectivo",
+        "agua"
+      ],
+      "advertencias": "Sitio poco documentado: precio, horario y ubicación exacta no verificados oficialmente. El acceso puede ser por rancho privado; confirma localmente.",
+      "datosCuriosos": [
+        "El estado la promociona por su 'vibrante color turquesa' y por estar a solo ~11 min de la cabecera."
+      ],
+      "erroresComunes": [
+        "Confundirla con la Poza de Rosendo (otro sitio)",
+        "Ir en lluvias (agua turbia)"
+      ],
+      "idealPara": [
+        "natacion",
+        "naturaleza",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "ruinas-de-el-jopoy-coxcatlan",
+      "nombre": "Ruinas de El Jopoy",
+      "zona": "Coxcatlán",
+      "tipo": "Arqueología",
+      "descripcion": "Restos de una ermita colonial de muros de piedra y grandes arcos, señalada como una de las primeras construcciones religiosas españolas de la Huasteca Potosina; hoy en ruinas y usada como panteón comunitario.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 1,
+      "horario": "Acceso libre (sin horario formal)",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Cobra vida el 1–2 de noviembre (Día de Muertos)",
+      "comoLlegar": "A ~8.4 km de la cabecera de Coxcatlán (localidad El Jopoy); Coxcatlán está ~1.5–2 h al sur de Ciudad Valles",
+      "queLlevar": [
+        "calzado de campo",
+        "agua",
+        "efectivo",
+        "respeto (es panteón)"
+      ],
+      "advertencias": "Sitio abandonado, sin techo y en deterioro, que funciona como cementerio: respeta el lugar. Autoría y fechas (atribuidas a Cortés, 1522–23) provienen de prensa y tradición, no de cédula INAH. Camino rural; conviene guía local.",
+      "datosCuriosos": [
+        "Se le señala como una de las primeras ermitas de la Huasteca Potosina.",
+        "El INAH realizó exploraciones preliminares hacia 2009."
+      ],
+      "erroresComunes": [
+        "Faltar al respeto (es cementerio activo)",
+        "Ir sin guía local"
+      ],
+      "idealPara": [
+        "historia",
+        "cultura"
+      ]
+    },
+    {
+      "slug": "tancanhuitz",
+      "nombre": "Tancanhuitz (Ciudad Santos)",
+      "zona": "Tancanhuitz",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Cabecera tének-nahua célebre por su parroquia de San Miguel Arcángel, a la que se sube por una larga escalinata (la 'Iglesia de los 149 Escalones'), y por su fuerte tradición de Xantolo, huapango y danzas indígenas.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "Abierto todo el día",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Xantolo (fin oct–inicio nov) y fiesta de San Miguel (25–29 sep)",
+      "comoLlegar": "~50–55 min al sur de Ciudad Valles (~54–56 km)",
+      "queLlevar": [
+        "calzado cómodo",
+        "agua",
+        "cámara",
+        "efectivo"
+      ],
+      "advertencias": "La experiencia cultural alcanza su pico en fechas específicas; fuera de ellas el pueblo es tranquilo. El '149' es el nombre tradicional de la escalinata, no un conteo medido. Carreteras de montaña.",
+      "datosCuriosos": [
+        "Su parroquia se popularizó como la 'Iglesia de los 149 Escalones'.",
+        "Forma parte de la Ruta Xantolo de la Huasteca Potosina."
+      ],
+      "erroresComunes": [
+        "Ir fuera de temporada esperando las danzas",
+        "Subestimar la escalinata"
+      ],
+      "idealPara": [
+        "cultura",
+        "historia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "san-martin-chalchicuautla",
+      "nombre": "San Martín Chalchicuautla",
+      "zona": "San Martín Chalchicuautla",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Municipio conocido como la 'Cuna del Xantolo', donde el Día de Muertos se vive con hondas raíces nahuas del 31 de octubre al 2 de noviembre. Cerca está la Cascada del Manantial.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "Abierto todo el día",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Xantolo: 31 oct–2 nov",
+      "comoLlegar": "~26 km (30–35 min) desde Tamazunchale; desde Ciudad Valles ~1.5–2 h pasando por Tamazunchale",
+      "queLlevar": [
+        "calzado cómodo",
+        "cámara",
+        "efectivo",
+        "agua"
+      ],
+      "advertencias": "La experiencia alcanza su máximo en el Xantolo; fuera de esas fechas el pueblo es tranquilo. Datos de la Cascada del Manantial (costo, horario, acceso) no verificados. Carretera de montaña.",
+      "datosCuriosos": [
+        "Reconocido como la 'Cuna del Xantolo' potosino: comparsas de 'viejos' enmascarados bailan huapango.",
+        "Su gastronomía de temporada incluye zacahuil, bocoles y queso de bola."
+      ],
+      "erroresComunes": [
+        "Visitar fuera del Xantolo esperando las comparsas",
+        "Dar por segura la apertura de la cascada"
+      ],
+      "idealPara": [
+        "cultura",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "san-vicente-tancuayalab",
+      "nombre": "San Vicente Tancuayalab",
+      "zona": "San Vicente Tancuayalab",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Pueblo huasteco reconocido como 'cuna del Día de Muertos' en San Luis Potosí, fundado por misioneros franciscanos en el siglo XVI cerca del río Moctezuma.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "Abierto todo el día",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Xantolo / Día de Muertos (fin oct–2 nov)",
+      "comoLlegar": "~1h 12 en auto desde Ciudad Valles (~70 km)",
+      "queLlevar": [
+        "calzado cómodo",
+        "cámara",
+        "efectivo",
+        "agua"
+      ],
+      "advertencias": "La experiencia cultural alcanza su pico en el Xantolo; fuera de esas fechas el pueblo es tranquilo.",
+      "datosCuriosos": [
+        "'Tancuayalab' significa en huasteco 'lugar del bastón de mando'.",
+        "Se fundó como 'San Francisco Tancuayalab' en el siglo XVI y se trasladó a su ubicación actual en 1767."
+      ],
+      "erroresComunes": [
+        "Ir fuera del Xantolo esperando las festividades",
+        "Subestimar el calor"
+      ],
+      "idealPara": [
+        "cultura",
+        "historia"
+      ]
+    },
+    {
+      "slug": "tanlajas",
+      "nombre": "Tanlajás",
+      "zona": "Tanlajás",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Pueblo de raíces tének conocido por su gastronomía regional (zacahuiles, bocoles, cecina) y por la 'Toreada de los Diablos', un ritual ancestral en el que enmascarados con cuernos y pieles recrean la lucha entre el bien y el mal.",
+      "precioEntrada": "Acceso libre",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "Abierto todo el día",
+      "diasAbierto": "Lunes a Domingo",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Semana Santa (Toreada de los Diablos) y fiesta de Santa Ana (25–26 jul)",
+      "comoLlegar": "~49–50 km (50–60 min) al sureste de Ciudad Valles",
+      "queLlevar": [
+        "calzado cómodo",
+        "efectivo",
+        "cámara",
+        "apetito (gastronomía local)"
+      ],
+      "advertencias": "La 'Toreada de los Diablos' se celebra en SEMANA SANTA (no en Día de Muertos). Para vivir el ritual hay que ir en esas fechas; incluye latigazos reales de cuero crudo.",
+      "datosCuriosos": [
+        "Su nombre tének significa 'lugar de lajas' (piedras planas).",
+        "En la Toreada los 'diablos' usan máscaras de madera talladas a mano y un chirrión (látigo de cuero)."
+      ],
+      "erroresComunes": [
+        "Ir esperando la Toreada en Día de Muertos (es Semana Santa)"
+      ],
+      "idealPara": [
+        "cultura",
+        "gastronomia",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "texquitote",
+      "nombre": "Texquitote — cuna del son huasteco",
+      "zona": "Matlapa",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Comunidad nahua reconocida como la cuna de la laudería del son huasteco, donde alrededor de 40 lauderos construyen a mano jaranas, quintas huapangueras, violines, conchas de armadillo y arpas.",
+      "precioEntrada": "Acceso libre (visitar talleres puede requerir acuerdo con el artesano)",
+      "dificultad": "baja",
+      "duracionHrs": 3,
+      "horario": "Talleres particulares (sin horario formal)",
+      "diasAbierto": "Contactar a un laudero por anticipado",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Época seca (nov–abr) para los caminos rurales",
+      "comoLlegar": "~20–30 min desde Tamazunchale (hub más cercano); desde Ciudad Valles ~2.5–3 h al sur por la federal 85 hasta Matlapa",
+      "queLlevar": [
+        "efectivo",
+        "calzado de campo",
+        "cámara",
+        "respeto por la comunidad"
+      ],
+      "advertencias": "Es una comunidad indígena habitada, no un atractivo montado: llega con respeto y contacta a un laudero por anticipado. Caminos finales de terracería. Hay dos localidades homónimas (Primero y Segundo): confirma el destino.",
+      "datosCuriosos": [
+        "En Texquitote se originó la 'quinta huapanguera', la guitarra de cinco cuerdas del huapango huasteco.",
+        "Las conchas para el son aún se elaboran con caparazón de armadillo."
+      ],
+      "erroresComunes": [
+        "Llegar sin contactar a un laudero",
+        "Confundir Texquitote Primero con Segundo"
+      ],
+      "idealPara": [
+        "cultura",
+        "musica",
+        "artesania"
+      ]
+    },
+    {
+      "slug": "laguna-de-los-suspiros",
+      "nombre": "Laguna de los Suspiros",
+      "zona": "Ébano",
+      "tipo": "Naturaleza",
+      "descripcion": "Laguna en el ejido de Plan de Iguala cuyo emblema es un majestuoso higuerón (ficus) de unos 200 años, cuyas enormes raíces forman dos 'puertas' naturales.",
+      "precioEntrada": "Sin tarifa oficial publicada",
+      "dificultad": "baja",
+      "duracionHrs": 2,
+      "horario": "Visita de día (sin horario formal)",
+      "diasAbierto": "Consultar localmente",
+      "mejorHora": "Mañana o atardecer",
+      "temporadaIdeal": "Consultar (el nivel del agua varía con la sequía)",
+      "comoLlegar": "~1h 20–1h 45 desde Ciudad Valles vía Tamuín y Ébano (~70–75 km); en el ejido Plan de Iguala",
+      "queLlevar": [
+        "repelente",
+        "agua",
+        "cámara",
+        "efectivo"
+      ],
+      "advertencias": "Sitio rústico de turismo incipiente, sin servicios formales verificados. El nivel del agua de las lagunas de Ébano baja con la sequía. No confundir con la Laguna Marland (otra laguna de Ébano).",
+      "datosCuriosos": [
+        "Su higuerón tiene unos 200 años y sus raíces forman dos grandes 'puertas' naturales, su rasgo más fotografiado.",
+        "La Secretaría de Turismo de SLP ha promovido la laguna como opción de paseo."
+      ],
+      "erroresComunes": [
+        "Esperar servicios turísticos formales",
+        "Confundirla con la Laguna Marland"
+      ],
+      "idealPara": [
+        "naturaleza",
+        "fotografia",
+        "familia"
+      ]
+    },
+    {
+      "slug": "la-trinidad-xilitla",
+      "nombre": "La Trinidad — Bosque de Niebla de Xilitla",
+      "zona": "Xilitla",
+      "tipo": "Naturaleza & Bosque",
+      "descripcion": "Comunidad náhuatl a unos 14 km de Xilitla, enclavada en uno de los bosques de niebla mejor conservados de la Huasteca (pino-encino, ~1,950 m). Tiene cabañas de madera para parejas y grupos, zona para acampar, fogatas y asadores, además de senderos para caminar a miradores, pozas, cuevas y sótanos.",
+      "precioEntrada": "$100 MXN por persona (entrada); cabañas para parejas y grupos desde $700 hasta $2,500 aparte",
+      "dificultad": "media",
+      "duracionHrs": 6,
+      "horario": "Visita y recorridos durante el día (reservar con la comunidad)",
+      "diasAbierto": "Todo el año (reservar por anticipado)",
+      "mejorHora": "Amanecer (para la niebla)",
+      "temporadaIdeal": "Todo el año; la niebla es más densa en lluvias (jun–oct)",
+      "comoLlegar": "~14 km al oeste de Xilitla (8.7 km en línea recta); entre 45 minutos y 1 hora por camino de sierra que asciende a ~1,950 m. El tramo final es una subida muy empinada y de terracería quebrada, así que conviene un auto con buena altura libre (que no sea muy bajo).",
+      "queLlevar": [
+        "abrigo (arriba hace frío)",
+        "calzado de senderismo",
+        "comida para asar (hay fogatas y asadores)",
+        "cámara",
+        "efectivo"
+      ],
+      "advertencias": "La subida es muy empinada y hay tramos de terracería quebrada: se recomienda un vehículo que no sea muy bajo, para que no pegue. Maneja de día. Arriba hace frío (es bosque de niebla): lleva abrigo aunque en Xilitla haga calor. Es una comunidad habitada; llega con respeto y reserva por anticipado.",
+      "datosCuriosos": [
+        "Es una comunidad náhuatl de unos 96 habitantes en lo alto de la Sierra Gorda.",
+        "Hay cabañas de madera para parejas y grupos (aprox. $700 a $2,500), zona para acampar, fogatas y asadores donde puedes asar tu comida.",
+        "El bosque alberga osos hormigueros de monte, coatíes, pavas cojolitas y madroños enormes."
+      ],
+      "erroresComunes": [
+        "Subir en un auto muy bajo (la terracería quebrada y la pendiente lo raspan)",
+        "Subestimar el frío y la humedad del bosque de niebla",
+        "Llegar sin reservar la cabaña o el campamento"
+      ],
+      "idealPara": [
+        "naturaleza",
+        "senderismo",
+        "familia",
+        "camping"
+      ]
+    },
+    {
+      "slug": "olla-de-la-luz",
+      "nombre": "Olla de la Luz — Cerro de la Luz",
+      "zona": "Xilitla",
+      "tipo": "Naturaleza & Sótano",
+      "descripcion": "Enorme sótano de unos 800 m de diámetro con un tiro vertical de más de 120 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
+      "precioEntrada": "Recorrido guiado desde La Trinidad (~$150–$250 MXN por grupo)",
+      "dificultad": "media",
+      "duracionHrs": 5,
+      "horario": "Recorridos durante el día (con guía de La Trinidad)",
+      "diasAbierto": "Todo el año (reservar por anticipado)",
+      "mejorHora": "Media mañana",
+      "temporadaIdeal": "Época seca (nov–may) para los caminos del bosque",
+      "comoLlegar": "A unos 5 km de La Trinidad (que está a ~14 km de Xilitla), subiendo hacia el Cerro de la Luz; el acceso final es a pie con guía de la comunidad",
+      "queLlevar": [
+        "calzado de senderismo",
+        "abrigo o impermeable",
+        "agua y snacks",
+        "cámara",
+        "efectivo"
+      ],
+      "advertencias": "Es indispensable ir con guía local de La Trinidad — no se puede llegar por cuenta propia. Requiere caminata por el bosque de niebla en altura (1,950–2,300 m). Es un abismo profundo: no te acerques al borde sin guía.",
+      "datosCuriosos": [
+        "El Cerro de la Luz que lo corona es el punto más alto del municipio de Xilitla, con elevaciones de hasta ~2,300 m.",
+        "El sótano mide cerca de 800 m de diámetro y su tiro vertical supera los 120 m."
+      ],
+      "erroresComunes": [
+        "Intentar llegar sin guía local",
+        "No considerar la altitud y el frío del bosque de niebla"
+      ],
+      "idealPara": [
+        "naturaleza",
+        "senderismo",
+        "aventura",
+        "fotografia"
+      ]
+    },
+    {
+      "slug": "cueva-del-salitre",
+      "nombre": "Cueva del Salitre — Xilitla",
+      "zona": "Xilitla",
+      "tipo": "Cueva & Aventura",
+      "descripcion": "Caverna escondida entre la selva de Xilitla, de unos 100 m de boca por 300 m de fondo. Sus paredes son un destino popular de espeleología, rappel y escalada (cinco rutas equipadas), a pocos minutos del centro del Pueblo Mágico.",
+      "precioEntrada": "$50 MXN por persona (entrada propia del sitio)",
+      "dificultad": "media",
+      "duracionHrs": 2,
+      "horario": "Horario diurno (consultar en el acceso)",
+      "diasAbierto": "Todo el año (puede inundarse en lluvias)",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Época seca (nov–may); en lluvias suele filtrarse agua e inundarse",
+      "comoLlegar": "Desde el centro de Xilitla por la carretera federal 120 rumbo a Huichihuayán, a pocos minutos del pueblo. El sitio ya cuenta con su propia entrada (acceso especial), con un sendero corto de unos 10 minutos hasta la cueva.",
+      "queLlevar": [
+        "lámpara o frontal",
+        "calzado cerrado con agarre",
+        "ropa que se pueda ensuciar",
+        "efectivo",
+        "agua"
+      ],
+      "advertencias": "En temporada de lluvias la cueva puede inundarse por filtraciones. La espeleología, el rappel y la escalada requieren equipo y guía; no entres a las zonas técnicas sin experiencia.",
+      "datosCuriosos": [
+        "Su nombre viene de la humedad ('salitre') que escurre por sus paredes.",
+        "Tiene cinco rutas de escalada equipadas, favoritas de los escaladores de la región."
+      ],
+      "erroresComunes": [
+        "Visitarla en plena temporada de lluvias (riesgo de inundación)",
+        "Entrar a las zonas técnicas sin equipo ni guía"
+      ],
+      "idealPara": [
+        "aventura",
+        "espeleologia",
+        "escalada",
+        "amigos"
+      ]
+    },
+    {
+      "slug": "museo-leonora-carrington-xilitla",
+      "nombre": "Museo Leonora Carrington — Xilitla",
+      "zona": "Xilitla",
+      "tipo": "Arte & Cultura",
+      "descripcion": "Museo dedicado a la artista surrealista Leonora Carrington, amiga de Edward James, en pleno centro de Xilitla. Exhibe escultura, litografía y dibujo de la autora, además de un espacio de difusión del surrealismo.",
+      "precioEntrada": "General $50 MXN · estudiantes, maestros y adultos mayores con credencial $25 · menores de 12 años gratis",
+      "dificultad": "baja",
+      "duracionHrs": 1,
+      "horario": "Martes a domingo, 11:00–17:00 (último acceso 16:30)",
+      "diasAbierto": "Martes a domingo (cerrado lunes)",
+      "mejorHora": "Mañana",
+      "temporadaIdeal": "Todo el año",
+      "comoLlegar": "En el centro de Xilitla, calle Corregidora #103, a pasos de la plaza principal; se llega a pie desde cualquier punto del Pueblo Mágico",
+      "queLlevar": [
+        "cámara",
+        "efectivo",
+        "calzado cómodo"
+      ],
+      "advertencias": "No confundir con el Museo Leonora Carrington de la ciudad de San Luis Potosí (Centro de las Artes): son dos museos distintos. Se combina muy bien con Las Pozas de Edward James el mismo día.",
+      "datosCuriosos": [
+        "Leonora Carrington (1917–2011) fue una de las grandes figuras del surrealismo y amiga de Edward James, creador de Las Pozas.",
+        "Visitar el museo y Las Pozas el mismo día es la combinación surrealista clásica de Xilitla."
+      ],
+      "erroresComunes": [
+        "Confundirlo con el Museo Leonora Carrington de la ciudad de San Luis Potosí",
+        "Llegar en lunes, cuando suele estar cerrado"
+      ],
+      "idealPara": [
+        "cultura",
+        "arte",
+        "familia",
+        "pareja"
+      ]
+    }
+  ],
+  "destinoTour": {
+    "cascada-de-tamul": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      },
+      {
+        "nombre": "Rappel en Tamul",
+        "slug": "rappel-tamul"
+      }
+    ],
+    "sotano-de-las-huahuas": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      }
+    ],
+    "sotano-de-las-golondrinas": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      }
+    ],
+    "rio-tampaon-rafting": [
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      },
+      {
+        "nombre": "Rappel en Tamul",
+        "slug": "rappel-tamul"
+      }
+    ],
+    "las-pozas-jardin-surrealista": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "xilitla-pueblo-magico": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      },
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      }
+    ],
+    "nacimiento-huichihuayan": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      },
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      }
+    ],
+    "la-trinidad-xilitla": [
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      }
+    ],
+    "puente-de-dios-tamasopo": [
+      {
+        "nombre": "Ruta Acuática",
+        "slug": "ruta-acuatica-puente-de-dios"
+      }
+    ],
+    "cascadas-de-tamasopo": [
+      {
+        "nombre": "Ruta Acuática",
+        "slug": "ruta-acuatica-puente-de-dios"
+      }
+    ],
+    "siete-cascadas-tamasopo": [
+      {
+        "nombre": "Ruta Acuática",
+        "slug": "ruta-acuatica-puente-de-dios"
+      }
+    ],
+    "hacienda-los-gomez-tamasopo": [
+      {
+        "nombre": "Ruta Acuática",
+        "slug": "ruta-acuatica-puente-de-dios"
+      }
+    ],
+    "cascada-el-meco": [
+      {
+        "nombre": "Cascadas del Meco",
+        "slug": "cascadas-del-meco"
+      }
+    ],
+    "cascada-el-salto": [
+      {
+        "nombre": "Cascadas del Meco",
+        "slug": "cascadas-del-meco"
+      }
+    ],
+    "cascadas-minas-viejas": [
+      {
+        "nombre": "Paraíso Escalonado",
+        "slug": "paraiso-escalonado-minas-micos"
+      }
+    ],
+    "cascadas-de-micos": [
+      {
+        "nombre": "Paraíso Escalonado",
+        "slug": "paraiso-escalonado-minas-micos"
+      }
+    ],
+    "laguna-media-luna": [
+      {
+        "nombre": "Descubre el Buceo",
+        "slug": "buceo-media-luna"
+      }
+    ],
+    "castillo-de-la-salud": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ]
+  },
+  "destinoTourCerca": {
+    "nacimiento-tambaque": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      },
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      }
+    ],
+    "cuevas-de-mantetzulel": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      }
+    ],
+    "aquismon-pueblo-magico": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      },
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      }
+    ],
+    "las-pozas-jardin-surrealista": [
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      }
+    ],
+    "cascada-los-comales": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      },
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      }
+    ],
+    "olla-de-la-luz": [
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      },
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "cueva-del-salitre": [
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      },
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "museo-leonora-carrington-xilitla": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      },
+      {
+        "nombre": "RZR por Xilitla",
+        "slug": "rzr-xilitla"
+      }
+    ],
+    "cascada-el-aguacate": [
+      {
+        "nombre": "Ruta Acuática",
+        "slug": "ruta-acuatica-puente-de-dios"
+      }
+    ],
+    "cascada-el-trampolin-tamasopo": [
+      {
+        "nombre": "Ruta Acuática",
+        "slug": "ruta-acuatica-puente-de-dios"
+      }
+    ],
+    "balneario-taninul": [
+      {
+        "nombre": "Paraíso Escalonado",
+        "slug": "paraiso-escalonado-minas-micos"
+      },
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      }
+    ],
+    "zona-arqueologica-tamtoc": [
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      },
+      {
+        "nombre": "Paraíso Escalonado",
+        "slug": "paraiso-escalonado-minas-micos"
+      }
+    ],
+    "zona-arqueologica-tamohi-el-consuelo": [
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      },
+      {
+        "nombre": "Paraíso Escalonado",
+        "slug": "paraiso-escalonado-minas-micos"
+      }
+    ],
+    "rio-axtla-el-chalan": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "voladores-tamaleton": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "tancanhuitz": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "texquitote": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "san-martin-chalchicuautla": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "templo-san-juan-bautista-coxcatlan": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "cascada-rancho-el-zapote-poza-azul-coxcatlan": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "ruinas-de-el-jopoy-coxcatlan": [
+      {
+        "nombre": "Ruta Surrealista",
+        "slug": "ruta-surrealista-edward-james"
+      }
+    ],
+    "san-vicente-tancuayalab": [
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      }
+    ],
+    "tanlajas": [
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      }
+    ],
+    "laguna-de-los-suspiros": [
+      {
+        "nombre": "Rafting en el Tampaón",
+        "slug": "rafting-rio-tampaon"
+      }
+    ]
+  },
+  "info": {
+    "empresa": "Tours Huasteca Potosina",
+    "sitio": "https://www.huasteca-potosina.com",
+    "zonas": [
+      "Aquismón",
+      "Axtla de Terrazas",
+      "Ciudad Valles",
+      "Coxcatlán",
+      "El Naranjo",
+      "Matlapa",
+      "Rioverde",
+      "San Martín Chalchicuautla",
+      "San Vicente Tancuayalab",
+      "Tamasopo",
+      "Tamuín",
+      "Tancanhuitz",
+      "Tanlajás",
+      "Xilitla",
+      "Ébano"
+    ],
+    "incluyeSiempre": [
+      "Seguro de viaje para todos los integrantes",
+      "Fotografías y video del recorrido"
+    ],
+    "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
+    "mejorTemporada": "La temporada seca (noviembre a abril) suele tener el agua más turquesa y los caminos en mejores condiciones. En lluvias (jul–sep) algunos ríos crecen y ciertas salidas (rafting) dependen del nivel del agua.",
+    "salida": "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",
+    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
+    "cancelacion": "Cancela gratis hasta 48 h antes.",
+    "pagoTours": "Los tours cobrados por persona se pagan con tarjeta en línea (confirmación instantánea) o por transferencia (cotización con folio). El RZR (por vehículo) y los paquetes se confirman por WhatsApp con el equipo.",
+    "pagoEntradas": "Si visitas los destinos por tu cuenta, la entrada suele ser SOLO EFECTIVO y muchos sitios no tienen cajero cerca.",
+    "paquetes": "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio es por pareja (2 personas)."
+  }
+}

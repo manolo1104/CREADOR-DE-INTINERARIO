@@ -11,7 +11,15 @@ function getSession(phone) {
 
 function pushHistory(phone, role, content) {
   const s = getSession(phone);
-  s.history.push({ role, content });
+  const last = s.history[s.history.length - 1];
+  // Fusiona mensajes de texto consecutivos del mismo rol para mantener la
+  // alternancia que exige la API (útil cuando el bot "lee" durante una pausa:
+  // varios mensajes del cliente o del dueño seguidos se juntan en un turno).
+  if (last && last.role === role && typeof last.content === "string" && typeof content === "string") {
+    last.content += "\n" + content;
+  } else {
+    s.history.push({ role, content });
+  }
   // Mantener manejable (últimos 40 turnos)
   if (s.history.length > 40) s.history = s.history.slice(-40);
 }

@@ -9,11 +9,12 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const { processMessage, needsHuman } = require("./agent");
 const { confirmarReserva } = require("./api-client");
-const { clearSession } = require("./sessions");
+const { clearSession, getSession, pushHistory } = require("./sessions");
 
 const OWNER = (process.env.OWNER_WHATSAPP_NUMBER || "").replace(/\D/g, "");
 const DEBOUNCE_MS = Number(process.env.MESSAGE_DEBOUNCE_MS || 2500);
-const HUMAN_TAKEOVER_MS = Number(process.env.HUMAN_TAKEOVER_MS || 60 * 60 * 1000); // 1 h
+// Cuando el dueño escribe manualmente en un chat, el bot se pausa este tiempo (default 5 min).
+const HUMAN_TAKEOVER_MS = Number(process.env.HUMAN_TAKEOVER_MS || 5 * 60 * 1000); // 5 min
 
 // El bot corre en un número personal: por defecto SOLO responde a desconocidos
 // (números NO guardados en los contactos). RESPOND_MODE: "strangers" (default) | "all".
@@ -106,9 +107,9 @@ client.on("message", async (msg) => {
     if (!body) return;
 
     console.log(`📩 Entrante de ${msg.from}: ${body.substring(0, 60)}`);
-    if (isPaused(msg.from)) { console.log("   (chat en pausa — lo tomó un humano)"); return; }
 
     // Corre en número personal: por defecto solo responde a DESCONOCIDOS.
+    // (Los contactos GUARDADOS no se responden nunca — los atiende el dueño.)
     if (RESPOND_MODE === "strangers") {
       let contact = null;
       try { contact = await msg.getContact(); } catch {}
@@ -120,6 +121,14 @@ client.on("message", async (msg) => {
         console.log("   ⏭️  es contacto guardado → no respondo (lo atiendes tú). Para probar, agrega su número a ALWAYS_RESPOND_NUMBERS o usa RESPOND_MODE=all.");
         return;
       }
+    }
+
+    // Si el chat está en pausa (un humano lo tomó): NO respondo, pero SÍ registro
+    // el mensaje del cliente en el historial para no perder el hilo al reanudar.
+    if (isPaused(msg.from)) {
+      pushHistory(msg.from, "user", body);
+      console.log("   ⏸️  chat en pausa (humano) — registro el mensaje del cliente para no perder el hilo, sin responder.");
+      return;
     }
 
     bufferMessage(msg.from, body);
@@ -188,10 +197,14 @@ client.on("message_create", async (msg) => {
     }
 
     // Si el dueño escribió manualmente en un chat de cliente (no fue el bot),
-    // pausar ese chat: un humano tomó la conversación.
+    // pausar ese chat 5 min: un humano tomó la conversación. Cada mensaje del
+    // dueño reinicia esos 5 min. Además registro su mensaje en el historial
+    // (como lado del negocio) para que el bot no pierda el hilo al reanudar.
     const target = msg.to || msg.from;
     if (target && target.endsWith("@c.us") && !isRecentBotOutgoing(target)) {
       pauseChat(target);
+      const s = getSession(target);
+      if (s.history.length > 0) pushHistory(target, "assistant", body);
     }
   } catch (e) {
     console.error("❌ message_create:", e.message);

@@ -7,7 +7,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
-const { recomendarLocal, needsHuman, processMessage, setApiClient, sanitizeLinks } = require("./agent");
+const { recomendarLocal, needsHuman, processMessage, setApiClient, sanitizeLinks, executeTool } = require("./agent");
 const { calcPrecio, findTour } = require("./catalog");
 const { PAQUETES, DESTINOS, DESTINO_TOUR, findPaquete, findDestino } = require("./knowledge");
 
@@ -34,10 +34,10 @@ async function run() {
   // ─────────────── PARTE 1: UNITARIAS ───────────────
   console.log("\n=== Parte 1: unitarias (deterministas) ===\n");
 
-  console.log("calcPrecio:");
-  ok(calcPrecio(800, 2, 0, 0).total === 1600, "RZR 2 adultos = $1,600");
-  ok(calcPrecio(800, 2, 1, 0).total === 1600 + 560, "RZR 2 adultos + 1 niño(6-10) = $2,160 (70%)");
-  ok(calcPrecio(800, 1, 0, 1).total === 800 + 400, "RZR 1 adulto + 1 menor de 6 = $1,200 (50%)");
+  console.log("calcPrecio (por persona):");
+  ok(calcPrecio(1600, 2, 0, 0).total === 3200, "Meco 2 adultos = $3,200");
+  ok(calcPrecio(1600, 2, 1, 0).total === 3200 + 1120, "2 adultos + 1 niño(6-10) = 70%");
+  ok(calcPrecio(1600, 1, 0, 1).total === 1600 + 800, "1 adulto + 1 menor de 6 = 50%");
 
   console.log("recomendarLocal:");
   ok(recomendarLocal({ intereses: ["aventura extrema"], actividad: "intenso", destino: "rzr por xilitla" })[0].slug === "rzr-xilitla", "destino RZR explícito → RZR primero");
@@ -52,10 +52,26 @@ async function run() {
 
   console.log("conocimiento (paquetes/destinos):");
   ok(PAQUETES.length === 3, "hay 3 paquetes");
-  ok(DESTINOS.length === 20, "hay 20 destinos");
+  ok(DESTINOS.length === 41, "hay 41 destinos");
   ok(findPaquete("aventura").precio === 9000, "Paquete Aventura = $9,000");
+  ok(findPaquete("gran-huasteca").precio === 15500, "Paquete Gran Huasteca = $15,500");
+  ok(!findPaquete("esencial"), "el paquete 'Esencial' ya NO existe");
   ok(findDestino("las pozas").precioEntrada === "$180 MXN", "Las Pozas entrada $180");
-  ok((DESTINO_TOUR["cascada-de-tamul"] || []).includes("rappel-tamul"), "Tamul → cross-sell tour vendible");
+  ok((DESTINO_TOUR["cascada-de-tamul"] || []).some((r) => r.slug === "rappel-tamul"), "Tamul → cross-sell tour vendible");
+
+  console.log("herramientas (deterministas):");
+  const rzrOk = await executeTool("cotizar_rzr", { ruta: "Nanacatli", vehiculo: "RZR 500" });
+  ok(rzrOk.ok === true && rzrOk.total === 1600, "cotizar_rzr Nanacatli + RZR 500 = $1,600/vehículo");
+  const rzrTop = await executeTool("cotizar_rzr", { ruta: "Nacimiento", vehiculo: "Polaris Pro S" });
+  ok(rzrTop.total === 7000, "cotizar_rzr Nacimiento + Polaris Pro S = $7,000/vehículo");
+  const cpRzr = await executeTool("calcular_precio", { slug: "rzr-xilitla", adultos: 2 });
+  ok(Boolean(cpRzr.error), "calcular_precio rechaza el RZR (es por vehículo)");
+  const ccRzr = await executeTool("crear_cotizacion", { slug: "rzr-xilitla", tourDate: "2026-09-01", adultos: 2, nombre: "Test" });
+  ok(Boolean(ccRzr.error), "crear_cotizacion bloquea el RZR (se confirma por WhatsApp)");
+  const buceo = await executeTool("calcular_precio", { slug: "buceo-media-luna", adultos: 1, ninosMid: 1 });
+  ok(Boolean(buceo.error), "buceo rechaza niños (solo +10 años)");
+  const raft = await executeTool("calcular_precio", { slug: "rafting-rio-tampaon", adultos: 2 });
+  ok(raft.total === 3900, "rafting 2 adultos = $3,900 ($1,950 c/u)");
 
   console.log("sanitizeLinks (links sin asteriscos):");
   ok(sanitizeLinks("Reserva: *https://www.huasteca-potosina.com/reservar-tour/rzr-xilitla*") === "Reserva: https://www.huasteca-potosina.com/reservar-tour/rzr-xilitla", "quita asteriscos pegados al link");
@@ -70,10 +86,14 @@ async function run() {
 
   console.log("\n=== Parte 2: conversaciones (Claude real, api mockeada) ===\n");
 
-  // Escenario A: precio del RZR
-  await scenario("Precio RZR (2 adultos)", "5211111111@c.us", [
+  // Escenario A: precio del RZR (por vehículo — puede dar "desde $1,600" o pedir ruta/vehículo)
+  await scenario("Precio RZR (por vehículo)", "5211111111@c.us", [
     "Hola! cuánto cuesta el recorrido en RZR para 2 personas?",
-  ], (last) => soft(/1[.,]?600/.test(last) || /800.*(cada|persona|c\/u)/.test(norm(last)), "menciona $1,600 (o $800/persona)"));
+  ], (last) => {
+    const n = norm(last);
+    soft(/1[.,]?600/.test(last) || n.includes("ruta") || n.includes("vehiculo") || n.includes("unidad"), "da 'desde $1,600' o pregunta ruta/vehículo");
+    soft(n.includes("vehiculo") || n.includes("unidad") || n.includes("por rzr") || n.includes("no es por persona") || /1[.,]?600/.test(last), "trata el RZR como por vehículo");
+  });
 
   // Escenario B: honestidad del rappel
   await scenario("Rappel — honestidad transporte", "5212222222@c.us", [
@@ -92,10 +112,10 @@ async function run() {
     soft(n.includes("minas") || n.includes("micos") || n.includes("meco") || n.includes("cascada"), "sugiere un tour de cascadas/familiar");
   });
 
-  // Escenario D: cotización por transferencia (multi-turno)
+  // Escenario D: cotización por transferencia (multi-turno) — tour por persona
   calls.quote.length = 0;
   await scenario("Cotización por transferencia", "5214444444@c.us", [
-    "Quiero el RZR para 2 adultos",
+    "Quiero la Expedición Tamul para 2 adultos",
     "El 15 de julio de 2026",
     "Prefiero pagar por transferencia. Mi nombre es Juan Pérez",
   ], (last) => {
@@ -113,8 +133,9 @@ async function run() {
     "¿Qué paquetes manejan?",
   ], (last) => {
     const n = norm(last);
-    soft(n.includes("esencial") || n.includes("aventura") || n.includes("completo"), "menciona algún paquete por nombre");
-    soft(/5[.,]?000|9[.,]?000|12[.,]?200/.test(last), "incluye algún precio de paquete");
+    soft(n.includes("aventura") || n.includes("completo") || n.includes("gran huasteca"), "menciona algún paquete por nombre");
+    soft(/9[.,]?000|12[.,]?200|15[.,]?500/.test(last), "incluye algún precio de paquete");
+    soft(!n.includes("esencial"), "NO menciona el paquete 'Esencial' (ya no existe)");
   });
 
   // Escenario G: destino con datos prácticos

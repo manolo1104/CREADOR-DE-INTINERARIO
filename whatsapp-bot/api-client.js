@@ -3,6 +3,8 @@
 
 const SITE_API_URL = (process.env.SITE_API_URL || "http://localhost:3000").replace(/\/$/, "");
 const AGENT_API_TOKEN = process.env.AGENT_API_TOKEN || "";
+// Sitio del hotel Paraíso Encantado (para consultar disponibilidad de habitaciones, solo lectura).
+const HOTEL_API_URL = (process.env.HOTEL_API_URL || "https://www.paraisoencantado.com").replace(/\/$/, "");
 
 function headers() {
   return {
@@ -32,6 +34,11 @@ async function crearCotizacion(payload) {
   return post("/api/bot/quote", payload);
 }
 
+// Registra en el panel las cotizaciones sin pago en línea (RZR y paquetes).
+async function registrarLead(payload) {
+  return post("/api/bot/lead", payload);
+}
+
 async function confirmarReserva(folio) {
   return post("/api/bot/confirm", { folio });
 }
@@ -40,4 +47,19 @@ async function consultarReserva(folio) {
   return get(`/api/bot/booking/${encodeURIComponent(folio)}`);
 }
 
-module.exports = { crearCotizacion, confirmarReserva, consultarReserva, SITE_API_URL };
+// Disponibilidad de habitaciones en el hotel (solo lectura, endpoint público del hotel).
+async function checkHotelAvailability(checkin, checkout, rooms) {
+  try {
+    const res = await fetch(`${HOTEL_API_URL}/api/check-availability`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checkin, checkout, rooms }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: e.message } };
+  }
+}
+
+module.exports = { crearCotizacion, registrarLead, confirmarReserva, consultarReserva, checkHotelAvailability, SITE_API_URL, HOTEL_API_URL };

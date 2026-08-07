@@ -51,8 +51,20 @@ npm start         # conecta a WhatsApp (escanea el QR que aparece en la terminal
 Requiere una **línea/número de WhatsApp DEDICADO**, distinto del número del bot del
 hotel y del 524891251458 (un número = una sola sesión de WhatsApp).
 
-## Mantener en sync
-`catalog.js` (7 tours, de `src/lib/tours.ts`) y `knowledge.js` (3 paquetes de
-`src/app/paquetes/page.tsx` + 20 destinos de `src/lib/destinos.ts`) son copias
-curadas del sitio. Si cambias precios, inclusiones, paquetes o destinos en el
-sitio, actualiza también estos dos archivos.
+## Mantener en sync (AUTOMÁTICO)
+El "cerebro" del bot vive en **`data.json`**, que se **genera** desde la fuente de la
+verdad del sitio (`src/lib/tours.ts`, `paquetes.ts`, `destinos.ts`, `tourMapping.ts`).
+`catalog.js` y `knowledge.js` solo lo leen — **no edites datos a mano en ellos**.
+
+Cuando cambies precios, tours, paquetes o destinos en el sitio, desde la raíz del
+proyecto corre:
+
+```bash
+npx tsx src/scripts/export-bot-data.ts
+```
+
+Eso regenera `whatsapp-bot/data.json` (hoy: 9 tours, 3 paquetes, 41 destinos) y el bot
+queda al día. La única capa manual son los overlays curados (qué NO incluye cada tour,
+"ideal para", punto de encuentro) que viven dentro de ese mismo script.
+
+Para probar sin WhatsApp: `node test-chat.js` (usa la `ANTHROPIC_API_KEY` del `.env`).

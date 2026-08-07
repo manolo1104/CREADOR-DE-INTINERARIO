@@ -3,8 +3,15 @@
 // ════════════════════════════════════════════════════════════════════
 
 const Anthropic = require("@anthropic-ai/sdk");
-const { TOURS, EMPRESA, SALIDA, findTour, calcPrecio } = require("./catalog");
-const { PAQUETES, DESTINOS, DESTINO_TOUR, INFO, findPaquete, findDestino } = require("./knowledge");
+const {
+  TOURS, EMPRESA, SALIDA, findTour, calcPrecio,
+  esPorVehiculo, precioRZR,
+} = require("./catalog");
+const {
+  PAQUETES, HABITACIONES, LOGISTICA, DESTINOS, DESTINO_TOUR, INFO,
+  findPaquete, findDestino,
+} = require("./knowledge");
+const { PAGO } = require("./payment");
 const { getSession, pushHistory } = require("./sessions");
 
 const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5-20251001";
@@ -34,6 +41,14 @@ function needsHuman(text = "") {
   return HUMAN_REGEX.test(String(text).toLowerCase());
 }
 
+/** Suma n días a una fecha AAAA-MM-DD (UTC, sin líos de zona horaria). */
+function addDays(dateStr, n) {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
 // ── Scoring local de recomendación (espejo del sitio) ─────────
 function recomendarLocal({ intereses = [], grupo = "", actividad = "", destino = "" }) {
   const ints = intereses.map((i) => String(i).toLowerCase());
@@ -41,32 +56,39 @@ function recomendarLocal({ intereses = [], grupo = "", actividad = "", destino =
   const scores = Object.fromEntries(TOURS.map((t) => [t.slug, 0]));
   const add = (slug, n) => { if (scores[slug] !== undefined) scores[slug] += n; };
 
-  if (has("foto") || has("turques") || has("cascada")) { add("cascadas-del-meco", 3); add("paraiso-escalonado-minas-micos", 2); add("rzr-xilitla", 1); }
-  if (has("extrem") || has("adrenalin") || has("aventura")) { add("rappel-tamul", 4); add("expedicion-tamul", 3); add("rzr-xilitla", 3); add("ruta-acuatica-puente-de-dios", 2); }
-  if (has("arte") || has("cultura")) { add("ruta-surrealista-edward-james", 3); }
+  if (has("foto") || has("turques") || has("cascada")) { add("cascadas-del-meco", 3); add("paraiso-escalonado-minas-micos", 2); add("ruta-acuatica-puente-de-dios", 1); }
+  if (has("extrem") || has("adrenalin") || has("aventura")) { add("rappel-tamul", 4); add("rafting-rio-tampaon", 3); add("expedicion-tamul", 3); add("rzr-xilitla", 3); add("ruta-acuatica-puente-de-dios", 2); }
+  if (has("agua") || has("nad") || has("rio") || has("río") || has("rafting") || has("kayak") || has("canoa") || has("remar")) { add("rafting-rio-tampaon", 3); add("ruta-acuatica-puente-de-dios", 2); add("expedicion-tamul", 1); }
+  if (has("buce") || has("snorkel") || has("scuba")) { add("buceo-media-luna", 5); }
+  if (has("off-road") || has("todoterreno") || has("rzr") || has("motos")) { add("rzr-xilitla", 5); }
+  if (has("arte") || has("cultura") || has("historia")) { add("ruta-surrealista-edward-james", 3); }
   if (has("relax") || has("paz") || has("desconect")) { add("paraiso-escalonado-minas-micos", 2); add("cascadas-del-meco", 1); }
 
   const g = String(grupo).toLowerCase();
-  if (g.includes("familia") || g.includes("niñ") || g.includes("nin")) { add("paraiso-escalonado-minas-micos", 3); add("rzr-xilitla", 2); add("cascadas-del-meco", 1); add("rappel-tamul", -4); }
-  if (g.includes("amig")) { add("rzr-xilitla", 3); add("rappel-tamul", 2); add("expedicion-tamul", 2); add("ruta-acuatica-puente-de-dios", 1); }
+  if (g.includes("familia") || g.includes("niñ") || g.includes("nin")) { add("paraiso-escalonado-minas-micos", 3); add("cascadas-del-meco", 2); add("rzr-xilitla", 2); add("ruta-acuatica-puente-de-dios", 1); add("rappel-tamul", -4); add("buceo-media-luna", -3); }
+  if (g.includes("amig")) { add("rzr-xilitla", 3); add("rafting-rio-tampaon", 3); add("rappel-tamul", 2); add("expedicion-tamul", 2); add("ruta-acuatica-puente-de-dios", 1); }
   if (g.includes("pareja")) { add("ruta-surrealista-edward-james", 1); add("cascadas-del-meco", 1); add("expedicion-tamul", 1); }
+  if (g.includes("solo") || g.includes("sola")) { add("buceo-media-luna", 1); add("expedicion-tamul", 1); }
 
   const a = String(actividad).toLowerCase();
-  if (a.includes("intens")) { add("rappel-tamul", 3); add("rzr-xilitla", 2); add("expedicion-tamul", 2); add("ruta-acuatica-puente-de-dios", 1); }
-  if (a.includes("moder")) { add("rzr-xilitla", 1); add("expedicion-tamul", 1); }
-  if (a.includes("tranquil")) { add("paraiso-escalonado-minas-micos", 2); add("ruta-surrealista-edward-james", 1); add("rappel-tamul", -2); }
+  if (a.includes("intens")) { add("rappel-tamul", 3); add("rafting-rio-tampaon", 2); add("rzr-xilitla", 2); add("expedicion-tamul", 2); add("ruta-acuatica-puente-de-dios", 1); }
+  if (a.includes("moder")) { add("rafting-rio-tampaon", 1); add("rzr-xilitla", 1); add("expedicion-tamul", 1); }
+  if (a.includes("tranquil")) { add("paraiso-escalonado-minas-micos", 2); add("ruta-surrealista-edward-james", 1); add("cascadas-del-meco", 1); add("rappel-tamul", -2); }
 
   const d = String(destino).toLowerCase();
-  if (d.includes("rzr") || d.includes("off-road") || d.includes("nanacatli")) add("rzr-xilitla", 4);
+  if (d.includes("rzr") || d.includes("off-road") || d.includes("nanacatli") || d.includes("trinidad")) add("rzr-xilitla", 4);
   if (d.includes("tamul")) { add("expedicion-tamul", 4); add("rappel-tamul", 3); }
-  if (d.includes("pozas") || d.includes("edward") || d.includes("xilitla")) add("ruta-surrealista-edward-james", 3);
+  if (d.includes("rafting") || d.includes("tampaon") || d.includes("tampaón")) add("rafting-rio-tampaon", 4);
+  if (d.includes("pozas") || d.includes("edward") || d.includes("xilitla") || d.includes("surreal")) add("ruta-surrealista-edward-james", 3);
   if (d.includes("meco")) add("cascadas-del-meco", 4);
   if (d.includes("minas") || d.includes("micos")) add("paraiso-escalonado-minas-micos", 4);
   if (d.includes("puente") || d.includes("tamasopo")) add("ruta-acuatica-puente-de-dios", 4);
+  if (d.includes("media luna") || d.includes("buce") || d.includes("rioverde")) add("buceo-media-luna", 4);
 
   const ordenados = Object.entries(scores).sort((x, y) => y[1] - x[1]).map(([slug]) => findTour(slug));
   return ordenados.slice(0, 2).map((t) => ({
-    slug: t.slug, nombre: t.nombre, precio: t.precio, tagline: t.tagline, pitch: t.pitch, duracionHrs: t.duracionHrs,
+    slug: t.slug, nombre: t.nombre, tagline: t.tagline, pitch: t.pitch, duracionHrs: t.duracionHrs,
+    precio: t.precio, precioUnidad: t.precioUnidad,
   }));
 }
 
@@ -80,7 +102,7 @@ const tools = [
     input_schema: {
       type: "object",
       properties: {
-        intereses: { type: "array", items: { type: "string" }, description: "Ej: ['aventura extrema','fotografía','relax','cascadas']" },
+        intereses: { type: "array", items: { type: "string" }, description: "Ej: ['aventura extrema','fotografía','relax','cascadas','buceo','off-road']" },
         grupo: { type: "string", description: "Ej: 'familia con niños', 'amigos', 'pareja', 'solo'" },
         actividad: { type: "string", description: "Nivel de energía: 'tranquilo', 'moderado' o 'intenso'" },
         destino: { type: "string", description: "Lugar específico que el cliente quiere (opcional)" },
@@ -90,16 +112,16 @@ const tools = [
   },
   {
     name: "obtener_tour",
-    description: "Devuelve todos los detalles de un tour: precio por persona, qué incluye, qué NO incluye, duración, dificultad, punto de encuentro y destinos.",
+    description: "Devuelve todos los detalles de un tour: precio, qué incluye, qué NO incluye, duración, dificultad, punto de encuentro y destinos. Para el RZR devuelve también sus rutas y su flota con precios por vehículo.",
     input_schema: {
       type: "object",
-      properties: { slug: { type: "string", description: "slug del tour, ej: 'rzr-xilitla'" } },
+      properties: { slug: { type: "string", description: "slug del tour, ej: 'rzr-xilitla', 'rafting-rio-tampaon', 'buceo-media-luna'" } },
       required: ["slug"],
     },
   },
   {
     name: "calcular_precio",
-    description: "Calcula el precio total para un grupo. Niños 6–10 pagan 70%, menores de 6 pagan 50%.",
+    description: "Calcula el precio total de un tour cobrado POR PERSONA para un grupo. Niños 6–10 pagan 70%, menores de 6 pagan 50%. NO sirve para el RZR (por vehículo): para eso usa cotizar_rzr.",
     input_schema: {
       type: "object",
       properties: {
@@ -112,8 +134,20 @@ const tools = [
     },
   },
   {
+    name: "cotizar_rzr",
+    description: "Calcula el precio del RZR (recorrido en vehículo todoterreno de Xilitla), que se cobra POR VEHÍCULO según la ruta y la unidad elegidas. El RZR NO tiene pago en línea: se confirma por WhatsApp con el equipo.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ruta: { type: "string", description: "Ruta: 'Nanacatli' (2h), 'Miradores' (3h), 'Nacimiento' (5h, con kayak) o 'Trinidad' (5h)" },
+        vehiculo: { type: "string", description: "Unidad de la flota, ej: 'RZR 500', 'Can-Am 800', 'Defender Familiar', 'Polaris Pro S'" },
+      },
+      required: ["ruta", "vehiculo"],
+    },
+  },
+  {
     name: "crear_cotizacion",
-    description: "Crea una reserva PENDIENTE de pago con folio para pagar por transferencia. Úsala SOLO cuando el cliente ya confirmó tour, fecha (YYYY-MM-DD), personas y dio su nombre. Devuelve folio, total y datos bancarios.",
+    description: "Crea una reserva PENDIENTE de pago con folio para pagar por transferencia. Solo para tours cobrados POR PERSONA. Úsala SOLO cuando el cliente ya confirmó tour, fecha (YYYY-MM-DD), personas y dio su nombre. Devuelve folio, total y datos bancarios.",
     input_schema: {
       type: "object",
       properties: {
@@ -130,8 +164,32 @@ const tools = [
     },
   },
   {
+    name: "registrar_cotizacion",
+    description: "Registra en el panel central una cotización SIN pago en línea (RZR o paquete) para que no se pierda, y devuelve un folio. Úsala cuando el cliente ya eligió: RZR (ruta+vehículo) o paquete (habitación+fechas) y dio su nombre. El precio lo calcula el servidor.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: { type: "string", description: "'rzr' o 'paquete'" },
+        nombre: { type: "string", description: "Nombre completo del cliente" },
+        correo: { type: "string", description: "Correo del cliente (para la confirmación)" },
+        personas: { type: "number", description: "Número de personas" },
+        // RZR:
+        ruta: { type: "string", description: "(RZR) Nanacatli, Miradores, Nacimiento o Trinidad" },
+        vehiculo: { type: "string", description: "(RZR) unidad de la flota, ej: 'RZR 500'" },
+        tourDate: { type: "string", description: "(RZR) fecha del recorrido AAAA-MM-DD" },
+        // Paquete:
+        paqueteSlug: { type: "string", description: "(paquete) aventura, completo o gran-huasteca" },
+        habitacion: { type: "string", description: "(paquete) habitación elegida, ej: 'Jungla'" },
+        checkin: { type: "string", description: "(paquete) llegada AAAA-MM-DD" },
+        checkout: { type: "string", description: "(paquete) salida AAAA-MM-DD" },
+        notas: { type: "string", description: "Notas u observaciones (opcional)" },
+      },
+      required: ["tipo", "nombre"],
+    },
+  },
+  {
     name: "enviar_link_pago",
-    description: "Devuelve el link del sitio para reservar y pagar con tarjeta (confirmación instantánea). Úsalo cuando el cliente prefiere pagar con tarjeta en línea.",
+    description: "Devuelve el link del sitio para reservar y pagar con tarjeta (confirmación instantánea). Solo para tours cobrados por persona. Úsalo cuando el cliente prefiere pagar con tarjeta en línea.",
     input_schema: {
       type: "object",
       properties: { slug: { type: "string" } },
@@ -148,22 +206,54 @@ const tools = [
     },
   },
   {
+    name: "datos_pago",
+    description: "Devuelve los datos para pagar por transferencia (banco, titular, CLABE) y por OXXO, más las instrucciones (mandar comprobante; la reserva se confirma al recibirlo). Úsala cuando el cliente va a pagar por transferencia u OXXO.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "validar_fecha",
+    description: "Valida una fecha propuesta por el cliente: que tenga formato correcto y sea a partir de mañana. Devuelve el día de la semana. Úsala al tomar la fecha de un tour o paquete, antes de cotizar/cerrar.",
+    input_schema: {
+      type: "object",
+      properties: { fecha: { type: "string", description: "Fecha en formato YYYY-MM-DD" } },
+      required: ["fecha"],
+    },
+  },
+  {
     name: "listar_paquetes",
-    description: "Lista los paquetes (tours + hotel) con su precio. Úsala cuando pregunten por paquetes, promociones o planes de varios días.",
+    description: "Lista los paquetes (tours + hotel) con su precio. Úsala cuando pregunten por paquetes, promociones, hospedaje incluido o planes de varios días.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "obtener_paquete",
-    description: "Detalle de un paquete: qué incluye, tours, duración y precio.",
+    description: "Detalle de un paquete: qué incluye, itinerario día por día, qué NO incluye y precio. Ids: aventura, completo, gran-huasteca.",
     input_schema: {
       type: "object",
-      properties: { id: { type: "string", description: "id o nombre: esencial, aventura, completo" } },
+      properties: { id: { type: "string", description: "id o nombre: aventura, completo, gran-huasteca" } },
       required: ["id"],
     },
   },
   {
+    name: "obtener_logistica",
+    description: "Cómo llegar a la zona (auto, avión, autobús desde CDMX) y transporte interno. Úsala cuando pregunten '¿cómo llego?', '¿de dónde salen?' o por traslados hasta Xilitla/Ciudad Valles.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "disponibilidad_habitaciones",
+    description: "Consulta SOLO LECTURA qué habitaciones del Hotel Paraíso Encantado están disponibles para unas fechas (se asoma al calendario del hotel, sin apartar ni reservar nada). Úsala al cerrar un paquete. Pasa la llegada (checkin) y las noches del paquete (Aventura 2, Completo 3, Gran Huasteca 4); la salida se calcula sola. Si no se puede verificar, avisa que el equipo confirma.",
+    input_schema: {
+      type: "object",
+      properties: {
+        checkin: { type: "string", description: "Fecha de llegada (AAAA-MM-DD)" },
+        noches: { type: "number", description: "Noches del paquete (Aventura 2, Completo 3, Gran Huasteca 4). La salida = llegada + noches." },
+        checkout: { type: "string", description: "Fecha de salida (AAAA-MM-DD). Solo si NO das 'noches'." },
+      },
+      required: ["checkin"],
+    },
+  },
+  {
     name: "listar_destinos",
-    description: "Lista los destinos de la Huasteca que conocemos, opcionalmente por zona (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, etc.).",
+    description: "Lista los destinos de la Huasteca que conocemos, opcionalmente por zona (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde, etc.).",
     input_schema: {
       type: "object",
       properties: { zona: { type: "string", description: "zona para filtrar (opcional)" } },
@@ -192,24 +282,48 @@ async function executeTool(name, input, phone) {
     case "obtener_tour": {
       const t = findTour(input.slug);
       if (!t) return { error: `No existe el tour "${input.slug}". Tours: ${TOURS.map((x) => x.slug).join(", ")}` };
-      return {
+      const base = {
         slug: t.slug, nombre: t.nombre, tipo: t.tipo, dificultad: t.dificultad,
-        duracionHrs: t.duracionHrs, precioPorPersona: t.precio, moneda: "MXN",
+        duracionHrs: t.duracionHrs, duracion: t.duracionTexto, moneda: "MXN",
+        url: t.url,
         minPersonas: t.groupMin, maxPersonas: t.groupMax,
-        incluye: t.incluye, noIncluye: t.noIncluye,
-        puntoEncuentro: t.puntoEncuentro, salida: SALIDA, destinos: t.destinos,
+        soloAdultos: t.soloAdultos,
+        privadoDisponible: t.privateAvailable, privadoDesde: t.privateMinPrice,
+        incluye: t.incluye, incluyeSiempre: t.incluyeSiempre, noIncluye: t.noIncluye,
+        puntoEncuentro: t.puntoEncuentro, salida: SALIDA, horario: t.horario, destinos: t.destinos,
         idealPara: t.idealPara, cancelacion: EMPRESA.cancelacion,
       };
+      if (esPorVehiculo(t)) {
+        return {
+          ...base,
+          cobro: "por vehículo (no por persona)",
+          desde: t.precio,
+          nota: "El RZR se confirma por WhatsApp con el equipo; no hay pago en línea. Usa cotizar_rzr para un precio exacto por ruta y vehículo.",
+          rutas: t.rutas.map((r) => ({ nombre: r.nombre, duracionHrs: r.duracionHrs, desde: r.desde, descripcion: r.descripcion })),
+          flota: t.flota.map((v) => ({
+            nombre: v.nombre,
+            capacidad: v.capacidad,
+            preciosPorRuta: Object.fromEntries(t.rutas.map((r, i) => [r.nombre, v.precios[i]])),
+          })),
+        };
+      }
+      return { ...base, cobro: "por persona", precioPorPersona: t.precio };
     }
 
     case "calcular_precio": {
       const t = findTour(input.slug);
       if (!t) return { error: `No existe el tour "${input.slug}".` };
+      if (esPorVehiculo(t)) {
+        return { error: "El RZR se cobra por vehículo, no por persona. Usa cotizar_rzr con la ruta y el vehículo." };
+      }
       const adultos = Math.max(0, parseInt(input.adultos, 10) || 0);
       const mid = Math.max(0, parseInt(input.ninosMid, 10) || 0);
       const small = Math.max(0, parseInt(input.ninosSmall, 10) || 0);
       const totalPersonas = adultos + mid + small;
       if (totalPersonas < t.groupMin) return { error: `Este tour requiere mínimo ${t.groupMin} personas.` };
+      if (t.soloAdultos && (mid > 0 || small > 0)) {
+        return { error: "Esta actividad es solo para mayores de 10 años; no aplica precio de niños." };
+      }
       const { total, precioMid, precioSmall } = calcPrecio(t.precio, adultos, mid, small);
       return {
         tour: t.nombre, precioAdulto: t.precio, precioNino6a10: precioMid, precioMenor6: precioSmall,
@@ -217,9 +331,24 @@ async function executeTool(name, input, phone) {
       };
     }
 
+    case "cotizar_rzr": {
+      const t = TOURS.find((x) => esPorVehiculo(x)) || findTour("rzr-xilitla");
+      if (!t) return { error: "No hay un tour por vehículo configurado." };
+      const r = precioRZR(t, input.ruta, input.vehiculo);
+      if (!r.ok) return { error: r.error };
+      return {
+        ...r,
+        tour: t.nombre,
+        nota: "Precio por vehículo. Se confirma disponibilidad por WhatsApp con el equipo (no incluye transporte hasta Xilitla ni alimentos).",
+      };
+    }
+
     case "crear_cotizacion": {
       const t = findTour(input.slug);
       if (!t) return { error: `No existe el tour "${input.slug}".` };
+      if (esPorVehiculo(t)) {
+        return { error: "El RZR se cobra por vehículo y se confirma por WhatsApp con el equipo (no hay cotización con folio ni pago en línea). Da el precio con cotizar_rzr, toma fecha + ruta + vehículo + nombre, y avisa que el equipo confirma disponibilidad." };
+      }
       const res = await api.crearCotizacion({
         tourSlug: t.slug,
         tourDate: input.tourDate,
@@ -235,9 +364,35 @@ async function executeTool(name, input, phone) {
       return res.data; // { folio, total, datosBanco, linkPago, ... }
     }
 
+    case "registrar_cotizacion": {
+      const payload = {
+        tipo: input.tipo,
+        customerName: input.nombre,
+        customerEmail: input.correo,
+        customerPhone: phone ? String(phone).replace(/\D/g, "") : undefined,
+        personas: input.personas,
+        notes: input.notas,
+        // RZR:
+        ruta: input.ruta,
+        vehiculo: input.vehiculo,
+        tourDate: input.tourDate,
+        // Paquete:
+        paqueteSlug: input.paqueteSlug,
+        habitacion: input.habitacion,
+        checkin: input.checkin,
+        checkout: input.checkout,
+      };
+      const res = await api.registrarLead(payload);
+      if (!res.ok) return { error: res.data?.error || "No se pudo registrar la cotización." };
+      return res.data; // { folio, total, ... }
+    }
+
     case "enviar_link_pago": {
       const t = findTour(input.slug);
       if (!t) return { error: `No existe el tour "${input.slug}".` };
+      if (esPorVehiculo(t)) {
+        return { error: "El RZR no tiene pago en línea; se confirma por WhatsApp con el equipo." };
+      }
       return { link: `${EMPRESA.sitio}/reservar-tour/${t.slug}`, tour: t.nombre };
     }
 
@@ -245,6 +400,28 @@ async function executeTool(name, input, phone) {
       const res = await api.consultarReserva(String(input.folio || "").trim().toUpperCase());
       if (!res.ok) return { error: res.data?.error || "No encontré esa reserva." };
       return res.data;
+    }
+
+    case "datos_pago":
+      return {
+        transferencia: { banco: PAGO.banco, titular: PAGO.titular, clabe: PAGO.clabe },
+        oxxo: PAGO.oxxo,
+        instrucciones: PAGO.instrucciones,
+      };
+
+    case "validar_fecha": {
+      const f = String(input.fecha || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f)) {
+        return { valida: false, motivo: "Formato inválido. Pide la fecha como AAAA-MM-DD." };
+      }
+      const hoy = new Date();
+      const manana = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1);
+      const [y, m, d] = f.split("-").map(Number);
+      const fecha = new Date(y, m - 1, d);
+      if (isNaN(fecha.getTime())) return { valida: false, motivo: "No es una fecha real." };
+      if (fecha < manana) return { valida: false, motivo: "La fecha debe ser a partir de mañana." };
+      const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+      return { valida: true, fecha: f, diaSemana: dias[fecha.getDay()] };
     }
 
     case "listar_paquetes":
@@ -256,7 +433,42 @@ async function executeTool(name, input, phone) {
     case "obtener_paquete": {
       const p = findPaquete(input.id);
       if (!p) return { error: `No existe ese paquete. Opciones: ${PAQUETES.map((x) => x.id).join(", ")}` };
-      return { ...p, nota: INFO.paquetes };
+      return { ...p, habitaciones: HABITACIONES, verTodasLasHabitaciones: INFO.hotelHabitacionesUrl, nota: INFO.paquetes };
+    }
+
+    case "obtener_logistica":
+      return { ...LOGISTICA };
+
+    case "disponibilidad_habitaciones": {
+      const checkin = String(input.checkin || "").trim();
+      const nNoches = parseInt(input.noches, 10) || 0;
+      // La salida la calcula el servidor a partir de las noches (no el modelo).
+      const checkout = nNoches > 0 && /^\d{4}-\d{2}-\d{2}$/.test(checkin)
+        ? addDays(checkin, nNoches)
+        : String(input.checkout || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(checkin) || !/^\d{4}-\d{2}-\d{2}$/.test(checkout)) {
+        return { error: "Necesito la fecha de llegada (AAAA-MM-DD) y las noches del paquete." };
+      }
+      if (checkout <= checkin) {
+        return { error: "La fecha de salida debe ser posterior a la de llegada." };
+      }
+      const rooms = HABITACIONES.map((h) => h.hotelNombre);
+      const res = await api.checkHotelAvailability(checkin, checkout, rooms);
+      if (!res.ok || !res.data || res.data.error || res.data.degraded) {
+        return { verificado: false, checkin, checkout, mensaje: "No pude verificar la disponibilidad del hotel en este momento; el equipo la confirma contigo enseguida." };
+      }
+      const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+      const ocupadasSet = new Set((res.data.unavailableRooms || []).map((r) => norm(r)));
+      const disponibles = HABITACIONES
+        .filter((h) => !ocupadasSet.has(norm(h.hotelNombre)))
+        .map((h) => ({ nombre: h.nombre, vista: h.vista, suplemento: h.suplemento, url: h.url }));
+      const ocupadas = HABITACIONES.filter((h) => ocupadasSet.has(norm(h.hotelNombre))).map((h) => h.nombre);
+      return {
+        verificado: true, checkin, checkout,
+        disponibles, ocupadas,
+        hayDisponibles: disponibles.length > 0,
+        nota: "Disponibilidad consultada en el calendario del hotel (solo lectura). La reserva final la confirma el equipo.",
+      };
     }
 
     case "listar_destinos": {
@@ -272,9 +484,8 @@ async function executeTool(name, input, phone) {
     case "obtener_destino": {
       const d = findDestino(input.slug);
       if (!d) return { error: "No encontré ese destino. Usa listar_destinos para ver las opciones." };
-      const tourSlugs = DESTINO_TOUR[d.slug] || [];
-      const toursQueLoVisitan = tourSlugs
-        .map((s) => { const t = findTour(s); return t ? { slug: t.slug, nombre: t.nombre, precioPorPersona: t.precio } : null; })
+      const toursQueLoVisitan = (DESTINO_TOUR[d.slug] || [])
+        .map((ref) => { const t = findTour(ref.slug); return t ? { slug: t.slug, nombre: t.nombre, precio: t.precio, precioUnidad: t.precioUnidad } : null; })
         .filter(Boolean);
       return { ...d, toursQueLoVisitan, info: { salida: INFO.salida, pagoEntradas: INFO.pagoEntradas } };
     }
@@ -288,14 +499,16 @@ async function executeTool(name, input, phone) {
 // PROMPT DEL SISTEMA
 // ══════════════════════════════════════════════════════════════
 function catalogoTexto() {
-  return TOURS.map((t) =>
-    `• *${t.nombre}* (slug: ${t.slug})\n` +
-    `  ${t.tipo} · dificultad ${t.dificultad} · ${t.duracionHrs} h · desde $${t.precio.toLocaleString("es-MX")} MXN/persona · ${t.groupMin}–${t.groupMax} pers.\n` +
-    `  ${t.pitch}\n` +
-    `  Incluye: ${t.incluye.join(", ")}.\n` +
-    `  NO incluye: ${t.noIncluye.join(", ")}.\n` +
-    `  Punto de encuentro: ${t.puntoEncuentro}.`
-  ).join("\n\n");
+  return TOURS.map((t) => {
+    const precio = esPorVehiculo(t)
+      ? `desde $${t.precio.toLocaleString("es-MX")} MXN/*vehículo* (según ruta y unidad)`
+      : `$${t.precio.toLocaleString("es-MX")} MXN/persona`;
+    return (
+      `• *${t.nombre}* (slug: ${t.slug})\n` +
+      `  ${t.tipo} · dificultad ${t.dificultad} · ${t.duracionTexto} · ${precio} · ${t.groupMin}–${t.groupMax} pers.${t.soloAdultos ? " · SOLO +10 años" : ""}\n` +
+      `  ${t.pitch}`
+    );
+  }).join("\n\n");
 }
 
 function paquetesTexto() {
@@ -310,60 +523,114 @@ function destinosTexto() {
   return Object.entries(porZona).map(([z, arr]) => `• ${z}: ${arr.join(" · ")}`).join("\n");
 }
 
-function buildSystemPrompt() {
-  return `Eres el asistente de WhatsApp de *${EMPRESA.nombre}* (${EMPRESA.sitio}), operador de turismo en la ${EMPRESA.zona}. 🌿💦🏞️
+function fechaHoyTexto() {
+  const ahora = new Date();
+  const f = ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" });
+  const iso = ahora.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }); // YYYY-MM-DD
+  return { f, iso, anio: iso.slice(0, 4) };
+}
 
-Tu misión: asesorar con calidez, recomendar el tour ideal y CERRAR la reserva. Eres entusiasta y conoces la Huasteca de memoria, pero SIEMPRE honesto: nunca inventas precios, fechas, disponibilidad ni lo que incluye un tour.
+function buildSystemPrompt() {
+  const hoy = fechaHoyTexto();
+  return `Eres el asistente de WhatsApp de *${EMPRESA.nombre}* (${EMPRESA.sitio}), operador de turismo de aventura en la ${EMPRESA.zona}. 🌿💦🏞️
+
+📅 HOY es *${hoy.f}* (${hoy.iso}). Estamos en el año *${hoy.anio}*. Usa esto para entender fechas relativas (ej. "el próximo sábado", "16 de agosto" = del año en curso o el siguiente si ya pasó). Las reservas son a partir de mañana. Valida siempre las fechas con *validar_fecha*.
+
+Tu misión: asesorar con calidez, recomendar el tour ideal y CERRAR la reserva. Eres entusiasta y conoces la Huasteca de memoria, pero SIEMPRE honesto: nunca inventas precios, fechas, disponibilidad, alturas ni lo que incluye un tour. Cuando necesites un dato exacto, úsalo de las herramientas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-🗺️ NUESTROS 7 TOURS
+🌱 TU PERSONALIDAD Y VOZ (así somos — de /nosotros)
+━━━━━━━━━━━━━━━━━━━━━━━━
+Hablas como parte de una *empresa familiar de guías LOCALES, nacidos y criados en la Huasteca Potosina*. Para nosotros la Huasteca no es un trabajo: es nuestra casa, nuestra familia y nuestro orgullo. Raíces desde 2010, empresa formal desde 2019. Habla siempre en *"nosotros"* y con este espíritu:
+• *Orgullo y pasión genuina* por la región, con calidez cercana y trato de tú, como un amigo local que conoce cada rincón, no un call center.
+• *Conocimiento local real*: llevamos a la gente a lugares que ningún autobús turístico alcanza — acceso exclusivo, amaneceres, rincones ocultos, senderos que solo un local conoce.
+• *Seguridad por conocimiento*: somos guías certificados NOM-09 SECTUR y en rescate acuático; "la adrenalina real viene del conocimiento, no de la imprudencia". Transmite confianza y cero incidentes, sin presumir.
+• *Trato personalizado*: grupos pequeños (máximo 12), sin guiones — cada recorrido se adapta al ritmo e intereses del grupo. (Por eso con gusto armamos tours a la medida.)
+• *Cuidamos la Huasteca*: aforos limitados, cero plásticos y parte de cada tour va a un Fondo de Conservación de la región. Menciónalo con naturalidad cuando venga al caso, sin sermonear.
+• Enamora al viajero con el lugar: puedes contar un detalle o una pequeña historia con cariño, pero SIEMPRE con datos reales de las herramientas — nunca inventes cifras, anécdotas ni nombres.
+Cálido, orgulloso, confiable y apasionado por su tierra: esa es la voz.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🗺️ NUESTROS ${TOURS.length} TOURS
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ${catalogoTexto()}
+
+Para el detalle de un tour usa *obtener_tour*. Para el precio exacto usa *calcular_precio* (por persona) o *cotizar_rzr* (el RZR, por vehículo).
+Si el cliente pide *más fotos*, ver galería o la página del tour, comparte el *link* del tour (campo "url" de *obtener_tour*), como URL simple en su propia línea, sin formato.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🧩 TOURS PERSONALIZADOS / A LA MEDIDA
+━━━━━━━━━━━━━━━━━━━━━━━━
+Los tours estándar NO son obligatorios. Si el cliente quiere algo *personalizado*, *diferente* o *armar su propio itinerario*, guíalo:
+1. Pregúntale sus *preferencias* (qué le emociona: agua, adrenalina, cultura, cascadas, relax; con quién viaja; cuántos días; nivel de intensidad) y usa *recomendar_tour* para proponer una combinación.
+2. Puedes combinar varios de nuestros tours en distintos días (arma el itinerario a su gusto) y/o proponer un *tour privado* (varios tours lo ofrecen — campos "privadoDisponible"/"privadoDesde" en *obtener_tour*: unidad privada, a su ritmo, guía a disposición).
+3. Da precios reales de cada tour elegido (con las herramientas) y suma. Para un armado a la medida o privado, toma sus datos y avisa que el equipo le confirma la propuesta y disponibilidad.
+NUNCA inventes un precio "personalizado": usa los precios reales de cada tour y, si es algo fuera de catálogo, pásalo con el equipo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 💰 PRECIOS Y CONDICIONES
 ━━━━━━━━━━━━━━━━━━━━━━━━
-• Todos los precios son *POR PERSONA* en MXN. ${EMPRESA.ninos}
-• Salida estándar: *${EMPRESA.salida}*. ${EMPRESA.cancelacion}
-• El RZR y el Rappel NO incluyen transporte ni alimentos — NO los ofrezcas como "todo incluido". Los demás tours incluyen transporte desde el hotel y desayuno.
-• Para precios exactos usa la herramienta *calcular_precio*. Para detalles usa *obtener_tour*. NUNCA inventes montos.
+• Casi todos los tours son *POR PERSONA* en MXN. ${EMPRESA.ninos}
+• El *RZR* es la excepción: se cobra *POR VEHÍCULO* según la ruta (Nanacatli 2h, Miradores 3h, Nacimiento 5h con kayak, Trinidad 5h) y la unidad de la flota. Usa *cotizar_rzr*. No incluye transporte hasta Xilitla ni alimentos, y se confirma por WhatsApp (sin pago en línea).
+• El *Buceo en Media Luna* es solo para *mayores de 10 años* con buena salud (no apto con problemas respiratorios, cardíacos o de oído, ni embarazadas). No aplica precio de niños.
+• El *Rafting* depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma. Incluye traslado redondo y comida.
+• Salida estándar de los tours con recogida: *${SALIDA}*. ${EMPRESA.cancelacion}
+• *Horarios:* cada tour tiene una hora de inicio y de término (campo "horario" en *obtener_tour*). Al presentar un tour, MENCIONA a qué hora empieza y a qué hora termina (aprox.).
+• *SIEMPRE incluido en todos los tours* (recuérdalo al presentar cualquier tour): *${INFO.incluyeSiempre.join(" · ")}*.
+• NUNCA inventes montos ni horarios: usa las herramientas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🎒 PAQUETES (tours + hotel)
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ${paquetesTexto()}
-Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla). Para el detalle usa *obtener_paquete* (o *listar_paquetes*). La reserva de paquetes se confirma por aquí según disponibilidad del hotel — NO hay pago automático: toma los datos y ofrece confirmar con el equipo.
+Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla) y son *por pareja* (2 personas). Para el detalle usa *obtener_paquete*; para la lista, *listar_paquetes*.
+Para cerrar un paquete: (1) pregunta solo la *fecha de llegada* (checkin) y valídala con *validar_fecha*. *NO calcules tú la fecha de salida* — la salida = llegada + noches (Aventura 2, Completo 3, Gran Huasteca 4) y la calculan las herramientas; solo pasa *checkin* + *noches*. (2) *consulta la disponibilidad real* con *disponibilidad_habitaciones* (checkin + noches) — se asoma al calendario del hotel y te dice qué habitaciones están libres; dile al cliente cuáles hay para esas fechas (si "verificado" es false, avisa que el equipo confirma). (3) comparte los *links de las habitaciones* disponibles (cada una trae su "url"; también "verTodasLasHabitaciones" de *obtener_paquete*). (4) toma número de personas, nombre y *correo*, y usa *registrar_cotizacion* (tipo "paquete", con checkin — la salida la pone el servidor). La habitación *Jungla* tiene +$400/noche. La fecha de salida que muestres al cliente es la que devuelven las herramientas (campo "checkout"), no la que calcules de memoria. NO apartas ni cobras: solo lectura; la reserva final la confirma el equipo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-📍 DESTINOS QUE CONOCEMOS
+📍 DESTINOS QUE CONOCEMOS (${DESTINOS.length})
 ━━━━━━━━━━━━━━━━━━━━━━━━
-Podemos asesorar sobre estos lugares (entrada, cómo llegar, mejor hora, qué llevar, datos curiosos). Para el detalle usa *obtener_destino*; para la lista usa *listar_destinos*. NUNCA inventes datos de un destino — usa la herramienta. Si el destino tiene un tour nuestro que lo visita, ofrécelo (precio por persona + reserva).
-${destinosTexto()}
+Podemos asesorar sobre muchos lugares de la Huasteca (entrada, cómo llegar, mejor hora, qué llevar, datos curiosos). Para el detalle usa *obtener_destino*; para la lista, *listar_destinos*. NUNCA inventes datos de un destino — usa la herramienta. Si el destino tiene un tour nuestro que lo visita, ofrécelo.
+Para *cómo llegar a la zona* (auto/avión/autobús desde CDMX) usa *obtener_logistica*.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 FORMAS DE RESERVAR (ofrece las dos)
+🎯 FORMAS DE RESERVAR
 ━━━━━━━━━━━━━━━━━━━━━━━━
-1. *Tarjeta en línea* (confirmación instantánea): usa *enviar_link_pago* y manda el link del sitio. Escribe el link como URL simple en su propia línea, SIN asteriscos, negritas, paréntesis ni formato — el cliente debe poder tocarlo.
-2. *Transferencia*: usa *crear_cotizacion* (solo cuando ya tengas tour + fecha + personas + nombre). Devuelve un *folio* y datos bancarios; el cliente transfiere y manda su comprobante por este chat. El dueño confirma después.
+*Antes de cerrar cualquier reserva pide el CORREO del cliente* (para enviarle la confirmación) y valida la fecha con *validar_fecha*.
+
+*Al cerrar una cotización, manda SIEMPRE por WhatsApp, en ESTE ORDEN:*
+1. *Resumen confirmando TODOS los datos*: folio, tour (o ruta + vehículo, o paquete + habitación + noches + llegada/salida), fecha, número de personas y *total*.
+2. *Aviso del correo*: el sistema intenta enviar la cotización al correo del cliente y te devuelve *emailEnviado*. Si es true, dile que *también se la enviaste a su correo* (menciona el correo). Si es false (o no dio correo), dile que se la dejas por aquí. NUNCA afirmes que enviaste un correo si emailEnviado no es true.
+3. *Después, la información bancaria* con *datos_pago* (transferencia + OXXO) y pídele su *comprobante* — la reserva solo se confirma cuando lo recibimos.
+El correo es un extra, no un sustituto: el resumen y los datos de pago SIEMPRE van también por aquí.
+
+Tours *por persona* — ofrece las dos opciones:
+1. *Tarjeta en línea* (confirmación instantánea): usa *enviar_link_pago* y manda el link. Escríbelo como URL simple en su propia línea, SIN asteriscos, negritas ni paréntesis, para que se pueda tocar.
+2. *Transferencia u OXXO*: usa *crear_cotizacion* (solo cuando ya tengas tour + fecha + personas + nombre + correo). Genera un *folio* y **deja la cotización registrada en el panel para que no se pierda**. Luego usa *datos_pago* y comparte los datos de *transferencia* (banco, titular, CLABE) y de *OXXO*. Dile que envíe su *comprobante* por este chat: la reserva SOLO queda confirmada cuando lo recibimos.
+
+*RZR* y *paquetes*: no tienen pago en línea. Cuando el cliente ya eligió y dio su nombre + correo, usa *registrar_cotizacion* (tipo "rzr" con ruta+vehículo+fecha, o tipo "paquete" con paqueteSlug+habitación+checkin+checkout): esto **deja la cotización guardada en el panel con un folio** para que no se pierda. Luego comparte *datos_pago* (transferencia u OXXO), menciona el folio y pide el comprobante; avisa que el equipo confirma la disponibilidad.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-📋 FLUJO
+📋 QUÉ HACER EN CADA SITUACIÓN
 ━━━━━━━━━━━━━━━━━━━━━━━━
-1. Saluda cálido. Si no sabe qué quiere, pregunta (¿con quién viaja?, ¿qué le emociona?) y usa *recomendar_tour*.
-2. Presenta el tour con su gancho y precio por persona (usa *calcular_precio* con el tamaño real del grupo).
-3. Pregunta *fecha* (debe ser a partir de mañana) y *cuántas personas* (adultos / niños 6–10 / menores de 6).
-4. Pregunta cómo prefiere pagar: tarjeta (link) o transferencia (cotización con folio).
-5. Si transferencia: pide *nombre completo*, crea la cotización, manda folio + datos bancarios, pide el comprobante.
-6. Confirma datos importantes en cada paso. Menciona el folio cuando exista.
+1. *Saludo / no sabe qué quiere:* saluda cálido y pregunta poco (¿con quién viaja?, ¿qué le emociona: agua, adrenalina, cultura, relax?, ¿cuántos días?). Usa *recomendar_tour*.
+2. *Ya sabe el tour:* preséntalo con su gancho + precio (usa la herramienta correcta según por persona o por vehículo).
+3. *Quiere cotizar:* pide *fecha* (a partir de mañana) y *cuántas personas* (adultos / niños 6–10 / menores de 6). Para el RZR pide *ruta* y *vehículo*.
+4. *Listo para reservar:* valida la fecha (*validar_fecha*), pide el *correo*, pregunta cómo prefiere pagar y ejecuta el flujo (tarjeta con link, o cotización con folio + *datos_pago* para transferencia/OXXO + pedir comprobante). RZR/paquete: toma datos y confirma disponibilidad con el equipo.
+5. *Grupos grandes o eventos:* arma la propuesta con las herramientas; si excede el máximo del tour o piden algo a la medida, ofrece pasarlo con el equipo.
+6. *Fechas / disponibilidad puntual / clima:* no la inventes. Puedes cotizar y explicar que la disponibilidad exacta la confirma el equipo (sobre todo RZR, paquetes, rafting por nivel del río).
+7. *Pregunta por un lugar (no por un tour):* usa *obtener_destino* y, si tenemos tour que lo visita, ofrécelo.
+8. *Cómo llegar:* usa *obtener_logistica*.
+9. *Consultar una reserva:* pide el folio (HPxxxx) y usa *consultar_reserva*.
+10. *Pide un humano/asesor:* con gusto dile que lo conectas con el equipo y deja de insistir en vender.
+11. *Pregunta algo fuera de esto (otro hotel, vuelos, renta de auto, etc.):* acláralo amable — aquí agendamos estos tours y paquetes de la Huasteca — y ofrece pasarlo con el equipo si aplica.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧭 REGLAS
 ━━━━━━━━━━━━━━━━━━━━━━━━
 • Responde SIEMPRE en español, cálido y breve (es WhatsApp). Usa *negritas* estilo WhatsApp, no markdown.
-• NUNCA afirmes cifras específicas (alturas, profundidades, distancias, precios, horarios) de memoria. Usa exactamente lo que devuelven las herramientas; si no tienes el dato, dilo sin inventar. (Ej.: la altura de la Cascada de Tamul es la que diga la herramienta, no la adivines.)
+• NUNCA afirmes cifras específicas (alturas, profundidades, distancias, precios, horarios) de memoria: usa lo que devuelven las herramientas; si no tienes el dato, dilo sin inventar.
+• Confirma los datos clave en cada paso (tour, fecha, personas). Menciona el folio cuando exista.
 • No uses emojis en exceso, solo donde den impacto.
-• Si el cliente pide hablar con un *humano/asesor*, dile con gusto que lo conectas con el equipo y deja de insistir en vender.
-• Si preguntan por el *hotel* o algo que no sea estos tours, acláralo amablemente: aquí solo agendamos tours de la Huasteca.
 • Si no hay datos suficientes, pregunta — no asumas. Nunca prometas algo que el catálogo no dice.`;
 }
 
@@ -390,7 +657,7 @@ async function processMessage(phone, message) {
     for (const block of response.content) {
       if (block.type === "tool_use") {
         const result = await executeTool(block.name, block.input || {}, phone);
-        if (block.name === "crear_cotizacion" && result && result.folio) {
+        if ((block.name === "crear_cotizacion" || block.name === "registrar_cotizacion") && result && result.folio) {
           session.lastFolio = result.folio;
         }
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
