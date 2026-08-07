@@ -52,7 +52,7 @@ const FAQS_CV: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
-    a: "Los tours de un día van de $1,300 a $1,850 MXN por persona con todo incluido: transporte desde tu hotel, desayuno regional, entradas, guía certificado NOM-09, equipo de seguridad y fotos del recorrido.",
+    a: "Los tours de un día van de $1,300 a $1,850 MXN por persona con todo incluido: traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla, desayuno regional, entradas, guía certificado NOM-09, equipo de seguridad y fotos del recorrido.",
   },
   {
     q: "¿Puedo reservar para mañana?",

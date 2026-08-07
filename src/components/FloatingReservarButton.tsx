@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackCtaClick } from "@/lib/analytics";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
+import { toursQueIncluyen } from "@/lib/tourMapping";
 
 const LOCK_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
@@ -28,12 +29,23 @@ export function FloatingReservarButton() {
   // fija abajo en móvil (que ya incluye WhatsApp), así que ocultamos los flotantes
   // en móvil para no encimarlos.
   const tourSlugMatch = pathname.match(/^\/(?:en\/)?tours\/([^/]+)$/);
-  const isTourDetail = !!tourSlugMatch;
+
+  // En un destino con tour propio también se monta la MobileBookingBar, así que
+  // aplica la misma regla. Y de paso el botón deja de mandar al catálogo
+  // genérico: lleva al tour concreto que visita ese destino.
+  const destinoSlugMatch = pathname.match(/^\/(?:en\/)?destinos\/([^/]+)$/);
+  const tourDelDestino = destinoSlugMatch
+    ? toursQueIncluyen(destinoSlugMatch[1])[0]
+    : undefined;
+
+  const conBarraInferior = !!tourSlugMatch || !!tourDelDestino;
   const href = tourSlugMatch
     ? `/reservar-tour/${tourSlugMatch[1]}`
-    : "/tours";
+    : tourDelDestino
+      ? `/tours/${tourDelDestino.slug}`
+      : "/tours";
   const waHref = waLink(WA_MESSAGES.flotante);
-  const visibility = isTourDetail ? "hidden lg:flex" : "flex";
+  const visibility = conBarraInferior ? "hidden lg:flex" : "flex";
 
   return (
     <>

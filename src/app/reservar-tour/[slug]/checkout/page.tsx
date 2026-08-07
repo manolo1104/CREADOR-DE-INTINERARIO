@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
@@ -12,6 +12,7 @@ import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate 
 import type { TourBookingState } from "@/lib/tourBooking";
 import { TOURS_DB } from "@/lib/tours";
 import { trackPurchase } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
 
 const stripePromise = loadStripe(
@@ -23,10 +24,12 @@ const WA_NUMBER = "524891251458";
 
 // ── Formulario ────────────────────────────────────────────────────────────────
 
-function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
+function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
   booking: TourBookingState;
   clientSecret: string;
   paymentIntentId: string;
+  /** Montos AUTORITATIVOS devueltos por el servidor (no los del sessionStorage). */
+  cobro: { charge: number; total: number; saldo: number; pct: number };
 }) {
   const stripe   = useStripe();
   const elements = useElements();
@@ -40,11 +43,13 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
   const [showNotes,      setShowNotes]      = useState(false);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState("");
+  const [procesando,     setProcesando]     = useState(false);
 
-  // Hotel de recogida (opcional). Si se deja vacío, coordinamos por WhatsApp.
+  // Hospedaje donde pasamos por el cliente (Xilitla o Ciudad Valles). Opcional:
+  // si se deja vacío, la dirección se coordina por WhatsApp.
   const pickupLocation = pickup.trim() || "Por definir — te contactaremos por WhatsApp";
 
-  const chargeAmt   = booking.total;
+  const chargeAmt   = cobro.charge;
 
   const waDoubtsMsg = encodeURIComponent(
     `Hola, estoy a punto de reservar el tour "${booking.tourName}" y tengo una pregunta antes de pagar.`
@@ -66,12 +71,41 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
       elements,
       confirmParams: {
         payment_method_data: { billing_details: { name: name.trim(), email: email.trim() } },
+        // Red de seguridad: si algún método llegara a exigir redirección, Stripe
+        // sabe a dónde regresar en lugar de reventar con un IntegrationError.
+        return_url: `${window.location.origin}/reservar-tour/confirmacion`,
       },
       redirect: "if_required",
     });
 
     if (stripeError) {
+      // Sin esto el motivo del fallo moría en un useState y jamás se sabía por
+      // qué no cerró la venta.
+      trackTourEvent("PAGO_FALLIDO", {
+        tour_name:   booking.tourName,
+        tourSlug:    booking.tourSlug,
+        amount:      chargeAmt,
+        code:        stripeError.code,
+        decline_code: stripeError.decline_code,
+        error_type:  stripeError.type,
+        pm_type:     stripeError.payment_method?.type,
+        message:     stripeError.message,
+        paymentIntentId,
+      });
       setError(stripeError.message || "Error al procesar el pago. Intenta de nuevo.");
+      setLoading(false);
+      return;
+    }
+
+    // Pagos que quedan "en proceso" (algunos débitos y wallets): el cobro sí va
+    // en camino. Antes caían al else y se les decía que había fallado.
+    if (paymentIntent?.status === "processing") {
+      trackTourEvent("PAGO_EN_PROCESO", {
+        tour_name: booking.tourName, tourSlug: booking.tourSlug,
+        amount: chargeAmt, paymentIntentId,
+      });
+      setError("");
+      setProcesando(true);
       setLoading(false);
       return;
     }
@@ -128,10 +162,22 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
           adults:   booking.adults,
           children: booking.children,
         });
+        trackTourEvent("BOOKING_CONFIRMED", {
+          tour_name: booking.tourName,
+          tourSlug:  booking.tourSlug,
+          amount:    chargeAmt,
+          adults:    booking.adults,
+          children:  booking.children,
+          confirmationNumber,
+        });
 
         sessionStorage.setItem("hp_tour_confirmation", JSON.stringify({
           confirmationNumber,
           ...booking,
+          // Montos del servidor, no los estimados en la pantalla anterior.
+          total:        cobro.total,
+          chargeAmount: cobro.charge,
+          paymentMode:  cobro.saldo > 0 ? "deposit" : "full",
           customerName:  name.trim(),
           customerEmail: email.trim(),
         }));
@@ -142,9 +188,37 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
         setLoading(false);
       }
     } else {
+      trackTourEvent("PAGO_FALLIDO", {
+        tour_name: booking.tourName, tourSlug: booking.tourSlug,
+        amount: chargeAmt, code: paymentIntent?.status ?? "sin_estado",
+        paymentIntentId,
+      });
       setError("El pago no fue completado. Intenta de nuevo.");
       setLoading(false);
     }
+  }
+
+  if (procesando) {
+    return (
+      <div className="bg-white border border-negro/8 p-8 text-center">
+        <Clock className="w-8 h-8 text-verde-selva mx-auto mb-4" />
+        <h2 className="font-cormorant text-verde-profundo text-2xl mb-2">Tu pago está en proceso</h2>
+        <p className="font-dm text-sm text-negro/60 leading-relaxed max-w-md mx-auto">
+          El banco está confirmando el cobro. En cuanto se acredite te enviamos la
+          confirmación a <strong className="text-negro/80">{email.trim()}</strong>. No hace falta
+          que pagues de nuevo.
+        </p>
+        <p className="font-dm text-xs text-negro/40 mt-4">Referencia: {paymentIntentId}</p>
+        <a
+          href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola, mi pago del tour "${booking.tourName}" quedó en proceso. Referencia: ${paymentIntentId}`)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 mt-6 text-verde-selva hover:text-verde-vivo font-dm text-sm underline underline-offset-4"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Avísanos por WhatsApp
+        </a>
+      </div>
+    );
   }
 
   return (
@@ -186,14 +260,15 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
           {/* Hotel de recogida — un solo campo opcional */}
           <div>
             <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">
-              Hotel de recogida <span className="text-negro/35 normal-case tracking-normal">(opcional)</span>
+              Dónde te hospedas <span className="text-negro/35 normal-case tracking-normal">(Xilitla o Ciudad Valles · opcional)</span>
             </label>
             <input type="text" value={pickup} onChange={(e) => setPickup(e.target.value)}
-              placeholder="Ej. Hotel Paraíso Encantado, Xilitla"
+              placeholder="Ej. Hotel Taninul, Ciudad Valles"
               className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
             <p className="mt-1.5 text-[10px] text-negro/40 font-dm">
-              Pasamos por ti a tu hospedaje. Si lo dejas en blanco, coordinamos la recogida por WhatsApp.
+              Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles — no importa dónde te quedes.
+              Si lo dejas en blanco, coordinamos la recogida por WhatsApp.
             </p>
           </div>
 
@@ -228,6 +303,18 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId }: {
         </div>
         {/* Apple Pay / Google Pay aparecen aquí automáticamente si están habilitados en
             el panel de Stripe y el dominio está verificado (Settings → Payment methods). */}
+        {cobro.saldo > 0 && (
+          <div className="mb-5 bg-verde-selva/8 border border-verde-selva/25 px-4 py-3">
+            <p className="font-dm text-sm text-verde-profundo">
+              Estás apartando tu lugar con el <strong>{cobro.pct} %</strong>.
+            </p>
+            <p className="font-dm text-xs text-negro/55 mt-1">
+              Hoy pagas <strong className="text-negro/75">{formatMXN(cobro.charge)} MXN</strong> ·
+              Saldo de <strong className="text-negro/75">{formatMXN(cobro.saldo)} MXN</strong> el
+              día del tour, en efectivo o con tarjeta.
+            </p>
+          </div>
+        )}
         <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
       </section>
 
@@ -286,6 +373,9 @@ export default function CheckoutTourPage() {
   const [paymentIntentId, setPIId]      = useState("");
   const [loadingPI, setLoadingPI]       = useState(true);
   const [piError, setPiError]           = useState("");
+  // Montos autoritativos del servidor; el sessionStorage solo es una pista.
+  const [cobro, setCobro] = useState({ charge: 0, total: 0, saldo: 0, pct: 100 });
+  const piPedido = useRef(false);
 
   useEffect(() => {
     const state = loadTourBookingState();
@@ -294,6 +384,14 @@ export default function CheckoutTourPage() {
       return;
     }
     setBooking(state);
+
+    // Un solo PaymentIntent por visita. Sin esta guarda el efecto se ejecuta dos
+    // veces (StrictMode en dev, remontajes en producción) y se creaban DOS
+    // PaymentIntents por checkout: inflaba las métricas de Stripe y, peor, le
+    // cambiaba el clientSecret a <Elements> después de montar — que no lo
+    // soporta y deja el formulario de tarjeta en blanco.
+    if (piPedido.current) return;
+    piPedido.current = true;
 
     fetch("/api/tours/create-payment-intent", {
       method:  "POST",
@@ -309,6 +407,7 @@ export default function CheckoutTourPage() {
           childrenMid:   state.childrenMid,
           childrenSmall: state.childrenSmall,
           promoCode:     state.promoCode,
+          pct:           state.pct,
           // Tours por vehículo (RZR): el servidor cobra desde la matriz flota×ruta.
           ruta:          state.ruta,
           vehiculo:      state.vehiculo,
@@ -321,6 +420,12 @@ export default function CheckoutTourPage() {
         if (d.error) { setPiError(d.error); return; }
         setClientSecret(d.clientSecret);
         setPIId(d.paymentIntentId);
+        setCobro({
+          charge: d.amount ?? state.total,
+          total:  d.total  ?? state.total,
+          saldo:  d.saldo  ?? 0,
+          pct:    d.pct    ?? 100,
+        });
       })
       .catch(() => setPiError("Error de conexión. Recarga la página."))
       .finally(() => setLoadingPI(false));
@@ -410,7 +515,7 @@ export default function CheckoutTourPage() {
             </div>
           ) : clientSecret ? (
             <Elements stripe={stripePromise} options={stripeOptions}>
-              <CheckoutForm booking={booking} clientSecret={clientSecret} paymentIntentId={paymentIntentId} />
+              <CheckoutForm booking={booking} clientSecret={clientSecret} paymentIntentId={paymentIntentId} cobro={cobro} />
             </Elements>
           ) : null}
         </div>
@@ -471,14 +576,26 @@ export default function CheckoutTourPage() {
               )}
               <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-2">
                 <span>Total</span>
-                <span className="font-cormorant text-xl text-dorado">{formatMXN(booking.total)} MXN</span>
+                <span className="font-cormorant text-xl text-dorado">{formatMXN(cobro.total || booking.total)} MXN</span>
               </div>
+              {cobro.saldo > 0 && (
+                <>
+                  <div className="flex justify-between text-verde-profundo font-medium">
+                    <span>Pagas hoy ({cobro.pct} %)</span>
+                    <span>{formatMXN(cobro.charge)} MXN</span>
+                  </div>
+                  <div className="flex justify-between text-negro/50 text-xs">
+                    <span>Saldo el día del tour</span>
+                    <span>{formatMXN(cobro.saldo)} MXN</span>
+                  </div>
+                </>
+              )}
             </div>
             <div className="border-t border-negro/8 pt-4">
               <p className="text-[9px] tracking-[2px] uppercase text-negro/30 font-dm mb-2">Todo incluido</p>
               <ul className="space-y-1 text-xs font-dm text-negro/55">
                 {(tourData?.incluye ?? [
-                  "Transporte desde tu hotel",
+                  "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
                   "Guía certificado NOM-09 SECTUR",
                   "Entradas a todas las atracciones",
                   "Desayuno con platillos típicos",

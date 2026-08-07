@@ -454,7 +454,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         <div><div class="k">Fecha fin</div><div class="v">${fDate(fechaFin)}</div></div>
         <div><div class="k">Duración</div><div class="v">${duracion} día${duracion !== 1 ? "s" : ""}</div></div>
         <div><div class="k">Hospedaje</div><div class="v" style="font-size:8pt">${hospNombre}</div></div>
-        <div style="grid-column:1/-1"><div class="k">Punto de salida</div><div class="v">Xilitla, SLP — recogida en hotel</div></div>
+        <div style="grid-column:1/-1"><div class="k">Recogida</div><div class="v">Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles</div></div>
       </div>
     </div>
   </div>

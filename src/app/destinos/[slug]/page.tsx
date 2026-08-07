@@ -10,12 +10,16 @@ import {
 } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
-import { DESTINO_EN_TOURS } from "@/lib/tourMapping";
+import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
 import { TOURS_DB } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { DestinoGallery } from "@/components/DestinoGallery";
 import { MejorEpocaWidget } from "@/components/MejorEpocaWidget";
+import { MobileBookingBar } from "@/components/MobileBookingBar";
+import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
+import { PageViewTracker } from "@/components/PageViewTracker";
+import { TrackedLink } from "@/components/TrackedLink";
 import {
   NARRATIVA_DESTINO,
   COMBINACION_DESTINO,
@@ -59,14 +63,22 @@ export default function DestinoPage({ params }: Props) {
 
   const jsonLd            = buildDestinationJsonLd(destino, locale);
   const faqs              = getDestinoFaqs(destino, locale);
-  const toursRelacionados = (DESTINO_EN_TOURS[destino.slug] ?? []).map((t) => {
+  // Tours que SÍ visitan este destino (para las píldoras del hero y la banda).
+  const toursRelacionados = toursQueIncluyen(destino.slug).map((t) => {
     const b = TOURS_DB.find((tour) => tour.slug === t.slug);
     return b ? localizeTour(b, locale) : { slug: t.slug, nombre: t.nombre };
   });
-  const toursCompletos    = (DESTINO_EN_TOURS[destino.slug] ?? [])
+  const toursCompletos    = toursQueIncluyen(destino.slug)
     .map((t) => TOURS_DB.find((tour) => tour.slug === t.slug))
     .filter(Boolean)
     .map((tour) => localizeTour(tour!, locale));
+  // Tours de la misma zona que NO lo visitan: se ofrecen como combinables para
+  // que los 26 destinos sin tour propio dejen de terminar en un CTA vacío.
+  const toursCercanos     = toursCercaDe(destino.slug)
+    .map((t) => TOURS_DB.find((tour) => tour.slug === t.slug))
+    .filter(Boolean)
+    .map((tour) => localizeTour(tour!, locale));
+  const tourPrincipal     = toursCompletos[0];
   const narrativa        = locale === "en" ? undefined : NARRATIVA_DESTINO[destino.slug];
   const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
   const reviewsDestino   = REVIEWS_POR_DESTINO[destino.slug] ?? [];
@@ -92,6 +104,17 @@ export default function DestinoPage({ params }: Props) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <PageViewTracker
+        event="DESTINO_PAGE_VIEW"
+        data={{
+          destino:  base.slug,
+          nombre:   base.nombre,
+          zona:     base.zona,
+          // Para medir el puente: ¿los destinos con tour propio convierten más?
+          tourSlug: tourPrincipal?.slug,
+          conTour:  tourPrincipal ? "incluye" : toursCercanos.length ? "cerca" : "ninguno",
+        }}
+      />
       <main className="min-h-screen">
 
         {/* ── HERO ── */}
@@ -143,6 +166,43 @@ export default function DestinoPage({ params }: Props) {
 
         {(allImages.length > 1 || (!destino.imagen_hero && allImages.length > 0)) && (
           <DestinoGallery images={allImages} nombre={destino.nombre} />
+        )}
+
+        {/* ── BANDA DE PRODUCTO ──
+            El 92 % del tráfico entra por contenido (destinos) y se va sin ver
+            un tour. El bloque completo de "Tours relacionados" vive hasta
+            abajo, después del mapa, las FAQs y las reseñas — casi nadie llega.
+            Esta banda pone el producto y su precio arriba del pliegue. */}
+        {tourPrincipal && (
+          <section className="bg-verde-profundo border-y border-verde-vivo/20">
+            <div className="max-w-5xl mx-auto px-6 md:px-8 py-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              <div className="flex-1 min-w-0">
+                <p className="font-cormorant text-crema text-xl md:text-2xl leading-snug">
+                  {dd.partOfTour(destino.nombre, tourPrincipal.nombre)}
+                </p>
+                <p className="font-dm text-crema/60 text-sm mt-1">
+                  {money(tourPrincipal.precio)} MXN {dd.perPerson}
+                  {tourPrincipal.precioUnidad === "vehiculo" ? "" : ` · ${dd.deposit30}`}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <TrackedLink
+                  href={localePath(`/tours/${tourPrincipal.slug}`, locale)}
+                  event="DESTINO_TOUR_CLICK"
+                  data={{
+                    destino:  base.slug,
+                    tourSlug: tourPrincipal.slug,
+                    tour_name: tourPrincipal.nombre,
+                    amount:   tourPrincipal.precio,
+                    source:   "banda_destino",
+                  }}
+                  className="inline-flex items-center gap-2 bg-lima text-negro px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-crema transition-colors"
+                >
+                  {dd.seeDepartures} →
+                </TrackedLink>
+              </div>
+            </div>
+          </section>
         )}
 
         {narrativa && (
@@ -344,6 +404,39 @@ export default function DestinoPage({ params }: Props) {
             <h2 className="font-cormorant text-crema text-3xl mb-3">
               {dd.wantToVisit} <em className="text-dorado">{destino.nombre}?</em>
             </h2>
+
+            {/* Antes esta rama era solo-WhatsApp: 26 de 41 destinos terminaban
+                sin un solo producto a la vista. Ahora se ofrecen los tours de
+                la misma zona, diciendo con claridad que NO lo visitan. */}
+            {toursCercanos.length > 0 && (
+              <div className="max-w-3xl mx-auto mb-10">
+                <p className="text-crema/50 text-sm mb-6 font-dm">{dd.nearbyIntro(destino.nombre)}</p>
+                <div className="grid gap-3 sm:grid-cols-2 text-left">
+                  {toursCercanos.map((t) => (
+                    <Link
+                      key={t.slug}
+                      href={localePath(`/tours/${t.slug}`, locale)}
+                      className="group border border-verde-vivo/25 bg-negro/25 hover:bg-negro/40 hover:border-verde-vivo/50 transition-colors p-4 flex items-center gap-4"
+                    >
+                      {t.imagen_hero && (
+                        <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden">
+                          <Image src={t.imagen_hero} alt={t.nombre} fill className="object-cover" sizes="64px" />
+                        </div>
+                      )}
+                      <span className="min-w-0">
+                        <span className="block font-dm text-sm text-crema leading-snug">{t.nombre}</span>
+                        <span className="block font-dm text-xs text-dorado mt-1">
+                          {money(t.precio)} MXN {t.precioUnidad === "vehiculo" ? "" : dd.perPerson}
+                        </span>
+                      </span>
+                      <span className="ml-auto text-verde-vivo group-hover:translate-x-0.5 transition-transform">→</span>
+                    </Link>
+                  ))}
+                </div>
+                <p className="text-[10px] text-crema/35 font-dm mt-5">{dd.combineWhatsapp}</p>
+              </div>
+            )}
+
             <p className="text-crema/50 text-sm mb-8 font-dm max-w-md mx-auto">{dd.writeWhatsapp}</p>
             <a href={waLink(waDestino)} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 mb-4">
@@ -353,6 +446,17 @@ export default function DestinoPage({ params }: Props) {
             <p className="text-[10px] text-crema/35 font-dm flex items-center justify-center gap-1.5">
               <Zap className="w-3 h-3" /> {dd.replyUnder1h}
             </p>
+          </div>
+        )}
+
+        {/* ── CAPTURA DE CORREO ──
+            Las páginas de destino son el grueso del tráfico orgánico y hasta
+            ahora no capturaban un solo correo: el recomendador es el único
+            formulario del sitio y casi nadie lo encuentra. (ES por ahora: el
+            itinerario que se envía está escrito en español.) */}
+        {locale !== "en" && (
+          <div className="max-w-4xl mx-auto px-6">
+            <BlogNewsletterInline fuente={`Destino: ${base.nombre}`} />
           </div>
         )}
 
@@ -376,6 +480,25 @@ export default function DestinoPage({ params }: Props) {
               )}
             </div>
           </div>
+        )}
+
+        {/* Barra móvil de reserva. En /tours/[slug] es el CTA que más convierte
+            (todos los "INICIÓ RESERVA" del log salieron de ahí) y vivía en una
+            sola plantilla. Aquí solo aparece si hay un tour que SÍ visita el
+            destino, para no prometer un itinerario que no existe. */}
+        {tourPrincipal && (
+          <>
+            <MobileBookingBar
+              tourSlug={tourPrincipal.slug}
+              precio={tourPrincipal.precio}
+              tourId={tourPrincipal.id}
+              tourName={tourPrincipal.nombre}
+              precioUnidad={tourPrincipal.precioUnidad}
+              waHref={waLink(waDestino)}
+              source="destino_bar"
+            />
+            <div className="h-20 lg:hidden" aria-hidden="true" />
+          </>
         )}
       </main>
     </>

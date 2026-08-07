@@ -35,7 +35,7 @@ export function buildTourEmailHtml(data: {
   const deposito  = data.depositoPagado ?? 0;
   const pendiente = Math.max(0, data.totalAmount - deposito);
   const fmxEmail  = (n: number) => `$${Number(n).toLocaleString("es-MX")} MXN`;
-  const pickupText = data.pickupLugar || "Frente a tu hotel. Confirma tu dirección exacta por WhatsApp.";
+  const pickupText = data.pickupLugar || "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. Confirma tu dirección exacta por WhatsApp.";
 
   // Tours de la reserva (excluye el objeto _meta). Si hay varios, se listan todos con su fecha.
   const tours = Array.isArray(data.lineItems) ? data.lineItems.filter((l: any) => l && !l._meta) : [];
@@ -97,7 +97,7 @@ export function buildTourEmailHtml(data: {
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
                   ${formatDate(data.tourDate)}
                 </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Salida: 8:30–9:00 AM desde tu hotel</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Pasamos por ti entre 8:00 y 9:00 AM</p>
               </td>
               <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
                 <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
@@ -278,7 +278,7 @@ export function buildTourEmailHtml(data: {
                 Todo incluido en tu tour
               </p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.9;">
-                ✓ Transporte desde tu hotel &nbsp;&nbsp; ✓ Desayuno con platillos típicos<br>
+                ✓ Traslado redondo desde tu hospedaje &nbsp;&nbsp; ✓ Desayuno con platillos típicos<br>
                 ✓ Entradas a todos los parques &nbsp;&nbsp; ✓ Guía certificado NOM-09 SECTUR<br>
                 ✓ Equipo de seguridad &nbsp;&nbsp; ✓ Fotografías y video del recorrido
               </p>
@@ -579,7 +579,7 @@ export function buildTourQuoteEmailHtml(data: {
             <tr><td>
               <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">Todo incluido en el precio</p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:2">
-                ✓ Transporte desde tu hotel &nbsp;&nbsp; ✓ Desayuno con platillos típicos<br>
+                ✓ Traslado redondo desde tu hospedaje &nbsp;&nbsp; ✓ Desayuno con platillos típicos<br>
                 ✓ Entradas a todos los parques &nbsp;&nbsp; ✓ Guía certificado NOM-09 SECTUR<br>
                 ✓ Equipo de seguridad completo &nbsp;&nbsp; ✓ Fotografías del recorrido
               </p>

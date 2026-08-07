@@ -217,7 +217,8 @@ export default function ConfirmacionTourPage() {
             {isDeposit && (
               <div className="bg-verde-selva/8 border border-verde-selva/20 px-4 py-3">
                 <p className="text-xs text-verde-selva font-dm font-medium">
-                  ✓ Depósito de 30% pagado · Resto: {formatMXN(remaining)} MXN se paga el día del tour
+                  ✓ Anticipo de {Math.round((chargeAmt / data.total) * 100)}% pagado · Saldo de{" "}
+                  {formatMXN(remaining)} MXN el día del tour, en efectivo o con tarjeta
                 </p>
               </div>
             )}

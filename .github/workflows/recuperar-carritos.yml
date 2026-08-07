@@ -1,9 +1,11 @@
-name: Recuperar carritos abandonados
+name: Correos automáticos (carritos + secuencia de leads)
 
 on:
   schedule:
-    # Cada 6 horas: revisa carritos abandonados y manda recordatorios.
-    - cron: "0 */6 * * *"
+    # Cada hora. La secuencia es 1 h → 24 h → 72 h; con el cron anterior (cada
+    # 6 h) el primer recordatorio salía hasta 6 horas tarde, cuando el cliente
+    # ya había reservado en otro lado o perdido el interés.
+    - cron: "0 * * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -13,6 +15,14 @@ jobs:
     steps:
       - name: Llamar al endpoint de recuperación
         run: |
+          # -f hace que un 401 (secreto mal configurado) falle el job en vez de
+          # pasar desapercibido como si no hubiera nada que enviar.
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/recuperar-carritos
+
+      - name: Secuencia de correos a los leads del recomendador
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/secuencia-leads

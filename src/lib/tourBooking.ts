@@ -16,7 +16,9 @@ export interface TourBookingState {
   promoDiscount: number; // porcentaje 0–100
   subtotal:      number;
   total:         number;  // precio total completo
-  chargeAmount:  number;  // monto real a cobrar (depósito o total)
+  chargeAmount:  number;  // monto real a cobrar hoy (anticipo o total)
+  pct:           number;  // 30 (anticipo) o 100 (pago completo)
+  saldo:         number;  // lo que queda por pagar el día del tour
   paymentMode:   "deposit" | "full";
   sessionId:     string;
   // Tours cobrados por vehículo (RZR): ruta + unidad elegida

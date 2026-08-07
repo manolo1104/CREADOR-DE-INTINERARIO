@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { minBookingDate } from "@/lib/tourBooking";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -19,13 +20,31 @@ function formatYMD(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function isPast(d: Date): boolean {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
+/**
+ * Primer día reservable, anclado a la hora de México y NO a la del dispositivo.
+ * Un viajero en España veía habilitado un día que aquí ya pasó.
+ */
+function primerDiaReservable(): Date {
+  const [y, m, d] = minBookingDate().split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/**
+ * Último día reservable. Sin tope, la gente paginaba hacia adelante y acababa
+ * eligiendo fechas a 10 meses vista (en el log había dos de 2027) — eso no es
+ * una reserva, es alguien peleándose con el calendario.
+ */
+const MESES_MAX = 6;
+
+function ultimoDiaReservable(): Date {
+  const min = primerDiaReservable();
+  return new Date(min.getFullYear(), min.getMonth() + MESES_MAX, min.getDate());
+}
+
+function fueraDeRango(d: Date): boolean {
   const dd = new Date(d);
   dd.setHours(0, 0, 0, 0);
-  return dd < tomorrow;
+  return dd < primerDiaReservable() || dd > ultimoDiaReservable();
 }
 
 // Build Mon-first calendar grid for a given month
@@ -74,7 +93,7 @@ function MonthGrid({
           if (!date) return <span key={`empty-${i}`} />;
 
           const ymd        = formatYMD(date);
-          const past       = isPast(date);
+          const past       = fueraDeRango(date);
           const isSelected = ymd === selected;
 
           if (past) {
@@ -135,10 +154,37 @@ export function TourCalendar({ value, onChange }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  const prev = useCallback(() => setMonthStart((m) => addMonths(m, -1)), []);
-  const next = useCallback(() => setMonthStart((m) => addMonths(m, 1)), []);
+  // Los topes evitan que se pueda paginar al pasado o a un año vista.
+  const minMes = new Date(primerDiaReservable().getFullYear(), primerDiaReservable().getMonth(), 1);
+  const maxMes = new Date(ultimoDiaReservable().getFullYear(), ultimoDiaReservable().getMonth(), 1);
+  const puedeRetroceder = monthStart > minMes;
+  const puedeAvanzar    = addMonths(monthStart, 1) <= maxMes;
+
+  const prev = useCallback(
+    () => setMonthStart((m) => (m > minMes ? addMonths(m, -1) : m)),
+    [minMes],
+  );
+  const next = useCallback(
+    () => setMonthStart((m) => (addMonths(m, 1) <= maxMes ? addMonths(m, 1) : m)),
+    [maxMes],
+  );
 
   const month2Start = addMonths(monthStart, 1);
+
+  // Atajo de los próximos 14 días: elegir fecha en un clic en lugar de navegar
+  // una cuadrícula. La mayoría reserva para los días inmediatos.
+  const proximosDias = (() => {
+    const inicio = primerDiaReservable();
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+      return {
+        ymd:  formatYMD(d),
+        dia:  DAYS_ES[(d.getDay() + 6) % 7],
+        num:  d.getDate(),
+        mes:  MONTHS_ES[d.getMonth()].slice(0, 3),
+      };
+    });
+  })();
 
   function handleSelect(ymd: string) {
     onChange(ymd);
@@ -157,22 +203,58 @@ export function TourCalendar({ value, onChange }: Props) {
 
   const CalendarInner = () => (
     <div className="space-y-4">
+      {/* Próximos días — un clic en vez de navegar la cuadrícula */}
+      <div>
+        <p className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm mb-2">
+          Próximos días
+        </p>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          {proximosDias.map((d) => {
+            const activo = d.ymd === value;
+            return (
+              <button
+                key={d.ymd}
+                type="button"
+                onClick={() => handleSelect(d.ymd)}
+                aria-pressed={activo}
+                aria-label={`Seleccionar ${d.ymd}`}
+                className={`flex-shrink-0 w-12 py-1.5 border text-center transition-colors ${
+                  activo
+                    ? "border-verde-selva bg-verde-selva text-crema"
+                    : "border-negro/15 hover:border-verde-selva/50 text-negro"
+                }`}
+              >
+                <span className={`block text-[9px] font-dm uppercase tracking-[1px] ${activo ? "text-crema/70" : "text-negro/40"}`}>
+                  {d.dia}
+                </span>
+                <span className="block text-sm font-dm leading-tight">{d.num}</span>
+                <span className={`block text-[9px] font-dm ${activo ? "text-crema/70" : "text-negro/40"}`}>
+                  {d.mes}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-t border-negro/8 pt-3">
         <button
           onClick={prev}
+          disabled={!puedeRetroceder}
           aria-label="Mes anterior"
-          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full"
+          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm">
-          Selecciona tu fecha
+          O elige otra fecha
         </span>
         <button
           onClick={next}
+          disabled={!puedeAvanzar}
           aria-label="Mes siguiente"
-          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full"
+          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

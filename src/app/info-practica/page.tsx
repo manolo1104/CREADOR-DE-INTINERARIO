@@ -149,7 +149,7 @@ const FAQ_DATA: FAQCategory[] = [
     items: [
       {
         q: "¿Desde dónde salen los tours?",
-        a: "Todos nuestros tours salen del Hotel Paraíso Encantado Xilitla, nuestro hotel sede. Si no te hospedas ahí, coordina tu recogida con nosotros por WhatsApp.",
+        a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. No necesitas hospedarte con nosotros. Las excepciones son el recorrido en RZR (nos vemos en nuestra base de Xilitla) y el buceo en Media Luna (el punto de encuentro es la laguna, en Rioverde).",
       },
       {
         q: "¿A qué hora es la salida?",
@@ -536,12 +536,12 @@ export default function InfoPracticaPage() {
               </p>
               <p className="text-crema/65 font-dm text-xs leading-relaxed mb-3">
                 Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín
-                Surrealista, con piscina, restaurante de cocina huasteca y punto de salida de todos
-                nuestros tours. Hospedarte aquí elimina cualquier traslado extra.
+                Surrealista, con piscina y restaurante de cocina huasteca. Pasamos por ti aquí
+                —igual que a cualquier hospedaje de Xilitla o Ciudad Valles— sin costo extra.
               </p>
               <ul className="space-y-1 mb-3">
                 {[
-                  "Punto de salida oficial de los tours — salida entre 8:00 y 9:00 AM sin traslados",
+                  "Recogida en la puerta entre 8:00 y 9:00 AM",
                   "Piscina con vista al cañón · Restaurante propio · AC y WiFi",
                   "Tarifa especial para viajeros que reservan tours con nosotros",
                   "Desde $1,200 MXN/noche (habitación doble)",
@@ -605,10 +605,12 @@ export default function InfoPracticaPage() {
       {/* ── HOTEL PARAÍSO ENCANTADO ── */}
       <Section id="hotel-paraiso" Icon={Hotel} title="Nuestra base: Hotel Paraíso Encantado">
         <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
-          Todos nuestros tours salen desde el{" "}
-          <strong className="text-crema">Hotel Paraíso Encantado Xilitla</strong>,
-          a pasos del Jardín Surrealista de Edward James. Hospedarte aquí simplifica la
-          logística y garantiza la salida puntual entre 8:00 y 9:00 AM.
+          El{" "}
+          <strong className="text-crema">Hotel Paraíso Encantado Xilitla</strong> es
+          nuestra casa, a pasos del Jardín Surrealista de Edward James. No hace falta
+          hospedarte aquí para tomar un tour —pasamos por ti a donde te quedes, en Xilitla
+          o en Ciudad Valles—, pero si te quedas con nosotros la logística es más simple y
+          sales por la puerta.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -655,7 +657,7 @@ export default function InfoPracticaPage() {
             <InfoCard title="¿Por qué hospedarte aquí?" accent="dorado">
               <BulletList
                 items={[
-                  "Punto de salida oficial de todos los tours — sin traslados extra",
+                  "Sales por la puerta: cero traslado antes de empezar el tour",
                   "A 50 metros del Jardín Surrealista de Edward James",
                   "Desayuno de cocina huasteca incluido en los tours",
                   "Piscina con vista al cañón y zona de selva",

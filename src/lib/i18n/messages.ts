@@ -103,6 +103,14 @@ export interface Messages {
     alsoInclude: (name: string) => string;
     createItinerary: string;
     faqTitulo: string;
+    // Banda de producto bajo la galería + tours de la misma zona
+    partOfTour: (destino: string, tour: string) => string;
+    perPerson: string;
+    seeDepartures: string;
+    deposit30: string;
+    nearbyTours: string;
+    nearbyIntro: (name: string) => string;
+    combineWhatsapp: string;
   };
   footer: {
     derechos: string;
@@ -191,8 +199,8 @@ const es: Messages = {
     daysOpen: "Días abierto",
     bestTime: "Mejor hora",
     bestSeason: "Temporada ideal",
-    meetingPoint: "Punto de encuentro",
-    meetingPointVal: "Ciudad Valles — frente a la central de autobuses",
+    meetingPoint: "Recogida",
+    meetingPointVal: "Tu hospedaje en Xilitla o Ciudad Valles",
     advertencias: "Advertencias",
     comoLlegar: "Cómo llegar",
     queLlevar: "Qué llevar",
@@ -211,6 +219,14 @@ const es: Messages = {
     includedIn: "Incluido en:",
     alsoInclude: (name) => `Los viajeros que visitan ${name} también suelen incluir:`,
     createItinerary: "✦ Crear itinerario personalizado",
+    // Banda de producto bajo la galería + tours de la misma zona
+    partOfTour: (destino: string, tour: string) => `${destino} es parte de ${tour}`,
+    perPerson: "por persona",
+    seeDepartures: "Ver salidas",
+    deposit30: "Aparta con el 30 %",
+    nearbyTours: "Tours en esta zona",
+    nearbyIntro: (name: string) => `No visitamos ${name} dentro de un tour, pero operamos en la misma zona — podemos combinarlo:`,
+    combineWhatsapp: "Pregunta por WhatsApp para combinarlo",
     faqTitulo: "Preguntas frecuentes",
   },
   footer: {
@@ -303,8 +319,8 @@ const en: Messages = {
     daysOpen: "Open days",
     bestTime: "Best time of day",
     bestSeason: "Best season",
-    meetingPoint: "Meeting point",
-    meetingPointVal: "Ciudad Valles — in front of the bus station",
+    meetingPoint: "Pickup",
+    meetingPointVal: "Your lodging in Xilitla or Ciudad Valles",
     advertencias: "Good to know",
     comoLlegar: "How to get there",
     queLlevar: "What to bring",
@@ -323,6 +339,13 @@ const en: Messages = {
     includedIn: "Included in:",
     alsoInclude: (name) => `Travelers who visit ${name} also tend to include:`,
     createItinerary: "✦ Create a custom itinerary",
+    partOfTour: (destino: string, tour: string) => `${destino} is part of ${tour}`,
+    perPerson: "per person",
+    seeDepartures: "See departures",
+    deposit30: "Book with 30 % deposit",
+    nearbyTours: "Tours in this area",
+    nearbyIntro: (name: string) => `We don't visit ${name} on a tour, but we operate in the same area — we can combine it:`,
+    combineWhatsapp: "Ask on WhatsApp to combine it",
     faqTitulo: "Frequently asked questions",
   },
   footer: {

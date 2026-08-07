@@ -44,7 +44,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Qué incluyen los tours?",
-    a: "Según el tour: transporte desde tu hospedaje, desayuno con platillos típicos de la región, entradas a todos los parques y atracciones, guía certificado NOM-09 SECTUR, equipo de seguridad, fotografías y video del recorrido, y botiquín de primeros auxilios. El precio que ves es el precio final por persona, sin sorpresas.",
+    a: "Según el tour: traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, desayuno con platillos típicos de la región, entradas a todos los parques y atracciones, guía certificado NOM-09 SECTUR, equipo de seguridad, fotografías y video del recorrido, y botiquín de primeros auxilios. El precio que ves es el precio final por persona, sin sorpresas.",
   },
   {
     q: "¿Cómo llegar a la Huasteca Potosina desde CDMX, Monterrey o Guadalajara?",

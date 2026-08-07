@@ -4,13 +4,69 @@ import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 import { TOUR_ACTIVITIES } from "@/lib/tourActivities";
 import { rateLimit } from "@/lib/rateLimit";
 // alias: en este archivo `actividad` ya es el nivel de actividad del formulario
-import { actividad as logActividad, nombreCorto } from "@/lib/logger";
+import { actividad as logActividad, nombreCorto, logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
+import { registrarLead, esEmailValido } from "@/lib/leads";
+import { sendBrevoEmail } from "@/lib/brevo";
+import { buildLeadSequenceEmail } from "@/lib/leadSequenceEmail";
 
 export const runtime = "nodejs";
 
 // id del tour → nombre legible (corto) para el log
 const nombreDe = (id: string): string =>
   nombreCorto(TOURS_DB.find((t) => t.id === id)?.nombre) || id;
+
+// id del tour → slug (la secuencia de correos trabaja con slugs)
+const slugDe = (id: string): string | null =>
+  TOURS_DB.find((t) => t.id === id)?.slug ?? null;
+
+/**
+ * Registra al lead con su recomendación y le manda el primer correo al momento.
+ * Se llama sin `await`: si algo falla aquí, el usuario igual ve su resultado.
+ */
+async function arrancarSecuencia(
+  email: unknown,
+  ctx: {
+    origen?: unknown; grupo?: unknown; intereses?: unknown; dias?: unknown;
+    primaryId: string; secondaryId: string; paquete: Paquete | null;
+  },
+) {
+  if (!esEmailValido(email)) return;
+  try {
+    const { esNuevo } = (await registrarLead(email, "Recomendador", {
+      grupo:          typeof ctx.grupo  === "string" ? ctx.grupo  : null,
+      dias:           typeof ctx.dias   === "string" ? ctx.dias   : null,
+      origen:         typeof ctx.origen === "string" ? ctx.origen : null,
+      intereses:      Array.isArray(ctx.intereses) ? ctx.intereses.map(String) : [],
+      tourPrincipal:  slugDe(ctx.primaryId),
+      tourSecundario: slugDe(ctx.secondaryId),
+      paquete:        ctx.paquete?.slug ?? null,
+    })) ?? { esNuevo: false };
+
+    // El primer correo solo se manda una vez, aunque use el recomendador varias.
+    if (!esNuevo) return;
+
+    const contenido = buildLeadSequenceEmail({
+      paso: 1,
+      grupo: typeof ctx.grupo === "string" ? ctx.grupo : null,
+      dias:  typeof ctx.dias  === "string" ? ctx.dias  : null,
+      tourPrincipal:  slugDe(ctx.primaryId),
+      tourSecundario: slugDe(ctx.secondaryId),
+    });
+    if (!contenido) return;
+
+    await sendBrevoEmail({ to: [{ email }], subject: contenido.subject, htmlContent: contenido.html });
+    await prisma.lead.updateMany({
+      where: { email, fuente: "Recomendador" },
+      data:  { emailsSent: 1, lastEmailAt: new Date() },
+    });
+    logActividad("📧  SECUENCIA 1/4", email, nombreDe(ctx.primaryId));
+  } catch (e) {
+    logger.error("secuencia_lead_paso1_failed", {
+      reason: e instanceof Error ? e.message : "desconocido",
+    });
+  }
+}
 
 /**
  * Selección DETERMINÍSTICA del paquete por días disponibles (la IA solo redacta el porqué):
@@ -313,6 +369,11 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
       paquete ? `+ ${paquete.nombre}` : undefined,
       typeof email === "string" && email ? email : undefined,
     );
+
+    // Guarda al lead CON su recomendación y arranca la secuencia. Antes el
+    // correo solo se anotaba en una hoja y nadie le volvía a escribir.
+    void arrancarSecuencia(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete });
+
     return NextResponse.json({
       ...result,
       primary:   { ...result.primary,   tourId: primaryId },

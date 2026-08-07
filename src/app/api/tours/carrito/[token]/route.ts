@@ -5,19 +5,20 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // GET /api/tours/carrito/[token]
-// Devuelve la selección guardada de un carrito para precargar /reservar-tour,
-// y lo marca como "recuperado" (el cliente volvió por el link del correo).
+// Devuelve la selección guardada de un carrito para precargar /reservar-tour.
+//
+// OJO: antes esto marcaba el carrito como "recovered" en cuanto el cliente
+// abría el link del correo, y el cron solo escribe a los que están "open".
+// Resultado: quien hacía clic en el primer recordatorio quedaba excluido de
+// todos los siguientes — justo el que más interés había mostrado. Volver a la
+// página NO es haber comprado; el carrito sigue abierto hasta que haya reserva
+// (send-confirmation y el webhook lo marcan "converted").
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   const token = params.token;
   if (!token) return NextResponse.json({ error: "Falta el token." }, { status: 400 });
 
   const cart = await prisma.abandonedCart.findUnique({ where: { token } });
   if (!cart) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
-
-  // Marca que el cliente regresó (solo si aún estaba abierto).
-  if (cart.status === "open") {
-    await prisma.abandonedCart.update({ where: { id: cart.id }, data: { status: "recovered" } });
-  }
 
   return NextResponse.json({
     tourSlug:      cart.tourSlug,

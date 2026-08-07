@@ -13,7 +13,7 @@ function formatFecha(ymd: string): string {
   }
 }
 
-export type CartEmailTipo = "cotizacion" | "recordatorio1" | "recordatorio2";
+export type CartEmailTipo = "cotizacion" | "recordatorio1" | "recordatorio2" | "recordatorio3";
 
 export interface CartEmailInput {
   tipo:       CartEmailTipo;
@@ -43,6 +43,14 @@ const COPY: Record<CartEmailTipo, { subject: (t: string) => string; titulo: stri
     titulo:  "Tu lugar sigue disponible",
     intro:   "Antes de que se llene la fecha, aquí tienes tu cotización lista. Recuerda: cancelación gratuita hasta 48 h antes, sin riesgo.",
     cta:     "Reservar ahora",
+  },
+  // Última llamada: aquí se subraya el anticipo, que es la objeción más común
+  // (no querer soltar el monto completo por adelantado).
+  recordatorio3: {
+    subject: (t) => `¿Apartamos tu lugar para ${t}?`,
+    titulo:  "Aparta tu lugar con el 30 %",
+    intro:   "No hace falta que pagues todo hoy: puedes apartar tu lugar con el 30 % y liquidar el resto el día del tour. Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 125 1458.",
+    cta:     "Apartar con el 30 %",
   },
 };
 

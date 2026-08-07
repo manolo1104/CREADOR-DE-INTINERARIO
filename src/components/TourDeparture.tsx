@@ -7,7 +7,9 @@ const WA_LLEGADA_ES =
 const WA_LLEGADA_EN =
   "https://wa.me/524891251458?text=Hi%2C%20I%20have%20questions%20about%20how%20to%20reach%20the%20tour%20departure%20point.";
 
-const GOOGLE_MAPS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
+// Nota: aquí ya no se muestra el mapa del Hotel Paraíso Encantado. Los tours no
+// salen de un punto fijo: pasamos por el cliente a SU hospedaje, en Xilitla o en
+// Ciudad Valles. El hotel sigue apareciendo en /paquetes, donde sí es la sede.
 
 /* Ícono de WhatsApp reutilizado en ambas variantes. */
 function WhatsAppIcon() {
@@ -126,66 +128,130 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
     );
   }
 
-  // ── Variante por defecto: tours que salen de Xilitla ──
+  // ── Variante RZR: se maneja en Xilitla, no hay recogida en Ciudad Valles ──
+  if (tourId === "tour-rzr-xilitla") {
+    return (
+      <section>
+        <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
+          <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Meeting point" : "Punto de encuentro"}
+        </h2>
+
+        <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
+          <p className="text-crema/65 font-dm text-sm leading-relaxed">
+            {en ? (
+              <>This tour runs entirely around{" "}
+              <strong className="text-crema font-medium">Xilitla</strong>, so we meet at our base
+              in town and set off from there. Transport to Xilitla is not included.</>
+            ) : (
+              <>Este recorrido se hace por los caminos de{" "}
+              <strong className="text-crema font-medium">Xilitla</strong>, así que nos vemos en
+              nuestra base del pueblo y salimos de ahí. El transporte hasta Xilitla no está incluido.</>
+            )}
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(en
+              ? [
+                  { Icon: Clock,        label: "Departure time", value: "Between 8:00 and 9:00 AM" },
+                  { Icon: Bus,          label: "Meeting point",  value: "Our base in Xilitla" },
+                  { Icon: CheckCircle2, label: "Duration",       value: "2 to 5 h depending on route" },
+                ]
+              : [
+                  { Icon: Clock,        label: "Horario de salida", value: "Entre 8:00 y 9:00 AM" },
+                  { Icon: Bus,          label: "Punto de encuentro", value: "Nuestra base en Xilitla" },
+                  { Icon: CheckCircle2, label: "Duración",          value: "2 a 5 h según la ruta" },
+                ]
+            ).map((item) => (
+              <div key={item.label} className="bg-verde-profundo/30 border border-white/8 p-3 rounded">
+                <item.Icon className="w-5 h-5 text-verde-vivo/60 mb-1" aria-hidden="true" />
+                <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm mb-0.5">
+                  {item.label}
+                </p>
+                <p className="text-crema/80 font-dm text-sm">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-crema/40 font-dm">
+            {en
+              ? "Staying in Ciudad Valles? Ask us and we'll help you organise the trip up to Xilitla."
+              : "¿Te hospedas en Ciudad Valles? Consúltanos y te ayudamos a organizar la subida a Xilitla."}
+          </p>
+
+          <a
+            href={WA_LLEGADA}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 px-4 py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all duration-200 rounded"
+          >
+            <WhatsAppIcon />
+            {en ? "Ask us how to get there →" : "Pregúntanos cómo llegar →"}
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  // ── Variante por defecto: pasamos por ti a tu hospedaje ──
+  // No hay un punto de salida único: recogemos en Xilitla y en Ciudad Valles,
+  // en el hospedaje del cliente (no hace falta que sea nuestro hotel).
   return (
     <section>
       <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
-        <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Departure point & transport" : "Punto de salida y transporte"}
+        <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Pickup & transport" : "Recogida y transporte"}
       </h2>
 
       <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
         {/* Texto intro */}
         <p className="text-crema/65 font-dm text-sm leading-relaxed">
           {en ? (
-            <>Our tours depart from the{" "}
-            <strong className="text-crema font-medium">Hotel Paraíso Encantado Xilitla</strong>,
-            our home base in the heart of Xilitla, steps from the Surrealist Garden.</>
+            <>We <strong className="text-crema font-medium">pick you up at your lodging</strong> —
+            hotel, hostel, cabin or Airbnb— in{" "}
+            <strong className="text-crema font-medium">Xilitla</strong> or{" "}
+            <strong className="text-crema font-medium">Ciudad Valles</strong>, and bring you back at
+            the end of the day. Round-trip transport is included; you don&apos;t need to stay with us.</>
           ) : (
-            <>Nuestros tours salen desde el{" "}
-            <strong className="text-crema font-medium">Hotel Paraíso Encantado Xilitla</strong>,
-            nuestro hotel sede ubicado en el corazón de Xilitla, a pasos del Jardín Surrealista.</>
+            <><strong className="text-crema font-medium">Pasamos por ti a tu hospedaje</strong>
+            —hotel, hostal, cabaña o Airbnb— en{" "}
+            <strong className="text-crema font-medium">Xilitla</strong> o{" "}
+            <strong className="text-crema font-medium">Ciudad Valles</strong>, y te regresamos al
+            terminar el día. El traslado redondo va incluido y no necesitas hospedarte con nosotros.</>
           )}
         </p>
 
-        {/* Mapa embebido */}
-        <div
-          className="relative rounded-xl overflow-hidden"
-          style={{ touchAction: "pan-y" }}
-          aria-label="Mapa de Google Maps — Hotel Paraíso Encantado Xilitla"
-        >
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1007!2d-98.9941194!3d21.3950444!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d6906a1c46f06f%3A0xdb106bd5eec4388f!2sHotel%20Para%C3%ADso%20Encantado%20Xilitla!5e1!3m2!1ses!2smx!4v1"
-            width="100%"
-            height="260"
-            style={{ border: 0, borderRadius: "12px", display: "block" }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            title="Hotel Paraíso Encantado Xilitla — Punto de salida de los tours"
-          />
+        {/* Las dos ciudades de recogida */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(en
+            ? [
+                { ciudad: "Xilitla",       nota: "Sierra, Surrealist Garden and surroundings" },
+                { ciudad: "Ciudad Valles", nota: "Waterfalls, Tamul and the Tampaón river" },
+              ]
+            : [
+                { ciudad: "Xilitla",       nota: "Sierra, Jardín Surrealista y alrededores" },
+                { ciudad: "Ciudad Valles", nota: "Cascadas, Tamul y el río Tampaón" },
+              ]
+          ).map((c) => (
+            <div key={c.ciudad} className="bg-verde-profundo/30 border border-white/8 p-4 rounded">
+              <p className="flex items-center gap-2 text-crema font-dm text-sm font-medium">
+                <MapPin className="w-4 h-4 text-verde-vivo/70 flex-shrink-0" aria-hidden="true" />
+                {c.ciudad}
+              </p>
+              <p className="text-crema/50 font-dm text-xs mt-1 pl-6">{c.nota}</p>
+            </div>
+          ))}
         </div>
-
-        {/* Link Google Maps */}
-        <a
-          href={GOOGLE_MAPS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors"
-        >
-          {en ? "View on Google Maps →" : "Ver en Google Maps →"}
-        </a>
 
         {/* Info de logística */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {(en
             ? [
-                { Icon: Clock,        label: "Departure time", value: "Between 8:00 and 9:00 AM" },
-                { Icon: Bus,          label: "Transport",      value: "From your stay in Xilitla" },
+                { Icon: Clock,        label: "Pickup time",    value: "Between 8:00 and 9:00 AM" },
+                { Icon: Bus,          label: "Transport",      value: "Round trip, included" },
                 { Icon: CheckCircle2, label: "Approx. return", value: "6:00–7:00 PM" },
               ]
             : [
-                { Icon: Clock,        label: "Horario de salida", value: "Entre 8:00 y 9:00 AM" },
-                { Icon: Bus,          label: "Transporte",        value: "Desde tu hospedaje en Xilitla" },
+                { Icon: Clock,        label: "Hora de recogida", value: "Entre 8:00 y 9:00 AM" },
+                { Icon: Bus,          label: "Traslado",          value: "Redondo, incluido" },
                 { Icon: CheckCircle2, label: "Regreso aprox.",    value: "6:00–7:00 PM" },
               ]
           ).map((item) => (
@@ -201,8 +267,8 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
 
         <p className="text-[10px] text-crema/40 font-dm">
           {en
-            ? "Not staying in Xilitla? Ask us — we'll arrange your pickup at no extra cost."
-            : "¿No estás hospedado en Xilitla? Consúltanos — coordinamos tu recogida sin costo adicional."}
+            ? "Staying somewhere else? Tell us where and we'll see if we can reach you. We confirm the exact pickup time and address by WhatsApp after you book."
+            : "¿Te hospedas en otro lado? Dinos dónde y vemos si podemos llegar por ti. La hora y la dirección exactas las confirmamos por WhatsApp al reservar."}
         </p>
 
         {/* CTA WhatsApp */}
@@ -213,7 +279,7 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
           className="inline-flex items-center gap-2 border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 px-4 py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all duration-200 rounded"
         >
           <WhatsAppIcon />
-          {en ? "Ask us how to get there →" : "Pregúntanos cómo llegar →"}
+          {en ? "Ask about your pickup →" : "Pregunta por tu recogida →"}
         </a>
       </div>
     </section>

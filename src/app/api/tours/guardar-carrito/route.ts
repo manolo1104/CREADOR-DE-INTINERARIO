@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { computeTourCharge } from "@/lib/tourPricing";
+import { computeTourCharge, fechaTourValida } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml } from "@/lib/cartEmail";
@@ -32,6 +32,11 @@ export async function POST(req: NextRequest) {
     }
     if (!tourDate) {
       return NextResponse.json({ error: "Falta la fecha." }, { status: 400 });
+    }
+    // Sin esto se guardaban cotizaciones con fechas imposibles y el cron
+    // perseguía durante días a alguien con un tour ya pasado.
+    if (!fechaTourValida(tourDate)) {
+      return NextResponse.json({ error: "La fecha del tour no es válida." }, { status: 400 });
     }
 
     // Total AUTORITATIVO del servidor (mismo cálculo que el cobro). Rechaza tours

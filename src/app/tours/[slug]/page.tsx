@@ -136,13 +136,14 @@ export default function TourDetailPage({ params }: Props) {
           : tour.soloAdultos
             ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This activity is for ages 10 and up, so there is no children's discount. The park admission is paid separately on site.` }
             : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children ages 6 to 10 pay 70% of the adult price and ages 3 to 5 pay 50%. Babies under 3 go free.` },
+        // No hay un punto de salida único: pasamos por el cliente a SU
+        // hospedaje, en Xilitla o en Ciudad Valles. Solo el RZR (se maneja en
+        // Xilitla) y Media Luna (Rioverde) tienen punto de encuentro fijo.
         esVehiculo
           ? { q: "Where does the tour depart from?", a: "We meet at our base in Xilitla, San Luis Potosí. Transportation to Xilitla is not included." }
           : tour.id === "tour-buceo-media-luna"
             ? { q: "Where does the tour depart from?", a: "We meet at the entrance of the Media Luna Lagoon, in Rioverde — about 2 hours from Ciudad Valles. You make your own way there; transportation and the park admission are not included." }
-          : tour.id === "tour-rafting-tampaon"
-            ? { q: "Where does the tour depart from?", a: "We pick you up at your lodging in Ciudad Valles or Xilitla — round-trip transport included." }
-            : { q: "Where does the tour depart from?", a: "The tour departs from Ciudad Valles, San Luis Potosí. We include pickup at your hotel or an agreed meeting point." },
+            : { q: "Where does the tour depart from?", a: "There is no single departure point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. Round-trip transport is included and you don't need to stay with us. We confirm the exact time and address by WhatsApp after you book." },
       ]
     : [
         { q: `¿Qué incluye el ${tour.nombre}?`, a: tour.incluye.join(", ") + ". Todo incluido en el precio." },
@@ -161,9 +162,7 @@ export default function TourDetailPage({ params }: Props) {
           ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es nuestra base en Xilitla, San Luis Potosí. El transporte hasta Xilitla no está incluido." }
           : tour.id === "tour-buceo-media-luna"
             ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es la entrada de la Laguna de la Media Luna, en Rioverde — a unas 2 horas de Ciudad Valles. Llegas por tu cuenta; el transporte y la entrada al parque no están incluidos." }
-          : tour.id === "tour-rafting-tampaon"
-            ? { q: "¿Dónde es el punto de salida?", a: "Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla — traslado redondo incluido." }
-            : { q: "¿Dónde es el punto de salida?", a: "El tour sale desde Ciudad Valles, San Luis Potosí. Incluimos recogida en tu hotel o punto de encuentro acordado." },
+            : { q: "¿Dónde es el punto de salida?", a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. El traslado redondo va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar." },
       ];
 
   const faqSchema = {

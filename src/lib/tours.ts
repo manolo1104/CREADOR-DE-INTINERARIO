@@ -73,6 +73,19 @@ export function tourDurTexto(t: Pick<Tour, "duracionRango" | "rutas" | "duracion
   return a === b ? `${a}${unidad}` : `${a}–${b}${unidad}`;
 }
 
+/**
+ * Los cuatro tours que concentran el interés real de los visitantes (Ruta
+ * Surrealista y Tamul solos son ~47 % de las vistas). Se muestran primero en
+ * /tours y en /experiencias; los otros cinco siguen existiendo, con su página y
+ * su SEO intactos, bajo "Otros recorridos". Menos opciones arriba = más cierre.
+ */
+export const TOURS_DESTACADOS = [
+  "ruta-surrealista-edward-james",
+  "expedicion-tamul",
+  "rzr-xilitla",
+  "paraiso-escalonado-minas-micos",
+] as const;
+
 export const TOURS_DB: Tour[] = [
   {
     id:               "tour-rzr-xilitla",
@@ -266,7 +279,7 @@ export const TOURS_DB: Tour[] = [
       "Entradas a todos los parques",
       "Paseo en canoa por el Cañón del Tampaón",
       "Guía certificado NOM-09",
-      "Transporte desde tu hospedaje",
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
       "Equipo de seguridad completo",
       "Fotografías y video del recorrido",
       "Botiquín de primeros auxilios",
@@ -317,7 +330,7 @@ export const TOURS_DB: Tour[] = [
       "Castillo de la Salud",
     ],
     incluye: [
-      "Transporte desde tu hotel",
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
       "Entradas a todas las atracciones",
       "Desayuno buffet",
       "Guías especializados en historia y cultura",
@@ -370,7 +383,7 @@ export const TOURS_DB: Tour[] = [
       "Cascada del Salto",
     ],
     incluye: [
-      "Transporte desde tu hotel",
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
       "Entradas a todas las atracciones",
       "Desayuno buffet",
       "Guías especializados",
@@ -423,7 +436,7 @@ export const TOURS_DB: Tour[] = [
       "Cascadas de Micos",
     ],
     incluye: [
-      "Transporte desde tu hotel",
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
       "Entradas a todas las atracciones",
       "Desayuno buffet",
       "Guías especializados",
@@ -479,7 +492,7 @@ export const TOURS_DB: Tour[] = [
       "Cascadas de Tamasopo (opcional)",
     ],
     incluye: [
-      "Transporte desde tu hotel",
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
       "Entradas a todas las atracciones",
       "Desayuno buffet",
       "Guías especializados",

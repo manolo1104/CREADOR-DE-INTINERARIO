@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { TOURS_DB, TOURS_DESTACADOS } from "@/lib/tours";
 import ExperienciasClient from "./ExperienciasClient";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { TourCard } from "@/components/TourCard";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -32,7 +34,7 @@ const FAQS = [
   },
   {
     q: "¿Qué incluye el precio de cada experiencia?",
-    a: "El precio indicado es el acceso o entrada por persona al destino natural. Los tours guiados con transporte desde tu hotel, desayuno típico, entradas y guía certificado NOM-09 tienen un costo adicional disponible en la sección de Tours.",
+    a: "El precio indicado es el acceso o entrada por persona al destino natural. Los tours guiados con traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, desayuno típico, entradas y guía certificado NOM-09 tienen un costo adicional disponible en la sección de Tours.",
   },
   {
     q: "¿Se puede visitar la Huasteca Potosina con niños?",
@@ -138,6 +140,35 @@ export default function ExperienciasPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── TOURS GUIADOS ──
+          Esta página lista los 41 DESTINOS, no tours: hasta ahora el único
+          toque de producto era un link "Ver todos los tours" hasta el final.
+          Aquí van arriba los cuatro que concentran el interés real. */}
+      <section className="px-6 py-14 border-b border-white/6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap items-baseline justify-between gap-3 mb-8">
+            <div>
+              <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-1">Con guía certificado</p>
+              <h2 className="font-cormorant font-light text-crema text-3xl">
+                Tours que puedes reservar hoy
+              </h2>
+            </div>
+            <Link
+              href="/tours"
+              className="text-[10px] tracking-[2px] uppercase text-dorado hover:text-lima transition-colors font-dm"
+            >
+              Ver los {TOURS_DB.length} tours →
+            </Link>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {TOURS_DESTACADOS.map((slug) => {
+              const tour = TOURS_DB.find((t) => t.slug === slug);
+              return tour ? <TourCard key={tour.slug} tour={tour} variant="compact" /> : null;
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* ── GRID CON FILTROS (client component) ── */}
       <ExperienciasClient />

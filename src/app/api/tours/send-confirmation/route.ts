@@ -44,8 +44,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "El pago no está completado." }, { status: 402 });
     }
 
-    // Monto AUTORITATIVO desde Stripe (centavos → MXN), no el que envía el cliente.
-    const totalAmount = Math.round((pi.amount_received || pi.amount) / 100);
+    // Montos AUTORITATIVOS desde Stripe (centavos → MXN), no los que envía el
+    // cliente. `cobrado` es lo que de verdad entró; `totalAmount` es el precio
+    // completo de la reserva, que con anticipo NO coincide con lo cobrado.
+    const cobrado     = Math.round((pi.amount_received || pi.amount) / 100);
+    const totalCompleto = Math.round(Number(pi.metadata?.totalCompleto) || 0);
+    const totalAmount = totalCompleto > 0 ? totalCompleto : cobrado;
+    const saldo       = Math.max(0, totalAmount - cobrado);
 
     // ── Idempotencia: si ya existe una reserva para este pago, devolverla ─────
     const existing = await prisma.tourBooking.findFirst({
@@ -89,7 +94,7 @@ export async function POST(req: NextRequest) {
           adults:    Number(adults)   || 1,
           children:  Number(children) || 0,
           totalAmount:           Math.round(Number(totalAmount) || 0),
-          depositoPagado:        Math.round(Number(totalAmount) || 0), // pago 100% online = liquidado
+          depositoPagado:        cobrado, // lo realmente cobrado: si hubo anticipo, queda saldo
           promoCode:             promoCode  || null,
           promoDiscount:         Number(promoDiscount) || 0,
           stripePaymentIntentId: paymentIntentId || null,
@@ -113,7 +118,7 @@ export async function POST(req: NextRequest) {
         "✅  RESERVÓ",
         nombreCorto(tourName),
         quienes,
-        mxn(totalAmount),
+        saldo > 0 ? `${mxn(cobrado)} de ${mxn(totalAmount)} · saldo ${mxn(saldo)}` : mxn(totalAmount),
         customerName,
         email,
         customerPhone,
@@ -160,6 +165,9 @@ export async function POST(req: NextRequest) {
           adults:        Number(adults)      || 1,
           children:      Number(children)    || 0,
           totalAmount:   Math.round(Number(totalAmount) || 0),
+          // Con anticipo, el correo muestra "Anticipo pagado" + "Saldo pendiente".
+          // Si se pagó todo, deposito == total y sale como "✓ Liquidado".
+          depositoPagado: cobrado,
           promoCode,
           promoDiscount: Number(promoDiscount) || 0,
           pickupLugar,

@@ -22,19 +22,23 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
   const [rutaNombre,     setRutaNombre]     = useState(rutas[0]?.nombre ?? "");
   const [vehiculoNombre, setVehiculoNombre] = useState(flota[0]?.nombre ?? "");
   const [unidades,       setUnidades]       = useState(1);
+  // Cuánto se paga hoy: 30 % (aparta tu lugar) o 100 %.
+  const [pct,            setPct]            = useState(30);
 
   const rutaIdx  = rutas.findIndex((r) => r.nombre === rutaNombre);
   const ruta     = rutas[rutaIdx];
   const vehiculo = flota.find((v) => v.nombre === vehiculoNombre);
   const precioUnidad = vehiculo && rutaIdx >= 0 ? (vehiculo.precios[rutaIdx] ?? 0) : 0;
   const total = precioUnidad * unidades;
+  const chargeAmount = pct === 100 ? total : Math.round((total * pct) / 100);
+  const saldo = total - chargeAmount;
 
   const canContinue = !!tourDate && rutaIdx >= 0 && !!vehiculo && total > 0;
 
   function handleContinue() {
     if (!canContinue || !ruta || !vehiculo) return;
     // Recalcula con la misma función del servidor (autoridad de precio compartida).
-    const veh = computeVehiculoCharge({ tourSlug: tour.slug, ruta: ruta.nombre, vehiculo: vehiculo.nombre, unidades });
+    const veh = computeVehiculoCharge({ tourSlug: tour.slug, ruta: ruta.nombre, vehiculo: vehiculo.nombre, unidades, pct });
     if (!veh) return;
     const name = vehiculoBookingName(tour, ruta.nombre, vehiculo.nombre, unidades);
     saveTourBookingState({
@@ -53,8 +57,10 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
       promoDiscount: 0,
       subtotal:      veh.total,
       total:         veh.total,
-      chargeAmount:  veh.total,
-      paymentMode:   "full",
+      chargeAmount:  veh.charge,
+      pct:           veh.pct,
+      saldo:         veh.saldo,
+      paymentMode:   veh.pct === 100 ? "full" : "deposit",
       sessionId:     crypto.randomUUID(),
       ruta:          ruta.nombre,
       vehiculo:      vehiculo.nombre,
@@ -190,6 +196,44 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
             </div>
           </div>
 
+          {/* Cuánto pagar hoy — el anticipo baja la barrera de entrada */}
+          <div className="mt-5 border-t border-negro/6 pt-4">
+            <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Cuánto pagas hoy</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { valor: 30,  titulo: "Aparta tu lugar", sub: "30 % hoy" },
+                { valor: 100, titulo: "Pago completo",   sub: "Liquida todo" },
+              ].map((op) => (
+                <button
+                  key={op.valor}
+                  type="button"
+                  onClick={() => setPct(op.valor)}
+                  aria-pressed={pct === op.valor}
+                  className={`text-left px-3 py-2.5 border transition-colors ${
+                    pct === op.valor
+                      ? "border-verde-selva bg-verde-selva/8"
+                      : "border-negro/15 hover:border-negro/30"
+                  }`}
+                >
+                  <span className="block font-dm text-xs font-medium text-negro">{op.titulo}</span>
+                  <span className="block font-dm text-[11px] text-negro/50 mt-0.5">{op.sub}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex justify-between items-baseline">
+              <span className="font-dm text-sm text-negro/70">Pagas ahora</span>
+              <span key={chargeAmount} className="font-cormorant text-xl text-verde-profundo animate-price-bump">
+                {formatMXN(chargeAmount)} MXN
+              </span>
+            </div>
+            {saldo > 0 && (
+              <p className="mt-1.5 font-dm text-xs text-negro/50">
+                Saldo de <strong className="text-negro/70">{formatMXN(saldo)} MXN</strong> el día del tour,
+                en efectivo o con tarjeta.
+              </p>
+            )}
+          </div>
+
           <div className="mt-5 border-t border-negro/6 pt-4">
             <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Incluido</p>
             <ul className="space-y-1.5">
@@ -212,7 +256,7 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
           disabled={!canContinue}
           className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {canContinue ? (<><Lock className="w-3.5 h-3.5" />{`Pagar ${formatMXN(total)} MXN →`}</>) : "Selecciona una fecha para continuar"}
+          {canContinue ? (<><Lock className="w-3.5 h-3.5" />{`Pagar ${formatMXN(chargeAmount)} MXN →`}</>) : "Selecciona una fecha para continuar"}
         </button>
         {!tourDate && <p className="text-center text-xs text-negro/40 font-dm">Elige la fecha del recorrido para continuar</p>}
       </aside>

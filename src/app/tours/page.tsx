@@ -1,13 +1,15 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
-import { TOURS_DB, tourDurTexto } from "@/lib/tours";
+import { TOURS_DB, TOURS_DESTACADOS, tourDurTexto } from "@/lib/tours";
 import { GuideProfile } from "@/components/GuideProfile";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
 import { Award, Bus, Calendar, Camera, CheckCircle2, Clock, MessageCircle, Star, Users } from "lucide-react";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
 
@@ -69,7 +71,7 @@ const BADGES_EN: { Icon: LucideIcon; title: string; sub: string }[] = [
 
 const COMO_FUNCIONA_ES = [
   { num: "01", titulo: "Escríbenos por WhatsApp", detalle: "Cuéntanos cuántas personas son, qué fechas manejan y qué tours te interesan. Respondemos en menos de una hora." },
-  { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: punto de encuentro, hora de salida, lista de qué llevar y el link de pago." },
+  { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: dónde y a qué hora pasamos por ti, lista de qué llevar y el link de pago." },
   { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate de llegar. Todo lo demás —transporte, entradas, desayuno, guía— ya está incluido." },
 ];
 const COMO_FUNCIONA_EN = [
@@ -95,6 +97,10 @@ export default function ToursPage() {
   const lp = (p: string) => localePath(p, locale);
   const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
+  // Destacados primero: son los que concentran el interés real (ver TOURS_DESTACADOS).
+  const destacados = tours.filter((t) => (TOURS_DESTACADOS as readonly string[]).includes(t.slug));
+  const otros      = tours.filter((t) => !(TOURS_DESTACADOS as readonly string[]).includes(t.slug));
+  const ordenados  = [...destacados, ...otros];
   const BADGES = en ? BADGES_EN : BADGES_ES;
   const COMO_FUNCIONA = en ? COMO_FUNCIONA_EN : COMO_FUNCIONA_ES;
   const TESTIMONIOS = en ? TESTIMONIOS_EN : TESTIMONIOS_ES;
@@ -205,11 +211,26 @@ export default function ToursPage() {
         </div>
       </section>
 
-      {/* ── TOURS GRID ── */}
+      <PageViewTracker event="TOURS_LIST_VIEW" data={{ total: tours.length }} />
+
+      {/* ── TOURS GRID ──
+          Los cuatro destacados (≈66 % del interés real) van arriba; el resto
+          queda bajo "Otros recorridos". Nadie pierde su página ni su SEO. */}
       <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-20">
+        {otros.length > 0 && (
+          <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-6">
+            {en ? "Most booked" : "Los más reservados"}
+          </p>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {tours.map((tour, tourIndex) => (
-            <article key={tour.id} id={tour.id} className="stagger-reveal group relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28 overflow-hidden" style={{ animationDelay: `${tourIndex * 80}ms` }}>
+          {ordenados.map((tour, tourIndex) => (
+            <Fragment key={tour.id}>
+            {tourIndex === destacados.length && (
+              <p className="lg:col-span-2 text-[9px] tracking-[3px] uppercase text-crema/35 font-dm pt-8 border-t border-white/8">
+                {en ? "Other tours" : "Otros recorridos"}
+              </p>
+            )}
+            <article id={tour.id} className="stagger-reveal group relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28 overflow-hidden" style={{ animationDelay: `${tourIndex * 80}ms` }}>
               <Link href={lp(`/tours/${tour.slug}`)} aria-label={`${en ? "View full tour" : "Ver tour completo"}: ${tour.nombre}`} className="absolute inset-0 z-0" />
 
               {/* ── IMAGEN ── */}
@@ -292,6 +313,7 @@ export default function ToursPage() {
                 </div>
               </div>
             </article>
+            </Fragment>
           ))}
         </div>
         {!en && (
@@ -368,7 +390,7 @@ export default function ToursPage() {
             <ul className="space-y-2 mb-7">
               {(en
                 ? ["Max. 12 people per group", "Dedicated guide the whole trip", "Transport from your accommodation", "From $1,300 MXN per person"]
-                : ["Máximo 12 personas por grupo", "Guía dedicado todo el recorrido", "Transporte desde tu hospedaje", "Precio desde $1,300 MXN por persona"]
+                : ["Máximo 12 personas por grupo", "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles", "Precio desde $1,300 MXN por persona"]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-verde-vivo mt-0.5 flex-shrink-0">✓</span>{item}</li>
               ))}

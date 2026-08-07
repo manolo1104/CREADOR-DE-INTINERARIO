@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
+import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName, fechaTourValida } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 
@@ -18,6 +18,16 @@ export async function POST(req: NextRequest) {
   try {
     const { customerEmail, customerName, tourDetails } = await req.json();
 
+    // La fecha nunca se validaba en el servidor: se podía cobrar una reserva
+    // para ayer o para dentro de dos años tocando el sessionStorage.
+    if (!fechaTourValida(tourDetails?.tourDate)) {
+      logger.warn("payment_intent_fecha_invalida", { tourDate: tourDetails?.tourDate, tourSlug: tourDetails?.tourSlug });
+      return NextResponse.json(
+        { error: "La fecha del tour no es válida. Elige otra fecha." },
+        { status: 400 },
+      );
+    }
+
     // ── Tours cobrados POR VEHÍCULO (RZR): precio desde la matriz flota×ruta ──
     if (tourDetails?.ruta && tourDetails?.vehiculo) {
       const veh = computeVehiculoCharge({
@@ -26,6 +36,7 @@ export async function POST(req: NextRequest) {
         ruta:     tourDetails?.ruta,
         vehiculo: tourDetails?.vehiculo,
         unidades: tourDetails?.unidades,
+        pct:      tourDetails?.pct,
       });
       if (!veh) {
         logger.warn("payment_intent_vehiculo_invalid", { tourSlug: tourDetails?.tourSlug, ruta: tourDetails?.ruta, vehiculo: tourDetails?.vehiculo });
@@ -37,6 +48,10 @@ export async function POST(req: NextRequest) {
         currency:      "mxn",
         description:   `Tour Huasteca Potosina — ${bookingName} · ${customerName || ""}`,
         receipt_email: customerEmail || undefined,
+        // Solo métodos que se resuelven sin salir de la página. Si algún día se
+        // habilita OXXO o SPEI en el panel de Stripe, el checkout embebido los
+        // ofrecería y fallaría al pedir redirección: esto lo impide.
+        automatic_payment_methods: { enabled: true, allow_redirects: "never" },
         metadata: {
           customerEmail: customerEmail || "",
           customerName:  customerName  || "",
@@ -50,13 +65,15 @@ export async function POST(req: NextRequest) {
           vehiculo:      veh.vehiculo.nombre,
           unidades:      String(veh.unidades),
           totalCompleto: String(veh.total),
+          pctPagado:     String(veh.pct),
+          saldo:         String(veh.saldo),
           source:        "huasteca-potosina.com",
         },
       });
       actividad(
-        "💳  LLEGÓ AL PAGO (RZR)",
+        "💳  ABRIÓ EL PAGO (RZR)",
         bookingName,
-        mxn(veh.charge),
+        veh.pct === 100 ? mxn(veh.charge) : `${mxn(veh.charge)} (anticipo ${veh.pct}% de ${mxn(veh.total)})`,
         customerName,
         customerEmail,
         tourDetails?.tourDate,
@@ -66,6 +83,9 @@ export async function POST(req: NextRequest) {
         clientSecret:    paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         amount:          veh.charge,
+        total:           veh.total,
+        saldo:           veh.saldo,
+        pct:             veh.pct,
       });
     }
 
@@ -77,6 +97,7 @@ export async function POST(req: NextRequest) {
       childrenMid:   tourDetails?.childrenMid,
       childrenSmall: tourDetails?.childrenSmall,
       promoCode:     tourDetails?.promoCode,
+      pct:           tourDetails?.pct,
     });
 
     if (!charge) {
@@ -92,6 +113,8 @@ export async function POST(req: NextRequest) {
       currency:      "mxn",
       description:   `Tour Huasteca Potosina — ${charge.tour.nombre} · ${customerName || ""}`,
       receipt_email: customerEmail || undefined,
+      // Solo métodos que se resuelven sin salir de la página (ver nota arriba).
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",
@@ -102,6 +125,8 @@ export async function POST(req: NextRequest) {
         adults:        String(tourDetails?.adults || 1),
         children:      String(childrenTotal),
         totalCompleto: String(charge.total),
+        pctPagado:     String(charge.pct),
+        saldo:         String(charge.saldo),
         source:        "huasteca-potosina.com",
       },
     });
@@ -112,11 +137,14 @@ export async function POST(req: NextRequest) {
     ]
       .filter(Boolean)
       .join(", ");
+    // OJO: esto se dispara al ABRIR /checkout, no al pagar. El PaymentIntent se
+    // crea cuando la página monta, así que este log mide "llegó al formulario",
+    // no "intentó cobrar". El cobro real se ve en ✅ RESERVÓ / ❌ PAGO FALLIDO.
     actividad(
-      "💳  LLEGÓ AL PAGO",
+      "💳  ABRIÓ EL PAGO",
       nombreCorto(charge.tour.nombre),
       quienes,
-      mxn(charge.charge),
+      charge.pct === 100 ? mxn(charge.charge) : `${mxn(charge.charge)} (anticipo ${charge.pct}% de ${mxn(charge.total)})`,
       customerName,
       customerEmail,
       tourDetails?.tourDate,
@@ -127,6 +155,9 @@ export async function POST(req: NextRequest) {
       clientSecret:    paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       amount:          charge.charge, // monto real cobrado (para que la UI lo refleje)
+      total:           charge.total,
+      saldo:           charge.saldo,
+      pct:             charge.pct,
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error";

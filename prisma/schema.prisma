@@ -147,6 +147,56 @@ model TourQuote {
 
 // Carrito abandonado: el cliente eligió tour/fecha y dejó su correo pero no pagó.
 // Un cron manda 1-2 correos de recuperación con un link que restaura la reserva.
+/// Correos capturados por el recomendador o el itinerario, con el contexto de
+/// lo que la persona pidió. Hasta ahora los leads solo se guardaban en una hoja
+/// de Google y nadie les volvía a escribir: se capturaba el correo y ahí moría.
+/// Guardar la recomendación permite que la secuencia hable de SU tour, no de
+/// "nuestros tours".
+model Lead {
+  id        String   @id @default(cuid())
+  email     String
+  fuente    String   @default("Recomendador") // Recomendador | Itinerario 3 días | Blog | Destino: X
+
+  // Contexto del recomendador (todo opcional: otras fuentes no lo tienen)
+  grupo          String?  // pareja, familia, amigos…
+  dias           String?
+  origen         String?  // ciudad de la que viene
+  intereses      String[] @default([])
+  tourPrincipal  String?  // slug
+  tourSecundario String?  // slug
+  paquete        String?  // slug
+
+  // Estado de la secuencia
+  emailsSent  Int       @default(0)
+  lastEmailAt DateTime?
+  status      String    @default("activo") // activo | convertido | baja | terminado
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([email, fuente])
+  @@index([status, emailsSent])
+}
+
+/// Eventos del embudo. Antes solo se escribían a stdout (Railway los rota), así
+/// que no había forma de contar nada: ni tasa de conversión, ni cuántos llegan
+/// al pago, ni desde qué página. Aquí quedan para poder medirlo.
+model TrackEvent {
+  id        String   @id @default(cuid())
+  event     String   // TOUR_PAGE_VIEW, CHECKOUT_STARTED, PAGO_FALLIDO, BOOKING_CONFIRMED…
+  sid       String?  // sesión del visitante (sessionStorage), para seguir su recorrido
+  path      String?
+  tourSlug  String?
+  amount    Int?     // MXN, cuando el evento tiene monto
+  device    String?  // movil | escritorio
+  referrer  String?  // de dónde llegó
+  data      Json?    // el resto del payload, sin esquema fijo
+  createdAt DateTime @default(now())
+
+  @@index([event, createdAt])
+  @@index([sid])
+  @@index([tourSlug])
+}
+
 model AbandonedCart {
   id            String    @id @default(cuid())
   token         String    @unique @default(cuid()) // link de recuperación

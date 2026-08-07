@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useItinerario } from "@/context/ItinerarioContext";
 import { Globe } from "lucide-react";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
@@ -20,7 +19,9 @@ function counterpartHref(pathname: string, locale: Locale): string {
 }
 
 export default function Navbar() {
-  const { count } = useItinerario();
+  // (El contador del itinerario se importaba aquí pero nunca se renderizó.
+  //  El contexto sigue disponible en @/context/ItinerarioContext por si algún
+  //  día se construye la página que muestre la lista.)
   const [scrolled, setScrolled] = useState(false);
   const [navbarVisible, setNavbarVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);

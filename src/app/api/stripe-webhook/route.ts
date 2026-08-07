@@ -120,8 +120,8 @@ export async function POST(req: NextRequest) {
 
         if (!existing) {
           const cobrado = Math.round((pi.amount_received || pi.amount) / 100);
-          // El precio completo llega en metadata (para paquetes con anticipo parcial);
-          // en tours de pago 100% totalCompleto == cobrado.
+          // El precio completo llega en metadata. Con anticipo (30 %) es mayor
+          // que lo cobrado; con pago completo coinciden.
           const totalAmount = Number(meta.totalCompleto) > 0 ? Number(meta.totalCompleto) : cobrado;
           const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
@@ -196,6 +196,7 @@ export async function POST(req: NextRequest) {
                 adults:        Number(meta.adults) || 1,
                 children:      Number(meta.children) || 0,
                 totalAmount,
+                depositoPagado: cobrado, // muestra saldo pendiente si fue anticipo
                 promoDiscount: 0,
               });
               await sendBrevoEmail({
@@ -246,6 +247,40 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+  }
+
+  // ── Pagos que SÍ se intentaron y fallaron ─────────────────────────────────
+  // Antes esto no existía: si al cliente le rechazaban la tarjeta, el motivo
+  // moría en su pantalla y aquí nunca nos enterábamos. Este log es la única
+  // forma de distinguir "no quiso pagar" de "no pudo pagar".
+  if (event.type === "payment_intent.payment_failed") {
+    const pi = event.data.object;
+    const meta = pi.metadata ?? {};
+    const err = pi.last_payment_error;
+    const motivo = err?.decline_code || err?.code || err?.type || "desconocido";
+
+    actividad(
+      "❌  PAGO FALLIDO",
+      nombreCorto(meta.tourName || meta.tourId || "tour"),
+      mxn(Math.round(pi.amount / 100)),
+      motivo,
+      err?.message,
+      err?.payment_method?.type,
+      meta.customerName,
+      meta.customerEmail || pi.receipt_email || undefined,
+      meta.tourDate,
+      pi.id,
+    );
+
+    logger.warn("stripe_payment_failed", {
+      payment_intent: pi.id,
+      tour_slug:      meta.tourSlug || null,
+      amount:         Math.round(pi.amount / 100),
+      decline_code:   err?.decline_code || null,
+      code:           err?.code || null,
+      error_type:     err?.type || null,
+      pm_type:        err?.payment_method?.type || null,
+    });
   }
 
   return NextResponse.json({ received: true });

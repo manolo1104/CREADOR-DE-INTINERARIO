@@ -5,9 +5,11 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { Destino } from "@/lib/destinos";
 import { Clock, CloudSun, Calendar, Star } from "lucide-react";
-import { useItinerario } from "@/context/ItinerarioContext";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { RATING_DESTINO } from "@/lib/destinoData";
+import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
+import { TOURS_DB } from "@/lib/tours";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 // ── Colores por nivel de dificultad ──────────────────────────────────────────
 
@@ -32,8 +34,12 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
   const lp = (p: string) => (en ? `/en${p}` : p);
-  const { agregar, quitar, tieneDestino } = useItinerario();
-  const yaAgregado = tieneDestino(d.slug);
+  // El tour que se ofrece en esta tarjeta. Primero el que SÍ visita el destino;
+  // si no hay, el de la misma zona (etiquetado como "cerca de", sin mentir).
+  const refIncluye = toursQueIncluyen(d.slug)[0];
+  const refCerca   = refIncluye ? undefined : toursCercaDe(d.slug)[0];
+  const ref        = refIncluye ?? refCerca;
+  const tour       = ref ? TOURS_DB.find((t) => t.slug === ref.slug) : undefined;
 
   const difKey = d.dificultad.toLowerCase() as DificultadKey;
   const difConfig = dificultadConfig[difKey] ?? dificultadConfig.media;
@@ -127,45 +133,52 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
         {/* Separador */}
         <div className="border-t border-white/8 mb-3" />
 
-        {/* CTA — siempre al fondo */}
+        {/* CTA — siempre al fondo.
+            Antes el botón principal era "+ Agregar a itinerario": metía el
+            destino en una lista que NINGUNA página mostraba, así que el CTA más
+            prominente del catálogo no llevaba a ningún lado. Ahora la tarjeta
+            ofrece el tour que cubre ese lugar, con su precio. */}
         <div className="mt-auto flex flex-col gap-2">
-          {/* Botón principal: Agregar a itinerario (solo español — el itinerario es feature ES) */}
-          {!en && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                if (yaAgregado) {
-                  quitar(d.slug);
-                } else {
-                  agregar(d.slug);
+          {tour && (
+            <>
+              <p className="text-[10px] font-dm text-crema/45 leading-snug">
+                {refIncluye
+                  ? (en ? "Included in " : "Incluido en ")
+                  : (en ? "Nearby tour: " : "Cerca de ")}
+                <span className="text-crema/70">{ref!.nombre}</span>
+              </p>
+              <Link
+                href={lp(`/tours/${tour.slug}`)}
+                onClick={() =>
+                  trackTourEvent("DESTINO_TOUR_CLICK", {
+                    destino:   d.slug,
+                    tourSlug:  tour.slug,
+                    tour_name: tour.nombre,
+                    amount:    tour.precio,
+                    relacion:  refIncluye ? "incluye" : "cerca",
+                    source:    "tarjeta_destino",
+                  })
                 }
-              }}
-              className={`w-full text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors duration-200 rounded ${
-                yaAgregado
-                  ? "bg-verde-profundo text-crema/60 border border-verde-vivo/30"
-                  : "bg-verde-selva hover:bg-verde-vivo text-crema"
-              }`}
-              aria-label={
-                yaAgregado
-                  ? `Quitar ${d.nombre} de mi itinerario`
-                  : `Agregar ${d.nombre} a mi itinerario`
-              }
-            >
-              {yaAgregado ? "✓ EN TU ITINERARIO" : "+ AGREGAR A ITINERARIO"}
-            </button>
+                className="w-full block text-center text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 rounded bg-verde-selva hover:bg-verde-vivo text-crema transition-colors duration-200"
+                aria-label={`${en ? "View tour" : "Ver tour"} ${tour.nombre}`}
+              >
+                {en ? "VIEW TOUR" : "VER TOUR"} · ${tour.precio.toLocaleString(en ? "en-US" : "es-MX")} MXN
+              </Link>
+            </>
           )}
 
-          {/* Botón: Ver detalles (en EN es el principal) */}
+          {/* Ver detalles del lugar — principal si el destino no tiene tour */}
           <Link
             href={lp(`/destinos/${d.slug}`)}
-            className={`w-full block text-center text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded ${
-              en
-                ? "bg-verde-selva hover:bg-verde-vivo text-crema font-medium py-3"
-                : "border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema"
+            className={`w-full block text-center text-[10px] tracking-[2px] uppercase font-dm transition-all duration-200 rounded ${
+              tour
+                ? "border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema py-2.5"
+                : "bg-verde-selva hover:bg-verde-vivo text-crema font-medium py-3"
             }`}
             aria-label={`${en ? "View details of" : "Ver detalles de"} ${d.nombre}`}
           >
-            {en ? "VIEW DETAILS →" : "VER DETALLES →"}
+            {en ? (tour ? "VIEW PLACE DETAILS →" : "VIEW DETAILS →")
+                : (tour ? "VER DETALLES DEL LUGAR →" : "VER DETALLES →")}
           </Link>
         </div>
       </div>

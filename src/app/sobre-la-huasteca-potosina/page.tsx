@@ -41,7 +41,7 @@ const DESTINOS_ICONO = [
   { nombre: "Cascada de Tamul",           desc: "La cascada más alta de la región, 105 metros sobre el Río Tampaón.",    img: "/imagenes/cascada-de-tamul/hero.jpg" },
   { nombre: "Las Pozas de Edward James",  desc: "Jardín surrealista único en el mundo construido en la selva de Xilitla.", img: "/imagenes/las-pozas-jardin-surrealista/hero.webp" },
   { nombre: "Sótano de las Golondrinas",  desc: "El abismo aéreo más profundo del mundo. Hogar de miles de vencejos.",    img: "/imagenes/sotano-de-las-golondrinas/hero.jpg" },
-  { nombre: "Cascadas de Micos",          desc: "7 cascadas escalonadas en un paraje de selva tropical exuberante.",      img: "/imagenes/cascadas-de-micos/hero.webp" },
+  { nombre: "Cascadas de Micos",          desc: "7 cascadas escalonadas en un paraje de selva tropical exuberante.",      img: "/imagenes/cascadas-de-micos/hero.jpg" },
 ];
 
 const SECCIONES = [

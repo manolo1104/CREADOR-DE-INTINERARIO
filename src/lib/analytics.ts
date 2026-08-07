@@ -39,7 +39,7 @@ export function trackBeginCheckout(params: {
   tourId:   string;
   tourName: string;
   price:    number;
-  source:   "widget" | "mobile_bar" | "floating_button" | "tour_card";
+  source:   "widget" | "mobile_bar" | "floating_button" | "tour_card" | "destino_bar";
 }) {
   track("begin_checkout", {
     currency: "MXN",

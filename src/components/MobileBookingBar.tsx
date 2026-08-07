@@ -13,16 +13,18 @@ interface Props {
   /** "vehiculo" = precio por vehículo; se reserva por WhatsApp (waHref) en vez del flujo online. */
   precioUnidad?: "persona" | "vehiculo";
   waHref?:  string;
+  /** De dónde sale la barra, para poder medir aparte la de tours y la de destinos. */
+  source?:  "mobile_bar" | "destino_bar";
 }
 
-export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref }: Props) {
+export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar" }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
   const track = () => {
-    trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source: "mobile_bar" });
-    trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, source: "mobile_bar" });
+    trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source });
+    trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, source });
   };
   const trackWa = () => {
-    trackTourEvent("WHATSAPP_CLICK", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, context: "mobile_bar" });
+    trackTourEvent("WHATSAPP_CLICK", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, context: source });
   };
   const ctaClass = "flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium flex-shrink-0";
 

@@ -212,7 +212,7 @@ export default function PreciosPage() {
           <div className="border border-verde-selva/30 bg-verde-profundo/30 p-7">
             <h2 className="font-cormorant font-light text-crema text-2xl mb-4">El precio siempre incluye</h2>
             <ul className="space-y-2 font-dm text-sm text-crema/75">
-              <li>✓ Transporte desde tu hospedaje en la zona</li>
+              <li>✓ Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles</li>
               <li>✓ Desayuno con platillos típicos de la región</li>
               <li>✓ Todas las entradas a parques y atracciones</li>
               <li>✓ Guía local certificado NOM-09 SECTUR</li>

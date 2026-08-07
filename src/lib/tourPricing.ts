@@ -4,6 +4,18 @@
 import { TOURS_DB, type Tour, type TourRuta, type TourVehiculo } from "./tours";
 import { calcTourTotal, validatePromoCode } from "./tourBooking";
 
+/**
+ * Porcentajes de pago permitidos. 30 = "aparta tu lugar" (el resto se liquida
+ * el día del tour), 100 = pago completo. Cualquier otro valor cae a 100.
+ */
+export const PCTS_TOUR = new Set([30, 100]);
+
+/** Normaliza el porcentaje que llega del cliente. Nunca se confía en él. */
+export function normalizarPct(pct: unknown): number {
+  const n = Math.round(Number(pct));
+  return PCTS_TOUR.has(n) ? n : 100;
+}
+
 export interface TourChargeInput {
   tourId?:        string;
   tourSlug?:      string;
@@ -11,19 +23,45 @@ export interface TourChargeInput {
   childrenMid:    number;
   childrenSmall:  number;
   promoCode?:     string;
+  /** 30 (anticipo) o 100 (pago completo). Por defecto 100. */
+  pct?:           number;
 }
 
 export interface TourChargeResult {
   tour:          Tour;
-  total:         number; // total completo (MXN)
-  charge:        number; // monto a cobrar ahora (siempre el total — pago 100%)
-  promoDiscount: number; // porcentaje aplicado
+  total:         number; // total completo de la reserva (MXN)
+  charge:        number; // monto a cobrar AHORA (total, o el 30 % si es anticipo)
+  saldo:         number; // lo que queda por pagar el día del tour
+  pct:           number; // porcentaje efectivamente cobrado
+  promoDiscount: number; // porcentaje de descuento aplicado
 }
 
 function clampInt(n: unknown, min: number, max: number): number {
   const v = Math.floor(Number(n) || 0);
   if (Number.isNaN(v)) return min;
   return Math.max(min, Math.min(max, v));
+}
+
+/**
+ * Valida la fecha del tour contra el calendario real. Hasta ahora el servidor
+ * NO la miraba: se podía cobrar una reserva para una fecha pasada o para dentro
+ * de dos años manipulando el sessionStorage. Vacía se acepta (los tours por
+ * WhatsApp coordinan la fecha después).
+ */
+export function fechaTourValida(tourDate: unknown): boolean {
+  if (!tourDate) return true;
+  if (typeof tourDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(tourDate)) return false;
+
+  const hoyMX = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const [y, m, d] = hoyMX.split("-").map(Number);
+  const hoy   = new Date(y, m - 1, d);
+  const tope  = new Date(y, m - 1 + 12, d); // un año vista, holgado
+
+  const [ty, tm, td] = tourDate.split("-").map(Number);
+  const fecha = new Date(ty, tm - 1, td);
+  if (Number.isNaN(fecha.getTime())) return false;
+
+  return fecha >= hoy && fecha <= tope;
 }
 
 /**
@@ -54,8 +92,11 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
 
   const { total } = calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount);
 
-  // Pago 100%: siempre se cobra el total completo (ya no hay opción de depósito).
-  return { tour, total, charge: total, promoDiscount };
+  // Anticipo: se cobra ahora el 30 % y el saldo se liquida el día del tour.
+  const pct    = normalizarPct(input.pct);
+  const charge = pct === 100 ? total : Math.round((total * pct) / 100);
+
+  return { tour, total, charge, saldo: total - charge, pct, promoDiscount };
 }
 
 // ── Tours cobrados POR VEHÍCULO (ej. RZR) ────────────────────────────────────
@@ -66,6 +107,8 @@ export interface VehiculoChargeInput {
   ruta?:     string;
   vehiculo?: string;
   unidades?: number;
+  /** 30 (anticipo) o 100 (pago completo). Por defecto 100. */
+  pct?:      number;
 }
 
 export interface VehiculoChargeResult {
@@ -74,7 +117,9 @@ export interface VehiculoChargeResult {
   vehiculo: TourVehiculo;
   unidades: number;
   total:    number; // precio del vehículo × unidades (MXN)
-  charge:   number; // se cobra el total completo (100%)
+  charge:   number; // monto a cobrar ahora (total, o el 30 % si es anticipo)
+  saldo:    number; // lo que queda por pagar el día del tour
+  pct:      number; // porcentaje efectivamente cobrado
 }
 
 /**
@@ -98,7 +143,13 @@ export function computeVehiculoCharge(input: VehiculoChargeInput): VehiculoCharg
   const unidades = clampInt(input.unidades, 1, 10);
   const total = precio * unidades;
 
-  return { tour, ruta: tour.rutas[rutaIdx], vehiculo, unidades, total, charge: total };
+  const pct    = normalizarPct(input.pct);
+  const charge = pct === 100 ? total : Math.round((total * pct) / 100);
+
+  return {
+    tour, ruta: tour.rutas[rutaIdx], vehiculo, unidades,
+    total, charge, saldo: total - charge, pct,
+  };
 }
 
 /** Nombre descriptivo de una reserva por vehículo: "RZR — Ruta Nacimiento · Defender ×2". */
