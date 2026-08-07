@@ -55,6 +55,14 @@ function folioNuevo() {
   return "COT-" + Date.now().toString(36).toUpperCase();
 }
 
+/** Suma n días a una fecha YYYY-MM-DD (en UTC, sin líos de zona horaria). */
+function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
 export async function POST(req: NextRequest) {
   const denied = checkAgentAuth(req);
   if (denied) return denied;
@@ -158,6 +166,10 @@ export async function POST(req: NextRequest) {
     const total = paq.precio + suplemento;
     const folio = folioNuevo();
     const nPersonas = Math.max(1, parseInt(String(personas), 10) || 2);
+    // La SALIDA la calcula el servidor = llegada + noches del paquete (no el bot,
+    // que se equivocaba). Ej: Completo (3 noches), llegada jueves → salida domingo.
+    const checkinStr = checkin && /^\d{4}-\d{2}-\d{2}$/.test(String(checkin)) ? String(checkin) : "";
+    const checkoutStr = checkinStr ? addDays(checkinStr, paq.noches) : (checkout ? String(checkout) : "");
 
     try {
       await prisma.tourQuote.create({
@@ -165,7 +177,7 @@ export async function POST(req: NextRequest) {
           quoteNumber: folio,
           tourName: `Paquete ${paq.nombre}`,
           tourSlug: `paquete-${paq.slug}`,
-          tourDate: checkin ? String(checkin) : "",
+          tourDate: checkinStr,
           adults: nPersonas,
           children: 0,
           totalAmount: total,
@@ -179,8 +191,8 @@ export async function POST(req: NextRequest) {
               habitacion: hab?.nombre ?? "por definir",
               hotel: "Hotel Paraíso Encantado",
               noches: paq.noches,
-              checkin: checkin ? String(checkin) : "",
-              checkout: checkout ? String(checkout) : "",
+              checkin: checkinStr,
+              checkout: checkoutStr,
               subtotal: total,
             },
           ],
@@ -196,13 +208,13 @@ export async function POST(req: NextRequest) {
       customerEmail: baseData.customerEmail || undefined,
       customerName: baseData.customerName, folio,
       tourName: `Paquete ${paq.nombre}`, tourSlug: `paquete-${paq.slug}`,
-      tourDate: checkin ? String(checkin) : "",
+      tourDate: checkinStr,
       adults: nPersonas, totalAmount: total,
       packageItems: [
-        { paquete: paq.nombre, habitacion: hab?.nombre ?? "por definir", hotel: "Hotel Paraíso Encantado", noches: paq.noches, checkin: checkin ? String(checkin) : "", checkout: checkout ? String(checkout) : "", subtotal: total },
+        { paquete: paq.nombre, habitacion: hab?.nombre ?? "por definir", hotel: "Hotel Paraíso Encantado", noches: paq.noches, checkin: checkinStr, checkout: checkoutStr, subtotal: total },
       ],
     });
-    return NextResponse.json({ folio, total, moneda: "MXN", tipo: "paquete", paquete: paq.nombre, habitacion: hab?.nombre ?? null, noches: paq.noches, emailEnviado });
+    return NextResponse.json({ folio, total, moneda: "MXN", tipo: "paquete", paquete: paq.nombre, habitacion: hab?.nombre ?? null, noches: paq.noches, checkin: checkinStr, checkout: checkoutStr, emailEnviado });
   }
 
   return NextResponse.json({ error: "tipo inválido (usa 'rzr' o 'paquete')." }, { status: 400 });
