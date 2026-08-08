@@ -7,8 +7,8 @@
 // ════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
-const { recomendarLocal, needsHuman, processMessage, setApiClient, sanitizeLinks, executeTool } = require("./agent");
-const { calcPrecio, findTour } = require("./catalog");
+const { recomendarLocal, needsHuman, processMessage, setApiClient, sanitizeLinks, toWhatsAppFormat, executeTool } = require("./agent");
+const { calcPrecio, findTour, TOURS } = require("./catalog");
 const { PAQUETES, DESTINOS, DESTINO_TOUR, findPaquete, findDestino } = require("./knowledge");
 
 let pass = 0, fail = 0, warn = 0;
@@ -29,6 +29,13 @@ setApiClient({
 });
 
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** Fecha en lenguaje natural a N días de hoy (para que las pruebas no caduquen). */
+function fechaFutura(dias) {
+  const d = new Date(Date.now() + dias * 86400000);
+  const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  return `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+}
 
 async function run() {
   // ─────────────── PARTE 1: UNITARIAS ───────────────
@@ -73,6 +80,42 @@ async function run() {
   const raft = await executeTool("calcular_precio", { slug: "rafting-rio-tampaon", adultos: 2 });
   ok(raft.total === 3900, "rafting 2 adultos = $3,900 ($1,950 c/u)");
 
+  console.log("honestidad — hechos cerrados por tour:");
+  const rappel = await executeTool("obtener_tour", { slug: "rappel-tamul" });
+  ok(rappel.transporte.incluido === false, "rappel: NO incluye transporte (no prometer recogida)");
+  ok(rappel.alimentos.desayuno === false && rappel.alimentos.comida === false, "rappel: no incluye ningún alimento");
+  const acuatica = await executeTool("obtener_tour", { slug: "ruta-acuatica-puente-de-dios" });
+  ok(acuatica.alimentos.desayuno === true && acuatica.alimentos.comida === false, "ruta acuática: desayuno SÍ, comida de mediodía NO");
+  ok(TOURS.every((t) => !/profesional/i.test(t.incluyeSiempre.join(" "))), "'incluyeSiempre' no dice 'profesional'");
+  ok(TOURS.every((t) => t.alimentos && t.alimentos.comida === false), "NINGÚN tour incluye comida de mediodía");
+  ok(TOURS.filter((t) => t.transporte.incluido).length === 6, "solo 6 de los 9 tours incluyen traslado");
+
+  console.log("destinos completos:");
+  const meco = await executeTool("obtener_tour", { slug: "cascadas-del-meco" });
+  ok(meco.destinos.length === 3, "el Meco expone sus 3 destinos");
+  const rzr = await executeTool("obtener_tour", { slug: "rzr-xilitla" });
+  ok(rzr.rutas.every((r) => r.destinos.length > 0), "cada ruta del RZR llega con SUS destinos (antes se borraban)");
+
+  console.log("cotizar_rzr filtra por capacidad:");
+  const rzr4 = await executeTool("cotizar_rzr", { ruta: "Nacimiento", personas: 4 });
+  ok(rzr4.opciones.every((o) => o.plazas >= 4), "con 4 personas no ofrece unidades de 2 plazas");
+  ok(rzr4.opciones.length > 0 && rzr4.opciones[0].precio <= rzr4.opciones[rzr4.opciones.length - 1].precio, "ordena las unidades de menor a mayor precio");
+  ok(Boolean((await executeTool("cotizar_rzr", { ruta: "Nanacatli", personas: 20 })).error), "avisa cuando el grupo no cabe en una sola unidad");
+
+  console.log("findDestino no devuelve el destino equivocado:");
+  ok(findDestino("cueva de las quilas") === null, "'cueva de las quilas' NO devuelve la Cueva del Salitre");
+  ok(findDestino("cascada bonita") === null, "'cascada bonita' NO devuelve la Cascada de Tamul");
+  ok(findDestino("laguna escondida") === null, "'laguna escondida' NO devuelve la Laguna de los Suspiros");
+  ok((findDestino("tamul") || {}).slug === "cascada-de-tamul", "'tamul' sí encuentra la Cascada de Tamul");
+  ok((findDestino("edward james") || {}).slug === "las-pozas-jardin-surrealista", "'edward james' encuentra Las Pozas (alias)");
+  ok((findDestino("castillo de la salud") || {}).slug === "castillo-de-la-salud", "'castillo de la salud' encuentra su ficha real");
+
+  console.log("toWhatsAppFormat (markdown → WhatsApp):");
+  ok(toWhatsAppFormat("**Total: $4,590**") === "*Total: $4,590*", "`**negritas**` → `*negritas*`");
+  ok(toWhatsAppFormat("### Paquete") === "*Paquete*", "`### título` → negrita");
+  ok(!/\*\*/.test(toWhatsAppFormat("**a** y **b**\n\n---\n\n- item")), "no queda ningún ** en la salida");
+  ok(toWhatsAppFormat("- uno\n- dos").includes("• uno"), "viñetas markdown → •");
+
   console.log("sanitizeLinks (links sin asteriscos):");
   ok(sanitizeLinks("Reserva: *https://www.huasteca-potosina.com/reservar-tour/rzr-xilitla*") === "Reserva: https://www.huasteca-potosina.com/reservar-tour/rzr-xilitla", "quita asteriscos pegados al link");
   ok(!/\*https?:|https?:[^\s]*\*/.test(sanitizeLinks("ve a *https://x.com/a* ya")), "no queda ningún * pegado a una URL");
@@ -113,11 +156,13 @@ async function run() {
   });
 
   // Escenario D: cotización por transferencia (multi-turno) — tour por persona
+  // La fecha se calcula siempre a futuro: con una fecha fija el test caducaba
+  // y el bot la rechazaba (correctamente), haciendo fallar la prueba sola.
   calls.quote.length = 0;
   await scenario("Cotización por transferencia", "5214444444@c.us", [
     "Quiero la Expedición Tamul para 2 adultos",
-    "El 15 de julio de 2026",
-    "Prefiero pagar por transferencia. Mi nombre es Juan Pérez",
+    `El ${fechaFutura(60)}`,
+    "Prefiero pagar por transferencia. Mi nombre es Juan Pérez, juan@correo.com",
   ], (last) => {
     soft(calls.quote.length >= 1, "llamó a crear_cotizacion");
     soft(/HPTEST123/.test(last), "el mensaje final incluye el folio HPTEST123");
@@ -153,6 +198,71 @@ async function run() {
     const n = norm(last);
     soft(n.includes("tamul"), "habla de la Cascada de Tamul");
     soft(n.includes("expedicion") || n.includes("rappel") || n.includes("tour"), "ofrece un tour que la visita");
+  });
+
+  // Escenario I: fotos — nunca "profesionales"
+  await scenario("Fotos: sin prometer 'profesional'", "5219999999@c.us", [
+    "Las fotos que toman son profesionales? me las dan?",
+  ], (last) => {
+    // Negarlo ("NO es una sesión fotográfica profesional") es la respuesta correcta;
+    // lo que no puede es afirmarlo. Miramos si la oración que dice "profesional"
+    // trae una negación.
+    const afirmaProfesional = last
+      .split(/(?<=[.!?\n])/)
+      .some((frase) => /profesional/i.test(frase) && !/\bno\b|\bni\b|\bsin\b|\btampoco\b/i.test(frase));
+    soft(!afirmaProfesional, "NO afirma que las fotos sean 'profesionales'");
+    soft(/foto/i.test(last) && /(guía|guia|recorrido)/i.test(last), "las describe como las que toma el guía en el recorrido");
+  });
+
+  // Escenario J: comidas — ningún tour es todo incluido
+  await scenario("Comidas: solo desayuno", "5210101010@c.us", [
+    "Oye y la comida está incluida en los tours? o es todo incluido?",
+  ], (last) => {
+    const n = norm(last);
+    soft(n.includes("desayuno"), "menciona que lo incluido es el desayuno");
+    // "NO es todo incluido" es la respuesta correcta; lo que no puede es afirmarlo.
+    soft(!/(?<!\bno,? )(?<!\bno es )(?<!\bno está )\bs[íi],?\s+(es\s+)?todo inclu/i.test(last), "NO afirma que sea 'todo incluido'");
+    soft(n.includes("comida de mediodia") || n.includes("no inclu"), "aclara que la comida de mediodía no va incluida");
+  });
+
+  // Escenario K: transporte — no prometer recogida donde no la hay
+  await scenario("Transporte: no prometer de más", "5210202020@c.us", [
+    "Todos los tours incluyen que pasen por mí a mi hotel verdad? el rappel también?",
+  ], (last) => {
+    const n = norm(last);
+    soft(n.includes("rappel") && (n.includes("no inclu") || n.includes("embarcadero") || n.includes("costo adicional")), "aclara que en el rappel NO pasan por el cliente");
+    soft(!/todos los tours inclu[yi]/i.test(last), "NO afirma que todos incluyen traslado");
+  });
+
+  // Escenario L: destinos completos al presentar un tour
+  await scenario("Destinos completos", "5210303030@c.us", [
+    "Cuéntame de la ruta surrealista de Edward James",
+  ], (last) => {
+    const n = norm(last);
+    const esperados = ["pozas", "huichihuayan", "quilas", "castillo"];
+    const faltan = esperados.filter((d) => !n.includes(d));
+    soft(faltan.length === 0, `nombra los 4 destinos del tour${faltan.length ? ` (faltaron: ${faltan.join(", ")})` : ""}`);
+  });
+
+  // Escenario M: formato WhatsApp, no markdown
+  await scenario("Formato WhatsApp", "5210404040@c.us", [
+    "Dame el detalle completo del Paquete Gran Huasteca",
+  ], (last) => {
+    ok(!/\*\*/.test(last), "la respuesta NO lleva ** (markdown) al cliente");
+    ok(!/^\s*#{1,6}\s/m.test(last), "la respuesta NO lleva ### (markdown) al cliente");
+  });
+
+  // Escenario N: lugar del que NO tenemos ficha — no inventarlo
+  await scenario("Lugar sin ficha: no inventar", "5210505050@c.us", [
+    "Qué me puedes contar de la Cueva de las Quilas? qué se ve ahí?",
+  ], (last) => {
+    const n = norm(last);
+    // Ofrecer OTRA cueva, bien etiquetada, es válido. El bug es pasar la ficha
+    // del Salitre como si fuera la de las Quilas — es decir, sin admitir antes
+    // que ese destino no lo tenemos.
+    const admite = /no (lo )?(tengo|encuentro|cuento|aparece)|no (esta|figura) (registrad|en nuestro)|no lo tengo registrad/.test(n);
+    soft(admite, "admite que no tiene la ficha de ese lugar");
+    soft(!n.includes("salitre") || admite, "no pasa la ficha del Salitre como si fuera la de las Quilas");
   });
 
   done();

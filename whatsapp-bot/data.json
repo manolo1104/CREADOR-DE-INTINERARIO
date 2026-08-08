@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T20:35:29.222Z",
+  "generatedAt": "2026-08-08T19:18:54.509Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -48,9 +48,19 @@
       ],
       "puntoEncuentro": "Base en Xilitla",
       "horario": "Inicia por la mañana (aprox. 8:30–9:00 AM); la hora de término depende de la ruta: Nanacatli ~2 h, Miradores ~3 h, Nacimiento y Trinidad ~5 h.",
+      "transporte": {
+        "incluido": false,
+        "detalle": "NO incluye transporte. El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá."
+      },
+      "alimentos": {
+        "desayuno": false,
+        "comida": false,
+        "detalle": "NO incluye ningún alimento."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "amigos",
@@ -242,9 +252,19 @@
       ],
       "puntoEncuentro": "Embarcadero del Río Tampaón",
       "horario": "Inicia aprox. 8:30 AM y termina aprox. 1:30 PM (~5 h). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": false,
+        "detalle": "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour."
+      },
+      "alimentos": {
+        "desayuno": false,
+        "comida": false,
+        "detalle": "NO incluye ningún alimento."
+      },
+      "fotos": "Fotos y video del descenso que toma el guía, incluyendo tomas aéreas con dron. Se entregan sin costo extra. NO las describas como 'profesionales'.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "aventura extrema",
@@ -271,7 +291,7 @@
       "privateAvailable": false,
       "privateMinPrice": null,
       "tagline": "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
-      "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
+      "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y desayuno buffet antes de salir. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
       "url": "https://www.huasteca-potosina.com/tours/rafting-rio-tampaon",
       "destinos": [
         "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
@@ -286,19 +306,30 @@
         "Balsa profesional, remo, casco y chaleco salvavidas",
         "Guía certificado en aguas rápidas dentro de tu balsa",
         "Briefing de seguridad y técnica de remado — rutas para principiantes y avanzados",
-        "Comida incluida — antes o después de la actividad",
+        "Desayuno buffet",
         "Descenso de 14 km por los rápidos del Tampaón",
         "Paradas para nadar en los tramos tranquilos del cañón"
       ],
       "noIncluye": [
+        "Comida de mediodía (solo el desayuno buffet está incluido)",
         "Bebidas alcohólicas",
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
       "horario": "Inicia aprox. 8:30 AM y termina aprox. 3:30 PM (~7 h). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o Xilitla."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno buffet, antes de salir. La comida de mediodía NO está incluida."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "aventura",
@@ -334,7 +365,7 @@
         "Cenote Cueva del Agua"
       ],
       "incluye": [
-        "Desayuno con platillos típicos de la región",
+        "Desayuno buffet",
         "Entradas a todos los parques",
         "Paseo en canoa por el Cañón del Tampaón",
         "Guía certificado NOM-09",
@@ -349,9 +380,19 @@
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
       "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "el más completo",
@@ -401,9 +442,19 @@
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
       "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "arte y cultura",
@@ -452,9 +503,19 @@
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
       "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "fotografía",
@@ -502,9 +563,19 @@
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
       "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "familias con niños",
@@ -554,9 +625,19 @@
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
       "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "aventura",
@@ -602,13 +683,24 @@
       "noIncluye": [
         "Transporte hasta la Laguna de la Media Luna (Rioverde)",
         "Entrada al parque (se paga allá)",
+        "Alimentos — no se incluye ninguna comida, pero en la laguna hay puestos y restaurantes donde comprar",
         "Traje de baño y toalla"
       ],
       "puntoEncuentro": "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
       "horario": "Inicia aprox. 8:30 AM y termina aprox. 12:30 PM (~4 h). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": false,
+        "detalle": "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta."
+      },
+      "alimentos": {
+        "desayuno": false,
+        "comida": false,
+        "detalle": "NO incluye ningún alimento. En la laguna hay puestos y restaurantes donde comprar."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
         "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido"
+        "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [
         "primera vez buceando",
@@ -782,7 +874,7 @@
           "precio": "$1,200"
         },
         {
-          "item": "Fotos + video profesional",
+          "item": "Fotos + video del recorrido",
           "precio": "$1,600"
         },
         {
@@ -879,7 +971,7 @@
           "precio": "$1,600"
         },
         {
-          "item": "Fotos + video profesional",
+          "item": "Fotos + video del recorrido",
           "precio": "$1,600"
         },
         {
@@ -2749,8 +2841,11 @@
     ],
     "incluyeSiempre": [
       "Seguro de viaje para todos los integrantes",
-      "Fotografías y video del recorrido"
+      "Fotografías y video del recorrido que toma tu guía"
     ],
+    "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
+    "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet; la comida de mediodía NUNCA está incluida en ningún tour. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen SOLO los desayunos del hotel: comidas y cenas van por cuenta del cliente.",
+    "transporte": "El traslado redondo desde el hospedaje (Xilitla o Ciudad Valles) SÍ está incluido en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática. NO está incluido en: RZR (sale de la base en Xilitla), rappel en Tamul (punto de encuentro en el embarcadero; se coordina aparte con costo adicional) ni buceo en Media Luna (el cliente llega a Rioverde). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "mejorTemporada": "La temporada seca (noviembre a abril) suele tener el agua más turquesa y los caminos en mejores condiciones. En lluvias (jul–sep) algunos ríos crecen y ciertas salidas (rafting) dependen del nivel del agua.",
     "salida": "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",

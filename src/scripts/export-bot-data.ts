@@ -22,14 +22,52 @@ import { DESTINO_EN_TOURS } from "../lib/tourMapping";
 const NO_INCLUYE: Record<string, string[]> = {
   "rzr-xilitla": ["Transporte hasta Xilitla", "Alimentos"],
   "rappel-tamul": ["Transporte hasta el embarcadero del Río Tampaón (se coordina aparte, con costo adicional)", "Alimentos"],
-  "rafting-rio-tampaon": ["Bebidas alcohólicas", "Propinas y gastos personales"],
+  "rafting-rio-tampaon": ["Comida de mediodía (solo el desayuno buffet está incluido)", "Bebidas alcohólicas", "Propinas y gastos personales"],
   "expedicion-tamul": ["Comida de mediodía", "Propinas y gastos personales"],
   "ruta-surrealista-edward-james": ["Comida de mediodía", "Propinas y gastos personales"],
   "cascadas-del-meco": ["Comida de mediodía", "Propinas y gastos personales"],
   "paraiso-escalonado-minas-micos": ["Comida de mediodía", "Propinas y gastos personales"],
   "ruta-acuatica-puente-de-dios": ["Comida de mediodía", "Propinas y gastos personales"],
-  "buceo-media-luna": ["Transporte hasta la Laguna de la Media Luna (Rioverde)", "Entrada al parque (se paga allá)", "Traje de baño y toalla"],
+  "buceo-media-luna": ["Transporte hasta la Laguna de la Media Luna (Rioverde)", "Entrada al parque (se paga allá)", "Alimentos — no se incluye ninguna comida, pero en la laguna hay puestos y restaurantes donde comprar", "Traje de baño y toalla"],
 };
+
+// ── Hechos que el bot NO debe deducir ni suponer ─────────────────────────────
+// Antes el bot leía "incluye"/"noIncluye" y sacaba conclusiones propias: llegó a
+// prometer recogida en el hotel para el rappel (no la hay) y comida para la Ruta
+// Acuática (tampoco). Ahora cada tour trae la respuesta ya escrita y literal.
+
+/** ¿Pasamos por el cliente a su hospedaje? Respuesta cerrada por tour. */
+const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
+  "rzr-xilitla": { incluido: false, detalle: "NO incluye transporte. El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá." },
+  "rappel-tamul": { incluido: false, detalle: "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour." },
+  "buceo-media-luna": { incluido: false, detalle: "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta." },
+  "rafting-rio-tampaon": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o Xilitla." },
+  "expedicion-tamul": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+  "ruta-surrealista-edward-james": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+  "cascadas-del-meco": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+  "paraiso-escalonado-minas-micos": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+  "ruta-acuatica-puente-de-dios": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+};
+
+/** Qué comida se incluye. NINGÚN tour es "todo incluido". */
+const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: string }> = {
+  "rzr-xilitla": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento." },
+  "rappel-tamul": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento." },
+  "buceo-media-luna": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. En la laguna hay puestos y restaurantes donde comprar." },
+  "rafting-rio-tampaon": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet, antes de salir. La comida de mediodía NO está incluida." },
+  "expedicion-tamul": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+  "ruta-surrealista-edward-james": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+  "cascadas-del-meco": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+  "paraiso-escalonado-minas-micos": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+  "ruta-acuatica-puente-de-dios": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+};
+
+/** Qué material visual se entrega. Nunca se describe como "profesional". */
+const FOTOS: Record<string, string> = {
+  "rappel-tamul": "Fotos y video del descenso que toma el guía, incluyendo tomas aéreas con dron. Se entregan sin costo extra. NO las describas como 'profesionales'.",
+};
+const FOTOS_DEFAULT =
+  "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.";
 
 const IDEAL_PARA: Record<string, string[]> = {
   "rzr-xilitla": ["amigos", "familias", "primerizos", "aventura off-road"],
@@ -46,7 +84,7 @@ const IDEAL_PARA: Record<string, string[]> = {
 // Lo que se incluye SIEMPRE en todos los tours (decisión del dueño, ago-2026).
 const INCLUYE_SIEMPRE = [
   "Seguro de viaje para todos los integrantes",
-  "Fotografías y video del recorrido",
+  "Fotografías y video del recorrido que toma tu guía",
 ];
 
 // Páginas de las habitaciones del Hotel Paraíso Encantado (para compartir con el cliente).
@@ -133,6 +171,10 @@ const tours = TOURS_DB.map((t) => ({
   noIncluye: NO_INCLUYE[t.slug] || [],
   puntoEncuentro: puntoEncuentro(t),
   horario: horarioTour(t),
+  // Hechos cerrados: el bot los repite tal cual, no los deduce.
+  transporte: TRANSPORTE[t.slug] || { incluido: false, detalle: "Confírmalo con el equipo." },
+  alimentos: ALIMENTOS[t.slug] || { desayuno: false, comida: false, detalle: "Confírmalo con el equipo." },
+  fotos: FOTOS[t.slug] || FOTOS_DEFAULT,
   incluyeSiempre: INCLUYE_SIEMPRE,
   idealPara: IDEAL_PARA[t.slug] || [],
   urgencia: t.urgencia || null,
@@ -235,6 +277,11 @@ const info = {
   sitio: empresa.sitio,
   zonas,
   incluyeSiempre: INCLUYE_SIEMPRE,
+  fotos: FOTOS_DEFAULT,
+  alimentos:
+    "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet; la comida de mediodía NUNCA está incluida en ningún tour. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen SOLO los desayunos del hotel: comidas y cenas van por cuenta del cliente.",
+  transporte:
+    "El traslado redondo desde el hospedaje (Xilitla o Ciudad Valles) SÍ está incluido en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática. NO está incluido en: RZR (sale de la base en Xilitla), rappel en Tamul (punto de encuentro en el embarcadero; se coordina aparte con costo adicional) ni buceo en Media Luna (el cliente llega a Rioverde). Nunca digas 'todos los tours incluyen transporte'.",
   hotelHabitacionesUrl: HOTEL_HABITACIONES_URL,
   mejorTemporada:
     "La temporada seca (noviembre a abril) suele tener el agua más turquesa y los caminos en mejores condiciones. En lluvias (jul–sep) algunos ríos crecen y ciertas salidas (rafting) dependen del nivel del agua.",

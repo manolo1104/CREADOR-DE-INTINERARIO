@@ -5,7 +5,7 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const {
   TOURS, EMPRESA, SALIDA, findTour, calcPrecio,
-  esPorVehiculo, precioRZR,
+  esPorVehiculo, precioRZR, findRutaRZR,
 } = require("./catalog");
 const {
   PAQUETES, HABITACIONES, LOGISTICA, DESTINOS, DESTINO_TOUR, INFO,
@@ -15,6 +15,29 @@ const { PAGO } = require("./payment");
 const { getSession, pushHistory } = require("./sessions");
 
 const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5-20251001";
+const MAX_TOKENS = Number(process.env.BOT_MAX_TOKENS || 2048);
+
+// El prompt fijo (instrucciones + las 20 herramientas) son ~11 mil tokens que
+// se reenvían en CADA llamada, y una sola conversación hace varias. Con el
+// caché, la primera llamada lo guarda y las demás lo leen a ~10 % del precio.
+// Solo cambia una vez al día (la fecha de hoy va dentro del prompt).
+function systemBlocks() {
+  return [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }];
+}
+
+// Los modelos nuevos (Sonnet 5, Opus 5) razonan por default, y ese
+// razonamiento consume del mismo max_tokens que la respuesta: sin apagarlo, el
+// bot se quedaría a media frase en WhatsApp. Haiku 4.5 no acepta este campo.
+const PIENSA_POR_DEFAULT = /claude-(sonnet-5|opus-5|opus-4-8|fable-5)/.test(MODEL);
+function requestBase() {
+  return {
+    model: MODEL,
+    max_tokens: MAX_TOKENS,
+    system: systemBlocks(),
+    tools,
+    ...(PIENSA_POR_DEFAULT ? { thinking: { type: "disabled" } } : {}),
+  };
+}
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -35,10 +58,42 @@ function sanitizeLinks(text) {
   return t;
 }
 
+// ── Markdown → formato de WhatsApp ────────────────────────────
+// WhatsApp NO entiende `**negritas**` ni `### títulos`: los muestra con los
+// asteriscos y las almohadillas a la vista. El modelo escribe markdown por
+// mucho que el prompt se lo prohíba, así que lo convertimos aquí, siempre.
+function toWhatsAppFormat(text) {
+  if (!text) return text;
+  let t = String(text);
+
+  // Encabezados markdown (### Título) → negrita de WhatsApp.
+  t = t.replace(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/gm, (_, h) => `*${h.replace(/\*+/g, "").trim()}*`);
+  // Separadores horizontales (--- o ***) en su propia línea → fuera.
+  t = t.replace(/^\s*([-*_])\1{2,}\s*$/gm, "");
+  // Negritas: ***x*** y **x** → *x*  ·  __x__ → _x_
+  t = t.replace(/\*\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*\*/g, "*$1*");
+  t = t.replace(/\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*/g, "*$1*");
+  t = t.replace(/___(?=\S)([\s\S]+?)(?<=\S)___/g, "_$1_");
+  t = t.replace(/__(?=\S)([\s\S]+?)(?<=\S)__/g, "_$1_");
+  // Viñetas markdown al inicio de línea → viñeta real.
+  t = t.replace(/^(\s*)[-*+]\s+(?=\S)/gm, "$1• ");
+  // Máximo dos saltos de línea seguidos.
+  t = t.replace(/\n{3,}/g, "\n\n");
+
+  return t.trim();
+}
+
 // ── Detección de petición de humano ───────────────────────────
 const HUMAN_REGEX = /\b(humano|asesor|agente|ejecutivo|persona real|operador|encargad[oa]|due[ñn]o)\b|hablar con (alguien|una persona|un humano)/i;
 function needsHuman(text = "") {
   return HUMAN_REGEX.test(String(text).toLowerCase());
+}
+
+/** Plazas totales de una unidad: "2 adultos + 1 niño" → 3, "6 adultos" → 6. */
+function capacidadTotal(txt) {
+  const nums = String(txt || "").match(/\d+/g);
+  if (!nums) return 0;
+  return nums.reduce((a, n) => a + Number(n), 0);
 }
 
 /** Suma n días a una fecha AAAA-MM-DD (UTC, sin líos de zona horaria). */
@@ -135,14 +190,15 @@ const tools = [
   },
   {
     name: "cotizar_rzr",
-    description: "Calcula el precio del RZR (recorrido en vehículo todoterreno de Xilitla), que se cobra POR VEHÍCULO según la ruta y la unidad elegidas. El RZR NO tiene pago en línea: se confirma por WhatsApp con el equipo.",
+    description: "Precio del RZR (vehículo todoterreno de Xilitla), que se cobra POR VEHÍCULO según la ruta y la unidad. Pasa SIEMPRE 'personas' si sabes cuántos van: la herramienta devuelve solo las unidades donde el grupo CABE, con su precio, y los destinos de esa ruta. No hace falta que el cliente elija vehículo antes: pide la ruta y las personas, y muéstrale las opciones. El RZR NO tiene pago en línea: se confirma por WhatsApp con el equipo.",
     input_schema: {
       type: "object",
       properties: {
         ruta: { type: "string", description: "Ruta: 'Nanacatli' (2h), 'Miradores' (3h), 'Nacimiento' (5h, con kayak) o 'Trinidad' (5h)" },
-        vehiculo: { type: "string", description: "Unidad de la flota, ej: 'RZR 500', 'Can-Am 800', 'Defender Familiar', 'Polaris Pro S'" },
+        personas: { type: "number", description: "Cuántas personas van (para filtrar las unidades donde caben). Muy recomendable." },
+        vehiculo: { type: "string", description: "Unidad de la flota si el cliente ya eligió, ej: 'RZR 900', 'Defender'. Opcional." },
       },
-      required: ["ruta", "vehiculo"],
+      required: ["ruta"],
     },
   },
   {
@@ -292,6 +348,8 @@ async function executeTool(name, input, phone) {
         incluye: t.incluye, incluyeSiempre: t.incluyeSiempre, noIncluye: t.noIncluye,
         puntoEncuentro: t.puntoEncuentro, salida: SALIDA, horario: t.horario, destinos: t.destinos,
         idealPara: t.idealPara, cancelacion: EMPRESA.cancelacion,
+        // Hechos cerrados: se responden con estos campos, nunca deduciéndolos.
+        transporte: t.transporte, alimentos: t.alimentos, fotos: t.fotos,
       };
       if (esPorVehiculo(t)) {
         return {
@@ -299,7 +357,12 @@ async function executeTool(name, input, phone) {
           cobro: "por vehículo (no por persona)",
           desde: t.precio,
           nota: "El RZR se confirma por WhatsApp con el equipo; no hay pago en línea. Usa cotizar_rzr para un precio exacto por ruta y vehículo.",
-          rutas: t.rutas.map((r) => ({ nombre: r.nombre, duracionHrs: r.duracionHrs, desde: r.desde, descripcion: r.descripcion })),
+          // Cada ruta lleva SUS destinos: antes se descartaban aquí, así que el
+          // bot vendía el RZR sin poder decir por dónde pasa el recorrido.
+          rutas: t.rutas.map((r) => ({
+            nombre: r.nombre, duracionHrs: r.duracionHrs, desde: r.desde,
+            descripcion: r.descripcion, destinos: r.destinos || [],
+          })),
           flota: t.flota.map((v) => ({
             nombre: v.nombre,
             capacidad: v.capacidad,
@@ -334,11 +397,51 @@ async function executeTool(name, input, phone) {
     case "cotizar_rzr": {
       const t = TOURS.find((x) => esPorVehiculo(x)) || findTour("rzr-xilitla");
       if (!t) return { error: "No hay un tour por vehículo configurado." };
+
+      const personas = Math.max(0, parseInt(input.personas, 10) || 0);
+      const ri = findRutaRZR(t, input.ruta);
+
+      // Sin vehículo elegido (o con el grupo por delante): devolvemos la tabla
+      // de precios ya filtrada por capacidad, en vez de pedirle al cliente que
+      // elija a ciegas entre unidades donde su grupo no cabe.
+      if (!input.vehiculo || personas > 0) {
+        if (ri < 0) {
+          return { error: `Ruta no encontrada. Opciones: ${t.rutas.map((r) => r.nombre).join(", ")}.` };
+        }
+        const ruta = t.rutas[ri];
+        const opciones = t.flota
+          .map((v) => ({ nombre: v.nombre, capacidad: v.capacidad, plazas: capacidadTotal(v.capacidad), precio: v.precios[ri] }))
+          .filter((v) => personas === 0 || v.plazas >= personas)
+          .sort((a, b) => a.precio - b.precio);
+
+        if (personas > 0 && !opciones.length) {
+          const max = Math.max(...t.flota.map((v) => capacidadTotal(v.capacidad)));
+          return {
+            error: `Ninguna unidad sola alcanza para ${personas} personas (la más grande lleva ${max}). Se necesitan varios vehículos: propón la combinación y avisa que el equipo confirma disponibilidad de la flota.`,
+          };
+        }
+        // Si eligió vehículo Y cabe el grupo, damos también el precio exacto.
+        const exacto = input.vehiculo ? precioRZR(t, input.ruta, input.vehiculo) : null;
+        return {
+          tour: t.nombre,
+          ruta: ruta.nombre,
+          rutaDuracionHrs: ruta.duracionHrs,
+          destinosDeLaRuta: ruta.destinos || [],
+          personas: personas || null,
+          moneda: "MXN",
+          porUnidad: "vehículo",
+          opciones,
+          ...(exacto && exacto.ok ? { seleccion: { vehiculo: exacto.vehiculo, capacidad: exacto.capacidad, total: exacto.total } } : {}),
+          nota: "Precio POR VEHÍCULO (no por persona). Muestra solo estas unidades: son las que alcanzan para el grupo. NO incluye transporte hasta Xilitla ni ningún alimento. Se confirma disponibilidad por WhatsApp con el equipo.",
+        };
+      }
+
       const r = precioRZR(t, input.ruta, input.vehiculo);
       if (!r.ok) return { error: r.error };
       return {
         ...r,
         tour: t.nombre,
+        destinosDeLaRuta: (t.rutas[ri] && t.rutas[ri].destinos) || [],
         nota: "Precio por vehículo. Se confirma disponibilidad por WhatsApp con el equipo (no incluye transporte hasta Xilitla ni alimentos).",
       };
     }
@@ -558,6 +661,9 @@ ${catalogoTexto()}
 Para el detalle de un tour usa *obtener_tour*. Para el precio exacto usa *calcular_precio* (por persona) o *cotizar_rzr* (el RZR, por vehículo).
 Si el cliente pide *más fotos*, ver galería o la página del tour, comparte el *link* del tour (campo "url" de *obtener_tour*), como URL simple en su propia línea, sin formato.
 
+*SIEMPRE que presentes un tour, di a qué lugares se va.* No basta el nombre del tour: enuncia TODOS los destinos del campo "destinos" de *obtener_tour*, con el nombre EXACTO que traen y sin quitar ninguno. Si son muchos, ponlos en una lista corta — pero completa. (Para el RZR, los destinos van por ruta: campo "destinos" dentro de cada ruta.)
+*Al listarlos, NO les agregues descripciones ni adjetivos de tu cosecha* (nada de "colonial", "prehispánico", "el más alto"): el nombre solo. Si quieres describir un destino, primero pide su ficha con *obtener_destino* y usa lo que diga. Un adorno inventado es tan grave como un precio inventado.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧩 TOURS PERSONALIZADOS / A LA MEDIDA
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -568,10 +674,36 @@ Los tours estándar NO son obligatorios. Si el cliente quiere algo *personalizad
 NUNCA inventes un precio "personalizado": usa los precios reales de cada tour y, si es algo fuera de catálogo, pásalo con el equipo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 LO QUE NUNCA DEBES PROMETER (lee esto dos veces)
+━━━━━━━━━━━━━━━━━━━━━━━━
+Un cliente al que le prometes algo que no damos llega el día del tour, se le cae el plan y nos deja una reseña de una estrella. Vale mil veces más decir "eso no viene incluido" que quedar bien en el chat. Estas cuatro reglas están por encima de vender:
+
+*1. TRANSPORTE — nunca lo supongas.* Cada tour trae el campo "transporte" en *obtener_tour* con la respuesta ya escrita: cópiala, no la deduzcas de la lista de "incluye".
+  · SÍ pasamos por el cliente a su hospedaje en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática.
+  · *NO* pasamos por él en: *RZR* (sale de nuestra base en Xilitla), *rappel en Tamul* (el punto de encuentro es el embarcadero; el traslado se coordina aparte y *tiene costo adicional*) y *buceo en Media Luna* (la actividad es en Rioverde y llega por su cuenta).
+  · JAMÁS digas "todos los tours incluyen traslado". Es falso en 3 de los 9.
+
+*2. COMIDAS — ningún tour es "todo incluido".* Cada tour trae el campo "alimentos" en *obtener_tour*: úsalo tal cual.
+  · Los tours de día completo incluyen *SOLO el desayuno buffet*.
+  · La *comida de mediodía NO está incluida en NINGÚN tour*. Ni la cena.
+  · El RZR, el rappel y el buceo *no incluyen ningún alimento*.
+  · Los paquetes incluyen *solo los desayunos* del hotel; comidas y cenas van por cuenta del cliente.
+  · Nunca escribas "todo incluido" ni un encabezado tipo "Todo Incluido" para un tour o un paquete.
+  · No inventes dónde puede comer (tienditas, puestos, restaurantes) salvo que el dato venga en la herramienta.
+
+*3. FOTOS Y VIDEO — nunca digas "profesional".* Cada tour trae el campo "fotos". Lo que damos es: *fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra*. NO prometas fotógrafo dedicado, sesión, edición, entrega en un plazo, ni las llames "profesionales". (Única excepción: en el rappel de Tamul sí hay tomas aéreas con dron — puedes mencionarlo, pero tampoco como "profesional".)
+
+*4. NO INVENTES HECHOS, no solo cifras.* Qué incluye un tour, qué ES un lugar, qué se ve, a qué hora se regresa, cómo se entregan las fotos: nada de eso se adivina. O viene de una herramienta, o no lo dices.
+  · Si el cliente pregunta por un lugar, usa *obtener_destino*. Si la herramienta no devuelve ficha, di con naturalidad que ese lugar no lo tienes a la mano y ofrece pasarlo con el equipo. *NUNCA describas un lugar por lo que suena su nombre.*
+  · La Cascada de Tamul es la más alta de *San Luis Potosí* (105 m), *NO* la más alta de México. No la asciendas.
+  · No inventes la hora de regreso: di la duración que trae "horario" y que el horario exacto se confirma al reservar.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
 💰 PRECIOS Y CONDICIONES
 ━━━━━━━━━━━━━━━━━━━━━━━━
 • Casi todos los tours son *POR PERSONA* en MXN. ${EMPRESA.ninos}
-• El *RZR* es la excepción: se cobra *POR VEHÍCULO* según la ruta (Nanacatli 2h, Miradores 3h, Nacimiento 5h con kayak, Trinidad 5h) y la unidad de la flota. Usa *cotizar_rzr*. No incluye transporte hasta Xilitla ni alimentos, y se confirma por WhatsApp (sin pago en línea).
+• El *RZR* es la excepción: se cobra *POR VEHÍCULO* según la ruta (Nanacatli 2h, Miradores 3h, Nacimiento 5h con kayak, Trinidad 5h) y la unidad de la flota. No incluye transporte hasta Xilitla ni alimentos, y se confirma por WhatsApp (sin pago en línea).
+  Para cotizarlo pide *la ruta* y *cuántas personas van*, y llama a *cotizar_rzr* con ambos. La herramienta te devuelve SOLO las unidades donde el grupo cabe, con su precio: preséntaselas con nombre, capacidad y precio para que elija. *Nunca ofrezcas una unidad donde el grupo no quepa* ni le pidas elegir vehículo sin haberle dado los precios.
 • El *Buceo en Media Luna* es solo para *mayores de 10 años* con buena salud (no apto con problemas respiratorios, cardíacos o de oído, ni embarazadas). No aplica precio de niños.
 • El *Rafting* depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma. Incluye traslado redondo y comida.
 • Salida estándar de los tours con recogida: *${SALIDA}*. ${EMPRESA.cancelacion}
@@ -627,8 +759,11 @@ Tours *por persona* — ofrece las dos opciones:
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧭 REGLAS
 ━━━━━━━━━━━━━━━━━━━━━━━━
-• Responde SIEMPRE en español, cálido y breve (es WhatsApp). Usa *negritas* estilo WhatsApp, no markdown.
+• Responde SIEMPRE en español, cálido y breve (es WhatsApp: apunta a 10–15 líneas salvo que te pidan el detalle completo).
+• *FORMATO WHATSAPP, NO MARKDOWN.* Negritas con UN asterisco: *así*. Nunca uses \`**doble asterisco**\`, ni \`###\` para títulos, ni \`---\` como separador: WhatsApp no los entiende y el cliente ve los símbolos en pantalla. Para una lista usa "• ".
 • NUNCA afirmes cifras específicas (alturas, profundidades, distancias, precios, horarios) de memoria: usa lo que devuelven las herramientas; si no tienes el dato, dilo sin inventar.
+• Tampoco afirmes HECHOS de memoria (qué incluye, qué es un lugar, si pasamos por el cliente): revisa la sección "LO QUE NUNCA DEBES PROMETER".
+• *Correos:* solo di que enviaste la cotización por correo si la herramienta devolvió *emailEnviado: true*. Si es false o no hay correo, no lo menciones siquiera.
 • Confirma los datos clave en cada paso (tour, fecha, personas). Menciona el folio cuando exista.
 • No uses emojis en exceso, solo donde den impacto.
 • Si no hay datos suficientes, pregunta — no asumas. Nunca prometas algo que el catálogo no dice.`;
@@ -642,10 +777,7 @@ async function processMessage(phone, message) {
   const session = getSession(phone);
 
   let response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    system: buildSystemPrompt(),
-    tools,
+    ...requestBase(),
     messages: session.history,
   });
 
@@ -666,10 +798,7 @@ async function processMessage(phone, message) {
     session.history.push({ role: "user", content: toolResults });
 
     response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      system: buildSystemPrompt(),
-      tools,
+      ...requestBase(),
       messages: session.history,
     });
   }
@@ -677,7 +806,8 @@ async function processMessage(phone, message) {
   const textBlock = response.content.find((b) => b.type === "text");
   const reply = (textBlock && textBlock.text) || "Disculpa, tuve un problemita. ¿Me lo repites? 🙏";
   session.history.push({ role: "assistant", content: response.content });
-  return sanitizeLinks(reply);
+  // El orden importa: primero markdown → WhatsApp, luego despegar los links.
+  return sanitizeLinks(toWhatsAppFormat(reply));
 }
 
-module.exports = { processMessage, buildSystemPrompt, recomendarLocal, executeTool, needsHuman, setApiClient, sanitizeLinks, tools };
+module.exports = { processMessage, buildSystemPrompt, recomendarLocal, executeTool, needsHuman, setApiClient, sanitizeLinks, toWhatsAppFormat, tools };
