@@ -5,9 +5,8 @@
 // ESTAS funciones y no una copia. Si el filtro se toca, la verificación en seco
 // se entera; una copia pegada a mano se desincronizaría en silencio.
 
-// Import relativo a propósito: los scripts de `src/scripts/` corren con `npx
-// tsx`, que no resuelve el alias `@/`. Este módulo tiene que poder importarse
-// tanto desde las rutas de Next como desde la verificación en seco.
+// Relativo por consistencia con el resto de `src/scripts/`, que importa así.
+// (`tsx` sí resuelve el alias `@/` vía tsconfig; ambos estilos funcionan.)
 import { minBookingDate } from "./tourBooking";
 
 /** Estados a los que el sistema todavía les escribe.

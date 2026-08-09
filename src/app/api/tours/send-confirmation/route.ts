@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
 import { actividad, mxn, nombreCorto } from "@/lib/logger";
+import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import fs from "fs";
 import path from "path";
 
@@ -137,15 +138,9 @@ export async function POST(req: NextRequest) {
     }
 
     // El cliente pagó: marca su carrito abandonado como convertido para que el
-    // cron de recuperación deje de mandarle recordatorios.
-    if (email?.includes("@") && tourSlug) {
-      try {
-        await prisma.abandonedCart.updateMany({
-          where: { customerEmail: email, tourSlug, tourDate: tourDate || "", status: { in: ["open", "recovered"] } },
-          data:  { status: "converted" },
-        });
-      } catch { /* no bloquear la confirmación si falla */ }
-    }
+    // cron de recuperación deje de mandarle recordatorios. Misma función que
+    // usa el panel de admin, para que la regla no viva en dos sitios.
+    await cerrarCarritosDe(email, [{ tourSlug, tourDate }]);
 
     if (!email?.includes("@")) {
       console.warn("⚠️ Email inválido — confirmación omitida");

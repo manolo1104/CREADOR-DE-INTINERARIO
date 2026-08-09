@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cerrarCarritosDe, toursDeReserva } from "@/lib/cerrarCarrito";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,15 @@ export async function POST(req: NextRequest) {
         status:                body.status || "paid",
       },
     });
-    return NextResponse.json({ ok: true, id: booking.id });
+    // La venta ya está cerrada: apaga el carrito abandonado que la originó.
+    // Sin esto el cron de recuperación le sigue escribiendo "¿Apartamos tu
+    // lugar?" a alguien que ya pagó — y este panel es justo por donde entran
+    // las ventas de los links de pago manuales.
+    const cerrados = await cerrarCarritosDe(booking.customerEmail, toursDeReserva(body));
+    if (cerrados) {
+      console.log(`🛟  admin/reservas: ${cerrados} carrito(s) cerrados para ${booking.customerEmail}`);
+    }
+
+    return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
 }
