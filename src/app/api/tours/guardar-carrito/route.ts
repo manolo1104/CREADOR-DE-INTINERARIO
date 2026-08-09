@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml } from "@/lib/cartEmail";
 import { actividad, mxn, nombreCorto } from "@/lib/logger";
+import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -67,10 +68,17 @@ export async function POST(req: NextRequest) {
       customerPhone: phone ? String(phone).trim() : null,
     };
 
-    // Dedup: si ya hay un carrito ABIERTO para el mismo correo+tour+fecha, se
+    // Dedup: si ya hay un carrito VIVO para el mismo correo+tour+fecha, se
     // actualiza (sin reenviar la cotización); si no, se crea y se envía.
+    // Incluye "recovered": si solo mirara "open", un cliente con un carrito
+    // atrapado en ese estado generaría un duplicado en vez de actualizarlo.
     const existente = await prisma.abandonedCart.findFirst({
-      where: { customerEmail: datos.customerEmail, tourSlug: datos.tourSlug, tourDate: datos.tourDate, status: "open" },
+      where: {
+        customerEmail: datos.customerEmail,
+        tourSlug:      datos.tourSlug,
+        tourDate:      datos.tourDate,
+        status:        { in: [...ESTADOS_VIVOS] },
+      },
     });
 
     let token: string;

@@ -11,6 +11,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { cargarEnv } from "./_env";
+import { ESTADO_MANUAL } from "../lib/cartFollowUp";
 
 cargarEnv();
 
@@ -21,9 +22,19 @@ const mxn = (n: number) => "$" + n.toLocaleString("es-MX");
 const ICONO: Record<string, string> = {
   open:      "🟢",
   recovered: "🔵",
+  manual:    "🙋",
   converted: "✅",
   expired:   "⚫",
 };
+
+/** Días que faltan para el tour (negativo = ya pasó). `tourDate` es String ISO. */
+function diasParaTour(tourDate: string): number {
+  const hoyMX = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  return Math.round(
+    (new Date(`${tourDate}T00:00:00`).getTime() - new Date(`${hoyMX}T00:00:00`).getTime()) /
+      86_400_000,
+  );
+}
 
 async function main() {
   const carritos = await prisma.abandonedCart.findMany({
@@ -48,8 +59,68 @@ async function main() {
       "\n",
   );
 
+  // Sacados de la automatización a propósito. Van PRIMERO y en su propia
+  // sección: excluirlos de los correos no puede volverlos invisibles — un
+  // cliente que desaparece del radar es justo el fallo que estamos corrigiendo.
+  const aMano = carritos.filter((c) => c.status === ESTADO_MANUAL);
+
+  if (aMano.length) {
+    console.log("─".repeat(70));
+    console.log("🙋  TÚ LOS LLEVAS A MANO  (el sistema NO les escribe)\n");
+    for (const c of aMano) {
+      const dias = (Date.now() - c.createdAt.getTime()) / 86_400_000;
+      const faltan = diasParaTour(c.tourDate);
+      const personas = c.adults + c.childrenMid + c.childrenSmall;
+      const cuando =
+        faltan < 0 ? `la fecha pasó hace ${-faltan} d` :
+        faltan === 0 ? "¡ES HOY!" :
+        `faltan ${faltan} d`;
+      console.log(`  🙋  ${mxn(c.total).padStart(8)}  ${c.customerEmail}`);
+      console.log(
+        `      ${c.tourName}  ·  ${c.tourDate}  ·  ${personas} persona${personas !== 1 ? "s" : ""}`,
+      );
+      console.log(
+        `      ⏳ ${cuando}  ·  guardado hace ${dias.toFixed(1)} d` +
+          (c.customerPhone ? `  ·  tel ${c.customerPhone}` : ""),
+      );
+      console.log("");
+    }
+    console.log(`  💰 A tu cargo: ${mxn(aMano.reduce((a, c) => a + c.total, 0))} MXN\n`);
+  }
+
   // Los que valen una llamada: eligieron todo, dejaron correo y no reservaron.
-  const pendientes = carritos.filter((c) => c.status !== "converted" && c.status !== "expired");
+  const candidatos = carritos.filter(
+    (c) => c.status !== "converted" && c.status !== "expired" && c.status !== ESTADO_MANUAL,
+  );
+
+  // ⚠️ CRUCE OBLIGATORIO CONTRA RESERVAS. El estado del carrito NO prueba que no
+  // haya venta: las reservas hechas a mano desde el panel (prefijo HP-M-) no
+  // pasan por `send-confirmation`, que es quien marca el carrito "converted".
+  // Sin este cruce el script reporta como "dinero en riesgo" a gente que ya
+  // pagó — pasó el 8 ago 2026 con un carrito de $4,810 que sí estaba vendido.
+  const fantasmas: typeof carritos = [];
+  const pendientes: typeof carritos = [];
+  for (const c of candidatos) {
+    const reserva = await prisma.tourBooking.findFirst({
+      where:  { customerEmail: c.customerEmail, tourSlug: c.tourSlug, tourDate: c.tourDate },
+      select: { confirmationNumber: true, status: true },
+    });
+    if (reserva) {
+      fantasmas.push(c);
+      console.log(
+        `  ✅ ${c.customerEmail} YA RESERVÓ (${reserva.confirmationNumber}, ${reserva.status}) — ` +
+        `carrito sin cerrar, NO lo persigas\n`,
+      );
+    } else {
+      pendientes.push(c);
+    }
+  }
+  if (fantasmas.length) {
+    console.log(
+      `   ${fantasmas.length} carrito(s) son fantasmas de ventas ya cerradas. ` +
+      `El cron los marca "converted" en ≤1 h.\n`,
+    );
+  }
 
   if (pendientes.length) {
     console.log("─".repeat(70));

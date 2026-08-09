@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml, type CartEmailTipo } from "@/lib/cartEmail";
 import { actividad, logger } from "@/lib/logger";
+import {
+  DIAS_VIGENCIA,
+  filtroDemasiadoViejos,
+  filtroFechaPasada,
+  filtroPendientes,
+  minFechaTour,
+} from "@/lib/cartFollowUp";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -27,18 +34,30 @@ export async function POST(req: NextRequest) {
   const hace1h  = new Date(ahora.getTime() -  1 * 60 * 60 * 1000 + margen);
   const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000 + margen);
   const hace72h = new Date(ahora.getTime() - 72 * 60 * 60 * 1000 + margen);
-  const hace14d = new Date(ahora.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const hace14d = new Date(ahora.getTime() - DIAS_VIGENCIA * 24 * 60 * 60 * 1000);
+  const minFecha = minFechaTour();
+
+  // Expira lo que ya no se puede vender: el tour YA PASÓ.
+  // Antes solo se expiraba por antigüedad del carrito, así que un carrito de
+  // hace 3 días para un tour de hace 2 seguía recibiendo "¡te está esperando!".
+  // Eso no es una venta perdida, es daño a la marca. Va ANTES de buscar
+  // candidatos para que los recién vencidos queden fuera de esta misma corrida.
+  const { count: expiradosPorFecha } = await prisma.abandonedCart.updateMany({
+    where: filtroFechaPasada(minFecha),
+    data:  { status: "expired" },
+  });
 
   // Expira carritos muy viejos (deja de escribirles). 14 días para que quepa
   // la secuencia completa de tres recordatorios.
   await prisma.abandonedCart.updateMany({
-    where: { status: "open", createdAt: { lt: hace14d } },
+    where: filtroDemasiadoViejos(hace14d),
     data:  { status: "expired" },
   });
 
-  // Candidatos: abiertos, con menos de 3 recordatorios, creados hace más de 1 h.
+  // Candidatos: vivos, con menos de 3 recordatorios, creados hace más de 1 h y
+  // con el tour todavía por delante.
   const abiertos = await prisma.abandonedCart.findMany({
-    where:   { status: "open", emailsSent: { lt: 3 }, createdAt: { lt: hace1h } },
+    where:   filtroPendientes(minFecha, hace1h),
     orderBy: { createdAt: "asc" },
     take:    100,
   });
@@ -100,7 +119,15 @@ export async function POST(req: NextRequest) {
     `${enviados} recordatorio(s)`,
     `${convertidos} ya reservó`,
     `${abiertos.length} abiertos`,
+    expiradosPorFecha ? `${expiradosPorFecha} venció la fecha` : undefined,
     fallidos ? `⚠️ ${fallidos} fallaron` : undefined,
   );
-  return NextResponse.json({ ok: true, enviados, convertidos, fallidos, revisados: abiertos.length });
+  return NextResponse.json({
+    ok: true,
+    enviados,
+    convertidos,
+    fallidos,
+    expiradosPorFecha,
+    revisados: abiertos.length,
+  });
 }

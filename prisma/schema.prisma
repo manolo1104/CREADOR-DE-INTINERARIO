@@ -212,7 +212,12 @@ model AbandonedCart {
   total         Int
   customerEmail String
   customerPhone String?
-  status        String    @default("open") // open | recovered | converted | expired
+  // open      → vivo, recibe recordatorios automáticos
+  // recovered → estado fósil (ya nada lo escribe); se trata como "open"
+  // manual    → lo lleva Manolo en persona: EXCLUIDO de todo envío automático
+  // converted → ya reservó
+  // expired   → el tour pasó, o el carrito superó los 14 días
+  status        String    @default("open")
   emailsSent    Int       @default(0)
   lastEmailAt   DateTime?
   createdAt     DateTime  @default(now())

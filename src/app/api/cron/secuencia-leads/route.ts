@@ -25,9 +25,18 @@ export async function POST(req: NextRequest) {
   const ahora  = new Date();
   const margen = 5 * 60 * 1000; // holgura para que un cron "en punto" no se salte un envío
 
-  // Candidatos: secuencia viva, con el paso 1 ya enviado y sin terminar.
+  // Candidatos: secuencia viva y sin terminar.
+  //
+  // Incluye deliberadamente a los de emailsSent = 0. El paso 1 lo manda
+  // /api/recomendar-tour al instante, pero sube el contador DESPUÉS de que
+  // Brevo acepta el envío: si Brevo falla (cuota, llave caducada), el lead se
+  // queda vivo en 0 y con el filtro anterior (`gte: 1`) el cron no lo tomaba
+  // NUNCA. Es la misma clase de trampa que tuvo un carrito atrapado en
+  // "recovered" 5 días sin un solo recordatorio (ago 2026): un registro vivo en
+  // un estado del que ningún proceso lo saca. Como ESPERA_HORAS[1] = 0, el paso
+  // 1 sale en la siguiente corrida sin lógica especial.
   const leads = await prisma.lead.findMany({
-    where:   { status: "activo", emailsSent: { gte: 1, lt: 4 } },
+    where:   { status: "activo", emailsSent: { lt: 4 } },
     orderBy: { createdAt: "asc" },
     take:    100,
   });
