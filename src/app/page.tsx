@@ -179,8 +179,16 @@ export default async function HomePage() {
 
           <div className="flex flex-wrap gap-4 justify-center mb-10">
             <MagneticButton>
-              <Link href={lp("/paquetes")} className="border border-crema/40 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-all duration-300 block">
-                {en ? "See the packages" : "Ver Paquetes"}
+              {/* Dorado = "reservar" en todo el sitio (es el color del botón del
+                  menú). En inglés lleva al catálogo: el motor es solo español. */}
+              <Link
+                href={en ? lp("/tours") : "/reservar"}
+                className="bg-dorado text-negro px-10 py-4 text-sm tracking-[2px] uppercase font-dm font-medium hover:bg-terracota hover:text-crema transition-colors duration-300 flex flex-col items-center gap-0.5"
+              >
+                <span>{en ? "Book a tour →" : "Reservar tour →"}</span>
+                <span className="text-[9px] tracking-[1.5px] uppercase text-negro/55 font-normal">
+                  {en ? "Free cancellation 48h" : "Apartas con el 30 %"}
+                </span>
               </Link>
             </MagneticButton>
             <MagneticButton>

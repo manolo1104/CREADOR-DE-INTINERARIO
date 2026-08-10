@@ -39,11 +39,13 @@ export function FloatingReservarButton() {
     : undefined;
 
   const conBarraInferior = !!tourSlugMatch || !!tourDelDestino;
+  // Fuera de una ficha concreta, el botón manda al motor de reservas y no al
+  // catálogo editorial: quien lo pulsa ya decidió que quiere reservar.
   const href = tourSlugMatch
     ? `/reservar-tour/${tourSlugMatch[1]}`
     : tourDelDestino
       ? `/tours/${tourDelDestino.slug}`
-      : "/tours";
+      : "/reservar";
   const waHref = waLink(WA_MESSAGES.flotante);
   const visibility = conBarraInferior ? "hidden lg:flex" : "flex";
 
