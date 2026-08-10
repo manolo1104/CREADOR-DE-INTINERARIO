@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName, fechaTourValida } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
+import { trackServerEvent } from "@/lib/serverTrack";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, tourDetails } = await req.json();
+    const { customerEmail, customerName, tourDetails, sid } = await req.json();
 
     // La fecha nunca se validaba en el servidor: se podía cobrar una reserva
     // para ayer o para dentro de dos años tocando el sessionStorage.
@@ -79,6 +80,12 @@ export async function POST(req: NextRequest) {
         tourDetails?.tourDate,
         paymentIntent.id,
       );
+      await trackServerEvent("PAYMENT_INITIATED", {
+        sid,
+        tourSlug: veh.tour.slug,
+        amount:   veh.charge,
+        data: { tour_name: bookingName, pct: veh.pct, total: veh.total, paymentIntentId: paymentIntent.id, tourDate: tourDetails?.tourDate },
+      });
       return NextResponse.json({
         clientSecret:    paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
@@ -150,6 +157,12 @@ export async function POST(req: NextRequest) {
       tourDetails?.tourDate,
       paymentIntent.id,
     );
+    await trackServerEvent("PAYMENT_INITIATED", {
+      sid,
+      tourSlug: charge.tour.slug,
+      amount:   charge.charge,
+      data: { tour_name: charge.tour.nombre, pct: charge.pct, total: charge.total, paymentIntentId: paymentIntent.id, tourDate: tourDetails?.tourDate },
+    });
 
     return NextResponse.json({
       clientSecret:    paymentIntent.client_secret,

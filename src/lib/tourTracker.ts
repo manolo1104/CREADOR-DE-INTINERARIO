@@ -1,5 +1,15 @@
 // Client-only — call only from "use client" components
 
+/**
+ * Id de sesión del visitante. Se exporta porque el pago se crea en el servidor
+ * (`/api/tours/create-payment-intent`), que no ve el sessionStorage: sin
+ * mandárselo, el evento del pago quedaba huérfano y el embudo no podía ligar
+ * "abrió la reserva" con "llegó al pago" de la misma persona.
+ */
+export function sessionId(): string {
+  return getSessionId();
+}
+
 function getSessionId(): string {
   if (typeof sessionStorage === "undefined") return "ssr";
   let sid = sessionStorage.getItem("hp_sid");

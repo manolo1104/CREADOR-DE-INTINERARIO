@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { TOURS_DB, tourDurTexto } from "@/lib/tours";
@@ -38,6 +38,19 @@ export default function ReservarTourPage() {
   const [cartSaved,   setCartSaved]   = useState(false);
   const [savingCart,  setSavingCart]  = useState(false);
   const [cartError,   setCartError]   = useState("");
+
+  // El embudo saltaba de TOUR_PAGE_VIEW (en /tours/[slug]) a DATE_SELECTED
+  // (aquí) sin nada en medio: era imposible saber si la gente no llegaba a esta
+  // página o llegaba y no elegía fecha. Sin este evento, los dos casos —que
+  // piden arreglos opuestos— se veían idénticos.
+  const vistaEnviada = useRef(false);
+  useEffect(() => {
+    if (vistaEnviada.current || !tour) return;
+    vistaEnviada.current = true;
+    trackTourEvent("BOOKING_PAGE_VIEW", { tour: tour.slug, tour_name: tour.nombre, amount: tour.precio });
+    // Una sola vez por montaje; `tour` sale del slug de la ruta y no cambia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Restaurar desde el link del correo de recuperación (?recuperar=<token>).
   useEffect(() => {

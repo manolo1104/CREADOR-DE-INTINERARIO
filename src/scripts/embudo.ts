@@ -22,10 +22,17 @@ const PASOS: Array<{ label: string; events: string[] }> = [
   { label: "Vio el catálogo",       events: ["TOURS_LIST_VIEW"] },
   { label: "Del destino al tour",   events: ["DESTINO_TOUR_CLICK"] },
   { label: "Vio un tour",           events: ["TOUR_PAGE_VIEW"] },
+  // Sin este paso no se distinguía "no llega a la página de reserva" de "llega
+  // y no elige fecha" — son páginas distintas y piden arreglos opuestos.
+  { label: "Abrió la reserva",      events: ["BOOKING_PAGE_VIEW"] },
   { label: "Eligió fecha",          events: ["DATE_SELECTED"] },
   { label: "Inició reserva",        events: ["CHECKOUT_STARTED"] },
+  { label: "Llegó al pago",         events: ["PAYMENT_INITIATED"] },
   { label: "Pago fallido",          events: ["PAGO_FALLIDO"] },
   { label: "RESERVÓ",               events: ["BOOKING_CONFIRMED"] },
+  // Fuera del embudo lineal: quien se va por WhatsApp no abandona, cambia de
+  // canal. Se cuenta aparte para no leerlo como una fuga.
+  { label: "· Se fue a WhatsApp",   events: ["WHATSAPP_CLICK"] },
 ];
 
 async function main() {
