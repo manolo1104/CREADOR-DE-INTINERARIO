@@ -107,3 +107,15 @@ export function toursQueIncluyen(slug: string): TourRef[] {
 export function toursCercaDe(slug: string): TourRef[] {
   return (DESTINO_EN_TOURS[slug] ?? []).filter((t) => t.relacion === "cerca");
 }
+
+/**
+ * El inverso de `toursQueIncluyen`: los destinos que un tour SÍ visita.
+ * Sale del mismo mapa, así que nunca puede contradecirlo. Conserva el orden en
+ * que aparecen los destinos aquí arriba (agrupados por municipio), que es un
+ * orden geográfico razonable para enseñar el recorrido de un día.
+ */
+export function destinosDelTour(tourSlug: string): string[] {
+  return Object.keys(DESTINO_EN_TOURS).filter((destinoSlug) =>
+    toursQueIncluyen(destinoSlug).some((t) => t.slug === tourSlug),
+  );
+}

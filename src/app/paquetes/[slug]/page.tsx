@@ -8,11 +8,62 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PAQUETES_DB, getPaquete, HABITACIONES, LOGISTICA, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, FAQS_PAQUETES } from "@/lib/paquetes";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, type Tour } from "@/lib/tours";
+import { DESTINOS_DB } from "@/lib/destinos";
+import { destinosDelTour } from "@/lib/tourMapping";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import { waLink } from "@/lib/whatsapp";
 
 const SITE = "https://www.huasteca-potosina.com";
+
+interface FotoDia { src: string; lugar: string }
+
+/**
+ * Fotos del día: una por cada destino que se visita, no tres del mismo lugar.
+ *
+ * Antes se tomaban hero + galería del tour, y como esas fotos suelen ser todas
+ * del mismo sitio, un día que visita Las Pozas, Xilitla, el Nacimiento y el
+ * Castillo de la Salud se veía como si fuera un solo lugar.
+ *
+ * Los destinos salen de `destinosDelTour`, es decir, del mismo mapa que usa el
+ * resto del sitio — no de una lista aparte que pueda desincronizarse. Si el día
+ * visita menos de `minimo` destinos (el Meco y Minas/Micos visitan dos), se
+ * completa con más fotos de la galería de esos mismos destinos, repartiendo una
+ * vuelta a cada uno antes de repetir. Nunca se repite la misma imagen.
+ */
+function fotosDelDia(tour: Tour, minimo = 3, maximo = 4): FotoDia[] {
+  const destinos = destinosDelTour(tour.slug)
+    .map((s) => DESTINOS_DB.find((d) => d.slug === s))
+    .filter((d): d is NonNullable<typeof d> => Boolean(d));
+
+  if (!destinos.length) {
+    // Sin destinos mapeados se cae al comportamiento anterior, con la galería del tour.
+    return Array.from(new Set([tour.imagen_hero, ...tour.gallery.map((g) => g.src)]))
+      .slice(0, minimo)
+      .map((src) => ({ src, lugar: tour.nombre }));
+  }
+
+  const fotos: FotoDia[] = [];
+  const vistas = new Set<string>();
+  const agregar = (src: string | undefined, lugar: string) => {
+    if (!src || vistas.has(src) || fotos.length >= maximo) return;
+    vistas.add(src);
+    fotos.push({ src, lugar });
+  };
+
+  for (const d of destinos) agregar(d.imagen_hero, d.nombre);
+
+  for (let i = 0; fotos.length < minimo; i++) {
+    const antes = fotos.length;
+    for (const d of destinos) {
+      if (fotos.length >= minimo) break;
+      agregar(d.imagen_galeria?.[i], d.nombre);
+    }
+    if (fotos.length === antes) break; // ya no quedan imágenes nuevas
+  }
+
+  return fotos;
+}
 
 const LOGISTICA_ICONS: Record<string, LucideIcon> = { Car, Plane, Bus, Sparkles };
 
@@ -172,7 +223,7 @@ export default function PaqueteDetallePage({ params }: Props) {
         <div className="space-y-10">
           {p.itinerario.map((d) => {
             const tour = d.tourSlug ? TOURS_DB.find((t) => t.slug === d.tourSlug) : undefined;
-            const imgs = tour ? Array.from(new Set([tour.imagen_hero, ...tour.gallery.map((g) => g.src)])).slice(0, 3) : [];
+            const imgs = tour ? fotosDelDia(tour) : [];
             return (
               <div key={d.dia} className="grid md:grid-cols-[auto_1fr] gap-5 md:gap-8 border-b border-white/8 pb-10 last:border-0">
                 {/* Marca de día */}
@@ -195,10 +246,15 @@ export default function PaqueteDetallePage({ params }: Props) {
                       <p className="text-crema/55 font-dm text-sm leading-relaxed mb-4">{tour.descripcion}</p>
 
                       {imgs.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                          {imgs.map((src, i) => (
-                            <div key={src} className="relative aspect-[4/3] overflow-hidden rounded">
-                              <Image src={src} alt={`${tour.nombre} — foto ${i + 1}`} fill className="object-cover" sizes="(max-width: 768px) 33vw, 240px" />
+                        <div className={`grid gap-2 mb-4 ${imgs.length >= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+                          {imgs.map((f) => (
+                            <div key={f.src} className="relative aspect-[4/3] overflow-hidden rounded">
+                              <Image src={f.src} alt={`${f.lugar} — ${tour.nombre}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 240px" />
+                              {/* El nombre del lugar sobre la foto: sin él, tres fotos
+                                  distintas del mismo día no se leen como tres lugares. */}
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-negro/85 to-transparent px-2 pt-5 pb-1.5">
+                                <span className="block text-[9px] leading-tight text-crema/90 font-dm tracking-wide">{f.lugar}</span>
+                              </div>
                             </div>
                           ))}
                         </div>
