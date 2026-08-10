@@ -380,7 +380,7 @@ export const TOURS_DB: Tour[] = [
     destinos: [
       "Cascada del Meco",
       "Mirador Panorámico del Meco",
-      "Cascada del Salto",
+      "Cascada El Salto",
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
