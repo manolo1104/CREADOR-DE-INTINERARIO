@@ -817,7 +817,7 @@ export const DESTINOS_DB: Destino[] = [
     icon: "Anchor",
     descripcion: "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
     duracion_hrs: 7,
-    precio_entrada: "$1,850 MXN (tour completo, con traslado y comida)",
+    precio_entrada: "$1,950 MXN (tour completo, con traslado y comida)",
     dificultad: "media",
     ideal_para: ["aventura", "amigos", "fotografia"],
     horario: "09:00–18:00",
