@@ -7,7 +7,7 @@ import type { Destino } from "@/lib/destinos";
 import { Clock, CloudSun, Calendar, Star } from "lucide-react";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { RATING_DESTINO } from "@/lib/destinoData";
-import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
+import { toursQueIncluyen } from "@/lib/tourMapping";
 import { TOURS_DB } from "@/lib/tours";
 import { trackTourEvent } from "@/lib/tourTracker";
 
@@ -34,11 +34,13 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
   const lp = (p: string) => (en ? `/en${p}` : p);
-  // El tour que se ofrece en esta tarjeta. Primero el que SÍ visita el destino;
-  // si no hay, el de la misma zona (etiquetado como "cerca de", sin mentir).
+  // El tour que se ofrece en esta tarjeta: SOLO el que de verdad visita el
+  // destino. Antes, si ninguno lo visitaba, se caía al de la misma zona con la
+  // etiqueta "cerca de" — pero eso ponía un botón "VER TOUR" con precio en 23 de
+  // los 41 destinos hacia recorridos que no van ahí. Si el destino no está en
+  // ningún itinerario, la tarjeta solo ofrece ver el lugar.
   const refIncluye = toursQueIncluyen(d.slug)[0];
-  const refCerca   = refIncluye ? undefined : toursCercaDe(d.slug)[0];
-  const ref        = refIncluye ?? refCerca;
+  const ref        = refIncluye;
   const tour       = ref ? TOURS_DB.find((t) => t.slug === ref.slug) : undefined;
 
   const difKey = d.dificultad.toLowerCase() as DificultadKey;
@@ -142,9 +144,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
           {tour && (
             <>
               <p className="text-[10px] font-dm text-crema/45 leading-snug">
-                {refIncluye
-                  ? (en ? "Included in " : "Incluido en ")
-                  : (en ? "Nearby tour: " : "Cerca de ")}
+                {en ? "Included in " : "Incluido en "}
                 <span className="text-crema/70">{ref!.nombre}</span>
               </p>
               <Link
@@ -155,7 +155,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
                     tourSlug:  tour.slug,
                     tour_name: tour.nombre,
                     amount:    tour.precio,
-                    relacion:  refIncluye ? "incluye" : "cerca",
+                    relacion:  "incluye",
                     source:    "tarjeta_destino",
                   })
                 }
