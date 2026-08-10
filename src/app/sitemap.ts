@@ -90,6 +90,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contacto`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/politica-de-cancelacion`, lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE}/xilitla-o-ciudad-valles`,           lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
   ];
 
   const tourPages: MetadataRoute.Sitemap = TOURS_DB.flatMap((t) =>
