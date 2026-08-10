@@ -32,6 +32,10 @@ export default function Navbar() {
   const locale: Locale = asLocale(pathname === "/en" || pathname.startsWith("/en/") ? "en" : "es");
   const dict = getDict(locale);
   const lp = (path: string) => localePath(path, locale);
+  // El motor de reservas solo existe en español, igual que /reservar-tour y
+  // /paquetes. En inglés el botón sigue llevando al catálogo, que sí está
+  // traducido — mandarlo a /en/reservar sería mandarlo a un 404.
+  const reservarHref = locale === "en" ? lp("/tours") : "/reservar";
   const switchHref = counterpartHref(pathname, locale);
 
   const destinosRef = useRef<HTMLDivElement>(null);
@@ -134,7 +138,7 @@ export default function Navbar() {
               {locale === "en" ? "ES" : "EN"}
             </Link>
 
-            <Link href={lp("/tours")} className="relative bg-dorado text-negro px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors duration-200 font-medium">
+            <Link href={reservarHref} className="relative bg-dorado text-negro px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors duration-200 font-medium">
               {dict.nav.reservar}
             </Link>
           </div>
@@ -176,7 +180,7 @@ export default function Navbar() {
             </Link>
 
             <div className="pt-4">
-              <Link href={lp("/tours")} className="block text-center bg-dorado text-negro py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
+              <Link href={reservarHref} className="block text-center bg-dorado text-negro py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
                 {dict.nav.reservar}
               </Link>
             </div>
