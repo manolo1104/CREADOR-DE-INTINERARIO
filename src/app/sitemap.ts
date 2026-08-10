@@ -3,6 +3,7 @@ import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
 
 // El sitemap consulta los artículos del blog (BD) en cada request. Si fuera
 // estático, el build lo "congela" sin posts (justo lo que pasaba: 0 artículos
@@ -107,8 +108,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
+  // 17 slugs de la base todavía arrastran el sufijo de año y `next.config.mjs`
+  // los redirige (308) a la versión sin año. Publicarlos tal cual mandaba a
+  // Google a rastrear URLs que redirigen; se listan ya normalizados.
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
-    url: `${BASE}/blog/${p.slug}`,
+    url: `${BASE}/blog/${normalizaSlugBlog(p.slug)}`,
     lastModified: p.updatedAt,
     changeFrequency: "monthly",
     priority: 0.8,
