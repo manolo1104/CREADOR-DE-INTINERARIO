@@ -176,7 +176,11 @@ export default function TourDetailPage({ params }: Props) {
     })),
   };
 
-  const reviewSchema = {
+  // Solo se declara calificación si el tour TIENE reseñas. Un tour recién
+  // publicado trae reviewCount 0, y emitir "4.9 sobre 0 reseñas" es una
+  // calificación inventada — además Google rechaza el aggregateRating sin al
+  // menos una reseña.
+  const reviewSchema = tour.reviewCount > 0 ? {
     "@context": "https://schema.org",
     "@type": "Product",
     name: tour.nombre,
@@ -196,7 +200,7 @@ export default function TourDetailPage({ params }: Props) {
         datePublished: r.fecha,
       })),
     } : {}),
-  };
+  } : null;
 
   const waTour = locale === "en"
     ? `Hi, I'm interested in the "${tour.nombre}" tour. Could you share availability and prices?`
@@ -211,7 +215,9 @@ export default function TourDetailPage({ params }: Props) {
     <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />
+      {reviewSchema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema) }} />
+      )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -466,9 +472,11 @@ export default function TourDetailPage({ params }: Props) {
               )}
               <p className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(32px,4vw,48px)" }}>{money(tour.precio)}</p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">{priceUnitShort}</p>
-              <p className="text-[10px] text-dorado/80 font-dm mt-2 flex items-center gap-1">
-                <Star className="w-3 h-3 fill-dorado/80" aria-hidden="true" /> 4.9 · ({t.reviewsCount(tour.reviewCount)})
-              </p>
+              {tour.reviewCount > 0 && (
+                <p className="text-[10px] text-dorado/80 font-dm mt-2 flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-dorado/80" aria-hidden="true" /> 4.9 · ({t.reviewsCount(tour.reviewCount)})
+                </p>
+              )}
               <p className="text-[10px] text-crema/40 font-dm mt-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" aria-hidden="true" /> {durLabel}
               </p>

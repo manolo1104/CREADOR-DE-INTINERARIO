@@ -363,4 +363,37 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Divers at the surface of the Media Luna Lagoon surrounded by cypress trees and open sky after their dive",
     ],
   },
+
+  "travesia-del-cafe": {
+    nombre: "Coffee Trail — Xilitla Coffee Farm by RZR",
+    tagline: "The taste of Xilitla, from the branch to the cup",
+    tipo: "Culture & Flavor",
+    urgencia: "Small groups at the farm — book ahead",
+    descripcion:
+      "Hop on an RZR and ride up to the coffee groves of Xilitla. Walk among the plants with the people who pick them, watch the beans get pulped, dried and roasted, and finish with a tasting of freshly roasted coffee. A relaxed experience of flavor and tradition, good for the whole family. $900 MXN per person.",
+    descripcionLarga:
+      "Xilitla smells of coffee long before you reach the farm. The mountains around town are planted with shade-grown coffee, and this trail takes you right there: to the place where your morning cup begins.\n\nThe ride is part of the experience. We pick you up at your lodging in Xilitla and head up to the farm by RZR, along the dirt roads that cut through the rainforest — the same vehicles as our off-road tours, only here the destination is a coffee grove.\n\nAt the farm, the coffee-growing family welcomes you. You walk among the plants, learn to tell a ripe cherry from one that isn't, and follow the whole process: the hand picking, the pulping, the drying patio where the beans are spread in the sun and turned for days, and finally the roasting drum, when the smell fills everything.\n\nIt ends with the tasting. In front of plates of green, roasted and ground coffee, you learn to smell and taste the way cuppers do, and they pour you the coffee from that same farm. Plenty of people leave with a bag under their arm.\n\nIt's an easy outing with no physical demands, ideal for couples, friends or family. It runs about 5 hours and departs with a minimum of 2 people.",
+    destinos: [
+      "Shade-grown coffee grove in the Xilitla highlands",
+      "Bean drying patio",
+      "Artisanal roastery",
+      "Cupping bar",
+    ],
+    incluye: [
+      "Round-trip transfer from your lodging in Xilitla — the ride to the farm is by RZR",
+      "Farm entrance and access",
+      "Guided walk through the grove and the full coffee process",
+      "Freshly roasted coffee tasting",
+    ],
+    gallery: [
+      "Coffee grower hand-picking ripe red cherries from a coffee plant in the mountains of Xilitla",
+      "Group of visitors tasting freshly poured coffee next to the roaster at the Xilitla coffee farm",
+      "Host in a yellow poncho showing a scoop of freshly roasted beans over the cooling drum",
+      "Four visitors in ponchos and straw hats posing under a huge tree in the middle of the coffee grove",
+      "The coffee grower crouching by the drying patio, explaining how the beans are dried to the group",
+      "Visitors listening to the coffee family's story inside the roastery, with old photographs hanging from the ceiling",
+      "Toasting with cups of coffee during the tasting, with plates of green, roasted and ground beans on the bar",
+      "Two visitors sorting coffee beans by hand on the farm's drying patio",
+    ],
+  },
 };
