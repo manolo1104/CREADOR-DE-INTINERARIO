@@ -9,7 +9,7 @@ const URL = `${SITE}/tours-en-ciudad-valles`;
 export const metadata: Metadata = {
   title: "Tours en Ciudad Valles, SLP — Salidas Diarias 2026",
   description:
-    "Tours guiados con salida desde Ciudad Valles: Cascada de Tamul, rafting, Micos y Xilitla. Pasamos por ti a tu hotel — todo incluido desde $1,300 MXN.",
+    "Tours guiados con salida desde Ciudad Valles: Cascada de Tamul, rafting, Micos y Xilitla. Pasamos por ti a tu hotel — todo incluido desde $900 MXN.",
   keywords: [
     "tours ciudad valles",
     "tours ciudad valles san luis potosi",
@@ -52,7 +52,7 @@ const FAQS_CV: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
-    a: "Los tours de un día van de $1,300 a $1,850 MXN por persona con todo incluido: traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla, desayuno regional, entradas, guía certificado NOM-09, equipo de seguridad y fotos del recorrido.",
+    a: "Los tours de un día van de $900 a $1,950 MXN por persona con todo incluido: traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla, desayuno regional, entradas, guía certificado NOM-09, equipo de seguridad y fotos del recorrido.",
   },
   {
     q: "¿Puedo reservar para mañana?",

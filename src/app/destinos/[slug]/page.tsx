@@ -11,6 +11,7 @@ import {
 import { DESTINOS_DB } from "@/lib/destinos";
 import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
 import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
+import { blogDeDestino } from "@/lib/blogDestinoMap";
 import { TOURS_DB } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
@@ -80,6 +81,8 @@ export default function DestinoPage({ params }: Props) {
     .map((tour) => localizeTour(tour!, locale));
   const tourPrincipal     = toursCompletos[0];
   const narrativa        = locale === "en" ? undefined : NARRATIVA_DESTINO[destino.slug];
+  // El blog solo existe en español; en /en no se ofrece la guía a fondo.
+  const guiaSlug         = locale === "en" ? undefined : blogDeDestino(destino.slug);
   const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
   const reviewsDestino   = REVIEWS_POR_DESTINO[destino.slug] ?? [];
   const rating           = RATING_DESTINO[destino.slug];
@@ -331,6 +334,32 @@ export default function DestinoPage({ params }: Props) {
                 </details>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── GUÍA A FONDO ──
+            La ficha y su artículo del blog competían por la misma consulta. En
+            vez de canonicalizar (el artículo tiene el doble de texto y es el que
+            Google posiciona), cada una conserva su intención y se enlazan: aquí
+            los datos prácticos, allá el desarrollo largo. */}
+        {guiaSlug && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
+            <Link
+              href={`/blog/${guiaSlug}`}
+              className="group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
+            >
+              <span>
+                <span className="block text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-1">
+                  {locale === "en" ? "In-depth guide" : "Guía a fondo"}
+                </span>
+                <span className="font-cormorant text-crema text-lg font-light group-hover:text-lima transition-colors">
+                  {locale === "en"
+                    ? `Complete guide to ${destino.nombre}`
+                    : `Guía completa de ${destino.nombre}`}
+                </span>
+              </span>
+              <span className="text-verde-vivo text-xl leading-none flex-shrink-0" aria-hidden>→</span>
+            </Link>
           </div>
         )}
 

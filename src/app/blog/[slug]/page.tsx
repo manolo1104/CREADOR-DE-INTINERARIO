@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
+import { GuiaDelLugar } from "@/components/blog/GuiaDelLugar";
 import { TOURS_DB } from "@/lib/tours";
 import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
 
@@ -309,6 +310,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
               {/* Content first half */}
               <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentFirst }} />
+
+              {/* Ficha del lugar + tours que lo visitan. Va a mitad del
+                  artículo: es donde el lector ya decidió que quiere ir. */}
+              <GuiaDelLugar blogSlug={post.slug} />
 
               {/* Newsletter inline (a mitad del artículo) */}
               <BlogNewsletterInline />

@@ -16,12 +16,18 @@ import { localizeTour } from "@/lib/i18n/localize";
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const en = locale === "en";
+  // El conteo y el precio de arranque salen de TOURS_DB: escritos a mano se
+  // habían quedado en "8 tours desde $1,300" cuando ya son 10 desde $900, y el
+  // gancho de precio más fuerte del catálogo no se estaba usando.
+  const nTours = TOURS_DB.length;
+  const desde = Math.min(...TOURS_DB.map((t) => t.precio));
+  const desdeTxt = `$${desde.toLocaleString("es-MX")}`;
   const title = en
-    ? "Huasteca Potosina Tours 2026 · All-Inclusive from $1,300"
-    : "Tours Huasteca Potosina 2026 · Todo Incluido desde $1,300";
+    ? `Huasteca Potosina Tours 2026 · All-Inclusive from ${desdeTxt}`
+    : `Tours Huasteca Potosina 2026 · Todo Incluido desde ${desdeTxt}`;
   const description = en
-    ? "8 guided tours with transport, breakfast, entrance fees and a NOM-09 certified guide. Groups of max. 12. Free cancellation 48h before. Book by card or WhatsApp."
-    : "8 tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas. Cancela gratis con 48h. Reserva con tarjeta o WhatsApp.";
+    ? `${nTours} guided tours with transport, breakfast, entrance fees and a NOM-09 certified guide. Free cancellation 48h before. Book with 30% deposit.`
+    : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Aparta con el 30 %.`;
   return {
     title,
     description,
@@ -389,8 +395,8 @@ export default function ToursPage() {
             </p>
             <ul className="space-y-2 mb-7">
               {(en
-                ? ["Max. 12 people per group", "Dedicated guide the whole trip", "Transport from your accommodation", "From $1,300 MXN per person"]
-                : ["Máximo 12 personas por grupo", "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles", "Precio desde $1,300 MXN por persona"]
+                ? ["Max. 12 people per group", "Dedicated guide the whole trip", "Transport from your accommodation", `From $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN per person`]
+                : ["Máximo 12 personas por grupo", "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles", `Precio desde $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN por persona`]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-verde-vivo mt-0.5 flex-shrink-0">✓</span>{item}</li>
               ))}

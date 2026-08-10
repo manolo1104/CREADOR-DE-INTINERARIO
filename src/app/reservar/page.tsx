@@ -15,7 +15,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Reservar tour en la Huasteca Potosina — Aparta con el 30 %",
   description:
-    "Elige tu recorrido y aparta tu lugar con el 30 %. Liquidas el día del tour y cancelas gratis hasta 48 h antes. Transporte desde tu hospedaje, guías certificados NOM-09, entradas y seguro de viaje incluidos.",
+    "Aparta con el 30 % y cancela gratis hasta 48 h antes. Transporte desde tu hospedaje, guía NOM-09, entradas y seguro de viaje incluidos. Liquidas el día del tour.",
   alternates: { canonical: `${SITE}/reservar` },
   openGraph: {
     title: "Reservar tour en la Huasteca Potosina",

@@ -67,8 +67,8 @@ export function SiteFooter() {
             </div>
             <p className="text-crema/40 text-xs font-dm leading-relaxed mb-4">
               {en
-                ? "The most extraordinary region in Mexico. Turquoise waterfalls, surrealist gardens, adventure without limits."
-                : "La región más extraordinaria de México. Cascadas turquesas, jardines surrealistas, aventura sin límites."}
+                ? "Local tour operator based in Xilitla, San Luis Potosí. Our own hotel and restaurant, NOM-09 certified guides, daily departures."
+                : "Operadora local con base en Xilitla, San Luis Potosí. Hotel y restaurante propios, guías certificados NOM-09, salidas todos los días."}
             </p>
             <a
               href={CONTACTO.whatsappUrl}

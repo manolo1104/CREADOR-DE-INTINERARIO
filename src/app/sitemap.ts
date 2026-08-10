@@ -3,6 +3,8 @@ import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
+import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 
 // El sitemap consulta los artículos del blog (BD) en cada request. Si fuera
 // estático, el build lo "congela" sin posts (justo lo que pasaba: 0 artículos
@@ -89,6 +91,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contacto`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/politica-de-cancelacion`, lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE}/xilitla-o-ciudad-valles`,           lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    ...CIUDADES_ORIGEN.map((c) => ({
+      url: `${BASE}/desde/${c.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
   ];
 
   const tourPages: MetadataRoute.Sitemap = TOURS_DB.flatMap((t) =>
@@ -107,8 +116,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
+  // 17 slugs de la base todavía arrastran el sufijo de año y `next.config.mjs`
+  // los redirige (308) a la versión sin año. Publicarlos tal cual mandaba a
+  // Google a rastrear URLs que redirigen; se listan ya normalizados.
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
-    url: `${BASE}/blog/${p.slug}`,
+    url: `${BASE}/blog/${normalizaSlugBlog(p.slug)}`,
     lastModified: p.updatedAt,
     changeFrequency: "monthly",
     priority: 0.8,

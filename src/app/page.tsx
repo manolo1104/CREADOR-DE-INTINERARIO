@@ -30,13 +30,17 @@ const SITE_URL = SITE;
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
-  const n = DESTINOS_DB.length;
   const title = locale === "en"
     ? "Huasteca Potosina Tours — Waterfalls, Adventure & Nature | Mexico"
     : "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México";
+  // La descripción anterior hablaba solo de la región y no daba ningún motivo
+  // para hacer clic en nosotros y no en Viator. Ahora lleva quiénes somos, el
+  // precio de arranque y la palanca que sí convierte (anticipo + cancelación).
+  const nTours = TOURS_DB.length;
+  const desde = `$${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")}`;
   const description = locale === "en"
-    ? `Discover the Huasteca Potosina: turquoise waterfalls, surrealist gardens and impossible canyons. ${n} unique destinations in San Luis Potosí, Mexico.`
-    : `Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. ${n} destinos únicos en San Luis Potosí, México.`;
+    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. Book with 30% deposit, free cancellation.`
+    : `Tours guiados desde Xilitla, con hotel y restaurante propios. ${nTours} recorridos con guía NOM-09 y seguro, desde ${desde}. Aparta con el 30 % y cancela gratis.`;
   return {
     title,
     description,
@@ -159,9 +163,15 @@ export default async function HomePage() {
           </h1>
 
           <p className="text-crema/80 max-w-xl mb-6 leading-relaxed font-dm drop-shadow" style={{ fontSize: "clamp(15px,1.8vw,18px)" }}>
+            {/* Antes esta línea describía la REGIÓN ("cascadas turquesas,
+                jardines surrealistas…"), no la empresa: cualquiera de los seis
+                competidores podía pegarla igual. Ahora dice lo único que ellos
+                no pueden copiar — que somos de Xilitla y el hotel y el
+                restaurante son nuestros. Sin superlativos: Huasteca Sharet
+                también tiene hospedaje propio, pero desde Ciudad Valles. */}
             {en
-              ? "Turquoise waterfalls, surrealist gardens, impossible canyons. The most extraordinary region in Mexico."
-              : "Cascadas turquesas, jardines surrealistas, cañones imposibles. La región más extraordinaria de México."}
+              ? "We're from Xilitla, and the hotel and restaurant here are ours. You sleep, eat and set out on your tour from the same place — and we also pick you up in Ciudad Valles. NOM-09 certified guides and travel insurance included."
+              : "Somos de Xilitla y aquí tenemos nuestro hotel y nuestro restaurante. Duermes, comes y sales al tour desde el mismo lugar — y también te recogemos en Ciudad Valles. Guías certificados NOM-09 y seguro de viaje incluidos."}
           </p>
 
           <div className="flex items-center gap-2 mb-12">

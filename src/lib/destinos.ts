@@ -227,7 +227,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Zona Arqueológica Tamtoc 2026 | Solo Domingos, Cómo Llegar y Guía",
-      metaDescription: "Descubre Tamtoc, la zona arqueológica más importante de la cultura Huasteca en San Luis Potosí. El Monumento 32 de 30 toneladas te espera. Tras las lluvias de 2024 abre solo los domingos; a 45 min de Ciudad Valles.",
+      metaDescription: "Tamtoc abre SOLO los domingos desde las lluvias de 2024. La zona arqueológica más importante de la cultura Huasteca, con el Monumento 32 de 30 toneladas, a 45 min de Ciudad Valles.",
       keywords: ["zona arqueologica tamtoc", "tamtoc tamuín san luis potosi", "cultura huasteca arqueologia", "que visitar en tamuín", "monumentos huastecos mexico"],
       faqPrincipales: [
         { pregunta: "¿Qué es el Monumento 32 de Tamtoc?", respuesta: "El Monumento 32 es una figura femenina de 30 toneladas tallada en piedra, considerada la representación más importante de la cultura Huasteca. Mide más de 4 metros de altura y ha permanecido en el mismo punto desde hace siglos." },
@@ -817,7 +817,7 @@ export const DESTINOS_DB: Destino[] = [
     icon: "Anchor",
     descripcion: "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
     duracion_hrs: 7,
-    precio_entrada: "$1,850 MXN (tour completo, con traslado y comida)",
+    precio_entrada: "$1,950 MXN (tour completo, con traslado y comida)",
     dificultad: "media",
     ideal_para: ["aventura", "amigos", "fotografia"],
     horario: "09:00–18:00",
@@ -949,7 +949,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Nadar con el río crecido", "No llevar efectivo para el chalán"],
     seo: {
       metaTitle: "Río Axtla y 'el Chalán' | Pozas para Nadar en Axtla de Terrazas",
-      metaDescription: "Río de aguas cristalinas en Axtla de Terrazas con pozas para nadar y 'el chalán', la balsa de fierro que cruza el río jalada a mano desde hace más de 50 años. Acceso libre.",
+      metaDescription: "Acceso libre. Río de aguas cristalinas en Axtla de Terrazas con pozas para nadar y 'el chalán', la balsa de fierro que cruza el río jalada a mano desde hace más de 50 años.",
       keywords: ["río axtla", "el chalán axtla", "qué hacer en axtla de terrazas", "pozas para nadar huasteca potosina"],
       faqPrincipales: [],
     },
@@ -1197,7 +1197,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Ir fuera del Xantolo esperando las festividades", "Subestimar el calor"],
     seo: {
       metaTitle: "San Vicente Tancuayalab | Cuna del Día de Muertos en SLP",
-      metaDescription: "Pueblo huasteco reconocido como 'cuna del Día de Muertos' en San Luis Potosí, fundado por misioneros franciscanos en el siglo XVI cerca del río Moctezuma. Acceso libre.",
+      metaDescription: "Acceso libre. Pueblo huasteco reconocido como 'cuna del Día de Muertos' en San Luis Potosí, fundado por franciscanos en el siglo XVI cerca del río Moctezuma.",
       keywords: ["san vicente tancuayalab", "cuna del día de muertos san luis potosí", "xantolo huasteca potosina", "pueblos de la huasteca potosina"],
       faqPrincipales: [],
     },
@@ -1359,7 +1359,7 @@ export const DESTINOS_DB: Destino[] = [
     imagen_hero: "/imagenes/cueva-del-salitre/hero.jpg", imagen_galeria: ["/imagenes/cueva-del-salitre/gallery-1.jpg", "/imagenes/cueva-del-salitre/gallery-2.jpg", "/imagenes/cueva-del-salitre/gallery-3.jpg", "/imagenes/cueva-del-salitre/gallery-4.jpg", "/imagenes/cueva-del-salitre/gallery-5.jpg", "/imagenes/cueva-del-salitre/gallery-6.jpg", "/imagenes/cueva-del-salitre/gallery-7.jpg", "/imagenes/cueva-del-salitre/gallery-8.jpg", "/imagenes/cueva-del-salitre/gallery-9.jpg"],
     seo: {
       metaTitle: "Cueva del Salitre Xilitla 2026 | Espeleología y Rappel",
-      metaDescription: "La Cueva del Salitre, un tesoro oculto de Xilitla: ~100 m de boca por 300 de fondo, con espeleología, rappel y cinco rutas de escalada. Cómo llegar, costo $50 y recomendaciones.",
+      metaDescription: "Cueva del Salitre, Xilitla: entrada $50. Boca de ~100 m por 300 de fondo, con espeleología, rappel y cinco rutas de escalada. Cómo llegar y qué llevar.",
       keywords: ["cueva del salitre xilitla", "espeleologia xilitla", "rappel xilitla", "escalada huasteca potosina", "que hacer en xilitla"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta entrar a la Cueva del Salitre?", respuesta: "La entrada cuesta $50 pesos por persona. El sitio ya cuenta con su propia entrada (acceso especial), sobre la carretera federal 120 rumbo a Huichihuayán, a pocos minutos del centro de Xilitla, con un sendero corto hasta la cueva." },
