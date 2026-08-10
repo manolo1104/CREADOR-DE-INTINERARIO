@@ -8,11 +8,105 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PAQUETES_DB, getPaquete, HABITACIONES, LOGISTICA, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, FAQS_PAQUETES } from "@/lib/paquetes";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, type Tour } from "@/lib/tours";
+import { DESTINOS_DB } from "@/lib/destinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import { waLink } from "@/lib/whatsapp";
 
 const SITE = "https://www.huasteca-potosina.com";
+
+interface FotoDia { src: string; lugar: string }
+
+const normalizar = (s: string) =>
+  s.toLowerCase()
+   .normalize("NFD").replace(/[̀-ͯ]/g, "")   // quita acentos
+   .replace(/[‘’'"]/g, "")                    // quita comillas rectas y curvas
+   .replace(/\s+/g, " ").trim();
+
+/** "Jardín Surrealista (Las Pozas)" → ["jardin surrealista (las pozas)", "jardin surrealista", "las pozas"] */
+function clavesDe(nombre: string): string[] {
+  const parentesis = nombre.match(/\(([^)]+)\)/)?.[1] ?? "";
+  return [nombre, nombre.replace(/\s*\([^)]*\)/g, ""), parentesis]
+    .map(normalizar).filter((s) => s.length >= 5);
+}
+
+const exactas = (a: string[], b: string[]) => a.some((x) => b.includes(x));
+const coinciden = (a: string[], b: string[]) =>
+  a.some((x) => b.some((y) => x.includes(y) || y.includes(x)));
+
+/**
+ * Imagen para un lugar del itinerario: primero su página de destino, si no la
+ * galería del tour.
+ *
+ * La coincidencia EXACTA va antes que la parcial a propósito: "Cascadas de
+ * Tamasopo" es subcadena de "Siete Cascadas de Tamasopo", así que buscando solo
+ * por subcadena se llevaba la foto del destino equivocado.
+ */
+function imagenesDelLugar(lugar: string, tour: Tour): string[] {
+  const claves = clavesDe(lugar);
+
+  const destino =
+    DESTINOS_DB.find((d) => exactas(claves, clavesDe(d.nombre))) ??
+    DESTINOS_DB.find((d) => coinciden(claves, clavesDe(d.nombre)));
+  if (destino) return [destino.imagen_hero, ...(destino.imagen_galeria ?? [])];
+
+  // Los alt de la galería empiezan con el lugar: "Cueva del Agua — haces de luz…"
+  return tour.gallery
+    .filter((g) => coinciden(claves, clavesDe(g.alt.split("—")[0])))
+    .map((g) => g.src);
+}
+
+/**
+ * Fotos del día: una por cada lugar que se visita, no tres del mismo sitio.
+ *
+ * Antes se tomaban hero + galería del tour, y como esas fotos suelen ser todas
+ * del mismo lugar, un día que visita Las Pozas, el Nacimiento, la Cueva de las
+ * Quilas y el Castillo de la Salud se veía como si fuera un solo sitio.
+ *
+ * La lista de lugares sale de `tour.destinos`, o sea del itinerario que el
+ * propio tour declara — la fuente más fiel que hay, y la única que hay que
+ * mantener. (El mapa `DESTINO_EN_TOURS` es más amplio a propósito: incluye
+ * lugares por los que se pasa, como Xilitla Pueblo Mágico, que no son paradas
+ * del itinerario.) Cada lugar toma la foto de su página de destino si la tiene,
+ * y si no —la Cueva de las Quilas y la Cueva del Agua no tienen página— la de
+ * la galería del propio tour.
+ *
+ * Si el día visita menos de `minimo` lugares (Minas/Micos visita dos), se
+ * completa con más fotos de esos mismos lugares, dando una vuelta a cada uno
+ * antes de repetir. Nunca se repite la misma imagen.
+ */
+function fotosDelDia(tour: Tour, minimo = 3, maximo = 4): FotoDia[] {
+  const lugares = tour.destinos
+    .map((nombre) => ({
+      etiqueta: nombre.replace(/\s*\([^)]*\)/g, "").trim(),
+      imagenes: imagenesDelLugar(nombre, tour),
+    }))
+    .filter((l) => l.imagenes.length > 0);
+
+  if (!lugares.length) {
+    return Array.from(new Set([tour.imagen_hero, ...tour.gallery.map((g) => g.src)]))
+      .slice(0, minimo)
+      .map((src) => ({ src, lugar: tour.nombre }));
+  }
+
+  const fotos: FotoDia[] = [];
+  const vistas = new Set<string>();
+  const agregar = (src: string | undefined, lugar: string, tope: number) => {
+    if (!src || vistas.has(src) || fotos.length >= tope) return;
+    vistas.add(src);
+    fotos.push({ src, lugar });
+  };
+
+  for (const l of lugares) agregar(l.imagenes[0], l.etiqueta, maximo);
+
+  for (let i = 1; fotos.length < minimo; i++) {
+    const antes = fotos.length;
+    for (const l of lugares) agregar(l.imagenes[i], l.etiqueta, minimo);
+    if (fotos.length === antes) break; // ya no quedan imágenes nuevas
+  }
+
+  return fotos;
+}
 
 const LOGISTICA_ICONS: Record<string, LucideIcon> = { Car, Plane, Bus, Sparkles };
 
@@ -172,7 +266,7 @@ export default function PaqueteDetallePage({ params }: Props) {
         <div className="space-y-10">
           {p.itinerario.map((d) => {
             const tour = d.tourSlug ? TOURS_DB.find((t) => t.slug === d.tourSlug) : undefined;
-            const imgs = tour ? Array.from(new Set([tour.imagen_hero, ...tour.gallery.map((g) => g.src)])).slice(0, 3) : [];
+            const imgs = tour ? fotosDelDia(tour) : [];
             return (
               <div key={d.dia} className="grid md:grid-cols-[auto_1fr] gap-5 md:gap-8 border-b border-white/8 pb-10 last:border-0">
                 {/* Marca de día */}
@@ -195,17 +289,26 @@ export default function PaqueteDetallePage({ params }: Props) {
                       <p className="text-crema/55 font-dm text-sm leading-relaxed mb-4">{tour.descripcion}</p>
 
                       {imgs.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                          {imgs.map((src, i) => (
-                            <div key={src} className="relative aspect-[4/3] overflow-hidden rounded">
-                              <Image src={src} alt={`${tour.nombre} — foto ${i + 1}`} fill className="object-cover" sizes="(max-width: 768px) 33vw, 240px" />
+                        <div className={`grid gap-2 mb-4 ${imgs.length >= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+                          {imgs.map((f) => (
+                            <div key={f.src} className="relative aspect-[4/3] overflow-hidden rounded">
+                              <Image src={f.src} alt={`${f.lugar} — ${tour.nombre}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 240px" />
+                              {/* El nombre del lugar sobre la foto: sin él, tres fotos
+                                  distintas del mismo día no se leen como tres lugares. */}
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-negro/85 to-transparent px-2 pt-5 pb-1.5">
+                                <span className="block text-[9px] leading-tight text-crema/90 font-dm tracking-wide">{f.lugar}</span>
+                              </div>
                             </div>
                           ))}
                         </div>
                       )}
 
+                      {/* La lista COMPLETA de lo que incluye el recorrido. Antes se
+                          cortaba en 6, y justo los que quedaban fuera eran el
+                          botiquín y el seguro de viaje — los dos que más
+                          tranquilizan a quien viaja con familia. */}
                       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 mb-4">
-                        {tour.incluye.slice(0, 6).map((inc) => (
+                        {tour.incluye.map((inc) => (
                           <span key={inc} className="flex items-start gap-2 text-[12px] text-crema/60 font-dm">
                             <Check className="w-3 h-3 text-verde-vivo flex-shrink-0 mt-0.5" /> {inc}
                           </span>
