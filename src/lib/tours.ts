@@ -212,9 +212,9 @@ export const TOURS_DB: Tour[] = [
     precio:           1950,
     urgencia:         "Sujeto al nivel del río — la salida se confirma al reservar",
     descripcion:
-      "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y desayuno buffet antes de salir. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
+      "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida que eliges antes o después de la actividad. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
     descripcionLarga:
-      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Para arrancar con energía, tu reserva incluye el desayuno buffet antes de salir; la comida de mediodía corre por tu cuenta.\n\nLa mejor temporada es de noviembre a marzo, cuando el agua alcanza su color más intenso. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
+      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Tu reserva incluye la comida, y tú decides cuándo: puedes tomarla antes de salir para arrancar con energía, o dejarla para después del descenso.\n\nLa mejor temporada es de noviembre a marzo, cuando el agua alcanza su color más intenso. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
     destinos: [
       "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
       "Embarcadero del Río Tampaón",
@@ -225,10 +225,13 @@ export const TOURS_DB: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla",
+      "Comida incluida — la eliges antes o después de la actividad",
+      "Entradas a todas las atracciones",
       "Balsa profesional, remo, casco y chaleco salvavidas",
       "Guía certificado en aguas rápidas dentro de tu balsa",
       "Briefing de seguridad y técnica de remado — rutas para principiantes y avanzados",
-      "Desayuno buffet",
+      "Botiquín de primeros auxilios",
+      "Seguro de actividad",
       "Descenso de 14 km por los rápidos del Tampaón",
       "Paradas para nadar en los tramos tranquilos del cañón",
     ],
