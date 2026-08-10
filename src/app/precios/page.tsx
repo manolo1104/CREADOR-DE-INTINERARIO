@@ -47,6 +47,12 @@ const RANGO_MIN = `$${Math.min(...preciosPorPersona).toLocaleString("es-MX")}`;
 const RANGO_MAX = `$${Math.max(...preciosPorPersona).toLocaleString("es-MX")}`;
 const RZR_DESDE = `$${(TOURS_DB.find((t) => t.id === "tour-rzr-xilitla")?.precio ?? 0).toLocaleString("es-MX")}`;
 
+// Tours con formato privado: el dato ya vivía en el catálogo sin publicarse.
+const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable && t.privateMinPrice);
+const PRIVADO_MIN = `$${Math.min(...PRIVADOS.map((t) => t.privateMinPrice!)).toLocaleString("es-MX")}`;
+const PRIVADO_MAX = `$${Math.max(...PRIVADOS.map((t) => t.privateMinPrice!)).toLocaleString("es-MX")}`;
+const PRIVADOS_NOMBRES = `${PRIVADOS.length} de nuestros recorridos`;
+
 // FAQ de precios: texto plano reutilizado tal cual en el FAQPage JSON-LD. Datos verificables, sin inventar.
 const FAQS_PRECIOS: { q: string; a: string }[] = [
   {
@@ -71,7 +77,9 @@ const FAQS_PRECIOS: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuánto cuesta un tour privado?",
-    a: "Casi todos nuestros recorridos se pueden hacer en formato privado para tu grupo, desde 2 personas. El precio depende del tour y del tamaño del grupo — escríbenos por WhatsApp y te cotizamos el mismo día.",
+    // Decía "casi todos" cuando son 5 de 10, y no daba precio pese a que
+    // `privateMinPrice` ya existe en el catálogo para cada uno de esos 5.
+    a: `${PRIVADOS_NOMBRES} se pueden hacer en formato privado para tu grupo, desde ${PRIVADO_MIN} MXN por el grupo completo (el más caro llega a ${PRIVADO_MAX}). El precio final depende del tour y del número de personas — escríbenos por WhatsApp y te cotizamos el mismo día.`,
   },
 ];
 
