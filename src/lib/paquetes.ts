@@ -245,12 +245,15 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     incluye: [
       "2 noches en Hotel Paraíso Encantado Xilitla",
-      "Desayunos ambos días",
+      "Desayuno buffet los días de tour",
       "Tour Expedición Tamul completo",
       "Tour Cascadas del Meco completo",
       "Transporte del hotel al inicio de cada tour y de regreso",
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
+      "Equipo de seguridad",
+      "Seguro de viaje",
+      "Fotografía del recorrido",
     ],
     noIncluye: [
       "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
@@ -292,11 +295,13 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     incluye: [
       "3 noches en Hotel Paraíso Encantado Xilitla",
-      "Desayunos los 3 días",
+      "Desayuno buffet los días de tour",
       "3 tours completos (a elegir)",
       "Transporte del hotel al inicio de cada tour y de regreso",
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
+      "Equipo de seguridad",
+      "Seguro de viaje",
       "Fotografías y video de cada recorrido",
     ],
     noIncluye: [
@@ -342,11 +347,13 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     incluye: [
       "4 noches en Hotel Paraíso Encantado Xilitla",
-      "Desayunos los 4 días",
+      "Desayuno buffet los días de tour",
       "4 tours completos (Edward James, Expedición Tamul, Cascadas del Meco y Ruta Acuática Puente de Dios)",
       "Transporte del hotel al inicio de cada tour y de regreso",
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
+      "Equipo de seguridad",
+      "Seguro de viaje",
       "Fotografías y video de cada recorrido",
     ],
     noIncluye: [
