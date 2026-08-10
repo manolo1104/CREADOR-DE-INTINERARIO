@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Navbar from "@/components/nav/Navbar";
 import { FloatingReservarButton } from "@/components/FloatingReservarButton";
+import { SiteFooter } from "@/components/SiteFooter";
 import { CookieBanner } from "@/components/CookieBanner";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
 
@@ -33,12 +34,16 @@ function ScrollProgressBar() {
 export function PublicShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
+  // Durante el pago no se pone pie de página: cualquier enlace ahí es una
+  // salida del embudo justo en el paso que menos conviene interrumpir.
+  const isCheckout = /^\/reservar-(tour|paquete)\//.test(pathname);
   return (
     <>
       {!isAdmin && <ScrollProgressBar />}
       {!isAdmin && <PresenceBeacon />}
       {!isAdmin && <Navbar />}
       {children}
+      {!isAdmin && !isCheckout && <SiteFooter />}
       {!isAdmin && <FloatingReservarButton />}
       {!isAdmin && <CookieBanner />}
     </>

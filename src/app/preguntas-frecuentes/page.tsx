@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/lib/i18n/config";
+import { TOURS_DB } from "@/lib/tours";
+import { formatMXN } from "@/lib/tourBooking";
 
 const URL = `${SITE}/preguntas-frecuentes`;
+
+// Los precios se leen del catálogo (TOURS_DB), nunca se escriben a mano: esta
+// página llegó a publicar $1,300 / $1,450 / $1,600 mientras el catálogo y
+// /precios decían $1,400 / $1,550 / $1,700. Un cliente que comparaba dos
+// páginas del mismo sitio encontraba la contradicción en un minuto.
+const precioDe = (id: string) => formatMXN(TOURS_DB.find((t) => t.id === id)?.precio ?? 0);
+
+const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
+const PRECIO_MIN = formatMXN(Math.min(...preciosPorPersona));
+const PRECIO_MAX = formatMXN(Math.max(...preciosPorPersona));
 
 export const metadata: Metadata = {
   title: "Preguntas Frecuentes — Tours Huasteca Potosina 2026",
@@ -40,7 +52,7 @@ export const metadata: Metadata = {
 const FAQS: { q: string; a: string }[] = [
   {
     q: "¿Cuánto cuesta un tour en la Huasteca Potosina?",
-    a: "Nuestros tours guiados de un día cuestan entre $1,300 y $1,850 MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) $1,300, Expedición Tamul $1,450, Cascadas del Meco $1,600. Si prefieres varios días con hospedaje, los paquetes van de $9,000 (3 días) a $15,500 MXN (5 días) por pareja.",
+    a: `Nuestros tours guiados de un día cuestan entre ${PRECIO_MIN} y ${PRECIO_MAX} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${precioDe("tour-edward-james")}, Expedición Tamul ${precioDe("tour-tamul")}, Cascadas del Meco ${precioDe("tour-meco")}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${precioDe("tour-rzr-xilitla")} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de $9,000 (3 días) a $15,500 MXN (5 días) por pareja.`,
   },
   {
     q: "¿Qué incluyen los tours?",
@@ -77,6 +89,33 @@ const FAQS: { q: string; a: string }[] = [
   {
     q: "¿Qué es Las Pozas de Edward James (Xilitla)?",
     a: "Es un jardín escultórico surrealista en Xilitla, Pueblo Mágico, creado por el poeta y mecenas británico Edward James a mediados del siglo XX. Entre la selva y las cascadas hay decenas de estructuras de concreto con formas imposibles, escaleras que no llevan a ningún lado y columnas inacabadas. Es uno de los sitios más enigmáticos y fotografiados de México.",
+  },
+  // Las preguntas de dinero no estaban en esta página: no aparecía ni una sola
+  // vez "cancelación", "reembolso", "pago", "tarjeta" o "factura". Son
+  // exactamente las que frenan una compra a meses de distancia.
+  {
+    q: "¿Cómo reservo y cuánto tengo que pagar por adelantado?",
+    a: "Reservas en línea desde la página del tour: eliges fecha y número de personas, y apartas con un anticipo del 30 %. El saldo lo liquidas el día del tour, en efectivo o con tarjeta. También puedes pagar el 100 % al reservar si prefieres llegar sin pendientes.",
+  },
+  {
+    q: "¿Puedo pagar con tarjeta? ¿Es seguro?",
+    a: "Sí. Los pagos con tarjeta se procesan con Stripe sobre conexión cifrada, la misma plataforma que usan miles de comercios en México. Nosotros nunca vemos ni guardamos los datos de tu tarjeta. También aceptamos transferencia; escríbenos por WhatsApp si la prefieres.",
+  },
+  {
+    q: "¿Cuál es la política de cancelación?",
+    a: "Cancelación gratuita con 48 horas o más de anticipación, con reembolso del 100 % incluido el anticipo. Entre 48 y 24 horas antes se retiene el 50 %. Con menos de 24 horas no hay reembolso, pero puedes reagendar una vez sin costo. Si cancelamos nosotros por clima, seguridad o cierre del paraje, eliges entre reembolso completo o reagendar sin costo.",
+  },
+  {
+    q: "¿Qué pasa si llueve el día de mi tour?",
+    a: "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, cancelamos nosotros y eliges entre reembolso del 100 % o reagendar sin costo. Nunca sacamos un grupo con el río crecido.",
+  },
+  {
+    q: "¿Hacen tours privados o para grupos grandes?",
+    a: "Sí. Los tours regulares operan en grupos pequeños de 6 a 12 personas. Para salidas privadas, grupos de más de 12, empresas o escuelas, escríbenos por WhatsApp con tus fechas y el número de personas y te armamos una cotización a la medida.",
+  },
+  {
+    q: "¿Los guías hablan inglés?",
+    a: "Nuestros guías tienen inglés básico–intermedio, suficiente para explicar el recorrido y las indicaciones de seguridad. Si necesitas un guía completamente bilingüe, consúltanos con anticipación al reservar.",
   },
 ];
 

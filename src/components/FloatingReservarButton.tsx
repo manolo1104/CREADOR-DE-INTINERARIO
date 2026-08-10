@@ -77,7 +77,10 @@ export function FloatingReservarButton() {
                    ${visibility}`}
       >
         {LOCK_SVG}
-        <span className="hidden sm:block text-[11px] tracking-[1.5px] uppercase font-dm font-medium">
+        {/* El texto iba oculto en móvil (`hidden sm:block`), así que el botón
+            quedaba reducido a un candado sin etiqueta: en el celular —de donde
+            viene la mayor parte del tráfico— nadie sabía qué hacía. */}
+        <span className="text-[11px] tracking-[1.5px] uppercase font-dm font-medium whitespace-nowrap">
           Reservar tour
         </span>
       </Link>

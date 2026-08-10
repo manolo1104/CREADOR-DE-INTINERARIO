@@ -244,6 +244,17 @@ export default function DestinoPage({ params }: Props) {
                 <div>
                   <div className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-0.5">{item.label}</div>
                   <div className="text-sm text-crema">{item.val}</div>
+                  {/* La entrada y la panga se leían como una contradicción con el
+                      "todo incluido" del tour. No lo son: este costo es para
+                      quien va por su cuenta. Decirlo aquí evita la duda y de
+                      paso enseña lo que el tour ya te ahorra. */}
+                  {item.label === dd.entrance && (
+                    <div className="text-[11px] text-crema/45 font-dm mt-1 leading-relaxed">
+                      {locale === "en"
+                        ? "This is the cost if you come on your own. On our tours, admission is already included."
+                        : "Este es el costo si vienes por tu cuenta. En nuestros tours las entradas ya van incluidas."}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

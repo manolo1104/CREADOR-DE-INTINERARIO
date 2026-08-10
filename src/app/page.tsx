@@ -18,12 +18,12 @@ import { CountdownViaje } from "@/components/CountdownViaje";
 import { GuiaMockup } from "@/components/GuiaMockup";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
-import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
+import { localizeTour } from "@/lib/i18n/localize";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
   MessageCircle, Star, Award, CheckCircle2,
   Bus, Calendar, BedDouble,
-  AtSign, Share2, Music2, Quote,
+  Quote,
 } from "lucide-react";
 
 const SITE_URL = SITE;
@@ -607,91 +607,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="relative bg-verde-profundo border-t border-white/8 py-16 px-6 overflow-hidden">
-        <FloatingLeaves count={16} />
-        <div className="relative z-10 max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-            <div>
-              <div className="mb-4">
-                <div className="font-cormorant text-crema text-2xl font-light tracking-[4px] uppercase">HUASTECA</div>
-                <div className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mt-0.5">Potosina</div>
-              </div>
-              <p className="text-crema/40 text-xs font-dm leading-relaxed mb-4">
-                {en ? "The most extraordinary region in Mexico. Turquoise waterfalls, surrealist gardens, adventure without limits." : "La región más extraordinaria de México. Cascadas turquesas, jardines surrealistas, aventura sin límites."}
-              </p>
-              <a href="https://wa.me/524891251458" target="_blank" rel="noopener noreferrer" className="text-xs text-verde-vivo hover:text-lima transition-colors font-dm">WhatsApp: +52 489 125 1458</a>
-            </div>
-
-            <div>
-              <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">{en ? "Destinations" : "Destinos"}</h3>
-              <ul className="space-y-3">
-                {DESTINOS_DB.slice(0, 4).map((base) => {
-                  const d = localizeDestino(base, locale);
-                  return (
-                    <li key={d.slug}>
-                      <Link href={lp(`/destinos/${d.slug}`)} className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2">
-                        <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
-                        {d.nombre}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">{en ? "Explore" : "Explora"}</h3>
-              <ul className="space-y-3">
-                {(en
-                  ? [
-                      { label: "Tours", href: lp("/tours") },
-                      { label: "Destinations", href: lp("/destinos") },
-                    ]
-                  : [
-                      { label: "Qué hacer en la Huasteca", href: "/que-hacer-en-la-huasteca-potosina" },
-                      { label: "Precios de tours",     href: "/precios" },
-                      { label: "Tours en Ciudad Valles", href: "/tours-en-ciudad-valles" },
-                      { label: "Experiencias",         href: "/experiencias" },
-                      { label: "Info Práctica",        href: "/info-practica" },
-                      { label: "¿Qué tour es para mí?", href: "/recomendar" },
-                      { label: "Blog",                 href: "/blog" },
-                      { label: "Sobre la Huasteca",    href: "/sobre-la-huasteca-potosina" },
-                      { label: "Sustentabilidad",      href: "/sustentabilidad-y-conservacion" },
-                      { label: "Créditos de fotos",    href: "/creditos" },
-                    ]
-                ).map((link) => (
-                  <li key={link.label}>
-                    <Link href={link.href} className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2">
-                      <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">{en ? "Connect" : "Conecta"}</h3>
-              <div className="flex gap-4 mb-5">
-                <a href="https://www.facebook.com/huastecatours/?locale=es_LA" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-10 h-10 border border-white/20 hover:border-verde-vivo/60 flex items-center justify-center text-crema/50 hover:text-verde-vivo transition-all">
-                  <Share2 className="w-4 h-4" aria-hidden="true" />
-                </a>
-                <span className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed"><AtSign className="w-4 h-4" aria-hidden="true" /></span>
-                <span className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed"><Music2 className="w-4 h-4" aria-hidden="true" /></span>
-              </div>
-              <p className="text-[10px] tracking-[1px] text-crema/30 font-dm mb-3">{en ? "14K followers on Facebook" : "14K seguidores en Facebook"}</p>
-              <a href="mailto:hola@huastecapotosina.mx" className="text-crema/50 hover:text-crema text-sm font-dm transition-colors">hola@huastecapotosina.mx</a>
-            </div>
-          </div>
-
-          <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
-            <span>© 2026 Tours Huasteca Potosina · {en ? "All rights reserved" : "Todos los derechos reservados"}</span>
-            <Link href="/aviso-de-privacidad" className="hover:text-crema/50 transition-colors underline-offset-2 hover:underline">{en ? "Privacy Policy" : "Aviso de Privacidad"}</Link>
-            <span>San Luis Potosí, {en ? "Mexico" : "México"}</span>
-          </div>
-        </div>
-      </footer>
+      {/* El pie de página vive ahora en el shell (SiteFooter), para que lo
+          tengan las 43 páginas y no solo la home. */}
     </main>
   );
 }

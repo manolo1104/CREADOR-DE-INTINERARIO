@@ -68,7 +68,9 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Está incluido el transporte?",
-      a: "No. El precio no incluye transporte ni alimentos. El punto de encuentro es el embarcadero del río; podemos coordinarte el transporte con un costo adicional o puedes llegar por tu cuenta.",
+      // Decía que NO estaba incluido, contradiciendo la lista de "incluye" del
+      // propio tour y su descripción, que sí traen el traslado desde Ciudad Valles.
+      a: "Sí, el traslado desde Ciudad Valles va incluido; de ahí salimos al embarcadero del río. Lo que no incluye el precio son los alimentos.",
     },
     {
       q: "¿Las fotos y el video tienen costo extra?",

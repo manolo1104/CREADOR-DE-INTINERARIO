@@ -9,8 +9,11 @@ import { TourCard } from "@/components/TourCard";
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
-  title: "Qué Hacer en la Huasteca Potosina — Cascadas, Aventura y Cultura 2026",
-  description: `Descubre las ${DESTINOS_DB.length} mejores experiencias en la Huasteca Potosina: cascadas turquesas, aventura extrema, cultura huasteca y naturaleza. Tours guiados con transporte incluido.`,
+  // El título era idéntico al de /que-hacer-en-la-huasteca-potosina, así que
+  // las dos páginas competían entre sí por la misma búsqueda. Esta se queda
+  // con "experiencias" (el catálogo) y la otra con "qué hacer" (la guía).
+  title: `Experiencias en la Huasteca Potosina — ${DESTINOS_DB.length} Destinos por Tipo de Aventura`,
+  description: `Explora las ${DESTINOS_DB.length} experiencias de la Huasteca Potosina agrupadas por tipo: cascadas turquesas, aventura extrema, cultura huasteca y naturaleza. Tours guiados con transporte incluido.`,
   alternates: { canonical: `${SITE}/experiencias` },
   openGraph: {
     title: "Experiencias en la Huasteca Potosina — Cascadas, Aventura y Cultura",

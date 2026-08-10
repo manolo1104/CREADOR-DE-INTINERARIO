@@ -115,7 +115,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-5 xl:gap-7">
             <Link href={lp("/")} className={navLinkClass(lp("/"))}>{dict.nav.tours && (locale === "en" ? "Home" : "Inicio")}</Link>
 
             <Link href={lp("/destinos")} className={navLinkClass(lp("/destinos"))}>{dict.nav.destinos}</Link>
@@ -126,9 +126,14 @@ export default function Navbar() {
             {locale === "es" && (
               <>
                 <Link href="/paquetes" className={navLinkClass("/paquetes")}>{dict.nav.paquetes}</Link>
+                {/* "Precios" y "Contacto" faltaban en el menú: son las dos
+                    entradas de mayor intención de compra y solo se llegaba a
+                    ellas por el pie de la home. */}
+                <Link href="/precios" className={navLinkClass("/precios")}>Precios</Link>
                 <Link href="/info-practica" className={navLinkClass("/info-practica")}>{dict.nav.infoPractica}</Link>
                 <Link href="/nosotros" className={navLinkClass("/nosotros")}>{dict.nav.nosotros}</Link>
                 <Link href="/blog" className={navLinkClass("/blog")}>{dict.nav.blog}</Link>
+                <Link href="/contacto" className={navLinkClass("/contacto")}>Contacto</Link>
               </>
             )}
 
@@ -169,9 +174,12 @@ export default function Navbar() {
             {locale === "es" && (
               <>
                 <Link href="/paquetes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.paquetes}</Link>
+                <Link href="/precios" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Precios</Link>
                 <Link href="/info-practica" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.infoPractica}</Link>
+                <Link href="/preguntas-frecuentes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Preguntas frecuentes</Link>
                 <Link href="/nosotros" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.nosotros}</Link>
                 <Link href="/blog" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
+                <Link href="/contacto" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Contacto</Link>
               </>
             )}
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { TOURS_DB, tourDurRange } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
+import { TOUR_REQUISITOS, noIncluyeDe, queLlevarDe } from "@/lib/tourRequisitos";
+import { TOUR_FAQS } from "@/lib/tourFaqs";
 import { TourGallery } from "@/components/TourGallery";
 import { TourDeparture } from "@/components/TourDeparture";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
@@ -165,11 +167,27 @@ export default function TourDetailPage({ params }: Props) {
             : { q: "¿Dónde es el punto de salida?", a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. El traslado redondo va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar." },
       ];
 
+  // `TOUR_FAQS` llevaba ~150 líneas de preguntas específicas por tour que
+  // NADIE importaba: código muerto, y por eso se había desincronizado (decía
+  // que el rappel no incluía transporte cuando su propio `incluye` sí lo trae).
+  // Se suman aquí, sin duplicar las que ya existen en `faqEntries`.
+  // Temas que ya responden `faqEntries` arriba o la sección "Antes de ir":
+  // repetirlos aquí solo infla la página y el JSON-LD.
+  const FAQ_YA_CUBIERTO = /cuánto dura|qué incluye|debo llevar|punto de salida/i;
+  const faqsEspecificas = locale === "en" ? [] : (TOUR_FAQS[tour.id] ?? []);
+  const faqPreguntasBase = new Set(faqEntries.map((f) => f.q.toLowerCase()));
+  const faqTodas = [
+    ...faqEntries,
+    ...faqsEspecificas.filter(
+      (f) => !faqPreguntasBase.has(f.q.toLowerCase()) && !FAQ_YA_CUBIERTO.test(f.q),
+    ),
+  ];
+
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     inLanguage: locale === "en" ? "en" : "es-MX",
-    mainEntity: faqEntries.map((f) => ({
+    mainEntity: faqTodas.map((f) => ({
       "@type": "Question",
       name: f.q,
       acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -413,6 +431,84 @@ export default function TourDetailPage({ params }: Props) {
             </ul>
           </section>
 
+          {/* ── NO INCLUYE · QUÉ LLEVAR · REQUISITOS ──
+              La ficha solo listaba lo que SÍ incluye. Lo demás vivía disperso
+              (el "No incluye" en /precios, el "Qué llevar" en /info-practica)
+              o directamente no existía, como los requisitos y la edad. En un
+              rafting Clase III y en un rappel de 105 m eso no es un hueco de
+              contenido, es un hueco operativo. Ver src/lib/tourRequisitos.ts. */}
+          {locale !== "en" && (
+            <section aria-labelledby="antes-de-ir">
+              <h2 id="antes-de-ir" className="font-cormorant text-crema text-2xl mb-5">
+                Antes de ir
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div className="border border-white/10 p-5">
+                  <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-crema/40 mb-4">No incluye</h3>
+                  <ul className="space-y-2">
+                    {noIncluyeDe(tour.id).map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-sm text-crema/60 font-dm leading-relaxed">
+                        <span className="text-terracota mt-0.5 flex-shrink-0" aria-hidden="true">·</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="border border-white/10 p-5">
+                  <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-crema/40 mb-4">Qué llevar</h3>
+                  <ul className="space-y-2">
+                    {queLlevarDe(tour.id).map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-sm text-crema/60 font-dm leading-relaxed">
+                        <span className="text-verde-vivo mt-0.5 flex-shrink-0" aria-hidden="true">✓</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {(() => {
+                const req = TOUR_REQUISITOS[tour.id];
+                const edadTexto = req?.edadMinima
+                  ? `Edad mínima: ${req.edadMinima} años.`
+                  : null;
+                if (!req?.requisitos?.length && !edadTexto && !req?.edadNota) return null;
+                return (
+                  <div className="border border-dorado/25 bg-dorado/[0.06] p-5">
+                    <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-dorado/80 mb-4">
+                      Requisitos y edad
+                    </h3>
+                    {(edadTexto || req?.edadNota) && (
+                      <p className="text-sm text-crema/75 font-dm leading-relaxed mb-3">
+                        {edadTexto} {req?.edadNota}
+                      </p>
+                    )}
+                    {req?.requisitos && req.requisitos.length > 0 && (
+                      <ul className="space-y-2">
+                        {req.requisitos.map((item) => (
+                          <li key={item} className="flex items-start gap-2.5 text-sm text-crema/60 font-dm leading-relaxed">
+                            <span className="text-dorado mt-0.5 flex-shrink-0" aria-hidden="true">→</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="text-xs text-crema/40 font-dm mt-4 leading-relaxed">
+                      Avísanos al reservar de cualquier condición médica, lesión, embarazo o
+                      limitación física que pueda afectar tu participación. Ver{" "}
+                      <Link href="/terminos" className="underline underline-offset-2 hover:text-crema/70">
+                        términos y condiciones
+                      </Link>
+                      .
+                    </p>
+                  </div>
+                );
+              })()}
+            </section>
+          )}
+
           <TourDeparture tourId={tour.id} />
 
           {reviews.length > 0 && (
@@ -486,10 +582,30 @@ export default function TourDetailPage({ params }: Props) {
                   ? (locale === "en" ? "2 to 8 people per vehicle" : "De 2 a 8 personas por vehículo")
                   : t.groupMax(tour.groupMax)}
               </p>
+              {/* El precio del privado ya existía en los datos (`privateMinPrice`)
+                  pero no se mostraba: el enlace mandaba a WhatsApp sin cifra, que
+                  es la forma más segura de perder la venta. Ahora se publica. */}
               {tour.privateAvailable && (
                 <a href={waLink(waPrivate)} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[10px] text-verde-vivo hover:text-lima font-dm mt-2 transition-colors">
-                  <Lock className="w-3 h-3" aria-hidden="true" /> {t.privateTour}
+                  className="block mt-3 border border-verde-vivo/30 hover:border-verde-vivo/60 bg-verde-vivo/5 px-3 py-2.5 transition-colors group/priv">
+                  <span className="flex items-center gap-1.5 text-[10px] tracking-[1px] uppercase font-dm text-verde-vivo">
+                    <Lock className="w-3 h-3" aria-hidden="true" />
+                    {locale === "en" ? "Private tour for your group" : "Tour privado para tu grupo"}
+                  </span>
+                  {tour.privateMinPrice && (
+                    <>
+                      <span className="block font-cormorant text-crema text-lg leading-tight mt-1">
+                        {locale === "en" ? "From " : "Desde "}
+                        {money(tour.privateMinPrice)} MXN
+                      </span>
+                      <span className="block text-[10px] font-dm text-crema/45 leading-tight">
+                        {locale === "en" ? "for the whole group" : "por el grupo completo"}
+                      </span>
+                    </>
+                  )}
+                  <span className="block text-[10px] font-dm text-crema/40 mt-0.5 group-hover/priv:text-crema/60 transition-colors">
+                    {locale === "en" ? "Ask on WhatsApp →" : "Cotizar por WhatsApp →"}
+                  </span>
                 </a>
               )}
               {!esVehiculo && (
@@ -545,6 +661,65 @@ export default function TourDetailPage({ params }: Props) {
           </div>
         </aside>
       </div>
+
+      {/* ── PREGUNTAS FRECUENTES ──
+          Estas cinco preguntas ya se emitían en el JSON-LD (FAQPage) pero no se
+          mostraban en la página. Google exige que el contenido marcado sea
+          visible, así que ahora se renderizan: además de quitar el riesgo de
+          acción manual, responden las dudas que hoy se van por WhatsApp. */}
+      <section aria-labelledby="faq-tour" className="bg-crema border-t border-negro/8 px-6 py-16">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-3">
+            {locale === "en" ? "Before you book" : "Antes de reservar"}
+          </p>
+          <h2 id="faq-tour" className="font-cormorant font-light text-verde-profundo text-3xl md:text-4xl mb-8">
+            {locale === "en" ? "Frequently asked questions" : "Preguntas frecuentes"}
+          </h2>
+          <div className="divide-y divide-negro/10 border-y border-negro/10">
+            {faqTodas.map((f) => (
+              <details key={f.q} className="group py-5">
+                <summary className="flex items-start justify-between gap-4 cursor-pointer list-none font-dm text-sm font-medium text-verde-profundo">
+                  <span>{f.q}</span>
+                  <span
+                    className="text-verde-selva text-lg leading-none flex-shrink-0 transition-transform duration-200 group-open:rotate-45"
+                    aria-hidden="true"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="font-dm text-sm text-negro/60 leading-relaxed mt-3 pr-8">{f.a}</p>
+              </details>
+            ))}
+          </div>
+          <p className="font-dm text-xs text-negro/45 mt-6">
+            {locale === "en" ? (
+              <>
+                More detail in our{" "}
+                <Link href="/politica-de-cancelacion" className="underline underline-offset-2 hover:text-negro/70">
+                  cancellation and weather policy
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Más detalle en la{" "}
+                <Link href="/politica-de-cancelacion" className="underline underline-offset-2 hover:text-negro/70">
+                  política de cancelación y clima
+                </Link>
+                , en{" "}
+                <Link href="/preguntas-frecuentes" className="underline underline-offset-2 hover:text-negro/70">
+                  preguntas frecuentes
+                </Link>{" "}
+                y en{" "}
+                <Link href="/info-practica" className="underline underline-offset-2 hover:text-negro/70">
+                  info práctica
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </div>
+      </section>
 
       {/* ── TOURS SIMILARES / CROSS-SELL ── */}
       {(() => {

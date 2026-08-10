@@ -124,7 +124,9 @@ export default function PaquetesPage() {
             </div>
             <div className="border-l border-white/15 pl-3">
               <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
-              <p className="text-[9px] font-dm text-crema/50">+320 reseñas</p>
+              {/* Era "+320" mientras el resto del sitio dice 492: la misma
+                  cifra no puede cambiar según la página que abra el cliente. */}
+              <p className="text-[9px] font-dm text-crema/50">492 reseñas</p>
             </div>
             <div className="border-l border-white/15 pl-3">
               <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
