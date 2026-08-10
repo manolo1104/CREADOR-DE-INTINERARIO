@@ -39,15 +39,23 @@ export const metadata: Metadata = {
 
 const DIF_LABEL: Record<string, string> = { baja: "Fácil", media: "Moderado", alta: "Avanzado" };
 
+// El rango se calcula del catálogo, no se escribe a mano: el texto decía
+// "$1,300 a $1,850" mientras la tabla de esta misma página llegaba a $1,950
+// (rafting) y bajaba a $900 (Travesía del Café).
+const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
+const RANGO_MIN = `$${Math.min(...preciosPorPersona).toLocaleString("es-MX")}`;
+const RANGO_MAX = `$${Math.max(...preciosPorPersona).toLocaleString("es-MX")}`;
+const RZR_DESDE = `$${(TOURS_DB.find((t) => t.id === "tour-rzr-xilitla")?.precio ?? 0).toLocaleString("es-MX")}`;
+
 // FAQ de precios: texto plano reutilizado tal cual en el FAQPage JSON-LD. Datos verificables, sin inventar.
 const FAQS_PRECIOS: { q: string; a: string }[] = [
   {
     q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
-    a: "Depende de los días y del plan. Un tour guiado de un día todo incluido cuesta entre $1,300 y $1,850 MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de 3 a 5 días con hotel y tours va de $9,000 a $15,500 MXN por pareja con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas libres.",
+    a: `Depende de los días y del plan. Un tour guiado de un día todo incluido cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de 3 a 5 días con hotel y tours va de $9,000 a $15,500 MXN por pareja con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas libres.`,
   },
   {
     q: "¿Los precios de los tours son por persona?",
-    a: "Sí, todos los tours de un día se cobran por persona, excepto el Recorrido en RZR por Xilitla, que se cobra por vehículo (desde $1,600 MXN por unidad, para 2 a 6 ocupantes según el modelo). Los paquetes con hotel se cotizan por pareja (2 personas).",
+    a: `Sí, todos los tours de un día se cobran por persona, excepto el Recorrido en RZR por Xilitla, que se cobra por vehículo (desde ${RZR_DESDE} MXN por unidad, para 2 a 6 ocupantes según el modelo). Los paquetes con hotel se cotizan por pareja (2 personas).`,
   },
   {
     q: "¿Hay descuento para niños?",

@@ -103,7 +103,10 @@ export function MejorEpocaWidget({ temporada, destinoNombre, tourHref }: Props) 
         </div>
       ) : nextOptimal ? (
         <p className="text-[10px] font-dm text-crema/45">
-          Próxima temporada óptima: <span className="text-dorado">{nextOptimal}</span>
+          {/* El espacio explícito importa: sin él el texto plano queda
+              "Enereservar con anticipación", que es lo que leen los lectores
+              de pantalla y los bots de IA aunque en pantalla se vea separado. */}
+          Próxima temporada óptima: <span className="text-dorado">{nextOptimal}</span>{" "}
           {tourHref && (
             <Link href={tourHref} className="ml-2 text-verde-vivo underline underline-offset-2 hover:text-lima transition-colors">
               reservar con anticipación →

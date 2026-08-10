@@ -720,6 +720,11 @@ export function RecommenderShell() {
       {/* Main */}
       <main className="flex-1 max-w-xl mx-auto w-full px-6 py-12">
 
+        {/* Los pasos del cuestionario solo tenían h2, así que la página no
+            tenía H1 en ninguno de los seis. Va oculto a la vista para no
+            romper el diseño, pero lo leen buscadores y lectores de pantalla. */}
+        <h1 className="sr-only">¿Qué tour de la Huasteca Potosina es para mí? Recomendador personalizado</h1>
+
         {/* STEP 1: ORIGEN */}
         {step === "origen" && (
           <div>

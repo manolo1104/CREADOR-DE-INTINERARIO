@@ -546,6 +546,65 @@ export default function TourDetailPage({ params }: Props) {
         </aside>
       </div>
 
+      {/* ── PREGUNTAS FRECUENTES ──
+          Estas cinco preguntas ya se emitían en el JSON-LD (FAQPage) pero no se
+          mostraban en la página. Google exige que el contenido marcado sea
+          visible, así que ahora se renderizan: además de quitar el riesgo de
+          acción manual, responden las dudas que hoy se van por WhatsApp. */}
+      <section aria-labelledby="faq-tour" className="bg-crema border-t border-negro/8 px-6 py-16">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-3">
+            {locale === "en" ? "Before you book" : "Antes de reservar"}
+          </p>
+          <h2 id="faq-tour" className="font-cormorant font-light text-verde-profundo text-3xl md:text-4xl mb-8">
+            {locale === "en" ? "Frequently asked questions" : "Preguntas frecuentes"}
+          </h2>
+          <div className="divide-y divide-negro/10 border-y border-negro/10">
+            {faqEntries.map((f) => (
+              <details key={f.q} className="group py-5">
+                <summary className="flex items-start justify-between gap-4 cursor-pointer list-none font-dm text-sm font-medium text-verde-profundo">
+                  <span>{f.q}</span>
+                  <span
+                    className="text-verde-selva text-lg leading-none flex-shrink-0 transition-transform duration-200 group-open:rotate-45"
+                    aria-hidden="true"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="font-dm text-sm text-negro/60 leading-relaxed mt-3 pr-8">{f.a}</p>
+              </details>
+            ))}
+          </div>
+          <p className="font-dm text-xs text-negro/45 mt-6">
+            {locale === "en" ? (
+              <>
+                More detail in our{" "}
+                <Link href="/politica-de-cancelacion" className="underline underline-offset-2 hover:text-negro/70">
+                  cancellation and weather policy
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Más detalle en la{" "}
+                <Link href="/politica-de-cancelacion" className="underline underline-offset-2 hover:text-negro/70">
+                  política de cancelación y clima
+                </Link>
+                , en{" "}
+                <Link href="/preguntas-frecuentes" className="underline underline-offset-2 hover:text-negro/70">
+                  preguntas frecuentes
+                </Link>{" "}
+                y en{" "}
+                <Link href="/info-practica" className="underline underline-offset-2 hover:text-negro/70">
+                  info práctica
+                </Link>
+                .
+              </>
+            )}
+          </p>
+        </div>
+      </section>
+
       {/* ── TOURS SIMILARES / CROSS-SELL ── */}
       {(() => {
         // OJO: `slug` debe ser el slug REAL del tour (no el id) — se busca con tr.slug === combo.slug
