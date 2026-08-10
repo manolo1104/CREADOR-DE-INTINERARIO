@@ -121,9 +121,13 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           <p className="text-crema/50 text-[10px] font-dm tracking-[1px] mt-0.5">
             {t.tagline}
           </p>
-          <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
-            <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} {en ? "real reviews" : "reseñas reales"})
-          </p>
+          {/* Sin reseñas no se enseña calificación: un tour nuevo mostraría
+              "4.9 · (0 reseñas reales)", que se contradice a sí mismo. */}
+          {t.reviewCount > 0 && (
+            <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
+              <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} {en ? "real reviews" : "reseñas reales"})
+            </p>
+          )}
         </div>
       </div>
 
