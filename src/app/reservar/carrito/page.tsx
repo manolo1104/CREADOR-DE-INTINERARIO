@@ -9,7 +9,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle, MessageCircle } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
-  actualizarItem, personasDeItem, ANTICIPO_PCT, type CarritoItem,
+  actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
 import { cotizarHospedaje, MAX_HUESPEDES_POR_HABITACION } from "@/lib/hospedaje";
 import { HABITACIONES } from "@/lib/paquetes";
@@ -64,6 +64,7 @@ interface Cobro {
   total: number;
   saldo: number;
   lineItems: { tourName: string; tourDate: string; adults: number; children: number; subtotal: number }[];
+  hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
 }
 
 // ── Formulario de pago ───────────────────────────────────────────────────────
@@ -86,6 +87,16 @@ function PagoCarrito({ cobro, datos, onListo }: {
       ...cobro.lineItems.map(
         (l) => `• ${l.tourName.split("—")[0].trim()} — ${formatTourDate(l.tourDate)} — ${l.adults + l.children} persona(s) — $${l.subtotal.toLocaleString("es-MX")}`,
       ),
+      "",
+      ...(cobro.hospedaje
+        ? [
+            "",
+            `Hospedaje: ${cobro.hospedaje.habitacion} — ${cobro.hospedaje.noches} noche(s) — ${cobro.hospedaje.huespedes} huésped(es) — $${cobro.hospedaje.total.toLocaleString("es-MX")}`,
+            ...(cobro.hospedaje.ahorro > 0
+              ? [`(ya con la 3.ª noche gratis: ahorro de $${cobro.hospedaje.ahorro.toLocaleString("es-MX")})`]
+              : []),
+          ]
+        : []),
       "",
       `Total del viaje: $${cobro.total.toLocaleString("es-MX")} MXN`,
       `Anticipo (30 %): $${cobro.amount.toLocaleString("es-MX")} MXN`,
@@ -235,6 +246,7 @@ export default function CarritoPage() {
   // Hospedaje opcional en el Hotel Paraíso Encantado. Apagado por defecto:
   // muchos ya vienen con hotel, y la promesa del sitio es justo que no hace
   // falta hospedarse con nosotros.
+  const [mostrarLista, setMostrarLista] = useState(false);
   const [conHotel,    setConHotel]    = useState(false);
   const [habitacion,  setHabitacion]  = useState(HABITACIONES[0]?.nombre ?? "");
   const [noches,      setNoches]      = useState(2);
@@ -319,6 +331,44 @@ export default function CarritoPage() {
       return s + (c ? c.precio * a.cantidad : 0);
     }, 0);
     cambiar(i.uid, { addOns: nuevos, total: base + extras });
+  }
+
+  /**
+   * Cambia ruta, vehículo o unidades de un tour cobrado por vehículo y vuelve a
+   * sacar el precio de la matriz flota × ruta — la misma que usa el servidor en
+   * `computeVehiculoCharge`.
+   */
+  /** Agrega un recorrido desde la lista, sin fecha: se elige aquí mismo. */
+  function agregarDelCatalogo(slug: string) {
+    const t = TOURS_DB.find((x) => x.slug === slug);
+    if (!t) return;
+    const porVehiculo = t.precioUnidad === "vehiculo";
+    const ruta = t.rutas?.[0];
+    const veh  = t.flota?.[0];
+    setItems(
+      agregarAlCarrito({
+        tourId: t.id, tourSlug: t.slug, tourName: t.nombre, tourImage: t.imagen_hero,
+        tourDate: "",
+        adults: porVehiculo ? 1 : 2,
+        childrenMid: 0, childrenSmall: 0,
+        ...(porVehiculo && ruta && veh
+          ? { ruta: ruta.nombre, vehiculo: veh.nombre, unidades: 1, total: veh.precios[0] ?? ruta.desde }
+          : { total: t.precio * 2 }),
+      }),
+    );
+    setCobro(null);
+  }
+
+  function cambiarVehiculo(i: CarritoItem, cambios: { ruta?: string; vehiculo?: string; unidades?: number }) {
+    const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
+    if (!tour?.rutas || !tour?.flota) return;
+    const ruta     = cambios.ruta     ?? i.ruta ?? tour.rutas[0].nombre;
+    const vehiculo = cambios.vehiculo ?? i.vehiculo ?? tour.flota[0].nombre;
+    const unidades = cambios.unidades ?? i.unidades ?? 1;
+    const idxRuta  = tour.rutas.findIndex((r) => r.nombre === ruta);
+    const veh      = tour.flota.find((v) => v.nombre === vehiculo);
+    if (idxRuta < 0 || !veh) return;
+    cambiar(i.uid, { ruta, vehiculo, unidades, total: (veh.precios[idxRuta] ?? 0) * unidades });
   }
 
   /** Suma o resta gente y vuelve a calcular el subtotal que se muestra. */
@@ -417,8 +467,39 @@ export default function CarritoPage() {
                         }`}
                       />
                       {i.unidades ? (
-                        <span className="font-dm text-[12px] text-negro/50">
-                          {i.ruta} · {i.unidades} × {i.vehiculo}
+                        // Ruta, vehículo y unidades se eligen AQUÍ. Antes el
+                        // RZR ni entraba al carrito: el botón del catálogo
+                        // mandaba a la ficha y rompía el flujo a la mitad.
+                        <span className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={i.ruta}
+                            onChange={(e) => cambiarVehiculo(i, { ruta: e.target.value })}
+                            aria-label={`Ruta de ${i.tourName}`}
+                            className="border border-negro/15 bg-white px-2 py-1.5 font-dm text-[12px] text-negro"
+                          >
+                            {(TOURS_DB.find((t) => t.slug === i.tourSlug)?.rutas ?? []).map((r) => (
+                              <option key={r.nombre} value={r.nombre}>{r.nombre}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={i.vehiculo}
+                            onChange={(e) => cambiarVehiculo(i, { vehiculo: e.target.value })}
+                            aria-label={`Vehículo de ${i.tourName}`}
+                            className="border border-negro/15 bg-white px-2 py-1.5 font-dm text-[12px] text-negro"
+                          >
+                            {(TOURS_DB.find((t) => t.slug === i.tourSlug)?.flota ?? []).map((v) => (
+                              <option key={v.nombre} value={v.nombre}>{v.nombre}</option>
+                            ))}
+                          </select>
+                          <span className="flex items-center gap-2">
+                            <button type="button" aria-label="Menos unidades"
+                              onClick={() => cambiarVehiculo(i, { unidades: Math.max(1, (i.unidades ?? 1) - 1) })}
+                              className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                            <span className="font-dm text-[12px] text-negro/70">{i.unidades} unidad{(i.unidades ?? 1) > 1 ? "es" : ""}</span>
+                            <button type="button" aria-label="Más unidades"
+                              onClick={() => cambiarVehiculo(i, { unidades: (i.unidades ?? 1) + 1 })}
+                              className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                          </span>
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
@@ -560,6 +641,31 @@ export default function CarritoPage() {
         </Link>
       </div>
 
+      {/* Dónde va y cuánto falta. Sin esto el carrito parecía un formulario sin
+          fin: no había forma de saber si faltaban dos pantallas o diez. */}
+      <div className="max-w-5xl mx-auto px-6 mb-8">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {["Tu viaje", "Tus datos", "Pago"].map((etiqueta, n) => {
+            const paso    = cobro ? 3 : (name.trim() && email.trim() ? 2 : 1);
+            const hecho   = n + 1 < paso;
+            const actual  = n + 1 === paso;
+            return (
+              <div key={etiqueta} className="flex items-center gap-2 sm:gap-3">
+                <div className={`flex items-center gap-2 ${actual ? "text-verde-selva" : hecho ? "text-verde-selva/70" : "text-negro/30"}`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-dm font-medium ${
+                    actual ? "bg-verde-selva text-white" : hecho ? "bg-verde-selva/20 text-verde-selva" : "border border-negro/20"
+                  }`}>
+                    {hecho ? "✓" : n + 1}
+                  </span>
+                  <span className="text-[11px] tracking-[1px] uppercase font-dm hidden sm:block">{etiqueta}</span>
+                </div>
+                {n < 2 && <div className={`h-px w-6 sm:w-10 ${hecho ? "bg-verde-selva/40" : "bg-negro/15"}`} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto px-6 grid lg:grid-cols-[1fr_380px] gap-10 items-start">
 
         {/* ── Renglones ── */}
@@ -628,6 +734,48 @@ export default function CarritoPage() {
               <ShieldCheck className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>Cancelación gratuita hasta 48 h antes, con reembolso completo.</span>
             </p>
+          </div>
+
+          {/* Agregar otro recorrido sin salir del carrito: antes había que
+              volver al catálogo, buscarlo y regresar. */}
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={() => setMostrarLista((v) => !v)}
+              aria-expanded={mostrarLista}
+              className="w-full border border-dashed border-verde-selva/40 text-verde-selva hover:bg-verde-selva/5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+            >
+              ＋ Agregar otro recorrido
+            </button>
+
+            {mostrarLista && (
+              <div className="mt-3 border border-negro/10 bg-white divide-y divide-negro/8 max-h-80 overflow-y-auto">
+                {TOURS_DB.filter((t) => !items.some((i) => i.tourSlug === t.slug)).map((t) => (
+                  <button
+                    key={t.slug}
+                    type="button"
+                    onClick={() => { agregarDelCatalogo(t.slug); setMostrarLista(false); }}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-verde-selva/5 text-left transition-colors"
+                  >
+                    <span className="relative w-14 h-11 flex-shrink-0 overflow-hidden">
+                      <Image src={t.imagen_hero} alt="" fill className="object-cover" sizes="56px" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-dm text-[13px] text-negro/85 truncate">{t.nombre.split("—")[0].trim()}</span>
+                      <span className="block font-dm text-[11px] text-negro/45">
+                        {formatMXN(t.precio)} {t.precioUnidad === "vehiculo" ? "por vehículo" : "por persona"}
+                      </span>
+                    </span>
+                    <span className="flex-shrink-0 text-verde-selva font-dm text-lg" aria-hidden="true">+</span>
+                  </button>
+                ))}
+                {TOURS_DB.every((t) => items.some((i) => i.tourSlug === t.slug)) && (
+                  <p className="p-4 font-dm text-[12px] text-negro/45 text-center">
+                    Ya tienes todos los recorridos en el carrito.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── HOSPEDAJE OPCIONAL ─────────────────────────────────────────
@@ -710,11 +858,25 @@ export default function CarritoPage() {
                   <div className="border-t border-negro/8 pt-3 space-y-1">
                     <p className="flex justify-between font-dm text-[13px] text-negro/70">
                       <span>{noches} noche{noches > 1 ? "s" : ""} · {huespedes} huésped{huespedes > 1 ? "es" : ""} · {hotelQuote.desglose?.length} habitación{(hotelQuote.desglose?.length ?? 1) > 1 ? "es" : ""}</span>
-                      <strong>{formatMXN(totalHotel)} MXN</strong>
+                      <span className="whitespace-nowrap">
+                        {/* El precio tachado hace visible el descuento. Antes
+                            solo se veía el total ya rebajado, así que la
+                            promoción no se notaba y no empujaba a nadie a
+                            quedarse la tercera noche. */}
+                        {(hotelQuote.nochesGratis ?? 0) > 0 && (
+                          <span className="text-negro/35 line-through mr-2">{formatMXN(hotelQuote.totalSinPromo ?? 0)}</span>
+                        )}
+                        <strong>{formatMXN(totalHotel)} MXN</strong>
+                      </span>
                     </p>
                     {(hotelQuote.nochesGratis ?? 0) > 0 && (
-                      <p className="font-dm text-[12px] text-verde-selva">
-                        Cada 3.ª noche va gratis: te ahorras {formatMXN(hotelQuote.ahorro ?? 0)}.
+                      <p className="font-dm text-[12px] text-verde-selva bg-verde-selva/8 border border-verde-selva/25 px-2.5 py-1.5">
+                        🎁 {hotelQuote.nochesGratis === 1 ? "La 3.ª noche va gratis" : `${hotelQuote.nochesGratis} noches gratis`}: te ahorras {formatMXN(hotelQuote.ahorro ?? 0)}.
+                      </p>
+                    )}
+                    {noches === 2 && (
+                      <p className="font-dm text-[12px] text-dorado">
+                        Si te quedas una noche más, <strong>la 3.ª va gratis</strong> — pagarías lo mismo.
                       </p>
                     )}
                   </div>

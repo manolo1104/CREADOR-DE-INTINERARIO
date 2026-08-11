@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus } from "lucide-react";
 import { agregarAlCarrito } from "@/lib/carrito";
+import { TOURS_DB } from "@/lib/tours";
 
 /**
  * Agrega un recorrido al carrito desde la propia tarjeta del catálogo, sin
@@ -29,10 +30,26 @@ export function BotonAgregarTour({
   const [agregado, setAgregado] = useState(false);
 
   function agregar() {
-    // Los tours por vehículo necesitan ruta y unidad, que no caben en una
-    // tarjeta: se manda a la ficha, donde sí se eligen.
+    // Los tours por vehículo (RZR, café) también entran al carrito. Antes se
+    // mandaba al cliente a la ficha para elegir ruta y unidad, lo que rompía
+    // el flujo del carrito justo a la mitad; ahora se agregan con la primera
+    // ruta y el primer vehículo, y eso se cambia dentro del carrito.
     if (porVehiculo) {
-      router.push(`/reservar-tour/${tourSlug}`);
+      const tour = TOURS_DB.find((t) => t.slug === tourSlug);
+      const ruta = tour?.rutas?.[0];
+      const veh  = tour?.flota?.[0];
+      if (!tour || !ruta || !veh) { router.push(`/reservar-tour/${tourSlug}`); return; }
+      agregarAlCarrito({
+        tourId, tourSlug, tourName, tourImage,
+        tourDate: "",
+        adults: 1, childrenMid: 0, childrenSmall: 0,
+        ruta: ruta.nombre,
+        vehiculo: veh.nombre,
+        unidades: 1,
+        total: veh.precios[0] ?? ruta.desde,
+      });
+      setAgregado(true);
+      setTimeout(() => setAgregado(false), 2200);
       return;
     }
     agregarAlCarrito({
