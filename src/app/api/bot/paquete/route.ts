@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
     lineItems.push({
       tourSlug: tour.slug,
       tourName: tour.nombre,
+      incluye:  tour.incluye,
       tourDate: String(raw.tourDate),
       adults: adultos,
       childrenMid: mid,
@@ -169,6 +170,8 @@ export async function POST(req: NextRequest) {
       checkout: hospedaje.checkout ?? null,
       subtotal: hospedajeSubtotal,
       desglose: cot.desglose ?? null,
+      nochesGratis: cot.nochesGratis ?? 0,
+      ahorro: cot.ahorro ?? 0,
       vistaMontana: cot.vistaMontana ?? null,
       _meta: hospedajeSinTarifa ? (cot.error ?? "tarifa_pendiente") : "cotizado",
     });
@@ -180,26 +183,30 @@ export async function POST(req: NextRequest) {
   const appUrl   = (process.env.APP_URL || "https://www.huasteca-potosina.com").replace(/\/$/, "");
 
   try {
-    await prisma.tourBooking.create({
+    // Va a TourQuote, no a TourBooking: esto es una COTIZACIÓN, no una reserva
+    // pagada. El panel las separa —/cotizaciones lee TourQuote y /reservas lee
+    // TourBooking— y escribirlas como reserva las mezclaba con las ventas
+    // reales, inflando /reservas con propuestas que nadie ha pagado.
+    await prisma.tourQuote.create({
       data: {
-        confirmationNumber: folio,
-        tourId:   "paquete-personalizado",
-        tourName: `Paquete a medida · ${lineItems.length} recorridos`,
+        quoteNumber: folio,
+        tourName: `Paquete a medida · ${lineItems.length} recorrido${lineItems.length !== 1 ? "s" : ""}${hosp ? " + hospedaje" : ""}`,
         tourSlug: "paquete-personalizado",
         tourDate: lineItems[0].tourDate,
         adults:   Math.max(...lineItems.map((l) => l.adults)),
         children: Math.max(...lineItems.map((l) => l.childrenMid + l.childrenSmall)),
-        totalAmount:    total,
-        depositoPagado: 0,
-        promoCode:      null,
-        promoDiscount:  0,
+        totalAmount: total,
         customerName:  String(customerName).trim(),
         customerEmail: customerEmail ? String(customerEmail).trim() : "",
         customerPhone: customerPhone ? String(customerPhone).replace(/\D/g, "") : null,
-        notes: notes ? String(notes) : null,
+        notes: [
+          `Paquete a medida armado por el bot de WhatsApp. Anticipo ${PCT_ANTICIPO} % = $${anticipo.toLocaleString("es-MX")}.`,
+          hospedajeSinTarifa ? "⚠️ Hospedaje SIN tarifa: falta confirmarla con el cliente." : "",
+          notes ? String(notes) : "",
+        ].filter(Boolean).join(" "),
         lineItems,
         packageItems,
-        status: "pending",
+        status: "enviada",
       },
     });
   } catch (e: any) {
@@ -228,6 +235,8 @@ export async function POST(req: NextRequest) {
               checkout: hosp.checkout,
               subtotal: hosp.subtotal,
               tarifaPendiente: hospedajeSinTarifa,
+              nochesGratis: hosp.nochesGratis,
+              ahorro: hosp.ahorro,
             }
           : undefined,
         notes: notes ? String(notes) : undefined,
@@ -272,8 +281,22 @@ export async function POST(req: NextRequest) {
         `${hosp.noches ? `${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""}` : "fechas por confirmar"}${hosp.checkin ? ` · ${fechaLarga(hosp.checkin)}` : ""}${hosp.habitaciones > 1 ? ` · ${hosp.habitaciones} habitaciones` : ""}`,
         hospedajeSinTarifa
           ? "Tarifa: te la confirma el equipo hoy mismo — no va incluida en el total de abajo."
-          : `${(hosp.desglose ?? []).map((d: any) => `${d.huespedes} pax · ${fmx(d.porNoche)}/noche`).join(" + ")} × ${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""} = ${fmx(hospedajeSubtotal!)}`,
+          : `${(hosp.desglose ?? []).map((d: any) => `${d.huespedes} pax · ${fmx(d.porNoche)}/noche`).join(" + ")} × ${hosp.desglose?.[0]?.nochesCobradas ?? hosp.noches} noche${(hosp.desglose?.[0]?.nochesCobradas ?? hosp.noches) !== 1 ? "s" : ""} = ${fmx(hospedajeSubtotal!)}`,
+        ...(hosp.nochesGratis > 0
+          ? [`🎁 *${hosp.nochesGratis} noche${hosp.nochesGratis !== 1 ? "s" : ""} de regalo* (cada 3ra noche va por nuestra cuenta) — te ahorras ${fmx(hosp.ahorro)}.`]
+          : []),
       ]
+    : [];
+
+  // Lo que incluyen TODOS los recorridos del paquete. Se calcula por
+  // intersección de los `incluye` reales de cada tour: si un tour no lo trae,
+  // no se promete. Lo que solo trae alguno se lista aparte, con su tour.
+  const listas: string[][] = lineItems.map((l) => l.incluye ?? []);
+  const comunes = listas.length
+    ? listas[0].filter((x: string) => listas.every((l) => l.includes(x)))
+    : [];
+  const bloqueIncluye = comunes.length
+    ? ["", "*Todos los recorridos incluyen:*", ...comunes.map((c) => `• ${c}`)]
     : [];
 
   const resumenWhatsApp = [
@@ -282,6 +305,7 @@ export async function POST(req: NextRequest) {
     ...lineItems.map((l, i) =>
       `*Día ${i + 1} · ${fechaLarga(l.tourDate)}*\n${l.tourName}\n${personasDe(l)} · ${fmx(l.subtotal)}`,
     ),
+    ...bloqueIncluye,
     ...lineaHospedaje,
     "",
     `*Total${hospedajeSinTarifa ? " de los tours" : " del viaje"}: ${fmx(total)} MXN*`,
@@ -291,6 +315,8 @@ export async function POST(req: NextRequest) {
       ? `Los tours te recogen en el hotel. Si prefieres quedarte en otro lado, también pasamos por ti — en Xilitla o en Ciudad Valles.`
       : `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`,
     `Cancelas gratis hasta 48 h antes, con reembolso completo.`,
+    "",
+    `⚠️ Al hacer la transferencia, pon *${folio}* como concepto — con eso identificamos tu pago.`,
   ].join("\n");
 
   return NextResponse.json({

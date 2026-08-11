@@ -665,7 +665,7 @@ export function buildTourQuoteEmailHtml(data: {
 export function buildPaquetePersonalizadoEmailHtml(data: {
   customerName: string;
   folio:        string;
-  lineItems:    { tourName: string; tourDate: string; adults: number; childrenMid?: number; childrenSmall?: number; subtotal: number }[];
+  lineItems:    { tourName: string; tourDate: string; adults: number; childrenMid?: number; childrenSmall?: number; subtotal: number; incluye?: string[] }[];
   total:        number;
   anticipo:     number;
   pctAnticipo:  number;
@@ -675,6 +675,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
     hotel?: string; habitacion?: string | null; noches?: number | null;
     habitaciones?: number; checkin?: string | null; checkout?: string | null;
     subtotal?: number | null; tarifaPendiente?: boolean;
+    nochesGratis?: number; ahorro?: number;
   };
   notes?:       string;
 }): string {
@@ -707,6 +708,21 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
       </tr>
     </table>`).join("");
 
+  // Lo que incluyen TODOS los recorridos: intersección de sus `incluye`
+  // reales. Si un tour no lo trae, no se promete en el correo.
+  const listasInc = data.lineItems.map((l) => l.incluye ?? []);
+  const comunes = listasInc.length && listasInc[0].length
+    ? listasInc[0].filter((x) => listasInc.every((l) => l.includes(x)))
+    : [];
+  const bloqueIncluye = comunes.length
+    ? `<tr><td style="padding:22px 32px 0 32px">
+         <p style="margin:0 0 8px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Todos los recorridos incluyen</p>
+         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+           ${comunes.map((c) => `<tr><td style="padding:3px 0;font-family:Arial;font-size:13px;line-height:1.6;color:#4a4a3a">· ${c}</td></tr>`).join("")}
+         </table>
+       </td></tr>`
+    : "";
+
   const h = data.hospedaje;
   const filaHospedaje = h
     ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3">
@@ -715,6 +731,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
           <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Hospedaje</p>
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${h.hotel ?? "Hotel Paraíso Encantado"}${h.habitacion ? ` · ${h.habitacion}` : ""}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${h.noches ? `${h.noches} noche${h.noches !== 1 ? "s" : ""}` : "Fechas por confirmar"}${h.checkin ? ` · llegada ${formatDate(h.checkin)}` : ""}${(h.habitaciones ?? 1) > 1 ? ` · ${h.habitaciones} habitaciones` : ""}</p>
+          ${(h.nochesGratis ?? 0) > 0 ? `<p style="font-size:12px;color:#5a9e2a;font-family:Arial;margin:4px 0 0 0">🎁 ${h.nochesGratis} noche${h.nochesGratis !== 1 ? "s" : ""} de regalo — te ahorras ${fmx(Number(h.ahorro ?? 0))}</p>` : ""}
         </td>
         <td style="padding:16px 0 16px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${h.tarifaPendiente ? "Por confirmar" : fmx(Number(h.subtotal ?? 0))}</p>
@@ -764,6 +781,8 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
           <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Tu itinerario</p>
           ${dias}${filaHospedaje}
         </td></tr>
+
+        ${bloqueIncluye}
 
         <tr><td style="padding:24px 32px 0 32px">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#1a2e1a;padding:20px 22px">
