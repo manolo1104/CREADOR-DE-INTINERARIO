@@ -71,7 +71,7 @@ interface Cobro {
 
 function PagoCarrito({ cobro, datos, onListo }: {
   cobro: Cobro;
-  datos: { name: string; email: string; phone: string; pickup: string };
+  datos: { name: string; email: string; phone: string; pickup: string; checkin?: string; checkout?: string };
   onListo: () => void;
 }) {
   const stripe   = useStripe();
@@ -155,6 +155,9 @@ function PagoCarrito({ cobro, datos, onListo }: {
             notes: [
               datos.pickup.trim() ? `Recogida: ${datos.pickup.trim()}` : null,
               `Reserva de ${cobro.lineItems.length} recorridos en un solo pago.`,
+              cobro.hospedaje
+                ? `Hospedaje: ${cobro.hospedaje.habitacion}, ${cobro.hospedaje.noches} noche(s), ${cobro.hospedaje.huespedes} huésped(es)${datos.checkin ? ` — entrada ${datos.checkin}` : ""}${datos.checkout ? `, salida ${datos.checkout}` : ""}.`
+                : null,
             ].filter(Boolean).join(" | "),
             totalAmount:     cobro.amount,
             paymentIntentId: cobro.paymentIntentId,
@@ -162,7 +165,21 @@ function PagoCarrito({ cobro, datos, onListo }: {
             tourDate:        primero.tourDate,
             adults:          cobro.lineItems.reduce((s, l) => s + l.adults, 0),
             children:        cobro.lineItems.reduce((s, l) => s + l.children, 0),
-            lineItems:       cobro.lineItems,
+            // El hospedaje entra como un renglón más: el cliente lo PAGÓ, así
+            // que tiene que aparecer en su confirmación. Antes se cobraba y el
+            // correo no lo mencionaba.
+            lineItems: [
+              ...cobro.lineItems,
+              ...(cobro.hospedaje
+                ? [{
+                    tourName: `Hospedaje · ${cobro.hospedaje.habitacion}`,
+                    tourDate: datos.checkin || primero.tourDate,
+                    adults:   cobro.hospedaje.huespedes,
+                    children: 0,
+                    subtotal: cobro.hospedaje.total,
+                  }]
+                : []),
+            ],
           }),
         });
       } catch {
@@ -247,9 +264,16 @@ export default function CarritoPage() {
   // muchos ya vienen con hotel, y la promesa del sitio es justo que no hace
   // falta hospedarse con nosotros.
   const [mostrarLista, setMostrarLista] = useState(false);
+  // Apartado temporal: al pasar al pago se reservan los lugares 15 minutos.
+  // No es un truco de urgencia inventado — es el tiempo real que se sostiene
+  // un cupo sin cobrar, y decirlo evita que alguien deje la pestaña abierta
+  // media hora y llegue a pagar algo que ya se ocupó.
+  const [expiraEn, setExpiraEn] = useState<number | null>(null);
+  const [restante, setRestante] = useState(0);
   const [conHotel,    setConHotel]    = useState(false);
   const [habitacion,  setHabitacion]  = useState(HABITACIONES[0]?.nombre ?? "");
-  const [noches,      setNoches]      = useState(2);
+  const [checkin,     setCheckin]     = useState("");
+  const [checkout,    setCheckout]    = useState("");
   const [huespedes,   setHuespedes]   = useState(2);
   const [error,  setError]  = useState("");
   const [cargando, setCargando] = useState(false);
@@ -259,8 +283,41 @@ export default function CarritoPage() {
     setItems(leerCarrito());
   }, []);
 
+  // Al activar el hospedaje se proponen fechas a partir de los recorridos ya
+  // elegidos: se llega la víspera del primero y se sale el día después del
+  // último. Es lo que hace casi todo el mundo, y evita que arranque vacío.
+  useEffect(() => {
+    if (!conHotel || checkin || checkout) return;
+    const fechas = items.map((i) => i.tourDate).filter(Boolean).sort();
+    if (fechas.length === 0) return;
+    const dia = (f: string, delta: number) => {
+      const d = new Date(`${f}T00:00:00`);
+      d.setDate(d.getDate() + delta);
+      return d.toISOString().slice(0, 10);
+    };
+    setCheckin(dia(fechas[0], -1));
+    setCheckout(dia(fechas[fechas.length - 1], 1));
+  }, [conHotel, items, checkin, checkout]);
+
+  // Cuenta atrás del apartado.
+  useEffect(() => {
+    if (!expiraEn) return;
+    const tick = () => setRestante(Math.max(0, Math.ceil((expiraEn - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiraEn]);
+
   const minDate = minBookingDate();
-  const hotelQuote = conHotel
+  // Las noches salen del calendario, no de un contador suelto: el cliente
+  // piensa en "llego el 15 y me voy el 18", no en "tres noches".
+  const noches = (() => {
+    if (!checkin || !checkout) return 0;
+    const ms = new Date(`${checkout}T00:00:00`).getTime() - new Date(`${checkin}T00:00:00`).getTime();
+    return Math.max(0, Math.round(ms / 86_400_000));
+  })();
+
+  const hotelQuote = conHotel && noches > 0
     ? cotizarHospedaje({
         habitacion,
         noches,
@@ -421,7 +478,7 @@ export default function CarritoPage() {
           sid:           sessionId(),
           items,
           hospedaje: conHotel
-            ? { habitacion, noches, huespedes, habitaciones: Math.max(1, Math.ceil(huespedes / MAX_HUESPEDES_POR_HABITACION)) }
+            ? { habitacion, noches, huespedes, checkin, checkout, habitaciones: Math.max(1, Math.ceil(huespedes / MAX_HUESPEDES_POR_HABITACION)) }
             : null,
         }),
       });
@@ -432,6 +489,7 @@ export default function CarritoPage() {
         return;
       }
       setCobro(data);
+      setExpiraEn(Date.now() + 15 * 60 * 1000);
     } catch {
       setError("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
     }
@@ -830,25 +888,47 @@ export default function CarritoPage() {
                   })}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: "Noches",    v: noches,    set: setNoches,    min: 1 },
-                    { label: "Huéspedes", v: huespedes, set: setHuespedes, min: 1 },
-                  ].map((c) => (
-                    <div key={c.label}>
-                      <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">{c.label}</p>
-                      <span className="flex items-center gap-3">
-                        <button type="button" aria-label={`Menos ${c.label}`}
-                          onClick={() => { c.set((n: number) => Math.max(c.min, n - 1)); setCobro(null); }}
-                          className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
-                        <span className="font-dm text-base text-negro/85 w-6 text-center">{c.v}</span>
-                        <button type="button" aria-label={`Más ${c.label}`}
-                          onClick={() => { c.set((n: number) => n + 1); setCobro(null); }}
-                          className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
-                      </span>
-                    </div>
-                  ))}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">
+                      Entrada
+                    </label>
+                    <input
+                      type="date" value={checkin} min={minDate}
+                      onChange={(e) => { setCheckin(e.target.value); setCobro(null); }}
+                      className="w-full border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">
+                      Salida
+                    </label>
+                    <input
+                      type="date" value={checkout} min={checkin || minDate}
+                      onChange={(e) => { setCheckout(e.target.value); setCobro(null); }}
+                      className="w-full border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
+                    />
+                  </div>
                 </div>
+
+                <div>
+                  <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">Huéspedes</p>
+                  <span className="flex items-center gap-3">
+                    <button type="button" aria-label="Menos huéspedes"
+                      onClick={() => { setHuespedes((n) => Math.max(1, n - 1)); setCobro(null); }}
+                      className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
+                    <span className="font-dm text-base text-negro/85 w-6 text-center">{huespedes}</span>
+                    <button type="button" aria-label="Más huéspedes"
+                      onClick={() => { setHuespedes((n) => n + 1); setCobro(null); }}
+                      className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
+                  </span>
+                </div>
+
+                {checkin && checkout && noches <= 0 && (
+                  <p className="font-dm text-[12px] text-terracota">
+                    La salida tiene que ser al menos un día después de la entrada.
+                  </p>
+                )}
 
                 {hotelQuote && !hotelQuote.ok && (
                   <p className="font-dm text-[12px] text-terracota">{hotelQuote.error}</p>
@@ -1011,8 +1091,25 @@ export default function CarritoPage() {
             </div>
           ) : (
             <div className="pt-4">
+              {restante > 0 ? (
+                <p className="mb-3 flex items-center gap-2 border border-dorado/35 bg-dorado/10 px-3 py-2.5 font-dm text-[12px] text-negro/70">
+                  <Clock className="w-4 h-4 text-dorado flex-shrink-0" aria-hidden="true" />
+                  <span>
+                    Te apartamos tus lugares{conHotel && hotelQuote?.ok ? " y la habitación" : ""} por{" "}
+                    <strong className="text-negro tabular-nums">
+                      {Math.floor(restante / 60)}:{String(restante % 60).padStart(2, "0")}
+                    </strong>
+                  </span>
+                </p>
+              ) : (
+                expiraEn !== null && (
+                  <p className="mb-3 border border-terracota/40 bg-terracota/8 px-3 py-2.5 font-dm text-[12px] text-terracota">
+                    Se acabó el apartado. Puedes seguir pagando, pero vuelve a revisar el resumen por si algo cambió.
+                  </p>
+                )
+              )}
               <Elements stripe={stripePromise} options={{ clientSecret: cobro.clientSecret, locale: "es" }}>
-                <PagoCarrito cobro={cobro} datos={{ name, email, phone, pickup }} onListo={() => setItems([])} />
+                <PagoCarrito cobro={cobro} datos={{ name, email, phone, pickup, checkin, checkout }} onListo={() => setItems([])} />
               </Elements>
             </div>
           )}
