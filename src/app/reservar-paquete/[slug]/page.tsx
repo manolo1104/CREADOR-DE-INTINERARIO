@@ -88,7 +88,10 @@ export default function ReservarPaquetePage() {
 
   const [fecha, setFecha]       = useState("");
   const [personas, setPersonas] = useState("2");
-  const [pct, setPct]           = useState<10 | 50 | 100>(50);
+  // El default arranca en el compromiso MÁS BAJO. Venía en 50 % con el 10 %
+  // justo al lado: en un paquete de $15,500 eso es pedirle al cliente $7,750
+  // de entrada en la primera pantalla. El que quiera pagar más lo elige.
+  const [pct, setPct]           = useState<10 | 50 | 100>(10);
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, INCLUYE_SIEMPRE } from "@/lib/tours";
 import {
   saveTourBookingState, formatMXN, calcTourTotal,
   validatePromoCode, formatTourDate,
@@ -459,8 +459,16 @@ export default function ReservarTourPage() {
             {/* Incluye */}
             <div className="mt-5 border-t border-negro/6 pt-4">
               <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Incluido</p>
+              {/*
+                Antes esto era `.slice(0, 5)`: el paso 1 enseñaba cinco puntos
+                mientras la ficha y el paso 2 enseñaban nueve. Nos estábamos
+                subvendiendo justo donde el cliente compara precio contra
+                valor. Se listan todos, y el seguro y las fotos —que van en
+                TODOS los tours pero no viven en `tour.incluye`— se suman aquí
+                para que el paso 1 diga lo mismo que el resto del sitio.
+              */}
               <ul className="space-y-1.5">
-                {tour.incluye.slice(0, 5).map((item) => (
+                {[...tour.incluye, ...INCLUYE_SIEMPRE].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs font-dm text-negro/60">
                     <span className="text-verde-selva flex-shrink-0 mt-0.5">✓</span>
                     {item}

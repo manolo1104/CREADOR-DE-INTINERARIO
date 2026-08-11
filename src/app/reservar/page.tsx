@@ -66,8 +66,15 @@ export default async function ReservarPage() {
             <p className="mt-6 inline-flex items-center gap-2 border border-verde-vivo/30 bg-verde-vivo/10 px-4 py-2 text-[12px] font-dm text-lima">
               <span aria-hidden="true">✓</span>
               <span>
+                {/*
+                  El "· N en total" se quitó a propósito: el histórico de la
+                  base arrancó hace poco, así que decía "30 en total" debajo de
+                  "+10,000 viajeros" del home. Un número chico y verdadero,
+                  puesto al lado de uno grande y también verdadero, resta
+                  credibilidad en vez de sumarla. El de 30 días sí ayuda:
+                  habla de actividad reciente, no de historia.
+                */}
                 <strong>{stats.ultimos30} reservas</strong> en los últimos 30 días
-                {vale(stats.total) && <> · {stats.total} en total</>}
               </span>
             </p>
           )}

@@ -26,6 +26,12 @@ export function FloatingReservarButton() {
   const pathname = usePathname();
   if (pathname === "/planear" || pathname === "/recomendar") return null;
 
+  // Dentro de una reserva en curso este botón hacía daño: en móvil era el ÚNICO
+  // control fijo en pantalla y decía "RESERVAR TOUR", pero llevaba a /reservar
+  // —o sea, abandonaba la reserva a medias y devolvía al catálogo— mientras el
+  // botón de pago de verdad quedaba hasta el fondo sin ser fijo.
+  if (/^\/(?:en\/)?reservar(-tour|-paquete)?(\/|$)/.test(pathname)) return null;
+
   // Detecta páginas de detalle de tour (ES y EN). Ahí ya existe la MobileBookingBar
   // fija abajo en móvil (que ya incluye WhatsApp), así que ocultamos los flotantes
   // en móvil para no encimarlos.

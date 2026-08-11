@@ -520,10 +520,20 @@ export default function TourDetailPage({ params }: Props) {
                   {t.viewOnGoogle}
                 </a>
               </div>
-              <div className="flex gap-1 mb-6">
+              {/*
+                La calificación de este bloque sale del MISMO sitio que la del
+                sidebar y la del JSON-LD (`tour.reviewCount`). Antes decía
+                "5.0 · 3 reseñas" —el promedio de los testimonios escritos— al
+                lado de un sidebar que decía "4.9 · 127": dos cifras distintas
+                de lo mismo en la misma pantalla, justo en el momento de
+                decidir la compra. Los testimonios de abajo son una muestra,
+                no el total, y así se etiquetan.
+              */}
+              <div className="flex gap-1 mb-2">
                 {"★★★★★".split("").map((s, i) => (<span key={i} className="text-dorado text-lg">{s}</span>))}
-                <span className="text-crema/40 font-dm text-sm ml-2 self-end">5.0 · {t.reviewsCount(reviews.length)}</span>
+                <span className="text-crema/40 font-dm text-sm ml-2 self-end">4.9 · {t.reviewsCount(tour.reviewCount)}</span>
               </div>
+              <p className="text-crema/30 font-dm text-[11px] mb-6">{t.reviewsSample(reviews.length)}</p>
               <div className="space-y-5">
                 {reviews.map((r) => (
                   <div key={r.nombre} className="border border-white/8 bg-negro/30 p-5">
