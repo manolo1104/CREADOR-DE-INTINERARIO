@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T04:27:22.378Z",
+  "generatedAt": "2026-08-11T19:39:33.195Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -286,7 +286,7 @@
       "duracionTexto": "7 h",
       "precio": 1950,
       "precioUnidad": "persona",
-      "groupMin": 2,
+      "groupMin": 4,
       "groupMax": 8,
       "soloAdultos": false,
       "privateAvailable": false,
@@ -361,12 +361,12 @@
       "privateAvailable": true,
       "privateMinPrice": 8500,
       "tagline": "El tour más completo de la Huasteca en un solo día",
-      "pitch": "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, asómate al imponente abismo del Sótano de las Huahuas y termina sumergiéndote en la magia subterránea de la Cueva del Agua. Una jornada que redefine lo que la naturaleza puede ofrecerte.",
+      "pitch": "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de pericos vuelven y se lanzan en picada al fondo.",
       "url": "https://www.huasteca-potosina.com/tours/expedicion-tamul",
       "destinos": [
         "Cascada de Tamul (paseo en canoa)",
-        "Sótano de las Huahuas (mirador al abismo de 512 m)",
-        "Cenote Cueva del Agua"
+        "Cenote Cueva del Agua (al regreso, en la misma canoa)",
+        "Sótano de las Huahuas al atardecer (regreso de los pericos)"
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -425,7 +425,7 @@
       "privateAvailable": true,
       "privateMinPrice": 7500,
       "tagline": "Arte, agua y misterio en un recorrido de contrastes únicos",
-      "pitch": "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y la arquitectura colonial del Castillo de la Salud. Cultura y naturaleza que se funden en un solo día extraordinario.",
+      "pitch": "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
       "url": "https://www.huasteca-potosina.com/tours/ruta-surrealista-edward-james",
       "destinos": [
         "Jardín Surrealista Edward James (Las Pozas)",
@@ -601,7 +601,7 @@
     {
       "id": "tour-puente-dios",
       "slug": "ruta-acuatica-puente-de-dios",
-      "nombre": "Ruta Acuática — Puente de Dios, Hacienda & Siete Cascadas",
+      "nombre": "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
       "tipo": "Aventura Acuática",
       "dificultad": "media",
       "duracionHrs": 10,
@@ -614,13 +614,12 @@
       "privateAvailable": true,
       "privateMinPrice": 8500,
       "tagline": "El recorrido más refrescante y completo de la región",
-      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies, explora la Hacienda Los Gómez y desciende por las Siete Cascadas en secuencia. Las pozas cristalinas de Tamasopo esperan a quienes quieran prolongar la aventura.",
+      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo. En un día da para uno de los dos, no para ambos.",
       "url": "https://www.huasteca-potosina.com/tours/ruta-acuatica-puente-de-dios",
       "destinos": [
         "Puente de Dios",
-        "Hacienda Los Gómez",
-        "Siete Cascadas",
-        "Cascadas de Tamasopo (opcional)"
+        "A elegir: Hacienda Los Gómez + Siete Cascadas (mismo lugar)",
+        "A elegir: Cascadas de Tamasopo"
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",

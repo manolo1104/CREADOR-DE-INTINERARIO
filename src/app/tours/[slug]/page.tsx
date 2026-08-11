@@ -249,7 +249,16 @@ export default function TourDetailPage({ params }: Props) {
       {/* ── HERO ── */}
       <section className="relative h-[60vh] min-h-[400px] overflow-hidden">
         {tour.imagen_hero && (
-          <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover" priority />
+          <Image
+            src={tour.imagen_hero}
+            alt={tour.nombre}
+            fill
+            className="object-cover"
+            priority
+            /* Usaba `fill` SIN `sizes`: Next asume 100vw y en un móvil de 400 px
+               se descargaba la variante de escritorio. */
+            sizes="100vw"
+          />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/50 to-negro/20" />
 
