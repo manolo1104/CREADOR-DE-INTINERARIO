@@ -4,6 +4,7 @@ import { TOURS_DB } from "@/lib/tours";
 import { calcTourTotal, minBookingDate } from "@/lib/tourBooking";
 import { buildPaquetePersonalizadoEmailHtml } from "@/lib/tourEmail";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { cotizarHospedaje } from "@/lib/hospedaje";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,22 +12,6 @@ export const runtime = "nodejs";
 /** Anticipo estándar. Misma cifra que `tourPricing.ts` y que el sitio. */
 const PCT_ANTICIPO = 30;
 
-/**
- * Tarifa por noche del Hotel Paraíso Encantado para cotizar hospedaje suelto.
- *
- * ⚠️ El sitio NO tiene este dato: los paquetes traen el hospedaje empaquetado y
- * el desglose de `valor` en `paquetes.ts` es un ancla de marketing, no la
- * tarifa real. El API del hotel solo devuelve disponibilidad, sin precios.
- *
- * Mientras no esté configurada, el hospedaje se suma al itinerario SIN monto y
- * se le dice al cliente que el equipo le pasa la tarifa. Preferimos eso a
- * inventar un precio: el cliente lo está usando para decidir con su dinero.
- *
- * Para activarlo: pon HOSPEDAJE_TARIFA_NOCHE en el entorno del sitio.
- */
-const TARIFA_NOCHE = Number(process.env.HOSPEDAJE_TARIFA_NOCHE) || null;
-/** Suplemento de la habitación Jungla (vista a la montaña). Sí está en el sitio. */
-const SUPLEMENTO_JUNGLA = 400;
 
 const DATOS_BANCO = {
   banco:    "BBVA",
@@ -151,14 +136,26 @@ export async function POST(req: NextRequest) {
   if (hospedaje?.interesado) {
     const noches = Math.max(0, parseInt(String(hospedaje.noches ?? 0), 10) || 0);
     const habitaciones = Math.max(1, parseInt(String(hospedaje.habitaciones ?? 1), 10) || 1);
-    const esJungla = /jungla/i.test(String(hospedaje.habitacion ?? ""));
+    // Si no dicen cuántos duermen, se asume que son los mismos del tour más
+    // grande: es lo que el cliente acaba de decir en la conversación.
+    const huespedes = Math.max(
+      0,
+      parseInt(String(hospedaje.huespedes ?? 0), 10) ||
+        Math.max(...lineItems.map((l) => l.adults + l.childrenMid + l.childrenSmall)),
+    );
 
-    if (TARIFA_NOCHE && noches > 0) {
-      const porNoche = TARIFA_NOCHE + (esJungla ? SUPLEMENTO_JUNGLA : 0);
-      hospedajeSubtotal = porNoche * noches * habitaciones;
+    const cot = cotizarHospedaje({
+      habitacion: hospedaje.habitacion,
+      noches,
+      habitaciones,
+      huespedes,
+    });
+
+    if (cot.ok) {
+      hospedajeSubtotal = cot.total!;
       total += hospedajeSubtotal;
     } else {
-      // Sin tarifa configurada no se inventa un monto: se deja marcado.
+      // Datos insuficientes: se registra el interés pero NO se inventa monto.
       hospedajeSinTarifa = true;
     }
 
@@ -167,10 +164,13 @@ export async function POST(req: NextRequest) {
       habitacion: hospedaje.habitacion ?? null,
       noches: noches || null,
       habitaciones,
+      huespedes: huespedes || null,
       checkin: hospedaje.checkin ?? null,
       checkout: hospedaje.checkout ?? null,
       subtotal: hospedajeSubtotal,
-      _meta: hospedajeSinTarifa ? "tarifa_pendiente" : "cotizado",
+      desglose: cot.desglose ?? null,
+      vistaMontana: cot.vistaMontana ?? null,
+      _meta: hospedajeSinTarifa ? (cot.error ?? "tarifa_pendiente") : "cotizado",
     });
   }
 
@@ -272,7 +272,7 @@ export async function POST(req: NextRequest) {
         `${hosp.noches ? `${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""}` : "fechas por confirmar"}${hosp.checkin ? ` · ${fechaLarga(hosp.checkin)}` : ""}${hosp.habitaciones > 1 ? ` · ${hosp.habitaciones} habitaciones` : ""}`,
         hospedajeSinTarifa
           ? "Tarifa: te la confirma el equipo hoy mismo — no va incluida en el total de abajo."
-          : `${fmx(hospedajeSubtotal!)}`,
+          : `${(hosp.desglose ?? []).map((d: any) => `${d.huespedes} pax · ${fmx(d.porNoche)}/noche`).join(" + ")} × ${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""} = ${fmx(hospedajeSubtotal!)}`,
       ]
     : [];
 
