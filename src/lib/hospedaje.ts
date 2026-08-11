@@ -40,27 +40,13 @@ export function repartirHuespedes(huespedes: number, habitaciones: number): numb
   return Array.from({ length: n }, (_, i) => base + (i < resto ? 1 : 0));
 }
 
-/**
- * Promoción: cada TERCERA noche es gratis (decisión de Manolo, 12 ago 2026).
- * Con 3 noches se cobran 2; con 6 se cobran 4. Aplica por habitación.
- */
-export function nochesGratis(noches: number): number {
-  return Math.floor(Math.max(0, noches) / 3);
-}
-
 export interface CotizacionHospedaje {
   ok: boolean;
   error?: string;
-  /** Total de todas las habitaciones por todas las noches, ya con la promoción. */
+  /** Total de todas las habitaciones por todas las noches. */
   total?: number;
-  /** Lo que costaría sin la promoción — sirve para enseñar el ahorro. */
-  totalSinPromo?: number;
-  /** Cuánto se ahorra el cliente por las noches gratis. */
-  ahorro?: number;
-  /** Noches regaladas por habitación. */
-  nochesGratis?: number;
   /** Desglose legible: una entrada por habitación. */
-  desglose?: { huespedes: number; porNoche: number; noches: number; nochesCobradas: number; subtotal: number }[];
+  desglose?: { huespedes: number; porNoche: number; noches: number; subtotal: number }[];
   vistaMontana?: boolean;
 }
 
@@ -92,23 +78,14 @@ export function cotizarHospedaje(input: {
   const vistaMontana = esHabitacionConVista(input.habitacion);
   const tabla = vistaMontana ? TARIFA_POR_NOCHE.montana : TARIFA_POR_NOCHE.estandar;
 
-  const gratis = nochesGratis(noches);
-  const nochesCobradas = noches - gratis;
-
   const desglose = reparto.map((h) => {
     const porNoche = tabla[Math.max(1, h) as 1 | 2 | 3 | 4];
-    return { huespedes: h, porNoche, noches, nochesCobradas, subtotal: porNoche * nochesCobradas };
+    return { huespedes: h, porNoche, noches, subtotal: porNoche * noches };
   });
-
-  const total = desglose.reduce((s, d) => s + d.subtotal, 0);
-  const totalSinPromo = desglose.reduce((s, d) => s + d.porNoche * noches, 0);
 
   return {
     ok: true,
-    total,
-    totalSinPromo,
-    ahorro: totalSinPromo - total,
-    nochesGratis: gratis,
+    total: desglose.reduce((s, d) => s + d.subtotal, 0),
     desglose,
     vistaMontana,
   };
