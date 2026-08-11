@@ -280,7 +280,7 @@ export const TOURS_DB: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-      "Desayuno buffet",
+      "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -336,7 +336,7 @@ export const TOURS_DB: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-      "Desayuno buffet",
+      "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -391,7 +391,7 @@ export const TOURS_DB: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-      "Desayuno buffet",
+      "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -446,7 +446,7 @@ export const TOURS_DB: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-      "Desayuno buffet",
+      "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -504,7 +504,7 @@ export const TOURS_DB: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-      "Desayuno buffet",
+      "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",

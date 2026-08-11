@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T01:42:13.604Z",
+  "generatedAt": "2026-08-11T03:52:12.576Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -328,7 +328,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet, antes de salir. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -370,7 +370,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet",
+        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -392,7 +392,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -435,7 +435,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet",
+        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -456,7 +456,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -498,7 +498,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet",
+        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -519,7 +519,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -560,7 +560,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet",
+        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -581,7 +581,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -624,7 +624,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet",
+        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -645,7 +645,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [

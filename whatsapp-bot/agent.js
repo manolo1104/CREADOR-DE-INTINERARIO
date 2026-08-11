@@ -152,6 +152,12 @@ function recomendarLocal({ intereses = [], grupo = "", actividad = "", destino =
   return ordenados.slice(0, 2).map((t) => ({
     slug: t.slug, nombre: t.nombre, tagline: t.tagline, pitch: t.pitch, duracionHrs: t.duracionHrs,
     precio: t.precio, precioUnidad: t.precioUnidad,
+    // Sin los destinos el modelo solo podía decir el NOMBRE del recorrido, y el
+    // cliente no sabía qué lugares va a conocer — que es lo que de verdad
+    // quiere saber cuando pide una recomendación.
+    destinos: t.destinos,
+    // Las rutas del RZR traen sus propios destinos, uno por ruta.
+    rutas: t.rutas ? t.rutas.map((r) => ({ nombre: r.nombre, duracionHrs: r.duracionHrs, destinos: r.destinos })) : undefined,
   }));
 }
 
@@ -765,9 +771,10 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 
 *2. COMIDAS — ningún tour es "todo incluido".* Cada tour trae el campo "alimentos" en *obtener_tour*: úsalo tal cual.
   · Los tours de día completo incluyen *SOLO el desayuno buffet*.
+  · 📍 *El desayuno NO es en el hotel.* Se hace una parada *camino a los destinos, en El Taco Loco*, donde se sirve el buffet con platillos típicos de la región y guisados. Dilo así cuando pregunten por el desayuno — nunca digas que se sirve en el hotel ni "antes de salir" sin más.
   · La *comida de mediodía NO está incluida en NINGÚN tour*. Ni la cena.
   · El RZR, el rappel y el buceo *no incluyen ningún alimento*.
-  · Los paquetes incluyen *solo los desayunos* del hotel; comidas y cenas van por cuenta del cliente.
+  · Los paquetes incluyen *solo los desayunos*; comidas y cenas van por cuenta del cliente.
   · Nunca escribas "todo incluido" ni un encabezado tipo "Todo Incluido" para un tour o un paquete.
   · No inventes dónde puede comer (tienditas, puestos, restaurantes) salvo que el dato venga en la herramienta.
 
@@ -798,6 +805,7 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 Cuando alguien venga por *varios días* o quiera *dos o más recorridos*, NO le recites los tres paquetes preestablecidos. Arma uno para él:
 1. Pregunta *cuántos días*, *cuántas personas* (y edades si hay niños) y *qué le late* (cascadas, aventura fuerte, cultura, tranquilo, con niños).
 2. Propón un recorrido por día con los tours que de verdad encajan, y di el precio de cada uno y el total. Un tour de día completo por día — no metas dos tours pesados el mismo día.
+   📍 *Al nombrar un recorrido, di SIEMPRE qué destinos visita*, no solo el nombre. "Ruta Acuática" no le dice nada a nadie; "Ruta Acuática — Puente de Dios, Hacienda Los Gómez y Siete Cascadas" sí. Vale para recomendaciones, itinerarios y listas: el cliente elige por los LUGARES, no por el nombre comercial.
    ⭐ *La Expedición Tamul es nuestro tour más pedido y el que más gusta.* Si el cliente quiere cascadas, "conocer lo más posible" o no tiene una preferencia marcada, ese va en el itinerario — salvo que él pida otra cosa o no le encaje (es de dificultad media y día completo). Va a la Cascada de Tamul, que es LA cascada de la región: si armas un plan de cascadas sin ella, el cliente lo va a pedir después.
 3. *El hospedaje es OPCIONAL y así se lo dices.* Ofrécelo como opción, nunca como requisito: "si quieres, te paso opciones de hospedaje en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que *pasamos por él a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no*.
    Si le interesa: consulta *disponibilidad_habitaciones* (checkin + noches), enséñale las libres, y cuando elija una, *SÍ puedes meterla en la misma cotización* — pasa el objeto *hospedaje* (interesado, habitacion, checkin, checkout, noches, habitaciones) a *cotizar_paquete_personalizado*. Va en el mismo folio y en el mismo correo que los tours. NUNCA le digas que el hospedaje se cotiza aparte ni que "el equipo lo confirma después".
@@ -837,6 +845,8 @@ Para *cómo llegar a la zona* (auto/avión/autobús desde CDMX) usa *obtener_log
 2. *Aviso del correo*: el sistema intenta enviar la cotización al correo del cliente y te devuelve *emailEnviado*. Si es true, dile que *también se la enviaste a su correo* (menciona el correo). Si es false (o no dio correo), dile que se la dejas por aquí. NUNCA afirmes que enviaste un correo si emailEnviado no es true.
 3. *Hasta entonces, la información bancaria* con *datos_pago* (transferencia + OXXO), con el monto del *anticipo*, y pídele su *comprobante* — la reserva solo se confirma cuando lo recibimos.
    Al dar los datos bancarios dile SIEMPRE que ponga el *folio como concepto o referencia* de la transferencia. Sin eso no podemos saber de quién es el depósito.
+
+*¿Hasta cuándo tengo para pagar?* — La cotización tiene *vigencia de 48 horas*. Dilo así, y agrega enseguida que *en temporada alta y en fines de semana conviene reservar cuanto antes, porque los lugares y las habitaciones se llenan rápido*. Es urgencia real, no presión inventada: no le pongas contadores ni le digas que "quedan X lugares" si no lo sabes.
 El correo es un extra, no un sustituto: el resumen y los datos de pago SIEMPRE van también por aquí.
 
 Tours *por persona* — ofrece las dos opciones:

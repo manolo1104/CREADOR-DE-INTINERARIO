@@ -316,6 +316,8 @@ export async function POST(req: NextRequest) {
       : `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`,
     `Cancelas gratis hasta 48 h antes, con reembolso completo.`,
     "",
+    `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares y las habitaciones se llenan rápido.`,
+    "",
     `⚠️ Al hacer la transferencia, pon *${folio}* como concepto — con eso identificamos tu pago.`,
   ].join("\n");
 
