@@ -76,6 +76,10 @@ const EVENTOS: Record<
   GALLERY_OPENED:        (d)    => ["🖼️  ABRIÓ LA GALERÍA", nombreTour(d)],
   REVIEWS_SCROLLED:      (d)    => ["⭐  LEYÓ LAS RESEÑAS", nombreTour(d)],
   STICKY_SIDEBAR_SHOWN:  (d)    => ["📌  VIO LA CALCULADORA DE PRECIO", nombreTour(d)],
+  // Sin este paso, el embudo saltaba de "vio un tour" a "eligió fecha", que son
+  // páginas distintas: no se podía distinguir "no llega a reservar" de "llega y
+  // no elige fecha", y cada caso pide un arreglo opuesto.
+  BOOKING_PAGE_VIEW:     (d)    => ["📝  ABRIÓ LA RESERVA", nombreTour(d), mxn(Number(d.amount))],
   DATE_SELECTED:         (d)    => ["📅  ELIGIÓ FECHA", (d.fecha ?? d.date) as string, nombreTour(d)],
   PARTICIPANTS_CHANGED:  (d)    => ["👥  AJUSTÓ PERSONAS", nombreTour(d), personas(d), mxn(Number(d.amount))],
   PROMO_APPLIED:         (d)    => ["🎟️  APLICÓ CUPÓN", (d.code ?? d.promoCode) as string, d.discountPct != null ? `-${d.discountPct}%` : undefined],

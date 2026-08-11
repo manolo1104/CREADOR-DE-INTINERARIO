@@ -12,7 +12,7 @@ import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate 
 import type { TourBookingState } from "@/lib/tourBooking";
 import { TOURS_DB } from "@/lib/tours";
 import { trackPurchase } from "@/lib/analytics";
-import { trackTourEvent } from "@/lib/tourTracker";
+import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
 
 const stripePromise = loadStripe(
@@ -397,6 +397,9 @@ export default function CheckoutTourPage() {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        // Va el id de sesión para que el evento del pago se pueda ligar con el
+        // resto del recorrido de esa misma persona en el embudo.
+        sid: sessionId(),
         // El monto lo calcula el servidor a partir de estos datos (no se envía amount).
         tourDetails: {
           tourId:        state.tourId,

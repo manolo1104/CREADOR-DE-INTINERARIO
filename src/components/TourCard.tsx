@@ -8,6 +8,7 @@ import { tourDurTexto, type Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
 import { trackWhatsapp } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 const dificultadConfig = {
   alta:  { label: "AVANZADO", labelEn: "ADVANCED", bg: "bg-orange-700",  dot: "bg-orange-400"  },
@@ -207,7 +208,14 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
               : WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => trackWhatsapp("tour_card", t.precio * 2)}
+            onClick={() => {
+              trackWhatsapp("tour_card", t.precio * 2);
+              // trackWhatsapp solo alimenta Google Analytics; el embudo lee de
+              // TrackEvent, así que este clic era invisible ahí.
+              trackTourEvent("WHATSAPP_CLICK", {
+                tour: t.slug, tour_name: t.nombre, amount: t.precio * 2, context: "tarjeta_tour",
+              });
+            }}
             className="relative z-10 w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
             {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}

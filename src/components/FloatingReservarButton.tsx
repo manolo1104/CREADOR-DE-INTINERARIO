@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { trackCtaClick } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { toursQueIncluyen } from "@/lib/tourMapping";
 
@@ -57,7 +58,14 @@ export function FloatingReservarButton() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Escribir por WhatsApp"
-        onClick={() => trackCtaClick("floating_whatsapp", waHref)}
+        onClick={() => {
+          trackCtaClick("floating_whatsapp", waHref);
+          // trackCtaClick solo va a Google Analytics. Sin esto, el botón de
+          // WhatsApp que aparece en TODAS las páginas no dejaba rastro en
+          // TrackEvent, y el embudo reportaba 0 clics a WhatsApp en 14 días
+          // como si nadie escribiera — cuando en realidad no se medía.
+          trackTourEvent("WHATSAPP_CLICK", { context: "boton_flotante" });
+        }}
         className={`fixed right-6 z-50 items-center justify-center
                    bg-[#25D366] hover:bg-[#1ebe5b] text-white
                    w-[52px] h-[52px] rounded-full shadow-xl shadow-black/40
