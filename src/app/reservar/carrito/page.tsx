@@ -6,15 +6,48 @@ import Link from "next/link";
 import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
   actualizarItem, personasDeItem, type CarritoItem,
 } from "@/lib/carrito";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
+
+/**
+ * Las dudas que de verdad frenan el pago. Todas las respuestas salen de lo que
+ * el sitio ya afirma (política de cancelación, fichas de tour): aquí no se
+ * inventa ninguna condición nueva.
+ */
+const FAQ_CARRITO = [
+  {
+    q: "¿Cuánto pago hoy y cuándo el resto?",
+    a: "Hoy apartas con el 30 % del total. El saldo lo liquidas el día del primer recorrido, en efectivo o con tarjeta, al llegar.",
+  },
+  {
+    q: "¿Puedo cancelar?",
+    a: "Sí. Cancelación gratuita hasta 48 horas antes, con reembolso completo y sin preguntas.",
+  },
+  {
+    q: "¿De dónde salimos y a qué hora?",
+    a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar. Salimos entre las 8:00 y las 9:00 AM, y la hora exacta de tu recogida la confirmamos por WhatsApp al reservar.",
+  },
+  {
+    q: "¿Necesito hospedarme con ustedes?",
+    a: "No. Pasamos por ti donde te estés quedando, sea nuestro hotel o cualquier otro.",
+  },
+  {
+    q: "¿Qué pasa si llueve?",
+    a: "Operamos con lluvia ligera. Si hay tormenta eléctrica, reprogramamos sin costo.",
+  },
+  {
+    q: "¿Puedo pagar varios recorridos juntos?",
+    a: "Es justo lo que hace este carrito: apartas todos tus días con un solo pago y un solo folio, en vez de reservar uno por uno.",
+  },
+] as const;
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
@@ -164,6 +197,15 @@ export default function CarritoPage() {
   }, []);
 
   const minDate = minBookingDate();
+  // Testimonios de los recorridos que ESTA persona lleva en el carrito: una
+  // reseña del tour que ya eligió pesa más que una genérica.
+  const resenas = Array.from(
+    new Map(
+      items
+        .flatMap((i) => TOUR_REVIEWS[(TOURS_DB.find((t) => t.slug === i.tourSlug)?.id ?? "") as keyof typeof TOUR_REVIEWS] ?? [])
+        .map((r) => [r.nombre + r.texto.slice(0, 12), r] as const),
+    ).values(),
+  ).slice(0, 3);
   const { total, anticipo, saldo, dias } = resumirCarrito(items);
 
   function quitar(uid: string) {
@@ -311,6 +353,42 @@ export default function CarritoPage() {
                   {!i.tourDate && (
                     <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
                   )}
+
+                  {/* Qué se visita y qué incluye, sin salir del carrito. Va
+                      plegado para que la lista siga siendo escaneable: quien
+                      lleva cuatro recorridos no quiere cuatro fichas abiertas. */}
+                  {(() => {
+                    const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+                    if (!t) return null;
+                    return (
+                      <details className="mt-2 group">
+                        <summary className="cursor-pointer list-none font-dm text-[11px] text-verde-selva hover:text-verde-vivo transition-colors">
+                          Qué incluye y qué se visita
+                          <span className="ml-1 inline-block transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                        </summary>
+                        <div className="mt-2.5 space-y-2.5 border-l-2 border-verde-selva/20 pl-3">
+                          <p className="font-dm text-[12px] text-negro/55 leading-snug">{t.descripcion}</p>
+                          {t.destinos?.length > 0 && (
+                            <div>
+                              <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Se visita</p>
+                              {t.destinos.map((d) => (
+                                <p key={d} className="font-dm text-[12px] text-negro/60 leading-snug">· {d}</p>
+                              ))}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Incluye</p>
+                            {[...t.incluye, ...INCLUYE_SIEMPRE].map((x) => (
+                              <p key={x} className="font-dm text-[12px] text-negro/60 leading-snug">✓ {x}</p>
+                            ))}
+                          </div>
+                          <p className="font-dm text-[11px] text-negro/40">
+                            {t.duracion_hrs} horas aprox. · grupo de {t.groupMin > 1 ? `${t.groupMin} a ` : "hasta "}{t.groupMax} personas
+                          </p>
+                        </div>
+                      </details>
+                    );
+                  })()}
                 </div>
                 <div className="text-right flex-shrink-0 flex flex-col justify-between">
                   <span className="font-cormorant text-dorado text-xl">{formatMXN(i.total)}</span>
@@ -348,6 +426,69 @@ export default function CarritoPage() {
               <span>Cancelación gratuita hasta 48 h antes, con reembolso completo.</span>
             </p>
           </div>
+
+          {/* ── PRUEBA SOCIAL ──────────────────────────────────────────────
+              Cifras reales y verificables: la calificación enlaza a las
+              reseñas de Google, y los testimonios son de los recorridos que
+              esta persona lleva en el carrito, no de cualquiera. */}
+          <section className="mt-8 border border-negro/10 bg-white p-5">
+            <a
+              href={GOOGLE_MAPS_REVIEWS_URL}
+              target="_blank" rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2.5 mb-4"
+            >
+              <span className="flex gap-0.5" aria-hidden="true">
+                {[...Array(5)].map((_, k) => <Star key={k} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
+              </span>
+              <span className="font-dm text-[13px] text-negro/75">
+                <strong className="text-negro">4.9</strong> · 492 reseñas en Google
+              </span>
+              <span className="font-dm text-[11px] text-negro/40 group-hover:text-verde-selva transition-colors">Verlas →</span>
+            </a>
+            <p className="flex items-center gap-2 font-dm text-[12px] text-negro/50 mb-4">
+              <Users className="w-3.5 h-3.5 text-verde-selva" aria-hidden="true" />
+              +10,000 viajeros desde 2019 · Premio Arival 2023 · Guías certificados NOM-09 SECTUR
+            </p>
+
+            {resenas.length > 0 && (
+              <div className="space-y-3 border-t border-negro/8 pt-4">
+                {resenas.map((r) => (
+                  <div key={r.nombre + r.texto.slice(0, 12)} className="flex gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={r.foto} alt="" width={32} height={32} loading="lazy" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-dm text-[12px] text-negro/70 leading-snug">“{r.texto}”</p>
+                      <p className="font-dm text-[11px] text-negro/40 mt-1">{r.nombre} · {r.ciudad}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── PREGUNTAS DE ÚLTIMO MINUTO ─────────────────────────────────
+              Las dudas que frenan el pago. Todas las respuestas salen de lo que
+              el sitio ya dice en la política de cancelación y en las fichas. */}
+          <section className="mt-6">
+            <h2 className="font-cormorant text-verde-profundo text-xl mb-3">Antes de pagar</h2>
+            <div className="divide-y divide-negro/10 border-y border-negro/10">
+              {FAQ_CARRITO.map((f) => (
+                <details key={f.q} className="group py-3.5">
+                  <summary className="flex items-start justify-between gap-4 cursor-pointer list-none font-dm text-[13px] text-negro/80">
+                    <span>{f.q}</span>
+                    <span className="text-verde-selva text-lg leading-none flex-shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                  </summary>
+                  <p className="font-dm text-[12px] text-negro/55 leading-relaxed mt-2 pr-6">{f.a}</p>
+                </details>
+              ))}
+            </div>
+            <p className="font-dm text-[11px] text-negro/40 mt-3">
+              ¿Te quedó otra duda?{" "}
+              <a href="https://wa.me/524891251458?text=Hola%2C%20estoy%20por%20pagar%20mi%20carrito%20y%20tengo%20una%20pregunta."
+                 target="_blank" rel="noopener noreferrer"
+                 className="text-verde-selva underline underline-offset-2">Escríbenos por WhatsApp</a> antes de pagar.
+            </p>
+          </section>
         </div>
 
         {/* ── Resumen y pago ── */}
