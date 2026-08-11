@@ -6,11 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle } from "lucide-react";
+import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle, MessageCircle } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
-  actualizarItem, personasDeItem, type CarritoItem,
+  actualizarItem, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
+import { cotizarHospedaje, MAX_HUESPEDES_POR_HABITACION } from "@/lib/hospedaje";
+import { HABITACIONES } from "@/lib/paquetes";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
 import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
@@ -76,6 +78,24 @@ function PagoCarrito({ cobro, datos, onListo }: {
   const router   = useRouter();
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+
+  const waPagoAlterno = `https://wa.me/524891251458?text=${encodeURIComponent(
+    [
+      "Hola, quiero apartar este viaje pero prefiero pagar por transferencia SPEI u OXXO.",
+      "",
+      ...cobro.lineItems.map(
+        (l) => `• ${l.tourName.split("—")[0].trim()} — ${formatTourDate(l.tourDate)} — ${l.adults + l.children} persona(s) — $${l.subtotal.toLocaleString("es-MX")}`,
+      ),
+      "",
+      `Total del viaje: $${cobro.total.toLocaleString("es-MX")} MXN`,
+      `Anticipo (30 %): $${cobro.amount.toLocaleString("es-MX")} MXN`,
+      `Saldo el día del primer recorrido: $${cobro.saldo.toLocaleString("es-MX")} MXN`,
+      "",
+      `A nombre de: ${datos.name || "(pendiente)"}`,
+      datos.email  ? `Correo: ${datos.email}` : "",
+      datos.pickup ? `Me hospedo en: ${datos.pickup}` : "",
+    ].filter(Boolean).join("\n"),
+  )}`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -175,6 +195,29 @@ function PagoCarrito({ cobro, datos, onListo }: {
       <p className="text-center text-[11px] font-dm text-negro/45">
         Pago cifrado con Stripe · El saldo de {formatMXN(cobro.saldo)} lo liquidas el día del primer recorrido
       </p>
+
+      {/* Salida para quien no quiere teclear su tarjeta. El motor solo acepta
+          tarjeta, y mucha gente en México prefiere SPEI u OXXO: sin esta puerta
+          esa venta se perdía en silencio. El mensaje va con TODO el detalle
+          para que nadie tenga que volver a preguntarlo por chat. */}
+      <div className="border-t border-negro/10 pt-4">
+        <p className="text-center font-dm text-[12px] text-negro/50 mb-3">
+          ¿Prefieres transferencia SPEI u OXXO?
+        </p>
+        <a
+          href={waPagoAlterno}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_pago_alterno", amount: cobro.amount, recorridos: cobro.lineItems.length })}
+          className="flex items-center justify-center gap-2.5 w-full border border-[#25D366]/60 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+        >
+          <MessageCircle className="w-4 h-4" aria-hidden="true" />
+          Apartar por WhatsApp
+        </a>
+        <p className="text-center font-dm text-[10px] text-negro/35 mt-2">
+          Te mandamos los datos y apartamos tus lugares al recibir el comprobante.
+        </p>
+      </div>
     </form>
   );
 }
@@ -189,6 +232,13 @@ export default function CarritoPage() {
   const [phone,  setPhone]  = useState("");
   const [pickup, setPickup] = useState("");
   const [cobro,  setCobro]  = useState<Cobro | null>(null);
+  // Hospedaje opcional en el Hotel Paraíso Encantado. Apagado por defecto:
+  // muchos ya vienen con hotel, y la promesa del sitio es justo que no hace
+  // falta hospedarse con nosotros.
+  const [conHotel,    setConHotel]    = useState(false);
+  const [habitacion,  setHabitacion]  = useState(HABITACIONES[0]?.nombre ?? "");
+  const [noches,      setNoches]      = useState(2);
+  const [huespedes,   setHuespedes]   = useState(2);
   const [error,  setError]  = useState("");
   const [cargando, setCargando] = useState(false);
 
@@ -198,6 +248,15 @@ export default function CarritoPage() {
   }, []);
 
   const minDate = minBookingDate();
+  const hotelQuote = conHotel
+    ? cotizarHospedaje({
+        habitacion,
+        noches,
+        huespedes,
+        habitaciones: Math.max(1, Math.ceil(huespedes / MAX_HUESPEDES_POR_HABITACION)),
+      })
+    : null;
+  const totalHotel = hotelQuote?.ok ? hotelQuote.total ?? 0 : 0;
   // Testimonios de los recorridos que ESTA persona lleva en el carrito: una
   // reseña del tour que ya eligió pesa más que una genérica.
   const resenas = Array.from(
@@ -207,7 +266,14 @@ export default function CarritoPage() {
         .map((r) => [r.nombre + r.texto.slice(0, 12), r] as const),
     ).values(),
   ).slice(0, 3);
-  const { total, anticipo, saldo, dias } = resumirCarrito(items);
+  // El hotel entra en el total y, por tanto, en el anticipo del 30 %. El
+  // servidor vuelve a cotizarlo con `cotizarHospedaje`, así que esto es solo
+  // lo que se pinta.
+  const resumen  = resumirCarrito(items);
+  const dias     = resumen.dias;
+  const total    = resumen.total + totalHotel;
+  const anticipo = Math.round((total * ANTICIPO_PCT) / 100);
+  const saldo    = total - anticipo;
 
   function quitar(uid: string) {
     setItems(quitarDelCarrito(uid));
@@ -216,6 +282,22 @@ export default function CarritoPage() {
   }
 
   function cambiar(uid: string, cambios: Partial<CarritoItem>) {
+    // Dos recorridos no pueden caer el mismo día: cada uno ocupa la jornada
+    // completa (salen a las 8 y vuelven por la tarde). Si se dejara pasar, el
+    // cliente pagaría dos tours que es físicamente imposible hacer, y la
+    // reclamación llega el mismo día de la salida.
+    if (cambios.tourDate) {
+      const chocaCon = items.find(
+        (x) => x.uid !== uid && x.tourDate === cambios.tourDate,
+      );
+      if (chocaCon) {
+        setError(
+          `Ya tienes "${chocaCon.tourName.split("—")[0].trim()}" ese día. Cada recorrido ocupa el día completo: elige otra fecha.`,
+        );
+        return;
+      }
+    }
+    setError("");
     setItems(actualizarItem(uid, cambios));
     setCobro(null); // cualquier cambio invalida el importe ya calculado
   }
@@ -288,6 +370,9 @@ export default function CarritoPage() {
           customerEmail: email.trim(),
           sid:           sessionId(),
           items,
+          hospedaje: conHotel
+            ? { habitacion, noches, huespedes, habitaciones: Math.max(1, Math.ceil(huespedes / MAX_HUESPEDES_POR_HABITACION)) }
+            : null,
         }),
       });
       const data = await res.json();
@@ -490,6 +575,12 @@ export default function CarritoPage() {
               el itinerario ordenado por día. Antes salían en el orden en que
               se agregaron, así que un viaje de cuatro días se leía descolocado
               y no había forma de ver qué faltaba. */}
+          {error && (
+            <p className="mb-4 border border-terracota/40 bg-terracota/8 px-3 py-2.5 font-dm text-[12px] text-terracota">
+              {error}
+            </p>
+          )}
+
           {sinFechaItems.length > 0 && (
             <div className="mb-6">
               <p className="flex items-center gap-2 font-dm text-[11px] tracking-[1.5px] uppercase text-terracota mb-2">
@@ -538,6 +629,99 @@ export default function CarritoPage() {
               <span>Cancelación gratuita hasta 48 h antes, con reembolso completo.</span>
             </p>
           </div>
+
+          {/* ── HOSPEDAJE OPCIONAL ─────────────────────────────────────────
+              Apagado por defecto y dicho con todas sus letras: la promesa del
+              sitio es que pasamos por ti a CUALQUIER hospedaje, y muchos ya
+              vienen con hotel. Ofrecerlo sin presionar es la diferencia entre
+              un extra y una molestia. */}
+          <section className="mt-8 border border-negro/10 bg-white p-5">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={conHotel}
+                onChange={(e) => { setConHotel(e.target.checked); setCobro(null); }}
+                className="mt-1 w-4 h-4 accent-verde-selva"
+              />
+              <span>
+                <span className="block font-cormorant text-verde-profundo text-xl">
+                  ¿Quieres que también te hospedemos?
+                </span>
+                <span className="block font-dm text-[12px] text-negro/50 mt-0.5">
+                  En nuestro Hotel Paraíso Encantado, en Xilitla. Es opcional: pasamos por ti aunque te quedes en otro lado.
+                </span>
+              </span>
+            </label>
+
+            {conHotel && (
+              <div className="mt-5 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {HABITACIONES.map((h) => {
+                    const activa = habitacion === h.nombre;
+                    return (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => { setHabitacion(h.nombre); setCobro(null); }}
+                        className={`text-left border overflow-hidden transition-colors ${activa ? "border-verde-selva" : "border-negro/12 hover:border-negro/30"}`}
+                      >
+                        <span className="relative block h-28">
+                          <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 300px" />
+                          {activa && (
+                            <span className="absolute inset-0 bg-verde-selva/25 flex items-center justify-center">
+                              <span className="bg-verde-selva text-crema text-[9px] tracking-[2px] uppercase font-dm px-2 py-1">Elegida</span>
+                            </span>
+                          )}
+                        </span>
+                        <span className="block p-3">
+                          <span className="block font-dm text-[13px] text-negro/85">{h.nombre}</span>
+                          <span className="block font-dm text-[11px] text-negro/45 leading-snug mt-0.5">{h.vista}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Noches",    v: noches,    set: setNoches,    min: 1 },
+                    { label: "Huéspedes", v: huespedes, set: setHuespedes, min: 1 },
+                  ].map((c) => (
+                    <div key={c.label}>
+                      <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">{c.label}</p>
+                      <span className="flex items-center gap-3">
+                        <button type="button" aria-label={`Menos ${c.label}`}
+                          onClick={() => { c.set((n: number) => Math.max(c.min, n - 1)); setCobro(null); }}
+                          className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
+                        <span className="font-dm text-base text-negro/85 w-6 text-center">{c.v}</span>
+                        <button type="button" aria-label={`Más ${c.label}`}
+                          onClick={() => { c.set((n: number) => n + 1); setCobro(null); }}
+                          className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {hotelQuote && !hotelQuote.ok && (
+                  <p className="font-dm text-[12px] text-terracota">{hotelQuote.error}</p>
+                )}
+
+                {hotelQuote?.ok && (
+                  <div className="border-t border-negro/8 pt-3 space-y-1">
+                    <p className="flex justify-between font-dm text-[13px] text-negro/70">
+                      <span>{noches} noche{noches > 1 ? "s" : ""} · {huespedes} huésped{huespedes > 1 ? "es" : ""} · {hotelQuote.desglose?.length} habitación{(hotelQuote.desglose?.length ?? 1) > 1 ? "es" : ""}</span>
+                      <strong>{formatMXN(totalHotel)} MXN</strong>
+                    </p>
+                    {(hotelQuote.nochesGratis ?? 0) > 0 && (
+                      <p className="font-dm text-[12px] text-verde-selva">
+                        Cada 3.ª noche va gratis: te ahorras {formatMXN(hotelQuote.ahorro ?? 0)}.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
 
           {/* ── PRUEBA SOCIAL ──────────────────────────────────────────────
               Cifras reales y verificables: la calificación enlaza a las
@@ -608,7 +792,7 @@ export default function CarritoPage() {
           {/* Mismo resumen que el checkout de un tour: qué se aparta, qué va
               incluido en cada recorrido, la logística y los números. */}
           <ResumenReserva
-            items={items.map((i) => {
+            items={[...items.map((i) => {
               const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
               return {
                 nombre:  i.tourName,
@@ -620,7 +804,12 @@ export default function CarritoPage() {
                 incluye:  [...(t?.incluye ?? []), ...INCLUYE_SIEMPRE],
                 eleccion: i.eleccion,
               };
-            })}
+            }), ...(hotelQuote?.ok ? [{
+              nombre:   `Hospedaje · ${habitacion}`,
+              detalle:  `${noches} noche${noches > 1 ? "s" : ""} · ${huespedes} huésped${huespedes > 1 ? "es" : ""}`,
+              subtotal: totalHotel,
+              incluye:  ["Hotel Paraíso Encantado, en Xilitla", ...((hotelQuote.nochesGratis ?? 0) > 0 ? ["Cada 3.ª noche gratis"] : [])],
+            }] : [])]}
             total={total}
             pagaHoy={anticipo}
             saldo={saldo}

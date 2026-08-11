@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
@@ -8,6 +8,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { getPaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
+import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
 import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel } from "lucide-react";
 
@@ -113,6 +114,24 @@ export default function ReservarPaquetePage() {
 
   const minDate = useMemo(() => minBookingDate(), []);
 
+  // Restaurar desde el link del correo de recuperación (?recuperar=<token>),
+  // igual que hace la reserva de un tour suelto.
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("recuperar");
+    if (!token) return;
+    fetch(`/api/tours/carrito/${token}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        if (!c || c.error) return;
+        if (c.tourDate) setFecha(c.tourDate);
+        if (typeof c.adults === "number" && c.adults >= 2) setPersonas(c.adults);
+        if (typeof c.childrenMid === "number") setChildrenMid(c.childrenMid);
+        if (typeof c.childrenSmall === "number") setChildrenSmall(c.childrenSmall);
+        if (c.email) setEmail(c.email);
+      })
+      .catch(() => {});
+  }, []);
+
   if (!paquete) {
     return (
       <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
@@ -138,6 +157,17 @@ export default function ReservarPaquetePage() {
     if (!name.trim() || !email.trim()) { setError("Nombre y correo son obligatorios."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("El correo no tiene un formato válido."); return; }
     setLoading(true);
+
+    // Rescate: ya tenemos nombre y correo pero todavía no ha pagado. Va sin
+    // await para no retrasarle el pago, y su fallo nunca lo bloquea.
+    fetch("/api/paquetes/guardar-carrito", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.trim(), phone: phone.trim(), slug: paquete!.slug,
+        personas, childrenMid, childrenSmall, vistaMontana, fecha,
+      }),
+    }).catch(() => {});
+
     try {
       const res = await fetch("/api/paquetes/create-payment-intent", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -390,6 +420,31 @@ export default function ReservarPaquetePage() {
                 })}
               </div>
             </section>
+
+            {/* Resumen antes de pedir los datos: el cliente confirma qué está
+                comprando —fechas, gente, habitación, itinerario y precio—
+                antes de teclear nada suyo. */}
+            {cotizacion && (
+              <ResumenReserva
+                items={[{
+                  nombre:  paquete.nombre,
+                  fecha,
+                  detalle: [
+                    `${personas} adulto${personas > 1 ? "s" : ""}`,
+                    childrenMid   ? `${childrenMid} niño${childrenMid > 1 ? "s" : ""} 6–10` : "",
+                    childrenSmall ? `${childrenSmall} menor${childrenSmall > 1 ? "es" : ""} de 6` : "",
+                    `${paquete.dias} días / ${paquete.noches} noches`,
+                    vistaMontana ? "Habitación Jungla" : "Habitación vista a la selva",
+                  ].filter(Boolean).join(" · "),
+                  subtotal: cotizacion.total,
+                  incluye:  paquete.incluye,
+                }]}
+                total={cotizacion.total}
+                pagaHoy={cotizacion.charge}
+                saldo={cotizacion.saldo}
+                pct={pct}
+              />
+            )}
 
             {/* Cuánto pagar */}
             <section className="bg-white border border-negro/8 p-6">

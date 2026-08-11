@@ -10,6 +10,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
 import { MAX_ITEMS, ANTICIPO_PCT } from "@/lib/carrito";
+import { cotizarHospedaje } from "@/lib/hospedaje";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid } = await req.json();
+    const { customerEmail, customerName, items, sid, hospedaje } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -128,6 +129,41 @@ export async function POST(req: NextRequest) {
       total += charge.total;
     }
 
+    // ── Hospedaje opcional ────────────────────────────────────────────────
+    // Igual que los tours: el cliente manda QUÉ quiere (habitación, noches,
+    // huéspedes) y el precio lo pone `cotizarHospedaje` con las tarifas reales.
+    let hotel: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null = null;
+    if (hospedaje?.habitacion && Number(hospedaje?.noches) > 0) {
+      const q = cotizarHospedaje({
+        habitacion:   hospedaje.habitacion,
+        noches:       hospedaje.noches,
+        habitaciones: hospedaje.habitaciones,
+        huespedes:    hospedaje.huespedes,
+      });
+      if (!q.ok || !q.total) {
+        return NextResponse.json({ error: q.error || "No se pudo cotizar el hospedaje." }, { status: 400 });
+      }
+      hotel = {
+        habitacion: String(hospedaje.habitacion),
+        noches:     Number(hospedaje.noches),
+        huespedes:  Number(hospedaje.huespedes),
+        total:      q.total,
+        ahorro:     q.ahorro ?? 0,
+      };
+      total += q.total;
+    }
+
+    // Dos recorridos el mismo día es imposible de operar: cada uno ocupa la
+    // jornada entera. La UI ya lo impide, pero el carrito vive en el
+    // localStorage del visitante y se puede editar.
+    const fechas = lineItems.map((l) => l.tourDate);
+    if (new Set(fechas).size !== fechas.length) {
+      return NextResponse.json(
+        { error: "Hay dos recorridos en la misma fecha. Cada uno ocupa el día completo." },
+        { status: 400 },
+      );
+    }
+
     const cobrar = Math.round((total * ANTICIPO_PCT) / 100);
     const saldo  = total - cobrar;
 
@@ -165,6 +201,7 @@ export async function POST(req: NextRequest) {
         adults:        String(lineItems.reduce((s, l) => s + l.adults, 0)),
         children:      String(lineItems.reduce((s, l) => s + l.children, 0)),
         items:         compacto,
+        hospedaje:     hotel ? `${hotel.habitacion} · ${hotel.noches} noches · ${hotel.huespedes} huéspedes · $${hotel.total}` : "",
         totalCompleto: String(total),
         pctPagado:     String(ANTICIPO_PCT),
         saldo:         String(saldo),
@@ -197,6 +234,7 @@ export async function POST(req: NextRequest) {
       saldo,
       pct:             ANTICIPO_PCT,
       lineItems,
+      hospedaje: hotel,
     });
   } catch (err) {
     const e = err as Error;

@@ -241,7 +241,7 @@ export const PAQUETES_DB: Paquete[] = [
     itinerario: [
       { dia: 1, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Llegada + Cascadas del Meco", descripcion: "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), te entregamos la habitación temprano para descansar y ese mismo día arrancamos con las cascadas turquesa de El Naranjo — un primer día suave y espectacular." },
       { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día más completo de aventura: ya descansado, salimos temprano para aprovechar la mejor luz y el caudal del río — mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua." },
-      { dia: 3, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y regreso a casa con la memoria llena de la Huasteca." },
+      { dia: 3, tipo: "salida", titulo: "Salida", descripcion: "Check-out y regreso a casa con la memoria llena de la Huasteca. El desayuno buffet va incluido solo los días de tour." },
     ],
     incluye: [
       "2 noches en Hotel Paraíso Encantado Xilitla",
@@ -291,7 +291,7 @@ export const PAQUETES_DB: Paquete[] = [
       { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista (Edward James)", descripcion: "Te recibimos y haces check-in en el hotel. Como Las Pozas está a minutos, ese mismo día visitamos el jardín surrealista de Edward James." },
       { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua." },
       { dia: 3, tipo: "tour", tourSlug: "paraiso-escalonado-minas-micos", titulo: "Paraíso Escalonado (o Ruta Acuática, a elegir)", descripcion: "Minas Viejas y Cascadas de Micos. Si prefieres, lo cambiamos por la Ruta Acuática del Puente de Dios." },
-      { dia: 4, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y regreso a casa con la memoria llena." },
+      { dia: 4, tipo: "salida", titulo: "Salida", descripcion: "Check-out y regreso a casa con la memoria llena. El desayuno buffet va incluido solo los días de tour." },
     ],
     incluye: [
       "3 noches en Hotel Paraíso Encantado Xilitla",
@@ -343,7 +343,7 @@ export const PAQUETES_DB: Paquete[] = [
       { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "Mirador al Sótano de las Huahuas, Cascada de Tamul en lancha de remo y Cueva del Agua." },
       { dia: 3, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Cascadas del Meco", descripcion: "Las cascadas turquesa de El Naranjo, miradores y pozas para nadar." },
       { dia: 4, tipo: "tour", tourSlug: "ruta-acuatica-puente-de-dios", titulo: "Ruta Acuática Puente de Dios", descripcion: "El arco de luz del Puente de Dios en Tamasopo, hacienda y siete cascadas." },
-      { dia: 5, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y regreso a casa con la memoria llena de la Huasteca completa." },
+      { dia: 5, tipo: "salida", titulo: "Salida", descripcion: "Check-out y regreso a casa con la memoria llena de la Huasteca completa. El desayuno buffet va incluido solo los días de tour." },
     ],
     incluye: [
       "4 noches en Hotel Paraíso Encantado Xilitla",
