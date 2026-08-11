@@ -8,6 +8,7 @@ import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats"
 import { waLink } from "@/lib/whatsapp";
 import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -229,11 +230,19 @@ export default async function ReservarPage() {
                       >
                         Reservar
                       </Link>
+                      <BotonAgregarTour
+                        tourId={tour.id}
+                        tourSlug={tour.slug}
+                        tourName={tour.nombre}
+                        tourImage={tour.imagen_hero}
+                        precio={tour.precio}
+                        porVehiculo={porVehiculo}
+                      />
                       <Link
                         href={`/tours/${tour.slug}`}
                         className="px-3 flex items-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[1.5px] uppercase font-dm transition-colors"
                       >
-                        Detalles
+                        Ver
                       </Link>
                     </div>
                   </div>

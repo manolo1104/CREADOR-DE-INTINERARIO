@@ -52,6 +52,15 @@ export async function POST(req: NextRequest) {
     let total = 0;
 
     for (const raw of items) {
+      // `fechaTourValida` acepta la fecha vacía a propósito (los tours por
+      // WhatsApp la coordinan después), pero un carrito SÍ tiene que traerla:
+      // se agrega desde el catálogo sin fecha y hay que elegirla antes de pagar.
+      if (!raw?.tourDate) {
+        return NextResponse.json(
+          { error: "Falta la fecha de uno de los recorridos del carrito." },
+          { status: 400 },
+        );
+      }
       if (!fechaTourValida(raw?.tourDate)) {
         return NextResponse.json(
           { error: "Una de las fechas no es válida. Revisa tu carrito." },

@@ -88,6 +88,17 @@ export function agregarAlCarrito(item: Omit<CarritoItem, "uid">): CarritoItem[] 
   return guardar([...sinDuplicado, { ...item, uid }]);
 }
 
+/**
+ * Cambia un renglón ya guardado (fecha, personas). Se agrega desde el catálogo
+ * sin fecha, así que el carrito TIENE que dejar ponerla; si no, el cliente
+ * quedaría atrapado con un carrito que no puede pagar.
+ */
+export function actualizarItem(uid: string, cambios: Partial<CarritoItem>): CarritoItem[] {
+  return guardar(
+    leerCarrito().map((i) => (i.uid === uid ? { ...i, ...cambios, uid: i.uid } : i)),
+  );
+}
+
 export function quitarDelCarrito(uid: string): CarritoItem[] {
   return guardar(leerCarrito().filter((i) => i.uid !== uid));
 }
@@ -117,6 +128,6 @@ export const ANTICIPO_PCT = 30;
 export function resumirCarrito(items: CarritoItem[]): ResumenCarrito {
   const total    = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
   const anticipo = Math.round((total * ANTICIPO_PCT) / 100);
-  const dias     = new Set(items.map((i) => i.tourDate)).size;
+  const dias     = new Set(items.map((i) => i.tourDate).filter(Boolean)).size;
   return { items, total, anticipo, saldo: total - anticipo, dias };
 }

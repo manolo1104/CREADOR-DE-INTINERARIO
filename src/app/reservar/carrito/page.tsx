@@ -9,9 +9,10 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
-  personasDeItem, type CarritoItem,
+  actualizarItem, personasDeItem, type CarritoItem,
 } from "@/lib/carrito";
-import { formatMXN, formatTourDate } from "@/lib/tourBooking";
+import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
+import { TOURS_DB } from "@/lib/tours";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
@@ -162,6 +163,7 @@ export default function CarritoPage() {
     setItems(leerCarrito());
   }, []);
 
+  const minDate = minBookingDate();
   const { total, anticipo, saldo, dias } = resumirCarrito(items);
 
   function quitar(uid: string) {
@@ -170,7 +172,32 @@ export default function CarritoPage() {
     setCobro(null);
   }
 
+  function cambiar(uid: string, cambios: Partial<CarritoItem>) {
+    setItems(actualizarItem(uid, cambios));
+    setCobro(null); // cualquier cambio invalida el importe ya calculado
+  }
+
+  /** Suma o resta gente y vuelve a calcular el subtotal que se muestra. */
+  function cambiarPersonas(i: CarritoItem, delta: number) {
+    const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
+    if (!tour) return;
+    const adultos = Math.min(
+      tour.groupMax - i.childrenMid - i.childrenSmall,
+      Math.max(tour.groupMin, i.adults + delta),
+    );
+    const { total } = calcTourTotal(tour.precio, adultos, i.childrenMid, i.childrenSmall, 0);
+    cambiar(i.uid, { adults: adultos, total });
+  }
+
+  // Sin fecha no se puede cobrar: el servidor la valida, pero es mejor decirlo
+  // aquí que dejar que el pago falle con un error genérico.
+  const sinFecha = items.filter((i) => !i.tourDate).length;
+
   async function irAlPago() {
+    if (sinFecha > 0) {
+      setError(`Falta la fecha de ${sinFecha} ${sinFecha === 1 ? "recorrido" : "recorridos"}.`);
+      return;
+    }
     if (!name.trim() || !email.trim()) {
       setError("Necesitamos tu nombre y tu correo para mandarte la confirmación.");
       return;
@@ -247,14 +274,43 @@ export default function CarritoPage() {
                   <p className="font-cormorant text-verde-profundo text-lg leading-tight">
                     {i.tourName.split("—")[0].trim()}
                   </p>
-                  <p className="font-dm text-[12px] text-negro/50 mt-0.5">
-                    {formatTourDate(i.tourDate)}
-                  </p>
-                  <p className="font-dm text-[12px] text-negro/50">
-                    {i.unidades
-                      ? `${i.ruta} · ${i.unidades} × ${i.vehiculo}`
-                      : `${personasDeItem(i)} ${personasDeItem(i) === 1 ? "persona" : "personas"}`}
-                  </p>
+
+                  {/* La fecha se edita AQUÍ: los recorridos que se agregan desde
+                      el catálogo llegan sin ella, y sin esto el carrito no se
+                      podría pagar nunca. */}
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                    <input
+                      type="date"
+                      value={i.tourDate}
+                      min={minDate}
+                      onChange={(e) => cambiar(i.uid, { tourDate: e.target.value })}
+                      aria-label={`Fecha de ${i.tourName}`}
+                      className={`border px-2 py-1.5 font-dm text-[12px] bg-white transition-colors ${
+                        i.tourDate ? "border-negro/15 text-negro/70" : "border-terracota/60 text-terracota"
+                      }`}
+                    />
+                    {i.unidades ? (
+                      <span className="font-dm text-[12px] text-negro/50">
+                        {i.ruta} · {i.unidades} × {i.vehiculo}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <button type="button" aria-label="Menos personas"
+                          onClick={() => cambiarPersonas(i, -1)}
+                          className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                        <span className="font-dm text-[12px] text-negro/70 w-14 text-center">
+                          {personasDeItem(i)} {personasDeItem(i) === 1 ? "persona" : "personas"}
+                        </span>
+                        <button type="button" aria-label="Más personas"
+                          onClick={() => cambiarPersonas(i, 1)}
+                          className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                      </span>
+                    )}
+                  </div>
+
+                  {!i.tourDate && (
+                    <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
+                  )}
                 </div>
                 <div className="text-right flex-shrink-0 flex flex-col justify-between">
                   <span className="font-cormorant text-dorado text-xl">{formatMXN(i.total)}</span>
