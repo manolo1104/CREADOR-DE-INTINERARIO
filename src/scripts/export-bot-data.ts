@@ -12,6 +12,7 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, tourDurTexto } from "../lib/tours";
+import { INCLUYE_SIEMPRE } from "../lib/tours";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
@@ -88,11 +89,8 @@ const IDEAL_PARA: Record<string, string[]> = {
   "travesia-del-cafe": ["familias", "medio día", "el más económico", "cultura y sabor", "ritmo tranquilo"],
 };
 
-// Lo que se incluye SIEMPRE en todos los tours (decisión del dueño, ago-2026).
-const INCLUYE_SIEMPRE = [
-  "Seguro de viaje para todos los integrantes",
-  "Fotografías y video del recorrido que toma tu guía",
-];
+// Fuente única en tours.ts — antes había una copia aquí y el endpoint del
+// paquete, que lee TOURS_DB, no la veía.
 
 // Páginas de las habitaciones del Hotel Paraíso Encantado (para compartir con el cliente).
 const HOTEL_HABITACIONES_URL = "https://www.paraisoencantado.com/habitaciones";

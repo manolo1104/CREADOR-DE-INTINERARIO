@@ -23,6 +23,17 @@ export interface TourVehiculo {
   precios:     number[];
 }
 
+/**
+ * Lo que va incluido en TODOS los recorridos sin excepción (decisión del dueño,
+ * ago-2026). No está en el `incluye` de cada tour, así que cualquier código que
+ * calcule "qué incluye" debe sumarlo — si no, acaba diciéndole al cliente que
+ * un tour no tiene seguro de viaje cuando sí lo tiene.
+ */
+export const INCLUYE_SIEMPRE = [
+  "Seguro de viaje para todos los integrantes",
+  "Fotografías y video del recorrido que toma tu guía",
+] as const;
+
 export interface Tour {
   id:               string;
   nombre:           string;

@@ -22,7 +22,12 @@ const MAX_TOKENS = Number(process.env.BOT_MAX_TOKENS || 2048);
 // caché, la primera llamada lo guarda y las demás lo leen a ~10 % del precio.
 // Solo cambia una vez al día (la fecha de hoy va dentro del prompt).
 function systemBlocks() {
-  return [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }];
+  // TTL de 1 h en vez de los 5 min por defecto. Entre mensaje y mensaje de un
+  // cliente de WhatsApp pasan más de 5 minutos, así que el caché expiraba y
+  // cada mensaje volvía a ESCRIBIR el prefijo (~17,400 tokens a 1.25x) en vez
+  // de leerlo a 0.1x. La escritura de 1 h cuesta 2x pero se paga sola desde el
+  // segundo mensaje de la conversación.
+  return [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral", ttl: "1h" } }];
 }
 
 // Los modelos nuevos (Sonnet 5, Opus 5) razonan por default, y ese
@@ -236,7 +241,7 @@ const tools = [
   {
     name: "cotizar_paquete_personalizado",
     description:
-      "Arma UN paquete a la medida con VARIOS tours en un solo folio y manda UN correo con el itinerario completo y el anticipo del 30%. Úsala en cuanto el cliente quiera 2 o más recorridos y ya te haya confirmado que le gusta la propuesta, con sus fechas, personas, nombre y correo. NO la uses para el RZR (se cobra por vehículo, cotízalo con cotizar_rzr). El precio lo calcula el servidor.",
+      "Arma UN paquete a la medida con VARIOS recorridos en un solo folio y manda UN correo con el itinerario completo y el anticipo del 30%. Úsala en cuanto el cliente quiera 2 o más recorridos y ya te haya confirmado que le gusta la propuesta, con sus fechas, personas, nombre y correo. Acepta CUALQUIER recorrido, incluido el RZR: para ese manda `ruta`, `vehiculo` y `unidades` en vez de personas (usa cotizar_rzr antes para enseñarle las opciones y su precio). El precio lo calcula el servidor.",
     input_schema: {
       type: "object",
       properties: {
@@ -248,11 +253,14 @@ const tools = [
             properties: {
               slug:       { type: "string", description: "slug del tour" },
               tourDate:   { type: "string", description: "fecha AAAA-MM-DD" },
-              adultos:    { type: "number" },
+              adultos:    { type: "number", description: "solo en tours por persona" },
               ninosMid:   { type: "number", description: "niños de 6 a 10 años" },
               ninosSmall: { type: "number", description: "menores de 6 años" },
+              ruta:       { type: "string", description: "(RZR) Nanacatli, Miradores, Nacimiento o Trinidad" },
+              vehiculo:   { type: "string", description: "(RZR) unidad de la flota, ej: 'RZR 500'" },
+              unidades:   { type: "number", description: "(RZR) cuántos vehículos" },
             },
-            required: ["slug", "tourDate", "adultos"],
+            required: ["slug", "tourDate"],
           },
         },
         customerName:  { type: "string", description: "Nombre completo del cliente" },
@@ -529,12 +537,6 @@ async function executeTool(name, input, phone) {
       if (!input.customerEmail) {
         return { error: "Sin correo no puedo mandar la propuesta. Pídeselo al cliente antes de llamar esta herramienta." };
       }
-      // El RZR se corta aquí y no en el servidor para poder decirle al modelo
-      // qué hacer en vez de solo rechazarlo.
-      const rzr = items.find((i) => { const t = findTour(i.slug); return t && esPorVehiculo(t); });
-      if (rzr) {
-        return { error: "El RZR se cobra por vehículo y no entra en un paquete por persona. Sácalo del paquete, cotiza el resto, y el RZR aparte con cotizar_rzr." };
-      }
       const res = await api.cotizarPaquetePersonalizado({
         items: items.map((i) => ({
           slug: i.slug,
@@ -542,6 +544,10 @@ async function executeTool(name, input, phone) {
           adultos: parseInt(i.adultos, 10) || 0,
           ninosMid: parseInt(i.ninosMid, 10) || 0,
           ninosSmall: parseInt(i.ninosSmall, 10) || 0,
+          // Solo los usa el servidor cuando el recorrido se cobra por vehículo.
+          ruta: i.ruta,
+          vehiculo: i.vehiculo,
+          unidades: parseInt(i.unidades, 10) || undefined,
         })),
         customerName: input.customerName,
         customerEmail: input.customerEmail,
@@ -853,7 +859,7 @@ Tours *por persona* — ofrece las dos opciones:
 1. *Tarjeta en línea* (confirmación instantánea): usa *enviar_link_pago* y manda el link. Escríbelo como URL simple en su propia línea, SIN asteriscos, negritas ni paréntesis, para que se pueda tocar.
 2. *Transferencia u OXXO*: usa *crear_cotizacion* (solo cuando ya tengas tour + fecha + personas + nombre + correo). Genera un *folio* y **deja la cotización registrada en el panel para que no se pierda**. Luego usa *datos_pago* y comparte los datos de *transferencia* (banco, titular, CLABE) y de *OXXO*. Dile que envíe su *comprobante* por este chat: la reserva SOLO queda confirmada cuando lo recibimos.
 
-*RZR* y *paquetes*: no tienen pago en línea. Cuando el cliente ya eligió y dio su nombre + correo, usa *registrar_cotizacion* (tipo "rzr" con ruta+vehículo+fecha, o tipo "paquete" con paqueteSlug+habitación+checkin+checkout): esto **deja la cotización guardada en el panel con un folio** para que no se pierda. Luego comparte *datos_pago* (transferencia u OXXO), menciona el folio y pide el comprobante; avisa que el equipo confirma la disponibilidad.
+*RZR* y *paquetes fijos*: no tienen pago en línea con tarjeta. El RZR SÍ entra en un paquete a medida (manda ruta, vehículo y unidades a *cotizar_paquete_personalizado*); si va solo, o para un paquete fijo, usa *registrar_cotizacion*. Luego *datos_pago*, el folio y el comprobante; avisa que el equipo confirma disponibilidad.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 📋 QUÉ HACER EN CADA SITUACIÓN
@@ -886,13 +892,43 @@ Tours *por persona* — ofrece las dos opciones:
 // ══════════════════════════════════════════════════════════════
 // PROCESAR MENSAJE (loop agéntico)
 // ══════════════════════════════════════════════════════════════
+/**
+ * Marca el final del historial como punto de caché.
+ *
+ * Sin esto, cada mensaje reenviaba TODA la conversación (hasta 40 turnos, con
+ * los resultados de las herramientas, que son los bloques más pesados) a precio
+ * completo. Con el punto de caché, lo que ya se mandó antes se LEE a 0.1x y solo
+ * se paga completo lo nuevo del turno. No cambia nada de lo que ve el modelo:
+ * son exactamente los mismos mensajes, solo etiquetados.
+ *
+ * Devuelve una COPIA a propósito: marcar `session.history` iría acumulando
+ * puntos de caché turno tras turno y la API solo admite 4.
+ */
+function conCache(history) {
+  if (!history.length) return history;
+  const ultimo = history[history.length - 1];
+  const bloques =
+    typeof ultimo.content === "string"
+      ? [{ type: "text", text: ultimo.content }]
+      : (ultimo.content || []).map((b) => ({ ...b }));
+  if (!bloques.length) return history;
+
+  bloques[bloques.length - 1] = {
+    ...bloques[bloques.length - 1],
+    cache_control: { type: "ephemeral", ttl: "1h" },
+  };
+  const copia = history.slice();
+  copia[copia.length - 1] = { ...ultimo, content: bloques };
+  return copia;
+}
+
 async function processMessage(phone, message) {
   pushHistory(phone, "user", message);
   const session = getSession(phone);
 
   let response = await client.messages.create({
     ...requestBase(),
-    messages: session.history,
+    messages: conCache(session.history),
   });
 
   // Resumen del paquete a medida generado por el servidor en ESTE turno. Se
@@ -925,7 +961,7 @@ async function processMessage(phone, message) {
 
     response = await client.messages.create({
       ...requestBase(),
-      messages: session.history,
+      messages: conCache(session.history),
     });
   }
 
