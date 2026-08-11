@@ -88,7 +88,14 @@ async function run() {
   ok(acuatica.alimentos.desayuno === true && acuatica.alimentos.comida === false, "ruta acuática: desayuno SÍ, comida de mediodía NO");
   ok(TOURS.every((t) => !/profesional/i.test(t.incluyeSiempre.join(" "))), "'incluyeSiempre' no dice 'profesional'");
   ok(TOURS.every((t) => t.alimentos && t.alimentos.comida === false), "NINGÚN tour incluye comida de mediodía");
-  ok(TOURS.filter((t) => t.transporte.incluido).length === 6, "solo 6 de los 9 tours incluyen traslado");
+  // Se cuenta contra los que NO lo incluyen (RZR, rappel y buceo), que es el
+  // hecho que importa y no cambia al agregar tours. La versión anterior fijaba
+  // "6 de 9" y caducó en cuanto entró la Travesía del Café.
+  const sinTraslado = TOURS.filter((t) => !t.transporte.incluido).map((t) => t.slug).sort();
+  ok(
+    sinTraslado.join(",") === "buceo-media-luna,rappel-tamul,rzr-xilitla",
+    `los únicos 3 tours SIN traslado son RZR, rappel y buceo (${TOURS.length - sinTraslado.length}/${TOURS.length} sí lo incluyen)`,
+  );
 
   console.log("destinos completos:");
   const meco = await executeTool("obtener_tour", { slug: "cascadas-del-meco" });

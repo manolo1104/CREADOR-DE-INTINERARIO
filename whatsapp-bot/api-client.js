@@ -39,6 +39,13 @@ async function registrarLead(payload) {
   return post("/api/bot/lead", payload);
 }
 
+// Paquete a medida: varios tours con sus fechas en UN folio y UN correo.
+// Antes había que llamar a crearCotizacion una vez por tour, lo que generaba
+// folios y correos sueltos para un mismo viaje.
+async function cotizarPaquetePersonalizado(payload) {
+  return post("/api/bot/paquete", payload);
+}
+
 async function confirmarReserva(folio) {
   return post("/api/bot/confirm", { folio });
 }
@@ -62,4 +69,4 @@ async function checkHotelAvailability(checkin, checkout, rooms) {
   }
 }
 
-module.exports = { crearCotizacion, registrarLead, confirmarReserva, consultarReserva, checkHotelAvailability, SITE_API_URL, HOTEL_API_URL };
+module.exports = { crearCotizacion, registrarLead, cotizarPaquetePersonalizado, confirmarReserva, consultarReserva, checkHotelAvailability, SITE_API_URL, HOTEL_API_URL };

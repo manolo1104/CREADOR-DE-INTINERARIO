@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T19:18:54.509Z",
+  "generatedAt": "2026-08-11T01:42:13.604Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -235,22 +235,23 @@
       "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
       "url": "https://www.huasteca-potosina.com/tours/rappel-tamul",
       "destinos": [
-        "Embarcadero del Río Tampaón (punto de encuentro)",
+        "Embarcadero del Río Tampaón (inicio del descenso)",
         "Pared de rappel frente a la Cascada de Tamul",
         "Cañón del Río Tampaón"
       ],
       "incluye": [
+        "Traslado desde Ciudad Valles",
         "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
         "Guías de alta montaña certificados",
         "Briefing y técnica de descenso — apto para principiantes",
-        "Fotografías y video con dron del descenso",
-        "Punto de encuentro en el embarcadero del río"
+        "Video con dron del descenso",
+        "Fotografía con cámaras de acción"
       ],
       "noIncluye": [
         "Transporte hasta el embarcadero del Río Tampaón (se coordina aparte, con costo adicional)",
         "Alimentos"
       ],
-      "puntoEncuentro": "Embarcadero del Río Tampaón",
+      "puntoEncuentro": "Embarcadero del Río Tampaón (inicio del descenso)",
       "horario": "Inicia aprox. 8:30 AM y termina aprox. 1:30 PM (~5 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": false,
@@ -291,7 +292,7 @@
       "privateAvailable": false,
       "privateMinPrice": null,
       "tagline": "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
-      "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y desayuno buffet antes de salir. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
+      "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida que eliges antes o después de la actividad. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
       "url": "https://www.huasteca-potosina.com/tours/rafting-rio-tampaon",
       "destinos": [
         "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
@@ -303,10 +304,13 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla",
+        "Comida incluida — la eliges antes o después de la actividad",
+        "Entradas a todas las atracciones",
         "Balsa profesional, remo, casco y chaleco salvavidas",
         "Guía certificado en aguas rápidas dentro de tu balsa",
         "Briefing de seguridad y técnica de remado — rutas para principiantes y avanzados",
-        "Desayuno buffet",
+        "Botiquín de primeros auxilios",
+        "Seguro de actividad",
         "Descenso de 14 km por los rápidos del Tampaón",
         "Paradas para nadar en los tramos tranquilos del cañón"
       ],
@@ -365,14 +369,15 @@
         "Cenote Cueva del Agua"
       ],
       "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
         "Desayuno buffet",
-        "Entradas a todos los parques",
-        "Paseo en canoa por el Cañón del Tampaón",
-        "Guía certificado NOM-09",
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-        "Equipo de seguridad completo",
+        "Entradas a todas las atracciones",
+        "Guía certificado NOM-09 SECTUR",
+        "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
         "Fotografías y video del recorrido",
-        "Botiquín de primeros auxilios"
+        "Botiquín de primeros auxilios",
+        "Seguro de viaje para todos los integrantes",
+        "Paseo en canoa por el Cañón del Tampaón"
       ],
       "noIncluye": [
         "Comida de mediodía",
@@ -429,12 +434,14 @@
         "Castillo de la Salud"
       ],
       "incluye": [
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-        "Entradas a todas las atracciones",
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
         "Desayuno buffet",
-        "Guías especializados en historia y cultura",
-        "Equipo de seguridad",
-        "Fotografías del tour"
+        "Entradas a todas las atracciones",
+        "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
+        "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
+        "Fotografías del recorrido",
+        "Botiquín de primeros auxilios",
+        "Seguro de viaje para todos los integrantes"
       ],
       "noIncluye": [
         "Comida de mediodía",
@@ -487,15 +494,17 @@
       "destinos": [
         "Cascada del Meco",
         "Mirador Panorámico del Meco",
-        "Cascada del Salto"
+        "Cascada El Salto"
       ],
       "incluye": [
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-        "Entradas a todas las atracciones",
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
         "Desayuno buffet",
-        "Guías especializados",
-        "Equipo de seguridad",
-        "Fotografías del tour"
+        "Entradas a todas las atracciones",
+        "Guía certificado NOM-09 SECTUR",
+        "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
+        "Fotografías del recorrido",
+        "Botiquín de primeros auxilios",
+        "Seguro de viaje para todos los integrantes"
       ],
       "noIncluye": [
         "Comida de mediodía",
@@ -550,12 +559,14 @@
         "Cascadas de Micos"
       ],
       "incluye": [
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-        "Entradas a todas las atracciones",
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
         "Desayuno buffet",
-        "Guías especializados",
-        "Equipo de seguridad",
-        "Fotografías del tour"
+        "Entradas a todas las atracciones",
+        "Guía certificado NOM-09 SECTUR",
+        "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
+        "Fotografías del recorrido",
+        "Botiquín de primeros auxilios",
+        "Seguro de viaje para todos los integrantes"
       ],
       "noIncluye": [
         "Comida de mediodía",
@@ -612,12 +623,14 @@
         "Cascadas de Tamasopo (opcional)"
       ],
       "incluye": [
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-        "Entradas a todas las atracciones",
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
         "Desayuno buffet",
-        "Guías especializados",
-        "Equipo de seguridad",
-        "Fotografías del tour"
+        "Entradas a todas las atracciones",
+        "Guía certificado NOM-09 SECTUR",
+        "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
+        "Fotografías del recorrido",
+        "Botiquín de primeros auxilios",
+        "Seguro de viaje para todos los integrantes"
       ],
       "noIncluye": [
         "Comida de mediodía",
@@ -710,6 +723,64 @@
       "urgencia": "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
       "rutas": null,
       "flota": null
+    },
+    {
+      "id": "tour-travesia-cafe",
+      "slug": "travesia-del-cafe",
+      "nombre": "Travesía del Café — Finca Cafetalera de Xilitla en RZR",
+      "tipo": "Cultura & Sabor",
+      "dificultad": "baja",
+      "duracionHrs": 5,
+      "duracionTexto": "5 h",
+      "precio": 900,
+      "precioUnidad": "persona",
+      "groupMin": 2,
+      "groupMax": 12,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateMinPrice": null,
+      "tagline": "El sabor de Xilitla, desde la mata hasta la taza",
+      "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/travesia-del-cafe",
+      "destinos": [
+        "Cafetal bajo sombra de la sierra de Xilitla",
+        "Patio de secado del grano",
+        "Tostaduría artesanal",
+        "Barra de cata"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla — el camino a la finca se hace en RZR",
+        "Entradas y acceso a la finca cafetalera",
+        "Recorrido guiado por el cafetal y por todo el proceso del café",
+        "Cata de café recién tostado"
+      ],
+      "noIncluye": [],
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 1:30 PM (~5 h). Los horarios exactos se confirman al reservar.",
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. A diferencia del resto de los tours, NO se recoge en Ciudad Valles."
+      },
+      "alimentos": {
+        "desayuno": false,
+        "comida": false,
+        "detalle": "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
+      "incluyeSiempre": [
+        "Seguro de viaje para todos los integrantes",
+        "Fotografías y video del recorrido que toma tu guía"
+      ],
+      "idealPara": [
+        "familias",
+        "medio día",
+        "el más económico",
+        "cultura y sabor",
+        "ritmo tranquilo"
+      ],
+      "urgencia": "Grupos pequeños en finca — se reserva con anticipación",
+      "rutas": null,
+      "flota": null
     }
   ],
   "paquetes": [
@@ -758,12 +829,15 @@
       ],
       "incluye": [
         "2 noches en Hotel Paraíso Encantado Xilitla",
-        "Desayunos ambos días",
+        "Desayuno buffet los días de tour",
         "Tour Expedición Tamul completo",
         "Tour Cascadas del Meco completo",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
-        "Entradas a todas las atracciones"
+        "Entradas a todas las atracciones",
+        "Equipo de seguridad",
+        "Seguro de viaje",
+        "Fotografía del recorrido"
       ],
       "noIncluye": [
         "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
@@ -847,11 +921,13 @@
       ],
       "incluye": [
         "3 noches en Hotel Paraíso Encantado Xilitla",
-        "Desayunos los 3 días",
+        "Desayuno buffet los días de tour",
         "3 tours completos (a elegir)",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
         "Entradas a todas las atracciones",
+        "Equipo de seguridad",
+        "Seguro de viaje",
         "Fotografías y video de cada recorrido"
       ],
       "noIncluye": [
@@ -944,11 +1020,13 @@
       ],
       "incluye": [
         "4 noches en Hotel Paraíso Encantado Xilitla",
-        "Desayunos los 4 días",
+        "Desayuno buffet los días de tour",
         "4 tours completos (Edward James, Expedición Tamul, Cascadas del Meco y Ruta Acuática Puente de Dios)",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
         "Entradas a todas las atracciones",
+        "Equipo de seguridad",
+        "Seguro de viaje",
         "Fotografías y video de cada recorrido"
       ],
       "noIncluye": [
@@ -1777,7 +1855,7 @@
       "zona": "Aquismón",
       "tipo": "Aventura",
       "descripcion": "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
-      "precioEntrada": "$1,850 MXN (tour completo, con traslado y comida)",
+      "precioEntrada": "$1,950 MXN (tour completo, con traslado y comida)",
       "dificultad": "media",
       "duracionHrs": 7,
       "horario": "09:00–18:00",
