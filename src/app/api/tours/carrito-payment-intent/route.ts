@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
         childrenSmall: raw?.childrenSmall,
         promoCode:     raw?.promoCode,
         pct:           100,
+        addOns:        raw?.addOns,
       });
       if (!charge) {
         return NextResponse.json(

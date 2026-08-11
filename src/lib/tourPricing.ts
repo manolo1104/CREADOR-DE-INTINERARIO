@@ -25,6 +25,8 @@ export interface TourChargeInput {
   promoCode?:     string;
   /** 30 (anticipo) o 100 (pago completo). Por defecto 100. */
   pct?:           number;
+  /** Actividades opcionales. Del cliente SOLO se acepta el id y la cantidad. */
+  addOns?:        { id: string; cantidad: number }[];
 }
 
 export interface TourChargeResult {
@@ -34,6 +36,9 @@ export interface TourChargeResult {
   saldo:         number; // lo que queda por pagar el día del tour
   pct:           number; // porcentaje efectivamente cobrado
   promoDiscount: number; // porcentaje de descuento aplicado
+  /** Add-ons validados, ya con su precio de catálogo. Vacío si no hubo. */
+  addOns:        { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[];
+  addOnsTotal:   number;
 }
 
 function clampInt(n: unknown, min: number, max: number): number {
@@ -80,7 +85,13 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const childrenMid   = clampInt(input.childrenMid, 0, tour.groupMax);
   const childrenSmall = clampInt(input.childrenSmall, 0, tour.groupMax);
 
-  if (adults + childrenMid + childrenSmall > tour.groupMax) return null;
+  const personas = adults + childrenMid + childrenSmall;
+  if (personas > tour.groupMax) return null;
+
+  // Mínimo del tour. Existía en los datos pero solo lo miraba el bot: por la web
+  // se podía pagar un rafting para 2 cuando la balsa no sale con menos de 4, y
+  // eso terminaba en una llamada para reprogramar o en un reembolso.
+  if (personas < tour.groupMin) return null;
 
   // Tours solo para adultos (ej. buceo Media Luna, edad mínima 10): el servidor
   // RECHAZA cualquier reserva con niños aunque la UI los oculte. Sin esta guarda
@@ -90,13 +101,37 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const promo = input.promoCode ? validatePromoCode(input.promoCode) : { valid: false, discount: 0 };
   const promoDiscount = promo.valid ? promo.discount : 0;
 
-  const { total } = calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount);
+  const { total: totalTour } = calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount);
+
+  // ── Add-ons ───────────────────────────────────────────────────────────────
+  // El precio se lee SIEMPRE del catálogo del propio tour, nunca del cliente.
+  // Un id que no exista en este tour se ignora en silencio en vez de cobrarse.
+  const addOns: TourChargeResult["addOns"] = [];
+  for (const pedido of input.addOns ?? []) {
+    const cat = (tour.addOns ?? []).find((a) => a.id === pedido?.id);
+    if (!cat) continue;
+    // Nadie puede comprar el add-on para más gente de la que va en la reserva.
+    const cantidad = clampInt(pedido?.cantidad, 0, personas);
+    if (cantidad <= 0) continue;
+    addOns.push({
+      id:       cat.id,
+      nombre:   cat.nombre,
+      cantidad,
+      precio:   cat.precio,
+      subtotal: cat.precio * cantidad,
+    });
+  }
+  const addOnsTotal = addOns.reduce((acc, a) => acc + a.subtotal, 0);
+
+  // Los add-ons no llevan descuento de promo ni tarifa de niño: son precio fijo
+  // por persona que lo toma.
+  const total = totalTour + addOnsTotal;
 
   // Anticipo: se cobra ahora el 30 % y el saldo se liquida el día del tour.
   const pct    = normalizarPct(input.pct);
   const charge = pct === 100 ? total : Math.round((total * pct) / 100);
 
-  return { tour, total, charge, saldo: total - charge, pct, promoDiscount };
+  return { tour, total, charge, saldo: total - charge, pct, promoDiscount, addOns, addOnsTotal };
 }
 
 // ── Tours cobrados POR VEHÍCULO (ej. RZR) ────────────────────────────────────

@@ -37,6 +37,10 @@ export interface CarritoItem {
   ruta?:         string;
   vehiculo?:     string;
   unidades?:     number;
+  /** Actividades opcionales: solo id y cantidad; el precio lo pone el servidor. */
+  addOns?:       { id: string; cantidad: number }[];
+  /** Elección de recorrido cuando el tour la exige (ej. Ruta Acuática). */
+  eleccion?:     string;
   /** Referencial, para pintar. El servidor manda. */
   total:         number;
 }

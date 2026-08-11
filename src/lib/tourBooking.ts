@@ -25,6 +25,10 @@ export interface TourBookingState {
   ruta?:         string;
   vehiculo?:     string;
   unidades?:     number;
+  /** Actividades opcionales elegidas. El servidor revalida id y cantidad. */
+  addOns?:       { id: string; nombre: string; cantidad: number; precio: number }[];
+  /** Elección de recorrido cuando el tour la exige (ej. Ruta Acuática). */
+  eleccion?:     { id: string; nombre: string };
 }
 
 const KEY = "hp_tour_booking_state";

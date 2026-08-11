@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
       childrenSmall: tourDetails?.childrenSmall,
       promoCode:     tourDetails?.promoCode,
       pct:           tourDetails?.pct,
+      addOns:        tourDetails?.addOns,
     });
 
     if (!charge) {
@@ -134,6 +135,7 @@ export async function POST(req: NextRequest) {
         totalCompleto: String(charge.total),
         pctPagado:     String(charge.pct),
         saldo:         String(charge.saldo),
+        addOns:        charge.addOns.map((a) => `${a.nombre} x${a.cantidad}`).join(", ").slice(0, 480),
         source:        "huasteca-potosina.com",
       },
     });

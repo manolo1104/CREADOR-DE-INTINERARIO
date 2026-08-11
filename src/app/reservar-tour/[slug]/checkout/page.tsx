@@ -121,6 +121,12 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
             customerPhone:    phone.trim() || null,
             notes:            [
               pickupLocation.trim() ? `Recogida: ${pickupLocation.trim()}` : null,
+              // Sin esto la operación no sabe qué eligió el cliente ni quién
+              // hace la actividad extra, y acaba preguntándolo por WhatsApp.
+              booking.eleccion ? `Eligió: ${booking.eleccion.nombre}` : null,
+              (booking.addOns ?? []).length
+                ? `Extras: ${(booking.addOns ?? []).map((a) => `${a.nombre} x${a.cantidad}`).join(", ")}`
+                : null,
               notes.trim() || null,
             ].filter(Boolean).join(" | ") || null,
             totalAmount:      chargeAmt,
@@ -415,6 +421,8 @@ export default function CheckoutTourPage() {
           ruta:          state.ruta,
           vehiculo:      state.vehiculo,
           unidades:      state.unidades,
+          // Solo id y cantidad: el precio del add-on lo pone computeTourCharge.
+          addOns:        (state.addOns ?? []).map((a) => ({ id: a.id, cantidad: a.cantidad })),
         },
       }),
     })

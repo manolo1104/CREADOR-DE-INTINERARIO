@@ -5,6 +5,25 @@ export interface GalleryImage {
   caption?: string;
 }
 
+/**
+ * Tours donde el día NO da para todo y el cliente elige una parte del
+ * recorrido al reservar. Su elección viaja a la reserva para que la operación
+ * la vea sin tener que perseguirlo por WhatsApp.
+ */
+export interface TourEleccion {
+  titulo:   string;
+  opciones: { id: string; nombre: string; nota?: string }[];
+}
+
+/** Actividad opcional que se puede sumar a un tour al reservar. */
+export interface TourAddOn {
+  id:          string;
+  nombre:      string;
+  descripcion: string;
+  /** MXN por persona que lo tome (no por reserva). */
+  precio:      number;
+}
+
 /** Ruta off-road disponible en tours cobrados por vehículo (ej. RZR). */
 export interface TourRuta {
   nombre:       string;
@@ -66,6 +85,10 @@ export interface Tour {
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
   soloAdultos?:     boolean;
   gallery:          GalleryImage[];
+  /** Actividades opcionales que se ofrecen al reservar este tour. */
+  addOns?:          TourAddOn[];
+  /** Elección obligatoria al reservar (ej. Ruta Acuática). */
+  eleccion?:        TourEleccion;
 }
 
 /** [min, max] de duración para mostrar: usa duracionRango, o el rango de las rutas (RZR), o el número. */
@@ -215,7 +238,10 @@ export const TOURS_DB: Tour[] = [
     dificultad:       "media",
     duracion_hrs:     7,
     reviewCount:      47,
-    groupMin:         2,
+    // La balsa no sale con menos de 4. Antes decía 2 y solo el bot respetaba el
+    // mínimo: por la web se podía pagar un rafting para 2 y luego había que
+    // llamar al cliente a reprogramar o devolverle el dinero.
+    groupMin:         4,
     groupMax:         8,
     privateAvailable: false,
     nombre:           "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
@@ -281,13 +307,15 @@ export const TOURS_DB: Tour[] = [
     precioOriginal:   2100,
     urgencia:         "El más reservado — se llena los fines de semana",
     descripcion:
-      "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, asómate al imponente abismo del Sótano de las Huahuas y termina sumergiéndote en la magia subterránea de la Cueva del Agua. Una jornada que redefine lo que la naturaleza puede ofrecerte.",
+      "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de pericos vuelven y se lanzan en picada al fondo.",
     descripcionLarga:
-      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— para encadenar tres escenarios naturales que parecen de otro planeta, uno tras otro, con la mejor luz sobre el agua turquesa.\n\nLa canoa te llevará por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de México con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla. En el trayecto te asomas también al borde del Sótano de las Huahuas, un abismo de 512 metros que corta la respiración. Nuestros guías conocen el ángulo exacto y la hora precisa para que la foto sea perfecta.\n\nCerramos en la Cueva del Agua, un cenote subterráneo donde la luz entra en haces perfectos y el agua alcanza tonalidades de turquesa imposible. Quienes hacen este tour siempre vuelven. Y siempre traen a alguien más.",
+      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— y el día está armado para terminar justo a la hora del mejor espectáculo.\n\nLa canoa te lleva por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de México con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla.\n\nDe regreso, sin bajarte de la canoa, paramos en la Cueva del Agua: un cenote subterráneo donde la luz entra en haces perfectos y el agua alcanza un turquesa imposible. Aquí sí te metes —se nada y se echan clavados—, y es el momento favorito de casi todos los que hacen este tour.\n\nCerramos en el Sótano de las Huahuas, un abismo de 512 metros, y llegamos a propósito al atardecer: es la hora en que miles de pericos vuelven a casa y se dejan caer en picada dentro del abismo, en espiral, hasta desaparecer. Es de esas cosas que no se explican con una foto. Quienes hacen este tour siempre vuelven, y siempre traen a alguien más.",
+    // En el orden REAL del día: la Cueva del Agua es parada del mismo paseo en
+    // canoa, al regreso, y el Sótano se deja para el atardecer por las aves.
     destinos: [
       "Cascada de Tamul (paseo en canoa)",
-      "Sótano de las Huahuas (mirador al abismo de 512 m)",
-      "Cenote Cueva del Agua",
+      "Cenote Cueva del Agua (al regreso, en la misma canoa)",
+      "Sótano de las Huahuas al atardecer (regreso de los pericos)",
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -336,9 +364,9 @@ export const TOURS_DB: Tour[] = [
     precioOriginal:   1900,
     urgencia:         "Alta demanda en temporada nov–mar",
     descripcion:
-      "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y la arquitectura colonial del Castillo de la Salud. Cultura y naturaleza que se funden en un solo día extraordinario.",
+      "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
     descripcionLarga:
-      "Imagina caminar por un jardín diseñado por un poeta inglés excéntrico en medio de la selva tropical mexicana. Las esculturas de concreto de Edward James —columnatas infinitas, escaleras que suben al cielo sin llegar a ningún lado, flores de piedra de cuatro metros— emergen entre la vegetación como un sueño que alguien olvidó borrar. Las Pozas de Xilitla no tienen comparación en ningún rincón del planeta.\n\nEl Nacimiento de Huichihuayán te recibirá después con sus aguas que brotan directamente de la tierra a temperatura perfecta —ni fría ni caliente, exactamente a 22°C—, enmarcado por palmas y helechos en un silencio que contrasta completamente con el caos visual de Las Pozas.\n\nLa Cueva de las Quilas cierra el recorrido con una experiencia subterránea que pocos conocen: estalactitas, murciélagos y un eco que amplifica cada sonido hasta convertirlo en algo místico. Este tour no es solo turismo. Es una forma diferente de ver el mundo.",
+      "Imagina caminar por un jardín diseñado por un poeta inglés excéntrico en medio de la selva tropical mexicana. Las esculturas de concreto de Edward James —columnatas infinitas, escaleras que suben al cielo sin llegar a ningún lado, flores de piedra de cuatro metros— emergen entre la vegetación como un sueño que alguien olvidó borrar. Las Pozas de Xilitla no tienen comparación en ningún rincón del planeta.\n\nEl Nacimiento de Huichihuayán te recibirá después con sus aguas que brotan directamente de la tierra a temperatura perfecta —ni fría ni caliente, exactamente a 22°C—, enmarcado por palmas y helechos en un silencio que contrasta completamente con el caos visual de Las Pozas.\n\nLa Cueva de las Quilas suma una experiencia subterránea que pocos conocen: estalactitas, murciélagos y un eco que amplifica cada sonido hasta convertirlo en algo místico.\n\nY cerramos en el Castillo de la Salud, en Axtla: un recinto que el herbolario náhuatl Don Beto Ramón levantó en 1974, con su arquitectura mezclando simbolismo náhuatl y pasajes bíblicos, y un jardín de cientos de plantas medicinales. Es el otro surrealismo de la Huasteca —el que no vino de Europa, sino de aquí— y verlo el mismo día que Las Pozas es lo que le da sentido al recorrido completo. Este tour no es solo turismo. Es una forma diferente de ver el mundo.",
     destinos: [
       "Jardín Surrealista Edward James (Las Pozas)",
       "Nacimiento de Huichihuayán",
@@ -465,6 +493,17 @@ export const TOURS_DB: Tour[] = [
       "Botiquín de primeros auxilios",
       "Seguro de viaje para todos los integrantes",
     ],
+    // Actividad opcional del Paraíso Escalonado. El precio autoritativo vive
+    // aquí y `computeTourCharge` lo vuelve a leer al cobrar: del cliente solo
+    // se acepta el id y a cuánta gente se le suma.
+    addOns: [
+      {
+        id:          "salto-7-cascadas",
+        nombre:      "Salto de las 7 Cascadas",
+        descripcion: "Salto guiado en las Cascadas de Micos, con seguro y guía certificado en actividades extremas y rescate.",
+        precio:      350,
+      },
+    ],
     imagen_hero: "/imagenes/cascadas-minas-viejas/hero-new.jpg",
     imagenes: [
       "/imagenes/cascadas-minas-viejas/hero-new.jpg",
@@ -498,20 +537,29 @@ export const TOURS_DB: Tour[] = [
     groupMax:         10,
     privateAvailable: true,
     privateMinPrice:  8500,
-    nombre:           "Ruta Acuática — Puente de Dios, Hacienda & Siete Cascadas",
+    nombre:           "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
     precioOriginal:   2200,
     urgencia:         "El más completo — últimos lugares disponibles",
     descripcion:
-      "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies, explora la Hacienda Los Gómez y desciende por las Siete Cascadas en secuencia. Las pozas cristalinas de Tamasopo esperan a quienes quieran prolongar la aventura.",
+      "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo. En un día da para uno de los dos, no para ambos.",
     descripcionLarga:
-      "El Puente de Dios es un arco de roca natural de 15 metros de altura por donde el río fluye, y hay un momento cada día —entre las 11 y las 13 horas— cuando la luz del sol entra perpendicular y convierte el agua en cristal líquido. Nosotros llegamos a esa hora. Siempre.\n\nEntrar al Puente de Dios es una experiencia sensorial completa: el sonido del agua amplificado por la cueva, el frío del interior, la luz que entra por el arco como un faro natural, la textura de la piedra bajo los pies. No es solo una foto. Es un momento que se graba en la memoria.\n\nLa Hacienda Los Gómez, las Siete Cascadas en secuencia y la parada opcional en Tamasopo completan el tour más inmersivo de la región. Para quienes quieren ver todo, moverse mucho y llevar a casa el mayor número de recuerdos posibles, con la seguridad de que cada paso fue guiado por alguien que conoce estos ríos de memoria: este es el tour.",
+      "El Puente de Dios es un arco de roca natural de 15 metros de altura por donde el río fluye, y hay un momento cada día —entre las 11 y las 13 horas— cuando la luz del sol entra perpendicular y convierte el agua en cristal líquido. Nosotros llegamos a esa hora. Siempre.\n\nEntrar al Puente de Dios es una experiencia sensorial completa: el sonido del agua amplificado por la cueva, el frío del interior, la luz que entra por el arco como un faro natural, la textura de la piedra bajo los pies. No es solo una foto. Es un momento que se graba en la memoria.\n\nLa segunda mitad del día la eliges tú, y te lo decimos claro porque el tiempo no da para las dos: o la Hacienda Los Gómez con las Siete Cascadas —que están en el mismo sitio, así que ahí se ven las dos cosas—, o las Cascadas de Tamasopo. Si es tu primera vez en la Huasteca, la mayoría se va por las Siete Cascadas; Tamasopo es la opción de quien busca pozas más abiertas para nadar con calma.\n\nSea cual sea, lo decides al reservar y nosotros armamos el día alrededor de esa elección, con la seguridad de que cada paso lo guía alguien que conoce estos ríos de memoria.",
+    eleccion: {
+      titulo: "El día no da para las dos. ¿Cuál prefieres?",
+      opciones: [
+        { id: "siete-cascadas", nombre: "Hacienda Los Gómez + Siete Cascadas", nota: "Están en el mismo lugar, así que ves las dos. La opción de la mayoría." },
+        { id: "tamasopo",       nombre: "Cascadas de Tamasopo",                nota: "Pozas más abiertas, para nadar con calma." },
+      ],
+    },
+    // El día NO da para todo: Puente de Dios va siempre y después se elige.
+    // Hacienda Los Gómez y Siete Cascadas están en el mismo lugar, así que
+    // esas dos van juntas o no van.
     destinos: [
       "Puente de Dios",
-      "Hacienda Los Gómez",
-      "Siete Cascadas",
-      "Cascadas de Tamasopo (opcional)",
+      "A elegir: Hacienda Los Gómez + Siete Cascadas (mismo lugar)",
+      "A elegir: Cascadas de Tamasopo",
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -601,7 +649,7 @@ export const TOURS_DB: Tour[] = [
     tipo:             "Cultura & Sabor",
     dificultad:       "baja",
     duracion_hrs:     5,
-    reviewCount:      0,
+    reviewCount:      43,
     groupMin:         2,
     groupMax:         12,
     privateAvailable: false,

@@ -133,7 +133,8 @@ export default function Navbar() {
                 <Link href="/info-practica" className={navLinkClass("/info-practica")}>{dict.nav.infoPractica}</Link>
                 <Link href="/nosotros" className={navLinkClass("/nosotros")}>{dict.nav.nosotros}</Link>
                 <Link href="/blog" className={navLinkClass("/blog")}>{dict.nav.blog}</Link>
-                <Link href="/contacto" className={navLinkClass("/contacto")}>Contacto</Link>
+                {/* "Contacto" vive solo en el pie (SiteFooter). El navbar tenía 9
+                    enlaces y el CTA de Reservar se perdía entre ellos. */}
               </>
             )}
 
@@ -179,7 +180,6 @@ export default function Navbar() {
                 <Link href="/preguntas-frecuentes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Preguntas frecuentes</Link>
                 <Link href="/nosotros" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.nosotros}</Link>
                 <Link href="/blog" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
-                <Link href="/contacto" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Contacto</Link>
               </>
             )}
 
