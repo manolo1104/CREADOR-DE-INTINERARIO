@@ -14,6 +14,7 @@ import {
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
 import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
+import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
@@ -530,20 +531,27 @@ export default function CarritoPage() {
 
         {/* ── Resumen y pago ── */}
         <aside className="border border-negro/10 bg-white p-6 lg:sticky lg:top-24">
-          <div className="space-y-2 pb-4 border-b border-negro/10">
-            <p className="flex justify-between font-dm text-sm text-negro/60">
-              <span>Total del viaje</span>
-              <strong className="text-negro/85">{formatMXN(total)} MXN</strong>
-            </p>
-            <p className="flex justify-between font-dm text-sm text-negro/60">
-              <span>Apartas hoy (30 %)</span>
-              <strong className="text-verde-selva">{formatMXN(anticipo)} MXN</strong>
-            </p>
-            <p className="flex justify-between font-dm text-[12px] text-negro/45">
-              <span>Saldo el día del primer recorrido</span>
-              <span>{formatMXN(saldo)} MXN</span>
-            </p>
-          </div>
+          {/* Mismo resumen que el checkout de un tour: qué se aparta, qué va
+              incluido en cada recorrido, la logística y los números. */}
+          <ResumenReserva
+            items={items.map((i) => {
+              const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+              return {
+                nombre:  i.tourName,
+                fecha:   i.tourDate,
+                detalle: i.unidades
+                  ? `${i.ruta} · ${i.unidades} × ${i.vehiculo}`
+                  : `${personasDeItem(i)} ${personasDeItem(i) === 1 ? "persona" : "personas"}`,
+                subtotal: i.total,
+                incluye:  [...(t?.incluye ?? []), ...INCLUYE_SIEMPRE],
+                eleccion: i.eleccion,
+              };
+            })}
+            total={total}
+            pagaHoy={anticipo}
+            saldo={saldo}
+            pct={30}
+          />
 
           {!cobro ? (
             <div className="pt-4 space-y-3">

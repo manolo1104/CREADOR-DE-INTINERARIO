@@ -1,3 +1,20 @@
+import { TOURS_DB, INCLUYE_SIEMPRE } from "./tours";
+
+/**
+ * Lo que incluye ESE tour, tomado del catálogo.
+ *
+ * Los correos traían la lista escrita a mano: prometían "traslado redondo desde
+ * tu hospedaje" y "desayuno con platillos típicos" a todo el mundo, así que
+ * quien reservaba el rappel, el RZR o el buceo —que no llevan ninguna de las
+ * dos— recibía por escrito algo que no iba a pasar. Y a diferencia de una
+ * página, el correo se guarda y se reclama.
+ */
+function incluidosDe(tourSlug: string): string {
+  const tour = TOURS_DB.find((t) => t.slug === tourSlug);
+  const items = tour ? [...tour.incluye, ...INCLUYE_SIEMPRE] : [...INCLUYE_SIEMPRE];
+  return items.map((x) => `✓ ${x}`).join("<br>");
+}
+
 // Plantilla HTML de confirmación de tour — adaptada del sistema de hotel Paraíso Encantado
 
 export function buildTourEmailHtml(data: {
@@ -278,9 +295,7 @@ export function buildTourEmailHtml(data: {
                 Todo incluido en tu tour
               </p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.9;">
-                ✓ Traslado redondo desde tu hospedaje &nbsp;&nbsp; ✓ Desayuno con platillos típicos<br>
-                ✓ Entradas a todos los parques &nbsp;&nbsp; ✓ Guía certificado NOM-09 SECTUR<br>
-                ✓ Equipo de seguridad &nbsp;&nbsp; ✓ Fotografías y video del recorrido
+                ${incluidosDe(data.tourSlug)}
               </p>
             </td></tr>
           </table>
@@ -579,9 +594,7 @@ export function buildTourQuoteEmailHtml(data: {
             <tr><td>
               <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">Todo incluido en el precio</p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:2">
-                ✓ Traslado redondo desde tu hospedaje &nbsp;&nbsp; ✓ Desayuno con platillos típicos<br>
-                ✓ Entradas a todos los parques &nbsp;&nbsp; ✓ Guía certificado NOM-09 SECTUR<br>
-                ✓ Equipo de seguridad completo &nbsp;&nbsp; ✓ Fotografías del recorrido
+                ${incluidosDe(data.tourSlug)}
               </p>
             </td></tr>
           </table>

@@ -10,7 +10,8 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate } from "@/lib/tourBooking";
 import type { TourBookingState } from "@/lib/tourBooking";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { trackPurchase } from "@/lib/analytics";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
@@ -534,93 +535,32 @@ export default function CheckoutTourPage() {
         {/* ── SIDEBAR ── */}
         <aside className="lg:sticky lg:top-24 space-y-4">
 
-          {/* Resumen */}
-          <div className="bg-white border border-negro/8 p-5 space-y-4">
-            <h3 className="font-cormorant text-verde-profundo text-lg">Tu reserva</h3>
-            <div className="space-y-2 text-sm font-dm">
-              <p className="text-negro/80 font-medium leading-snug">{booking.tourName}</p>
-              <p className="text-negro/50">{formatTourDate(booking.tourDate)}</p>
-              <div className="flex gap-4 text-negro/50 text-xs">
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{booking.tourDuration}h</span>
-                {booking.vehiculo ? (
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{booking.unidades} vehículo{(booking.unidades ?? 1) !== 1 ? "s" : ""}</span>
-                ) : (
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{booking.adults + booking.children} personas</span>
-                )}
-              </div>
-            </div>
-            <div className="border-t border-negro/8 pt-4 space-y-2 text-sm font-dm">
-              {booking.vehiculo ? (
-                <>
-                  <div className="flex justify-between text-negro/60"><span>Ruta</span><span className="text-right">{(booking.ruta ?? "").replace(/^Ruta\s/, "")}</span></div>
-                  <div className="flex justify-between text-negro/60"><span>Vehículo</span><span className="text-right">{booking.vehiculo}</span></div>
-                  <div className="flex justify-between text-negro/60">
-                    <span>{booking.unidades} vehículo{(booking.unidades ?? 1) !== 1 ? "s" : ""} × {formatMXN(booking.priceAdult)}</span>
-                    <span>{formatMXN(booking.total)}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between text-negro/60">
-                    <span>{booking.adults} adulto{booking.adults !== 1 ? "s" : ""}</span>
-                    <span>{formatMXN(booking.priceAdult * booking.adults)}</span>
-                  </div>
-                  {booking.childrenMid > 0 && (
-                    <div className="flex justify-between text-negro/60">
-                      <span>{booking.childrenMid} niño{booking.childrenMid !== 1 ? "s" : ""} 6–10 años</span>
-                      <span>{formatMXN(Math.round(booking.priceAdult * 0.7) * booking.childrenMid)}</span>
-                    </div>
-                  )}
-                  {booking.childrenSmall > 0 && (
-                    <div className="flex justify-between text-negro/60">
-                      <span>{booking.childrenSmall} menor{booking.childrenSmall !== 1 ? "es" : ""} de 6</span>
-                      <span>{formatMXN(Math.round(booking.priceAdult * 0.5) * booking.childrenSmall)}</span>
-                    </div>
-                  )}
-                  {booking.promoDiscount > 0 && (
-                    <div className="flex justify-between text-verde-selva">
-                      <span>Descuento {booking.promoDiscount}%</span>
-                      <span>−{formatMXN(booking.subtotal - booking.total)}</span>
-                    </div>
-                  )}
-                </>
-              )}
-              <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-2">
-                <span>Total</span>
-                <span className="font-cormorant text-xl text-dorado">{formatMXN(cobro.total || booking.total)} MXN</span>
-              </div>
-              {cobro.saldo > 0 && (
-                <>
-                  <div className="flex justify-between text-verde-profundo font-medium">
-                    <span>Pagas hoy ({cobro.pct} %)</span>
-                    <span>{formatMXN(cobro.charge)} MXN</span>
-                  </div>
-                  <div className="flex justify-between text-negro/50 text-xs">
-                    <span>Saldo el día del tour</span>
-                    <span>{formatMXN(cobro.saldo)} MXN</span>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="border-t border-negro/8 pt-4">
-              <p className="text-[9px] tracking-[2px] uppercase text-negro/30 font-dm mb-2">Todo incluido</p>
-              <ul className="space-y-1 text-xs font-dm text-negro/55">
-                {(tourData?.incluye ?? [
-                  "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-                  "Guía certificado NOM-09 SECTUR",
-                  "Entradas a todas las atracciones",
-                  "Desayuno con platillos típicos",
-                  "Equipo de seguridad completo",
-                  "Fotografías y video del recorrido",
-                ]).map((item) => (
-                  <li key={item} className="flex items-start gap-1.5">
-                    <span className="text-verde-selva flex-shrink-0 mt-0.5">✓</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          {/* Resumen — componente compartido con el carrito. El de aquí
+              listaba `tour.incluye` SIN sumar `INCLUYE_SIEMPRE`, así que le
+              decía al cliente que su reserva no traía seguro de viaje ni
+              fotos; y tenía una lista de respaldo escrita a mano que prometía
+              desayuno a recorridos que no lo llevan. */}
+          <ResumenReserva
+            items={[{
+              nombre:   booking.tourName,
+              fecha:    booking.tourDate,
+              detalle:  booking.vehiculo
+                ? `${booking.ruta} · ${booking.unidades} × ${booking.vehiculo}`
+                : [
+                    `${booking.adults} adulto${booking.adults > 1 ? "s" : ""}`,
+                    booking.children ? `${booking.children} niño${booking.children > 1 ? "s" : ""}` : "",
+                  ].filter(Boolean).join(", "),
+              incluye:  [...(tourData?.incluye ?? []), ...INCLUYE_SIEMPRE],
+              addOns:   (booking.addOns ?? []).map((a) => ({
+                nombre: a.nombre, cantidad: a.cantidad, subtotal: a.precio * a.cantidad,
+              })),
+              eleccion: booking.eleccion?.nombre,
+            }]}
+            total={cobro.total}
+            pagaHoy={cobro.charge}
+            saldo={cobro.saldo}
+            pct={cobro.pct}
+          />
 
           {/* Garantías — versión compacta */}
           <div className="bg-white border border-negro/8 p-5">
