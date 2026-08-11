@@ -26,3 +26,6 @@ backups-imagenes/
 # Respaldo de las fotos antes de comprimirlas (script comprimir-imagenes.ts).
 # No se sube: son ~190 MB y solo sirven para poder volver atrás en local.
 .originales-imagenes/
+
+# Worktrees temporales de Claude Code.
+.claude/worktrees/
