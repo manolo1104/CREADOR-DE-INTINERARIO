@@ -220,6 +220,45 @@ const tools = [
     },
   },
   {
+    name: "cotizar_paquete_personalizado",
+    description:
+      "Arma UN paquete a la medida con VARIOS tours en un solo folio y manda UN correo con el itinerario completo y el anticipo del 30%. Úsala en cuanto el cliente quiera 2 o más recorridos y ya te haya confirmado que le gusta la propuesta, con sus fechas, personas, nombre y correo. NO la uses para el RZR (se cobra por vehículo, cotízalo con cotizar_rzr). El precio lo calcula el servidor.",
+    input_schema: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          description: "Los recorridos del paquete, uno por objeto.",
+          items: {
+            type: "object",
+            properties: {
+              slug:       { type: "string", description: "slug del tour" },
+              tourDate:   { type: "string", description: "fecha AAAA-MM-DD" },
+              adultos:    { type: "number" },
+              ninosMid:   { type: "number", description: "niños de 6 a 10 años" },
+              ninosSmall: { type: "number", description: "menores de 6 años" },
+            },
+            required: ["slug", "tourDate", "adultos"],
+          },
+        },
+        customerName:  { type: "string", description: "Nombre completo del cliente" },
+        customerEmail: { type: "string", description: "Correo del cliente — sin esto no se puede mandar la propuesta" },
+        hospedaje: {
+          type: "object",
+          description: "Solo si el cliente pidió opciones de hospedaje. NUNCA lo asumas: el hospedaje es opcional.",
+          properties: {
+            interesado: { type: "boolean" },
+            checkin:    { type: "string", description: "AAAA-MM-DD" },
+            checkout:   { type: "string", description: "AAAA-MM-DD" },
+            noches:     { type: "number" },
+          },
+        },
+        notes: { type: "string", description: "Peticiones especiales del cliente (opcional)" },
+      },
+      required: ["items", "customerName", "customerEmail"],
+    },
+  },
+  {
     name: "registrar_cotizacion",
     description: "Registra en el panel central una cotización SIN pago en línea (RZR o paquete) para que no se pierda, y devuelve un folio. Úsala cuando el cliente ya eligió: RZR (ruta+vehículo) o paquete (habitación+fechas) y dio su nombre. El precio lo calcula el servidor.",
     input_schema: {
@@ -467,6 +506,36 @@ async function executeTool(name, input, phone) {
       return res.data; // { folio, total, datosBanco, linkPago, ... }
     }
 
+    case "cotizar_paquete_personalizado": {
+      const items = Array.isArray(input.items) ? input.items : [];
+      if (!items.length) return { error: "Necesito al menos un recorrido con su fecha." };
+      if (!input.customerEmail) {
+        return { error: "Sin correo no puedo mandar la propuesta. Pídeselo al cliente antes de llamar esta herramienta." };
+      }
+      // El RZR se corta aquí y no en el servidor para poder decirle al modelo
+      // qué hacer en vez de solo rechazarlo.
+      const rzr = items.find((i) => { const t = findTour(i.slug); return t && esPorVehiculo(t); });
+      if (rzr) {
+        return { error: "El RZR se cobra por vehículo y no entra en un paquete por persona. Sácalo del paquete, cotiza el resto, y el RZR aparte con cotizar_rzr." };
+      }
+      const res = await api.cotizarPaquetePersonalizado({
+        items: items.map((i) => ({
+          slug: i.slug,
+          tourDate: i.tourDate,
+          adultos: parseInt(i.adultos, 10) || 0,
+          ninosMid: parseInt(i.ninosMid, 10) || 0,
+          ninosSmall: parseInt(i.ninosSmall, 10) || 0,
+        })),
+        customerName: input.customerName,
+        customerEmail: input.customerEmail,
+        customerPhone: phone ? String(phone).replace(/\D/g, "") : undefined,
+        hospedaje: input.hospedaje,
+        notes: input.notes,
+      });
+      if (!res.ok) return { error: res.data?.error || "No se pudo armar el paquete." };
+      return res.data; // { folio, total, anticipo, saldo, recorridos, emailEnviado, ... }
+    }
+
     case "registrar_cotizacion": {
       const payload = {
         tipo: input.tipo,
@@ -705,11 +774,22 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 • El *RZR* es la excepción: se cobra *POR VEHÍCULO* según la ruta (Nanacatli 2h, Miradores 3h, Nacimiento 5h con kayak, Trinidad 5h) y la unidad de la flota. No incluye transporte hasta Xilitla ni alimentos, y se confirma por WhatsApp (sin pago en línea).
   Para cotizarlo pide *la ruta* y *cuántas personas van*, y llama a *cotizar_rzr* con ambos. La herramienta te devuelve SOLO las unidades donde el grupo cabe, con su precio: preséntaselas con nombre, capacidad y precio para que elija. *Nunca ofrezcas una unidad donde el grupo no quepa* ni le pidas elegir vehículo sin haberle dado los precios.
 • El *Buceo en Media Luna* es solo para *mayores de 10 años* con buena salud (no apto con problemas respiratorios, cardíacos o de oído, ni embarazadas). No aplica precio de niños.
-• El *Rafting* depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma. Incluye traslado redondo y comida.
+• El *Rafting* depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma. Incluye traslado redondo y *desayuno buffet* — la comida de mediodía NO va incluida.
 • Salida estándar de los tours con recogida: *${SALIDA}*. ${EMPRESA.cancelacion}
 • *Horarios:* cada tour tiene una hora de inicio y de término (campo "horario" en *obtener_tour*). Al presentar un tour, MENCIONA a qué hora empieza y a qué hora termina (aprox.).
 • *SIEMPRE incluido en todos los tours* (recuérdalo al presentar cualquier tour): *${INFO.incluyeSiempre.join(" · ")}*.
+• *ANTICIPO DEL 30 %* — así se aparta TODO (tours sueltos y paquetes a medida). El cliente paga hoy el 30 % y el resto lo liquida el día del recorrido. Cancela gratis hasta 48 h antes con reembolso completo. Cuando des un total, di SIEMPRE con cuánto se aparta: "son $X en total, apartas con $Y". Nunca le pidas el 100 % por adelantado como si fuera la única opción.
 • NUNCA inventes montos ni horarios: usa las herramientas.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+🧩 ARMA UN PAQUETE A LA MEDIDA (esto es lo primero que debes intentar)
+━━━━━━━━━━━━━━━━━━━━━━━━
+Cuando alguien venga por *varios días* o quiera *dos o más recorridos*, NO le recites los tres paquetes preestablecidos. Arma uno para él:
+1. Pregunta *cuántos días*, *cuántas personas* (y edades si hay niños) y *qué le late* (cascadas, aventura fuerte, cultura, tranquilo, con niños).
+2. Propón un recorrido por día con los tours que de verdad encajan, y di el precio de cada uno y el total. Un tour de día completo por día — no metas dos tours pesados el mismo día.
+3. *El hospedaje es OPCIONAL y así se lo dices.* Ofrécelo como opción, nunca como requisito: "si quieres, te paso opciones de hospedaje en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que *pasamos por él a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no*.
+4. Cuando te diga que le gusta, pide *nombre y correo* y llama a *cotizar_paquete_personalizado* con todos los recorridos. Eso genera UN folio y le manda UN correo con el itinerario completo y el anticipo. No generes una cotización por tour.
+5. Los paquetes preestablecidos (*listar_paquetes*) siguen existiendo: ofrécelos solo si el cliente pregunta por ellos directamente o si quiere algo ya armado con hotel incluido.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🎒 PAQUETES (tours + hotel)
@@ -729,10 +809,17 @@ Para *cómo llegar a la zona* (auto/avión/autobús desde CDMX) usa *obtener_log
 ━━━━━━━━━━━━━━━━━━━━━━━━
 *Antes de cerrar cualquier reserva pide el CORREO del cliente* (para enviarle la confirmación) y valida la fecha con *validar_fecha*.
 
-*Al cerrar una cotización, manda SIEMPRE por WhatsApp, en ESTE ORDEN:*
-1. *Resumen confirmando TODOS los datos*: folio, tour (o ruta + vehículo, o paquete + habitación + noches + llegada/salida), fecha, número de personas y *total*.
+*Al cerrar una cotización, manda SIEMPRE por WhatsApp, en ESTE ORDEN. Aplica IGUAL a un tour suelto, al RZR, a un paquete preestablecido y a un paquete a medida (cotizar_paquete_personalizado):*
+1. *RESUMEN COMPLETO, ANTES QUE NADA.* Nunca sueltes los datos bancarios sin haber mandado antes el resumen — el cliente tiene que poder revisar qué está apartando.
+   ⚠️ *cotizar_paquete_personalizado* ya te devuelve el resumen escrito en el campo *resumenWhatsApp*: **cópialo TAL CUAL como tu primer mensaje**, sin reescribirlo ni resumirlo, y solo después sigue con el paso 2. Para los demás casos, el resumen lleva:
+   • el *folio*;
+   • *cada recorrido con su fecha y su precio* (en un paquete a medida, día por día, tal como se lo propusiste y él lo aceptó);
+   • el número de *personas* (y edades de los niños si las hay);
+   • el *total* y con *cuánto se aparta* (anticipo del 30 %), diciendo que el resto se liquida el día del recorrido;
+   • dónde lo recogemos (su hospedaje en Xilitla o Ciudad Valles).
+   Ese resumen debe coincidir *exactamente* con lo que el cliente aceptó y con lo que devolvió la herramienta. Si algo no cuadra, corrígelo con él ANTES de pedirle dinero.
 2. *Aviso del correo*: el sistema intenta enviar la cotización al correo del cliente y te devuelve *emailEnviado*. Si es true, dile que *también se la enviaste a su correo* (menciona el correo). Si es false (o no dio correo), dile que se la dejas por aquí. NUNCA afirmes que enviaste un correo si emailEnviado no es true.
-3. *Después, la información bancaria* con *datos_pago* (transferencia + OXXO) y pídele su *comprobante* — la reserva solo se confirma cuando lo recibimos.
+3. *Hasta entonces, la información bancaria* con *datos_pago* (transferencia + OXXO), con el monto del *anticipo*, y pídele su *comprobante* — la reserva solo se confirma cuando lo recibimos.
 El correo es un extra, no un sustituto: el resumen y los datos de pago SIEMPRE van también por aquí.
 
 Tours *por persona* — ofrece las dos opciones:
@@ -781,6 +868,12 @@ async function processMessage(phone, message) {
     messages: session.history,
   });
 
+  // Resumen del paquete a medida generado por el servidor en ESTE turno. Se
+  // guarda aquí porque pedirlo por prompt no alcanza: el modelo saltaba directo
+  // a los datos bancarios sin enseñar qué se estaba apartando. Mismo criterio
+  // que `toWhatsAppFormat()` — determinista, no depende de que obedezca.
+  let resumenPendiente = null;
+
   let guard = 0;
   while (response.stop_reason === "tool_use" && guard++ < 6) {
     session.history.push({ role: "assistant", content: response.content });
@@ -791,6 +884,12 @@ async function processMessage(phone, message) {
         const result = await executeTool(block.name, block.input || {}, phone);
         if ((block.name === "crear_cotizacion" || block.name === "registrar_cotizacion") && result && result.folio) {
           session.lastFolio = result.folio;
+        }
+        if (block.name === "cotizar_paquete_personalizado" && result && result.folio) {
+          session.lastFolio = result.folio;
+          if (result.resumenWhatsApp) {
+            resumenPendiente = { texto: result.resumenWhatsApp, total: result.total };
+          }
         }
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
       }
@@ -804,8 +903,21 @@ async function processMessage(phone, message) {
   }
 
   const textBlock = response.content.find((b) => b.type === "text");
-  const reply = (textBlock && textBlock.text) || "Disculpa, tuve un problemita. ¿Me lo repites? 🙏";
+  let reply = (textBlock && textBlock.text) || "Disculpa, tuve un problemita. ¿Me lo repites? 🙏";
   session.history.push({ role: "assistant", content: response.content });
+
+  // Si en este turno se armó un paquete, el resumen va SIEMPRE por delante: el
+  // cliente tiene que ver qué aparta antes de leer una CLABE.
+  // La señal de "ya lo incluyó" es el TOTAL del viaje, no el folio: el modelo
+  // cita el folio junto a los datos bancarios pero omite el desglose, que es
+  // justo lo que el cliente necesita revisar.
+  if (resumenPendiente) {
+    const totalTxt = Number(resumenPendiente.total).toLocaleString("es-MX");
+    if (!reply.includes(totalTxt)) {
+      reply = `${resumenPendiente.texto}\n\n${reply}`;
+    }
+  }
+
   // El orden importa: primero markdown → WhatsApp, luego despegar los links.
   return sanitizeLinks(toWhatsAppFormat(reply));
 }

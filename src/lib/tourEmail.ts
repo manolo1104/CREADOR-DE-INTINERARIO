@@ -650,3 +650,141 @@ export function buildTourQuoteEmailHtml(data: {
 </body>
 </html>`;
 }
+
+/**
+ * Correo del PAQUETE A MEDIDA que arma el bot de WhatsApp.
+ *
+ * Se separa de `buildTourQuoteEmailHtml` por dos razones que cambian el
+ * mensaje, no solo el diseño:
+ *  1. Lleva el ANTICIPO. La plantilla de cotización solo mostraba "Total
+ *     Cotizado", así que le pedía al cliente el 100 % de golpe mientras el
+ *     sitio le pide el 30 %. Era la petición de dinero con más fricción.
+ *  2. El hospedaje es OPCIONAL y se dice explícitamente: los tours pasan por
+ *     el cliente a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro o no.
+ */
+export function buildPaquetePersonalizadoEmailHtml(data: {
+  customerName: string;
+  folio:        string;
+  lineItems:    { tourName: string; tourDate: string; adults: number; childrenMid?: number; childrenSmall?: number; subtotal: number }[];
+  total:        number;
+  anticipo:     number;
+  pctAnticipo:  number;
+  hospedajeInteresado?: boolean;
+  notes?:       string;
+}): string {
+  const base  = "https://www.huasteca-potosina.com";
+  const waUrl = "https://wa.me/524891251458";
+
+  const fmx = (n: number) => `$${Number(n).toLocaleString("es-MX")}`;
+  const formatDate = (d: string) => {
+    if (!d) return "Por confirmar";
+    const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    return r.charAt(0).toUpperCase() + r.slice(1);
+  };
+  const personasTexto = (it: { adults: number; childrenMid?: number; childrenSmall?: number }) =>
+    [`${it.adults} adulto${it.adults !== 1 ? "s" : ""}`,
+     (it.childrenMid ?? 0) > 0 ? `${it.childrenMid} niño${it.childrenMid !== 1 ? "s" : ""} (6–10)` : "",
+     (it.childrenSmall ?? 0) > 0 ? `${it.childrenSmall} menor${it.childrenSmall !== 1 ? "es" : ""} de 6` : ""]
+      .filter(Boolean).join(" · ");
+
+  const dias = data.lineItems.map((it, i) => `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3">
+      <tr>
+        <td style="padding:16px 0;vertical-align:top;width:64%">
+          <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Día ${i + 1}</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
+          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(it.tourDate)} · ${personasTexto(it)}</p>
+        </td>
+        <td style="padding:16px 0 16px 16px;text-align:right;vertical-align:top;white-space:nowrap">
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(it.subtotal)}</p>
+        </td>
+      </tr>
+    </table>`).join("");
+
+  const bloqueHospedaje = data.hospedajeInteresado
+    ? `<p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 6px 0">
+         Nos pediste opciones de hospedaje: te las mandamos por WhatsApp con disponibilidad y tarifas del
+         <strong>Hotel Paraíso Encantado</strong>, en Xilitla. No va incluido en este total.
+       </p>`
+    : "";
+
+  return `<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4edd8">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4edd8;padding:28px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#ffffff">
+
+        <tr><td style="background:#1a2e1a;padding:30px 32px">
+          <p style="margin:0;font-family:Arial;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#8fbe3a">Tours Huasteca Potosina</p>
+          <p style="margin:8px 0 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#f4edd8">Tu viaje, armado a tu medida</p>
+          <p style="margin:6px 0 0 0;font-family:Arial;font-size:12px;color:#f4edd8;opacity:.6">Folio ${data.folio}</p>
+        </td></tr>
+
+        <tr><td style="padding:28px 32px 0 32px">
+          <p style="font-family:Arial;font-size:14px;line-height:1.7;color:#4a4a3a;margin:0">
+            Hola ${data.customerName}, esto es lo que armamos contigo. Nada de esto está apartado todavía
+            — cuando nos digas que sí, apartamos con el ${data.pctAnticipo} %.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding:22px 32px 0 32px">
+          <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Tu itinerario</p>
+          ${dias}
+        </td></tr>
+
+        <tr><td style="padding:24px 32px 0 32px">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#1a2e1a;padding:20px 22px">
+            <tr>
+              <td><p style="margin:0;font-family:Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Apartas hoy con</p></td>
+              <td style="text-align:right">
+                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#f4edd8">${fmx(data.anticipo)}<span style="font-size:13px;color:#c4882a"> MXN</span></p>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top:10px;border-top:1px solid rgba(244,237,216,.15)">
+                <p style="margin:8px 0 0 0;font-family:Arial;font-size:12px;color:#f4edd8;opacity:.75">
+                  Total del viaje ${fmx(data.total)} · el resto (${fmx(data.total - data.anticipo)}) se liquida el día del primer recorrido.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="font-family:Arial;font-size:12px;color:#6a6a55;margin:10px 0 0 0">
+            Cancelas gratis hasta 48 h antes, con reembolso completo del anticipo.
+          </p>
+        </td></tr>
+
+        <tr><td style="padding:24px 32px 0 32px">
+          <p style="margin:0 0 8px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Dónde te recogemos</p>
+          <p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 10px 0">
+            Pasamos por ti a tu hospedaje, <strong>en Xilitla o en Ciudad Valles</strong>. No necesitas hospedarte
+            con nosotros: donde te quedes, ahí te recogemos.
+          </p>
+          ${bloqueHospedaje}
+        </td></tr>
+
+        ${data.notes ? `<tr><td style="padding:18px 32px 0 32px">
+          <p style="margin:0 0 6px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Notas</p>
+          <p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0">${data.notes}</p>
+        </td></tr>` : ""}
+
+        <tr><td style="padding:26px 32px 30px 32px" align="center">
+          <a href="${waUrl}" style="display:inline-block;background:#5a9e2a;color:#ffffff;text-decoration:none;font-family:Arial;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:14px 34px">Apartar por WhatsApp</a>
+          <p style="font-family:Arial;font-size:11px;color:#8a7a5a;margin:14px 0 0 0">
+            ¿Dudas? Responde este correo o escríbenos al +52 489 125 1458.
+          </p>
+        </td></tr>
+
+        <tr><td style="background:#f4edd8;padding:18px 32px;text-align:center">
+          <p style="font-family:Arial;font-size:11px;color:#8a7a5a;margin:0">
+            <a href="${base}" style="color:#8a7a5a;text-decoration:none">huasteca-potosina.com</a> · Xilitla, San Luis Potosí
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}

@@ -47,6 +47,9 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "cascadas-del-meco": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   "paraiso-escalonado-minas-micos": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   "ruta-acuatica-puente-de-dios": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+  // Único tour con traslado incluido pero SOLO dentro de Xilitla: el camino a
+  // la finca se hace en RZR y no se sale a Ciudad Valles.
+  "travesia-del-cafe": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. A diferencia del resto de los tours, NO se recoge en Ciudad Valles." },
 };
 
 /** Qué comida se incluye. NINGÚN tour es "todo incluido". */
@@ -60,6 +63,9 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   "cascadas-del-meco": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
   "paraiso-escalonado-minas-micos": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
   "ruta-acuatica-puente-de-dios": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+  // Medio día: no lleva desayuno. Sí incluye la cata de café de la finca, que
+  // no es un alimento del paquete sino parte del recorrido.
+  "travesia-del-cafe": { desayuno: false, comida: false, detalle: "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido." },
 };
 
 /** Qué material visual se entrega. Nunca se describe como "profesional". */
@@ -79,6 +85,7 @@ const IDEAL_PARA: Record<string, string[]> = {
   "paraiso-escalonado-minas-micos": ["familias con niños", "relax", "cascadas turquesas", "ritmo tranquilo"],
   "ruta-acuatica-puente-de-dios": ["aventura", "amigos", "nadar", "cascadas"],
   "buceo-media-luna": ["primera vez buceando", "mayores de 10 años", "aventura acuática"],
+  "travesia-del-cafe": ["familias", "medio día", "el más económico", "cultura y sabor", "ritmo tranquilo"],
 };
 
 // Lo que se incluye SIEMPRE en todos los tours (decisión del dueño, ago-2026).
