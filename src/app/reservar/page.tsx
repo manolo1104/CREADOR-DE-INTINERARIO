@@ -8,7 +8,7 @@ import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats"
 import { waLink } from "@/lib/whatsapp";
 import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { PAQUETES_DB } from "@/lib/paquetes";
-import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
+import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -148,108 +148,15 @@ export default async function ReservarPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {tours.map((tour, i) => {
-            const porVehiculo = tour.precioUnidad === "vehiculo";
-            const anticipo    = Math.round(tour.precio * ANTICIPO);
-            const reservas    = stats?.porTour[tour.slug] ?? 0;
-            const esTop       = stats?.masReservado === tour.slug;
-
-            return (
-              <article
-                key={tour.id}
-                className="stagger-reveal group relative flex flex-col border border-white/10 bg-negro/40 hover:border-verde-vivo/45 transition-colors duration-300 overflow-hidden"
-                style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
-              >
-                {/* Imagen */}
-                <div className="relative h-44 overflow-hidden flex-shrink-0">
-                  <Image
-                    src={tour.imagen_hero}
-                    alt={tour.nombre}
-                    fill
-                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/15 to-negro/25" />
-
-                  {esTop && (
-                    <span className="absolute top-3 left-3 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1px] uppercase px-2.5 py-1">
-                      El más reservado
-                    </span>
-                  )}
-                  <span className="absolute bottom-3 left-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                    ⏱ {tourDurTexto(tour, " h")}
-                  </span>
-                  <span className="absolute bottom-3 right-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                    máx. {tour.groupMax}
-                  </span>
-                </div>
-
-                {/* Info */}
-                <div className="flex flex-col flex-1 p-5">
-                  <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1.5">{tour.tipo}</p>
-                  <h3 className="font-cormorant text-crema text-xl leading-tight mb-2">
-                    {tour.nombre.split("—")[0].trim()}
-                  </h3>
-
-                  {/* Escasez REAL: la que declara el propio tour */}
-                  {tour.urgencia && (
-                    <p className="text-[11px] font-dm text-dorado/85 leading-snug mb-3">
-                      ▸ {tour.urgencia}
-                    </p>
-                  )}
-
-                  {/* La calificación del recorrido, que es lo que de verdad
-                      empuja a reservar. El conteo de grupos que había aquí
-                      salía del histórico corto de la base y en varios tours
-                      daba números de un dígito. */}
-                  {tour.reviewCount > 0 && (
-                    <p className="flex items-center gap-1.5 text-[11px] font-dm text-dorado/90 mb-3">
-                      <Star className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
-                      <strong className="text-crema/85">4.9</strong>
-                      <span className="text-crema/45">· {tour.reviewCount} reseñas</span>
-                    </p>
-                  )}
-
-                  <div className="mt-auto pt-4 border-t border-white/8">
-                    <p className="flex items-baseline gap-2 mb-0.5">
-                      <span className="font-cormorant text-dorado text-3xl font-light leading-none">
-                        {formatMXN(tour.precio)}
-                      </span>
-                      <span className="text-[10px] text-crema/40 font-dm">
-                        MXN {porVehiculo ? "por vehículo" : "por persona"}
-                      </span>
-                    </p>
-                    <p className="text-[11px] font-dm text-crema/55 mb-4">
-                      Apartas con <strong className="text-crema/85">{formatMXN(anticipo)}</strong>
-                    </p>
-
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/reservar-tour/${tour.slug}`}
-                        className="flex-1 text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors"
-                      >
-                        Reservar
-                      </Link>
-                      <BotonAgregarTour
-                        tourId={tour.id}
-                        tourSlug={tour.slug}
-                        tourName={tour.nombre}
-                        tourImage={tour.imagen_hero}
-                        precio={tour.precio}
-                        porVehiculo={porVehiculo}
-                      />
-                      <Link
-                        href={`/tours/${tour.slug}`}
-                        className="px-3 flex items-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[1.5px] uppercase font-dm transition-colors"
-                      >
-                        Ver
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          {tours.map((tour, i) => (
+            <TarjetaTourReservar
+              key={tour.id}
+              tour={tour}
+              anticipo={Math.round(tour.precio * ANTICIPO)}
+              esTop={stats?.masReservado === tour.slug}
+              delay={Math.min(i, 8) * 60}
+            />
+          ))}
         </div>
       </section>
 
