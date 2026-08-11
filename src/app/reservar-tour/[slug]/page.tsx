@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { TOURS_DB, tourDurTexto, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { agregarAlCarrito } from "@/lib/carrito";
 import {
   saveTourBookingState, formatMXN, calcTourTotal,
   validatePromoCode, formatTourDate,
@@ -171,6 +172,28 @@ export default function ReservarTourPage() {
       sessionId: crypto.randomUUID(),
     });
     router.push(`/reservar-tour/${tour.slug}/checkout`);
+  }
+
+  /**
+   * Guarda este recorrido en el carrito y devuelve al catálogo para seguir
+   * eligiendo. Antes, quien quería tres días tenía que pasar por el checkout
+   * tres veces: tres cobros, tres folios y tres oportunidades de abandonar.
+   */
+  function handleAgregarYSeguir() {
+    if (!tourDate || !tour) return;
+    agregarAlCarrito({
+      tourId:        tour.id,
+      tourSlug:      tour.slug,
+      tourName:      tour.nombre,
+      tourImage:     tour.imagen_hero,
+      tourDate,
+      adults,
+      childrenMid,
+      childrenSmall,
+      promoCode,
+      total,
+    });
+    router.push("/reservar#catalogo");
   }
 
   // Guarda la cotización (carrito) y la envía por correo, para poder retomarla
@@ -499,6 +522,21 @@ export default function ReservarTourPage() {
               "Selecciona una fecha para continuar"
             )}
           </button>
+
+          {/*
+            Segunda salida: agregar este recorrido y seguir eligiendo. Va
+            debajo del botón de pago y con menos peso visual, para no competir
+            con quien ya decidió pagar uno solo — pero existe, porque el viaje
+            típico a la Huasteca son dos o tres días, no uno.
+          */}
+          {canContinue && (
+            <button
+              onClick={handleAgregarYSeguir}
+              className="w-full border border-verde-selva/40 text-verde-selva hover:bg-verde-selva/8 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+            >
+              ＋ Agregar y elegir otro día
+            </button>
+          )}
 
           {!canContinue && !tourDate && (
             <p className="text-center text-xs text-negro/40 font-dm">Elige la fecha del tour para continuar</p>

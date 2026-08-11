@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Navbar from "@/components/nav/Navbar";
 import { FloatingReservarButton } from "@/components/FloatingReservarButton";
+import { CarritoBar } from "@/components/carrito/CarritoBar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookieBanner } from "@/components/CookieBanner";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
@@ -45,6 +46,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       {children}
       {!isAdmin && !isCheckout && <SiteFooter />}
       {!isAdmin && <FloatingReservarButton />}
+      {!isAdmin && <CarritoBar />}
       {!isAdmin && <CookieBanner />}
     </>
   );
