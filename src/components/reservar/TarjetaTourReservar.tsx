@@ -8,6 +8,7 @@ import type { Tour } from "@/lib/tours";
 import { INCLUYE_SIEMPRE, tourDurTexto } from "@/lib/tours";
 import { formatMXN } from "@/lib/tourBooking";
 import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
+import { Tilt } from "@/components/ui/Tilt";
 
 const DIFICULTAD: Record<string, string> = { baja: "Fácil", media: "Moderado", alta: "Avanzado" };
 
@@ -65,15 +66,16 @@ export function TarjetaTourReservar({
 
   return (
     <>
-      <article
+      <Tilt
+        glow
+        animationDelay={`${delay}ms`}
         onClick={abrir}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAbierto(true); } }}
         role="button"
         tabIndex={0}
         aria-haspopup="dialog"
         aria-label={`Vista rápida de ${tour.nombre}`}
-        className="stagger-reveal group relative flex flex-col border border-white/10 bg-negro/40 hover:border-verde-vivo/45 transition-colors duration-300 overflow-hidden cursor-pointer focus:outline-none focus:border-verde-vivo"
-        style={{ animationDelay: `${delay}ms` }}
+        className="stagger-reveal group relative flex flex-col h-full border border-white/10 bg-negro/40 hover:border-verde-vivo/45 overflow-hidden cursor-pointer focus:outline-none focus:border-verde-vivo"
       >
         <div className="relative h-44 overflow-hidden flex-shrink-0">
           <Image
@@ -151,7 +153,7 @@ export function TarjetaTourReservar({
             </div>
           </div>
         </div>
-      </article>
+      </Tilt>
 
       {/* ── VISTA RÁPIDA ── */}
       {abierto && (
