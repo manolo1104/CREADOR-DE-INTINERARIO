@@ -11,8 +11,7 @@ import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
   actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
-import { cotizarHospedaje, MAX_HUESPEDES_POR_HABITACION } from "@/lib/hospedaje";
-import { HABITACIONES } from "@/lib/paquetes";
+import { HABITACIONES_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
 import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
@@ -271,10 +270,15 @@ export default function CarritoPage() {
   const [expiraEn, setExpiraEn] = useState<number | null>(null);
   const [restante, setRestante] = useState(0);
   const [conHotel,    setConHotel]    = useState(false);
-  const [habitacion,  setHabitacion]  = useState(HABITACIONES[0]?.nombre ?? "");
+  // Una entrada por habitación, con cuánta gente duerme en cada una. Con más
+  // gente de la que cabe en una, el cliente decide el reparto (3+2 o 4+1):
+  // el precio cambia según eso y él sabe mejor cómo quiere dormir.
+  const [habs, setHabs] = useState<{ habitacionId: string; huespedes: number }[]>([
+    { habitacionId: "lirios-1", huespedes: 2 },
+  ]);
+  const [detalleHab, setDetalleHab] = useState<string | null>(null);
   const [checkin,     setCheckin]     = useState("");
   const [checkout,    setCheckout]    = useState("");
-  const [huespedes,   setHuespedes]   = useState(2);
   const [error,  setError]  = useState("");
   const [cargando, setCargando] = useState(false);
 
@@ -317,14 +321,8 @@ export default function CarritoPage() {
     return Math.max(0, Math.round(ms / 86_400_000));
   })();
 
-  const hotelQuote = conHotel && noches > 0
-    ? cotizarHospedaje({
-        habitacion,
-        noches,
-        huespedes,
-        habitaciones: Math.max(1, Math.ceil(huespedes / MAX_HUESPEDES_POR_HABITACION)),
-      })
-    : null;
+  const huespedes  = habs.reduce((s, h) => s + h.huespedes, 0);
+  const hotelQuote = conHotel && noches > 0 ? cotizarHabitaciones(habs, noches) : null;
   const totalHotel = hotelQuote?.ok ? hotelQuote.total ?? 0 : 0;
   // Testimonios de los recorridos que ESTA persona lleva en el carrito: una
   // reseña del tour que ya eligió pesa más que una genérica.
@@ -478,7 +476,7 @@ export default function CarritoPage() {
           sid:           sessionId(),
           items,
           hospedaje: conHotel
-            ? { habitacion, noches, huespedes, checkin, checkout, habitaciones: Math.max(1, Math.ceil(huespedes / MAX_HUESPEDES_POR_HABITACION)) }
+            ? { habitaciones: habs, noches, checkin, checkout }
             : null,
         }),
       });
@@ -862,31 +860,102 @@ export default function CarritoPage() {
             {conHotel && (
               <div className="mt-5 space-y-4">
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {HABITACIONES.map((h) => {
-                    const activa = habitacion === h.nombre;
+                  {HABITACIONES_HOTEL.map((h) => {
+                    const idx    = habs.findIndex((x) => x.habitacionId === h.id);
+                    const activa = idx >= 0;
                     return (
-                      <button
-                        key={h.id}
-                        type="button"
-                        onClick={() => { setHabitacion(h.nombre); setCobro(null); }}
-                        className={`text-left border overflow-hidden transition-colors ${activa ? "border-verde-selva" : "border-negro/12 hover:border-negro/30"}`}
-                      >
-                        <span className="relative block h-28">
-                          <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 300px" />
-                          {activa && (
-                            <span className="absolute inset-0 bg-verde-selva/25 flex items-center justify-center">
-                              <span className="bg-verde-selva text-crema text-[9px] tracking-[2px] uppercase font-dm px-2 py-1">Elegida</span>
+                      <div key={h.id} className={`border overflow-hidden transition-colors ${activa ? "border-verde-selva" : "border-negro/12"}`}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCobro(null);
+                            setHabs((prev) =>
+                              activa
+                                ? prev.filter((x) => x.habitacionId !== h.id)
+                                : [...prev, { habitacionId: h.id, huespedes: Math.min(2, h.maxHuespedes) }],
+                            );
+                          }}
+                          className="w-full text-left"
+                        >
+                          <span className="relative block h-28">
+                            <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 300px" />
+                            {activa && (
+                              <span className="absolute inset-0 bg-verde-selva/25 flex items-center justify-center">
+                                <span className="bg-verde-selva text-crema text-[9px] tracking-[2px] uppercase font-dm px-2 py-1">Elegida</span>
+                              </span>
+                            )}
+                            {h.vistaMontana && (
+                              <span className="absolute top-2 left-2 bg-dorado text-negro text-[8px] tracking-[1px] uppercase font-dm px-1.5 py-0.5">
+                                Vista a la montaña
+                              </span>
+                            )}
+                          </span>
+                          <span className="block px-3 pt-3">
+                            <span className="block font-dm text-[13px] text-negro/85">{h.nombre}</span>
+                            <span className="block font-dm text-[11px] text-negro/45 leading-snug mt-0.5">
+                              {h.vista} · hasta {h.maxHuespedes} personas · desde {formatMXN(h.tarifas[2] ?? h.tarifas[1])}/noche
                             </span>
-                          )}
-                        </span>
-                        <span className="block p-3">
-                          <span className="block font-dm text-[13px] text-negro/85">{h.nombre}</span>
-                          <span className="block font-dm text-[11px] text-negro/45 leading-snug mt-0.5">{h.vista}</span>
-                        </span>
-                      </button>
+                          </span>
+                        </button>
+
+                        {/* Cuánta gente duerme AQUÍ. Con cinco personas hacen
+                            falta dos habitaciones, y el reparto lo decide el
+                            cliente porque cambia el precio. */}
+                        {activa && (
+                          <div className="flex items-center justify-between px-3 py-2 border-t border-negro/8 mt-2">
+                            <span className="font-dm text-[11px] text-negro/55">Duermen aquí</span>
+                            <span className="flex items-center gap-2">
+                              <button type="button" aria-label={`Menos huéspedes en ${h.nombre}`}
+                                onClick={() => { setCobro(null); setHabs((prev) => prev.map((x) => x.habitacionId === h.id ? { ...x, huespedes: Math.max(1, x.huespedes - 1) } : x)); }}
+                                className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                              <span className="font-dm text-[12px] text-negro/80 w-4 text-center">{habs[idx].huespedes}</span>
+                              <button type="button" aria-label={`Más huéspedes en ${h.nombre}`}
+                                onClick={() => { setCobro(null); setHabs((prev) => prev.map((x) => x.habitacionId === h.id ? { ...x, huespedes: Math.min(h.maxHuespedes, x.huespedes + 1) } : x)); }}
+                                disabled={habs[idx].huespedes >= h.maxHuespedes}
+                                className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm disabled:opacity-30">+</button>
+                            </span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setDetalleHab(detalleHab === h.id ? null : h.id)}
+                          aria-expanded={detalleHab === h.id}
+                          className="w-full px-3 py-2 border-t border-negro/8 font-dm text-[11px] text-verde-selva hover:bg-verde-selva/5 transition-colors text-left"
+                        >
+                          {detalleHab === h.id ? "Ocultar detalles" : "Ver más detalles"}
+                        </button>
+
+                        {detalleHab === h.id && (
+                          <div className="px-3 pb-3 space-y-2">
+                            <p className="font-dm text-[12px] text-negro/60 leading-snug">{h.descripcion}</p>
+                            <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/35">{h.categoria}</p>
+                            <ul className="space-y-0.5">
+                              {h.caracteristicas.map((c) => (
+                                <li key={c} className="font-dm text-[12px] text-negro/55">· {c}</li>
+                              ))}
+                            </ul>
+                            <div className="border-t border-negro/8 pt-2">
+                              <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Precio por noche</p>
+                              {Object.entries(h.tarifas)
+                                .filter(([n]) => Number(n) >= 2)
+                                .map(([n, precio]) => (
+                                  <p key={n} className="flex justify-between font-dm text-[12px] text-negro/55">
+                                    <span>{n} persona{Number(n) > 1 ? "s" : ""}</span>
+                                    <span>{formatMXN(precio as number)}</span>
+                                  </p>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
+
+                {habs.length === 0 && (
+                  <p className="font-dm text-[12px] text-terracota">Elige al menos una habitación.</p>
+                )}
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
@@ -911,18 +980,13 @@ export default function CarritoPage() {
                   </div>
                 </div>
 
-                <div>
-                  <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">Huéspedes</p>
-                  <span className="flex items-center gap-3">
-                    <button type="button" aria-label="Menos huéspedes"
-                      onClick={() => { setHuespedes((n) => Math.max(1, n - 1)); setCobro(null); }}
-                      className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
-                    <span className="font-dm text-base text-negro/85 w-6 text-center">{huespedes}</span>
-                    <button type="button" aria-label="Más huéspedes"
-                      onClick={() => { setHuespedes((n) => n + 1); setCobro(null); }}
-                      className="w-9 h-9 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
-                  </span>
-                </div>
+                {/* El total de huéspedes ya no se pone aquí: sale de sumar lo
+                    que el cliente asignó a cada habitación. Con cinco personas
+                    eso obliga a elegir dos habitaciones, que es la verdad
+                    operativa: ninguna admite cinco. */}
+                <p className="font-dm text-[12px] text-negro/55">
+                  {huespedes} huésped{huespedes !== 1 ? "es" : ""} en {habs.length} habitación{habs.length !== 1 ? "es" : ""}
+                </p>
 
                 {checkin && checkout && noches <= 0 && (
                   <p className="font-dm text-[12px] text-terracota">
@@ -1047,8 +1111,8 @@ export default function CarritoPage() {
                 eleccion: i.eleccion,
               };
             }), ...(hotelQuote?.ok ? [{
-              nombre:   `Hospedaje · ${habitacion}`,
-              detalle:  `${noches} noche${noches > 1 ? "s" : ""} · ${huespedes} huésped${huespedes > 1 ? "es" : ""}`,
+              nombre:   `Hospedaje · ${habs.map((h) => getHabitacion(h.habitacionId)?.nombre ?? "").filter(Boolean).join(" + ")}`,
+              detalle:  `${noches} noche${noches > 1 ? "s" : ""} · ${huespedes} huésped${huespedes > 1 ? "es" : ""} · ${habs.length} habitación${habs.length > 1 ? "es" : ""}`,
               subtotal: totalHotel,
               incluye:  ["Hotel Paraíso Encantado, en Xilitla", ...((hotelQuote.nochesGratis ?? 0) > 0 ? ["Cada 3.ª noche gratis"] : [])],
             }] : [])]}

@@ -362,7 +362,13 @@ export default function ToursPage() {
             ))}
           </div>
           <div className="reveal-up text-center mt-14">
-            <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
+            {/* El cierre de la página también arranca con reservar en línea:
+                antes solo ofrecía WhatsApp, así que quien bajaba hasta el final
+                —el más decidido— salía del canal automático. */}
+            <Link href="/reservar" className="inline-flex items-center justify-center gap-2.5 bg-dorado hover:bg-lima text-negro px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 min-h-[44px]">
+              {en ? "Book a tour" : "Reservar tour"}
+            </Link>
+            <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
               {WA_SVG}
               {en ? "Book on WhatsApp" : "Reservar por WhatsApp"}
             </a>

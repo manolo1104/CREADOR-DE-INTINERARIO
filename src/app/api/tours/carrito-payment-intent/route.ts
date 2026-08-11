@@ -10,7 +10,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
 import { MAX_ITEMS, ANTICIPO_PCT } from "@/lib/carrito";
-import { cotizarHospedaje } from "@/lib/hospedaje";
+import { cotizarHabitaciones } from "@/lib/habitaciones";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -132,21 +132,21 @@ export async function POST(req: NextRequest) {
     // ── Hospedaje opcional ────────────────────────────────────────────────
     // Igual que los tours: el cliente manda QUÉ quiere (habitación, noches,
     // huéspedes) y el precio lo pone `cotizarHospedaje` con las tarifas reales.
+    // ── Hospedaje opcional ────────────────────────────────────────────────
+    // El cliente manda QUÉ habitaciones quiere y cuánta gente duerme en cada
+    // una; el precio lo pone `cotizarHabitaciones` con las tarifas reales del
+    // hotel, que dependen de la habitación Y de la ocupación. También valida
+    // el cupo: ninguna admite cinco personas.
     let hotel: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null = null;
-    if (hospedaje?.habitacion && Number(hospedaje?.noches) > 0) {
-      const q = cotizarHospedaje({
-        habitacion:   hospedaje.habitacion,
-        noches:       hospedaje.noches,
-        habitaciones: hospedaje.habitaciones,
-        huespedes:    hospedaje.huespedes,
-      });
+    if (Array.isArray(hospedaje?.habitaciones) && hospedaje.habitaciones.length > 0 && Number(hospedaje?.noches) > 0) {
+      const q = cotizarHabitaciones(hospedaje.habitaciones, Number(hospedaje.noches));
       if (!q.ok || !q.total) {
         return NextResponse.json({ error: q.error || "No se pudo cotizar el hospedaje." }, { status: 400 });
       }
       hotel = {
-        habitacion: String(hospedaje.habitacion),
+        habitacion: (q.desglose ?? []).map((d) => `${d.habitacion} (${d.huespedes})`).join(" + "),
         noches:     Number(hospedaje.noches),
-        huespedes:  Number(hospedaje.huespedes),
+        huespedes:  (q.desglose ?? []).reduce((s, d) => s + d.huespedes, 0),
         total:      q.total,
         ahorro:     q.ahorro ?? 0,
       };
