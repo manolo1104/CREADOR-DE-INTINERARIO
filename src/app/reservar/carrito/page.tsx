@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users } from "lucide-react";
+import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
   actualizarItem, personasDeItem, type CarritoItem,
@@ -233,7 +233,11 @@ export default function CarritoPage() {
 
   // Sin fecha no se puede cobrar: el servidor la valida, pero es mejor decirlo
   // aquí que dejar que el pago falle con un error genérico.
-  const sinFecha = items.filter((i) => !i.tourDate).length;
+  const sinFechaItems = items.filter((i) => !i.tourDate);
+  const conFechaItems = [...items]
+    .filter((i) => i.tourDate)
+    .sort((a, b) => a.tourDate.localeCompare(b.tourDate));
+  const sinFecha = sinFechaItems.length;
 
   async function irAlPago() {
     if (sinFecha > 0) {
@@ -270,6 +274,105 @@ export default function CarritoPage() {
     setCargando(false);
   }
 
+  const Renglon = (i: CarritoItem) => (
+    // La `key` incluye la fecha a propósito: al ponerle día a un recorrido,
+    // React lo remonta en su grupo nuevo y la animación de entrada lo acompaña
+    // hasta su lugar. Es el efecto de la lista que pasó Manolo, hecho con la
+    // animación que el proyecto ya tiene en tailwind.config, sin librería.
+    <div key={i.uid + i.tourDate} className="animate-slide-up flex gap-4 border border-negro/10 bg-white p-4">
+                  <div className="relative w-24 h-20 flex-shrink-0 overflow-hidden">
+                    <Image src={i.tourImage} alt={i.tourName} fill className="object-cover" sizes="96px" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-cormorant text-verde-profundo text-lg leading-tight">
+                      {i.tourName.split("—")[0].trim()}
+                    </p>
+  
+                    {/* La fecha se edita AQUÍ: los recorridos que se agregan desde
+                        el catálogo llegan sin ella, y sin esto el carrito no se
+                        podría pagar nunca. */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      <input
+                        type="date"
+                        value={i.tourDate}
+                        min={minDate}
+                        onChange={(e) => cambiar(i.uid, { tourDate: e.target.value })}
+                        aria-label={`Fecha de ${i.tourName}`}
+                        className={`border px-2 py-1.5 font-dm text-[12px] bg-white transition-colors ${
+                          i.tourDate ? "border-negro/15 text-negro/70" : "border-terracota/60 text-terracota"
+                        }`}
+                      />
+                      {i.unidades ? (
+                        <span className="font-dm text-[12px] text-negro/50">
+                          {i.ruta} · {i.unidades} × {i.vehiculo}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <button type="button" aria-label="Menos personas"
+                            onClick={() => cambiarPersonas(i, -1)}
+                            className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                          <span className="font-dm text-[12px] text-negro/70 w-14 text-center">
+                            {personasDeItem(i)} {personasDeItem(i) === 1 ? "persona" : "personas"}
+                          </span>
+                          <button type="button" aria-label="Más personas"
+                            onClick={() => cambiarPersonas(i, 1)}
+                            className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                        </span>
+                      )}
+                    </div>
+  
+                    {!i.tourDate && (
+                      <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
+                    )}
+  
+                    {/* Qué se visita y qué incluye, sin salir del carrito. Va
+                        plegado para que la lista siga siendo escaneable: quien
+                        lleva cuatro recorridos no quiere cuatro fichas abiertas. */}
+                    {(() => {
+                      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+                      if (!t) return null;
+                      return (
+                        <details className="mt-2 group">
+                          <summary className="cursor-pointer list-none font-dm text-[11px] text-verde-selva hover:text-verde-vivo transition-colors">
+                            Qué incluye y qué se visita
+                            <span className="ml-1 inline-block transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                          </summary>
+                          <div className="mt-2.5 space-y-2.5 border-l-2 border-verde-selva/20 pl-3">
+                            <p className="font-dm text-[12px] text-negro/55 leading-snug">{t.descripcion}</p>
+                            {t.destinos?.length > 0 && (
+                              <div>
+                                <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Se visita</p>
+                                {t.destinos.map((d) => (
+                                  <p key={d} className="font-dm text-[12px] text-negro/60 leading-snug">· {d}</p>
+                                ))}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Incluye</p>
+                              {[...t.incluye, ...INCLUYE_SIEMPRE].map((x) => (
+                                <p key={x} className="font-dm text-[12px] text-negro/60 leading-snug">✓ {x}</p>
+                              ))}
+                            </div>
+                            <p className="font-dm text-[11px] text-negro/40">
+                              {t.duracion_hrs} horas aprox. · grupo de {t.groupMin > 1 ? `${t.groupMin} a ` : "hasta "}{t.groupMax} personas
+                            </p>
+                          </div>
+                        </details>
+                      );
+                    })()}
+                  </div>
+                  <div className="text-right flex-shrink-0 flex flex-col justify-between">
+                    <span className="font-cormorant text-dorado text-xl">{formatMXN(i.total)}</span>
+                    <button
+                      onClick={() => quitar(i.uid)}
+                      aria-label={`Quitar ${i.tourName}`}
+                      className="text-negro/30 hover:text-terracota transition-colors self-end"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+  );
   if (!montado) return <main className="min-h-screen bg-crema pt-32" />;
 
   if (items.length === 0) {
@@ -307,101 +410,35 @@ export default function CarritoPage() {
           </p>
 
           <div className="space-y-3">
-            {items.map((i) => (
-              <div key={i.uid} className="flex gap-4 border border-negro/10 bg-white p-4">
-                <div className="relative w-24 h-20 flex-shrink-0 overflow-hidden">
-                  <Image src={i.tourImage} alt={i.tourName} fill className="object-cover" sizes="96px" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-cormorant text-verde-profundo text-lg leading-tight">
-                    {i.tourName.split("—")[0].trim()}
-                  </p>
-
-                  {/* La fecha se edita AQUÍ: los recorridos que se agregan desde
-                      el catálogo llegan sin ella, y sin esto el carrito no se
-                      podría pagar nunca. */}
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <input
-                      type="date"
-                      value={i.tourDate}
-                      min={minDate}
-                      onChange={(e) => cambiar(i.uid, { tourDate: e.target.value })}
-                      aria-label={`Fecha de ${i.tourName}`}
-                      className={`border px-2 py-1.5 font-dm text-[12px] bg-white transition-colors ${
-                        i.tourDate ? "border-negro/15 text-negro/70" : "border-terracota/60 text-terracota"
-                      }`}
-                    />
-                    {i.unidades ? (
-                      <span className="font-dm text-[12px] text-negro/50">
-                        {i.ruta} · {i.unidades} × {i.vehiculo}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <button type="button" aria-label="Menos personas"
-                          onClick={() => cambiarPersonas(i, -1)}
-                          className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
-                        <span className="font-dm text-[12px] text-negro/70 w-14 text-center">
-                          {personasDeItem(i)} {personasDeItem(i) === 1 ? "persona" : "personas"}
-                        </span>
-                        <button type="button" aria-label="Más personas"
-                          onClick={() => cambiarPersonas(i, 1)}
-                          className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
-                      </span>
-                    )}
-                  </div>
-
-                  {!i.tourDate && (
-                    <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
-                  )}
-
-                  {/* Qué se visita y qué incluye, sin salir del carrito. Va
-                      plegado para que la lista siga siendo escaneable: quien
-                      lleva cuatro recorridos no quiere cuatro fichas abiertas. */}
-                  {(() => {
-                    const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
-                    if (!t) return null;
-                    return (
-                      <details className="mt-2 group">
-                        <summary className="cursor-pointer list-none font-dm text-[11px] text-verde-selva hover:text-verde-vivo transition-colors">
-                          Qué incluye y qué se visita
-                          <span className="ml-1 inline-block transition-transform group-open:rotate-45" aria-hidden="true">+</span>
-                        </summary>
-                        <div className="mt-2.5 space-y-2.5 border-l-2 border-verde-selva/20 pl-3">
-                          <p className="font-dm text-[12px] text-negro/55 leading-snug">{t.descripcion}</p>
-                          {t.destinos?.length > 0 && (
-                            <div>
-                              <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Se visita</p>
-                              {t.destinos.map((d) => (
-                                <p key={d} className="font-dm text-[12px] text-negro/60 leading-snug">· {d}</p>
-                              ))}
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Incluye</p>
-                            {[...t.incluye, ...INCLUYE_SIEMPRE].map((x) => (
-                              <p key={x} className="font-dm text-[12px] text-negro/60 leading-snug">✓ {x}</p>
-                            ))}
-                          </div>
-                          <p className="font-dm text-[11px] text-negro/40">
-                            {t.duracion_hrs} horas aprox. · grupo de {t.groupMin > 1 ? `${t.groupMin} a ` : "hasta "}{t.groupMax} personas
-                          </p>
-                        </div>
-                      </details>
-                    );
-                  })()}
-                </div>
-                <div className="text-right flex-shrink-0 flex flex-col justify-between">
-                  <span className="font-cormorant text-dorado text-xl">{formatMXN(i.total)}</span>
-                  <button
-                    onClick={() => quitar(i.uid)}
-                    aria-label={`Quitar ${i.tourName}`}
-                    className="text-negro/30 hover:text-terracota transition-colors self-end"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+          {/* Dos grupos: primero lo que BLOQUEA el pago (recorridos sin
+              fecha, que entran así al agregarlos desde el catálogo) y después
+              el itinerario ordenado por día. Antes salían en el orden en que
+              se agregaron, así que un viaje de cuatro días se leía descolocado
+              y no había forma de ver qué faltaba. */}
+          {sinFechaItems.length > 0 && (
+            <div className="mb-6">
+              <p className="flex items-center gap-2 font-dm text-[11px] tracking-[1.5px] uppercase text-terracota mb-2">
+                <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                Falta la fecha ({sinFechaItems.length})
+              </p>
+              <div className="space-y-3">
+                {sinFechaItems.map((i) => Renglon(i))}
               </div>
-            ))}
+            </div>
+          )}
+
+          {conFechaItems.length > 0 && (
+            <div>
+              {sinFechaItems.length > 0 && (
+                <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/40 mb-2">
+                  Tu itinerario
+                </p>
+              )}
+              <div className="space-y-3">
+                {conFechaItems.map((i) => Renglon(i))}
+              </div>
+            </div>
+          )}
           </div>
 
           {/* Logística: la duda que más frena en el momento de pagar */}
