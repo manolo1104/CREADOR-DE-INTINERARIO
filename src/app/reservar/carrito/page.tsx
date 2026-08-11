@@ -220,6 +220,25 @@ export default function CarritoPage() {
     setCobro(null); // cualquier cambio invalida el importe ya calculado
   }
 
+  /**
+   * Activa, quita o cambia la cantidad de una actividad opcional. Igual que con
+   * las personas, aquí solo se recalcula lo que se PINTA: el importe que se
+   * cobra lo vuelve a sacar `computeTourCharge` en el servidor.
+   */
+  function cambiarAddOn(i: CarritoItem, id: string, cantidad: number) {
+    const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
+    const cat  = tour?.addOns?.find((a) => a.id === id);
+    if (!tour || !cat) return;
+    const otros   = (i.addOns ?? []).filter((a) => a.id !== id);
+    const nuevos  = cantidad > 0 ? [...otros, { id, cantidad }] : otros;
+    const { total: base } = calcTourTotal(tour.precio, i.adults, i.childrenMid, i.childrenSmall, 0);
+    const extras = nuevos.reduce((s, a) => {
+      const c = tour.addOns?.find((x) => x.id === a.id);
+      return s + (c ? c.precio * a.cantidad : 0);
+    }, 0);
+    cambiar(i.uid, { addOns: nuevos, total: base + extras });
+  }
+
   /** Suma o resta gente y vuelve a calcular el subtotal que se muestra. */
   function cambiarPersonas(i: CarritoItem, delta: number) {
     const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
@@ -229,7 +248,16 @@ export default function CarritoPage() {
       Math.max(tour.groupMin, i.adults + delta),
     );
     const { total } = calcTourTotal(tour.precio, adultos, i.childrenMid, i.childrenSmall, 0);
-    cambiar(i.uid, { adults: adultos, total });
+    // Los add-ons se topan a la gente que va: si el grupo baja, la actividad
+    // opcional no puede quedar contratada para más personas de las que quedan.
+    const addOns = (i.addOns ?? [])
+      .map((a) => ({ ...a, cantidad: Math.min(a.cantidad, adultos + i.childrenMid + i.childrenSmall) }))
+      .filter((a) => a.cantidad > 0);
+    const extras = addOns.reduce((s, a) => {
+      const c = tour.addOns?.find((x) => x.id === a.id);
+      return s + (c ? c.precio * a.cantidad : 0);
+    }, 0);
+    cambiar(i.uid, { adults: adultos, addOns, total: total + extras });
   }
 
   // Sin fecha no se puede cobrar: el servidor la valida, pero es mejor decirlo
@@ -326,7 +354,53 @@ export default function CarritoPage() {
                       <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
                     )}
   
-                    {/* Qué se visita y qué incluye, sin salir del carrito. Va
+                    {/* Actividades opcionales del recorrido. Se agregan aquí
+                      porque al meter un tour desde el catálogo nunca se pasa
+                      por el paso 1, que es donde vivía la única forma de
+                      contratarlas: el Salto de las 7 Cascadas quedaba invisible
+                      para quien usaba el carrito. */}
+                  {(() => {
+                    const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+                    const pax = personasDeItem(i);
+                    return (t?.addOns ?? []).map((a) => {
+                      const puestos = i.addOns?.find((x) => x.id === a.id)?.cantidad ?? 0;
+                      const activo  = puestos > 0;
+                      return (
+                        <div key={a.id} className={`mt-2 border p-2.5 ${activo ? "border-verde-selva/50 bg-verde-selva/5" : "border-negro/10"}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-dm text-[12px] text-negro/80">{a.nombre}</p>
+                              <p className="font-dm text-[11px] text-negro/45 leading-snug">{a.descripcion}</p>
+                              <p className="font-dm text-[11px] text-verde-selva mt-0.5">+{formatMXN(a.precio)} por persona</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => cambiarAddOn(i, a.id, activo ? 0 : pax)}
+                              className={`flex-shrink-0 text-[9px] tracking-[1.5px] uppercase font-dm px-2.5 py-1.5 border transition-colors ${
+                                activo ? "border-verde-selva bg-verde-selva text-crema" : "border-negro/25 text-negro/60 hover:border-verde-selva"
+                              }`}
+                            >
+                              {activo ? "Quitar" : "Agregar"}
+                            </button>
+                          </div>
+                          {activo && (
+                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-negro/8">
+                              <span className="font-dm text-[11px] text-negro/55">¿Cuántos lo hacen?</span>
+                              <span className="flex items-center gap-2">
+                                <button type="button" aria-label="Menos" onClick={() => cambiarAddOn(i, a.id, Math.max(0, puestos - 1))}
+                                  className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                                <span className="font-dm text-[12px] text-negro/70 w-4 text-center">{puestos}</span>
+                                <button type="button" aria-label="Más" onClick={() => cambiarAddOn(i, a.id, Math.min(pax, puestos + 1))}
+                                  className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+
+                  {/* Qué se visita y qué incluye, sin salir del carrito. Va
                         plegado para que la lista siga siendo escaneable: quien
                         lleva cuatro recorridos no quiere cuatro fichas abiertas. */}
                     {(() => {
@@ -558,22 +632,22 @@ export default function CarritoPage() {
               <input
                 value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Nombre completo *"
-                className="w-full border border-negro/15 px-3 py-3 font-dm text-sm focus:border-verde-selva outline-none"
+                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               <input
                 value={email} onChange={(e) => setEmail(e.target.value)}
                 type="email" placeholder="Correo electrónico *"
-                className="w-full border border-negro/15 px-3 py-3 font-dm text-sm focus:border-verde-selva outline-none"
+                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               <input
                 value={phone} onChange={(e) => setPhone(e.target.value)}
                 type="tel" placeholder="WhatsApp (opcional)"
-                className="w-full border border-negro/15 px-3 py-3 font-dm text-sm focus:border-verde-selva outline-none"
+                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               <input
                 value={pickup} onChange={(e) => setPickup(e.target.value)}
                 placeholder="¿Dónde te hospedas? (Xilitla o Cd. Valles)"
-                className="w-full border border-negro/15 px-3 py-3 font-dm text-sm focus:border-verde-selva outline-none"
+                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               {error && <p className="text-sm font-dm text-terracota">{error}</p>}
               <button

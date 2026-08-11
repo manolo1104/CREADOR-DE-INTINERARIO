@@ -38,8 +38,11 @@ export async function POST(req: NextRequest) {
     }
 
     const cobro = computePaqueteCharge({
-      slug:     paqueteDetails?.slug,
-      personas: paqueteDetails?.personas,
+      slug:          paqueteDetails?.slug,
+      personas:      paqueteDetails?.personas,
+      childrenMid:   paqueteDetails?.childrenMid,
+      childrenSmall: paqueteDetails?.childrenSmall,
+      vistaMontana:  paqueteDetails?.vistaMontana,
       pct,
     });
     if (!cobro) {
@@ -69,8 +72,9 @@ export async function POST(req: NextRequest) {
         tourName:      `Paquete · ${paquete.nombre}`,
         tourSlug:      paquete.slug,
         tourDate:      fecha,
-        adults:        personas || "2",
-        children:      "0",
+        adults:        String(cobro.adultos),
+        children:      String(cobro.childrenMid + cobro.childrenSmall),
+        habitacion:    cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva",
         producto:      "paquete",
         paquetePct:    String(pct),
         totalCompleto: String(cobro.total),

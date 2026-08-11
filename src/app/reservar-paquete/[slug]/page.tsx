@@ -89,7 +89,10 @@ export default function ReservarPaquetePage() {
   const paquete = getPaquete(params.slug);
 
   const [fecha, setFecha]       = useState("");
-  const [personas, setPersonas] = useState(2);
+  const [personas, setPersonas] = useState(2);            // adultos
+  const [childrenMid,   setChildrenMid]   = useState(0);  // 6–10 años → 70 %
+  const [childrenSmall, setChildrenSmall] = useState(0);  // menores de 6 → 50 %
+  const [vistaMontana,  setVistaMontana]  = useState(false);
   // El default arranca en el compromiso MÁS BAJO. Venía en 50 % con el 10 %
   // justo al lado: en un paquete de $15,500 eso es pedirle al cliente $7,750
   // de entrada en la primera pantalla. El que quiera pagar más lo elige.
@@ -124,7 +127,7 @@ export default function ReservarPaquetePage() {
   // El precio ya NO es fijo: el publicado cubre a dos personas, y cada persona
   // extra suma hotel y boletos de tour. Se usa la MISMA función que el servidor
   // (`computePaqueteCharge`), así lo que se ve es lo que se cobra.
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, pct });
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, pct });
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
@@ -140,7 +143,7 @@ export default function ReservarPaquetePage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
-          paqueteDetails: { slug: paquete!.slug, pct, personas, fecha },
+          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha },
         }),
       });
       const d = await res.json();
@@ -159,7 +162,7 @@ export default function ReservarPaquetePage() {
     appearance: { theme: "stripe" as const, variables: { colorPrimary: "#3a6b1a", colorBackground: "#f4edd8", colorText: "#1a2e1a", fontFamily: "DM Sans, sans-serif", borderRadius: "0px" } },
   };
 
-  const form = { name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim(), pct, personas, fecha };
+  const form = { name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim(), pct, personas, childrenMid, childrenSmall, vistaMontana, fecha };
 
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">
@@ -250,6 +253,32 @@ export default function ReservarPaquetePage() {
                       El precio publicado cubre a 2 personas. Cada persona más suma su hotel y sus tours, y lo verás desglosado aquí.
                     </p>
                   )}
+                  {/* Menores, con la misma escala que los tours sueltos. */}
+                  <div className="mt-4 space-y-2.5 border-t border-negro/8 pt-3">
+                    {[
+                      { label: "Niños 6–10 años", nota: "70 % del tour", v: childrenMid,   set: setChildrenMid },
+                      { label: "Menores de 6",    nota: "50 % del tour", v: childrenSmall, set: setChildrenSmall },
+                    ].map((c) => (
+                      <div key={c.label} className="flex items-center justify-between">
+                        <span className="font-dm text-[12px] text-negro/65">
+                          {c.label} <span className="text-negro/35">· {c.nota}</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <button type="button" aria-label={`Menos ${c.label}`}
+                            onClick={() => c.set((n: number) => Math.max(0, n - 1))}
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
+                          <span className="font-dm text-sm text-negro/80 w-5 text-center">{c.v}</span>
+                          <button type="button" aria-label={`Más ${c.label}`}
+                            onClick={() => c.set((n: number) => n + 1)}
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
+                        </span>
+                      </div>
+                    ))}
+                    <p className="font-dm text-[10px] text-negro/35 leading-snug">
+                      Los bebés menores de 3 no pagan tour. Los menores sí ocupan lugar en la habitación.
+                    </p>
+                  </div>
+
                   {personas >= MAX_PERSONAS_PAQUETE && (
                     <p className="mt-2 text-[11px] font-dm text-negro/55">
                       ¿Son más de {MAX_PERSONAS_PAQUETE}?{" "}
@@ -323,6 +352,43 @@ export default function ReservarPaquetePage() {
                   ({toursIncluidos.map((t) => t.nombre.split("—")[0].trim()).join(", ")}).
                 </p>
               )}
+            </section>
+
+            {/* Habitación */}
+            <section className="bg-white border border-negro/8 p-6">
+              <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Tu habitación</h2>
+              <p className="font-dm text-xs text-negro/45 mb-5">
+                {paquete.noches} noche{paquete.noches > 1 ? "s" : ""} en el Hotel Paraíso Encantado, en Xilitla.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[
+                  { m: false, t: "Vista a la selva", s: "Orquídeas, Bromelias o Lirios. Incluida en el precio." },
+                  { m: true,  t: "Jungla · vista a la montaña", s: "La favorita para despertar con el paisaje de la sierra." },
+                ].map((o) => {
+                  const activa = vistaMontana === o.m;
+                  // La diferencia se calcula con las tarifas reales, así que
+                  // sube según cuánta gente duerma en la habitación.
+                  const dif = o.m && cotizacion
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, pct })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, pct })?.total ?? 0)
+                    : 0;
+                  return (
+                    <button key={o.t} type="button" onClick={() => setVistaMontana(o.m)}
+                      className={`text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
+                          {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
+                        </span>
+                        <span className="font-dm text-sm text-negro/85 font-medium">{o.t}</span>
+                      </div>
+                      <p className="font-dm text-[11px] text-negro/50 leading-snug">{o.s}</p>
+                      {o.m && dif > 0 && (
+                        <p className="font-dm text-[12px] text-dorado mt-1.5">+{fmx(dif)} MXN por las {paquete.noches} noches</p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </section>
 
             {/* Cuánto pagar */}

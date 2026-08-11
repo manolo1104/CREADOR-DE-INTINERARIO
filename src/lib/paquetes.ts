@@ -296,7 +296,7 @@ export const PAQUETES_DB: Paquete[] = [
     incluye: [
       "3 noches en Hotel Paraíso Encantado Xilitla",
       "Desayuno buffet los días de tour",
-      "3 tours completos (a elegir)",
+      "3 tours completos ya seleccionados: Ruta Surrealista Edward James, Expedición Tamul y Paraíso Escalonado",
       "Transporte del hotel al inicio de cada tour y de regreso",
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
