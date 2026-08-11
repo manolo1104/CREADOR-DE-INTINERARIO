@@ -117,7 +117,7 @@ export default async function ReservarPage() {
       <section className="max-w-4xl mx-auto px-6 pt-14 pb-4">
         <div className="grid sm:grid-cols-3 gap-6">
           {[
-            { n: "1", t: "Elige tu recorrido", s: "Abajo está el catálogo completo con precios reales." },
+            { n: "1", t: "Elige tus recorridos", s: "Puedes juntar varios días en un solo carrito y pagarlos de una vez." },
             { n: "2", t: "Aparta con el 30 %", s: "Eliges fecha y personas. Pago seguro con tarjeta." },
             { n: "3", t: "Liquidas el día del tour", s: "En efectivo o tarjeta, al llegar." },
           ].map(({ n, t, s }) => (

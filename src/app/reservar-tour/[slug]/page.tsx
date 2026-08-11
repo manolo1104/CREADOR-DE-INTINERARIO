@@ -655,14 +655,13 @@ export default function ReservarTourPage() {
             con quien ya decidió pagar uno solo — pero existe, porque el viaje
             típico a la Huasteca son dos o tres días, no uno.
           */}
-          {canContinue && (
-            <button
-              onClick={handleAgregarYSeguir}
-              className="w-full border border-verde-selva/40 text-verde-selva hover:bg-verde-selva/8 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
-            >
-              ＋ Agregar y elegir otro día
-            </button>
-          )}
+          <button
+            onClick={handleAgregarYSeguir}
+            disabled={!canContinue}
+            className="w-full border border-verde-selva/40 text-verde-selva hover:bg-verde-selva/8 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            ＋ Agregar al carrito y elegir otro día
+          </button>
 
           {!canContinue && !tourDate && (
             <p className="text-center text-xs text-negro/40 font-dm">Elige la fecha del tour para continuar</p>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveTourBookingState, formatMXN } from "@/lib/tourBooking";
+import { agregarAlCarrito } from "@/lib/carrito";
 import { computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
 import type { Tour } from "@/lib/tours";
 import { TourCalendar } from "@/components/booking/TourCalendar";
@@ -67,6 +68,27 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
       unidades,
     });
     router.push(`/reservar-tour/${tour.slug}/checkout`);
+  }
+
+  function handleAgregarYSeguir() {
+    if (!canContinue || !ruta || !vehiculo) return;
+    const veh = computeVehiculoCharge({ tourSlug: tour.slug, ruta: ruta.nombre, vehiculo: vehiculo.nombre, unidades, pct: 100 });
+    if (!veh) return;
+    agregarAlCarrito({
+      tourId:        tour.id,
+      tourSlug:      tour.slug,
+      tourName:      vehiculoBookingName(tour, ruta.nombre, vehiculo.nombre, unidades),
+      tourImage:     tour.imagen_hero,
+      tourDate,
+      adults:        unidades,
+      childrenMid:   0,
+      childrenSmall: 0,
+      ruta:          ruta.nombre,
+      vehiculo:      vehiculo.nombre,
+      unidades,
+      total:         veh.total,
+    });
+    router.push("/reservar#catalogo");
   }
 
   return (
@@ -257,6 +279,16 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
           className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {canContinue ? (<><Lock className="w-3.5 h-3.5" />{`Pagar ${formatMXN(chargeAmount)} MXN →`}</>) : "Selecciona una fecha para continuar"}
+        </button>
+        {/* El carrito estaba escondido: solo aparecía DESPUÉS de elegir fecha, así
+            que nadie descubría que se podían apartar varios días. Ahora se ve
+            siempre y explica qué le falta. */}
+        <button
+          onClick={handleAgregarYSeguir}
+          disabled={!canContinue}
+          className="w-full border border-verde-selva/40 text-verde-selva hover:bg-verde-selva/8 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+        >
+          ＋ Agregar al carrito y elegir otro día
         </button>
         {!tourDate && <p className="text-center text-xs text-negro/40 font-dm">Elige la fecha del recorrido para continuar</p>}
       </aside>
