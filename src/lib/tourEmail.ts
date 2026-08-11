@@ -670,6 +670,12 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
   anticipo:     number;
   pctAnticipo:  number;
   hospedajeInteresado?: boolean;
+  /** Hospedaje dentro del MISMO folio. `tarifaPendiente` = el equipo pasa la tarifa. */
+  hospedaje?: {
+    hotel?: string; habitacion?: string | null; noches?: number | null;
+    habitaciones?: number; checkin?: string | null; checkout?: string | null;
+    subtotal?: number | null; tarifaPendiente?: boolean;
+  };
   notes?:       string;
 }): string {
   const base  = "https://www.huasteca-potosina.com";
@@ -701,12 +707,37 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
       </tr>
     </table>`).join("");
 
-  const bloqueHospedaje = data.hospedajeInteresado
-    ? `<p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 6px 0">
-         Nos pediste opciones de hospedaje: te las mandamos por WhatsApp con disponibilidad y tarifas del
-         <strong>Hotel Paraíso Encantado</strong>, en Xilitla. No va incluido en este total.
-       </p>`
+  const h = data.hospedaje;
+  const filaHospedaje = h
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3">
+      <tr>
+        <td style="padding:16px 0;vertical-align:top;width:64%">
+          <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Hospedaje</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${h.hotel ?? "Hotel Paraíso Encantado"}${h.habitacion ? ` · ${h.habitacion}` : ""}</p>
+          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${h.noches ? `${h.noches} noche${h.noches !== 1 ? "s" : ""}` : "Fechas por confirmar"}${h.checkin ? ` · llegada ${formatDate(h.checkin)}` : ""}${(h.habitaciones ?? 1) > 1 ? ` · ${h.habitaciones} habitaciones` : ""}</p>
+        </td>
+        <td style="padding:16px 0 16px 16px;text-align:right;vertical-align:top;white-space:nowrap">
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${h.tarifaPendiente ? "Por confirmar" : fmx(Number(h.subtotal ?? 0))}</p>
+        </td>
+      </tr>
+    </table>`
     : "";
+
+  const bloqueHospedaje = h
+    ? (h.tarifaPendiente
+        ? `<p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 6px 0">
+             Tu habitación queda apartada en este mismo folio. La <strong>tarifa del hospedaje te la confirmamos hoy mismo</strong>
+             por WhatsApp y todavía no está sumada en el total de arriba.
+           </p>`
+        : `<p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 6px 0">
+             Tu hospedaje va incluido en este folio y en el total de arriba.
+           </p>`)
+    : (data.hospedajeInteresado
+        ? `<p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 6px 0">
+             Nos pediste opciones de hospedaje: te las mandamos por WhatsApp con disponibilidad y tarifas del
+             <strong>Hotel Paraíso Encantado</strong>, en Xilitla.
+           </p>`
+        : "");
 
   return `<!doctype html>
 <html lang="es">
@@ -731,7 +762,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
 
         <tr><td style="padding:22px 32px 0 32px">
           <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Tu itinerario</p>
-          ${dias}
+          ${dias}${filaHospedaje}
         </td></tr>
 
         <tr><td style="padding:24px 32px 0 32px">

@@ -11,6 +11,23 @@ export const runtime = "nodejs";
 /** Anticipo estándar. Misma cifra que `tourPricing.ts` y que el sitio. */
 const PCT_ANTICIPO = 30;
 
+/**
+ * Tarifa por noche del Hotel Paraíso Encantado para cotizar hospedaje suelto.
+ *
+ * ⚠️ El sitio NO tiene este dato: los paquetes traen el hospedaje empaquetado y
+ * el desglose de `valor` en `paquetes.ts` es un ancla de marketing, no la
+ * tarifa real. El API del hotel solo devuelve disponibilidad, sin precios.
+ *
+ * Mientras no esté configurada, el hospedaje se suma al itinerario SIN monto y
+ * se le dice al cliente que el equipo le pasa la tarifa. Preferimos eso a
+ * inventar un precio: el cliente lo está usando para decidir con su dinero.
+ *
+ * Para activarlo: pon HOSPEDAJE_TARIFA_NOCHE en el entorno del sitio.
+ */
+const TARIFA_NOCHE = Number(process.env.HOSPEDAJE_TARIFA_NOCHE) || null;
+/** Suplemento de la habitación Jungla (vista a la montaña). Sí está en el sitio. */
+const SUPLEMENTO_JUNGLA = 400;
+
 const DATOS_BANCO = {
   banco:    "BBVA",
   titular:  "Tours Huasteca Potosina",
@@ -123,15 +140,44 @@ export async function POST(req: NextRequest) {
   // Se ordena por fecha para que el itinerario del correo se lea como el viaje.
   lineItems.sort((a, b) => a.tourDate.localeCompare(b.tourDate));
 
+  // ── Hospedaje (opcional) ───────────────────────────────────────
+  // Entra al MISMO folio y al mismo correo. Antes el bot tenía que decirle al
+  // cliente que la habitación "la confirma el equipo aparte", que es justo
+  // donde se caía la conversación.
+  const packageItems: any[] = [];
+  let hospedajeSubtotal: number | null = null;
+  let hospedajeSinTarifa = false;
+
+  if (hospedaje?.interesado) {
+    const noches = Math.max(0, parseInt(String(hospedaje.noches ?? 0), 10) || 0);
+    const habitaciones = Math.max(1, parseInt(String(hospedaje.habitaciones ?? 1), 10) || 1);
+    const esJungla = /jungla/i.test(String(hospedaje.habitacion ?? ""));
+
+    if (TARIFA_NOCHE && noches > 0) {
+      const porNoche = TARIFA_NOCHE + (esJungla ? SUPLEMENTO_JUNGLA : 0);
+      hospedajeSubtotal = porNoche * noches * habitaciones;
+      total += hospedajeSubtotal;
+    } else {
+      // Sin tarifa configurada no se inventa un monto: se deja marcado.
+      hospedajeSinTarifa = true;
+    }
+
+    packageItems.push({
+      hotel: "Hotel Paraíso Encantado (Xilitla)",
+      habitacion: hospedaje.habitacion ?? null,
+      noches: noches || null,
+      habitaciones,
+      checkin: hospedaje.checkin ?? null,
+      checkout: hospedaje.checkout ?? null,
+      subtotal: hospedajeSubtotal,
+      _meta: hospedajeSinTarifa ? "tarifa_pendiente" : "cotizado",
+    });
+  }
+
+  const hosp     = packageItems[0];
   const anticipo = Math.round((total * PCT_ANTICIPO) / 100);
   const folio    = "HP-P" + Date.now().toString(36).toUpperCase();
   const appUrl   = (process.env.APP_URL || "https://www.huasteca-potosina.com").replace(/\/$/, "");
-
-  // El hospedaje es una nota, no un cargo: se cotiza aparte con el hotel. Aquí
-  // solo se guarda el interés para que el equipo dé seguimiento.
-  const packageItems = hospedaje?.interesado
-    ? [{ hotel: "Hotel Paraíso Encantado (Xilitla)", noches: hospedaje.noches ?? null, checkin: hospedaje.checkin ?? null, checkout: hospedaje.checkout ?? null, _meta: "cotizar_aparte" }]
-    : [];
 
   try {
     await prisma.tourBooking.create({
@@ -172,6 +218,18 @@ export async function POST(req: NextRequest) {
         anticipo,
         pctAnticipo: PCT_ANTICIPO,
         hospedajeInteresado: Boolean(hospedaje?.interesado),
+        hospedaje: hosp
+          ? {
+              hotel: hosp.hotel,
+              habitacion: hosp.habitacion,
+              noches: hosp.noches,
+              habitaciones: hosp.habitaciones,
+              checkin: hosp.checkin,
+              checkout: hosp.checkout,
+              subtotal: hosp.subtotal,
+              tarifaPendiente: hospedajeSinTarifa,
+            }
+          : undefined,
         notes: notes ? String(notes) : undefined,
       });
       const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
@@ -206,17 +264,32 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .join(" + ");
 
+  const lineaHospedaje = hosp
+    ? [
+        "",
+        "*Hospedaje*",
+        `${hosp.hotel}${hosp.habitacion ? ` · ${hosp.habitacion}` : ""}`,
+        `${hosp.noches ? `${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""}` : "fechas por confirmar"}${hosp.checkin ? ` · ${fechaLarga(hosp.checkin)}` : ""}${hosp.habitaciones > 1 ? ` · ${hosp.habitaciones} habitaciones` : ""}`,
+        hospedajeSinTarifa
+          ? "Tarifa: te la confirma el equipo hoy mismo — no va incluida en el total de abajo."
+          : `${fmx(hospedajeSubtotal!)}`,
+      ]
+    : [];
+
   const resumenWhatsApp = [
     `📋 *Tu paquete a la medida* — folio ${folio}`,
     "",
     ...lineItems.map((l, i) =>
       `*Día ${i + 1} · ${fechaLarga(l.tourDate)}*\n${l.tourName}\n${personasDe(l)} · ${fmx(l.subtotal)}`,
     ),
+    ...lineaHospedaje,
     "",
-    `*Total del viaje: ${fmx(total)} MXN*`,
+    `*Total${hospedajeSinTarifa ? " de los tours" : " del viaje"}: ${fmx(total)} MXN*`,
     `*Apartas hoy con ${fmx(anticipo)}* (${PCT_ANTICIPO} %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del primer recorrido.`,
     "",
-    `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`,
+    hosp
+      ? `Los tours te recogen en el hotel. Si prefieres quedarte en otro lado, también pasamos por ti — en Xilitla o en Ciudad Valles.`
+      : `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`,
     `Cancelas gratis hasta 48 h antes, con reembolso completo.`,
   ].join("\n");
 

@@ -111,7 +111,10 @@ function recomendarLocal({ intereses = [], grupo = "", actividad = "", destino =
   const scores = Object.fromEntries(TOURS.map((t) => [t.slug, 0]));
   const add = (slug, n) => { if (scores[slug] !== undefined) scores[slug] += n; };
 
-  if (has("foto") || has("turques") || has("cascada")) { add("cascadas-del-meco", 3); add("paraiso-escalonado-minas-micos", 2); add("ruta-acuatica-puente-de-dios", 1); }
+  // La Expedición Tamul quedaba en CERO cuando alguien pedía "cascadas", aunque
+  // visita la Cascada de Tamul, la más famosa de la región. Por eso el bot
+  // proponía Meco + Escalonado + Acuática y ni la mencionaba.
+  if (has("foto") || has("turques") || has("cascada")) { add("expedicion-tamul", 4); add("cascadas-del-meco", 3); add("paraiso-escalonado-minas-micos", 2); add("ruta-acuatica-puente-de-dios", 1); }
   if (has("extrem") || has("adrenalin") || has("aventura")) { add("rappel-tamul", 4); add("rafting-rio-tampaon", 3); add("expedicion-tamul", 3); add("rzr-xilitla", 3); add("ruta-acuatica-puente-de-dios", 2); }
   if (has("agua") || has("nad") || has("rio") || has("río") || has("rafting") || has("kayak") || has("canoa") || has("remar")) { add("rafting-rio-tampaon", 3); add("ruta-acuatica-puente-de-dios", 2); add("expedicion-tamul", 1); }
   if (has("buce") || has("snorkel") || has("scuba")) { add("buceo-media-luna", 5); }
@@ -139,6 +142,11 @@ function recomendarLocal({ intereses = [], grupo = "", actividad = "", destino =
   if (d.includes("minas") || d.includes("micos")) add("paraiso-escalonado-minas-micos", 4);
   if (d.includes("puente") || d.includes("tamasopo")) add("ruta-acuatica-puente-de-dios", 4);
   if (d.includes("media luna") || d.includes("buce") || d.includes("rioverde")) add("buceo-media-luna", 4);
+
+  // Desempate por popularidad real: la Expedición Tamul es el tour más pedido
+  // (el primero en sesiones del embudo del sitio). Es medio punto, así que no
+  // le gana a una preferencia explícita del cliente — solo decide los empates.
+  add("expedicion-tamul", 0.5);
 
   const ordenados = Object.entries(scores).sort((x, y) => y[1] - x[1]).map(([slug]) => findTour(slug));
   return ordenados.slice(0, 2).map((t) => ({
@@ -245,12 +253,14 @@ const tools = [
         customerEmail: { type: "string", description: "Correo del cliente — sin esto no se puede mandar la propuesta" },
         hospedaje: {
           type: "object",
-          description: "Solo si el cliente pidió opciones de hospedaje. NUNCA lo asumas: el hospedaje es opcional.",
+          description: "Inclúyelo SOLO si el cliente aceptó hospedarse con nosotros. El hospedaje es opcional y nunca se asume. Va en el MISMO folio que los tours.",
           properties: {
-            interesado: { type: "boolean" },
-            checkin:    { type: "string", description: "AAAA-MM-DD" },
-            checkout:   { type: "string", description: "AAAA-MM-DD" },
-            noches:     { type: "number" },
+            interesado:   { type: "boolean", description: "true solo si el cliente ya dijo que sí quiere el hospedaje" },
+            habitacion:   { type: "string", description: "Habitación elegida, ej: 'Bromelias 1'. Confírmala antes con disponibilidad_habitaciones." },
+            checkin:      { type: "string", description: "AAAA-MM-DD" },
+            checkout:     { type: "string", description: "AAAA-MM-DD" },
+            noches:       { type: "number" },
+            habitaciones: { type: "number", description: "Cuántas habitaciones (por defecto 1). Cada una es para 2 personas." },
           },
         },
         notes: { type: "string", description: "Peticiones especiales del cliente (opcional)" },
@@ -787,8 +797,11 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 Cuando alguien venga por *varios días* o quiera *dos o más recorridos*, NO le recites los tres paquetes preestablecidos. Arma uno para él:
 1. Pregunta *cuántos días*, *cuántas personas* (y edades si hay niños) y *qué le late* (cascadas, aventura fuerte, cultura, tranquilo, con niños).
 2. Propón un recorrido por día con los tours que de verdad encajan, y di el precio de cada uno y el total. Un tour de día completo por día — no metas dos tours pesados el mismo día.
+   ⭐ *La Expedición Tamul es nuestro tour más pedido y el que más gusta.* Si el cliente quiere cascadas, "conocer lo más posible" o no tiene una preferencia marcada, ese va en el itinerario — salvo que él pida otra cosa o no le encaje (es de dificultad media y día completo). Va a la Cascada de Tamul, que es LA cascada de la región: si armas un plan de cascadas sin ella, el cliente lo va a pedir después.
 3. *El hospedaje es OPCIONAL y así se lo dices.* Ofrécelo como opción, nunca como requisito: "si quieres, te paso opciones de hospedaje en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que *pasamos por él a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no*.
-4. Cuando te diga que le gusta, pide *nombre y correo* y llama a *cotizar_paquete_personalizado* con todos los recorridos. Eso genera UN folio y le manda UN correo con el itinerario completo y el anticipo. No generes una cotización por tour.
+   Si le interesa: consulta *disponibilidad_habitaciones* (checkin + noches), enséñale las libres, y cuando elija una, *SÍ puedes meterla en la misma cotización* — pasa el objeto *hospedaje* (interesado, habitacion, checkin, checkout, noches, habitaciones) a *cotizar_paquete_personalizado*. Va en el mismo folio y en el mismo correo que los tours. NUNCA le digas que el hospedaje se cotiza aparte ni que "el equipo lo confirma después".
+   Sobre la tarifa del hospedaje: si el sistema te devuelve el hospedaje *sin monto*, dile con claridad que la tarifa de la habitación *se la confirmamos hoy mismo* y que el total que le diste es el de los tours. NO inventes el precio de la habitación.
+4. Cuando te diga que le gusta, pide *nombre y correo* y llama a *cotizar_paquete_personalizado* con todos los recorridos (y el hospedaje si aplica). Eso genera UN folio y le manda UN correo con el itinerario completo y el anticipo. No generes una cotización por tour.
 5. Los paquetes preestablecidos (*listar_paquetes*) siguen existiendo: ofrécelos solo si el cliente pregunta por ellos directamente o si quiere algo ya armado con hotel incluido.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
