@@ -24,6 +24,16 @@ import { trackPurchase } from "@/lib/analytics";
  * el sitio ya afirma (política de cancelación, fichas de tour): aquí no se
  * inventa ninguna condición nueva.
  */
+/** Lo que ofrece el hotel, para que el cliente sepa qué está comprando. */
+const SERVICIOS_HOTEL = [
+  "Estacionamiento",
+  "Alberca",
+  "WiFi",
+  "Aire acondicionado",
+  "Restaurante",
+  "A 7 min del centro de Xilitla",
+] as const;
+
 const FAQ_CARRITO = [
   {
     q: "¿Cuánto pago hoy y cuándo el resto?",
@@ -324,6 +334,16 @@ export default function CarritoPage() {
   const huespedes  = habs.reduce((s, h) => s + h.huespedes, 0);
   const hotelQuote = conHotel && noches > 0 ? cotizarHabitaciones(habs, noches) : null;
   const totalHotel = hotelQuote?.ok ? hotelQuote.total ?? 0 : 0;
+
+  // Si reserva el hotel con nosotros, la recogida es aquí: se llena solo para
+  // que no tenga que escribirlo, y se puede editar si prefiere otra cosa.
+  useEffect(() => {
+    if (!conHotel || !hotelQuote?.ok) return;
+    const nombres = (hotelQuote.desglose ?? []).map((d) => d.habitacion).join(" + ");
+    setPickup(`Hotel Paraíso Encantado, Xilitla${nombres ? ` — ${nombres}` : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conHotel, JSON.stringify(habs), hotelQuote?.ok]);
+
   // Testimonios de los recorridos que ESTA persona lleva en el carrito: una
   // reseña del tour que ya eligió pesa más que una genérica.
   const resenas = Array.from(
@@ -1068,29 +1088,6 @@ export default function CarritoPage() {
             )}
           </section>
 
-          {/* ── PREGUNTAS DE ÚLTIMO MINUTO ─────────────────────────────────
-              Las dudas que frenan el pago. Todas las respuestas salen de lo que
-              el sitio ya dice en la política de cancelación y en las fichas. */}
-          <section className="mt-6">
-            <h2 className="font-cormorant text-verde-profundo text-xl mb-3">Antes de pagar</h2>
-            <div className="divide-y divide-negro/10 border-y border-negro/10">
-              {FAQ_CARRITO.map((f) => (
-                <details key={f.q} className="group py-3.5">
-                  <summary className="flex items-start justify-between gap-4 cursor-pointer list-none font-dm text-[13px] text-negro/80">
-                    <span>{f.q}</span>
-                    <span className="text-verde-selva text-lg leading-none flex-shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
-                  </summary>
-                  <p className="font-dm text-[12px] text-negro/55 leading-relaxed mt-2 pr-6">{f.a}</p>
-                </details>
-              ))}
-            </div>
-            <p className="font-dm text-[11px] text-negro/40 mt-3">
-              ¿Te quedó otra duda?{" "}
-              <a href="https://wa.me/524891251458?text=Hola%2C%20estoy%20por%20pagar%20mi%20carrito%20y%20tengo%20una%20pregunta."
-                 target="_blank" rel="noopener noreferrer"
-                 className="text-verde-selva underline underline-offset-2">Escríbenos por WhatsApp</a> antes de pagar.
-            </p>
-          </section>
         </div>
 
         {/* ── Resumen y pago ── */}
@@ -1111,10 +1108,25 @@ export default function CarritoPage() {
                 eleccion: i.eleccion,
               };
             }), ...(hotelQuote?.ok ? [{
-              nombre:   `Hospedaje · ${habs.map((h) => getHabitacion(h.habitacionId)?.nombre ?? "").filter(Boolean).join(" + ")}`,
-              detalle:  `${noches} noche${noches > 1 ? "s" : ""} · ${huespedes} huésped${huespedes > 1 ? "es" : ""} · ${habs.length} habitación${habs.length > 1 ? "es" : ""}`,
+              nombre:  `Hospedaje · Hotel Paraíso Encantado`,
+              // Fechas de verdad, no "Falta la fecha": el hospedaje va de un
+              // día a otro y ya se eligieron arriba.
+              fechaTexto: `${formatTourDate(checkin)} → ${formatTourDate(checkout)} · ${noches} noche${noches > 1 ? "s" : ""}`,
+              // Qué habitación y cuánta gente duerme en cada una.
+              detalle: (hotelQuote.desglose ?? [])
+                .map((d) => `${d.habitacion} (${d.huespedes} persona${d.huespedes > 1 ? "s" : ""})`)
+                .join(" + "),
+              extras:  [...SERVICIOS_HOTEL],
               subtotal: totalHotel,
-              incluye:  ["Hotel Paraíso Encantado, en Xilitla", ...((hotelQuote.nochesGratis ?? 0) > 0 ? ["Cada 3.ª noche gratis"] : [])],
+              incluye: [
+                ...(hotelQuote.desglose ?? []).map(
+                  (d) => `${d.habitacion} · ${d.huespedes} persona${d.huespedes > 1 ? "s" : ""} · ${formatMXN(d.porNoche)}/noche`,
+                ),
+                ...((hotelQuote.nochesGratis ?? 0) > 0
+                  ? [`${hotelQuote.nochesGratis} noche${(hotelQuote.nochesGratis ?? 0) > 1 ? "s" : ""} gratis — te ahorras ${formatMXN(hotelQuote.ahorro ?? 0)}`]
+                  : []),
+                ...SERVICIOS_HOTEL,
+              ],
             }] : [])]}
             total={total}
             pagaHoy={anticipo}
@@ -1178,6 +1190,34 @@ export default function CarritoPage() {
             </div>
           )}
         </aside>
+      </div>
+
+      {/* Las preguntas van al FINAL, a lo ancho: arriba empujaban el resumen y
+          el pago fuera de la pantalla justo cuando el cliente iba a decidir. */}
+      <div className="max-w-5xl mx-auto px-6">
+          {/* ── PREGUNTAS DE ÚLTIMO MINUTO ─────────────────────────────────
+            Las dudas que frenan el pago. Todas las respuestas salen de lo que
+            el sitio ya dice en la política de cancelación y en las fichas. */}
+        <section className="mt-14">
+          <h2 className="font-cormorant text-verde-profundo text-xl mb-3">Antes de pagar</h2>
+          <div className="divide-y divide-negro/10 border-y border-negro/10">
+            {FAQ_CARRITO.map((f) => (
+              <details key={f.q} className="group py-3.5">
+                <summary className="flex items-start justify-between gap-4 cursor-pointer list-none font-dm text-[13px] text-negro/80">
+                  <span>{f.q}</span>
+                  <span className="text-verde-selva text-lg leading-none flex-shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <p className="font-dm text-[12px] text-negro/55 leading-relaxed mt-2 pr-6">{f.a}</p>
+              </details>
+            ))}
+          </div>
+          <p className="font-dm text-[11px] text-negro/40 mt-3">
+            ¿Te quedó otra duda?{" "}
+            <a href="https://wa.me/524891251458?text=Hola%2C%20estoy%20por%20pagar%20mi%20carrito%20y%20tengo%20una%20pregunta."
+               target="_blank" rel="noopener noreferrer"
+               className="text-verde-selva underline underline-offset-2">Escríbenos por WhatsApp</a> antes de pagar.
+          </p>
+        </section>
       </div>
     </main>
   );

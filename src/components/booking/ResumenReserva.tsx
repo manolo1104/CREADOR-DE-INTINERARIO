@@ -7,6 +7,14 @@ export interface RenglonResumen {
   nombre:    string;
   /** YYYY-MM-DD. Vacío cuando aún no se elige. */
   fecha?:    string;
+  /**
+   * Texto de fecha ya armado, para renglones que no son de un solo día — el
+   * hospedaje va de una fecha a otra. Sin esto, el renglón del hotel salía con
+   * "Falta la fecha" aunque el cliente ya hubiera elegido entrada y salida.
+   */
+  fechaTexto?: string;
+  /** Servicios del renglón (ej. lo que ofrece el hotel). */
+  extras?:   string[];
   /** "4 adultos, 1 niño" o "Ruta Nanacatli · 2 × RZR 500". */
   detalle?:  string;
   subtotal?: number;
@@ -66,9 +74,14 @@ export function ResumenReserva({
               )}
             </div>
             <p className="font-dm text-[11px] text-negro/45 mt-0.5">
-              {i.fecha ? formatTourDate(i.fecha) : "Falta la fecha"}
+              {i.fechaTexto ? i.fechaTexto : i.fecha ? formatTourDate(i.fecha) : "Falta la fecha"}
               {i.detalle ? ` · ${i.detalle}` : ""}
             </p>
+            {(i.extras ?? []).length > 0 && (
+              <p className="font-dm text-[11px] text-negro/45 mt-1 leading-snug">
+                {(i.extras ?? []).join(" · ")}
+              </p>
+            )}
             {i.eleccion && (
               <p className="font-dm text-[11px] text-verde-selva mt-0.5">Elegiste: {i.eleccion}</p>
             )}
