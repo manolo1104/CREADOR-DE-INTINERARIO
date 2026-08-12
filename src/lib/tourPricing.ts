@@ -199,6 +199,8 @@ export function vehiculoBookingName(tour: Tour, rutaNombre: string, vehiculoNomb
 export interface LineaCarrito {
   tourId: string; tourSlug: string; tourName: string; tourDate: string;
   adults: number; children: number; subtotal: number;
+  /** Los tramos por separado: el correo dice "2 adultos · 1 niño · 1 menor". */
+  childrenMid?: number; childrenSmall?: number;
   ruta?: string; vehiculo?: string; unidades?: number;
   eleccion?: string;
 }
@@ -286,6 +288,8 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
       tourDate: String(raw.tourDate),
       adults:   Number(raw.adults) || 1,
       children: (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0),
+      childrenMid:   Number(raw.childrenMid) || 0,
+      childrenSmall: Number(raw.childrenSmall) || 0,
       subtotal: charge.total,
       ...(eleccionValida ? { eleccion: eleccionValida } : {}),
     });

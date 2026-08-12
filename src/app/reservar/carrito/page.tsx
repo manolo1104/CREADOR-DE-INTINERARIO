@@ -67,7 +67,7 @@ interface Cobro {
   amount: number;
   total: number;
   saldo: number;
-  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; subtotal: number; eleccion?: string }[];
+  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string }[];
   hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
   traslado:  { ciudad: string; personas: number; total: number } | null;
 }
@@ -198,16 +198,23 @@ function PagoCarrito({ cobro, datos, onListo }: {
                     subtotal: cobro.traslado.total,
                   }]
                 : []),
-              ...(cobro.hospedaje
-                ? [{
-                    tourName: `Hospedaje · ${cobro.hospedaje.habitacion}`,
-                    tourDate: datos.checkin || primero.tourDate,
-                    adults:   cobro.hospedaje.huespedes,
-                    children: 0,
-                    subtotal: cobro.hospedaje.total,
-                  }]
-                : []),
             ],
+            // El hospedaje va por `packageItems`, NO como un renglón de tour.
+            // El correo tiene un bloque propio para el hotel que pinta noches y
+            // entrada → salida; metiéndolo entre los tours salía como "Hospedaje
+            // · Lirios 1 — 4 personas" y el cliente no veía ni cuántas noches
+            // había pagado ni qué día se iba.
+            packageItems: cobro.hospedaje
+              ? [{
+                  hotel:        "Hotel Paraíso Encantado",
+                  habitacion:   cobro.hospedaje.habitacion,
+                  noches:       cobro.hospedaje.noches,
+                  habitaciones: cobro.hospedaje.habitacion.split(" + ").length,
+                  checkin:      datos.checkin || "",
+                  checkout:     datos.checkout || "",
+                  subtotal:     cobro.hospedaje.total,
+                }]
+              : undefined,
           }),
         });
         const datosRes = await res.json().catch(() => null);

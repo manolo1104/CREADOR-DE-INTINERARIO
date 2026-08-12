@@ -65,7 +65,23 @@ export function buildTourEmailHtml(data: {
       const un = Math.max(1, Number(t.unidades) || 1);
       return `${formatDate(t.tourDate)} · ${un} vehículo${un !== 1 ? "s" : ""}`;
     }
-    return `${formatDate(t.tourDate)} · ${tourParts(t)} persona${tourParts(t) !== 1 ? "s" : ""}`;
+    // Desglose del grupo. Decir solo "4 personas" le escondía al equipo que
+    // van menores: cambia el equipo de seguridad que hay que preparar, y hay
+    // recorridos con edad mínima. El precio ya cobrado los distingue (70 % de 6
+    // a 10, 50 % por debajo), así que el correo también debe.
+    const mid   = Number(t.childrenMid) || 0;
+    const small = Number(t.childrenSmall) || 0;
+    const ad    = Number(t.adults) || 0;
+    const otros = Number(t.children) || 0;
+    const partes: string[] = [];
+    if (ad)    partes.push(`${ad} adulto${ad !== 1 ? "s" : ""}`);
+    if (mid)   partes.push(`${mid} de 6 a 10 años`);
+    if (small) partes.push(`${small} menor${small !== 1 ? "es" : ""} de 6`);
+    if (!mid && !small && otros) partes.push(`${otros} menor${otros !== 1 ? "es" : ""}`);
+    const gente = partes.length
+      ? partes.join(" · ")
+      : `${tourParts(t)} persona${tourParts(t) !== 1 ? "s" : ""}`;
+    return `${formatDate(t.tourDate)} · ${gente}`;
   };
 
   // Tamaño REAL del grupo (no sumar las personas de cada tour: es el mismo grupo).
