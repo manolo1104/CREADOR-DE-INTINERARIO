@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { TOURS_DB, tourDurTexto, INCLUYE_SIEMPRE } from "@/lib/tours";
 import { agregarAlCarrito } from "@/lib/carrito";
+import { PAQUETES_DB } from "@/lib/paquetes";
 import {
   saveTourBookingState, formatMXN, calcTourTotal,
   validatePromoCode, formatTourDate,
@@ -99,6 +100,25 @@ export default function ReservarTourPage() {
   // recalcula el monto en /api/tours/create-payment-intent — esto es solo la UI.
   const chargeAmount = pct === 100 ? total : Math.round((total * pct) / 100);
   const saldo        = total - chargeAmount;
+
+  // Correos de rescate viejos: hasta el arreglo de `linkRecuperacion`, los
+  // carritos de PAQUETE armaban su link como /reservar-tour/<slug>, que no
+  // existe. Esos correos ya están en bandejas de entrada y no se pueden
+  // recuperar, así que aquí se reencaminan en vez de enseñar un 404.
+  const paquete = !tour ? PAQUETES_DB.find((p) => p.slug === params.slug) : undefined;
+  useEffect(() => {
+    if (!paquete) return;
+    const qs = typeof window !== "undefined" ? window.location.search : "";
+    router.replace(`/reservar-paquete/${paquete.slug}${qs}`);
+  }, [paquete, router]);
+
+  if (paquete) {
+    return (
+      <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
+        <p className="font-dm text-negro/50 text-sm">Llevándote a tu paquete…</p>
+      </main>
+    );
+  }
 
   if (notFound || !tour) {
     return (
