@@ -1,9 +1,25 @@
-// Clima REAL-TIME de la Huasteca Potosina (Ciudad Valles) + pronóstico a 7 días.
-// Datos de Open-Meteo (gratis, sin API key). Server component: la petición se
-// cachea 1 h (revalidate), no corre en cada visita, y se oculta solo si falla.
+// Clima real de la Huasteca + pronóstico a 7 días.
+//
+// Fuente: Open-Meteo. Es de lo mejor que hay disponible y no por ser gratis:
+// sirve los modelos de los servicios meteorológicos nacionales sin
+// reempaquetar, y su `best_match` elige el mejor para cada punto con
+// corrección por altitud. Comprobado el 11 ago 2026 en Xilitla: best_match
+// daba 28.8 °C, pegado al ECMWF (28.4), mientras el GFS decía 31.3 porque su
+// terreno no resuelve los 589 m del pueblo. El SMN de CONAGUA no publica una
+// API estable, y sus observaciones alimentan igual a estos modelos.
+//
+// Server component: la petición se cachea 1 h y el bloque se oculta solo si
+// falla, para que un problema del clima nunca rompa el hero.
 
-const LAT = 21.9955;
-const LON = -99.0206; // Ciudad Valles — corazón turístico de la Huasteca
+// Se muestran los DOS puntos de recogida, no uno.
+// Antes solo salía Ciudad Valles, y el sitio entero se posiciona desde
+// Xilitla, que está 500 m más alto: hoy mismo marcaba 23.5 °C contra 27.6, y
+// llueve más. Quien hacía maleta con el dato de Valles llegaba mal abrigado.
+const XILITLA = { lat: 21.3906, lon: -98.9958, nombre: "Xilitla" };
+const VALLES  = { lat: 21.9955, lon: -99.0206, nombre: "Ciudad Valles" };
+
+const LAT = XILITLA.lat;
+const LON = XILITLA.lon;
 
 interface OpenMeteo {
   current?: { temperature_2m: number; weather_code: number };
@@ -16,10 +32,10 @@ interface OpenMeteo {
   };
 }
 
-async function getClima(): Promise<OpenMeteo | null> {
+async function getClima(lat = LAT, lon = LON): Promise<OpenMeteo | null> {
   try {
     const url =
-      `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,weather_code` +
       `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
       `&timezone=America%2FMexico_City&forecast_days=7`;
@@ -52,7 +68,12 @@ const DIAS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const DIAS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export async function ClimaHero({ en = false }: { en?: boolean }) {
-  const data = await getClima();
+  // Las dos en paralelo: si la de Valles falla, el bloque sigue funcionando
+  // con la de Xilitla, que es la que manda.
+  const [data, valles] = await Promise.all([
+    getClima(XILITLA.lat, XILITLA.lon),
+    getClima(VALLES.lat, VALLES.lon),
+  ]);
   if (!data?.current || !data.daily) return null;
 
   const now = wmo(data.current.weather_code, en);
@@ -77,7 +98,12 @@ export async function ClimaHero({ en = false }: { en?: boolean }) {
           <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm">
             {en ? "Weather now · Huasteca" : "Clima ahora · Huasteca"}
           </p>
-          <p className="font-dm text-crema/55 text-[11px]">Ciudad Valles · {now.label}</p>
+          <p className="font-dm text-crema/55 text-[11px]">{XILITLA.nombre} · {now.label}</p>
+          {valles?.current && (
+            <p className="font-dm text-crema/35 text-[10px]">
+              {VALLES.nombre} {Math.round(valles.current.temperature_2m)}°
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-2xl leading-none" aria-hidden="true">{now.emoji}</span>
