@@ -1,4 +1,5 @@
 import { TOURS_DB, INCLUYE_SIEMPRE, incluyeDeTour } from "./tours";
+import { PAQUETES_DB } from "./paquetes";
 
 /**
  * Lo que incluye ESE tour, tomado del catálogo.
@@ -37,7 +38,10 @@ export function buildTourEmailHtml(data: {
   packageItems?:     any[];   // [{hotel,habitacion,noches,habitaciones,checkin,checkout,subtotal}, ...]
 }): string {
   const base = "https://www.huasteca-potosina.com";
-  const tourUrl = `${base}/tours/${data.tourSlug}`;
+  // Mismo criterio que en la cotización: un paquete no vive en /tours.
+  const tourUrl = PAQUETES_DB.some((p) => p.slug === data.tourSlug)
+    ? `${base}/paquetes/${data.tourSlug}`
+    : `${base}/tours/${data.tourSlug}`;
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "Por confirmar";
@@ -442,7 +446,18 @@ export function buildTourQuoteEmailHtml(data: {
 }): string {
   const base     = "https://www.huasteca-potosina.com";
   const waUrl    = "https://wa.me/524891251458";
-  const tourUrl  = `${base}/tours/${data.tourSlug}`;
+  /**
+   * A dónde lleva el botón "Reservar y pagar en línea".
+   *
+   * ⚠️ Antes era SIEMPRE `/tours/<slug>`. En una cotización de PAQUETE el slug
+   * es "completo" o "gran-huasteca", que no son tours: el botón daba 404. Es
+   * exactamente lo que le pasó a Marco Torres el 12 ago 2026 —"la página me
+   * marca error"— y obligó a cerrar la venta a mano por WhatsApp.
+   */
+  const esPaquete = PAQUETES_DB.some((p) => p.slug === data.tourSlug);
+  const tourUrl  = esPaquete
+    ? `${base}/reservar-paquete/${data.tourSlug}`
+    : `${base}/reservar/carrito?agregar=${data.tourSlug}`;
 
   const formatDate = (d: string) => {
     if (!d) return "Por confirmar";
