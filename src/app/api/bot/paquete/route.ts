@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { calcTourTotal, minBookingDate } from "@/lib/tourBooking";
 import { computeVehiculoCharge } from "@/lib/tourPricing";
 import { buildPaquetePersonalizadoEmailHtml } from "@/lib/tourEmail";
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
         unidades: veh.unidades,
         capacidad: veh.vehiculo.capacidad,
         porUnidad: "vehiculo",
-        incluye: [...tour.incluye, ...INCLUYE_SIEMPRE],
+        incluye: incluyeDeTour(tour),
         subtotal: veh.total,
       });
       continue;
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
     lineItems.push({
       tourSlug: tour.slug,
       tourName: tour.nombre,
-      incluye:  [...tour.incluye, ...INCLUYE_SIEMPRE],
+      incluye:  incluyeDeTour(tour),
       tourDate: String(raw.tourDate),
       adults: adultos,
       childrenMid: mid,

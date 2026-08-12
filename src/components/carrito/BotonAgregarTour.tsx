@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, ShoppingBag } from "lucide-react";
 import { agregarAlCarrito } from "@/lib/carrito";
-import { TOURS_DB } from "@/lib/tours";
+import { itemDesdeSlug } from "@/lib/carritoItems";
+import { useCarritoSlugs } from "./useCarritoSlugs";
 
 /**
  * Agrega un recorrido al carrito desde la propia tarjeta del catálogo, sin
@@ -15,71 +16,61 @@ import { TOURS_DB } from "@/lib/tours";
  * el cliente ya está viendo sus días juntos y puede ordenarlos. El pago no deja
  * cobrar nada sin fecha, así que no hay forma de que se cuele una reserva sin
  * día.
+ *
+ * El botón refleja si el tour YA está en el carrito, no solo si se acaba de
+ * pulsar. Antes el "Agregado" era un `setTimeout` de 2.2 s y luego volvía a
+ * decir "Carrito": desde el catálogo era imposible saber qué llevabas puesto, y
+ * el segundo clic no llevaba a ningún lado.
  */
 export function BotonAgregarTour({
-  tourId, tourSlug, tourName, tourImage, precio, porVehiculo,
+  tourSlug, tourName,
 }: {
-  tourId: string;
+  tourId?: string;
   tourSlug: string;
   tourName: string;
-  tourImage: string;
-  precio: number;
+  tourImage?: string;
+  precio?: number;
   porVehiculo?: boolean;
 }) {
   const router = useRouter();
-  const [agregado, setAgregado] = useState(false);
+  const enCarrito = useCarritoSlugs().has(tourSlug);
+  const [recienAgregado, setRecienAgregado] = useState(false);
 
-  function agregar() {
-    // Los tours por vehículo (RZR, café) también entran al carrito. Antes se
-    // mandaba al cliente a la ficha para elegir ruta y unidad, lo que rompía
-    // el flujo del carrito justo a la mitad; ahora se agregan con la primera
-    // ruta y el primer vehículo, y eso se cambia dentro del carrito.
-    if (porVehiculo) {
-      const tour = TOURS_DB.find((t) => t.slug === tourSlug);
-      const ruta = tour?.rutas?.[0];
-      const veh  = tour?.flota?.[0];
-      if (!tour || !ruta || !veh) { router.push(`/reservar-tour/${tourSlug}`); return; }
-      agregarAlCarrito({
-        tourId, tourSlug, tourName, tourImage,
-        tourDate: "",
-        adults: 1, childrenMid: 0, childrenSmall: 0,
-        ruta: ruta.nombre,
-        vehiculo: veh.nombre,
-        unidades: 1,
-        total: veh.precios[0] ?? ruta.desde,
-      });
-      setAgregado(true);
-      setTimeout(() => setAgregado(false), 2200);
+  function alPulsar() {
+    // Ya lo lleva: el clic sirve para ir a cerrarlo, no para volver a meterlo.
+    if (enCarrito) {
+      router.push("/reservar/carrito");
       return;
     }
-    agregarAlCarrito({
-      tourId,
-      tourSlug,
-      tourName,
-      tourImage,
-      tourDate: "",      // se elige en el carrito
-      adults: 2,
-      childrenMid: 0,
-      childrenSmall: 0,
-      total: precio * 2, // referencial; el servidor lo recalcula al cobrar
-    });
-    setAgregado(true);
-    setTimeout(() => setAgregado(false), 2200);
+    const item = itemDesdeSlug(tourSlug);
+    if (!item) return;
+    agregarAlCarrito(item);
+    setRecienAgregado(true);
+    setTimeout(() => setRecienAgregado(false), 2200);
   }
+
+  const estado = recienAgregado ? "agregado" : enCarrito ? "dentro" : "fuera";
+  const texto  = estado === "agregado" ? "Agregado" : estado === "dentro" ? "En tu carrito" : "Carrito";
 
   return (
     <button
       type="button"
-      onClick={agregar}
+      onClick={alPulsar}
       className={`px-3 flex items-center gap-1.5 border text-[10px] tracking-[1.5px] uppercase font-dm transition-colors ${
-        agregado
-          ? "border-verde-vivo text-verde-vivo bg-verde-vivo/10"
-          : "border-white/15 hover:border-dorado/60 text-crema/60 hover:text-dorado"
+        estado === "fuera"
+          ? "border-white/15 hover:border-dorado/60 text-crema/60 hover:text-dorado"
+          : "border-verde-vivo text-verde-vivo bg-verde-vivo/10 hover:bg-verde-vivo/20"
       }`}
-      aria-label={`Agregar ${tourName} al carrito`}
+      aria-label={
+        enCarrito
+          ? `${tourName} ya está en tu carrito — ir al carrito`
+          : `Agregar ${tourName} al carrito`
+      }
     >
-      {agregado ? <Check className="w-3 h-3" aria-hidden="true" /> : <Plus className="w-3 h-3" aria-hidden="true" />}
-      {agregado ? "Agregado" : "Carrito"}
+      {estado === "fuera"    && <Plus className="w-3 h-3" aria-hidden="true" />}
+      {estado === "agregado" && <Check className="w-3 h-3" aria-hidden="true" />}
+      {estado === "dentro"   && <ShoppingBag className="w-3 h-3" aria-hidden="true" />}
+      {texto}
     </button>
   );
 }

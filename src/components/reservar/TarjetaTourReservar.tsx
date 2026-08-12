@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Clock, Users, Star, MapPin, X, Check } from "lucide-react";
 import type { Tour } from "@/lib/tours";
-import { INCLUYE_SIEMPRE, tourDurTexto } from "@/lib/tours";
+import { incluyeDeTour, tourDurTexto } from "@/lib/tours";
 import { formatMXN } from "@/lib/tourBooking";
 import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
 import { Tilt } from "@/components/ui/Tilt";
@@ -62,7 +62,7 @@ export function TarjetaTourReservar({
   /** Los botones no deben abrir la vista rápida. */
   const noPropagar = (e: React.MouseEvent) => e.stopPropagation();
 
-  const incluyeTodo = [...tour.incluye, ...INCLUYE_SIEMPRE];
+  const incluyeTodo = incluyeDeTour(tour);
 
   return (
     <>

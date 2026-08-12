@@ -1,4 +1,4 @@
-import { TOURS_DB, INCLUYE_SIEMPRE } from "./tours";
+import { TOURS_DB, INCLUYE_SIEMPRE, incluyeDeTour } from "./tours";
 
 /**
  * Lo que incluye ESE tour, tomado del catálogo.
@@ -11,7 +11,7 @@ import { TOURS_DB, INCLUYE_SIEMPRE } from "./tours";
  */
 function incluidosDe(tourSlug: string): string {
   const tour = TOURS_DB.find((t) => t.slug === tourSlug);
-  const items = tour ? [...tour.incluye, ...INCLUYE_SIEMPRE] : [...INCLUYE_SIEMPRE];
+  const items = tour ? incluyeDeTour(tour) : [...INCLUYE_SIEMPRE];
   return items.map((x) => `✓ ${x}`).join("<br>");
 }
 

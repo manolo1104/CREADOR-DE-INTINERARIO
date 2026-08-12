@@ -12,7 +12,7 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, tourDurTexto } from "../lib/tours";
-import { INCLUYE_SIEMPRE } from "../lib/tours";
+import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
@@ -172,7 +172,9 @@ const tours = TOURS_DB.map((t) => ({
   pitch: t.descripcion,
   url: `${empresa.sitio}/tours/${t.slug}`,
   destinos: t.destinos,
-  incluye: t.incluye,
+  // Solo lo propio: `incluyeSiempre` va aparte y el bot las dice en dos
+  // frases. Con la lista cruda repetía "seguro de viaje" en las dos.
+  incluye: incluyePropioDeTour(t),
   noIncluye: NO_INCLUYE[t.slug] || [],
   puntoEncuentro: puntoEncuentro(t),
   horario: horarioTour(t),

@@ -10,7 +10,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate } from "@/lib/tourBooking";
 import type { TourBookingState } from "@/lib/tourBooking";
-import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { trackPurchase } from "@/lib/analytics";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
@@ -550,7 +550,7 @@ export default function CheckoutTourPage() {
                     `${booking.adults} adulto${booking.adults > 1 ? "s" : ""}`,
                     booking.children ? `${booking.children} niño${booking.children > 1 ? "s" : ""}` : "",
                   ].filter(Boolean).join(", "),
-              incluye:  [...(tourData?.incluye ?? []), ...INCLUYE_SIEMPRE],
+              incluye:  incluyeDeTour({ incluye: tourData?.incluye ?? [] }),
               addOns:   (booking.addOns ?? []).map((a) => ({
                 nombre: a.nombre, cantidad: a.cantidad, subtotal: a.precio * a.cantidad,
               })),

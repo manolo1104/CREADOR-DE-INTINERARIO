@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveTourBookingState, formatMXN } from "@/lib/tourBooking";
 import { agregarAlCarrito } from "@/lib/carrito";
+import { itemDesdeTour } from "@/lib/carritoItems";
 import { computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
 import type { Tour } from "@/lib/tours";
 import { TourCalendar } from "@/components/booking/TourCalendar";
@@ -74,20 +75,17 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
     if (!canContinue || !ruta || !vehiculo) return;
     const veh = computeVehiculoCharge({ tourSlug: tour.slug, ruta: ruta.nombre, vehiculo: vehiculo.nombre, unidades, pct: 100 });
     if (!veh) return;
-    agregarAlCarrito({
-      tourId:        tour.id,
-      tourSlug:      tour.slug,
-      tourName:      vehiculoBookingName(tour, ruta.nombre, vehiculo.nombre, unidades),
-      tourImage:     tour.imagen_hero,
+    // Los campos comunes salen de `itemDesdeTour` (una sola definición de cómo
+    // nace un renglón); aquí solo se encima lo que el cliente ya configuró.
+    agregarAlCarrito(itemDesdeTour(tour, {
+      tourName: vehiculoBookingName(tour, ruta.nombre, vehiculo.nombre, unidades),
       tourDate,
-      adults:        unidades,
-      childrenMid:   0,
-      childrenSmall: 0,
-      ruta:          ruta.nombre,
-      vehiculo:      vehiculo.nombre,
+      adults:   unidades,
+      ruta:     ruta.nombre,
+      vehiculo: vehiculo.nombre,
       unidades,
-      total:         veh.total,
-    });
+      total:    veh.total,
+    }));
     router.push("/reservar#catalogo");
   }
 

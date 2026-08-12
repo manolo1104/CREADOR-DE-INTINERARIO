@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
       tourId: string; tourSlug: string; tourName: string; tourDate: string;
       adults: number; children: number; subtotal: number;
       ruta?: string; vehiculo?: string; unidades?: number;
+      /** Recorridos con elección obligatoria (Ruta Acuática). */
+      eleccion?: string;
     }[] = [];
     let total = 0;
 
@@ -117,6 +119,10 @@ export async function POST(req: NextRequest) {
         );
       }
       const children = (Number(raw?.childrenMid) || 0) + (Number(raw?.childrenSmall) || 0);
+      // La elección se valida contra el catálogo, no se acepta a ciegas: viene
+      // del localStorage del visitante, que cualquiera puede editar.
+      const eleccionValida = charge.tour.eleccion?.opciones
+        .find((o) => o.nombre === raw?.eleccion || o.id === raw?.eleccion)?.nombre;
       lineItems.push({
         tourId:   charge.tour.id,
         tourSlug: charge.tour.slug,
@@ -125,6 +131,7 @@ export async function POST(req: NextRequest) {
         adults:   Number(raw?.adults) || 1,
         children,
         subtotal: charge.total,
+        ...(eleccionValida ? { eleccion: eleccionValida } : {}),
       });
       total += charge.total;
     }

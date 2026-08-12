@@ -53,6 +53,69 @@ export const INCLUYE_SIEMPRE = [
   "Fotografías y video del recorrido que toma tu guía",
 ] as const;
 
+/** Clave de comparación: sin mayúsculas, sin acentos y sin puntuación. */
+function claveIncluye(x: string): string {
+  return x
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Lo que incluye un recorrido: su propio `incluye` más `INCLUYE_SIEMPRE`, ya sin
+ * repeticiones.
+ *
+ * Todo el que quiera pintar "qué incluye" tiene que pasar por aquí. Cuando se
+ * concatenaban a pelo, 5 de los 10 tours le decían al cliente dos veces "Seguro
+ * de viaje para todos los integrantes" —porque también lo traían en su propio
+ * `incluye`— y Tamul prometía las fotos dos veces con distinto texto. Una lista
+ * que se repite no se lee como generosa, se lee como descuidada, y aparecía en
+ * la pantalla de reserva, en el carrito, en el correo y en el cerebro del bot.
+ *
+ * Se descartan también los casi-duplicados por prefijo: entre "Fotografías y
+ * video del recorrido" y "Fotografías y video del recorrido que toma tu guía"
+ * gana la larga, que es la que dice quién las toma.
+ */
+export function incluyeDeTour(t: Pick<Tour, "incluye">): string[] {
+  const salida: string[] = [];
+  for (const item of [...(t.incluye ?? []), ...INCLUYE_SIEMPRE]) {
+    const texto = item.trim();
+    if (!texto) continue;
+    const clave = claveIncluye(texto);
+    if (!clave) continue;
+
+    const iguales = salida.findIndex((y) => claveIncluye(y) === clave);
+    if (iguales >= 0) continue;
+
+    // Uno contiene al otro: se queda el más específico.
+    const contenido = salida.findIndex((y) => {
+      const cy = claveIncluye(y);
+      return cy.startsWith(clave) || clave.startsWith(cy);
+    });
+    if (contenido >= 0) {
+      if (clave.length > claveIncluye(salida[contenido]).length) salida[contenido] = texto;
+      continue;
+    }
+    salida.push(texto);
+  }
+  return salida;
+}
+
+/**
+ * Lo que incluye ESTE recorrido y no todos: `incluyeDeTour` menos lo que ya
+ * cubre `INCLUYE_SIEMPRE`.
+ *
+ * Es para quien presenta las dos listas por separado —el cerebro del bot las
+ * manda como `incluye` e `incluyeSiempre`, y las dice en dos frases distintas—.
+ * Sin esto, el bot le repetía al cliente "seguro de viaje" en las dos.
+ */
+export function incluyePropioDeTour(t: Pick<Tour, "incluye">): string[] {
+  const siempre = new Set(INCLUYE_SIEMPRE.map(claveIncluye));
+  return incluyeDeTour(t).filter((x) => !siempre.has(claveIncluye(x)));
+}
+
 export interface Tour {
   id:               string;
   nombre:           string;

@@ -37,7 +37,11 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const isAdmin = pathname.startsWith("/admin");
   // Durante el pago no se pone pie de página: cualquier enlace ahí es una
   // salida del embudo justo en el paso que menos conviene interrumpir.
-  const isCheckout = /^\/reservar-(tour|paquete)\//.test(pathname);
+  // `/reservar/carrito` entra aquí: es una pantalla de pago igual que las otras
+  // dos, pero como cuelga de `/reservar` se quedaba fuera del patrón y pintaba
+  // el pie completo —decenas de enlaces de salida— justo debajo del botón de
+  // pagar. `/reservar` a secas es el catálogo y sí lleva pie.
+  const isCheckout = /^\/reservar-(tour|paquete)\/|^\/reservar\/carrito/.test(pathname);
   return (
     <>
       {!isAdmin && <ScrollProgressBar />}

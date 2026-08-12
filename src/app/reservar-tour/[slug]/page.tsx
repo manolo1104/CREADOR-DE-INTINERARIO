@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, incluyeDeTour } from "@/lib/tours";
 import { agregarAlCarrito } from "@/lib/carrito";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import {
@@ -637,7 +637,7 @@ export default function ReservarTourPage() {
                 para que el paso 1 diga lo mismo que el resto del sitio.
               */}
               <ul className="space-y-1.5">
-                {[...tour.incluye, ...INCLUYE_SIEMPRE].map((item) => (
+                {incluyeDeTour(tour).map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs font-dm text-negro/60">
                     <span className="text-verde-selva flex-shrink-0 mt-0.5">✓</span>
                     {item}

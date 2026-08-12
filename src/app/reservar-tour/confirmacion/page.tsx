@@ -10,7 +10,7 @@ interface ConfirmationData {
   tourName:           string;
   tourSlug:           string;
   tourDate:           string;
-  tourDuration:       number;
+  tourDuration?:      number;
   adults:             number;
   children:           number;
   total:              number;
@@ -19,6 +19,15 @@ interface ConfirmationData {
   promoCode?:         string;
   customerName:       string;
   customerEmail:      string;
+  /**
+   * Los renglones cuando la reserva vino del carrito (varios recorridos y, si
+   * lo contrató, el hospedaje). Con esto la pantalla deja de resumir un viaje
+   * de cuatro días como "4 recorridos" y enseña el itinerario que se pagó.
+   */
+  lineItems?: {
+    tourName: string; tourDate: string;
+    adults: number; children: number; subtotal: number;
+  }[];
 }
 
 const NEXT_STEPS = [
@@ -56,15 +65,30 @@ export default function ConfirmacionTourPage() {
 
   useEffect(() => {
     const raw = sessionStorage.getItem("hp_tour_confirmation");
-    if (raw) {
+    if (!raw) return;
+    // Sin el try/catch, un sessionStorage corrupto dejaba la pantalla en blanco
+    // DESPUÉS de haber cobrado. El pago ya está hecho: pase lo que pase aquí,
+    // el cliente tiene que ver algo y su correo ya salió.
+    try {
       setData(JSON.parse(raw));
-      sessionStorage.removeItem("hp_tour_confirmation");
+    } catch {
+      /* se queda el estado de "cargando", que remite al correo */
     }
+    sessionStorage.removeItem("hp_tour_confirmation");
   }, []);
 
+  // Con varios recorridos se listan todos: el mensaje es lo que la persona le
+  // manda al hotel para coordinar, y "3 recorridos" no sirve para coordinar.
   const waMessage = data
     ? encodeURIComponent(
-        `Hola, confirmo mi tour:\n• ${data.tourName}\n• Fecha: ${formatTourDate(data.tourDate)}\n• Participantes: ${data.adults + data.children}\n• Confirmación: ${data.confirmationNumber}`
+        [
+          "Hola, confirmo mi reserva:",
+          ...(data.lineItems?.length
+            ? data.lineItems.map((l) => `• ${l.tourName.split("—")[0].trim()} — ${formatTourDate(l.tourDate)}`)
+            : [`• ${data.tourName}`, `• Fecha: ${formatTourDate(data.tourDate)}`]),
+          `• Participantes: ${data.adults + data.children}`,
+          `• Confirmación: ${data.confirmationNumber}`,
+        ].join("\n"),
       )
     : "";
 
@@ -78,26 +102,38 @@ export default function ConfirmacionTourPage() {
 
   function downloadIcs() {
     if (!data) return;
-    // Evento de día completo en la fecha del tour (la hora exacta se coordina por WhatsApp).
-    const start = data.tourDate.replace(/-/g, "");
-    const [y, m, d] = data.tourDate.split("-").map(Number);
-    const end = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10).replace(/-/g, "");
     const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    // Un evento de día completo por recorrido. Con el carrito, un viaje de
+    // cuatro días tiene que dejar CUATRO días marcados en el calendario, no
+    // solo el primero. La hora exacta se coordina por WhatsApp.
+    const eventos = (data.lineItems?.length ? data.lineItems : [{
+      tourName: data.tourName, tourDate: data.tourDate,
+      adults: data.adults, children: data.children, subtotal: 0,
+    }]).filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(e.tourDate));
+
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
       "PRODID:-//Tours Huasteca Potosina//ES",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
-      "BEGIN:VEVENT",
-      `UID:${data.confirmationNumber}@huasteca-potosina.com`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${start}`,
-      `DTEND;VALUE=DATE:${end}`,
-      `SUMMARY:Tour ${data.tourName} — Huasteca Potosina`,
-      `DESCRIPTION:Confirmación ${data.confirmationNumber}. ${data.adults + data.children} participante(s). Te contactaremos por WhatsApp (+52 489 125 1458) un día antes para coordinar la hora exacta de recogida.`,
-      "LOCATION:Huasteca Potosina, San Luis Potosí, México",
-      "END:VEVENT",
+      ...eventos.flatMap((ev, i) => {
+        const start = ev.tourDate.replace(/-/g, "");
+        const [y, m, d] = ev.tourDate.split("-").map(Number);
+        const end = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10).replace(/-/g, "");
+        return [
+          "BEGIN:VEVENT",
+          `UID:${data.confirmationNumber}-${i}@huasteca-potosina.com`,
+          `DTSTAMP:${stamp}`,
+          `DTSTART;VALUE=DATE:${start}`,
+          `DTEND;VALUE=DATE:${end}`,
+          `SUMMARY:${ev.tourName.split("—")[0].trim()} — Huasteca Potosina`,
+          `DESCRIPTION:Confirmación ${data.confirmationNumber}. ${ev.adults + ev.children} participante(s). Te contactaremos por WhatsApp (+52 489 125 1458) un día antes para coordinar la hora exacta de recogida.`,
+          "LOCATION:Huasteca Potosina, San Luis Potosí, México",
+          "END:VEVENT",
+        ];
+      }),
       "END:VCALENDAR",
     ].join("\r\n");
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
@@ -113,7 +149,12 @@ export default function ConfirmacionTourPage() {
 
   async function handleShare() {
     if (!data) return;
-    const text = `¡Acabo de reservar "${data.tourName}" en la Huasteca Potosina! 🌊 ¿Quién se apunta al próximo? 👉 https://www.huasteca-potosina.com/tours/${data.tourSlug}`;
+    // Sin slug (un carrito de varios recorridos no tiene "uno") el enlace se va
+    // al catálogo, no a `/tours/undefined`.
+    const url = data.tourSlug
+      ? `https://www.huasteca-potosina.com/tours/${data.tourSlug}`
+      : "https://www.huasteca-potosina.com/tours";
+    const text = `¡Acabo de reservar "${data.tourName}" en la Huasteca Potosina! 🌊 ¿Quién se apunta al próximo? 👉 ${url}`;
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ text, title: "Mi tour en la Huasteca Potosina" });
@@ -142,6 +183,8 @@ export default function ConfirmacionTourPage() {
   const chargeAmt = data.chargeAmount ?? data.total;
   const isDeposit = data.paymentMode === "deposit" && !!data.chargeAmount && data.chargeAmount < data.total;
   const remaining = isDeposit ? data.total - chargeAmt : 0;
+  /** La reserva trae más de un renglón: viene del carrito. */
+  const varios = (data.lineItems?.length ?? 0) > 1;
 
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">
@@ -180,18 +223,42 @@ export default function ConfirmacionTourPage() {
         <div className="bg-white border border-negro/8 p-6 mb-6">
           <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Resumen de tu reserva</h2>
           <div className="space-y-4">
-            <div className="font-dm">
-              <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1">Tour</p>
-              <p className="text-negro/80 font-medium">{data.tourName}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            {varios ? (
+              /* Vino del carrito: el itinerario día por día, que es lo que la
+                 persona acaba de pagar. "3 recorridos" no le dice nada. */
               <div className="font-dm">
-                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" /> Fecha
-                </p>
-                <p className="text-negro/80 text-sm">{formatTourDate(data.tourDate)}</p>
-                <p className="text-negro/40 text-xs mt-0.5">Hora: por acordar con el guía</p>
+                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-2">Tu itinerario</p>
+                <ul className="divide-y divide-negro/8 border-y border-negro/8">
+                  {data.lineItems!.map((l, i) => (
+                    <li key={`${l.tourName}-${l.tourDate}-${i}`} className="flex items-baseline justify-between gap-4 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-negro/80 text-sm leading-snug">{l.tourName.split("—")[0].trim()}</p>
+                        <p className="text-negro/45 text-xs mt-0.5">
+                          {formatTourDate(l.tourDate)}
+                          {l.adults + l.children > 0 && ` · ${l.adults + l.children} persona${l.adults + l.children !== 1 ? "s" : ""}`}
+                        </p>
+                      </div>
+                      <span className="text-negro/60 text-sm whitespace-nowrap">{formatMXN(l.subtotal)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
+            ) : (
+              <div className="font-dm">
+                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1">Tour</p>
+                <p className="text-negro/80 font-medium">{data.tourName}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              {!varios && (
+                <div className="font-dm">
+                  <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Fecha
+                  </p>
+                  <p className="text-negro/80 text-sm">{formatTourDate(data.tourDate)}</p>
+                  <p className="text-negro/40 text-xs mt-0.5">Hora: por acordar con el guía</p>
+                </div>
+              )}
               <div className="font-dm">
                 <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
                   <Users className="w-3 h-3" /> Participantes
@@ -201,12 +268,16 @@ export default function ConfirmacionTourPage() {
                   {data.children > 0 ? ` · ${data.children} niño${data.children !== 1 ? "s" : ""}` : ""}
                 </p>
               </div>
-              <div className="font-dm">
-                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Duración
-                </p>
-                <p className="text-negro/80 text-sm">{data.tourDuration} horas aprox.</p>
-              </div>
+              {/* La duración solo existe cuando la reserva es de un tour: un
+                  carrito de varios días no tiene "una" duración. */}
+              {!varios && data.tourDuration ? (
+                <div className="font-dm">
+                  <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Duración
+                  </p>
+                  <p className="text-negro/80 text-sm">{data.tourDuration} horas aprox.</p>
+                </div>
+              ) : null}
               <div className="font-dm">
                 <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1">
                   {isDeposit ? "Depósito pagado" : "Total pagado"}

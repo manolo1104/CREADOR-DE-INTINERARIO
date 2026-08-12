@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,9 +11,10 @@ import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
   actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
+import { itemDesdeSlug } from "@/lib/carritoItems";
 import { HABITACIONES_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
-import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
@@ -73,7 +74,7 @@ interface Cobro {
   amount: number;
   total: number;
   saldo: number;
-  lineItems: { tourName: string; tourDate: string; adults: number; children: number; subtotal: number }[];
+  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; subtotal: number; eleccion?: string }[];
   hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
 }
 
@@ -154,8 +155,12 @@ function PagoCarrito({ cobro, datos, onListo }: {
     if (paymentIntent?.status === "succeeded") {
       const primero = cobro.lineItems[0];
       const resumen = `${cobro.lineItems.length} recorridos`;
+      // El folio real lo devuelve `send-confirmation`. Antes se ignoraba la
+      // respuesta y la pantalla de éxito acababa enseñando `undefined` donde va
+      // el número que el cliente tiene que presentarle al guía.
+      let confirmationNumber = "";
       try {
-        await fetch("/api/tours/send-confirmation", {
+        const res = await fetch("/api/tours/send-confirmation", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -165,6 +170,11 @@ function PagoCarrito({ cobro, datos, onListo }: {
             notes: [
               datos.pickup.trim() ? `Recogida: ${datos.pickup.trim()}` : null,
               `Reserva de ${cobro.lineItems.length} recorridos en un solo pago.`,
+              // Sin esto, el equipo recibía la Ruta Acuática sin saber si el
+              // cliente eligió las Siete Cascadas o Tamasopo.
+              ...cobro.lineItems
+                .filter((l) => l.eleccion)
+                .map((l) => `${l.tourName.split("—")[0].trim()} — eligió: ${l.eleccion}`),
               cobro.hospedaje
                 ? `Hospedaje: ${cobro.hospedaje.habitacion}, ${cobro.hospedaje.noches} noche(s), ${cobro.hospedaje.huespedes} huésped(es)${datos.checkin ? ` — entrada ${datos.checkin}` : ""}${datos.checkout ? `, salida ${datos.checkout}` : ""}.`
                 : null,
@@ -192,25 +202,61 @@ function PagoCarrito({ cobro, datos, onListo }: {
             ],
           }),
         });
+        const datosRes = await res.json().catch(() => null);
+        if (datosRes?.confirmationNumber) confirmationNumber = datosRes.confirmationNumber;
       } catch {
         // Si el correo falla, el pago YA se hizo. El webhook de Stripe levanta
         // la reserva igual, así que no se le dice al cliente que falló nada.
       }
 
+      const totalAdultos = cobro.lineItems.reduce((s, l) => s + l.adults, 0);
+      const totalNinos   = cobro.lineItems.reduce((s, l) => s + l.children, 0);
+
       trackPurchase({
-        confirmationNumber: cobro.paymentIntentId,
+        confirmationNumber: confirmationNumber || cobro.paymentIntentId,
         tourId:   primero.tourName,
         tourName: resumen,
         total:    cobro.amount,
-        adults:   cobro.lineItems.reduce((s, l) => s + l.adults, 0),
-        children: cobro.lineItems.reduce((s, l) => s + l.children, 0),
+        adults:   totalAdultos,
+        children: totalNinos,
       });
       trackTourEvent("BOOKING_CONFIRMED", { carrito: true, amount: cobro.amount, total: cobro.total });
 
+      // ⚠️ Esta forma la dicta `ConfirmationData` en
+      // `app/reservar-tour/confirmacion/page.tsx`. El carrito escribía sus
+      // propios nombres (`charged`, `name`, `email`) y la pantalla de éxito
+      // salía sin nombre, sin folio y —lo peor— enseñando el TOTAL donde va lo
+      // COBRADO: le decía al cliente que había pagado el viaje entero cuando
+      // solo dio el anticipo. Si cambias un campo aquí, cámbialo allá.
       sessionStorage.setItem("hp_tour_confirmation", JSON.stringify({
-        tourName: resumen, tourDate: primero.tourDate,
-        total: cobro.total, charged: cobro.amount, saldo: cobro.saldo,
-        email: datos.email, name: datos.name,
+        confirmationNumber: confirmationNumber || cobro.paymentIntentId,
+        tourName:      resumen,
+        tourSlug:      primero.tourSlug ?? "",
+        tourDate:      primero.tourDate,
+        adults:        totalAdultos,
+        children:      totalNinos,
+        total:         cobro.total,
+        chargeAmount:  cobro.amount,
+        paymentMode:   "deposit",
+        customerName:  datos.name,
+        customerEmail: datos.email,
+        // El itinerario completo: un carrito de cuatro días que confirma
+        // diciendo solo "4 recorridos" desperdicia el momento de más confianza.
+        lineItems: [
+          ...cobro.lineItems.map((l) => ({
+            tourName: l.tourName, tourDate: l.tourDate,
+            adults: l.adults, children: l.children, subtotal: l.subtotal,
+          })),
+          ...(cobro.hospedaje
+            ? [{
+                tourName: `Hospedaje · ${cobro.hospedaje.habitacion}`,
+                tourDate: datos.checkin || primero.tourDate,
+                adults:   cobro.hospedaje.huespedes,
+                children: 0,
+                subtotal: cobro.hospedaje.total,
+              }]
+            : []),
+        ],
       }));
       vaciarCarrito();
       onListo();
@@ -292,6 +338,8 @@ export default function CarritoPage() {
   const [checkout,    setCheckout]    = useState("");
   const [error,  setError]  = useState("");
   const [cargando, setCargando] = useState(false);
+  /** El campo de nombre, para poder llevar ahí desde la barra fija de móvil. */
+  const nombreRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setMontado(true);
@@ -433,22 +481,9 @@ export default function CarritoPage() {
    */
   /** Agrega un recorrido desde la lista, sin fecha: se elige aquí mismo. */
   function agregarDelCatalogo(slug: string) {
-    const t = TOURS_DB.find((x) => x.slug === slug);
-    if (!t) return;
-    const porVehiculo = t.precioUnidad === "vehiculo";
-    const ruta = t.rutas?.[0];
-    const veh  = t.flota?.[0];
-    setItems(
-      agregarAlCarrito({
-        tourId: t.id, tourSlug: t.slug, tourName: t.nombre, tourImage: t.imagen_hero,
-        tourDate: "",
-        adults: porVehiculo ? 1 : 2,
-        childrenMid: 0, childrenSmall: 0,
-        ...(porVehiculo && ruta && veh
-          ? { ruta: ruta.nombre, vehiculo: veh.nombre, unidades: 1, total: veh.precios[0] ?? ruta.desde }
-          : { total: t.precio * 2 }),
-      }),
-    );
+    const item = itemDesdeSlug(slug);
+    if (!item) return;
+    setItems(agregarAlCarrito(item));
     setCobro(null);
   }
 
@@ -525,6 +560,25 @@ export default function CarritoPage() {
       setError(`Falta la fecha de ${sinFecha} ${sinFecha === 1 ? "recorrido" : "recorridos"}.`);
       return;
     }
+    // Un recorrido con elección obligatoria y sin elegir no se puede operar: el
+    // equipo no sabría a dónde llevarlo.
+    const sinEleccion = items.filter((i) => {
+      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+      return t?.eleccion && !i.eleccion;
+    });
+    if (sinEleccion.length > 0) {
+      setError(`Falta elegir el recorrido de ${sinEleccion[0].tourName.split("—")[0].trim()}.`);
+      return;
+    }
+    const bajoMinimo = items.filter((i) => {
+      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+      return t && !i.unidades && personasDeItem(i) < t.groupMin;
+    });
+    if (bajoMinimo.length > 0) {
+      const t = TOURS_DB.find((x) => x.slug === bajoMinimo[0].tourSlug)!;
+      setError(`${t.nombre.split("—")[0].trim()} sale a partir de ${t.groupMin} personas.`);
+      return;
+    }
     if (!name.trim() || !email.trim()) {
       setError("Necesitamos tu nombre y tu correo para mandarte la confirmación.");
       return;
@@ -564,14 +618,33 @@ export default function CarritoPage() {
     // React lo remonta en su grupo nuevo y la animación de entrada lo acompaña
     // hasta su lugar. Es el efecto de la lista que pasó Manolo, hecho con la
     // animación que el proyecto ya tiene en tailwind.config, sin librería.
-    <div key={i.uid + i.tourDate} className="animate-slide-up flex gap-4 border border-negro/10 bg-white p-4">
-                  <div className="relative w-24 h-20 flex-shrink-0 overflow-hidden">
-                    <Image src={i.tourImage} alt={i.tourName} fill className="object-cover" sizes="96px" />
+    <div key={i.uid + i.tourDate} className="animate-slide-up flex gap-3 sm:gap-4 border border-negro/10 bg-white p-3 sm:p-4">
+                  <div className="relative w-16 h-14 sm:w-24 sm:h-20 flex-shrink-0 overflow-hidden">
+                    <Image src={i.tourImage} alt={i.tourName} fill className="object-cover" sizes="(max-width: 640px) 64px, 96px" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-cormorant text-verde-profundo text-lg leading-tight">
-                      {i.tourName.split("—")[0].trim()}
-                    </p>
+                    {/* Título, precio y papelera en la MISMA línea.
+                      El precio vivía en una tercera columna del renglón y en un
+                      teléfono no cabía: con la foto, el selector de fecha y los
+                      contadores, la fila se pasaba del ancho de la tarjeta y el
+                      precio y el bote de basura quedaban cortados contra el
+                      borde de la pantalla. El importe es justo el dato que la
+                      persona busca al revisar su carrito. */}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-cormorant text-verde-profundo text-lg leading-tight min-w-0">
+                        {i.tourName.split("—")[0].trim()}
+                      </p>
+                      <span className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-cormorant text-dorado text-lg sm:text-xl whitespace-nowrap">{formatMXN(i.total)}</span>
+                        <button
+                          onClick={() => quitar(i.uid)}
+                          aria-label={`Quitar ${i.tourName}`}
+                          className="w-8 h-8 -mr-1.5 flex items-center justify-center text-negro/30 hover:text-terracota transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </span>
+                    </div>
   
                     {/* La fecha se edita AQUÍ: los recorridos que se agregan desde
                         el catálogo llegan sin ella, y sin esto el carrito no se
@@ -631,9 +704,11 @@ export default function CarritoPage() {
                         // 6–10 años al 70 %, menores de 6 al 50 %.
                         <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                           {([
-                            { campo: "adults"        as const, etiqueta: "adultos",     nota: "" },
-                            { campo: "childrenMid"   as const, etiqueta: "niños 6–10",  nota: "70 %" },
-                            { campo: "childrenSmall" as const, etiqueta: "menores de 6", nota: "50 %" },
+                            // `singular` porque con un solo acompañante se leía
+                            // "1 adultos" y "1 niños 6–10".
+                            { campo: "adults"        as const, etiqueta: "adultos", singular: "adulto", nota: "" },
+                            { campo: "childrenMid"   as const, etiqueta: "de 6 a 10 años", singular: "de 6 a 10 años", nota: "70 %" },
+                            { campo: "childrenSmall" as const, etiqueta: "menores de 6",   singular: "menor de 6",     nota: "50 %" },
                           ])
                             // El buceo en Media Luna es solo para adultos y el
                             // servidor rechaza la reserva con menores. Enseñar
@@ -641,18 +716,18 @@ export default function CarritoPage() {
                             // arme su grupo, vea un precio y el pago le falle
                             // con un error genérico.
                             .filter(({ campo }) => campo === "adults" || !TOURS_DB.find((t) => t.slug === i.tourSlug)?.soloAdultos)
-                            .map(({ campo, etiqueta, nota }) => (
+                            .map(({ campo, etiqueta, singular, nota }) => (
                             <span key={campo} className="flex items-center gap-1.5">
                               <button type="button" aria-label={`Menos ${etiqueta} en ${i.tourName}`}
                                 onClick={() => cambiarPersonas(i, campo, -1)}
-                                className="w-6 h-6 border border-negro/20 text-negro/60 hover:border-verde-selva text-xs">−</button>
+                                className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
                               <span className="font-dm text-[11px] text-negro/65 whitespace-nowrap">
-                                {i[campo] ?? 0} {etiqueta}
+                                {i[campo] ?? 0} {(i[campo] ?? 0) === 1 ? singular : etiqueta}
                                 {nota && <span className="text-negro/35"> ({nota})</span>}
                               </span>
                               <button type="button" aria-label={`Más ${etiqueta} en ${i.tourName}`}
                                 onClick={() => cambiarPersonas(i, campo, 1)}
-                                className="w-6 h-6 border border-negro/20 text-negro/60 hover:border-verde-selva text-xs">+</button>
+                                className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
                             </span>
                           ))}
                         </span>
@@ -668,7 +743,79 @@ export default function CarritoPage() {
                     {!i.tourDate && (
                       <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
                     )}
-  
+
+                    {/* Elección obligatoria del recorrido (Ruta Acuática: el día
+                      no da para las dos mitades).
+                      ⚠️ El carrito PINTABA esta elección si ya venía puesta,
+                      pero no tenía dónde elegirla y no la mandaba al servidor:
+                      quien reservaba por aquí compraba un día prometido como
+                      "lo decides al reservar" sin decidir nada, y al equipo le
+                      llegaba la reserva sin saber a dónde llevarlo. */}
+                    {(() => {
+                      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+                      if (!t?.eleccion) return null;
+                      return (
+                        <div className={`mt-2.5 border p-2.5 ${i.eleccion ? "border-negro/10" : "border-terracota/40 bg-terracota/5"}`}>
+                          <p className="font-dm text-[11px] text-negro/70 mb-2">{t.eleccion.titulo}</p>
+                          <div className="space-y-1.5">
+                            {t.eleccion.opciones.map((o) => {
+                              const activa = i.eleccion === o.nombre;
+                              return (
+                                <button
+                                  key={o.id}
+                                  type="button"
+                                  onClick={() => cambiar(i.uid, { eleccion: o.nombre })}
+                                  aria-pressed={activa}
+                                  className={`w-full text-left border p-2 transition-colors ${
+                                    activa ? "border-verde-selva bg-verde-selva/8" : "border-negro/15 hover:border-verde-selva/50"
+                                  }`}
+                                >
+                                  <span className="flex items-start gap-2">
+                                    <span className={`mt-0.5 w-3 h-3 flex-shrink-0 rounded-full border ${activa ? "border-verde-selva bg-verde-selva" : "border-negro/30"}`} aria-hidden="true" />
+                                    <span className="min-w-0">
+                                      <span className="block font-dm text-[12px] text-negro/80 leading-snug">{o.nombre}</span>
+                                      {o.nota && <span className="block font-dm text-[11px] text-negro/45 leading-snug">{o.nota}</span>}
+                                    </span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {!i.eleccion && (
+                            <p className="font-dm text-[11px] text-terracota mt-2">Elige una para poder continuar</p>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* El grupo no llega al mínimo del recorrido. Antes esto no
+                      se decía en el carrito: el renglón se veía normal, con su
+                      precio, y el error salía hasta el cobro, genérico y sin
+                      señalar cuál era. La salida por WhatsApp existe porque el
+                      equipo sí suma gente suelta a otro grupo. */}
+                    {(() => {
+                      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+                      if (!t || i.unidades || personasDeItem(i) >= t.groupMin) return null;
+                      return (
+                        <div className="mt-2 border border-terracota/40 bg-terracota/5 p-2.5">
+                          <p className="font-dm text-[11px] text-negro/70 leading-snug">
+                            Este recorrido sale a partir de <strong>{t.groupMin} personas</strong>. ¿Van menos?{" "}
+                            <a
+                              href={`https://wa.me/524891251458?text=${encodeURIComponent(
+                                `Hola, somos ${personasDeItem(i)} y nos interesa ${t.nombre.split("—")[0].trim()}. ¿Nos pueden sumar a otro grupo?`,
+                              )}`}
+                              target="_blank" rel="noopener noreferrer"
+                              onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_grupo_minimo", tour: i.tourSlug })}
+                              className="text-verde-selva underline underline-offset-2"
+                            >
+                              Escríbenos y los sumamos a otro grupo
+                            </a>.
+                          </p>
+                        </div>
+                      );
+                    })()}
+
+
                     {/* Actividades opcionales del recorrido. Se agregan aquí
                       porque al meter un tour desde el catálogo nunca se pasa
                       por el paso 1, que es donde vivía la única forma de
@@ -739,7 +886,7 @@ export default function CarritoPage() {
                             )}
                             <div>
                               <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Incluye</p>
-                              {[...t.incluye, ...INCLUYE_SIEMPRE].map((x) => (
+                              {incluyeDeTour(t).map((x) => (
                                 <p key={x} className="font-dm text-[12px] text-negro/60 leading-snug">✓ {x}</p>
                               ))}
                             </div>
@@ -750,16 +897,6 @@ export default function CarritoPage() {
                         </details>
                       );
                     })()}
-                  </div>
-                  <div className="text-right flex-shrink-0 flex flex-col justify-between">
-                    <span className="font-cormorant text-dorado text-xl">{formatMXN(i.total)}</span>
-                    <button
-                      onClick={() => quitar(i.uid)}
-                      aria-label={`Quitar ${i.tourName}`}
-                      className="text-negro/30 hover:text-terracota transition-colors self-end"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
   );
@@ -777,15 +914,13 @@ export default function CarritoPage() {
             Ver los recorridos
           </Link>
         </div>
-        {/* A los 3 minutos sin cerrar la reserva. Se apaga solo cuando el
-          cliente ya está en la pantalla de pago. */}
-      <RescatePopup activo={items.length > 0 && !cobro} mensaje={waRescate} />
-    </main>
+      </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-crema pt-24 pb-20">
+    // `pb-36` en móvil: la barra fija de abajo tapaba el final de las preguntas.
+    <main className="min-h-screen bg-crema pt-24 pb-36 lg:pb-20">
       <div className="max-w-5xl mx-auto px-6 mb-8">
         <Link href="/reservar" className="inline-flex items-center gap-1.5 text-negro/50 hover:text-verde-selva text-xs font-dm tracking-[1px] uppercase transition-colors">
           <ChevronLeft className="w-3 h-3" />
@@ -1129,40 +1264,6 @@ export default function CarritoPage() {
               Cifras reales y verificables: la calificación enlaza a las
               reseñas de Google, y los testimonios son de los recorridos que
               esta persona lleva en el carrito, no de cualquiera. */}
-          <section className="mt-8 border border-negro/10 bg-white p-5">
-            <a
-              href={GOOGLE_MAPS_REVIEWS_URL}
-              target="_blank" rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2.5 mb-4"
-            >
-              <span className="flex gap-0.5" aria-hidden="true">
-                {[...Array(5)].map((_, k) => <Star key={k} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
-              </span>
-              <span className="font-dm text-[13px] text-negro/75">
-                <strong className="text-negro">4.9</strong> · 492 reseñas en Google
-              </span>
-              <span className="font-dm text-[11px] text-negro/40 group-hover:text-verde-selva transition-colors">Verlas →</span>
-            </a>
-            <p className="flex items-center gap-2 font-dm text-[12px] text-negro/50 mb-4">
-              <Users className="w-3.5 h-3.5 text-verde-selva" aria-hidden="true" />
-              +10,000 viajeros desde 2019 · Premio Arival 2023 · Guías certificados NOM-09 SECTUR
-            </p>
-
-            {resenas.length > 0 && (
-              <div className="space-y-3 border-t border-negro/8 pt-4">
-                {resenas.map((r) => (
-                  <div key={r.nombre + r.texto.slice(0, 12)} className="flex gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.foto} alt="" width={32} height={32} loading="lazy" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-dm text-[12px] text-negro/70 leading-snug">“{r.texto}”</p>
-                      <p className="font-dm text-[11px] text-negro/40 mt-1">{r.nombre} · {r.ciudad}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
 
         </div>
 
@@ -1180,7 +1281,7 @@ export default function CarritoPage() {
                   ? `${i.ruta} · ${i.unidades} × ${i.vehiculo}`
                   : `${personasDeItem(i)} ${personasDeItem(i) === 1 ? "persona" : "personas"}`,
                 subtotal: i.total,
-                incluye:  [...(t?.incluye ?? []), ...INCLUYE_SIEMPRE],
+                incluye:  incluyeDeTour({ incluye: t?.incluye ?? [] }),
                 eleccion: i.eleccion,
                 // Las actividades opcionales se cobran, así que tienen que
                 // verse en el resumen. Se contratan en el renglón de arriba y
@@ -1224,6 +1325,7 @@ export default function CarritoPage() {
           {!cobro ? (
             <div className="pt-4 space-y-3">
               <input
+                ref={nombreRef}
                 value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Nombre completo *"
                 className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
@@ -1285,6 +1387,45 @@ export default function CarritoPage() {
           "otros ya lo hicieron", luego las dudas concretas. */}
       <div className="max-w-5xl mx-auto px-6">
 
+        {/* Prueba social a lo ancho, DESPUÉS del pago. En un teléfono el
+          aside cae debajo de todo, así que con las reseñas aquí arriba había
+          que pasar tres testimonios largos antes de ver el total y el botón
+          de pagar. */}
+              <section className="mt-8 border border-negro/10 bg-white p-5">
+                <a
+                  href={GOOGLE_MAPS_REVIEWS_URL}
+                  target="_blank" rel="noopener noreferrer"
+                  className="group inline-flex items-center gap-2.5 mb-4"
+                >
+                  <span className="flex gap-0.5" aria-hidden="true">
+                    {[...Array(5)].map((_, k) => <Star key={k} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
+                  </span>
+                  <span className="font-dm text-[13px] text-negro/75">
+                    <strong className="text-negro">4.9</strong> · 492 reseñas en Google
+                  </span>
+                  <span className="font-dm text-[11px] text-negro/40 group-hover:text-verde-selva transition-colors">Verlas →</span>
+                </a>
+                <p className="flex items-center gap-2 font-dm text-[12px] text-negro/50 mb-4">
+                  <Users className="w-3.5 h-3.5 text-verde-selva" aria-hidden="true" />
+                  +10,000 viajeros desde 2019 · Premio Arival 2023 · Guías certificados NOM-09 SECTUR
+                </p>
+
+                {resenas.length > 0 && (
+                  <div className="space-y-3 border-t border-negro/8 pt-4">
+                    {resenas.map((r) => (
+                      <div key={r.nombre + r.texto.slice(0, 12)} className="flex gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={r.foto} alt="" width={32} height={32} loading="lazy" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-dm text-[12px] text-negro/70 leading-snug">“{r.texto}”</p>
+                          <p className="font-dm text-[11px] text-negro/40 mt-1">{r.nombre} · {r.ciudad}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
           {/* ── PREGUNTAS DE ÚLTIMO MINUTO ─────────────────────────────────
             Las dudas que frenan el pago. Todas las respuestas salen de lo que
             el sitio ya dice en la política de cancelación y en las fichas. */}
@@ -1309,6 +1450,42 @@ export default function CarritoPage() {
           </p>
         </section>
       </div>
+
+      {/* ── Barra fija de móvil ────────────────────────────────────────────
+        En un teléfono el resumen y el botón viven al fondo de una página de casi
+        cuatro mil píxeles: mientras el cliente ajusta fechas y personas no tiene
+        a la vista ni lo que va a pagar ni por dónde seguir. Es el mismo patrón
+        que las fichas de tour ya usan (`MobileBookingBar`).
+        Desaparece al entrar al pago: ahí manda el formulario de la tarjeta. */}
+      {!cobro && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-negro/10 bg-crema/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/45 leading-none">Pagas hoy (30 %)</p>
+            <p className="font-cormorant text-dorado text-xl leading-tight">{formatMXN(anticipo)} MXN</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              // Con los datos puestos, cobra. Si no, lleva al formulario en vez
+              // de dejar el aviso de error a dos mil píxeles de distancia.
+              if (name.trim() && email.trim()) { irAlPago(); return; }
+              nombreRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+              setTimeout(() => nombreRef.current?.focus({ preventScroll: true }), 450);
+            }}
+            disabled={cargando}
+            className="ml-auto flex-shrink-0 bg-verde-selva text-crema px-5 py-3.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40"
+          >
+            {cargando ? "Un momento…" : "Continuar →"}
+          </button>
+        </div>
+      )}
+
+      {/* A los 3 minutos sin cerrar la reserva. Se apaga solo cuando el cliente
+        ya está en la pantalla de pago.
+        ⚠️ Vive aquí, en el árbol del carrito CON recorridos. Estuvo colgado del
+        `return` del carrito vacío, donde su propia condición (`items.length > 0`)
+        no podía cumplirse nunca: no se mostró una sola vez desde que se creó. */}
+      <RescatePopup activo={items.length > 0 && !cobro} mensaje={waRescate} />
     </main>
   );
 }
