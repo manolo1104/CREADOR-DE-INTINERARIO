@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { minBookingDate } from "@/lib/tourBooking";
+import { bloquearScroll } from "@/lib/scrollLock";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -59,26 +61,36 @@ function buildGrid(year: number, month: number): (Date | null)[] {
   return grid;
 }
 
+function formatDisplay(ymd: string): string {
+  if (!ymd) return "";
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const f = date.toLocaleDateString("es-MX", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+  return f.charAt(0).toUpperCase() + f.slice(1);
+}
+
 // ── MonthGrid ─────────────────────────────────────────────────────────────────
 
 function MonthGrid({
-  year, month, selected, onSelect,
+  year, month, selected, bloqueadas, motivoBloqueo, onSelect,
 }: {
   year:     number;
   month:    number;
   selected: string;
+  bloqueadas: Set<string>;
+  motivoBloqueo?: (ymd: string) => string;
   onSelect: (ymd: string) => void;
 }) {
   const grid = buildGrid(year, month);
 
   return (
     <div className="min-w-0">
-      {/* Month label */}
       <p className="text-center font-cormorant text-verde-profundo text-base mb-3 leading-none">
         {MONTHS_ES[month]} {year}
       </p>
 
-      {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS_ES.map((d) => (
           <span key={d} className="text-center text-[10px] tracking-[1px] uppercase text-negro/35 font-dm py-1">
@@ -87,13 +99,13 @@ function MonthGrid({
         ))}
       </div>
 
-      {/* Days */}
       <div className="grid grid-cols-7 gap-y-1">
         {grid.map((date, i) => {
           if (!date) return <span key={`empty-${i}`} />;
 
           const ymd        = formatYMD(date);
           const past       = fueraDeRango(date);
+          const ocupado    = bloqueadas.has(ymd);
           const isSelected = ymd === selected;
 
           if (past) {
@@ -106,12 +118,27 @@ function MonthGrid({
             );
           }
 
+          // Día que ya ocupa otro recorrido del carrito. Se distingue del día
+          // fuera de rango (tachado, no gris muerto) porque no es "imposible",
+          // es "ya lo tienes tomado", y el tooltip dice con qué.
+          if (ocupado) {
+            return (
+              <div key={ymd} className="flex flex-col items-center py-1">
+                <span
+                  title={motivoBloqueo?.(ymd)}
+                  aria-label={motivoBloqueo?.(ymd)}
+                  className="w-8 h-8 flex items-center justify-center text-[12px] font-dm text-negro/30 line-through decoration-terracota/60 cursor-not-allowed select-none"
+                >
+                  {date.getDate()}
+                </span>
+              </div>
+            );
+          }
+
           return (
-            <div
-              key={ymd}
-              className="relative flex flex-col items-center py-1"
-            >
+            <div key={ymd} className="relative flex flex-col items-center py-1">
               <button
+                type="button"
                 onClick={() => onSelect(ymd)}
                 aria-label={`Seleccionar ${ymd}`}
                 className={`w-8 h-8 flex items-center justify-center text-[12px] font-dm rounded-full transition-colors duration-150
@@ -130,29 +157,168 @@ function MonthGrid({
   );
 }
 
-// ── Main TourCalendar ─────────────────────────────────────────────────────────
+// ── Contenido del calendario ────────────────────────────────────────────────
+// Vive FUERA del componente principal a propósito: estaba definido dentro y se
+// recreaba en cada render, lo que remontaba todo el subárbol y tiraba el foco y
+// el scroll de la fila de días. Con un calendario suelto apenas se notaba; con
+// uno por renglón del carrito, sí.
+
+function CalendarInner({
+  value, monthStart, bloqueadas, motivoBloqueo,
+  puedeRetroceder, puedeAvanzar, onPrev, onNext, onSelect,
+}: {
+  value: string;
+  monthStart: Date;
+  bloqueadas: Set<string>;
+  motivoBloqueo?: (ymd: string) => string;
+  puedeRetroceder: boolean;
+  puedeAvanzar: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onSelect: (ymd: string) => void;
+}) {
+  const month2Start = addMonths(monthStart, 1);
+
+  // Atajo de los próximos 14 días: elegir fecha en un clic en lugar de navegar
+  // una cuadrícula. La mayoría reserva para los días inmediatos.
+  const proximosDias = (() => {
+    const inicio = primerDiaReservable();
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+      return {
+        ymd: formatYMD(d),
+        dia: DAYS_ES[(d.getDay() + 6) % 7],
+        num: d.getDate(),
+        mes: MONTHS_ES[d.getMonth()].slice(0, 3),
+      };
+    });
+  })();
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm mb-2">
+          Próximos días
+        </p>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          {proximosDias.map((d) => {
+            const activo  = d.ymd === value;
+            const ocupado = bloqueadas.has(d.ymd);
+            return (
+              <button
+                key={d.ymd}
+                type="button"
+                disabled={ocupado}
+                title={ocupado ? motivoBloqueo?.(d.ymd) : undefined}
+                onClick={() => onSelect(d.ymd)}
+                aria-pressed={activo}
+                aria-label={`Seleccionar ${d.ymd}`}
+                className={`flex-shrink-0 w-12 py-1.5 border text-center transition-colors ${
+                  activo
+                    ? "border-verde-selva bg-verde-selva text-crema"
+                    : ocupado
+                      ? "border-negro/10 text-negro/25 line-through cursor-not-allowed"
+                      : "border-negro/15 hover:border-verde-selva/50 text-negro"
+                }`}
+              >
+                <span className={`block text-[9px] font-dm uppercase tracking-[1px] ${activo ? "text-crema/70" : "text-negro/40"}`}>
+                  {d.dia}
+                </span>
+                <span className="block text-sm font-dm leading-tight">{d.num}</span>
+                <span className={`block text-[9px] font-dm ${activo ? "text-crema/70" : "text-negro/40"}`}>
+                  {d.mes}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-negro/8 pt-3">
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={!puedeRetroceder}
+          aria-label="Mes anterior"
+          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm">
+          O elige otra fecha
+        </span>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!puedeAvanzar}
+          aria-label="Mes siguiente"
+          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <MonthGrid
+          year={monthStart.getFullYear()} month={monthStart.getMonth()}
+          selected={value} bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo} onSelect={onSelect}
+        />
+        <div className="hidden sm:block">
+          <MonthGrid
+            year={month2Start.getFullYear()} month={month2Start.getMonth()}
+            selected={value} bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo} onSelect={onSelect}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TourCalendar ────────────────────────────────────────────────────────────
 
 interface Props {
   value:    string; // YYYY-MM-DD
   onChange: (ymd: string) => void;
+  /**
+   * `inline` (por defecto) = como siempre: en pantallas ≥sm el calendario se ve
+   * abierto, y en móvil es un botón que abre una hoja.
+   * `compact` = botón + hoja en TODOS los tamaños. Es lo que necesita el
+   * carrito: el calendario abierto mide ~500 px y con cuatro recorridos la
+   * lista dejaba de ser una lista.
+   */
+  modo?: "inline" | "compact";
+  /** Días que ya ocupa otro recorrido del carrito. */
+  fechasBloqueadas?: readonly string[];
+  /** Qué decir de un día bloqueado (sale como tooltip). */
+  motivoBloqueo?: (ymd: string) => string;
+  /** Texto del botón cuando aún no hay fecha. */
+  placeholder?: string;
+  /** Encabezado de la hoja. Con varios calendarios hace falta decir de cuál es. */
+  titulo?: string;
+  /** Ofrece "Quitar fecha" dentro de la hoja. */
+  permitirLimpiar?: boolean;
 }
 
-export function TourCalendar({ value, onChange }: Props) {
+export function TourCalendar({
+  value, onChange,
+  modo = "inline",
+  fechasBloqueadas,
+  motivoBloqueo,
+  placeholder = "Toca para seleccionar fecha",
+  titulo = "Selecciona la fecha",
+  permitirLimpiar = false,
+}: Props) {
   const today = new Date();
   const [monthStart, setMonthStart] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
   );
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [abierto, setAbierto] = useState(false);
+  const [montado, setMontado] = useState(false);
+  const disparadorRef = useRef<HTMLButtonElement | null>(null);
 
-  // Prevent body scroll when mobile sheet is open
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
+  const bloqueadas = new Set(fechasBloqueadas ?? []);
+
+  useEffect(() => setMontado(true), []);
 
   // Los topes evitan que se pueda paginar al pasado o a un año vista.
   const minMes = new Date(primerDiaReservable().getFullYear(), primerDiaReservable().getMonth(), 1);
@@ -169,167 +335,118 @@ export function TourCalendar({ value, onChange }: Props) {
     [maxMes],
   );
 
-  const month2Start = addMonths(monthStart, 1);
+  // Al abrir, aterrizar en el mes de la fecha ya elegida. Sin esto, un recorrido
+  // fechado en diciembre reabría en el mes actual y había que paginar cuatro
+  // veces para ver la fecha que uno mismo puso. No va en el `useState` inicial
+  // porque el componente NO se desmonta entre aperturas.
+  useEffect(() => {
+    if (!abierto) return;
+    const base = value ? new Date(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1, 1) : null;
+    const destino = base && base >= minMes && base <= maxMes ? base : minMes;
+    setMonthStart(destino);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto]);
 
-  // Atajo de los próximos 14 días: elegir fecha en un clic en lugar de navegar
-  // una cuadrícula. La mayoría reserva para los días inmediatos.
-  const proximosDias = (() => {
-    const inicio = primerDiaReservable();
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
-      return {
-        ymd:  formatYMD(d),
-        dia:  DAYS_ES[(d.getDay() + 6) % 7],
-        num:  d.getDate(),
-        mes:  MONTHS_ES[d.getMonth()].slice(0, 3),
-      };
-    });
-  })();
+  // Un solo bloqueo de scroll para todos los calendarios de la página.
+  useEffect(() => {
+    if (!abierto) return;
+    return bloquearScroll();
+  }, [abierto]);
+
+  // Escape cierra y devuelve el foco al botón, como cualquier diálogo.
+  useEffect(() => {
+    if (!abierto) return;
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setAbierto(false); disparadorRef.current?.focus(); }
+    };
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, [abierto]);
 
   function handleSelect(ymd: string) {
+    if (bloqueadas.has(ymd)) return;
     onChange(ymd);
-    setMobileOpen(false);
+    setAbierto(false);
   }
 
-  function formatDisplay(ymd: string) {
-    if (!ymd) return "";
-    const [y, m, d] = ymd.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
-    const formatted = date.toLocaleDateString("es-MX", {
-      weekday: "long", day: "numeric", month: "long", year: "numeric",
-    });
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-  }
-
-  const CalendarInner = () => (
-    <div className="space-y-4">
-      {/* Próximos días — un clic en vez de navegar la cuadrícula */}
-      <div>
-        <p className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm mb-2">
-          Próximos días
-        </p>
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          {proximosDias.map((d) => {
-            const activo = d.ymd === value;
-            return (
-              <button
-                key={d.ymd}
-                type="button"
-                onClick={() => handleSelect(d.ymd)}
-                aria-pressed={activo}
-                aria-label={`Seleccionar ${d.ymd}`}
-                className={`flex-shrink-0 w-12 py-1.5 border text-center transition-colors ${
-                  activo
-                    ? "border-verde-selva bg-verde-selva text-crema"
-                    : "border-negro/15 hover:border-verde-selva/50 text-negro"
-                }`}
-              >
-                <span className={`block text-[9px] font-dm uppercase tracking-[1px] ${activo ? "text-crema/70" : "text-negro/40"}`}>
-                  {d.dia}
-                </span>
-                <span className="block text-sm font-dm leading-tight">{d.num}</span>
-                <span className={`block text-[9px] font-dm ${activo ? "text-crema/70" : "text-negro/40"}`}>
-                  {d.mes}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between border-t border-negro/8 pt-3">
-        <button
-          onClick={prev}
-          disabled={!puedeRetroceder}
-          aria-label="Mes anterior"
-          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <span className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm">
-          O elige otra fecha
-        </span>
-        <button
-          onClick={next}
-          disabled={!puedeAvanzar}
-          aria-label="Mes siguiente"
-          className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Months grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <MonthGrid
-          year={monthStart.getFullYear()}
-          month={monthStart.getMonth()}
-          selected={value}
-          onSelect={handleSelect}
-        />
-        <div className="hidden sm:block">
-          <MonthGrid
-            year={month2Start.getFullYear()}
-            month={month2Start.getMonth()}
-            selected={value}
-            onSelect={handleSelect}
-          />
-        </div>
-      </div>
-
-    </div>
+  const inner = (
+    <CalendarInner
+      value={value} monthStart={monthStart}
+      bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo}
+      puedeRetroceder={puedeRetroceder} puedeAvanzar={puedeAvanzar}
+      onPrev={prev} onNext={next} onSelect={handleSelect}
+    />
   );
 
+  const disparador = (
+    <button
+      ref={disparadorRef}
+      type="button"
+      onClick={() => setAbierto(true)}
+      aria-haspopup="dialog"
+      aria-expanded={abierto}
+      className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 border font-dm text-sm transition-colors ${
+        value
+          ? "border-verde-selva bg-verde-selva/5 text-negro/80"
+          : "border-terracota/60 bg-crema text-terracota"
+      }`}
+    >
+      <span className="truncate text-left">{value ? formatDisplay(value) : placeholder}</span>
+      <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-40" />
+    </button>
+  );
+
+  /**
+   * La hoja se pinta en un portal a `document.body`.
+   * Es `fixed inset-0`, y `position: fixed` deja de referirse a la ventana en
+   * cuanto un ancestro tiene `transform`, `filter` o `contain` — y aquí el
+   * calendario va dentro de un renglón del carrito, con tarjetas animadas
+   * alrededor. Sin el portal, el modal se rompe según dónde se monte.
+   */
+  const hoja = abierto && montado
+    ? createPortal(
+        <div className="fixed inset-0 z-[100]" aria-modal="true" role="dialog">
+          <div className="absolute inset-0 bg-negro/60 backdrop-blur-sm" onClick={() => setAbierto(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-crema rounded-t-2xl shadow-2xl p-6 pb-8 animate-slide-up max-h-[88vh] overflow-y-auto sm:max-w-xl sm:mx-auto sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-cormorant text-verde-profundo text-lg pr-4">{titulo}</h3>
+              <button
+                type="button"
+                onClick={() => setAbierto(false)}
+                aria-label="Cerrar"
+                className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-negro/40 hover:text-negro transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {inner}
+            {permitirLimpiar && value && (
+              <button
+                type="button"
+                onClick={() => { onChange(""); setAbierto(false); }}
+                className="mt-5 w-full border border-negro/15 py-2.5 font-dm text-[12px] text-negro/55 hover:border-terracota hover:text-terracota transition-colors"
+              >
+                Quitar la fecha
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  // ── Compacto: botón + hoja en todos los tamaños ──
+  if (modo === "compact") {
+    return <>{disparador}{hoja}</>;
+  }
+
+  // ── Inline: abierto en escritorio, hoja en móvil ──
   return (
     <div>
-      {/* ── Desktop: calendar always visible ── */}
-      <div className="hidden sm:block">
-        <CalendarInner />
-      </div>
+      <div className="hidden sm:block">{inner}</div>
+      <div className="sm:hidden">{disparador}</div>
+      {hoja}
 
-      {/* ── Mobile: trigger + bottom sheet ── */}
-      <div className="sm:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className={`w-full flex items-center justify-between px-4 py-3 border font-dm text-sm transition-colors ${
-            value
-              ? "border-verde-selva bg-verde-selva/5 text-negro/80"
-              : "border-negro/20 bg-crema text-negro/40"
-          }`}
-        >
-          <span>{value ? formatDisplay(value) : "Toca para seleccionar fecha"}</span>
-          <ChevronRight className="w-4 h-4 text-negro/30" />
-        </button>
-
-        {/* Bottom sheet overlay */}
-        {mobileOpen && (
-          <div className="fixed inset-0 z-[100]" aria-modal="true" role="dialog">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-negro/60 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)}
-            />
-            {/* Sheet */}
-            <div className="absolute bottom-0 left-0 right-0 bg-crema rounded-t-2xl shadow-2xl p-6 pb-8 animate-slide-up">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-cormorant text-verde-profundo text-lg">Selecciona la fecha</h3>
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Cerrar"
-                  className="w-8 h-8 flex items-center justify-center text-negro/40 hover:text-negro transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <CalendarInner />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Selection confirmation (both mobile & desktop) */}
       {value && (
         <div className="mt-3 flex items-center gap-2 text-verde-selva text-xs font-dm animate-fade-in">
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

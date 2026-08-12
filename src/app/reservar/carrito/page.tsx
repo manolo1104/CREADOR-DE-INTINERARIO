@@ -12,12 +12,14 @@ import {
   actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
+import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
 import { TRASLADOS, getTraslado, tarifaTraslado, precioBase } from "@/lib/traslados";
 import { HABITACIONES_HOTEL, SERVICIOS_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
+import { TourCalendar } from "@/components/booking/TourCalendar";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
@@ -370,6 +372,10 @@ export default function CarritoPage() {
   const renglonRefs = useRef<Record<string, HTMLDivElement | null>>({});
   /** Renglón que acaba de llegar por `?agregar`: se resalta un momento. */
   const [recienLlegado, setRecienLlegado] = useState<string | null>(null);
+  /** Lo que le falta al carrito, por renglón. Se llena al intentar pagar. */
+  const [fallos, setFallos] = useState<FalloCarrito[]>([]);
+  /** Renglón al que se acaba de llevar la vista por un fallo. */
+  const [resaltado, setResaltado] = useState<string | null>(null);
 
   useEffect(() => {
     setMontado(true);
@@ -521,7 +527,11 @@ export default function CarritoPage() {
       }
     }
     setError("");
-    setItems(actualizarItem(uid, cambios));
+    const nuevos = actualizarItem(uid, cambios);
+    setItems(nuevos);
+    // Si ya se había intentado pagar, el aviso se actualiza en vivo: arreglar el
+    // renglón lo apaga sin tener que volver a pulsar el botón.
+    setFallos((f) => (f.length ? validarCarrito(nuevos) : f));
     setCobro(null); // cualquier cambio invalida el importe ya calculado
   }
 
@@ -625,28 +635,21 @@ export default function CarritoPage() {
     .sort((a, b) => a.tourDate.localeCompare(b.tourDate));
   const sinFecha = sinFechaItems.length;
 
+  /** Lleva la vista al renglón que falla y lo resalta. */
+  function irAlRenglon(uid: string) {
+    renglonRefs.current[uid]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setResaltado(uid);
+    setTimeout(() => setResaltado((r) => (r === uid ? null : r)), 2600);
+  }
+
   async function irAlPago() {
-    if (sinFecha > 0) {
-      setError(`Falta la fecha de ${sinFecha} ${sinFecha === 1 ? "recorrido" : "recorridos"}.`);
-      return;
-    }
-    // Un recorrido con elección obligatoria y sin elegir no se puede operar: el
-    // equipo no sabría a dónde llevarlo.
-    const sinEleccion = items.filter((i) => {
-      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
-      return t?.eleccion && !i.eleccion;
-    });
-    if (sinEleccion.length > 0) {
-      setError(`Falta elegir el recorrido de ${sinEleccion[0].tourName.split("—")[0].trim()}.`);
-      return;
-    }
-    const bajoMinimo = items.filter((i) => {
-      const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
-      return t && !i.unidades && personasDeItem(i) < t.groupMin;
-    });
-    if (bajoMinimo.length > 0) {
-      const t = TOURS_DB.find((x) => x.slug === bajoMinimo[0].tourSlug)!;
-      setError(`${t.nombre.split("—")[0].trim()} sale a partir de ${t.groupMin} personas.`);
+    const fallos = validarCarrito(items);
+    setFallos(fallos);
+    if (fallos.length > 0) {
+      // El aviso ya NO se queda solo junto al botón: se lleva a la persona al
+      // recorrido que lo causa, que es lo único accionable.
+      setError("");
+      irAlRenglon(fallos[0].uid);
       return;
     }
     if (!name.trim() || !email.trim()) {
@@ -694,11 +697,19 @@ export default function CarritoPage() {
     // React lo remonta en su grupo nuevo y la animación de entrada lo acompaña
     // hasta su lugar. Es el efecto de la lista que pasó Manolo, hecho con la
     // animación que el proyecto ya tiene en tailwind.config, sin librería.
+    // ⚠️ La `key` era `i.uid + i.tourDate` para que React remontara el renglón
+    // al fecharlo y se disparara `animate-slide-up`. Con el calendario dentro,
+    // ese remonte destruye la hoja ABIERTA en el mismo instante en que se elige
+    // el día. La animación se sacrifica; el calendario no.
     <div
-      key={i.uid + i.tourDate}
+      key={i.uid}
       ref={(el) => { renglonRefs.current[i.uid] = el; }}
       className={`animate-slide-up flex gap-3 sm:gap-4 border bg-white p-3 sm:p-4 transition-colors duration-500 ${
-        recienLlegado === i.uid ? "border-verde-selva ring-2 ring-verde-selva/25" : "border-negro/10"
+        resaltado === i.uid
+          ? "border-terracota ring-2 ring-terracota/25"
+          : recienLlegado === i.uid
+            ? "border-verde-selva ring-2 ring-verde-selva/25"
+            : "border-negro/10"
       }`}
     >
                   <div className="relative w-16 h-14 sm:w-24 sm:h-20 flex-shrink-0 overflow-hidden">
@@ -731,17 +742,32 @@ export default function CarritoPage() {
                     {/* La fecha se edita AQUÍ: los recorridos que se agregan desde
                         el catálogo llegan sin ella, y sin esto el carrito no se
                         podría pagar nunca. */}
-                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                      <input
-                        type="date"
+                    <div className="mt-2 max-w-[280px]">
+                      {/* El MISMO calendario del flujo de un tour, en modo
+                        compacto: botón que abre una hoja. Aquí había un
+                        `<input type="date">` del navegador —el widget más frío
+                        que existe— mientras el otro flujo tenía atajos de los
+                        próximos días y dos meses a la vista. Era la misma
+                        decisión con dos experiencias distintas.
+                        Los días que ya ocupa otro recorrido salen tachados:
+                        cada tour se lleva el día completo, y antes eso se
+                        descubría con un error DESPUÉS de elegir. */}
+                      <TourCalendar
+                        modo="compact"
                         value={i.tourDate}
-                        min={minDate}
-                        onChange={(e) => cambiar(i.uid, { tourDate: e.target.value })}
-                        aria-label={`Fecha de ${i.tourName}`}
-                        className={`border px-2 py-1.5 font-dm text-[12px] bg-white transition-colors ${
-                          i.tourDate ? "border-negro/15 text-negro/70" : "border-terracota/60 text-terracota"
-                        }`}
+                        onChange={(ymd) => cambiar(i.uid, { tourDate: ymd })}
+                        fechasBloqueadas={items.filter((x) => x.uid !== i.uid && x.tourDate).map((x) => x.tourDate)}
+                        motivoBloqueo={(ymd) => {
+                          const otro = items.find((x) => x.uid !== i.uid && x.tourDate === ymd);
+                          return otro ? `Ya tienes "${otro.tourName.split("—")[0].trim()}" ese día` : "Día ocupado";
+                        }}
+                        titulo={`Fecha de ${i.tourName.split("—")[0].trim()}`}
+                        placeholder="Elige la fecha"
+                        permitirLimpiar
                       />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       {i.unidades ? (
                         // Ruta, vehículo y unidades se eligen AQUÍ. Antes el
                         // RZR ni entraba al carrito: el botón del catálogo
@@ -822,9 +848,15 @@ export default function CarritoPage() {
                       </p>
                     )}
   
-                    {!i.tourDate && (
-                      <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
-                    )}
+                    {/* Lo que le falta a ESTE recorrido, dentro de su tarjeta.
+                      Solo después de intentar pagar: recibir el carrito lleno
+                      de avisos en rojo antes de tocar nada es hostil. */}
+                    {fallos.filter((f) => f.uid === i.uid).map((f) => (
+                      <p key={f.campo} className="font-dm text-[11px] text-terracota mt-1.5 flex items-start gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
+                        <span>{f.mensaje}</span>
+                      </p>
+                    ))}
 
                     {/* Elección obligatoria del recorrido (Ruta Acuática: el día
                       no da para las dos mitades).
@@ -863,9 +895,6 @@ export default function CarritoPage() {
                               );
                             })}
                           </div>
-                          {!i.eleccion && (
-                            <p className="font-dm text-[11px] text-terracota mt-2">Elige una para poder continuar</p>
-                          )}
                         </div>
                       );
                     })()}
@@ -1058,9 +1087,16 @@ export default function CarritoPage() {
 
           {sinFechaItems.length > 0 && (
             <div className="mb-6">
-              <p className="flex items-center gap-2 font-dm text-[11px] tracking-[1.5px] uppercase text-terracota mb-2">
+              {/* Neutral mientras la persona todavía está armando su viaje. Los
+                recorridos sin fecha se agrupan arriba porque son los que tiene
+                que atender, pero recibirla con un encabezado en rojo antes de
+                que toque nada la trata como si ya se hubiera equivocado. Se
+                pone en rojo cuando intenta pagar y de verdad falta algo. */}
+              <p className={`flex items-center gap-2 font-dm text-[11px] tracking-[1.5px] uppercase mb-2 transition-colors ${
+                fallos.length > 0 ? "text-terracota" : "text-negro/40"
+              }`}>
                 <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                Falta la fecha ({sinFechaItems.length})
+                {sinFechaItems.length === 1 ? "Elige el día" : `Elige el día (${sinFechaItems.length})`}
               </p>
               <div className="space-y-3">
                 {sinFechaItems.map((i) => Renglon(i))}
@@ -1520,6 +1556,31 @@ export default function CarritoPage() {
                 className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               {error && <p className="text-sm font-dm text-terracota">{error}</p>}
+
+              {/* Resumen accionable. En escritorio esta columna es `sticky`, así
+                que la persona está mirando AQUÍ cuando pulsa: dejar el aviso
+                solo dentro del renglón —que puede estar fuera de pantalla— no
+                sirve. Dice qué falta y lleva ahí. */}
+              {fallos.length > 0 && (
+                <div className="border border-terracota/40 bg-terracota/5 p-3">
+                  <p className="flex items-start gap-1.5 font-dm text-[12px] text-terracota">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
+                    <span>
+                      {fallos.length === 1
+                        ? fallos[0].mensajeLargo
+                        : `Faltan ${fallos.length} datos: ${fallos[0].mensajeLargo.toLowerCase()}…`}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => irAlRenglon(fallos[0].uid)}
+                    className="mt-2 font-dm text-[12px] text-verde-selva underline underline-offset-2 hover:text-verde-vivo transition-colors"
+                  >
+                    Llévame ahí →
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={irAlPago}
                 disabled={cargando}
