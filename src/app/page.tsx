@@ -10,12 +10,14 @@ import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
 import { StatTile } from "@/components/StatTile";
 import { MagneticButton } from "@/components/MagneticButton";
+import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { HeroStats } from "@/components/HeroStats";
 import { ClimaHero } from "@/components/ClimaHero";
 import { VisitantesEnVivo } from "@/components/VisitantesEnVivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { CountdownViaje } from "@/components/CountdownViaje";
 import { GuiaMockup } from "@/components/GuiaMockup";
+import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
@@ -87,7 +89,7 @@ export default async function HomePage() {
   const recentPosts = en ? [] : await getRandomPosts();
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
   // En el inicio mostramos solo 3 tours destacados; el botón lleva al catálogo completo.
-  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "paraiso-escalonado-minas-micos"];
+  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "rzr-xilitla"];
   const toursHome = HOME_TOUR_SLUGS.map((s) => tours.find((t) => t.slug === s)).filter(Boolean) as typeof tours;
 
   const CATEGORIAS = [
@@ -360,37 +362,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── VIAJE PROGRAMADO SEPTIEMBRE ── */}
-      <section aria-label={en ? "September scheduled trip from Mexico City" : "Viaje programado de septiembre desde CDMX"} className="relative px-6 py-20 overflow-hidden border-y border-white/10">
-        <Image src="/imagenes/viaje-septiembre/fondo-cascada.jpg" alt="" fill className="object-cover object-center" sizes="100vw" />
-        <div className="absolute inset-0 bg-gradient-to-r from-negro/95 via-negro/88 to-negro/70" />
-        <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
-          <div className="bg-negro/55 backdrop-blur-md border border-white/10 p-6 md:p-8 rounded-lg">
-            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-              ✦ {en ? "Scheduled group trip · September long weekend" : "Viaje grupal · Puente de Septiembre"}
-            </p>
-            <h2 className="reveal-up font-cormorant font-light text-crema leading-tight mb-3" style={{ fontSize: "clamp(30px,4.5vw,52px)" }}>
-              {en ? "The Huasteca from " : "La Huasteca desde "}<em className="shimmer-gold not-italic">CDMX</em>
-            </h2>
-            <p className="reveal-up reveal-d1 text-crema/75 font-dm text-sm leading-relaxed mb-6 max-w-md">
-              {en
-                ? "4 days / 3 nights · Sep 16–19, 2026. Round-trip transport, lodging and 3 guided all-inclusive tours. You just show up."
-                : "4 días / 3 noches · 16–19 sep 2026. Transporte redondo, hospedaje y 3 recorridos guiados todo incluido. Tú solo llega."}
-            </p>
-            <div className="mb-7">
-              <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">{en ? "from" : "desde"}</p>
-              <p className="font-cormorant text-dorado text-4xl leading-none">$7,900 <span className="font-dm text-[11px] text-crema/45">MXN / {en ? "person" : "persona"}</span></p>
-            </div>
-            <Link href={lp("/viaje-septiembre")} className="inline-flex items-center gap-2 bg-dorado text-negro px-9 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-200">
-              {en ? "See the trip →" : "Ver el viaje →"}
-            </Link>
-          </div>
-          <div className="flex md:justify-end">
-            <CountdownViaje target="2026-09-16T07:00:00-06:00" en={en} variant="hero" />
-          </div>
-        </div>
-      </section>
-
       {/* ── TESTIMONIOS ── */}
       <section aria-label={en ? "Traveler reviews" : "Reseñas de viajeros"} className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-7xl mx-auto">
@@ -548,7 +519,7 @@ export default async function HomePage() {
             <FloatingLeaves />
             <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
-                <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Guía Definitiva · PDF descargable</span>
+                <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Gratis · PDF descargable</span>
                 <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
                   Todo lo que necesitas para{" "}<em className="shimmer-gold">viajar solo por la Huasteca</em>
                 </h2>
@@ -560,16 +531,11 @@ export default async function HomePage() {
                   <span>✓ Precios 2026</span>
                   <span>✓ 3 itinerarios</span>
                 </div>
-                <div className="flex items-baseline justify-center md:justify-start gap-3 mb-6">
-                  <span className="font-cormorant font-light text-crema/40 line-through text-xl">$199</span>
-                  <span className="font-cormorant font-light text-dorado text-4xl">$49 <span className="text-[11px] font-dm text-crema/40">MXN</span></span>
-                </div>
-                <MagneticButton className="inline-block mb-4">
-                  <Link href="/guia" className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
-                    Descargar la guía → $49
-                  </Link>
-                </MagneticButton>
-                <p className="text-[11px] text-crema/30 tracking-wide font-dm">Pago seguro · Descarga inmediata · 🛡️ Garantía 7 días</p>
+                {/* Gratis a cambio del correo. Cobrar $49 por el imán de
+                    leads era cobrar por lo único que convierte a un visitante
+                    frío en alguien a quien puedes escribirle: casi nadie
+                    pagaba, y los que no pagaban se iban sin dejar rastro. */}
+                <GuiaGratisForm />
               </div>
               <div className="relative z-10">
                 <GuiaMockup />
@@ -602,6 +568,44 @@ export default async function HomePage() {
           </section>
         </>
       )}
+
+      {/* ── CIERRE ─────────────────────────────────────────────────────────
+          El inicio terminaba en información práctica y de ahí saltaba a los
+          reconocimientos: quien llegaba hasta abajo —el que más leyó, o sea el
+          más interesado— no tenía nada que pulsar. */}
+      <section aria-label={en ? "Book your trip" : "Reserva tu viaje"} className="relative bg-verde-profundo py-20 px-6 overflow-hidden border-t border-white/10">
+        <FloatingLeaves />
+        <div className="relative z-10 max-w-3xl mx-auto text-center">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+            {en ? "Ready when you are" : "Cuando quieras"}
+          </p>
+          <h2 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(30px,4.5vw,50px)" }}>
+            {en ? <>Your Huasteca trip <em className="shimmer-gold">starts here</em></> : <>Tu viaje a la Huasteca <em className="shimmer-gold">empieza aquí</em></>}
+          </h2>
+          <p className="reveal-up reveal-d1 text-crema/60 font-dm text-sm leading-relaxed max-w-xl mx-auto mb-9">
+            {en
+              ? "Pick your tours, add the nights you need and pay a 30% deposit. Free cancellation up to 48 h before."
+              : "Elige tus recorridos, súmale las noches que necesites y aparta con el 30 %. Cancelas gratis hasta 48 h antes."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <MagneticButton className="inline-block">
+              <Link href={en ? lp("/tours") : "/reservar"} className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
+                {en ? "Book now" : "Reservar ahora"}
+              </Link>
+            </MagneticButton>
+            <a
+              href={waLink(WA_MESSAGES.general)}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-9 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+            >
+              {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
+            </a>
+          </div>
+          <p className="reveal-up reveal-d1 mt-7 text-[11px] tracking-[2px] uppercase font-dm text-crema/35">
+            4.9 ★ · 492 {en ? "Google reviews" : "reseñas Google"} · +10,000 {en ? "travelers" : "viajeros"}
+          </p>
+        </div>
+      </section>
 
       {/* ── BADGES DE CERTIFICACIÓN ── */}
       <section aria-label={en ? "Official certifications and recognition" : "Certificaciones y reconocimientos oficiales"} className="bg-white border-t border-negro/8 py-10 px-6">

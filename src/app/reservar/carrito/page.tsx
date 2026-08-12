@@ -16,6 +16,7 @@ import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/
 import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
+import { RescatePopup } from "@/components/carrito/RescatePopup";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
@@ -323,6 +324,7 @@ export default function CarritoPage() {
   }, [expiraEn]);
 
   const minDate = minBookingDate();
+
   // Las noches salen del calendario, no de un contador suelto: el cliente
   // piensa en "llego el 15 y me voy el 18", no en "tres noches".
   const noches = (() => {
@@ -361,6 +363,22 @@ export default function CarritoPage() {
   const total    = resumen.total + totalHotel;
   const anticipo = Math.round((total * ANTICIPO_PCT) / 100);
   const saldo    = total - anticipo;
+
+  // Mensaje del rescate: lleva lo que el cliente ya eligió para que no tenga
+  // que repetirlo. Sin esto el chat arranca con "hola" y se pierde el contexto.
+  const waRescate = `https://wa.me/524891251458?text=${encodeURIComponent(
+    [
+      "Hola, estoy armando mi viaje en la página y tengo una duda:",
+      "",
+      ...items.map((i) => `• ${i.tourName.split("—")[0].trim()}${i.tourDate ? ` — ${i.tourDate}` : " — (sin fecha)"}`),
+      ...(conHotel && hotelQuote?.ok
+        ? [`• Hospedaje: ${(hotelQuote.desglose ?? []).map((d) => d.habitacion).join(" + ")}${noches ? ` — ${noches} noche(s)` : ""}`]
+        : []),
+      "",
+      `Total estimado: $${total.toLocaleString("es-MX")} MXN`,
+    ].join("\n"),
+  )}`;
+
 
   function quitar(uid: string) {
     setItems(quitarDelCarrito(uid));
@@ -704,7 +722,10 @@ export default function CarritoPage() {
             Ver los recorridos
           </Link>
         </div>
-      </main>
+        {/* A los 3 minutos sin cerrar la reserva. Se apaga solo cuando el
+          cliente ya está en la pantalla de pago. */}
+      <RescatePopup activo={items.length > 0 && !cobro} mensaje={waRescate} />
+    </main>
     );
   }
 
@@ -1049,6 +1070,201 @@ export default function CarritoPage() {
             )}
           </section>
 
+          {/* ── HOSPEDAJE OPCIONAL ─────────────────────────────────────────
+              Apagado por defecto y dicho con todas sus letras: la promesa del
+              sitio es que pasamos por ti a CUALQUIER hospedaje, y muchos ya
+              vienen con hotel. Ofrecerlo sin presionar es la diferencia entre
+              un extra y una molestia. */}
+          <section className="mt-8 border border-negro/10 bg-white p-5">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={conHotel}
+                onChange={(e) => { setConHotel(e.target.checked); setCobro(null); }}
+                className="mt-1 w-4 h-4 accent-verde-selva"
+              />
+              <span>
+                <span className="block font-cormorant text-verde-profundo text-xl">
+                  ¿Quieres que también te hospedemos?
+                </span>
+                <span className="block font-dm text-[12px] text-negro/50 mt-0.5">
+                  En nuestro Hotel Paraíso Encantado, en Xilitla. Es opcional: pasamos por ti aunque te quedes en otro lado.
+                </span>
+              </span>
+            </label>
+
+            {conHotel && (
+              <div className="mt-5 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {HABITACIONES_HOTEL.map((h) => {
+                    const idx    = habs.findIndex((x) => x.habitacionId === h.id);
+                    const activa = idx >= 0;
+                    return (
+                      <div key={h.id} className={`border overflow-hidden transition-colors ${activa ? "border-verde-selva" : "border-negro/12"}`}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCobro(null);
+                            setHabs((prev) =>
+                              activa
+                                ? prev.filter((x) => x.habitacionId !== h.id)
+                                : [...prev, { habitacionId: h.id, huespedes: Math.min(2, h.maxHuespedes) }],
+                            );
+                          }}
+                          className="w-full text-left"
+                        >
+                          <span className="relative block h-28">
+                            <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 300px" />
+                            {activa && (
+                              <span className="absolute inset-0 bg-verde-selva/25 flex items-center justify-center">
+                                <span className="bg-verde-selva text-crema text-[9px] tracking-[2px] uppercase font-dm px-2 py-1">Elegida</span>
+                              </span>
+                            )}
+                            {h.vistaMontana && (
+                              <span className="absolute top-2 left-2 bg-dorado text-negro text-[8px] tracking-[1px] uppercase font-dm px-1.5 py-0.5">
+                                Vista a la montaña
+                              </span>
+                            )}
+                          </span>
+                          <span className="block px-3 pt-3">
+                            <span className="block font-dm text-[13px] text-negro/85">{h.nombre}</span>
+                            <span className="block font-dm text-[11px] text-negro/45 leading-snug mt-0.5">
+                              {h.vista} · hasta {h.maxHuespedes} personas · desde {formatMXN(h.tarifas[2] ?? h.tarifas[1])}/noche
+                            </span>
+                          </span>
+                        </button>
+
+                        {/* Cuánta gente duerme AQUÍ. Con cinco personas hacen
+                            falta dos habitaciones, y el reparto lo decide el
+                            cliente porque cambia el precio. */}
+                        {activa && (
+                          <div className="flex items-center justify-between px-3 py-2 border-t border-negro/8 mt-2">
+                            <span className="font-dm text-[11px] text-negro/55">Duermen aquí</span>
+                            <span className="flex items-center gap-2">
+                              <button type="button" aria-label={`Menos huéspedes en ${h.nombre}`}
+                                onClick={() => { setCobro(null); setHabs((prev) => prev.map((x) => x.habitacionId === h.id ? { ...x, huespedes: Math.max(1, x.huespedes - 1) } : x)); }}
+                                className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                              <span className="font-dm text-[12px] text-negro/80 w-4 text-center">{habs[idx].huespedes}</span>
+                              <button type="button" aria-label={`Más huéspedes en ${h.nombre}`}
+                                onClick={() => { setCobro(null); setHabs((prev) => prev.map((x) => x.habitacionId === h.id ? { ...x, huespedes: Math.min(h.maxHuespedes, x.huespedes + 1) } : x)); }}
+                                disabled={habs[idx].huespedes >= h.maxHuespedes}
+                                className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm disabled:opacity-30">+</button>
+                            </span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => setDetalleHab(detalleHab === h.id ? null : h.id)}
+                          aria-expanded={detalleHab === h.id}
+                          className="w-full px-3 py-2 border-t border-negro/8 font-dm text-[11px] text-verde-selva hover:bg-verde-selva/5 transition-colors text-left"
+                        >
+                          {detalleHab === h.id ? "Ocultar detalles" : "Ver más detalles"}
+                        </button>
+
+                        {detalleHab === h.id && (
+                          <div className="px-3 pb-3 space-y-2">
+                            <p className="font-dm text-[12px] text-negro/60 leading-snug">{h.descripcion}</p>
+                            <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/35">{h.categoria}</p>
+                            <ul className="space-y-0.5">
+                              {h.caracteristicas.map((c) => (
+                                <li key={c} className="font-dm text-[12px] text-negro/55">· {c}</li>
+                              ))}
+                            </ul>
+                            <div className="border-t border-negro/8 pt-2">
+                              <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Precio por noche</p>
+                              {Object.entries(h.tarifas)
+                                .filter(([n]) => Number(n) >= 2)
+                                .map(([n, precio]) => (
+                                  <p key={n} className="flex justify-between font-dm text-[12px] text-negro/55">
+                                    <span>{n} persona{Number(n) > 1 ? "s" : ""}</span>
+                                    <span>{formatMXN(precio as number)}</span>
+                                  </p>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {habs.length === 0 && (
+                  <p className="font-dm text-[12px] text-terracota">Elige al menos una habitación.</p>
+                )}
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">
+                      Entrada
+                    </label>
+                    <input
+                      type="date" value={checkin} min={minDate}
+                      onChange={(e) => { setCheckin(e.target.value); setCobro(null); }}
+                      className="w-full border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-dm text-[11px] tracking-[1.5px] uppercase text-negro/45 mb-1.5">
+                      Salida
+                    </label>
+                    <input
+                      type="date" value={checkout} min={checkin || minDate}
+                      onChange={(e) => { setCheckout(e.target.value); setCobro(null); }}
+                      className="w-full border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* El total de huéspedes ya no se pone aquí: sale de sumar lo
+                    que el cliente asignó a cada habitación. Con cinco personas
+                    eso obliga a elegir dos habitaciones, que es la verdad
+                    operativa: ninguna admite cinco. */}
+                <p className="font-dm text-[12px] text-negro/55">
+                  {huespedes} huésped{huespedes !== 1 ? "es" : ""} en {habs.length} habitación{habs.length !== 1 ? "es" : ""}
+                </p>
+
+                {checkin && checkout && noches <= 0 && (
+                  <p className="font-dm text-[12px] text-terracota">
+                    La salida tiene que ser al menos un día después de la entrada.
+                  </p>
+                )}
+
+                {hotelQuote && !hotelQuote.ok && (
+                  <p className="font-dm text-[12px] text-terracota">{hotelQuote.error}</p>
+                )}
+
+                {hotelQuote?.ok && (
+                  <div className="border-t border-negro/8 pt-3 space-y-1">
+                    <p className="flex justify-between font-dm text-[13px] text-negro/70">
+                      <span>{noches} noche{noches > 1 ? "s" : ""} · {huespedes} huésped{huespedes > 1 ? "es" : ""} · {hotelQuote.desglose?.length} habitación{(hotelQuote.desglose?.length ?? 1) > 1 ? "es" : ""}</span>
+                      <span className="whitespace-nowrap">
+                        {/* El precio tachado hace visible el descuento. Antes
+                            solo se veía el total ya rebajado, así que la
+                            promoción no se notaba y no empujaba a nadie a
+                            quedarse la tercera noche. */}
+                        {(hotelQuote.nochesGratis ?? 0) > 0 && (
+                          <span className="text-negro/35 line-through mr-2">{formatMXN(hotelQuote.totalSinPromo ?? 0)}</span>
+                        )}
+                        <strong>{formatMXN(totalHotel)} MXN</strong>
+                      </span>
+                    </p>
+                    {(hotelQuote.nochesGratis ?? 0) > 0 && (
+                      <p className="font-dm text-[12px] text-verde-selva bg-verde-selva/8 border border-verde-selva/25 px-2.5 py-1.5">
+                        🎁 {hotelQuote.nochesGratis === 1 ? "La 3.ª noche va gratis" : `${hotelQuote.nochesGratis} noches gratis`}: te ahorras {formatMXN(hotelQuote.ahorro ?? 0)}.
+                      </p>
+                    )}
+                    {noches === 2 && (
+                      <p className="font-dm text-[12px] text-dorado">
+                        Si te quedas una noche más, <strong>la 3.ª va gratis</strong> — pagarías lo mismo.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* ── PRUEBA SOCIAL ──────────────────────────────────────────────
               Cifras reales y verificables: la calificación enlaza a las
               reseñas de Google, y los testimonios son de los recorridos que
@@ -1192,9 +1408,12 @@ export default function CarritoPage() {
         </aside>
       </div>
 
-      {/* Las preguntas van al FINAL, a lo ancho: arriba empujaban el resumen y
-          el pago fuera de la pantalla justo cuando el cliente iba a decidir. */}
+      {/* La prueba social y las preguntas van al FINAL, a lo ancho: arriba
+          empujaban el resumen y el pago fuera de la pantalla justo cuando el
+          cliente iba a decidir. Quedan en el orden en que hacen falta —primero
+          "otros ya lo hicieron", luego las dudas concretas. */}
       <div className="max-w-5xl mx-auto px-6">
+
           {/* ── PREGUNTAS DE ÚLTIMO MINUTO ─────────────────────────────────
             Las dudas que frenan el pago. Todas las respuestas salen de lo que
             el sitio ya dice en la política de cancelación y en las fichas. */}
