@@ -45,6 +45,11 @@ const DIF_LABEL: Record<string, string> = { baja: "Fácil", media: "Moderado", a
 const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
 const RANGO_MIN = `$${Math.min(...preciosPorPersona).toLocaleString("es-MX")}`;
 const RANGO_MAX = `$${Math.max(...preciosPorPersona).toLocaleString("es-MX")}`;
+// Derivado del catálogo: estos importes estaban escritos a mano en la respuesta
+// de abajo y se quedaron viejos en cuanto cambió un paquete.
+const preciosPaquete = PAQUETES_DB.map((p) => p.precio);
+const PAQ_MIN = `$${Math.min(...preciosPaquete).toLocaleString("es-MX")}`;
+const PAQ_MAX = `$${Math.max(...preciosPaquete).toLocaleString("es-MX")}`;
 const RZR_DESDE = `$${(TOURS_DB.find((t) => t.id === "tour-rzr-xilitla")?.precio ?? 0).toLocaleString("es-MX")}`;
 
 // Tours con formato privado: el dato ya vivía en el catálogo sin publicarse.
@@ -57,7 +62,7 @@ const PRIVADOS_NOMBRES = `${PRIVADOS.length} de nuestros recorridos`;
 const FAQS_PRECIOS: { q: string; a: string }[] = [
   {
     q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
-    a: `Depende de los días y del plan. Un tour guiado de un día todo incluido cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de 3 a 5 días con hotel y tours va de $9,000 a $15,500 MXN por pareja con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas libres.`,
+    a: `Depende de los días y del plan. Un tour guiado de un día todo incluido cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de 3 a 5 días con hotel y tours va de ${PAQ_MIN} a ${PAQ_MAX} MXN por pareja con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas libres.`,
   },
   {
     q: "¿Los precios de los tours son por persona?",

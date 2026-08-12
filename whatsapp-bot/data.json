@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T08:05:01.121Z",
+  "generatedAt": "2026-08-12T17:21:55.394Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -869,7 +869,7 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 12200,
+      "precio": 12500,
       "precioLabel": "por pareja",
       "badge": null,
       "perfiles": [
@@ -960,7 +960,7 @@
       "duracion": "5 días / 4 noches",
       "dias": 5,
       "noches": 4,
-      "precio": 15500,
+      "precio": 16500,
       "precioLabel": "por pareja",
       "badge": "El más completo",
       "perfiles": [

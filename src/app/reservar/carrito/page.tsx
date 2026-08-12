@@ -12,7 +12,7 @@ import {
   actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
-import { HABITACIONES_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
+import { HABITACIONES_HOTEL, SERVICIOS_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
@@ -26,16 +26,6 @@ import { trackPurchase } from "@/lib/analytics";
  * el sitio ya afirma (política de cancelación, fichas de tour): aquí no se
  * inventa ninguna condición nueva.
  */
-/** Lo que ofrece el hotel, para que el cliente sepa qué está comprando. */
-const SERVICIOS_HOTEL = [
-  "Estacionamiento",
-  "Alberca",
-  "WiFi",
-  "Aire acondicionado",
-  "Restaurante",
-  "A 7 min del centro de Xilitla",
-] as const;
-
 const FAQ_CARRITO = [
   {
     q: "¿Cuánto pago hoy y cuándo el resto?",

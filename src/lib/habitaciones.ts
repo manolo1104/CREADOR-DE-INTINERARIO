@@ -31,6 +31,22 @@ export interface Habitacion {
   imagen:      string;
 }
 
+/**
+ * Lo que ofrece el hotel, para que el cliente sepa qué está comprando.
+ *
+ * Vive aquí y no en una pantalla concreta: lo enseñan el carrito y el checkout
+ * de paquetes, y dos listas separadas acaban diciendo cosas distintas del mismo
+ * hotel.
+ */
+export const SERVICIOS_HOTEL = [
+  "Estacionamiento",
+  "Alberca",
+  "WiFi",
+  "Aire acondicionado",
+  "Restaurante",
+  "A 7 min del centro de Xilitla",
+] as const;
+
 const IMG = "/imagenes/hotel-paraiso-encantado/habitaciones";
 
 export const HABITACIONES_HOTEL: Habitacion[] = [

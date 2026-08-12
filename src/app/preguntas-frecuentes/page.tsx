@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/lib/i18n/config";
 import { TOURS_DB } from "@/lib/tours";
+import { PAQUETES_DB } from "@/lib/paquetes";
 import { formatMXN } from "@/lib/tourBooking";
 
 const URL = `${SITE}/preguntas-frecuentes`;
@@ -15,6 +16,13 @@ const precioDe = (id: string) => formatMXN(TOURS_DB.find((t) => t.id === id)?.pr
 const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
 const PRECIO_MIN = formatMXN(Math.min(...preciosPorPersona));
 const PRECIO_MAX = formatMXN(Math.max(...preciosPorPersona));
+// Del catálogo, no a mano: el rango de paquetes se quedaba viejo cada vez que
+// cambiaba un precio.
+const preciosPaquete = PAQUETES_DB.map((p) => p.precio);
+const PAQ_MIN = formatMXN(Math.min(...preciosPaquete));
+const PAQ_MAX = formatMXN(Math.max(...preciosPaquete));
+const PAQ_DIAS_MIN = Math.min(...PAQUETES_DB.map((p) => p.dias));
+const PAQ_DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
 
 export const metadata: Metadata = {
   title: "Preguntas Frecuentes — Tours Huasteca Potosina 2026",
@@ -52,7 +60,7 @@ export const metadata: Metadata = {
 const FAQS: { q: string; a: string }[] = [
   {
     q: "¿Cuánto cuesta un tour en la Huasteca Potosina?",
-    a: `Nuestros tours guiados de un día cuestan entre ${PRECIO_MIN} y ${PRECIO_MAX} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${precioDe("tour-edward-james")}, Expedición Tamul ${precioDe("tour-tamul")}, Cascadas del Meco ${precioDe("tour-meco")}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${precioDe("tour-rzr-xilitla")} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de $9,000 (3 días) a $15,500 MXN (5 días) por pareja.`,
+    a: `Nuestros tours guiados de un día cuestan entre ${PRECIO_MIN} y ${PRECIO_MAX} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${precioDe("tour-edward-james")}, Expedición Tamul ${precioDe("tour-tamul")}, Cascadas del Meco ${precioDe("tour-meco")}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${precioDe("tour-rzr-xilitla")} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de ${PAQ_MIN} (${PAQ_DIAS_MIN} días) a ${PAQ_MAX} MXN (${PAQ_DIAS_MAX} días) por pareja.`,
   },
   {
     q: "¿Qué incluyen los tours?",

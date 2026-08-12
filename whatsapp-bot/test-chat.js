@@ -61,7 +61,7 @@ async function run() {
   ok(PAQUETES.length === 3, "hay 3 paquetes");
   ok(DESTINOS.length === 41, "hay 41 destinos");
   ok(findPaquete("aventura").precio === 9000, "Paquete Aventura = $9,000");
-  ok(findPaquete("gran-huasteca").precio === 15500, "Paquete Gran Huasteca = $15,500");
+  ok(findPaquete("gran-huasteca").precio === 16500, "Paquete Gran Huasteca = $16,500");
   ok(!findPaquete("esencial"), "el paquete 'Esencial' ya NO existe");
   ok(findDestino("las pozas").precioEntrada === "$180 MXN", "Las Pozas entrada $180");
   ok((DESTINO_TOUR["cascada-de-tamul"] || []).some((r) => r.slug === "rappel-tamul"), "Tamul → cross-sell tour vendible");

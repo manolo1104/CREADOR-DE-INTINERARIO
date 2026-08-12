@@ -3,13 +3,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { getPaquete } from "@/lib/paquetes";
+import { getPaquete, HABITACIONES } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
+import { HABITACIONES_HOTEL, SERVICIOS_HOTEL } from "@/lib/habitaciones";
 import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel } from "lucide-react";
 
 const stripePromise = loadStripe(
@@ -392,8 +394,8 @@ export default function ReservarPaquetePage() {
               </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 {[
-                  { m: false, t: "Vista a la selva", s: "Orquídeas, Bromelias o Lirios. Incluida en el precio." },
-                  { m: true,  t: "Jungla · vista a la montaña", s: "La favorita para despertar con el paisaje de la sierra." },
+                  { m: false, t: "Vista a la selva", s: "Incluida en el precio del paquete." },
+                  { m: true,  t: "Vista a la montaña", s: "Para despertar con el paisaje de la sierra." },
                 ].map((o) => {
                   const activa = vistaMontana === o.m;
                   // La diferencia se calcula con las tarifas reales, así que
@@ -419,6 +421,77 @@ export default function ReservarPaquetePage() {
                   );
                 })}
               </div>
+
+              {/* Cuáles son esas habitaciones, de verdad.
+                Antes esto era una sola línea de texto ("Orquídeas, Bromelias o
+                Lirios") y el cliente estaba apartando tres o cuatro noches sin
+                haber visto un cuarto, sin saber cuánta gente cabe ni qué tiene.
+                Los datos salen de `HABITACIONES_HOTEL`, que es la copia del
+                sistema del hotel — las mismas que vende el carrito. */}
+              {(() => {
+                // ⚠️ Solo las que el PAQUETE ofrece (`HABITACIONES` de paquetes.ts),
+                // no el inventario entero del hotel: el carrito vende las nueve
+                // habitaciones, pero el paquete tiene su propia lista —Helechos y
+                // las suites cuestan bastante más por noche y no entran en el
+                // precio publicado—. La ficha (fotos, cupo, características) se
+                // toma de la copia del sistema del hotel, cruzando por id.
+                const grupo = HABITACIONES_HOTEL.filter(
+                  (h) => HABITACIONES.some((p) => p.id === h.id) && h.vistaMontana === vistaMontana,
+                );
+                if (grupo.length === 0) return null;
+                return (
+                  <div className="mt-5 pt-5 border-t border-negro/8">
+                    <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/40 mb-3">
+                      {grupo.length === 1 ? "La habitación" : `Te asignamos una de estas ${grupo.length}`}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {grupo.map((h) => (
+                        <div key={h.id} className="border border-negro/10 overflow-hidden">
+                          <div className="relative aspect-[4/3] bg-negro/5">
+                            <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width:640px) 45vw, 200px" />
+                          </div>
+                          <div className="p-2.5">
+                            <p className="font-dm text-[12px] text-negro/85 leading-tight">{h.nombre}</p>
+                            <p className="font-dm text-[11px] text-negro/45 leading-snug mt-0.5">
+                              Hasta {h.maxHuespedes} persona{h.maxHuespedes > 1 ? "s" : ""} · {h.vista}
+                            </p>
+                            <p className="font-dm text-[10px] text-negro/40 leading-snug mt-1">
+                              {h.caracteristicas.slice(0, 3).join(" · ")}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="font-dm text-[11px] text-negro/45 mt-3">
+                      La habitación exacta se confirma por WhatsApp según disponibilidad de tus fechas.
+                      {personas > 2 && " Si no caben todos en una, agregamos las que hagan falta y lo verás en el precio."}
+                    </p>
+                  </div>
+                );
+              })()}
+            </section>
+
+            {/* El hotel: las dudas de siempre —dónde está, si hay alberca, si hay
+              estacionamiento— resueltas antes de pedirle la tarjeta, no después
+              por WhatsApp. */}
+            <section className="bg-white border border-negro/8 p-6">
+              <h2 className="font-cormorant text-verde-profundo text-xl mb-1">El hotel</h2>
+              <p className="font-dm text-xs text-negro/45 mb-4">
+                Hotel Paraíso Encantado, en Xilitla. Es nuestro, así que el hospedaje y los
+                recorridos los coordina el mismo equipo.
+              </p>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {SERVICIOS_HOTEL.map((s) => (
+                  <li key={s} className="flex items-start gap-2 font-dm text-[12px] text-negro/70">
+                    <Check className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <span className="leading-snug">{s}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="font-dm text-[11px] text-negro/45 mt-4 pt-4 border-t border-negro/8">
+                No tienes que hospedarte aquí para hacer los tours, pero en este paquete el
+                hotel va incluido. Pasamos por ti en la puerta cada mañana.
+              </p>
             </section>
 
             {/* Resumen antes de pedir los datos: el cliente confirma qué está
