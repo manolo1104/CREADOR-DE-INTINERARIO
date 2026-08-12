@@ -1,3 +1,4 @@
+import { nochesGratis } from "./habitaciones";
 // Cálculo AUTORITATIVO del precio de un paquete en el servidor.
 // El cliente nunca decide el monto: aquí se recalcula desde PAQUETES_DB.
 
@@ -49,10 +50,21 @@ function repartir(personas: number, habitaciones: number): number[] {
   return Array.from({ length: n }, (_, i) => base + (i < resto ? 1 : 0));
 }
 
-function costoHotelPorNoche(personas: number, vistaMontana = false): number {
+/**
+ * Lo que cuesta el hotel por noche para ese grupo.
+ *
+ * `reparto` es cómo decidió dormir el cliente. Si no viene, se reparte lo más
+ * parejo posible —que suele ser lo más barato—. Importa: la tarifa depende de
+ * cuánta gente duerme en CADA habitación, así que 4+1 y 3+2 no cuestan igual.
+ */
+function costoHotelPorNoche(personas: number, vistaMontana = false, reparto?: number[]): number {
   const tabla = vistaMontana ? TARIFA_NOCHE.montana : TARIFA_NOCHE.estandar;
   const habitaciones = Math.max(1, Math.ceil(personas / MAX_POR_HABITACION));
-  return repartir(personas, habitaciones).reduce(
+  const valido = Array.isArray(reparto)
+    && reparto.length === habitaciones
+    && reparto.every((n) => n >= 1 && n <= MAX_POR_HABITACION)
+    && reparto.reduce((a, b) => a + b, 0) === personas;
+  return (valido ? reparto! : repartir(personas, habitaciones)).reduce(
     (s, ocupacion) => s + tabla[Math.min(MAX_POR_HABITACION, Math.max(1, ocupacion)) as 1 | 2 | 3 | 4],
     0,
   );
@@ -103,6 +115,10 @@ export function computePaqueteCharge(input: {
   childrenSmall?: unknown;
   /** Habitación Jungla, con vista a la montaña. */
   vistaMontana?:  unknown;
+  /** Cuánta gente duerme en cada habitación, en el orden que eligió el cliente. */
+  reparto?:       unknown;
+  /** El día "a elegir", cuando el paquete lo ofrece. */
+  tourElegido?:   unknown;
   pct?:           unknown;
 }): PaqueteChargeResult | null {
   const paquete = PAQUETES_DB.find((p) => p.slug === input.slug);
@@ -119,16 +135,24 @@ export function computePaqueteCharge(input: {
   if (adultos < 2 || personas > MAX_PERSONAS_PAQUETE) return null;
 
   const pct = Number(input.pct);
-  if (![10, 50, 100].includes(pct)) return null;
+  // 30 % mínimo (decisión de Manolo, 12 ago 2026). Antes el mínimo era 10 %, que
+  // no cubre ni la primera noche de hotel del paquete.
+  if (![30, 50, 100].includes(pct)) return null;
 
   const vistaMontana = !!input.vistaMontana;
 
   // Hotel: lo que ocupan de verdad —los menores también ocupan cama— menos la
   // habitación ESTÁNDAR de dos que ya viene en el precio publicado. Si eligen
   // Jungla, la diferencia sale sola de la tabla de tarifas.
-  const hotelReal     = costoHotelPorNoche(personas, vistaMontana) * paquete.noches;
-  const hotelIncluido = costoHotelPorNoche(2, false)               * paquete.noches;
-  const extraHotel    = Math.max(0, hotelReal - hotelIncluido);
+  // Cada 3.ª noche va gratis, y eso aplica TAMBIÉN a la gente extra: en el
+  // paquete Completo (3 noches) la persona adicional paga 2, no 3. Antes se
+  // multiplicaba por todas las noches y el extra pagaba la que la pareja no
+  // paga.
+  const nochesCobradas = paquete.noches - nochesGratis(paquete.noches);
+  const reparto = Array.isArray(input.reparto) ? input.reparto.map((n) => Number(n) || 0) : undefined;
+  const hotelReal      = costoHotelPorNoche(personas, vistaMontana, reparto) * nochesCobradas;
+  const hotelIncluido  = costoHotelPorNoche(2, false)                        * nochesCobradas;
+  const extraHotel     = Math.max(0, hotelReal - hotelIncluido);
 
   const toursPorPersona = toursDelPaquete(paquete).reduce((s, t) => s + t.precio, 0);
   // Misma escala de menores que en los tours sueltos: 70 % de 6 a 10 años y

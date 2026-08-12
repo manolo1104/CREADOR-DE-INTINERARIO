@@ -219,6 +219,9 @@ const paquetes = PAQUETES_DB.map((p) => ({
   noches: p.noches,
   precio: p.precio,
   precioLabel: p.precioLabel,
+  // La URL donde SE RESERVA este paquete. Sin esto Camila no tenía ningún link
+  // que mandar y el cliente acababa en el catálogo de tours, sin su paquete.
+  url: `${empresa.sitio}/reservar-paquete/${p.slug}`,
   badge: p.badge || null,
   perfiles: p.perfiles,
   tours: p.tours,

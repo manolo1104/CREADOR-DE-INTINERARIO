@@ -628,7 +628,11 @@ async function executeTool(name, input, phone) {
     case "obtener_paquete": {
       const p = findPaquete(input.id);
       if (!p) return { error: `No existe ese paquete. Opciones: ${PAQUETES.map((x) => x.id).join(", ")}` };
-      return { ...p, habitaciones: HABITACIONES, verTodasLasHabitaciones: INFO.hotelHabitacionesUrl, nota: INFO.paquetes };
+      // `linkReserva` es la URL donde el cliente PAGA este paquete. Antes esta
+      // herramienta no devolvía ninguna, así que el único link que Camila tenía
+      // a mano era el catálogo de tours: el cliente perdía el paquete del que
+      // acababan de hablar.
+      return { ...p, linkReserva: p.url, habitaciones: HABITACIONES, verTodasLasHabitaciones: INFO.hotelHabitacionesUrl, nota: INFO.paquetes };
     }
 
     case "obtener_logistica":

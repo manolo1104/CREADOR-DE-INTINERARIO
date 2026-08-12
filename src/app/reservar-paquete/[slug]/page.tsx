@@ -7,7 +7,7 @@ import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getPaquete, HABITACIONES } from "@/lib/paquetes";
-import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
+import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
@@ -22,7 +22,7 @@ const stripePromise = loadStripe(
 const WA_NUMBER = "524891251458";
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 const PCT_OPTIONS = [
-  { pct: 10,  label: "Aparta tu lugar", sub: "Anticipo del 10%" },
+  { pct: 30,  label: "Aparta tu lugar", sub: "Anticipo del 30 %" },
   { pct: 50,  label: "Mitad ahora",     sub: "50% hoy, 50% después" },
   { pct: 100, label: "Pago completo",   sub: "Liquida el 100%" },
 ] as const;
@@ -96,10 +96,14 @@ export default function ReservarPaquetePage() {
   const [childrenMid,   setChildrenMid]   = useState(0);  // 6–10 años → 70 %
   const [childrenSmall, setChildrenSmall] = useState(0);  // menores de 6 → 50 %
   const [vistaMontana,  setVistaMontana]  = useState(false);
-  // El default arranca en el compromiso MÁS BAJO. Venía en 50 % con el 10 %
-  // justo al lado: en un paquete de $15,500 eso es pedirle al cliente $7,750
-  // de entrada en la primera pantalla. El que quiera pagar más lo elige.
-  const [pct, setPct]           = useState<10 | 50 | 100>(10);
+  /** El día que el cliente elige, cuando el paquete lo ofrece. */
+  const [tourElegido,   setTourElegido]   = useState<string>("");
+  /** Cómo se reparte la gente entre habitaciones. */
+  const [repartoHab,    setRepartoHab]    = useState<number[]>([]);
+  // El default arranca en el compromiso MÁS BAJO de los tres. El mínimo subió
+  // de 10 % a 30 % (decisión de Manolo, 12 ago 2026): el 10 % no cubría ni la
+  // primera noche de hotel del paquete.
+  const [pct, setPct]           = useState<30 | 50 | 100>(30);
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
@@ -148,7 +152,37 @@ export default function ReservarPaquetePage() {
   // El precio ya NO es fijo: el publicado cubre a dos personas, y cada persona
   // extra suma hotel y boletos de tour. Se usa la MISMA función que el servidor
   // (`computePaqueteCharge`), así lo que se ve es lo que se cobra.
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, pct });
+  // ── Reparto por habitación ────────────────────────────────────────────────
+  const totalHuespedes        = personas + childrenMid + childrenSmall;
+  const habitacionesNecesarias = Math.max(1, Math.ceil(totalHuespedes / MAX_POR_HABITACION));
+
+  /**
+   * El reparto actual. Arranca lo más parejo posible —que suele ser lo más
+   * barato— y el cliente lo ajusta: la tarifa del hotel depende de cuánta gente
+   * duerme en cada habitación, así que 3+2 y 4+1 no cuestan lo mismo.
+   */
+  const reparto = (() => {
+    const suma = repartoHab.reduce((a, b) => a + b, 0);
+    if (repartoHab.length === habitacionesNecesarias && suma === totalHuespedes) return repartoHab;
+    const base = Math.floor(totalHuespedes / habitacionesNecesarias);
+    const resto = totalHuespedes % habitacionesNecesarias;
+    return Array.from({ length: habitacionesNecesarias }, (_, i) => base + (i < resto ? 1 : 0));
+  })();
+
+  /** Mueve una persona de una habitación a otra sin perder ni inventar gente. */
+  function moverPersona(idx: number, delta: number) {
+    const nuevo = [...reparto];
+    const destino = nuevo[idx] + delta;
+    if (destino < 1 || destino > MAX_POR_HABITACION) return;
+    // Se compensa en otra habitación para que el total no cambie.
+    const otra = nuevo.findIndex((n, i) => i !== idx && (delta > 0 ? n > 1 : n < MAX_POR_HABITACION));
+    if (otra < 0) return;
+    nuevo[idx] = destino;
+    nuevo[otra] -= delta;
+    setRepartoHab(nuevo);
+  }
+
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, pct });
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
@@ -158,6 +192,12 @@ export default function ReservarPaquetePage() {
     setError("");
     if (!name.trim() || !email.trim()) { setError("Nombre y correo son obligatorios."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("El correo no tiene un formato válido."); return; }
+    // Un paquete con día "a elegir" y sin elegir no se puede operar: el equipo
+    // no sabría a dónde llevarlo el día 3.
+    if (paquete!.eleccionTour && !tourElegido) {
+      setError(`Elige el recorrido del día ${paquete!.eleccionTour.dia} para continuar.`);
+      return;
+    }
     setLoading(true);
 
     // Rescate: ya tenemos nombre y correo pero todavía no ha pagado. Va sin
@@ -166,7 +206,7 @@ export default function ReservarPaquetePage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: email.trim(), phone: phone.trim(), slug: paquete!.slug,
-        personas, childrenMid, childrenSmall, vistaMontana, fecha,
+        personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido,
       }),
     }).catch(() => {});
 
@@ -175,7 +215,7 @@ export default function ReservarPaquetePage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
-          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha },
+          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido },
         }),
       });
       const d = await res.json();
@@ -386,6 +426,43 @@ export default function ReservarPaquetePage() {
               )}
             </section>
 
+            {/* Elección de tour, cuando el paquete la ofrece.
+              El itinerario del Completo decía "Paraíso Escalonado (o Ruta
+              Acuática, a elegir)" y no había ningún sitio donde elegir: el
+              cliente pagaba un día "a elegir" sin elegirlo, y al equipo le
+              llegaba la reserva sin saber a dónde llevarlo. Los dos valen lo
+              mismo, así que la elección no mueve el precio. */}
+            {paquete.eleccionTour && (
+              <section className="bg-white border border-negro/8 p-6">
+                <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{paquete.eleccionTour.titulo}</h2>
+                <p className="font-dm text-xs text-negro/45 mb-5">
+                  Día {paquete.eleccionTour.dia} de tu itinerario. Cuesta lo mismo en las dos opciones.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {paquete.eleccionTour.opciones.map((o) => {
+                    const activa = tourElegido === o.slug;
+                    return (
+                      <button key={o.slug} type="button" onClick={() => setTourElegido(o.slug)}
+                        className={`text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                        <span className="flex items-start gap-2">
+                          <span className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
+                            {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block font-dm text-sm text-negro/85 font-medium leading-snug">{o.nombre}</span>
+                            {o.nota && <span className="block font-dm text-[11px] text-negro/50 leading-snug mt-0.5">{o.nota}</span>}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {!tourElegido && (
+                  <p className="font-dm text-[11px] text-terracota mt-3">Elige uno para poder continuar.</p>
+                )}
+              </section>
+            )}
+
             {/* Habitación */}
             <section className="bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Tu habitación</h2>
@@ -401,8 +478,8 @@ export default function ReservarPaquetePage() {
                   // La diferencia se calcula con las tarifas reales, así que
                   // sube según cuánta gente duerma en la habitación.
                   const dif = o.m && cotizacion
-                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, pct })?.total ?? 0)
-                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, pct })?.total ?? 0)
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, reparto, pct })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, reparto, pct })?.total ?? 0)
                     : 0;
                   return (
                     <button key={o.t} type="button" onClick={() => setVistaMontana(o.m)}
@@ -464,11 +541,48 @@ export default function ReservarPaquetePage() {
                     </div>
                     <p className="font-dm text-[11px] text-negro/45 mt-3">
                       La habitación exacta se confirma por WhatsApp según disponibilidad de tus fechas.
-                      {personas > 2 && " Si no caben todos en una, agregamos las que hagan falta y lo verás en el precio."}
                     </p>
                   </div>
                 );
               })()}
+
+              {/* Cómo se reparten entre habitaciones.
+                Con más de 4 hace falta más de una, y el reparto NO da igual: la
+                tarifa del hotel cambia según cuánta gente duerme en cada
+                habitación, así que 4+1 y 3+2 no cuestan lo mismo. Antes esto se
+                decidía solo (ceil(personas/4)) y el cliente ni lo veía. */}
+              {totalHuespedes > MAX_POR_HABITACION && (
+                <div className="mt-5 pt-5 border-t border-negro/8">
+                  <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/40 mb-1">
+                    Cómo se reparten
+                  </p>
+                  <p className="font-dm text-[12px] text-negro/55 mb-3">
+                    Son {totalHuespedes} personas y cada habitación admite hasta {MAX_POR_HABITACION}.
+                    Necesitas {habitacionesNecesarias} habitaciones — dinos cómo quieren dormir.
+                  </p>
+                  <div className="space-y-2">
+                    {reparto.map((n, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-3 border border-negro/10 px-3 py-2.5">
+                        <span className="font-dm text-[13px] text-negro/70">Habitación {idx + 1}</span>
+                        <span className="flex items-center gap-2">
+                          <button type="button" aria-label={`Menos personas en la habitación ${idx + 1}`}
+                            onClick={() => moverPersona(idx, -1)}
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
+                          <span className="font-dm text-[13px] text-negro/85 w-16 text-center tabular-nums">
+                            {n} persona{n !== 1 ? "s" : ""}
+                          </span>
+                          <button type="button" aria-label={`Más personas en la habitación ${idx + 1}`}
+                            onClick={() => moverPersona(idx, 1)}
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="font-dm text-[11px] text-negro/40 mt-2">
+                    El precio de arriba ya cuenta este reparto.
+                  </p>
+                </div>
+              )}
             </section>
 
             {/* El hotel: las dudas de siempre —dónde está, si hay alberca, si hay

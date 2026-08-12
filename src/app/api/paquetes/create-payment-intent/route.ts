@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
       childrenMid:   paqueteDetails?.childrenMid,
       childrenSmall: paqueteDetails?.childrenSmall,
       vistaMontana:  paqueteDetails?.vistaMontana,
+      // Cómo eligió dormir el cliente. El servidor lo valida dentro
+      // (`costoHotelPorNoche`): si el reparto no cuadra con la gente, se ignora
+      // y se usa el automático. El importe nunca sale del navegador.
+      reparto:       paqueteDetails?.reparto,
       pct,
     });
     if (!cobro) {
@@ -75,6 +79,10 @@ export async function POST(req: NextRequest) {
         adults:        String(cobro.adultos),
         children:      String(cobro.childrenMid + cobro.childrenSmall),
         habitacion:    cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva",
+        // Sin esto el equipo recibe un paquete con un día "a elegir" sin saber
+        // qué eligió el cliente, y el reparto de habitaciones se perdía.
+        tourElegido:   String(paqueteDetails?.tourElegido || ""),
+        repartoHab:    Array.isArray(paqueteDetails?.reparto) ? paqueteDetails.reparto.join("+") : "",
         producto:      "paquete",
         paquetePct:    String(pct),
         totalCompleto: String(cobro.total),

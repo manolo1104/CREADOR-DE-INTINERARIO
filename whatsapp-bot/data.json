@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T18:05:46.375Z",
+  "generatedAt": "2026-08-12T21:21:01.908Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -787,6 +787,7 @@
       "noches": 2,
       "precio": 9000,
       "precioLabel": "por pareja",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura",
       "badge": "Más popular",
       "perfiles": [
         "Amigos aventureros",
@@ -871,6 +872,7 @@
       "noches": 3,
       "precio": 12500,
       "precioLabel": "por pareja",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/completo",
       "badge": null,
       "perfiles": [
         "Familias",
@@ -962,6 +964,7 @@
       "noches": 4,
       "precio": 16500,
       "precioLabel": "por pareja",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/gran-huasteca",
       "badge": "El más completo",
       "perfiles": [
         "Lo ven todo",

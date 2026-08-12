@@ -228,6 +228,47 @@ export async function POST(req: NextRequest) {
   const folio    = "HP-P" + Date.now().toString(36).toUpperCase();
   const appUrl   = (process.env.APP_URL || "https://www.huasteca-potosina.com").replace(/\/$/, "");
 
+  // El link para pagar con tarjeta: se guarda la cotización como carrito
+  // recuperable y se manda al cliente a SU carrito, con todo dentro. Antes este
+  // link era `/reservar` —el catálogo de tours— y quien lo abría se encontraba
+  // desde cero, sin nada de lo que Camila acababa de cotizarle.
+  let linkCarrito = `${appUrl}/reservar`;
+  try {
+    const paraCarrito = lineItems.map((l) => ({
+      tourId:        l.tourId,
+      tourSlug:      l.tourSlug,
+      tourName:      l.tourName,
+      tourImage:     l.tourImage ?? "",
+      tourDate:      l.tourDate,
+      adults:        l.adults,
+      childrenMid:   l.childrenMid,
+      childrenSmall: l.childrenSmall,
+      total:         l.subtotal,
+      ...(l.ruta ? { ruta: l.ruta, vehiculo: l.vehiculo, unidades: l.unidades } : {}),
+    }));
+    const guardado = await prisma.abandonedCart.create({
+      data: {
+        tourId:        lineItems[0].tourId,
+        tourSlug:      lineItems[0].tourSlug,
+        tourName:      `Paquete a medida · ${lineItems.length} recorrido${lineItems.length !== 1 ? "s" : ""}`,
+        tourDate:      lineItems[0].tourDate,
+        adults:        Math.max(...lineItems.map((l) => l.adults)),
+        childrenMid:   Math.max(...lineItems.map((l) => l.childrenMid + l.childrenSmall)),
+        childrenSmall: 0,
+        total,
+        customerEmail: customerEmail ? String(customerEmail).trim() : "",
+        customerPhone: customerPhone ? String(customerPhone).replace(/\D/g, "") : null,
+        // Lo lleva por WhatsApp el equipo: queda FUERA de los recordatorios
+        // automáticos para no escribirle a alguien con quien ya se está hablando.
+        status:        "manual",
+        carritoJson:   JSON.stringify({ items: paraCarrito, hospedaje: null, traslado: null }),
+      },
+    });
+    linkCarrito = `${appUrl}/reservar/carrito?recuperar=${guardado.token}`;
+  } catch {
+    // Si no se puede guardar, el link al catálogo sigue siendo mejor que nada.
+  }
+
   try {
     // Va a TourQuote, no a TourBooking: esto es una COTIZACIÓN, no una reserva
     // pagada. El panel las separa —/cotizaciones lee TourQuote y /reservas lee
@@ -415,7 +456,10 @@ export async function POST(req: NextRequest) {
     hospedajeOpcional: true,
     recogida: "Pasamos por el cliente a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no.",
     datosBanco: DATOS_BANCO,
-    linkSitio: `${appUrl}/reservar`,
+    // Un paquete a la medida no tiene página propia, así que el link lleva al
+    // CARRITO con sus recorridos dentro, listo para pagar con tarjeta. Antes
+    // apuntaba a `/reservar` —el catálogo— y el cliente perdía todo lo cotizado.
+    linkSitio: linkCarrito,
     emailEnviado,
     resumenWhatsApp,
     instruccion: "MANDA `resumenWhatsApp` TAL CUAL como primer mensaje, antes de cualquier dato bancario.",

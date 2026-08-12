@@ -31,6 +31,17 @@ export interface Paquete {
   imagen: string;
   urgencia: string;
   tours: string[];               // texto para la tarjeta del listado
+  /**
+   * Un día del itinerario que el cliente ELIGE. Los dos tours valen lo mismo,
+   * así que la elección no mueve el precio — pero el equipo necesita saber a
+   * dónde lo lleva, y hasta ahora el itinerario decía "o Ruta Acuática, a
+   * elegir" sin que hubiera ningún sitio donde elegir.
+   */
+  eleccionTour?: {
+    dia: number;
+    titulo: string;
+    opciones: { slug: string; nombre: string; nota?: string }[];
+  };
   itinerario: ItinerarioDia[];   // día por día para la página de detalle
   incluye: string[];
   noIncluye: string[];
@@ -273,6 +284,16 @@ export const PAQUETES_DB: Paquete[] = [
   {
     id: "completo",
     slug: "completo",
+    eleccionTour: {
+      dia: 3,
+      titulo: "El día 3 lo eliges tú",
+      opciones: [
+        { slug: "paraiso-escalonado-minas-micos", nombre: "Paraíso Escalonado + Minas Viejas y Micos",
+          nota: "Cascadas escalonadas y saltos. La opción de la mayoría." },
+        { slug: "ruta-acuatica-puente-de-dios", nombre: "Ruta Acuática — Puente de Dios",
+          nota: "El arco de roca natural con el río por debajo." },
+      ],
+    },
     nombre: "Paquete Completo Huasteca",
     subtitulo: "La experiencia definitiva",
     duracion: "4 días / 3 noches",
