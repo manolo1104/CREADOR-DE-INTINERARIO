@@ -11,6 +11,7 @@ import { logger, actividad, mxn } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
 import { MAX_ITEMS, ANTICIPO_PCT } from "@/lib/carrito";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
+import { getTraslado, tarifaTraslado } from "@/lib/traslados";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, hospedaje } = await req.json();
+    const { customerEmail, customerName, items, sid, hospedaje, traslado } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -160,6 +161,29 @@ export async function POST(req: NextRequest) {
       total += q.total;
     }
 
+    // ── Traslado desde la ciudad de origen ───────────────────────────────
+    // El cliente manda de DÓNDE viene y cuántos van; la tarifa la pone el
+    // catálogo. Nunca se acepta un importe del cliente.
+    let viaje: { ciudad: string; personas: number; total: number } | null = null;
+    if (traslado?.ciudad) {
+      const ruta = getTraslado(String(traslado.ciudad));
+      if (!ruta) {
+        return NextResponse.json({ error: "Esa ciudad de traslado no existe." }, { status: 400 });
+      }
+      // La gente del traslado son los que van en el vehículo, no la suma de los
+      // recorridos: en un carrito de tres días el mismo grupo viaja una vez.
+      const personas = Math.max(
+        1,
+        Math.min(20, Number(traslado.personas) || Math.max(...lineItems.map((l) => l.adults + l.children), 1)),
+      );
+      const precio = tarifaTraslado(ruta, personas)?.precio;
+      if (!precio) {
+        return NextResponse.json({ error: "No hay tarifa de traslado para ese grupo." }, { status: 400 });
+      }
+      viaje = { ciudad: ruta.ciudad, personas, total: precio };
+      total += precio;
+    }
+
     // Dos recorridos el mismo día es imposible de operar: cada uno ocupa la
     // jornada entera. La UI ya lo impide, pero el carrito vive en el
     // localStorage del visitante y se puede editar.
@@ -209,6 +233,7 @@ export async function POST(req: NextRequest) {
         children:      String(lineItems.reduce((s, l) => s + l.children, 0)),
         items:         compacto,
         hospedaje:     hotel ? `${hotel.habitacion} · ${hotel.noches} noches · ${hotel.huespedes} huéspedes · $${hotel.total}` : "",
+        traslado:      viaje ? `${viaje.ciudad} → Xilitla · ${viaje.personas} pax · $${viaje.total}` : "",
         totalCompleto: String(total),
         pctPagado:     String(ANTICIPO_PCT),
         saldo:         String(saldo),
@@ -242,6 +267,7 @@ export async function POST(req: NextRequest) {
       pct:             ANTICIPO_PCT,
       lineItems,
       hospedaje: hotel,
+      traslado: viaje,
     });
   } catch (err) {
     const e = err as Error;

@@ -8,7 +8,7 @@ const {
   esPorVehiculo, precioRZR, findRutaRZR,
 } = require("./catalog");
 const {
-  PAQUETES, HABITACIONES, LOGISTICA, DESTINOS, DESTINO_TOUR, INFO,
+  PAQUETES, HABITACIONES, LOGISTICA, TRASLADOS, DESTINOS, DESTINO_TOUR, INFO,
   findPaquete, findDestino,
 } = require("./knowledge");
 const { PAGO } = require("./payment");
@@ -355,7 +355,7 @@ const tools = [
   },
   {
     name: "obtener_logistica",
-    description: "Cómo llegar a la zona (auto, avión, autobús desde CDMX) y transporte interno. Úsala cuando pregunten '¿cómo llego?', '¿de dónde salen?' o por traslados hasta Xilitla/Ciudad Valles.",
+    description: "Cómo llegar a la zona (auto, avión, autobús desde CDMX), transporte interno Y nuestro traslado privado con precio desde San Luis Potosí, Tampico y CDMX. Úsala cuando pregunten '¿cómo llego?', '¿de dónde salen?', '¿me pueden recoger en mi ciudad?' o por traslados hasta Xilitla/Ciudad Valles.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -632,7 +632,10 @@ async function executeTool(name, input, phone) {
     }
 
     case "obtener_logistica":
-      return { ...LOGISTICA };
+      // Los traslados van aquí y no en una herramienta aparte: el cliente
+      // pregunta "¿cómo llego?" una sola vez y tiene que oír las dos respuestas
+      // —cómo llegar por su cuenta y cuánto cuesta que lo llevemos—.
+      return { ...LOGISTICA, trasladoPrivado: TRASLADOS };
 
     case "disponibilidad_habitaciones": {
       const checkin = String(input.checkin || "").trim();

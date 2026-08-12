@@ -12,6 +12,8 @@ const DATA = require("./data.json");
 const PAQUETES = DATA.paquetes;
 const HABITACIONES = DATA.habitaciones;
 const LOGISTICA = DATA.logistica;
+// Traslado privado desde la ciudad del cliente hasta Xilitla (ida y vuelta).
+const TRASLADOS = DATA.traslados || [];
 const FAQS_PAQUETES = DATA.faqsPaquetes;
 const DESTINOS = DATA.destinos;
 const DESTINO_TOUR = DATA.destinoTour; // slug destino → [{ nombre, slug }] de tours nuestros
@@ -115,6 +117,7 @@ module.exports = {
   PAQUETES,
   HABITACIONES,
   LOGISTICA,
+  TRASLADOS,
   FAQS_PAQUETES,
   DESTINOS,
   DESTINO_TOUR,

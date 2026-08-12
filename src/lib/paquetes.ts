@@ -3,6 +3,7 @@
  * La tarjeta (PaquetesInteractivo) y las páginas de detalle (/paquetes/[slug])
  * leen de aquí. Los tours del itinerario se cruzan por `tourSlug` contra TOURS_DB.
  */
+import { TRASLADOS, precioBase } from "./traslados";
 
 export interface ItinerarioDia {
   dia: number;
@@ -208,7 +209,7 @@ export const FAQS_PAQUETES = [
   },
   {
     q: "¿El precio incluye el traslado hasta Xilitla?",
-    a: "No. El precio del paquete incluye el traslado del hotel al punto de inicio de cada tour y de regreso, pero no el traslado hasta Xilitla. Llegas por tu cuenta; en la sección 'Cómo llegar' te mostramos las opciones (auto, avión y autobús).",
+    a: `No viene incluido, pero sí lo hacemos aparte: tenemos traslado privado desde ${TRASLADOS.map((r) => `${r.ciudad} (desde $${precioBase(r).toLocaleString("es-MX")} redondo por vehículo)`).join(", ")}. El precio del paquete sí cubre el traslado del hotel al punto de inicio de cada tour y de regreso. Si prefieres llegar por tu cuenta, en la sección 'Cómo llegar' están las opciones de auto, avión y autobús.`,
   },
   {
     q: "¿Cómo confirman la disponibilidad?",

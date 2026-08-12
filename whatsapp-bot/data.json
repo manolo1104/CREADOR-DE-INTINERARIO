@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T17:21:55.394Z",
+  "generatedAt": "2026-08-12T17:40:35.196Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -1122,6 +1122,62 @@
     ],
     "intra": "Ya en la zona, nuestro transporte te lleva del hotel al inicio de cada tour y de regreso. Como referencia: Xilitla está a ~40 min de Aquismón y ~1 h de Ciudad Valles; Ciudad Valles a ~50 min de Tamasopo."
   },
+  "traslados": [
+    {
+      "ciudad": "San Luis Potosí",
+      "nota": "Precio POR VEHÍCULO e IDA Y VUELTA hasta Xilitla, no por persona. Recogida a domicilio.",
+      "tarifas": [
+        {
+          "grupo": "1 a 4 personas",
+          "precio": 6000
+        },
+        {
+          "grupo": "5 a 6 personas",
+          "precio": 8000
+        },
+        {
+          "grupo": "7 o más personas",
+          "precio": 12000
+        }
+      ]
+    },
+    {
+      "ciudad": "Tampico",
+      "nota": "Precio POR VEHÍCULO e IDA Y VUELTA hasta Xilitla, no por persona. Recogida a domicilio.",
+      "tarifas": [
+        {
+          "grupo": "1 a 4 personas",
+          "precio": 5000
+        },
+        {
+          "grupo": "5 a 6 personas",
+          "precio": 6400
+        },
+        {
+          "grupo": "7 o más personas",
+          "precio": 10000
+        }
+      ]
+    },
+    {
+      "ciudad": "CDMX",
+      "nota": "Precio POR VEHÍCULO e IDA Y VUELTA hasta Xilitla, no por persona. Recogida a domicilio.",
+      "tarifas": [
+        {
+          "grupo": "1 a 4 personas",
+          "precio": 14000
+        },
+        {
+          "grupo": "5 a 6 personas",
+          "precio": 8000
+        },
+        {
+          "grupo": "7 o más personas",
+          "precio": 18000
+        }
+      ]
+    }
+  ],
   "faqsPaquetes": [
     {
       "q": "¿El precio es por persona o por pareja?",
@@ -1141,7 +1197,7 @@
     },
     {
       "q": "¿El precio incluye el traslado hasta Xilitla?",
-      "a": "No. El precio del paquete incluye el traslado del hotel al punto de inicio de cada tour y de regreso, pero no el traslado hasta Xilitla. Llegas por tu cuenta; en la sección 'Cómo llegar' te mostramos las opciones (auto, avión y autobús)."
+      "a": "No viene incluido, pero sí lo hacemos aparte: tenemos traslado privado desde San Luis Potosí (desde $6,000 redondo por vehículo), Tampico (desde $5,000 redondo por vehículo), CDMX (desde $14,000 redondo por vehículo). El precio del paquete sí cubre el traslado del hotel al punto de inicio de cada tour y de regreso. Si prefieres llegar por tu cuenta, en la sección 'Cómo llegar' están las opciones de auto, avión y autobús."
     },
     {
       "q": "¿Cómo confirman la disponibilidad?",

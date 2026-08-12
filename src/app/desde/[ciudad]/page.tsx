@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { CIUDADES_ORIGEN, getCiudadOrigen } from "@/lib/ciudadesOrigen";
 import { TOURS_DB, TOURS_DESTACADOS } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { getTraslado } from "@/lib/traslados";
+import { TrasladoTabla } from "@/components/TrasladoTabla";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
 
@@ -48,6 +50,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
 
   const url = `${SITE}/desde/${c.slug}`;
   const paquete = PAQUETES_DB.find((p) => p.slug === c.paqueteSugerido) ?? PAQUETES_DB[0];
+  const traslado = getTraslado(c.slug);
   const destacados = TOURS_DESTACADOS.map((s) => TOURS_DB.find((t) => t.slug === s))
     .filter((t): t is (typeof TOURS_DB)[number] => Boolean(t))
     .slice(0, 3);
@@ -106,6 +109,19 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
           <p className="mt-4 text-crema/40 font-dm text-xs">
             Horarios y tarifas aproximados: cambian por temporada. Confírmalos al comprar tu boleto.
           </p>
+
+          {/* Traslado propio, si lo hay para esta ciudad. Va justo debajo de las
+            formas de llegar porque es la respuesta a la duda que acaban de
+            leer: el último tramo son casi dos horas de sierra con curvas y
+            neblina, y hasta ahora la única salida era manejarlas uno mismo. */}
+          {traslado && (
+            <div className="mt-6 border border-dorado/25 bg-verde-profundo/40 p-5">
+              <p className="text-[9px] tracking-[2px] uppercase font-dm text-dorado/70 mb-3">
+                O te llevamos nosotros
+              </p>
+              <TrasladoTabla ruta={traslado} />
+            </div>
+          )}
         </div>
       </section>
 

@@ -12,6 +12,7 @@ import {
   actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
 } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
+import { TRASLADOS, getTraslado, tarifaTraslado, precioBase } from "@/lib/traslados";
 import { HABITACIONES_HOTEL, SERVICIOS_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
@@ -66,6 +67,7 @@ interface Cobro {
   saldo: number;
   lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; subtotal: number; eleccion?: string }[];
   hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
+  traslado:  { ciudad: string; personas: number; total: number } | null;
 }
 
 // ── Formulario de pago ───────────────────────────────────────────────────────
@@ -168,6 +170,11 @@ function PagoCarrito({ cobro, datos, onListo }: {
               cobro.hospedaje
                 ? `Hospedaje: ${cobro.hospedaje.habitacion}, ${cobro.hospedaje.noches} noche(s), ${cobro.hospedaje.huespedes} huésped(es)${datos.checkin ? ` — entrada ${datos.checkin}` : ""}${datos.checkout ? `, salida ${datos.checkout}` : ""}.`
                 : null,
+              // El traslado hay que operarlo: sin esto el equipo cobraba un
+              // viaje desde otra ciudad y no se enteraba de que existía.
+              cobro.traslado
+                ? `TRASLADO: ${cobro.traslado.ciudad} → Xilitla, ida y vuelta, ${cobro.traslado.personas} pasajero(s). Falta acordar hora y domicilio de recogida.`
+                : null,
             ].filter(Boolean).join(" | "),
             totalAmount:     cobro.amount,
             paymentIntentId: cobro.paymentIntentId,
@@ -180,6 +187,15 @@ function PagoCarrito({ cobro, datos, onListo }: {
             // correo no lo mencionaba.
             lineItems: [
               ...cobro.lineItems,
+              ...(cobro.traslado
+                ? [{
+                    tourName: `Traslado ${cobro.traslado.ciudad} → Xilitla (ida y vuelta)`,
+                    tourDate: primero.tourDate,
+                    adults:   cobro.traslado.personas,
+                    children: 0,
+                    subtotal: cobro.traslado.total,
+                  }]
+                : []),
               ...(cobro.hospedaje
                 ? [{
                     tourName: `Hospedaje · ${cobro.hospedaje.habitacion}`,
@@ -237,6 +253,15 @@ function PagoCarrito({ cobro, datos, onListo }: {
             tourName: l.tourName, tourDate: l.tourDate,
             adults: l.adults, children: l.children, subtotal: l.subtotal,
           })),
+          ...(cobro.traslado
+            ? [{
+                tourName: `Traslado ${cobro.traslado.ciudad} → Xilitla (ida y vuelta)`,
+                tourDate: primero.tourDate,
+                adults:   cobro.traslado.personas,
+                children: 0,
+                subtotal: cobro.traslado.total,
+              }]
+            : []),
           ...(cobro.hospedaje
             ? [{
                 tourName: `Hospedaje · ${cobro.hospedaje.habitacion}`,
@@ -323,6 +348,11 @@ export default function CarritoPage() {
   const [expiraEn, setExpiraEn] = useState<number | null>(null);
   const [restante, setRestante] = useState(0);
   const [conHotel,    setConHotel]    = useState(false);
+  // Traslado desde la ciudad de origen. Apagado por defecto igual que el hotel:
+  // quien llega en su coche no tiene por qué ver un cargo que no pidió.
+  const [conTraslado,    setConTraslado]    = useState(false);
+  const [ciudadTraslado, setCiudadTraslado] = useState<string>(TRASLADOS[0].slug);
+  const [paxTraslado,    setPaxTraslado]    = useState(2);
   // Una entrada por habitación, con cuánta gente duerme en cada una. Con más
   // gente de la que cabe en una, el cliente decide el reparto (3+2 o 4+1):
   // el precio cambia según eso y él sabe mejor cómo quiere dormir.
@@ -418,6 +448,10 @@ export default function CarritoPage() {
   })();
 
   const huespedes  = habs.reduce((s, h) => s + h.huespedes, 0);
+  const rutaTraslado      = conTraslado ? getTraslado(ciudadTraslado) : undefined;
+  const precioDelTraslado = rutaTraslado ? (tarifaTraslado(rutaTraslado, paxTraslado)?.precio ?? null) : null;
+  const totalTraslado     = precioDelTraslado ?? 0;
+
   const hotelQuote = conHotel && noches > 0 ? cotizarHabitaciones(habs, noches) : null;
   const totalHotel = hotelQuote?.ok ? hotelQuote.total ?? 0 : 0;
 
@@ -444,7 +478,7 @@ export default function CarritoPage() {
   // lo que se pinta.
   const resumen  = resumirCarrito(items);
   const dias     = resumen.dias;
-  const total    = resumen.total + totalHotel;
+  const total    = resumen.total + totalHotel + totalTraslado;
   const anticipo = Math.round((total * ANTICIPO_PCT) / 100);
   const saldo    = total - anticipo;
 
@@ -632,6 +666,9 @@ export default function CarritoPage() {
           items,
           hospedaje: conHotel
             ? { habitaciones: habs, noches, checkin, checkout }
+            : null,
+          traslado: conTraslado && rutaTraslado
+            ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
             : null,
         }),
       });
@@ -1297,6 +1334,87 @@ export default function CarritoPage() {
                       </p>
                     )}
                   </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* ── TRASLADO DESDE TU CIUDAD ───────────────────────────────────
+              El último tramo hasta Xilitla son casi dos horas de sierra con
+              curvas y neblina, y era el motivo por el que había gente que no
+              venía. Va apagado por defecto, como el hotel: quien llega en su
+              coche no tiene por qué ver un cargo que no pidió. */}
+          <section className="mt-8 border border-negro/10 bg-white p-5">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={conTraslado}
+                onChange={(e) => { setConTraslado(e.target.checked); setCobro(null); }}
+                className="mt-1 w-4 h-4 accent-verde-selva"
+              />
+              <span>
+                <span className="block font-cormorant text-verde-profundo text-xl">
+                  ¿Te llevamos desde tu ciudad?
+                </span>
+                <span className="block font-dm text-[12px] text-negro/50 mt-0.5">
+                  Traslado privado de ida y vuelta hasta Xilitla. Es opcional: si vienes en tu coche, sáltalo.
+                </span>
+              </span>
+            </label>
+
+            {conTraslado && (
+              <div className="mt-5 space-y-4">
+                <div className="grid sm:grid-cols-3 gap-2">
+                  {TRASLADOS.map((r) => {
+                    const activa = ciudadTraslado === r.slug;
+                    return (
+                      <button
+                        key={r.slug}
+                        type="button"
+                        onClick={() => { setCiudadTraslado(r.slug); setCobro(null); }}
+                        className={`text-left border p-3 transition-colors ${
+                          activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-verde-selva/50"
+                        }`}
+                      >
+                        <span className="block font-dm text-[13px] text-negro/85">{r.ciudad}</span>
+                        <span className="block font-dm text-[11px] text-negro/45 mt-0.5">
+                          desde {formatMXN(precioBase(r))} redondo
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {rutaTraslado && (
+                  <>
+                    <div className="flex items-center justify-between gap-3 border-t border-negro/8 pt-3">
+                      <span className="font-dm text-[12px] text-negro/60">¿Cuántos viajan?</span>
+                      <span className="flex items-center gap-2">
+                        <button type="button" aria-label="Menos pasajeros"
+                          onClick={() => { setPaxTraslado((n) => Math.max(1, n - 1)); setCobro(null); }}
+                          className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
+                        <span className="font-dm text-[13px] text-negro/80 w-6 text-center tabular-nums">{paxTraslado}</span>
+                        <button type="button" aria-label="Más pasajeros"
+                          onClick={() => { setPaxTraslado((n) => Math.min(20, n + 1)); setCobro(null); }}
+                          className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
+                      </span>
+                    </div>
+
+                    {precioDelTraslado !== null ? (
+                      <p className="flex justify-between font-dm text-[13px] text-negro/70 border-t border-negro/8 pt-3">
+                        <span>{rutaTraslado.ciudad} → Xilitla · ida y vuelta · {paxTraslado} pasajero{paxTraslado !== 1 ? "s" : ""}</span>
+                        <strong className="whitespace-nowrap">{formatMXN(precioDelTraslado)} MXN</strong>
+                      </p>
+                    ) : (
+                      <p className="font-dm text-[12px] text-terracota">
+                        Para ese grupo lo cotizamos aparte — escríbenos por WhatsApp.
+                      </p>
+                    )}
+                    <p className="font-dm text-[11px] text-negro/40">
+                      El precio es por vehículo, no por persona. Te recogemos en tu domicilio y te
+                      regresamos al terminar.
+                    </p>
+                  </>
                 )}
               </div>
             )}

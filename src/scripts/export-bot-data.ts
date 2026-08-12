@@ -14,6 +14,7 @@ import { join } from "path";
 import { TOURS_DB, tourDurTexto } from "../lib/tours";
 import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
+import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
 
@@ -312,6 +313,17 @@ const out = {
   paquetes,
   habitaciones,
   logistica: LOGISTICA,
+  // Traslados privados desde la ciudad de origen. Sin esto Camila contestaba
+  // que el cliente tiene que llegar por su cuenta, y ahí se perdía la venta de
+  // quien no quiere manejar las dos horas de sierra.
+  traslados: TRASLADOS.map((r) => ({
+    ciudad: r.ciudad,
+    nota: "Precio POR VEHÍCULO e IDA Y VUELTA hasta Xilitla, no por persona. Recogida a domicilio.",
+    tarifas: r.tarifas.map((t) => ({
+      grupo:  t.hasta === null ? `${t.desde} o más personas` : `${t.desde} a ${t.hasta} personas`,
+      precio: t.precio,
+    })),
+  })),
   faqsPaquetes: FAQS_PAQUETES,
   destinos,
   destinoTour,
