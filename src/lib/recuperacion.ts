@@ -22,6 +22,12 @@ export function linkRecuperacion(
   tourSlug: string,
   token: string,
 ): string {
-  const ruta = esCarritoDePaquete(tourId) ? "reservar-paquete" : "reservar-tour";
-  return `${appUrl}/${ruta}/${tourSlug}?recuperar=${token}`;
+  // Los paquetes conservan su pantalla propia.
+  if (esCarritoDePaquete(tourId)) {
+    return `${appUrl}/reservar-paquete/${tourSlug}?recuperar=${token}`;
+  }
+  // Los tours van al carrito, que es la única experiencia de reserva. Los links
+  // ya enviados apuntan a `/reservar-tour/<slug>?recuperar=<token>` y siguen
+  // funcionando: esa ruta redirige aquí conservando el token.
+  return `${appUrl}/reservar/carrito?recuperar=${token}`;
 }

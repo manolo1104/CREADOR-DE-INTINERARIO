@@ -376,10 +376,23 @@ export default function CarritoPage() {
   const [fallos, setFallos] = useState<FalloCarrito[]>([]);
   /** Renglón al que se acaba de llevar la vista por un fallo. */
   const [resaltado, setResaltado] = useState<string | null>(null);
+  /** "Guárdalo y decide luego": la salida secundaria, para no perder el lead. */
+  const [correoGuardar, setCorreoGuardar] = useState("");
+  const [guardando,     setGuardando]     = useState(false);
+  const [guardado,      setGuardado]      = useState(false);
+  const [errorGuardar,  setErrorGuardar]  = useState("");
 
   useEffect(() => {
     setMontado(true);
+    void hidratarDesdeUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  /**
+   * Deja el carrito listo a partir de la URL: restaura una cotización guardada y
+   * mete el recorrido que venga pedido. Es lo primero que corre al montar.
+   */
+  async function hidratarDesdeUrl() {
     // `?agregar=<slug>` es cómo entra un recorrido desde el resto del sitio.
     // Las páginas de tour, destino, blog y precios se pintan en el servidor y
     // ahí no existe `localStorage`, así que en vez de que cada botón sepa
@@ -387,8 +400,46 @@ export default function CarritoPage() {
     // aquí, en el único sitio que toca el carrito.
     const params = new URLSearchParams(window.location.search);
     const pedido = params.get("agregar");
+    const token  = params.get("recuperar");
 
     let carrito = leerCarrito();
+
+    // `?recuperar=<token>` es el link de los correos de rescate. Va PRIMERO y
+    // luego `?agregar`, porque los links viejos traen los dos con el mismo tour:
+    // `/reservar-tour/<slug>?recuperar=<t>` redirige aquí como
+    // `?agregar=<slug>&recuperar=<t>`. Al revés, el tour entraría sin fecha por
+    // `agregar` y otra vez con su fecha real al restaurar —`agregarAlCarrito`
+    // deduplica por slug+fecha, así que NO los uniría— y el cliente vería el
+    // mismo recorrido dos veces y el doble de total.
+    if (token) {
+      try {
+        const r = await fetch(`/api/tours/carrito/${token}`);
+        const c = r.ok ? await r.json() : null;
+        if (c && !c.error) {
+          if (c.email) setEmail(c.email);
+          // Se FUSIONA con lo que ya tenga: puede haber armado un carrito nuevo
+          // antes de abrir el correo, y reemplazarlo sería borrarle trabajo.
+          const restaurados: CarritoItem[] = Array.isArray(c.items) && c.items.length
+            ? c.items
+            : (c.tourSlug
+                ? [itemDesdeSlug(c.tourSlug, {
+                    tourDate:      c.tourDate || "",
+                    adults:        typeof c.adults === "number" ? c.adults : undefined,
+                    childrenMid:   typeof c.childrenMid === "number" ? c.childrenMid : undefined,
+                    childrenSmall: typeof c.childrenSmall === "number" ? c.childrenSmall : undefined,
+                  })].filter(Boolean) as CarritoItem[]
+                : []);
+          for (const it of restaurados) {
+            const yaEsta = carrito.some(
+              (x) => x.tourSlug === it.tourSlug && x.tourDate === it.tourDate,
+            );
+            if (!yaEsta) carrito = agregarAlCarrito({ ...it, uid: undefined } as never);
+          }
+          trackTourEvent("CARRITO_RECUPERADO", { recorridos: restaurados.length });
+        }
+      } catch { /* si no se puede restaurar, el carrito local sigue intacto */ }
+    }
+
     if (pedido) {
       const yaEsta = carrito.find((i) => i.tourSlug === pedido);
       if (yaEsta) {
@@ -407,7 +458,8 @@ export default function CarritoPage() {
     }
     setItems(carrito);
     setHidratando(false);
-  }, []);
+    trackTourEvent("BOOKING_PAGE_VIEW", { carrito: true, recorridos: carrito.length });
+  }
 
   // Lleva la vista al recorrido que acaba de entrar y apaga el resalte.
   useEffect(() => {
@@ -635,6 +687,40 @@ export default function CarritoPage() {
     .sort((a, b) => a.tourDate.localeCompare(b.tourDate));
   const sinFecha = sinFechaItems.length;
 
+  /**
+   * Guarda el carrito y manda la cotización por correo.
+   *
+   * Es la fuga más cara que tenía el motor: quien se iba sin pagar no dejaba
+   * rastro, y la secuencia de tres recordatorios que ya existe no tenía a quién
+   * escribirle.
+   */
+  async function guardarCotizacion() {
+    const correo = correoGuardar.trim() || email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      setErrorGuardar("Escribe un correo válido.");
+      return;
+    }
+    setGuardando(true);
+    setErrorGuardar("");
+    try {
+      const r = await fetch("/api/tours/guardar-carrito", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: correo, phone: phone || null, items }),
+      });
+      const d = await r.json().catch(() => null);
+      if (!r.ok) {
+        setErrorGuardar(d?.error || "No se pudo guardar. Intenta de nuevo.");
+      } else {
+        setGuardado(true);
+        trackTourEvent("LEAD_CARRITO_GUARDADO", { recorridos: items.length, amount: total });
+      }
+    } catch {
+      setErrorGuardar("No se pudo conectar. Revisa tu internet.");
+    }
+    setGuardando(false);
+  }
+
   /** Lleva la vista al renglón que falla y lo resalta. */
   function irAlRenglon(uid: string) {
     renglonRefs.current[uid]?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -755,7 +841,10 @@ export default function CarritoPage() {
                       <TourCalendar
                         modo="compact"
                         value={i.tourDate}
-                        onChange={(ymd) => cambiar(i.uid, { tourDate: ymd })}
+                        onChange={(ymd) => {
+                          cambiar(i.uid, { tourDate: ymd });
+                          if (ymd) trackTourEvent("DATE_SELECTED", { fecha: ymd, tour: i.tourSlug, carrito: true });
+                        }}
                         fechasBloqueadas={items.filter((x) => x.uid !== i.uid && x.tourDate).map((x) => x.tourDate)}
                         motivoBloqueo={(ymd) => {
                           const otro = items.find((x) => x.uid !== i.uid && x.tourDate === ymd);
@@ -1588,6 +1677,46 @@ export default function CarritoPage() {
               >
                 {cargando ? "Un momento…" : "Continuar al pago →"}
               </button>
+
+              {/* La salida secundaria. Va DEBAJO del botón de pagar a propósito:
+                arriba le canibaliza el clic al CTA principal.
+                Existe porque hasta ahora quien se iba del carrito sin pagar no
+                dejaba rastro, y la secuencia de tres recordatorios que ya está
+                montada no tenía a quién escribirle. */}
+              <div className="pt-4 border-t border-negro/10">
+                {guardado ? (
+                  <p className="font-dm text-[12px] text-verde-selva bg-verde-selva/8 border border-verde-selva/25 px-3 py-2.5">
+                    ✓ Te mandamos tu cotización. El carrito te espera en ese correo.
+                  </p>
+                ) : (
+                  <>
+                    <p className="font-dm text-[12px] text-negro/55 mb-2">
+                      ¿Todavía lo estás pensando? Te mandamos tu cotización y la retomas cuando quieras.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        value={correoGuardar || email}
+                        onChange={(e) => { setCorreoGuardar(e.target.value); setErrorGuardar(""); }}
+                        type="email"
+                        placeholder="tucorreo@ejemplo.com"
+                        className="flex-1 min-w-0 border border-negro/15 bg-white px-3 py-2.5 font-dm text-[13px] text-negro placeholder:text-negro/35 focus:border-verde-selva outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={guardarCotizacion}
+                        disabled={guardando}
+                        className="flex-shrink-0 border border-verde-selva text-verde-selva px-4 text-[11px] tracking-[1.5px] uppercase font-dm hover:bg-verde-selva/8 transition-colors disabled:opacity-40"
+                      >
+                        {guardando ? "…" : "Enviar"}
+                      </button>
+                    </div>
+                    {errorGuardar && <p className="font-dm text-[11px] text-terracota mt-1.5">{errorGuardar}</p>}
+                    <p className="font-dm text-[11px] text-negro/35 mt-1.5">
+                      Sin compromiso. Necesita al menos un recorrido con fecha.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
             <div className="pt-4">

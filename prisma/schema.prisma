@@ -218,6 +218,12 @@ model AbandonedCart {
   // converted → ya reservó
   // expired   → el tour pasó, o el carrito superó los 14 días
   status        String    @default("open")
+  // Carrito completo en JSON cuando la cotización trae VARIOS recorridos.
+  // Nullable a propósito: `npm start` corre `prisma db push --accept-data-loss`
+  // en producción, y una columna obligatoria sobre filas existentes tira el
+  // despliegue. Las columnas planas de arriba siguen siendo el ancla del cron y
+  // del correo, y se llenan con el primer recorrido.
+  carritoJson   String?
   emailsSent    Int       @default(0)
   lastEmailAt   DateTime?
   createdAt     DateTime  @default(now())

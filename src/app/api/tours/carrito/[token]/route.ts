@@ -29,5 +29,9 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     promoCode:     cart.promoCode,
     promoDiscount: cart.promoDiscount,
     email:         cart.customerEmail,
+    // El carrito completo, cuando la cotización traía varios recorridos.
+    // La forma plana de arriba se CONSERVA siempre: hay tokens vivos en las
+    // bandejas de entrada de clientes que llegan al flujo de un solo tour.
+    items: cart.carritoJson ? JSON.parse(cart.carritoJson) : null,
   });
 }

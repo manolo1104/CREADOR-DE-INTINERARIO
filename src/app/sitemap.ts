@@ -68,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Páginas solo en español (aún sin versión /en).
   // Regla: toda página pública e indexable debe estar aquí. Se excluyen a propósito
   // las transaccionales (/reservar-*, /guia/descarga, /confirmacion-tour), el panel
-  // /admin, /planear (bloqueada en robots.ts) y /aviso-de-privacidad (noindex).
+  // /admin y /planear (bloqueada en robots.ts).
   const esOnlyStatic: MetadataRoute.Sitemap = [
     { url: `${BASE}/blog`,                  lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
     { url: `${BASE}/preguntas-frecuentes`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
@@ -91,6 +91,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contacto`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/politica-de-cancelacion`, lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE}/aviso-de-privacidad`,     lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE}/xilitla-o-ciudad-valles`,           lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     ...CIUDADES_ORIGEN.map((c) => ({
       url: `${BASE}/desde/${c.slug}`,

@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import {
-  computeTourCharge,
-  computeVehiculoCharge,
-  vehiculoBookingName,
-  fechaTourValida,
-} from "@/lib/tourPricing";
+import { tarifarRecorridos } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
@@ -46,96 +41,14 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Tarificación renglón por renglón, siempre en el servidor ──────────
-    const lineItems: {
-      tourId: string; tourSlug: string; tourName: string; tourDate: string;
-      adults: number; children: number; subtotal: number;
-      ruta?: string; vehiculo?: string; unidades?: number;
-      /** Recorridos con elección obligatoria (Ruta Acuática). */
-      eleccion?: string;
-    }[] = [];
-    let total = 0;
-
-    for (const raw of items) {
-      // `fechaTourValida` acepta la fecha vacía a propósito (los tours por
-      // WhatsApp la coordinan después), pero un carrito SÍ tiene que traerla:
-      // se agrega desde el catálogo sin fecha y hay que elegirla antes de pagar.
-      if (!raw?.tourDate) {
-        return NextResponse.json(
-          { error: "Falta la fecha de uno de los recorridos del carrito." },
-          { status: 400 },
-        );
-      }
-      if (!fechaTourValida(raw?.tourDate)) {
-        return NextResponse.json(
-          { error: "Una de las fechas no es válida. Revisa tu carrito." },
-          { status: 400 },
-        );
-      }
-
-      // Tours por vehículo (RZR, café): el precio sale de la matriz ruta×unidad.
-      if (raw?.ruta && raw?.vehiculo) {
-        // `pct: 100` porque aquí se pide el PRECIO COMPLETO del renglón; el
-        // anticipo se aplica una sola vez sobre la suma, al final.
-        const veh = computeVehiculoCharge({
-          tourId:   raw?.tourId,
-          tourSlug: raw?.tourSlug,
-          ruta:     raw?.ruta,
-          vehiculo: raw?.vehiculo,
-          unidades: raw?.unidades,
-          pct:      100,
-        });
-        if (!veh) {
-          return NextResponse.json({ error: "Ruta o vehículo inválido en el carrito." }, { status: 400 });
-        }
-        lineItems.push({
-          tourId:   veh.tour.id,
-          tourSlug: veh.tour.slug,
-          tourName: vehiculoBookingName(veh.tour, veh.ruta.nombre, veh.vehiculo.nombre, veh.unidades),
-          tourDate: raw.tourDate,
-          adults:   veh.unidades,
-          children: 0,
-          ruta:     veh.ruta.nombre,
-          vehiculo: veh.vehiculo.nombre,
-          unidades: veh.unidades,
-          subtotal: veh.total,
-        });
-        total += veh.total;
-        continue;
-      }
-
-      const charge = computeTourCharge({
-        tourId:        raw?.tourId,
-        tourSlug:      raw?.tourSlug,
-        adults:        raw?.adults,
-        childrenMid:   raw?.childrenMid,
-        childrenSmall: raw?.childrenSmall,
-        promoCode:     raw?.promoCode,
-        pct:           100,
-        addOns:        raw?.addOns,
-      });
-      if (!charge) {
-        return NextResponse.json(
-          { error: "Uno de los recorridos del carrito ya no está disponible con esos datos." },
-          { status: 400 },
-        );
-      }
-      const children = (Number(raw?.childrenMid) || 0) + (Number(raw?.childrenSmall) || 0);
-      // La elección se valida contra el catálogo, no se acepta a ciegas: viene
-      // del localStorage del visitante, que cualquiera puede editar.
-      const eleccionValida = charge.tour.eleccion?.opciones
-        .find((o) => o.nombre === raw?.eleccion || o.id === raw?.eleccion)?.nombre;
-      lineItems.push({
-        tourId:   charge.tour.id,
-        tourSlug: charge.tour.slug,
-        tourName: charge.tour.nombre,
-        tourDate: raw.tourDate,
-        adults:   Number(raw?.adults) || 1,
-        children,
-        subtotal: charge.total,
-        ...(eleccionValida ? { eleccion: eleccionValida } : {}),
-      });
-      total += charge.total;
+    // La MISMA función que usa `guardar-carrito` para la cotización por correo:
+    // si divergieran, el correo prometería un precio que el cobro no respeta.
+    const tarifa = tarifarRecorridos(items);
+    if (!tarifa.ok) {
+      return NextResponse.json({ error: tarifa.error }, { status: 400 });
     }
+    const lineItems = tarifa.lineItems;
+    let total = tarifa.total;
 
     // ── Hospedaje opcional ────────────────────────────────────────────────
     // Igual que los tours: el cliente manda QUÉ quiere (habitación, noches,

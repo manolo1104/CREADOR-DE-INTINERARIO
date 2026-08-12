@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { linkRecuperacion } from "@/lib/recuperacion";
 import { computeTourCharge, fechaTourValida } from "@/lib/tourPricing";
+import { tarifarRecorridos } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml } from "@/lib/cartEmail";
@@ -27,11 +28,23 @@ export async function POST(req: NextRequest) {
       tourSlug, tourId, tourDate,
       adults, childrenMid, childrenSmall,
       promoCode, email, phone,
+      // Carrito completo. Cuando viene, manda sobre los campos sueltos de
+      // arriba: es el camino del carrito de varios recorridos.
+      items,
     } = body;
 
     if (!email || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: "Correo inválido." }, { status: 400 });
     }
+    // ── Carrito de VARIOS recorridos ─────────────────────────────────────
+    // Hasta ahora este endpoint solo sabía guardar UN tour, así que el carrito
+    // —el flujo de más ticket— no capturaba ningún correo: quien se iba sin
+    // pagar se perdía para siempre.
+    const esCarrito = Array.isArray(items) && items.length > 0;
+    if (esCarrito) {
+      return await guardarCarritoCompleto(items, String(email).trim(), phone);
+    }
+
     if (!tourDate) {
       return NextResponse.json({ error: "Falta la fecha." }, { status: 400 });
     }
@@ -130,4 +143,100 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
   }
+}
+
+/**
+ * Guarda un carrito de varios recorridos y manda su cotización.
+ *
+ * Las columnas planas de `AbandonedCart` se llenan con el PRIMER recorrido
+ * fechado: son el ancla del cron de recuperación y del correo, que siguen
+ * funcionando igual. El carrito entero va en `carritoJson`.
+ *
+ * ⚠️ Se exige al menos un recorrido con fecha. El cron marca vencido todo lo
+ * que tenga `tourDate` anterior a hoy, y una cadena vacía es "menor" que
+ * cualquier fecha: un carrito sin fechas nacería expirado y no recibiría ni un
+ * recordatorio.
+ */
+async function guardarCarritoCompleto(items: unknown[], email: string, phone: unknown) {
+  const tarifa = tarifarRecorridos(items);
+  if (!tarifa.ok) {
+    return NextResponse.json({ error: tarifa.error }, { status: 400 });
+  }
+
+  const conFecha = tarifa.lineItems.filter((l) => l.tourDate);
+  if (conFecha.length === 0) {
+    return NextResponse.json(
+      { error: "Ponle fecha al menos a un recorrido para poder guardártelo." },
+      { status: 400 },
+    );
+  }
+  const ancla = [...conFecha].sort((a, b) => a.tourDate.localeCompare(b.tourDate))[0];
+
+  const datos = {
+    tourId:        ancla.tourId,
+    tourSlug:      ancla.tourSlug,
+    tourName:      tarifa.lineItems.length > 1
+      ? `${ancla.tourName} y ${tarifa.lineItems.length - 1} recorrido${tarifa.lineItems.length > 2 ? "s" : ""} más`
+      : ancla.tourName,
+    tourDate:      ancla.tourDate,
+    adults:        tarifa.lineItems.reduce((s, l) => s + l.adults, 0),
+    childrenMid:   tarifa.lineItems.reduce((s, l) => s + l.children, 0),
+    childrenSmall: 0,
+    promoCode:     null,
+    promoDiscount: 0,
+    total:         tarifa.total,
+    customerEmail: email,
+    customerPhone: phone ? String(phone).trim() : null,
+    carritoJson:   JSON.stringify(items),
+  };
+
+  const existente = await prisma.abandonedCart.findFirst({
+    where: {
+      customerEmail: datos.customerEmail,
+      tourSlug:      datos.tourSlug,
+      tourDate:      datos.tourDate,
+      status:        { in: [...ESTADOS_VIVOS] },
+    },
+  });
+
+  let token: string;
+  let esNuevo = false;
+  if (existente) {
+    await prisma.abandonedCart.update({ where: { id: existente.id }, data: datos });
+    token = existente.token;
+  } else {
+    const creado = await prisma.abandonedCart.create({ data: datos });
+    token = creado.token;
+    esNuevo = true;
+  }
+
+  const restoreUrl = linkRecuperacion(APP_URL, datos.tourId, datos.tourSlug, token);
+
+  if (esNuevo) {
+    try {
+      const { subject, html } = buildCartEmailHtml({
+        tipo: "cotizacion",
+        tourName: datos.tourName,
+        tourDate: datos.tourDate,
+        adults: datos.adults,
+        children: datos.childrenMid,
+        total: datos.total,
+        restoreUrl,
+      });
+      await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
+    } catch {
+      // Si el correo falla, el carrito igual queda guardado para el cron.
+    }
+  }
+
+  actividad(
+    "🛟  COTIZACIÓN GUARDADA",
+    `${tarifa.lineItems.length} recorrido(s)`,
+    mxn(datos.total),
+    datos.customerEmail,
+    datos.tourDate,
+    esNuevo ? "nueva" : "actualizada",
+  );
+
+  return NextResponse.json({ ok: true });
 }

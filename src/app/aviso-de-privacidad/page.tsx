@@ -1,11 +1,16 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { SITE } from "@/lib/i18n/config";
 
 export const metadata: Metadata = {
   title: "Aviso de Privacidad — Tours Huasteca Potosina",
   description:
     "Aviso de Privacidad de Tours Huasteca Potosina conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).",
-  robots: { index: false },
+  // Indexable, igual que /terminos y /politica-de-cancelacion. Estaba fuera del
+  // índice sin motivo declarado, y en un sitio que cobra en línea el aviso de
+  // privacidad es una de las páginas que Google busca para confiar en ti.
+  alternates: { canonical: `${SITE}/aviso-de-privacidad` },
+  robots: { index: true, follow: true },
 };
 
 const FECHA = "27 de abril de 2026";

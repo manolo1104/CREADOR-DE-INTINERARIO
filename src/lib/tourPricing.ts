@@ -193,3 +193,104 @@ export function vehiculoBookingName(tour: Tour, rutaNombre: string, vehiculoNomb
   const uni  = unidades > 1 ? ` ×${unidades}` : "";
   return `${base} — ${rutaNombre} · ${vehiculoNombre}${uni}`;
 }
+
+// ── Tarifado de un carrito completo ──────────────────────────────────────────
+
+export interface LineaCarrito {
+  tourId: string; tourSlug: string; tourName: string; tourDate: string;
+  adults: number; children: number; subtotal: number;
+  ruta?: string; vehiculo?: string; unidades?: number;
+  eleccion?: string;
+}
+
+export type TarifaCarrito =
+  | { ok: true;  lineItems: LineaCarrito[]; total: number }
+  | { ok: false; error: string };
+
+/**
+ * Tarifa los recorridos de un carrito, siempre en el servidor.
+ *
+ * Lo usan LOS DOS caminos: el que cobra (`carrito-payment-intent`) y el que
+ * guarda la cotización por correo (`guardar-carrito`). Vive aquí justo para que
+ * no puedan divergir: si el correo promete un precio y el pago calcula otro, el
+ * cliente lo descubre en la peor pantalla posible.
+ *
+ * Regla que no se rompe: lo que manda el cliente son referencias (qué tour, qué
+ * día, cuánta gente). El `total` que viaja en su localStorage jamás se cobra.
+ */
+export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
+  const lineItems: LineaCarrito[] = [];
+  let total = 0;
+
+  for (const bruto of items) {
+    const raw = bruto as Record<string, unknown>;
+    if (!raw?.tourDate) {
+      return { ok: false, error: "Falta la fecha de uno de los recorridos del carrito." };
+    }
+    if (!fechaTourValida(raw.tourDate)) {
+      return { ok: false, error: "Una de las fechas no es válida. Revisa tu carrito." };
+    }
+
+    // Tours por vehículo (RZR, café): el precio sale de la matriz ruta×unidad.
+    if (raw.ruta && raw.vehiculo) {
+      // `pct: 100` porque aquí se pide el PRECIO COMPLETO del renglón; el
+      // anticipo se aplica una sola vez sobre la suma, al final.
+      const veh = computeVehiculoCharge({
+        tourId:   raw.tourId as string,
+        tourSlug: raw.tourSlug as string,
+        ruta:     raw.ruta as string,
+        vehiculo: raw.vehiculo as string,
+        unidades: raw.unidades as number,
+        pct:      100,
+      });
+      if (!veh) return { ok: false, error: "Ruta o vehículo inválido en el carrito." };
+      lineItems.push({
+        tourId:   veh.tour.id,
+        tourSlug: veh.tour.slug,
+        tourName: vehiculoBookingName(veh.tour, veh.ruta.nombre, veh.vehiculo.nombre, veh.unidades),
+        tourDate: String(raw.tourDate),
+        adults:   veh.unidades,
+        children: 0,
+        ruta:     veh.ruta.nombre,
+        vehiculo: veh.vehiculo.nombre,
+        unidades: veh.unidades,
+        subtotal: veh.total,
+      });
+      total += veh.total;
+      continue;
+    }
+
+    const charge = computeTourCharge({
+      tourId:        raw.tourId as string,
+      tourSlug:      raw.tourSlug as string,
+      adults:        raw.adults as number,
+      childrenMid:   raw.childrenMid as number,
+      childrenSmall: raw.childrenSmall as number,
+      promoCode:     raw.promoCode as string,
+      pct:           100,
+      addOns:        raw.addOns as { id: string; cantidad: number }[],
+    });
+    if (!charge) {
+      return { ok: false, error: "Uno de los recorridos del carrito ya no está disponible con esos datos." };
+    }
+
+    // La elección se valida contra el catálogo, no se acepta a ciegas: viene del
+    // localStorage del visitante, que cualquiera puede editar.
+    const eleccionValida = charge.tour.eleccion?.opciones
+      .find((o) => o.nombre === raw.eleccion || o.id === raw.eleccion)?.nombre;
+
+    lineItems.push({
+      tourId:   charge.tour.id,
+      tourSlug: charge.tour.slug,
+      tourName: charge.tour.nombre,
+      tourDate: String(raw.tourDate),
+      adults:   Number(raw.adults) || 1,
+      children: (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0),
+      subtotal: charge.total,
+      ...(eleccionValida ? { eleccion: eleccionValida } : {}),
+    });
+    total += charge.total;
+  }
+
+  return { ok: true, lineItems, total };
+}
