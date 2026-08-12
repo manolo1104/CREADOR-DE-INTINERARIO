@@ -39,6 +39,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     que_llevar: ["non-slip footwear", "biodegradable insect repellent"],
     datos_curiosos: ["It was once an orchid plantation", "Edward James never lived in the structures"],
     errores_comunes: ["Arriving without a reservation", "Smooth-soled shoes"],
+      seo: {
+      metaTitle: "Las Pozas Xilitla 2026 | Hours, Tickets & How to Get There",
+      metaDescription: "Edward James's surrealist garden in Xilitla: $180 MXN entry, open Wednesday to Monday 09:00-18:00 (closed Tuesdays). How to get there, the best hour to go and what to bring.",
+      keywords: ["las pozas xilitla", "edward james surrealist garden", "las pozas tickets", "xilitla mexico", "surrealist garden san luis potosi"],
+    },
   },
   "cascada-de-tamul": {
     nombre: "Tamul Waterfall",
@@ -53,6 +58,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     que_llevar: ["life jacket", "water shoes", "2L of water"],
     datos_curiosos: ["105m drop", "In October: turquoise water + orange foliage"],
     errores_comunes: ["Arriving late", "Not bringing cash"],
+      seo: {
+      metaTitle: "Tamul Waterfall 2026 | Price, Hours and the Boat Trip",
+      metaDescription: "The tallest waterfall in San Luis Potosi (105 m), reached by paddling up the Tampaon river. $220 MXN entry plus $300 per person for the boat, cash only. Last departures at 2 PM.",
+      keywords: ["tamul waterfall", "cascada de tamul", "tamul boat trip", "how to get to tamul", "huasteca potosina waterfalls"],
+    },
   },
   "sotano-de-las-golondrinas": {
     nombre: "Sótano de las Golondrinas (Cave of Swallows)",
@@ -67,6 +77,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     que_llevar: ["jacket", "flashlight", "sneakers"],
     datos_curiosos: ["The birds are SWIFTS, not swallows", "The bottom = 3 soccer fields"],
     errores_comunes: ["Arriving at 9 AM after the birds have already left"],
+      seo: {
+      metaTitle: "Cave of Swallows 2026 | What Time the Birds Fly Out",
+      metaDescription: "A 376 m free-fall abyss (up to 512 m deep) in Aquismon. $100 MXN entry. Arrive by 5:45 AM to watch the swifts spiral out. 568 steps down to the viewpoint.",
+      keywords: ["cave of swallows", "sotano de las golondrinas", "golondrinas bird flight time", "aquismon san luis potosi", "deepest cave in mexico"],
+    },
   },
   "cascadas-de-micos": {
     nombre: "Micos Waterfalls",
@@ -81,6 +96,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     que_llevar: ["water shoes", "dry-fit clothing"],
     datos_curiosos: ["The most versatile river in the area"],
     errores_comunes: ["Not adjusting your life vest properly"],
+      seo: {
+      metaTitle: "Micos Waterfalls 2026 | Price, Cliff Jumps and How to Get There",
+      metaDescription: "Seven waterfalls with a jumping circuit, zipline, kayak and skybike, 20 min from Ciudad Valles. $100 MXN entry, open daily 08:00-18:00. Life jacket and helmet are required.",
+      keywords: ["micos waterfalls", "cascadas de micos", "micos cliff jumping", "things to do in ciudad valles", "huasteca potosina"],
+    },
   },
   "puente-de-dios-tamasopo": {
     nombre: "Puente de Dios (Tamasopo)",
@@ -143,6 +163,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     que_llevar: ["swimsuit", "biodegradable sunscreen"],
     datos_curiosos: ["The pools change color with the season"],
     errores_comunes: ["Using chemical sunscreen"],
+      seo: {
+      metaTitle: "Tamasopo Waterfalls 2026 | Price, Hours and Swimming Pools",
+      metaDescription: "Turquoise pools for swimming in Tamasopo, ideal for families. $60 MXN entry, open daily 08:00-17:00, 45 min from Ciudad Valles. Biodegradable sunscreen only.",
+      keywords: ["tamasopo waterfalls", "cascadas de tamasopo", "tamasopo price", "swimming in huasteca potosina", "tamasopo opening hours"],
+    },
   },
   "siete-cascadas-tamasopo": {
     nombre: "Seven Waterfalls of Tamasopo",
@@ -655,49 +680,104 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
   "rio-axtla-el-chalan": {
     descripcion: "A crystal-clear river with pools for swimming, whose emblem is 'el chalán': an old iron raft pulled across the river by hand for over 50 years.",
     tipo: "Nature",
+      seo: {
+      metaTitle: "Rio Axtla and 'el Chalan' | Free Swimming Spots in Axtla",
+      metaDescription: "Free access. A clear-water river in Axtla de Terrazas with pools for swimming and 'el chalan', the hand-pulled iron raft that has been crossing the river for over 50 years.",
+      keywords: ["rio axtla", "el chalan axtla", "things to do in axtla de terrazas", "free swimming huasteca potosina"],
+    },
   },
   "cascada-el-trampolin-tamasopo": {
     descripcion: "A free, public stretch of the Agua Buena River with turquoise water, mini waterfalls, pools and ropes in the trees to jump into the water.",
     tipo: "Nature",
+      seo: {
+      metaTitle: "El Trampolin, Tamasopo | Free River with Turquoise Pools",
+      metaDescription: "A free, public stretch of the Agua Buena river in Tamasopo: turquoise water, small waterfalls, pools and rope swings. It is NOT the paid Cascadas de Tamasopo park.",
+      keywords: ["el trampolin tamasopo", "agua buena river", "free waterfalls huasteca potosina", "things to do in tamasopo"],
+    },
   },
   "templo-san-juan-bautista-coxcatlan": {
     nombre: "Church of San Juan Bautista (Coxcatlán)",
     descripcion: "A 16th-century church and former convent, considered one of the oldest in the Huasteca Potosina, facing Coxcatlán's main square.",
     tipo: "Art & Culture",
+      seo: {
+      metaTitle: "San Juan Bautista Church, Coxcatlan | 16th-Century Convent",
+      metaDescription: "A 16th-century church and former convent facing the main square of Coxcatlan, considered one of the oldest in the Huasteca Potosina. Free entry; it is a working church, not a museum.",
+      keywords: ["san juan bautista coxcatlan", "coxcatlan convent", "oldest churches huasteca potosina", "coxcatlan san luis potosi"],
+    },
   },
   "cascada-rancho-el-zapote-poza-azul-coxcatlan": {
     descripcion: "A turquoise waterfall and pool known locally as the 'blue pool', one of the least crowded natural spots in the Huasteca Potosina.",
     tipo: "Nature",
+      seo: {
+      metaTitle: "Rancho El Zapote Waterfall (Poza Azul), Coxcatlan",
+      metaDescription: "A waterfall and turquoise pool in Coxcatlan known as 'poza azul', one of the least crowded corners of the Huasteca Potosina. Little documented: confirm access and fees locally.",
+      keywords: ["poza azul coxcatlan", "rancho el zapote waterfall", "coxcatlan san luis potosi", "off the beaten path huasteca potosina"],
+    },
   },
   "ruinas-de-el-jopoy-coxcatlan": {
     nombre: "El Jopoy Ruins",
     descripcion: "Remains of a colonial hermitage with stone walls and large arches, noted as one of the first Spanish religious buildings in the Huasteca Potosina; now in ruins and used as a community cemetery.",
     tipo: "Archaeology",
+      seo: {
+      metaTitle: "El Jopoy Ruins, Coxcatlan | Colonial Chapel in Ruins",
+      metaDescription: "The remains of a colonial chapel with stone walls and wide arches in Coxcatlan, today used as a community cemetery. Free access; it comes alive on November 1 and 2.",
+      keywords: ["el jopoy ruins", "el jopoy coxcatlan", "colonial ruins huasteca potosina", "things to do in coxcatlan"],
+    },
   },
   "tancanhuitz": {
     descripcion: "A Tének-Nahua county seat famous for its San Miguel Arcángel church reached by a long stairway (the 'Church of the 149 Steps'), and for its strong Xantolo, huapango and indigenous dance traditions.",
     tipo: "Art & Culture",
+      seo: {
+      metaTitle: "Tancanhuitz | The 149-Step Church and Xantolo",
+      metaDescription: "A Tenek-Nahua town whose San Miguel Arcangel parish sits at the top of a long stairway, home to some of the strongest Xantolo, huapango and dance traditions in the Huasteca.",
+      keywords: ["tancanhuitz", "149 steps church", "xantolo tancanhuitz", "ciudad santos san luis potosi"],
+    },
   },
   "san-martin-chalchicuautla": {
     descripcion: "A town known as the 'Cradle of Xantolo', where the Day of the Dead is lived with deep Nahua roots from October 31 to November 2. The Cascada del Manantial waterfall is nearby.",
     tipo: "Art & Culture",
+      seo: {
+      metaTitle: "San Martin Chalchicuautla | The Birthplace of Xantolo",
+      metaDescription: "The municipality known as the 'cradle of Xantolo': from October 31 to November 2, Day of the Dead is lived with deep Nahua roots. Cascada del Manantial is nearby.",
+      keywords: ["san martin chalchicuautla", "birthplace of xantolo", "xantolo huasteca potosina", "day of the dead san luis potosi"],
+    },
   },
   "san-vicente-tancuayalab": {
     descripcion: "A Huastec town recognized as the 'cradle of the Day of the Dead' in San Luis Potosí, founded by Franciscan missionaries in the 16th century near the Moctezuma River.",
     tipo: "Art & Culture",
+      seo: {
+      metaTitle: "San Vicente Tancuayalab | Cradle of Day of the Dead in SLP",
+      metaDescription: "Free access. A Huastec town recognised as the 'cradle of Day of the Dead' in San Luis Potosi, founded by Franciscans in the 16th century near the Moctezuma river.",
+      keywords: ["san vicente tancuayalab", "day of the dead san luis potosi", "xantolo huasteca potosina", "huastec towns mexico"],
+    },
   },
   "tanlajas": {
     descripcion: "A town of Tének roots known for its regional cuisine (zacahuiles, bocoles, cecina) and for the 'Toreada de los Diablos', an ancestral ritual where masked figures recreate the struggle between good and evil.",
     tipo: "Art & Culture",
+      seo: {
+      metaTitle: "Tanlajas | The Devils' Bullfight and Tenek Cooking",
+      metaDescription: "A town with Tenek roots known for its zacahuiles, bocoles and cecina, and for the 'Toreada de los Diablos', a masked ritual held during Holy Week (not Day of the Dead).",
+      keywords: ["tanlajas", "toreada de los diablos", "zacahuil huasteca potosina", "tenek culture"],
+    },
   },
   "texquitote": {
     nombre: "Texquitote — cradle of son huasteco",
     descripcion: "A Nahua community recognized as the cradle of son huasteco lutherie, where around 40 luthiers hand-build jaranas, huapanguera guitars, violins, armadillo-shell instruments and harps.",
     tipo: "Art & Culture",
+      seo: {
+      metaTitle: "Texquitote, Matlapa | Home of the Son Huasteco Luthiers",
+      metaDescription: "A Nahua community where around 40 luthiers hand-build the jaranas, quinta huapangueras, violins and harps of son huasteco. The workshops are private: get in touch before visiting.",
+      keywords: ["texquitote", "son huasteco luthiers", "jarana huasteca", "quinta huapanguera", "mexican crafts huasteca potosina"],
+    },
   },
   "laguna-de-los-suspiros": {
     descripcion: "A lagoon in the Plan de Iguala ejido whose emblem is a majestic ~200-year-old fig tree (higuerón) whose huge roots form two natural 'doorways'.",
     tipo: "Nature",
+      seo: {
+      metaTitle: "Laguna de los Suspiros, Ebano | The 200-Year-Old Fig Tree",
+      metaDescription: "A lagoon in the Plan de Iguala ejido (Ebano) whose emblem is a roughly 200-year-old fig tree, its huge roots forming two natural 'doorways'. No formal tourist services.",
+      keywords: ["laguna de los suspiros", "ebano san luis potosi", "fig tree laguna de los suspiros", "things to do in ebano"],
+    },
   },
   "la-trinidad-xilitla": {
     nombre: "La Trinidad — Xilitla Cloud Forest",
