@@ -184,7 +184,10 @@ const es: Messages = {
     book: "Reservar →",
     reviewsCount: (n) => `${n} reseñas`,
     reviewsSample: (n) => `Mostramos ${n} opiniones recientes de viajeros.`,
-    bookThisTour: "Reservar este tour",
+    // Dice lo que de verdad hace el botón: mete el recorrido al carrito, donde
+    // se elige la fecha y se paga (varios días en un solo cobro). "Reservar"
+    // prometía terminar ahí mismo.
+    bookThisTour: "Agregar al carrito",
     askWhatsapp: "Preguntar por WhatsApp",
     freeCancel48: "Cancela gratis · 48h antes",
   },
@@ -212,7 +215,7 @@ const es: Messages = {
     travelersSay: "Lo que dicen los viajeros",
     toursThatInclude: "Tours que incluyen",
     bookOrAsk: "Reserva directamente con tarjeta o pregunta por WhatsApp.",
-    bookWithCard: "Reservar con tarjeta",
+    bookWithCard: "Agregar al carrito",
     askWhatsapp: "Preguntar por WhatsApp",
     replyUnder1h: "Respuesta en menos de 1 hora · Lun–Dom",
     wantToVisit: "¿Quieres visitar",
@@ -302,7 +305,7 @@ const en: Messages = {
     book: "Book →",
     reviewsCount: (n) => `${n} reviews`,
     reviewsSample: (n) => `Showing ${n} recent traveller reviews.`,
-    bookThisTour: "Book this tour",
+    bookThisTour: "Add to cart",
     askWhatsapp: "Ask on WhatsApp",
     freeCancel48: "Free cancellation · 48h before",
   },
@@ -333,7 +336,7 @@ const en: Messages = {
     travelersSay: "What travelers say",
     toursThatInclude: "Tours that include",
     bookOrAsk: "Book directly by card or ask on WhatsApp.",
-    bookWithCard: "Book by card",
+    bookWithCard: "Add to cart",
     askWhatsapp: "Ask on WhatsApp",
     replyUnder1h: "Reply in under 1 hour · Mon–Sun",
     wantToVisit: "Want to visit",

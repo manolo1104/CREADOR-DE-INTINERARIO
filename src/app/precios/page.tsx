@@ -158,7 +158,7 @@ export default function PreciosPage() {
                       {/* El precio es el enlace: quien llega a /precios ya está
                           comparando, y antes tenía que dar dos saltos más para
                           poder reservar. */}
-                      <Link href={`/reservar-tour/${t.slug}`} className="group/precio inline-block">
+                      <Link href={`/reservar/carrito?agregar=${t.slug}`} className="group/precio inline-block">
                         <span className="font-cormorant text-dorado text-xl group-hover/precio:text-lima transition-colors">{money(t.precio)}</span>
                         <span className="text-crema/40 text-xs"> MXN</span>
                         <span className="block text-[9px] tracking-[1.5px] uppercase font-dm text-crema/35 group-hover/precio:text-lima transition-colors">Reservar →</span>
@@ -178,7 +178,7 @@ export default function PreciosPage() {
                     </td>
                     <td className="px-4 py-4 text-crema/60">{DIF_LABEL[t.dificultad]}</td>
                     <td className="px-4 py-4 text-right whitespace-nowrap">
-                      <Link href={`/reservar-tour/${t.slug}`} className="group/precio inline-block">
+                      <Link href={`/reservar/carrito?agregar=${t.slug}`} className="group/precio inline-block">
                         <span className="text-crema/50 text-xs">desde </span>
                         <span className="font-cormorant text-dorado text-xl group-hover/precio:text-lima transition-colors">{money(t.precio)}</span>
                         <span className="text-crema/40 text-xs"> MXN por vehículo</span>

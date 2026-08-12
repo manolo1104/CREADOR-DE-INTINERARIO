@@ -420,7 +420,7 @@ export default function DestinoPage({ params }: Props) {
                         <span className="font-dm text-[10px] text-crema/40 ml-1">MXN / {locale === "en" ? "person" : "persona"}</span>
                       </p>
                       <div className="space-y-2">
-                        <Link href={`/reservar-tour/${tour.slug}`}
+                        <Link href={`/reservar/carrito?agregar=${tour.slug}`}
                           className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors">
                           <Lock className="w-3 h-3" />{dd.bookWithCard}
                         </Link>

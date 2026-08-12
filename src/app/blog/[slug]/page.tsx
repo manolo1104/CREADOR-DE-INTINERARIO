@@ -388,7 +388,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   </p>
                   <div className="space-y-2">
                     <Link
-                      href={relevantTour.precioUnidad === "vehiculo" ? `/tours/${relevantTour.slug}` : `/reservar-tour/${relevantTour.slug}`}
+                      href={`/reservar/carrito?agregar=${relevantTour.slug}`}
                       className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
                       Reservar →
                     </Link>

@@ -311,6 +311,12 @@ function PagoCarrito({ cobro, datos, onListo }: {
 export default function CarritoPage() {
   const [items, setItems]   = useState<CarritoItem[]>([]);
   const [montado, setMontado] = useState(false);
+  /**
+   * Hay un `?agregar` pendiente de resolver. Sin esto, quien llega desde el
+   * botón de una ficha de tour ve "Tu carrito está vacío" durante un frame,
+   * justo en el aterrizaje que se quiere cuidar.
+   */
+  const [hidratando, setHidratando] = useState(true);
   const [name,   setName]   = useState("");
   const [email,  setEmail]  = useState("");
   const [phone,  setPhone]  = useState("");
@@ -340,11 +346,51 @@ export default function CarritoPage() {
   const [cargando, setCargando] = useState(false);
   /** El campo de nombre, para poder llevar ahí desde la barra fija de móvil. */
   const nombreRef = useRef<HTMLInputElement | null>(null);
+  /** Cada renglón, para poder llevar la vista al que toca. */
+  const renglonRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  /** Renglón que acaba de llegar por `?agregar`: se resalta un momento. */
+  const [recienLlegado, setRecienLlegado] = useState<string | null>(null);
 
   useEffect(() => {
     setMontado(true);
-    setItems(leerCarrito());
+
+    // `?agregar=<slug>` es cómo entra un recorrido desde el resto del sitio.
+    // Las páginas de tour, destino, blog y precios se pintan en el servidor y
+    // ahí no existe `localStorage`, así que en vez de que cada botón sepa
+    // escribir el carrito, mandan la intención en la URL y ese trabajo pasa
+    // aquí, en el único sitio que toca el carrito.
+    const params = new URLSearchParams(window.location.search);
+    const pedido = params.get("agregar");
+
+    let carrito = leerCarrito();
+    if (pedido) {
+      const yaEsta = carrito.find((i) => i.tourSlug === pedido);
+      if (yaEsta) {
+        // No se duplica: quien vuelve a pulsar "Reservar" del mismo tour
+        // quiere verlo, no llevarlo dos veces. Se le lleva al renglón.
+        setRecienLlegado(yaEsta.uid);
+      } else {
+        const nuevo = itemDesdeSlug(pedido);
+        if (nuevo) {
+          carrito = agregarAlCarrito(nuevo);
+          setRecienLlegado(carrito[carrito.length - 1]?.uid ?? null);
+        }
+      }
+      // Se limpia la URL para que recargar no vuelva a hacer lo mismo.
+      window.history.replaceState({}, "", "/reservar/carrito");
+    }
+    setItems(carrito);
+    setHidratando(false);
   }, []);
+
+  // Lleva la vista al recorrido que acaba de entrar y apaga el resalte.
+  useEffect(() => {
+    if (!recienLlegado) return;
+    const nodo = renglonRefs.current[recienLlegado];
+    nodo?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const id = setTimeout(() => setRecienLlegado(null), 2600);
+    return () => clearTimeout(id);
+  }, [recienLlegado]);
 
   // Al activar el hospedaje se proponen fechas a partir de los recorridos ya
   // elegidos: se llega la víspera del primero y se sale el día después del
@@ -618,7 +664,13 @@ export default function CarritoPage() {
     // React lo remonta en su grupo nuevo y la animación de entrada lo acompaña
     // hasta su lugar. Es el efecto de la lista que pasó Manolo, hecho con la
     // animación que el proyecto ya tiene en tailwind.config, sin librería.
-    <div key={i.uid + i.tourDate} className="animate-slide-up flex gap-3 sm:gap-4 border border-negro/10 bg-white p-3 sm:p-4">
+    <div
+      key={i.uid + i.tourDate}
+      ref={(el) => { renglonRefs.current[i.uid] = el; }}
+      className={`animate-slide-up flex gap-3 sm:gap-4 border bg-white p-3 sm:p-4 transition-colors duration-500 ${
+        recienLlegado === i.uid ? "border-verde-selva ring-2 ring-verde-selva/25" : "border-negro/10"
+      }`}
+    >
                   <div className="relative w-16 h-14 sm:w-24 sm:h-20 flex-shrink-0 overflow-hidden">
                     <Image src={i.tourImage} alt={i.tourName} fill className="object-cover" sizes="(max-width: 640px) 64px, 96px" />
                   </div>
@@ -900,7 +952,7 @@ export default function CarritoPage() {
                   </div>
                 </div>
   );
-  if (!montado) return <main className="min-h-screen bg-crema pt-32" />;
+  if (!montado || hidratando) return <main className="min-h-screen bg-crema pt-32" />;
 
   if (items.length === 0) {
     return (

@@ -638,10 +638,10 @@ export default function TourDetailPage({ params }: Props) {
             </div>
 
             <div className="space-y-2.5">
-              <Link href={`/reservar-tour/${tour.slug}`}
+              <Link href={`/reservar/carrito?agregar=${tour.slug}`}
                 className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
                 <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-                {esVehiculo ? (locale === "en" ? "Book with card" : "Reservar con tarjeta") : t.bookThisTour}
+                {t.bookThisTour}
               </Link>
               <a href={waLink(waTour)} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
@@ -783,7 +783,7 @@ export default function TourDetailPage({ params }: Props) {
                         className="text-[9px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-3 py-1.5 transition-all">
                         {t.viewTour}
                       </Link>
-                      <Link href={`/reservar-tour/${comboTour.slug}`}
+                      <Link href={`/reservar/carrito?agregar=${comboTour.slug}`}
                         className="text-[9px] tracking-[2px] uppercase font-dm text-negro bg-dorado hover:bg-lima px-3 py-1.5 transition-all">
                         {t.book}
                       </Link>

@@ -232,7 +232,7 @@ function TourResultCard({
   const proof = TOUR_PROOF[tour.id];
   const savings = (tour.precioOriginal ?? tour.precio) - tour.precio;
   const esVehiculo = tour.precioUnidad === "vehiculo";
-  const bookHref = esVehiculo ? `/tours/${tour.slug}` : `/reservar-tour/${tour.slug}`;
+  const bookHref = `/reservar/carrito?agregar=${tour.slug}`;
 
   return (
     <div className={`bg-white border ${isPrimary ? "border-verde-selva shadow-lg shadow-verde-selva/10" : "border-negro/10"} overflow-hidden`}>

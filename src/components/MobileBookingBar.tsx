@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Lock, ShoppingBag } from "lucide-react";
 import { trackBeginCheckout } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
+import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 
 interface Props {
   tourSlug: string;
@@ -19,6 +20,13 @@ interface Props {
 
 export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar" }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
+  // Esta barra es la ÚNICA de abajo en las fichas de tour: `CarritoBar` se
+  // esconde aquí (ver `lib/barrasFijas.ts`) porque las dos vivían en `bottom-0`
+  // y se tapaban. Así que si el visitante ya lleva recorridos, el acceso al
+  // carrito tiene que estar aquí dentro o se pierde.
+  const enCarrito = useCarritoSlugs();
+  const yaEnCarrito = enCarrito.has(tourSlug);
+  const llevaAlgo = enCarrito.size > 0;
   const track = () => {
     trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source });
     trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, source });
@@ -53,10 +61,29 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           </svg>
         </a>
       )}
-      <Link href={`/reservar-tour/${tourSlug}`} onClick={track} className={ctaClass}>
-        <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-        Reservar
-      </Link>
+      {/* El acceso al carrito, solo cuando lleva algo y este tour NO es el que
+          lleva (si no, sería el mismo destino dos veces, uno al lado del otro). */}
+      {llevaAlgo && !yaEnCarrito && (
+        <Link
+          href="/reservar/carrito"
+          aria-label={`Ver tu carrito (${enCarrito.size})`}
+          className="flex items-center justify-center gap-1.5 w-11 h-11 border border-dorado/50 text-dorado flex-shrink-0 hover:bg-dorado/10 transition-colors"
+        >
+          <ShoppingBag className="w-4 h-4" aria-hidden="true" />
+          <span className="font-dm text-[11px] leading-none">{enCarrito.size}</span>
+        </Link>
+      )}
+      {yaEnCarrito ? (
+        <Link href="/reservar/carrito" className={ctaClass}>
+          <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
+          En tu carrito
+        </Link>
+      ) : (
+        <Link href={`/reservar/carrito?agregar=${tourSlug}`} onClick={track} className={ctaClass}>
+          <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+          Agregar
+        </Link>
+      )}
     </div>
   );
 }

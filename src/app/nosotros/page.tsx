@@ -654,7 +654,9 @@ export default function NosotrosPage() {
                       </span>
                     </p>
                     <Link
-                      href={tour.precioUnidad === "vehiculo" ? `/tours/${tour.slug}` : `/reservar-tour/${tour.slug}`}
+                      // El carrito ya sabe armar los tours por vehículo (elige ruta y unidad
+                      // dentro), así que el RZR deja de ser una excepción que salía del motor.
+                      href={`/reservar/carrito?agregar=${tour.slug}`}
                       className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">Reservar</Link>
                     <a
                       href={waLink(tour.precioUnidad === "vehiculo"

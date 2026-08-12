@@ -6,6 +6,7 @@ import { trackCtaClick } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { toursQueIncluyen } from "@/lib/tourMapping";
+import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 
 const LOCK_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
@@ -24,6 +25,9 @@ const WA_SVG = (
 
 export function FloatingReservarButton() {
   const pathname = usePathname();
+  // Se lee SIEMPRE (los hooks no pueden ir después de un `return`): hace falta
+  // saber si abajo está la barra del carrito para no aterrizar encima de ella.
+  const enCarrito = useCarritoSlugs();
   if (pathname === "/planear" || pathname === "/recomendar") return null;
 
   // Dentro de una reserva en curso este botón hacía daño: en móvil era el ÚNICO
@@ -49,12 +53,28 @@ export function FloatingReservarButton() {
   // Fuera de una ficha concreta, el botón manda al motor de reservas y no al
   // catálogo editorial: quien lo pulsa ya decidió que quiere reservar.
   const href = tourSlugMatch
-    ? `/reservar-tour/${tourSlugMatch[1]}`
+    ? `/reservar/carrito?agregar=${tourSlugMatch[1]}`
     : tourDelDestino
       ? `/tours/${tourDelDestino.slug}`
       : "/reservar";
   const waHref = waLink(WA_MESSAGES.flotante);
   const visibility = conBarraInferior ? "hidden lg:flex" : "flex";
+
+  /**
+   * La barra del carrito ocupa el pie de la pantalla en cuanto hay algo dentro,
+   * y estos botones aterrizaban justo encima —en móvil Y en escritorio, porque
+   * esa barra no se esconde en pantallas grandes—. Cuando está, se suben.
+   *
+   * Basta con "¿hay carrito?", sin mirar si es ficha de tour: ahí estos botones
+   * son solo de escritorio (`hidden lg:flex`) y la barra del carrito también se
+   * pinta solo en escritorio, así que o coinciden los dos o no está ninguno.
+   */
+  const sobreBarraCarrito = enCarrito.size > 0;
+  // Literales a propósito: Tailwind lee el código fuente para generar el CSS y
+  // una clase armada con plantilla (`bottom-[${x}px]`) nunca llegaría a la hoja
+  // de estilos. Son los mismos 24 y 86 de siempre, más los 72 de la barra.
+  const abajoReservar = sobreBarraCarrito ? "bottom-[96px]"  : "bottom-6";
+  const abajoWhatsApp = sobreBarraCarrito ? "bottom-[158px]" : "bottom-[86px]";
 
   return (
     <>
@@ -76,7 +96,7 @@ export function FloatingReservarButton() {
                    bg-[#25D366] hover:bg-[#1ebe5b] text-white
                    w-[52px] h-[52px] rounded-full shadow-xl shadow-black/40
                    transition-all duration-300 hover:scale-105
-                   bottom-[86px] ${visibility}`}
+                   ${abajoWhatsApp} ${visibility}`}
       >
         {WA_SVG}
       </a>
@@ -84,7 +104,7 @@ export function FloatingReservarButton() {
         href={href}
         aria-label="Reservar tour"
         onClick={() => trackCtaClick("floating_button", href)}
-        className={`fixed bottom-6 right-6 z-50 items-center gap-2.5
+        className={`fixed ${abajoReservar} right-6 z-50 items-center gap-2.5
                    bg-dorado hover:bg-terracota text-negro hover:text-crema
                    pl-4 pr-5 py-3.5 rounded-full shadow-xl shadow-black/40
                    transition-all duration-300 hover:scale-105

@@ -137,7 +137,7 @@ export function TarjetaTourReservar({
 
             <div className="flex gap-2" onClick={noPropagar}>
               <Link
-                href={`/reservar-tour/${tour.slug}`}
+                href={`/reservar/carrito?agregar=${tour.slug}`}
                 className="flex-1 text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors"
               >
                 Reservar
@@ -235,7 +235,7 @@ export function TarjetaTourReservar({
 
               <div className="flex flex-col sm:flex-row gap-2">
                 <Link
-                  href={`/reservar-tour/${tour.slug}`}
+                  href={`/reservar/carrito?agregar=${tour.slug}`}
                   className="flex-1 text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3.5 transition-colors"
                 >
                   Reservar este recorrido
