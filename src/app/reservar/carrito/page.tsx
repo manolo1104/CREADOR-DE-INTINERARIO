@@ -465,24 +465,51 @@ export default function CarritoPage() {
   }
 
   /** Suma o resta gente y vuelve a calcular el subtotal que se muestra. */
-  function cambiarPersonas(i: CarritoItem, delta: number) {
+  /**
+   * Suma o resta gente de un tramo concreto y recalcula el subtotal.
+   *
+   * `calcTourTotal` es la MISMA función que usa el servidor, así que los
+   * tramos de menor (70 % de 6 a 10 años, 50 % por debajo de 6) salen igual
+   * aquí que al cobrar.
+   */
+  function cambiarPersonas(
+    i: CarritoItem,
+    campo: "adults" | "childrenMid" | "childrenSmall",
+    delta: number,
+  ) {
     const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
     if (!tour) return;
-    const adultos = Math.min(
-      tour.groupMax - i.childrenMid - i.childrenSmall,
-      Math.max(tour.groupMin, i.adults + delta),
+
+    // Los adultos no pueden bajar del mínimo del tour; los menores sí llegan a
+    // cero. Y entre todos no pueden pasar del cupo.
+    const piso  = campo === "adults" ? Math.max(1, tour.groupMin) : 0;
+    const otros = (["adults", "childrenMid", "childrenSmall"] as const)
+      .filter((c) => c !== campo)
+      .reduce((s, c) => s + (i[c] ?? 0), 0);
+    const valor = Math.min(
+      tour.groupMax - otros,
+      Math.max(piso, (i[campo] ?? 0) + delta),
     );
-    const { total } = calcTourTotal(tour.precio, adultos, i.childrenMid, i.childrenSmall, 0);
+
+    const adultos       = campo === "adults"        ? valor : i.adults;
+    const childrenMid   = campo === "childrenMid"   ? valor : i.childrenMid;
+    const childrenSmall = campo === "childrenSmall" ? valor : i.childrenSmall;
+
+    // El mínimo del tour (el rafting no sale con menos de 4) cuenta a TODOS los
+    // que van, no solo a los adultos.
+    if (adultos + childrenMid + childrenSmall < tour.groupMin) return;
+
+    const { total } = calcTourTotal(tour.precio, adultos, childrenMid, childrenSmall, 0);
     // Los add-ons se topan a la gente que va: si el grupo baja, la actividad
     // opcional no puede quedar contratada para más personas de las que quedan.
     const addOns = (i.addOns ?? [])
-      .map((a) => ({ ...a, cantidad: Math.min(a.cantidad, adultos + i.childrenMid + i.childrenSmall) }))
+      .map((a) => ({ ...a, cantidad: Math.min(a.cantidad, adultos + childrenMid + childrenSmall) }))
       .filter((a) => a.cantidad > 0);
     const extras = addOns.reduce((s, a) => {
       const c = tour.addOns?.find((x) => x.id === a.id);
       return s + (c ? c.precio * a.cantidad : 0);
     }, 0);
-    cambiar(i.uid, { adults: adultos, addOns, total: total + extras });
+    cambiar(i.uid, { adults: adultos, childrenMid, childrenSmall, addOns, total: total + extras });
   }
 
   // Sin fecha no se puede cobrar: el servidor la valida, pero es mejor decirlo
@@ -596,19 +623,47 @@ export default function CarritoPage() {
                           </span>
                         </span>
                       ) : (
-                        <span className="flex items-center gap-2">
-                          <button type="button" aria-label="Menos personas"
-                            onClick={() => cambiarPersonas(i, -1)}
-                            className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
-                          <span className="font-dm text-[12px] text-negro/70 w-14 text-center">
-                            {personasDeItem(i)} {personasDeItem(i) === 1 ? "persona" : "personas"}
-                          </span>
-                          <button type="button" aria-label="Más personas"
-                            onClick={() => cambiarPersonas(i, 1)}
-                            className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                        // Adultos y menores por separado. Antes solo se podían
+                        // sumar adultos, así que una familia con dos niños
+                        // pagaba cuatro boletos completos en el carrito y solo
+                        // veía la tarifa de menor si entraba por la ficha del
+                        // tour. Los tramos son los mismos de siempre:
+                        // 6–10 años al 70 %, menores de 6 al 50 %.
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                          {([
+                            { campo: "adults"        as const, etiqueta: "adultos",     nota: "" },
+                            { campo: "childrenMid"   as const, etiqueta: "niños 6–10",  nota: "70 %" },
+                            { campo: "childrenSmall" as const, etiqueta: "menores de 6", nota: "50 %" },
+                          ])
+                            // El buceo en Media Luna es solo para adultos y el
+                            // servidor rechaza la reserva con menores. Enseñar
+                            // los contadores ahí sería dejar que el cliente
+                            // arme su grupo, vea un precio y el pago le falle
+                            // con un error genérico.
+                            .filter(({ campo }) => campo === "adults" || !TOURS_DB.find((t) => t.slug === i.tourSlug)?.soloAdultos)
+                            .map(({ campo, etiqueta, nota }) => (
+                            <span key={campo} className="flex items-center gap-1.5">
+                              <button type="button" aria-label={`Menos ${etiqueta} en ${i.tourName}`}
+                                onClick={() => cambiarPersonas(i, campo, -1)}
+                                className="w-6 h-6 border border-negro/20 text-negro/60 hover:border-verde-selva text-xs">−</button>
+                              <span className="font-dm text-[11px] text-negro/65 whitespace-nowrap">
+                                {i[campo] ?? 0} {etiqueta}
+                                {nota && <span className="text-negro/35"> ({nota})</span>}
+                              </span>
+                              <button type="button" aria-label={`Más ${etiqueta} en ${i.tourName}`}
+                                onClick={() => cambiarPersonas(i, campo, 1)}
+                                className="w-6 h-6 border border-negro/20 text-negro/60 hover:border-verde-selva text-xs">+</button>
+                            </span>
+                          ))}
                         </span>
                       )}
                     </div>
+
+                    {TOURS_DB.find((t) => t.slug === i.tourSlug)?.soloAdultos && (
+                      <p className="font-dm text-[11px] text-negro/40 mt-1">
+                        Este recorrido es solo para mayores de 10 años.
+                      </p>
+                    )}
   
                     {!i.tourDate && (
                       <p className="font-dm text-[11px] text-terracota mt-1">Elige la fecha de este recorrido</p>
