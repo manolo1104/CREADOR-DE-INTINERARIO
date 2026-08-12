@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T17:40:35.196Z",
+  "generatedAt": "2026-08-12T18:05:46.375Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -1136,7 +1136,7 @@
           "precio": 8000
         },
         {
-          "grupo": "7 o más personas",
+          "grupo": "7 a 12 personas",
           "precio": 12000
         }
       ]
@@ -1154,7 +1154,7 @@
           "precio": 6400
         },
         {
-          "grupo": "7 o más personas",
+          "grupo": "7 a 12 personas",
           "precio": 10000
         }
       ]
@@ -1169,10 +1169,10 @@
         },
         {
           "grupo": "5 a 6 personas",
-          "precio": 8000
+          "precio": 16000
         },
         {
-          "grupo": "7 o más personas",
+          "grupo": "7 a 12 personas",
           "precio": 18000
         }
       ]

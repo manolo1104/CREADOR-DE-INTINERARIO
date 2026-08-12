@@ -5,7 +5,10 @@
  * persona: el tramo de la sierra son casi dos horas de curvas y quien no quiere
  * manejarlas ya no tiene que llegar por su cuenta.
  *
- * Las tarifas van por tamaño de grupo porque cambia la unidad que se manda.
+ * Las tarifas van por tamaño de grupo porque cambia la unidad que se manda, y
+ * llegan hasta 12 pasajeros: es el cupo de la unidad más grande. A partir de
+ * ahí no hay tarifa y se cotiza a mano — el sitio lo dice en vez de inventar un
+ * precio.
  *
  * ⚠️ Todo importe que se enseñe al cliente sale de aquí. Es el único lugar donde
  * se tocan: si aparece un número de traslado escrito a mano en una página, está
@@ -38,7 +41,7 @@ export const TRASLADOS: RutaTraslado[] = [
     tarifas: [
       { desde: 1, hasta: 4,    precio: 6000 },
       { desde: 5, hasta: 6,    precio: 8000 },
-      { desde: 7, hasta: null, precio: 12000 },
+      { desde: 7, hasta: 12,   precio: 12000 },
     ],
   },
   {
@@ -48,7 +51,7 @@ export const TRASLADOS: RutaTraslado[] = [
     tarifas: [
       { desde: 1, hasta: 4,    precio: 5000 },
       { desde: 5, hasta: 6,    precio: 6400 },
-      { desde: 7, hasta: null, precio: 10000 },
+      { desde: 7, hasta: 12,   precio: 10000 },
     ],
   },
   {
@@ -57,13 +60,8 @@ export const TRASLADOS: RutaTraslado[] = [
     ciudadLarga: "desde la Ciudad de México",
     tarifas: [
       { desde: 1, hasta: 4,    precio: 14000 },
-      // 🔴 PENDIENTE DE CONFIRMAR CON MANOLO (12 ago 2026).
-      // Tal como está, un grupo de 5–6 paga MENOS que uno de 1–4 ($8,000 contra
-      // $14,000): a cualquier pareja le conviene decir que son cinco. En las
-      // otras dos rutas el precio sí sube con el grupo. Si el criterio fue
-      // doblar la cotización del proveedor, aquí van $16,000.
-      { desde: 5, hasta: 6,    precio: 8000 },
-      { desde: 7, hasta: null, precio: 18000 },
+      { desde: 5, hasta: 6,    precio: 16000 },
+      { desde: 7, hasta: 12,   precio: 18000 },
     ],
   },
 ];

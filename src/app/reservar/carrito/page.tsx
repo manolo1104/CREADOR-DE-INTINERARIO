@@ -667,7 +667,10 @@ export default function CarritoPage() {
           hospedaje: conHotel
             ? { habitaciones: habs, noches, checkin, checkout }
             : null,
-          traslado: conTraslado && rutaTraslado
+          // Solo si hay tarifa para ese grupo. Arriba de 12 no la hay y se
+          // cotiza a mano: mandarlo igual hacía que el servidor rechazara el
+          // pago ENTERO, no solo el traslado.
+          traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
             ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
             : null,
         }),
@@ -1407,7 +1410,18 @@ export default function CarritoPage() {
                       </p>
                     ) : (
                       <p className="font-dm text-[12px] text-terracota">
-                        Para ese grupo lo cotizamos aparte — escríbenos por WhatsApp.
+                        Nuestra unidad más grande llega a 12 pasajeros. Para{" "}
+                        {paxTraslado} lo cotizamos aparte —{" "}
+                        <a
+                          href={`https://wa.me/524891251458?text=${encodeURIComponent(
+                            `Hola, somos ${paxTraslado} y queremos traslado de ${rutaTraslado.ciudad} a Xilitla. ¿Me cotizan?`,
+                          )}`}
+                          target="_blank" rel="noopener noreferrer"
+                          onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_traslado_grupo_grande", ciudad: rutaTraslado.slug, personas: paxTraslado })}
+                          className="underline underline-offset-2"
+                        >
+                          escríbenos por WhatsApp
+                        </a>. Tu reserva sigue sin el traslado.
                       </p>
                     )}
                     <p className="font-dm text-[11px] text-negro/40">
