@@ -23,8 +23,29 @@ const RESPOND_MODE = (process.env.RESPOND_MODE || "strangers").toLowerCase();
 const ALWAYS_RESPOND = (process.env.ALWAYS_RESPOND_NUMBERS || "")
   .split(",").map((s) => s.replace(/\D/g, "")).filter(Boolean);
 
+/**
+ * Versión FIJADA de WhatsApp Web.
+ *
+ * Sin fijarla, la librería usa la que WhatsApp sirva ese día. Cuando publican
+ * una nueva, el arranque entra en un ciclo de recargas y `Client.inject` truena
+ * con "Execution context was destroyed" ANTES de poder pintar el QR: el bot
+ * queda muerto sin decir por qué, y no hay forma de reconectarlo. Pasó dos
+ * veces el 11 de agosto de 2026.
+ *
+ * `2.3000.1044917563-alpha` está comprobada con whatsapp-web.js 1.34.7: llega
+ * al QR limpiamente. Si algún día WhatsApp rompe la compatibilidad, hay que
+ * subir a otra de
+ * https://github.com/wppconnect-team/wa-version/tree/main/html
+ * y PROBARLA antes de dejarla puesta.
+ */
+const WA_WEB_VERSION = process.env.WA_WEB_VERSION || "2.3000.1044917563-alpha";
+
 const client = new Client({
   authStrategy: new LocalAuth({ clientId: "huasteca-tours" }),
+  webVersionCache: {
+    type: "remote",
+    remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${WA_WEB_VERSION}.html`,
+  },
   puppeteer: {
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],

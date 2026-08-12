@@ -336,7 +336,13 @@ export function TourCalendar({ value, onChange }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
           <span>
-            Fecha seleccionada: <strong>{formatDisplay(value)}</strong> · Salida: por acordar
+            {/*
+              Antes decía "Salida: por acordar". La ficha del tour ya responde
+              esto ("salimos entre 8:00 y 9:00 AM"), así que el motor metía una
+              incógnita logística justo en el instante de decidir. La hora
+              exacta de recogida sí se confirma después, y eso se dice aparte.
+            */}
+            Fecha seleccionada: <strong>{formatDisplay(value)}</strong> · Salida entre 8:00 y 9:00 AM
           </span>
         </div>
       )}

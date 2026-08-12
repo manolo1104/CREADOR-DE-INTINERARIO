@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, INCLUYE_SIEMPRE } from "@/lib/tours";
 import { calcTourTotal, minBookingDate } from "@/lib/tourBooking";
+import { computeVehiculoCharge } from "@/lib/tourPricing";
 import { buildPaquetePersonalizadoEmailHtml } from "@/lib/tourEmail";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { cotizarHospedaje } from "@/lib/hospedaje";
@@ -26,6 +27,10 @@ interface ItemEntrada {
   adultos?: number;
   ninosMid?: number;
   ninosSmall?: number;
+  /** Solo para los tours cobrados por vehículo (RZR). */
+  ruta?: string;
+  vehiculo?: string;
+  unidades?: number;
 }
 
 /**
@@ -75,14 +80,6 @@ export async function POST(req: NextRequest) {
     if (!tour) {
       return NextResponse.json({ error: `No existe el tour "${raw.slug}".` }, { status: 400 });
     }
-    // El RZR se cobra por vehículo (flota × ruta), no por persona: mezclarlo
-    // aquí daría un total falso.
-    if (tour.precioUnidad === "vehiculo") {
-      return NextResponse.json(
-        { error: `${tour.nombre} se cobra por vehículo y no puede ir en un paquete por persona. Cotízalo aparte.` },
-        { status: 400 },
-      );
-    }
     if (!raw.tourDate || !/^\d{4}-\d{2}-\d{2}$/.test(String(raw.tourDate))) {
       return NextResponse.json({ error: `Falta la fecha (AAAA-MM-DD) de ${tour.nombre}.` }, { status: 400 });
     }
@@ -91,6 +88,55 @@ export async function POST(req: NextRequest) {
         { error: `La fecha de ${tour.nombre} debe ser a partir del ${minDate}.` },
         { status: 400 },
       );
+    }
+
+    // Cobro por VEHÍCULO (el RZR). Se cotiza con la misma función del sitio
+    // para no duplicar la matriz flota × ruta. Antes se rechazaba, lo que
+    // obligaba al cliente a llevar dos cotizaciones para un mismo viaje.
+    if (tour.precioUnidad === "vehiculo") {
+      // `computeVehiculoCharge` compara por nombre exacto ("Ruta Nanacatli"),
+      // y el bot manda lo que dijo el cliente ("Nanacatli"). Se resuelve aquí
+      // en vez de obligar al modelo a memorizar los nombres literales.
+      const norm = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^ruta /, "").trim();
+      const pedidaRuta = norm(String(raw.ruta ?? ""));
+      const rutaReal = (tour.rutas ?? []).find((r) => norm(r.nombre) === pedidaRuta)
+        ?? (tour.rutas ?? []).find((r) => pedidaRuta && norm(r.nombre).includes(pedidaRuta));
+      const pedidoVeh = norm(String(raw.vehiculo ?? ""));
+      const vehReal = (tour.flota ?? []).find((v) => norm(v.nombre) === pedidoVeh)
+        ?? (tour.flota ?? []).find((v) => pedidoVeh && norm(v.nombre).includes(pedidoVeh));
+
+      const veh = computeVehiculoCharge({
+        tourSlug: tour.slug,
+        ruta: rutaReal?.nombre ?? String(raw.ruta ?? ""),
+        vehiculo: vehReal?.nombre ?? String(raw.vehiculo ?? ""),
+        unidades: raw.unidades,
+        pct: 100,
+      });
+      if (!veh) {
+        const rutas = (tour.rutas ?? []).map((r) => r.nombre).join(", ");
+        const flota = (tour.flota ?? []).map((v) => v.nombre).join(", ");
+        return NextResponse.json(
+          { error: `Para ${tour.nombre} necesito la ruta y el vehículo. Rutas: ${rutas}. Flota: ${flota}.` },
+          { status: 400 },
+        );
+      }
+      total += veh.total;
+      lineItems.push({
+        tourSlug: tour.slug,
+        tourName: tour.nombre,
+        tourDate: String(raw.tourDate),
+        adults: 0,
+        childrenMid: 0,
+        childrenSmall: 0,
+        ruta: veh.ruta.nombre,
+        vehiculo: veh.vehiculo.nombre,
+        unidades: veh.unidades,
+        capacidad: veh.vehiculo.capacidad,
+        porUnidad: "vehiculo",
+        incluye: [...tour.incluye, ...INCLUYE_SIEMPRE],
+        subtotal: veh.total,
+      });
+      continue;
     }
 
     const adultos = Math.max(0, parseInt(String(raw.adultos ?? 0), 10) || 0);
@@ -114,6 +160,7 @@ export async function POST(req: NextRequest) {
     lineItems.push({
       tourSlug: tour.slug,
       tourName: tour.nombre,
+      incluye:  [...tour.incluye, ...INCLUYE_SIEMPRE],
       tourDate: String(raw.tourDate),
       adults: adultos,
       childrenMid: mid,
@@ -169,6 +216,8 @@ export async function POST(req: NextRequest) {
       checkout: hospedaje.checkout ?? null,
       subtotal: hospedajeSubtotal,
       desglose: cot.desglose ?? null,
+      nochesGratis: cot.nochesGratis ?? 0,
+      ahorro: cot.ahorro ?? 0,
       vistaMontana: cot.vistaMontana ?? null,
       _meta: hospedajeSinTarifa ? (cot.error ?? "tarifa_pendiente") : "cotizado",
     });
@@ -180,26 +229,30 @@ export async function POST(req: NextRequest) {
   const appUrl   = (process.env.APP_URL || "https://www.huasteca-potosina.com").replace(/\/$/, "");
 
   try {
-    await prisma.tourBooking.create({
+    // Va a TourQuote, no a TourBooking: esto es una COTIZACIÓN, no una reserva
+    // pagada. El panel las separa —/cotizaciones lee TourQuote y /reservas lee
+    // TourBooking— y escribirlas como reserva las mezclaba con las ventas
+    // reales, inflando /reservas con propuestas que nadie ha pagado.
+    await prisma.tourQuote.create({
       data: {
-        confirmationNumber: folio,
-        tourId:   "paquete-personalizado",
-        tourName: `Paquete a medida · ${lineItems.length} recorridos`,
+        quoteNumber: folio,
+        tourName: `Paquete a medida · ${lineItems.length} recorrido${lineItems.length !== 1 ? "s" : ""}${hosp ? " + hospedaje" : ""}`,
         tourSlug: "paquete-personalizado",
         tourDate: lineItems[0].tourDate,
         adults:   Math.max(...lineItems.map((l) => l.adults)),
         children: Math.max(...lineItems.map((l) => l.childrenMid + l.childrenSmall)),
-        totalAmount:    total,
-        depositoPagado: 0,
-        promoCode:      null,
-        promoDiscount:  0,
+        totalAmount: total,
         customerName:  String(customerName).trim(),
         customerEmail: customerEmail ? String(customerEmail).trim() : "",
         customerPhone: customerPhone ? String(customerPhone).replace(/\D/g, "") : null,
-        notes: notes ? String(notes) : null,
+        notes: [
+          `Paquete a medida armado por el bot de WhatsApp. Anticipo ${PCT_ANTICIPO} % = $${anticipo.toLocaleString("es-MX")}.`,
+          hospedajeSinTarifa ? "⚠️ Hospedaje SIN tarifa: falta confirmarla con el cliente." : "",
+          notes ? String(notes) : "",
+        ].filter(Boolean).join(" "),
         lineItems,
         packageItems,
-        status: "pending",
+        status: "enviada",
       },
     });
   } catch (e: any) {
@@ -228,6 +281,8 @@ export async function POST(req: NextRequest) {
               checkout: hosp.checkout,
               subtotal: hosp.subtotal,
               tarifaPendiente: hospedajeSinTarifa,
+              nochesGratis: hosp.nochesGratis,
+              ahorro: hosp.ahorro,
             }
           : undefined,
         notes: notes ? String(notes) : undefined,
@@ -255,14 +310,19 @@ export async function POST(req: NextRequest) {
   };
   // Se desglosan los niños: decir solo "4 personas" escondía que dos pagan el
   // 70 %, y el cliente no podía cuadrar el subtotal con lo que pidió.
-  const personasDe = (l: any) =>
-    [
+  const personasDe = (l: any) => {
+    // Los tours por vehículo se describen por unidad, no por pasajero.
+    if (l.porUnidad === "vehiculo") {
+      return `${l.ruta} · ${l.unidades} × ${l.vehiculo}`;
+    }
+    return [
       `${l.adults} adulto${l.adults !== 1 ? "s" : ""}`,
       l.childrenMid > 0 ? `${l.childrenMid} niño${l.childrenMid !== 1 ? "s" : ""} 6–10` : "",
       l.childrenSmall > 0 ? `${l.childrenSmall} menor${l.childrenSmall !== 1 ? "es" : ""} de 6` : "",
     ]
       .filter(Boolean)
       .join(" + ");
+  };
 
   const lineaHospedaje = hosp
     ? [
@@ -272,8 +332,53 @@ export async function POST(req: NextRequest) {
         `${hosp.noches ? `${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""}` : "fechas por confirmar"}${hosp.checkin ? ` · ${fechaLarga(hosp.checkin)}` : ""}${hosp.habitaciones > 1 ? ` · ${hosp.habitaciones} habitaciones` : ""}`,
         hospedajeSinTarifa
           ? "Tarifa: te la confirma el equipo hoy mismo — no va incluida en el total de abajo."
-          : `${(hosp.desglose ?? []).map((d: any) => `${d.huespedes} pax · ${fmx(d.porNoche)}/noche`).join(" + ")} × ${hosp.noches} noche${hosp.noches !== 1 ? "s" : ""} = ${fmx(hospedajeSubtotal!)}`,
+          : `${(hosp.desglose ?? []).map((d: any) => `${d.huespedes} pax · ${fmx(d.porNoche)}/noche`).join(" + ")} × ${hosp.desglose?.[0]?.nochesCobradas ?? hosp.noches} noche${(hosp.desglose?.[0]?.nochesCobradas ?? hosp.noches) !== 1 ? "s" : ""} = ${fmx(hospedajeSubtotal!)}`,
+        ...(hosp.nochesGratis > 0
+          ? [`🎁 *${hosp.nochesGratis} noche${hosp.nochesGratis !== 1 ? "s" : ""} de regalo* (cada 3ra noche va por nuestra cuenta) — te ahorras ${fmx(hosp.ahorro)}.`]
+          : []),
       ]
+    : [];
+
+  // Lo que incluyen TODOS los recorridos del paquete. Se calcula por
+  // intersección de los `incluye` reales de cada tour: si un tour no lo trae,
+  // no se promete. Lo que solo trae alguno se lista aparte, con su tour.
+  // Lo que incluyen TODOS los recorridos, comparado por CONCEPTO y no por
+  // texto exacto: "traslado desde Xilitla o Ciudad Valles" y "traslado desde
+  // Xilitla" son el mismo concepto con distinta redacción, y compararlos como
+  // cadenas dejaba la intersección vacía — con lo que el resumen listaba el
+  // `incluye` completo de cada tour y se volvía larguísimo.
+  const CONCEPTOS: { clave: string; re: RegExp; etiqueta: string }[] = [
+    { clave: "traslado", re: /traslado|recogida|pasamos por/i, etiqueta: "Traslado redondo desde tu hospedaje" },
+    { clave: "desayuno", re: /desayuno/i,                       etiqueta: "Desayuno buffet en El Taco Loco, camino a los destinos" },
+    { clave: "entradas", re: /entrada|acceso/i,                 etiqueta: "Entradas y accesos" },
+    { clave: "guia",     re: /gu[ií]a|instructor/i,             etiqueta: "Guía certificado NOM-09 SECTUR" },
+    { clave: "equipo",   re: /equipo de seguridad|casco|chaleco/i, etiqueta: "Equipo de seguridad" },
+    { clave: "fotos",    re: /fotograf|fotos|video/i,           etiqueta: "Fotografías del recorrido" },
+    { clave: "botiquin", re: /botiqu[ií]n/i,                    etiqueta: "Botiquín de primeros auxilios" },
+    { clave: "seguro",   re: /seguro de viaje/i,                etiqueta: "Seguro de viaje" },
+  ];
+  const conceptosDe = (incluye: string[]) =>
+    new Set(CONCEPTOS.filter((c) => incluye.some((i) => c.re.test(i))).map((c) => c.clave));
+
+  const porItem = lineItems.map((l) => ({ nombre: l.tourName, set: conceptosDe(l.incluye ?? []) }));
+  const comunes = porItem.length
+    ? CONCEPTOS.filter((c) => porItem.every((p) => p.set.has(c.clave)))
+    : [];
+  const bloqueIncluye = comunes.length
+    ? ["", "*Todos los recorridos incluyen:*", ...comunes.map((c) => `• ${c.etiqueta}`)]
+    : [];
+
+  // Diferencias: SOLO los conceptos que unos traen y otros no. Se nombra el
+  // concepto, no el texto completo — el cliente quiere saber qué cambia.
+  const clavesComunes = new Set(comunes.map((c) => c.clave));
+  const diferencias = porItem
+    .map((p) => ({
+      nombre: p.nombre.split(" —")[0],
+      suma: CONCEPTOS.filter((c) => !clavesComunes.has(c.clave) && p.set.has(c.clave)),
+    }))
+    .filter((d) => d.suma.length > 0);
+  const bloqueDiferencias = diferencias.length
+    ? ["", "*Y además:*", ...diferencias.map((d) => `• _${d.nombre}_ suma ${d.suma.map((c) => c.etiqueta.toLowerCase().split(",")[0]).join(" y ")}.`)]
     : [];
 
   const resumenWhatsApp = [
@@ -282,6 +387,8 @@ export async function POST(req: NextRequest) {
     ...lineItems.map((l, i) =>
       `*Día ${i + 1} · ${fechaLarga(l.tourDate)}*\n${l.tourName}\n${personasDe(l)} · ${fmx(l.subtotal)}`,
     ),
+    ...bloqueIncluye,
+    ...bloqueDiferencias,
     ...lineaHospedaje,
     "",
     `*Total${hospedajeSinTarifa ? " de los tours" : " del viaje"}: ${fmx(total)} MXN*`,
@@ -291,6 +398,10 @@ export async function POST(req: NextRequest) {
       ? `Los tours te recogen en el hotel. Si prefieres quedarte en otro lado, también pasamos por ti — en Xilitla o en Ciudad Valles.`
       : `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`,
     `Cancelas gratis hasta 48 h antes, con reembolso completo.`,
+    "",
+    `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares y las habitaciones se llenan rápido.`,
+    "",
+    `⚠️ Al hacer la transferencia, pon *${folio}* como concepto — con eso identificamos tu pago.`,
   ].join("\n");
 
   return NextResponse.json({

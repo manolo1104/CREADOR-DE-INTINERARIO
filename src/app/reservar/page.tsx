@@ -1,11 +1,14 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, Users, Shield, Check, MapPin, CalendarCheck, CreditCard, Lock } from "lucide-react";
+import { Clock, Users, Shield, Check, MapPin, CalendarCheck, CreditCard, Lock, Star } from "lucide-react";
 import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
 import { formatMXN } from "@/lib/tourBooking";
 import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats";
 import { waLink } from "@/lib/whatsapp";
+import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
+import { PAQUETES_DB } from "@/lib/paquetes";
+import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -61,16 +64,33 @@ export default async function ReservarPage() {
             <strong className="text-crema">cancelas gratis hasta 48 h antes</strong>.
           </p>
 
-          {/* Prueba social — solo si los números reales dan */}
-          {stats && vale(stats.ultimos30) && (
-            <p className="mt-6 inline-flex items-center gap-2 border border-verde-vivo/30 bg-verde-vivo/10 px-4 py-2 text-[12px] font-dm text-lima">
-              <span aria-hidden="true">✓</span>
-              <span>
-                <strong>{stats.ultimos30} reservas</strong> en los últimos 30 días
-                {vale(stats.total) && <> · {stats.total} en total</>}
-              </span>
-            </p>
-          )}
+          {/*
+            Prueba social del encabezado: la CALIFICACIÓN, no el conteo de
+            reservas. El histórico de la base arrancó hace poco, así que decía
+            "30 reservas" debajo del "+10,000 viajeros" del home — un número
+            chico y verdadero al lado de uno grande y también verdadero, que
+            restaba en vez de sumar. La calificación de Google es la misma que
+            ya se usa en el home y en /tours, y es verificable: el enlace lleva
+            a las reseñas reales.
+          */}
+          <a
+            href={GOOGLE_MAPS_REVIEWS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 group inline-flex items-center gap-2.5 border border-dorado/30 bg-dorado/10 px-4 py-2.5 hover:border-dorado/60 transition-colors"
+          >
+            <span className="flex gap-0.5" aria-hidden="true">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
+              ))}
+            </span>
+            <span className="font-dm text-[13px] text-crema/90">
+              <strong className="text-crema">4.9</strong> · 492 reseñas en Google
+            </span>
+            <span className="font-dm text-[11px] text-crema/45 group-hover:text-crema/70 transition-colors hidden sm:inline">
+              Verlas →
+            </span>
+          </a>
         </div>
       </section>
 
@@ -98,7 +118,7 @@ export default async function ReservarPage() {
       <section className="max-w-4xl mx-auto px-6 pt-14 pb-4">
         <div className="grid sm:grid-cols-3 gap-6">
           {[
-            { n: "1", t: "Elige tu recorrido", s: "Abajo está el catálogo completo con precios reales." },
+            { n: "1", t: "Elige tus recorridos", s: "Puedes juntar varios días en un solo carrito y pagarlos de una vez." },
             { n: "2", t: "Aparta con el 30 %", s: "Eliges fecha y personas. Pago seguro con tarjeta." },
             { n: "3", t: "Liquidas el día del tour", s: "En efectivo o tarjeta, al llegar." },
           ].map(({ n, t, s }) => (
@@ -128,96 +148,93 @@ export default async function ReservarPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {tours.map((tour, i) => {
-            const porVehiculo = tour.precioUnidad === "vehiculo";
-            const anticipo    = Math.round(tour.precio * ANTICIPO);
-            const reservas    = stats?.porTour[tour.slug] ?? 0;
-            const esTop       = stats?.masReservado === tour.slug;
+          {tours.map((tour, i) => (
+            <TarjetaTourReservar
+              key={tour.id}
+              tour={tour}
+              anticipo={Math.round(tour.precio * ANTICIPO)}
+              esTop={stats?.masReservado === tour.slug}
+              delay={Math.min(i, 8) * 60}
+            />
+          ))}
+        </div>
+      </section>
 
-            return (
-              <article
-                key={tour.id}
-                className="stagger-reveal group relative flex flex-col border border-white/10 bg-negro/40 hover:border-verde-vivo/45 transition-colors duration-300 overflow-hidden"
-                style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
-              >
-                {/* Imagen */}
-                <div className="relative h-44 overflow-hidden flex-shrink-0">
-                  <Image
-                    src={tour.imagen_hero}
-                    alt={tour.nombre}
-                    fill
-                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/15 to-negro/25" />
+      {/* ── PAQUETES ───────────────────────────────────────────────────── */}
+      {/*
+        La página se llamaba "motor de reservas" pero solo listaba los tours de
+        un día: los paquetes de varios días —el producto de mayor ticket— no
+        aparecían por ningún lado. Quien llegaba aquí buscando un viaje completo
+        no encontraba nada y se iba.
+      */}
+      <section id="paquetes" className="max-w-6xl mx-auto px-6 pb-14">
+        <div className="flex items-baseline justify-between flex-wrap gap-2 mb-8 border-b border-white/8 pb-4">
+          <h2 className="font-cormorant font-light text-crema" style={{ fontSize: "clamp(24px,3.5vw,38px)" }}>
+            Viajes de varios días
+          </h2>
+          <p className="text-[11px] font-dm text-crema/45">
+            Con hospedaje, desayunos y traslados incluidos
+          </p>
+        </div>
 
-                  {esTop && (
-                    <span className="absolute top-3 left-3 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1px] uppercase px-2.5 py-1">
-                      El más reservado
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {PAQUETES_DB.map((paq) => (
+            <article
+              key={paq.id}
+              className="group relative flex flex-col border border-dorado/20 bg-negro/40 hover:border-dorado/50 transition-colors duration-300 overflow-hidden"
+            >
+              <div className="relative h-44 overflow-hidden flex-shrink-0">
+                <Image
+                  src={paq.imagen}
+                  alt={paq.nombre}
+                  fill
+                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/15 to-negro/25" />
+                <span className="absolute bottom-3 left-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
+                  {paq.dias} días · {paq.noches} noches
+                </span>
+              </div>
+
+              <div className="flex flex-col flex-1 p-5">
+                <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-1.5">Paquete</p>
+                <h3 className="font-cormorant text-crema text-xl leading-tight mb-2">
+                  {paq.nombre.split("—")[0].trim()}
+                </h3>
+                <p className="text-[11px] font-dm text-crema/50 leading-snug mb-3 line-clamp-3">
+                  {paq.subtitulo}
+                </p>
+
+                <div className="mt-auto pt-4 border-t border-white/8">
+                  <p className="flex items-baseline gap-2 mb-0.5">
+                    <span className="font-cormorant text-dorado text-3xl font-light leading-none">
+                      {formatMXN(paq.precio)}
                     </span>
-                  )}
-                  <span className="absolute bottom-3 left-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                    ⏱ {tourDurTexto(tour, " h")}
-                  </span>
-                  <span className="absolute bottom-3 right-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                    máx. {tour.groupMax}
-                  </span>
-                </div>
+                    <span className="text-[10px] text-crema/40 font-dm">MXN {paq.precioLabel}</span>
+                  </p>
+                  <p className="text-[11px] font-dm text-crema/55 mb-4">
+                    Apartas desde <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * 0.1))}</strong>
+                  </p>
 
-                {/* Info */}
-                <div className="flex flex-col flex-1 p-5">
-                  <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1.5">{tour.tipo}</p>
-                  <h3 className="font-cormorant text-crema text-xl leading-tight mb-2">
-                    {tour.nombre.split("—")[0].trim()}
-                  </h3>
-
-                  {/* Escasez REAL: la que declara el propio tour */}
-                  {tour.urgencia && (
-                    <p className="text-[11px] font-dm text-dorado/85 leading-snug mb-3">
-                      ▸ {tour.urgencia}
-                    </p>
-                  )}
-
-                  {/* Prueba social por tour, solo si el número real da.
-                      "grupos", no "personas": cada reserva puede traer varios. */}
-                  {vale(reservas) && (
-                    <p className="text-[11px] font-dm text-lima/80 mb-3">
-                      ✓ {reservas} grupos ya lo reservaron
-                    </p>
-                  )}
-
-                  <div className="mt-auto pt-4 border-t border-white/8">
-                    <p className="flex items-baseline gap-2 mb-0.5">
-                      <span className="font-cormorant text-dorado text-3xl font-light leading-none">
-                        {formatMXN(tour.precio)}
-                      </span>
-                      <span className="text-[10px] text-crema/40 font-dm">
-                        MXN {porVehiculo ? "por vehículo" : "por persona"}
-                      </span>
-                    </p>
-                    <p className="text-[11px] font-dm text-crema/55 mb-4">
-                      Apartas con <strong className="text-crema/85">{formatMXN(anticipo)}</strong>
-                    </p>
-
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/reservar-tour/${tour.slug}`}
-                        className="flex-1 text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors"
-                      >
-                        Reservar
-                      </Link>
-                      <Link
-                        href={`/tours/${tour.slug}`}
-                        className="px-3 flex items-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[1.5px] uppercase font-dm transition-colors"
-                      >
-                        Detalles
-                      </Link>
-                    </div>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/reservar-paquete/${paq.slug}`}
+                      className="flex-1 text-center bg-dorado hover:bg-lima text-negro text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors"
+                    >
+                      Reservar
+                    </Link>
+                    <Link
+                      href={`/paquetes/${paq.slug}`}
+                      className="px-3 flex items-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[1.5px] uppercase font-dm transition-colors"
+                    >
+                      Detalles
+                    </Link>
                   </div>
                 </div>
-              </article>
-            );
-          })}
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 

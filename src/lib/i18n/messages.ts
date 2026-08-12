@@ -65,6 +65,7 @@ export interface Messages {
     viewTour: string;
     book: string;
     reviewsCount: (n: number) => string;
+    reviewsSample: (n: number) => string;
     bookThisTour: string;
     askWhatsapp: string;
     freeCancel48: string;
@@ -182,6 +183,7 @@ const es: Messages = {
     viewTour: "Ver tour →",
     book: "Reservar →",
     reviewsCount: (n) => `${n} reseñas`,
+    reviewsSample: (n) => `Mostramos ${n} opiniones recientes de viajeros.`,
     bookThisTour: "Reservar este tour",
     askWhatsapp: "Preguntar por WhatsApp",
     freeCancel48: "Cancela gratis · 48h antes",
@@ -299,6 +301,7 @@ const en: Messages = {
     viewTour: "View tour →",
     book: "Book →",
     reviewsCount: (n) => `${n} reviews`,
+    reviewsSample: (n) => `Showing ${n} recent traveller reviews.`,
     bookThisTour: "Book this tour",
     askWhatsapp: "Ask on WhatsApp",
     freeCancel48: "Free cancellation · 48h before",

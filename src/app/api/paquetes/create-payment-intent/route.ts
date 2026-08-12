@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getPaquete } from "@/lib/paquetes";
+import { computePaqueteCharge, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 
@@ -26,17 +27,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paquete inválido." }, { status: 400 });
     }
 
-    // El monto es AUTORITATIVO desde el servidor: precio del paquete × porcentaje.
+    // El monto es AUTORITATIVO desde el servidor. Antes era
+    // `paquete.precio × pct` a secas: el precio publicado es POR PAREJA, así que
+    // un grupo de cinco pagaba exactamente lo mismo que uno de dos. Ahora
+    // `computePaqueteCharge` suma el hotel que de verdad se ocupa y los boletos
+    // de tour de cada persona extra.
     const pct = Number(paqueteDetails?.pct);
     if (!PCTS.has(pct)) {
       return NextResponse.json({ error: "Porcentaje de pago inválido." }, { status: 400 });
     }
-    const charge = Math.round(paquete.precio * pct / 100);
+
+    const cobro = computePaqueteCharge({
+      slug:          paqueteDetails?.slug,
+      personas:      paqueteDetails?.personas,
+      childrenMid:   paqueteDetails?.childrenMid,
+      childrenSmall: paqueteDetails?.childrenSmall,
+      vistaMontana:  paqueteDetails?.vistaMontana,
+      pct,
+    });
+    if (!cobro) {
+      return NextResponse.json(
+        { error: `Número de personas inválido. Para grupos de más de ${MAX_PERSONAS_PAQUETE} escríbenos por WhatsApp y lo cotizamos.` },
+        { status: 400 },
+      );
+    }
+    const charge = cobro.charge;
     if (charge <= 0) {
       return NextResponse.json({ error: "Monto inválido." }, { status: 400 });
     }
 
-    const personas = String(paqueteDetails?.personas || "");
+    const personas = String(cobro.personas);
     const fecha    = String(paqueteDetails?.fecha || "");
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -52,11 +72,15 @@ export async function POST(req: NextRequest) {
         tourName:      `Paquete · ${paquete.nombre}`,
         tourSlug:      paquete.slug,
         tourDate:      fecha,
-        adults:        personas || "2",
-        children:      "0",
+        adults:        String(cobro.adultos),
+        children:      String(cobro.childrenMid + cobro.childrenSmall),
+        habitacion:    cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva",
         producto:      "paquete",
         paquetePct:    String(pct),
-        totalCompleto: String(paquete.precio),
+        totalCompleto: String(cobro.total),
+        habitaciones:  String(cobro.habitaciones),
+        extraHotel:    String(cobro.extraHotel),
+        extraTours:    String(cobro.extraTours),
         personas,
         source:        "huasteca-potosina.com",
       },

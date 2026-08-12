@@ -22,7 +22,12 @@ const MAX_TOKENS = Number(process.env.BOT_MAX_TOKENS || 2048);
 // caché, la primera llamada lo guarda y las demás lo leen a ~10 % del precio.
 // Solo cambia una vez al día (la fecha de hoy va dentro del prompt).
 function systemBlocks() {
-  return [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }];
+  // TTL de 1 h en vez de los 5 min por defecto. Entre mensaje y mensaje de un
+  // cliente de WhatsApp pasan más de 5 minutos, así que el caché expiraba y
+  // cada mensaje volvía a ESCRIBIR el prefijo (~17,400 tokens a 1.25x) en vez
+  // de leerlo a 0.1x. La escritura de 1 h cuesta 2x pero se paga sola desde el
+  // segundo mensaje de la conversación.
+  return [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral", ttl: "1h" } }];
 }
 
 // Los modelos nuevos (Sonnet 5, Opus 5) razonan por default, y ese
@@ -152,6 +157,12 @@ function recomendarLocal({ intereses = [], grupo = "", actividad = "", destino =
   return ordenados.slice(0, 2).map((t) => ({
     slug: t.slug, nombre: t.nombre, tagline: t.tagline, pitch: t.pitch, duracionHrs: t.duracionHrs,
     precio: t.precio, precioUnidad: t.precioUnidad,
+    // Sin los destinos el modelo solo podía decir el NOMBRE del recorrido, y el
+    // cliente no sabía qué lugares va a conocer — que es lo que de verdad
+    // quiere saber cuando pide una recomendación.
+    destinos: t.destinos,
+    // Las rutas del RZR traen sus propios destinos, uno por ruta.
+    rutas: t.rutas ? t.rutas.map((r) => ({ nombre: r.nombre, duracionHrs: r.duracionHrs, destinos: r.destinos })) : undefined,
   }));
 }
 
@@ -230,7 +241,7 @@ const tools = [
   {
     name: "cotizar_paquete_personalizado",
     description:
-      "Arma UN paquete a la medida con VARIOS tours en un solo folio y manda UN correo con el itinerario completo y el anticipo del 30%. Úsala en cuanto el cliente quiera 2 o más recorridos y ya te haya confirmado que le gusta la propuesta, con sus fechas, personas, nombre y correo. NO la uses para el RZR (se cobra por vehículo, cotízalo con cotizar_rzr). El precio lo calcula el servidor.",
+      "Arma UN paquete a la medida con VARIOS recorridos en un solo folio y manda UN correo con el itinerario completo y el anticipo del 30%. Úsala en cuanto el cliente quiera 2 o más recorridos y ya te haya confirmado que le gusta la propuesta, con sus fechas, personas, nombre y correo. Acepta CUALQUIER recorrido, incluido el RZR: para ese manda `ruta`, `vehiculo` y `unidades` en vez de personas (usa cotizar_rzr antes para enseñarle las opciones y su precio). El precio lo calcula el servidor.",
     input_schema: {
       type: "object",
       properties: {
@@ -242,11 +253,14 @@ const tools = [
             properties: {
               slug:       { type: "string", description: "slug del tour" },
               tourDate:   { type: "string", description: "fecha AAAA-MM-DD" },
-              adultos:    { type: "number" },
+              adultos:    { type: "number", description: "solo en tours por persona" },
               ninosMid:   { type: "number", description: "niños de 6 a 10 años" },
               ninosSmall: { type: "number", description: "menores de 6 años" },
+              ruta:       { type: "string", description: "(RZR) Nanacatli, Miradores, Nacimiento o Trinidad" },
+              vehiculo:   { type: "string", description: "(RZR) unidad de la flota, ej: 'RZR 500'" },
+              unidades:   { type: "number", description: "(RZR) cuántos vehículos" },
             },
-            required: ["slug", "tourDate", "adultos"],
+            required: ["slug", "tourDate"],
           },
         },
         customerName:  { type: "string", description: "Nombre completo del cliente" },
@@ -523,12 +537,6 @@ async function executeTool(name, input, phone) {
       if (!input.customerEmail) {
         return { error: "Sin correo no puedo mandar la propuesta. Pídeselo al cliente antes de llamar esta herramienta." };
       }
-      // El RZR se corta aquí y no en el servidor para poder decirle al modelo
-      // qué hacer en vez de solo rechazarlo.
-      const rzr = items.find((i) => { const t = findTour(i.slug); return t && esPorVehiculo(t); });
-      if (rzr) {
-        return { error: "El RZR se cobra por vehículo y no entra en un paquete por persona. Sácalo del paquete, cotiza el resto, y el RZR aparte con cotizar_rzr." };
-      }
       const res = await api.cotizarPaquetePersonalizado({
         items: items.map((i) => ({
           slug: i.slug,
@@ -536,6 +544,10 @@ async function executeTool(name, input, phone) {
           adultos: parseInt(i.adultos, 10) || 0,
           ninosMid: parseInt(i.ninosMid, 10) || 0,
           ninosSmall: parseInt(i.ninosSmall, 10) || 0,
+          // Solo los usa el servidor cuando el recorrido se cobra por vehículo.
+          ruta: i.ruta,
+          vehiculo: i.vehiculo,
+          unidades: parseInt(i.unidades, 10) || undefined,
         })),
         customerName: input.customerName,
         customerEmail: input.customerEmail,
@@ -765,9 +777,10 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 
 *2. COMIDAS — ningún tour es "todo incluido".* Cada tour trae el campo "alimentos" en *obtener_tour*: úsalo tal cual.
   · Los tours de día completo incluyen *SOLO el desayuno buffet*.
+  · 📍 *El desayuno NO es en el hotel.* Se hace una parada *camino a los destinos, en El Taco Loco*, donde se sirve el buffet con platillos típicos de la región y guisados. Dilo así cuando pregunten por el desayuno — nunca digas que se sirve en el hotel ni "antes de salir" sin más.
   · La *comida de mediodía NO está incluida en NINGÚN tour*. Ni la cena.
   · El RZR, el rappel y el buceo *no incluyen ningún alimento*.
-  · Los paquetes incluyen *solo los desayunos* del hotel; comidas y cenas van por cuenta del cliente.
+  · Los paquetes incluyen *solo los desayunos*; comidas y cenas van por cuenta del cliente.
   · Nunca escribas "todo incluido" ni un encabezado tipo "Todo Incluido" para un tour o un paquete.
   · No inventes dónde puede comer (tienditas, puestos, restaurantes) salvo que el dato venga en la herramienta.
 
@@ -798,10 +811,13 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 Cuando alguien venga por *varios días* o quiera *dos o más recorridos*, NO le recites los tres paquetes preestablecidos. Arma uno para él:
 1. Pregunta *cuántos días*, *cuántas personas* (y edades si hay niños) y *qué le late* (cascadas, aventura fuerte, cultura, tranquilo, con niños).
 2. Propón un recorrido por día con los tours que de verdad encajan, y di el precio de cada uno y el total. Un tour de día completo por día — no metas dos tours pesados el mismo día.
+   📍 *Al nombrar un recorrido, di SIEMPRE qué destinos visita*, no solo el nombre. "Ruta Acuática" no le dice nada a nadie; "Ruta Acuática — Puente de Dios, Hacienda Los Gómez y Siete Cascadas" sí. Vale para recomendaciones, itinerarios y listas: el cliente elige por los LUGARES, no por el nombre comercial.
    ⭐ *La Expedición Tamul es nuestro tour más pedido y el que más gusta.* Si el cliente quiere cascadas, "conocer lo más posible" o no tiene una preferencia marcada, ese va en el itinerario — salvo que él pida otra cosa o no le encaje (es de dificultad media y día completo). Va a la Cascada de Tamul, que es LA cascada de la región: si armas un plan de cascadas sin ella, el cliente lo va a pedir después.
 3. *El hospedaje es OPCIONAL y así se lo dices.* Ofrécelo como opción, nunca como requisito: "si quieres, te paso opciones de hospedaje en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que *pasamos por él a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no*.
    Si le interesa: consulta *disponibilidad_habitaciones* (checkin + noches), enséñale las libres, y cuando elija una, *SÍ puedes meterla en la misma cotización* — pasa el objeto *hospedaje* (interesado, habitacion, checkin, checkout, noches, habitaciones) a *cotizar_paquete_personalizado*. Va en el mismo folio y en el mismo correo que los tours. NUNCA le digas que el hospedaje se cotiza aparte ni que "el equipo lo confirma después".
-   Sobre la tarifa del hospedaje: si el sistema te devuelve el hospedaje *sin monto*, dile con claridad que la tarifa de la habitación *se la confirmamos hoy mismo* y que el total que le diste es el de los tours. NO inventes el precio de la habitación.
+   🎁 *Cada TERCERA noche va por nuestra cuenta.* Con 3 noches paga 2, con 6 paga 4. Menciónalo al ofrecer el hospedaje — es un argumento fuerte para que se queden una noche más. El sistema aplica el descuento solo; tú NO lo calcules.
+   Tarifas por habitación y noche: sin vista a montaña $1,500 (1–2 personas) o $1,900 (3–4); la Jungla, con vista a la montaña, $1,900 (1–2) o $2,400 (3–4). Cada habitación admite hasta 4 personas. Para el monto exacto deja que lo calcule *cotizar_paquete_personalizado*.
+   Si el sistema te devuelve el hospedaje *sin monto*, dile con claridad que la tarifa *se la confirmamos hoy mismo* y que el total que le diste es el de los tours. NO inventes el precio de la habitación.
 4. Cuando te diga que le gusta, pide *nombre y correo* y llama a *cotizar_paquete_personalizado* con todos los recorridos (y el hospedaje si aplica). Eso genera UN folio y le manda UN correo con el itinerario completo y el anticipo. No generes una cotización por tour.
 5. Los paquetes preestablecidos (*listar_paquetes*) siguen existiendo: ofrécelos solo si el cliente pregunta por ellos directamente o si quiere algo ya armado con hotel incluido.
 
@@ -834,13 +850,16 @@ Para *cómo llegar a la zona* (auto/avión/autobús desde CDMX) usa *obtener_log
    Ese resumen debe coincidir *exactamente* con lo que el cliente aceptó y con lo que devolvió la herramienta. Si algo no cuadra, corrígelo con él ANTES de pedirle dinero.
 2. *Aviso del correo*: el sistema intenta enviar la cotización al correo del cliente y te devuelve *emailEnviado*. Si es true, dile que *también se la enviaste a su correo* (menciona el correo). Si es false (o no dio correo), dile que se la dejas por aquí. NUNCA afirmes que enviaste un correo si emailEnviado no es true.
 3. *Hasta entonces, la información bancaria* con *datos_pago* (transferencia + OXXO), con el monto del *anticipo*, y pídele su *comprobante* — la reserva solo se confirma cuando lo recibimos.
+   Al dar los datos bancarios dile SIEMPRE que ponga el *folio como concepto o referencia* de la transferencia. Sin eso no podemos saber de quién es el depósito.
+
+*¿Hasta cuándo tengo para pagar?* — La cotización tiene *vigencia de 48 horas*. Dilo así, y agrega enseguida que *en temporada alta y en fines de semana conviene reservar cuanto antes, porque los lugares y las habitaciones se llenan rápido*. Es urgencia real, no presión inventada: no le pongas contadores ni le digas que "quedan X lugares" si no lo sabes.
 El correo es un extra, no un sustituto: el resumen y los datos de pago SIEMPRE van también por aquí.
 
 Tours *por persona* — ofrece las dos opciones:
 1. *Tarjeta en línea* (confirmación instantánea): usa *enviar_link_pago* y manda el link. Escríbelo como URL simple en su propia línea, SIN asteriscos, negritas ni paréntesis, para que se pueda tocar.
 2. *Transferencia u OXXO*: usa *crear_cotizacion* (solo cuando ya tengas tour + fecha + personas + nombre + correo). Genera un *folio* y **deja la cotización registrada en el panel para que no se pierda**. Luego usa *datos_pago* y comparte los datos de *transferencia* (banco, titular, CLABE) y de *OXXO*. Dile que envíe su *comprobante* por este chat: la reserva SOLO queda confirmada cuando lo recibimos.
 
-*RZR* y *paquetes*: no tienen pago en línea. Cuando el cliente ya eligió y dio su nombre + correo, usa *registrar_cotizacion* (tipo "rzr" con ruta+vehículo+fecha, o tipo "paquete" con paqueteSlug+habitación+checkin+checkout): esto **deja la cotización guardada en el panel con un folio** para que no se pierda. Luego comparte *datos_pago* (transferencia u OXXO), menciona el folio y pide el comprobante; avisa que el equipo confirma la disponibilidad.
+*RZR* y *paquetes fijos*: no tienen pago en línea con tarjeta. El RZR SÍ entra en un paquete a medida (manda ruta, vehículo y unidades a *cotizar_paquete_personalizado*); si va solo, o para un paquete fijo, usa *registrar_cotizacion*. Luego *datos_pago*, el folio y el comprobante; avisa que el equipo confirma disponibilidad.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 📋 QUÉ HACER EN CADA SITUACIÓN
@@ -873,13 +892,43 @@ Tours *por persona* — ofrece las dos opciones:
 // ══════════════════════════════════════════════════════════════
 // PROCESAR MENSAJE (loop agéntico)
 // ══════════════════════════════════════════════════════════════
+/**
+ * Marca el final del historial como punto de caché.
+ *
+ * Sin esto, cada mensaje reenviaba TODA la conversación (hasta 40 turnos, con
+ * los resultados de las herramientas, que son los bloques más pesados) a precio
+ * completo. Con el punto de caché, lo que ya se mandó antes se LEE a 0.1x y solo
+ * se paga completo lo nuevo del turno. No cambia nada de lo que ve el modelo:
+ * son exactamente los mismos mensajes, solo etiquetados.
+ *
+ * Devuelve una COPIA a propósito: marcar `session.history` iría acumulando
+ * puntos de caché turno tras turno y la API solo admite 4.
+ */
+function conCache(history) {
+  if (!history.length) return history;
+  const ultimo = history[history.length - 1];
+  const bloques =
+    typeof ultimo.content === "string"
+      ? [{ type: "text", text: ultimo.content }]
+      : (ultimo.content || []).map((b) => ({ ...b }));
+  if (!bloques.length) return history;
+
+  bloques[bloques.length - 1] = {
+    ...bloques[bloques.length - 1],
+    cache_control: { type: "ephemeral", ttl: "1h" },
+  };
+  const copia = history.slice();
+  copia[copia.length - 1] = { ...ultimo, content: bloques };
+  return copia;
+}
+
 async function processMessage(phone, message) {
   pushHistory(phone, "user", message);
   const session = getSession(phone);
 
   let response = await client.messages.create({
     ...requestBase(),
-    messages: session.history,
+    messages: conCache(session.history),
   });
 
   // Resumen del paquete a medida generado por el servidor en ESTE turno. Se
@@ -912,7 +961,7 @@ async function processMessage(phone, message) {
 
     response = await client.messages.create({
       ...requestBase(),
-      messages: session.history,
+      messages: conCache(session.history),
     });
   }
 

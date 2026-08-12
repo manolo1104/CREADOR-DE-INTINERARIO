@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getPaquete } from "@/lib/paquetes";
+import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
+import { waLink } from "@/lib/whatsapp";
+import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
-import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck } from "lucide-react";
+import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel } from "lucide-react";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
@@ -87,8 +90,14 @@ export default function ReservarPaquetePage() {
   const paquete = getPaquete(params.slug);
 
   const [fecha, setFecha]       = useState("");
-  const [personas, setPersonas] = useState("2");
-  const [pct, setPct]           = useState<10 | 50 | 100>(50);
+  const [personas, setPersonas] = useState(2);            // adultos
+  const [childrenMid,   setChildrenMid]   = useState(0);  // 6–10 años → 70 %
+  const [childrenSmall, setChildrenSmall] = useState(0);  // menores de 6 → 50 %
+  const [vistaMontana,  setVistaMontana]  = useState(false);
+  // El default arranca en el compromiso MÁS BAJO. Venía en 50 % con el 10 %
+  // justo al lado: en un paquete de $15,500 eso es pedirle al cliente $7,750
+  // de entrada en la primera pantalla. El que quiera pagar más lo elige.
+  const [pct, setPct]           = useState<10 | 50 | 100>(10);
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
@@ -105,6 +114,24 @@ export default function ReservarPaquetePage() {
 
   const minDate = useMemo(() => minBookingDate(), []);
 
+  // Restaurar desde el link del correo de recuperación (?recuperar=<token>),
+  // igual que hace la reserva de un tour suelto.
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("recuperar");
+    if (!token) return;
+    fetch(`/api/tours/carrito/${token}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((c) => {
+        if (!c || c.error) return;
+        if (c.tourDate) setFecha(c.tourDate);
+        if (typeof c.adults === "number" && c.adults >= 2) setPersonas(c.adults);
+        if (typeof c.childrenMid === "number") setChildrenMid(c.childrenMid);
+        if (typeof c.childrenSmall === "number") setChildrenSmall(c.childrenSmall);
+        if (c.email) setEmail(c.email);
+      })
+      .catch(() => {});
+  }, []);
+
   if (!paquete) {
     return (
       <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
@@ -116,20 +143,37 @@ export default function ReservarPaquetePage() {
     );
   }
 
-  const chargeAmt = Math.round(paquete.precio * pct / 100);
-  const pendiente = paquete.precio - chargeAmt;
+  // El precio ya NO es fijo: el publicado cubre a dos personas, y cada persona
+  // extra suma hotel y boletos de tour. Se usa la MISMA función que el servidor
+  // (`computePaqueteCharge`), así lo que se ve es lo que se cobra.
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, pct });
+  const totalReal  = cotizacion?.total  ?? paquete.precio;
+  const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
+  const pendiente  = totalReal - chargeAmt;
+  const toursIncluidos = toursDelPaquete(paquete);
 
   async function goToPay() {
     setError("");
     if (!name.trim() || !email.trim()) { setError("Nombre y correo son obligatorios."); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("El correo no tiene un formato válido."); return; }
     setLoading(true);
+
+    // Rescate: ya tenemos nombre y correo pero todavía no ha pagado. Va sin
+    // await para no retrasarle el pago, y su fallo nunca lo bloquea.
+    fetch("/api/paquetes/guardar-carrito", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.trim(), phone: phone.trim(), slug: paquete!.slug,
+        personas, childrenMid, childrenSmall, vistaMontana, fecha,
+      }),
+    }).catch(() => {});
+
     try {
       const res = await fetch("/api/paquetes/create-payment-intent", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
-          paqueteDetails: { slug: paquete!.slug, pct, personas, fecha },
+          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha },
         }),
       });
       const d = await res.json();
@@ -148,7 +192,7 @@ export default function ReservarPaquetePage() {
     appearance: { theme: "stripe" as const, variables: { colorPrimary: "#3a6b1a", colorBackground: "#f4edd8", colorText: "#1a2e1a", fontFamily: "DM Sans, sans-serif", borderRadius: "0px" } },
   };
 
-  const form = { name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim(), pct, personas, fecha };
+  const form = { name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim(), pct, personas, childrenMid, childrenSmall, vistaMontana, fecha };
 
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">
@@ -195,18 +239,212 @@ export default function ReservarPaquetePage() {
               <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Fecha y personas</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">Fecha tentativa de llegada</label>
+                  <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">Fecha de inicio del tour</label>
                   <input type="date" value={fecha} min={minDate} onChange={(e) => setFecha(e.target.value)}
                     className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                  <p className="mt-1.5 text-[11px] text-negro/50 font-dm">
+                    Salimos a las <strong className="text-negro/75">8:30 AM aprox.</strong> del primer día. Pasamos por ti a tu hospedaje.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">Número de personas</label>
-                  <input type="number" min={1} max={30} value={personas} onChange={(e) => setPersonas(e.target.value)}
-                    className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
-                  <p className="mt-1.5 text-[10px] text-negro/40 font-dm">El precio es {paquete.precioLabel}. Si son más personas, ajustamos por WhatsApp.</p>
+                  <div className="flex items-center gap-3">
+                    <button type="button" aria-label="Menos personas"
+                      onClick={() => setPersonas((n) => Math.max(2, n - 1))}
+                      className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors">−</button>
+                    <span className="font-dm text-lg text-negro/85 w-8 text-center">{personas}</span>
+                    <button type="button" aria-label="Más personas"
+                      onClick={() => setPersonas((n) => Math.min(MAX_PERSONAS_PAQUETE, n + 1))}
+                      className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors">+</button>
+                  </div>
+                  {/* El desglose se enseña siempre que haya extras: si el precio
+                      sube, el cliente tiene que ver POR QUÉ sube. */}
+                  {cotizacion && personas > 2 ? (
+                    <div className="mt-3 border-t border-negro/8 pt-3 space-y-1">
+                      <p className="flex justify-between font-dm text-[12px] text-negro/55">
+                        <span>Paquete base (2 personas)</span><span>{fmx(cotizacion.base)}</span>
+                      </p>
+                      {cotizacion.extraHotel > 0 && (
+                        <p className="flex justify-between font-dm text-[12px] text-negro/55">
+                          <span>Hotel por {personas - 2} persona{personas - 2 > 1 ? "s" : ""} más · {cotizacion.habitaciones} habitación{cotizacion.habitaciones > 1 ? "es" : ""}</span>
+                          <span>+{fmx(cotizacion.extraHotel)}</span>
+                        </p>
+                      )}
+                      <p className="flex justify-between font-dm text-[12px] text-negro/55">
+                        <span>Tours por {personas - 2} persona{personas - 2 > 1 ? "s" : ""} más</span>
+                        <span>+{fmx(cotizacion.extraTours)}</span>
+                      </p>
+                      <p className="flex justify-between font-dm text-[13px] text-negro/85 font-medium pt-1">
+                        <span>Total del viaje</span><span>{fmx(cotizacion.total)} MXN</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-[10px] text-negro/40 font-dm">
+                      El precio publicado cubre a 2 personas. Cada persona más suma su hotel y sus tours, y lo verás desglosado aquí.
+                    </p>
+                  )}
+                  {/* Menores, con la misma escala que los tours sueltos. */}
+                  <div className="mt-4 space-y-2.5 border-t border-negro/8 pt-3">
+                    {[
+                      { label: "Niños 6–10 años", nota: "70 % del tour", v: childrenMid,   set: setChildrenMid },
+                      { label: "Menores de 6",    nota: "50 % del tour", v: childrenSmall, set: setChildrenSmall },
+                    ].map((c) => (
+                      <div key={c.label} className="flex items-center justify-between">
+                        <span className="font-dm text-[12px] text-negro/65">
+                          {c.label} <span className="text-negro/35">· {c.nota}</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <button type="button" aria-label={`Menos ${c.label}`}
+                            onClick={() => c.set((n: number) => Math.max(0, n - 1))}
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
+                          <span className="font-dm text-sm text-negro/80 w-5 text-center">{c.v}</span>
+                          <button type="button" aria-label={`Más ${c.label}`}
+                            onClick={() => c.set((n: number) => n + 1)}
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
+                        </span>
+                      </div>
+                    ))}
+                    <p className="font-dm text-[10px] text-negro/35 leading-snug">
+                      Los bebés menores de 3 no pagan tour. Los menores sí ocupan lugar en la habitación.
+                    </p>
+                  </div>
+
+                  {personas >= MAX_PERSONAS_PAQUETE && (
+                    <p className="mt-2 text-[11px] font-dm text-negro/55">
+                      ¿Son más de {MAX_PERSONAS_PAQUETE}?{" "}
+                      <a href={waLink(`Hola, somos ${personas + 1} personas y queremos el ${paquete.nombre}. ¿Nos lo cotizan?`)}
+                         target="_blank" rel="noopener noreferrer"
+                         className="text-verde-selva underline underline-offset-2">Lo cotizamos por WhatsApp</a>.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
+
+            {/* Qué incluye este viaje — antes el checkout de paquetes no decía
+                NADA: ni itinerario, ni horario, ni qué va incluido. El cliente
+                soltaba miles de pesos a ciegas. */}
+            <section className="bg-white border border-negro/8 p-6">
+              <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Tu viaje, día por día</h2>
+              <p className="font-dm text-xs text-negro/45 mb-5">{paquete.duracion} · {paquete.precioLabel}</p>
+
+              <ol className="space-y-3 mb-6">
+                {paquete.itinerario.map((dia, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="flex-shrink-0 w-7 h-7 border border-verde-selva/30 bg-verde-selva/5 flex items-center justify-center font-cormorant text-verde-selva text-sm">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-dm text-[13px] text-negro/85 leading-snug">{dia.titulo}</p>
+                      <p className="font-dm text-[12px] text-negro/50 leading-snug mt-0.5">{dia.descripcion}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="border-t border-negro/8 pt-4 space-y-2.5">
+                <p className="flex items-start gap-2.5 font-dm text-[12px] text-negro/65">
+                  <Clock className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>Salimos a las <strong className="text-negro/85">8:30 AM aprox.</strong> cada día de tour.</span>
+                </p>
+                <p className="flex items-start gap-2.5 font-dm text-[12px] text-negro/65">
+                  <MapPin className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>Pasamos por ti a tu hospedaje en <strong className="text-negro/85">Xilitla o Ciudad Valles</strong> y te regresamos al terminar.</span>
+                </p>
+                <p className="flex items-start gap-2.5 font-dm text-[12px] text-negro/65">
+                  <Hotel className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{paquete.noches} noche{paquete.noches > 1 ? "s" : ""} en el Hotel Paraíso Encantado, en Xilitla.</span>
+                </p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-5 pt-4 border-t border-negro/8">
+                <p className="sm:col-span-2 text-[10px] tracking-[2px] uppercase text-negro/40 font-dm mb-1">Incluido</p>
+                {paquete.incluye.map((x) => (
+                  <p key={x} className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+                    <Check className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    {x}
+                  </p>
+                ))}
+              </div>
+
+              {paquete.noIncluye.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-negro/8">
+                  <p className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm mb-2">No incluido</p>
+                  {paquete.noIncluye.map((x) => (
+                    <p key={x} className="font-dm text-[12px] text-negro/45 leading-snug">· {x}</p>
+                  ))}
+                </div>
+              )}
+
+              {toursIncluidos.length > 0 && (
+                <p className="mt-5 pt-4 border-t border-negro/8 font-dm text-[11px] text-negro/45">
+                  Cada persona adicional suma {fmx(toursIncluidos.reduce((a, t) => a + t.precio, 0))} de tours
+                  ({toursIncluidos.map((t) => t.nombre.split("—")[0].trim()).join(", ")}).
+                </p>
+              )}
+            </section>
+
+            {/* Habitación */}
+            <section className="bg-white border border-negro/8 p-6">
+              <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Tu habitación</h2>
+              <p className="font-dm text-xs text-negro/45 mb-5">
+                {paquete.noches} noche{paquete.noches > 1 ? "s" : ""} en el Hotel Paraíso Encantado, en Xilitla.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[
+                  { m: false, t: "Vista a la selva", s: "Orquídeas, Bromelias o Lirios. Incluida en el precio." },
+                  { m: true,  t: "Jungla · vista a la montaña", s: "La favorita para despertar con el paisaje de la sierra." },
+                ].map((o) => {
+                  const activa = vistaMontana === o.m;
+                  // La diferencia se calcula con las tarifas reales, así que
+                  // sube según cuánta gente duerma en la habitación.
+                  const dif = o.m && cotizacion
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, pct })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, pct })?.total ?? 0)
+                    : 0;
+                  return (
+                    <button key={o.t} type="button" onClick={() => setVistaMontana(o.m)}
+                      className={`text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
+                          {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
+                        </span>
+                        <span className="font-dm text-sm text-negro/85 font-medium">{o.t}</span>
+                      </div>
+                      <p className="font-dm text-[11px] text-negro/50 leading-snug">{o.s}</p>
+                      {o.m && dif > 0 && (
+                        <p className="font-dm text-[12px] text-dorado mt-1.5">+{fmx(dif)} MXN por las {paquete.noches} noches</p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Resumen antes de pedir los datos: el cliente confirma qué está
+                comprando —fechas, gente, habitación, itinerario y precio—
+                antes de teclear nada suyo. */}
+            {cotizacion && (
+              <ResumenReserva
+                items={[{
+                  nombre:  paquete.nombre,
+                  fecha,
+                  detalle: [
+                    `${personas} adulto${personas > 1 ? "s" : ""}`,
+                    childrenMid   ? `${childrenMid} niño${childrenMid > 1 ? "s" : ""} 6–10` : "",
+                    childrenSmall ? `${childrenSmall} menor${childrenSmall > 1 ? "es" : ""} de 6` : "",
+                    `${paquete.dias} días / ${paquete.noches} noches`,
+                    vistaMontana ? "Habitación Jungla" : "Habitación vista a la selva",
+                  ].filter(Boolean).join(" · "),
+                  subtotal: cotizacion.total,
+                  incluye:  paquete.incluye,
+                }]}
+                total={cotizacion.total}
+                pagaHoy={cotizacion.charge}
+                saldo={cotizacion.saldo}
+                pct={pct}
+              />
+            )}
 
             {/* Cuánto pagar */}
             <section className="bg-white border border-negro/8 p-6">
@@ -215,7 +453,7 @@ export default function ReservarPaquetePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {PCT_OPTIONS.map((o) => {
                   const active = pct === o.pct;
-                  const amt = Math.round(paquete.precio * o.pct / 100);
+                  const amt = Math.round(totalReal * o.pct / 100);
                   return (
                     <button key={o.pct} type="button" onClick={() => setPct(o.pct)}
                       className={`text-left border p-4 transition-colors ${active ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>

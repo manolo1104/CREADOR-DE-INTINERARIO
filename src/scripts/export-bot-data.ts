@@ -12,6 +12,7 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, tourDurTexto } from "../lib/tours";
+import { INCLUYE_SIEMPRE } from "../lib/tours";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
@@ -57,12 +58,12 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   "rzr-xilitla": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento." },
   "rappel-tamul": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento." },
   "buceo-media-luna": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. En la laguna hay puestos y restaurantes donde comprar." },
-  "rafting-rio-tampaon": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet, antes de salir. La comida de mediodía NO está incluida." },
-  "expedicion-tamul": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
-  "ruta-surrealista-edward-james": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
-  "cascadas-del-meco": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
-  "paraiso-escalonado-minas-micos": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
-  "ruta-acuatica-puente-de-dios": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. La comida de mediodía NO está incluida." },
+  "rafting-rio-tampaon": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "expedicion-tamul": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "ruta-surrealista-edward-james": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "cascadas-del-meco": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "paraiso-escalonado-minas-micos": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "ruta-acuatica-puente-de-dios": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
   // Medio día: no lleva desayuno. Sí incluye la cata de café de la finca, que
   // no es un alimento del paquete sino parte del recorrido.
   "travesia-del-cafe": { desayuno: false, comida: false, detalle: "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido." },
@@ -88,11 +89,8 @@ const IDEAL_PARA: Record<string, string[]> = {
   "travesia-del-cafe": ["familias", "medio día", "el más económico", "cultura y sabor", "ritmo tranquilo"],
 };
 
-// Lo que se incluye SIEMPRE en todos los tours (decisión del dueño, ago-2026).
-const INCLUYE_SIEMPRE = [
-  "Seguro de viaje para todos los integrantes",
-  "Fotografías y video del recorrido que toma tu guía",
-];
+// Fuente única en tours.ts — antes había una copia aquí y el endpoint del
+// paquete, que lee TOURS_DB, no la veía.
 
 // Páginas de las habitaciones del Hotel Paraíso Encantado (para compartir con el cliente).
 const HOTEL_HABITACIONES_URL = "https://www.paraisoencantado.com/habitaciones";

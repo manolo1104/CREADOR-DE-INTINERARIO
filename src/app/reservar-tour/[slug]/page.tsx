@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, INCLUYE_SIEMPRE } from "@/lib/tours";
+import { agregarAlCarrito } from "@/lib/carrito";
+import { PAQUETES_DB } from "@/lib/paquetes";
 import {
   saveTourBookingState, formatMXN, calcTourTotal,
   validatePromoCode, formatTourDate,
@@ -21,6 +23,8 @@ export default function ReservarTourPage() {
   const tour   = TOURS_DB.find((t) => t.slug === params.slug);
 
   const [tourDate,       setTourDate]       = useState("");
+  // Arranca en 2 y se ajusta al mínimo real del tour en cuanto se conoce
+  // (el rafting no sale con menos de 4).
   const [adults,         setAdults]         = useState(2);
   const [childrenMid,    setChildrenMid]    = useState(0); // 6–10 años → 70%
   const [childrenSmall,  setChildrenSmall]  = useState(0); // <6 años   → 50%
@@ -38,6 +42,10 @@ export default function ReservarTourPage() {
   const [cartSaved,   setCartSaved]   = useState(false);
   const [savingCart,  setSavingCart]  = useState(false);
   const [cartError,   setCartError]   = useState("");
+  // Actividades opcionales del tour (hoy solo el Salto de las 7 Cascadas).
+  const [addOnQty, setAddOnQty] = useState<Record<string, number>>({});
+  // Tours donde el cliente elige la segunda mitad del día (Ruta Acuática).
+  const [opcionDia, setOpcionDia] = useState("");
 
   // El embudo saltaba de TOUR_PAGE_VIEW (en /tours/[slug]) a DATE_SELECTED
   // (aquí) sin nada en medio: era imposible saber si la gente no llegaba a esta
@@ -70,15 +78,47 @@ export default function ReservarTourPage() {
       .catch(() => {});
   }, []);
 
+  // El rafting no sale con menos de 4. En vez de dejar que el cliente llene
+  // todo y choque con un error al pagar, el selector arranca ya en el mínimo.
+  useEffect(() => {
+    if (tour && adults < tour.groupMin) setAdults(tour.groupMin);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour?.slug]);
+
   const children = childrenMid + childrenSmall;
   const notFound = !tour;
-  const { subtotal, discount, total, childPriceMid, childPriceSmall } = calcTourTotal(
+  const { subtotal, discount, total: totalTour, childPriceMid, childPriceSmall } = calcTourTotal(
     tour?.precio ?? 0, adults, childrenMid, childrenSmall, promoDiscount
   );
+  // Los add-ons son precio fijo por persona que lo toma: ni promo ni tarifa de
+  // niño. El servidor vuelve a calcularlos en computeTourCharge.
+  const addOnsTotal = (tour?.addOns ?? []).reduce(
+    (acc, a) => acc + a.precio * (addOnQty[a.id] || 0), 0
+  );
+  const total = totalTour + addOnsTotal;
   // Anticipo: se cobra el 30 % ahora y el saldo el día del tour. El servidor
   // recalcula el monto en /api/tours/create-payment-intent — esto es solo la UI.
   const chargeAmount = pct === 100 ? total : Math.round((total * pct) / 100);
   const saldo        = total - chargeAmount;
+
+  // Correos de rescate viejos: hasta el arreglo de `linkRecuperacion`, los
+  // carritos de PAQUETE armaban su link como /reservar-tour/<slug>, que no
+  // existe. Esos correos ya están en bandejas de entrada y no se pueden
+  // recuperar, así que aquí se reencaminan en vez de enseñar un 404.
+  const paquete = !tour ? PAQUETES_DB.find((p) => p.slug === params.slug) : undefined;
+  useEffect(() => {
+    if (!paquete) return;
+    const qs = typeof window !== "undefined" ? window.location.search : "";
+    router.replace(`/reservar-paquete/${paquete.slug}${qs}`);
+  }, [paquete, router]);
+
+  if (paquete) {
+    return (
+      <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
+        <p className="font-dm text-negro/50 text-sm">Llevándote a tu paquete…</p>
+      </main>
+    );
+  }
 
   if (notFound || !tour) {
     return (
@@ -169,8 +209,42 @@ export default function ReservarTourPage() {
       saldo,
       paymentMode: pct === 100 ? "full" : "deposit",
       sessionId: crypto.randomUUID(),
+      addOns: (tour.addOns ?? [])
+        .filter((a) => (addOnQty[a.id] || 0) > 0)
+        .map((a) => ({ id: a.id, nombre: a.nombre, cantidad: addOnQty[a.id], precio: a.precio })),
+      eleccion: tour.eleccion && opcionDia
+        ? { id: opcionDia, nombre: tour.eleccion.opciones.find((o) => o.id === opcionDia)?.nombre ?? opcionDia }
+        : undefined,
     });
     router.push(`/reservar-tour/${tour.slug}/checkout`);
+  }
+
+  /**
+   * Guarda este recorrido en el carrito y devuelve al catálogo para seguir
+   * eligiendo. Antes, quien quería tres días tenía que pasar por el checkout
+   * tres veces: tres cobros, tres folios y tres oportunidades de abandonar.
+   */
+  function handleAgregarYSeguir() {
+    if (!tourDate || !tour) return;
+    agregarAlCarrito({
+      tourId:        tour.id,
+      tourSlug:      tour.slug,
+      tourName:      tour.nombre,
+      tourImage:     tour.imagen_hero,
+      tourDate,
+      adults,
+      childrenMid,
+      childrenSmall,
+      promoCode,
+      total,
+      addOns: (tour.addOns ?? [])
+        .filter((a) => (addOnQty[a.id] || 0) > 0)
+        .map((a) => ({ id: a.id, cantidad: addOnQty[a.id] })),
+      eleccion: tour.eleccion && opcionDia
+        ? tour.eleccion.opciones.find((o) => o.id === opcionDia)?.nombre
+        : undefined,
+    });
+    router.push("/reservar#catalogo");
   }
 
   // Guarda la cotización (carrito) y la envía por correo, para poder retomarla
@@ -208,7 +282,10 @@ export default function ReservarTourPage() {
     }
   }
 
-  const canContinue = !!tourDate && adults >= 1;
+  const personasTotal = adults + children;
+  const faltaEleccion = !!tour.eleccion && !opcionDia;
+  const canContinue =
+    !!tourDate && personasTotal >= tour.groupMin && !faltaEleccion;
 
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">
@@ -267,7 +344,7 @@ export default function ReservarTourPage() {
                   <p className="font-dm text-xs text-negro/40">{formatMXN(tour.precio)} por persona</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setAdults(Math.max(1, adults - 1))}
+                  <button onClick={() => setAdults(Math.max(tour.groupMin, adults - 1))}
                     className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
                     aria-label="Reducir adultos">−</button>
                   <span className="w-8 text-center font-dm text-negro">{adults}</span>
@@ -318,7 +395,99 @@ export default function ReservarTourPage() {
               {tour.soloAdultos && (
                 <p className="text-xs text-negro/40 font-dm border-t border-negro/6 pt-5">Actividad para mayores de 10 años en buena salud. La entrada al parque se paga aparte en sitio.</p>
               )}
-              <p className="text-xs text-negro/40 font-dm">Máximo {tour.groupMax} participantes por tour</p>
+              <p className="text-xs text-negro/40 font-dm">
+                {tour.groupMin > 1 && <>Mínimo {tour.groupMin} · </>}Máximo {tour.groupMax} participantes por tour
+              </p>
+
+            {/* Mínimo del tour: se dice por qué y se ofrece salida por WhatsApp */}
+            {tour.groupMin > 1 && (
+              <div className="border border-dorado/30 bg-dorado/8 p-3.5">
+                <p className="font-dm text-[12px] text-negro/70 leading-snug">
+                  Este recorrido sale <strong>a partir de {tour.groupMin} personas</strong>.
+                  ¿Van menos?{" "}
+                  <a
+                    href={`https://wa.me/524891251458?text=${encodeURIComponent(`Hola, somos menos de ${tour.groupMin} y nos interesa el tour "${tour.nombre}". ¿Nos pueden sumar a otro grupo?`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-verde-selva underline underline-offset-2 hover:text-verde-vivo"
+                  >
+                    Escríbenos y los sumamos a otro grupo
+                  </a>.
+                </p>
+              </div>
+            )}
+
+            {/* Elección de recorrido (Ruta Acuática): el día no da para las dos */}
+            {tour.eleccion && (
+              <div className="border border-negro/12 p-4">
+                <p className="font-dm text-sm text-negro/80 mb-1">{tour.eleccion.titulo}</p>
+                <p className="font-dm text-[11px] text-negro/45 mb-3">
+                  Lo que elijas aquí es lo que armamos para tu día.
+                </p>
+                <div className="space-y-2">
+                  {tour.eleccion.opciones.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setOpcionDia(o.id)}
+                      aria-pressed={opcionDia === o.id}
+                      className={`w-full text-left border p-3 transition-colors ${
+                        opcionDia === o.id
+                          ? "border-verde-selva bg-verde-selva/8"
+                          : "border-negro/12 hover:border-negro/30"
+                      }`}
+                    >
+                      <span className="block font-dm text-[13px] text-negro/85">{o.nombre}</span>
+                      {o.nota && <span className="block font-dm text-[11px] text-negro/50 mt-0.5">{o.nota}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actividades opcionales */}
+            {(tour.addOns ?? []).map((a) => {
+              const puestos = addOnQty[a.id] || 0;
+              const activo  = puestos > 0;
+              return (
+                <div key={a.id} className={`border p-4 transition-colors ${activo ? "border-verde-selva bg-verde-selva/6" : "border-negro/12"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-dm text-sm text-negro/85">{a.nombre}</p>
+                      <p className="font-dm text-[11px] text-negro/50 leading-snug mt-0.5">{a.descripcion}</p>
+                      <p className="font-dm text-[12px] text-verde-selva mt-1.5">
+                        +{formatMXN(a.precio)} MXN por persona
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAddOnQty((q) => ({ ...q, [a.id]: activo ? 0 : personasTotal }))}
+                      className={`flex-shrink-0 text-[10px] tracking-[1.5px] uppercase font-dm px-3 py-2 border transition-colors ${
+                        activo
+                          ? "border-verde-selva bg-verde-selva text-crema"
+                          : "border-negro/25 text-negro/60 hover:border-verde-selva hover:text-verde-selva"
+                      }`}
+                    >
+                      {activo ? "Quitar" : "Agregar"}
+                    </button>
+                  </div>
+
+                  {activo && (
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-negro/8">
+                      <span className="font-dm text-[12px] text-negro/60">¿Cuántos lo hacen?</span>
+                      <div className="flex items-center gap-3">
+                        <button type="button" aria-label="Menos personas"
+                          onClick={() => setAddOnQty((q) => ({ ...q, [a.id]: Math.max(0, puestos - 1) }))}
+                          className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
+                        <span className="font-dm text-sm text-negro/80 w-5 text-center">{puestos}</span>
+                        <button type="button" aria-label="Más personas"
+                          onClick={() => setAddOnQty((q) => ({ ...q, [a.id]: Math.min(personasTotal, puestos + 1) }))}
+                          className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             </div>
           </section>
 
@@ -459,8 +628,16 @@ export default function ReservarTourPage() {
             {/* Incluye */}
             <div className="mt-5 border-t border-negro/6 pt-4">
               <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Incluido</p>
+              {/*
+                Antes esto era `.slice(0, 5)`: el paso 1 enseñaba cinco puntos
+                mientras la ficha y el paso 2 enseñaban nueve. Nos estábamos
+                subvendiendo justo donde el cliente compara precio contra
+                valor. Se listan todos, y el seguro y las fotos —que van en
+                TODOS los tours pero no viven en `tour.incluye`— se suman aquí
+                para que el paso 1 diga lo mismo que el resto del sitio.
+              */}
               <ul className="space-y-1.5">
-                {tour.incluye.slice(0, 5).map((item) => (
+                {[...tour.incluye, ...INCLUYE_SIEMPRE].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs font-dm text-negro/60">
                     <span className="text-verde-selva flex-shrink-0 mt-0.5">✓</span>
                     {item}
@@ -490,6 +667,20 @@ export default function ReservarTourPage() {
             ) : (
               "Selecciona una fecha para continuar"
             )}
+          </button>
+
+          {/*
+            Segunda salida: agregar este recorrido y seguir eligiendo. Va
+            debajo del botón de pago y con menos peso visual, para no competir
+            con quien ya decidió pagar uno solo — pero existe, porque el viaje
+            típico a la Huasteca son dos o tres días, no uno.
+          */}
+          <button
+            onClick={handleAgregarYSeguir}
+            disabled={!canContinue}
+            className="w-full border border-verde-selva/40 text-verde-selva hover:bg-verde-selva/8 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            ＋ Agregar al carrito y elegir otro día
           </button>
 
           {!canContinue && !tourDate && (

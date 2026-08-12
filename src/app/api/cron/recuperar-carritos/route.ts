@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { linkRecuperacion } from "@/lib/recuperacion";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml, type CartEmailTipo } from "@/lib/cartEmail";
 import { actividad, logger } from "@/lib/logger";
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     else if (c.emailsSent === 2 && (!c.lastEmailAt || c.lastEmailAt < hace72h)) tipo = "recordatorio3";
     if (!tipo) continue;
 
-    const restoreUrl = `${APP_URL}/reservar-tour/${c.tourSlug}?recuperar=${c.token}`;
+    const restoreUrl = linkRecuperacion(APP_URL, c.tourId, c.tourSlug, c.token);
     try {
       const { subject, html } = buildCartEmailHtml({
         tipo,

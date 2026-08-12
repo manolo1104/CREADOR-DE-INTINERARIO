@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { linkRecuperacion } from "@/lib/recuperacion";
 import { computeTourCharge, fechaTourValida } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { sendBrevoEmail } from "@/lib/brevo";
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
       esNuevo = true;
     }
 
-    const restoreUrl = `${APP_URL}/reservar-tour/${datos.tourSlug}?recuperar=${token}`;
+    const restoreUrl = linkRecuperacion(APP_URL, datos.tourId, datos.tourSlug, token);
 
     // La cotización inmediata solo se envía al CREAR (no en cada actualización).
     if (esNuevo) {
