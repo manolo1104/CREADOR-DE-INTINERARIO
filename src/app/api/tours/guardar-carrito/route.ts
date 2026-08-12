@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { linkRecuperacion } from "@/lib/recuperacion";
 import { computeTourCharge, fechaTourValida } from "@/lib/tourPricing";
 import { tarifarRecorridos } from "@/lib/tourPricing";
+import { cotizarHabitaciones } from "@/lib/habitaciones";
+import { getTraslado, tarifaTraslado } from "@/lib/traslados";
 import { rateLimit } from "@/lib/rateLimit";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml } from "@/lib/cartEmail";
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
       promoCode, email, phone,
       // Carrito completo. Cuando viene, manda sobre los campos sueltos de
       // arriba: es el camino del carrito de varios recorridos.
-      items,
+      items, hospedaje, traslado,
     } = body;
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     // pagar se perdía para siempre.
     const esCarrito = Array.isArray(items) && items.length > 0;
     if (esCarrito) {
-      return await guardarCarritoCompleto(items, String(email).trim(), phone);
+      return await guardarCarritoCompleto(items, String(email).trim(), phone, hospedaje, traslado);
     }
 
     if (!tourDate) {
@@ -157,7 +159,13 @@ export async function POST(req: NextRequest) {
  * cualquier fecha: un carrito sin fechas nacería expirado y no recibiría ni un
  * recordatorio.
  */
-async function guardarCarritoCompleto(items: unknown[], email: string, phone: unknown) {
+async function guardarCarritoCompleto(
+  items: unknown[],
+  email: string,
+  phone: unknown,
+  hospedaje?: { habitaciones?: { habitacionId: string; huespedes: number }[]; noches?: number; checkin?: string; checkout?: string } | null,
+  traslado?: { ciudad?: string; personas?: number } | null,
+) {
   const tarifa = tarifarRecorridos(items);
   if (!tarifa.ok) {
     return NextResponse.json({ error: tarifa.error }, { status: 400 });
@@ -172,6 +180,41 @@ async function guardarCarritoCompleto(items: unknown[], email: string, phone: un
   }
   const ancla = [...conFecha].sort((a, b) => a.tourDate.localeCompare(b.tourDate))[0];
 
+  // El hospedaje y el traslado se cotizan igual que al cobrar, con el catálogo.
+  let hotel: { habitacion: string; noches: number; huespedes: number; checkin?: string; checkout?: string; subtotal: number } | null = null;
+  let total = tarifa.total;
+  if (Array.isArray(hospedaje?.habitaciones) && hospedaje!.habitaciones!.length > 0 && Number(hospedaje?.noches) > 0) {
+    const q = cotizarHabitaciones(hospedaje!.habitaciones!, Number(hospedaje!.noches));
+    if (q.ok && q.total) {
+      hotel = {
+        habitacion: (q.desglose ?? []).map((x) => `${x.habitacion} (${x.huespedes})`).join(" + "),
+        noches:     Number(hospedaje!.noches),
+        huespedes:  (q.desglose ?? []).reduce((a, x) => a + x.huespedes, 0),
+        checkin:    hospedaje!.checkin,
+        checkout:   hospedaje!.checkout,
+        subtotal:   q.total,
+      };
+      total += q.total;
+    }
+  }
+
+  let viaje: { ciudad: string; personas: number; subtotal: number } | null = null;
+  if (traslado?.ciudad) {
+    const ruta = getTraslado(String(traslado.ciudad));
+    const pax  = Math.max(1, Number(traslado.personas) || 1);
+    const precio = ruta ? tarifaTraslado(ruta, pax)?.precio : undefined;
+    if (ruta && precio) {
+      viaje = { ciudad: ruta.ciudad, personas: pax, subtotal: precio };
+      total += precio;
+    }
+  }
+
+  // ⚠️ El grupo NO se suma entre recorridos: son las MISMAS personas yendo
+  // varios días. Sumando, un viaje de 2 días para 3 personas guardaba "6
+  // adultos" y el correo se lo decía al cliente.
+  const grupoAdultos = Math.max(...tarifa.lineItems.map((l) => l.adults), 0);
+  const grupoMenores = Math.max(...tarifa.lineItems.map((l) => l.children), 0);
+
   const datos = {
     tourId:        ancla.tourId,
     tourSlug:      ancla.tourSlug,
@@ -179,15 +222,17 @@ async function guardarCarritoCompleto(items: unknown[], email: string, phone: un
       ? `${ancla.tourName} y ${tarifa.lineItems.length - 1} recorrido${tarifa.lineItems.length > 2 ? "s" : ""} más`
       : ancla.tourName,
     tourDate:      ancla.tourDate,
-    adults:        tarifa.lineItems.reduce((s, l) => s + l.adults, 0),
-    childrenMid:   tarifa.lineItems.reduce((s, l) => s + l.children, 0),
+    adults:        grupoAdultos,
+    childrenMid:   grupoMenores,
     childrenSmall: 0,
     promoCode:     null,
     promoDiscount: 0,
-    total:         tarifa.total,
+    total,
     customerEmail: email,
     customerPhone: phone ? String(phone).trim() : null,
-    carritoJson:   JSON.stringify(items),
+    // Se guarda TODO lo elegido, no solo los recorridos: si el cliente vuelve
+    // por el link del correo, el hospedaje y el traslado siguen ahí.
+    carritoJson:   JSON.stringify({ items, hospedaje: hospedaje ?? null, traslado: traslado ?? null }),
   };
 
   const existente = await prisma.abandonedCart.findFirst({
@@ -222,6 +267,13 @@ async function guardarCarritoCompleto(items: unknown[], email: string, phone: un
         children: datos.childrenMid,
         total: datos.total,
         restoreUrl,
+        lineas: tarifa.lineItems.map((l) => ({
+          tourName: l.tourName, tourDate: l.tourDate,
+          adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
+          subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
+        })),
+        hospedaje: hotel,
+        traslado:  viaje,
       });
       await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
     } catch {

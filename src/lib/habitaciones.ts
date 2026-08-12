@@ -131,7 +131,7 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     vistaMontana: true,
     maxHuespedes: 4,
     tarifas: { 1: 2000, 2: 2000, 3: 2500, 4: 2500 },
-    caracteristicas: ["2 camas matrimoniales", "Vista a la sierra", "Baño completo", "WiFi", "Aire acondicionado"],
+    caracteristicas: ["2 camas matrimoniales", "Piscina de spa al exterior", "Vista a la sierra", "Baño completo", "WiFi", "Aire acondicionado"],
     imagen: `${IMG}/jungla.jpg`,
   },
   {
@@ -155,7 +155,7 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     vistaMontana: true,
     maxHuespedes: 4,
     tarifas: { 1: 2000, 2: 2000, 3: 2500, 4: 2500 },
-    caracteristicas: ["2 camas matrimoniales", "Spa privado al aire libre", "Terraza panorámica", "Baño completo", "Aire acondicionado"],
+    caracteristicas: ["2 camas matrimoniales", "Tina de hidromasaje", "Terraza panorámica", "Baño completo", "Aire acondicionado"],
     imagen: `${IMG}/lindavista.jpg`,
   },
 ];

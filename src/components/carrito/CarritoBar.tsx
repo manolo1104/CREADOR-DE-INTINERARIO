@@ -11,7 +11,7 @@ import {
   type CarritoItem,
 } from "@/lib/carrito";
 import { formatMXN } from "@/lib/tourBooking";
-import { hayBarraDeTour, enMotorDeReservas } from "@/lib/barrasFijas";
+import { hayBarraDeTour, enPantallaDePago } from "@/lib/barrasFijas";
 
 /**
  * Barra fija que recuerda al visitante que ya tiene recorridos apartados.
@@ -43,10 +43,9 @@ export function CarritoBar() {
     };
   }, []);
 
-  // Dentro del motor —carrito, checkout de tour y de paquete— esta barra sobra:
-  // repite lo que ya está en pantalla y, en el checkout de un paquete, invita a
-  // irse a otra compra justo antes de pagar.
-  if (!montado || items.length === 0 || enMotorDeReservas(pathname)) return null;
+  // Solo se esconde en las pantallas de PAGO. En `/reservar` —el catálogo— tiene
+  // que verse: es donde la persona está eligiendo su segundo recorrido.
+  if (!montado || items.length === 0 || enPantallaDePago(pathname)) return null;
 
   // En las fichas de tour manda `MobileBookingBar`, que vive en el mismo
   // `bottom-0`: las dos juntas se tapaban una a la otra, y ahí el acceso al

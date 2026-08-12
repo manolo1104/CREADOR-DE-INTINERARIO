@@ -26,7 +26,18 @@ export function hayBarraDeTour(pathname: string | null | undefined): boolean {
   return destino ? toursQueIncluyen(destino[1]).length > 0 : false;
 }
 
-/** Dentro del motor de reservas no se pinta ninguna barra global. */
-export function enMotorDeReservas(pathname: string | null | undefined): boolean {
-  return /^\/(?:en\/)?reservar(-tour|-paquete)?(\/|$)/.test(pathname ?? "");
+/**
+ * ¿Es una PANTALLA DE PAGO? Ahí no se pinta la barra del carrito: repite lo que
+ * ya está en pantalla y, en el checkout de un paquete, invita a irse a otra
+ * compra justo antes de pagar.
+ *
+ * ⚠️ `/reservar` a secas NO entra: es el CATÁLOGO, y es justo donde más falta
+ * hace la barra —quien está eligiendo su segundo recorrido necesita ver que
+ * lleva algo—. Al unificar la regla se coló y la barra desapareció de ahí.
+ */
+export function enPantallaDePago(pathname: string | null | undefined): boolean {
+  const p = pathname ?? "";
+  return p.startsWith("/reservar/carrito")
+      || /^\/(?:en\/)?reservar-(tour|paquete)\//.test(p)
+      || /\/checkout$/.test(p);
 }

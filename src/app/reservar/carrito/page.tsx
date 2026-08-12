@@ -13,6 +13,7 @@ import {
 } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
 import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
+import { leerExtras, guardarExtras, limpiarExtras } from "@/lib/carritoExtras";
 import { TRASLADOS, getTraslado, tarifaTraslado, precioBase } from "@/lib/traslados";
 import { HABITACIONES_HOTEL, SERVICIOS_HOTEL, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
@@ -283,6 +284,7 @@ function PagoCarrito({ cobro, datos, onListo }: {
         ],
       }));
       vaciarCarrito();
+      limpiarExtras();
       onListo();
       router.push("/reservar-tour/confirmacion");
     }
@@ -361,6 +363,8 @@ export default function CarritoPage() {
   // quien llega en su coche no tiene por qué ver un cargo que no pidió.
   const [conTraslado,    setConTraslado]    = useState(false);
   const [ciudadTraslado, setCiudadTraslado] = useState<string>(TRASLADOS[0].slug);
+  /** Ya se restauró lo guardado; hasta entonces no se escribe nada. */
+  const [extrasListos, setExtrasListos] = useState(false);
   const [paxTraslado,    setPaxTraslado]    = useState(2);
   // Una entrada por habitación, con cuánta gente duerme en cada una. Con más
   // gente de la que cabe en una, el cliente decide el reparto (3+2 o 4+1):
@@ -426,8 +430,22 @@ export default function CarritoPage() {
           if (c.email) setEmail(c.email);
           // Se FUSIONA con lo que ya tenga: puede haber armado un carrito nuevo
           // antes de abrir el correo, y reemplazarlo sería borrarle trabajo.
-          const restaurados: CarritoItem[] = Array.isArray(c.items) && c.items.length
-            ? c.items
+          // `carritoJson` guarda { items, hospedaje, traslado }; los tokens
+          // viejos guardaban solo el array de recorridos.
+          const guardado = Array.isArray(c.items) ? { items: c.items, hospedaje: null, traslado: null } : (c.items ?? null);
+          if (guardado?.hospedaje?.habitaciones?.length) {
+            setConHotel(true);
+            setHabs(guardado.hospedaje.habitaciones);
+            if (guardado.hospedaje.checkin)  setCheckin(guardado.hospedaje.checkin);
+            if (guardado.hospedaje.checkout) setCheckout(guardado.hospedaje.checkout);
+          }
+          if (guardado?.traslado?.ciudad) {
+            setConTraslado(true);
+            setCiudadTraslado(guardado.traslado.ciudad);
+            if (guardado.traslado.personas) setPaxTraslado(Number(guardado.traslado.personas));
+          }
+          const restaurados: CarritoItem[] = Array.isArray(guardado?.items) && guardado.items.length
+            ? guardado.items
             : (c.tourSlug
                 ? [itemDesdeSlug(c.tourSlug, {
                     tourDate:      c.tourDate || "",
@@ -463,10 +481,38 @@ export default function CarritoPage() {
       // Se limpia la URL para que recargar no vuelva a hacer lo mismo.
       window.history.replaceState({}, "", "/reservar/carrito");
     }
+    // Lo que eligió y no son recorridos: hospedaje, traslado y sus datos. Vivía
+    // solo en memoria, así que salir a mirar otro tour y volver lo borraba todo.
+    const ex = leerExtras();
+    setConHotel(ex.conHotel);
+    setHabs(ex.habs);
+    setCheckin(ex.checkin);
+    setCheckout(ex.checkout);
+    setConTraslado(ex.conTraslado);
+    if (ex.ciudadTraslado) setCiudadTraslado(ex.ciudadTraslado);
+    setPaxTraslado(ex.paxTraslado);
+    if (ex.name)   setName(ex.name);
+    if (ex.email)  setEmail(ex.email);
+    if (ex.phone)  setPhone(ex.phone);
+    if (ex.pickup) setPickup(ex.pickup);
+    setExtrasListos(true);
+
     setItems(carrito);
     setHidratando(false);
     trackTourEvent("BOOKING_PAGE_VIEW", { carrito: true, recorridos: carrito.length });
   }
+
+  // Guarda la elección en cuanto cambia. La guarda de `extrasListos` evita que
+  // el primer render —con los valores por defecto— pise lo que ya había
+  // guardado antes de que termine de restaurarse.
+  useEffect(() => {
+    if (!extrasListos) return;
+    guardarExtras({
+      conHotel, habs, checkin, checkout,
+      conTraslado, ciudadTraslado, paxTraslado,
+      name, email, phone, pickup,
+    });
+  }, [extrasListos, conHotel, habs, checkin, checkout, conTraslado, ciudadTraslado, paxTraslado, name, email, phone, pickup]);
 
   // Lleva la vista al recorrido que acaba de entrar y apaga el resalte.
   useEffect(() => {
@@ -713,7 +759,15 @@ export default function CarritoPage() {
       const r = await fetch("/api/tours/guardar-carrito", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: correo, phone: phone || null, items }),
+        body: JSON.stringify({
+          email: correo, phone: phone || null, items,
+          // El hospedaje y el traslado también: sin esto la cotización llegaba
+          // sin lo que más sube el ticket, y al volver por el link se perdía.
+          hospedaje: conHotel ? { habitaciones: habs, noches, checkin, checkout } : null,
+          traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
+            ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
+            : null,
+        }),
       });
       const d = await r.json().catch(() => null);
       if (!r.ok) {
