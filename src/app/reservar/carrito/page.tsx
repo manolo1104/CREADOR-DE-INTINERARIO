@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle, MessageCircle } from "lucide-react";
+import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle, MessageCircle, Expand, Share2 } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
   actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
@@ -22,6 +22,8 @@ import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
+import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
+import { BotonCompartir } from "@/components/booking/BotonCompartir";
 import { trackTourEvent, sessionId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
@@ -372,7 +374,8 @@ export default function CarritoPage() {
   const [habs, setHabs] = useState<{ habitacionId: string; huespedes: number }[]>([
     { habitacionId: "lirios-1", huespedes: 2 },
   ]);
-  const [detalleHab, setDetalleHab] = useState<string | null>(null);
+  /** Cuarto abierto en la galería a pantalla completa. */
+  const [galeria, setGaleria] = useState<string | null>(null);
   const [checkin,     setCheckin]     = useState("");
   const [checkout,    setCheckout]    = useState("");
   const [error,  setError]  = useState("");
@@ -1214,11 +1217,40 @@ export default function CarritoPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 grid lg:grid-cols-[1fr_380px] gap-10 items-start">
+      {/* `min-w-0` en el grid Y en sus hijos.
+        Sin él, un hijo de grid tiene `min-width: auto` y se niega a encoger por
+        debajo del ancho mínimo de su contenido: en un teléfono de 360 px la
+        columna se quedaba en 373 y TODO el carrito salía cortado por la derecha
+        —el título, los precios, los botones—. Se veía bien a 390 px, que es
+        justo el tamaño con el que se probó. */}
+      <div className="max-w-5xl mx-auto px-6 grid lg:grid-cols-[1fr_380px] gap-10 items-start min-w-0">
 
         {/* ── Renglones ── */}
-        <div>
-          <h1 className="font-cormorant font-light text-verde-profundo text-3xl mb-1">Tu viaje</h1>
+        <div className="min-w-0">
+          <div className="flex items-start justify-between gap-3">
+          <h1 className="font-cormorant font-light text-verde-profundo text-3xl mb-1 min-w-0">Tu viaje</h1>
+          {/* Compartirlo con quien decide. El carrito vive en ESTE navegador,
+            así que el enlace se genera guardándolo en el servidor. */}
+          <BotonCompartir
+            titulo="Mi viaje a la Huasteca Potosina"
+            texto={`Armé este viaje: ${items.length} recorrido${items.length !== 1 ? "s" : ""} · ${formatMXN(total)} MXN`}
+            origen="carrito"
+            className="flex-shrink-0 border border-verde-selva/40 text-verde-selva px-3 py-2 hover:bg-verde-selva/8"
+            obtenerUrl={async () => {
+              const r = await fetch("/api/tours/compartir", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  items,
+                  hospedaje: conHotel ? { habitaciones: habs, noches, checkin, checkout } : null,
+                  traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
+                    ? { ciudad: rutaTraslado.slug, personas: paxTraslado } : null,
+                }),
+              });
+              const d = await r.json().catch(() => null);
+              return r.ok ? d?.url ?? null : null;
+            }}
+          />
+        </div>
           <p className="font-dm text-negro/50 text-sm mb-6">
             {items.length} {items.length === 1 ? "recorrido" : "recorridos"} · {dias} {dias === 1 ? "día" : "días"}
           </p>
@@ -1416,37 +1448,17 @@ export default function CarritoPage() {
                           </div>
                         )}
 
+                        {/* Abre la galería a pantalla completa. Antes desplegaba
+                          una lista de texto debajo: se apartan tres noches sin
+                          haber visto bien el cuarto. */}
                         <button
                           type="button"
-                          onClick={() => setDetalleHab(detalleHab === h.id ? null : h.id)}
-                          aria-expanded={detalleHab === h.id}
-                          className="w-full px-3 py-2 border-t border-negro/8 font-dm text-[11px] text-verde-selva hover:bg-verde-selva/5 transition-colors text-left"
+                          onClick={() => setGaleria(h.id)}
+                          className="w-full flex items-center gap-1.5 px-3 py-2 border-t border-negro/8 font-dm text-[11px] text-verde-selva hover:bg-verde-selva/5 transition-colors text-left"
                         >
-                          {detalleHab === h.id ? "Ocultar detalles" : "Ver más detalles"}
+                          <Expand className="w-3 h-3" aria-hidden="true" />
+                          Ver fotos y detalles
                         </button>
-
-                        {detalleHab === h.id && (
-                          <div className="px-3 pb-3 space-y-2">
-                            <p className="font-dm text-[12px] text-negro/60 leading-snug">{h.descripcion}</p>
-                            <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/35">{h.categoria}</p>
-                            <ul className="space-y-0.5">
-                              {h.caracteristicas.map((c) => (
-                                <li key={c} className="font-dm text-[12px] text-negro/55">· {c}</li>
-                              ))}
-                            </ul>
-                            <div className="border-t border-negro/8 pt-2">
-                              <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/35 mb-1">Precio por noche</p>
-                              {Object.entries(h.tarifas)
-                                .filter(([n]) => Number(n) >= 2)
-                                .map(([n, precio]) => (
-                                  <p key={n} className="flex justify-between font-dm text-[12px] text-negro/55">
-                                    <span>{n} persona{Number(n) > 1 ? "s" : ""}</span>
-                                    <span>{formatMXN(precio as number)}</span>
-                                  </p>
-                                ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -1628,7 +1640,7 @@ export default function CarritoPage() {
         </div>
 
         {/* ── Resumen y pago ── */}
-        <aside className="border border-negro/10 bg-white p-6 lg:sticky lg:top-24">
+        <aside className="min-w-0 border border-negro/10 bg-white p-6 lg:sticky lg:top-24">
           {/* Mismo resumen que el checkout de un tour: qué se aparta, qué va
               incluido en cada recorrido, la logística y los números. */}
           <ResumenReserva
@@ -1910,6 +1922,12 @@ export default function CarritoPage() {
         ⚠️ Vive aquí, en el árbol del carrito CON recorridos. Estuvo colgado del
         `return` del carrito vacío, donde su propia condición (`items.length > 0`)
         no podía cumplirse nunca: no se mostró una sola vez desde que se creó. */}
+      <GaleriaHabitacion
+        habitacion={HABITACIONES_HOTEL.find((h) => h.id === galeria) ?? null}
+        abierta={!!galeria}
+        onCerrar={() => setGaleria(null)}
+      />
+
       <RescatePopup activo={items.length > 0 && !cobro} mensaje={waRescate} />
     </main>
   );

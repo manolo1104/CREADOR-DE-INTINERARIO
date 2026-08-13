@@ -12,7 +12,9 @@ import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
 import { HABITACIONES_HOTEL, SERVICIOS_HOTEL } from "@/lib/habitaciones";
-import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel } from "lucide-react";
+import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
+import { BotonCompartir } from "@/components/booking/BotonCompartir";
+import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel, Expand } from "lucide-react";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
@@ -107,6 +109,8 @@ export default function ReservarPaquetePage() {
   const [nocheExtra,    setNocheExtra]    = useState(false);
   /** La habitación concreta que eligió. Vacío = todavía no elige. */
   const [habitacionId,  setHabitacionId]  = useState<string>("");
+  /** Cuarto abierto en la galería a pantalla completa. */
+  const [galeria,       setGaleria]       = useState<string | null>(null);
   // El default arranca en el compromiso MÁS BAJO de los tres. El mínimo subió
   // de 10 % a 30 % (decisión de Manolo, 12 ago 2026): el 10 % no cubría ni la
   // primera noche de hotel del paquete.
@@ -271,6 +275,25 @@ export default function ReservarPaquetePage() {
             <h1 className="font-cormorant text-verde-profundo text-xl leading-snug">{paquete.nombre}</h1>
             <p className="font-dm text-sm text-negro/50 mt-1">{fmx(paquete.precio)} MXN <span className="text-negro/40">{paquete.precioLabel}</span></p>
           </div>
+          {/* Compartir el paquete con quien decide, ya con lo que lleva
+            configurado —fecha, gente, habitación— en el texto del mensaje.
+            El enlace es la ficha del paquete: el checkout no guarda estado en
+            la URL, así que prometer que se abre "tal cual" sería mentira. */}
+          <BotonCompartir
+            titulo={paquete.nombre}
+            texto={[
+              `${paquete.nombre} — ${paquete.duracion}`,
+              fecha ? `Salida: ${fecha}` : "",
+              `${personas} adulto${personas !== 1 ? "s" : ""}${childrenMid + childrenSmall > 0 ? ` · ${childrenMid + childrenSmall} menor${childrenMid + childrenSmall !== 1 ? "es" : ""}` : ""}`,
+              habElegida ? `Habitación: ${habElegida.nombre}` : "",
+              tourElegido ? `Día ${paquete.eleccionTour?.dia}: ${paquete.eleccionTour?.opciones.find((o) => o.slug === tourElegido)?.nombre ?? ""}` : "",
+              nocheExtra ? "Con noche extra (llegada la víspera)" : "",
+              `Total: ${fmx(totalReal)} MXN`,
+            ].filter(Boolean).join("\n")}
+            origen="paquete"
+            className="flex-shrink-0 self-start border border-verde-selva/40 text-verde-selva px-3 py-2 hover:bg-verde-selva/8"
+            obtenerUrl={() => `https://www.huasteca-potosina.com/paquetes/${paquete.slug}`}
+          />
         </div>
 
         {stage === "done" ? (
@@ -535,6 +558,12 @@ export default function ReservarPaquetePage() {
               )}
             </section>
 
+            <GaleriaHabitacion
+              habitacion={HABITACIONES_HOTEL.find((h) => h.id === galeria) ?? null}
+              abierta={!!galeria}
+              onCerrar={() => setGaleria(null)}
+            />
+
             {/* Habitación */}
             <section className="bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Tu habitación</h2>
@@ -619,6 +648,18 @@ export default function ReservarPaquetePage() {
                                   Elegida
                                 </span>
                               )}
+                              {/* Ver la habitación a detalle sin elegirla: mirar
+                                y decidir son dos cosas distintas. */}
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Ver fotos de ${h.nombre}`}
+                                onClick={(e) => { e.stopPropagation(); setGaleria(h.id); }}
+                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setGaleria(h.id); } }}
+                                className="absolute bottom-1.5 right-1.5 w-7 h-7 flex items-center justify-center bg-negro/55 hover:bg-negro/75 text-crema transition-colors cursor-pointer"
+                              >
+                                <Expand className="w-3.5 h-3.5" aria-hidden="true" />
+                              </span>
                             </span>
                             <span className="block p-2.5">
                               <span className="block font-dm text-[12px] text-negro/85 leading-tight">{h.nombre}</span>
