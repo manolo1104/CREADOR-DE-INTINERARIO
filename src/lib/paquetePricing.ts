@@ -94,6 +94,10 @@ export interface PaqueteChargeResult {
   base:           number;
   /** Lo que se suma de hotel por la gente extra. */
   extraHotel:     number;
+  /** Llegó la víspera. */
+  nocheExtra:     boolean;
+  /** Noches de hotel en total, ya con la extra si la hay. */
+  nochesTotales:  number;
   /** Lo que se suma de boletos de tour por la gente extra. */
   extraTours:     number;
   /** Precio por boleto extra, sumando todos los tours del itinerario. */
@@ -119,6 +123,13 @@ export function computePaqueteCharge(input: {
   reparto?:       unknown;
   /** El día "a elegir", cuando el paquete lo ofrece. */
   tourElegido?:   unknown;
+  /**
+   * Llegar la víspera. El día 1 del paquete es día de tour: se sale del hotel
+   * entre 8:30 y 9:00, así que quien llega esa misma mañana tiene que estar en
+   * Xilitla antes de las 9. Con la noche extra llega el día anterior (check-in
+   * desde las 3 pm) y arranca descansado.
+   */
+  nocheExtra?:    unknown;
   pct?:           unknown;
 }): PaqueteChargeResult | null {
   const paquete = PAQUETES_DB.find((p) => p.slug === input.slug);
@@ -148,10 +159,17 @@ export function computePaqueteCharge(input: {
   // paquete Completo (3 noches) la persona adicional paga 2, no 3. Antes se
   // multiplicaba por todas las noches y el extra pagaba la que la pareja no
   // paga.
-  const nochesCobradas = paquete.noches - nochesGratis(paquete.noches);
+  const nocheExtra = !!input.nocheExtra;
+  const nochesTotales = paquete.noches + (nocheExtra ? 1 : 0);
+
+  // Lo que el precio publicado ya cubre: las noches DEL PAQUETE, con su
+  // promoción. La noche extra se suma aparte y por eso no entra aquí.
+  const nochesBaseCobradas   = paquete.noches - nochesGratis(paquete.noches);
+  const nochesTotalCobradas  = nochesTotales  - nochesGratis(nochesTotales);
+
   const reparto = Array.isArray(input.reparto) ? input.reparto.map((n) => Number(n) || 0) : undefined;
-  const hotelReal      = costoHotelPorNoche(personas, vistaMontana, reparto) * nochesCobradas;
-  const hotelIncluido  = costoHotelPorNoche(2, false)                        * nochesCobradas;
+  const hotelReal      = costoHotelPorNoche(personas, vistaMontana, reparto) * nochesTotalCobradas;
+  const hotelIncluido  = costoHotelPorNoche(2, false)                        * nochesBaseCobradas;
   const extraHotel     = Math.max(0, hotelReal - hotelIncluido);
 
   const toursPorPersona = toursDelPaquete(paquete).reduce((s, t) => s + t.precio, 0);
@@ -176,6 +194,8 @@ export function computePaqueteCharge(input: {
     vistaMontana,
     extraHotel,
     extraTours,
+    nocheExtra,
+    nochesTotales,
     toursPorPersona,
     habitaciones: Math.max(1, Math.ceil(personas / MAX_POR_HABITACION)),
     total,

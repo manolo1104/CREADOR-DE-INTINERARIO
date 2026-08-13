@@ -100,6 +100,8 @@ export default function ReservarPaquetePage() {
   const [tourElegido,   setTourElegido]   = useState<string>("");
   /** Cómo se reparte la gente entre habitaciones. */
   const [repartoHab,    setRepartoHab]    = useState<number[]>([]);
+  /** Llegar la víspera: el día 1 es día de tour y se sale a las 8:30–9:00. */
+  const [nocheExtra,    setNocheExtra]    = useState(false);
   // El default arranca en el compromiso MÁS BAJO de los tres. El mínimo subió
   // de 10 % a 30 % (decisión de Manolo, 12 ago 2026): el 10 % no cubría ni la
   // primera noche de hotel del paquete.
@@ -182,7 +184,7 @@ export default function ReservarPaquetePage() {
     setRepartoHab(nuevo);
   }
 
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, pct });
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra, pct });
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
@@ -206,7 +208,7 @@ export default function ReservarPaquetePage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: email.trim(), phone: phone.trim(), slug: paquete!.slug,
-        personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido,
+        personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra,
       }),
     }).catch(() => {});
 
@@ -215,7 +217,7 @@ export default function ReservarPaquetePage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
-          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido },
+          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra },
         }),
       });
       const d = await res.json();
@@ -463,6 +465,64 @@ export default function ReservarPaquetePage() {
               </section>
             )}
 
+            {/* El día 1 es día de TOUR.
+              Se sale del hotel entre 8:30 y 9:00, así que quien llega esa
+              misma mañana tiene que estar en Xilitla antes de las 9 — con seis
+              horas de carretera de por medio, eso significa salir de madrugada.
+              Manolo lo advertía a mano por WhatsApp en cada venta; aquí sale
+              solo, con la salida a un clic. */}
+            <section className="bg-white border border-negro/8 p-6">
+              <h2 className="font-cormorant text-verde-profundo text-xl mb-1">¿Cuándo llegas?</h2>
+              <p className="font-dm text-xs text-negro/45 mb-4">
+                Tu primer día ya es día de tour: salimos del hotel entre 8:30 y 9:00 de la mañana.
+              </p>
+              <div className="space-y-2.5">
+                {[
+                  { extra: false, t: "Llego el mismo día del primer tour",
+                    s: "Tienes que estar en el hotel antes de las 9:00 AM. Si vienes de lejos, es salir de madrugada." },
+                  { extra: true, t: "Llego un día antes",
+                    s: "Check-in desde las 3:00 PM de la víspera. Duermes ahí y arrancas descansado." },
+                ].map((o) => {
+                  const activa = nocheExtra === o.extra;
+                  const dif = o.extra && cotizacion
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra: true, pct })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra: false, pct })?.total ?? 0)
+                    : 0;
+                  return (
+                    <button key={o.t} type="button" onClick={() => setNocheExtra(o.extra)}
+                      className={`w-full text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      <span className="flex items-start gap-2">
+                        <span className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
+                          {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-baseline justify-between gap-3">
+                            <span className="font-dm text-sm text-negro/85 font-medium">{o.t}</span>
+                            {o.extra && dif > 0 && (
+                              <span className="font-dm text-[12px] text-dorado whitespace-nowrap">+{fmx(dif)}</span>
+                            )}
+                          </span>
+                          <span className="block font-dm text-[11px] text-negro/50 leading-snug mt-0.5">{o.s}</span>
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {nocheExtra && fecha && (
+                <p className="font-dm text-[12px] text-verde-selva mt-3 border-t border-negro/8 pt-3">
+                  {/* La entrada es el día ANTERIOR al primer tour: esa es toda
+                    la gracia de la noche extra. */}
+                  Entras el {(() => {
+                    const d = new Date(`${fecha}T12:00:00`);
+                    d.setDate(d.getDate() - 1);
+                    const t = d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+                    return t.charAt(0).toUpperCase() + t.slice(1);
+                  })()} desde las 3:00 PM — un día antes de tu primer tour.
+                </p>
+              )}
+            </section>
+
             {/* Habitación */}
             <section className="bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Tu habitación</h2>
@@ -478,8 +538,8 @@ export default function ReservarPaquetePage() {
                   // La diferencia se calcula con las tarifas reales, así que
                   // sube según cuánta gente duerma en la habitación.
                   const dif = o.m && cotizacion
-                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, reparto, pct })?.total ?? 0)
-                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, reparto, pct })?.total ?? 0)
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, reparto, nocheExtra, pct })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, reparto, nocheExtra, pct })?.total ?? 0)
                     : 0;
                   return (
                     <button key={o.t} type="button" onClick={() => setVistaMontana(o.m)}

@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
       // (`costoHotelPorNoche`): si el reparto no cuadra con la gente, se ignora
       // y se usa el automático. El importe nunca sale del navegador.
       reparto:       paqueteDetails?.reparto,
+      // Llegar la víspera: suma una noche de hotel al total.
+      nocheExtra:    paqueteDetails?.nocheExtra,
       pct,
     });
     if (!cobro) {
@@ -83,6 +85,8 @@ export async function POST(req: NextRequest) {
         // qué eligió el cliente, y el reparto de habitaciones se perdía.
         tourElegido:   String(paqueteDetails?.tourElegido || ""),
         repartoHab:    Array.isArray(paqueteDetails?.reparto) ? paqueteDetails.reparto.join("+") : "",
+        nocheExtra:    cobro.nocheExtra ? "sí — entra la víspera, check-in 3 PM" : "no",
+        nochesHotel:   String(cobro.nochesTotales),
         producto:      "paquete",
         paquetePct:    String(pct),
         totalCompleto: String(cobro.total),
