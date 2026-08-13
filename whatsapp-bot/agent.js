@@ -318,7 +318,10 @@ const tools = [
   },
   {
     name: "consultar_reserva",
-    description: "Consulta el estado de una reserva por su folio (ej: HPXXXX).",
+    description:
+      "Consulta una reserva por su folio (ej: HPXXXX). Devuelve el tour, la fecha, las personas Y EL ESTADO DEL PAGO: `pagado`, `saldo`, `liquidado` y un `resumenPago` ya redactado. " +
+      "⚠️ `status: \"paid\"` significa RESERVA CONFIRMADA, no que ya pagó todo: quien reserva en el sitio paga solo el anticipo del 30 %. " +
+      "SIEMPRE dile al cliente cuánto pagó y cuánto le falta — usa `resumenPago` tal cual. Nunca le digas que su reserva está \"pagada\" a secas si `saldo` es mayor que cero.",
     input_schema: {
       type: "object",
       properties: { folio: { type: "string" } },
@@ -820,6 +823,8 @@ Cuando alguien venga por *varios días* o quiera *dos o más recorridos*, NO le 
 2. Propón un recorrido por día con los tours que de verdad encajan, y di el precio de cada uno y el total. Un tour de día completo por día — no metas dos tours pesados el mismo día.
    📍 *Al nombrar un recorrido, di SIEMPRE qué destinos visita*, no solo el nombre. "Ruta Acuática" no le dice nada a nadie; "Ruta Acuática — Puente de Dios, Hacienda Los Gómez y Siete Cascadas" sí. Vale para recomendaciones, itinerarios y listas: el cliente elige por los LUGARES, no por el nombre comercial.
    ⭐ *La Expedición Tamul es nuestro tour más pedido y el que más gusta.* Si el cliente quiere cascadas, "conocer lo más posible" o no tiene una preferencia marcada, ese va en el itinerario — salvo que él pida otra cosa o no le encaje (es de dificultad media y día completo). Va a la Cascada de Tamul, que es LA cascada de la región: si armas un plan de cascadas sin ella, el cliente lo va a pedir después.
+⚠️ *NUNCA digas que una reserva está "pagada" sin mirar el saldo.* Quien reserva en el sitio paga SOLO el anticipo del 30 %; el resto se liquida el día del tour. Al consultar un folio, di SIEMPRE las dos cifras: lo que ya pagó y lo que le falta. La herramienta te lo devuelve ya redactado en el campo resumenPago — úsalo tal cual.
+
 3. *El hospedaje es OPCIONAL y así se lo dices.* Ofrécelo como opción, nunca como requisito: "si quieres, te paso opciones de hospedaje en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que *pasamos por él a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no*.
    Si le interesa: consulta *disponibilidad_habitaciones* (checkin + noches), enséñale las libres, y cuando elija una, *SÍ puedes meterla en la misma cotización* — pasa el objeto *hospedaje* (interesado, habitacion, checkin, checkout, noches, habitaciones) a *cotizar_paquete_personalizado*. Va en el mismo folio y en el mismo correo que los tours. NUNCA le digas que el hospedaje se cotiza aparte ni que "el equipo lo confirma después".
    🎁 *Cada TERCERA noche va por nuestra cuenta.* Con 3 noches paga 2, con 6 paga 4. Menciónalo al ofrecer el hospedaje — es un argumento fuerte para que se queden una noche más. El sistema aplica el descuento solo; tú NO lo calcules.
