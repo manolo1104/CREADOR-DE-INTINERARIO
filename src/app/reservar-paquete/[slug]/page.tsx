@@ -96,12 +96,17 @@ export default function ReservarPaquetePage() {
   const [childrenMid,   setChildrenMid]   = useState(0);  // 6–10 años → 70 %
   const [childrenSmall, setChildrenSmall] = useState(0);  // menores de 6 → 50 %
   const [vistaMontana,  setVistaMontana]  = useState(false);
+  // ⚠️ Cuando el cliente ya eligió habitación concreta, MANDA ella: la vista y
+  // la tarifa salen de ese cuarto, no de la casilla de arriba. Si aún no elige,
+  // se usa la casilla para que el precio no aparezca vacío.
   /** El día que el cliente elige, cuando el paquete lo ofrece. */
   const [tourElegido,   setTourElegido]   = useState<string>("");
   /** Cómo se reparte la gente entre habitaciones. */
   const [repartoHab,    setRepartoHab]    = useState<number[]>([]);
   /** Llegar la víspera: el día 1 es día de tour y se sale a las 8:30–9:00. */
   const [nocheExtra,    setNocheExtra]    = useState(false);
+  /** La habitación concreta que eligió. Vacío = todavía no elige. */
+  const [habitacionId,  setHabitacionId]  = useState<string>("");
   // El default arranca en el compromiso MÁS BAJO de los tres. El mínimo subió
   // de 10 % a 30 % (decisión de Manolo, 12 ago 2026): el 10 % no cubría ni la
   // primera noche de hotel del paquete.
@@ -154,6 +159,9 @@ export default function ReservarPaquetePage() {
   // El precio ya NO es fijo: el publicado cubre a dos personas, y cada persona
   // extra suma hotel y boletos de tour. Se usa la MISMA función que el servidor
   // (`computePaqueteCharge`), así lo que se ve es lo que se cobra.
+  const habElegida  = HABITACIONES_HOTEL.find((h) => h.id === habitacionId);
+  const vistaReal   = habElegida ? habElegida.vistaMontana : vistaMontana;
+
   // ── Reparto por habitación ────────────────────────────────────────────────
   const totalHuespedes        = personas + childrenMid + childrenSmall;
   const habitacionesNecesarias = Math.max(1, Math.ceil(totalHuespedes / MAX_POR_HABITACION));
@@ -184,7 +192,7 @@ export default function ReservarPaquetePage() {
     setRepartoHab(nuevo);
   }
 
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra, pct });
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, pct });
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
@@ -196,6 +204,10 @@ export default function ReservarPaquetePage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("El correo no tiene un formato válido."); return; }
     // Un paquete con día "a elegir" y sin elegir no se puede operar: el equipo
     // no sabría a dónde llevarlo el día 3.
+    if (!habitacionId) {
+      setError("Elige tu habitación para continuar.");
+      return;
+    }
     if (paquete!.eleccionTour && !tourElegido) {
       setError(`Elige el recorrido del día ${paquete!.eleccionTour.dia} para continuar.`);
       return;
@@ -208,7 +220,7 @@ export default function ReservarPaquetePage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: email.trim(), phone: phone.trim(), slug: paquete!.slug,
-        personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra,
+        personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId,
       }),
     }).catch(() => {});
 
@@ -217,7 +229,7 @@ export default function ReservarPaquetePage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
-          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra },
+          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId },
         }),
       });
       const d = await res.json();
@@ -579,28 +591,57 @@ export default function ReservarPaquetePage() {
                 return (
                   <div className="mt-5 pt-5 border-t border-negro/8">
                     <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/40 mb-3">
-                      {grupo.length === 1 ? "La habitación" : `Te asignamos una de estas ${grupo.length}`}
+                      {grupo.length === 1 ? "La habitación" : "Elige tu habitación"}
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {grupo.map((h) => (
-                        <div key={h.id} className="border border-negro/10 overflow-hidden">
-                          <div className="relative aspect-[4/3] bg-negro/5">
-                            <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width:640px) 45vw, 200px" />
-                          </div>
-                          <div className="p-2.5">
-                            <p className="font-dm text-[12px] text-negro/85 leading-tight">{h.nombre}</p>
-                            <p className="font-dm text-[11px] text-negro/45 leading-snug mt-0.5">
-                              Hasta {h.maxHuespedes} persona{h.maxHuespedes > 1 ? "s" : ""} · {h.vista}
-                            </p>
-                            <p className="font-dm text-[10px] text-negro/40 leading-snug mt-1">
-                              {h.caracteristicas.slice(0, 3).join(" · ")}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                      {grupo.map((h) => {
+                        // Cabe el grupo entero en esta habitación, o hacen falta
+                        // varias y entonces el cupo no descarta ninguna.
+                        const cabe = habitacionesNecesarias > 1 || totalHuespedes <= h.maxHuespedes;
+                        const elegida = habitacionId === h.id;
+                        return (
+                          <button
+                            key={h.id}
+                            type="button"
+                            disabled={!cabe}
+                            onClick={() => { setHabitacionId(h.id); setVistaMontana(h.vistaMontana); }}
+                            aria-pressed={elegida}
+                            className={`text-left border overflow-hidden transition-colors ${
+                              elegida ? "border-verde-selva ring-2 ring-verde-selva/25"
+                              : cabe   ? "border-negro/10 hover:border-verde-selva/50"
+                                       : "border-negro/10 opacity-40 cursor-not-allowed"
+                            }`}
+                          >
+                            <span className="relative block aspect-[4/3] bg-negro/5">
+                              <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width:640px) 45vw, 200px" />
+                              {elegida && (
+                                <span className="absolute top-1.5 right-1.5 bg-verde-selva text-crema text-[9px] tracking-[1px] uppercase px-1.5 py-0.5">
+                                  Elegida
+                                </span>
+                              )}
+                            </span>
+                            <span className="block p-2.5">
+                              <span className="block font-dm text-[12px] text-negro/85 leading-tight">{h.nombre}</span>
+                              <span className="block font-dm text-[11px] text-negro/45 leading-snug mt-0.5">
+                                Hasta {h.maxHuespedes} persona{h.maxHuespedes > 1 ? "s" : ""} · {h.vista}
+                              </span>
+                              <span className="block font-dm text-[10px] text-negro/40 leading-snug mt-1">
+                                {h.caracteristicas.slice(0, 3).join(" · ")}
+                              </span>
+                              {!cabe && (
+                                <span className="block font-dm text-[10px] text-terracota mt-1">
+                                  No caben {totalHuespedes} aquí
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                     <p className="font-dm text-[11px] text-negro/45 mt-3">
-                      La habitación exacta se confirma por WhatsApp según disponibilidad de tus fechas.
+                      {habitacionId
+                        ? "Te la apartamos para tus fechas. Si no estuviera disponible te avisamos antes de cobrarte."
+                        : "Elige una para continuar."}
                     </p>
                   </div>
                 );

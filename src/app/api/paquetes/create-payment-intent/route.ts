@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getPaquete } from "@/lib/paquetes";
+import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
+import { HABITACIONES } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
@@ -37,12 +39,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Porcentaje de pago inválido." }, { status: 400 });
     }
 
+    // La habitación concreta que eligió el cliente, validada contra el catálogo
+    // del hotel y contra las que este paquete ofrece.
+    const habitacionElegida = HABITACIONES_HOTEL.find(
+      (h) => h.id === paqueteDetails?.habitacionId && HABITACIONES.some((x) => x.id === h.id),
+    );
+
     const cobro = computePaqueteCharge({
       slug:          paqueteDetails?.slug,
       personas:      paqueteDetails?.personas,
       childrenMid:   paqueteDetails?.childrenMid,
       childrenSmall: paqueteDetails?.childrenSmall,
-      vistaMontana:  paqueteDetails?.vistaMontana,
+      // La vista sale de la habitación que eligió, no de una casilla suelta:
+      // el cliente elige "Jungla" y el precio TIENE que ser el de Jungla.
+      vistaMontana:  habitacionElegida ? habitacionElegida.vistaMontana : paqueteDetails?.vistaMontana,
       // Cómo eligió dormir el cliente. El servidor lo valida dentro
       // (`costoHotelPorNoche`): si el reparto no cuadra con la gente, se ignora
       // y se usa el automático. El importe nunca sale del navegador.
@@ -80,7 +90,7 @@ export async function POST(req: NextRequest) {
         tourDate:      fecha,
         adults:        String(cobro.adultos),
         children:      String(cobro.childrenMid + cobro.childrenSmall),
-        habitacion:    cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva",
+        habitacion:    habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
         // Sin esto el equipo recibe un paquete con un día "a elegir" sin saber
         // qué eligió el cliente, y el reparto de habitaciones se perdía.
         tourElegido:   String(paqueteDetails?.tourElegido || ""),
