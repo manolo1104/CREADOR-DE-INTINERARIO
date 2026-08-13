@@ -241,10 +241,14 @@ async function handleOwnerCommand(msg, body) {
     case "/status":
       return reply(`✅ Bot activo. Chats en pausa: ${pausedChats.size}.`);
     case "/help":
-      return reply("*Comandos:*\n*/confirma <folio>* — confirma reserva y avisa al cliente\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
+      return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume el anticipo del 30 %)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
     case "/confirma": {
-      if (!arg) return reply("Uso: /confirma HPXXXX");
-      return handleConfirma(reply, arg.toUpperCase());
+      if (!arg) return reply("Uso: /confirma HPXXXX [monto]\nEj: /confirma HPABC123 3750  (lo que entró)\nSin monto se asume el anticipo del 30 %.");
+      {
+        const [folioArg, montoArg] = arg.trim().split(/\s+/);
+        const monto = montoArg ? Number(String(montoArg).replace(/[^\d.]/g, "")) : undefined;
+        return handleConfirma(reply, folioArg.toUpperCase(), monto);
+      }
     }
     case "/pausa": {
       const num = digitsOnly(arg) || digitsOnly(msg.to || "");
@@ -264,10 +268,22 @@ async function handleOwnerCommand(msg, body) {
   }
 }
 
-async function handleConfirma(reply, folio) {
-  const res = await confirmarReserva(folio);
+async function handleConfirma(reply, folio, montoPagado) {
+  const res = await confirmarReserva(folio, montoPagado);
   if (!res.ok) return reply(`❌ ${res.data?.error || "No se pudo confirmar."}`);
   const b = res.data;
+  const mx = (n) => `$${Number(n).toLocaleString("es-MX")} MXN`;
+
+  // ⚠️ El desglose de lo pagado y lo pendiente va SIEMPRE. Antes el mensaje
+  // solo enseñaba el total y quien había dado el 30 % entendía que ya no debía
+  // nada — se enteraba el día del tour, delante del guía.
+  const dinero = b.liquidado
+    ? `💰 *Total:* ${mx(b.totalAmount)}\n` +
+      `✅ *Pagado:* ${mx(b.pagado)} — no queda nada pendiente\n\n`
+    : `💰 *Total del viaje:* ${mx(b.totalAmount)}\n` +
+      `✅ *Anticipo recibido:* ${mx(b.pagado)} (${b.pctPagado} %)\n` +
+      `🕒 *Saldo pendiente:* ${mx(b.saldo)} — se liquida el día del tour, en efectivo o con tarjeta\n\n`;
+
   const msgCliente =
     `🎉 *¡Tu reserva está CONFIRMADA!*\n\n` +
     `📋 *Folio:* ${b.folio}\n` +
@@ -275,12 +291,12 @@ async function handleConfirma(reply, folio) {
     `📅 *Fecha:* ${b.tourDate}\n` +
     `⏰ *Salida:* 8:30–9:00 AM\n` +
     `👥 *Personas:* ${b.adults} adulto(s)${b.children ? ` + ${b.children} niño(s)` : ""}\n` +
-    `💰 *Total:* $${Number(b.totalAmount).toLocaleString("es-MX")} MXN\n\n` +
+    dinero +
     `Te enviaremos el punto de encuentro exacto un día antes. Lleva ropa cómoda, calzado cerrado y protector solar. ¡Nos vemos pronto! 🌿`;
 
   if (b.customerPhone) {
     await client.sendMessage(`${digitsOnly(b.customerPhone)}@c.us`, msgCliente).catch(() => {});
-    return reply(`✅ ${folio} confirmada${b.yaConfirmada ? " (ya lo estaba)" : ""}. Mensaje enviado a ${b.customerName}.`);
+    return reply(`✅ ${folio} confirmada${b.yaConfirmada ? " (ya lo estaba)" : ""}. Registrado: ${mx(b.pagado)} de ${mx(b.totalAmount)}${b.saldo > 0 ? ` · falta ${mx(b.saldo)}` : " · liquidado"}. Mensaje enviado a ${b.customerName}.`);
   }
   return reply(`✅ ${folio} confirmada. ⚠️ Sin teléfono guardado — copia y envía manualmente:\n\n${msgCliente}`);
 }

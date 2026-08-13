@@ -46,8 +46,10 @@ async function cotizarPaquetePersonalizado(payload) {
   return post("/api/bot/paquete", payload);
 }
 
-async function confirmarReserva(folio) {
-  return post("/api/bot/confirm", { folio });
+async function confirmarReserva(folio, montoPagado) {
+  // `montoPagado` es lo que DE VERDAD entró. Sin él, el servidor asume el
+  // anticipo estándar en vez de dar la reserva por liquidada.
+  return post("/api/bot/confirm", { folio, montoPagado });
 }
 
 async function consultarReserva(folio) {
