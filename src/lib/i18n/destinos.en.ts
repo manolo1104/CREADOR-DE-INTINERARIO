@@ -119,11 +119,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
           {
             pregunta: "How tall is Tamul Waterfall?",
-            respuesta: "It drops 105 metres, the tallest in San Luis Potosí. In October the turquoise water contrasts with the orange foliage of the canyon.",
+            respuesta: "It drops 344 feet (105 m), the tallest in San Luis Potosí. In October the turquoise water contrasts with the orange foliage of the canyon.",
           },
         ],
       metaTitle: "Tamul Waterfall 2026 | Price, Hours and the Boat Trip",
-      metaDescription: "The tallest waterfall in San Luis Potosi (105 m), reached by paddling up the Tampaon river. $220 MXN entry plus $300 per person for the boat, cash only. Last departures at 2 PM.",
+      metaDescription: "The tallest waterfall in San Luis Potosi at 344 feet, reached by paddling up the Tampaon river. $220 MXN entry plus $300 per person for the boat, cash only. Last departures at 2 PM.",
       keywords: ["tamul waterfall", "cascada de tamul", "tamul boat trip", "how to get to tamul", "huasteca potosina waterfalls"],
     },
   },
@@ -148,7 +148,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
           {
             pregunta: "How deep is the Sótano de las Golondrinas?",
-            respuesta: "It has a 376-metre free fall and a total depth of up to 512 metres. The floor measures about three football pitches across.",
+            respuesta: "It has a 376-meter free fall and a total depth of up to 512 meters. The floor measures about three football pitches across.",
           },
           {
             pregunta: "How hard is the descent?",
@@ -854,7 +854,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     mejor_hora: "Morning",
     temporada_ideal: "Year-round (liveliest during Xantolo, 1–2 Nov)",
     advertencias: "The construction dates (1522–1523) come from local tradition and press reports, not a verified INAH plaque. Visiting hours are not published: check locally.",
-    como_llegar: "~1.5–2 h south of Ciudad Valles; in the centre of the town of Coxcatlán, facing the square",
+    como_llegar: "~1.5–2 h south of Ciudad Valles; in the center of the town of Coxcatlán, facing the square",
     que_llevar: [
       "comfortable shoes",
       "camera",
@@ -892,7 +892,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       "water",
     ],
     datos_curiosos: [
-      "The state promotes it for its 'vibrant turquoise colour' and for being only ~11 min from the town centre.",
+      "The state promotes it for its 'vibrant turquoise color' and for being only ~11 min from the town center.",
     ],
     errores_comunes: [
       "Confusing it with Poza de Rosendo (a different spot)",
@@ -1203,7 +1203,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       faqPrincipales: [
         {
           pregunta: "What is the Olla de la Luz?",
-          respuesta: "It's a large sinkhole (doline) roughly 800 metres across with a vertical drop of more than 120 metres, set high in the Xilitla cloud forest and crowned by the Cerro de la Luz.",
+          respuesta: "It's a large sinkhole (doline) roughly 800 meters across with a vertical drop of more than 120 meters, set high in the Xilitla cloud forest and crowned by the Cerro de la Luz.",
         },
         {
           pregunta: "How do you get to the Olla de la Luz?",
@@ -1211,7 +1211,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
         {
           pregunta: "How high up is it?",
-          respuesta: "The route runs between 1,950 and 2,300 metres above sea level, so the weather is cool and damp; bring a jacket and hiking shoes.",
+          respuesta: "The route runs between 1,950 and 2,300 meters above sea level, so the weather is cool and damp; bring a jacket and hiking shoes.",
         },
       ],
       metaTitle: "Olla de la Luz Xilitla | Cerro de la Luz Sinkhole",
@@ -1231,7 +1231,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     datos_curiosos: [
       "Its name comes from the damp ('salitre', saltpetre) that seeps down its walls.",
-      "It has five bolted climbing routes, a favourite with climbers in the region.",
+      "It has five bolted climbing routes, a favorite with climbers in the region.",
     ],
     errores_comunes: [
       "Visiting at the height of the rainy season (flood risk)",

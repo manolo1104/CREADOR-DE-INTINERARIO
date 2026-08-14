@@ -94,7 +94,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     subtitulo: "The definitive experience",
     duracion: "4 days / 3 nights",
     precioLabel: "per couple",
-    urgencia: "Three full days of tours — the families' favourite",
+    urgencia: "Three full days of tours — the families' favorite",
     perfiles: ["Families", "Groups", "The full experience"],
     tours: [
       "Surrealist Route — Edward James (Day 1)",
@@ -277,7 +277,7 @@ const HABITACIONES_EN: Record<string, { descripcion: string; vista: string }> = 
     vista: "Jungle / garden",
   },
   jungla: {
-    descripcion: "A room looking straight out at the mountain — the favourite for waking up to the sierra.",
+    descripcion: "A room looking straight out at the mountain — the favorite for waking up to the sierra.",
     vista: "Mountain",
   },
 };

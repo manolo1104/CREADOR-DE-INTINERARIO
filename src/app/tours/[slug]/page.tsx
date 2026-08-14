@@ -6,7 +6,7 @@ import { Metadata } from "next";
 import { TOURS_DB, tourDurRange } from "@/lib/tours";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TOUR_REQUISITOS, noIncluyeDe, queLlevarDe } from "@/lib/tourRequisitos";
-import { TOUR_FAQS } from "@/lib/tourFaqs";
+import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
 import { TourGallery } from "@/components/TourGallery";
 import { TourDeparture } from "@/components/TourDeparture";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
@@ -174,7 +174,9 @@ export default function TourDetailPage({ params }: Props) {
   // Temas que ya responden `faqEntries` arriba o la sección "Antes de ir":
   // repetirlos aquí solo infla la página y el JSON-LD.
   const FAQ_YA_CUBIERTO = /cuánto dura|qué incluye|debo llevar|punto de salida/i;
-  const faqsEspecificas = locale === "en" ? [] : (TOUR_FAQS[tour.id] ?? []);
+  // Estuvieron en `[]` en inglés mientras no había traducción; desde el 14 ago
+  // se resuelven por idioma, así que el JSON-LD inglés ya emite sus preguntas.
+  const faqsEspecificas = getTourFaqs(tour.id, locale);
   const faqPreguntasBase = new Set(faqEntries.map((f) => f.q.toLowerCase()));
   const faqTodas = [
     ...faqEntries,

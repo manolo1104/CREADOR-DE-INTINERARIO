@@ -777,17 +777,20 @@ const ES: InfoPracticaContent = {
 };
 
 const EN: InfoPracticaContent = {
-  metaTitle: "Practical Info — Getting There, When to Go and Where to Stay | Huasteca Potosina",
+  // "Practical Info" es calco de "Info Práctica": nadie en EE. UU. busca eso.
+  // Un americano busca "travel guide" y "how to get to". El inglés también usa
+  // "traveling" con una L, no la grafía británica que traía este bloque.
+  metaTitle: "Huasteca Potosina Travel Guide — How to Get There and When to Go",
   metaDescription:
-    "Everything you need before travelling to the Huasteca Potosina: flights from Mexico City, seasons, where to stay in Ciudad Valles and Xilitla, budget and local tips.",
-  ogTitle: "Practical Info — The Complete Guide to Travelling in the Huasteca Potosina",
-  ogDescription: "Getting there, when to go, where to stay and what it costs. All updated for 2026.",
-  twitterTitle: "Practical Info — Huasteca Potosina",
-  twitterDescription: "Getting there, when to go, where to stay, budget and what to pack.",
+    "Which airport to fly into, how long the drive really is, when the water runs bluest, what to pack and what things cost. Written by guides who live here.",
+  ogTitle: "The Huasteca Potosina Travel Guide, Written by Local Guides",
+  ogDescription: "Which airport, how long the drive is, when to come and what it costs. Updated for 2026.",
+  twitterTitle: "Huasteca Potosina Travel Guide",
+  twitterDescription: "Which airport, how long the drive is, when to come, budget and what to pack.",
 
   heroEyebrow: "Everything you need to know",
-  heroH1a: "Practical Travel ",
-  heroH1b: "Guide",
+  heroH1a: "The Huasteca Potosina ",
+  heroH1b: "Travel Guide",
   heroIntro:
     "Everything you need to get here, get around, find a bed and enjoy the Huasteca Potosina without any nasty surprises.",
   navLabels: [
@@ -871,7 +874,7 @@ const EN: InfoPracticaContent = {
       meses: "November — March",
       etiqueta: "The best season",
       puntos: [
-        "Waterfalls at their best flow and turquoise colour",
+        "Waterfalls at their best flow and turquoise color",
         "Cool weather (18–26°C), less humidity",
         "Sótano de Golondrinas: the swifts are at their most active",
         "Tamtoc: visitable without extreme heat",
@@ -883,7 +886,7 @@ const EN: InfoPracticaContent = {
       etiqueta: "Spring — Transition",
       puntos: [
         "Temperatures rise (28–38°C), especially in Tamuín",
-        "Waterfalls still flowing well, with intense colour",
+        "Waterfalls still flowing well, with intense color",
         "Holy Week: very busy, prices go up",
         "Ideal for Tamul and Las Pozas (lush foliage)",
       ],
@@ -931,7 +934,7 @@ const EN: InfoPracticaContent = {
   recomendacionEquipo: "Our team's recommendation",
   hotelNombre: "Hotel Paraíso Encantado Xilitla",
   hotelTexto:
-    "Our base of operations and the best option in Xilitla. 50 metres from the Surrealist Garden, with a pool and a restaurant serving Huastec cooking. We pick you up here — just as we do at any lodging in Xilitla or Ciudad Valles — at no extra cost.",
+    "Our base of operations and the best option in Xilitla. 50 meters from the Surrealist Garden, with a pool and a restaurant serving Huastec cooking. We pick you up here — just as we do at any lodging in Xilitla or Ciudad Valles — at no extra cost.",
   hotelItems: [
     "Door-to-door pickup between 8:00 and 9:00 AM",
     "Pool overlooking the canyon · Its own restaurant · AC and WiFi",
@@ -965,17 +968,17 @@ const EN: InfoPracticaContent = {
   porQueHospedarte: "Why stay here?",
   paraisoPorQue: [
     "Set off from the door: no transfer before the tour even starts",
-    "50 metres from Edward James's Surrealist Garden",
+    "50 meters from Edward James's Surrealist Garden",
     "Huastec breakfast included with the tours",
     "Pool overlooking the canyon and the jungle area",
     "Rooms with AC, WiFi and private bathroom",
     "24h reception to sort out the logistics",
   ],
   reservasTitulo: "Bookings",
-  reservasTexto: "Mention that you're travelling with us when you book and you get a preferential rate.",
+  reservasTexto: "Mention that you're traveling with us when you book and you get a preferential rate.",
   verEnGoogleMaps: "See on Google Maps →",
 
-  mapaIntroA: "The Huasteca Potosina is centred around ",
+  mapaIntroA: "The Huasteca Potosina is centered around ",
   mapaXilitla: "Xilitla",
   mapaIntroB: " and ",
   mapaIntroC: ". Every main destination is within 2 hours of the others. Key spots: ",
@@ -1089,7 +1092,7 @@ const EN: InfoPracticaContent = {
       dias: "7 Days",
       sub: "The whole Huasteca — for anyone who wants to get lost here",
       pasos: [
-        { dia: "Day 1", lugar: "Arrive in Valles · Explore the centre · Night in Valles" },
+        { dia: "Day 1", lugar: "Arrive in Valles · Explore the center · Night in Valles" },
         { dia: "Day 2", lugar: "Tamul + Sótano de las Huahuas tour · Night in Xilitla" },
         { dia: "Day 3", lugar: "Las Pozas · Xilitla Pueblo Mágico · Night in Xilitla" },
         { dia: "Day 4", lugar: "El Meco Waterfall tour · Night in Tamasopo or Valles" },
@@ -1326,7 +1329,7 @@ const EN: InfoPracticaContent = {
       },
       buena: {
         titulo: "Good season — a fine time to visit",
-        texto: "The water keeps its intense colour. Temperatures are rising — get going early in the mornings. Ideal for tours with natural shade, like Las Pozas or the rivers. Quieter than high season.",
+        texto: "The water keeps its intense color. Temperatures are rising — get going early in the mornings. Ideal for tours with natural shade, like Las Pozas or the rivers. Quieter than high season.",
         tours: ["Surrealist Route (Las Pozas)", "Stepped Paradise + Minas Viejas and Micos", "Water Route, Puente de Dios"],
       },
       caluroso: {

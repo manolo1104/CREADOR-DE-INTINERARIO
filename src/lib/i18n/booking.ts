@@ -972,7 +972,7 @@ const en: BookingMessages = {
     pagoSeguro: "Secure payment · Stripe",
     ayudaTitulo: "Not sure which one to pick?",
     ayudaTexto:
-      "Tell us how many days you have and who you're travelling with, and we'll tell you which tour suits you. No commitment.",
+      "Tell us how many days you have and who you're traveling with, and we'll tell you which tour suits you. No commitment.",
     verMiTourIdeal: "Find my ideal tour",
     preguntarWhatsapp: "Ask on WhatsApp",
     waAyuda: "Hi, I'd like to book a tour in the Huasteca. Can you help me choose?",
@@ -1105,7 +1105,7 @@ const en: BookingMessages = {
     trasladoTitulo: "Shall we drive you from your city?",
     trasladoSub: "Private round-trip transfer to Xilitla. Optional: if you're driving, skip it.",
     desdeRedondo: (precio) => `from ${precio} round trip`,
-    cuantosViajan: "How many are travelling?",
+    cuantosViajan: "How many are traveling?",
     menosPasajeros: "Fewer passengers",
     masPasajeros: "More passengers",
     trasladoLinea: (ciudad, pax) => `${ciudad} → Xilitla · round trip · ${pax} passenger${pax !== 1 ? "s" : ""}`,

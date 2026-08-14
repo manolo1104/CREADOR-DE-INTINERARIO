@@ -34,7 +34,7 @@ const SITE_URL = SITE;
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const title = locale === "en"
-    ? "Huasteca Potosina Tours — Waterfalls, Adventure & Nature | Mexico"
+    ? "Huasteca Potosina Tours — Mexico's Waterfall Country"
     : "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México";
   // La descripción anterior hablaba solo de la región y no daba ningún motivo
   // para hacer clic en nosotros y no en Viator. Ahora lleva quiénes somos, el

@@ -324,7 +324,7 @@ const EN: NosotrosContent = {
   fundadorP1:
     "Born in Xilitla, San Luis Potosí — the same Pueblo Mágico where Edward James's Las Pozas stands, at the heart of the Huasteca. He grew up surrounded by turquoise waterfalls, canyons and a landscape very few people in the world have the privilege of calling home.",
   fundadorP2:
-    "He studied Business Strategy and Transformation at the Tecnológico de Monterrey. On an academic exchange in Australia he travelled its coasts, the islands of Indonesia and the landscapes of New Zealand — and that's where everything changed: comparing those destinations with the Huasteca Potosina, he realised Mexico has places just as striking or more beautiful, but the world doesn't know it yet. That conviction was the spark for everything.",
+    "He studied Business Strategy and Transformation at the Tecnológico de Monterrey. On an academic exchange in Australia he traveled its coasts, the islands of Indonesia and the landscapes of New Zealand — and that's where everything changed: comparing those destinations with the Huasteca Potosina, he realized Mexico has places just as striking or more beautiful, but the world doesn't know it yet. That conviction was the spark for everything.",
   fundadorP3a: "At 22 he founded Huasteca Potosina Tours with one simple, powerful aim: ",
   fundadorP3bStrong: "to share the beauty of the Huasteca Potosina and make sure every traveller leaves with the best possible experience",
   fundadorP3b: " of the most extraordinary region in Mexico.",

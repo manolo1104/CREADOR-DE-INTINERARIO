@@ -22,11 +22,14 @@ export function generateMetadata(): Metadata {
   const nTours = TOURS_DB.length;
   const desde = Math.min(...TOURS_DB.map((t) => t.precio));
   const desdeTxt = `$${desde.toLocaleString("es-MX")}`;
+  // El inglés NO calca el título español. "Huasteca Potosina Tours 2026" no lo
+  // busca nadie en EE. UU.; "adventure tours Mexico" sí, y es la consulta a la
+  // que apunta esta página. La marca ya la lleva el título del home.
   const title = en
-    ? `Huasteca Potosina Tours 2026 · All-Inclusive from ${desdeTxt}`
+    ? `Adventure Tours in the Huasteca Potosina, Mexico · From ${desdeTxt}`
     : `Tours Huasteca Potosina 2026 · Todo Incluido desde ${desdeTxt}`;
   const description = en
-    ? `${nTours} guided tours with transport, breakfast, entrance fees and a NOM-09 certified guide. Free cancellation 48h before. Book with 30% deposit.`
+    ? `Waterfalls, caves, rafting and a surrealist jungle garden. ${nTours} guided day tours with transport, breakfast, entry fees, insurance and a certified guide. 30% deposit, free cancellation.`
     : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Aparta con el 30 %.`;
   return {
     title,
