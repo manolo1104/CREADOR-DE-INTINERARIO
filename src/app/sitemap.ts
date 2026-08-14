@@ -72,6 +72,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bilingual("/info-practica",    { changeFrequency: "monthly", priority: 0.7 }),
   ];
 
+  // Páginas SOLO en inglés, sin equivalente español (ni previsto).
+  // La sala de prensa se dirige a periodistas estadounidenses: un editor que
+  // busca "huasteca potosina press" tiene que encontrarla, así que va indexada.
+  const enOnlyStatic: MetadataRoute.Sitemap = [
+    { url: `${BASE}/en/press`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+  ];
+
   // Páginas solo en español (aún sin versión /en).
   // Regla: toda página pública e indexable debe estar aquí. Se excluyen a propósito
   // las transaccionales (/reservar-*, /guia/descarga, /confirmacion-tour), el panel
@@ -136,5 +143,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  return [...bilingualStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages, ...paquetePages];
+  return [...bilingualStatic, ...enOnlyStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages, ...paquetePages];
 }
