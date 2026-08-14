@@ -9,6 +9,7 @@ import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { RATING_DESTINO } from "@/lib/destinoData";
 import { toursQueIncluyen } from "@/lib/tourMapping";
 import { TOURS_DB } from "@/lib/tours";
+import { localizeTour } from "@/lib/i18n/localize";
 import { trackTourEvent } from "@/lib/tourTracker";
 
 // ── Colores por nivel de dificultad ──────────────────────────────────────────
@@ -41,7 +42,11 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
   // ningún itinerario, la tarjeta solo ofrece ver el lugar.
   const refIncluye = toursQueIncluyen(d.slug)[0];
   const ref        = refIncluye;
-  const tour       = ref ? TOURS_DB.find((t) => t.slug === ref.slug) : undefined;
+  const tourBase   = ref ? TOURS_DB.find((t) => t.slug === ref.slug) : undefined;
+  const tour       = tourBase ? localizeTour(tourBase, en ? "en" : "es") : undefined;
+  // El nombre venía de `tourMapping`, que está en español: la tarjeta en inglés
+  // decía "Included in Ruta Acuática". Se toma del catálogo ya localizado.
+  const tourNombre = tour ? tour.nombre.split("—")[0].trim() : ref?.nombre;
 
   const difKey = d.dificultad.toLowerCase() as DificultadKey;
   const difConfig = dificultadConfig[difKey] ?? dificultadConfig.media;
@@ -145,7 +150,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
             <>
               <p className="text-[10px] font-dm text-crema/45 leading-snug">
                 {en ? "Included in " : "Incluido en "}
-                <span className="text-crema/70">{ref!.nombre}</span>
+                <span className="text-crema/70">{tourNombre}</span>
               </p>
               <Link
                 href={lp(`/tours/${tour.slug}`)}

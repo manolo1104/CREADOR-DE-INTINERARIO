@@ -15,6 +15,15 @@ export interface TourTranslation {
   /** Textos de rutas/flota en el MISMO orden que tours.ts; duración y precios NO se traducen. */
   rutas?: { nombre?: string; descripcion?: string; destinos?: string[]; incluye?: string[] }[];
   flota?: { nombre?: string; capacidad?: string; descripcion?: string }[];
+  /**
+   * Elección obligatoria del recorrido, en el MISMO orden de opciones que
+   * tours.ts. Los `id` NO se traducen: son los que viajan al servidor.
+   * Sin esto, la única decisión que el carrito EXIGE para poder cobrar salía en
+   * español en medio de un checkout en inglés.
+   */
+  eleccion?: { titulo?: string; opciones?: { nombre?: string; nota?: string }[] };
+  /** Actividades opcionales, en el MISMO orden que tours.ts; el precio no se traduce. */
+  addOns?: { nombre?: string; descripcion?: string }[];
 }
 
 export const TOURS_EN: Record<string, TourTranslation> = {
@@ -254,6 +263,12 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   },
 
   "paraiso-escalonado-minas-micos": {
+    addOns: [
+      {
+        nombre: "The 7 Waterfalls Jump",
+        descripcion: "Guided cliff jumping at the Micos Waterfalls, with insurance and a guide certified in extreme sports and rescue.",
+      },
+    ],
     nombre: "Stepped Paradise — Minas Viejas & Micos Waterfalls",
     tagline: "Two natural gems, one perfect day to unwind",
     tipo: "Waterfalls & Wellness",
@@ -291,6 +306,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   },
 
   "ruta-acuatica-puente-de-dios": {
+    eleccion: {
+      titulo: "There isn't time for both in one day. Which do you prefer?",
+      opciones: [
+        { nombre: "Hacienda Los Gómez + Siete Cascadas", nota: "They're in the same spot, so you see both. What most people choose." },
+        { nombre: "Tamasopo Waterfalls", nota: "Wider, more open pools for a relaxed swim." },
+      ],
+    },
     nombre: "Water Route — Puente de Dios, Hacienda & Seven Waterfalls",
     tagline: "The most refreshing and complete journey in the region",
     tipo: "Water Adventure",

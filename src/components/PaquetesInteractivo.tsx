@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Check, Moon, MapPin, Star } from "lucide-react";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import type { Paquete } from "@/lib/paquetes";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
 
 export type { Paquete };
 
@@ -60,6 +62,8 @@ function PaqueteCard({
   p: Paquete;
   estado: "normal" | "destacado" | "atenuado";
 }) {
+  const { locale, lp } = useLocale();
+  const t = getPaquetesInteractivoUI(locale);
   const totalValor = p.valor.reduce(
     (acc, v) => acc + parseInt(v.precio.replace(/[^0-9]/g, ""), 10),
     0
@@ -86,7 +90,7 @@ function PaqueteCard({
       {estado === "destacado" && (
         <div className="absolute top-4 left-4 z-10 bg-verde-selva text-crema text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-lima animate-pulse" />
-          Tu recomendado
+          {t.tuRecomendado}
         </div>
       )}
 
@@ -145,7 +149,7 @@ function PaqueteCard({
         {p.tours.length > 0 && (
           <div className="mb-4">
             <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2 flex items-center gap-1.5">
-              <MapPin className="w-3 h-3" /> Tours incluidos
+              <MapPin className="w-3 h-3" /> {t.toursIncluidos}
             </p>
             <ul className="space-y-1.5">
               {p.tours.map((t) => (
@@ -159,7 +163,7 @@ function PaqueteCard({
         )}
 
         <div className="mb-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">Qué incluye</p>
+          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">{t.queIncluye}</p>
           <ul className="space-y-1.5">
             {p.incluye.map((item) => (
               <li key={item} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
@@ -172,7 +176,7 @@ function PaqueteCard({
 
         <details className="mb-5 border border-white/10">
           <summary className="cursor-pointer px-3 py-2.5 text-[10px] tracking-[1px] uppercase font-dm text-crema/50 hover:text-crema transition-colors list-none flex items-center justify-between">
-            Ver desglose de valor incluido
+            {t.verDesglose}
             <span className="text-verde-vivo text-base leading-none">+</span>
           </summary>
           <div className="border-t border-white/8 px-3 py-3 space-y-2">
@@ -183,11 +187,11 @@ function PaqueteCard({
               </div>
             ))}
             <div className="flex justify-between text-[11px] font-dm border-t border-white/8 pt-2 mt-1">
-              <span className="text-crema/55">Valor total</span>
+              <span className="text-crema/55">{t.valorTotal}</span>
               <span className="text-crema/80 font-medium line-through">${totalValor.toLocaleString()} MXN</span>
             </div>
             <div className="flex justify-between text-[12px] font-dm font-medium">
-              <span className="text-verde-vivo">Precio paquete</span>
+              <span className="text-verde-vivo">{t.precioPaquete}</span>
               <span className="text-dorado">${p.precio.toLocaleString()} MXN</span>
             </div>
           </div>
@@ -196,14 +200,14 @@ function PaqueteCard({
 
       <div className="mt-auto px-6 pb-6">
         <Link
-          href={`/paquetes/${p.slug}`}
+          href={lp(`/paquetes/${p.slug}`)}
           className="flex items-center justify-center gap-2 w-full mb-3 py-3 text-[10px] tracking-[2px] uppercase font-dm border border-verde-selva/40 text-verde-vivo hover:border-verde-vivo hover:bg-verde-selva/10 transition-colors"
         >
-          Ver el paquete día por día →
+          {t.verDiaPorDia}
         </Link>
         <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
         <p className="text-center text-[9px] text-crema/25 font-dm mt-3">
-          Reserva por WhatsApp o con tarjeta · Cancelación flexible
+          {t.reservaFlexible}
         </p>
       </div>
     </article>
@@ -212,32 +216,30 @@ function PaqueteCard({
 
 // ── Quiz — idea 4 ─────────────────────────────────────────────────
 
-const NOCHES_OPTS = ["2 noches", "3 noches", "4 noches"] as const;
-const VIBE_OPTS   = ["Arte & naturaleza", "Aventura extrema", "Todo incluido"] as const;
+/**
+ * El quiz guarda el ÍNDICE de la respuesta, no su texto.
+ *
+ * Antes comparaba contra la cadena literal ("2 noches"): en inglés el botón dice
+ * "2 nights" y ninguna comparación casaba, así que el quiz se quedaba mudo y
+ * nunca recomendaba un paquete. El índice es el mismo en los dos idiomas.
+ */
+const PAQUETE_POR_NOCHES = ["aventura", "completo", "gran-huasteca"] as const;
 
-function getRecomendado(noches: string | null, _vibe: string | null): string | null {
-  if (!noches) return null;
-  if (noches === "2 noches") return "aventura";
-  if (noches === "3 noches") return "completo";
-  if (noches === "4 noches") return "gran-huasteca";
-  return null;
+function getRecomendado(nochesIdx: number | null): string | null {
+  return nochesIdx === null ? null : PAQUETE_POR_NOCHES[nochesIdx] ?? null;
 }
-
-const NOMBRE_PAQUETE: Record<string, string> = {
-  aventura: "Paquete Aventura",
-  completo: "Paquete Completo Huasteca",
-  "gran-huasteca": "Paquete Gran Huasteca",
-};
 
 // ── Main ─────────────────────────────────────────────────────────
 
 export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
-  const [noches, setNoches] = useState<string | null>(null);
-  const [vibe,   setVibe]   = useState<string | null>(null);
+  const { locale, lp } = useLocale();
+  const t = getPaquetesInteractivoUI(locale);
+  const [noches, setNoches] = useState<number | null>(null);
+  const [vibe,   setVibe]   = useState<number | null>(null);
   const [showSticky, setShowSticky] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const recomendado = getRecomendado(noches, vibe);
+  const recomendado = getRecomendado(noches);
   const needsVibe   = false; // la recomendación depende solo de las noches
 
   useEffect(() => {
@@ -264,25 +266,25 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
       <section className="bg-verde-profundo/10 border-y border-white/6 py-10 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-[9px] tracking-[4px] uppercase text-verde-vivo font-dm mb-2">
-            ✦ Encuentra tu paquete ideal
+            {t.quizEyebrow}
           </p>
           <h2 className="font-cormorant font-light text-crema mb-8" style={{ fontSize: "clamp(20px,3vw,30px)" }}>
-            Dos preguntas, <em className="shimmer-gold">un paquete perfecto</em>
+            {t.quizH2a}<em className="shimmer-gold">{t.quizH2b}</em>
           </h2>
 
           <div className="space-y-6">
             {/* Q1 */}
             <div>
               <p className="text-[10px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
-                ¿Cuántas noches tienes disponibles?
+                {t.quizP1}
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                {NOCHES_OPTS.map((opt) => (
+                {t.nochesOpts.map((opt, i) => (
                   <button
                     key={opt}
-                    onClick={() => { setNoches(noches === opt ? null : opt); setVibe(null); }}
+                    onClick={() => { setNoches(noches === i ? null : i); setVibe(null); }}
                     className={`px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm border transition-all duration-200 ${
-                      noches === opt
+                      noches === i
                         ? "bg-dorado text-negro border-dorado"
                         : "border-white/20 text-crema/60 hover:border-dorado/50 hover:text-crema"
                     }`}
@@ -294,17 +296,17 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
             </div>
 
             {/* Q2 */}
-            <div className={`transition-opacity duration-300 ${noches ? "opacity-100" : "opacity-30 pointer-events-none"}`}>
+            <div className={`transition-opacity duration-300 ${noches !== null ? "opacity-100" : "opacity-30 pointer-events-none"}`}>
               <p className="text-[10px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
-                ¿Qué tipo de experiencia buscas?
+                {t.quizP2}
               </p>
               <div className="flex flex-wrap gap-2 justify-center">
-                {VIBE_OPTS.map((opt) => (
+                {t.vibeOpts.map((opt, i) => (
                   <button
                     key={opt}
-                    onClick={() => setVibe(vibe === opt ? null : opt)}
+                    onClick={() => setVibe(vibe === i ? null : i)}
                     className={`px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm border transition-all duration-200 ${
-                      vibe === opt
+                      vibe === i
                         ? "bg-verde-selva text-crema border-verde-selva"
                         : "border-white/20 text-crema/60 hover:border-verde-vivo/50 hover:text-crema"
                     }`}
@@ -316,17 +318,21 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
             </div>
 
             {/* Resultado */}
-            {noches && (
+            {noches !== null && (
               <div className="animate-fade-in">
                 {needsVibe ? (
                   <p className="text-crema/40 font-dm text-sm">
-                    ↑ Elige el tipo de experiencia para ver tu recomendación
+                    {t.eligeTipo}
                   </p>
                 ) : recomendado ? (
                   <div className="border border-dorado/30 bg-dorado/8 px-6 py-4 max-w-sm mx-auto">
-                    <p className="text-[9px] tracking-[2px] uppercase text-dorado/70 font-dm mb-1">Tu paquete ideal</p>
-                    <p className="font-cormorant text-dorado text-xl font-light">{NOMBRE_PAQUETE[recomendado]}</p>
-                    <p className="text-[10px] text-crema/40 font-dm mt-1">Mira el paquete destacado ↓</p>
+                    <p className="text-[9px] tracking-[2px] uppercase text-dorado/70 font-dm mb-1">{t.tuPaqueteIdeal}</p>
+                    {/* El nombre sale del propio catálogo ya localizado, no de
+                        una tabla aparte que había que mantener a mano. */}
+                    <p className="font-cormorant text-dorado text-xl font-light">
+                      {paquetes.find((p) => p.id === recomendado)?.nombre}
+                    </p>
+                    <p className="text-[10px] text-crema/40 font-dm mt-1">{t.miraDestacado}</p>
                   </div>
                 ) : null}
               </div>
@@ -353,13 +359,13 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
       >
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
           <span className="flex-shrink-0 text-[9px] tracking-[2px] uppercase text-crema/25 font-dm hidden sm:block mr-1">
-            Reservar:
+            {t.reservarLabel}
           </span>
           {paquetes.map((p) => (
             <a
               key={p.id}
               href={`https://wa.me/524891251458?text=${encodeURIComponent(
-                `Hola, me interesa el ${p.nombre} ($${p.precio.toLocaleString("es-MX")} MXN). ¿Tienen disponibilidad?`
+                t.waPaquete(p.nombre, `$${p.precio.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`)
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -371,7 +377,7 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
             >
               <div className="min-w-0">
                 <p className={`text-[9px] tracking-[1.5px] uppercase font-dm font-medium leading-none mb-0.5 ${p.destacado ? "text-dorado" : "text-crema/50"}`}>
-                  {p.destacado ? "★ " : ""}{p.nombre.replace("Paquete ", "")}
+                  {p.destacado ? "★ " : ""}{p.nombre.replace(/^Paquete |\s*Package$/g, "")}
                 </p>
                 <p className={`font-cormorant leading-none ${p.destacado ? "text-dorado" : "text-crema/70"}`} style={{ fontSize: "15px" }}>
                   ${p.precio.toLocaleString("es-MX")}

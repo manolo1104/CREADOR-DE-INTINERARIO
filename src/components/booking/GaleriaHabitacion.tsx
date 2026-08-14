@@ -5,7 +5,9 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
 import { bloquearScroll } from "@/lib/scrollLock";
-import type { Habitacion } from "@/lib/habitaciones";
+import { caracteristicasHabitacion, vistaHabitacion, type Habitacion } from "@/lib/habitaciones";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 
 /**
  * Fotos del hotel que se enseñan junto a la habitación.
@@ -15,13 +17,13 @@ import type { Habitacion } from "@/lib/habitaciones";
  * que la alberca está dentro de su habitación.
  */
 const AREAS_HOTEL = [
-  { src: "/imagenes/hotel-paraiso-encantado/hero.jpg",      alt: "Hotel Paraíso Encantado" },
-  { src: "/imagenes/hotel-paraiso-encantado/terraza.jpg",   alt: "Terraza del hotel" },
-  { src: "/imagenes/hotel-paraiso-encantado/gallery-1.jpg", alt: "Áreas del hotel" },
-  { src: "/imagenes/hotel-paraiso-encantado/gallery-2.jpg", alt: "Áreas del hotel" },
-  { src: "/imagenes/hotel-paraiso-encantado/gallery-3.jpg", alt: "Áreas del hotel" },
-  { src: "/imagenes/hotel-paraiso-encantado/gallery-4.jpg", alt: "Áreas del hotel" },
-  { src: "/imagenes/hotel-paraiso-encantado/gallery-5.jpg", alt: "Áreas del hotel" },
+  { src: "/imagenes/hotel-paraiso-encantado/hero.jpg",      alt: "altHotel" as const },
+  { src: "/imagenes/hotel-paraiso-encantado/terraza.jpg",   alt: "altTerraza" as const },
+  { src: "/imagenes/hotel-paraiso-encantado/gallery-1.jpg", alt: "altAreas" as const },
+  { src: "/imagenes/hotel-paraiso-encantado/gallery-2.jpg", alt: "altAreas" as const },
+  { src: "/imagenes/hotel-paraiso-encantado/gallery-3.jpg", alt: "altAreas" as const },
+  { src: "/imagenes/hotel-paraiso-encantado/gallery-4.jpg", alt: "altAreas" as const },
+  { src: "/imagenes/hotel-paraiso-encantado/gallery-5.jpg", alt: "altAreas" as const },
 ];
 
 interface Foto { src: string; alt: string; etiqueta: string }
@@ -41,6 +43,8 @@ export function GaleriaHabitacion({
 }) {
   const [i, setI] = useState(0);
   const [montado, setMontado] = useState(false);
+  const { locale } = useLocale();
+  const t = getBooking(locale).galeria;
 
   useEffect(() => setMontado(true), []);
   useEffect(() => { if (abierta) setI(0); }, [abierta, habitacion?.id]);
@@ -48,8 +52,8 @@ export function GaleriaHabitacion({
 
   const fotos: Foto[] = habitacion
     ? [
-        { src: habitacion.imagen, alt: habitacion.nombre, etiqueta: habitacion.nombre },
-        ...AREAS_HOTEL.map((f) => ({ ...f, etiqueta: "Áreas del hotel" })),
+        { src: habitacion.imagen, alt: habitacion.nombre, etiqueta: t.etiquetaHabitacion },
+        ...AREAS_HOTEL.map((f) => ({ src: f.src, alt: t[f.alt], etiqueta: t.etiquetaAreas })),
       ]
     : [];
 
@@ -81,11 +85,11 @@ export function GaleriaHabitacion({
         <div className="min-w-0">
           <p className="font-cormorant text-xl leading-tight truncate">{habitacion.nombre}</p>
           <p className="font-dm text-[11px] text-crema/50 mt-0.5">
-            {actual.etiqueta} · {i + 1} de {fotos.length}
+            {actual.etiqueta} · {t.contador(i + 1, fotos.length)}
           </p>
         </div>
         <button
-          type="button" onClick={onCerrar} aria-label="Cerrar galería"
+          type="button" onClick={onCerrar} aria-label={t.cerrar}
           className="w-10 h-10 flex-shrink-0 flex items-center justify-center text-crema/70 hover:text-crema transition-colors"
         >
           <X className="w-5 h-5" />
@@ -104,11 +108,11 @@ export function GaleriaHabitacion({
         />
         {fotos.length > 1 && (
           <>
-            <button type="button" onClick={() => ir(-1)} aria-label="Foto anterior"
+            <button type="button" onClick={() => ir(-1)} aria-label={t.fotoAnterior}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center bg-negro/50 text-crema hover:bg-negro/70 transition-colors rounded-full">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button type="button" onClick={() => ir(1)} aria-label="Foto siguiente"
+            <button type="button" onClick={() => ir(1)} aria-label={t.fotoSiguiente}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center bg-negro/50 text-crema hover:bg-negro/70 transition-colors rounded-full">
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -119,16 +123,16 @@ export function GaleriaHabitacion({
       {/* Datos del cuarto, siempre visibles: es lo que decide, no la foto. */}
       <div className="p-4 border-t border-crema/10">
         <p className="font-dm text-[12px] text-crema/70 leading-relaxed">
-          Hasta {habitacion.maxHuespedes} persona{habitacion.maxHuespedes !== 1 ? "s" : ""} · {habitacion.vista}
+          {t.hastaPersonas(habitacion.maxHuespedes)} · {vistaHabitacion(habitacion.vista, locale)}
         </p>
         <p className="font-dm text-[11px] text-crema/45 leading-relaxed mt-1">
-          {habitacion.caracteristicas.join(" · ")}
+          {caracteristicasHabitacion(habitacion.caracteristicas, locale).join(" · ")}
         </p>
         <div className="flex gap-1.5 overflow-x-auto mt-3 pb-1">
           {fotos.map((f, k) => (
             <button
               key={f.src} type="button" onClick={() => setI(k)}
-              aria-label={`Ver foto ${k + 1}`}
+              aria-label={t.verFoto(k + 1)}
               className={`relative w-14 h-11 flex-shrink-0 overflow-hidden border-2 transition-colors ${
                 k === i ? "border-dorado" : "border-transparent opacity-50 hover:opacity-100"
               }`}

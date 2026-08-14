@@ -26,8 +26,12 @@ export function SiteFooter() {
   // sería mandar a un 404.
   const explora = en
     ? [
+        { label: "Book a tour", href: lp("/reservar") },
+        { label: "All-inclusive packages", href: lp("/paquetes") },
         { label: "Tours", href: lp("/tours") },
         { label: "Destinations", href: lp("/destinos") },
+        { label: "About us", href: lp("/nosotros") },
+        { label: "Practical info", href: lp("/info-practica") },
       ]
     : [
         { label: "Reservar un tour", href: "/reservar" },

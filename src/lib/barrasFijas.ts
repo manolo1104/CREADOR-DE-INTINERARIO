@@ -37,7 +37,11 @@ export function hayBarraDeTour(pathname: string | null | undefined): boolean {
  */
 export function enPantallaDePago(pathname: string | null | undefined): boolean {
   const p = pathname ?? "";
-  return p.startsWith("/reservar/carrito")
+  // El `/en/` del carrito NO es opcional por gusto: esta regla se escribió
+  // cuando el carrito solo existía en español, así que `/en/reservar/carrito`
+  // no casaba y la barra "Ver carrito" salía flotando ENCIMA del botón de pagar
+  // en la versión en inglés — justo lo que el resto del archivo evita.
+  return /^\/(?:en\/)?reservar\/carrito/.test(p)
       || /^\/(?:en\/)?reservar-(tour|paquete)\//.test(p)
       || /\/checkout$/.test(p);
 }

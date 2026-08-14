@@ -35,7 +35,7 @@ export function GuideProfile() {
               </span>
             </div>
             <p className="text-[11px] text-crema/40 font-dm mb-2">
-              {en ? "8+ years exploring the Huasteca · Spanish & basic English" : "Más de 8 años recorriendo la Huasteca · Español e inglés básico"}
+              {en ? "8+ years exploring the Huasteca · Native Spanish · Fully bilingual guides available on request" : "Más de 8 años recorriendo la Huasteca · Español nativo · Guías completamente bilingües disponibles, pídelo al reservar"}
             </p>
             <p className="text-sm text-crema/60 font-dm leading-relaxed">
               {en

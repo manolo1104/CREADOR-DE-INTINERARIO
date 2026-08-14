@@ -169,7 +169,7 @@ export function TourCalculadora({ tourName, precioBase, tourSlug, tourId }: Prop
 
       {tourSlug ? (
         <Link
-          href={`/reservar-tour/${tourSlug}`}
+          href={`${en ? "/en" : ""}/reservar-tour/${tourSlug}`}
           onClick={() => {
             trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName, price: total, source: "widget" });
             trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName, adults: adultos, children: ninos, amount: total, source: "widget" });

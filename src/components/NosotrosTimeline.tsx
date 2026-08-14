@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getNosotros } from "@/lib/i18n/nosotros.en";
 
 type HitoItem = {
   año: string;
@@ -8,24 +10,42 @@ type HitoItem = {
   cta: { label: string; href: string } | null;
 };
 
-const HISTORIA: HitoItem[] = [
-  { año: "2010", hito: "Carlos Rodríguez, con 19 años, empieza a guiar informalmente a los primeros turistas que llegan a Tamuín preguntando por la Cascada de Tamul. Sin carretera asfaltada. Sin tarifa fija. Solo el conocimiento de cada vereda que nadie más tenía.", cta: null },
-  { año: "2012", hito: "Miguel Ángel Hernández se une como guía acuático. Lleva años pescando en el Tampaón con su padre y conoce cada corriente, cada roca y cada momento del día donde la luz entra diferente al cañón.", cta: null },
-  { año: "2014", hito: "José Laredo completa su primera bajada técnica al fondo del Sótano de las Golondrinas — uno de los primeros habitantes de la región en hacerlo con equipo certificado.", cta: { label: "El Sótano es parte de nuestro Tour Tamul →", href: "/tours/tour-tamul" } },
-  { año: "2015", hito: "Los tres guías se conocen en una excursión espontánea a Las Pozas de Edward James. La química es inmediata: experiencia local, seguridad técnica, pasión genuina. Deciden que hay algo que construir juntos.", cta: { label: "Visita Las Pozas con nosotros →", href: "/tours/tour-edward-james" } },
-  { año: "2016", hito: "Primera temporada operando como equipo informal. Una camioneta rentada, tres destinos y solo boca a boca. Sin publicidad, sin página web. El 80% de los clientes venían por recomendación de otros viajeros.", cta: null },
-  { año: "2017", hito: "Primer curso de primeros auxilios y rescate en agua rápida con Cruz Roja Mexicana. Queríamos que cada familia que subiera a nuestra camioneta supiera que estaban en las mejores manos posibles. — Carlos", cta: null },
-  { año: "2018", hito: "Primer tour privado con acceso nocturno al ejido de Tamul. Los ejidatarios — que conocen a Carlos desde niño — les abren la puerta antes del amanecer. Ese fue el origen del acceso exclusivo que ofrecemos hoy.", cta: { label: "Conoce el acceso exclusivo al Sótano →", href: "/tours/tour-tamul" } },
-  { año: "2019", hito: "Manolo Covarrubias funda formalmente Tours Huasteca Potosina y une al equipo de guías bajo una misma empresa. Primera camioneta propia, primera página en WhatsApp Business y primeras reservas en línea. Tres destinos se convierten en cinco.", cta: null },
-  { año: "2020", hito: "Pandemia. Cero turistas. En vez de cerrar, usamos el tiempo para certificarnos con SECTUR, capacitar al equipo y apoyar a comunidades locales con distribución de despensas.", cta: null },
-  { año: "2021", hito: "Certificación NOM-09 SECTUR completa del equipo. Expansión a Xilitla y Las Pozas. Alianza oficial con ejido Tamul para acceso exclusivo al amanecer al Sótano de las Huahuas.", cta: { label: "Este acceso exclusivo es parte de nuestro Tour Tamul →", href: "/tours/tour-tamul" } },
-  { año: "2022", hito: "Eliminación total de plásticos de un solo uso. Lanzamiento del kit de bienvenida con cantimplora reutilizable incluida en todos los tours.", cta: { label: "Conoce nuestro compromiso ambiental →", href: "/sustentabilidad-y-conservacion" } },
-  { año: "2023", hito: "492 reseñas verificadas en Google Maps con 4.9 estrellas de calificación. Primera temporada en que la demanda superó nuestra capacidad máxima.", cta: null },
-  { año: "2024", hito: "Creación del Fondo de Conservación Huasteca con 3 ejidos socios. Reforestación de 2.4 hectáreas de galería riparia en el Río Tampaón.", cta: { label: "Conoce el impacto de tu reserva →", href: "/sustentabilidad-y-conservacion" } },
-  { año: "2025", hito: "Lanzamiento de la plataforma digital con planificador de viajes con inteligencia artificial — el primero entre operadores turísticos de la región.", cta: { label: "Prueba el recomendador IA →", href: "/recomendar" } },
+/**
+ * La línea del tiempo se arma con el diccionario.
+ *
+ * Antes la lista vivía aquí, duplicada de `nosotros/page.tsx`. Al traducir había
+ * que acordarse de las dos copias, y la que se enseña de verdad es esta.
+ * Año y destino del enlace no dependen del idioma; el texto sí.
+ */
+const HISTORIA_BASE: { año: string; href: string | null }[] = [
+  { año: "2010", href: null },
+  { año: "2012", href: null },
+  { año: "2014", href: "/tours/expedicion-tamul" },
+  { año: "2015", href: "/tours/ruta-surrealista-edward-james" },
+  { año: "2016", href: null },
+  { año: "2017", href: null },
+  { año: "2018", href: "/tours/expedicion-tamul" },
+  { año: "2019", href: null },
+  { año: "2020", href: null },
+  { año: "2021", href: "/tours/expedicion-tamul" },
+  { año: "2022", href: "/sustentabilidad-y-conservacion" },
+  { año: "2023", href: null },
+  { año: "2024", href: "/sustentabilidad-y-conservacion" },
+  { año: "2025", href: "/recomendar" },
 ];
 
 export function NosotrosTimeline() {
+  const { locale, en, lp } = useLocale();
+  const t = getNosotros(locale);
+  // `/recomendar` y `/sustentabilidad-y-conservacion` siguen siendo solo-ES: en
+  // inglés el hito se queda sin enlace en vez de cruzar de idioma.
+  const HISTORIA: HitoItem[] = HISTORIA_BASE.map((h, i) => ({
+    año: h.año,
+    hito: t.historia[i].hito,
+    cta: h.href && t.historia[i].ctaLabel && !(en && /recomendar|sustentabilidad/.test(h.href))
+      ? { label: t.historia[i].ctaLabel!, href: lp(h.href) }
+      : null,
+  }));
   const containerRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(0);
   const [lineH, setLineH] = useState(0);

@@ -10,6 +10,8 @@ import {
   resumirCarrito,
   type CarritoItem,
 } from "@/lib/carrito";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 import { formatMXN } from "@/lib/tourBooking";
 import { hayBarraDeTour, enPantallaDePago } from "@/lib/barrasFijas";
 
@@ -26,6 +28,8 @@ import { hayBarraDeTour, enPantallaDePago } from "@/lib/barrasFijas";
 export function CarritoBar() {
   const pathname = usePathname();
   const [items, setItems] = useState<CarritoItem[]>([]);
+  const { locale, lp } = useLocale();
+  const t = getBooking(locale).barra;
   // El carrito vive en localStorage, que no existe en el servidor. Hasta que no
   // monta en el cliente no se pinta nada, o React se queja de hidratación.
   const [montado, setMontado] = useState(false);
@@ -64,18 +68,18 @@ export function CarritoBar() {
           <ShoppingBag className="w-5 h-5 text-dorado flex-shrink-0" aria-hidden="true" />
           <div className="min-w-0">
             <p className="font-dm text-[12px] text-crema/90 leading-tight truncate">
-              {items.length} {items.length === 1 ? "recorrido" : "recorridos"} · {formatMXN(total)} MXN
+              {t.resumen(items.length, formatMXN(total))}
             </p>
             <p className="font-dm text-[10px] text-crema/45 leading-tight">
-              Apartas con {formatMXN(anticipo)}
+              {t.apartasCon(formatMXN(anticipo))}
             </p>
           </div>
         </div>
         <Link
-          href="/reservar/carrito"
+          href={lp("/reservar/carrito")}
           className="flex-shrink-0 bg-dorado hover:bg-lima text-negro text-[10px] tracking-[2px] uppercase font-dm font-medium px-5 py-3 transition-colors"
         >
-          Ver carrito
+          {t.verCarrito}
         </Link>
       </div>
     </div>

@@ -6,6 +6,8 @@ import { Check, Plus, ShoppingBag } from "lucide-react";
 import { agregarAlCarrito } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
 import { useCarritoSlugs } from "./useCarritoSlugs";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 
 /**
  * Agrega un recorrido al carrito desde la propia tarjeta del catálogo, sin
@@ -33,13 +35,15 @@ export function BotonAgregarTour({
   porVehiculo?: boolean;
 }) {
   const router = useRouter();
+  const { locale, lp } = useLocale();
+  const t = getBooking(locale).barra;
   const enCarrito = useCarritoSlugs().has(tourSlug);
   const [recienAgregado, setRecienAgregado] = useState(false);
 
   function alPulsar() {
     // Ya lo lleva: el clic sirve para ir a cerrarlo, no para volver a meterlo.
     if (enCarrito) {
-      router.push("/reservar/carrito");
+      router.push(lp("/reservar/carrito"));
       return;
     }
     const item = itemDesdeSlug(tourSlug);
@@ -50,7 +54,7 @@ export function BotonAgregarTour({
   }
 
   const estado = recienAgregado ? "agregado" : enCarrito ? "dentro" : "fuera";
-  const texto  = estado === "agregado" ? "Agregado" : estado === "dentro" ? "En tu carrito" : "Carrito";
+  const texto  = estado === "agregado" ? t.agregado : estado === "dentro" ? t.enTuCarrito : t.carrito;
 
   return (
     <button
@@ -63,8 +67,8 @@ export function BotonAgregarTour({
       }`}
       aria-label={
         enCarrito
-          ? `${tourName} ya está en tu carrito — ir al carrito`
-          : `Agregar ${tourName} al carrito`
+          ? t.yaEstaEnCarrito(tourName)
+          : t.agregarAlCarrito(tourName)
       }
     >
       {estado === "fuera"    && <Plus className="w-3 h-3" aria-hidden="true" />}

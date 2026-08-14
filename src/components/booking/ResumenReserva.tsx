@@ -2,6 +2,8 @@
 
 import { Clock, MapPin, ShieldCheck, Camera } from "lucide-react";
 import { formatMXN, formatTourDate } from "@/lib/tourBooking";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 
 export interface RenglonResumen {
   nombre:    string;
@@ -46,17 +48,19 @@ export function ResumenReserva({
   saldo:   number;
   pct:     number;
 }) {
+  const { locale } = useLocale();
+  const t = getBooking(locale).resumen;
   const uno = items.length === 1;
   // La recogida solo se promete si el recorrido de verdad la incluye: el
   // rappel, el RZR y el buceo no llevan traslado.
   const conTraslado = items.some((i) =>
-    i.incluye.some((x) => /traslado|pasamos por|recogida/i.test(x)),
+    i.incluye.some((x) => /traslado|pasamos por|recogida|transport|pick[- ]?up|round[- ]?trip/i.test(x)),
   );
 
   return (
     <div className="border border-negro/10 bg-white p-5">
       <p className="text-[9px] tracking-[2px] uppercase text-negro/35 font-dm mb-4">
-        Resumen de tu reserva
+        {t.titulo}
       </p>
 
       {/* ── Qué se aparta ── */}
@@ -74,7 +78,7 @@ export function ResumenReserva({
               )}
             </div>
             <p className="font-dm text-[11px] text-negro/45 mt-0.5">
-              {i.fechaTexto ? i.fechaTexto : i.fecha ? formatTourDate(i.fecha) : "Falta la fecha"}
+              {i.fechaTexto ? i.fechaTexto : i.fecha ? formatTourDate(i.fecha, locale) : t.faltaLaFecha}
               {i.detalle ? ` · ${i.detalle}` : ""}
             </p>
             {(i.extras ?? []).length > 0 && (
@@ -83,7 +87,7 @@ export function ResumenReserva({
               </p>
             )}
             {i.eleccion && (
-              <p className="font-dm text-[11px] text-verde-selva mt-0.5">Elegiste: {i.eleccion}</p>
+              <p className="font-dm text-[11px] text-verde-selva mt-0.5">{t.elegiste(i.eleccion)}</p>
             )}
             {(i.addOns ?? []).map((a) => (
               <p key={a.nombre} className="flex justify-between font-dm text-[11px] text-negro/55 mt-0.5">
@@ -98,7 +102,7 @@ export function ResumenReserva({
       {/* ── Qué va incluido ── */}
       <div className="py-4 border-b border-negro/8">
         <p className="text-[9px] tracking-[2px] uppercase text-negro/35 font-dm mb-2.5">
-          Lo que va incluido
+          {t.loQueVaIncluido}
         </p>
         {uno ? (
           <ul className="space-y-1">
@@ -134,37 +138,37 @@ export function ResumenReserva({
       <div className="py-4 border-b border-negro/8 space-y-2">
         <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
           <Clock className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <span>Salida entre <strong className="text-negro/80">8:00 y 9:00 AM</strong>. Confirmamos tu hora exacta por WhatsApp.</span>
+          <span>{t.salidaEntre}<strong className="text-negro/80">{t.salidaEntreFuerte}</strong>{t.confirmamosHora}</span>
         </p>
         {conTraslado && (
           <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
             <MapPin className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-            <span>Pasamos por ti a tu hospedaje en <strong className="text-negro/80">Xilitla o Ciudad Valles</strong>.</span>
+            <span>{t.pasamosPorTi}<strong className="text-negro/80">{t.pasamosPorTiFuerte}</strong>.</span>
           </p>
         )}
         <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
           <ShieldCheck className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <span>Cancelas gratis hasta 48 h antes, con reembolso completo.</span>
+          <span>{t.cancelasGratis}</span>
         </p>
         <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
           <Camera className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <span>Fotos y video del recorrido, entregados el mismo día.</span>
+          <span>{t.fotosYVideo}</span>
         </p>
       </div>
 
       {/* ── Números ── */}
       <div className="pt-4 space-y-1.5">
         <p className="flex justify-between font-dm text-[13px] text-negro/60">
-          <span>Total del viaje</span>
+          <span>{t.totalDelViaje}</span>
           <strong className="text-negro/85">{formatMXN(total)} MXN</strong>
         </p>
         <p className="flex justify-between font-dm text-[13px]">
-          <span className="text-negro/60">Pagas hoy ({pct} %)</span>
+          <span className="text-negro/60">{t.pagasHoy(pct)}</span>
           <strong className="font-cormorant text-dorado text-xl leading-none">{formatMXN(pagaHoy)} MXN</strong>
         </p>
         {saldo > 0 && (
           <p className="flex justify-between font-dm text-[11px] text-negro/45">
-            <span>Saldo el día del primer recorrido</span>
+            <span>{t.saldoDia}</span>
             <span>{formatMXN(saldo)} MXN</span>
           </p>
         )}

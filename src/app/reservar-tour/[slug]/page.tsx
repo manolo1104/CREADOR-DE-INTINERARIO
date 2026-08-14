@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { asLocale, localePath } from "@/lib/i18n/config";
 
 /**
  * Adaptador. Esta URL ya no tiene pantalla propia: el carrito es la única
@@ -25,6 +27,9 @@ export default function ReservarTourRedirect({
   params: { slug: string };
   searchParams: { recuperar?: string };
 }) {
+  const locale = asLocale(headers().get("x-locale"));
+  const lp = (path: string) => localePath(path, locale);
+
   const recuperar = searchParams?.recuperar
     ? `recuperar=${encodeURIComponent(searchParams.recuperar)}`
     : "";
@@ -33,13 +38,15 @@ export default function ReservarTourRedirect({
   //    link como /reservar-tour/<slug>, que nunca existió; se reencaminan.
   //    Antes esto se hacía en cliente y pintaba un "Llevándote a tu paquete…".
   if (PAQUETES_DB.some((p) => p.slug === params.slug)) {
+    // Los paquetes siguen siendo solo-ES: el redirect va SIN prefijo a
+    // propósito, porque /en/reservar-paquete no existe todavía.
     redirect(`/reservar-paquete/${params.slug}${recuperar ? `?${recuperar}` : ""}`);
   }
 
   // 2. Tour que ya no existe: al catálogo, no a un 404. Un 404 aquí es una
   //    salida del embudo para alguien que venía con intención de reservar.
   if (!TOURS_DB.some((t) => t.slug === params.slug)) {
-    redirect("/reservar");
+    redirect(lp("/reservar"));
   }
 
   // 3. Lo normal: al carrito, con el recorrido dentro.
@@ -47,5 +54,5 @@ export default function ReservarTourRedirect({
   //    quiere: un 308 se cachea en el navegador del cliente para siempre y
   //    dejaría esta ruta congelada aunque algún día vuelva a tener pantalla.
   const qs = [`agregar=${params.slug}`, recuperar].filter(Boolean).join("&");
-  redirect(`/reservar/carrito?${qs}`);
+  redirect(`${lp("/reservar/carrito")}?${qs}`);
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { DestinoProductCard } from "@/components/DestinoProductCard";
+import { localizeDestino } from "@/lib/i18n/localize";
 
 // Agrupación por MUNICIPIO (campo `zona`). Orden: los municipios con más destinos
 // primero y luego alfabético. Los nombres de municipio NO se traducen (place names),
@@ -25,10 +26,18 @@ export default function DestinosClient() {
   const en = pathname === "/en" || pathname.startsWith("/en/");
   const [grupoActivo, setGrupoActivo] = useState("todos");
 
-  const gruposVisibles =
+  // ⚠️ Los grupos se arman a nivel de módulo desde `DESTINOS_DB`, que está en
+  // español. La ficha SÍ localizaba, pero el LISTADO no: en /en las 41 tarjetas
+  // salían con el nombre, la temporada y los días de apertura en español.
+  const gruposBase =
     grupoActivo === "todos"
       ? GRUPOS_CON_DATOS
       : GRUPOS_CON_DATOS.filter(g => g.key === grupoActivo);
+
+  const gruposVisibles = gruposBase.map((g) => ({
+    ...g,
+    destinos: g.destinos.map((d) => localizeDestino(d, en ? "en" : "es")),
+  }));
 
   let idx = 0;
 

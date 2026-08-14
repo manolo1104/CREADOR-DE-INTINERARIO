@@ -5,6 +5,8 @@ import { Lock, ShoppingBag } from "lucide-react";
 import { trackBeginCheckout } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 
 interface Props {
   tourSlug: string;
@@ -20,6 +22,8 @@ interface Props {
 
 export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar" }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
+  const { locale, en, lp } = useLocale();
+  const t = getBooking(locale).barra;
   // Esta barra es la ÚNICA de abajo en las fichas de tour: `CarritoBar` se
   // esconde aquí (ver `lib/barrasFijas.ts`) porque las dos vivían en `bottom-0`
   // y se tapaban. Así que si el visitante ya lleva recorridos, el acceso al
@@ -39,11 +43,11 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-negro/97 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
       <div className="flex-1 min-w-0">
-        <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">Desde</p>
+        <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">{t.desde}</p>
         <p className="font-cormorant text-dorado text-xl leading-none">
-          ${precio.toLocaleString("es-MX")}
+          ${precio.toLocaleString(en ? "en-US" : "es-MX")}
           <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">
-            {esVehiculo ? "MXN/vehículo" : "MXN/persona"}
+            {esVehiculo ? t.mxnVehiculo : t.mxnPersona}
           </span>
         </p>
       </div>
@@ -53,7 +57,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           target="_blank"
           rel="noopener noreferrer"
           onClick={trackWa}
-          aria-label="Preguntar por WhatsApp"
+          aria-label={t.preguntarWhatsapp}
           className="flex items-center justify-center w-11 h-11 bg-[#25D366] text-white flex-shrink-0 hover:brightness-110 transition-all"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
@@ -65,8 +69,8 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           lleva (si no, sería el mismo destino dos veces, uno al lado del otro). */}
       {llevaAlgo && !yaEnCarrito && (
         <Link
-          href="/reservar/carrito"
-          aria-label={`Ver tu carrito (${enCarrito.size})`}
+          href={lp("/reservar/carrito")}
+          aria-label={t.verTuCarrito(enCarrito.size)}
           className="flex items-center justify-center gap-1.5 w-11 h-11 border border-dorado/50 text-dorado flex-shrink-0 hover:bg-dorado/10 transition-colors"
         >
           <ShoppingBag className="w-4 h-4" aria-hidden="true" />
@@ -74,14 +78,14 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
         </Link>
       )}
       {yaEnCarrito ? (
-        <Link href="/reservar/carrito" className={ctaClass}>
+        <Link href={lp("/reservar/carrito")} className={ctaClass}>
           <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
-          En tu carrito
+          {t.enTuCarrito}
         </Link>
       ) : (
-        <Link href={`/reservar/carrito?agregar=${tourSlug}`} onClick={track} className={ctaClass}>
+        <Link href={lp(`/reservar/carrito?agregar=${tourSlug}`)} onClick={track} className={ctaClass}>
           <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          Agregar
+          {t.agregar}
         </Link>
       )}
     </div>

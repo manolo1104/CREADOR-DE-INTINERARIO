@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -6,32 +7,36 @@ import {
   Heart, Leaf, Star, CheckCircle2, MapPin, TrendingUp, TreePine, Quote,
 } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
+import { localizeTour } from "@/lib/i18n/localize";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { NosotrosNumeros } from "@/components/NosotrosNumeros";
 import { NosotrosTimeline } from "@/components/NosotrosTimeline";
+import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { getNosotros, type NosotrosContent } from "@/lib/i18n/nosotros.en";
 
-const SITE = "https://www.huasteca-potosina.com";
 const GOOGLE_REVIEWS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
 
-export const metadata: Metadata = {
-  title: "Quiénes Somos — Guías Locales Certificados | Tours Huasteca Potosina",
-  description: "Empresa familiar de guías nacidos en la Huasteca Potosina. 6+ años desde 2019, certificación NOM-09 SECTUR y el compromiso de mostrarte la región como ningún otro puede hacerlo.",
-  openGraph: {
-    title: "Quiénes Somos — Tours Huasteca Potosina",
-    description: "Guías locales certificados NOM-09 SECTUR. 6+ años desde 2019, 4.9 estrellas en Google, cero incidentes.",
-    url: `${SITE}/nosotros`,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-  },
-  twitter: { card: "summary_large_image", title: "Quiénes Somos — Tours Huasteca Potosina", description: "Guías locales certificados NOM-09 con 6+ años desde 2019. 4.9★ · 492 reseñas." },
-  alternates: { canonical: `${SITE}/nosotros` },
-};
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getNosotros(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl("/nosotros", locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+    },
+    twitter: { card: "summary_large_image", title: t.ogTitle, description: t.twitterDescription },
+    alternates: buildAlternates("/nosotros", locale),
+  };
+}
 
-const WA = "https://wa.me/524891251458?text=Hola%2C%20quisiera%20saber%20m%C3%A1s%20sobre%20el%20equipo.";
-
-const orgSchema = {
+const orgSchema = (t: NosotrosContent) => ({
   "@context": "https://schema.org",
   "@type": "TouristAgency",
   name: "Tours Huasteca Potosina",
@@ -40,7 +45,7 @@ const orgSchema = {
   image: `${SITE}/og-image.jpg`,
   telephone: "+524891251458",
   foundingDate: "2019",
-  description: "Operadora turística familiar con raíces en la Huasteca Potosina desde 2010. Guías locales certificados NOM-09 SECTUR que llevan a los viajeros a los rincones que ningún autobús turístico alcanza.",
+  description: t.orgDescription,
   priceRange: "$$$",
   currenciesAccepted: "MXN",
   paymentAccepted: "Cash, Credit Card, Debit Card",
@@ -62,15 +67,15 @@ const orgSchema = {
   ],
   aggregateRating: { "@type": "AggregateRating", ratingValue: 4.9, reviewCount: 492, bestRating: 5, worstRating: 1 },
   sameAs: [GOOGLE_REVIEWS_URL, "https://www.tripadvisor.com.mx/Search?q=Tours+Huasteca+Potosina+Xilitla"],
-};
+});
 
-const personSchemas = [
+const personSchemas = (t: NosotrosContent) => [
   {
     "@context": "https://schema.org",
     "@type": "Person",
     name: "Manolo Covarrubias",
-    jobTitle: "Fundador & CEO — Tours Huasteca Potosina",
-    description: "Nacido en Xilitla, SLP. Licenciado en Estrategia y Transformación de Negocios por el Tecnológico de Monterrey. Fundó Tours Huasteca Potosina a los 22 años con la misión de difundir la hermosura de la Huasteca Potosina y ofrecer la mejor experiencia posible a cada viajero.",
+    jobTitle: t.personas[0].jobTitle,
+    description: t.personas[0].description,
     birthPlace: { "@type": "Place", name: "Xilitla, San Luis Potosí, México" },
     nationality: "Mexican",
     alumniOf: { "@type": "EducationalOrganization", name: "Tecnológico de Monterrey" },
@@ -87,76 +92,49 @@ const personSchemas = [
     "@context": "https://schema.org",
     "@type": "Person",
     name: "Carlos Rodríguez",
-    jobTitle: "Guía de Turismo de Aventura — Principal",
-    description: "Creció en Tamuín y a los 14 años ya llevaba a sus primos a la Cascada de Tamul a pie. Primer guía certificado NOM-09 SECTUR de la región. 15+ años guiando en la Huasteca Potosina.",
+    jobTitle: t.personas[1].jobTitle,
+    description: t.personas[1].description,
     birthPlace: { "@type": "Place", name: "Tamuín, San Luis Potosí, México" },
     nationality: "Mexican",
     worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
     knowsAbout: ["Cascada de Tamul", "Sótano de las Golondrinas", "Cañón del Tampaón", "Huasteca Potosina", "Turismo de aventura"],
-    hasCredential: { "@type": "EducationalOccupationalCredential", name: "Guía de Turismo NOM-09 SECTUR", credentialCategory: "Certificación federal" },
+    hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[1].credential, credentialCategory: t.personas[1].credentialCategory },
   },
   {
     "@context": "https://schema.org",
     "@type": "Person",
     name: "Miguel Ángel Hernández",
-    jobTitle: "Guía Acuático — Especialista Río Tampaón",
-    description: "Creció pescando en el Río Tampaón. Certificación de rescate en aguas rápidas Cruz Roja Mexicana. Especialista en los recorridos en canoa y las rutas fluviales de la Huasteca.",
+    jobTitle: t.personas[2].jobTitle,
+    description: t.personas[2].description,
     birthPlace: { "@type": "Place", name: "Ciudad Valles, San Luis Potosí, México" },
     nationality: "Mexican",
     worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
     knowsAbout: ["Río Tampaón", "Rescate acuático", "Cascada de Tamul", "Sótano de las Huahuas", "Cañón del Tampaón"],
-    hasCredential: { "@type": "EducationalOccupationalCredential", name: "Rescate en Aguas Rápidas — Cruz Roja Mexicana", credentialCategory: "Certificación de rescate" },
+    hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[2].credential, credentialCategory: t.personas[2].credentialCategory },
   },
   {
     "@context": "https://schema.org",
     "@type": "Person",
     name: "José Laredo",
-    jobTitle: "Guía de Aventura Extrema — Rappel y Montaña",
-    description: "Uno de los primeros en descender al fondo del Sótano de las Golondrinas en modo técnico. Diseña los protocolos de seguridad de los tours de aventura extrema.",
+    jobTitle: t.personas[3].jobTitle,
+    description: t.personas[3].description,
     birthPlace: { "@type": "Place", name: "Ciudad Valles, San Luis Potosí, México" },
     nationality: "Mexican",
     worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
     knowsAbout: ["Rappel", "Sótano de las Golondrinas", "Cañones de la Huasteca Potosina", "Turismo extremo", "Seguridad en aventura"],
-    hasCredential: { "@type": "EducationalOccupationalCredential", name: "Guía de Turismo de Aventura NOM-09 SECTUR", credentialCategory: "Certificación federal" },
+    hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[3].credential, credentialCategory: t.personas[3].credentialCategory },
   },
 ];
 
-const NUMEROS = [
-  { num: "+10,000", label: "Viajeros guiados" },
-  { num: "15+",     label: "Años de experiencia local" },
-  { num: "4.9 ★",   label: "Calificación Google" },
-  { num: "0",       label: "Incidentes de seguridad" },
-];
 
-const GUIAS = [
-  {
-    nombre: "Carlos Rodríguez",
-    rol: "Guía Principal · Tamul & Sótano",
-    foto: "/guides/guia-1.png",
-    estrellas: "4.9", resenas: "492",
-    historia: "Creció en Tamuín, a 15 minutos de la Cascada de Tamul. A los 14 años ya llevaba a sus primos al río a pie porque no había carretera hasta allá. Fue el primer guía de la región en certificarse con SECTUR en la norma NOM-09 y hoy conoce cada piedra del Cañón del Tampaón, cada corriente del Sótano y cada sendero oculto que ningún autobús turístico verá jamás. Ha guiado más de 800 grupos sin un solo incidente.",
-    cita: "El momento que más me emociona es cuando llegamos al recodo del Tampaón y de repente aparece la cascada completa. Llevo seis años viéndola y todavía me quedo sin palabras — igual que mis viajeros.",
-    badge: "NOM-09 SECTUR",
-  },
-  {
-    nombre: "Miguel Ángel Hernández",
-    rol: "Guía Acuático · Río Tampaón",
-    foto: "/guides/guia-2.png",
-    estrellas: "5.0", resenas: "318",
-    historia: "Creció pescando en el río Tampaón con su padre cada amanecer. Aprendió a leer las corrientes antes de aprender a leer en la escuela. Hoy es el especialista acuático del equipo: tiene certificación de rescate en aguas rápidas de Cruz Roja Mexicana y ha guiado más de 600 grupos en el río sin un solo incidente. Si el río está difícil ese día, Miguel Ángel lo sabe antes de llegar.",
-    cita: "El Tampaón no es el mismo río dos días seguidos. Eso es lo que me apasiona: cada amanecer leo el agua y decido la ruta. No hay guión — hay conocimiento del río.",
-    badge: "Rescate Acuático Cruz Roja",
-  },
-  {
-    nombre: "José Laredo",
-    rol: "Guía de Aventura · Rappel & Cañones",
-    foto: "/guides/guia-3.png",
-    estrellas: "4.9", resenas: "274",
-    historia: "Empezó a hacer rappel a los 18 años en los cañones de Ciudad Valles. A los 22 fue uno de los primeros en descender al fondo del Sótano de las Golondrinas en modo técnico. Hoy entrena a otros guías y diseña los protocolos de seguridad de todos nuestros tours de aventura. Su principio: la adrenalina real viene del conocimiento, no de la imprudencia.",
-    cita: "Mi trabajo es que la persona con más miedo al vacío llegue al borde del Sótano y se sienta más viva que nunca. Cuando lo logro — y casi siempre lo logro — ese momento no tiene precio.",
-    badge: "Aventura · SECTUR",
-  },
+
+/** Lo que NO cambia con el idioma: nombre, foto y cifras. El resto sale del diccionario. */
+const GUIAS_BASE = [
+  { nombre: "Carlos Rodríguez",        foto: "/guides/guia-1.png", estrellas: "4.9", resenas: "492" },
+  { nombre: "Miguel Ángel Hernández",  foto: "/guides/guia-2.png", estrellas: "5.0", resenas: "318" },
+  { nombre: "José Laredo",             foto: "/guides/guia-3.png", estrellas: "4.9", resenas: "274" },
 ];
+const guias = (t: NosotrosContent) => GUIAS_BASE.map((g, i) => ({ ...g, ...t.guias[i] }));
 
 const TESTIMONIOS_GUIAS = [
   { texto: "Carlos nos explicó la historia del ejido mientras remábamos por el Tampaón. Me sé toda la historia de la Cascada de Tamul gracias a él. El tour vale el doble solo por eso.", nombre: "Diana L.", ciudad: "Guadalajara, Jal.", guia: "Carlos Rodríguez", foto: "/imagenes/reviews/reviewer-21.jpg" },
@@ -164,104 +142,61 @@ const TESTIMONIOS_GUIAS = [
   { texto: "Le dije a José que le tenía terror a las alturas. Me llevó al borde del Sótano paso a paso. Terminé sintiéndome la persona más valiente del mundo.", nombre: "Alejandra M.", ciudad: "Monterrey, N.L.", guia: "José Laredo", foto: "/imagenes/reviews/reviewer-10.jpg" },
 ];
 
-const VALORES = [
-  { Icon: Heart,      titulo: "Pasión local",          texto: "Nacimos aquí. La Huasteca no es un trabajo para nosotros — es nuestra casa, nuestra familia y nuestro orgullo.", foto: "/imagenes/tours/tamul/hero.jpg",      fotoAlt: "Guías locales en la Cascada de Tamul" },
-  { Icon: Shield,     titulo: "Seguridad primero",      texto: "Todos nuestros guías tienen certificación en primeros auxilios, rescate acuático y manejo de grupos en entornos naturales.", foto: "/guides/guia-1.png",                 fotoAlt: "Carlos Rodríguez — guía certificado con equipo de seguridad" },
-  { Icon: Leaf,       titulo: "Turismo responsable",    texto: "Aforos limitados, cero plásticos y $30 MXN de cada tour van al Fondo de Conservación Huasteca.", foto: "/imagenes/tours/tamul/gallery-3.jpg", fotoAlt: "Grupo en canoa en el Cañón del Tampaón — bajo impacto" },
-  { Icon: Star,       titulo: "Experiencia auténtica",  texto: "No seguimos guiones. Cada recorrido se adapta al ritmo y los intereses de tu grupo para vivir la Huasteca de verdad.", foto: "/imagenes/tours/tamul/gallery-1.jpg", fotoAlt: "Cueva del Agua — destinos inaccesibles solo con guía local" },
-  { Icon: Users,      titulo: "Grupos pequeños",         texto: "Máximo 12 personas por grupo. Atención personalizada y acceso a rincones que los autobuses turísticos nunca verán.", foto: "/imagenes/tours/tamul/gallery-4.jpg", fotoAlt: "Grupo pequeño en el río — experiencia personalizada" },
-  { Icon: TrendingUp, titulo: "Mejora constante",        texto: "Cada temporada actualizamos protocolos, rutas y equipamiento. Capacitación continua con SECTUR.", foto: "/imagenes/tours/tamul/gallery-5.jpg",  fotoAlt: "Sótano de las Huahuas al amanecer — acceso exclusivo" },
+/** Icono y foto por valor; el título, el texto y el alt salen del diccionario. */
+const VALORES_BASE = [
+  { Icon: Heart,      foto: "/imagenes/tours/tamul/hero.jpg" },
+  { Icon: Shield,     foto: "/guides/guia-1.png" },
+  { Icon: Leaf,       foto: "/imagenes/tours/tamul/gallery-3.jpg" },
+  { Icon: Star,       foto: "/imagenes/tours/tamul/gallery-1.jpg" },
+  { Icon: Users,      foto: "/imagenes/tours/tamul/gallery-4.jpg" },
+  { Icon: TrendingUp, foto: "/imagenes/tours/tamul/gallery-5.jpg" },
 ];
+const valores = (t: NosotrosContent) => VALORES_BASE.map((v, i) => ({ ...v, ...t.valores[i] }));
 
-const HISTORIA = [
-  {
-    año: "2010",
-    hito: "Carlos Rodríguez, con 19 años, empieza a guiar informalmente a los primeros turistas que llegan a Tamuín preguntando por la Cascada de Tamul. Sin carretera asfaltada. Sin tarifa fija. Solo el conocimiento de cada vereda que nadie más tenía.",
-    cta: null,
-  },
-  {
-    año: "2012",
-    hito: "Miguel Ángel Hernández se une como guía acuático. Lleva años pescando en el Tampaón con su padre y conoce cada corriente, cada roca y cada momento del día donde la luz entra diferente al cañón.",
-    cta: null,
-  },
-  {
-    año: "2014",
-    hito: "José Laredo completa su primera bajada técnica al fondo del Sótano de las Golondrinas — uno de los primeros habitantes de la región en hacerlo con equipo certificado.",
-    cta: { label: "El Sótano es parte de nuestro Tour Tamul →", href: "/tours/tour-tamul" },
-  },
-  {
-    año: "2015",
-    hito: "Los tres guías se conocen en una excursión espontánea a Las Pozas de Edward James. La química es inmediata: experiencia local, seguridad técnica, pasión genuina. Deciden que hay algo que construir juntos.",
-    cta: { label: "Visita Las Pozas con nosotros →", href: "/tours/tour-edward-james" },
-  },
-  {
-    año: "2016",
-    hito: "Primera temporada operando como equipo informal. Una camioneta rentada, tres destinos y solo boca a boca. Sin publicidad, sin página web. El 80% de los clientes venían por recomendación de otros viajeros.",
-    cta: null,
-  },
-  {
-    año: "2017",
-    hito: "Primer curso de primeros auxilios y rescate en agua rápida con Cruz Roja Mexicana. Queríamos que cada familia que subiera a nuestra camioneta supiera que estaban en las mejores manos posibles. — Carlos",
-    cta: null,
-  },
-  {
-    año: "2018",
-    hito: "Primer tour privado con acceso nocturno al ejido de Tamul. Los ejidatarios — que conocen a Carlos desde niño — les abren la puerta antes del amanecer. Ese fue el origen del acceso exclusivo que ofrecemos hoy.",
-    cta: { label: "Conoce el acceso exclusivo al Sótano →", href: "/tours/tour-tamul" },
-  },
-  {
-    año: "2019",
-    hito: "Manolo Covarrubias funda formalmente Tours Huasteca Potosina y une al equipo de guías bajo una misma empresa. Primera camioneta propia, primera página en WhatsApp Business y primeras reservas en línea. Tres destinos se convierten en cinco.",
-    cta: null,
-  },
-  {
-    año: "2020",
-    hito: "Pandemia. Cero turistas. En vez de cerrar, usamos el tiempo para certificarnos con SECTUR, capacitar al equipo y apoyar a comunidades locales con distribución de despensas.",
-    cta: null,
-  },
-  {
-    año: "2021",
-    hito: "Certificación NOM-09 SECTUR completa del equipo. Expansión a Xilitla y Las Pozas. Alianza oficial con ejido Tamul para acceso exclusivo al amanecer al Sótano de las Huahuas.",
-    cta: { label: "Este acceso exclusivo es parte de nuestro Tour Tamul →", href: "/tours/tour-tamul" },
-  },
-  {
-    año: "2022",
-    hito: "Eliminación total de plásticos de un solo uso. Lanzamiento del kit de bienvenida con cantimplora reutilizable incluida en todos los tours.",
-    cta: { label: "Conoce nuestro compromiso ambiental →", href: "/sustentabilidad-y-conservacion" },
-  },
-  {
-    año: "2023",
-    hito: "492 reseñas verificadas en Google Maps con 4.9 estrellas de calificación. Primera temporada en que la demanda superó nuestra capacidad máxima.",
-    cta: null,
-  },
-  {
-    año: "2024",
-    hito: "Creación del Fondo de Conservación Huasteca con 3 ejidos socios. Reforestación de 2.4 hectáreas de galería riparia en el Río Tampaón.",
-    cta: { label: "Conoce el impacto de tu reserva →", href: "/sustentabilidad-y-conservacion" },
-  },
-  {
-    año: "2025",
-    hito: "Lanzamiento de la plataforma digital con planificador de viajes con inteligencia artificial — el primero entre operadores turísticos de la región.",
-    cta: { label: "Prueba el recomendador IA →", href: "/recomendar" },
-  },
+/** Año y destino del enlace por hito; el texto sale del diccionario. */
+const HISTORIA_BASE: { año: string; href: string | null }[] = [
+  { año: "2010", href: null },
+  { año: "2012", href: null },
+  { año: "2014", href: "/tours/expedicion-tamul" },
+  { año: "2015", href: "/tours/ruta-surrealista-edward-james" },
+  { año: "2016", href: null },
+  { año: "2017", href: null },
+  { año: "2018", href: "/tours/expedicion-tamul" },
+  { año: "2019", href: null },
+  { año: "2020", href: null },
+  { año: "2021", href: "/tours/expedicion-tamul" },
+  { año: "2022", href: "/sustentabilidad-y-conservacion" },
+  { año: "2023", href: null },
+  { año: "2024", href: "/sustentabilidad-y-conservacion" },
+  { año: "2025", href: "/recomendar" },
 ];
+const historia = (t: NosotrosContent, lp: (p: string) => string) =>
+  HISTORIA_BASE.map((h, i) => ({
+    año: h.año,
+    hito: t.historia[i].hito,
+    // Los enlaces a /recomendar y /sustentabilidad son solo-ES; en inglés se
+    // omiten para no sacar al visitante del idioma a media línea del tiempo.
+    cta: h.href && t.historia[i].ctaLabel && !/recomendar|sustentabilidad/.test(h.href)
+      ? { label: t.historia[i].ctaLabel!, href: lp(h.href) }
+      : null,
+  }));
 
-const CERTIFICACIONES = [
-  { Icon: Award,       titulo: "NOM-09 SECTUR",    sub: "Guías de turismo de aventura certificados por la Secretaría de Turismo de México" },
-  { Icon: Stethoscope, titulo: "Primeros Auxilios", sub: "Cruz Roja Mexicana — renovación anual obligatoria" },
-  { Icon: Globe,       titulo: "Guías bilingües",   sub: "Español nativo · Inglés básico–intermedio en todos los recorridos" },
-  { Icon: Shield,      titulo: "Seguro de viajero", sub: "Responsabilidad civil y asistencia médica incluida en todos los tours" },
-  { Icon: CheckCircle2,titulo: "Rescate acuático",  sub: "Certificación especializada para tours en cascadas y ríos" },
-  { Icon: Calendar,    titulo: "Guiando desde 2010", sub: "15 años de experiencia local · Empresa formal fundada en 2019" },
-];
+const CERT_ICONS = [Award, Stethoscope, Globe, Shield, CheckCircle2, Calendar];
+const certificaciones = (t: NosotrosContent) =>
+  CERT_ICONS.map((Icon, i) => ({ Icon, ...t.certificaciones[i] }));
 
 const WA_SVG = (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>);
 
 export default function NosotrosPage() {
+  const locale = asLocale(headers().get("x-locale"));
+  const t  = getNosotros(locale);
+  const lp = (path: string) => localePath(path, locale);
+  const WA = `https://wa.me/524891251458?text=${encodeURIComponent(t.waMsg)}`;
+
   return (
     <main id="main-content" className="min-h-screen bg-crema">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
-      {personSchemas.map((s) => (
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema(t)) }} />
+      {personSchemas(t).map((s) => (
         <script key={s.name} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }} />
       ))}
 
@@ -270,12 +205,12 @@ export default function NosotrosPage() {
         <Image src="/imagenes/guias/equipo-guias.jpg" alt="Equipo de guías certificados de Tours Huasteca Potosina" fill className="object-cover object-center" priority quality={85} />
         <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/50 to-negro/40" />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">✦ Quiénes somos</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">{t.heroEyebrow}</p>
           <h1 className="reveal-up font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(36px,6vw,68px)" }}>
-            Una empresa familiar<em className="shimmer-gold block"> nacida en la Huasteca</em>
+            {t.heroH1a}<em className="shimmer-gold block">{t.heroH1b}</em>
           </h1>
           <p className="reveal-fade text-crema/65 font-dm text-sm leading-relaxed max-w-xl mx-auto">
-            No somos una agencia de escritorio. Somos guías locales que crecimos explorando cada sendero, cascada y comunidad de la región.
+            {t.heroIntro}
           </p>
         </div>
       </section>
@@ -289,7 +224,7 @@ export default function NosotrosPage() {
       <section className="bg-white border-b border-negro/8 py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-10 font-dm text-center">
-            Fundador & CEO
+            {t.fundadorEyebrow}
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-12 items-start">
@@ -335,35 +270,30 @@ export default function NosotrosPage() {
             {/* Contenido */}
             <div>
               <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-1" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
-                Manolo Covarrubias
+                {t.fundadorNombre}
               </h2>
               <p className="text-[11px] tracking-[3px] uppercase text-verde-selva font-dm mb-6">
-                Fundador & CEO · Tours Huasteca Potosina
+                {t.fundadorRol}
               </p>
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-8">
-                {[
-                  { label: "📍 Xilitla, SLP" },
-                  { label: "🎓 Tec de Monterrey" },
-                  { label: "📐 Estrategia & Transformación de Negocios" },
-                  { label: "22 años" },
-                ].map((b) => (
-                  <span key={b.label} className="border border-negro/15 bg-crema/60 px-3 py-1.5 text-[10px] font-dm text-negro/60 tracking-wide">
-                    {b.label}
+                {t.fundadorBadges.map((label) => (
+                  <span key={label} className="border border-negro/15 bg-crema/60 px-3 py-1.5 text-[10px] font-dm text-negro/60 tracking-wide">
+                    {label}
                   </span>
                 ))}
               </div>
 
               <div className="space-y-4 text-negro/65 font-dm text-sm leading-relaxed mb-8">
                 <p>
-                  Nació en Xilitla, San Luis Potosí — el mismo pueblo mágico donde se encuentran Las Pozas de Edward James y el corazón de la Huasteca. Creció rodeado de cascadas turquesas, cañones y una naturaleza que muy pocas personas en el mundo tienen el privilegio de llamar hogar.
+                  {t.fundadorP1}
                 </p>
                 <p>
-                  Estudió Estrategia y Transformación de Negocios en el Tecnológico de Monterrey. Durante un intercambio académico en Australia recorrió sus costas, las islas de Indonesia y los paisajes de Nueva Zelanda — y fue ahí donde todo cambió: comparando esos destinos con la Huasteca Potosina se dio cuenta de que México tiene lugares igual de impresionantes o más hermosos, pero el mundo todavía no lo sabe. Esa convicción fue la chispa que encendió todo.
+                  {t.fundadorP2}
                 </p>
                 <p>
-                  A sus 22 años fundó Tours Huasteca Potosina con un objetivo simple y poderoso: <strong className="text-negro/80">difundir la hermosura de la Huasteca Potosina y asegurarse de que cada viajero se lleve la mejor experiencia posible</strong> de la región más extraordinaria de México.
+                  {t.fundadorP3a}<strong className="text-negro/80">{t.fundadorP3bStrong}</strong>{t.fundadorP3b}
                 </p>
               </div>
 
@@ -371,10 +301,10 @@ export default function NosotrosPage() {
               <div className="border-l-2 border-dorado/50 pl-5 bg-dorado/5 py-4 pr-4">
                 <Quote className="w-4 h-4 text-dorado/60 mb-2" aria-hidden="true" />
                 <p className="text-negro/70 font-dm text-sm leading-relaxed italic mb-2">
-                  "La Huasteca merece ser conocida por el mundo. Y el mundo merece conocer la Huasteca. Cada tour es una oportunidad de hacer eso realidad."
+                  &ldquo;{t.fundadorCita}&rdquo;
                 </p>
                 <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-negro/35">
-                  Manolo Covarrubias · Fundador & CEO
+                  {t.fundadorCitaAutor}
                 </p>
               </div>
             </div>
@@ -386,26 +316,26 @@ export default function NosotrosPage() {
       <section className="max-w-4xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           <div>
-            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Nuestra historia</p>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{t.historiaEyebrow}</p>
             <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
-              De guías locales a <em className="shimmer-gold">referentes de la región</em>
+              {t.historiaH2a}<em className="shimmer-gold">{t.historiaH2b}</em>
             </h2>
             <div className="space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               <p>
-                Tours Huasteca Potosina nació formalmente en 2019, cuando Manolo Covarrubias la fundó. Pero las raíces de nuestro equipo vienen de mucho antes: de 2010, cuando Carlos Rodríguez — hoy nuestro guía principal — tenía 19 años y ya llevaba turistas a la Cascada de Tamul a pie, porque no había carretera asfaltada y él era el único que sabía cómo llegar.
+                {t.historiaP1}
               </p>
               <p>
-                Lo que siguió fueron años de aprendizaje en el campo — pescando en el Tampaón, haciendo rappel en los cañones, conociendo a los ejidatarios que custodian el acceso a los sitios más espectaculares. Cuando los tres guías se unieron en 2015, tenían lo que ninguna agencia puede comprar: quince años de conocimiento local acumulado. En 2019, Manolo — nacido en Xilitla y convencido de que la Huasteca merece ser conocida por el mundo — unió todo ese talento local bajo una misma empresa y una misma misión.
+                {t.historiaP2}
               </p>
               {/* Anécdota emotiva — momento fundacional */}
               <div className="border-l-2 border-dorado/40 pl-5 bg-dorado/5 py-4 pr-4 mt-2">
                 <p className="text-negro/70 font-dm text-sm leading-relaxed italic mb-3">
-                  "Un grupo de Guadalajara llegó al primer tour en 2020. Escépticos, con sueño, preguntando si valía la pena madrugar. Eran las 5:15 AM cuando llegamos al borde del Sótano. Empezaron a salir los pericos — miles, en espiral, con ese sonido que no existe en ningún otro lugar del mundo. Un señor de unos 55 años se quedó llorando. No podía explicar por qué. Solo decía 'gracias, gracias'. Ese momento fue cuando entendimos que esto no era un negocio de turismo. Era algo más grande."
+                  &ldquo;{t.historiaCita}&rdquo;
                 </p>
-                <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-negro/40">Carlos Rodríguez · Guía Principal · 2020</p>
+                <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-negro/40">{t.historiaCitaAutor}</p>
               </div>
               <p>
-                Hoy, más de quince años después de aquel primer viaje improvisado al Tamul, somos la operadora turística mejor calificada de la región en Google Maps: 492 reseñas verificadas, 4.9 estrellas. Pero seguimos siendo las mismas personas que crecieron aquí.
+                {t.historiaP3}
               </p>
             </div>
           </div>
@@ -417,12 +347,12 @@ export default function NosotrosPage() {
       {/* VALORES CON FOTOS */}
       <section className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lo que nos define</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">{t.valoresEyebrow}</p>
           <h2 className="reveal-up font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Nuestros <em className="shimmer-gold">valores</em>
+            {t.valoresH2} <em className="shimmer-gold">{t.valoresH2Em}</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {VALORES.map((v) => (
+            {valores(t).map((v) => (
               <div key={v.titulo} className="border border-negro/8 bg-crema/60 overflow-hidden hover:border-verde-selva/30 transition-colors group">
                 <div className="relative aspect-[16/9] overflow-hidden">
                   <Image src={v.foto} alt={v.fotoAlt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
@@ -443,19 +373,19 @@ export default function NosotrosPage() {
       <section className="relative bg-verde-profundo py-20 px-6 overflow-hidden">
         <FloatingLeaves count={18} />
         <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Más que turismo</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">{t.impactoEyebrow}</p>
           <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Impacto <em className="shimmer-gold">comunitario</em>
+            {t.impactoH2a}<em className="shimmer-gold">{t.impactoH2b}</em>
           </h2>
           <p className="text-crema/55 font-dm text-sm text-center mb-12 max-w-lg mx-auto leading-relaxed">
-            Cuando reservas con nosotros, tu dinero no va a una corporación. Va directamente a familias de la región y a la conservación de los ecosistemas que hicieron posible tu experiencia.
+            {t.impactoIntro}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
             {[
-              { num: "$30 MXN", label: "De cada tour al Fondo de Conservación Huasteca", Icon: TreePine },
-              { num: "3",       label: "Ejidos locales socios en el fondo de conservación", Icon: Users },
-              { num: "2.4 ha",  label: "De galería riparia reforestada en el Río Tampaón", Icon: Leaf },
-              { num: "90%",     label: "De cada pago se queda en comunidades huastecas", Icon: Heart },
+              { num: "$30 MXN", label: t.impactoDatos[0], Icon: TreePine },
+              { num: "3",       label: t.impactoDatos[1], Icon: Users },
+              { num: "2.4 ha",  label: t.impactoDatos[2], Icon: Leaf },
+              { num: "90%",     label: t.impactoDatos[3], Icon: Heart },
             ].map((d) => (
               <div key={d.label} className="border border-white/10 bg-negro/20 p-6 text-center">
                 <d.Icon className="w-6 h-6 text-verde-vivo mx-auto mb-3" aria-hidden="true" />
@@ -465,11 +395,13 @@ export default function NosotrosPage() {
             ))}
           </div>
           <div className="border border-dorado/20 bg-dorado/8 p-6 max-w-2xl mx-auto text-center">
-            <p className="text-dorado font-dm text-sm font-medium mb-2">✦ Al reservar cualquier tour, $30 MXN van al Fondo de Conservación Huasteca</p>
-            <p className="text-crema/55 font-dm text-xs leading-relaxed">El fondo financia reforestación con especies nativas, limpieza de ríos y capacitación ambiental en comunidades ejidales. Cada reserva es un voto por la Huasteca del futuro.</p>
-            <Link href="/sustentabilidad-y-conservacion" className="inline-block mt-4 text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-5 py-2 transition-all">
-              Conoce el proyecto completo →
-            </Link>
+            <p className="text-dorado font-dm text-sm font-medium mb-2">{t.impactoDestacado}</p>
+            <p className="text-crema/55 font-dm text-xs leading-relaxed">{t.impactoTexto}</p>
+            {locale === "es" && (
+              <Link href="/sustentabilidad-y-conservacion" className="inline-block mt-4 text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-5 py-2 transition-all">
+                {t.impactoCta}
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -478,12 +410,12 @@ export default function NosotrosPage() {
       <section className="relative py-20 px-6 bg-negro overflow-hidden">
         <FloatingLeaves count={16} />
         <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Quienes te guiarán</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">{t.equipoEyebrow}</p>
           <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Nuestro <em className="shimmer-gold">equipo</em>
+            {t.equipoH2a} <em className="shimmer-gold">{t.equipoH2b}</em>
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {GUIAS.map((g) => (
+            {guias(t).map((g) => (
               <div key={g.nombre} className="border border-white/10 bg-negro/60 overflow-hidden">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <Image src={g.foto} alt={g.nombre} fill className="object-cover object-top" loading="lazy" sizes="(max-width: 1024px) 100vw, 33vw" />
@@ -502,7 +434,7 @@ export default function NosotrosPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="text-dorado text-xs tracking-tight">★★★★★</span>
-                      <span className="text-[10px] text-crema/40 font-dm">{g.estrellas} · {g.resenas} reseñas</span>
+                      <span className="text-[10px] text-crema/40 font-dm">{t.guiasEstrellas(g.estrellas, g.resenas)}</span>
                     </div>
                     <span className="text-[9px] tracking-[1px] uppercase font-dm text-verde-selva/70 border border-verde-selva/20 px-2 py-1">{g.badge}</span>
                   </div>
@@ -516,9 +448,12 @@ export default function NosotrosPage() {
       {/* TESTIMONIOS CON NOMBRE DE GUÍA */}
       <section className="py-20 px-6 bg-crema border-y border-negro/8">
         <div className="max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lo que dicen de nuestro equipo</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">{t.testimoniosEyebrow}</p>
           <h2 className="reveal-up font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Mencionan a nuestros guías <em className="shimmer-gold">por nombre</em>
+            {t.testimoniosH2a}<em className="shimmer-gold">{t.testimoniosH2b}</em>
+            {t.resenasEnEspanol && (
+              <span className="block font-dm text-[12px] text-negro/40 italic mt-2">{t.resenasEnEspanol}</span>
+            )}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {TESTIMONIOS_GUIAS.map((t) => (
@@ -543,7 +478,7 @@ export default function NosotrosPage() {
           </div>
           <p className="text-center mt-6">
             <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="text-[10px] tracking-[2px] uppercase font-dm text-verde-selva hover:text-verde-vivo underline underline-offset-2 transition-colors">
-              Ver las 492 reseñas verificadas en Google →
+              {t.verResenas}
             </a>
           </p>
         </div>
@@ -552,12 +487,12 @@ export default function NosotrosPage() {
       {/* CERTIFICACIONES */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Respaldo oficial</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">{t.garantiasEyebrow}</p>
           <h2 className="reveal-up font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Certificaciones y <em className="shimmer-gold">garantías</em>
+            {t.garantiasH2Full}<em className="shimmer-gold">{t.garantiasH2b}</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {CERTIFICACIONES.map((c) => (
+            {certificaciones(t).map((c) => (
               <div key={c.titulo} className="border border-dorado/15 bg-white p-5 flex gap-4 items-start">
                 <c.Icon className="w-6 h-6 text-dorado/70 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
@@ -574,7 +509,7 @@ export default function NosotrosPage() {
       <section className="bg-arena/40 border-y border-negro/8 py-12 px-6">
         <div className="max-w-4xl mx-auto">
           <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm text-center mb-2">Reconocimientos verificables</p>
-          <p className="text-[9px] tracking-[1px] uppercase text-negro/25 font-dm text-center mb-8">Haz clic en cada badge para comprobar</p>
+          <p className="text-[9px] tracking-[1px] uppercase text-negro/25 font-dm text-center mb-8">{t.hazClicBadges}</p>
           <div className="flex flex-wrap items-center justify-center gap-8">
             <a href="https://www.tripadvisor.com.mx/Search?q=Tours+Huasteca+Potosina+Xilitla" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Ver en TripAdvisor">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -585,18 +520,18 @@ export default function NosotrosPage() {
               <div className="flex items-center gap-2 bg-white border border-negro/10 rounded-lg px-4 py-2 shadow-sm group-hover:border-verde-selva/30 transition-colors">
                 <svg viewBox="0 0 24 24" className="w-6 h-6" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                 <div>
-                  <p className="text-[11px] font-dm text-negro/70 font-medium leading-none">4.9 Estrellas</p>
+                  <p className="text-[11px] font-dm text-negro/70 font-medium leading-none">{t.cuatroNueveEstrellas}</p>
                   <div className="flex gap-0.5 mt-1">{[1,2,3,4,5].map(i => (<svg key={i} className="w-2.5 h-2.5 text-dorado fill-current" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>))}</div>
                 </div>
               </div>
-              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">492 reseñas en Google ↗</span>
+              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">{t.googleLink}</span>
             </a>
             <a href="https://www.gob.mx/sectur" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Secretaría de Turismo de México">
               <div className="border-2 border-negro/20 group-hover:border-verde-selva/40 rounded-lg px-5 py-3 text-center transition-colors">
                 <p className="text-[11px] font-dm text-negro/70 font-semibold tracking-wider uppercase">SECTUR</p>
-                <p className="text-[9px] font-dm text-negro/40 mt-0.5">Certificado NOM-09</p>
+                <p className="text-[9px] font-dm text-negro/40 mt-0.5">{t.nom09Titulo}</p>
               </div>
-              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">Guías oficiales ↗</span>
+              <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">{t.guiasOficiales}</span>
             </a>
             <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Negocio verificado en Google">
               <div className="bg-[#25D366]/10 border border-[#25D366]/30 group-hover:border-[#25D366]/60 rounded-lg px-4 py-2.5 flex items-center gap-2 transition-colors">
@@ -612,19 +547,19 @@ export default function NosotrosPage() {
       {/* CTA */}
       <section className="py-20 px-6 text-center bg-crema">
         <div className="max-w-2xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Hablemos</p>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{t.hablemos}</p>
           <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
-            ¿Preguntas para nuestro equipo?
+            {t.ctaH2}
           </h2>
           <p className="text-negro/55 font-dm text-sm mb-10 leading-relaxed">
-            Carlos, Miguel Ángel o José responden en menos de una hora, todos los días. Sin bots, sin esperas.
+            {t.ctaTexto}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href={WA} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200">
-              {WA_SVG} Hablar con el equipo →
+              {WA_SVG} {t.hablarConEquipo}
             </a>
-            <Link href="/tours" className="inline-flex items-center justify-center border border-negro/20 hover:border-verde-selva/40 text-negro/60 hover:text-verde-selva px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all duration-200">
-              Ver nuestros tours
+            <Link href={lp("/tours")} className="inline-flex items-center justify-center border border-negro/20 hover:border-verde-selva/40 text-negro/60 hover:text-verde-selva px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all duration-200">
+              {t.ctaTours}
             </Link>
           </div>
         </div>
@@ -634,10 +569,10 @@ export default function NosotrosPage() {
       <section className="relative bg-negro py-20 px-6 overflow-hidden">
         <FloatingLeaves count={14} />
         <div className="relative z-10 max-w-6xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">Disponibles ahora</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>Reserva con nosotros</h2>
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">{t.disponiblesAhora}</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>{t.reservaConNosotros}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {TOURS_DB.map((tour) => (
+            {TOURS_DB.map((base) => localizeTour(base, locale)).map((tour) => (
               <article key={tour.slug} className="group flex flex-col border border-white/10 hover:border-verde-vivo/50 bg-negro/60 transition-colors duration-300 overflow-hidden">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   {tour.imagen_hero && <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw" />}
@@ -650,19 +585,19 @@ export default function NosotrosPage() {
                     <p className="font-cormorant text-dorado text-lg leading-none">
                       ${tour.precio.toLocaleString("es-MX")}
                       <span className="font-dm text-[9px] text-crema/40 ml-1">
-                        {tour.precioUnidad === "vehiculo" ? "MXN/vehículo" : "MXN"}
+                        {tour.precioUnidad === "vehiculo" ? t.mxnVehiculo : "MXN"}
                       </span>
                     </p>
                     <Link
                       // El carrito ya sabe armar los tours por vehículo (elige ruta y unidad
                       // dentro), así que el RZR deja de ser una excepción que salía del motor.
-                      href={`/reservar/carrito?agregar=${tour.slug}`}
-                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">Reservar</Link>
+                      href={lp(`/reservar/carrito?agregar=${tour.slug}`)}
+                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">{t.ctaReservar}</Link>
                     <a
                       href={waLink(tour.precioUnidad === "vehiculo"
                         ? `Hola, me interesa el tour "${tour.nombre}". ¿Me ayudas a elegir ruta y vehículo?`
                         : WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2))}
-                      target="_blank" rel="noopener noreferrer" className="block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all">Preguntar vía WhatsApp</a>
+                      target="_blank" rel="noopener noreferrer" className="block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all">{t.ctaWhatsapp}</a>
                   </div>
                 </div>
               </article>

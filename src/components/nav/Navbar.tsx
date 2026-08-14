@@ -32,10 +32,11 @@ export default function Navbar() {
   const locale: Locale = asLocale(pathname === "/en" || pathname.startsWith("/en/") ? "en" : "es");
   const dict = getDict(locale);
   const lp = (path: string) => localePath(path, locale);
-  // El motor de reservas solo existe en español, igual que /reservar-tour y
-  // /paquetes. En inglés el botón sigue llevando al catálogo, que sí está
-  // traducido — mandarlo a /en/reservar sería mandarlo a un 404.
-  const reservarHref = locale === "en" ? lp("/tours") : "/reservar";
+  // El motor de reservas ya existe en los dos idiomas: /en/reservar, el carrito
+  // y la confirmación están traducidos. El botón lleva al motor en ambos.
+  // (Antes en inglés iba a /en/tours porque /en/reservar daba 404: el visitante
+  // que pulsaba "Book" volvía al catálogo y no había forma de reservar.)
+  const reservarHref = lp("/reservar");
   const switchHref = counterpartHref(pathname, locale);
 
   const destinosRef = useRef<HTMLDivElement>(null);
@@ -122,16 +123,18 @@ export default function Navbar() {
 
             <Link href={lp("/tours")} className={navLinkClass(lp("/tours"))}>{dict.nav.tours}</Link>
 
+            {/* Paquetes ya existe en los dos idiomas (/en/paquetes y su ficha). */}
+            <Link href={lp("/paquetes")} className={navLinkClass(lp("/paquetes"))}>{dict.nav.paquetes}</Link>
+            <Link href={lp("/nosotros")} className={navLinkClass(lp("/nosotros"))}>{dict.nav.nosotros}</Link>
+            <Link href={lp("/info-practica")} className={navLinkClass(lp("/info-practica"))}>{dict.nav.infoPractica}</Link>
+
             {/* Secciones solo-ES (aún sin versión en inglés) */}
             {locale === "es" && (
               <>
-                <Link href="/paquetes" className={navLinkClass("/paquetes")}>{dict.nav.paquetes}</Link>
                 {/* "Precios" y "Contacto" faltaban en el menú: son las dos
                     entradas de mayor intención de compra y solo se llegaba a
                     ellas por el pie de la home. */}
                 <Link href="/precios" className={navLinkClass("/precios")}>Precios</Link>
-                <Link href="/info-practica" className={navLinkClass("/info-practica")}>{dict.nav.infoPractica}</Link>
-                <Link href="/nosotros" className={navLinkClass("/nosotros")}>{dict.nav.nosotros}</Link>
                 <Link href="/blog" className={navLinkClass("/blog")}>{dict.nav.blog}</Link>
                 {/* "Contacto" vive solo en el pie (SiteFooter). El navbar tenía 9
                     enlaces y el CTA de Reservar se perdía entre ellos. */}
@@ -168,17 +171,26 @@ export default function Navbar() {
               {dict.nav.destinos}
             </Link>
 
+            <Link href={lp("/paquetes")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
+              {dict.nav.paquetes}
+            </Link>
+            <Link href={lp("/nosotros")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
+              {dict.nav.nosotros}
+            </Link>
+            <Link href={lp("/info-practica")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
+              {dict.nav.infoPractica}
+            </Link>
             <Link href={lp("/tours")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.tours}
             </Link>
 
             {locale === "es" && (
               <>
-                <Link href="/paquetes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.paquetes}</Link>
+
                 <Link href="/precios" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Precios</Link>
-                <Link href="/info-practica" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.infoPractica}</Link>
+
                 <Link href="/preguntas-frecuentes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Preguntas frecuentes</Link>
-                <Link href="/nosotros" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.nosotros}</Link>
+
                 <Link href="/blog" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
               </>
             )}

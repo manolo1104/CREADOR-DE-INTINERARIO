@@ -106,7 +106,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿El guía habla inglés?",
-      a: "Tenemos guías con inglés básico. Si requieres bilingüe avanzado, avísanos al reservar.",
+      a: "Nuestros guías están certificados NOM-09 y tenemos guías completamente bilingües disponibles: pídelo al reservar y te asignamos uno.",
     },
     {
       q: "¿Cuánto tiempo estamos en cada lugar?",

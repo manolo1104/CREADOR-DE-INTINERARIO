@@ -34,7 +34,7 @@ export function localeUrl(path: string, locale: Locale): string {
 /**
  * Construye el objeto `alternates` (canonical + hreflang) de Next.js metadata
  * para una ruta dada, recíproco y con x-default apuntando a español.
- * `path` es la ruta SIN prefijo de locale (ej. "/tours/tour-tamul").
+ * `path` es la ruta SIN prefijo de locale (ej. "/tours/expedicion-tamul").
  */
 export function buildAlternates(path: string, locale: Locale) {
   return {

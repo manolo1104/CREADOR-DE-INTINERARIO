@@ -367,7 +367,15 @@ export default function DestinoPage({ params }: Props) {
         {reviewsDestino.length > 0 && (
           <div className="max-w-4xl mx-auto px-6 pb-12">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-cormorant text-crema text-xl">{dd.travelersSay}</h2>
+              <h2 className="font-cormorant text-crema text-xl">
+                {dd.travelersSay}
+                {/* En inglés se avisa de que el testimonio va en español: son
+                    viajeros con nombre y ciudad, y traducirles las palabras
+                    sin decirlo sería ponerles en la boca algo que no dijeron. */}
+                {dd.resenasEnEspanol && (
+                  <span className="block font-dm text-[11px] text-crema/40 italic mt-1">{dd.resenasEnEspanol}</span>
+                )}
+              </h2>
               {rating && (
                 <div className="flex items-center gap-1.5">
                   <div className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
@@ -420,7 +428,7 @@ export default function DestinoPage({ params }: Props) {
                         <span className="font-dm text-[10px] text-crema/40 ml-1">MXN / {locale === "en" ? "person" : "persona"}</span>
                       </p>
                       <div className="space-y-2">
-                        <Link href={`/reservar/carrito?agregar=${tour.slug}`}
+                        <Link href={localePath(`/reservar/carrito?agregar=${tour.slug}`, locale)}
                           className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors">
                           <Lock className="w-3 h-3" />{dd.bookWithCard}
                         </Link>

@@ -26,6 +26,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       partySize:    Number(meta.numPersonas) || undefined,
       lineItems:    Array.isArray((q as any).lineItems) ? (q as any).lineItems : undefined,
       packageItems: Array.isArray((q as any).packageItems) ? (q as any).packageItems : undefined,
+      // Idioma del cliente, guardado en el `_meta` de la cotización.
+      locale:       meta.locale,
     });
 
     const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
@@ -34,7 +36,9 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     await sendBrevoEmail({
       to:      [{ email: to, name: q.customerName }],
       bcc:     to !== adminTo ? [{ email: adminTo }] : [],
-      subject: `Tu cotización de tour está lista — ${q.quoteNumber}`,
+      subject: meta.locale === "en"
+        ? `Your tour quote is ready — ${q.quoteNumber}`
+        : `Tu cotización de tour está lista — ${q.quoteNumber}`,
       htmlContent: html,
     });
 

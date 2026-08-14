@@ -92,6 +92,13 @@ export interface Messages {
     location: string;
     openInMaps: string;
     travelersSay: string;
+    verGaleria: string;
+    cerrarGaleria: string;
+    fotoAnterior: string;
+    fotoSiguiente: string;
+    ampliarFoto: (n: number, nombre: string) => string;
+    /** Vacío en español; en inglés avisa de que las reseñas van en su idioma original. */
+    resenasEnEspanol: string;
     toursThatInclude: string;
     bookOrAsk: string;
     bookWithCard: string;
@@ -112,6 +119,14 @@ export interface Messages {
     nearbyTours: string;
     nearbyIntro: (name: string) => string;
     combineWhatsapp: string;
+  };
+  cookies: {
+    titulo: string;
+    texto: string;
+    avisoPrivacidad: string;
+    textoCola: string;
+    rechazar: string;
+    aceptar: string;
   };
   footer: {
     derechos: string;
@@ -213,6 +228,12 @@ const es: Messages = {
     location: "Ubicación",
     openInMaps: "Abrir en Google Maps →",
     travelersSay: "Lo que dicen los viajeros",
+    verGaleria: "Ver galería",
+    cerrarGaleria: "Cerrar galería",
+    fotoAnterior: "Foto anterior",
+    fotoSiguiente: "Foto siguiente",
+    ampliarFoto: (n, nombre) => `Ampliar foto ${n} de ${nombre}`,
+    resenasEnEspanol: "",
     toursThatInclude: "Tours que incluyen",
     bookOrAsk: "Reserva directamente con tarjeta o pregunta por WhatsApp.",
     bookWithCard: "Agregar al carrito",
@@ -233,6 +254,14 @@ const es: Messages = {
     nearbyIntro: (name: string) => `No visitamos ${name} dentro de un tour, pero operamos en la misma zona — podemos combinarlo:`,
     combineWhatsapp: "Pregunta por WhatsApp para combinarlo",
     faqTitulo: "Preguntas frecuentes",
+  },
+  cookies: {
+    titulo: "Usamos cookies",
+    texto: "Este sitio utiliza cookies propias para mejorar tu experiencia de navegación y analizar el tráfico. Consulta nuestro ",
+    avisoPrivacidad: "Aviso de Privacidad",
+    textoCola: " para más información.",
+    rechazar: "Rechazar",
+    aceptar: "Aceptar",
   },
   footer: {
     derechos: "Todos los derechos reservados",
@@ -334,6 +363,14 @@ const en: Messages = {
     location: "Location",
     openInMaps: "Open in Google Maps →",
     travelersSay: "What travelers say",
+    verGaleria: "View gallery",
+    cerrarGaleria: "Close gallery",
+    fotoAnterior: "Previous photo",
+    fotoSiguiente: "Next photo",
+    ampliarFoto: (n, nombre) => `Enlarge photo ${n} of ${nombre}`,
+    // Mismo criterio que en el carrito: son viajeros reales con nombre y
+    // ciudad, así que se dejan como las escribieron y se avisa del idioma.
+    resenasEnEspanol: "In their own words (Spanish).",
     toursThatInclude: "Tours that include",
     bookOrAsk: "Book directly by card or ask on WhatsApp.",
     bookWithCard: "Add to cart",
@@ -353,6 +390,14 @@ const en: Messages = {
     nearbyIntro: (name: string) => `We don't visit ${name} on a tour, but we operate in the same area — we can combine it:`,
     combineWhatsapp: "Ask on WhatsApp to combine it",
     faqTitulo: "Frequently asked questions",
+  },
+  cookies: {
+    titulo: "We use cookies",
+    texto: "This site uses first-party cookies to improve your browsing experience and analyse traffic. See our ",
+    avisoPrivacidad: "Privacy Policy",
+    textoCola: " for more information.",
+    rechazar: "Reject",
+    aceptar: "Accept",
   },
   footer: {
     derechos: "All rights reserved",

@@ -123,7 +123,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Los guías hablan inglés?",
-    a: "Nuestros guías tienen inglés básico–intermedio, suficiente para explicar el recorrido y las indicaciones de seguridad. Si necesitas un guía completamente bilingüe, consúltanos con anticipación al reservar.",
+    a: "Nuestros guías están certificados NOM-09 y tenemos guías completamente bilingües disponibles: pídelo al reservar y te asignamos uno.",
   },
 ];
 

@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getInfoPractica } from "@/lib/i18n/infoPractica.en";
 
-const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const MESES_LARGO = [
-  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
-];
+/**
+ * Los nombres de mes salen de `Intl`, no de tablas escritas a mano.
+ *
+ * Mismo criterio que en `TourCalendar`: dos listas paralelas por idioma es una
+ * lista que se queda a medio traducir. Con mayúscula inicial, como el original.
+ */
+function nombreMes(i: number, locale: "es" | "en", corto: boolean): string {
+  const f = new Date(2020, i, 1).toLocaleDateString(locale === "en" ? "en-US" : "es-MX", {
+    month: corto ? "short" : "long",
+  }).replace(".", "");
+  return f.charAt(0).toUpperCase() + f.slice(1);
+}
 
 type Rec = "ideal" | "buena" | "caluroso" | "lluvia";
 
@@ -26,86 +35,71 @@ const CLIMA: { temp: string; lluvia: string; cascadas: string; rec: Rec }[] = [
   { temp: "16–24°C", lluvia: "Poca",     cascadas: "Muy buena", rec: "ideal"    },
 ];
 
-const RECOMENDACIONES: Record<Rec, {
+/**
+ * Lo que NO depende del idioma: emoji, colores y a qué tour lleva cada enlace.
+ *
+ * ⚠️ Los `slug` estaban mal: apuntaban a `tour-tamul`, `tour-edward-james`,
+ * `tour-meco`, `tour-minas-micos` y `tour-puente-dios`, que no existen en
+ * `TOURS_DB` ni tienen redirect. Eran 404 también en español.
+ */
+const ESTILOS: Record<Rec, {
   emoji: string;
-  titulo: string;
-  texto: string;
   bordColor: string;
   bgColor: string;
   labelColor: string;
-  tours: { label: string; href: string }[];
+  slugs: string[];
 }> = {
   ideal: {
     emoji: "🌟",
-    titulo: "Temporada ideal — ¡Excelente elección!",
-    texto: "Las cascadas están en su caudal óptimo con el agua turquesa característico de la Huasteca. Clima fresco (16–30°C) y agradable. Es temporada alta — reserva hospedaje y tours con anticipación.",
     bordColor: "border-verde-vivo/40",
     bgColor:   "bg-verde-selva/10",
     labelColor:"text-verde-vivo",
-    tours: [
-      { label: "Tour Tamul + Sótano de las Huahuas", href: "/tours/tour-tamul" },
-      { label: "Tour Edward James (Las Pozas)",       href: "/tours/tour-edward-james" },
-      { label: "Tour Cascada El Meco",               href: "/tours/tour-meco" },
-    ],
+    slugs: ["expedicion-tamul", "ruta-surrealista-edward-james", "cascadas-del-meco"],
   },
   buena: {
     emoji: "☀️",
-    titulo: "Buena temporada — Bien para visitar",
-    texto: "El agua conserva su color intenso. Las temperaturas suben — actívate temprano por las mañanas. Ideal para tours con sombra natural como Las Pozas o los ríos. Menos concurrencia que temporada alta.",
     bordColor: "border-dorado/40",
     bgColor:   "bg-dorado/8",
     labelColor:"text-dorado",
-    tours: [
-      { label: "Tour Edward James (Las Pozas)",       href: "/tours/tour-edward-james" },
-      { label: "Tour Minas Viejas + Micos",           href: "/tours/tour-minas-micos" },
-      { label: "Tour Puente de Dios + Tamasopo",      href: "/tours/tour-puente-dios" },
-    ],
+    slugs: ["ruta-surrealista-edward-james", "paraiso-escalonado-minas-micos", "ruta-acuatica-puente-de-dios"],
   },
   caluroso: {
     emoji: "🌡️",
-    titulo: "Temporada calurosa — Prepárate bien",
-    texto: "28–38°C en zonas bajas. Hidratación constante, actívate antes de las 10am. Las pozas se disfrutan mucho — el agua fresca es un alivio. Evita Tamtoc (sin sombra). Lleva sombrero y ropa UV.",
     bordColor: "border-orange-400/40",
     bgColor:   "bg-orange-500/8",
     labelColor:"text-orange-400",
-    tours: [
-      { label: "Tour Minas Viejas + Micos (pozas frescas)", href: "/tours/tour-minas-micos" },
-      { label: "Tour Puente de Dios + Tamasopo",            href: "/tours/tour-puente-dios" },
-    ],
+    slugs: ["paraiso-escalonado-minas-micos", "ruta-acuatica-puente-de-dios"],
   },
   lluvia: {
     emoji: "🌧️",
-    titulo: "Temporada de lluvias — Consulta condiciones",
-    texto: "Vegetación explosivamente verde y muy fotogénica. Algunos tours de río pueden suspenderse por corrientes altas (especialmente Tamul en septiembre). Menos turistas y precios más bajos. Consulta antes de reservar.",
     bordColor: "border-agua/40",
     bgColor:   "bg-agua/8",
     labelColor:"text-agua",
-    tours: [
-      { label: "Tour Edward James (Las Pozas — siempre operamos)", href: "/tours/tour-edward-james" },
-      { label: "Tour Minas Viejas + Micos",                        href: "/tours/tour-minas-micos" },
-    ],
+    slugs: ["ruta-surrealista-edward-james", "paraiso-escalonado-minas-micos"],
   },
 };
 
 export function ClimaWidget() {
+  const { locale, lp } = useLocale();
+  const c = getInfoPractica(locale).clima;
   const [mes, setMes] = useState<number | null>(null);
 
   const info = mes !== null ? CLIMA[mes] : null;
-  const rec  = info ? RECOMENDACIONES[info.rec] : null;
+  const rec  = info ? { ...ESTILOS[info.rec], ...c.recomendaciones[info.rec] } : null;
 
   return (
     <div className="mt-8 bg-negro/40 border border-white/10 p-6">
       <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo font-dm mb-2">
-        ✦ Herramienta interactiva
+        {c.herramienta}
       </p>
-      <h3 className="font-cormorant text-crema text-xl mb-1">¿Cuándo vas tú?</h3>
+      <h3 className="font-cormorant text-crema text-xl mb-1">{c.pregunta}</h3>
       <p className="text-crema/45 font-dm text-xs mb-6">
-        Selecciona tu mes de viaje y te decimos qué esperar y qué tour encaja mejor.
+        {c.instruccion}
       </p>
 
       {/* Month selector */}
       <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5 mb-6">
-        {MESES_CORTO.map((m, i) => (
+        {Array.from({ length: 12 }, (_, i) => nombreMes(i, locale, true)).map((m, i) => (
           <button
             key={m}
             onClick={() => setMes(i === mes ? null : i)}
@@ -133,32 +127,32 @@ export function ClimaWidget() {
 
           <div className="grid grid-cols-3 gap-3 border-t border-white/10 pt-4">
             <div className="text-center">
-              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">Temperatura</p>
+              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">{c.temperatura}</p>
               <p className="text-crema/75 font-dm text-xs font-medium">{info.temp}</p>
             </div>
             <div className="text-center">
-              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">Lluvia</p>
-              <p className="text-crema/75 font-dm text-xs font-medium">{info.lluvia}</p>
+              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">{c.lluvia}</p>
+              <p className="text-crema/75 font-dm text-xs font-medium">{c.lluviaValores[info.lluvia] ?? info.lluvia}</p>
             </div>
             <div className="text-center">
-              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">Cascadas</p>
-              <p className="text-crema/75 font-dm text-xs font-medium">{info.cascadas}</p>
+              <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1">{c.cascadas}</p>
+              <p className="text-crema/75 font-dm text-xs font-medium">{c.cascadasValores[info.cascadas] ?? info.cascadas}</p>
             </div>
           </div>
 
           <div className="border-t border-white/10 pt-4">
             <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-3">
-              Tours recomendados para {MESES_LARGO[mes]}
+              {c.recomendados(nombreMes(mes, locale, false))}
             </p>
             <div className="space-y-2">
-              {rec.tours.map((t) => (
+              {rec.tours.map((label, i) => (
                 <Link
-                  key={t.href}
-                  href={t.href}
+                  key={label}
+                  href={lp(`/tours/${rec.slugs[i]}`)}
                   className="flex items-center justify-between group border border-white/10 hover:border-verde-vivo/40 px-4 py-2.5 transition-all"
                 >
                   <span className="text-xs font-dm text-crema/70 group-hover:text-crema transition-colors">
-                    {t.label}
+                    {label}
                   </span>
                   <span className="text-verde-vivo text-xs">→</span>
                 </Link>
@@ -170,7 +164,7 @@ export function ClimaWidget() {
 
       {mes === null && (
         <p className="text-center text-crema/30 font-dm text-xs py-4">
-          Selecciona un mes para ver la recomendación personalizada
+          {c.seleccionaMes}
         </p>
       )}
     </div>

@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDict } from "@/lib/i18n/messages";
 
 export function CookieBanner() {
   const [visible, setVisible] = useState(false);
+  const { locale } = useLocale();
+  const t = getDict(locale).cookies;
 
   useEffect(() => {
     const consent = localStorage.getItem("hp_cookie_consent");
@@ -33,15 +37,14 @@ export function CookieBanner() {
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1">
           <p id="cookie-title" className="text-crema font-dm text-sm font-medium mb-1">
-            Usamos cookies
+            {t.titulo}
           </p>
           <p className="text-crema/60 font-dm text-xs leading-relaxed">
-            Este sitio utiliza cookies propias para mejorar tu experiencia de navegación y analizar el tráfico.
-            Consulta nuestro{" "}
+            {t.texto}
             <Link href="/aviso-de-privacidad" className="text-lima underline hover:text-verde-vivo transition-colors">
-              Aviso de Privacidad
-            </Link>{" "}
-            para más información.
+              {t.avisoPrivacidad}
+            </Link>
+            {t.textoCola}
           </p>
         </div>
         <div className="flex gap-3 flex-shrink-0">
@@ -49,13 +52,13 @@ export function CookieBanner() {
             onClick={reject}
             className="px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm text-crema/60 border border-crema/20 hover:border-crema/40 hover:text-crema transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-lima"
           >
-            Rechazar
+            {t.rechazar}
           </button>
           <button
             onClick={accept}
             className="px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm bg-verde-selva text-crema hover:bg-verde-vivo transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-lima"
           >
-            Aceptar
+            {t.aceptar}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
+import { headers } from "next/headers";
 import { FAQAccordion } from "@/components/FAQAccordion";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import type { FAQCategory } from "@/components/FAQAccordion";
@@ -16,21 +17,26 @@ import {
   Hotel, UtensilsCrossed, Star, ExternalLink,
 } from "lucide-react";
 
-const SITE = "https://www.huasteca-potosina.com";
-export const metadata: Metadata = {
-  title: "Info Práctica — Cómo Llegar, Cuándo ir y Dónde Quedarse | Huasteca Potosina",
-  description: "Todo lo que necesitas antes de viajar a la Huasteca Potosina: vuelos desde CDMX, temporadas, hospedaje en Ciudad Valles y Xilitla, presupuesto y consejos locales.",
-  openGraph: {
-    title: "Info Práctica — Guía Completa para viajar a la Huasteca Potosina",
-    description: "Cómo llegar, cuándo ir, dónde quedarse y presupuesto. Todo actualizado 2026.",
-    url: `${SITE}/info-practica`,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-  },
-  twitter: { card: "summary_large_image", title: "Info Práctica — Huasteca Potosina", description: "Cómo llegar, cuándo ir, dónde quedarse, presupuesto y qué llevar." },
-  alternates: { canonical: `${SITE}/info-practica` },
-};
+import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { getInfoPractica, type InfoPracticaContent } from "@/lib/i18n/infoPractica.en";
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getInfoPractica(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl("/info-practica", locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+    },
+    twitter: { card: "summary_large_image", title: t.twitterTitle, description: t.twitterDescription },
+    alternates: buildAlternates("/info-practica", locale),
+  };
+}
 
 function Section({
   id,
@@ -97,119 +103,52 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
-const FAQ_DATA: FAQCategory[] = [
-  {
-    titulo: "Sobre los tours",
-    items: [
-      {
-        q: "¿Los tours se realizan aunque llueva?",
-        a: "Sí, salvo condiciones de alerta meteorológica. La lluvia en la Huasteca es parte de la experiencia y las cascadas lucen más espectaculares. En caso de cancelación por clima extremo, reagendamos sin costo.",
-      },
-      {
-        q: "¿Qué nivel físico se requiere?",
-        a: "Depende del tour. Cada ficha indica el nivel (Fácil / Moderado). Los tours Fácil son aptos para toda la familia. Los Moderado requieren poder caminar 3–5 km en terreno irregular.",
-      },
-      {
-        q: "¿Pueden participar niños?",
-        a: "Sí. Los menores de 4 años no pagan entrada. De 4 a 12 años tienen precio preferencial (60% del precio adulto). Consulta la ficha de cada tour para los detalles.",
-      },
-      {
-        q: "¿Pueden participar personas mayores?",
-        a: "Sí, en los tours nivel Fácil. Recomendamos consultarnos si hay condiciones de salud específicas para orientarte al mejor recorrido.",
-      },
-      {
-        q: "¿El guía habla inglés?",
-        a: "Nuestros guías tienen inglés básico–intermedio. Si requieres guía completamente bilingüe, consúltanos con anticipación.",
-      },
-      {
-        q: "¿Cuántas personas hay en cada tour?",
-        a: "Nuestros grupos son pequeños, máximo 12 personas, para garantizar una experiencia personalizada. También ofrecemos tours privados para tu grupo.",
-      },
-    ],
-  },
-  {
-    titulo: "Reservas y pagos",
-    items: [
-      {
-        q: "¿Cómo reservo mi lugar?",
-        a: "Por WhatsApp o con tarjeta de crédito/débito a través de Stripe (pago seguro en línea). Al reservar se confirma tu lugar de inmediato.",
-      },
-      {
-        q: "¿Cuál es la política de cancelación?",
-        a: "— Cancelación con 48h o más de anticipación: reembolso completo.\n— Cancelación con menos de 24h: sin reembolso, pero puedes reagendar una vez sin costo adicional.\n— No-show (no presentarse): sin reembolso.\n— Cancelación por parte nuestra (clima extremo u operativo): reembolso completo o reagendamiento sin costo, a tu elección.",
-      },
-      {
-        q: "¿Necesito pagar el total al reservar?",
-        a: "Sí. La reserva se confirma con el pago completo del tour en línea, de forma segura con tarjeta. Si prefieres otro medio de pago, escríbenos por WhatsApp y lo coordinamos.",
-      },
-    ],
-  },
-  {
-    titulo: "Logística",
-    items: [
-      {
-        q: "¿Desde dónde salen los tours?",
-        a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. No necesitas hospedarte con nosotros. Las excepciones son el recorrido en RZR (nos vemos en nuestra base de Xilitla) y el buceo en Media Luna (el punto de encuentro es la laguna, en Rioverde).",
-      },
-      {
-        q: "¿A qué hora es la salida?",
-        a: "Los tours salen entre las 8:00 y las 9:00 AM; confirmamos tu hora exacta al reservar. Regreso aproximado entre 6:00 y 7:00 PM.",
-      },
-      {
-        q: "¿Qué debo llevar?",
-        a: "Ropa cómoda y que puedas mojar, zapatos con agarre (no sandalias de playa), bloqueador solar biodegradable, agua, identificación oficial y ganas de aventura. Todo lo demás lo ponemos nosotros.",
-      },
-    ],
-  },
-];
 
-const faqSchema = {
+/** El FAQ vive en `i18n/infoPractica.en.ts`, en los dos idiomas. */
+const faqSchema = (t: InfoPracticaContent, locale: "es" | "en") => ({
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  mainEntity: FAQ_DATA.flatMap((cat) =>
+  inLanguage: locale === "en" ? "en" : "es-MX",
+  mainEntity: t.faq.flatMap((cat) =>
     cat.items.map((item) => ({
       "@type": "Question",
       name:           item.q,
       acceptedAnswer: { "@type": "Answer", text: item.a },
     }))
   ),
-};
+});
 
 export default function InfoPracticaPage() {
+  const locale = asLocale(headers().get("x-locale"));
+  const t  = getInfoPractica(locale);
+  const lp = (path: string) => localePath(path, locale);
+  const en = locale === "en";
+
   return (
     <main className="min-h-screen bg-negro">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(t, locale)) }} />
 
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-          Todo lo que necesitas saber
+          {t.heroEyebrow}
         </p>
         <h1
           className="reveal-up font-cormorant font-light text-crema mb-5"
           style={{ fontSize: "clamp(40px,7vw,76px)" }}
         >
-          Guía Práctica de <em className="shimmer-gold">Viaje</em>
+          {t.heroH1a}<em className="shimmer-gold">{t.heroH1b}</em>
         </h1>
         <p className="reveal-fade text-crema/55 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-8">
-          Todo lo que necesitas para llegar, moverte, hospedarte y disfrutar la Huasteca Potosina
-          sin sorpresas desagradables.
+          {t.heroIntro}
         </p>
 
         {/* Quick nav */}
         <div className="flex flex-wrap gap-2 justify-center">
           {[
-            { label: "Cómo llegar",      href: "#como-llegar" },
-            { label: "Cuándo viajar",    href: "#cuando-viajar" },
-            { label: "Dónde quedarse",   href: "#donde-quedarse" },
-            { label: "Hotel Paraíso",    href: "#hotel-paraiso" },
-            { label: "Dónde comer",      href: "#papan-huasteco" },
-            { label: "Presupuesto",      href: "#presupuesto" },
-            { label: "Itinerarios",      href: "#itinerarios" },
-            { label: "Qué llevar",       href: "#que-llevar" },
-            { label: "Mapa",             href: "#mapa" },
-            { label: "Seguridad",        href: "#seguridad" },
-          ].map((link) => (
+            "#como-llegar", "#cuando-viajar", "#donde-quedarse", "#hotel-paraiso", "#papan-huasteco",
+            "#presupuesto", "#itinerarios", "#que-llevar", "#mapa", "#seguridad",
+          ].map((href, i) => ({ href, label: t.navLabels[i] })).map((link) => (
             <a
               key={link.label}
               href={link.href}
@@ -222,89 +161,46 @@ export default function InfoPracticaPage() {
       </section>
 
       {/* ── CÓMO LLEGAR ── */}
-      <Section id="como-llegar" Icon={Bus} title="Cómo llegar">
+      <Section id="como-llegar" Icon={Bus} title={t.tituloComoLlegar}>
         <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
-          <strong className="text-crema">Ciudad Valles (SLP)</strong> es la puerta de entrada a la
-          Huasteca Potosina. Desde aquí, todos los destinos principales están a menos de 2 horas.
+          <strong className="text-crema">{t.llegarIntroFuerte}</strong>{t.llegarIntro}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-          <InfoCard title="En avión" accent="agua">
-            <BulletList
-              items={[
-                "Aeropuerto más cercano: San Luis Potosí (SLP) — 3.5h en coche",
-                "Alternativa: Tampico (TAM) — 2h en coche, más conexiones",
-                "Desde CDMX: ~1h de vuelo + renta de auto recomendada",
-                "Aeroméxico y VivaAerobus operan rutas directas",
-              ]}
-            />
-          </InfoCard>
-
-          <InfoCard title="En autobús" accent="verde">
-            <BulletList
-              items={[
-                "ADO GL desde CDMX (Terminal Norte) → Ciudad Valles: ~8 horas",
-                "Precio aprox: $600–900 MXN por persona (clase ejecutiva)",
-                "Salidas frecuentes: 10pm, 11:30pm, 12am (llegada madrugada)",
-                "También desde Monterrey: ~4.5h, desde Tampico: ~2h",
-              ]}
-            />
-          </InfoCard>
-
-          <InfoCard title="En coche" accent="dorado">
-            <BulletList
-              items={[
-                "Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ~5.5h",
-                "Desde Monterrey: 340km por MEX-85 — ~4h",
-                "Desde San Luis Potosí capital: 260km — ~3h",
-                "Autopista de cuota recomendada: segura y rápida",
-                "Gasolina disponible en Valles. Llenar tanque antes de excursiones",
-              ]}
-            />
-          </InfoCard>
-
-          <InfoCard title="Transporte local" accent="agua">
-            <BulletList
-              items={[
-                "Combis (minivanes) conectan Valles con Micos, Tamasopo, Tamuín",
-                "Precio combi: $35–80 MXN dependiendo la ruta",
-                "Taxis colectivos a destinos populares: $50–120 MXN p/p",
-                "Renta de auto recomendada para mayor flexibilidad",
-                "Moto taxi disponible en zonas rurales (~$30–50 MXN)",
-              ]}
-            />
-          </InfoCard>
+          {t.llegarBloques.map((b, i) => (
+            <InfoCard key={b.titulo} title={b.titulo} accent={(["agua","verde","dorado","agua"] as const)[i]}>
+              <BulletList items={b.items} />
+            </InfoCard>
+          ))}
         </div>
 
         {/* Imagen contextual */}
         <div className="relative aspect-[21/9] overflow-hidden mb-6">
           <Image
             src="/imagenes/tours/tamul/gallery-3.jpg"
-            alt="Grupo en canoa recorriendo el Cañón del Tampaón — Huasteca Potosina"
+            alt={t.llegarFotoAlt}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 896px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-negro/60 to-transparent" />
           <p className="absolute bottom-3 left-4 text-[10px] font-dm text-crema/50">
-            El río Tampaón es la ruta de acceso a la Cascada de Tamul — 30 min en canoa
+            {t.llegarFotoPie}
           </p>
         </div>
 
         <div className="bg-dorado/8 border border-dorado/25 p-5 mb-6">
           <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
-            <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" /> Consejo del viajero
+            <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" /> {t.consejoViajero}
           </p>
           <p className="text-crema/70 text-sm font-dm">
-            Si vas en grupo de 4 o más personas, rentar un coche en Valles suele salir más barato
-            que taxis y te da total libertad de horarios. Muchos destinos no tienen transporte
-            regular antes de las 8am.
+            {t.llegarConsejo}
           </p>
         </div>
 
         {/* Links afiliados de transporte */}
         <div className="border border-white/8 bg-negro/30 p-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">Reserva tu transporte</p>
+          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">{t.reservaTransporte}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <a
               href="https://www.ado.com.mx/"
@@ -313,8 +209,8 @@ export default function InfoPracticaPage() {
               className="flex items-center justify-between border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
             >
               <div>
-                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">ADO · Autobús</p>
-                <p className="text-[10px] font-dm text-crema/35">CDMX → Valles desde $600</p>
+                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">{t.afiliados[0].nombre}</p>
+                <p className="text-[10px] font-dm text-crema/35">{t.afiliados[0].sub}</p>
               </div>
               <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
             </a>
@@ -325,8 +221,8 @@ export default function InfoPracticaPage() {
               className="flex items-center justify-between border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
             >
               <div>
-                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">Rentalcars · Auto</p>
-                <p className="text-[10px] font-dm text-crema/35">Valles desde ~$800/día</p>
+                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">{t.afiliados[1].nombre}</p>
+                <p className="text-[10px] font-dm text-crema/35">{t.afiliados[1].sub}</p>
               </div>
               <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
             </a>
@@ -337,8 +233,8 @@ export default function InfoPracticaPage() {
               className="flex items-center justify-between border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
             >
               <div>
-                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">Kayak · Vuelos</p>
-                <p className="text-[10px] font-dm text-crema/35">CDMX → SLP desde $1,200</p>
+                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">{t.afiliados[2].nombre}</p>
+                <p className="text-[10px] font-dm text-crema/35">{t.afiliados[2].sub}</p>
               </div>
               <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
             </a>
@@ -347,9 +243,9 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── CUÁNDO VIAJAR ── */}
-      <Section id="cuando-viajar" Icon={Calendar} title="Cuándo viajar">
+      <Section id="cuando-viajar" Icon={Calendar} title={t.tituloCuandoViajar}>
         <p className="text-crema/60 font-dm text-sm mb-8">
-          La Huasteca recibe visitantes todo el año, pero cada temporada tiene su carácter.
+          {t.cuandoIntro}
         </p>
 
         {/* Imágenes temporada seca vs verde */}
@@ -357,78 +253,42 @@ export default function InfoPracticaPage() {
           <div className="relative aspect-[4/3] overflow-hidden">
             <Image
               src="/imagenes/tours/tamul/gallery-1.jpg"
-              alt="Cueva del Agua con agua turquesa — temporada seca Nov–Mar"
+              alt={t.fotoSecaAlt}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, 440px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
-            <p className="absolute bottom-2 left-3 text-[10px] font-dm text-crema/80">Nov–Mar · Agua turquesa</p>
+            <p className="absolute bottom-2 left-3 text-[10px] font-dm text-crema/80">{t.fotoSecaPie}</p>
           </div>
           <div className="relative aspect-[4/3] overflow-hidden">
             <Image
               src="/imagenes/tours/tamul/gallery-5.jpg"
-              alt="Sótano de las Huahuas con vegetación verde exuberante — temporada lluvias"
+              alt={t.fotoVerdeAlt}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, 440px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
-            <p className="absolute bottom-2 left-3 text-[10px] font-dm text-crema/80">Jun–Oct · Verde intenso</p>
+            <p className="absolute bottom-2 left-3 text-[10px] font-dm text-crema/80">{t.fotoVerdePie}</p>
           </div>
         </div>
 
         <div className="space-y-4 mb-8">
-          {[
-            {
-              meses: "Noviembre — Marzo",
-              etiqueta: "Temporada ideal",
-              color: "verde" as const,
-              puntos: [
-                "Cascadas en su nivel óptimo de caudal y color turquesa",
-                "Clima fresco (18–26°C), menos humedad",
-                "Sótano de Golondrinas: vencejos activos en sus mejores vuelos",
-                "Tamtoc: visitable sin calor extremo",
-                "Temporada alta de turismo: reservar hospedaje con anticipación",
-              ],
-            },
-            {
-              meses: "Abril — Mayo",
-              etiqueta: "Primavera — Transición",
-              color: "dorado" as const,
-              puntos: [
-                "Temperaturas suben (28–38°C), especialmente en Tamuín",
-                "Cascadas aún con buen caudal, color intenso",
-                "Semana Santa: muy concurrido, precios al alza",
-                "Ideal para Tamul y Las Pozas (follaje exuberante)",
-              ],
-            },
-            {
-              meses: "Junio — Octubre",
-              etiqueta: "Temporada de lluvia",
-              color: "agua" as const,
-              puntos: [
-                "Lluvias frecuentes (especialmente julio–septiembre)",
-                "Vegetación explosivamente verde y fotogénica",
-                "Ríos crecidos: algunas actividades acuáticas se suspenden",
-                "Menos turistas, precios más bajos",
-                "Consultar condiciones antes de ir a Tamul (corrientes peligrosas)",
-              ],
-            },
-          ].map((t, i) => (
-            <div key={t.meses}>
-              <InfoCard title={`${t.meses} · ${t.etiqueta}`} accent={t.color}>
-                <BulletList items={t.puntos} />
+          {t.temporadas.map((temp, i) => ({ ...temp, color: (["verde","dorado","agua"] as const)[i] })).map((temp, i) => (
+            <div key={temp.meses}>
+              <InfoCard title={`${temp.meses} · ${temp.etiqueta}`} accent={temp.color}>
+                <BulletList items={temp.puntos} />
               </InfoCard>
               {/* Micro-CTA tras temporada ideal */}
               {i === 0 && (
                 <div className="mt-2 ml-4 flex items-center gap-2">
                   <span className="text-verde-vivo text-sm">→</span>
                   <Link
-                    href="/tours"
+                    href={lp("/tours")}
                     className="text-xs font-dm text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors"
                   >
-                    Ver tours disponibles para esta temporada
+                    {t.verToursTemporada}
                   </Link>
                 </div>
               )}
@@ -441,20 +301,14 @@ export default function InfoPracticaPage() {
           <table className="w-full text-xs font-dm border-collapse">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-2 pr-4 text-crema/40 tracking-[1px] uppercase font-normal w-24">Mes</th>
-                <th className="text-left py-2 pr-4 text-crema/40 tracking-[1px] uppercase font-normal">Temperatura</th>
-                <th className="text-left py-2 pr-4 text-crema/40 tracking-[1px] uppercase font-normal">Lluvia</th>
-                <th className="text-left py-2 text-crema/40 tracking-[1px] uppercase font-normal">Cascadas</th>
+                <th className="text-left py-2 pr-4 text-crema/40 tracking-[1px] uppercase font-normal w-24">{t.tablaCabeceras[0]}</th>
+                <th className="text-left py-2 pr-4 text-crema/40 tracking-[1px] uppercase font-normal">{t.tablaCabeceras[1]}</th>
+                <th className="text-left py-2 pr-4 text-crema/40 tracking-[1px] uppercase font-normal">{t.tablaCabeceras[2]}</th>
+                <th className="text-left py-2 text-crema/40 tracking-[1px] uppercase font-normal">{t.tablaCabeceras[3]}</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { mes: "Ene–Feb", temp: "18–26°C", lluvia: "Poca", cascadas: "Excelente" },
-                { mes: "Mar–May", temp: "24–36°C", lluvia: "Moderada", cascadas: "Muy buena" },
-                { mes: "Jun–Sep", temp: "26–34°C", lluvia: "Alta", cascadas: "Variable" },
-                { mes: "Oct–Nov", temp: "22–30°C", lluvia: "Bajando", cascadas: "Buena" },
-                { mes: "Dic", temp: "16–24°C", lluvia: "Poca", cascadas: "Muy buena" },
-              ].map((row) => (
+              {t.tablaFilas.map((row) => (
                 <tr key={row.mes} className="border-b border-white/6 hover:bg-verde-profundo/20 transition-colors">
                   <td className="py-2.5 pr-4 text-crema/70">{row.mes}</td>
                   <td className="py-2.5 pr-4 text-crema/60">{row.temp}</td>
@@ -473,26 +327,19 @@ export default function InfoPracticaPage() {
       </div>
 
       {/* ── DÓNDE QUEDARSE ── */}
-      <Section id="donde-quedarse" Icon={BedDouble} title="Dónde quedarse">
+      <Section id="donde-quedarse" Icon={BedDouble} title={t.tituloDondeQuedarse}>
         <p className="text-crema/60 font-dm text-sm mb-8">
-          Elige tu base según el estilo de viaje. Ciudad Valles tiene la mejor logística;
-          Xilitla y Tamasopo ofrecen inmersión total en la naturaleza.
+          {t.quedarseIntro}
         </p>
 
         <div className="space-y-5">
           {/* Ciudad Valles */}
-          <InfoCard title="Ciudad Valles · Base logística ideal" accent="verde">
+          <InfoCard title={t.vallesTitulo} accent="verde">
             <p className="text-crema/60 text-sm mb-3">
-              El hub perfecto. Acceso a todos los destinos en menos de 2 horas, con la mayor variedad
-              de hospedaje, restaurantes y servicios. Aeropuerto pequeño y terminal ADO.
+              {t.vallesTexto}
             </p>
             <BulletList
-              items={[
-                "Hotel Valles: tradicional, alberca, desde $900 MXN/noche",
-                "Hotel Casa Real: boutique, céntrico, desde $1,100 MXN/noche",
-                "Hostal La Huasteca: viajeros solo/mochilero, desde $280 MXN/cama",
-                "Airbnb: casas completas desde $600 MXN/noche",
-              ]}
+              items={t.vallesItems}
             />
             {/* Links afiliados */}
             <div className="mt-4 flex flex-wrap gap-2">
@@ -502,7 +349,7 @@ export default function InfoPracticaPage() {
                 rel="noopener noreferrer sponsored"
                 className="flex items-center gap-1.5 text-[10px] font-dm text-verde-vivo border border-verde-vivo/30 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all"
               >
-                <ExternalLink className="w-3 h-3" /> Ver en Airbnb
+                <ExternalLink className="w-3 h-3" /> {t.verEnAirbnb}
               </a>
               <a
                 href="https://www.booking.com/searchresults.es.html?ss=Ciudad+Valles%2C+San+Luis+Potos%C3%AD"
@@ -510,42 +357,34 @@ export default function InfoPracticaPage() {
                 rel="noopener noreferrer sponsored"
                 className="flex items-center gap-1.5 text-[10px] font-dm text-verde-vivo border border-verde-vivo/30 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all"
               >
-                <ExternalLink className="w-3 h-3" /> Ver en Booking.com
+                <ExternalLink className="w-3 h-3" /> {t.verEnBooking}
               </a>
             </div>
           </InfoCard>
 
           {/* Xilitla — con Hotel Paraíso Encantado destacado */}
-          <InfoCard title="Xilitla · Experiencia boutique" accent="dorado">
+          <InfoCard title={t.xilitlaTitulo} accent="dorado">
             <p className="text-crema/60 text-sm mb-4">
-              El pueblo mágico más cercano a{" "}
-              <Link href="/destinos/las-pozas-jardin-surrealista" className="text-dorado hover:text-lima underline underline-offset-2 transition-colors">
-                Las Pozas de Edward James
+              {t.xilitlaTexto1}
+              <Link href={lp("/destinos/las-pozas-jardin-surrealista")} className="text-dorado hover:text-lima underline underline-offset-2 transition-colors">
+                {t.xilitlaLasPozas}
               </Link>
-              . Opciones boutique en casas coloniales con vistas al cañón. Perfecto para 1–2 noches
-              de inmersión cultural.
+              {t.xilitlaTexto2}
             </p>
 
             {/* Recomendación destacada */}
             <div className="border border-dorado/40 bg-dorado/8 p-4 mb-4">
               <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
-                <Star className="w-3 h-3 fill-dorado" aria-hidden="true" /> Recomendación de nuestro equipo
+                <Star className="w-3 h-3 fill-dorado" aria-hidden="true" /> {t.recomendacionEquipo}
               </p>
               <p className="text-crema font-dm text-sm font-medium mb-1">
-                Hotel Paraíso Encantado Xilitla
+                {t.hotelNombre}
               </p>
               <p className="text-crema/65 font-dm text-xs leading-relaxed mb-3">
-                Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín
-                Surrealista, con piscina y restaurante de cocina huasteca. Pasamos por ti aquí
-                —igual que a cualquier hospedaje de Xilitla o Ciudad Valles— sin costo extra.
+                {t.hotelTexto}
               </p>
               <ul className="space-y-1 mb-3">
-                {[
-                  "Recogida en la puerta entre 8:00 y 9:00 AM",
-                  "Piscina con vista al cañón · Restaurante propio · AC y WiFi",
-                  "Tarifa especial para viajeros que reservan tours con nosotros",
-                  "Desde $1,200 MXN/noche (habitación doble)",
-                ].map((item) => (
+                {t.hotelItems.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs text-crema/65 font-dm">
                     <span className="text-dorado mt-0.5 flex-shrink-0">✦</span>
                     {item}
@@ -558,17 +397,13 @@ export default function InfoPracticaPage() {
                 rel="noopener noreferrer"
                 className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/50 hover:border-dorado hover:bg-dorado/10 px-4 py-1.5 transition-all"
               >
-                Consultar disponibilidad →
+                {t.consultarDisponibilidad}
               </a>
             </div>
 
-            <p className="text-[10px] tracking-[1px] uppercase text-crema/35 font-dm mb-2">Otras opciones</p>
+            <p className="text-[10px] tracking-[1px] uppercase text-crema/35 font-dm mb-2">{t.otrasOpciones}</p>
             <BulletList
-              items={[
-                "Castillo El Buen Café: histórico, vista panorámica, desde $1,500 MXN",
-                "Posada El Castillo: en la propiedad de Edward James, desde $2,200 MXN",
-                "Posada Xilitla: familiar, económica, desde $600 MXN",
-              ]}
+              items={t.xilitlaOtras}
             />
           </InfoCard>
 
@@ -581,36 +416,27 @@ export default function InfoPracticaPage() {
               rel="noopener noreferrer"
               className="text-xs font-dm text-dorado hover:text-lima underline underline-offset-2 transition-colors"
             >
-              Reserva el Hotel Paraíso Encantado con tarifa especial al combinar con tour
+              {t.xilitlaMicroCta}
             </Link>
           </div>
 
           {/* Tamasopo */}
-          <InfoCard title="Tamasopo · Inmersión en la naturaleza" accent="agua">
+          <InfoCard title={t.tamasopoTitulo} accent="agua">
             <p className="text-crema/60 text-sm mb-3">
-              Pequeño pueblo a 10 min de las Cascadas de Tamasopo y Puente de Dios. Opciones
-              rurales y eco-campamentos. Ideal para amantes de la naturaleza.
+              {t.tamasopoTexto}
             </p>
             <BulletList
-              items={[
-                "Cabañas Tamasopo: piscina, naturaleza, desde $800 MXN/noche",
-                "Eco-camping junto a las cascadas: desde $150 MXN/persona",
-                "Posadas familiares: básicas, auténticas, desde $350 MXN/noche",
-              ]}
+              items={t.tamasopoItems}
             />
           </InfoCard>
         </div>
       </Section>
 
       {/* ── HOTEL PARAÍSO ENCANTADO ── */}
-      <Section id="hotel-paraiso" Icon={Hotel} title="Nuestra base: Hotel Paraíso Encantado">
+      <Section id="hotel-paraiso" Icon={Hotel} title={t.tituloHotelParaiso}>
         <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
-          El{" "}
-          <strong className="text-crema">Hotel Paraíso Encantado Xilitla</strong> es
-          nuestra casa, a pasos del Jardín Surrealista de Edward James. No hace falta
-          hospedarte aquí para tomar un tour —pasamos por ti a donde te quedes, en Xilitla
-          o en Ciudad Valles—, pero si te quedas con nosotros la logística es más simple y
-          sales por la puerta.
+          {t.paraisoIntroA}
+          <strong className="text-crema">{t.hotelNombre}</strong>{t.paraisoIntroB}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -619,7 +445,7 @@ export default function InfoPracticaPage() {
             <div className="relative aspect-[4/3] col-span-2 overflow-hidden rounded-lg">
               <Image
                 src="/imagenes/hotel-paraiso-encantado/hero.jpg"
-                alt="Hotel Paraíso Encantado Xilitla — fachada y jardines"
+                alt={t.paraisoFotoHeroAlt}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -628,7 +454,7 @@ export default function InfoPracticaPage() {
             <div className="relative aspect-square overflow-hidden rounded-lg">
               <Image
                 src="/imagenes/hotel-paraiso-encantado/habitacion.jpg"
-                alt="Habitación del Hotel Paraíso Encantado Xilitla"
+                alt={t.paraisoFotoHabAlt}
                 fill
                 className="object-cover"
                 sizes="25vw"
@@ -637,7 +463,7 @@ export default function InfoPracticaPage() {
             <div className="relative aspect-square overflow-hidden rounded-lg">
               <Image
                 src="/imagenes/hotel-paraiso-encantado/terraza.jpg"
-                alt="Terraza con vista al cañón en el Hotel Paraíso Encantado"
+                alt={t.paraisoFotoTerrazaAlt}
                 fill
                 className="object-cover"
                 sizes="25vw"
@@ -651,25 +477,18 @@ export default function InfoPracticaPage() {
               {[1,2,3,4,5].map((i) => (
                 <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
               ))}
-              <span className="text-crema/50 font-dm text-xs ml-2">Boutique 4 estrellas</span>
+              <span className="text-crema/50 font-dm text-xs ml-2">{t.boutique4}</span>
             </div>
 
-            <InfoCard title="¿Por qué hospedarte aquí?" accent="dorado">
+            <InfoCard title={t.porQueHospedarte} accent="dorado">
               <BulletList
-                items={[
-                  "Sales por la puerta: cero traslado antes de empezar el tour",
-                  "A 50 metros del Jardín Surrealista de Edward James",
-                  "Desayuno de cocina huasteca incluido en los tours",
-                  "Piscina con vista al cañón y zona de selva",
-                  "Habitaciones con AC, WiFi y baño privado",
-                  "Recepción 24h para coordinación de logística",
-                ]}
+                items={t.paraisoPorQue}
               />
             </InfoCard>
 
-            <InfoCard title="Reservas" accent="verde">
+            <InfoCard title={t.reservasTitulo} accent="verde">
               <p className="text-crema/60 font-dm text-sm mb-3">
-                Mencionando que vas con nosotros al reservar obtienes tarifa preferencial.
+                {t.reservasTexto}
               </p>
               <a
                 href="https://wa.me/524891251458?text=Hola%2C%20quisiera%20reservar%20habitaci%C3%B3n%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
@@ -677,7 +496,7 @@ export default function InfoPracticaPage() {
                 rel="noopener noreferrer"
                 className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-[#25D366] border border-[#25D366]/40 hover:border-[#25D366] hover:bg-[#25D366]/10 px-4 py-2 transition-all rounded"
               >
-                Consultar disponibilidad →
+                {t.consultarDisponibilidad}
               </a>
             </InfoCard>
 
@@ -687,26 +506,32 @@ export default function InfoPracticaPage() {
               rel="noopener noreferrer"
               className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors"
             >
-              Ver en Google Maps →
+              {t.verEnGoogleMaps}
             </a>
           </div>
         </div>
       </Section>
 
       {/* ── MAPA INTERACTIVO ── */}
-      <Section id="mapa" Icon={Map} title="Mapa de la región">
+      <Section id="mapa" Icon={Map} title={t.tituloMapa}>
         <p className="text-crema/60 font-dm text-sm mb-6 leading-relaxed">
-          La Huasteca Potosina se concentra alrededor de{" "}
-          <Link href="/destinos/xilitla-pueblo-magico" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
-            Xilitla
-          </Link>{" "}
-          y{" "}
-          <strong className="text-crema">Ciudad Valles</strong>. Todos los destinos principales están a
-          menos de 2 horas entre sí. Puntos clave:{" "}
-          <Link href="/destinos/cascada-de-tamul" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Cascada de Tamul</Link>,{" "}
-          <Link href="/destinos/las-pozas-jardin-surrealista" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Las Pozas</Link>,{" "}
-          <Link href="/destinos/sotano-de-las-golondrinas" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Sótano de las Golondrinas</Link>,{" "}
-          <Link href="/destinos/puente-de-dios-tamasopo" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">Puente de Dios</Link>.
+          {t.mapaIntroA}
+          <Link href={lp("/destinos/xilitla-pueblo-magico")} className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
+            {t.mapaXilitla}
+          </Link>
+          {t.mapaIntroB}
+          <strong className="text-crema">Ciudad Valles</strong>{t.mapaIntroC}
+          {[
+            "/destinos/cascada-de-tamul",
+            "/destinos/las-pozas-jardin-surrealista",
+            "/destinos/sotano-de-las-golondrinas",
+            "/destinos/puente-de-dios-tamasopo",
+          ].map((href, i) => (
+            <span key={href}>
+              <Link href={lp(href)} className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">{t.mapaPuntos[i]}</Link>
+              {i < 3 ? ", " : "."}
+            </span>
+          ))}
         </p>
 
         <div className="relative w-full aspect-[16/9] overflow-hidden border border-white/10">
@@ -718,20 +543,20 @@ export default function InfoPracticaPage() {
             allowFullScreen
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            title="Mapa Huasteca Potosina — destinos principales"
+            title={t.mapaTitle}
           />
         </div>
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Cascada de Tamul",        href: "/destinos/cascada-de-tamul",          dist: "1.5h desde Valles" },
-            { label: "Las Pozas (Xilitla)",      href: "/destinos/las-pozas-jardin-surrealista", dist: "1h desde Valles" },
-            { label: "Sótano de Golondrinas",   href: "/destinos/sotano-de-las-golondrinas", dist: "1h desde Valles" },
-            { label: "Puente de Dios",           href: "/destinos/puente-de-dios-tamasopo",   dist: "45 min desde Valles" },
-          ].map((d) => (
+            "/destinos/cascada-de-tamul",
+            "/destinos/las-pozas-jardin-surrealista",
+            "/destinos/sotano-de-las-golondrinas",
+            "/destinos/puente-de-dios-tamasopo",
+          ].map((href, i) => ({ href, ...t.mapaDestinos[i] })).map((d) => (
             <Link
               key={d.href}
-              href={d.href}
+              href={lp(d.href)}
               className="border border-white/8 hover:border-verde-vivo/40 bg-negro/30 p-3 group transition-all"
             >
               <p className="text-xs font-dm font-medium text-crema/75 group-hover:text-crema transition-colors leading-snug mb-1">
@@ -744,38 +569,24 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── RESTAURANTE PAPÁN HUASTECO ── */}
-      <Section id="papan-huasteco" Icon={UtensilsCrossed} title="Dónde comer: Restaurante Papán Huasteco">
+      <Section id="papan-huasteco" Icon={UtensilsCrossed} title={t.tituloPapan}>
         <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
-          En el mismo corazón de Xilitla, el{" "}
-          <strong className="text-crema">Restaurante Papán Huasteco</strong> es nuestra
-          recomendación número uno para cocina regional auténtica. Platillos tradicionales
-          huastecos cocinados en fogón de leña, con ingredientes de la región.
+          {t.papanIntroA}
+          <strong className="text-crema">{t.papanNombre}</strong>{t.papanIntroB}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           {/* Info */}
           <div className="space-y-4">
-            <InfoCard title="Lo que no debes perderte" accent="terracota">
+            <InfoCard title={t.papanNoPerderte} accent="terracota">
               <BulletList
-                items={[
-                  "Zacahuil — el tamal gigante huasteco en hoja de plátano",
-                  "Bocoles rellenos de frijol y queso fresco",
-                  "Enchiladas huastecas con carne de cerdo",
-                  "Café de olla preparado con piloncillo y canela",
-                  "Agua de tamarindo y jamaica de la región",
-                ]}
+                items={t.papanPlatillos}
               />
             </InfoCard>
 
-            <InfoCard title="Razones para venir" accent="dorado">
+            <InfoCard title={t.papanRazones} accent="dorado">
               <BulletList
-                items={[
-                  "Recetas auténticas de cocineras locales, no fusión turística",
-                  "Ingredientes frescos de mercado huasteco",
-                  "Fogón de leña — sabores que no existen en la ciudad",
-                  "Precios justos: comida completa desde $120 MXN",
-                  "Perfecto antes o después de visitar Las Pozas",
-                ]}
+                items={t.papanRazonesItems}
               />
             </InfoCard>
           </div>
@@ -785,7 +596,7 @@ export default function InfoPracticaPage() {
             <div className="relative aspect-[4/3] col-span-2 overflow-hidden rounded-lg">
               <Image
                 src="/imagenes/papan-huasteco/hero.webp"
-                alt="Restaurante Papán Huasteco — cocina regional auténtica en Xilitla"
+                alt={t.papanFotoHeroAlt}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -794,7 +605,7 @@ export default function InfoPracticaPage() {
             <div className="relative aspect-square overflow-hidden rounded-lg">
               <Image
                 src="/imagenes/papan-huasteco/platillos.jpg"
-                alt="Platillos típicos huastecos — zacahuil y bocoles"
+                alt={t.papanFotoPlatillosAlt}
                 fill
                 className="object-cover"
                 sizes="25vw"
@@ -803,7 +614,7 @@ export default function InfoPracticaPage() {
             <div className="relative aspect-square overflow-hidden rounded-lg">
               <Image
                 src="/imagenes/papan-huasteco/fogon.webp"
-                alt="Fogón de leña en el Restaurante Papán Huasteco"
+                alt={t.papanFotoFogonAlt}
                 fill
                 className="object-cover"
                 sizes="25vw"
@@ -814,263 +625,116 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── PRESUPUESTO ── */}
-      <Section id="presupuesto" Icon={DollarSign} title="Presupuesto diario">
+      <Section id="presupuesto" Icon={DollarSign} title={t.tituloPresupuesto}>
         <p className="text-crema/60 font-dm text-sm mb-8">
-          Costos aproximados por persona/día (2026). La Huasteca es sorprendentemente accesible.
+          {t.presupuestoIntro}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-          {[
-            {
-              nivel: "Económico",
-              rango: "$400–600 MXN",
-              color: "border-lima/40 bg-lima/8",
-              dot: "bg-lima",
-              incluye: [
-                "Hospedaje: hostal o camping ($150–200)",
-                "Comida: mercado y puestos locales ($100–150)",
-                "1 destino por día: $60–220 MXN entrada",
-                "Transporte: combis y colectivos ($50–100)",
-              ],
-            },
-            {
-              nivel: "Moderado",
-              rango: "$800–1,500 MXN",
-              color: "border-dorado/40 bg-dorado/8",
-              dot: "bg-dorado",
-              incluye: [
-                "Hotel 3 estrellas o posada ($400–600)",
-                "Restaurantes y cafés ($200–300)",
-                "2 destinos por día incluidas actividades",
-                "Taxi o renta compartida de auto",
-                "Recuerdos y gastos varios",
-              ],
-            },
-            {
-              nivel: "Premium",
-              rango: "$1,500+ MXN",
-              color: "border-agua/40 bg-agua/8",
-              dot: "bg-agua",
-              incluye: [
-                "Hotel boutique o posada de lujo ($800+)",
-                "Restaurante de cocina huasteca gourmet",
-                "Tour guiado privado + actividades premium",
-                "Renta de coche propia",
-                "Spa o experiencias exclusivas",
-              ],
-            },
-          ].map((p) => (
+          {t.niveles.map((n, i) => ({
+            ...n,
+            color: (["border-lima/40 bg-lima/8", "border-dorado/40 bg-dorado/8", "border-agua/40 bg-agua/8"])[i],
+            dot: (["bg-lima", "bg-dorado", "bg-agua"])[i],
+          })).map((p) => (
             <div key={p.nivel} className={`border ${p.color} p-6`}>
               <span className={`inline-block w-3 h-3 rounded-full ${p.dot} mb-3`} aria-hidden="true" />
               <h3 className="font-cormorant text-crema text-xl mb-1">{p.nivel}</h3>
-              <p className="text-dorado font-dm text-sm font-medium mb-4">{p.rango} / día</p>
+              <p className="text-dorado font-dm text-sm font-medium mb-4">{p.rango} {t.porDia}</p>
               <BulletList items={p.incluye} />
             </div>
           ))}
         </div>
 
-        <InfoCard title="Pagos y efectivo" accent="dorado">
-          <BulletList
-            items={[
-              "SIEMPRE llevar efectivo. Muchos destinos solo aceptan efectivo",
-              "Cajeros en Ciudad Valles (BBVA, Banamex, HSBC) — surtir antes de salir",
-              "Las Pozas y hoteles aceptan tarjeta; Tamul, Golondrinas: solo efectivo",
-              "Tipo de cambio: cambiar pesos en Valles, no en aeropuerto",
-            ]}
-          />
+        <InfoCard title={t.pagosTitulo} accent="dorado">
+          <BulletList items={t.pagosItems} />
         </InfoCard>
       </Section>
 
       {/* ── ITINERARIOS SUGERIDOS ── */}
-      <Section id="itinerarios" Icon={Route} title="Itinerarios sugeridos">
+      <Section id="itinerarios" Icon={Route} title={t.tituloItinerarios}>
         <p className="text-crema/60 font-dm text-sm mb-8 leading-relaxed">
-          La pregunta más común es: ¿cuántos días necesito y en qué orden? Aquí tres rutas modelo
-          según tu disponibilidad. Todos nuestros tours encajan en cualquiera de estos itinerarios.
+          {t.itinerariosIntro}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 3 días */}
-          <div className="border border-verde-vivo/20 bg-verde-selva/5 p-6">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-verde-vivo" />
-              <p className="text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo">Intenso</p>
-            </div>
-            <h3 className="font-cormorant text-crema text-xl mb-0.5">3 Días</h3>
-            <p className="text-crema/40 font-dm text-[11px] mb-5">Lo esencial — para fines de semana largos</p>
-            <ol className="space-y-3">
-              {[
-                { dia: "Día 1", lugar: "Llegada a Ciudad Valles · Noche en Valles o Xilitla" },
-                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 8:00–9:00 am · Noche Xilitla" },
-                { dia: "Día 3", lugar: "Las Pozas (Edward James) · Regreso tarde" },
-              ].map((d) => (
-                <li key={d.dia} className="flex gap-3">
-                  <span className="text-[9px] tracking-[1px] uppercase text-verde-vivo font-dm font-bold flex-shrink-0 mt-0.5 w-10">{d.dia}</span>
-                  <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
-                </li>
-              ))}
-            </ol>
-            <Link
-              href="/tours/tour-tamul"
-              className="mt-5 block text-center border border-verde-vivo/40 hover:bg-verde-vivo/10 text-verde-vivo text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all"
-            >
-              Ver tour Tamul →
-            </Link>
-          </div>
-
-          {/* 5 días */}
-          <div className="border border-dorado/20 bg-dorado/5 p-6">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-dorado" />
-              <p className="text-[9px] tracking-[2px] uppercase font-dm text-dorado">Ideal</p>
-            </div>
-            <h3 className="font-cormorant text-crema text-xl mb-0.5">5 Días</h3>
-            <p className="text-crema/40 font-dm text-[11px] mb-5">Lo recomendado — sin prisas y sin perderte nada</p>
-            <ol className="space-y-3">
-              {[
-                { dia: "Día 1", lugar: "Llegada · Comida en Papán Huasteco · Noche Xilitla" },
-                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas" },
-                { dia: "Día 3", lugar: "Las Pozas de Edward James · Pueblo de Xilitla" },
-                { dia: "Día 4", lugar: "Tour Cascada El Meco o Minas Viejas + Micos" },
-                { dia: "Día 5", lugar: "Puente de Dios + Tamasopo · Regreso" },
-              ].map((d) => (
-                <li key={d.dia} className="flex gap-3">
-                  <span className="text-[9px] tracking-[1px] uppercase text-dorado font-dm font-bold flex-shrink-0 mt-0.5 w-10">{d.dia}</span>
-                  <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
-                </li>
-              ))}
-            </ol>
-            <Link
-              href="/recomendar"
-              className="mt-5 block text-center bg-dorado/20 hover:bg-dorado/30 text-dorado text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all"
-            >
-              ¿Qué tour primero? →
-            </Link>
-          </div>
-
-          {/* 7 días */}
-          <div className="border border-agua/20 bg-agua/5 p-6">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-agua" />
-              <p className="text-[9px] tracking-[2px] uppercase font-dm text-agua">Completo</p>
-            </div>
-            <h3 className="font-cormorant text-crema text-xl mb-0.5">7 Días</h3>
-            <p className="text-crema/40 font-dm text-[11px] mb-5">La Huasteca completa — para quienes se quieren perder aquí</p>
-            <ol className="space-y-3">
-              {[
-                { dia: "Día 1", lugar: "Llegada Valles · Explora el centro · Noche Valles" },
-                { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Noche Xilitla" },
-                { dia: "Día 3", lugar: "Las Pozas · Pueblo Mágico Xilitla · Noche Xilitla" },
-                { dia: "Día 4", lugar: "Tour Cascada El Meco · Noche Tamasopo o Valles" },
-                { dia: "Día 5", lugar: "Tour Minas Viejas + Micos · Laguna Media Luna" },
-                { dia: "Día 6", lugar: "Tour Puente de Dios + Siete Cascadas de Tamasopo" },
-                { dia: "Día 7", lugar: "Tamtoc + mercado local + regreso tranquilo" },
-              ].map((d) => (
-                <li key={d.dia} className="flex gap-3">
-                  <span className="text-[9px] tracking-[1px] uppercase text-agua font-dm font-bold flex-shrink-0 mt-0.5 w-10">{d.dia}</span>
-                  <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
-                </li>
-              ))}
-            </ol>
-            <Link
-              href="/tours"
-              className="mt-5 block text-center border border-agua/40 hover:bg-agua/10 text-agua text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all"
-            >
-              Ver todos los tours →
-            </Link>
-          </div>
+          {/* El destino de cada CTA no depende del idioma; el texto sí. El plan
+              de 5 días apunta al recomendador IA, que es solo-ES: en inglés se
+              manda al catálogo de tours en vez de cruzar de idioma. */}
+          {t.planes.map((plan, i) => {
+            const estilo = [
+              { caja: "border-verde-vivo/20 bg-verde-selva/5", dot: "bg-verde-vivo", texto: "text-verde-vivo",
+                cta: "border border-verde-vivo/40 hover:bg-verde-vivo/10 text-verde-vivo" },
+              { caja: "border-dorado/20 bg-dorado/5", dot: "bg-dorado", texto: "text-dorado",
+                cta: "bg-dorado/20 hover:bg-dorado/30 text-dorado" },
+              { caja: "border-agua/20 bg-agua/5", dot: "bg-agua", texto: "text-agua",
+                cta: "border border-agua/40 hover:bg-agua/10 text-agua" },
+            ][i];
+            const href = [
+              lp("/tours/expedicion-tamul"),
+              en ? lp("/tours") : "/recomendar",
+              lp("/tours"),
+            ][i];
+            return (
+              <div key={plan.dias} className={`border ${estilo.caja} p-6`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`w-2 h-2 rounded-full ${estilo.dot}`} />
+                  <p className={`text-[9px] tracking-[2px] uppercase font-dm ${estilo.texto}`}>{plan.etiqueta}</p>
+                </div>
+                <h3 className="font-cormorant text-crema text-xl mb-0.5">{plan.dias}</h3>
+                <p className="text-crema/40 font-dm text-[11px] mb-5">{plan.sub}</p>
+                <ol className="space-y-3">
+                  {plan.pasos.map((d) => (
+                    <li key={d.dia} className="flex gap-3">
+                      <span className={`text-[9px] tracking-[1px] uppercase font-dm font-bold flex-shrink-0 mt-0.5 w-10 ${estilo.texto}`}>{d.dia}</span>
+                      <span className="text-crema/65 font-dm text-xs leading-relaxed">{d.lugar}</span>
+                    </li>
+                  ))}
+                </ol>
+                <Link
+                  href={href}
+                  className={`mt-5 block text-center text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all ${estilo.cta}`}
+                >
+                  {plan.cta}
+                </Link>
+              </div>
+            );
+          })}
         </div>
 
-        <p className="mt-6 text-center text-crema/35 font-dm text-xs">
-          ¿No sabes por dónde empezar?{" "}
-          <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
-            Usa el recomendador IA →
-          </Link>
-        </p>
+        {/* El recomendador IA es solo-ES: el pie se omite en inglés. */}
+        {!en && (
+          <p className="mt-6 text-center text-crema/35 font-dm text-xs">
+            {t.itinerariosPie}
+            <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
+              {t.itinerariosPieLink}
+            </Link>
+          </p>
+        )}
       </Section>
 
       {/* ── QUÉ LLEVAR ── */}
-      <Section id="que-llevar" Icon={Backpack} title="Qué llevar">
+      <Section id="que-llevar" Icon={Backpack} title={t.tituloQueLlevar}>
         {/* Imagen introductoria */}
         <div className="relative aspect-[21/9] overflow-hidden mb-8">
           <Image
             src="/imagenes/tours/tamul/gallery-4.jpg"
-            alt="Viajeros disfrutando en las aguas del río Tampaón — equipo básico para la Huasteca"
+            alt={t.llevarFotoAlt}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 896px"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
           <p className="absolute bottom-3 left-4 text-[10px] font-dm text-crema/70">
-            Aqua shoes y ropa de secado rápido son indispensables en la{" "}
-            <Link href="/destinos/cascada-de-tamul" className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
-              Cascada de Tamul
+            {t.llevarFotoPieA}
+            <Link href={lp("/destinos/cascada-de-tamul")} className="text-verde-vivo hover:text-lima underline underline-offset-2 transition-colors">
+              {t.llevarFotoPieLink}
             </Link>
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {[
-            {
-              categoria: "Calzado",
-              items: [
-                "Aqua shoes INDISPENSABLES para ríos y pozas",
-                "Tenis con suela antiderrapante para senderos",
-                "Sandalias para hotel/pueblo",
-                "Calzado cerrado para Tamtoc (terreno irregular)",
-              ],
-            },
-            {
-              categoria: "Ropa",
-              items: [
-                "Ropa dry-fit o de secado rápido (2–3 mudas)",
-                "Traje de baño (llevar 2 si habrá días seguidos de agua)",
-                "Camiseta manga larga para sol y repelente",
-                "Chamarra ligera para el Sótano de Golondrinas (6°C en el fondo)",
-                "Sombrero o gorra imprescindible para Tamtoc y días calurosos",
-              ],
-            },
-            {
-              categoria: "Salud y protección",
-              items: [
-                "Repelente BIODEGRADABLE (obligatorio en pozas y cascadas)",
-                "Bloqueador solar BIODEGRADABLE (solo este permitido en agua)",
-                "Pastillas potabilizadoras o filtro de agua",
-                "Botiquín básico: curitas, antidiarreico, antihistamínico",
-                "Medicamento para el mareo si haces lancha en Tamul",
-              ],
-            },
-            {
-              categoria: "Documentos y dinero",
-              items: [
-                "INE o pasaporte vigente",
-                "Efectivo en pesos mexicanos (ver sección Presupuesto)",
-                "Seguro de viaje recomendado para actividades extremas",
-                "Reservaciones descargadas en el celular (sin internet en cascadas)",
-                "Número de emergencias guardado: ver sección Seguridad",
-              ],
-            },
-            {
-              categoria: "Tecnología",
-              items: [
-                "Powerbank: muchos sitios sin carga disponible",
-                "Funda impermeable para teléfono (esencial en lanchas y pozas)",
-                "Cámara de acción (GoPro) si harás actividades acuáticas",
-                "Descarga mapas offline de la región antes de salir",
-                "Chip local o eSIM: cobertura limitada fuera de Valles",
-              ],
-            },
-            {
-              categoria: "Mochila y extras",
-              items: [
-                "Mochila resistente al agua o bolsas zip-lock para lo electrónico",
-                "Botella de agua reutilizable (2L mínimo para días de cascadas)",
-                "Snacks energéticos para días largos",
-                "Linterna frontal para el Sótano de Golondrinas",
-                "Toalla de microfibra de secado rápido",
-              ],
-            },
-          ].map((cat) => (
-            <InfoCard key={cat.categoria} title={cat.categoria} accent="verde">
+          {t.llevarCategorias.map((cat) => (
+            <InfoCard key={cat.titulo} title={cat.titulo} accent="verde">
               <BulletList items={cat.items} />
             </InfoCard>
           ))}
@@ -1078,18 +742,11 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── SEGURIDAD ── */}
-      <Section id="seguridad" Icon={Shield} title="Seguridad y emergencias">
+      <Section id="seguridad" Icon={Shield} title={t.tituloSeguridad}>
         <div className="space-y-5">
-          <InfoCard title="Números de emergencia" accent="terracota">
+          <InfoCard title={t.emergenciasTitulo} accent="terracota">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              {[
-                { label: "Emergencias general", num: "911" },
-                { label: "Cruz Roja Valles", num: "(481) 382-0119" },
-                { label: "IMSS Ciudad Valles", num: "(481) 381-1190" },
-                { label: "Bomberos Valles", num: "(481) 382-0123" },
-                { label: "Policía Municipal Valles", num: "(481) 382-0066" },
-                { label: "Protección Civil SLP", num: "(444) 812-6000" },
-              ].map((e) => (
+              {t.emergencias.map((e) => (
                 <div key={e.label} className="flex items-center gap-3 py-2 border-b border-white/6">
                   <div>
                     <div className="text-[10px] uppercase tracking-[1px] text-crema/40 font-dm">{e.label}</div>
@@ -1100,44 +757,11 @@ export default function InfoPracticaPage() {
             </div>
           </InfoCard>
 
-          <InfoCard title="Consejos de seguridad general" accent="dorado">
-            <BulletList
-              items={[
-                "La región es generalmente segura para turistas. Mantén actitud de viajero responsable.",
-                "Viaja en grupos y evita excursiones solitarias a cascadas remotas.",
-                "Sigue SIEMPRE las indicaciones de guías y personal local en sitios de aventura.",
-                "No desobedezcas señales de corriente fuerte o nivel alto de río.",
-                "Guarda objetos de valor en el hotel; no los lleves a las cascadas.",
-                "Comparte tu itinerario del día con alguien de confianza antes de salir.",
-              ]}
-            />
-          </InfoCard>
-
-          <InfoCard title="Seguridad en el agua" accent="agua">
-            <BulletList
-              items={[
-                "Chaleco salvavidas OBLIGATORIO en Tamul y actividades de río.",
-                "Nunca nadar en zonas con corrientes fuertes sin guía.",
-                "Puente de Dios: seguir siempre la cuerda de seguridad instalada.",
-                "Consultar caudal de ríos en temporada de lluvia antes de ir.",
-                "Habilidades de natación básicas necesarias para Tamul y Puente de Dios.",
-                "Tamasopo y Micos: ideales para no nadadores por aguas más tranquilas.",
-              ]}
-            />
-          </InfoCard>
-
-          <InfoCard title="Salud" accent="verde">
-            <BulletList
-              items={[
-                "Hospital Regional Ciudad Valles: atención de urgencias 24hrs.",
-                "Llevar medicamentos básicos: el surtido en zonas rurales es limitado.",
-                "Hidratación constante: mínimo 2L diarios, más en días calurosos.",
-                "Protección solar rigurosa especialmente en Tamtoc (sin sombra natural).",
-                "Diarrea del viajero: beber solo agua embotellada o purificada.",
-                "Vacunación: no requerida, pero recomendable hepatitis A y tifoidea.",
-              ]}
-            />
-          </InfoCard>
+          {t.seguridadBloques.map((b, i) => (
+            <InfoCard key={b.titulo} title={b.titulo} accent={(["dorado","agua","verde"] as const)[i]}>
+              <BulletList items={b.items} />
+            </InfoCard>
+          ))}
         </div>
       </Section>
 
@@ -1150,19 +774,19 @@ export default function InfoPracticaPage() {
               className="font-cormorant font-light text-crema"
               style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
             >
-              Preguntas Frecuentes
+              {t.faqTitulo}
             </h2>
           </div>
           <p className="text-crema/45 font-dm text-sm mb-10 ml-10">
-            Todo lo que necesitas saber antes de reservar.
+            {t.faqIntro}
           </p>
 
           {/* Política de cancelación destacada */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
             {([
-              { color: "text-lima border-lima/30 bg-lima/8",       Icon: CheckCircle2,   titulo: "+48h de anticipación", sub: "Reembolso completo" },
-              { color: "text-dorado border-dorado/30 bg-dorado/8", Icon: AlertTriangle,  titulo: "-24h de anticipación", sub: "Sin reembolso · Reagendamiento gratuito (1 vez)" },
-              { color: "text-terracota border-terracota/30 bg-terracota/8", Icon: XCircle, titulo: "No-show",             sub: "Sin reembolso" },
+              { color: "text-lima border-lima/30 bg-lima/8",                 Icon: CheckCircle2,  ...t.cancelacion[0] },
+              { color: "text-dorado border-dorado/30 bg-dorado/8",           Icon: AlertTriangle, ...t.cancelacion[1] },
+              { color: "text-terracota border-terracota/30 bg-terracota/8",  Icon: XCircle,       ...t.cancelacion[2] },
             ] as { color: string; Icon: LucideIcon; titulo: string; sub: string }[]).map((p) => (
               <div key={p.titulo} className={`border ${p.color} p-4 rounded`}>
                 <p.Icon className="w-5 h-5 mb-2" aria-hidden="true" />
@@ -1172,36 +796,33 @@ export default function InfoPracticaPage() {
             ))}
           </div>
 
-          <FAQAccordion categorias={FAQ_DATA} />
+          <FAQAccordion categorias={t.faq} />
         </div>
       </section>
 
       {/* ── LEAD MAGNET PDF ── */}
+      {/* La Guía Definitiva es un PDF en español: la sección se oculta en inglés
+          en vez de vender un producto que el visitante no va a poder leer. */}
+      {!en && (
       <section className="py-16 border-b border-white/6">
         <div className="max-w-4xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div>
               <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3">
-                ✦ Guía Definitiva · PDF descargable
+                {t.guiaEyebrow}
               </p>
               <h2
                 className="reveal-up font-cormorant font-light text-crema mb-4"
                 style={{ fontSize: "clamp(26px,3.5vw,42px)" }}
               >
-                Llévate la guía completa en{" "}
-                <em className="shimmer-gold">PDF</em>
+                {t.guiaH2a}
+                <em className="shimmer-gold">{t.guiaH2b}</em>
               </h2>
               <p className="text-crema/55 font-dm text-sm mb-6 leading-relaxed">
-                Mapa de la región, checklist de equipaje, presupuesto detallado y los 3 itinerarios
-                modelo — todo en un PDF que funciona sin internet, listo para el día del viaje.
+                {t.guiaTexto}
               </p>
               <ul className="space-y-2 mb-6">
-                {[
-                  "Mapa descargable con todos los destinos",
-                  "Checklist de empaque (no olvides nada)",
-                  "Presupuesto detallado por tipo de viajero",
-                  "Itinerarios 3, 5 y 7 días listos para imprimir",
-                ].map((item) => (
+                {t.guiaItems.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-crema/65 font-dm">
                     <span className="text-verde-vivo mt-0.5 flex-shrink-0">✦</span>
                     {item}
@@ -1215,15 +836,16 @@ export default function InfoPracticaPage() {
                 <span className="font-cormorant font-light text-dorado text-3xl">$49 <span className="text-[11px] font-dm text-crema/40">MXN</span></span>
               </div>
               <p className="font-dm text-[11px] text-crema/40 mb-5">
-                Pago seguro · Descarga inmediata · Garantía 7 días
+                {t.guiaGarantia}
               </p>
               <Link href="/guia" className="block w-full text-center bg-dorado text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
-                Descargar la guía → $49
+                {t.guiaCta}
               </Link>
             </div>
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA */}
       <section className="relative py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6 overflow-hidden">
@@ -1233,24 +855,25 @@ export default function InfoPracticaPage() {
           className="reveal-up font-cormorant font-light text-crema mb-4"
           style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
         >
-          ¿Listo para <em className="shimmer-gold">planear tu viaje?</em>
+          {t.ctaH2a}<em className="shimmer-gold">{t.ctaH2b}</em>
         </h2>
         <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
-          Usa nuestro planificador IA para crear un itinerario personalizado con toda la
-          información práctica que necesitas.
+          {t.ctaTexto}
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link
-            href="/destinos"
+            href={lp("/destinos")}
             className="border border-crema/30 text-crema px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-crema/10 transition-all"
           >
-            Ver destinos
+            {t.ctaDestinos}
           </Link>
+          {/* El recomendador IA es solo-ES; en inglés el CTA lleva al motor de
+              reservas, que sí está traducido. */}
           <Link
-            href="/recomendar"
+            href={en ? lp("/reservar") : "/recomendar"}
             className="bg-verde-selva text-crema px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
           >
-            ¿Qué tour es para mí? →
+            {t.ctaRecomendar}
           </Link>
         </div>
         </div>

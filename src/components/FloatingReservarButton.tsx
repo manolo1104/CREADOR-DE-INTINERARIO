@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getBooking } from "@/lib/i18n/booking";
 import { trackCtaClick } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -49,14 +50,22 @@ export function FloatingReservarButton() {
     ? toursQueIncluyen(destinoSlugMatch[1])[0]
     : undefined;
 
+  // El botón ya sabía leer /en para decidir dónde esconderse, pero los destinos
+  // que construía salían SIN prefijo: en una ficha de tour en inglés, el botón
+  // flotante —que en escritorio es el CTA más visible— cruzaba al carrito en
+  // español.
+  const en = pathname === "/en" || pathname.startsWith("/en/");
+  const lp = (path: string) => (en ? `/en${path}` : path);
+  const t = getBooking(en ? "en" : "es");
+
   const conBarraInferior = !!tourSlugMatch || !!tourDelDestino;
   // Fuera de una ficha concreta, el botón manda al motor de reservas y no al
   // catálogo editorial: quien lo pulsa ya decidió que quiere reservar.
   const href = tourSlugMatch
-    ? `/reservar/carrito?agregar=${tourSlugMatch[1]}`
+    ? lp(`/reservar/carrito?agregar=${tourSlugMatch[1]}`)
     : tourDelDestino
-      ? `/tours/${tourDelDestino.slug}`
-      : "/reservar";
+      ? lp(`/tours/${tourDelDestino.slug}`)
+      : lp("/reservar");
   const waHref = waLink(WA_MESSAGES.flotante);
   const visibility = conBarraInferior ? "hidden lg:flex" : "flex";
 
@@ -102,7 +111,7 @@ export function FloatingReservarButton() {
       </a>
       <Link
         href={href}
-        aria-label="Reservar tour"
+        aria-label={t.catalogo.reservarTourFlotante}
         onClick={() => trackCtaClick("floating_button", href)}
         className={`fixed ${abajoReservar} right-6 z-50 items-center gap-2.5
                    bg-dorado hover:bg-terracota text-negro hover:text-crema
@@ -115,7 +124,7 @@ export function FloatingReservarButton() {
             quedaba reducido a un candado sin etiqueta: en el celular —de donde
             viene la mayor parte del tráfico— nadie sabía qué hacía. */}
         <span className="text-[11px] tracking-[1.5px] uppercase font-dm font-medium whitespace-nowrap">
-          Reservar tour
+          {t.catalogo.reservarTourFlotante}
         </span>
       </Link>
     </>

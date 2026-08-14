@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Calendar, Users, Clock, MessageCircle, Share2, CalendarPlus, Copy } from "lucide-react";
 import { formatTourDate, formatMXN } from "@/lib/tourBooking";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 
 interface ConfirmationData {
   confirmationNumber: string;
@@ -30,35 +32,9 @@ interface ConfirmationData {
   }[];
 }
 
-const NEXT_STEPS = [
-  {
-    num: "01",
-    title: "Revisa tu correo",
-    text: "Recibirás la confirmación completa en tu bandeja de entrada en los próximos 5 minutos. Revisa también el spam.",
-  },
-  {
-    num: "02",
-    title: "Confirma por WhatsApp",
-    text: "Envíanos tu número de confirmación al +52 489 125 1458. Te responderemos para coordinar tu punto de recogida exacto.",
-  },
-  {
-    num: "03",
-    title: "Un día antes de tu tour",
-    text: "Te contactaremos por WhatsApp con los detalles finales: hora exacta de recogida, clima esperado y cualquier recomendación especial.",
-  },
-  {
-    num: "04",
-    title: "Prepara tu equipo",
-    text: "Ropa cómoda, calzado cerrado, traje de baño, protector solar biodegradable y mucha energía. Todo lo demás lo incluye tu tour.",
-  },
-  {
-    num: "05",
-    title: "El día del tour",
-    text: "Preséntate en el punto acordado con tu guía y muestra tu número de confirmación. ¡El resto lo hacemos nosotros!",
-  },
-];
-
 export default function ConfirmacionTourPage() {
+  const { locale, lp } = useLocale();
+  const t = getBooking(locale).confirmacion;
   const [data, setData]       = useState<ConfirmationData | null>(null);
   const [copied, setCopied]   = useState(false);
   const [shareOk, setShareOk] = useState(false);
@@ -82,12 +58,12 @@ export default function ConfirmacionTourPage() {
   const waMessage = data
     ? encodeURIComponent(
         [
-          "Hola, confirmo mi reserva:",
+          t.waConfirmo,
           ...(data.lineItems?.length
-            ? data.lineItems.map((l) => `• ${l.tourName.split("—")[0].trim()} — ${formatTourDate(l.tourDate)}`)
-            : [`• ${data.tourName}`, `• Fecha: ${formatTourDate(data.tourDate)}`]),
-          `• Participantes: ${data.adults + data.children}`,
-          `• Confirmación: ${data.confirmationNumber}`,
+            ? data.lineItems.map((l) => `• ${l.tourName.split("—")[0].trim()} — ${formatTourDate(l.tourDate, locale)}`)
+            : [`• ${data.tourName}`, t.waFecha(formatTourDate(data.tourDate, locale))]),
+          t.waParticipantes(data.adults + data.children),
+          t.waConfirmacion(data.confirmationNumber),
         ].join("\n"),
       )
     : "";
@@ -129,7 +105,7 @@ export default function ConfirmacionTourPage() {
           `DTSTART;VALUE=DATE:${start}`,
           `DTEND;VALUE=DATE:${end}`,
           `SUMMARY:${ev.tourName.split("—")[0].trim()} — Huasteca Potosina`,
-          `DESCRIPTION:Confirmación ${data.confirmationNumber}. ${ev.adults + ev.children} participante(s). Te contactaremos por WhatsApp (+52 489 125 1458) un día antes para coordinar la hora exacta de recogida.`,
+          `DESCRIPTION:${t.icsDescripcion(data.confirmationNumber, ev.adults + ev.children)}`,
           "LOCATION:Huasteca Potosina, San Luis Potosí, México",
           "END:VEVENT",
         ];
@@ -151,13 +127,11 @@ export default function ConfirmacionTourPage() {
     if (!data) return;
     // Sin slug (un carrito de varios recorridos no tiene "uno") el enlace se va
     // al catálogo, no a `/tours/undefined`.
-    const url = data.tourSlug
-      ? `https://www.huasteca-potosina.com/tours/${data.tourSlug}`
-      : "https://www.huasteca-potosina.com/tours";
-    const text = `¡Acabo de reservar "${data.tourName}" en la Huasteca Potosina! 🌊 ¿Quién se apunta al próximo? 👉 ${url}`;
+    const url = `https://www.huasteca-potosina.com${lp(data.tourSlug ? `/tours/${data.tourSlug}` : "/tours")}`;
+    const text = t.compartirTexto(data.tourName, url);
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ text, title: "Mi tour en la Huasteca Potosina" });
+        await navigator.share({ text, title: t.compartirTitulo });
         setShareOk(true);
       } catch { /* usuario canceló */ }
     } else {
@@ -172,9 +146,9 @@ export default function ConfirmacionTourPage() {
     return (
       <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
         <div className="text-center max-w-sm">
-          <p className="font-cormorant text-verde-profundo text-2xl mb-4">Cargando confirmación...</p>
-          <p className="font-dm text-sm text-negro/50 mb-6">Si ya realizaste tu pago, revisa tu correo electrónico.</p>
-          <Link href="/tours" className="text-verde-selva underline font-dm text-sm">Ver todos los tours</Link>
+          <p className="font-cormorant text-verde-profundo text-2xl mb-4">{t.cargando}</p>
+          <p className="font-dm text-sm text-negro/50 mb-6">{t.cargandoSub}</p>
+          <Link href={lp("/tours")} className="text-verde-selva underline font-dm text-sm">{t.verTodosLosTours}</Link>
         </div>
       </main>
     );
@@ -196,16 +170,16 @@ export default function ConfirmacionTourPage() {
             <CheckCircle2 className="w-8 h-8 text-white" />
           </div>
           <h1 className="font-cormorant font-light text-verde-profundo mb-3" style={{ fontSize: "clamp(32px,5vw,52px)" }}>
-            ¡Tour Confirmado!
+            {t.titulo}
           </h1>
           <p className="font-dm text-negro/60 text-sm max-w-sm mx-auto leading-relaxed">
-            Hola <strong>{data.customerName}</strong>, tu reserva está lista. Confirmación enviada a <strong>{data.customerEmail}</strong>.
+            {t.saludo(data.customerName, data.customerEmail)}
           </p>
         </div>
 
         {/* ── NÚMERO DE CONFIRMACIÓN ── */}
         <div className="bg-white border border-negro/8 p-6 mb-6 text-center">
-          <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm mb-2">Número de Confirmación</p>
+          <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm mb-2">{t.numeroConfirmacion}</p>
           <p className="font-cormorant text-dorado mb-3" style={{ fontSize: "clamp(28px,5vw,40px)" }}>
             {data.confirmationNumber}
           </p>
@@ -214,28 +188,28 @@ export default function ConfirmacionTourPage() {
             className="inline-flex items-center gap-2 text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors border border-verde-selva/30 hover:border-verde-vivo px-4 py-2"
           >
             <Copy className="w-3.5 h-3.5" />
-            {copied ? "¡Copiado! ✓" : "Copiar número"}
+            {copied ? t.copiado : t.copiar}
           </button>
-          <p className="font-dm text-xs text-negro/40 mt-3">Presenta este número al guía el día del tour</p>
+          <p className="font-dm text-xs text-negro/40 mt-3">{t.presentaAlGuia}</p>
         </div>
 
         {/* ── RESUMEN COMPLETO ── */}
         <div className="bg-white border border-negro/8 p-6 mb-6">
-          <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Resumen de tu reserva</h2>
+          <h2 className="font-cormorant text-verde-profundo text-xl mb-5">{t.resumenTitulo}</h2>
           <div className="space-y-4">
             {varios ? (
               /* Vino del carrito: el itinerario día por día, que es lo que la
                  persona acaba de pagar. "3 recorridos" no le dice nada. */
               <div className="font-dm">
-                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-2">Tu itinerario</p>
+                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-2">{t.tuItinerario}</p>
                 <ul className="divide-y divide-negro/8 border-y border-negro/8">
                   {data.lineItems!.map((l, i) => (
                     <li key={`${l.tourName}-${l.tourDate}-${i}`} className="flex items-baseline justify-between gap-4 py-2.5">
                       <div className="min-w-0">
                         <p className="text-negro/80 text-sm leading-snug">{l.tourName.split("—")[0].trim()}</p>
                         <p className="text-negro/45 text-xs mt-0.5">
-                          {formatTourDate(l.tourDate)}
-                          {l.adults + l.children > 0 && ` · ${l.adults + l.children} persona${l.adults + l.children !== 1 ? "s" : ""}`}
+                          {formatTourDate(l.tourDate, locale)}
+                          {l.adults + l.children > 0 && ` · ${t.personas(l.adults + l.children)}`}
                         </p>
                       </div>
                       <span className="text-negro/60 text-sm whitespace-nowrap">{formatMXN(l.subtotal)}</span>
@@ -245,7 +219,7 @@ export default function ConfirmacionTourPage() {
               </div>
             ) : (
               <div className="font-dm">
-                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1">Tour</p>
+                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1">{t.tour}</p>
                 <p className="text-negro/80 font-medium">{data.tourName}</p>
               </div>
             )}
@@ -253,19 +227,18 @@ export default function ConfirmacionTourPage() {
               {!varios && (
                 <div className="font-dm">
                   <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" /> Fecha
+                    <Calendar className="w-3 h-3" /> {t.fecha}
                   </p>
-                  <p className="text-negro/80 text-sm">{formatTourDate(data.tourDate)}</p>
-                  <p className="text-negro/40 text-xs mt-0.5">Hora: por acordar con el guía</p>
+                  <p className="text-negro/80 text-sm">{formatTourDate(data.tourDate, locale)}</p>
+                  <p className="text-negro/40 text-xs mt-0.5">{t.horaPorAcordar}</p>
                 </div>
               )}
               <div className="font-dm">
                 <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
-                  <Users className="w-3 h-3" /> Participantes
+                  <Users className="w-3 h-3" /> {t.participantes}
                 </p>
                 <p className="text-negro/80 text-sm">
-                  {data.adults} adulto{data.adults !== 1 ? "s" : ""}
-                  {data.children > 0 ? ` · ${data.children} niño${data.children !== 1 ? "s" : ""}` : ""}
+                  {t.adultosNinos(data.adults, data.children)}
                 </p>
               </div>
               {/* La duración solo existe cuando la reserva es de un tour: un
@@ -273,14 +246,14 @@ export default function ConfirmacionTourPage() {
               {!varios && data.tourDuration ? (
                 <div className="font-dm">
                   <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1 flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> Duración
+                    <Clock className="w-3 h-3" /> {t.duracion}
                   </p>
-                  <p className="text-negro/80 text-sm">{data.tourDuration} horas aprox.</p>
+                  <p className="text-negro/80 text-sm">{t.horasAprox(data.tourDuration)}</p>
                 </div>
               ) : null}
               <div className="font-dm">
                 <p className="text-[9px] tracking-[2px] uppercase text-negro/40 mb-1">
-                  {isDeposit ? "Depósito pagado" : "Total pagado"}
+                  {isDeposit ? t.depositoPagado : t.totalPagado}
                 </p>
                 <p className="font-cormorant text-dorado text-lg">{formatMXN(chargeAmt)} MXN</p>
               </div>
@@ -288,8 +261,7 @@ export default function ConfirmacionTourPage() {
             {isDeposit && (
               <div className="bg-verde-selva/8 border border-verde-selva/20 px-4 py-3">
                 <p className="text-xs text-verde-selva font-dm font-medium">
-                  ✓ Anticipo de {Math.round((chargeAmt / data.total) * 100)}% pagado · Saldo de{" "}
-                  {formatMXN(remaining)} MXN el día del tour, en efectivo o con tarjeta
+                  {t.anticipoPagado(Math.round((chargeAmt / data.total) * 100), formatMXN(remaining))}
                 </p>
               </div>
             )}
@@ -298,9 +270,9 @@ export default function ConfirmacionTourPage() {
 
         {/* ── PRÓXIMOS PASOS ── */}
         <div className="bg-verde-profundo text-crema p-6 mb-6">
-          <h2 className="font-cormorant text-crema text-xl mb-6">¿Qué sigue?</h2>
+          <h2 className="font-cormorant text-crema text-xl mb-6">{t.queSigue}</h2>
           <ol className="space-y-5">
-            {NEXT_STEPS.map((step) => (
+            {t.pasos.map((step) => (
               <li key={step.num} className="flex gap-4">
                 <span className="font-cormorant text-dorado text-2xl font-light flex-shrink-0 leading-none mt-0.5">
                   {step.num}
@@ -323,7 +295,7 @@ export default function ConfirmacionTourPage() {
             className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white w-full py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
-            Confirmar por WhatsApp · +52 489 125 1458
+            {t.confirmarWhatsapp}
           </a>
 
           <button
@@ -331,7 +303,7 @@ export default function ConfirmacionTourPage() {
             className="flex items-center justify-center gap-2 w-full border border-negro/20 hover:border-verde-selva/50 hover:bg-verde-selva/5 text-negro/70 hover:text-verde-selva py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all"
           >
             <Share2 className="w-4 h-4" />
-            {shareOk ? "¡Enlace copiado! Compártelo 🎉" : "Compartir mi reserva"}
+            {shareOk ? t.enlaceCopiado : t.compartirReserva}
           </button>
 
           <div className="grid grid-cols-2 gap-3">
@@ -340,23 +312,23 @@ export default function ConfirmacionTourPage() {
               className="flex items-center justify-center gap-2 border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
-              Agregar al calendario
+              {t.agregarCalendario}
             </button>
             <Link
-              href="/tours"
+              href={lp("/tours")}
               className="flex items-center justify-center border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-all"
             >
-              Ver más tours
+              {t.verMasTours}
             </Link>
           </div>
         </div>
 
         <p className="text-center text-xs text-negro/40 font-dm">
-          ¿Problemas? Escríbenos a{" "}
+          {t.problemas}{" "}
           <a href="mailto:hola@huasteca-potosina.com" className="text-verde-selva underline">
             hola@huasteca-potosina.com
           </a>
-          {" "}o al{" "}
+          {" "}{t.oAl}{" "}
           <a href="https://wa.me/524891251458" target="_blank" rel="noopener noreferrer" className="text-verde-selva underline">
             +52 489 125 1458
           </a>

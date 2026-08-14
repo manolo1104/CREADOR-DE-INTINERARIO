@@ -25,6 +25,41 @@ export interface DestinoTranslation {
   };
 }
 
+/**
+ * El horario, traducido por VOCABULARIO y no destino a destino.
+ *
+ * De los 23 horarios distintos que hay en el catálogo, 12 son rangos de reloj
+ * ("09:00–18:00") que no se traducen y el resto son una docena de frases que se
+ * repiten entre destinos. Una tabla de frases los cubre todos y sigue
+ * cubriéndolos cuando se agregue un destino que reuse alguna. Lo que no esté en
+ * la tabla cae al español: es preferible a inventar un horario.
+ *
+ * ⚠️ Este campo NO estaba en `DestinoTranslation`, así que `localizeDestino`
+ * nunca lo tocaba: los 41 destinos enseñaban su horario en español dentro de la
+ * ficha en inglés.
+ */
+const HORARIOS_EN: Record<string, string> = {
+  "Abierto todo el día": "Open all day",
+  "Abierto todo el día (templo en uso)": "Open all day (a working church)",
+  "Acceso libre (sin horario formal)": "Free access (no set hours)",
+  "Horario diurno (consultar en el acceso)": "Daylight hours (check at the entrance)",
+  "Martes a domingo, 11:00–17:00 (último acceso 16:30)": "Tuesday to Sunday, 11:00–17:00 (last entry 16:30)",
+  "Recorridos durante el día (con guía de La Trinidad)": "Daytime tours (with a guide from La Trinidad)",
+  "Talleres particulares (sin horario formal)": "Private workshops (no set hours)",
+  "Visita de día": "Daytime visit",
+  "Visita de día (sin horario formal)": "Daytime visit (no set hours)",
+  "Visita de día con guía": "Daytime visit with a guide",
+  "Visita y recorridos durante el día (reservar con la comunidad)": "Daytime visits and tours (book with the community)",
+  "08:00–18:00 (limpias y masajes hasta las 16:00)": "08:00–18:00 (cleansing rituals and massages until 16:00)",
+  "09:00–18:00 (último acceso 17:00)": "09:00–18:00 (last entry 17:00)",
+};
+
+/** El horario de un destino en el idioma pedido; los rangos de reloj pasan tal cual. */
+export function horarioDestino(horario: string, locale: "es" | "en" = "es"): string {
+  if (locale === "es") return horario;
+  return HORARIOS_EN[horario] ?? horario;
+}
+
 export const DESTINOS_EN: Record<string, DestinoTranslation> = {
   "las-pozas-jardin-surrealista": {
     nombre: "Las Pozas (Surrealist Garden)",
@@ -40,6 +75,20 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["It was once an orchid plantation", "Edward James never lived in the structures"],
     errores_comunes: ["Arriving without a reservation", "Smooth-soled shoes"],
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "What days is Las Pozas open and how much does it cost?",
+            respuesta: "It's open Wednesday to Monday from 09:00 to 18:00 and closed on Tuesdays. Admission is $180 MXN. It's worth buying your digital ticket before you arrive.",
+          },
+          {
+            pregunta: "How long do you need to tour Las Pozas?",
+            respuesta: "About 4 hours to take it in at a relaxed pace. The best time to go in is between 09:00 and 11:00, when there are fewer people and better light for photos.",
+          },
+          {
+            pregunta: "Who built Las Pozas?",
+            respuesta: "The British poet Edward James, who raised the concrete structures among the waterfalls and jungle. The land used to be an orchid plantation, and he never lived inside the structures.",
+          },
+        ],
       metaTitle: "Las Pozas Xilitla 2026 | Hours, Tickets & How to Get There",
       metaDescription: "Edward James's surrealist garden in Xilitla: $180 MXN entry, open Wednesday to Monday 09:00-18:00 (closed Tuesdays). How to get there, the best hour to go and what to bring.",
       keywords: ["las pozas xilitla", "edward james surrealist garden", "las pozas tickets", "xilitla mexico", "surrealist garden san luis potosi"],
@@ -59,6 +108,20 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["105m drop", "In October: turquoise water + orange foliage"],
     errores_comunes: ["Arriving late", "Not bringing cash"],
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "How much does it cost to visit Tamul Waterfall?",
+            respuesta: "Admission is $220 MXN plus $300 MXN per person for the panga (boat). CASH only: there is no ATM at the dock.",
+          },
+          {
+            pregunta: "What time should you get to Tamul?",
+            respuesta: "Ideally by 08:00. The boatmen stop heading out at 2 PM, so arriving late means missing the trip altogether.",
+          },
+          {
+            pregunta: "How tall is Tamul Waterfall?",
+            respuesta: "It drops 105 metres, the tallest in San Luis Potosí. In October the turquoise water contrasts with the orange foliage of the canyon.",
+          },
+        ],
       metaTitle: "Tamul Waterfall 2026 | Price, Hours and the Boat Trip",
       metaDescription: "The tallest waterfall in San Luis Potosi (105 m), reached by paddling up the Tampaon river. $220 MXN entry plus $300 per person for the boat, cash only. Last departures at 2 PM.",
       keywords: ["tamul waterfall", "cascada de tamul", "tamul boat trip", "how to get to tamul", "huasteca potosina waterfalls"],
@@ -78,6 +141,20 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["The birds are SWIFTS, not swallows", "The bottom = 3 soccer fields"],
     errores_comunes: ["Arriving at 9 AM after the birds have already left"],
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "What time do the birds fly out of the Sótano de las Golondrinas?",
+            respuesta: "The spiral flight happens at dawn: you need to be at the rim around 5:45 AM. If you arrive at 9 AM the birds have already left and you miss the spectacle.",
+          },
+          {
+            pregunta: "How deep is the Sótano de las Golondrinas?",
+            respuesta: "It has a 376-metre free fall and a total depth of up to 512 metres. The floor measures about three football pitches across.",
+          },
+          {
+            pregunta: "How hard is the descent?",
+            respuesta: "It's 568 steps down to the lookout, and the climb back up is exhausting. Bring trainers, a jacket and a torch for the dawn hour.",
+          },
+        ],
       metaTitle: "Cave of Swallows 2026 | What Time the Birds Fly Out",
       metaDescription: "A 376 m free-fall abyss (up to 512 m deep) in Aquismon. $100 MXN entry. Arrive by 5:45 AM to watch the swifts spiral out. 568 steps down to the viewpoint.",
       keywords: ["cave of swallows", "sotano de las golondrinas", "golondrinas bird flight time", "aquismon san luis potosi", "deepest cave in mexico"],
@@ -97,6 +174,20 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["The most versatile river in the area"],
     errores_comunes: ["Not adjusting your life vest properly"],
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "How much does it cost to enter the Micos Waterfalls?",
+            respuesta: "Admission is $100 MXN and it's open every day from 08:00 to 18:00. The activities (jumps, zip line, kayak, skybike) are booked separately on site.",
+          },
+          {
+            pregunta: "Are the jumps at Micos safe?",
+            respuesta: "Yes, as long as you do them with the gear on: a life vest and helmet are MANDATORY. The most common mistake is not fastening the vest properly before jumping.",
+          },
+          {
+            pregunta: "How do you get to Micos from Ciudad Valles?",
+            respuesta: "It's 20 minutes from Ciudad Valles. There are shared vans leaving every 30 minutes for around $35 MXN.",
+          },
+        ],
       metaTitle: "Micos Waterfalls 2026 | Price, Cliff Jumps and How to Get There",
       metaDescription: "Seven waterfalls with a jumping circuit, zipline, kayak and skybike, 20 min from Ciudad Valles. $100 MXN entry, open daily 08:00-18:00. Life jacket and helmet are required.",
       keywords: ["micos waterfalls", "cascadas de micos", "micos cliff jumping", "things to do in ciudad valles", "huasteca potosina"],
@@ -164,6 +255,20 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["The pools change color with the season"],
     errores_comunes: ["Using chemical sunscreen"],
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "How much is admission to the Tamasopo Waterfalls?",
+            respuesta: "Admission is $60 MXN and the park is open every day from 08:00 to 17:00. It's one of the cheapest entries in the Huasteca Potosina.",
+          },
+          {
+            pregunta: "Can you swim at the Tamasopo Waterfalls?",
+            respuesta: "Yes, the pools are good for swimming and it's a quiet spot for a family day out. The best time is between 10:00 and 14:00, when the water looks bluest.",
+          },
+          {
+            pregunta: "Why is only biodegradable sunscreen allowed?",
+            respuesta: "Chemical sunscreen pollutes the pools and damages the river ecosystem. Only biodegradable sunscreen is allowed at Tamasopo; it's the most common mistake visitors make.",
+          },
+        ],
       metaTitle: "Tamasopo Waterfalls 2026 | Price, Hours and Swimming Pools",
       metaDescription: "Turquoise pools for swimming in Tamasopo, ideal for families. $60 MXN entry, open daily 08:00-17:00, 45 min from Ciudad Valles. Biodegradable sunscreen only.",
       keywords: ["tamasopo waterfalls", "cascadas de tamasopo", "tamasopo price", "swimming in huasteca potosina", "tamasopo opening hours"],
@@ -678,6 +783,27 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
 
   // Fichas ligeras (descripción + tipo; el resto cae al español por ahora)
   "rio-axtla-el-chalan": {
+    nombre: "Río Axtla and 'el Chalán'",
+    precio_entrada: "Free access (ferry crossing: token fee)",
+    dias_abierto: "Monday to Sunday (Sunday street markets along the bank)",
+    mejor_hora: "Mid-morning",
+    temporada_ideal: "Mar–Jun (clear water)",
+    advertencias: "In the rainy season (~Jun–Oct) the river rises and becomes dangerous: don't swim when it's running high. No official hours or prices; check with the municipal tourism office.",
+    como_llegar: "~1 h 30 from Ciudad Valles (~82 km) on federal highway 85 south; ~15 min from downtown Axtla to the river",
+    que_llevar: [
+      "swimsuit",
+      "water sandals",
+      "cash",
+      "biodegradable sunscreen",
+    ],
+    datos_curiosos: [
+      "The iron 'chalán' ferry has been running for more than 50 years and is a symbol of Axtla.",
+      "The river is formed where the Huichihuayán and Tancuilín rivers meet.",
+    ],
+    errores_comunes: [
+      "Swimming when the river is running high",
+      "Not bringing cash for the ferry",
+    ],
     descripcion: "A crystal-clear river with pools for swimming, whose emblem is 'el chalán': an old iron raft pulled across the river by hand for over 50 years.",
     tipo: "Nature",
       seo: {
@@ -687,15 +813,61 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "cascada-el-trampolin-tamasopo": {
+    nombre: "El Trampolín (Tamasopo)",
+    precio_entrada: "Free access (parking fee possible)",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Mid-morning",
+    temporada_ideal: "Nov–May",
+    advertencias: "This is NOT the paid 'Cascadas de Tamasopo' park. There are no formal lifeguards: check the depth before jumping. Muddy, slippery ground. Wear a life vest.",
+    como_llegar: "~1 h–1 h 15 from Ciudad Valles; ~4–5 km from downtown Tamasopo on the road to Agua Buena",
+    que_llevar: [
+      "swimsuit",
+      "water shoes",
+      "life vest",
+      "cash",
+    ],
+    datos_curiosos: [
+      "It's a free stretch of the Agua Buena river, not the paid Cascadas de Tamasopo park.",
+      "The spot runs about 2 km along the river.",
+    ],
+    errores_comunes: [
+      "Mistaking it for the paid Tamasopo park",
+      "Jumping without checking the depth",
+    ],
     descripcion: "A free, public stretch of the Agua Buena River with turquoise water, mini waterfalls, pools and ropes in the trees to jump into the water.",
     tipo: "Nature",
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "Is El Trampolín the same as the Tamasopo Waterfalls?",
+            respuesta: "No. El Trampolín is a free, public stretch of the Agua Buena river; the Cascadas de Tamasopo are a separate paid park. It's the most common mix-up visitors make.",
+          },
+        ],
       metaTitle: "El Trampolin, Tamasopo | Free River with Turquoise Pools",
       metaDescription: "A free, public stretch of the Agua Buena river in Tamasopo: turquoise water, small waterfalls, pools and rope swings. It is NOT the paid Cascadas de Tamasopo park.",
       keywords: ["el trampolin tamasopo", "agua buena river", "free waterfalls huasteca potosina", "things to do in tamasopo"],
     },
   },
   "templo-san-juan-bautista-coxcatlan": {
+    precio_entrada: "Free access",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Morning",
+    temporada_ideal: "Year-round (liveliest during Xantolo, 1–2 Nov)",
+    advertencias: "The construction dates (1522–1523) come from local tradition and press reports, not a verified INAH plaque. Visiting hours are not published: check locally.",
+    como_llegar: "~1.5–2 h south of Ciudad Valles; in the centre of the town of Coxcatlán, facing the square",
+    que_llevar: [
+      "comfortable shoes",
+      "camera",
+      "cash",
+    ],
+    datos_curiosos: [
+      "It's considered one of the oldest religious buildings in the Huasteca Potosina.",
+      "It is said to have been built with stone bound by a mortar that included ground seashells.",
+    ],
+    errores_comunes: [
+      "Assuming there are set visiting hours",
+      "Expecting a museum (it's a working church)",
+    ],
     nombre: "Church of San Juan Bautista (Coxcatlán)",
     descripcion: "A 16th-century church and former convent, considered one of the oldest in the Huasteca Potosina, facing Coxcatlán's main square.",
     tipo: "Art & Culture",
@@ -706,6 +878,26 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "cascada-rancho-el-zapote-poza-azul-coxcatlan": {
+    nombre: "Rancho El Zapote Waterfall (Poza Azul)",
+    precio_entrada: "No official fee published (check on site)",
+    dias_abierto: "Check locally",
+    mejor_hora: "Mid-morning",
+    temporada_ideal: "Dry season (the water clouds up with the rains)",
+    advertencias: "Poorly documented site: price, hours and exact location are not officially verified. Access may be through a private ranch; check locally.",
+    como_llegar: "~11 min from the town of Coxcatlán, which is ~1.5–2 h south of Ciudad Valles",
+    que_llevar: [
+      "swimsuit",
+      "water shoes",
+      "cash",
+      "water",
+    ],
+    datos_curiosos: [
+      "The state promotes it for its 'vibrant turquoise colour' and for being only ~11 min from the town centre.",
+    ],
+    errores_comunes: [
+      "Confusing it with Poza de Rosendo (a different spot)",
+      "Going in the rainy season (murky water)",
+    ],
     descripcion: "A turquoise waterfall and pool known locally as the 'blue pool', one of the least crowded natural spots in the Huasteca Potosina.",
     tipo: "Nature",
       seo: {
@@ -715,6 +907,26 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "ruinas-de-el-jopoy-coxcatlan": {
+    precio_entrada: "Free access",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Morning",
+    temporada_ideal: "It comes alive on 1–2 November (Day of the Dead)",
+    advertencias: "An abandoned, roofless and deteriorating site that serves as a cemetery: treat it with respect. Its authorship and dates (attributed to Cortés, 1522–23) come from press reports and tradition, not an INAH plaque. Rural track; a local guide is advisable.",
+    como_llegar: "~8.4 km from the town of Coxcatlán (El Jopoy locality); Coxcatlán is ~1.5–2 h south of Ciudad Valles",
+    que_llevar: [
+      "outdoor shoes",
+      "water",
+      "cash",
+      "respect (it's a graveyard)",
+    ],
+    datos_curiosos: [
+      "It's cited as one of the first hermitages in the Huasteca Potosina.",
+      "INAH carried out preliminary surveys around 2009.",
+    ],
+    errores_comunes: [
+      "Being disrespectful (it's an active cemetery)",
+      "Going without a local guide",
+    ],
     nombre: "El Jopoy Ruins",
     descripcion: "Remains of a colonial hermitage with stone walls and large arches, noted as one of the first Spanish religious buildings in the Huasteca Potosina; now in ruins and used as a community cemetery.",
     tipo: "Archaeology",
@@ -725,6 +937,27 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "tancanhuitz": {
+    nombre: "Tancanhuitz (Ciudad Santos)",
+    precio_entrada: "Free access",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Morning",
+    temporada_ideal: "Xantolo (late Oct–early Nov) and the San Miguel festival (25–29 Sep)",
+    advertencias: "The cultural experience peaks on specific dates; outside them the town is quiet. The '149' is the traditional name of the stairway, not a measured count. Mountain roads.",
+    como_llegar: "~50–55 min south of Ciudad Valles (~54–56 km)",
+    que_llevar: [
+      "comfortable shoes",
+      "water",
+      "camera",
+      "cash",
+    ],
+    datos_curiosos: [
+      "Its parish church became known as the 'Church of the 149 Steps'.",
+      "It's part of the Huasteca Potosina's Xantolo Route.",
+    ],
+    errores_comunes: [
+      "Going out of season expecting the dances",
+      "Underestimating the stairway",
+    ],
     descripcion: "A Tének-Nahua county seat famous for its San Miguel Arcángel church reached by a long stairway (the 'Church of the 149 Steps'), and for its strong Xantolo, huapango and indigenous dance traditions.",
     tipo: "Art & Culture",
       seo: {
@@ -734,6 +967,27 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "san-martin-chalchicuautla": {
+    nombre: "San Martín Chalchicuautla",
+    precio_entrada: "Free access",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Morning",
+    temporada_ideal: "Xantolo: 31 Oct–2 Nov",
+    advertencias: "The experience peaks during Xantolo; outside those dates the town is quiet. Details for the Cascada del Manantial (cost, hours, access) are unverified. Mountain road.",
+    como_llegar: "~26 km (30–35 min) from Tamazunchale; ~1.5–2 h from Ciudad Valles via Tamazunchale",
+    que_llevar: [
+      "comfortable shoes",
+      "camera",
+      "cash",
+      "water",
+    ],
+    datos_curiosos: [
+      "Recognised as the birthplace of Xantolo in San Luis Potosí: troupes of masked 'viejos' dance huapango.",
+      "Its seasonal food includes zacahuil, bocoles and queso de bola.",
+    ],
+    errores_comunes: [
+      "Visiting outside Xantolo expecting the troupes",
+      "Assuming the waterfall will be open",
+    ],
     descripcion: "A town known as the 'Cradle of Xantolo', where the Day of the Dead is lived with deep Nahua roots from October 31 to November 2. The Cascada del Manantial waterfall is nearby.",
     tipo: "Art & Culture",
       seo: {
@@ -743,6 +997,27 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "san-vicente-tancuayalab": {
+    nombre: "San Vicente Tancuayalab",
+    precio_entrada: "Free access",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Morning",
+    temporada_ideal: "Xantolo / Day of the Dead (late Oct–2 Nov)",
+    advertencias: "The cultural experience peaks during Xantolo; outside those dates the town is quiet.",
+    como_llegar: "~1 h 12 by car from Ciudad Valles (~70 km)",
+    que_llevar: [
+      "comfortable shoes",
+      "camera",
+      "cash",
+      "water",
+    ],
+    datos_curiosos: [
+      "'Tancuayalab' means 'place of the staff of command' in Huastec.",
+      "It was founded as 'San Francisco Tancuayalab' in the 16th century and moved to its present site in 1767.",
+    ],
+    errores_comunes: [
+      "Going outside Xantolo expecting the festivities",
+      "Underestimating the heat",
+    ],
     descripcion: "A Huastec town recognized as the 'cradle of the Day of the Dead' in San Luis Potosí, founded by Franciscan missionaries in the 16th century near the Moctezuma River.",
     tipo: "Art & Culture",
       seo: {
@@ -752,25 +1027,98 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "tanlajas": {
+    nombre: "Tanlajás",
+    precio_entrada: "Free access",
+    dias_abierto: "Monday to Sunday",
+    mejor_hora: "Morning",
+    temporada_ideal: "Holy Week (Toreada de los Diablos) and the Santa Ana festival (25–26 Jul)",
+    advertencias: "The 'Toreada de los Diablos' is held during HOLY WEEK (not Day of the Dead). To see the ritual you have to go on those dates; it involves real rawhide whip strikes.",
+    como_llegar: "~49–50 km (50–60 min) southeast of Ciudad Valles",
+    que_llevar: [
+      "comfortable shoes",
+      "cash",
+      "camera",
+      "an appetite (local food)",
+    ],
+    datos_curiosos: [
+      "Its Tének name means 'place of flat stones'.",
+      "In the Toreada the 'devils' wear hand-carved wooden masks and carry a chirrión (leather whip).",
+    ],
+    errores_comunes: [
+      "Going expecting the Toreada on Day of the Dead (it's Holy Week)",
+    ],
     descripcion: "A town of Tének roots known for its regional cuisine (zacahuiles, bocoles, cecina) and for the 'Toreada de los Diablos', an ancestral ritual where masked figures recreate the struggle between good and evil.",
     tipo: "Art & Culture",
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "When is the Toreada de los Diablos in Tanlajás?",
+            respuesta: "It's held during Holy Week, not on the Day of the Dead. It's the most common mistake people make when planning a visit.",
+          },
+        ],
       metaTitle: "Tanlajas | The Devils' Bullfight and Tenek Cooking",
       metaDescription: "A town with Tenek roots known for its zacahuiles, bocoles and cecina, and for the 'Toreada de los Diablos', a masked ritual held during Holy Week (not Day of the Dead).",
       keywords: ["tanlajas", "toreada de los diablos", "zacahuil huasteca potosina", "tenek culture"],
     },
   },
   "texquitote": {
+    precio_entrada: "Free access (visiting workshops may need to be arranged with the luthier)",
+    dias_abierto: "Contact a luthier in advance",
+    mejor_hora: "Morning",
+    temporada_ideal: "Dry season (Nov–Apr) for the rural roads",
+    advertencias: "This is a living Indigenous community, not a staged attraction: come with respect and contact a luthier in advance. The final stretches are dirt road. There are two localities with the same name (Primero and Segundo): confirm which one you're going to.",
+    como_llegar: "~20–30 min from Tamazunchale (the nearest hub); ~2.5–3 h south of Ciudad Valles on federal highway 85 to Matlapa",
+    que_llevar: [
+      "cash",
+      "outdoor shoes",
+      "camera",
+      "respect for the community",
+    ],
+    datos_curiosos: [
+      "The 'quinta huapanguera', the five-string guitar of huapango huasteco, originated in Texquitote.",
+      "The conchas used for son are still made from armadillo shell.",
+    ],
+    errores_comunes: [
+      "Turning up without contacting a luthier",
+      "Mixing up Texquitote Primero and Segundo",
+    ],
     nombre: "Texquitote — cradle of son huasteco",
     descripcion: "A Nahua community recognized as the cradle of son huasteco lutherie, where around 40 luthiers hand-build jaranas, huapanguera guitars, violins, armadillo-shell instruments and harps.",
     tipo: "Art & Culture",
       seo: {
+        faqPrincipales: [
+          {
+            pregunta: "Can you visit a luthier's workshop in Texquitote?",
+            respuesta: "Yes, but the workshops are private and have no set hours: you need to contact a luthier beforehand to arrange the visit.",
+          },
+        ],
       metaTitle: "Texquitote, Matlapa | Home of the Son Huasteco Luthiers",
       metaDescription: "A Nahua community where around 40 luthiers hand-build the jaranas, quinta huapangueras, violins and harps of son huasteco. The workshops are private: get in touch before visiting.",
       keywords: ["texquitote", "son huasteco luthiers", "jarana huasteca", "quinta huapanguera", "mexican crafts huasteca potosina"],
     },
   },
   "laguna-de-los-suspiros": {
+    nombre: "Laguna de los Suspiros",
+    precio_entrada: "No official fee published",
+    dias_abierto: "Check locally",
+    mejor_hora: "Morning or sunset",
+    temporada_ideal: "Check ahead (the water level varies with drought)",
+    advertencias: "A rustic, emerging tourism site with no verified formal services. The water level of the Ébano lagoons drops during drought. Not to be confused with Laguna Marland (another Ébano lagoon).",
+    como_llegar: "~1 h 20–1 h 45 from Ciudad Valles via Tamuín and Ébano (~70–75 km); in the Plan de Iguala ejido",
+    que_llevar: [
+      "insect repellent",
+      "water",
+      "camera",
+      "cash",
+    ],
+    datos_curiosos: [
+      "Its strangler fig is around 200 years old and its roots form two large natural 'doorways', its most photographed feature.",
+      "The SLP tourism ministry has promoted the lagoon as a day-trip option.",
+    ],
+    errores_comunes: [
+      "Expecting formal tourist services",
+      "Confusing it with Laguna Marland",
+    ],
     descripcion: "A lagoon in the Plan de Iguala ejido whose emblem is a majestic ~200-year-old fig tree (higuerón) whose huge roots form two natural 'doorways'.",
     tipo: "Nature",
       seo: {
@@ -780,6 +1128,24 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     },
   },
   "la-trinidad-xilitla": {
+    mejor_hora: "Sunrise (for the fog)",
+    que_llevar: [
+      "a jacket (it's cold up there)",
+      "hiking shoes",
+      "food to grill (there are fire pits and grills)",
+      "camera",
+      "cash",
+    ],
+    datos_curiosos: [
+      "It's a Nahua community of around 96 people high in the Sierra Gorda.",
+      "There are wooden cabins for couples and groups (roughly $700 to $2,500), a camping area, fire pits and grills where you can cook your own food.",
+      "The forest is home to tamanduas, coatis, crested guans and huge madroño trees.",
+    ],
+    errores_comunes: [
+      "Driving up in a very low car (the broken dirt road and the gradient will scrape it)",
+      "Underestimating the cold and damp of the cloud forest",
+      "Turning up without booking the cabin or campsite",
+    ],
     nombre: "La Trinidad — Xilitla Cloud Forest",
     descripcion: "A Nahua community about 14 km from Xilitla, set in one of the best-preserved cloud forests in the Huasteca (pine-oak, ~1,950 m). It has wooden cabins for couples and groups, a camping area, campfires and grills, plus trails to lookouts, pools, caves and sinkholes.",
     tipo: "Nature & Forest",
@@ -789,12 +1155,42 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     advertencias: "The climb is very steep with rough dirt-road sections, so a vehicle that isn't too low is recommended so it doesn't scrape. It's cold up there (cloud forest): bring a jacket even if it's warm down in Xilitla. It's an inhabited community — come with respect and book ahead.",
     como_llegar: "~14 km west of Xilitla; 45 min to 1 h on a mountain road climbing to ~1,950 m. The final stretch is very steep and rough dirt road, so a vehicle with good ground clearance (not too low) is recommended.",
     seo: {
+      faqPrincipales: [
+        {
+          pregunta: "How do you get to La Trinidad from Xilitla?",
+          respuesta: "La Trinidad is about 14 km west of Xilitla on a mountain road that climbs to around 1,950 m. The drive takes between 45 minutes and 1 hour. The final stretch is a very steep, broken dirt road, so it's best to drive in daylight and in a car that isn't too low, so it doesn't scrape.",
+        },
+        {
+          pregunta: "What can you do in La Trinidad and how much does it cost?",
+          respuesta: "Admission is $100 per person. You can walk trails to lookouts, pools, caves and sinkholes (such as the Olla de la Luz), stay in wooden cabins for couples or groups (roughly $700 to $2,500 depending on size), camp, build fires and grill your own food. It's cold up there, so bring a jacket.",
+        },
+        {
+          pregunta: "When is the best time to visit the La Trinidad cloud forest?",
+          respuesta: "You can visit year-round. The signature fog is densest in the rainy season (June to October). Because of the altitude the weather is cool and damp, so bring a jacket even if it's hot down in Xilitla.",
+        },
+      ],
       metaTitle: "La Trinidad Xilitla 2026 | Cloud Forest in the Sierra",
       metaDescription: "La Trinidad, the cloud forest hidden 14 km from Xilitla: trails, lookouts, pools and cabins in a Nahua community at 1,950 m. How to get there, costs and what to do.",
       keywords: ["la trinidad xilitla", "cloud forest huasteca potosina", "what to do in xilitla", "ecotourism xilitla", "xilitla cabins sierra gorda"],
     },
   },
   "olla-de-la-luz": {
+    mejor_hora: "Mid-morning",
+    que_llevar: [
+      "hiking shoes",
+      "a jacket or rain shell",
+      "water and snacks",
+      "camera",
+      "cash",
+    ],
+    datos_curiosos: [
+      "The Cerro de la Luz above it is the highest point in the municipality of Xilitla, reaching ~2,300 m.",
+      "The sinkhole is about 800 m across and its vertical drop is over 120 m.",
+    ],
+    errores_comunes: [
+      "Trying to get there without a local guide",
+      "Not allowing for the altitude and the cold of the cloud forest",
+    ],
     nombre: "Olla de la Luz — Cerro de la Luz",
     descripcion: "A huge sinkhole about 800 m across with a vertical shaft over 120 m deep, crowned by Cerro de la Luz, the highest point in the Xilitla municipality. Reached after a hike through the cloud forest from La Trinidad.",
     tipo: "Nature & Sinkhole",
@@ -804,12 +1200,43 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     advertencias: "A local guide from La Trinidad is required — you can't reach it on your own. It involves a cloud-forest hike at altitude (1,950–2,300 m), and it's a deep abyss: don't approach the edge without a guide.",
     como_llegar: "About 5 km from La Trinidad (which is ~14 km from Xilitla), climbing toward Cerro de la Luz; reached on foot and only with a community guide",
     seo: {
+      faqPrincipales: [
+        {
+          pregunta: "What is the Olla de la Luz?",
+          respuesta: "It's a large sinkhole (doline) roughly 800 metres across with a vertical drop of more than 120 metres, set high in the Xilitla cloud forest and crowned by the Cerro de la Luz.",
+        },
+        {
+          pregunta: "How do you get to the Olla de la Luz?",
+          respuesta: "Only with a local guide from La Trinidad: the visit must be guided, you can't get there on your own. Access is on foot, about 5 km from La Trinidad, climbing towards the Cerro de la Luz. La Trinidad is about 14 km from Xilitla.",
+        },
+        {
+          pregunta: "How high up is it?",
+          respuesta: "The route runs between 1,950 and 2,300 metres above sea level, so the weather is cool and damp; bring a jacket and hiking shoes.",
+        },
+      ],
       metaTitle: "Olla de la Luz Xilitla | Cerro de la Luz Sinkhole",
       metaDescription: "The Olla de la Luz: a sinkhole ~800 m across and over 120 m deep crowned by Cerro de la Luz, the highest point in Xilitla. Reached from La Trinidad.",
       keywords: ["olla de la luz xilitla", "hoya de la luz", "cerro de la luz xilitla", "sinkhole xilitla", "la trinidad cloud forest"],
     },
   },
   "cueva-del-salitre": {
+    mejor_hora: "Morning",
+    advertencias: "In the rainy season the cave can flood from seepage. Caving, rappelling and climbing require gear and a guide; don't enter the technical sections without experience.",
+    que_llevar: [
+      "torch or headlamp",
+      "closed shoes with grip",
+      "clothes you don't mind getting dirty",
+      "cash",
+      "water",
+    ],
+    datos_curiosos: [
+      "Its name comes from the damp ('salitre', saltpetre) that seeps down its walls.",
+      "It has five bolted climbing routes, a favourite with climbers in the region.",
+    ],
+    errores_comunes: [
+      "Visiting at the height of the rainy season (flood risk)",
+      "Entering the technical sections without gear or a guide",
+    ],
     nombre: "Cueva del Salitre — Xilitla",
     descripcion: "A cavern hidden in the Xilitla jungle, about 100 m wide at the mouth and 300 m deep. Its walls are a popular spot for caving, rappelling and rock climbing (five bolted routes), minutes from the Magic Town center.",
     tipo: "Cave & Adventure",
@@ -818,12 +1245,41 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     temporada_ideal: "Dry season (Nov–May); it tends to seep water and flood during the rains",
     como_llegar: "From downtown Xilitla along federal highway 120 toward Huichihuayán, a few minutes from town. The site now has its own dedicated entrance, with a short ~10 min trail to the cave.",
     seo: {
+      faqPrincipales: [
+        {
+          pregunta: "How much does it cost to enter the Cueva del Salitre?",
+          respuesta: "Admission is $50 pesos per person. The site now has its own entrance (special access) on federal highway 120 towards Huichihuayán, a few minutes from downtown Xilitla, with a short trail to the cave.",
+        },
+        {
+          pregunta: "What can you do at the Cueva del Salitre?",
+          respuesta: "It's a popular spot for caving, rappelling and rock climbing: its walls have five bolted routes. You can also walk it after a short trail of about 10 minutes.",
+        },
+        {
+          pregunta: "When is the best time to visit?",
+          respuesta: "The dry season (November to May). In the rainy season water tends to seep in and it can even flood, so it's best avoided.",
+        },
+      ],
       metaTitle: "Cueva del Salitre Xilitla 2026 | Caving & Rappel",
       metaDescription: "Cueva del Salitre, a hidden gem of Xilitla: ~100 m wide and 300 m deep, with caving, rappelling and five climbing routes. How to get there, $50 fee and tips.",
       keywords: ["cueva del salitre xilitla", "caving xilitla", "rappel xilitla", "rock climbing huasteca potosina", "what to do in xilitla"],
     },
   },
   "museo-leonora-carrington-xilitla": {
+    mejor_hora: "Morning",
+    advertencias: "Not to be confused with the Leonora Carrington Museum in the city of San Luis Potosí (Centro de las Artes): they are two different museums. It pairs very well with Edward James's Las Pozas on the same day.",
+    que_llevar: [
+      "camera",
+      "cash",
+      "comfortable shoes",
+    ],
+    datos_curiosos: [
+      "Leonora Carrington (1917–2011) was one of the great figures of surrealism and a friend of Edward James, creator of Las Pozas.",
+      "Visiting the museum and Las Pozas on the same day is the classic surrealist pairing in Xilitla.",
+    ],
+    errores_comunes: [
+      "Confusing it with the Leonora Carrington Museum in the city of San Luis Potosí",
+      "Arriving on a Monday, when it's usually closed",
+    ],
     nombre: "Leonora Carrington Museum — Xilitla",
     descripcion: "A museum dedicated to the surrealist artist Leonora Carrington, a friend of Edward James, in the heart of Xilitla. It shows her sculpture, lithography and drawing, plus a space devoted to surrealism.",
     tipo: "Art & Culture",
@@ -832,6 +1288,20 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     temporada_ideal: "Year-round",
     como_llegar: "In downtown Xilitla, Corregidora #103, steps from the main square; walkable from anywhere in the Magic Town",
     seo: {
+      faqPrincipales: [
+        {
+          pregunta: "What are the opening hours of the Leonora Carrington Museum in Xilitla?",
+          respuesta: "It's open Tuesday to Sunday, from 11:00 to 17:00 (last entry at 16:30); it closes on Mondays.",
+        },
+        {
+          pregunta: "How much is admission to the museum?",
+          respuesta: "General admission is $50 pesos; students, teachers and seniors with ID pay $25, and children under 12 go free.",
+        },
+        {
+          pregunta: "Is it connected to Edward James's Las Pozas?",
+          respuesta: "Yes. Leonora Carrington was a friend of Edward James, the creator of Las Pozas. Visiting the museum and Las Pozas on the same day is the classic surrealist pairing in Xilitla.",
+        },
+      ],
       metaTitle: "Leonora Carrington Museum Xilitla | Hours & Prices 2026",
       metaDescription: "Leonora Carrington Museum in downtown Xilitla: sculpture, lithography and drawing by the surrealist artist and friend of Edward James. Hours, prices and how to get there.",
       keywords: ["leonora carrington museum xilitla", "leonora carrington xilitla", "what to do in xilitla", "surrealism xilitla", "huasteca potosina museums"],

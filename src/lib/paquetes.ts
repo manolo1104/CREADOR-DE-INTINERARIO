@@ -201,6 +201,22 @@ export const RESENAS_PAQUETES: Resena[] = [
 
 // ── FAQ compartido para las páginas de detalle ──────────────────────────────
 
+/**
+ * La lista de traslados con su precio, en el idioma pedido.
+ *
+ * Vive aquí y no dentro del texto de la FAQ porque la MISMA frase se arma en
+ * español y en inglés: si cada versión la construyera por su cuenta, un cambio
+ * de precio en `TRASLADOS` acabaría reflejado en un idioma y en el otro no.
+ */
+export function TRASLADOS_TEXTO(locale: "es" | "en" = "es"): string {
+  return TRASLADOS.map((r) => {
+    const precio = `$${precioBase(r).toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+    return locale === "en"
+      ? `${r.ciudad} (from ${precio} round trip per vehicle)`
+      : `${r.ciudad} (desde ${precio} redondo por vehículo)`;
+  }).join(", ");
+}
+
 export const FAQS_PAQUETES = [
   {
     q: "¿El precio es por persona o por pareja?",
@@ -220,7 +236,7 @@ export const FAQS_PAQUETES = [
   },
   {
     q: "¿El precio incluye el traslado hasta Xilitla?",
-    a: `No viene incluido, pero sí lo hacemos aparte: tenemos traslado privado desde ${TRASLADOS.map((r) => `${r.ciudad} (desde $${precioBase(r).toLocaleString("es-MX")} redondo por vehículo)`).join(", ")}. El precio del paquete sí cubre el traslado del hotel al punto de inicio de cada tour y de regreso. Si prefieres llegar por tu cuenta, en la sección 'Cómo llegar' están las opciones de auto, avión y autobús.`,
+    a: `No viene incluido, pero sí lo hacemos aparte: tenemos traslado privado desde ${TRASLADOS_TEXTO("es")}. El precio del paquete sí cubre el traslado del hotel al punto de inicio de cada tour y de regreso. Si prefieres llegar por tu cuenta, en la sección 'Cómo llegar' están las opciones de auto, avión y autobús.`,
   },
   {
     q: "¿Cómo confirman la disponibilidad?",

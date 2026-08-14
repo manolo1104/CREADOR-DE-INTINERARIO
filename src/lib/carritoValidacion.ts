@@ -1,5 +1,8 @@
 import { TOURS_DB } from "./tours";
 import { personasDeItem, type CarritoItem } from "./carrito";
+import { getBooking } from "./i18n/booking";
+import { localizeTour } from "./i18n/localize";
+import type { Locale } from "./i18n/config";
 
 /**
  * Qué le falta al carrito para poder cobrarse, renglón por renglón.
@@ -24,19 +27,30 @@ export interface FalloCarrito {
 
 const corto = (nombre: string) => nombre.split("—")[0].trim();
 
-export function validarCarrito(items: CarritoItem[]): FalloCarrito[] {
+/** El nombre corto de un renglón, en el idioma pedido. */
+function nombreDe(i: CarritoItem, locale: Locale): string {
+  const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
+  return corto(tour ? localizeTour(tour, locale).nombre : i.tourName);
+}
+
+export function validarCarrito(items: CarritoItem[], locale: Locale = "es"): FalloCarrito[] {
   const fallos: FalloCarrito[] = [];
   const vistas = new Map<string, CarritoItem>();
+  const t = getBooking(locale).validacion;
 
   for (const i of items) {
     const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
-    const nombre = corto(i.tourName);
+    // El nombre guardado en el carrito SIEMPRE está en español: se escribe al
+    // agregar el recorrido, desde `TOURS_DB`. Para el aviso se resuelve otra vez
+    // por slug en el idioma que toca, o el mensaje en inglés acabaría diciendo
+    // "Cascada de Tamul — Expedición completa is missing its date".
+    const nombre = nombreDe(i, locale);
 
     if (!i.tourDate) {
       fallos.push({
         uid: i.uid, campo: "fecha",
-        mensaje: "Elige la fecha de este recorrido",
-        mensajeLargo: `Falta la fecha de ${nombre}`,
+        mensaje: t.faltaFecha,
+        mensajeLargo: t.faltaFechaLargo(nombre),
       });
     } else {
       // Dos recorridos el mismo día es imposible de operar: cada uno se lleva
@@ -45,8 +59,8 @@ export function validarCarrito(items: CarritoItem[]): FalloCarrito[] {
       if (choca) {
         fallos.push({
           uid: i.uid, campo: "choque",
-          mensaje: `Ya tienes "${corto(choca.tourName)}" ese día. Cada recorrido ocupa el día completo.`,
-          mensajeLargo: `${nombre} choca con ${corto(choca.tourName)}: los dos el mismo día`,
+          mensaje: t.choque(nombreDe(choca, locale)),
+          mensajeLargo: t.choqueLargo(nombre, nombreDe(choca, locale)),
         });
       } else {
         vistas.set(i.tourDate, i);
@@ -56,8 +70,8 @@ export function validarCarrito(items: CarritoItem[]): FalloCarrito[] {
     if (tour?.eleccion && !i.eleccion) {
       fallos.push({
         uid: i.uid, campo: "eleccion",
-        mensaje: "Elige una para poder continuar",
-        mensajeLargo: `Falta elegir el recorrido de ${nombre}`,
+        mensaje: t.faltaEleccion,
+        mensajeLargo: t.faltaEleccionLargo(nombre),
       });
     }
 
@@ -65,8 +79,8 @@ export function validarCarrito(items: CarritoItem[]): FalloCarrito[] {
     if (tour && !i.unidades && personasDeItem(i) < tour.groupMin) {
       fallos.push({
         uid: i.uid, campo: "grupo",
-        mensaje: `Sale a partir de ${tour.groupMin} personas`,
-        mensajeLargo: `${nombre} sale a partir de ${tour.groupMin} personas`,
+        mensaje: t.grupoMinimo(tour.groupMin),
+        mensajeLargo: t.grupoMinimoLargo(nombre, tour.groupMin),
       });
     }
   }

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Share2, Copy, Check } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
 
 /**
  * Compartir lo que se está armando.
@@ -35,6 +37,7 @@ export function BotonCompartir({
   className?: string;
 }) {
   const [estado, setEstado] = useState<"listo" | "trabajando" | "copiado" | "error">("listo");
+  const t = getBooking(useLocale().locale).compartir;
 
   async function compartir() {
     setEstado("trabajando");
@@ -63,10 +66,10 @@ export function BotonCompartir({
   }
 
   const etiqueta =
-    estado === "trabajando" ? "Preparando…" :
-    estado === "copiado"    ? "¡Enlace copiado!" :
-    estado === "error"      ? "No se pudo, intenta de nuevo" :
-    "Compartir";
+    estado === "trabajando" ? t.trabajando :
+    estado === "copiado"    ? t.copiado :
+    estado === "error"      ? t.error :
+    t.compartir;
 
   return (
     <button

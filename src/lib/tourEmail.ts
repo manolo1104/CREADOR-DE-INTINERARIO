@@ -1,5 +1,9 @@
-import { TOURS_DB, INCLUYE_SIEMPRE, incluyeDeTour } from "./tours";
+import { TOURS_DB, INCLUYE_SIEMPRE, INCLUYE_SIEMPRE_EN, incluyeDeTour } from "./tours";
 import { PAQUETES_DB } from "./paquetes";
+import { getEmails, emailLocale } from "./i18n/emails";
+import { localizeTour } from "./i18n/localize";
+import { localizePaquete } from "./i18n/paquetes.en";
+import type { Locale } from "./i18n/config";
 
 /**
  * Lo que incluye ESE tour, tomado del catálogo.
@@ -10,9 +14,12 @@ import { PAQUETES_DB } from "./paquetes";
  * dos— recibía por escrito algo que no iba a pasar. Y a diferencia de una
  * página, el correo se guarda y se reclama.
  */
-function incluidosDe(tourSlug: string): string {
-  const tour = TOURS_DB.find((t) => t.slug === tourSlug);
-  const items = tour ? incluyeDeTour(tour) : [...INCLUYE_SIEMPRE];
+function incluidosDe(tourSlug: string, locale: Locale = "es"): string {
+  const base = TOURS_DB.find((t) => t.slug === tourSlug);
+  const tour = base ? localizeTour(base, locale) : undefined;
+  const items = tour
+    ? incluyeDeTour(tour, locale)
+    : [...(locale === "en" ? INCLUYE_SIEMPRE_EN : INCLUYE_SIEMPRE)];
   return items.map((x) => `✓ ${x}`).join("<br>");
 }
 
@@ -36,27 +43,45 @@ export function buildTourEmailHtml(data: {
   partySize?:        number;  // tamaño real del grupo; tiene prioridad para mostrar participantes
   lineItems?:        any[];   // [{tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}, ...] (+ un objeto _meta)
   packageItems?:     any[];   // [{hotel,habitacion,noches,habitaciones,checkin,checkout,subtotal}, ...]
+  /** Idioma en que el cliente reservó. Cae al español si no viene. */
+  locale?:           string;
 }): string {
+  const locale = emailLocale(data.locale);
+  const T = getEmails(locale).confirmacion;
   const base = "https://www.huasteca-potosina.com";
   // Mismo criterio que en la cotización: un paquete no vive en /tours.
+  const pre = locale === "en" ? "/en" : "";
+  /**
+   * El nombre del recorrido en el idioma del correo. La reserva lo guarda en
+   * ESPAÑOL, así que sin esto la confirmación en inglés titulaba el tour con su
+   * nombre mexicano.
+   */
+  const nombreTour = (nombre: string, slug?: string) => {
+    if (locale === "es") return nombre;
+    const b = slug ? TOURS_DB.find((t) => t.slug === slug) : undefined;
+    if (b) return localizeTour(b, locale).nombre;
+    const paq = slug ? PAQUETES_DB.find((x) => x.slug === slug) : undefined;
+    return paq ? localizePaquete(paq, locale).nombre : nombre;
+  };
+  const tourTitulo = nombreTour(data.tourName, data.tourSlug);
   const tourUrl = PAQUETES_DB.some((p) => p.slug === data.tourSlug)
-    ? `${base}/paquetes/${data.tourSlug}`
-    : `${base}/tours/${data.tourSlug}`;
+    ? `${base}${pre}/paquetes/${data.tourSlug}`
+    : `${base}${pre}/tours/${data.tourSlug}`;
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return "Por confirmar";
+    if (!dateStr) return T.porConfirmar;
     const d = new Date(dateStr + "T12:00:00");
-    const f = d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const f = d.toLocaleDateString(locale === "en" ? "en-US" : "es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     return f.charAt(0).toUpperCase() + f.slice(1);
   };
 
   const totalParticipants = data.adults + data.children;
-  const participantsText  = `${data.adults} adulto${data.adults !== 1 ? "s" : ""}${data.children > 0 ? ` · ${data.children} menor${data.children !== 1 ? "es" : ""}` : ""}`;
+  const participantsText  = `${T.adultos(data.adults)}${data.children > 0 ? ` · ${T.menores(data.children)}` : ""}`;
   const hasPromo = data.promoCode && (data.promoDiscount ?? 0) > 0;
   const deposito  = data.depositoPagado ?? 0;
   const pendiente = Math.max(0, data.totalAmount - deposito);
-  const fmxEmail  = (n: number) => `$${Number(n).toLocaleString("es-MX")} MXN`;
-  const pickupText = data.pickupLugar || "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. Confirma tu dirección exacta por WhatsApp.";
+  const fmxEmail  = (n: number) => `$${Number(n).toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN`;
+  const pickupText = data.pickupLugar || T.pickupDefault;
 
   // Tours de la reserva (excluye el objeto _meta). Si hay varios, se listan todos con su fecha.
   const tours = Array.isArray(data.lineItems) ? data.lineItems.filter((l: any) => l && !l._meta) : [];
@@ -67,7 +92,7 @@ export function buildTourEmailHtml(data: {
   const lineDetail = (t: any) => {
     if (t.vehiculo) {
       const un = Math.max(1, Number(t.unidades) || 1);
-      return `${formatDate(t.tourDate)} · ${un} vehículo${un !== 1 ? "s" : ""}`;
+      return `${formatDate(t.tourDate)} · ${T.vehiculos(un)}`;
     }
     // Desglose del grupo. Decir solo "4 personas" le escondía al equipo que
     // van menores: cambia el equipo de seguridad que hay que preparar, y hay
@@ -78,13 +103,13 @@ export function buildTourEmailHtml(data: {
     const ad    = Number(t.adults) || 0;
     const otros = Number(t.children) || 0;
     const partes: string[] = [];
-    if (ad)    partes.push(`${ad} adulto${ad !== 1 ? "s" : ""}`);
-    if (mid)   partes.push(`${mid} de 6 a 10 años`);
-    if (small) partes.push(`${small} menor${small !== 1 ? "es" : ""} de 6`);
-    if (!mid && !small && otros) partes.push(`${otros} menor${otros !== 1 ? "es" : ""}`);
+    if (ad)    partes.push(T.adultos(ad));
+    if (mid)   partes.push(T.de6a10(mid));
+    if (small) partes.push(T.menoresDe6(small));
+    if (!mid && !small && otros) partes.push(T.menores(otros));
     const gente = partes.length
       ? partes.join(" · ")
-      : `${tourParts(t)} persona${tourParts(t) !== 1 ? "s" : ""}`;
+      : (tourParts(t) === 1 ? T.unaPersona : T.personas(tourParts(t)));
     return `${formatDate(t.tourDate)} · ${gente}`;
   };
 
@@ -94,19 +119,19 @@ export function buildTourEmailHtml(data: {
   const grupo = (data.partySize && data.partySize > 0)
     ? data.partySize
     : (perTourMax > 0 ? perTourMax : totalParticipants);
-  const grupoText = grupo === 1 ? "1 persona" : `${grupo} personas`;
+  const grupoText = grupo === 1 ? T.unaPersona : T.personas(grupo);
 
   // Bloque "Detalles del tour": una fila por tour cuando hay varios; si no, el bloque clásico.
   const detallesHtml = isMultiTour ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
             <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:16px 22px;">
-              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">Tours reservados (${tours.length})</p>
-              <p style="margin:6px 0 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">Grupo de ${grupoText}</p>
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">${T.toursReservados(tours.length)}</p>
+              <p style="margin:6px 0 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${T.grupoDe(grupoText)}</p>
             </td></tr>
             ${tours.map((t: any, i: number) => `
             <tr>
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${t.tourName || "Tour"}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${nombreTour(t.tourName, t.tourSlug) || "Tour"}</p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${lineDetail(t)}</p>
               </td>
               <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
@@ -119,31 +144,31 @@ export function buildTourEmailHtml(data: {
             <tr>
               <td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:20px 22px;">
                 <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
-                  Tour Reservado
+                  ${T.tourReservado}
                 </p>
                 <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#1a2e1a;font-weight:400;">
-                  ${data.tourName}
+                  ${tourTitulo}
                 </p>
               </td>
             </tr>
             <tr>
               <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
                 <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
-                  Fecha del Recorrido
+                  ${T.fechaRecorrido}
                 </p>
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
                   ${formatDate(data.tourDate)}
                 </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">Pasamos por ti entre 8:00 y 9:00 AM</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${T.pasamosPorTi}</p>
               </td>
               <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
                 <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
-                  Participantes
+                  ${T.participantes}
                 </p>
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
                   ${grupoText}
                 </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${data.partySize && data.partySize > 0 ? "Reserva confirmada para tu grupo" : participantsText}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${data.partySize && data.partySize > 0 ? T.reservaGrupo : participantsText}</p>
               </td>
             </tr>
           </table>`;
@@ -152,7 +177,7 @@ export function buildTourEmailHtml(data: {
   const lodgingHtml = packages.length ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
             <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:16px 22px;">
-              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">🏨 Hospedaje incluido</p>
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">${T.hospedajeIncluido}</p>
             </td></tr>
             ${packages.map((p: any) => {
               const noches = Number(p.noches) || 0;
@@ -161,8 +186,8 @@ export function buildTourEmailHtml(data: {
               return `
             <tr>
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || "Habitación"}${p.hotel ? ` · ${p.hotel}` : ""}</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${noches} noche${noches !== 1 ? "s" : ""}${habs > 1 ? ` · ${habs} habitaciones` : ""}${fechas ? ` · ${fechas}` : ""}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || (locale === "en" ? "Room" : "Habitación")}${p.hotel ? ` · ${p.hotel}` : ""}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${T.noches(noches)}${habs > 1 ? T.habitaciones(habs) : ""}${fechas ? ` · ${fechas}` : ""}</p>
               </td>
               <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
                 <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${p.subtotal != null ? fmxEmail(p.subtotal) : ""}</p>
@@ -172,11 +197,11 @@ export function buildTourEmailHtml(data: {
           </table>` : "";
 
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="${locale === "en" ? "en" : "es"}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tour confirmado — ${data.confirmationNumber}</title>
+  <title>${T.subject(data.confirmationNumber)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
     * { margin:0; padding:0; }
@@ -203,7 +228,7 @@ export function buildTourEmailHtml(data: {
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
     <tr><td style="padding:14px 0;text-align:center;">
       <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6a7a5a;">
-        Huasteca Potosina &middot; San Luis Potosí &middot; México
+        ${T.preheader}
       </p>
     </td></tr>
   </table>
@@ -215,13 +240,13 @@ export function buildTourEmailHtml(data: {
         <!-- HERO -->
         <tr><td class="mobile-plg" style="padding:36px 40px 40px 40px;background-color:#1a2e1a;">
           <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.65);">
-            Confirmación de Tour
+            ${T.eyebrow}
           </p>
           <h1 class="hero-title" style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:44px;font-style:italic;font-weight:300;color:#f4edd8;line-height:1.1;">
-            ¡Tu aventura está<br>confirmada!
+            ${T.h1a}<br>${T.h1b}
           </h1>
           <p style="margin:14px 0 0 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7;">
-            Prepárate para vivir la Huasteca Potosina como nunca antes. Aquí tienes todos los detalles de tu recorrido.
+            ${T.intro}
           </p>
         </td></tr>
 
@@ -229,10 +254,10 @@ export function buildTourEmailHtml(data: {
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:48px 48px;">
 
           <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;color:#1a2e1a;line-height:1.2;">
-            ¡Hola, <span style="font-style:italic;color:#c4882a;">${data.customerName}!</span>
+            ${T.hola} <span style="font-style:italic;color:#c4882a;">${data.customerName}!</span>
           </p>
           <p style="margin:20px 0 30px 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:#3a3a2e;line-height:1.85;">
-            Tu lugar está apartado. Nuestro equipo de guías certificados ya conoce tu reserva y estará listo para darte la bienvenida. Solo preocúpate por llegar — nosotros nos encargamos de todo lo demás.
+            ${T.lugarApartado}
           </p>
 
           <table role="presentation" width="48" cellspacing="0" cellpadding="0" border="0">
@@ -246,7 +271,7 @@ export function buildTourEmailHtml(data: {
                 <tr>
                   <td>
                     <p style="margin:0 0 8px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a;">
-                      Número de Confirmación
+                      ${T.numeroConfirmacion}
                     </p>
                     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:#1a2e1a;letter-spacing:1px;">
                       ${data.confirmationNumber}
@@ -272,7 +297,7 @@ export function buildTourEmailHtml(data: {
                 <tr>
                   <td>
                     <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c4882a;">
-                      Total del tour
+                      ${T.totalDelTour}
                     </p>
                   </td>
                   <td style="text-align:right;">
@@ -284,25 +309,25 @@ export function buildTourEmailHtml(data: {
                 ${hasPromo ? `
                 <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.3);">
                   <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8fbe3a;">
-                    ✓ Código ${data.promoCode} aplicado — ${data.promoDiscount}% de descuento
+                    ${T.codigoAplicado(String(data.promoCode), Number(data.promoDiscount))}
                   </p>
                 </td></tr>` : ""}
                 ${deposito > 0 ? `
                 <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.3);">
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                     <tr>
-                      <td><p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.65);">Anticipo pagado</p></td>
+                      <td><p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.65);">${T.anticipoPagado}</p></td>
                       <td style="text-align:right;"><p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:13px;color:#8fbe3a;">${fmxEmail(deposito)}</p></td>
                     </tr>
                     <tr>
-                      <td><p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${pendiente > 0 ? "#f4a44a" : "#8fbe3a"};">${pendiente > 0 ? "Saldo pendiente" : "✓ Liquidado"}</p></td>
+                      <td><p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${pendiente > 0 ? "#f4a44a" : "#8fbe3a"};">${pendiente > 0 ? T.saldoPendiente : T.liquidado}</p></td>
                       <td style="text-align:right;"><p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:${pendiente > 0 ? "#f4a44a" : "#8fbe3a"};">${fmxEmail(pendiente)}</p></td>
                     </tr>
                   </table>
                 </td></tr>
                 ${data.metodoPago ? `
                 <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.2);">
-                  <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.5);">Método de pago: <span style="color:rgba(244,237,216,0.8);">${data.metodoPago}</span></p>
+                  <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.5);">${T.metodoPago} <span style="color:rgba(244,237,216,0.8);">${data.metodoPago}</span></p>
                 </td></tr>` : ""}` : ""}
               </table>
             </td></tr>
@@ -312,10 +337,10 @@ export function buildTourEmailHtml(data: {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-left:2px solid #c4882a;padding-left:20px;margin:28px 0;">
             <tr><td>
               <p style="margin:0 0 12px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a;">
-                Todo incluido en tu tour
+                ${T.todoIncluido}
               </p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.9;">
-                ${incluidosDe(data.tourSlug)}
+                ${incluidosDe(data.tourSlug, locale)}
               </p>
             </td></tr>
           </table>
@@ -325,16 +350,16 @@ export function buildTourEmailHtml(data: {
         <!-- PRÓXIMOS PASOS -->
         <tr><td class="mobile-p" style="background-color:#e6dfc8;padding:36px 48px;">
           <p style="margin:0 0 8px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6a4a;">
-            Próximos pasos
+            ${T.proximosPasos}
           </p>
           <h2 style="margin:0 0 20px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-style:italic;font-weight:300;color:#1a2e1a;">
-            Antes de tu recorrido
+            ${T.antesDeTuRecorrido}
           </h2>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;background-color:#f4edd8;">
                 <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">
-                  🌅 Punto de Salida
+                  ${T.puntoSalida}
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
                   ${pickupText}
@@ -342,29 +367,29 @@ export function buildTourEmailHtml(data: {
               </td>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-left:none;background-color:#f4edd8;">
                 <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">
-                  👟 Qué Llevar
+                  ${T.queLlevar}
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
-                  Ropa cómoda, calzado cerrado, traje de baño, protector solar biodegradable.
+                  ${T.queLlevarTexto}
                 </p>
               </td>
             </tr>
             <tr>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-top:none;background-color:#f4edd8;">
                 <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">
-                  📱 Confirma por WhatsApp
+                  ${T.confirmaWhatsapp}
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
                   <a href="https://wa.me/524891251458" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">+52 489 125 1458</a><br>
-                  Envía tu número: <strong>${data.confirmationNumber}</strong>
+                  ${T.enviaTuNumero} <strong>${data.confirmationNumber}</strong>
                 </p>
               </td>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#f4edd8;">
                 <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">
-                  🆔 Al Subir al Transporte
+                  ${T.alSubir}
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
-                  Presenta este número al guía:<br><strong>${data.confirmationNumber}</strong>
+                  ${T.presentaAlGuia}<br><strong>${data.confirmationNumber}</strong>
                 </p>
               </td>
             </tr>
@@ -374,15 +399,15 @@ export function buildTourEmailHtml(data: {
         <!-- CTA -->
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:40px 48px;text-align:center;border-top:1px solid #d4ccbc;">
           <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a;">
-            Mientras esperas
+            ${T.mientrasEsperas}
           </p>
           <h2 style="margin:0 0 22px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-style:italic;font-weight:300;color:#1a2e1a;">
-            Descubre más tours de la Huasteca
+            ${T.descubreMas}
           </h2>
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
             <tr><td style="background-color:#3a6b1a;padding:14px 36px;">
-              <a href="${base}/tours" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block;">
-                Ver Todos los Tours
+              <a href="${base}${pre}/tours" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block;">
+                ${T.verTodos}
               </a>
             </td></tr>
           </table>
@@ -391,7 +416,7 @@ export function buildTourEmailHtml(data: {
         <!-- CONTACTO -->
         <tr><td class="mobile-p" style="background-color:#f4edd8;padding:28px 48px;border-top:1px solid #d4ccbc;">
           <p style="margin:0 0 14px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a;">
-            ¿Tienes preguntas?
+            ${T.preguntas}
           </p>
           <p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:13px;color:#1a2e1a;">
             📱 <a href="https://wa.me/524891251458" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">WhatsApp: +52 489 125 1458</a>
@@ -400,7 +425,7 @@ export function buildTourEmailHtml(data: {
             📧 <a href="mailto:hola@huasteca-potosina.com" style="color:#1a2e1a;border-bottom:1px solid #d4ccbc;">hola@huasteca-potosina.com</a>
           </p>
           <p style="margin:12px 0 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a;">
-            ID de Pago: ${data.paymentIntentId || "N/A"}
+            ${T.idPago(data.paymentIntentId || "N/A")}
           </p>
         </td></tr>
 
@@ -410,11 +435,11 @@ export function buildTourEmailHtml(data: {
             Tours Huasteca Potosina
           </p>
           <p style="margin:0 0 14px 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a;line-height:1.6;">
-            Xilitla &middot; San Luis Potosí &middot; México<br>
-            Guías certificados NOM-09 SECTUR · +8 años de experiencia
+            ${T.ubicacion}<br>
+            ${T.guiasCert}
           </p>
           <p style="margin:14px 0 0 0;font-family:'DM Sans',Arial;font-size:10px;color:#b8a890;">
-            © ${new Date().getFullYear()} Tours Huasteca Potosina · Todos los derechos reservados
+            ${T.derechos(new Date().getFullYear())}
           </p>
         </td></tr>
 
@@ -443,8 +468,14 @@ export function buildTourQuoteEmailHtml(data: {
   // Hospedaje cotizado. Antes no llegaba al correo aunque la cotización del
   // sistema sí lo incluye → el cliente no veía el hotel/noches ni su subtotal.
   packageItems?: { hotel?: string; habitacion?: string; noches?: number; habitaciones?: number; checkin?: string; checkout?: string; subtotal?: number; _meta?: unknown }[];
+  /** Idioma del cliente. Cae al español si no viene. */
+  locale?:       string;
 }): string {
+  const locale = emailLocale(data.locale);
+  const T = getEmails(locale).cotizacion;
+  const C = getEmails(locale).confirmacion;
   const base     = "https://www.huasteca-potosina.com";
+  const pre      = locale === "en" ? "/en" : "";
   const waUrl    = "https://wa.me/524891251458";
   /**
    * A dónde lleva el botón "Reservar y pagar en línea".
@@ -456,19 +487,28 @@ export function buildTourQuoteEmailHtml(data: {
    */
   const esPaquete = PAQUETES_DB.some((p) => p.slug === data.tourSlug);
   const tourUrl  = esPaquete
-    ? `${base}/reservar-paquete/${data.tourSlug}`
-    : `${base}/reservar/carrito?agregar=${data.tourSlug}`;
+    ? `${base}${pre}/reservar-paquete/${data.tourSlug}`
+    : `${base}${pre}/reservar/carrito?agregar=${data.tourSlug}`;
 
   const formatDate = (d: string) => {
-    if (!d) return "Por confirmar";
-    const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    if (!d) return C.porConfirmar;
+    const r = new Date(d + "T12:00:00").toLocaleDateString(locale === "en" ? "en-US" : "es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     return r.charAt(0).toUpperCase() + r.slice(1);
   };
 
-  const fmx = (n: number) => `$${Number(n).toLocaleString("es-MX")}`;
+  const fmx = (n: number) => `$${Number(n).toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+
+  /** El nombre del recorrido en el idioma del correo (se guarda en español). */
+  const nombreQ = (nombre: string, slug?: string) => {
+    if (locale === "es") return nombre;
+    const b = slug ? TOURS_DB.find((t) => t.slug === slug) : undefined;
+    if (b) return localizeTour(b, locale).nombre;
+    const pq = slug ? PAQUETES_DB.find((x) => x.slug === slug) : undefined;
+    return pq ? localizePaquete(pq, locale).nombre : nombre;
+  };
 
   const totalParticipants = data.adults + data.children;
-  const participantsText  = `${data.adults} adulto${data.adults !== 1 ? "s" : ""}${data.children > 0 ? ` · ${data.children} menor${data.children !== 1 ? "es" : ""}` : ""}`;
+  const participantsText  = `${C.adultos(data.adults)}${data.children > 0 ? ` · ${C.menores(data.children)}` : ""}`;
 
   // Tabla de items si hay paquete multi-tour
   const itemsRows = (data.lineItems && data.lineItems.length > 1)
@@ -477,7 +517,7 @@ export function buildTourQuoteEmailHtml(data: {
       <tr>
         <td style="padding:14px 0;vertical-align:top;width:65%">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
-          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${it.vehiculo ? `${formatDate(it.tourDate)} · ${Math.max(1, Number(it.unidades) || 1)} vehículo${(Number(it.unidades) || 1) !== 1 ? "s" : ""}` : `${formatDate(it.tourDate)} · ${it.adults} adulto${it.adults !== 1 ? "s" : ""}${(it.childrenMid ?? 0) > 0 ? ` · ${it.childrenMid} niño${it.childrenMid !== 1 ? "s" : ""} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${it.childrenSmall} niño${it.childrenSmall !== 1 ? "s" : ""} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${it.children} niño${it.children !== 1 ? "s" : ""}` : ""}`}</p>
+          <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${it.vehiculo ? `${formatDate(it.tourDate)} · ${C.vehiculos(Math.max(1, Number(it.unidades) || 1))}` : `${formatDate(it.tourDate)} · ${C.adultos(it.adults)}${(it.childrenMid ?? 0) > 0 ? ` · ${T.ninos(it.childrenMid!)} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${T.ninos(it.childrenSmall!)} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${T.ninos(it.children!)}` : ""}`}</p>
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(it.subtotal)}</p>
@@ -502,10 +542,10 @@ export function buildTourQuoteEmailHtml(data: {
   const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p) => p && !p._meta) : [];
   const lodgingHtml = packages.length ? `
           <!-- HOSPEDAJE COTIZADO -->
-          <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">Hospedaje incluido</p>
+          <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">${T.hospedajeIncluido}</p>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #c4882a;background-color:#fdf9f0;">
             <tr><td colspan="2" style="border-bottom:1px solid #e4ddd3;padding:14px 22px;">
-              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">🏨 Noches de hotel</p>
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">${T.nochesHotel}</p>
             </td></tr>
             ${packages.map((p) => {
               const noches = Number(p.noches) || 0;
@@ -514,8 +554,8 @@ export function buildTourQuoteEmailHtml(data: {
               return `
             <tr>
               <td style="width:62%;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || "Habitación"}${p.hotel ? ` · ${p.hotel}` : ""}</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${noches} noche${noches !== 1 ? "s" : ""}${habs > 1 ? ` · ${habs} habitaciones` : ""}${fechas ? ` · ${fechas}` : ""}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || T.hospedajeTitulo}${p.hotel ? ` · ${p.hotel}` : ""}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${C.noches(noches)}${habs > 1 ? C.habitaciones(habs) : ""}${fechas ? ` · ${fechas}` : ""}</p>
               </td>
               <td style="width:38%;padding:16px 22px;vertical-align:top;text-align:right;white-space:nowrap;">
                 <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${p.subtotal != null ? fmx(p.subtotal) : ""}</p>
@@ -525,11 +565,11 @@ export function buildTourQuoteEmailHtml(data: {
           </table>` : "";
 
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="${locale === "en" ? "en" : "es"}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tu cotización — ${data.quoteNumber}</title>
+  <title>${T.tituloTab(data.quoteNumber)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
     * { margin:0; padding:0; }
@@ -550,7 +590,7 @@ export function buildTourQuoteEmailHtml(data: {
 <div class="wrapper">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
     <tr><td style="padding:14px 0;text-align:center">
-      <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6a7a5a">Huasteca Potosina &middot; San Luis Potosí &middot; México</p>
+      <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#6a7a5a">${C.preheader}</p>
     </td></tr>
   </table>
 
@@ -560,19 +600,19 @@ export function buildTourQuoteEmailHtml(data: {
 
         <!-- HERO -->
         <tr><td class="mobile-plg" style="padding:36px 40px 40px;background-color:#1a2e1a">
-          <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.55)">Tu cotización está lista</p>
-          <h1 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;font-style:italic;font-weight:300;color:#f4edd8;line-height:1.1">Aquí tienes tu<br>propuesta de viaje</h1>
-          <p style="margin:14px 0 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7">Hola ${data.customerName}, preparamos esta cotización con todos los detalles para que puedas planear tu aventura en la Huasteca Potosina.</p>
+          <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.55)">${T.eyebrow}</p>
+          <h1 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;font-style:italic;font-weight:300;color:#f4edd8;line-height:1.1">${T.h1a}<br>${T.h1b}</h1>
+          <p style="margin:14px 0 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7">${T.preview(data.customerName)}</p>
         </td></tr>
 
         <!-- CARD PRINCIPAL -->
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:44px 48px">
 
           <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#1a2e1a;line-height:1.2">
-            Hola, <span style="font-style:italic;color:#c4882a">${data.customerName}</span>
+            ${T.hola} <span style="font-style:italic;color:#c4882a">${data.customerName}</span>
           </p>
           <p style="margin:18px 0 28px;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:#3a3a2e;line-height:1.85">
-            Con gusto te compartimos los detalles y el precio de tu recorrido. Esta cotización es válida por <strong>48 horas</strong>. Para confirmar tu lugar, contáctanos por WhatsApp o reserva directamente desde el sitio.
+            ${T.intro1} <strong>${T.validez}</strong>${T.intro2}
           </p>
 
           <table role="presentation" width="48" cellspacing="0" cellpadding="0" border="0">
@@ -585,9 +625,9 @@ export function buildTourQuoteEmailHtml(data: {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td>
-                    <p style="margin:0 0 6px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">Número de Cotización</p>
+                    <p style="margin:0 0 6px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">${T.numeroCotizacion}</p>
                     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#1a2e1a;letter-spacing:1px">${data.quoteNumber}</p>
-                    <p style="margin:6px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">⏳ Válida por 48 horas a partir de hoy</p>
+                    <p style="margin:6px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${T.validaHoy}</p>
                   </td>
                   <td style="vertical-align:middle;text-align:right;width:48px">
                     <table role="presentation" width="44" height="44" cellspacing="0" cellpadding="0" border="0" style="border:1.5px solid #c4882a;background-color:#f4edd8;border-radius:50%">
@@ -600,9 +640,9 @@ export function buildTourQuoteEmailHtml(data: {
           </table>
 
           <!-- TOURS COTIZADOS -->
-          <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">Tours cotizados</p>
+          <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">${T.toursCotizados}</p>
           ${data.partySize && data.partySize > 0 && data.lineItems && data.lineItems.length > 1 ? `
-          <p style="margin:-8px 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">Grupo de ${data.partySize} persona${data.partySize !== 1 ? "s" : ""}</p>` : ""}
+          <p style="margin:-8px 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${T.grupoDe(Number(data.partySize))}</p>` : ""}
           ${itemsRows}
           ${lodgingHtml}
 
@@ -611,7 +651,7 @@ export function buildTourQuoteEmailHtml(data: {
             <tr><td class="mobile-p" style="padding:22px 28px">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td><p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Total Cotizado</p></td>
+                  <td><p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">${T.totalCotizado}</p></td>
                   <td style="text-align:right">
                     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#f4edd8">${fmx(data.totalAmount)}<span style="font-size:13px;color:#c4882a"> MXN</span></p>
                   </td>
@@ -623,7 +663,7 @@ export function buildTourQuoteEmailHtml(data: {
           <!-- QUÉ INCLUYE -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-left:2px solid #c4882a;padding-left:18px;margin:24px 0">
             <tr><td>
-              <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">Todo incluido en el precio</p>
+              <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">${T.todoIncluido}</p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:2">
                 ${incluidosDe(data.tourSlug)}
               </p>
@@ -633,7 +673,7 @@ export function buildTourQuoteEmailHtml(data: {
           ${data.notes ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ede8dc;padding:16px 18px;margin:18px 0">
             <tr><td>
-              <p style="margin:0 0 4px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a">Notas</p>
+              <p style="margin:0 0 4px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a">${T.notas}</p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.7">${data.notes}</p>
             </td></tr>
           </table>` : ""}
@@ -642,17 +682,17 @@ export function buildTourQuoteEmailHtml(data: {
 
         <!-- PRÓXIMOS PASOS -->
         <tr><td class="mobile-p" style="background-color:#e6dfc8;padding:36px 48px">
-          <p style="margin:0 0 8px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6a4a">¿Cómo confirmar?</p>
-          <h2 style="margin:0 0 20px;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-style:italic;font-weight:300;color:#1a2e1a">Solo dinos que vas y apartamos tu lugar</h2>
+          <p style="margin:0 0 8px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6a4a">${T.comoConfirmar}</p>
+          <h2 style="margin:0 0 20px;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-style:italic;font-weight:300;color:#1a2e1a">${T.soloDinos}</h2>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;background-color:#f4edd8">
-                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">📱 WhatsApp directo</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">Escríbenos tu número de cotización: <strong>${data.quoteNumber}</strong></p>
+                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${T.whatsappDirecto}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${T.escribenosFolio} <strong>${data.quoteNumber}</strong></p>
               </td>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-left:none;background-color:#f4edd8">
-                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">🌐 Reservar en línea</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">Paga con tarjeta de forma rápida y segura</p>
+                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${T.reservarEnLinea}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${T.pagaConTarjeta}</p>
               </td>
             </tr>
           </table>
@@ -663,28 +703,28 @@ export function buildTourQuoteEmailHtml(data: {
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto">
             <tr>
               <td style="background-color:#25D366;padding:14px 28px;margin-right:8px">
-                <a href="${waUrl}?text=Hola%2C+confirmo+cotizaci%C3%B3n+${data.quoteNumber}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#ffffff;text-decoration:none;display:block">WhatsApp +52 489 125 1458</a>
+                <a href="${waUrl}?text=Hola%2C+confirmo+cotizaci%C3%B3n+${data.quoteNumber}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#ffffff;text-decoration:none;display:block">${T.btnWhatsapp}</a>
               </td>
             </tr>
           </table>
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:12px auto 0">
             <tr>
               <td style="background-color:#3a6b1a;padding:14px 28px">
-                <a href="${tourUrl}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block">Reservar y pagar en línea</a>
+                <a href="${tourUrl}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block">${T.btnReservar}</a>
               </td>
             </tr>
           </table>
-          <p style="margin:16px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">Esta cotización vence en 48 horas · Sujeta a disponibilidad</p>
+          <p style="margin:16px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${T.vence}</p>
         </td></tr>
 
         <!-- FOOTER -->
         <tr><td class="mobile-plg" style="background-color:#e6dfc8;padding:32px 48px;text-align:center">
           <p style="margin:0 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;letter-spacing:3px;text-transform:uppercase;color:#7a6a4a">Tours Huasteca Potosina</p>
           <p style="margin:0 0 14px;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a;line-height:1.6">
-            Xilitla, San Luis Potosí · México<br>
-            Guías certificados NOM-09 SECTUR · +8 años de experiencia
+            ${C.ubicacion}<br>
+            ${C.guiasCert}
           </p>
-          <p style="margin:12px 0 0;font-family:'DM Sans',Arial;font-size:10px;color:#b8a890">© ${new Date().getFullYear()} Tours Huasteca Potosina · Todos los derechos reservados</p>
+          <p style="margin:12px 0 0;font-family:'DM Sans',Arial;font-size:10px;color:#b8a890">${C.derechos(new Date().getFullYear())}</p>
         </td></tr>
 
       </table>

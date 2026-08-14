@@ -638,7 +638,7 @@ export default function TourDetailPage({ params }: Props) {
             </div>
 
             <div className="space-y-2.5">
-              <Link href={`/reservar/carrito?agregar=${tour.slug}`}
+              <Link href={localePath(`/reservar/carrito?agregar=${tour.slug}`, locale)}
                 className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
                 <Lock className="w-3.5 h-3.5" aria-hidden="true" />
                 {t.bookThisTour}
@@ -783,7 +783,7 @@ export default function TourDetailPage({ params }: Props) {
                         className="text-[9px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-3 py-1.5 transition-all">
                         {t.viewTour}
                       </Link>
-                      <Link href={`/reservar/carrito?agregar=${comboTour.slug}`}
+                      <Link href={localePath(`/reservar/carrito?agregar=${comboTour.slug}`, locale)}
                         className="text-[9px] tracking-[2px] uppercase font-dm text-negro bg-dorado hover:bg-lima px-3 py-1.5 transition-all">
                         {t.book}
                       </Link>

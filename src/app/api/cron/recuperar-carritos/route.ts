@@ -85,15 +85,24 @@ export async function POST(req: NextRequest) {
     if (!tipo) continue;
 
     const restoreUrl = linkRecuperacion(APP_URL, c.tourId, c.tourSlug, c.token);
+    // El idioma se guardó dentro de `carritoJson` al crear el carrito: quien
+    // cotizó en inglés recibe los tres recordatorios en inglés.
+    let locale = "es";
+    try {
+      const guardado = c.carritoJson ? JSON.parse(c.carritoJson) : null;
+      if (guardado?.locale === "en") locale = "en";
+    } catch { /* JSON viejo o corrupto: se queda en español */ }
     try {
       const { subject, html } = buildCartEmailHtml({
         tipo,
         tourName: c.tourName,
+        tourSlug: c.tourSlug,
         tourDate: c.tourDate,
         adults:   c.adults,
         children: c.childrenMid + c.childrenSmall,
         total:    c.total,
         restoreUrl,
+        locale,
       });
       await sendBrevoEmail({ to: [{ email: c.customerEmail }], subject, htmlContent: html });
       await prisma.abandonedCart.update({

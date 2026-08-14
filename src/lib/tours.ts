@@ -53,6 +53,15 @@ export const INCLUYE_SIEMPRE = [
   "Fotografías y video del recorrido que toma tu guía",
 ] as const;
 
+/**
+ * Lo mismo en inglés. Vive aquí y no en `i18n/booking.ts` para que nadie pueda
+ * cambiar una lista sin ver la otra: son la misma promesa al cliente.
+ */
+export const INCLUYE_SIEMPRE_EN = [
+  "Travel insurance for everyone in the group",
+  "Photos and video of the tour, taken by your guide",
+] as const;
+
 /** Clave de comparación: sin mayúsculas, sin acentos y sin puntuación. */
 function claveIncluye(x: string): string {
   return x
@@ -77,10 +86,17 @@ function claveIncluye(x: string): string {
  * Se descartan también los casi-duplicados por prefijo: entre "Fotografías y
  * video del recorrido" y "Fotografías y video del recorrido que toma tu guía"
  * gana la larga, que es la que dice quién las toma.
+ *
+ * ⚠️ En inglés hay que pasarle un tour YA localizado (`localizeTour`) Y el
+ * locale: el `incluye` propio del tour viene de `tours.en.ts`, pero las dos
+ * líneas de `INCLUYE_SIEMPRE` viven aquí y hay que traducirlas también. Sin el
+ * segundo argumento, la lista salía en inglés con dos renglones en español
+ * justo en la pantalla de pago.
  */
-export function incluyeDeTour(t: Pick<Tour, "incluye">): string[] {
+export function incluyeDeTour(t: Pick<Tour, "incluye">, locale: "es" | "en" = "es"): string[] {
   const salida: string[] = [];
-  for (const item of [...(t.incluye ?? []), ...INCLUYE_SIEMPRE]) {
+  const siempre = locale === "en" ? INCLUYE_SIEMPRE_EN : INCLUYE_SIEMPRE;
+  for (const item of [...(t.incluye ?? []), ...siempre]) {
     const texto = item.trim();
     if (!texto) continue;
     const clave = claveIncluye(texto);

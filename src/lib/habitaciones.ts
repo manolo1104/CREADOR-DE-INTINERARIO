@@ -1,3 +1,6 @@
+import { getBooking } from "./i18n/booking";
+import type { Locale } from "./i18n/config";
+
 /**
  * Catálogo de habitaciones del Hotel Paraíso Encantado.
  *
@@ -46,6 +49,56 @@ export const SERVICIOS_HOTEL = [
   "Restaurante",
   "A 7 min del centro de Xilitla",
 ] as const;
+
+/** Los mismos servicios en el idioma del visitante. */
+export function serviciosHotel(locale: Locale = "es"): string[] {
+  return [...getBooking(locale).hotel.servicios];
+}
+
+/**
+ * La vista de una habitación, traducida.
+ *
+ * El NOMBRE de la habitación no se traduce (Orquídeas 2, Jungla) porque es como
+ * la conoce el hotel y como aparece en la reserva que recibe el equipo; la
+ * vista sí, porque es una descripción, no un nombre propio.
+ */
+export function vistaHabitacion(vista: string, locale: Locale = "es"): string {
+  return getBooking(locale).hotel.vistas[vista] ?? vista;
+}
+
+/**
+ * Las características del cuarto, traducidas frase por frase.
+ *
+ * Se traduce el VOCABULARIO, no cada habitación: las nueve fichas se arman con
+ * las mismas veinte frases ("2 camas matrimoniales", "Baño completo"…), así que
+ * una tabla de frases cubre todas y sigue cubriéndolas cuando se agregue un
+ * cuarto nuevo. Lo que no esté en la tabla cae al español en vez de perderse,
+ * que es preferible a inventar una traducción.
+ */
+const CARACTERISTICAS_EN: Record<string, string> = {
+  "1 cama King Size": "1 king-size bed",
+  "2 camas matrimoniales": "2 double beds",
+  "3 camas matrimoniales": "3 double beds",
+  "4 camas matrimoniales": "4 double beds",
+  "Acceso a piscina spa": "Access to the spa pool",
+  "Aire acondicionado": "Air conditioning",
+  "Balcón privado": "Private balcony",
+  "Baño completo": "Full bathroom",
+  "Piscina de spa al exterior": "Outdoor spa pool",
+  "Spa privado al aire libre": "Private open-air spa",
+  "Terraza con vista": "Terrace with a view",
+  "Terraza con vista a piscina": "Terrace overlooking the pool",
+  "Terraza panorámica": "Panoramic terrace",
+  "Tina de hidromasaje": "Hot tub",
+  "Vista a la sierra": "Mountain-range view",
+  WiFi: "WiFi",
+};
+
+export function caracteristicasHabitacion(lista: string[], locale: Locale = "es"): string[] {
+  if (locale === "es") return lista;
+  // Los metros cuadrados ("28 m²") se dejan tal cual: son una cifra, no texto.
+  return lista.map((x) => CARACTERISTICAS_EN[x] ?? x);
+}
 
 const IMG = "/imagenes/hotel-paraiso-encantado/habitaciones";
 
@@ -195,10 +248,12 @@ export interface CotizacionHabitaciones {
 export function cotizarHabitaciones(
   seleccion: { habitacionId: string; huespedes: number }[],
   noches: number,
+  locale: Locale = "es",
 ): CotizacionHabitaciones {
+  const t = getBooking(locale).hotel;
   const n = Math.floor(noches);
-  if (n <= 0)              return { ok: false, error: "Faltan las noches." };
-  if (seleccion.length === 0) return { ok: false, error: "Falta elegir la habitación." };
+  if (n <= 0)              return { ok: false, error: t.faltanNoches };
+  if (seleccion.length === 0) return { ok: false, error: t.faltaHabitacion };
 
   const gratis = nochesGratis(n);
   const cobradas = n - gratis;
@@ -206,10 +261,10 @@ export function cotizarHabitaciones(
   const desglose: NonNullable<CotizacionHabitaciones["desglose"]> = [];
   for (const s of seleccion) {
     const hab = getHabitacion(s.habitacionId);
-    if (!hab) return { ok: false, error: "Habitación no encontrada." };
+    if (!hab) return { ok: false, error: t.noEncontrada };
     const porNoche = tarifaNoche(hab, s.huespedes);
     if (porNoche === null) {
-      return { ok: false, error: `${hab.nombre} admite hasta ${hab.maxHuespedes} personas.` };
+      return { ok: false, error: t.admiteHasta(hab.nombre, hab.maxHuespedes) };
     }
     desglose.push({ habitacion: hab.nombre, huespedes: s.huespedes, porNoche, subtotal: porNoche * cobradas });
   }

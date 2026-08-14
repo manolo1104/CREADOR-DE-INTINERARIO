@@ -88,10 +88,20 @@ export function validatePromoCode(code: string): { valid: boolean; discount: num
 
 // ── Formato de fecha para UI ─────────────────────────────────
 
-export function formatTourDate(dateStr: string) {
+/**
+ * Fecha larga para la interfaz.
+ *
+ * El locale es opcional y cae en español: hay una veintena de llamadas en el
+ * lado ES y en los correos que no tienen por qué enterarse de que existe el
+ * inglés. El motor sí lo pasa — un cliente que reserva en `/en` tiene que ver
+ * "Saturday, September 5, 2026", no "Sábado, 5 de septiembre de 2026".
+ */
+export function formatTourDate(dateStr: string, locale: "es" | "en" = "es") {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T12:00:00");
-  const f = d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const f = d.toLocaleDateString(locale === "en" ? "en-US" : "es-MX", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
   return f.charAt(0).toUpperCase() + f.slice(1);
 }
 

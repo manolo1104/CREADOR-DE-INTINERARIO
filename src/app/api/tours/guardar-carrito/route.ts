@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
       // Carrito completo. Cuando viene, manda sobre los campos sueltos de
       // arriba: es el camino del carrito de varios recorridos.
       items, hospedaje, traslado,
+      // Idioma en que el cliente armó el carrito: define en qué idioma sale la
+      // cotización y, más tarde, los recordatorios del cron.
+      locale,
     } = body;
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
     // pagar se perdía para siempre.
     const esCarrito = Array.isArray(items) && items.length > 0;
     if (esCarrito) {
-      return await guardarCarritoCompleto(items, String(email).trim(), phone, hospedaje, traslado);
+      return await guardarCarritoCompleto(items, String(email).trim(), phone, hospedaje, traslado, locale);
     }
 
     if (!tourDate) {
@@ -116,11 +119,13 @@ export async function POST(req: NextRequest) {
         const { subject, html } = buildCartEmailHtml({
           tipo: "cotizacion",
           tourName: datos.tourName,
+          tourSlug: datos.tourSlug,
           tourDate: datos.tourDate,
           adults: datos.adults,
           children: datos.childrenMid + datos.childrenSmall,
           total: datos.total,
           restoreUrl,
+          locale,
         });
         await sendBrevoEmail({
           to: [{ email: datos.customerEmail }],
@@ -165,6 +170,7 @@ async function guardarCarritoCompleto(
   phone: unknown,
   hospedaje?: { habitaciones?: { habitacionId: string; huespedes: number }[]; noches?: number; checkin?: string; checkout?: string } | null,
   traslado?: { ciudad?: string; personas?: number } | null,
+  locale?: unknown,
 ) {
   const tarifa = tarifarRecorridos(items);
   if (!tarifa.ok) {
@@ -232,7 +238,10 @@ async function guardarCarritoCompleto(
     customerPhone: phone ? String(phone).trim() : null,
     // Se guarda TODO lo elegido, no solo los recorridos: si el cliente vuelve
     // por el link del correo, el hospedaje y el traslado siguen ahí.
-    carritoJson:   JSON.stringify({ items, hospedaje: hospedaje ?? null, traslado: traslado ?? null }),
+    // El idioma va DENTRO del JSON, no en una columna nueva: `npm start` corre
+    // `prisma db push` en producción y una columna nueva no se puede probar en
+    // local. Es el mismo patrón `_meta` que ya usa el resto del proyecto.
+    carritoJson:   JSON.stringify({ items, hospedaje: hospedaje ?? null, traslado: traslado ?? null, locale: locale === "en" ? "en" : "es" }),
   };
 
   const existente = await prisma.abandonedCart.findFirst({
@@ -262,18 +271,20 @@ async function guardarCarritoCompleto(
       const { subject, html } = buildCartEmailHtml({
         tipo: "cotizacion",
         tourName: datos.tourName,
+        tourSlug: datos.tourSlug,
         tourDate: datos.tourDate,
         adults: datos.adults,
         children: datos.childrenMid,
         total: datos.total,
         restoreUrl,
         lineas: tarifa.lineItems.map((l) => ({
-          tourName: l.tourName, tourDate: l.tourDate,
+          tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,
           adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
           subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
         })),
         hospedaje: hotel,
         traslado:  viaje,
+        locale:    locale === "en" ? "en" : "es",
       });
       await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
     } catch {

@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDict } from "@/lib/i18n/messages";
 
 interface Props {
   images:   { src: string; alt: string }[];
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export function DestinoGallery({ images, nombre }: Props) {
+  const dg = getDict(useLocale().locale).destino;
   const [lightbox, setLightbox] = useState<number | null>(null);
   const touchX = useRef<number | null>(null);
 
@@ -56,7 +59,7 @@ export function DestinoGallery({ images, nombre }: Props) {
             key={img.src}
             onClick={() => setLightbox(i)}
             className={`reveal-up group relative overflow-hidden bg-verde-profundo/40 cursor-zoom-in ${i === 0 ? "col-span-2 row-span-2" : ""}`}
-            aria-label={`Ampliar foto ${i + 1} de ${nombre}`}
+            aria-label={dg.ampliarFoto(i + 1, nombre)}
           >
             {/* Skeleton mientras carga */}
             <div className="absolute inset-0 bg-gradient-to-br from-verde-profundo/60 to-verde-selva/20 animate-pulse" />
@@ -73,7 +76,7 @@ export function DestinoGallery({ images, nombre }: Props) {
             {/* Cue de ampliar en hover (solo la primera, para no saturar) */}
             {i === 0 && (
               <span className="absolute bottom-3 right-3 z-30 flex items-center gap-1.5 bg-negro/55 backdrop-blur-sm text-crema/90 text-[10px] tracking-[1.5px] uppercase font-dm px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Expand className="w-3 h-3" strokeWidth={1.8} /> Ver galería
+                <Expand className="w-3 h-3" strokeWidth={1.8} /> {dg.verGaleria}
               </span>
             )}
           </button>
@@ -92,7 +95,7 @@ export function DestinoGallery({ images, nombre }: Props) {
           <button
             onClick={close}
             className="absolute top-4 right-4 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-2 transition-colors"
-            aria-label="Cerrar galería"
+            aria-label={dg.cerrarGaleria}
           >
             <X className="w-6 h-6" />
           </button>
@@ -106,7 +109,7 @@ export function DestinoGallery({ images, nombre }: Props) {
           <button
             onClick={(e) => { e.stopPropagation(); prev(); }}
             className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-3 transition-colors"
-            aria-label="Foto anterior"
+            aria-label={dg.fotoAnterior}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -137,7 +140,7 @@ export function DestinoGallery({ images, nombre }: Props) {
           <button
             onClick={(e) => { e.stopPropagation(); next(); }}
             className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 z-10 text-crema/70 hover:text-crema bg-negro/50 rounded-full p-3 transition-colors"
-            aria-label="Foto siguiente"
+            aria-label={dg.fotoSiguiente}
           >
             <ChevronRight className="w-6 h-6" />
           </button>

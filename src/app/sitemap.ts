@@ -63,6 +63,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bilingual("/tours",            { changeFrequency: "weekly",  priority: 0.9 }),
     ...bilingual("/viaje-septiembre", { changeFrequency: "weekly",  priority: 0.9 }),
     ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8 }),
+    // El catálogo del motor. Es de conversión, no un paso del checkout: tiene
+    // canonical y metadata propios en los dos idiomas. El carrito y la
+    // confirmación NO entran — son transaccionales.
+    ...bilingual("/reservar",         { changeFrequency: "weekly",  priority: 0.9 }),
+    ...bilingual("/paquetes",         { changeFrequency: "monthly", priority: 0.6 }),
+    ...bilingual("/nosotros",         { changeFrequency: "monthly", priority: 0.6 }),
+    ...bilingual("/info-practica",    { changeFrequency: "monthly", priority: 0.7 }),
   ];
 
   // Páginas solo en español (aún sin versión /en).
@@ -73,21 +80,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/blog`,                  lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
     { url: `${BASE}/preguntas-frecuentes`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/creditos`,              lastModified: new Date(), changeFrequency: "yearly",  priority: 0.2 },
-    { url: `${BASE}/nosotros`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE}/info-practica`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/recomendar`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/experiencias`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE}/paquetes`,      lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/precios`,       lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/guia`,          lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sobre-la-huasteca-potosina`,        lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sustentabilidad-y-conservacion`,    lastModified: new Date(), changeFrequency: "yearly",  priority: 0.4 },
     { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tours-en-ciudad-valles`,            lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    // /reservar es el catálogo de conversión, no un paso del checkout: es
-    // indexable (tiene canonical y metadata propia) y se había quedado fuera
-    // por la regla que excluye "/reservar-*".
-    { url: `${BASE}/reservar`,                lastModified: new Date(), changeFrequency: "weekly",  priority: 0.9 },
     { url: `${BASE}/contacto`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/politica-de-cancelacion`, lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
@@ -128,13 +128,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
   }));
 
-  const paquetePages: MetadataRoute.Sitemap = PAQUETES_DB.map((p) => ({
-    url: `${BASE}/paquetes/${p.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.7,
-    images: p.imagen ? [absImg(p.imagen)] : undefined,
-  }));
+  const paquetePages: MetadataRoute.Sitemap = PAQUETES_DB.flatMap((p) =>
+    bilingual(`/paquetes/${p.slug}`, {
+      changeFrequency: "monthly",
+      priority: 0.7,
+      images: p.imagen ? [absImg(p.imagen)] : undefined,
+    }),
+  );
 
   return [...bilingualStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages, ...paquetePages];
 }

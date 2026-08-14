@@ -5,14 +5,19 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { minBookingDate } from "@/lib/tourBooking";
 import { bloquearScroll } from "@/lib/scrollLock";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
+import type { Locale } from "@/lib/i18n/config";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-const MONTHS_ES = [
-  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
-];
-const DAYS_ES = ["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+/** Nombre del mes en el idioma del visitante, con mayúscula inicial. */
+function nombreMes(month: number, locale: Locale): string {
+  const f = new Date(2020, month, 1).toLocaleDateString(
+    locale === "en" ? "en-US" : "es-MX", { month: "long" },
+  );
+  return f.charAt(0).toUpperCase() + f.slice(1);
+}
 
 function addMonths(date: Date, n: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + n, 1);
@@ -61,11 +66,11 @@ function buildGrid(year: number, month: number): (Date | null)[] {
   return grid;
 }
 
-function formatDisplay(ymd: string): string {
+function formatDisplay(ymd: string, locale: Locale): string {
   if (!ymd) return "";
   const [y, m, d] = ymd.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  const f = date.toLocaleDateString("es-MX", {
+  const f = date.toLocaleDateString(locale === "en" ? "en-US" : "es-MX", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
   return f.charAt(0).toUpperCase() + f.slice(1);
@@ -74,7 +79,7 @@ function formatDisplay(ymd: string): string {
 // ── MonthGrid ─────────────────────────────────────────────────────────────────
 
 function MonthGrid({
-  year, month, selected, bloqueadas, motivoBloqueo, onSelect,
+  year, month, selected, bloqueadas, motivoBloqueo, onSelect, locale,
 }: {
   year:     number;
   month:    number;
@@ -82,17 +87,19 @@ function MonthGrid({
   bloqueadas: Set<string>;
   motivoBloqueo?: (ymd: string) => string;
   onSelect: (ymd: string) => void;
+  locale:   Locale;
 }) {
   const grid = buildGrid(year, month);
+  const dias = getBooking(locale).calendario.dias;
 
   return (
     <div className="min-w-0">
       <p className="text-center font-cormorant text-verde-profundo text-base mb-3 leading-none">
-        {MONTHS_ES[month]} {year}
+        {nombreMes(month, locale)} {year}
       </p>
 
       <div className="grid grid-cols-7 mb-1">
-        {DAYS_ES.map((d) => (
+        {dias.map((d) => (
           <span key={d} className="text-center text-[10px] tracking-[1px] uppercase text-negro/35 font-dm py-1">
             {d}
           </span>
@@ -165,7 +172,7 @@ function MonthGrid({
 
 function CalendarInner({
   value, monthStart, bloqueadas, motivoBloqueo,
-  puedeRetroceder, puedeAvanzar, onPrev, onNext, onSelect,
+  puedeRetroceder, puedeAvanzar, onPrev, onNext, onSelect, locale,
 }: {
   value: string;
   monthStart: Date;
@@ -176,8 +183,10 @@ function CalendarInner({
   onPrev: () => void;
   onNext: () => void;
   onSelect: (ymd: string) => void;
+  locale: Locale;
 }) {
   const month2Start = addMonths(monthStart, 1);
+  const t = getBooking(locale).calendario;
 
   // Atajo de los próximos 14 días: elegir fecha en un clic en lugar de navegar
   // una cuadrícula. La mayoría reserva para los días inmediatos.
@@ -187,9 +196,9 @@ function CalendarInner({
       const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
       return {
         ymd: formatYMD(d),
-        dia: DAYS_ES[(d.getDay() + 6) % 7],
+        dia: t.dias[(d.getDay() + 6) % 7],
         num: d.getDate(),
-        mes: MONTHS_ES[d.getMonth()].slice(0, 3),
+        mes: nombreMes(d.getMonth(), locale).slice(0, 3),
       };
     });
   })();
@@ -198,7 +207,7 @@ function CalendarInner({
     <div className="space-y-4">
       <div>
         <p className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm mb-2">
-          Próximos días
+          {t.proximosDias}
         </p>
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
           {proximosDias.map((d) => {
@@ -212,7 +221,7 @@ function CalendarInner({
                 title={ocupado ? motivoBloqueo?.(d.ymd) : undefined}
                 onClick={() => onSelect(d.ymd)}
                 aria-pressed={activo}
-                aria-label={`Seleccionar ${d.ymd}`}
+                aria-label={d.ymd}
                 className={`flex-shrink-0 w-12 py-1.5 border text-center transition-colors ${
                   activo
                     ? "border-verde-selva bg-verde-selva text-crema"
@@ -239,19 +248,19 @@ function CalendarInner({
           type="button"
           onClick={onPrev}
           disabled={!puedeRetroceder}
-          aria-label="Mes anterior"
+          aria-label={t.mesAnterior}
           className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-[10px] tracking-[2px] uppercase text-negro/40 font-dm">
-          O elige otra fecha
+          {t.oEligeOtraFecha}
         </span>
         <button
           type="button"
           onClick={onNext}
           disabled={!puedeAvanzar}
-          aria-label="Mes siguiente"
+          aria-label={t.mesSiguiente}
           className="w-8 h-8 flex items-center justify-center text-negro/50 hover:text-verde-selva hover:bg-verde-selva/10 transition-colors rounded-full disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           <ChevronRight className="w-4 h-4" />
@@ -261,12 +270,12 @@ function CalendarInner({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <MonthGrid
           year={monthStart.getFullYear()} month={monthStart.getMonth()}
-          selected={value} bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo} onSelect={onSelect}
+          selected={value} bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo} onSelect={onSelect} locale={locale}
         />
         <div className="hidden sm:block">
           <MonthGrid
             year={month2Start.getFullYear()} month={month2Start.getMonth()}
-            selected={value} bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo} onSelect={onSelect}
+            selected={value} bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo} onSelect={onSelect} locale={locale}
           />
         </div>
       </div>
@@ -304,10 +313,14 @@ export function TourCalendar({
   modo = "inline",
   fechasBloqueadas,
   motivoBloqueo,
-  placeholder = "Toca para seleccionar fecha",
-  titulo = "Selecciona la fecha",
+  placeholder,
+  titulo,
   permitirLimpiar = false,
 }: Props) {
+  const { locale } = useLocale();
+  const t = getBooking(locale).calendario;
+  const textoPlaceholder = placeholder ?? t.placeholder;
+  const textoTitulo      = titulo ?? t.titulo;
   const today = new Date();
   const [monthStart, setMonthStart] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
@@ -374,7 +387,7 @@ export function TourCalendar({
       value={value} monthStart={monthStart}
       bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo}
       puedeRetroceder={puedeRetroceder} puedeAvanzar={puedeAvanzar}
-      onPrev={prev} onNext={next} onSelect={handleSelect}
+      onPrev={prev} onNext={next} onSelect={handleSelect} locale={locale}
     />
   );
 
@@ -391,7 +404,7 @@ export function TourCalendar({
           : "border-terracota/60 bg-crema text-terracota"
       }`}
     >
-      <span className="truncate text-left">{value ? formatDisplay(value) : placeholder}</span>
+      <span className="truncate text-left">{value ? formatDisplay(value, locale) : textoPlaceholder}</span>
       <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-40" />
     </button>
   );
@@ -409,11 +422,11 @@ export function TourCalendar({
           <div className="absolute inset-0 bg-negro/60 backdrop-blur-sm" onClick={() => setAbierto(false)} />
           <div className="absolute bottom-0 left-0 right-0 bg-crema rounded-t-2xl shadow-2xl p-6 pb-8 animate-slide-up max-h-[88vh] overflow-y-auto sm:max-w-xl sm:mx-auto sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-cormorant text-verde-profundo text-lg pr-4">{titulo}</h3>
+              <h3 className="font-cormorant text-verde-profundo text-lg pr-4">{textoTitulo}</h3>
               <button
                 type="button"
                 onClick={() => setAbierto(false)}
-                aria-label="Cerrar"
+                aria-label={t.cerrar}
                 className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-negro/40 hover:text-negro transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -426,7 +439,7 @@ export function TourCalendar({
                 onClick={() => { onChange(""); setAbierto(false); }}
                 className="mt-5 w-full border border-negro/15 py-2.5 font-dm text-[12px] text-negro/55 hover:border-terracota hover:text-terracota transition-colors"
               >
-                Quitar la fecha
+                {t.quitarLaFecha}
               </button>
             )}
           </div>
@@ -459,7 +472,7 @@ export function TourCalendar({
               incógnita logística justo en el instante de decidir. La hora
               exacta de recogida sí se confirma después, y eso se dice aparte.
             */}
-            Fecha seleccionada: <strong>{formatDisplay(value)}</strong> · Salida entre 8:00 y 9:00 AM
+            {t.fechaSeleccionada} <strong>{formatDisplay(value, locale)}</strong>{t.salidaEntre}
           </span>
         </div>
       )}

@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
       adults, children,
       promoCode, promoDiscount,
       lineItems, packageItems,
+      // Idioma en que el cliente reservó, para que la confirmación salga igual.
+      locale,
     } = body;
 
     // ── Verificación del pago con Stripe (fuente de verdad del monto) ─────────
@@ -105,7 +107,12 @@ export async function POST(req: NextRequest) {
           notes:          notes         || null,
           // Tours por vehículo (RZR): guarda la línea con ruta/vehículo/unidades
           // para que /reservas, el PDF y el modal del admin la reconstruyan.
-          lineItems:      Array.isArray(lineItems) && lineItems.length ? lineItems : undefined,
+          // El idioma va en el objeto `_meta` (patrón del proyecto): sin él,
+          // reenviar la confirmación desde el panel la mandaría en español a un
+          // cliente que compró en inglés.
+          lineItems:      Array.isArray(lineItems) && lineItems.length
+            ? [...lineItems, { _meta: true, locale: locale === "en" ? "en" : "es" }]
+            : [{ _meta: true, locale: locale === "en" ? "en" : "es" }],
           status:         "paid",
         },
       });
@@ -168,6 +175,7 @@ export async function POST(req: NextRequest) {
           pickupLugar,
           lineItems:     Array.isArray(lineItems) ? lineItems.filter((l: any) => l && !l._meta) : undefined,
           packageItems:  Array.isArray(packageItems) ? packageItems : undefined,
+          locale,
         });
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";

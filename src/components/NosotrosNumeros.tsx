@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getNosotros } from "@/lib/i18n/nosotros.en";
 
 type NumeroItem = {
   target: number;
@@ -14,28 +16,28 @@ const NUMEROS: NumeroItem[] = [
   {
     target: 10000,
     decimals: 0,
-    format: (n) => `+${Math.floor(n).toLocaleString("es-MX")}`,
-    label: "Viajeros guiados",
+    format: (n) => `+${Math.floor(n).toLocaleString()}`,
+    label: "",
     anima: true,
   },
   {
     target: 15,
     decimals: 0,
     format: (n) => `${Math.floor(n)}+`,
-    label: "Años de experiencia local",
+    label: "",
     anima: true,
   },
   {
     target: 4.9,
     decimals: 1,
     format: (n) => `${n.toFixed(1)} ★`,
-    label: "Calificación Google",
+    label: "",
   },
   {
     target: 0,
     decimals: 0,
     format: (n) => `${Math.floor(n)}`,
-    label: "Incidentes de seguridad",
+    label: "",
   },
 ];
 
@@ -87,10 +89,13 @@ function CounterItem({ target, decimals, format, label, anima }: NumeroItem) {
 }
 
 export function NosotrosNumeros() {
+  // La cifra y la animación viven aquí; la etiqueta sale del diccionario, que
+  // es el único sitio donde existe en los dos idiomas.
+  const t = getNosotros(useLocale().locale);
   return (
     <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-      {NUMEROS.map((n) => (
-        <CounterItem key={n.label} {...n} />
+      {NUMEROS.map((n, i) => (
+        <CounterItem key={i} {...n} label={t.numeros[i].label} />
       ))}
     </div>
   );

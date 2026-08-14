@@ -1,6 +1,8 @@
 "use client";
 
 import { trackPackageInquiry, trackWhatsapp } from "@/lib/analytics";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getPaqueteFormUI } from "@/lib/i18n/paquetes.en";
 
 const WA_SVG = (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
@@ -18,6 +20,7 @@ interface Props {
 }
 
 export function PaqueteCtaButton({ href, packageName, price, destacado }: Props) {
+  const t = getPaqueteFormUI(useLocale().locale);
   function handleClick() {
     trackPackageInquiry(packageName, price);
     trackWhatsapp("package_inquiry", price);
@@ -36,7 +39,7 @@ export function PaqueteCtaButton({ href, packageName, price, destacado }: Props)
       }`}
     >
       {WA_SVG}
-      Reservar este paquete
+      {t.reservarEstePaquete}
     </a>
   );
 }

@@ -40,6 +40,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       partySize:          Number(meta.numPersonas) || undefined,
       lineItems:          rawLines.filter((l: any) => l && !l._meta),
       packageItems:       Array.isArray((b as any).packageItems) ? (b as any).packageItems : [],
+      // Reenviar en el idioma en que el cliente compró (guardado en `_meta`).
+      locale:             meta.locale,
     });
 
     const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
@@ -47,7 +49,9 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     await sendBrevoEmail({
       to:      [{ email: b.customerEmail, name: b.customerName }],
       bcc:     [{ email: adminTo }],
-      subject: `Tu tour está confirmado — ${b.confirmationNumber}`,
+      subject: meta.locale === "en"
+        ? `Your tour is confirmed — ${b.confirmationNumber}`
+        : `Tu tour está confirmado — ${b.confirmationNumber}`,
       htmlContent: html,
     });
 
