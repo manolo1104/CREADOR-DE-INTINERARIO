@@ -23,7 +23,9 @@ export function generateMetadata(): Metadata {
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
-      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: t.ogAlt }],
+      // Sin `images`: la tarjeta la pone `opengraph-image.tsx` de cada segmento
+      // (español aquí, inglés en /en/paquetes). Declararla aquí las anularía —
+      // lo que declara la página gana al archivo. Ver la nota en destinos/page.tsx.
     },
   };
 }

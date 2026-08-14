@@ -12,7 +12,8 @@ import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { NosotrosNumeros } from "@/components/NosotrosNumeros";
 import { NosotrosTimeline } from "@/components/NosotrosTimeline";
-import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
+import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { getNosotros, type NosotrosContent } from "@/lib/i18n/nosotros.en";
 
 const GOOGLE_REVIEWS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
@@ -36,38 +37,18 @@ export function generateMetadata(): Metadata {
   };
 }
 
-const orgSchema = (t: NosotrosContent) => ({
-  "@context": "https://schema.org",
-  "@type": "TouristAgency",
-  name: "Tours Huasteca Potosina",
-  url: SITE,
-  logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo-light.svg`, width: 600, height: 600 },
-  image: `${SITE}/og-image.jpg`,
-  telephone: "+524891251458",
-  foundingDate: "2019",
-  description: t.orgDescription,
-  priceRange: "$$$",
-  currenciesAccepted: "MXN",
-  paymentAccepted: "Cash, Credit Card, Debit Card",
-  areaServed: {
-    "@type": "Place",
-    name: "Huasteca Potosina",
-    address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
-  },
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Xilitla",
-    addressRegion: "San Luis Potosí",
-    postalCode: "79900",
-    addressCountry: "MX",
-  },
-  openingHoursSpecification: [
-    { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday"], opens: "06:00", closes: "20:00" },
-    { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday","Sunday"], opens: "05:00", closes: "20:00" },
-  ],
-  aggregateRating: { "@type": "AggregateRating", ratingValue: 4.9, reviewCount: 492, bestRating: 5, worstRating: 1 },
-  sameAs: [GOOGLE_REVIEWS_URL, "https://www.tripadvisor.com.mx/Search?q=Tours+Huasteca+Potosina+Xilitla"],
-});
+/**
+ * La ficha de la empresa vive ahora en `buildOrganizationJsonLd` y se comparte
+ * con la home, que publicaba una versión distinta y más pobre. Aquí solo se le
+ * pasa la descripción curada de esta página, que es más rica que la genérica.
+ *
+ * Del `sameAs` anterior se cayó una URL de BÚSQUEDA de TripAdvisor: buscar el
+ * nombre no es tener perfil, y `sameAs` sirve justo para lo contrario —afirmar
+ * "esta empresa es esta misma de allá". Si algún día hay ficha real, se agrega
+ * en `jsonld.ts`.
+ */
+const orgSchema = (t: NosotrosContent, locale: Locale) =>
+  buildOrganizationJsonLd(locale, t.orgDescription);
 
 const personSchemas = (t: NosotrosContent) => [
   {
@@ -85,7 +66,7 @@ const personSchemas = (t: NosotrosContent) => [
       "https://www.instagram.com/manolocovaa/",
       "https://www.linkedin.com/in/manolo-covarrubias-121921236/",
     ],
-    worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+    worksFor: ORG_REF,
     knowsAbout: ["Turismo en la Huasteca Potosina", "Estrategia de negocios", "Tour operación", "San Luis Potosí"],
   },
   {
@@ -96,7 +77,7 @@ const personSchemas = (t: NosotrosContent) => [
     description: t.personas[1].description,
     birthPlace: { "@type": "Place", name: "Tamuín, San Luis Potosí, México" },
     nationality: "Mexican",
-    worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+    worksFor: ORG_REF,
     knowsAbout: ["Cascada de Tamul", "Sótano de las Golondrinas", "Cañón del Tampaón", "Huasteca Potosina", "Turismo de aventura"],
     hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[1].credential, credentialCategory: t.personas[1].credentialCategory },
   },
@@ -108,7 +89,7 @@ const personSchemas = (t: NosotrosContent) => [
     description: t.personas[2].description,
     birthPlace: { "@type": "Place", name: "Ciudad Valles, San Luis Potosí, México" },
     nationality: "Mexican",
-    worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+    worksFor: ORG_REF,
     knowsAbout: ["Río Tampaón", "Rescate acuático", "Cascada de Tamul", "Sótano de las Huahuas", "Cañón del Tampaón"],
     hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[2].credential, credentialCategory: t.personas[2].credentialCategory },
   },
@@ -120,7 +101,7 @@ const personSchemas = (t: NosotrosContent) => [
     description: t.personas[3].description,
     birthPlace: { "@type": "Place", name: "Ciudad Valles, San Luis Potosí, México" },
     nationality: "Mexican",
-    worksFor: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+    worksFor: ORG_REF,
     knowsAbout: ["Rappel", "Sótano de las Golondrinas", "Cañones de la Huasteca Potosina", "Turismo extremo", "Seguridad en aventura"],
     hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[3].credential, credentialCategory: t.personas[3].credentialCategory },
   },
@@ -195,7 +176,7 @@ export default function NosotrosPage() {
 
   return (
     <main id="main-content" className="min-h-screen bg-crema">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema(t)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema(t, locale)) }} />
       {personSchemas(t).map((s) => (
         <script key={s.name} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }} />
       ))}

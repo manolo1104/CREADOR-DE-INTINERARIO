@@ -20,6 +20,7 @@ import { GuiaMockup } from "@/components/GuiaMockup";
 import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour } from "@/lib/i18n/localize";
 import { TRASLADOS, tarifaTraslado } from "@/lib/traslados";
 import {
@@ -54,7 +55,8 @@ export function generateMetadata(): Metadata {
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
-      images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Huasteca Potosina" }],
+      // Sin `images`: la pone `opengraph-image.tsx` de cada raíz (española aquí,
+      // inglesa en /en). Declararla aquí las anularía. Ver destinos/page.tsx.
     },
     alternates: buildAlternates("/", locale),
   };
@@ -114,17 +116,12 @@ export default async function HomePage() {
     name: "Tours Huasteca Potosina", url: `${SITE_URL}${lp("/")}`,
     description: "Tourism in the Huasteca Potosina, San Luis Potosí, Mexico",
     inLanguage: en ? "en" : "es-MX",
+    publisher: ORG_REF,
   };
-  const agencySchema = {
-    "@context": "https://schema.org", "@type": ["TouristAgency", "Organization"],
-    name: "Tours Huasteca Potosina", url: SITE_URL, logo: `${SITE_URL}/imagenes/hero-home.jpg`,
-    description: "Certified tour operator in the Huasteca Potosina, San Luis Potosí, Mexico.",
-    address: { "@type": "PostalAddress", addressLocality: "Xilitla", addressRegion: "San Luis Potosí", addressCountry: "MX" },
-    telephone: "+524891251458", email: "hola@huasteca-potosina.com",
-    aggregateRating: { "@type": "AggregateRating", ratingValue: 4.9, bestRating: 5, reviewCount: 492 },
-    award: "Best Tour Operator North America — Arival 2023",
-    sameAs: ["https://www.facebook.com/huastecatours/"],
-  };
+  // La home publicaba su propia `TouristAgency`, distinta y más pobre que la de
+  // /nosotros. Ahora las dos emiten LA MISMA entidad (`ORG_ID`), que es lo que
+  // permite a Google y a los buscadores de IA saber que hablan del mismo negocio.
+  const agencySchema = buildOrganizationJsonLd(locale);
 
   const TESTIMONIOS = en
     ? [

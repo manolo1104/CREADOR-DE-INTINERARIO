@@ -10,6 +10,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { PAQUETES_DB, getPaquete, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import {
   localizePaquete, getLocalizedHabitaciones, getLocalizedLogistica,
   getLocalizedFaqs, getPaqueteDetalleUI,
@@ -184,7 +185,7 @@ export default function PaqueteDetallePage({ params }: Props) {
         image: `${SITE}${p.imagen}`,
         inLanguage: locale === "en" ? "en" : "es-MX",
         touristType: p.perfiles,
-        provider: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        provider: ORG_REF,
         itinerary: {
           "@type": "ItemList",
           numberOfItems: p.itinerario.length,
@@ -207,7 +208,7 @@ export default function PaqueteDetallePage({ params }: Props) {
           url,
           // El precio publicado es POR PAREJA (2 personas), no por persona.
           description: t.offerDescripcion(p.precioLabel, p.duracion),
-          seller: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+          seller: ORG_REF,
         },
       },
       {
@@ -232,6 +233,8 @@ export default function PaqueteDetallePage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-negro">
+      {/* La empresa con su `@id`: el `provider`/`seller` de abajo la referencia. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd(locale)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(paqueteSchema) }} />
 
       {/* ── HERO ── */}

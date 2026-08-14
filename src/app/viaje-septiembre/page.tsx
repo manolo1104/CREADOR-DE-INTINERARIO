@@ -11,6 +11,7 @@ import { waLink } from "@/lib/whatsapp";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { CountdownViaje } from "@/components/CountdownViaje";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 
 // Salida: miércoles 16 de septiembre de 2026, 7:00 AM (CDMX, UTC-6 todo el año desde 2022)
 const TARGET = "2026-09-16T07:00:00-06:00";
@@ -189,7 +190,7 @@ export default function ViajeSeptiembrePage() {
         url,
         image: `${SITE}${HERO_IMG}`,
         inLanguage: en ? "en" : "es-MX",
-        provider: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        provider: ORG_REF,
         itinerary: {
           "@type": "ItemList",
           numberOfItems: ITINERARIO.length,
@@ -212,7 +213,7 @@ export default function ViajeSeptiembrePage() {
           url,
           description: en ? "Per person, double occupancy" : "Por persona en ocupación doble",
           validThrough: "2026-09-16",
-          seller: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+          seller: ORG_REF,
         },
       },
       {
@@ -232,7 +233,7 @@ export default function ViajeSeptiembrePage() {
           name: "Xilitla, Huasteca Potosina",
           address: { "@type": "PostalAddress", addressLocality: "Xilitla", addressRegion: "San Luis Potosí", addressCountry: "MX" },
         },
-        organizer: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+        organizer: ORG_REF,
         offers: {
           "@type": "Offer",
           price: PRECIO,
@@ -263,6 +264,8 @@ export default function ViajeSeptiembrePage() {
 
   return (
     <main id="main-content" className="min-h-screen bg-negro">
+      {/* La empresa con su `@id`: el `provider`/`seller` de abajo la referencia. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd(locale)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(viajeSchema) }} />
 
       {/* ── HERO ── */}

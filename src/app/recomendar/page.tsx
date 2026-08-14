@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { RecommenderShell } from "@/components/recommender/RecommenderShell";
 import { SITE } from "@/lib/i18n/config";
+import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
 
 const URL = `${SITE}/recomendar`;
 
@@ -36,6 +37,8 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
+    // La empresa con su `@id`, que es a quien apunta el `provider` de abajo.
+    buildOrganizationNode("es"),
     {
       "@type": "WebApplication",
       name: "Recomendador de tours de la Huasteca Potosina",
@@ -46,7 +49,7 @@ const jsonLd = {
       description:
         "Herramienta gratuita que recomienda el tour ideal de la Huasteca Potosina según grupo, intereses y nivel de actividad.",
       offers: { "@type": "Offer", price: "0", priceCurrency: "MXN" },
-      provider: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+      provider: ORG_REF,
     },
     {
       "@type": "BreadcrumbList",

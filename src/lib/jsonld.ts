@@ -1,8 +1,88 @@
 import { Destino } from "./destinos";
 import { RATING_DESTINO } from "./destinoData";
+import { CONTACTO } from "./contacto";
 import { localePath, type Locale } from "./i18n/config";
 
 const BASE_URL = "https://www.huasteca-potosina.com";
+
+/**
+ * Identificador único de la empresa dentro del grafo de schema.org.
+ *
+ * Es una URL con fragmento, no una página: nombra a la ENTIDAD "Tours Huasteca
+ * Potosina", no a un documento. Sirve para que todas las páginas hablen del
+ * mismo negocio en vez de declarar cada una su propia organización suelta —que
+ * es lo que pasaba: la home publicaba una `TouristAgency` y /nosotros otra
+ * distinta y más completa, sin nada que las relacionara. Un buscador de IA leía
+ * dos operadoras con el mismo nombre.
+ */
+export const ORG_ID = `${BASE_URL}/#organization`;
+
+/** Referencia a la organización desde cualquier otro schema (`provider`, `publisher`…). */
+export const ORG_REF = { "@id": ORG_ID } as const;
+
+/** Reseñas verificadas en el Perfil de Empresa de Google. */
+const GOOGLE_REVIEWS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
+
+/**
+ * La empresa, declarada UNA sola vez y en un solo sitio.
+ *
+ * Los datos son los que ya publicaba /nosotros (la versión rica), no los de la
+ * home (la pobre). Lo que NO se declara es tan importante como lo que sí:
+ * `CONTACTO.direccion` y `CONTACTO.razonSocial` están pendientes de confirmar,
+ * así que no se inventa un domicilio exacto. `sameAs` solo lleva perfiles que
+ * existen de verdad —antes incluía una URL de BÚSQUEDA de TripAdvisor, que no
+ * es un perfil y no identifica a nadie.
+ */
+export function buildOrganizationNode(locale: Locale = "es", description?: string) {
+  return {
+    "@type": ["TouristAgency", "Organization"],
+    "@id": ORG_ID,
+    name: CONTACTO.nombreComercial,
+    url: BASE_URL,
+    inLanguage: locale === "en" ? "en" : "es-MX",
+    description:
+      description ??
+      (locale === "en"
+        ? "Certified tour operator based in Xilitla, San Luis Potosí. Guided day tours across the Huasteca Potosina with NOM-09 certified guides, transport and insurance included."
+        : "Operadora de tours certificada con base en Xilitla, San Luis Potosí. Tours guiados de un día por la Huasteca Potosina con guías certificados NOM-09, transporte y seguro incluidos."),
+    logo: { "@type": "ImageObject", url: `${BASE_URL}/logos/huasteca-logo-light.svg`, width: 600, height: 600 },
+    image: `${BASE_URL}/og-image.jpg`,
+    telephone: CONTACTO.telefonoE164,
+    email: CONTACTO.email,
+    foundingDate: "2019",
+    priceRange: "$$$",
+    currenciesAccepted: "MXN",
+    paymentAccepted: "Cash, Credit Card, Debit Card",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Xilitla",
+      addressRegion: "San Luis Potosí",
+      postalCode: "79900",
+      addressCountry: "MX",
+    },
+    areaServed: {
+      "@type": "Place",
+      name: "Huasteca Potosina",
+      address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+    },
+    openingHoursSpecification: [
+      { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "06:00", closes: "20:00" },
+      { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday", "Sunday"], opens: "05:00", closes: "20:00" },
+    ],
+    aggregateRating: { "@type": "AggregateRating", ratingValue: 4.9, reviewCount: 492, bestRating: 5, worstRating: 1 },
+    award: "Best Tour Operator North America — Arival 2023",
+    sameAs: [CONTACTO.facebook, GOOGLE_REVIEWS_URL, CONTACTO.mapsUrl],
+  };
+}
+
+/**
+ * La empresa como documento JSON-LD suelto, para páginas que emiten un `<script>`
+ * por schema. Las que arman un `@graph` usan `buildOrganizationNode` directamente:
+ * dentro de un grafo el `@context` va una sola vez, arriba.
+ */
+export function buildOrganizationJsonLd(locale: Locale = "es", description?: string) {
+  return { "@context": "https://schema.org", ...buildOrganizationNode(locale, description) };
+}
 
 export interface DestinoFaq {
   pregunta: string;

@@ -21,26 +21,53 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
-export function generateMetadata(): Metadata {
-  const locale = asLocale(headers().get("x-locale"));
-  return {
-    metadataBase: new URL("https://www.huasteca-potosina.com"),
+/**
+ * Metadata de respaldo: la que hereda cualquier ruta que no declare la suya.
+ *
+ * Estaba escrita en español aunque el locale fuera "en" —solo `openGraph.locale`
+ * cambiaba—, así que una ruta inglesa sin metadata propia se anunciaba en
+ * español. Le pasaba al 404: `/en/blog` servía "Descubre la Huasteca Potosina…".
+ */
+const FALLBACK = {
+  es: {
     title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
     description: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA. San Luis Potosí, México.",
-    keywords: ["Huasteca Potosina","turismo San Luis Potosí","cascadas México","Xilitla","Ciudad Valles","Las Pozas","Cascada de Tamul","itinerario"],
+    ogDescription: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+    twitterDescription: "Cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+    imageAlt: "Cascadas turquesas de la Huasteca Potosina, México",
+    keywords: ["Huasteca Potosina", "turismo San Luis Potosí", "cascadas México", "Xilitla", "Ciudad Valles", "Las Pozas", "Cascada de Tamul", "itinerario"],
+  },
+  en: {
+    title: "Huasteca Potosina Tours — Waterfalls, Caves & Adventure | Mexico",
+    description: "Discover the Huasteca Potosina: turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours from Xilitla, San Luis Potosí, Mexico.",
+    ogDescription: "Turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours in San Luis Potosí, Mexico.",
+    twitterDescription: "Turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours in Mexico.",
+    imageAlt: "Turquoise waterfalls of the Huasteca Potosina, Mexico",
+    keywords: ["Huasteca Potosina", "Mexico waterfalls", "Xilitla", "Las Pozas Edward James", "Tamul waterfall", "San Luis Potosi tours", "Mexico adventure travel"],
+  },
+} as const;
+
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const f = FALLBACK[locale];
+  return {
+    metadataBase: new URL("https://www.huasteca-potosina.com"),
+    title: f.title,
+    description: f.description,
+    keywords: [...f.keywords],
     openGraph: {
-      title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
-      description: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+      title: f.title,
+      description: f.ogDescription,
       url: "https://www.huasteca-potosina.com",
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
-      images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Cascadas turquesas de la Huasteca Potosina, México" }],
+      images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: f.imageAlt }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
-      description: "Cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+      title: f.title,
+      description: f.twitterDescription,
       images: ["/og-image.jpg"],
     },
   };

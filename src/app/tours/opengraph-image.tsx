@@ -1,54 +1,22 @@
-import { ImageResponse } from "next/og";
+import { TOURS_DB } from "@/lib/tours";
+import { FONDOS, tarjetaOG, OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og/tarjeta";
 
-export const runtime     = "nodejs";
-export const alt         = "Tours Guiados Huasteca Potosina — Transporte, Desayuno & Guía Certificado";
-export const size        = { width: 1200, height: 630 };
-export const contentType = "image/png";
+// Se pasa a la tarjeta compartida (`src/lib/og/tarjeta.tsx`). De paso desaparecen
+// las cinco cajitas vacías que salían donde debían ir las estrellas y los dos
+// rombos "✦" del renglón superior: `next/og` no tiene esos caracteres en su
+// fuente, así que en producción se veían como tofu. Ahora las estrellas se dibujan.
+export const runtime = "nodejs";
+export const alt = "Tours Guiados Huasteca Potosina — Transporte, Desayuno & Guía Certificado";
+export const size = OG_SIZE;
+export const contentType = OG_CONTENT_TYPE;
 
 export default function Image() {
-  return new ImageResponse(
-    <div
-      style={{
-        width: "100%", height: "100%", display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        background: "linear-gradient(135deg, #1a2e1a 0%, #2a4a1a 60%, #1a3a0e 100%)",
-        padding: "60px",
-      }}
-    >
-      {/* Top label */}
-      <p style={{ color: "#4a8c1c", fontSize: "15px", letterSpacing: "5px", textTransform: "uppercase", margin: "0 0 24px", fontFamily: "sans-serif" }}>
-        ✦ San Luis Potosí · México ✦
-      </p>
-
-      {/* Main title */}
-      <h1 style={{ color: "#f4edd8", fontSize: "68px", fontWeight: 300, textAlign: "center", margin: "0 0 12px", lineHeight: 1.1, fontFamily: "serif" }}>
-        Tours Huasteca
-      </h1>
-      <h2 style={{ color: "#c4882a", fontSize: "48px", fontWeight: 300, fontStyle: "italic", textAlign: "center", margin: "0 0 40px", fontFamily: "serif" }}>
-        Potosina
-      </h2>
-
-      {/* Divider */}
-      <div style={{ width: "80px", height: "1px", background: "#c4882a", margin: "0 0 40px" }} />
-
-      {/* Pills */}
-      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", justifyContent: "center" }}>
-        {["Transporte incluido", "Desayuno típico", "Guías NOM-09", "Máx. 12 personas"].map((t) => (
-          <span key={t} style={{
-            border: "1px solid rgba(244,237,216,0.25)", color: "#f4edd8", fontSize: "14px",
-            padding: "8px 20px", fontFamily: "sans-serif", letterSpacing: "1px",
-          }}>{t}</span>
-        ))}
-      </div>
-
-      {/* Stars */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "36px" }}>
-        <span style={{ color: "#c4882a", fontSize: "20px" }}>★★★★★</span>
-        <span style={{ color: "rgba(244,237,216,0.7)", fontSize: "15px", fontFamily: "sans-serif" }}>
-          4.9 · 492 reseñas · Mejor Tour Operador Norteamérica
-        </span>
-      </div>
-    </div>,
-    { width: 1200, height: 630 },
-  );
+  return tarjetaOG({
+    fondo: FONDOS.tours,
+    eyebrow: "San Luis Potosí · México",
+    titulo: `${TOURS_DB.length} Tours Guiados`,
+    subtitulo: "Huasteca Potosina",
+    pills: ["Transporte incluido", "Desayuno típico", "Guías NOM-09", "Máx. 12 personas"],
+    estrellas: "4.9 · 492 reseñas · Mejor Tour Operador Norteamérica",
+  });
 }

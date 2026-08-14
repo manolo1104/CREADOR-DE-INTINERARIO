@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
+import { altsGaleriaDestino } from "@/lib/altImagenes";
 import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
 import { blogDeDestino } from "@/lib/blogDestinoMap";
 import { TOURS_DB } from "@/lib/tours";
@@ -96,10 +97,12 @@ export default function DestinoPage({ params }: Props) {
     ? `Hi, I'd like information about visiting ${destino.nombre} in the Huasteca Potosina.`
     : WA_MESSAGES.destino(destino.nombre);
 
-  const allImages = [
-    { src: destino.imagen_hero, alt: destino.nombre },
-    ...destino.imagen_galeria.map((src, i) => ({ src, alt: `${destino.nombre} — ${locale === "en" ? "photo" : "foto"} ${i + 2}` })),
-  ].filter(img => !!img.src);
+  // Los alt salían "{nombre} — foto 2", "foto 3"… en toda la galería: inútiles
+  // para Google Imágenes y para quien navega con lector de pantalla. Ahora se
+  // derivan del nombre del archivo cuando este describe la foto. Ver altImagenes.ts.
+  const fotosGaleria = [destino.imagen_hero, ...destino.imagen_galeria].filter(Boolean);
+  const altsGaleria  = altsGaleriaDestino(destino, fotosGaleria, locale);
+  const allImages    = fotosGaleria.map((src, i) => ({ src, alt: altsGaleria[i] }));
 
   const mapsUrl  = `https://www.google.com/maps/search/${encodeURIComponent(destino.nombre + " " + destino.zona + " San Luis Potosí")}/@${destino.lat},${destino.lng},13z`;
   const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${destino.lng - 0.08},${destino.lat - 0.06},${destino.lng + 0.08},${destino.lat + 0.06}&layer=mapnik&marker=${destino.lat},${destino.lng}`;
@@ -124,7 +127,8 @@ export default function DestinoPage({ params }: Props) {
         <div className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
           {destino.imagen_hero ? (
             <>
-              <Image src={destino.imagen_hero} alt={destino.nombre} fill priority className="object-cover" sizes="100vw" />
+              {/* El mismo alt que su miniatura en la galería: la foto es la misma. */}
+              <Image src={destino.imagen_hero} alt={altsGaleria[0]} fill priority className="object-cover" sizes="100vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/60 to-transparent" />
             </>
           ) : (

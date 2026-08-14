@@ -12,6 +12,7 @@ import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
 import { getBooking } from "@/lib/i18n/booking";
 import { localizeTour } from "@/lib/i18n/localize";
 
@@ -61,8 +62,60 @@ export default async function ReservarPage() {
   const tours  = ordenarPorReservas(TOURS_DB, stats).map((x) => localizeTour(x, locale));
   const desde  = Math.min(...TOURS_DB.map((x) => x.precio));
 
+  /**
+   * El catálogo del motor no publicaba NINGÚN dato estructurado, siendo la
+   * página de conversión y con prioridad 0.9 en el sitemap: Google veía diez
+   * tours con precio y no podía leer ni uno.
+   *
+   * El orden del `ItemList` es el real de la página —el más reservado primero—,
+   * no un orden inventado para el buscador.
+   */
+  const catalogoSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildOrganizationNode(locale),
+      {
+        "@type": "ItemList",
+        name: t.metaTitle,
+        url: `${SITE}${lp("/reservar")}`,
+        inLanguage: en ? "en" : "es-MX",
+        numberOfItems: tours.length,
+        itemListOrder: "https://schema.org/ItemListOrderDescending",
+        itemListElement: tours.map((x, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "TouristTrip",
+            name: x.nombre,
+            description: x.descripcion,
+            url: `${SITE}${lp(`/tours/${x.slug}`)}`,
+            image: x.imagen_hero?.startsWith("http") ? x.imagen_hero : `${SITE}${x.imagen_hero}`,
+            duration: `PT${x.duracion_hrs}H`,
+            provider: ORG_REF,
+            offers: {
+              "@type": "Offer",
+              price: x.precio,
+              priceCurrency: "MXN",
+              availability: "https://schema.org/InStock",
+              url: `${SITE}${lp(`/reservar-tour/${x.slug}`)}`,
+              seller: ORG_REF,
+            },
+          },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: en ? "Home" : "Inicio", item: `${SITE}${lp("/")}` },
+          { "@type": "ListItem", position: 2, name: en ? "Book" : "Reservar", item: `${SITE}${lp("/reservar")}` },
+        ],
+      },
+    ],
+  };
+
   return (
     <main id="main-content" className="min-h-screen bg-negro">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogoSchema) }} />
 
       {/* ── ENCABEZADO ─────────────────────────────────────────────────── */}
       <section className="relative bg-verde-profundo px-6 pt-32 pb-12 text-center overflow-hidden">

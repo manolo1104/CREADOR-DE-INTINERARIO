@@ -16,6 +16,7 @@ import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones } from 
 import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
@@ -114,7 +115,7 @@ export default function TourDetailPage({ params }: Props) {
       ? ["Adventure tourism", "Nature tourism", tour.tipo]
       : ["Turismo de aventura", "Turismo de naturaleza", tour.tipo],
     duration: `PT${tour.duracion_hrs}H`,
-    provider: { "@type": "TouristAgency", name: "Tours Huasteca Potosina", url: SITE },
+    provider: ORG_REF,
     offers: {
       "@type": "Offer",
       price: tour.precio,
@@ -233,6 +234,10 @@ export default function TourDetailPage({ params }: Props) {
 
   return (
     <main id="main-content" className="min-h-screen bg-negro">
+      {/* La empresa, con su `@id`. Va en la página porque el `provider` del tour
+          la referencia por `@id`: sin el nodo completo aquí, la referencia queda
+          colgando y el buscador no sabe a qué operadora apunta. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd(locale)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(tourSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       {reviewSchema && (

@@ -5,6 +5,7 @@ import { CONTACTO } from "@/lib/contacto";
 import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { SITE } from "@/lib/i18n/config";
+import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
 
 /**
  * Sala de prensa, SOLO en inglés y sin equivalente en español.
@@ -71,12 +72,70 @@ const FOTOS = [
   { src: "/imagenes/tours/ruta-surrealista-hero.webp", alt: "The surrealist garden of Las Pozas seen through tropical vegetation" },
 ];
 
+const URL_PRENSA = `${SITE}/en/press`;
+
+/**
+ * La sala de prensa no publicaba dato estructurado alguno. Aquí importa más que
+ * en ninguna otra página: el lector objetivo es un editor, y quien encuentra
+ * esta página primero suele ser un asistente de IA al que le preguntan "¿quién
+ * tiene fotos de Las Pozas con derechos claros?".
+ *
+ * Los `ImageObject` declaran licencia porque la página YA la declara en texto
+ * ("free for editorial use, credit with a link, not for advertising"). El
+ * schema solo repite, en un formato que la máquina lee, lo que el humano ve —
+ * y Google muestra esos metadatos de licencia en los resultados de imágenes.
+ */
+const pressSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    buildOrganizationNode("en"),
+    {
+      "@type": "WebPage",
+      "@id": URL_PRENSA,
+      url: URL_PRENSA,
+      name: TITULO,
+      description: DESCRIPCION,
+      inLanguage: "en",
+      about: ORG_REF,
+      publisher: ORG_REF,
+      // El contacto de prensa: es lo que un editor necesita extraer de aquí.
+      mainEntity: {
+        "@type": "ContactPoint",
+        contactType: "press",
+        email: CONTACTO.email,
+        telephone: CONTACTO.telefonoE164,
+        availableLanguage: ["en", "es"],
+        areaServed: "US",
+      },
+    },
+    ...FOTOS.map((f) => ({
+      "@type": "ImageObject",
+      contentUrl: `${SITE}${f.src}`,
+      caption: f.alt,
+      creditText: CONTACTO.nombreComercial,
+      copyrightNotice: `© ${CONTACTO.nombreComercial}`,
+      creator: ORG_REF,
+      // Las condiciones están escritas en la propia página, en inglés llano.
+      license: URL_PRENSA,
+      acquireLicensePage: URL_PRENSA,
+    })),
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/en` },
+        { "@type": "ListItem", position: 2, name: "Press & media", item: URL_PRENSA },
+      ],
+    },
+  ],
+};
+
 export default function PressPage() {
   const nTours = TOURS_DB.length;
   const nDestinos = DESTINOS_DB.length;
 
   return (
     <main className="bg-crema">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pressSchema) }} />
       {/* ── Encabezado ── */}
       <section className="bg-verde-profundo px-6 py-20 md:py-24">
         <div className="max-w-4xl mx-auto">

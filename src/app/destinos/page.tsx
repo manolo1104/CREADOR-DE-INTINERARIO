@@ -24,7 +24,11 @@ export function generateMetadata(): Metadata {
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
-      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Destinos Huasteca Potosina" }],
+      // Sin `images` A PROPÓSITO. Next da prioridad a lo que declara la página
+      // sobre el archivo `opengraph-image.tsx` del mismo segmento, así que
+      // mientras esta línea existió (con el `og-image.jpg` genérico) la tarjeta
+      // de /destinos estuvo construida y NUNCA se sirvió. Al quitarla, cada
+      // idioma toma la suya: la española de este segmento y la de /en/destinos.
     },
     twitter: {
       card: "summary_large_image",

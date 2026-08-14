@@ -1,6 +1,7 @@
 import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { altsGaleriaDestino } from "@/lib/altImagenes";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -73,15 +74,17 @@ export async function GET() {
     return { loc: `${BASE}/tours/${t.slug}`, imagenes };
   });
 
-  const destinos: Entrada[] = DESTINOS_DB.map((d) => ({
-    loc: `${BASE}/destinos/${d.slug}`,
-    imagenes: [d.imagen_hero, ...(d.imagen_galeria ?? [])]
-      .filter(Boolean)
-      .map((src, i) => ({
-        url: abs(src),
-        titulo: i === 0 ? `${d.nombre}, ${d.zona} — Huasteca Potosina` : `${d.nombre} — foto ${i + 1}`,
-      })),
-  }));
+  // Los títulos salen del MISMO helper que los `alt` de la página, así que lo
+  // que Google lee en el sitemap y lo que lee en el HTML coinciden. Antes aquí
+  // decía "— foto 2", "— foto 3"…, que no describe nada.
+  const destinos: Entrada[] = DESTINOS_DB.map((d) => {
+    const fotos = [d.imagen_hero, ...(d.imagen_galeria ?? [])].filter(Boolean);
+    const alts = altsGaleriaDestino(d, fotos, "es");
+    return {
+      loc: `${BASE}/destinos/${d.slug}`,
+      imagenes: fotos.map((src, i) => ({ url: abs(src), titulo: alts[i] })),
+    };
+  });
 
   const paquetes: Entrada[] = PAQUETES_DB.map((p) => ({
     loc: `${BASE}/paquetes/${p.slug}`,
