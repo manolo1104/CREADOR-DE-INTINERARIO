@@ -1,0 +1,27 @@
+name: Petición de reseñas (post-tour)
+
+on:
+  schedule:
+    # Una vez al día, 16:00 UTC = 10:00 en Ciudad de México. Va aparte del
+    # workflow de carritos, que corre CADA HORA: una petición de reseña es un
+    # correo diario como mucho, y colgarla de un cron horario solo multiplica
+    # por 24 las llamadas para que 23 no hagan nada.
+    #
+    # La hora importa: el correo compite con la bandeja de la mañana, no con la
+    # de medianoche. Un cliente estadounidense está entre 1 y 3 horas por
+    # delante de México, así que le llega a media mañana también.
+    - cron: "0 16 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  resenas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pedir reseña a quien ya viajó
+        run: |
+          # -f hace que un 401 (secreto mal configurado) falle el job en vez de
+          # pasar desapercibido como si no hubiera nada que enviar.
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/pedir-resenas
