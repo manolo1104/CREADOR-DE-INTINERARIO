@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
+import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
 
 // El sitemap consulta los artículos del blog (BD) en cada request. Si fuera
 // estático, el build lo "congela" sin posts (justo lo que pasaba: 0 artículos
@@ -70,6 +71,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bilingual("/paquetes",         { changeFrequency: "monthly", priority: 0.6 }),
     ...bilingual("/nosotros",         { changeFrequency: "monthly", priority: 0.6 }),
     ...bilingual("/info-practica",    { changeFrequency: "monthly", priority: 0.7 }),
+    // Traducidas el 14 ago 2026: hasta entonces vivían en `esOnlyStatic`.
+    ...bilingual("/preguntas-frecuentes", { changeFrequency: "monthly", priority: 0.7 }),
+    ...bilingual("/experiencias",         { changeFrequency: "monthly", priority: 0.6 }),
+    ...bilingual("/contacto",             { changeFrequency: "yearly",  priority: 0.6 }),
   ];
 
   // Páginas SOLO en inglés, sin equivalente español (ni previsto).
@@ -77,6 +82,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // busca "huasteca potosina press" tiene que encontrarla, así que va indexada.
   const enOnlyStatic: MetadataRoute.Sitemap = [
     { url: `${BASE}/en/press`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    // Landings de origen para EE.UU. No tienen espejo español a propósito: un
+    // lector mexicano no busca "cómo llegar desde Houston".
+    ...CIUDADES_ORIGEN_EN.map((c) => ({
+      url: `${BASE}/en/from/${c.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
   ];
 
   // Páginas solo en español (aún sin versión /en).
@@ -85,17 +98,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // /admin y /planear (bloqueada en robots.ts).
   const esOnlyStatic: MetadataRoute.Sitemap = [
     { url: `${BASE}/blog`,                  lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
-    { url: `${BASE}/preguntas-frecuentes`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/creditos`,              lastModified: new Date(), changeFrequency: "yearly",  priority: 0.2 },
     { url: `${BASE}/recomendar`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/experiencias`,  lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/precios`,       lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/guia`,          lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sobre-la-huasteca-potosina`,        lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sustentabilidad-y-conservacion`,    lastModified: new Date(), changeFrequency: "yearly",  priority: 0.4 },
     { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tours-en-ciudad-valles`,            lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/contacto`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/politica-de-cancelacion`, lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE}/aviso-de-privacidad`,     lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },

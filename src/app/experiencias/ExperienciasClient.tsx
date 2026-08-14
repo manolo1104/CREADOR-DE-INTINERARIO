@@ -5,16 +5,12 @@ import Link from "next/link";
 import { Clock, MessageCircle } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { localizeDestino } from "@/lib/i18n/localize";
+import { getExperiencias } from "@/lib/i18n/experiencias.en";
 
-const FILTROS = [
-  { label: "Todos",      value: "todos"      },
-  { label: "Cascadas",   value: "cascadas"   },
-  { label: "Aventura",   value: "aventura"   },
-  { label: "Cultura",    value: "cultura"    },
-  { label: "Bienestar",  value: "bienestar"  },
-  { label: "Fotografía", value: "fotografia" },
-];
-
+// Los `value` de los filtros NO se traducen: son la llave del mapa de slugs.
+// Solo cambian las etiquetas visibles, que vienen de `experiencias.en.ts`.
 const SLUGS_POR_FILTRO: Record<string, string[]> = {
   cascadas:  [
     "cascada-de-tamul", "cascadas-de-micos", "cascadas-de-tamasopo",
@@ -39,11 +35,11 @@ const SLUGS_POR_FILTRO: Record<string, string[]> = {
   ],
 };
 
-const DIFICULTAD_BADGE: Record<string, { label: string; cls: string }> = {
-  baja:    { label: "Fácil",   cls: "bg-emerald-900/50 text-emerald-400" },
-  media:   { label: "Media",   cls: "bg-amber-900/50   text-amber-400"   },
-  alta:    { label: "Difícil", cls: "bg-orange-900/50  text-orange-400"  },
-  extrema: { label: "Extrema", cls: "bg-red-900/50     text-red-400"     },
+const DIFICULTAD_CLS: Record<string, string> = {
+  baja:    "bg-emerald-900/50 text-emerald-400",
+  media:   "bg-amber-900/50   text-amber-400",
+  alta:    "bg-orange-900/50  text-orange-400",
+  extrema: "bg-red-900/50     text-red-400",
 };
 
 // USD approximation — fixed rate ~17 MXN/USD
@@ -53,23 +49,28 @@ function toUSD(precioStr: string): string {
   return `≈ US$${Math.round(num / 17)}`;
 }
 
-function waLink(nombre: string): string {
-  const msg = encodeURIComponent(`Hola, me interesa visitar ${nombre}. ¿Pueden orientarme sobre tours disponibles?`);
-  return `https://wa.me/524891251458?text=${msg}`;
+function waLink(mensaje: string): string {
+  return `https://wa.me/524891251458?text=${encodeURIComponent(mensaje)}`;
 }
 
 export default function ExperienciasClient() {
+  const { locale, lp } = useLocale();
+  const t = getExperiencias(locale);
   const [filtro, setFiltro] = useState("todos");
 
-  const filtrados = filtro === "todos"
+  const base = filtro === "todos"
     ? DESTINOS_DB
     : DESTINOS_DB.filter((d) => (SLUGS_POR_FILTRO[filtro] || []).includes(d.slug));
+
+  // El nombre y la descripción se traducen aquí: son los 41 destinos que ya
+  // viven traducidos en `destinos.en.ts`.
+  const filtrados = base.map((d) => localizeDestino(d, locale));
 
   return (
     <section className="max-w-7xl mx-auto px-6 py-12">
       {/* Filtros — type="button" para evitar submit accidental en forms */}
       <div className="flex flex-wrap items-center gap-2 mb-10">
-        {FILTROS.map((f) => (
+        {t.filtros.map((f) => (
           <button
             key={f.value}
             type="button"
@@ -84,7 +85,7 @@ export default function ExperienciasClient() {
           </button>
         ))}
         <span className="ml-auto text-[10px] font-dm text-crema/30 tracking-widest">
-          {filtrados.length} destino{filtrados.length !== 1 ? "s" : ""}
+          {filtrados.length} {filtrados.length !== 1 ? t.contadorPlural : t.contadorSingular}
         </span>
       </div>
 
@@ -92,7 +93,8 @@ export default function ExperienciasClient() {
           el botón de WhatsApp es independiente con z-10 para no quedar bloqueado */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filtrados.map((d) => {
-          const dif = DIFICULTAD_BADGE[d.dificultad] ?? DIFICULTAD_BADGE.media;
+          const difCls = DIFICULTAD_CLS[d.dificultad] ?? DIFICULTAD_CLS.media;
+          const difLabel = t.dificultad[d.dificultad] ?? t.dificultad.media;
           const usd = toUSD(d.precio_entrada);
           return (
             <div
@@ -101,8 +103,8 @@ export default function ExperienciasClient() {
             >
               {/* Stretched link — cubre toda la tarjeta */}
               <Link
-                href={`/destinos/${d.slug}`}
-                aria-label={`Ver ${d.nombre}`}
+                href={lp(`/destinos/${d.slug}`)}
+                aria-label={t.verAria(d.nombre)}
                 className="absolute inset-0 z-0"
               />
 
@@ -117,8 +119,8 @@ export default function ExperienciasClient() {
                 <div className="absolute inset-0 bg-gradient-to-t from-negro/70 via-negro/10 to-transparent" />
 
                 {/* Badge dificultad */}
-                <span className={`absolute top-3 right-3 text-[8px] tracking-[1.5px] uppercase px-2 py-0.5 font-dm font-medium ${dif.cls}`}>
-                  {dif.label}
+                <span className={`absolute top-3 right-3 text-[8px] tracking-[1.5px] uppercase px-2 py-0.5 font-dm font-medium ${difCls}`}>
+                  {difLabel}
                 </span>
 
                 {/* Badge ícono */}
@@ -128,15 +130,15 @@ export default function ExperienciasClient() {
 
                 {/* Botón Reservar — visible en hover, z-10 sobre el stretched link */}
                 <a
-                  href={waLink(d.nombre)}
+                  href={waLink(t.waMensaje(d.nombre))}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Reservar ${d.nombre} por WhatsApp`}
+                  aria-label={t.reservarAria(d.nombre)}
                   className="relative z-10 absolute bottom-3 right-3 flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1da851] text-white text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MessageCircle className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-                  Reservar
+                  {t.reservarBadge}
                 </a>
               </div>
 
@@ -167,11 +169,11 @@ export default function ExperienciasClient() {
                       {d.precio_entrada.split(" ").slice(0, 2).join(" ")}
                     </span>
                     <span className="text-crema/30 text-[9px] font-dm block leading-none mt-0.5">
-                      / persona · entrada{usd && ` · ${usd}`}
+                      {t.precioNota}{usd && ` · ${usd}`}
                     </span>
                   </div>
                   <span className="text-[9px] tracking-[2px] uppercase text-verde-vivo group-hover:text-lima transition-colors font-dm">
-                    Ver más →
+                    {t.verMas}
                   </span>
                 </div>
               </div>
@@ -182,13 +184,13 @@ export default function ExperienciasClient() {
 
       {filtrados.length === 0 && (
         <div className="text-center py-20">
-          <p className="text-crema/40 font-dm text-sm mb-4">No hay destinos en esta categoría.</p>
+          <p className="text-crema/40 font-dm text-sm mb-4">{t.vacioTexto}</p>
           <button
             type="button"
             onClick={() => setFiltro("todos")}
             className="text-[10px] tracking-[2px] uppercase text-verde-vivo hover:text-lima font-dm border-b border-verde-vivo/30 transition-colors"
           >
-            Ver todos →
+            {t.vacioBoton}
           </button>
         </div>
       )}

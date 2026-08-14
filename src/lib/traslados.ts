@@ -30,6 +30,8 @@ export interface RutaTraslado {
   ciudad: string;
   /** Cómo se dice en una frase: "desde San Luis Potosí". */
   ciudadLarga: string;
+  /** Lo mismo en inglés, para las landings `/en/from/<city>`. */
+  ciudadLargaEn: string;
   tarifas: TarifaTraslado[];
 }
 
@@ -38,6 +40,7 @@ export const TRASLADOS: RutaTraslado[] = [
     slug: "san-luis-potosi",
     ciudad: "San Luis Potosí",
     ciudadLarga: "desde la ciudad de San Luis Potosí",
+    ciudadLargaEn: "from the city of San Luis Potosí",
     tarifas: [
       { desde: 1, hasta: 4,    precio: 6000 },
       { desde: 5, hasta: 6,    precio: 8000 },
@@ -48,6 +51,7 @@ export const TRASLADOS: RutaTraslado[] = [
     slug: "tampico",
     ciudad: "Tampico",
     ciudadLarga: "desde Tampico",
+    ciudadLargaEn: "from Tampico",
     tarifas: [
       { desde: 1, hasta: 4,    precio: 5000 },
       { desde: 5, hasta: 6,    precio: 6400 },
@@ -58,6 +62,7 @@ export const TRASLADOS: RutaTraslado[] = [
     slug: "cdmx",
     ciudad: "CDMX",
     ciudadLarga: "desde la Ciudad de México",
+    ciudadLargaEn: "from Mexico City",
     tarifas: [
       { desde: 1, hasta: 4,    precio: 14000 },
       { desde: 5, hasta: 6,    precio: 16000 },
@@ -83,8 +88,13 @@ export function precioTraslado(slug: string, personas: number): number | null {
   return tarifaTraslado(ruta, personas)?.precio ?? null;
 }
 
-/** "1 a 4 personas" · "7 o más personas" */
-export function etiquetaTramo(t: TarifaTraslado): string {
+/** "1 a 4 personas" · "7 o más personas" (y su equivalente en inglés). */
+export function etiquetaTramo(t: TarifaTraslado, locale: "es" | "en" = "es"): string {
+  if (locale === "en") {
+    if (t.hasta === null) return `${t.desde} or more passengers`;
+    if (t.hasta === t.desde) return `${t.desde} passenger${t.desde > 1 ? "s" : ""}`;
+    return `${t.desde} to ${t.hasta} passengers`;
+  }
   if (t.hasta === null) return `${t.desde} o más personas`;
   if (t.hasta === t.desde) return `${t.desde} persona${t.desde > 1 ? "s" : ""}`;
   return `${t.desde} a ${t.hasta} personas`;

@@ -7,6 +7,7 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { localizeDestino } from "@/lib/i18n/localize";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { CONTACTO } from "@/lib/contacto";
+import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 
 /**
@@ -30,8 +31,10 @@ export function SiteFooter() {
         { label: "All-inclusive packages", href: lp("/paquetes") },
         { label: "Tours", href: lp("/tours") },
         { label: "Destinations", href: lp("/destinos") },
+        { label: "Things to do", href: lp("/experiencias") },
         { label: "About us", href: lp("/nosotros") },
-        { label: "Practical info", href: lp("/info-practica") },
+        { label: "Travel guide", href: lp("/info-practica") },
+        { label: "FAQ", href: lp("/preguntas-frecuentes") },
       ]
     : [
         { label: "Reservar un tour", href: "/reservar" },
@@ -48,7 +51,12 @@ export function SiteFooter() {
 
   const legales = en
     ? [
-        { label: "Contact", href: "/contacto" },
+        // `lp()` y no "/contacto" a secas: sin el prefijo, el pie del sitio
+        // inglés devolvía al visitante al sitio español justo en la página
+        // donde iba a escribir.
+        { label: "Contact", href: lp("/contacto") },
+        { label: "Press room", href: "/en/press" },
+        // El aviso legal solo existe en español; /en/contacto lo advierte.
         { label: "Privacy Policy", href: "/aviso-de-privacidad" },
       ]
     : [
@@ -170,6 +178,29 @@ export function SiteFooter() {
             </p>
           </div>
         </div>
+
+        {/* Landings de origen. Sin enlaces internos son páginas huérfanas: el
+            sitemap las declara, pero nada del sitio las respalda. */}
+        {en && (
+          <div className="border-t border-white/8 pt-8 pb-8 mb-2">
+            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-4">
+              Traveling from
+            </h3>
+            <ul className="flex flex-wrap gap-x-6 gap-y-2">
+              {CIUDADES_ORIGEN_EN.map((c) => (
+                <li key={c.slug}>
+                  <Link
+                    href={`/en/from/${c.slug}`}
+                    className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                    {c.nombre}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
           <span>
