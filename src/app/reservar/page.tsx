@@ -9,7 +9,7 @@ import { formatMXN } from "@/lib/tourBooking";
 import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats";
 import { waLink } from "@/lib/whatsapp";
 import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { getBooking } from "@/lib/i18n/booking";
@@ -176,23 +176,24 @@ export default async function ReservarPage() {
         aparecían por ningún lado. Quien llegaba aquí buscando un viaje completo
         no encontraba nada y se iba.
       */}
-      {/* Los paquetes se ocultan en inglés: sus dos destinos —/reservar-paquete
-          y /paquetes/[slug]— siguen siendo solo-ES. Enseñar la tarjeta aquí
-          sacaría al visitante del inglés justo en el paso de comprar el producto
-          más caro. Vuelve en cuanto esas dos pantallas estén traducidas. */}
-      {!en && (
+      {/* Los paquetes estuvieron ocultos en inglés mientras /reservar-paquete y
+          /paquetes/[slug] eran solo-ES. Ambas se tradujeron y están en prod
+          desde el 14 ago, así que la tarjeta vuelve a los dos idiomas: es el
+          producto de mayor ticket y el visitante inglés no lo veía. */}
       <section id="paquetes" className="max-w-6xl mx-auto px-6 pb-14">
         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-8 border-b border-white/8 pb-4">
           <h2 className="font-cormorant font-light text-crema" style={{ fontSize: "clamp(24px,3.5vw,38px)" }}>
-            Viajes de varios días
+            {en ? "Multi-day trips" : "Viajes de varios días"}
           </h2>
           <p className="text-[11px] font-dm text-crema/45">
-            Con hospedaje, desayunos y traslados incluidos
+            {en
+              ? "Hotel, breakfasts and in-region transport included"
+              : "Con hospedaje, desayunos y traslados incluidos"}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PAQUETES_DB.map((paq) => (
+          {getLocalizedPaquetes(locale).map((paq) => (
             <article
               key={paq.id}
               className="group relative flex flex-col border border-dorado/20 bg-negro/40 hover:border-dorado/50 transition-colors duration-300 overflow-hidden"
@@ -207,12 +208,14 @@ export default async function ReservarPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/15 to-negro/25" />
                 <span className="absolute bottom-3 left-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                  {paq.dias} días · {paq.noches} noches
+                  {en
+                    ? `${paq.dias} days · ${paq.noches} nights`
+                    : `${paq.dias} días · ${paq.noches} noches`}
                 </span>
               </div>
 
               <div className="flex flex-col flex-1 p-5">
-                <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-1.5">Paquete</p>
+                <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-1.5">{en ? "Package" : "Paquete"}</p>
                 <h3 className="font-cormorant text-crema text-xl leading-tight mb-2">
                   {paq.nombre.split("—")[0].trim()}
                 </h3>
@@ -228,21 +231,22 @@ export default async function ReservarPage() {
                     <span className="text-[10px] text-crema/40 font-dm">MXN {paq.precioLabel}</span>
                   </p>
                   <p className="text-[11px] font-dm text-crema/55 mb-4">
-                    Apartas desde <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * 0.1))}</strong>
+                    {en ? "Reserve from " : "Apartas desde "}
+                    <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * 0.1))}</strong>
                   </p>
 
                   <div className="flex gap-2">
                     <Link
-                      href={`/reservar-paquete/${paq.slug}`}
+                      href={lp(`/reservar-paquete/${paq.slug}`)}
                       className="flex-1 text-center bg-dorado hover:bg-lima text-negro text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors"
                     >
-                      Reservar
+                      {en ? "Book" : "Reservar"}
                     </Link>
                     <Link
-                      href={`/paquetes/${paq.slug}`}
+                      href={lp(`/paquetes/${paq.slug}`)}
                       className="px-3 flex items-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[1.5px] uppercase font-dm transition-colors"
                     >
-                      Detalles
+                      {en ? "Details" : "Detalles"}
                     </Link>
                   </div>
                 </div>
@@ -251,7 +255,6 @@ export default async function ReservarPage() {
           ))}
         </div>
       </section>
-      )}
 
       {/* ── REVERSIÓN DE RIESGO ────────────────────────────────────────── */}
       <section className="bg-verde-profundo/30 border-y border-white/8 py-14 px-6">

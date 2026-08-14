@@ -21,6 +21,7 @@ import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
+import { TRASLADOS, tarifaTraslado } from "@/lib/traslados";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
   MessageCircle, Star, Award, CheckCircle2,
@@ -171,8 +172,14 @@ export default async function HomePage() {
                 no pueden copiar — que somos de Xilitla y el hotel y el
                 restaurante son nuestros. Sin superlativos: Huasteca Sharet
                 también tiene hospedaje propio, pero desde Ciudad Valles. */}
+            {/* El inglés SÍ abre describiendo la región, al revés que el
+                español: un mexicano ya sabe qué es la Huasteca, un americano no
+                ha oído el nombre en su vida. Primero se le dice qué hay —con
+                datos concretos que ningún competidor puede copiar: los 344 pies
+                del Tamul y Las Pozas— y enseguida el foso (hotel y guías
+                propios) y cómo llegar. No volver a quitarle la descripción. */}
             {en
-              ? "We're from Xilitla, and the hotel and restaurant here are ours. You sleep, eat and set out on your tour from the same place — and we also pick you up in Ciudad Valles. NOM-09 certified guides and travel insurance included."
+              ? "Turquoise rivers, a 344-foot waterfall, and a surrealist castle an English poet built in the jungle. We're from Xilitla — the hotel, the restaurant and the guides are ours. Fly into Tampico and we'll pick you up. NOM-09 certified guides and travel insurance included."
               : "Somos de Xilitla y aquí tenemos nuestro hotel y nuestro restaurante. Duermes, comes y sales al tour desde el mismo lugar — y también te recogemos en Ciudad Valles. Guías certificados NOM-09 y seguro de viaje incluidos."}
           </p>
 
@@ -192,14 +199,16 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-4 justify-center mb-10">
             <MagneticButton>
               {/* Dorado = "reservar" en todo el sitio (es el color del botón del
-                  menú). En inglés lleva al catálogo: el motor es solo español. */}
+                  menú). Desde el 14 ago el motor existe en inglés, así que los
+                  dos idiomas van al motor: mandar el inglés al catálogo era un
+                  rodeo heredado de cuando /en/reservar era un 404. */}
               <Link
-                href={en ? lp("/tours") : "/reservar"}
+                href={lp("/reservar")}
                 className="bg-dorado text-negro px-10 py-4 text-sm tracking-[2px] uppercase font-dm font-medium hover:bg-terracota hover:text-crema transition-colors duration-300 flex flex-col items-center gap-0.5"
               >
                 <span>{en ? "Book a tour →" : "Reservar tour →"}</span>
                 <span className="text-[9px] tracking-[1.5px] uppercase text-negro/55 font-normal">
-                  {en ? "Free cancellation 48h" : "Apartas con el 30 %"}
+                  {en ? "30% deposit · Free cancellation 48h" : "Apartas con el 30 %"}
                 </span>
               </Link>
             </MagneticButton>
@@ -453,16 +462,19 @@ export default async function HomePage() {
       <section aria-label={en ? "Why visit the Huasteca Potosina" : "Por qué visitar la Huasteca Potosina"} className="bg-white border-b border-negro/8 py-24 px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Why the Huasteca?" : "¿Por qué la Huasteca?"}</p>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Why here, and not Costa Rica" : "¿Por qué la Huasteca?"}</p>
             <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
-              {en ? <>A region that <em className="shimmer-gold">changes you</em></> : <>Una región que{" "}<em className="shimmer-gold">te cambia</em></>}
+              {en ? <>Half the flight, <em className="shimmer-gold">a third of the bill</em></> : <>Una región que{" "}<em className="shimmer-gold">te cambia</em></>}
             </h2>
             <div className="reveal-up reveal-d1 space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               {en ? (
                 <>
-                  <p>The Huasteca Potosina is one of Mexico's most biodiverse regions, where tropical jungle coexists with karst canyons, turquoise waterfalls and the millennia-old traditions of the Huastec culture, recognized by UNESCO.</p>
-                  <p>Here time is measured differently: by the circular flight of thousands of swifts at dawn over the Cave of Swallows, by the shifting color of Tamul's water between January and October, by the light that crosses Puente de Dios only between 11 AM and 1 PM.</p>
-                  <p>It's not just a destination. It's an experience that redefines what nature means in Mexico.</p>
+                  {/* Copy escrito para el mercado americano: contra Costa Rica
+                      no se gana con adjetivos, se gana con el precio real. Los
+                      paquetes son POR PAREJA — ese es el dato que convierte. */}
+                  <p>Tampico is a short hop from Texas, and from the airport it&apos;s two and a half hours to Xilitla — in a private vehicle, driven by us. You sleep in a Pueblo Mágico, in our own hotel, not on a resort strip.</p>
+                  <p>Every guide holds NOM-09, Mexico&apos;s federal guiding certification, and travel insurance is in the price for every traveler on every tour. Groups stop at twelve. Fully bilingual guides are available — just ask when you book.</p>
+                  <p>Five days, four nights, every tour, the hotel and the insurance: <strong className="text-verde-profundo">$16,500 MXN for two people</strong>. The price you see on our booking page is the price you pay.</p>
                 </>
               ) : (
                 <>
@@ -488,6 +500,86 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── QUÉ INCLUYE Y QUÉ NO (solo EN) ──────────────────────────────
+          La jugada de mayor conversión del playbook americano: el viajero de
+          EE. UU. está entrenado para buscar el costo oculto, y encontrarlo
+          DECLARADO con precio desactiva la desconfianza de golpe. De paso
+          convierte el traslado de "costo extra" en "producto disponible".
+          Las tarifas salen de `traslados.ts` a propósito: es el único lugar
+          donde se tocan, y un número escrito a mano aquí estaría mal por
+          definición. */}
+      {en && (
+        <section aria-label="What's included and what isn't" className="bg-crema border-b border-negro/8 py-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">No surprises</p>
+            <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-10" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
+              What&apos;s included, and <em className="shimmer-gold">what isn&apos;t</em>
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
+              <div className="reveal-up">
+                <h3 className="font-dm text-[11px] tracking-[2.5px] uppercase text-verde-selva mb-5 pb-3 border-b border-verde-selva/25">
+                  In every tour
+                </h3>
+                <ul className="space-y-3.5 text-sm font-dm text-negro/65 leading-relaxed">
+                  <li className="flex gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <span><strong className="text-negro/85">Travel and adventure insurance</strong> — every traveler, already in the price.</span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <span><strong className="text-negro/85">A NOM-09 certified guide</strong> — Mexico&apos;s federal standard. Ours were born in these mountains.</span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <span><strong className="text-negro/85">Safety equipment and transport</strong> from your hotel to each trailhead and back.</span>
+                  </li>
+                  <li className="flex gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <span><strong className="text-negro/85">Groups capped at 12.</strong> We intend to keep it that way.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="reveal-up reveal-d1">
+                <h3 className="font-dm text-[11px] tracking-[2.5px] uppercase text-terracota mb-5 pb-3 border-b border-terracota/25">
+                  Not included — and here&apos;s the price
+                </h3>
+                <p className="text-sm font-dm text-negro/65 leading-relaxed mb-4">
+                  <strong className="text-negro/85">Airport transfers.</strong> Private, round trip, priced per vehicle — not per person — for up to 12 passengers.
+                </p>
+                <ul className="space-y-2 mb-5">
+                  {TRASLADOS.map((ruta) => {
+                    const desde = tarifaTraslado(ruta, 1);
+                    return (
+                      <li key={ruta.slug} className="flex items-baseline justify-between gap-3 text-sm font-dm border-b border-negro/8 pb-2">
+                        <span className="text-negro/70">From {ruta.ciudad}</span>
+                        <span className="text-verde-profundo font-medium tabular-nums">
+                          {desde ? `from $${desde.precio.toLocaleString("en-US")} MXN` : "on request"}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="text-sm font-dm text-negro/65 leading-relaxed">
+                  <strong className="text-negro/85">Flights</strong>, and any meals not listed on your itinerary. That&apos;s the whole list.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-negro/10 flex flex-wrap gap-x-8 gap-y-3 text-[11px] tracking-[1.5px] uppercase font-dm text-negro/50">
+              <span>30% deposit to reserve</span>
+              <span className="text-negro/15">|</span>
+              <span>Free cancellation up to 48 h</span>
+              <span className="text-negro/15">|</span>
+              <span>Apple&nbsp;Pay · Google&nbsp;Pay · Card</span>
+              <span className="text-negro/15">|</span>
+              <span>Fully bilingual guides on request</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── PLANIFICADOR IA + LEAD MAGNET + INFO PRÁCTICA (solo ES) ── */}
       {!en && (
@@ -577,24 +669,28 @@ export default async function HomePage() {
         <FloatingLeaves />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            {en ? "Ready when you are" : "Cuando quieras"}
+            {en ? "November to April is dry season" : "Cuando quieras"}
           </p>
           <h2 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(30px,4.5vw,50px)" }}>
-            {en ? <>Your Huasteca trip <em className="shimmer-gold">starts here</em></> : <>Tu viaje a la Huasteca <em className="shimmer-gold">empieza aquí</em></>}
+            {en ? <>Come before we&apos;re the reason <em className="shimmer-gold">it changed</em></> : <>Tu viaje a la Huasteca <em className="shimmer-gold">empieza aquí</em></>}
           </h2>
+          {/* La urgencia en inglés va INVERTIDA a propósito: para el viajero
+              americano informado "el próximo Tulum" es el destino arruinado, no
+              la aspiración. Prometerlo sería prometerle justo lo que evita. La
+              escasez honesta es la temporada seca, no un colapso inventado. */}
           <p className="reveal-up reveal-d1 text-crema/60 font-dm text-sm leading-relaxed max-w-xl mx-auto mb-9">
             {en
-              ? "Pick your tours, add the nights you need and pay a 30% deposit. Free cancellation up to 48 h before."
+              ? "We'd like to keep the rivers the way they are — that's why our groups stop at twelve and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. 30% deposit, free cancellation up to 48 h before."
               : "Elige tus recorridos, súmale las noches que necesites y aparta con el 30 %. Cancelas gratis hasta 48 h antes."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <MagneticButton className="inline-block">
-              <Link href={en ? lp("/tours") : "/reservar"} className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
+              <Link href={lp("/reservar")} className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
                 {en ? "Book now" : "Reservar ahora"}
               </Link>
             </MagneticButton>
             <a
-              href={waLink(WA_MESSAGES.general)}
+              href={waLink(en ? "Hi! I'd like to ask about your Huasteca Potosina tours." : WA_MESSAGES.general)}
               target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-9 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all"
             >

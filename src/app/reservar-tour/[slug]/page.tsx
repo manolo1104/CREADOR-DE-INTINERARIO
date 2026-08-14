@@ -38,9 +38,10 @@ export default function ReservarTourRedirect({
   //    link como /reservar-tour/<slug>, que nunca existió; se reencaminan.
   //    Antes esto se hacía en cliente y pintaba un "Llevándote a tu paquete…".
   if (PAQUETES_DB.some((p) => p.slug === params.slug)) {
-    // Los paquetes siguen siendo solo-ES: el redirect va SIN prefijo a
-    // propósito, porque /en/reservar-paquete no existe todavía.
-    redirect(`/reservar-paquete/${params.slug}${recuperar ? `?${recuperar}` : ""}`);
+    // `/en/reservar-paquete` existe desde el 14 ago, así que el redirect
+    // conserva el idioma. Antes iba SIN prefijo y sacaba al cliente inglés al
+    // sitio en español justo al ir a pagar el producto más caro.
+    redirect(lp(`/reservar-paquete/${params.slug}${recuperar ? `?${recuperar}` : ""}`));
   }
 
   // 2. Tour que ya no existe: al catálogo, no a un 404. Un 404 aquí es una
