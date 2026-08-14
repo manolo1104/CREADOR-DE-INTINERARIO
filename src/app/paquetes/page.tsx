@@ -6,6 +6,7 @@ import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { RESENAS_PAQUETES, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
 import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI } from "@/lib/i18n/paquetes.en";
 
 export function generateMetadata(): Metadata {
@@ -39,6 +40,10 @@ export default function PaquetesPage() {
   const paquetesSchema = {
     "@context": "https://schema.org",
     "@graph": [
+      // La operadora y el hotel: dos entidades distintas del mismo dueño. Los
+      // paquetes son justo donde se juntan (tours de una, camas del otro).
+      buildOrganizationNode(locale),
+      buildHotelNode(locale),
       {
         "@type": "BreadcrumbList",
         itemListElement: [

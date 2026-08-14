@@ -84,6 +84,48 @@ export function buildOrganizationJsonLd(locale: Locale = "es", description?: str
   return { "@context": "https://schema.org", ...buildOrganizationNode(locale, description) };
 }
 
+/** El hotel es una entidad aparte de la operadora, con su propio `@id`. */
+export const HOTEL_ID = `${BASE_URL}/#hotel`;
+export const HOTEL_REF = { "@id": HOTEL_ID } as const;
+
+/**
+ * El Hotel Paraíso Encantado, donde duermen los paquetes.
+ *
+ * Existe como entidad propia por una razón concreta: su Instagram
+ * (@_paraiso_encantado) es del HOTEL, no de la operadora. El perfil se presenta
+ * como "Paraíso Encantado | Xilitla · 15 habitaciones únicas". Colgarlo del
+ * `sameAs` de "Tours Huasteca Potosina" habría afirmado que la operadora y el
+ * hotel son la misma cosa, y son dos marcas del mismo dueño. Aquí la cuenta
+ * queda declarada donde sí es verdad, y `parentOrganization` dice la relación
+ * real —el hotel es de la operadora, como ya afirma el propio sitio.
+ *
+ * NO se declara `numberOfRooms`: `habitaciones.ts` lista 9 y la biografía de
+ * Instagram dice 15. Mientras las dos fuentes no coincidan, no se publica.
+ * Tampoco `address` con calle: `CONTACTO.direccion` sigue sin confirmarse.
+ */
+export function buildHotelNode(locale: Locale = "es") {
+  return {
+    "@type": "Hotel",
+    "@id": HOTEL_ID,
+    name: "Hotel Paraíso Encantado",
+    url: "https://www.paraisoencantado.com",
+    inLanguage: locale === "en" ? "en" : "es-MX",
+    description:
+      locale === "en"
+        ? "Our own hotel in Xilitla, San Luis Potosí, a short walk from Edward James's surrealist garden. It is where the multi-day packages stay."
+        : "Nuestro hotel en Xilitla, San Luis Potosí, a unos pasos del jardín surrealista de Edward James. Es donde se hospedan los paquetes de varios días.",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Xilitla",
+      addressRegion: "San Luis Potosí",
+      postalCode: "79900",
+      addressCountry: "MX",
+    },
+    parentOrganization: ORG_REF,
+    sameAs: ["https://www.instagram.com/_paraiso_encantado/"],
+  };
+}
+
 export interface DestinoFaq {
   pregunta: string;
   respuesta: string;

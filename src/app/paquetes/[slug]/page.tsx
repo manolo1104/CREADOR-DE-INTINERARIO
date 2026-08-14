@@ -10,7 +10,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { PAQUETES_DB, getPaquete, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
-import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
+import { buildOrganizationJsonLd, buildHotelNode, ORG_REF } from "@/lib/jsonld";
 import {
   localizePaquete, getLocalizedHabitaciones, getLocalizedLogistica,
   getLocalizedFaqs, getPaqueteDetalleUI,
@@ -235,6 +235,10 @@ export default function PaqueteDetallePage({ params }: Props) {
     <main className="min-h-screen bg-negro">
       {/* La empresa con su `@id`: el `provider`/`seller` de abajo la referencia. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd(locale)) }} />
+      {/* El hotel donde duerme el paquete, como entidad propia: es lo que se
+          está comprando junto con los tours, y tiene su propia presencia
+          (sitio e Instagram) distinta de la de la operadora. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", ...buildHotelNode(locale) }) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(paqueteSchema) }} />
 
       {/* ── HERO ── */}
