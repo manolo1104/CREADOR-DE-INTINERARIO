@@ -10,10 +10,10 @@ import type { Locale } from "./config";
  *     — que es el catálogo, y lo que se publica en la ficha del destino y en su
  *     JSON-LD — dice 376 m de caída libre y hasta 512 m de profundidad total.
  *     Un lector que abría la ficha desde esta misma página veía las dos.
- *   · "Desde CDMX son 6 horas por la 85D" y el autobús "8 h (~$600)". La guía
- *     práctica (`infoPractica.en.ts`, la página auditada donde viven las
- *     distancias) dice 430 km por Mex-85 / MEX-70 en ~5.5 h, y ADO en ~8 h por
- *     $600–900. Se alinea con la guía: es la fuente.
+ *   · "Desde CDMX son 6 horas por la 85D" y el autobús "8 h (~$600)". El
+ *     trayecto son 430 km por la Mex-85 / MEX-70 y **6.5 a 7 horas** (dato de
+ *     Manolo, puesto en todas las páginas a la vez), y el ADO son ~8 h por
+ *     $600–900. Ver la nota larga en `faq.en.ts`.
  *
  * ⚠️ El grid es un componente CLIENTE. Los nombres y descripciones de los
  * destinos NO se traducen aquí: salen de `localizeDestino`, que ya tiene los 41
@@ -149,7 +149,7 @@ const ES: ExperienciasContent = {
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde Ciudad de México?",
-      a: "Desde CDMX son 430 km por la autopista Mex-85 / MEX-70: aproximadamente 5.5 horas en coche. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son unas 8 horas ($600–900 MXN en clase ejecutiva). Ciudad Valles es la base de operaciones de la región.",
+      a: "Desde CDMX son 430 km por la autopista Mex-85 / MEX-70: unas 6.5 a 7 horas en coche. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son unas 8 horas ($600–900 MXN en clase ejecutiva). Ciudad Valles es la base de operaciones de la región.",
     },
   ],
 
@@ -241,7 +241,7 @@ const EN: ExperienciasContent = {
     },
     {
       q: "How do I get to the Huasteca Potosina from Mexico City?",
-      a: "It's 267 miles (430 km) from Mexico City on the Mex-85 / MEX-70 toll highway — roughly 5.5 hours by car. By bus, ADO runs from Terminal Norte to Ciudad Valles in about 8 hours ($600–900 MXN in executive class). Ciudad Valles is the region's base.",
+      a: "It's 267 miles (430 km) from Mexico City on the Mex-85 / MEX-70 toll highway — about 6.5 to 7 hours by car. By bus, ADO runs from Terminal Norte to Ciudad Valles in about 8 hours ($600–900 MXN in executive class). Ciudad Valles is the region's base.",
     },
   ],
 

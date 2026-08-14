@@ -205,7 +205,7 @@ export default function PressPage() {
             {[
               ["Where", "Xilitla and Ciudad Valles, San Luis Potosí, Mexico"],
               ["Nearest airport", "Tampico (TAM) — about 2.5 hours by road to Xilitla"],
-              ["From Mexico City", "430 km, about 5.5 hours by road"],
+              ["From Mexico City", "430 km (267 miles), about 6.5 to 7 hours by road"],
               ["Tallest waterfall", "Tamul — 344 feet (105 m), the tallest in San Luis Potosí"],
               ["Las Pozas", "Open Wednesday–Monday, 09:00–18:00. Closed Tuesdays. Entry $180 MXN"],
               ["Company founded", "Guiding since 2010; incorporated in 2019"],

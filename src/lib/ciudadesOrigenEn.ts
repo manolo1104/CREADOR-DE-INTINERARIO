@@ -74,7 +74,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       {
         modo: "Fly to Mexico City (MEX)",
         detalle:
-          "More flights and often cheaper fares, but you trade the savings back for road time: Mexico City to Ciudad Valles is 267 miles (430 km) on the Mex-85 / MEX-70 toll highway, roughly 5.5 hours by car. Worth it only if you want a couple of days in the capital anyway.",
+          "More flights and often cheaper fares, but you trade the savings back for road time: Mexico City to Ciudad Valles is 267 miles (430 km) on the Mex-85 / MEX-70 toll highway, about 6.5 to 7 hours by car. Worth it only if you want a couple of days in the capital anyway.",
       },
       {
         modo: "Drive",
@@ -86,7 +86,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
     faqs: [
       {
         q: "Why fly to Tampico instead of Mexico City?",
-        a: "Because of what happens after you land. Tampico is a 2-hour drive from Ciudad Valles; Mexico City is 5.5 hours. The nonstop from Houston is under two hours, so you can leave in the morning and be swimming under a waterfall the same afternoon.",
+        a: "Because of what happens after you land. Tampico is a 2-hour drive from Ciudad Valles; Mexico City is closer to 7. The nonstop from Houston is under two hours, so you can leave in the morning and be swimming under a waterfall the same afternoon.",
       },
       {
         q: "Do I need to rent a car?",
@@ -121,7 +121,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       {
         modo: "Fly to Mexico City (MEX)",
         detalle:
-          "More frequencies and often a cheaper fare, but Mexico City to Ciudad Valles is 267 miles (430 km), roughly 5.5 hours by road. It only pays off if you were going to spend time in the capital regardless.",
+          "More frequencies and often a cheaper fare, but Mexico City to Ciudad Valles is 267 miles (430 km), about 6.5 to 7 hours by road. It only pays off if you were going to spend time in the capital regardless.",
       },
       {
         modo: "Fly to Monterrey (MTY)",
@@ -173,7 +173,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       {
         modo: "Fly to Mexico City (MEX)",
         detalle:
-          "The most frequent option, but it leaves 267 miles (430 km) of road ahead of you — roughly 5.5 hours on the Mex-85 / MEX-70 toll highway to Ciudad Valles.",
+          "The most frequent option, but it leaves 267 miles (430 km) of road ahead of you — about 6.5 to 7 hours on the Mex-85 / MEX-70 toll highway to Ciudad Valles.",
       },
     ],
     paqueteSugerido: "completo",
@@ -220,7 +220,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       {
         modo: "Fly to Mexico City (MEX)",
         detalle:
-          "The option with the most departures, at the cost of the longest drive: 267 miles (430 km) and roughly 5.5 hours to Ciudad Valles on the toll highway.",
+          "The option with the most departures, at the cost of the longest drive: 267 miles (430 km) and about 6.5 to 7 hours to Ciudad Valles on the toll highway.",
       },
     ],
     paqueteSugerido: "completo",

@@ -48,7 +48,7 @@ const FAQS_CV: { q: string; a: string }[] = [
   },
   {
     q: "¿Cómo llego a Ciudad Valles?",
-    a: "En autobús hay salidas nocturnas directas desde la Terminal del Norte de CDMX (~9–10 horas, llegas temprano y puedes tomar el tour ese mismo día). En auto son ~9 horas desde CDMX y ~6 desde Monterrey. En avión, el aeropuerto de Tampico queda a ~2.5 horas en auto.",
+    a: "En autobús hay salidas nocturnas directas desde la Terminal del Norte de CDMX (~9–10 horas, llegas temprano y puedes tomar el tour ese mismo día). En auto son ~6.5 a 7 horas desde CDMX y ~6 desde Monterrey. En avión, el aeropuerto de Tampico queda a ~2.5 horas en auto.",
   },
   {
     q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
@@ -177,7 +177,7 @@ export default function ToursCiudadVallesPage() {
           <div className="border border-white/10 p-7">
             <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En auto</h3>
             <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              ~9 horas desde CDMX y ~6 desde Monterrey. Recomendamos manejar de día por la sierra y usar Ciudad Valles
+              ~6.5 a 7 horas desde CDMX y ~6 desde Monterrey. Recomendamos manejar de día por la sierra y usar Ciudad Valles
               como base.
             </p>
           </div>

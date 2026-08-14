@@ -260,7 +260,7 @@ const ES: InfoPracticaContent = {
     {
       titulo: "En coche",
       items: [
-        "Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ~5.5h",
+        "Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ~6.5 a 7h",
         "Desde Monterrey: 340km por MEX-85 — ~4h",
         "Desde San Luis Potosí capital: 260km — ~3h",
         "Autopista de cuota recomendada: segura y rápida",
@@ -834,7 +834,7 @@ const EN: InfoPracticaContent = {
     {
       titulo: "By car",
       items: [
-        "From Mexico City: 430km on the Mex-85 / MEX-70 motorway — ~5.5h",
+        "From Mexico City: 430km (267 mi) on the Mex-85 / MEX-70 toll highway — ~6.5 to 7h",
         "From Monterrey: 340km on the MEX-85 — ~4h",
         "From the city of San Luis Potosí: 260km — ~3h",
         "The toll motorway is recommended: safe and fast",

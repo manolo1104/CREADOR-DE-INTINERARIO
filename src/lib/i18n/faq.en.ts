@@ -14,18 +14,16 @@ import { fmtMoney } from "./format";
  * comparaba dos páginas del mismo sitio encontraba la contradicción en un
  * minuto. Traducirla a mano habría abierto ese mismo hueco en inglés.
  *
- * ⚠️ La respuesta de "cómo llegar" se CORRIGIÓ en los dos idiomas (14 ago 2026).
- * Decía 9–10 horas en auto desde CDMX y 9 desde Guadalajara. La guía práctica
- * (`infoPractica.en.ts`, donde viven las distancias auditadas) dice 430 km por
- * la Mex-85 / MEX-70 en ~5.5 h, y `ciudadesOrigen.ts` dice 5.5–6 h: el 9–10 era
- * el tiempo del AUTOBÚS colado en la fila del coche. Lo de Guadalajara no tenía
- * ninguna fuente en el sitio — `ciudadesOrigen.ts` dejó fuera esa ciudad a
+ * ⚠️ CDMX → Ciudad Valles son **6.5 a 7 horas** en auto (430 km). Es el dato de
+ * Manolo, que hace la carretera, y el 14 ago 2026 se puso en TODAS las páginas
+ * a la vez. Ninguna de las dos cifras que publicaba el sitio era correcta: esta
+ * página decía 9–10 h (que es el tiempo del AUTOBÚS, colado en la fila del
+ * coche) y la guía práctica decía 5.5 h. Lo de "9 horas desde Guadalajara" no
+ * tenía ninguna fuente — `ciudadesOrigen.ts` había dejado fuera esa ciudad a
  * propósito por eso mismo — y se sustituyó por el tramo que sí está medido.
  *
- * 🔴 PENDIENTE, no se tocó aquí: `/tours-en-ciudad-valles` sigue publicando
- * "~9 horas desde CDMX". Con esta corrección el sitio ya no se contradice en la
- * FAQ, pero esa página sí. Necesita el visto bueno de Manolo, que es quien
- * conoce la carretera.
+ * OJO al comparar: los 339 km / ~5.5–6 h de `ciudadesOrigen.ts` y `paquetes.ts`
+ * son CDMX → **Xilitla**, otro destino, y esos siguen siendo correctos.
  *
  * ⚠️ Las CIFRAS son las mismas en los dos idiomas. Lo único que cambia es la
  * unidad cuando el lector americano no piensa en métrico: el Sótano de las
@@ -148,7 +146,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde CDMX, Monterrey o Guadalajara?",
-      a: "En auto, con Ciudad Valles como destino: unas 5.5–6 horas desde Ciudad de México (430 km por la autopista de cuota Mex-85 / MEX-70) y unas 6 horas desde Monterrey. Desde Guadalajara se llega vía la ciudad de San Luis Potosí, de donde son 260 km / ~3 horas del tramo final. En autobús hay salidas nocturnas desde la Terminal del Norte de CDMX: ~8 horas a Ciudad Valles y ~9–10 horas si vas directo a Xilitla. En avión, Tampico es el aeropuerto más práctico (~2 h en auto a Ciudad Valles, ~2.5 h a Xilitla); también puedes volar a la ciudad de San Luis Potosí (~3 h). Recomendamos manejar de día por la sierra.",
+      a: "En auto, con Ciudad Valles como destino: unas 6.5 a 7 horas desde Ciudad de México (430 km por la autopista de cuota Mex-85 / MEX-70) y unas 6 horas desde Monterrey. Desde Guadalajara se llega vía la ciudad de San Luis Potosí, de donde son 260 km / ~3 horas del tramo final. En autobús hay salidas nocturnas desde la Terminal del Norte de CDMX: ~8 horas a Ciudad Valles y ~9–10 horas si vas directo a Xilitla. En avión, Tampico es el aeropuerto más práctico (~2 h en auto a Ciudad Valles, ~2.5 h a Xilitla); también puedes volar a la ciudad de San Luis Potosí (~3 h). Recomendamos manejar de día por la sierra.",
     },
     {
       q: "¿Cuál es la mejor época para visitar la Huasteca Potosina?",
@@ -262,11 +260,11 @@ const EN: FaqContent = {
     },
     {
       q: "How do I get to the Huasteca Potosina from the United States?",
-      a: `Fly into Tampico (TAM): it's the closest airport, about a 2.5-hour drive to Ciudad Valles and roughly the same to Xilitla. Mexico City (MEX) is the other common route — about 5.5 hours by road — and San Luis Potosí (SLP) is around 3.5 hours. You do not need to rent a car: we run private round-trip transfers priced per vehicle for up to 12 passengers, from ${fmtMoney(trasladoBase("tampico"), "en")} from Tampico, ${fmtMoney(trasladoBase("san-luis-potosi"), "en")} from San Luis Potosí and ${fmtMoney(trasladoBase("cdmx"), "en")} from Mexico City. If you do drive yourself, drive the mountain stretch in daylight.`,
+      a: `Fly into Tampico (TAM): it's the closest airport, about a 2.5-hour drive to Ciudad Valles and roughly the same to Xilitla. Mexico City (MEX) is the other common route — about 6.5 to 7 hours by road — and San Luis Potosí (SLP) is around 3.5 hours. You do not need to rent a car: we run private round-trip transfers priced per vehicle for up to 12 passengers, from ${fmtMoney(trasladoBase("tampico"), "en")} from Tampico, ${fmtMoney(trasladoBase("san-luis-potosi"), "en")} from San Luis Potosí and ${fmtMoney(trasladoBase("cdmx"), "en")} from Mexico City. If you do drive yourself, drive the mountain stretch in daylight.`,
     },
     {
       q: "How do I get there from Mexico City or Monterrey?",
-      a: "By car, with Ciudad Valles as your destination: about 5.5 to 6 hours from Mexico City — 267 miles (430 km) on the Mex-85 / MEX-70 toll highway — and about 6 hours from Monterrey. By bus, there are overnight departures from Mexico City's Terminal del Norte: roughly 8 hours to Ciudad Valles, or 9–10 if you ride straight through to Xilitla. By air, Tampico is the most practical airport (about a 2-hour drive to Ciudad Valles, 2.5 to Xilitla); San Luis Potosí is another option at about 3 hours. Drive the mountain stretches in daylight.",
+      a: "By car, with Ciudad Valles as your destination: about 6.5 to 7 hours from Mexico City — 267 miles (430 km) on the Mex-85 / MEX-70 toll highway — and about 6 hours from Monterrey. By bus, there are overnight departures from Mexico City's Terminal del Norte: roughly 8 hours to Ciudad Valles, or 9–10 if you ride straight through to Xilitla. By air, Tampico is the most practical airport (about a 2-hour drive to Ciudad Valles, 2.5 to Xilitla); San Luis Potosí is another option at about 3 hours. Drive the mountain stretches in daylight.",
     },
     {
       q: "When is the best time to visit the Huasteca Potosina?",
