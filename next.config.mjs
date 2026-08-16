@@ -40,6 +40,26 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // ── Apex sin www → www ───────────────────────────────────────────────
+      // Todo el sitio se declara canónico en `www` (canonical, hreflang y
+      // sitemap), así que el apex NO debe servir una segunda copia: redirige.
+      //
+      // Hasta el 16 ago 2026 el apex apuntaba al redireccionador de URL de
+      // Namecheap (192.64.119.2), que SOLO habla HTTP: en el puerto 443 no
+      // había nada escuchando y `connect` daba timeout. Como Chrome y Safari
+      // prueban HTTPS primero, quien tecleaba "huasteca-potosina.com" a secas
+      // veía una página colgada, y cualquier enlace al apex moría ahí.
+      //
+      // Este redirect solo entra en juego cuando el apex apunte a Railway
+      // (registro ALIAS en Namecheap + el dominio dado de alta en Railway).
+      // Mientras tanto es inofensivo: nadie llega con ese Host.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "huasteca-potosina.com" }],
+        destination: "https://www.huasteca-potosina.com/:path*",
+        permanent: true,
+      },
+
       // ── Tour slug fixes ──────────────────────────────────────────────────
       { source: "/tours/ruta-surrealista",  destination: "/tours/ruta-surrealista-edward-james",    permanent: true },
       { source: "/tours/paraiso-escalonado",destination: "/tours/paraiso-escalonado-minas-micos",   permanent: true },
