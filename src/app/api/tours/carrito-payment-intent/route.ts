@@ -4,7 +4,7 @@ import { tarifarRecorridos } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
-import { MAX_ITEMS, ANTICIPO_PCT } from "@/lib/carrito";
+import { MAX_ITEMS, ANTICIPO_PCT, pctACobrar } from "@/lib/carrito";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { getTraslado, tarifaTraslado } from "@/lib/traslados";
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, hospedaje, traslado } = await req.json();
+    const { customerEmail, customerName, items, sid, hospedaje, traslado, locale } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     // una; el precio lo pone `cotizarHabitaciones` con las tarifas reales del
     // hotel, que dependen de la habitación Y de la ocupación. También valida
     // el cupo: ninguna admite cinco personas.
-    let hotel: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null = null;
+    let hotel: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number; checkin: string; checkout: string } | null = null;
     if (Array.isArray(hospedaje?.habitaciones) && hospedaje.habitaciones.length > 0 && Number(hospedaje?.noches) > 0) {
       const q = cotizarHabitaciones(hospedaje.habitaciones, Number(hospedaje.noches));
       if (!q.ok || !q.total) {
@@ -70,6 +70,8 @@ export async function POST(req: NextRequest) {
         huespedes:  (q.desglose ?? []).reduce((s, d) => s + d.huespedes, 0),
         total:      q.total,
         ahorro:     q.ahorro ?? 0,
+        checkin:    typeof hospedaje.checkin  === "string" ? hospedaje.checkin  : "",
+        checkout:   typeof hospedaje.checkout === "string" ? hospedaje.checkout : "",
       };
       total += q.total;
     }
@@ -108,8 +110,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cobrar = Math.round((total * ANTICIPO_PCT) / 100);
-    const saldo  = total - cobrar;
+    // Un solo día de recorrido se cobra COMPLETO; con hospedaje o varios días,
+    // el 30 % de siempre. Misma función que usa el carrito para pintarlo, para
+    // que el importe de la pantalla y el de Stripe no puedan diferir.
+    const diasCobro = new Set(lineItems.map((l) => l.tourDate)).size;
+    const pctHoy    = pctACobrar(diasCobro, !!hotel);
+    const cobrar    = Math.round((total * pctHoy) / 100);
+    const saldo     = total - cobrar;
 
     if (cobrar < 10) {
       return NextResponse.json({ error: "El importe del carrito no es válido." }, { status: 400 });
@@ -126,6 +133,14 @@ export async function POST(req: NextRequest) {
       .join(";")
       .slice(0, 480);
 
+    // Las actividades opcionales, aparte del renglón compacto: se cobraron y son
+    // lo único que el equipo no puede deducir del catálogo. Si el cliente cierra
+    // la pestaña, esto es lo que el webhook tiene para no perderlas.
+    const addOnsCompacto = lineItems
+      .flatMap((l) => (l.addOns ?? []).map((a) => `${l.tourSlug}:${a.nombre} x${a.cantidad}`))
+      .join("; ")
+      .slice(0, 480);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount:        Math.round(cobrar * 100),
       currency:      "mxn",
@@ -139,17 +154,27 @@ export async function POST(req: NextRequest) {
         customerName:  customerName  || "",
         carrito:       "1",
         tourId:        lineItems[0].tourId,
-        tourName:      resumenNombre,
+        // Con un solo recorrido va su nombre real: esta metadata es lo que lee
+        // el webhook si el cliente cierra la pestaña, y guardar "1 recorridos"
+        // dejaba la reserva sin nombre de tour en el panel y en el correo.
+        tourName:      lineItems.length === 1 ? lineItems[0].tourName : resumenNombre,
         tourSlug:      lineItems[0].tourSlug,
         tourDate:      lineItems[0].tourDate,
         adults:        String(lineItems.reduce((s, l) => s + l.adults, 0)),
         children:      String(lineItems.reduce((s, l) => s + l.children, 0)),
         items:         compacto,
+        addOns:        addOnsCompacto,
         hospedaje:     hotel ? `${hotel.habitacion} · ${hotel.noches} noches · ${hotel.huespedes} huéspedes · $${hotel.total}` : "",
         traslado:      viaje ? `${viaje.ciudad} → Xilitla · ${viaje.personas} pax · $${viaje.total}` : "",
+        // Las mismas dos cosas, en JSON, para que el webhook las pueda
+        // RECONSTRUIR y no solo enseñarlas. Las de arriba son para leerlas en el
+        // panel de Stripe; volver a parsear un texto con "·" es frágil.
+        hospedajeData: hotel ? JSON.stringify(hotel).slice(0, 480) : "",
+        trasladoData:  viaje ? JSON.stringify(viaje).slice(0, 480) : "",
         totalCompleto: String(total),
-        pctPagado:     String(ANTICIPO_PCT),
+        pctPagado:     String(pctHoy),
         saldo:         String(saldo),
+        locale:        locale === "en" ? "en" : "es",
         source:        "huasteca-potosina.com",
       },
     });
@@ -177,7 +202,7 @@ export async function POST(req: NextRequest) {
       amount:          cobrar,
       total,
       saldo,
-      pct:             ANTICIPO_PCT,
+      pct:             pctHoy,
       lineItems,
       hospedaje: hotel,
       traslado: viaje,

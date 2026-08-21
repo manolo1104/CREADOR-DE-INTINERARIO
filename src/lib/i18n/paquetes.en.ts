@@ -1011,6 +1011,8 @@ export interface PaqueteCheckoutUI {
   errHabitacion: string;
   errEleccion: (dia: number) => string;
   errConexion: string;
+  /** El grupo salió del rango que el motor cobra solo. */
+  errGrupoNoCotizable: (max: number) => string;
   preparandoPago: string;
   continuarPagar: (monto: string) => string;
   cancelacionFlexible: string;
@@ -1027,6 +1029,15 @@ export interface PaqueteCheckoutUI {
   diasNoches: (dias: number, noches: number) => string;
   habJungla: string;
   habSelva: string;
+  /**
+   * Los extras del paquete, desglosados en el resumen de reserva. Antes todo
+   * —gente adicional, noche extra y habitación con vista— iba aplastado en un
+   * solo importe y el cliente veía el precio subir sin una línea que lo
+   * explicara. Los tres renglones suman EXACTAMENTE el total.
+   */
+  resumenHotelExtra: (noches: number, habs: number, habitacion: string) => string;
+  resumenToursExtra: (personas: number) => string;
+  resumenNocheExtra: string;
 }
 
 const CHK_ES: PaqueteCheckoutUI = {
@@ -1138,6 +1149,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   errHabitacion: "Elige tu habitación para continuar.",
   errEleccion: (dia) => `Elige el recorrido del día ${dia} para continuar.`,
   errConexion: "Error de conexión. Intenta de nuevo.",
+  errGrupoNoCotizable: (max) => `No podemos cotizar ese grupo en línea (máximo ${max} personas). Escríbenos por WhatsApp y lo armamos a tu medida.`,
   preparandoPago: "Preparando pago seguro...",
   continuarPagar: (monto) => `Continuar — pagar ${monto} MXN`,
   cancelacionFlexible: "Cancelación flexible · Te contactamos para coordinar fechas",
@@ -1153,6 +1165,11 @@ const CHK_ES: PaqueteCheckoutUI = {
   diasNoches: (dias, noches) => `${dias} días / ${noches} noches`,
   habJungla: "Habitación Jungla",
   habSelva: "Habitación vista a la selva",
+  resumenHotelExtra: (noches, habs, habitacion) =>
+    `Hotel · ${noches} noche${noches > 1 ? "s" : ""} · ${habs} habitación${habs > 1 ? "es" : ""}${habitacion ? ` · ${habitacion}` : ""}`,
+  resumenToursExtra: (personas) =>
+    `Boletos de tour · ${personas} persona${personas > 1 ? "s" : ""} más`,
+  resumenNocheExtra: "noche extra",
 };
 
 const CHK_EN: PaqueteCheckoutUI = {
@@ -1264,6 +1281,7 @@ const CHK_EN: PaqueteCheckoutUI = {
   errHabitacion: "Choose your room to continue.",
   errEleccion: (dia) => `Choose the tour for day ${dia} to continue.`,
   errConexion: "Connection error. Please try again.",
+  errGrupoNoCotizable: (max) => `We can't quote that group online (${max} people max). Message us on WhatsApp and we'll put it together for you.`,
   preparandoPago: "Preparing secure payment...",
   continuarPagar: (monto) => `Continue — pay ${monto} MXN`,
   cancelacionFlexible: "Flexible cancellation · We'll contact you to arrange dates",
@@ -1279,6 +1297,11 @@ const CHK_EN: PaqueteCheckoutUI = {
   diasNoches: (dias, noches) => `${dias} days / ${noches} nights`,
   habJungla: "Jungla room",
   habSelva: "Jungle-view room",
+  resumenHotelExtra: (noches, habs, habitacion) =>
+    `Hotel · ${noches} night${noches > 1 ? "s" : ""} · ${habs} room${habs > 1 ? "s" : ""}${habitacion ? ` · ${habitacion}` : ""}`,
+  resumenToursExtra: (personas) =>
+    `Tour tickets · ${personas} more ${personas > 1 ? "people" : "person"}`,
+  resumenNocheExtra: "extra night",
 };
 
 export function getPaqueteCheckoutUI(locale: Locale): PaqueteCheckoutUI {

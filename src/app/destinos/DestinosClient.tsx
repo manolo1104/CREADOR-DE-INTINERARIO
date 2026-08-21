@@ -109,10 +109,10 @@ export default function DestinosClient() {
           </a>
         ) : (
           <Link
-            href="/recomendar"
-            className="inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
+            href="/reservar"
+            className="inline-block bg-dorado text-negro px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium"
           >
-            Descubrir mi tour ideal →
+            Ver recorridos y reservar →
           </Link>
         )}
       </section>

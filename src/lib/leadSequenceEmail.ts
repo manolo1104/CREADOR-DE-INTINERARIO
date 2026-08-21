@@ -17,7 +17,7 @@ const WA   = "524891251458";
 
 const mx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 
-export type LeadEmailPaso = 1 | 2 | 3 | 4;
+export type LeadEmailPaso = 1 | 2 | 3 | 4 | 5;
 
 export interface LeadEmailInput {
   paso:            LeadEmailPaso;
@@ -224,6 +224,50 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
         `),
       };
 
+    // ── 5. +21 días: el único correo que vende el viaje completo ────────────
+    // La secuencia terminaba a los 7 días, justo cuando mucha gente todavía no
+    // tiene fechas. Y en tres semanas ya suele tenerlas.
+    //
+    // Este es además el único paso que habla de varios recorridos, que es donde
+    // está el dinero de verdad: 21 de las 35 reservas del negocio son de dos o
+    // más tours y hacen el 85 % del ingreso.
+    case 5: {
+      const otro = secundario ?? TOURS_DB.find((t) => t.slug !== principal.slug && !t.precioUnidad);
+      return {
+        subject: `Los que vienen 3 días hacen esto`,
+        html: wrap(`
+          <h1 style="font-size:23px;margin:0 0 8px;color:#1a2e1a">Casi nadie viene por un solo día</h1>
+          <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 20px">
+            De cada diez personas que reservan con nosotros, seis se llevan dos o
+            tres recorridos. No por vendérselos: es que la Huasteca no se ve en un
+            día y las cascadas quedan lejos unas de otras.
+          </p>
+
+          <!-- Aquí iba la promesa de 10 % y 15 % por varios recorridos. Se
+               quitó al apagar ese descuento (20 ago 2026): un correo no puede
+               ofrecer algo que el carrito ya no aplica. -->
+          <div style="border:1px solid #e3ddc9;background:#f7f4ec;padding:18px 20px;margin:0 0 20px">
+            <p style="margin:0 0 10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Si armas tu viaje completo</p>
+            <p style="margin:0 0 6px;font-size:14px;line-height:1.6;color:#444">
+              Un solo traslado, el mismo guía y el mismo grupo: nos organizamos
+              una vez y tú aprovechas cada día.
+            </p>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#444">
+              Te armamos el itinerario día por día, sin que tengas que cuadrar
+              distancias ni horarios.
+            </p>
+          </div>
+
+          ${tarjetaTour(principal, "Con el que casi todos empiezan")}
+          ${otro ? tarjetaTour(otro, "Y el que suelen sumarle") : ""}
+          ${botonPrincipal(`${BASE}/reservar`, "Armar mi viaje →")}
+          <p style="text-align:center;font-size:13px;color:#666;margin:0">
+            Apartas con el 30 %. Cancelación gratuita hasta 48 h antes.
+          </p>
+        `),
+      };
+    }
+
     default:
       return null;
   }
@@ -235,4 +279,8 @@ export const ESPERA_HORAS: Record<LeadEmailPaso, number> = {
   2: 24,   // +1 día
   3: 72,   // +3 días
   4: 168,  // +7 días
+  5: 504,  // +21 días — el que vende el viaje de varios recorridos
 };
+
+/** Pasos que tiene la secuencia. El cron lo usa para saber cuándo termina. */
+export const PASOS_SECUENCIA = 5;

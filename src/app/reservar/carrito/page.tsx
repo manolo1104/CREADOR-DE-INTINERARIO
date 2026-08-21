@@ -9,7 +9,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { ChevronLeft, Lock, Trash2, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle, MessageCircle, Expand, Share2 } from "lucide-react";
 import {
   leerCarrito, quitarDelCarrito, vaciarCarrito, resumirCarrito,
-  actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, type CarritoItem,
+  actualizarItem, agregarAlCarrito, personasDeItem, ANTICIPO_PCT, pctACobrar, type CarritoItem,
 } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
 import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
@@ -61,7 +61,7 @@ interface Cobro {
   amount: number;
   total: number;
   saldo: number;
-  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string }[];
+  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string; addOns?: { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[] }[];
   hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
   traslado:  { ciudad: string; personas: number; total: number } | null;
 }
@@ -176,6 +176,15 @@ function PagoCarrito({ cobro, datos, onListo }: {
               ...cobro.lineItems
                 .filter((l) => l.eleccion)
                 .map((l) => t.notas.eligio(l.tourName.split("—")[0].trim(), l.eleccion!)),
+              // La actividad opcional se COBRA y hay que operarla: el Salto de
+              // las 7 Cascadas necesita guía de rescate. Sin esta línea el
+              // equipo en Xilitla no se enteraba de que estaba contratada.
+              ...cobro.lineItems
+                .filter((l) => (l.addOns ?? []).length > 0)
+                .map((l) => t.notas.extras(
+                  l.tourName.split("—")[0].trim(),
+                  (l.addOns ?? []).map((a) => `${a.nombre} x${a.cantidad}`).join(", "),
+                )),
               cobro.hospedaje
                 ? t.notas.hospedaje(cobro.hospedaje.habitacion, cobro.hospedaje.noches, cobro.hospedaje.huespedes, datos.checkin || "", datos.checkout || "")
                 : null,
@@ -187,10 +196,22 @@ function PagoCarrito({ cobro, datos, onListo }: {
             ].filter(Boolean).join(" | "),
             totalAmount:     cobro.amount,
             paymentIntentId: cobro.paymentIntentId,
-            tourName:        resumen,
+            // Con UN solo recorrido se guarda su nombre real, no el resumen:
+            // "1 recorridos" acababa en el panel y en el correo del cliente
+            // como si fuera el nombre del tour. Con varios sí va el resumen,
+            // porque el detalle vive en `lineItems`.
+            tourName:        cobro.lineItems.length === 1
+              ? (cobro.lineItems[0].tourName || resumen)
+              : resumen,
+            // Faltaba por completo: sin slug, el correo no sabía qué tour era y
+            // caía a la lista genérica de "todo incluido".
+            tourSlug:        primero.tourSlug,
+            tourId:          (primero as any).tourId || primero.tourSlug,
             tourDate:        primero.tourDate,
-            adults:          cobro.lineItems.reduce((s, l) => s + l.adults, 0),
-            children:        cobro.lineItems.reduce((s, l) => s + l.children, 0),
+            // El mismo grupo va a todos los recorridos: se guarda el grupo, no
+            // la suma por tour (2 personas en 3 tours daban 6 adultos).
+            adults:          Math.max(...cobro.lineItems.map((l) => l.adults || 0), 0) || 1,
+            children:        Math.max(...cobro.lineItems.map((l) => l.children || 0), 0),
             // El hospedaje entra como un renglón más: el cliente lo PAGÓ, así
             // que tiene que aparecer en su confirmación. Antes se cobraba y el
             // correo no lo mencionaba.
@@ -601,7 +622,10 @@ export default function CarritoPage() {
   const resumen  = resumirCarrito(items);
   const dias     = resumen.dias;
   const total    = resumen.total + totalHotel + totalTraslado;
-  const anticipo = Math.round((total * ANTICIPO_PCT) / 100);
+  // Un solo día de recorrido se cobra completo; con hospedaje vuelve al 30 %.
+  // El servidor aplica exactamente la misma regla en `carrito-payment-intent`.
+  const pctHoy   = pctACobrar(dias, totalHotel > 0);
+  const anticipo = Math.round((total * pctHoy) / 100);
   const saldo    = total - anticipo;
 
   // Mensaje del rescate: lleva lo que el cliente ya eligió para que no tenga
@@ -835,6 +859,10 @@ export default function CarritoPage() {
           traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
             ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
             : null,
+          // El idioma viaja hasta la metadata de Stripe: si el cliente cierra la
+          // pestaña, el webhook levanta la reserva y necesita saber en qué
+          // idioma mandarle su confirmación.
+          locale,
         }),
       });
       const data = await res.json();
@@ -887,7 +915,25 @@ export default function CarritoPage() {
                         {nombreCorto(i.tourSlug, i.tourName, locale)}
                       </p>
                       <span className="flex items-center gap-2 flex-shrink-0">
-                        <span className="font-cormorant text-dorado text-lg sm:text-xl whitespace-nowrap">{formatMXN(i.total)}</span>
+                        {/* Cuando el carrito lleva varios recorridos, este
+                          renglón puede venir rebajado. Se enseña el precio de
+                          antes tachado: un descuento que no se ve no convence
+                          a nadie de agregar el siguiente. */}
+                        {resumen.descuentoPorItem[i.uid] ? (
+                          <span className="flex flex-col items-end leading-none">
+                            <span className="flex items-baseline gap-1.5">
+                              <s className="font-dm text-[11px] text-negro/35">{formatMXN(i.total)}</s>
+                              <span className="font-cormorant text-dorado text-lg sm:text-xl whitespace-nowrap">
+                                {formatMXN(Math.round(i.total * (100 - resumen.descuentoPorItem[i.uid]) / 100))}
+                              </span>
+                            </span>
+                            <span className="mt-1 font-dm text-[9px] tracking-[1px] uppercase text-verde-selva bg-verde-selva/10 px-1.5 py-0.5">
+                              −{resumen.descuentoPorItem[i.uid]} %
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="font-cormorant text-dorado text-lg sm:text-xl whitespace-nowrap">{formatMXN(i.total)}</span>
+                        )}
                         <button
                           onClick={() => quitar(i.uid)}
                           aria-label={t.quitar(nombreCorto(i.tourSlug, i.tourName, locale))}
@@ -1263,9 +1309,44 @@ export default function CarritoPage() {
             }}
           />
         </div>
-          <p className="font-dm text-negro/50 text-sm mb-6">
+          <p className="font-dm text-negro/50 text-sm mb-4">
             {t.conteo(items.length, dias)}
           </p>
+
+          {/* ── FRANJA DE CONFIANZA ────────────────────────────────────────
+            La página del dinero era la ÚNICA sin una sola señal de confianza a
+            la vista: la calificación, las credenciales y los testimonios viven
+            al final del documento, después del formulario y del pago. En un
+            teléfono eso son varias pantallas de scroll que casi nadie recorre,
+            así que quien llegaba aquí desde Google decidía pagarle a un
+            desconocido sin ver un solo motivo para hacerlo.
+
+            Va compacta —una franja, no un bloque— justo por lo que decía el
+            comentario de abajo: un módulo alto aquí empuja el resumen y el
+            botón de pagar fuera de la pantalla. Las reseñas largas se quedan
+            donde están. */}
+          <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-negro/8 py-2.5">
+            <a
+              href={GOOGLE_MAPS_REVIEWS_URL}
+              target="_blank" rel="noopener noreferrer"
+              className="group inline-flex items-center gap-1.5"
+            >
+              <span className="flex gap-0.5" aria-hidden="true">
+                {[...Array(5)].map((_, k) => <Star key={k} className="w-3 h-3 fill-dorado text-dorado" />)}
+              </span>
+              <span className="font-dm text-[12px] text-negro/70">
+                <strong className="text-negro">4.9</strong> · {t.resenasGoogle}
+              </span>
+            </a>
+            <span className="inline-flex items-center gap-1.5 font-dm text-[12px] text-negro/55">
+              <ShieldCheck className="w-3.5 h-3.5 text-verde-selva flex-shrink-0" aria-hidden="true" />
+              {t.confianzaCancelas}
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-dm text-[12px] text-negro/55">
+              <Lock className="w-3.5 h-3.5 text-verde-selva flex-shrink-0" aria-hidden="true" />
+              {t.confianzaPago(pctHoy)}
+            </span>
+          </div>
 
           <div className="space-y-3">
           {/* Dos grupos: primero lo que BLOQUEA el pago (recorridos sin
@@ -1343,6 +1424,9 @@ export default function CarritoPage() {
               className="w-full border border-dashed border-verde-selva/40 text-verde-selva hover:bg-verde-selva/5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
             >
               {t.agregarOtroRecorrido}
+              <span className="block mt-1 font-dm text-[11px] tracking-normal normal-case text-verde-selva">
+                {items.length === 1 ? t.gancho2doRecorrido : t.gancho3erRecorrido}
+              </span>
             </button>
 
             {mostrarLista && (
@@ -1702,7 +1786,8 @@ export default function CarritoPage() {
             total={total}
             pagaHoy={anticipo}
             saldo={saldo}
-            pct={30}
+            pct={pctHoy}
+            ahorroMultiple={resumen.ahorroMultiple}
           />
 
           {!cobro ? (
@@ -1913,6 +1998,11 @@ export default function CarritoPage() {
           <div className="min-w-0">
             <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/45 leading-none">{t.pagasHoy}</p>
             <p className="font-cormorant text-dorado text-xl leading-tight">{formatMXN(anticipo)} MXN</p>
+            {resumen.ahorroMultiple > 0 && (
+              <p className="font-dm text-[10px] text-verde-selva leading-none mt-0.5 truncate">
+                {t.ahorroMultiple(formatMXN(resumen.ahorroMultiple))}
+              </p>
+            )}
           </div>
           <button
             type="button"

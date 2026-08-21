@@ -3,6 +3,7 @@
 
 import { TOURS_DB, type Tour, type TourRuta, type TourVehiculo } from "./tours";
 import { calcTourTotal, validatePromoCode } from "./tourBooking";
+import { descuentoPorPosicion } from "./carrito";
 
 /**
  * Porcentajes de pago permitidos. 30 = "aparta tu lugar" (el resto se liquida
@@ -203,11 +204,33 @@ export interface LineaCarrito {
   childrenMid?: number; childrenSmall?: number;
   ruta?: string; vehiculo?: string; unidades?: number;
   eleccion?: string;
+  /**
+   * Actividades opcionales contratadas, ya con su precio de catálogo.
+   *
+   * 🔴 El bug que esto arregla: el add-on SÍ se cobraba —va dentro de
+   * `charge.total`, o sea dentro de `subtotal`— pero no se copiaba aquí, así
+   * que desaparecía del correo, de las notas del equipo y del panel. El cliente
+   * veía $3,900 donde el tour para dos son $3,200 sin explicación, y el guía en
+   * Xilitla nunca se enteraba de que habían pagado el Salto de las 7 Cascadas,
+   * que necesita guía de rescate.
+   */
+  addOns?: { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[];
+  /** Lo que costaba este renglón antes del descuento por varios recorridos. */
+  subtotalSinDescuento?: number;
+  /** Porcentaje descontado por ser el 2.º, 3.º… recorrido del carrito. */
+  descuentoMultiple?: number;
 }
 
 export type TarifaCarrito =
-  | { ok: true;  lineItems: LineaCarrito[]; total: number }
+  | {
+      ok: true;
+      lineItems: LineaCarrito[];
+      total: number;
+      /** Pesos ahorrados por llevar varios recorridos. 0 si va uno solo. */
+      ahorroMultiple: number;
+    }
   | { ok: false; error: string };
+
 
 /**
  * Tarifa los recorridos de un carrito, siempre en el servidor.
@@ -292,9 +315,41 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
       childrenSmall: Number(raw.childrenSmall) || 0,
       subtotal: charge.total,
       ...(eleccionValida ? { eleccion: eleccionValida } : {}),
+      // Ya validados contra el catálogo por `computeTourCharge`: van con su
+      // nombre y su precio real para que el correo y el panel los puedan pintar.
+      ...(charge.addOns.length ? { addOns: charge.addOns } : {}),
     });
     total += charge.total;
   }
 
-  return { ok: true, lineItems, total };
+  // ── Descuento por varios recorridos ───────────────────────────────────────
+  // Se aplica al final, sobre los renglones ya tarifados: el más caro completo,
+  // el segundo −10 % y del tercero en adelante −15 %.
+  //
+  // No se acumula con un código promocional: un renglón que ya trae código se
+  // queda como está. Sin esa guarda, un HUASTECA20 sobre el tercer recorrido
+  // acabaría en 35 % de descuento sin que nadie lo hubiera decidido.
+  let ahorroMultiple = 0;
+  if (lineItems.length > 1) {
+    const conPromo = items.some(
+      (x) => typeof (x as Record<string, unknown>)?.promoCode === "string"
+        && ((x as Record<string, unknown>).promoCode as string).trim() !== "",
+    );
+    if (!conPromo) {
+      const orden = [...lineItems].sort((a, b) => b.subtotal - a.subtotal);
+      orden.forEach((linea, i) => {
+        const pct = descuentoPorPosicion(i);
+        if (pct === 0) return;
+        const original = linea.subtotal;
+        const rebaja   = Math.round(original * pct / 100);
+        linea.subtotalSinDescuento = original;
+        linea.descuentoMultiple    = pct;
+        linea.subtotal             = original - rebaja;
+        ahorroMultiple += rebaja;
+      });
+      total -= ahorroMultiple;
+    }
+  }
+
+  return { ok: true, lineItems, total, ahorroMultiple };
 }

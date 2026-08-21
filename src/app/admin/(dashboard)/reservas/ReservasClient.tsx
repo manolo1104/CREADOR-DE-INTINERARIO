@@ -2,10 +2,13 @@
 
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble } from "lucide-react";
+import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
+import PagoProveedorCell, { type Evidencia } from "@/components/admin/PagoProveedorCell";
+import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
+import ReservaDetalle from "@/components/admin/ReservaDetalle";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -57,8 +60,13 @@ function DaysChip({ d }: { d: number }) {
   return <span className={`${base} bg-[#1B4332]/5 text-[#1B4332]/50`}>{d}d</span>;
 }
 
-export default function ReservasClient({ initialBookings }: { initialBookings: TourBooking[] }) {
+export default function ReservasClient(
+  { initialBookings, initialEvidencias = [] }:
+  { initialBookings: TourBooking[]; initialEvidencias?: Evidencia[] },
+) {
   const [bookings,      setBookings]      = useState(initialBookings);
+  const [evidencias,    setEvidencias]    = useState<Evidencia[]>(initialEvidencias);
+  const [detalle,       setDetalle]       = useState<TourBooking | null>(null);
   const [search,        setSearch]        = useState("");
   const [statusFilter,  setStatusFilter]  = useState<"all" | "paid" | "pending" | "cancelled">("all");
   const [loading,       setLoading]       = useState(false);
@@ -76,6 +84,22 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
   const [dateTo,        setDateTo]        = useState("");
   const today = useMemo(() => todayMX(), []);
 
+  // Las evidencias llegan en una sola lista (metadatos, sin los bytes) y se
+  // agrupan aquí para no hacer un filter por fila en cada render.
+  const evidenciasPorReserva = useMemo(() => {
+    const m: Record<string, Evidencia[]> = {};
+    for (const e of evidencias) (m[e.bookingId] ||= []).push(e);
+    return m;
+  }, [evidencias]);
+
+  function patchProveedor(id: string, patch: Record<string, unknown>) {
+    setBookings(bs => bs.map(x => x.id === id ? { ...x, ...patch } as TourBooking : x));
+  }
+
+  function setEvidenciasDe(bookingId: string, lista: Evidencia[]) {
+    setEvidencias(prev => [...prev.filter(e => e.bookingId !== bookingId), ...lista]);
+  }
+
   function flash(m: string) {
     setMsg(m);
     if (m.startsWith("✅")) playSuccess();
@@ -87,6 +111,10 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     setLoading(true);
     const r = await fetch("/api/admin/reservas");
     if (r.ok) setBookings(await r.json());
+    // Las evidencias viven en otra tabla: se recargan aparte para que el
+    // contador de adjuntos no quede desfasado tras refrescar.
+    const e = await fetch("/api/admin/evidencia").catch(() => null);
+    if (e?.ok) setEvidencias(await e.json());
     setLoading(false);
   }
 
@@ -177,9 +205,9 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
       tourName:       tourNames || TOURS_DB.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
       tourSlug:       primaryLine.tourSlug,
       tourDate:       primaryLine.tourDate,
-      // Las líneas por vehículo (RZR) llevan adults=0 → usa el tamaño real del grupo como respaldo.
-      adults:         form.lines.reduce((s, l) => s + l.adults, 0) || Number(form.numPersonas) || 1,
-      children:       form.lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
+      // El mismo grupo va a TODOS los tours: se guarda el grupo, no la suma por
+      // tour (sumar hacía que 2 personas con 5 tours quedaran como 10 adultos).
+      ...grupoParaGuardar(form.lines, form.numPersonas),
       totalAmount,
       lineItems,
       packageItems,
@@ -243,12 +271,10 @@ export default function ReservasClient({ initialBookings }: { initialBookings: T
     const checkouts  = pkgs.map(p => p.checkout).filter(Boolean).sort();
     const fechaInicio = tourDates[0] || b.tourDate;
     const fechaFin   = checkouts.length ? checkouts[checkouts.length - 1] : tourDates[tourDates.length - 1] || b.tourDate;
-    // Tamaño REAL del grupo (no sumar por tour: es el mismo grupo en todos los tours).
-    // Prioridad: el número capturado en la reserva → máximo por tour → total guardado.
-    const perTourMax  = lines.length ? Math.max(...lines.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0))) : 0;
-    const numPersonas = Number(meta.numPersonas) > 0
-      ? Number(meta.numPersonas)
-      : (perTourMax > 0 ? perTourMax : b.adults + (b.children ?? 0));
+    // Tamaño REAL del grupo, desglosado en adultos y niños (ver lib/admin/reserva).
+    const grupo       = grupoDe(b as any);
+    const numPersonas = Number(meta.numPersonas) > 0 ? Number(meta.numPersonas) : grupo.total;
+    const desglose    = grupoLargo(grupo);
     // Resumen de arriba: NO repetir los nombres (el itinerario de abajo ya los lista).
     // Con varios tours mostramos el conteo; con uno solo, su nombre.
     const tourResumen = lines.length > 1 ? `${lines.length} tours` : (lines[0]?.tourName || b.tourName);
@@ -331,6 +357,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 .summary{background:var(--arena);padding:5mm 14mm;display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;}
 .summary .item .k{font-size:7pt;letter-spacing:2.5px;text-transform:uppercase;color:var(--verde-selva);margin-bottom:1.5mm;}
 .summary .item .v{font-family:var(--display);font-size:12pt;line-height:1.1;color:var(--negro);}
+.summary .item .sub{font-size:7pt;color:rgba(14,23,16,.5);margin-top:1mm;line-height:1.2;}
 .summary .item .v.italic{font-style:italic;color:var(--dorado);}
 .summary .item .v.mono{font-family:ui-monospace,monospace;font-size:9pt;font-style:normal;}
 .body{padding:6mm 14mm;flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:7mm;min-height:0;}
@@ -403,7 +430,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   <div class="summary">
     <div class="item"><div class="k">${lines.length > 1 ? "Tours" : "Tour"}</div><div class="v italic">${tourResumen}</div></div>
     <div class="item"><div class="k">Fechas</div><div class="v mono">${fDate(fechaInicio)} al ${fDate(fechaFin)}</div></div>
-    <div class="item"><div class="k">Personas</div><div class="v">${numPersonas}</div></div>
+    <div class="item"><div class="k">Personas</div><div class="v">${numPersonas}</div><div class="sub">${desglose}</div></div>
     <div class="item">
       <div class="k">Total · saldo</div>
       <div class="v italic">$${b.totalAmount.toLocaleString("es-MX")}</div>
@@ -600,7 +627,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           const pendiente = Math.max(0, b.totalAmount - deposito);
           const hosp = hospedajeSummary(b);
           return (
-            <div key={b.id} className="bg-white border border-[#1B4332]/10 rounded-md p-4">
+            <div key={b.id} onClick={() => { playClick(); setDetalle(b); }}
+              className="bg-white border border-[#1B4332]/10 rounded-md p-4 cursor-pointer active:bg-[#FAFAF8]">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[#1B4332] font-mono text-xs font-medium">{b.confirmationNumber}</span>
                 <div className="flex items-center gap-2">
@@ -617,15 +645,26 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 </p>
               )}
               <div className="flex items-center justify-between mt-2 text-xs">
-                <span className="text-[#1B4332]/60">{fDate(b.tourDate)} · {b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</span>
+                <span className="text-[#1B4332]/60">{fDate(b.tourDate)} · {grupoCorto(grupoDe(b as any))}</span>
                 <span className="text-[#52B788] font-medium">{fmx(b.totalAmount)}</span>
               </div>
               {pendiente > 0 && <p className="text-orange-600 text-[10px] mt-1">Saldo pendiente: {fmx(pendiente)}</p>}
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8">
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
+              </div>
+              <div className="mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
+                <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1.5">Pago al proveedor</p>
+                <PagoProveedorCell
+                  reserva={b as any}
+                  evidencias={evidenciasPorReserva[b.id] ?? []}
+                  onChange={patchProveedor}
+                  onEvidencias={setEvidenciasDe}
+                  flash={flash}
+                  compacto
+                />
               </div>
             </div>
           );
@@ -638,20 +677,22 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">
               <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Total","Anticipo","Estado","Acciones"].map(h => (
-                  <th key={h} className="py-3 px-3 text-left font-dm">{h}</th>
+                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Total","Anticipo","Estado","Acciones","Proveedor"].map(h => (
+                  <th key={h} className={`py-3 px-3 text-left font-dm ${h === "Proveedor" ? "sticky right-0 z-20 bg-[#FAFAF8] border-l border-[#1B4332]/10 w-[150px] min-w-[150px]" : ""}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={10} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={11} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
                 const rawDeposito = (b as any).depositoPagado ?? 0;
                 const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
                 const pendiente = Math.max(0, b.totalAmount - deposito);
                 const hosp = hospedajeSummary(b);
                 return (
-                  <tr key={b.id} className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors">
+                  <tr key={b.id} onClick={() => { playClick(); setDetalle(b); }}
+                    title="Ver todos los detalles"
+                    className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors cursor-pointer">
                     <td className="py-3 px-3 text-[#1B4332] font-mono text-xs font-medium">{b.confirmationNumber}</td>
                     <td className="py-3 px-3"><p className="text-[#1B4332] font-medium">{b.customerName}</p><p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p></td>
                     <td className="py-3 px-3 max-w-[170px]">
@@ -664,7 +705,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     </td>
                     <td className="py-3 px-3 text-[#1B4332]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
                     <td className="py-3 px-3">{b.status !== "cancelled" ? <DaysChip d={daysToTour(b.tourDate, today)} /> : <span className="text-[#1B4332]/20 text-xs">—</span>}</td>
-                    <td className="py-3 px-3 text-[#1B4332]/70 text-xs">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</td>
+                    <td className="py-3 px-3 text-[#1B4332]/70 text-xs" title={grupoLargo(grupoDe(b as any))}>{grupoCorto(grupoDe(b as any))}</td>
                     <td className="py-3 px-3 text-[#52B788] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
                     <td className="py-3 px-3 text-xs">
                       {deposito > 0 ? (
@@ -674,7 +715,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         </div>
                       ) : <span className="text-[#1B4332]/30">—</span>}
                     </td>
-                    <td className="py-3 px-3 relative">
+                    <td className="py-3 px-3 relative" onClick={e => e.stopPropagation()}>
                       {statusEditing === b.id && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setStatusEditing(null)} />
@@ -695,8 +736,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         {STATUS_LABEL[b.status] || b.status}
                       </button>
                     </td>
-                    <td className="py-3 px-3">
+                    <td className="py-3 px-3" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
+                        <button onClick={() => { playClick(); setDetalle(b); }} title="Ver detalles"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} title="Enviar email"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); downloadPDF(b); }} title="Descargar PDF"
@@ -707,6 +750,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
+                    <td className="py-3 px-3 w-[150px] min-w-[150px] whitespace-nowrap sticky right-0 z-10 bg-white border-l border-[#1B4332]/10"
+                        onClick={e => e.stopPropagation()}>
+                      <PagoProveedorCell
+                        reserva={b as any}
+                        evidencias={evidenciasPorReserva[b.id] ?? []}
+                        onChange={patchProveedor}
+                        onEvidencias={setEvidenciasDe}
+                        flash={flash}
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -714,6 +767,14 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           </table>
         </div>
       </div>
+
+      {detalle && (
+        <ReservaDetalle
+          reserva={detalle}
+          evidencias={evidenciasPorReserva[detalle.id] ?? []}
+          onClose={() => setDetalle(null)}
+        />
+      )}
 
       {modal === "new" && (
         <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm}

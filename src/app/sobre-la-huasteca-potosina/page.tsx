@@ -251,16 +251,16 @@ export default function SobreLaHuastecaPage() {
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link
-            href="/tours"
+            href="/reservar"
             className="inline-block bg-dorado text-white px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-terracota transition-colors"
           >
-            Ver todos los tours
+            Ver recorridos y reservar
           </Link>
           <Link
-            href="/recomendar"
+            href="/tours"
             className="inline-block border border-crema/30 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-colors"
           >
-            ¿Qué tour es para mí? →
+            Conocer los tours a fondo →
           </Link>
         </div>
       </section>

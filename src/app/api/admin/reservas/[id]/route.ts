@@ -8,6 +8,7 @@ const BOOKING_FIELDS = [
   "totalAmount", "depositoPagado", "promoCode", "promoDiscount",
   "customerName", "customerEmail", "customerPhone", "notes",
   "lineItems", "packageItems", "status",
+  "pagoProveedor", "pagoProveedorMonto", "pagoProveedorFecha", "pagoProveedorNota",
 ] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -31,7 +32,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // Eliminación completa de la base de datos
+    // Eliminación completa de la base de datos. La evidencia del pago al
+    // proveedor vive en otra tabla sin llave foránea, así que se borra a mano:
+    // si no, quedarían bytes huérfanos ocupando espacio para siempre.
+    await prisma.pagoProveedorEvidencia.deleteMany({ where: { bookingId: params.id } });
     await prisma.tourBooking.delete({ where: { id: params.id } });
     return NextResponse.json({ ok: true });
   } catch (e: any) {

@@ -115,10 +115,15 @@ export interface Messages {
     partOfTour: (destino: string, tour: string) => string;
     perPerson: string;
     seeDepartures: string;
+    /** Antes decía "Aparta con el 30 %". Se cambió al pasar a cobrar completo
+     *  el viaje de un solo día: ese botón lleva a reservar UN tour. */
     deposit30: string;
     nearbyTours: string;
     nearbyIntro: (name: string) => string;
     combineWhatsapp: string;
+    /** CTA al motor de reservas desde un destino SIN tour propio. */
+    reservarCercano: string;
+    verTodosYReservar: string;
   };
   cookies: {
     titulo: string;
@@ -236,7 +241,7 @@ const es: Messages = {
     resenasEnEspanol: "",
     toursThatInclude: "Tours que incluyen",
     bookOrAsk: "Reserva directamente con tarjeta o pregunta por WhatsApp.",
-    bookWithCard: "Agregar al carrito",
+    bookWithCard: "Reservar ahora",
     askWhatsapp: "Preguntar por WhatsApp",
     replyUnder1h: "Respuesta en menos de 1 hora · Lun–Dom",
     wantToVisit: "¿Quieres visitar",
@@ -249,10 +254,12 @@ const es: Messages = {
     partOfTour: (destino: string, tour: string) => `${destino} es parte de ${tour}`,
     perPerson: "por persona",
     seeDepartures: "Ver salidas",
-    deposit30: "Aparta con el 30 %",
+    deposit30: "Cancela gratis 48 h antes",
     nearbyTours: "Tours en esta zona",
     nearbyIntro: (name: string) => `No visitamos ${name} dentro de un tour, pero operamos en la misma zona — podemos combinarlo:`,
     combineWhatsapp: "Pregunta por WhatsApp para combinarlo",
+    reservarCercano: "Reservar",
+    verTodosYReservar: "Ver los recorridos y reservar",
     faqTitulo: "Preguntas frecuentes",
   },
   cookies: {
@@ -373,7 +380,7 @@ const en: Messages = {
     resenasEnEspanol: "In their own words (Spanish).",
     toursThatInclude: "Tours that include",
     bookOrAsk: "Book directly by card or ask on WhatsApp.",
-    bookWithCard: "Add to cart",
+    bookWithCard: "Book now",
     askWhatsapp: "Ask on WhatsApp",
     replyUnder1h: "Reply in under 1 hour · Mon–Sun",
     wantToVisit: "Want to visit",
@@ -385,10 +392,12 @@ const en: Messages = {
     partOfTour: (destino: string, tour: string) => `${destino} is part of ${tour}`,
     perPerson: "per person",
     seeDepartures: "See departures",
-    deposit30: "Book with 30 % deposit",
+    deposit30: "Free cancellation 48 h before",
     nearbyTours: "Tours in this area",
     nearbyIntro: (name: string) => `We don't visit ${name} on a tour, but we operate in the same area — we can combine it:`,
     combineWhatsapp: "Ask on WhatsApp to combine it",
+    reservarCercano: "Book",
+    verTodosYReservar: "See the tours and book",
     faqTitulo: "Frequently asked questions",
   },
   cookies: {

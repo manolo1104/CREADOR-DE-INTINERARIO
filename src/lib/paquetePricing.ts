@@ -42,6 +42,25 @@ export const MAX_POR_HABITACION = 4;
 /** Tope de lo que el motor cobra solo. Arriba de esto, se cotiza a mano. */
 export const MAX_PERSONAS_PAQUETE = 12;
 
+/**
+ * Cuánto se puede pagar hoy. 30 % es el mínimo desde el 12 de agosto de 2026
+ * (antes era 10 %, que no cubre ni la primera noche de hotel).
+ *
+ * ⚠️ Vive aquí y NADIE lo vuelve a escribir a mano. El bug que esto arregla:
+ * `create-payment-intent` tenía su propia copia congelada en [10, 50, 100]
+ * mientras la pantalla ofrecía 30 y este archivo exigía 30. La opción marcada
+ * por defecto —el 30 %— devolvía 400 "Porcentaje de pago inválido" y ningún
+ * paquete se podía pagar sin que el cliente cambiara la opción a ciegas.
+ */
+export const PCTS_PAQUETE = [30, 50, 100] as const;
+export type PctPaquete = (typeof PCTS_PAQUETE)[number];
+
+/** Normaliza el porcentaje que llega del cliente. Devuelve null si no es válido. */
+export function pctPaqueteValido(v: unknown): PctPaquete | null {
+  const n = Math.round(Number(v));
+  return (PCTS_PAQUETE as readonly number[]).includes(n) ? (n as PctPaquete) : null;
+}
+
 /** Reparte la gente lo más parejo posible: 5 en 2 habitaciones son 3 + 2. */
 function repartir(personas: number, habitaciones: number): number[] {
   const n = Math.max(1, habitaciones);
@@ -145,10 +164,10 @@ export function computePaqueteCharge(input: {
   // habitaciones.
   if (adultos < 2 || personas > MAX_PERSONAS_PAQUETE) return null;
 
-  const pct = Number(input.pct);
   // 30 % mínimo (decisión de Manolo, 12 ago 2026). Antes el mínimo era 10 %, que
   // no cubre ni la primera noche de hotel del paquete.
-  if (![30, 50, 100].includes(pct)) return null;
+  const pct = pctPaqueteValido(input.pct);
+  if (pct === null) return null;
 
   const vistaMontana = !!input.vistaMontana;
 

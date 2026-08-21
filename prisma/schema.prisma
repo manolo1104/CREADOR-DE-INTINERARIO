@@ -253,6 +253,14 @@ model TourBooking {
   lineItems             Json?    // [{tourSlug,tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}]
   packageItems          Json?    // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
   depositoPagado        Int      @default(0)
+  // Control de pagos al proveedor de servicios (lanchero, guía, transporte).
+  // null = sin marcar · true = ya le pagué · false = marcado como NO pagado.
+  // Campos opcionales a propósito: `prisma db push` corre en cada arranque de
+  // Railway y una columna obligatoria sobre filas existentes tumba el deploy.
+  pagoProveedor         Boolean?
+  pagoProveedorMonto    Int      @default(0)
+  pagoProveedorFecha    DateTime?
+  pagoProveedorNota     String?
   status                String   @default("pending")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -289,4 +297,22 @@ model BlogPost {
   @@index([slug])
   @@index([publishedAt])
   @@index([tags])
+}
+
+/// Evidencia del pago al proveedor: el PDF o la captura de la transferencia.
+/// Vive en tabla APARTE (no en TourBooking) a propósito: el panel hace
+/// `findMany` de TODAS las reservas y si los bytes colgaran de TourBooking
+/// cada carga del listado se traería los archivos completos.
+/// Se guarda en Postgres porque Railway no tiene disco persistente: lo que se
+/// escriba en el contenedor se borra en el siguiente despliegue.
+model PagoProveedorEvidencia {
+  id            String   @id @default(cuid())
+  bookingId     String
+  nombreArchivo String
+  tipoMime      String
+  tamanoBytes   Int
+  datos         Bytes
+  createdAt     DateTime @default(now())
+
+  @@index([bookingId])
 }

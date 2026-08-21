@@ -22,7 +22,13 @@ export interface RenglonResumen {
   subtotal?: number;
   /** Lo que incluye ESTE recorrido, ya con `INCLUYE_SIEMPRE` sumado por quien llama. */
   incluye:   string[];
-  addOns?:   { nombre: string; cantidad: number; subtotal: number }[];
+  /**
+   * Lo que se suma al renglón y se cobra aparte: la actividad opcional de un
+   * tour, o los extras de un paquete (gente adicional, noche extra, habitación
+   * con vista). `cantidad` es opcional: "× 2" solo se pinta cuando dice algo —
+   * un renglón de "Noche extra" no necesita un "× 1" colgando.
+   */
+  addOns?:   { nombre: string; cantidad?: number; subtotal: number }[];
   /** Elección del cliente cuando el tour la exige (ej. Ruta Acuática). */
   eleccion?: string;
 }
@@ -40,13 +46,15 @@ export interface RenglonResumen {
  * responsable de mandar el `incluye` completo del catálogo.
  */
 export function ResumenReserva({
-  items, total, pagaHoy, saldo, pct,
+  items, total, pagaHoy, saldo, pct, ahorroMultiple = 0,
 }: {
   items:   RenglonResumen[];
   total:   number;
   pagaHoy: number;
   saldo:   number;
   pct:     number;
+  /** Pesos rebajados por llevar varios recorridos. Se enseña como renglón. */
+  ahorroMultiple?: number;
 }) {
   const { locale } = useLocale();
   const t = getBooking(locale).resumen;
@@ -91,7 +99,7 @@ export function ResumenReserva({
             )}
             {(i.addOns ?? []).map((a) => (
               <p key={a.nombre} className="flex justify-between font-dm text-[11px] text-negro/55 mt-0.5">
-                <span>+ {a.nombre} × {a.cantidad}</span>
+                <span>+ {a.nombre}{typeof a.cantidad === "number" ? ` × ${a.cantidad}` : ""}</span>
                 <span>{formatMXN(a.subtotal)}</span>
               </p>
             ))}
@@ -158,6 +166,21 @@ export function ResumenReserva({
 
       {/* ── Números ── */}
       <div className="pt-4 space-y-1.5">
+        {/* El descuento por varios recorridos va como renglón propio, antes del
+          total: si solo se ve el importe final, la persona no se entera de que
+          agregar el segundo tour le sirvió de algo. */}
+        {ahorroMultiple > 0 && (
+          <>
+            <p className="flex justify-between font-dm text-[13px] text-negro/45">
+              <span>{t.sumaDeRecorridos}</span>
+              <span>{formatMXN(total + ahorroMultiple)} MXN</span>
+            </p>
+            <p className="flex justify-between font-dm text-[13px] text-verde-selva">
+              <span>{t.descuentoVariosRecorridos}</span>
+              <strong>−{formatMXN(ahorroMultiple)} MXN</strong>
+            </p>
+          </>
+        )}
         <p className="flex justify-between font-dm text-[13px] text-negro/60">
           <span>{t.totalDelViaje}</span>
           <strong className="text-negro/85">{formatMXN(total)} MXN</strong>

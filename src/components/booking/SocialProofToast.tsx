@@ -30,6 +30,12 @@ const PRUEBAS_EN: { texto: string; fuente: string }[] = [
   { texto: "Small groups of max. 12 people", fuente: "Personalized attention" },
 ];
 
+/**
+ * Cuántas veces aparece el aviso en una visita, como mucho. Es el largo del
+ * mazo: se ven las ocho pruebas una vez y se calla.
+ */
+const MAX_TOASTS = 8;
+
 // Fisher-Yates: baraja los índices 0..n-1 para recorrer las pruebas
 // en orden aleatorio sin repetir ninguna hasta agotar la lista.
 function makeShuffledDeck(n: number): number[] {
@@ -56,9 +62,18 @@ export function SocialProofToast({ tourId, tourName }: Props) {
   const deck       = useRef<number[]>([]);
   const hideTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mostrados  = useRef(0);
 
   const showToast = useCallback(() => {
     if (dismissed) return;
+    // El ciclo no terminaba nunca: se reprogramaba solo cada ~90 s mientras la
+    // pestaña siguiera viva. Una sola sesión con la página abierta cuatro días
+    // emitió 1,840 avisos —el 65 % de TODA la telemetría del sitio en catorce
+    // días— y a esa persona le apareció el mismo cartel doscientas veces.
+    // Ocho pruebas es el mazo completo: después de verlo entero, insistir no
+    // convence a nadie.
+    if (mostrados.current >= MAX_TOASTS) return;
+    mostrados.current += 1;
     // Toma el siguiente índice del mazo barajado; re-baraja al agotarse
     if (deck.current.length === 0) deck.current = makeShuffledDeck(PRUEBAS.length);
     const idx = deck.current.pop()!;

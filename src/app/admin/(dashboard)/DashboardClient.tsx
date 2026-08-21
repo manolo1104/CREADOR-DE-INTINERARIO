@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, Calendar, FileText, TrendingUp, Users, Plus, ArrowRight } from "lucide-react";
 import type { TourBooking, TourQuote } from "@prisma/client";
 import CountUp from "@/components/admin/CountUp";
+import { grupoDe, grupoCorto } from "@/lib/admin/reserva";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
@@ -69,7 +70,7 @@ export default function DashboardClient({
           </p>
           <p className={`font-dm text-xs ${todayBookings.length > 0 ? "text-white/70" : "text-[#1B4332]/30"}`}>
             {todayBookings.length > 0
-              ? `${todayBookings.reduce((s, b) => s + b.adults + b.children, 0)} personas`
+              ? `${todayBookings.reduce((s, b) => s + grupoDe(b as any).total, 0)} personas`
               : "Sin tours"}
           </p>
         </div>
@@ -112,7 +113,7 @@ export default function DashboardClient({
                   <p className="font-dm text-sm font-medium text-[#1B4332]">{b.customerName}</p>
                   <p className="font-dm text-xs text-[#1B4332]/50 truncate">{b.tourName}</p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="font-dm text-[10px] text-[#1B4332]/40">{b.adults}A{b.children > 0 ? ` · ${b.children}N` : ""}</span>
+                    <span className="font-dm text-[10px] text-[#1B4332]/40">{grupoCorto(grupoDe(b as any))}</span>
                     <span className="font-dm text-xs text-[#52B788] font-medium">{fmx(b.totalAmount)}</span>
                   </div>
                 </div>
@@ -149,7 +150,7 @@ export default function DashboardClient({
                     <p className="font-dm text-sm font-medium text-[#1B4332] truncate">{b.customerName}</p>
                     <p className="font-dm text-xs text-[#1B4332]/50 truncate">{b.tourName}</p>
                   </div>
-                  <span className="font-dm text-[10px] text-[#1B4332]/40 whitespace-nowrap">{b.adults}A</span>
+                  <span className="font-dm text-[10px] text-[#1B4332]/40 whitespace-nowrap">{grupoCorto(grupoDe(b as any))}</span>
                 </div>
               ))}
               {upcomingBookings.length > 5 && (

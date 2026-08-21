@@ -445,6 +445,7 @@ export default function TourDetailPage({ params }: Props) {
                 </li>
               ))}
             </ul>
+
           </section>
 
           {/* ── NO INCLUYE · QUÉ LLEVAR · REQUISITOS ──
@@ -657,6 +658,7 @@ export default function TourDetailPage({ params }: Props) {
               </a>
               <p className="text-center text-[9px] text-crema/25 font-dm">{t.freeCancel48}</p>
             </div>
+
 
             <div className="border border-white/10 bg-negro/60 p-5">
               <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">{t.bookWithConfidence}</p>

@@ -78,15 +78,17 @@ const BADGES_EN: { Icon: LucideIcon; title: string; sub: string }[] = [
   { Icon: CheckCircle2,  title: "Instant confirmation", sub: "On WhatsApp when you book" },
 ];
 
+// Los dos canales pesan igual a propósito: reservar en línea es tan válido como
+// escribir por WhatsApp, y antes el paso 01 solo ofrecía WhatsApp.
 const COMO_FUNCIONA_ES = [
-  { num: "01", titulo: "Escríbenos por WhatsApp", detalle: "Cuéntanos cuántas personas son, qué fechas manejan y qué tours te interesan. Respondemos en menos de una hora." },
-  { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: dónde y a qué hora pasamos por ti, lista de qué llevar y el link de pago." },
-  { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate de llegar. Todo lo demás —transporte, entradas, desayuno, guía— ya está incluido." },
+  { num: "01", titulo: "Reserva en línea o por WhatsApp", detalle: "Aparta tu lugar tú mismo en el motor de reservas, o escríbenos por WhatsApp con cuántos son, sus fechas y qué tours les interesan. Las dos formas valen igual; por WhatsApp respondemos en menos de una hora." },
+  { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: dónde y a qué hora pasamos por ti, la lista de qué llevar y cómo pagar — link de pago, transferencia bancaria o depósito en OXXO." },
+  { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate por estar listo en el lobby de tu hotel en Xilitla o Ciudad Valles. Todo lo demás —transporte, entradas, desayuno, guía— ya está incluido." },
 ];
 const COMO_FUNCIONA_EN = [
-  { num: "01", titulo: "Message us on WhatsApp", detalle: "Tell us how many people you are, what dates work for you and which tours you're interested in. We reply in under an hour." },
-  { num: "02", titulo: "We confirm and reserve your spot", detalle: "We send you the tour details: meeting point, departure time, a what-to-bring list and the payment link." },
-  { num: "03", titulo: "Enjoy, worry-free", detalle: "On tour day, all you have to do is show up. Everything else — transport, entrance fees, breakfast, guide — is already included." },
+  { num: "01", titulo: "Book online or on WhatsApp", detalle: "Reserve your spot yourself in our booking engine, or message us on WhatsApp with your group size, your dates and the tours you're interested in. Either way works; on WhatsApp we reply in under an hour." },
+  { num: "02", titulo: "We confirm and reserve your spot", detalle: "We send you the tour details: meeting point, departure time, a what-to-bring list and how to pay — payment link, bank transfer or cash deposit at OXXO." },
+  { num: "03", titulo: "Enjoy, worry-free", detalle: "On tour day, all you have to do is be ready in your hotel lobby in Xilitla or Ciudad Valles. Everything else — transport, entrance fees, breakfast, guide — is already included." },
 ];
 
 const TESTIMONIOS_ES = [

@@ -142,6 +142,14 @@ export interface BookingMessages {
 
     // Agregar otro
     agregarOtroRecorrido: string;
+    /** Escasez real, calculada contra las reservas pagadas. */
+    quedanLugares: (quedan: number, cupo: number) => string;
+    salidaLlena: string;
+    faltanParaSalir: (faltan: number, minimo: number) => string;
+    /** Gancho al descuento por varios recorridos, bajo el botón de agregar. */
+    gancho2doRecorrido: string;
+    gancho3erRecorrido: string;
+    ahorroMultiple: (pesos: string) => string;
     yaTienesTodos: string;
 
     // Logística
@@ -256,6 +264,10 @@ export interface BookingMessages {
     resenasGoogle: string;
     verlas: string;
     credenciales: string;
+    /** Franja de confianza alta del carrito (arriba del itinerario). */
+    confianzaCancelas: string;
+    /** Recibe el % que se cobra hoy: 100 en un solo día, 30 en varios. */
+    confianzaPago: (pct: number) => string;
     /** Vacío en español; en inglés avisa de que las reseñas van en su idioma original. */
     resenasEnEspanol: string;
     antesDePagar: string;
@@ -269,6 +281,8 @@ export interface BookingMessages {
       recogida: (lugar: string) => string;
       reservaVarios: (n: number) => string;
       eligio: (tour: string, opcion: string) => string;
+      /** Actividad opcional contratada: hay que operarla y cobrarla. */
+      extras: (tour: string, lista: string) => string;
       hospedaje: (hab: string, noches: number, huespedes: number, entrada: string, salida: string) => string;
       traslado: (ciudad: string, pax: number) => string;
       idiomaCliente: string;
@@ -292,6 +306,8 @@ export interface BookingMessages {
     cancelasGratis: string;
     fotosYVideo: string;
     totalDelViaje: string;
+    sumaDeRecorridos: string;
+    descuentoVariosRecorridos: string;
     pagasHoy: (pct: number) => string;
     saldoDia: string;
   };
@@ -442,20 +458,20 @@ const es: BookingMessages = {
     eyebrow: "Motor de reservas",
     h1: "Elige tu recorrido y aparta tu lugar",
     introApartas: "No pagas todo hoy: ",
-    introY: "apartas con el 30 %",
+    introY: "apartas con el 30 % si son varios días",
     introMedio: " y liquidas el día del tour. Si algo cambia, ",
     introCancelas: "cancelas gratis hasta 48 h antes",
     resenasGoogle: "492 reseñas en Google",
     verlas: "Verlas →",
     confianza: [
-      { t: "Apartas con el 30 %", s: "El resto, el día del tour" },
+      { t: "Apartas con el 30 %", s: "En viajes de varios días. Uno solo se paga completo." },
       { t: "Cancelación gratuita", s: "Hasta 48 h antes, sin preguntas" },
       { t: "Grupos pequeños", s: "Guías certificados NOM-09" },
       { t: "Pasamos por ti", s: "En tu hospedaje de Xilitla o Cd. Valles" },
     ],
     pasos: [
       { n: "1", t: "Elige tus recorridos", s: "Puedes juntar varios días en un solo carrito y pagarlos de una vez." },
-      { n: "2", t: "Aparta con el 30 %", s: "Eliges fecha y personas. Pago seguro con tarjeta." },
+      { n: "2", t: "Pago seguro con tarjeta", s: "Eliges fecha y personas. Los viajes de varios días se apartan con el 30 %." },
       { n: "3", t: "Liquidas el día del tour", s: "En efectivo o tarjeta, al llegar." },
     ],
     todosLosRecorridos: "Todos los recorridos",
@@ -572,6 +588,16 @@ const es: BookingMessages = {
       `${horas} horas aprox. · grupo de ${min > 1 ? `${min} a ` : "hasta "}${max} personas`,
 
     agregarOtroRecorrido: "＋ Agregar otro recorrido",
+    quedanLugares: (quedan, cupo) =>
+      quedan === 1 ? `Queda 1 lugar de ${cupo} para ese día` : `Quedan ${quedan} lugares de ${cupo} para ese día`,
+    salidaLlena: "Esa salida ya está llena — elige otro día",
+    faltanParaSalir: (faltan, minimo) =>
+      faltan === 1
+        ? `Falta 1 persona para confirmar esta salida (mínimo ${minimo})`
+        : `Faltan ${faltan} personas para confirmar esta salida (mínimo ${minimo})`,
+    gancho2doRecorrido: "La mayoría de nuestros viajeros hace 2 o 3 recorridos",
+    gancho3erRecorrido: "Te armamos el itinerario día por día",
+    ahorroMultiple: (pesos: string) => `Ahorras ${pesos} por llevar varios recorridos`,
     yaTienesTodos: "Ya tienes todos los recorridos en el carrito.",
 
     pasamosPorTi: " —hotel, hostal, cabaña o Airbnb— en ",
@@ -689,6 +715,10 @@ const es: BookingMessages = {
     resenasGoogle: "492 reseñas en Google",
     verlas: "Verlas →",
     credenciales: "+10,000 viajeros desde 2019 · Premio Arival 2023 · Guías certificados NOM-09 SECTUR",
+    confianzaCancelas: "Cancelas gratis hasta 48 h antes",
+    confianzaPago: (pct) => pct >= 100
+      ? "Pago seguro con Stripe · Pagas el total y no queda saldo"
+      : `Pago seguro con Stripe · Apartas con el ${pct} %`,
     resenasEnEspanol: "",
     antesDePagar: "Antes de pagar",
     otraDuda: "¿Te quedó otra duda?",
@@ -724,6 +754,7 @@ const es: BookingMessages = {
       recogida: (lugar) => `Recogida: ${lugar}`,
       reservaVarios: (n) => `Reserva de ${n} recorridos en un solo pago.`,
       eligio: (tour, opcion) => `${tour} — eligió: ${opcion}`,
+      extras: (tour, lista) => `${tour} — ACTIVIDAD EXTRA CONTRATADA: ${lista}`,
       hospedaje: (hab, noches, huespedes, entrada, salida) =>
         `Hospedaje: ${hab}, ${noches} noche(s), ${huespedes} huésped(es)${entrada ? ` — entrada ${entrada}` : ""}${salida ? `, salida ${salida}` : ""}.`,
       traslado: (ciudad, pax) =>
@@ -748,6 +779,8 @@ const es: BookingMessages = {
     cancelasGratis: "Cancelas gratis hasta 48 h antes, con reembolso completo.",
     fotosYVideo: "Fotos y video del recorrido, entregados el mismo día.",
     totalDelViaje: "Total del viaje",
+    sumaDeRecorridos: "Suma de los recorridos",
+    descuentoVariosRecorridos: "Descuento por varios recorridos",
     pagasHoy: (pct) => `Pagas hoy (${pct} %)`,
     saldoDia: "Saldo el día del primer recorrido",
   },
@@ -933,13 +966,13 @@ const en: BookingMessages = {
     eyebrow: "Booking engine",
     h1: "Pick your tour and hold your spot",
     introApartas: "You don't pay it all today: ",
-    introY: "hold your spot with 30 %",
+    introY: "hold your spot with 30 % on multi-day trips",
     introMedio: " and settle the rest on tour day. If anything changes, ",
     introCancelas: "cancel free up to 48 h before",
     resenasGoogle: "492 Google reviews",
     verlas: "Read them →",
     confianza: [
-      { t: "Hold with 30 %", s: "The rest on tour day" },
+      { t: "Hold with 30 %", s: "On multi-day trips. A single day is paid in full." },
       { t: "Free cancellation", s: "Up to 48 h before, no questions" },
       { t: "Small groups", s: "NOM-09 certified guides" },
       { t: "We pick you up", s: "At your lodging in Xilitla or Ciudad Valles" },
@@ -1063,6 +1096,16 @@ const en: BookingMessages = {
       `${horas} hours approx. · group of ${min > 1 ? `${min} to ` : "up to "}${max} people`,
 
     agregarOtroRecorrido: "＋ Add another tour",
+    quedanLugares: (quedan, cupo) =>
+      quedan === 1 ? `1 spot left of ${cupo} for that day` : `${quedan} spots left of ${cupo} for that day`,
+    salidaLlena: "That departure is full — pick another day",
+    faltanParaSalir: (faltan, minimo) =>
+      faltan === 1
+        ? `1 more person needed to confirm this departure (minimum ${minimo})`
+        : `${faltan} more people needed to confirm this departure (minimum ${minimo})`,
+    gancho2doRecorrido: "Most of our travelers do 2 or 3 tours",
+    gancho3erRecorrido: "We lay out your day-by-day itinerary",
+    ahorroMultiple: (pesos: string) => `You save ${pesos} by booking several tours`,
     yaTienesTodos: "You already have every tour in your cart.",
 
     pasamosPorTi: " —hotel, hostel, cabin or Airbnb— in ",
@@ -1180,6 +1223,10 @@ const en: BookingMessages = {
     resenasGoogle: "492 Google reviews",
     verlas: "Read them →",
     credenciales: "+10,000 travellers since 2019 · Arival Award 2023 · NOM-09 SECTUR certified guides",
+    confianzaCancelas: "Free cancellation up to 48 h before",
+    confianzaPago: (pct) => pct >= 100
+      ? "Secure payment with Stripe · Paid in full, no balance left"
+      : `Secure payment with Stripe · ${pct} % deposit`,
     // Las reseñas son de viajeros reales, con nombre y ciudad. Se dejan tal como
     // las escribieron y se avisa de que están en español: traducirlas en
     // silencio sería poner palabras en boca de una persona identificable.
@@ -1221,6 +1268,7 @@ const en: BookingMessages = {
       recogida: (lugar) => `Recogida: ${lugar}`,
       reservaVarios: (n) => `Reserva de ${n} recorridos en un solo pago.`,
       eligio: (tour, opcion) => `${tour} — eligió: ${opcion}`,
+      extras: (tour, lista) => `${tour} — ACTIVIDAD EXTRA CONTRATADA: ${lista}`,
       hospedaje: (hab, noches, huespedes, entrada, salida) =>
         `Hospedaje: ${hab}, ${noches} noche(s), ${huespedes} huésped(es)${entrada ? ` — entrada ${entrada}` : ""}${salida ? `, salida ${salida}` : ""}.`,
       traslado: (ciudad, pax) =>
@@ -1245,6 +1293,8 @@ const en: BookingMessages = {
     cancelasGratis: "Cancel free up to 48 h before, with a full refund.",
     fotosYVideo: "Photos and video of the tour, delivered the same day.",
     totalDelViaje: "Trip total",
+    sumaDeRecorridos: "Tours subtotal",
+    descuentoVariosRecorridos: "Multi-tour discount",
     pagasHoy: (pct) => `You pay today (${pct} %)`,
     saldoDia: "Balance on your first tour day",
   },

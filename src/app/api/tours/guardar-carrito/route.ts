@@ -10,6 +10,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { buildCartEmailHtml } from "@/lib/cartEmail";
 import { actividad, mxn, nombreCorto } from "@/lib/logger";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
+import { avisarCarritoGrande } from "@/lib/avisoCarritoGrande";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -131,6 +132,14 @@ export async function POST(req: NextRequest) {
           to: [{ email: datos.customerEmail }],
           subject,
           htmlContent: html,
+        });
+        await avisarCarritoGrande({
+          total:         datos.total,
+          customerEmail: datos.customerEmail,
+          customerPhone: datos.customerPhone,
+          tourName:      datos.tourName,
+          tourDate:      datos.tourDate,
+          restoreUrl,
         });
       } catch {
         // Si el correo falla, el carrito igual queda guardado para el cron de recuperación.
@@ -287,6 +296,17 @@ async function guardarCarritoCompleto(
         locale:    locale === "en" ? "en" : "es",
       });
       await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
+        // Y si el carrito es grande, que Manolo se entere mientras la persona
+        // todavía está decidiendo: él cierra el 25 % de lo que atiende y la
+        // página el 2.5 %.
+        await avisarCarritoGrande({
+          total:         datos.total,
+          customerEmail: datos.customerEmail,
+          customerPhone: datos.customerPhone,
+          tourName:      datos.tourName,
+          tourDate:      datos.tourDate,
+          restoreUrl,
+        });
     } catch {
       // Si el correo falla, el carrito igual queda guardado para el cron.
     }

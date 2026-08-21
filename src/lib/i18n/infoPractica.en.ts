@@ -738,7 +738,7 @@ const ES: InfoPracticaContent = {
   ctaTexto:
     "Usa nuestro planificador IA para crear un itinerario personalizado con toda la información práctica que necesitas.",
   ctaDestinos: "Ver destinos",
-  ctaRecomendar: "¿Qué tour es para mí? →",
+  ctaRecomendar: "Ver recorridos y reservar →",
 
   clima: {
     herramienta: "✦ Herramienta interactiva",
@@ -1308,7 +1308,7 @@ const EN: InfoPracticaContent = {
   ctaTexto:
     "Use our AI planner to build a personalised itinerary with all the practical information you need.",
   ctaDestinos: "See destinations",
-  ctaRecomendar: "Which tour is right for me? →",
+  ctaRecomendar: "See tours and book →",
 
   clima: {
     herramienta: "✦ Interactive tool",

@@ -73,17 +73,39 @@ export function calcTourTotal(
 
 // ── Códigos promo ────────────────────────────────────────────
 
-const PROMO_CODES: Record<string, number> = {
-  HUASTECA20:  20,
-  GRUPAL15:    15,
-  XILITLA10:   10,
-};
+/**
+ * Códigos promocionales, con la fecha en que dejan de servir.
+ *
+ * Antes eran tres números sueltos sin caducidad ni condiciones: quien
+ * encontrara `HUASTECA20` —en una captura, en un foro, en un correo viejo—
+ * tenía 20 % de por vida sobre cualquier reserva. Un descuento que no vence no
+ * es una promoción, es un precio nuevo.
+ *
+ * `vence` es el ÚLTIMO día en que el código sirve (inclusive), en horario de
+ * México. Para retirar un código basta con ponerle una fecha pasada; para
+ * dejarlo indefinido, omitir el campo — pero eso debería ser la excepción.
+ */
+// Sin códigos activos por decisión de Manolo (20 ago 2026). Los tres que había
+// —HUASTECA20, GRUPAL15, XILITLA10— se retiraron; se agregarán otros después.
+// La maquinaria se queda en pie: basta añadir una línea aquí para revivirlos,
+// y `vence` los caduca solo.
+const PROMO_CODES: Record<string, { pct: number; vence?: string }> = {};
+
+/** Hoy en Ciudad de México, como YYYY-MM-DD. El servidor puede correr en UTC. */
+function hoyMX(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+}
 
 export function validatePromoCode(code: string): { valid: boolean; discount: number; msg: string } {
   const upper = code.trim().toUpperCase();
-  const pct   = PROMO_CODES[upper];
-  if (!pct) return { valid: false, discount: 0, msg: "Código no válido" };
-  return { valid: true, discount: pct, msg: `${pct} % de descuento aplicado ✓` };
+  const promo = PROMO_CODES[upper];
+  if (!promo) return { valid: false, discount: 0, msg: "Código no válido" };
+  if (promo.vence && hoyMX() > promo.vence) {
+    // Se distingue de "no válido" a propósito: quien teclea un código vencido
+    // sí lo tuvo alguna vez, y merece saber que existió y ya no sirve.
+    return { valid: false, discount: 0, msg: "Ese código ya venció" };
+  }
+  return { valid: true, discount: promo.pct, msg: `${promo.pct} % de descuento aplicado ✓` };
 }
 
 // ── Formato de fecha para UI ─────────────────────────────────

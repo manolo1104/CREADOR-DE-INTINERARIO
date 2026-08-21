@@ -137,7 +137,7 @@ export default function ExperienciasPage() {
               <p className="text-crema font-dm text-sm">{t.bannerTexto}</p>
             </div>
             <Link
-              href="/recomendar"
+              href={localePath("/reservar", locale)}
               className="flex-shrink-0 bg-dorado text-negro text-[10px] tracking-[2px] uppercase font-dm px-6 py-3 hover:bg-lima transition-colors whitespace-nowrap font-medium"
             >
               {t.bannerCta}

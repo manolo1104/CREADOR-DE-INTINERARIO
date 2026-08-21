@@ -867,10 +867,11 @@ export default function InfoPracticaPage() {
           >
             {t.ctaDestinos}
           </Link>
-          {/* El recomendador IA es solo-ES; en inglés el CTA lleva al motor de
-              reservas, que sí está traducido. */}
+          {/* Los dos idiomas al motor: el recomendador (solo-ES) se llevaba el
+              CTA principal de una página de alta intención y lo usaron 4
+              personas en 14 días. */}
           <Link
-            href={en ? lp("/reservar") : "/recomendar"}
+            href={lp("/reservar")}
             className="bg-verde-selva text-crema px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
           >
             {t.ctaRecomendar}

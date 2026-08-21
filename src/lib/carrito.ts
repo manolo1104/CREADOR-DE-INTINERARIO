@@ -120,14 +120,99 @@ export interface ResumenCarrito {
   saldo:    number;
   /** Fechas distintas: sirve para decir "3 días de recorridos". */
   dias:     number;
+  /** Porcentaje que se cobra hoy: 100 si es un solo día, 30 si son varios. */
+  pct:      number;
+  /** Lo que costaría el viaje sin el descuento por varios recorridos. */
+  totalSinDescuento: number;
+  /** Pesos ahorrados por llevar más de un recorrido. 0 si va uno solo. */
+  ahorroMultiple:    number;
+  /** El descuento que le tocó a cada renglón, por `uid`. */
+  descuentoPorItem:  Record<string, number>;
 }
 
 /** El anticipo de los tours es del 30 %, igual que en el checkout de uno solo. */
 export const ANTICIPO_PCT = 30;
 
+/**
+ * Qué porcentaje del total se cobra HOY.
+ *
+ * Un viaje de **un solo día de recorrido se cobra completo** (decisión de
+ * Manolo, 20 ago 2026): son montos chicos y no vale la pena quedarse con un
+ * saldo que hay que perseguir el día del tour.
+ *
+ * El hospedaje cuenta como "varios días": una noche de hotel ya estira el viaje
+ * más allá de la jornada, y cobrar $12,000 de golpe espanta al cliente. Esos
+ * siguen apartándose con el 30 %.
+ *
+ * ⚠️ Vive aquí porque lo usan los DOS lados: el carrito para pintar y
+ * `carrito-payment-intent` para cobrar de verdad. Si divergieran, la pantalla
+ * diría un importe y Stripe cobraría otro.
+ */
+export function pctACobrar(dias: number, conHospedaje = false): number {
+  return dias <= 1 && !conHospedaje ? 100 : ANTICIPO_PCT;
+}
+
+/**
+ * Cuánto se descuenta el recorrido que ocupa la posición `i` del carrito,
+ * ordenado de más caro a más barato: el más caro paga completo, el segundo
+ * −10 % y del tercero en adelante −15 %.
+ *
+ * De las 35 reservas del negocio, 21 son de varios recorridos y hacen el 85 %
+ * del ingreso: un cliente de tres tours deja $20,392 contra los $4,311 de uno
+ * de un solo tour. El descuento estaba en el sitio equivocado —un "26 % OFF"
+ * fijo sobre el PRIMER recorrido, o sea sobre la venta que ya estaba hecha—;
+ * aquí se rebaja únicamente lo que probablemente no se habría vendido.
+ *
+ * Se ordena por precio para que el total no dependa del orden en que la persona
+ * fue agregando cosas.
+ *
+ * ⚠️ Vive en este módulo, que NO importa el catálogo, porque lo usan los dos
+ * lados: esto para pintar y `tarifarRecorridos` para cobrar. Si divergieran, el
+ * carrito enseñaría un total y el pago cobraría otro.
+ */
+export function descuentoPorPosicion(_i: number): number {
+  // APAGADO por decisión de Manolo (20 ago 2026): todavía no se lanza el
+  // descuento por varios recorridos. Devolver 0 lo desaparece entero —de la
+  // pantalla y del cobro— porque toda la UI que lo pinta va tras un `&&`.
+  // Para revivirlo: 2.º recorrido 10 %, 3.º en adelante 15 %.
+  //   if (i <= 0) return 0;
+  //   if (i === 1) return 10;
+  //   return 15;
+  return 0;
+}
+
 export function resumirCarrito(items: CarritoItem[]): ResumenCarrito {
-  const total    = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
-  const anticipo = Math.round((total * ANTICIPO_PCT) / 100);
+  const totalSinDescuento = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
+
+  // El MISMO cálculo que hace el servidor en `tarifarRecorridos`: el recorrido
+  // más caro paga completo, el segundo −10 % y del tercero en adelante −15 %.
+  //
+  // Esto solo pinta. El precio que se cobra lo vuelve a calcular el servidor —
+  // pero tiene que coincidir al peso, o la persona ve un total en el carrito y
+  // otro en la pantalla del pago, que es la peor forma de perder una venta.
+  const descuentoPorItem: Record<string, number> = {};
+  let ahorroMultiple = 0;
+
+  if (items.length > 1) {
+    [...items]
+      .sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0))
+      .forEach((i, pos) => {
+        const pct = descuentoPorPosicion(pos);
+        if (pct === 0) return;
+        const rebaja = Math.round((Number(i.total) || 0) * pct / 100);
+        descuentoPorItem[i.uid] = pct;
+        ahorroMultiple += rebaja;
+      });
+  }
+
+  const total    = totalSinDescuento - ahorroMultiple;
   const dias     = new Set(items.map((i) => i.tourDate).filter(Boolean)).size;
-  return { items, total, anticipo, saldo: total - anticipo, dias };
+  // Sin hospedaje aquí: `resumirCarrito` solo conoce los recorridos. La página
+  // recalcula el porcentaje cuando el cliente agrega hotel.
+  const pct      = pctACobrar(dias);
+  const anticipo = Math.round((total * pct) / 100);
+  return {
+    items, total, anticipo, saldo: total - anticipo, dias, pct,
+    totalSinDescuento, ahorroMultiple, descuentoPorItem,
+  };
 }

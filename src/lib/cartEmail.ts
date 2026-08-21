@@ -73,6 +73,8 @@ export interface CartEmailInput {
 }
 
 
+import { pctACobrar } from "@/lib/carrito";
+
 const ANTICIPO_PCT = 30;
 
 /** "2 adultos · 1 de 6 a 10 años · 1 menor de 6" — el desglose que importa. */
@@ -138,7 +140,11 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
       )
     : "";
 
-  const anticipo = d.anticipo ?? Math.round((d.total * ANTICIPO_PCT) / 100);
+  // El correo tiene que decir el MISMO porcentaje que se le cobró: con un solo
+  // día de recorrido es el 100 %, no el 30 % de siempre.
+  const diasCorreo = new Set((d.lineas ?? []).map((l: any) => l.tourDate).filter(Boolean)).size;
+  const pctCorreo  = pctACobrar(diasCorreo, Boolean((d as any).hospedaje));
+  const anticipo   = d.anticipo ?? Math.round((d.total * pctCorreo) / 100);
 
   const html = `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2e1a;background:#ffffff">
@@ -163,7 +169,7 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
           <td style="padding:14px 16px;border-top:2px solid #d8cfb8;text-align:right;font-size:17px;font-weight:bold;color:#3a6b1a;white-space:nowrap">${mx(d.total, locale)}</td>
         </tr>
         <tr>
-          <td style="padding:0 16px 14px;font-size:13px;color:#7d7566">${T.apartasHoy(ANTICIPO_PCT)}</td>
+          <td style="padding:0 16px 14px;font-size:13px;color:#7d7566">${pctCorreo >= 100 ? T.pagoCompleto : T.apartasHoy(pctCorreo)}</td>
           <td style="padding:0 16px 14px;text-align:right;font-size:14px;color:#c4882a;white-space:nowrap">${mx(anticipo, locale)}</td>
         </tr>
       </table>

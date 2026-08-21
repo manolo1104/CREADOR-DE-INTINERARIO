@@ -38,6 +38,8 @@ export interface EmailMessages {
     grupoDe: (n: number) => string;
     total: string;
     apartasHoy: (pct: number) => string;
+    /** Cuando el viaje es de un solo día y se cobra completo. */
+    pagoCompleto: string;
     traslado: (ciudad: string) => string;
     idaYVuelta: (pax: number) => string;
     nochesHuespedes: (noches: number, huespedes: number) => string;
@@ -75,6 +77,8 @@ export interface EmailMessages {
     liquidado: string;
     metodoPago: string;
     todoIncluido: string;
+    /** Encabezado cuando la reserva lleva varios recorridos. */
+    todosIncluyen: string;
     proximosPasos: string;
     antesDeTuRecorrido: string;
     puntoSalida: string;
@@ -100,6 +104,10 @@ export interface EmailMessages {
     menoresDe6: (n: number) => string;
     vehiculos: (n: number) => string;
     pickupDefault: string;
+    /** Actividad opcional contratada: se cobró, así que se dice. */
+    addOnLinea: (nombre: string, cantidad: number) => string;
+    /** Elección obligatoria del recorrido (ej. Siete Cascadas o Tamasopo). */
+    elegiste: (opcion: string) => string;
   };
 
 
@@ -150,6 +158,18 @@ export interface EmailMessages {
     notaSaldo: string;
     notaLiquidado: string;
     dudas: string;
+    /** Desglose del grupo: el equipo necesita saber que van menores. */
+    grupoLinea: (adultos: number, mid: number, small: number) => string;
+    habitacion: string;
+    entradaHotel: string;
+    noches: (n: number) => string;
+    /** Llegó la víspera: el check-in es el día ANTERIOR al primer tour. */
+    nocheExtraNota: string;
+    eligeDia: (dia: number) => string;
+    tuItinerario: string;
+    diaN: (n: number) => string;
+    todoIncluido: string;
+    guiaAdjunta: string;
   };
 }
 
@@ -195,6 +215,7 @@ const ES: EmailMessages = {
     grupoDe: (n) => `Grupo de <strong style="color:#1a2e1a">${n} persona${n !== 1 ? "s" : ""}</strong>`,
     total: "Total",
     apartasHoy: (pct) => `Apartas hoy con el ${pct} %`,
+    pagoCompleto: "Pago completo — no queda saldo por cubrir",
     traslado: (ciudad) => `🚐 Traslado ${ciudad} → Xilitla`,
     idaYVuelta: (pax) => `Ida y vuelta · ${pax} pasajero${pax !== 1 ? "s" : ""}`,
     nochesHuespedes: (noches, huespedes) =>
@@ -237,6 +258,7 @@ const ES: EmailMessages = {
     liquidado: "✓ Liquidado",
     metodoPago: "Método de pago:",
     todoIncluido: "Todo incluido en tu tour",
+    todosIncluyen: "Todos tus recorridos incluyen",
     proximosPasos: "Próximos pasos",
     antesDeTuRecorrido: "Antes de tu recorrido",
     puntoSalida: "🌅 Punto de Salida",
@@ -262,6 +284,8 @@ const ES: EmailMessages = {
     menoresDe6: (n) => `${n} menor${n !== 1 ? "es" : ""} de 6`,
     vehiculos: (n) => `${n} vehículo${n !== 1 ? "s" : ""}`,
     pickupDefault: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. Confirma tu dirección exacta por WhatsApp.",
+    addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "persona" : "personas"}`,
+    elegiste: (opcion) => `Elegiste: ${opcion}`,
   },
 
 
@@ -306,12 +330,29 @@ const ES: EmailMessages = {
     paquete: "Paquete",
     fechaTentativa: "Fecha tentativa",
     personas: "Personas",
-    precio: "Precio del paquete",
+    // Ya no es "el precio del paquete": el publicado cubre a dos y aquí va el
+    // total real, con la gente extra, la noche extra y la habitación elegida.
+    precio: "Total de tu viaje",
     pagoInicial: (pct) => `Pago inicial (${pct}%)`,
     saldoPendiente: "Saldo pendiente",
     notaSaldo: "El saldo restante se cubre antes o durante tu llegada. Te contactaremos por WhatsApp para coordinar fechas y detalles.",
     notaLiquidado: "Tu paquete está pagado al 100%. Te contactaremos por WhatsApp para coordinar los detalles.",
     dudas: "¿Dudas? Escríbenos por WhatsApp al +52 489 125 1458.",
+    grupoLinea: (adultos, mid, small) =>
+      [
+        `${adultos} ${adultos === 1 ? "adulto" : "adultos"}`,
+        mid   ? `${mid} ${mid === 1 ? "niño" : "niños"} (6–10)`   : "",
+        small ? `${small} ${small === 1 ? "menor" : "menores"} de 6` : "",
+      ].filter(Boolean).join(" · "),
+    habitacion: "Habitación",
+    entradaHotel: "Entrada al hotel",
+    noches: (n) => `${n} ${n === 1 ? "noche" : "noches"}`,
+    nocheExtraNota: "Llegas la víspera · check-in desde las 3:00 PM",
+    eligeDia: (dia) => `Tu elección del día ${dia}`,
+    tuItinerario: "Tu itinerario",
+    diaN: (n) => `Día ${n}`,
+    todoIncluido: "Todo lo que incluye",
+    guiaAdjunta: "Te adjuntamos la Guía de la Huasteca Potosina en PDF para que vayas planeando.",
   },
 };
 
@@ -357,6 +398,7 @@ const EN: EmailMessages = {
     grupoDe: (n) => `A group of <strong style="color:#1a2e1a">${n} ${n !== 1 ? "people" : "person"}</strong>`,
     total: "Total",
     apartasHoy: (pct) => `You hold it today with ${pct} %`,
+    pagoCompleto: "Paid in full — no balance left to cover",
     traslado: (ciudad) => `🚐 Transfer ${ciudad} → Xilitla`,
     idaYVuelta: (pax) => `Round trip · ${pax} passenger${pax !== 1 ? "s" : ""}`,
     nochesHuespedes: (noches, huespedes) =>
@@ -399,6 +441,7 @@ const EN: EmailMessages = {
     liquidado: "✓ Paid in full",
     metodoPago: "Payment method:",
     todoIncluido: "Everything included in your tour",
+    todosIncluyen: "All your tours include",
     proximosPasos: "What happens next",
     antesDeTuRecorrido: "Before your tour",
     puntoSalida: "🌅 Pickup Point",
@@ -424,6 +467,8 @@ const EN: EmailMessages = {
     menoresDe6: (n) => `${n} under 6`,
     vehiculos: (n) => `${n} vehicle${n !== 1 ? "s" : ""}`,
     pickupDefault: "We pick you up at your lodging in Xilitla or Ciudad Valles. Confirm your exact address on WhatsApp.",
+    addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "person" : "people"}`,
+    elegiste: (opcion) => `You chose: ${opcion}`,
   },
 
 
@@ -468,12 +513,27 @@ const EN: EmailMessages = {
     paquete: "Package",
     fechaTentativa: "Approximate date",
     personas: "People",
-    precio: "Package price",
+    precio: "Your trip total",
     pagoInicial: (pct) => `Initial payment (${pct}%)`,
     saldoPendiente: "Outstanding balance",
     notaSaldo: "The remaining balance is settled before or during your arrival. We'll contact you on WhatsApp to arrange dates and details.",
     notaLiquidado: "Your package is paid in full. We'll contact you on WhatsApp to arrange the details.",
     dudas: "Questions? Message us on WhatsApp at +52 489 125 1458.",
+    grupoLinea: (adultos, mid, small) =>
+      [
+        `${adultos} ${adultos === 1 ? "adult" : "adults"}`,
+        mid   ? `${mid} ${mid === 1 ? "child" : "children"} (6–10)` : "",
+        small ? `${small} under 6`                                  : "",
+      ].filter(Boolean).join(" · "),
+    habitacion: "Room",
+    entradaHotel: "Hotel check-in",
+    noches: (n) => `${n} ${n === 1 ? "night" : "nights"}`,
+    nocheExtraNota: "You arrive the night before · check-in from 3:00 PM",
+    eligeDia: (dia) => `Your choice for day ${dia}`,
+    tuItinerario: "Your itinerary",
+    diaN: (n) => `Day ${n}`,
+    todoIncluido: "Everything included",
+    guiaAdjunta: "We've attached our Huasteca Potosina Guide (PDF) so you can start planning.",
   },
 };
 

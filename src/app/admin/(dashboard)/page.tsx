@@ -11,7 +11,7 @@ export default async function AdminDashboard() {
   const { year, month } = partsMX(new Date());
   const monthStart = mxMonthStart(year, month);
 
-  const [todayBookings, upcomingBookings, recentBookings, pendingQuotes, monthBookings, allPending] = await Promise.all([
+  const [todayBookings, upcomingBookings, recentBookings, pendingQuotes, monthBookings, allPending, activeQuotesCount] = await Promise.all([
     prisma.tourBooking.findMany({
       where: { tourDate: todayStr, status: { not: "cancelled" } },
       orderBy: { createdAt: "desc" },
@@ -32,6 +32,10 @@ export default async function AdminDashboard() {
     }),
     // "Pendiente de cobro": saldo que falta de TODAS las reservas no canceladas
     prisma.tourBooking.findMany({ where: { status: { not: "cancelled" } } }),
+    // El total real de cotizaciones activas. La lista de arriba lleva `take: 5`
+    // porque solo se pintan 5 en el panel; contar esa lista hacía que el KPI
+    // dijera siempre "5" aunque hubiera decenas abiertas.
+    prisma.tourQuote.count({ where: { status: { in: ["borrador", "enviada"] } } }),
   ]);
 
   const monthIngresos = monthBookings.reduce((s, b) => s + montoCobrado(b), 0);
@@ -46,7 +50,7 @@ export default async function AdminDashboard() {
       monthIngresos={monthIngresos}
       monthReservas={monthBookings.length}
       pendingAmount={pendingAmount}
-      activeQuotes={pendingQuotes.length}
+      activeQuotes={activeQuotesCount}
     />
   );
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
+import { leerJson, reconstruirLineas } from "@/lib/webhookRecuperacion";
 
 export const runtime = "nodejs";
 
@@ -137,6 +138,36 @@ export async function POST(req: NextRequest) {
             } catch { /* si no se puede leer el cargo, seguimos sin correo */ }
           }
           const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail);
+          const locale = meta.locale === "en" ? "en" : "es";
+
+          // ── Reconstrucción del pedido ────────────────────────────────────
+          // 🔴 El bug que esto arregla: aquí solo se copiaban los campos planos.
+          // Un carrito de tres recorridos con hotel y traslado quedaba en el
+          // panel como UN tour suelto, sin itinerario, sin hospedaje y sin el
+          // traslado que el equipo tiene que operar — aunque el cobro sí había
+          // incluido todo eso. El comentario de `carrito-payment-intent` decía
+          // que el webhook leía `meta.items`; no lo leía.
+          const lineas = reconstruirLineas(meta);
+          const hotel  = leerJson<{ habitacion?: string; noches?: number; huespedes?: number; total?: number; checkin?: string; checkout?: string }>(meta.hospedajeData);
+          const viaje  = leerJson<{ ciudad?: string; personas?: number; total?: number }>(meta.trasladoData);
+
+          if (viaje?.ciudad) {
+            lineas.push({
+              tourName: `Traslado ${viaje.ciudad} → Xilitla (ida y vuelta)`,
+              tourDate: meta.tourDate || "",
+              adults:   Number(viaje.personas) || 1,
+              children: 0,
+              subtotal: Number(viaje.total) || 0,
+            });
+          }
+
+          const notas = [
+            "Reserva registrada automáticamente por webhook — el cliente no completó la pantalla de confirmación.",
+            locale === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : "",
+            meta.addOns    ? `ACTIVIDAD EXTRA CONTRATADA: ${meta.addOns}` : "",
+            meta.hospedaje ? `Hospedaje: ${meta.hospedaje}` : "",
+            meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
+          ].filter(Boolean).join(" | ");
 
           await prisma.tourBooking.create({
             data: {
@@ -153,7 +184,19 @@ export async function POST(req: NextRequest) {
               customerName:          meta.customerName || "Pendiente (vía webhook)",
               customerEmail:         emailValido ? clienteEmail : "pendiente@desconocido",
               customerPhone:         null,
-              notes:                 "Reserva registrada automáticamente por webhook — el cliente no completó la pantalla de confirmación.",
+              notes:                 notas,
+              lineItems:             [...lineas, { _meta: true, locale }],
+              packageItems:          hotel?.habitacion
+                ? [{
+                    hotel:        "Hotel Paraíso Encantado",
+                    habitacion:   hotel.habitacion,
+                    noches:       Number(hotel.noches) || 0,
+                    habitaciones: String(hotel.habitacion).split(" + ").length,
+                    checkin:      hotel.checkin  || "",
+                    checkout:     hotel.checkout || "",
+                    subtotal:     Number(hotel.total) || 0,
+                  }]
+                : undefined,
               status:                "paid",
             },
           });
@@ -192,12 +235,30 @@ export async function POST(req: NextRequest) {
                 paymentIntentId: pi.id,
                 tourName:      meta.tourName || "Tour Huasteca",
                 tourDate:      meta.tourDate || "",
-                tourSlug:      meta.tourSlug || "",
+                // Con carrito, `tourSlug` es solo el del PRIMER recorrido: se
+                // deja vacío para que el correo lea el itinerario de `lineItems`
+                // y no titule el viaje entero con un solo tour.
+                tourSlug:      lineas.length > 1 ? "" : (meta.tourSlug || ""),
                 adults:        Number(meta.adults) || 1,
                 children:      Number(meta.children) || 0,
                 totalAmount,
                 depositoPagado: cobrado, // muestra saldo pendiente si fue anticipo
                 promoDiscount: 0,
+                // El itinerario completo y el hotel, para que el cliente que
+                // cerró la pestaña reciba la misma confirmación que los demás.
+                lineItems:     lineas.length ? lineas : undefined,
+                packageItems:  hotel?.habitacion
+                  ? [{
+                      hotel:        "Hotel Paraíso Encantado",
+                      habitacion:   hotel.habitacion,
+                      noches:       Number(hotel.noches) || 0,
+                      habitaciones: String(hotel.habitacion).split(" + ").length,
+                      checkin:      hotel.checkin  || "",
+                      checkout:     hotel.checkout || "",
+                      subtotal:     Number(hotel.total) || 0,
+                    }]
+                  : undefined,
+                locale,
               });
               await sendBrevoEmail({
                 to:  [{ email: clienteEmail, name: meta.customerName || undefined }],

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computePaqueteCharge } from "@/lib/paquetePricing";
+import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
+import { HABITACIONES } from "@/lib/paquetes";
 import { rateLimit } from "@/lib/rateLimit";
 import { MARCA_PAQUETE } from "@/lib/recuperacion";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
@@ -38,12 +40,22 @@ export async function POST(req: NextRequest) {
 
     // El importe se recalcula aquí: el correo de rescate lleva un precio y no
     // puede salir del navegador del visitante.
+    //
+    // ⚠️ Con los MISMOS datos que usa el cobro. Antes faltaban `nocheExtra` y
+    // `reparto`, así que el correo de recuperación cotizaba menos de lo que el
+    // checkout iba a cobrar: la peor sorpresa posible para quien vuelve por el
+    // link creyendo que le guardamos ese precio.
+    const habitacionElegida = HABITACIONES_HOTEL.find(
+      (h) => h.id === body?.habitacionId && HABITACIONES.some((x) => x.id === h.id),
+    );
     const cobro = computePaqueteCharge({
       slug:          body?.slug,
       personas:      body?.personas,
       childrenMid:   body?.childrenMid,
       childrenSmall: body?.childrenSmall,
-      vistaMontana:  body?.vistaMontana,
+      vistaMontana:  habitacionElegida ? habitacionElegida.vistaMontana : body?.vistaMontana,
+      reparto:       body?.reparto,
+      nocheExtra:    body?.nocheExtra,
       pct:           100,
     });
     if (!cobro) {

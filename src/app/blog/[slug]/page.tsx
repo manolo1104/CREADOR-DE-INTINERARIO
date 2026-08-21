@@ -351,13 +351,13 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
               {/* CTA final */}
               <div className="my-12 p-8 bg-forest border border-lima/20 text-center">
-                <p className="text-[9px] tracking-[3px] uppercase text-lima/70 font-dm mb-3">✦ Tecnología IA · Gratis</p>
-                <h3 className="font-display text-2xl text-crema mb-3">Planea tu visita a la Huasteca Potosina</h3>
+                <p className="text-[9px] tracking-[3px] uppercase text-lima/70 font-dm mb-3">✦ Salidas todos los días</p>
+                <h3 className="font-display text-2xl text-crema mb-3">Reserva tu tour en la Huasteca Potosina</h3>
                 <p className="text-crema/50 font-dm font-light text-sm mb-6">
-                  Dinos cuántos días tienes y la IA crea tu itinerario personalizado con rutas reales, tiempos y precios.
+                  Todo incluido: transporte desde tu hospedaje, guía certificado, entradas y comida. Apartas con el 30 % y cancelas gratis hasta 48 h antes.
                 </p>
-                <Link href="/recomendar" className="inline-flex items-center gap-2 bg-verde-selva text-crema px-8 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors">
-                  ¿Qué tour es para mí? →
+                <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
+                  Ver recorridos y reservar →
                 </Link>
               </div>
             </article>

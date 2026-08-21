@@ -210,17 +210,16 @@ export default async function HomePage() {
               </Link>
             </MagneticButton>
             <MagneticButton>
-              {en ? (
-                <Link href={lp("/tours")} className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5">
-                  <span>✦ See the tours →</span>
-                  <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">All-inclusive · Small groups</span>
-                </Link>
-              ) : (
-                <Link href="/recomendar" className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5">
-                  <span>✦ Recomendador IA →</span>
-                  <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">2 minutos · Gratuito</span>
-                </Link>
-              )}
+              {/* El segundo botón del hero mandaba al recomendador en español:
+                  en 14 días lo usaron 4 personas, mientras el catálogo llevó
+                  150 sesiones al motor. El inglés ya iba a /tours desde antes;
+                  ahora los dos van al mismo sitio y se acabó el ternario. */}
+              <Link href={lp("/tours")} className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5">
+                <span>{en ? "✦ See the tours →" : "✦ Ver los recorridos →"}</span>
+                <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">
+                  {en ? "All-inclusive · Small groups" : "Todo incluido · Grupos pequeños"}
+                </span>
+              </Link>
             </MagneticButton>
           </div>
 

@@ -144,6 +144,20 @@ export interface Tour {
   precio:           number;
   /** Rango de duración a mostrar (ej. [8,10] → "8–10 horas"). Si no, se usa duracion_hrs. */
   duracionRango?:   [number, number];
+  /**
+   * Precio anterior, para tacharlo junto al actual.
+   *
+   * Vaciado el 18 ago 2026: seis de los diez tours traían aquí un número fijo
+   * que producía un "26 % OFF" permanente, sin fecha de vencimiento y sin que
+   * ese precio se hubiera cobrado nunca. Un descuento que no vence le enseña al
+   * visitante que esperar no cuesta nada —lo contrario de la urgencia— y en
+   * México un "precio anterior" que nunca existió puede leerse como publicidad
+   * engañosa. El descuento ahora vive donde está el dinero: en el segundo y el
+   * tercer recorrido (`descuentoPorPosicion`).
+   *
+   * Si alguna vez SÍ se cobró un precio más alto, se puede volver a poner: toda
+   * la UI que lo pinta sigue en su sitio y se enciende sola.
+   */
   precioOriginal?:  number;
   /** "persona" (default) usa el flujo de reserva online; "vehiculo" se reserva por WhatsApp. */
   precioUnidad?:    "persona" | "vehiculo";
@@ -269,13 +283,13 @@ export const TOURS_DB: Tour[] = [
     dificultad:       "alta",
     duracion_hrs:     5,
     reviewCount:      58,
-    groupMin:         2,
-    groupMax:         8,
+    groupMin:         4,
+    groupMax:         10,
     privateAvailable: false,
     nombre:           "Rappel en la Cascada de Tamul — Descenso Frente a la Caída Más Alta de México",
     tagline:          "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
     precio:           1700,
-    precioOriginal:   2500,
+    precioOriginal:   1890,
     urgencia:         "Cupo muy limitado — máximo 8 personas por día",
     descripcion:
       "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
@@ -320,7 +334,7 @@ export const TOURS_DB: Tour[] = [
     // La balsa no sale con menos de 4. Antes decía 2 y solo el bot respetaba el
     // mínimo: por la web se podía pagar un rafting para 2 y luego había que
     // llamar al cliente a reprogramar o devolverle el dinero.
-    groupMin:         4,
+    groupMin:         5,
     groupMax:         8,
     privateAvailable: false,
     nombre:           "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
@@ -383,7 +397,7 @@ export const TOURS_DB: Tour[] = [
     nombre:           "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
     tagline:          "El tour más completo de la Huasteca en un solo día",
     precio:           1550,
-    precioOriginal:   2100,
+    precioOriginal:   1720,
     urgencia:         "El más reservado — se llena los fines de semana",
     descripcion:
       "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de pericos vuelven y se lanzan en picada al fondo.",
@@ -434,13 +448,13 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     8,
     reviewCount:      84,
     groupMin:         2,
-    groupMax:         10,
+    groupMax:         12,
     privateAvailable: true,
     privateMinPrice:  7500,
     nombre:           "Ruta Surrealista — Edward James, Manantiales & Selva",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
     precio:           1400,
-    precioOriginal:   1900,
+    precioOriginal:   1560,
     urgencia:         "Alta demanda en temporada nov–mar",
     descripcion:
       "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
@@ -458,7 +472,6 @@ export const TOURS_DB: Tour[] = [
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-      "Fotografías del recorrido",
       "Botiquín de primeros auxilios",
       "Seguro de viaje para todos los integrantes",
     ],
@@ -490,13 +503,13 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     7,
     reviewCount:      96,
     groupMin:         2,
-    groupMax:         8,
+    groupMax:         12,
     privateAvailable: true,
     privateMinPrice:  7000,
     nombre:           "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
     tagline:          "Tres caídas de agua, tres emociones distintas",
     precio:           1700,
-    precioOriginal:   2300,
+    precioOriginal:   1890,
     urgencia:         "Favorito de fotógrafos — cupos limitados",
     descripcion:
       "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
@@ -513,7 +526,6 @@ export const TOURS_DB: Tour[] = [
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-      "Fotografías del recorrido",
       "Botiquín de primeros auxilios",
       "Seguro de viaje para todos los integrantes",
     ],
@@ -552,7 +564,7 @@ export const TOURS_DB: Tour[] = [
     nombre:           "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
     tagline:          "Dos joyas naturales, un día perfecto para desconectar",
     precio:           1600,
-    precioOriginal:   2200,
+    precioOriginal:   1780,
     urgencia:         "Ideal para familias — reserva con anticipación",
     descripcion:
       "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
@@ -568,7 +580,6 @@ export const TOURS_DB: Tour[] = [
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-      "Fotografías del recorrido",
       "Botiquín de primeros auxilios",
       "Seguro de viaje para todos los integrantes",
     ],
@@ -613,13 +624,13 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     10,
     reviewCount:      73,
     groupMin:         2,
-    groupMax:         10,
+    groupMax:         12,
     privateAvailable: true,
     privateMinPrice:  8500,
     nombre:           "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
-    precioOriginal:   2200,
+    precioOriginal:   1780,
     urgencia:         "El más completo — últimos lugares disponibles",
     descripcion:
       "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo. En un día da para uno de los dos, no para ambos.",
@@ -646,7 +657,6 @@ export const TOURS_DB: Tour[] = [
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-      "Fotografías del recorrido",
       "Botiquín de primeros auxilios",
       "Seguro de viaje para todos los integrantes",
     ],
@@ -684,8 +694,8 @@ export const TOURS_DB: Tour[] = [
     dificultad:       "baja",
     duracion_hrs:     4,
     reviewCount:      31,
-    groupMin:         1,
-    groupMax:         8,
+    groupMin:         2,
+    groupMax:         10,
     privateAvailable: false,
     soloAdultos:      true,
     nombre:           "Descubre el Buceo en la Laguna de la Media Luna — Tu Primera Inmersión con Instructor PADI",

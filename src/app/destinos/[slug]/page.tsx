@@ -463,26 +463,42 @@ export default function DestinoPage({ params }: Props) {
             {toursCercanos.length > 0 && (
               <div className="max-w-3xl mx-auto mb-10">
                 <p className="text-crema/50 text-sm mb-6 font-dm">{dd.nearbyIntro(destino.nombre)}</p>
+                {/* Cada recorrido de la zona sale con su propio botón al MOTOR
+                    —no a la ficha—. Estas páginas son el 19 % del tráfico y en
+                    14 días mandaron CERO sesiones al carrito: la tarjeta entera
+                    era un enlace a `/tours/[slug]`, un paso más antes de poder
+                    reservar, y el único botón de verdad era el verde de
+                    WhatsApp. */}
                 <div className="grid gap-3 sm:grid-cols-2 text-left">
                   {toursCercanos.map((t) => (
-                    <Link
+                    <div
                       key={t.slug}
-                      href={localePath(`/tours/${t.slug}`, locale)}
-                      className="group border border-verde-vivo/25 bg-negro/25 hover:bg-negro/40 hover:border-verde-vivo/50 transition-colors p-4 flex items-center gap-4"
+                      className="border border-verde-vivo/25 bg-negro/25 hover:border-verde-vivo/50 transition-colors p-4 flex flex-col gap-3"
                     >
-                      {t.imagen_hero && (
-                        <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden">
-                          <Image src={t.imagen_hero} alt={t.nombre} fill className="object-cover" sizes="64px" />
-                        </div>
-                      )}
-                      <span className="min-w-0">
-                        <span className="block font-dm text-sm text-crema leading-snug">{t.nombre}</span>
-                        <span className="block font-dm text-xs text-dorado mt-1">
-                          {money(t.precio)} MXN {t.precioUnidad === "vehiculo" ? "" : dd.perPerson}
+                      <Link
+                        href={localePath(`/tours/${t.slug}`, locale)}
+                        className="group flex items-center gap-4"
+                      >
+                        {t.imagen_hero && (
+                          <span className="relative block w-16 h-16 flex-shrink-0 overflow-hidden">
+                            <Image src={t.imagen_hero} alt={t.nombre} fill className="object-cover" sizes="64px" />
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block font-dm text-sm text-crema leading-snug">{t.nombre}</span>
+                          <span className="block font-dm text-xs text-dorado mt-1">
+                            {money(t.precio)} MXN {t.precioUnidad === "vehiculo" ? "" : dd.perPerson}
+                          </span>
                         </span>
-                      </span>
-                      <span className="ml-auto text-verde-vivo group-hover:translate-x-0.5 transition-transform">→</span>
-                    </Link>
+                        <span className="ml-auto text-verde-vivo group-hover:translate-x-0.5 transition-transform">→</span>
+                      </Link>
+                      <Link
+                        href={localePath(`/reservar/carrito?agregar=${t.slug}`, locale)}
+                        className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+                      >
+                        <Lock className="w-3 h-3" />{dd.reservarCercano} · {dd.deposit30}
+                      </Link>
+                    </div>
                   ))}
                 </div>
                 <p className="text-[10px] text-crema/35 font-dm mt-5">{dd.combineWhatsapp}</p>
@@ -490,11 +506,24 @@ export default function DestinoPage({ params }: Props) {
             )}
 
             <p className="text-crema/50 text-sm mb-8 font-dm max-w-md mx-auto">{dd.writeWhatsapp}</p>
+
+            {/* El catálogo del motor, antes que WhatsApp: quien llega aquí desde
+                Google no tiene por qué abrir una conversación para ver qué se
+                puede reservar y a qué precio. */}
+            <div className="flex flex-wrap gap-3 justify-center mb-4">
+              <Link
+                href={localePath("/reservar", locale)}
+                className="inline-flex items-center gap-2.5 bg-dorado hover:bg-terracota text-negro hover:text-crema px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+              >
+                <Lock className="w-4 h-4 flex-shrink-0" />
+                {dd.verTodosYReservar}
+              </Link>
             <a href={waLink(waDestino)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 mb-4">
+              className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
               {dd.bookViaWhatsapp}
             </a>
+            </div>
             <p className="text-[10px] text-crema/35 font-dm flex items-center justify-center gap-1.5">
               <Zap className="w-3 h-3" /> {dd.replyUnder1h}
             </p>
@@ -508,7 +537,10 @@ export default function DestinoPage({ params }: Props) {
             itinerario que se envía está escrito en español.) */}
         {locale !== "en" && (
           <div className="max-w-4xl mx-auto px-6">
-            <BlogNewsletterInline fuente={`Destino: ${base.nombre}`} />
+            <BlogNewsletterInline
+              fuente={`Destino: ${base.nombre}`}
+              tourSlug={(tourPrincipal ?? toursCercanos[0])?.slug}
+            />
           </div>
         )}
 

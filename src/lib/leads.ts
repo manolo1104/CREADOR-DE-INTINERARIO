@@ -94,6 +94,15 @@ export async function registrarLead(
   email: string,
   fuente: string,
   ctx: ContextoLead = {},
+  /**
+   * Cuántos pasos de la secuencia se dan por enviados al registrarlo.
+   *
+   * El recomendador manda su propio paso 1 en el momento, así que arranca en 0.
+   * Las capturas del blog y de los destinos también entregan algo al instante
+   * —el itinerario de 3 días—, y ese correo ES su paso 1: sin esto recibirían
+   * después un "Tu recomendación: …" que nadie pidió.
+   */
+  pasosYaEnviados = 0,
 ): Promise<{ id: string; esNuevo: boolean } | null> {
   try {
     const existente = await prisma.lead.findUnique({
@@ -117,7 +126,13 @@ export async function registrarLead(
     }
 
     const creado = await prisma.lead.create({
-      data: { email, fuente, ...datos },
+      data: {
+        email,
+        fuente,
+        ...datos,
+        emailsSent:  pasosYaEnviados,
+        lastEmailAt: pasosYaEnviados > 0 ? new Date() : undefined,
+      },
       select: { id: true },
     });
     return { id: creado.id, esNuevo: true };

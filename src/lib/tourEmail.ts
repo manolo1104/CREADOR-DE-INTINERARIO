@@ -14,13 +14,39 @@ import type { Locale } from "./i18n/config";
  * dos— recibía por escrito algo que no iba a pasar. Y a diferencia de una
  * página, el correo se guarda y se reclama.
  */
-function incluidosDe(tourSlug: string, locale: Locale = "es"): string {
+function listaIncluidos(tourSlug: string, locale: Locale = "es"): string[] {
   const base = TOURS_DB.find((t) => t.slug === tourSlug);
   const tour = base ? localizeTour(base, locale) : undefined;
-  const items = tour
+  return tour
     ? incluyeDeTour(tour, locale)
     : [...(locale === "en" ? INCLUYE_SIEMPRE_EN : INCLUYE_SIEMPRE)];
-  return items.map((x) => `✓ ${x}`).join("<br>");
+}
+
+function incluidosDe(tourSlug: string, locale: Locale = "es"): string {
+  return listaIncluidos(tourSlug, locale).map((x) => `✓ ${x}`).join("<br>");
+}
+
+/**
+ * Lo que incluyen los recorridos de la reserva.
+ *
+ * Con uno solo, su lista completa. Con varios, la INTERSECCIÓN: prometer lo de
+ * un tour para todos es exactamente el error que este archivo ya evitaba en la
+ * cotización (el rappel no lleva desayuno; el buceo no lleva traslado).
+ *
+ * ⚠️ El bug que esto arregla: se leía `data.tourSlug`, y las reservas que
+ * entran por el carrito lo guardan VACÍO, así que el correo caía al respaldo
+ * genérico y el cliente recibía dos renglones ("seguro" y "fotos") en vez de
+ * todo lo que pagó. Los recorridos de verdad viven en `lineItems`.
+ */
+function incluidosDeReserva(slugs: string[], locale: Locale = "es"): { html: string; varios: boolean } {
+  const validos = slugs.filter((x) => x && TOURS_DB.some((t) => t.slug === x));
+  if (validos.length === 0) return { html: incluidosDe("", locale), varios: false };
+  if (validos.length === 1) return { html: incluidosDe(validos[0], locale), varios: false };
+
+  const listas = validos.map((x) => listaIncluidos(x, locale));
+  const comunes = listas[0].filter((x) => listas.every((l) => l.includes(x)));
+  const items = comunes.length ? comunes : [...(locale === "en" ? INCLUYE_SIEMPRE_EN : INCLUYE_SIEMPRE)];
+  return { html: items.map((x) => `✓ ${x}`).join("<br>"), varios: true };
 }
 
 // Plantilla HTML de confirmación de tour — adaptada del sistema de hotel Paraíso Encantado
@@ -63,10 +89,21 @@ export function buildTourEmailHtml(data: {
     const paq = slug ? PAQUETES_DB.find((x) => x.slug === slug) : undefined;
     return paq ? localizePaquete(paq, locale).nombre : nombre;
   };
-  const tourTitulo = nombreTour(data.tourName, data.tourSlug);
-  const tourUrl = PAQUETES_DB.some((p) => p.slug === data.tourSlug)
-    ? `${base}${pre}/paquetes/${data.tourSlug}`
-    : `${base}${pre}/tours/${data.tourSlug}`;
+  // ⚠️ Las reservas que entran por el carrito guardan `tourName` como un
+  // resumen ("1 recorridos") y `tourSlug` VACÍO. La verdad está en `lineItems`,
+  // así que se lee de ahí primero y los campos de arriba quedan de respaldo.
+  const lineasReserva = Array.isArray(data.lineItems)
+    ? data.lineItems.filter((l: any) => l && !l._meta && (l.tourSlug || l.tourName))
+    : [];
+  const slugReal   = data.tourSlug || lineasReserva[0]?.tourSlug || "";
+  const nombreReal = lineasReserva.length === 1
+    ? (lineasReserva[0].tourName || data.tourName)
+    : data.tourName;
+
+  const tourTitulo = nombreTour(nombreReal, slugReal);
+  const tourUrl = PAQUETES_DB.some((p) => p.slug === slugReal)
+    ? `${base}${pre}/paquetes/${slugReal}`
+    : `${base}${pre}/tours/${slugReal}`;
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return T.porConfirmar;
@@ -85,6 +122,11 @@ export function buildTourEmailHtml(data: {
 
   // Tours de la reserva (excluye el objeto _meta). Si hay varios, se listan todos con su fecha.
   const tours = Array.isArray(data.lineItems) ? data.lineItems.filter((l: any) => l && !l._meta) : [];
+  // Lo que incluyen los recorridos de ESTA reserva (intersección si son varios).
+  const incluidosReserva = incluidosDeReserva(
+    tours.length ? tours.map((l: any) => l.tourSlug).filter(Boolean) : [slugReal],
+    locale,
+  );
   const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p: any) => p && !p._meta) : [];
   const isMultiTour = tours.length > 1;
   const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
@@ -113,6 +155,36 @@ export function buildTourEmailHtml(data: {
     return `${formatDate(t.tourDate)} · ${gente}`;
   };
 
+  /** El nombre de la actividad opcional en el idioma del correo. */
+  const nombreAddOn = (a: any, slug?: string): string => {
+    if (locale === "es") return a?.nombre || a?.id || "";
+    const base = slug ? TOURS_DB.find((t) => t.slug === slug) : undefined;
+    const loc  = base ? localizeTour(base, locale).addOns?.find((x) => x.id === a?.id) : undefined;
+    return loc?.nombre || a?.nombre || a?.id || "";
+  };
+
+  /**
+   * Lo que el cliente contrató ADEMÁS del recorrido: la actividad opcional y la
+   * elección obligatoria.
+   *
+   * ⚠️ El add-on se cobra —va dentro del subtotal del renglón— pero este correo
+   * no lo nombraba por ningún lado: el cliente veía un importe más alto que el
+   * precio del tour sin explicación, y el equipo no se enteraba de que había
+   * contratado una actividad que necesita guía de rescate. La elección
+   * (Siete Cascadas o Tamasopo) tampoco se confirmaba nunca.
+   */
+  const lineExtras = (t: any): string => {
+    const filas: string[] = [];
+    for (const a of Array.isArray(t?.addOns) ? t.addOns : []) {
+      const cant = Math.max(1, Number(a?.cantidad) || 1);
+      const imp  = a?.subtotal != null ? ` · ${fmxEmail(Number(a.subtotal))}` : "";
+      filas.push(`${T.addOnLinea(nombreAddOn(a, t.tourSlug), cant)}${imp}`);
+    }
+    if (t?.eleccion) filas.push(T.elegiste(String(t.eleccion)));
+    if (!filas.length) return "";
+    return `<p style="margin:6px 0 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#3a6b1a;line-height:1.7;">${filas.join("<br>")}</p>`;
+  };
+
   // Tamaño REAL del grupo (no sumar las personas de cada tour: es el mismo grupo).
   // Prioridad: el número que capturó el dueño (partySize) → si no, el máximo por tour → si no, el total.
   const perTourMax = tours.length ? Math.max(...tours.map(tourParts)) : 0;
@@ -133,6 +205,7 @@ export function buildTourEmailHtml(data: {
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${nombreTour(t.tourName, t.tourSlug) || "Tour"}</p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${lineDetail(t)}</p>
+                ${lineExtras(t)}
               </td>
               <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
                 <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${t.subtotal != null ? fmxEmail(t.subtotal) : ""}</p>
@@ -171,6 +244,12 @@ export function buildTourEmailHtml(data: {
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${data.partySize && data.partySize > 0 ? T.reservaGrupo : participantsText}</p>
               </td>
             </tr>
+            ${tours.length === 1 && lineExtras(tours[0]) ? `
+            <tr>
+              <td colspan="2" style="border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:14px 22px;">
+                ${lineExtras(tours[0])}
+              </td>
+            </tr>` : ""}
           </table>`;
 
   // Bloque de hospedaje (si la reserva incluye paquete con noches de hotel).
@@ -337,10 +416,10 @@ export function buildTourEmailHtml(data: {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-left:2px solid #c4882a;padding-left:20px;margin:28px 0;">
             <tr><td>
               <p style="margin:0 0 12px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a;">
-                ${T.todoIncluido}
+                ${incluidosReserva.varios ? T.todosIncluyen : T.todoIncluido}
               </p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.9;">
-                ${incluidosDe(data.tourSlug, locale)}
+                ${incluidosReserva.html}
               </p>
             </td></tr>
           </table>
@@ -464,7 +543,7 @@ export function buildTourQuoteEmailHtml(data: {
   totalAmount:   number;
   notes?:        string;
   partySize?:    number;  // tamaño real del grupo (evita sumar las personas de cada tour)
-  lineItems?:    { tourName: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number }[];
+  lineItems?:    { tourName: string; tourSlug?: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number }[];
   // Hospedaje cotizado. Antes no llegaba al correo aunque la cotización del
   // sistema sí lo incluye → el cliente no veía el hotel/noches ni su subtotal.
   packageItems?: { hotel?: string; habitacion?: string; noches?: number; habitaciones?: number; checkin?: string; checkout?: string; subtotal?: number; _meta?: unknown }[];
@@ -497,6 +576,15 @@ export function buildTourQuoteEmailHtml(data: {
   };
 
   const fmx = (n: number) => `$${Number(n).toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+  // Lo que incluyen los recorridos de la cotización. Antes se leía solo
+  // `data.tourSlug` (el primero) y SIN idioma: una cotización de tres tours
+  // prometía lo del primero para todos, y la versión en inglés lo listaba en
+  // español.
+  const slugsCotiza = (data.lineItems ?? []).map((l) => l.tourSlug).filter(Boolean) as string[];
+  const incluidosCotizacion = incluidosDeReserva(
+    slugsCotiza.length ? slugsCotiza : [data.tourSlug],
+    locale,
+  );
 
   /** El nombre del recorrido en el idioma del correo (se guarda en español). */
   const nombreQ = (nombre: string, slug?: string) => {
@@ -665,7 +753,7 @@ export function buildTourQuoteEmailHtml(data: {
             <tr><td>
               <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">${T.todoIncluido}</p>
               <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:2">
-                ${incluidosDe(data.tourSlug)}
+                ${incluidosCotizacion.html}
               </p>
             </td></tr>
           </table>

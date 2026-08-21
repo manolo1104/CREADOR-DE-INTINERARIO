@@ -1,38 +1,14 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getClientes } from "@/lib/admin/clientes";
 
 export const dynamic = "force-dynamic";
 
+// La agrupación vive en `@/lib/admin/clientes` para que esta ruta y la pestaña
+// /admin/clientes den siempre el mismo resultado (antes cada una tenía su
+// propia copia y no coincidían: una sumaba lo cobrado y la otra lo vendido).
 export async function GET() {
   try {
-    const bookings = await prisma.tourBooking.findMany({
-      where: { status: { not: "cancelled" } },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const map: Record<string, {
-      email: string; nombre: string; telefono: string;
-      totalReservas: number; totalGastado: number;
-      ultimaFecha: string; tours: string[];
-    }> = {};
-
-    for (const b of bookings) {
-      const key = b.customerEmail.toLowerCase();
-      if (!map[key]) {
-        map[key] = {
-          email: b.customerEmail, nombre: b.customerName,
-          telefono: b.customerPhone || "", totalReservas: 0,
-          totalGastado: 0, ultimaFecha: b.tourDate, tours: [],
-        };
-      }
-      const c = map[key];
-      c.totalReservas++;
-      c.totalGastado += b.totalAmount;
-      if (b.tourDate > c.ultimaFecha) c.ultimaFecha = b.tourDate;
-      if (!c.tours.includes(b.tourName)) c.tours.push(b.tourName);
-    }
-
-    return NextResponse.json(Object.values(map));
+    return NextResponse.json(await getClientes());
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

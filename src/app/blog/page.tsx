@@ -99,8 +99,8 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
           <p className="text-crema/60 font-dm font-light text-lg max-w-2xl mx-auto mb-8">
             Cascadas turquesas, cañones imposibles, selva viva. Todo lo que necesitas saber para planear tu viaje perfecto.
           </p>
-          <Link href="/recomendar" className="inline-flex items-center gap-2 bg-verde-selva text-crema px-6 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors">
-            ✦ Recomendador IA — ¿Qué tour es para mí? →
+          <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-6 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
+            Ver recorridos y reservar →
           </Link>
         </section>
 
@@ -117,12 +117,16 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
 
         {/* CTA final */}
         <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-white/8">
-          <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ Tecnología IA</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema text-3xl mb-4">¿Listo para planear tu viaje?</h2>
-          <p className="text-crema/50 font-dm font-light mb-8">Dinos cuántos días tienes y la IA crea tu itinerario personalizado en 2 minutos. Gratis, sin registro.</p>
-          <Link href="/recomendar" className="inline-flex items-center gap-2 bg-verde-selva text-crema px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-verde-vivo transition-colors">
-            Encontrar mi tour perfecto →
+          <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ 4.9★ · 492 reseñas de Google</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema text-3xl mb-4">¿Listo para reservar tu viaje?</h2>
+          <p className="text-crema/50 font-dm font-light mb-8">Diez recorridos con todo incluido. Apartas con el 30 % y cancelas gratis hasta 48 h antes.</p>
+          <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
+            Ver recorridos y reservar →
           </Link>
+          <p className="mt-5 text-[11px] text-crema/30 font-dm">
+            ¿Prefieres que la IA te arme el itinerario?{" "}
+            <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2">Recomendador →</Link>
+          </p>
         </section>
         </div>
       </main>

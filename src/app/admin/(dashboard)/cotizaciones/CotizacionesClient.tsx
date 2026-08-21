@@ -6,6 +6,7 @@ import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, 
 import { TOURS_DB } from "@/lib/tours";
 import { type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
+import { grupoDe, grupoParaGuardar, grupoLargo } from "@/lib/admin/reserva";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   borrador: { label: "Borrador",  cls: "bg-gray-100 text-gray-600"     },
@@ -184,8 +185,8 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const payload = {
       tourName: lines.map(l => l.tourName).join(" + "), tourSlug: lines[0].tourSlug,
       tourDate: lines[0].tourDate,
-      adults: lines.reduce((s, l) => s + l.adults, 0) || Number(numPersonas) || 1, // líneas por vehículo llevan adults=0
-      children: lines.reduce((s, l) => s + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0), 0),
+      // El grupo, NO la suma por tour (ver src/lib/admin/reserva.ts).
+      ...grupoParaGuardar(lines, numPersonas),
       totalAmount: finalTotal, lineItems, packageItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
@@ -244,9 +245,29 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const anticipo     = meta.anticipo != null ? Number(meta.anticipo) : 0;
     const packageItems = cleanPackages(rawPkgs);
     // Conservar el _meta de la reserva (método de pago / pickup) en lineItems.
-    const tourLines    = Array.isArray((q as any).lineItems) ? (q as any).lineItems : [];
+    // Las líneas de tour de la cotización pasan tal cual: ahí viven las fechas,
+    // el grupo por tour y los subtotales.
+    const tourLines    = Array.isArray((q as any).lineItems)
+      ? (q as any).lineItems.filter((l: any) => l && !l._meta)
+      : [];
+    // El grupo real: si la cotización no traía `numPersonas` capturado, se
+    // deduce de las líneas en vez de guardar 0 y perder el dato.
+    const grupo        = grupoDe(q as any);
+    const personas     = Number(meta.numPersonas) || grupo.total || 0;
     const lineItems    = [
-      { _meta: true, metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla", numPersonas: Number(meta.numPersonas) || 0 },
+      {
+        _meta: true,
+        metodoPago: "Transferencia",
+        folioPago: "",
+        pickupLugar: "Lobby de tu hotel en Xilitla",
+        numPersonas: personas,
+        // Rastro de la cotización de origen y del descuento que se le aplicó:
+        // sin esto se perdía POR QUÉ el total no cuadra con la suma de líneas.
+        cotizacionOrigen: q.quoteNumber,
+        priceOverride:    meta.priceOverride ?? null,
+        discountType:     meta.discountType ?? null,
+        discountValue:    meta.discountValue ?? null,
+      },
       ...tourLines,
     ];
 
@@ -260,8 +281,10 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
         tourName:       q.tourName,
         tourSlug:       q.tourSlug,
         tourDate:       q.tourDate,
-        adults:         q.adults,
-        children:       q.children,
+        // El grupo, no la suma por tour: la cotización pudo guardarse con el
+        // formato viejo que sumaba, y ese error no debe heredarse a la reserva.
+        adults:         grupo.adultos || 1,
+        children:       grupo.ninos,
         totalAmount:    q.totalAmount,
         depositoPagado: anticipo, // anticipo acordado en la cotización
         lineItems,
@@ -331,6 +354,8 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     // Tamaño REAL del grupo (no sumar por tour: es el mismo grupo en todos los tours).
     // Prioridad: el número capturado en la cotización → máximo por tour → total guardado.
     const perTourMax   = items.length ? Math.max(...items.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0))) : 0;
+    const grupoQ       = grupoDe(q as any);
+    const desgloseQ     = grupoLargo(grupoQ);
     const numPersonas  = Number(meta.numPersonas) > 0
       ? Number(meta.numPersonas)
       : (perTourMax > 0 ? perTourMax : q.adults + (q.children ?? 0));
@@ -441,7 +466,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       <h3>Cliente</h3>
       <div class="field">
         <div><div class="k">Nombre</div><div class="v">${q.customerName}</div></div>
-        <div><div class="k">Personas</div><div class="v">${numPersonas}</div></div>
+        <div><div class="k">Personas</div><div class="v">${numPersonas}</div><div class="v" style="font-size:7pt;color:rgba(14,23,16,.5)">${desgloseQ}</div></div>
         <div><div class="k">WhatsApp</div><div class="v">${q.customerPhone || "—"}</div></div>
         <div><div class="k">Email</div><div class="v" style="font-size:7.5pt">${q.customerEmail || "—"}</div></div>
         ${q.notes ? `<div style="grid-column:1/-1"><div class="k">Notas</div><div class="v" style="font-size:7.5pt">${q.notes}</div></div>` : ""}

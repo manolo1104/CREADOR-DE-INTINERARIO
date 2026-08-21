@@ -7,7 +7,7 @@ import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getPaquete, HABITACIONES } from "@/lib/paquetes";
-import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION } from "@/lib/paquetePricing";
+import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION, PCTS_PAQUETE, type PctPaquete } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
@@ -27,8 +27,13 @@ const stripePromise = loadStripe(
 
 const WA_NUMBER = "524891251458";
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
-/** Los porcentajes no dependen del idioma; sus etiquetas sí (ver el diccionario). */
-const PCT_VALUES = [30, 50, 100] as const;
+/**
+ * Los porcentajes no dependen del idioma; sus etiquetas sí (ver el diccionario).
+ * La lista sale de `paquetePricing`, que es la misma que valida el servidor: si
+ * se escribieran por separado volverían a divergir, y esa divergencia dejó el
+ * 30 % —la opción por defecto— devolviendo 400 durante nueve días.
+ */
+const PCT_VALUES = PCTS_PAQUETE;
 
 // ── Paso de pago (Stripe) ─────────────────────────────────────────────────────
 function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDone }: any) {
@@ -124,7 +129,7 @@ export default function ReservarPaquetePage() {
   // El default arranca en el compromiso MÁS BAJO de los tres. El mínimo subió
   // de 10 % a 30 % (decisión de Manolo, 12 ago 2026): el 10 % no cubría ni la
   // primera noche de hotel del paquete.
-  const [pct, setPct]           = useState<30 | 50 | 100>(30);
+  const [pct, setPct]           = useState<PctPaquete>(PCTS_PAQUETE[0]);
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
   const [phone, setPhone]       = useState("");
@@ -214,6 +219,9 @@ export default function ReservarPaquetePage() {
 
   async function goToPay() {
     setError("");
+    // Sin cotización no hay precio que cobrar: seguir enseñaba el importe de
+    // respaldo (`paquete.precio × pct`), que no es lo que el servidor cobraría.
+    if (!cotizacion) { setError(t.errGrupoNoCotizable(MAX_PERSONAS_PAQUETE)); return; }
     if (!name.trim() || !email.trim()) { setError(t.errNombreCorreo); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(t.errCorreoInvalido); return; }
     // Un paquete con día "a elegir" y sin elegir no se puede operar: el equipo
@@ -345,26 +353,33 @@ export default function ReservarPaquetePage() {
                       className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors">−</button>
                     <span className="font-dm text-lg text-negro/85 w-8 text-center">{personas}</span>
                     <button type="button" aria-label={t.masPersonas}
+                      disabled={totalHuespedes >= MAX_PERSONAS_PAQUETE}
                       onClick={() => setPersonas((n) => Math.min(MAX_PERSONAS_PAQUETE, n + 1))}
-                      className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors">+</button>
+                      className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors disabled:opacity-40">+</button>
                   </div>
                   {/* El desglose se enseña siempre que haya extras: si el precio
-                      sube, el cliente tiene que ver POR QUÉ sube. */}
-                  {cotizacion && personas > 2 ? (
+                      sube, el cliente tiene que ver POR QUÉ sube.
+                      ⚠️ La condición miraba `personas > 2`, y `personas` son
+                      solo los ADULTOS: con 2 adultos y 2 niños el precio saltaba
+                      de $12,500 a $19,670 sin una sola línea que lo explicara.
+                      Ahora se dispara con los extras de verdad. */}
+                  {cotizacion && (cotizacion.extraHotel > 0 || cotizacion.extraTours > 0) ? (
                     <div className="mt-3 border-t border-negro/8 pt-3 space-y-1">
                       <p className="flex justify-between font-dm text-[12px] text-negro/55">
                         <span>{t.paqueteBase}</span><span>{fmx(cotizacion.base)}</span>
                       </p>
                       {cotizacion.extraHotel > 0 && (
                         <p className="flex justify-between font-dm text-[12px] text-negro/55">
-                          <span>{t.hotelPorPersonas(personas - 2, cotizacion.habitaciones)}</span>
+                          <span>{t.resumenHotelExtra(cotizacion.nochesTotales, cotizacion.habitaciones, habElegida?.nombre ?? "")}</span>
                           <span>+{fmx(cotizacion.extraHotel)}</span>
                         </p>
                       )}
-                      <p className="flex justify-between font-dm text-[12px] text-negro/55">
-                        <span>{t.toursPorPersonas(personas - 2)}</span>
-                        <span>+{fmx(cotizacion.extraTours)}</span>
-                      </p>
+                      {cotizacion.extraTours > 0 && (
+                        <p className="flex justify-between font-dm text-[12px] text-negro/55">
+                          <span>{t.resumenToursExtra(cotizacion.personas - 2)}</span>
+                          <span>+{fmx(cotizacion.extraTours)}</span>
+                        </p>
+                      )}
                       <p className="flex justify-between font-dm text-[13px] text-negro/85 font-medium pt-1">
                         <span>{t.totalDelViaje}</span><span>{fmx(cotizacion.total)} MXN</span>
                       </p>
@@ -389,9 +404,14 @@ export default function ReservarPaquetePage() {
                             onClick={() => c.set((n: number) => Math.max(0, n - 1))}
                             className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
                           <span className="font-dm text-sm text-negro/80 w-5 text-center">{c.v}</span>
+                          {/* Los menores también cuentan para el tope. Sin
+                            esto se podían poner 12 adultos y 3 niños: el
+                            servidor rechazaba la reserva y, mientras tanto, la
+                            pantalla enseñaba un precio de respaldo inventado. */}
                           <button type="button" aria-label={t.masDe(c.label)}
+                            disabled={totalHuespedes >= MAX_PERSONAS_PAQUETE}
                             onClick={() => c.set((n: number) => n + 1)}
-                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">+</button>
+                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva disabled:opacity-40 disabled:hover:border-negro/20">+</button>
                         </span>
                       </div>
                     ))}
@@ -595,7 +615,15 @@ export default function ReservarPaquetePage() {
                       - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, reparto, nocheExtra, pct })?.total ?? 0)
                     : 0;
                   return (
-                    <button key={o.t} type="button" onClick={() => setVistaMontana(o.m)}
+                    <button key={o.t} type="button"
+                      onClick={() => {
+                        setVistaMontana(o.m);
+                        // Si la habitación ya elegida es del otro grupo, se
+                        // suelta: si no, quedaba seleccionada una Jungla fuera
+                        // de la lista visible, el precio se cobraba como Jungla
+                        // y la pantalla decía "vista a la selva".
+                        if (habElegida && habElegida.vistaMontana !== o.m) setHabitacionId("");
+                      }}
                       className={`text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
@@ -771,11 +799,36 @@ export default function ReservarPaquetePage() {
                     t.adultos(personas),
                     childrenMid   ? t.ninos610Resumen(childrenMid) : "",
                     childrenSmall ? t.menores6Resumen(childrenSmall) : "",
-                    t.diasNoches(paquete.dias, paquete.noches),
-                    vistaMontana ? t.habJungla : t.habSelva,
+                    // Con la noche extra sube la noche Y el día: se entra la
+                    // víspera. Dejar los días del catálogo daba "5 días / 5
+                    // noches", que no existe.
+                    t.diasNoches(paquete.dias + (nocheExtra ? 1 : 0), cotizacion.nochesTotales),
+                    // La habitación REAL que eligió, no la casilla de vista: si
+                    // cambia de opinión y vuelve a "selva" con una Jungla ya
+                    // elegida, el precio es el de Jungla y el resumen decía
+                    // "vista a la selva".
+                    habElegida?.nombre ?? (vistaReal ? t.habJungla : t.habSelva),
+                    nocheExtra ? t.resumenNocheExtra : "",
                   ].filter(Boolean).join(" · "),
-                  subtotal: cotizacion.total,
+                  // El renglón principal es el precio PUBLICADO; lo que se suma
+                  // encima va desglosado abajo. Los tres importes suman exacto
+                  // el total, sin restas frágiles entre escenarios.
+                  subtotal: cotizacion.base,
                   incluye:  paquete.incluye,
+                  addOns: [
+                    ...(cotizacion.extraHotel > 0 ? [{
+                      nombre:   t.resumenHotelExtra(
+                        cotizacion.nochesTotales,
+                        cotizacion.habitaciones,
+                        habElegida?.nombre ?? "",
+                      ),
+                      subtotal: cotizacion.extraHotel,
+                    }] : []),
+                    ...(cotizacion.extraTours > 0 ? [{
+                      nombre:   t.resumenToursExtra(cotizacion.personas - 2),
+                      subtotal: cotizacion.extraTours,
+                    }] : []),
+                  ],
                 }]}
                 total={cotizacion.total}
                 pagaHoy={cotizacion.charge}

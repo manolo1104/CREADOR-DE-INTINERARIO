@@ -3,15 +3,12 @@ import { stripe } from "@/lib/stripe";
 import { getPaquete } from "@/lib/paquetes";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { HABITACIONES } from "@/lib/paquetes";
-import { computePaqueteCharge, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
+import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-// Porcentajes de pago permitidos para paquetes (el cliente elige).
-const PCTS = new Set([10, 50, 100]);
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -34,8 +31,11 @@ export async function POST(req: NextRequest) {
     // un grupo de cinco pagaba exactamente lo mismo que uno de dos. Ahora
     // `computePaqueteCharge` suma el hotel que de verdad se ocupa y los boletos
     // de tour de cada persona extra.
-    const pct = Number(paqueteDetails?.pct);
-    if (!PCTS.has(pct)) {
+    // La lista de porcentajes vive en `paquetePricing` y NO se copia aquí: esta
+    // ruta tenía su propia versión congelada en [10, 50, 100] y rechazaba el
+    // 30 %, que es justo la opción que la pantalla trae marcada por defecto.
+    const pct = pctPaqueteValido(paqueteDetails?.pct);
+    if (pct === null) {
       return NextResponse.json({ error: "Porcentaje de pago inválido." }, { status: 400 });
     }
 
@@ -90,6 +90,11 @@ export async function POST(req: NextRequest) {
         tourDate:      fecha,
         adults:        String(cobro.adultos),
         children:      String(cobro.childrenMid + cobro.childrenSmall),
+        // Los tramos por separado. Sin esto la confirmación no podía decir
+        // cuántos menores van ni de qué edad, y el equipo prepara el equipo de
+        // seguridad a ciegas.
+        childrenMid:   String(cobro.childrenMid),
+        childrenSmall: String(cobro.childrenSmall),
         habitacion:    habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
         // Sin esto el equipo recibe un paquete con un día "a elegir" sin saber
         // qué eligió el cliente, y el reparto de habitaciones se perdía.
@@ -113,7 +118,9 @@ export async function POST(req: NextRequest) {
       "💳  LLEGÓ AL PAGO (PAQUETE)",
       paquete.nombre,
       anticipo,
-      `${mxn(charge)} de ${mxn(paquete.precio)}`,
+      // El total REAL del viaje, no el precio de folleto: "13,823 de 16,500"
+      // se leía como una reserva casi liquidada cuando faltaban $32,252.
+      `${mxn(charge)} de ${mxn(cobro.total)}`,
       personas ? `${personas} personas` : "",
       customerName,
       customerEmail,

@@ -116,9 +116,9 @@ const ES: ExperienciasContent = {
   heroIntro:
     "{N} destinos únicos — cascadas turquesas, aventura extrema, arte surrealista y aguas termales. Una experiencia para cada tipo de viajero.",
 
-  bannerEyebrow: "✦ Planificador IA · Gratis",
-  bannerTexto: "¿No sabes qué combinar? Arma tu itinerario perfecto en 2 minutos.",
-  bannerCta: "Encontrar mi tour ideal →",
+  bannerEyebrow: "✦ 4.9★ · 492 reseñas de Google",
+  bannerTexto: "Diez recorridos con todo incluido. Apartas con el 30 % y cancelas gratis hasta 48 h antes.",
+  bannerCta: "Ver recorridos y reservar →",
   bannerVisible: true,
 
   toursEyebrow: "Con guía certificado",
@@ -207,11 +207,12 @@ const EN: ExperienciasContent = {
   heroIntro:
     "{N} places worth the drive — turquoise waterfalls, extreme adventure, surrealist art and hot springs. One for every kind of traveler.",
 
-  // El planificador de itinerarios (`/recomendar`) solo existe en español.
-  bannerEyebrow: "",
-  bannerTexto: "",
-  bannerCta: "",
-  bannerVisible: false,
+  // El banner anunciaba el planificador (`/recomendar`, solo-ES) y por eso
+  // estaba apagado en inglés. Ahora lleva al motor, que sí está traducido.
+  bannerEyebrow: "✦ 4.9★ · 492 Google reviews",
+  bannerTexto: "Ten all-inclusive tours. Book with a 30 % deposit, cancel free up to 48 h before.",
+  bannerCta: "See tours and book →",
+  bannerVisible: true,
 
   toursEyebrow: "With a certified guide",
   toursTitulo: "Tours you can book today",

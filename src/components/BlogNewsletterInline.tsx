@@ -11,7 +11,18 @@ import { Map, CheckCircle, Loader2 } from "lucide-react";
  * (PDF gratuito)" que ya no existía y posteaba a un endpoint desactivado: el
  * formulario fallaba siempre, en la página más visitada del sitio.
  */
-export function BlogNewsletterInline({ fuente = "Blog" }: { fuente?: string }) {
+export function BlogNewsletterInline({
+  fuente = "Blog",
+  tourSlug,
+}: {
+  fuente?: string;
+  /**
+   * El recorrido del que va a hablarle el seguimiento. Se manda desde las
+   * páginas de destino —donde sí se sabe qué está leyendo la persona— para que
+   * los tres correos siguientes hablen de SU cascada y no de una cualquiera.
+   */
+  tourSlug?: string;
+}) {
   const [email, setEmail]   = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError]   = useState("");
@@ -25,7 +36,7 @@ export function BlogNewsletterInline({ fuente = "Blog" }: { fuente?: string }) {
       const res = await fetch("/api/lead-magnet", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ email, fuente }),
+        body:    JSON.stringify({ email, fuente, tourSlug }),
       });
       if (res.ok) {
         setStatus("success");
