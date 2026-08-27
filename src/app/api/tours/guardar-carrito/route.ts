@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
           children: datos.childrenMid + datos.childrenSmall,
           total: datos.total,
           restoreUrl,
+          email: datos.customerEmail,
           locale,
         });
         await sendBrevoEmail({
@@ -250,7 +251,29 @@ async function guardarCarritoCompleto(
     // El idioma va DENTRO del JSON, no en una columna nueva: `npm start` corre
     // `prisma db push` en producción y una columna nueva no se puede probar en
     // local. Es el mismo patrón `_meta` que ya usa el resto del proyecto.
-    carritoJson:   JSON.stringify({ items, hospedaje: hospedaje ?? null, traslado: traslado ?? null, locale: locale === "en" ? "en" : "es" }),
+    // Además de lo que eligió, se guarda lo que el SERVIDOR calculó: los
+    // renglones tarifados, el hotel y el traslado con sus importes.
+    //
+    // ⚠️ Sin esto, los tres recordatorios del cron salían mal. Solo tenían
+    // `total`, así que pintaban un renglón único —el nombre del primer tour
+    // con el importe del viaje ENTERO, hotel y traslado incluidos— y, al no
+    // ver ningún día, calculaban el anticipo con `pctACobrar(0, false)` = 100 %:
+    // le exigían al cliente los $12,500 completos cuando el carrito le iba a
+    // cobrar $3,750. La cotización inmediata sí venía bien; los recordatorios,
+    // que son los que llegan cuando ya está dudando, no.
+    carritoJson:   JSON.stringify({
+      items,
+      hospedaje: hospedaje ?? null,
+      traslado:  traslado ?? null,
+      locale:    locale === "en" ? "en" : "es",
+      lineas:    tarifa.lineItems.map((l) => ({
+        tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,
+        adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
+        subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
+      })),
+      hotel,
+      viaje,
+    }),
   };
 
   const existente = await prisma.abandonedCart.findFirst({
@@ -293,6 +316,7 @@ async function guardarCarritoCompleto(
         })),
         hospedaje: hotel,
         traslado:  viaje,
+        email:     datos.customerEmail,
         locale:    locale === "en" ? "en" : "es",
       });
       await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });

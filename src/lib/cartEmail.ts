@@ -70,10 +70,22 @@ export interface CartEmailInput {
   anticipo?:  number;
   /** Idioma en que el cliente armó el carrito. Cae al español si no viene. */
   locale?:    string;
+  /**
+   * Del destinatario, para firmar su baja de un clic.
+   *
+   * El criterio en todo el sistema es uno: ¿ya nos pagó? Si no —itinerario,
+   * secuencia, carrito, cotización, boletín— el correo lleva baja. Si sí
+   * —confirmaciones, entrega de la guía, petición de reseña— no la lleva:
+   * no es publicidad y ofrecerle darse de baja de su propia compra confunde.
+   */
+  email?:     string | null;
 }
 
 
 import { pctACobrar } from "@/lib/carrito";
+import {
+  C, WA, bajoBoton, boton, filaMoney, fotoTour, garantias, shellCorreo,
+} from "./emailLayout";
 
 const ANTICIPO_PCT = 30;
 
@@ -91,13 +103,18 @@ function gente(l: CartEmailLinea, locale: Locale): string {
   return partes.join(" · ") || c.unaPersona;
 }
 
+// Mismo tratamiento de borde y fondo que `filaMoney` del módulo compartido:
+// con `border-top` solo, los renglones del itinerario y los del total no
+// cerraban la misma caja y se veía un escalón a media tabla.
 const fila = (izq: string, der: string, sub = "") => `
       <tr>
-        <td style="padding:13px 16px;border-top:1px solid #e3ddc9;vertical-align:top">
-          <div style="color:#1a2e1a;font-size:14px;line-height:1.35">${izq}</div>
-          ${sub ? `<div style="color:#7d7566;font-size:12px;margin-top:3px;line-height:1.4">${sub}</div>` : ""}
+        <td style="border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:14px 22px;vertical-align:top;">
+          <div style="font-family:'DM Sans',Arial,sans-serif;color:#1a2e1a;font-size:14px;line-height:1.35;">${izq}</div>
+          ${sub ? `<div style="font-family:'DM Sans',Arial,sans-serif;color:#8a7a5a;font-size:12px;font-weight:300;margin-top:4px;line-height:1.5;">${sub}</div>` : ""}
         </td>
-        <td style="padding:13px 16px;border-top:1px solid #e3ddc9;text-align:right;white-space:nowrap;color:#1a2e1a;font-size:14px;vertical-align:top">${der}</td>
+        <td style="border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:14px 22px;text-align:right;white-space:nowrap;vertical-align:top;">
+          <span style="font-family:'Cormorant Garamond',Georgia,serif;color:#1a2e1a;font-size:18px;">${der}</span>
+        </td>
       </tr>`;
 
 export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: string } {
@@ -146,60 +163,37 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
   const pctCorreo  = pctACobrar(diasCorreo, Boolean((d as any).hospedaje));
   const anticipo   = d.anticipo ?? Math.round((d.total * pctCorreo) / 100);
 
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2e1a;background:#ffffff">
-    <div style="background:#0e1710;padding:22px 24px">
-      <div style="color:#c4882a;font-size:11px;letter-spacing:3px;text-transform:uppercase">Tours Huasteca Potosina</div>
-      <h1 style="font-size:23px;margin:8px 0 0;color:#f5f0e3;font-weight:normal">${c.titulo}</h1>
-    </div>
+  // La foto del primer recorrido del carrito: es lo que estaba a punto de
+  // comprar, y verlo pesa más que cualquier recordatorio escrito.
+  const slugFoto = (lineas?.[0]?.tourSlug) || d.tourSlug || "";
+  const tourFoto = TOURS_DB.find((t) => t.slug === slugFoto);
 
-    <div style="padding:24px">
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 22px">${c.intro}</p>
-
-      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a;margin:0 0 8px">
-        ${T.tuViaje}${lineas && lineas.length > 1 ? T.recorridos(lineas.length) : ""}
-      </div>
-      <table style="width:100%;border-collapse:collapse;background:#faf7ee;border:1px solid #e3ddc9">
-        <tr><td colspan="2" style="padding:12px 16px;background:#f2ecdc;font-size:13px;color:#5c5347">
-          ${T.grupoDe(grupo)}
+  const html = shellCorreo({
+    locale,
+    preheader: locale === "en"
+      ? "Huasteca Potosina · San Luis Potosí · Mexico"
+      : "Huasteca Potosina · San Luis Potosí · México",
+    eyebrow: `${T.tuViaje}${lineas && lineas.length > 1 ? T.recorridos(lineas.length) : ""}`,
+    h1a: c.titulo,
+    entradilla: c.intro,
+    cuerpo: [
+      tourFoto ? fotoTour(tourFoto.slug, tituloTour, 190) : "",
+      `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:${tourFoto ? "0" : "0"} 0 0 0;">
+        <tr><td colspan="2" style="border:1px solid ${C.borde};${tourFoto ? "border-top:none;" : ""}background-color:#f2ecdc;padding:13px 22px;">
+          <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;letter-spacing:1px;color:#5c5347;">${T.grupoDe(grupo)}</p>
         </td></tr>
         ${filasTours}${filaTraslado}${filaHotel}
-        <tr>
-          <td style="padding:14px 16px;border-top:2px solid #d8cfb8;font-size:15px">${T.total}</td>
-          <td style="padding:14px 16px;border-top:2px solid #d8cfb8;text-align:right;font-size:17px;font-weight:bold;color:#3a6b1a;white-space:nowrap">${mx(d.total, locale)}</td>
-        </tr>
-        <tr>
-          <td style="padding:0 16px 14px;font-size:13px;color:#7d7566">${pctCorreo >= 100 ? T.pagoCompleto : T.apartasHoy(pctCorreo)}</td>
-          <td style="padding:0 16px 14px;text-align:right;font-size:14px;color:#c4882a;white-space:nowrap">${mx(anticipo, locale)}</td>
-        </tr>
-      </table>
-
-      <p style="text-align:center;margin:26px 0 8px">
-        <a href="${d.restoreUrl}" style="background:#c4882a;color:#0e1710;text-decoration:none;padding:15px 34px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;font-size:13px;display:inline-block">
-          ${c.cta} →
-        </a>
-      </p>
-      <p style="text-align:center;font-size:12px;color:#8a8275;margin:0 0 22px">
-        ${T.ctaSub}
-      </p>
-
-      <table style="width:100%;border-collapse:collapse;font-size:12px;color:#6b6357;border-top:1px solid #e3ddc9">
-        <tr>
-          <td style="padding:12px 0 0;line-height:1.6">
-            ${T.garantias.join("<br>")}
-          </td>
-        </tr>
-      </table>
-
-      <p style="font-size:12px;line-height:1.6;color:#8a8275;text-align:center;margin:20px 0 0">
-        ${T.prefieresChat}
-        <a href="https://wa.me/524891251458" style="color:#3a6b1a;text-decoration:none">+52 489 125 1458</a>.
-      </p>
-      <p style="font-size:11px;color:#aaa;text-align:center;margin-top:16px">
-        ${T.yaNoInteresa}
-      </p>
-    </div>
-  </div>`;
+        ${filaMoney(T.total, mx(d.total, locale), "verde", true)}
+        ${filaMoney(pctCorreo >= 100 ? T.pagoCompleto : T.apartasHoy(pctCorreo), mx(anticipo, locale))}
+      </table>`,
+      boton(d.restoreUrl, c.cta, "dorado"),
+      bajoBoton(T.ctaSub),
+      garantias([...T.garantias]),
+    ].join(""),
+    pie: `${T.prefieresChat} <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a>.`,
+    origen: T.yaNoInteresa,
+    paraBaja: d.email ?? undefined,
+  });
 
   return { subject: c.subject(tituloTour), html };
 }

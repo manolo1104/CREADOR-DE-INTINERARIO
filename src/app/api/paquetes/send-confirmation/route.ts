@@ -6,10 +6,8 @@ import { rateLimit } from "@/lib/rateLimit";
 import { getPaquete } from "@/lib/paquetes";
 import { actividad, mxn } from "@/lib/logger";
 import { getEmails, emailLocale } from "@/lib/i18n/emails";
-import { localizePaquete } from "@/lib/i18n/paquetes.en";
-import { localizeTour } from "@/lib/i18n/localize";
+import { buildPaqueteConfirmEmailHtml, fechaLarga } from "@/lib/paqueteEmail";
 import { TOURS_DB } from "@/lib/tours";
-import type { Locale } from "@/lib/i18n/config";
 import fs from "fs";
 import path from "path";
 
@@ -24,15 +22,6 @@ function sumarDias(ymd: string, dias: number): string {
   const d = new Date(`${ymd}T12:00:00`);
   d.setDate(d.getDate() + dias);
   return d.toISOString().slice(0, 10);
-}
-
-function fechaLarga(ymd: string, locale: Locale): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return "";
-  const f = new Date(`${ymd}T12:00:00`).toLocaleDateString(
-    locale === "en" ? "en-US" : "es-MX",
-    { weekday: "long", day: "numeric", month: "long", year: "numeric" },
-  );
-  return f.charAt(0).toUpperCase() + f.slice(1);
 }
 
 export async function POST(req: NextRequest) {
@@ -211,59 +200,14 @@ export async function POST(req: NextRequest) {
     if (email?.includes("@")) {
       try {
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
-        const paqueteLoc = localizePaquete(paquete, L);
-        const fila = (k: string, v: string, extra = "") =>
-          `<tr><td style="padding:6px 0;color:#666">${k}</td><td style="text-align:right;${extra}">${v}</td></tr>`;
-
-        // El itinerario con fechas reales: antes el correo del producto más caro
-        // no decía ni a dónde se iba cada día.
-        const itinerarioHtml = lineItems.length
-          ? `<p style="margin:22px 0 6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a5a">${T.tuItinerario}</p>
-             <table style="width:100%;border-collapse:collapse;font-size:14px">
-               ${lineItems.map((l, i) => {
-                 const base = TOURS_DB.find((t) => t.slug === l.tourSlug);
-                 const nombre = base ? localizeTour(base, L).nombre : l.tourName;
-                 const dia = paquete.itinerario.filter((d) => d.tourSlug)[i]?.dia ?? i + 1;
-                 return `<tr>
-                   <td style="padding:6px 0;color:#666;white-space:nowrap;vertical-align:top">${T.diaN(dia)}</td>
-                   <td style="text-align:right;padding:6px 0">${nombre}${l.tourDate ? `<br><span style="color:#8a7a5a;font-size:12px">${fechaLarga(l.tourDate, L)}</span>` : ""}</td>
-                 </tr>`;
-               }).join("")}
-             </table>`
-          : "";
-
-        const incluyeHtml = paqueteLoc.incluye?.length
-          ? `<p style="margin:22px 0 6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7a5a">${T.todoIncluido}</p>
-             <ul style="margin:0;padding-left:18px;font-size:13px;color:#3a3a2e;line-height:1.8">
-               ${paqueteLoc.incluye.map((x) => `<li>${x}</li>`).join("")}
-             </ul>`
-          : "";
-
-        const html = `
-          <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1a2e1a">
-            <h2 style="color:#1a2e1a">${T.titulo}</h2>
-            <p>${T.saludo(customerName || "")}</p>
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              ${fila(T.confirmacion, confirmationNumber, "font-weight:bold")}
-              ${fila(T.paquete, `${paqueteLoc.nombre} · ${paqueteLoc.duracion}`)}
-              ${fechaInicio ? fila(T.fechaTentativa, fechaLarga(fechaInicio, L) || fechaInicio) : ""}
-              ${fila(T.personas, T.grupoLinea(adultos, nMid, nSmall))}
-              ${habitacion ? fila(T.habitacion, habitacion) : ""}
-              ${checkin ? fila(T.entradaHotel, `${fechaLarga(checkin, L)} · ${T.noches(nochesHotel)}`) : ""}
-              ${nocheExtra ? `<tr><td colspan="2" style="padding:4px 0;color:#3a6b1a;font-size:13px">${T.nocheExtraNota}</td></tr>` : ""}
-              ${eleccionNombre && paquete.eleccionTour ? fila(T.eligeDia(paquete.eleccionTour.dia), eleccionNombre) : ""}
-            </table>
-            ${itinerarioHtml}
-            <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:22px;border-top:1px solid #d4ccbc">
-              ${fila(T.precio, fmx(totalFull))}
-              ${fila(T.pagoInicial(pctNum), fmx(cobrado), "color:#3a6b1a;font-weight:bold")}
-              ${pendiente > 0 ? fila(T.saldoPendiente, fmx(pendiente), "color:#9a4a1e") : ""}
-            </table>
-            <p style="font-size:13px;color:#666">${pendiente > 0 ? T.notaSaldo : T.notaLiquidado}</p>
-            ${incluyeHtml}
-            <p style="font-size:13px;color:#666;margin-top:22px">${T.guiaAdjunta}</p>
-            <p style="font-size:13px">${T.dudas}</p>
-          </div>`;
+        const { subject, html } = buildPaqueteConfirmEmailHtml({
+          locale: L, paquete, confirmationNumber,
+          customerName, fechaInicio,
+          adultos, nMid, nSmall,
+          habitacion, checkin, nochesHotel, nocheExtra,
+          eleccionNombre, lineItems,
+          totalFull, cobrado, pendiente, pctNum,
+        });
 
         // La guía en PDF, igual que en la confirmación de tours. Si el archivo
         // no está, el correo sale de todos modos.
@@ -276,7 +220,7 @@ export async function POST(req: NextRequest) {
         await sendBrevoEmail({
           to:  [{ email, name: customerName }],
           bcc: [{ email: adminTo }],
-          subject: T.subject(confirmationNumber),
+          subject,
           htmlContent: html,
           attachments: adjuntos,
         });

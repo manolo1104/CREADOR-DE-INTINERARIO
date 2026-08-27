@@ -6,6 +6,7 @@ import { PAQUETES_DB } from "@/lib/paquetes";
 import { HABITACIONES } from "@/lib/paquetes";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
+import { metaAlEnviar, conMeta } from "@/lib/quoteFollowUp";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,6 +37,26 @@ async function enviarCorreoCotizacion(data: {
   } catch (e: any) {
     console.error("❌ correo cotización (lead):", e?.message);
     return false;
+  }
+}
+
+/**
+ * Arranca el seguimiento de una cotización recién enviada.
+ *
+ * Se llama SOLO si el correo salió: contar los días de la secuencia desde un
+ * correo que nadie recibió gasta los tres pasos en el vacío. El `_meta` va en
+ * `lineItems` —también en los paquetes, cuyo detalle vive en `packageItems`—
+ * porque es donde lo busca `quoteFollowUp`.
+ */
+async function arrancarSeguimiento(folio: string, tourDate: string): Promise<void> {
+  try {
+    const q = await prisma.tourQuote.findUnique({ where: { quoteNumber: folio } });
+    await prisma.tourQuote.update({
+      where: { quoteNumber: folio },
+      data:  { lineItems: conMeta(q?.lineItems, metaAlEnviar(tourDate, "es")) as never },
+    });
+  } catch (e: any) {
+    console.error("❌ bot/lead seguimiento:", e?.message);
   }
 }
 
@@ -149,6 +170,7 @@ export async function POST(req: NextRequest) {
       adults: nPersonas, totalAmount: total,
       notes: `Cobro por vehículo. Ruta: ${tour.rutas[ri].nombre}. Vehículo: ${veh.nombre}.`,
     });
+    if (emailEnviado) await arrancarSeguimiento(folio, tourDate ? String(tourDate) : "");
     return NextResponse.json({ folio, total, moneda: "MXN", tipo: "rzr", ruta: tour.rutas[ri].nombre, vehiculo: veh.nombre, emailEnviado });
   }
 
@@ -196,6 +218,8 @@ export async function POST(req: NextRequest) {
               subtotal: total,
             },
           ],
+          // El paquete guarda su detalle en `packageItems`; el seguimiento vive
+          // en `lineItems`, que es donde lo busca `quoteFollowUp`.
           status: "enviada",
         },
       });
@@ -214,6 +238,7 @@ export async function POST(req: NextRequest) {
         { paquete: paq.nombre, habitacion: hab?.nombre ?? "por definir", hotel: "Hotel Paraíso Encantado", noches: paq.noches, checkin: checkinStr, checkout: checkoutStr, subtotal: total },
       ],
     });
+    if (emailEnviado) await arrancarSeguimiento(folio, checkinStr);
     return NextResponse.json({ folio, total, moneda: "MXN", tipo: "paquete", paquete: paq.nombre, habitacion: hab?.nombre ?? null, noches: paq.noches, checkin: checkinStr, checkout: checkoutStr, emailEnviado });
   }
 

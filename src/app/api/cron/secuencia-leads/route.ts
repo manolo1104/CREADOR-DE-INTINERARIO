@@ -10,8 +10,13 @@ export const maxDuration = 60;
 
 // POST /api/cron/secuencia-leads
 //
-// Manda los pasos 2 al 5 de la secuencia a quien dejó su correo en el sitio.
-// Cadencia desde la captura: +24 h, +72 h, +7 días, +21 días.
+// Manda los pasos 2 al 7 de la secuencia a quien dejó su correo en el sitio.
+// Cadencia desde la captura: +24 h, +72 h, +7 d, +21 d, +35 d y +60 d.
+//
+// Terminaba a los 21 días, que es cuando mucha gente todavía no tiene fechas.
+// Ahora llega a los dos meses, y al acabar el lead queda en "terminado", que es
+// justo de donde toma el boletín mensual (`/api/cron/boletin`) sus
+// destinatarios: la secuencia deja de ser un callejón sin salida.
 //
 // El paso 1 sale al instante desde el propio formulario: /api/recomendar-tour
 // manda su recomendación y /api/lead-magnet manda el itinerario de 3 días (ese
@@ -73,9 +78,14 @@ export async function POST(req: NextRequest) {
 
     const contenido = buildLeadSequenceEmail({
       paso,
+      // Firma su enlace de baja de un clic en el pie.
+      email:          lead.email,
       grupo:          lead.grupo,
       dias:           lead.dias,
       origen:         lead.origen,
+      // Se guardaban desde el primer día y no los leía nadie: el correo
+      // ignoraba la pregunta "¿qué te emociona?" del propio formulario.
+      intereses:      lead.intereses,
       tourPrincipal:  lead.tourPrincipal,
       tourSecundario: lead.tourSecundario,
     });

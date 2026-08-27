@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
+import { metaAlEnviar, conMeta } from "@/lib/quoteFollowUp";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +43,22 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       htmlContent: html,
     });
 
-    await prisma.tourQuote.update({ where: { id: params.id }, data: { status: "enviada" } });
-    return NextResponse.json({ ok: true });
+    // Mandarla a mano ARRANCA el seguimiento. Antes, la cotización que Manolo
+    // atendía en persona —la que cierra al 25 %— se quedaba sin un solo correo
+    // después, mientras que el carrito automático sí tenía tres.
+    //
+    // La marca se escribe AQUÍ y no en el cron: si el viaje ya está encima y
+    // no caben los tres pasos antes de la fecha, nace en "sin-tiempo" y queda
+    // dicho por qué esa cotización no va a recibir seguimiento.
+    const seq = metaAlEnviar(q.tourDate, meta.locale === "en" ? "en" : "es");
+    await prisma.tourQuote.update({
+      where: { id: params.id },
+      data:  {
+        status:    "enviada",
+        lineItems: conMeta(q.lineItems, seq) as never,
+      },
+    });
+    return NextResponse.json({ ok: true, seguimiento: seq.seqEstado });
   } catch (e: any) {
     console.error("admin/cotizaciones send-email:", e?.message);
     return NextResponse.json({ error: "No se pudo enviar el email" }, { status: 500 });

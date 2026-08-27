@@ -442,8 +442,12 @@ export default function CarritoPage() {
     // escribir el carrito, mandan la intención en la URL y ese trabajo pasa
     // aquí, en el único sitio que toca el carrito.
     const params = new URLSearchParams(window.location.search);
-    const pedido = params.get("agregar");
-    const token  = params.get("recuperar");
+    // `getAll` y no `get`: el correo del plan por día manda el viaje entero
+    // (`?agregar=a&agregar=b&agregar=c`) y con `get` solo entraba el primero —
+    // la persona llegaba a un carrito con un tercio de lo que le prometimos.
+    // Un solo `agregar` sigue funcionando igual: es un arreglo de uno.
+    const pedidos = params.getAll("agregar").filter(Boolean);
+    const token   = params.get("recuperar");
 
     let carrito = leerCarrito();
 
@@ -497,19 +501,25 @@ export default function CarritoPage() {
       } catch { /* si no se puede restaurar, el carrito local sigue intacto */ }
     }
 
-    if (pedido) {
-      const yaEsta = carrito.find((i) => i.tourSlug === pedido);
-      if (yaEsta) {
-        // No se duplica: quien vuelve a pulsar "Reservar" del mismo tour
-        // quiere verlo, no llevarlo dos veces. Se le lleva al renglón.
-        setRecienLlegado(yaEsta.uid);
-      } else {
+    if (pedidos.length) {
+      // Se resalta el PRIMERO que de verdad entró. Con un plan de varios días,
+      // llevar la vista al último renglón deja los otros fuera de pantalla.
+      let aResaltar: string | null = null;
+      for (const pedido of pedidos) {
+        const yaEsta = carrito.find((i) => i.tourSlug === pedido);
+        if (yaEsta) {
+          // No se duplica: quien vuelve a pulsar "Reservar" del mismo tour
+          // quiere verlo, no llevarlo dos veces. Se le lleva al renglón.
+          aResaltar ??= yaEsta.uid;
+          continue;
+        }
         const nuevo = itemDesdeSlug(pedido);
         if (nuevo) {
           carrito = agregarAlCarrito(nuevo);
-          setRecienLlegado(carrito[carrito.length - 1]?.uid ?? null);
+          aResaltar ??= carrito[carrito.length - 1]?.uid ?? null;
         }
       }
+      setRecienLlegado(aResaltar);
       // Se limpia la URL para que recargar no vuelva a hacer lo mismo.
       window.history.replaceState({}, "", lp("/reservar/carrito"));
     }

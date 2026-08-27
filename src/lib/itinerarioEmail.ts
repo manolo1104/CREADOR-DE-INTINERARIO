@@ -6,9 +6,9 @@
 // el itinerario resuelve "qué hago", la guía resuelve "cómo lo hago yo solo".
 
 import { TOURS_DB } from "./tours";
-
-const BASE = "https://www.huasteca-potosina.com";
-const WA   = "524891251458";
+import {
+  BASE, C, WA, bajoBoton, barra, boton, fotoTour, parrafo, shellCorreo, tabla, titulo,
+} from "./emailLayout";
 
 const mx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 
@@ -62,95 +62,99 @@ const DIAS: Dia[] = [
   },
 ];
 
-export function buildItinerarioEmailHtml(): { subject: string; html: string } {
+export function buildItinerarioEmailHtml(email?: string): { subject: string; html: string } {
   const diasHtml = DIAS.map((d) => {
     const tour = TOURS_DB.find((t) => t.slug === d.tourSlug);
     const lugares = d.lugares
-      .map(
-        (l) =>
-          `<li style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#444">${l}</li>`,
-      )
+      .map((l) => `
+        <p style="margin:0 0 7px 0;font-family:'DM Sans',Arial,sans-serif;font-size:13.5px;font-weight:300;color:${C.texto};line-height:1.6;">
+          <span style="color:${C.verde};">·</span>&nbsp; ${l}
+        </p>`)
       .join("");
 
     const tourHtml = tour
-      ? `<p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#3a6b1a">
-           ¿Sin coche o sin ganas de manejar? Este día completo es nuestro
-           <a href="${BASE}/tours/${tour.slug}" style="color:#3a6b1a;font-weight:bold">${tour.nombre.split(" — ")[0]}</a>
-           — ${mx(tour.precio)} por persona, con entradas, guía y traslado redondo
-           desde tu hospedaje en Xilitla o Ciudad Valles.
-         </p>`
+      ? `
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-left:2px solid ${C.dorado};margin:16px 0 0 0;">
+          <tr><td style="padding:2px 0 2px 16px;">
+            <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.texto};line-height:1.7;">
+              ¿Sin coche o sin ganas de manejar? Este día completo es nuestro
+              <a href="${BASE}/tours/${tour.slug}" style="color:${C.verde};font-weight:500;">${tour.nombre.split(" — ")[0]}</a>
+              — ${mx(tour.precio)} por persona, con entradas, guía y traslado redondo desde tu hospedaje.
+            </p>
+          </td></tr>
+        </table>`
       : "";
 
+    // La foto es la del tour que cubre ESA zona, no una postal genérica: el
+    // día 2 habla de Aquismón y la imagen es Tamul. Versión ligera y en JPG
+    // (`src/scripts/generar-imagenes-correo.ts`) — la del sitio pesa demasiado
+    // y dos tours la tienen en webp, que Outlook no muestra.
     return `
-    <div style="border:1px solid #e3ddc9;background:#f7f4ec;padding:18px 20px;margin:0 0 16px">
-      <p style="margin:0 0 2px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">
-        Día ${d.num} · ${d.zona}
-      </p>
-      <h2 style="margin:0 0 12px;font-size:18px;color:#1a2e1a;font-weight:normal">${d.titulo}</h2>
-      <ul style="margin:0;padding-left:18px">${lugares}</ul>
-      <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#666;border-top:1px solid #e3ddc9;padding-top:12px">
-        <strong style="color:#1a2e1a">Tip:</strong> ${d.tip}
-      </p>
-      ${tourHtml}
-    </div>`;
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 16px 0;">
+      ${tour ? `<tr><td style="padding:0;">${fotoTour(tour.slug, `${d.titulo} — ${d.zona}`, 180)}</td></tr>` : ""}
+      <tr><td style="border:1px solid ${C.borde};${tour ? "border-top:none;" : ""}background-color:${C.tarjeta};padding:20px 22px;">
+        <p style="margin:0 0 4px 0;font-family:'DM Sans',Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${C.dorado};">Día ${d.num} · ${d.zona}</p>
+        ${titulo(d.titulo, "0 0 14px 0")}
+        ${lugares}
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:14px 0 0 0;">
+          <tr><td style="border-top:1px solid ${C.borde};padding:13px 0 0 0;">
+            <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.tenue};line-height:1.7;">
+              <strong style="color:${C.oscuro};">Tip:</strong> ${d.tip}
+            </p>
+          </td></tr>
+        </table>
+        ${tourHtml}
+      </td></tr>
+    </table>`;
   }).join("");
 
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2e1a">
+  const antesDeSalir = [
+    "Lleva efectivo: varios parques no aceptan tarjeta.",
+    "Zapato que se pueda mojar y se agarre bien a la roca.",
+    "Bloqueador biodegradable — en varios sitios es obligatorio.",
+    "Bolsa seca o funda para el celular si vas a Tamul o rafting.",
+  ];
 
-    <h1 style="font-size:24px;margin:0 0 8px;color:#1a2e1a">Tu itinerario de 3 días en la Huasteca</h1>
-    <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 24px">
-      Este es el recorrido que le armamos a la mayoría de nuestros viajeros: cubre
-      lo imperdible sin pasar el día entero en carretera. Guárdalo, es tuyo.
-    </p>
-
-    ${diasHtml}
-
-    <div style="border:1px solid #e3ddc9;padding:18px 20px;margin:24px 0 16px">
-      <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Antes de salir</p>
-      <ul style="margin:0;padding-left:18px">
-        <li style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#444">Lleva efectivo: varios parques no aceptan tarjeta.</li>
-        <li style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#444">Zapato que se pueda mojar y se agarre bien a la roca.</li>
-        <li style="margin:0 0 6px;font-size:14px;line-height:1.5;color:#444">Bloqueador biodegradable — en varios sitios es obligatorio.</li>
-        <li style="margin:0;font-size:14px;line-height:1.5;color:#444">Bolsa seca o funda para el celular si vas a Tamul o rafting.</li>
-      </ul>
-      <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:#666;border-top:1px solid #e3ddc9;padding-top:12px">
-        <strong style="color:#1a2e1a">¿Dónde quedarte?</strong> Xilitla y Ciudad Valles son las dos
-        bases más prácticas. Si tomas alguno de nuestros tours, pasamos por ti a tu hospedaje en
-        cualquiera de las dos — no importa en qué hotel te quedes.
-      </p>
-    </div>
-
-    <p style="text-align:center;margin:28px 0 8px">
-      <a href="${BASE}/tours" style="background:#3a6b1a;color:#ffffff;text-decoration:none;padding:14px 34px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;font-size:13px;display:inline-block">
-        Ver los tours con guía →
-      </a>
-    </p>
-    <p style="text-align:center;font-size:13px;color:#666;margin:0 0 28px">
-      Puedes apartar tu lugar con el 30 % y pagar el resto el día del tour.
-    </p>
-
-    <div style="background:#1a2e1a;padding:22px 24px;margin:0 0 20px">
-      <p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">¿Vas por tu cuenta?</p>
-      <h2 style="margin:0 0 10px;font-size:19px;color:#f4edd8;font-weight:normal">La Guía Definitiva de la Huasteca</h2>
-      <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:rgba(244,237,216,0.75)">
-        Presupuesto real día por día, cómo llegar a cada sitio desde CDMX, Monterrey
-        y San Luis, horarios y precios de entrada actualizados, dónde dormir y comer,
-        e itinerarios de 5 y 7 días. Todo lo que este correo no alcanza a cubrir.
-      </p>
-      <a href="${BASE}/guia" style="background:#c4882a;color:#0e1710;text-decoration:none;padding:12px 28px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;font-size:12px;display:inline-block">
-        Verla — $49 MXN
-      </a>
-    </div>
-
-    <p style="font-size:12px;line-height:1.6;color:#888;text-align:center">
-      ¿Dudas sobre fechas, clima o cómo combinar los días?<br>
-      Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:#3a6b1a">+52 489 125 1458</a> — contestamos en menos de 1 hora.
-    </p>
-    <p style="font-size:11px;color:#aaa;text-align:center;margin-top:18px">
-      Tours Huasteca Potosina · Recibiste este correo porque pediste el itinerario en nuestro sitio.
-    </p>
-  </div>`;
+  const html = shellCorreo({
+    locale: "es",
+    preheader: "Huasteca Potosina · San Luis Potosí · México",
+    eyebrow: "Tu itinerario, gratis",
+    h1a: "Tres días en",
+    h1b: "la Huasteca",
+    entradilla: "Este es el recorrido que le armamos a la mayoría de nuestros viajeros: cubre lo imperdible sin pasar el día entero en carretera. Guárdalo, es tuyo.",
+    cuerpo: [
+      diasHtml,
+      barra("Antes de salir"),
+      tabla(`
+        <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:20px 22px;">
+          ${antesDeSalir.map((x) => `
+          <p style="margin:0 0 8px 0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.texto};line-height:1.6;">
+            <span style="color:${C.verde};">✓</span>&nbsp; ${x}
+          </p>`).join("")}
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:12px 0 0 0;">
+            <tr><td style="border-top:1px solid ${C.borde};padding:13px 0 0 0;">
+              <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.tenue};line-height:1.7;">
+                <strong style="color:${C.oscuro};">¿Dónde quedarte?</strong> Xilitla y Ciudad Valles son las dos bases más
+                prácticas. Si tomas alguno de nuestros tours, pasamos por ti a tu hospedaje en cualquiera de las dos —
+                no importa en qué hotel te quedes.
+              </p>
+            </td></tr>
+          </table>
+        </td></tr>`),
+      boton(`${BASE}/tours`, "Ver los tours con guía"),
+      bajoBoton("Puedes apartar tu lugar con el 30 % y pagar el resto el día del tour."),
+      barra("¿Vas por tu cuenta?"),
+      tabla(`
+        <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:22px;">
+          ${titulo("La Guía Definitiva de la Huasteca", "0 0 10px 0")}
+          ${parrafo("Presupuesto real día por día, cómo llegar a cada sitio desde CDMX, Monterrey y San Luis, horarios y precios de entrada actualizados, dónde dormir y comer, e itinerarios de 5 y 7 días. Todo lo que este correo no alcanza a cubrir.", "0")}
+        </td></tr>`),
+      boton(`${BASE}/guia`, "Verla — $49 MXN", "dorado"),
+    ].join(""),
+    pie: `¿Dudas sobre fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de 1 hora.`,
+    origen: "Recibiste este correo porque pediste el itinerario en nuestro sitio.",
+    paraBaja: email,
+  });
 
   return { subject: "Tu itinerario de 3 días en la Huasteca 🌿", html };
 }

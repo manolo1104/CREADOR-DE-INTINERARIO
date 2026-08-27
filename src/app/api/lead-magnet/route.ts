@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       1,
     );
 
-    const { subject, html } = buildItinerarioEmailHtml();
+    const { subject, html } = buildItinerarioEmailHtml(email);
     await sendBrevoEmail({ to: [{ email }], subject, htmlContent: html });
 
     return NextResponse.json({ ok: true });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { linkRecuperacion } from "@/lib/recuperacion";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { buildCartEmailHtml, type CartEmailTipo } from "@/lib/cartEmail";
+import { buildCartEmailHtml, type CartEmailTipo, type CartEmailLinea } from "@/lib/cartEmail";
 import { actividad, logger } from "@/lib/logger";
 import {
   DIAS_VIGENCIA,
@@ -85,13 +85,43 @@ export async function POST(req: NextRequest) {
     if (!tipo) continue;
 
     const restoreUrl = linkRecuperacion(APP_URL, c.tourId, c.tourSlug, c.token);
-    // El idioma se guardó dentro de `carritoJson` al crear el carrito: quien
-    // cotizó en inglés recibe los tres recordatorios en inglés.
+
+    // Todo lo que el recordatorio necesita vive dentro de `carritoJson`.
+    //
+    // Antes de aquí solo se sacaba el idioma, y el correo salía con el viaje
+    // aplastado en un renglón —el primer tour cargando con el importe del
+    // total— y exigiendo el pago completo, porque sin días a la vista
+    // `pctACobrar(0, false)` devuelve 100. El cliente leía "paga $12,500" y el
+    // carrito le iba a pedir $3,750.
     let locale = "es";
+    let lineas: CartEmailLinea[] | undefined;
+    let hospedaje: Parameters<typeof buildCartEmailHtml>[0]["hospedaje"];
+    let traslado:  Parameters<typeof buildCartEmailHtml>[0]["traslado"];
     try {
       const guardado = c.carritoJson ? JSON.parse(c.carritoJson) : null;
       if (guardado?.locale === "en") locale = "en";
-    } catch { /* JSON viejo o corrupto: se queda en español */ }
+
+      if (Array.isArray(guardado?.lineas) && guardado.lineas.length) {
+        lineas = guardado.lineas;
+      } else if (Array.isArray(guardado?.items) && guardado.items.length) {
+        // Carritos creados antes de que se guardaran los renglones tarifados.
+        // El importe por recorrido no se puede reconstruir aquí sin recalcular,
+        // y el correo deja la celda vacía cuando falta; lo que sí se recupera
+        // —y es lo que importaba— son los días, que son los que deciden si se
+        // aparta con el 30 % o se paga completo.
+        lineas = guardado.items.map((i: Record<string, unknown>) => ({
+          tourName: String(i.tourName ?? ""), tourSlug: String(i.tourSlug ?? ""),
+          tourDate: String(i.tourDate ?? ""),
+          adults: Number(i.adults) || 0,
+          childrenMid: Number(i.childrenMid) || 0,
+          childrenSmall: Number(i.childrenSmall) || 0,
+          unidades: i.unidades ? Number(i.unidades) : undefined,
+        }));
+      }
+      if (guardado?.hotel?.habitacion) hospedaje = guardado.hotel;
+      if (guardado?.viaje?.ciudad)     traslado  = guardado.viaje;
+    } catch { /* JSON viejo o corrupto: se queda en español y sin desglose */ }
+
     try {
       const { subject, html } = buildCartEmailHtml({
         tipo,
@@ -102,6 +132,10 @@ export async function POST(req: NextRequest) {
         children: c.childrenMid + c.childrenSmall,
         total:    c.total,
         restoreUrl,
+        lineas,
+        hospedaje,
+        traslado,
+        email:    c.customerEmail,
         locale,
       });
       await sendBrevoEmail({ to: [{ email: c.customerEmail }], subject, htmlContent: html });

@@ -1,4 +1,4 @@
-name: Correos automáticos (carritos + secuencia de leads)
+name: Correos automáticos (carritos + leads + cotizaciones)
 
 on:
   schedule:
@@ -26,3 +26,13 @@ jobs:
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/secuencia-leads
+
+      - name: Seguimiento de las cotizaciones (panel y bot)
+        run: |
+          # Las cotizaciones que Manolo manda a mano no tenían ningún
+          # seguimiento. Este paso las retoma a la hora, a las 24 h y a las
+          # 72 h — no arranca si el viaje es dentro de menos de 4 días, y se
+          # pausa en cuanto el cliente confirma su reserva.
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/secuencia-cotizaciones

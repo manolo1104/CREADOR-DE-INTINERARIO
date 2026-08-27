@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
+import { buildAvisoPagoIncompletoHtml } from "@/lib/avisoCarritoGrande";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 import { leerJson, reconstruirLineas } from "@/lib/webhookRecuperacion";
@@ -47,53 +49,19 @@ export async function POST(req: NextRequest) {
     const meta = session.metadata ?? {};
     if (meta.producto === "guia_pdf" && session.payment_status === "paid") {
       const email = session.customer_details?.email || session.customer_email || undefined;
-      const appUrl = process.env.APP_URL ?? "https://www.huasteca-potosina.com";
-      const downloadUrl = `${appUrl}/guia/descarga?session_id=${session.id}`;
-      const tripUrl = `${appUrl}/viaje-septiembre`;
-      const toursUrl = `${appUrl}/tours`;
-
       actividad("💰  GUÍA PDF PAGADA", mxn((session.amount_total ?? 0) / 100), email);
 
       if (email) {
         try {
+          const { subject, html } = buildGuiaEmailHtml({
+            sessionId: session.id,
+            appUrl: process.env.APP_URL,
+          });
           await sendBrevoEmail({
             to: [{ email }],
             bcc: process.env.ADMIN_EMAIL_TOURS ? [{ email: process.env.ADMIN_EMAIL_TOURS }] : undefined,
-            subject: "Tu Guía Definitiva de la Huasteca Potosina 🌿 — descárgala aquí",
-            htmlContent: `
-              <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1c1c1c">
-                <h1 style="font-size:22px;margin:0 0 8px">¡Gracias por tu compra! 🎉</h1>
-                <p style="font-size:15px;line-height:1.6;color:#444">
-                  Tu <strong>Guía Definitiva de la Huasteca Potosina 2026</strong> está lista.
-                  Descárgala con el botón de abajo (guarda este correo para volver a descargarla cuando quieras):
-                </p>
-                <p style="text-align:center;margin:28px 0">
-                  <a href="${downloadUrl}" style="background:#c4882a;color:#0e1710;text-decoration:none;padding:14px 32px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;font-size:13px;display:inline-block">
-                    ↓ Descargar mi guía
-                  </a>
-                </p>
-                <p style="font-size:13px;line-height:1.6;color:#666">
-                  Tip: ábrela en tu celular o computadora. Para guardarla como PDF usa
-                  <strong>Ctrl/Cmd + P → Guardar como PDF</strong>.
-                </p>
-                <hr style="border:none;border-top:1px solid #e5e5e5;margin:28px 0">
-                <p style="font-size:15px;line-height:1.6;color:#444;margin-bottom:6px">
-                  <strong>¿Y si lo dejas en nuestras manos?</strong>
-                </p>
-                <p style="font-size:14px;line-height:1.6;color:#555;margin-top:0">
-                  Tenemos un <strong>viaje programado de CDMX a la Huasteca (16–19 sep 2026)</strong>: transporte redondo,
-                  hospedaje y 3 recorridos guiados, todo incluido, desde $7,900/persona.
-                </p>
-                <p style="margin:14px 0 4px">
-                  <a href="${tripUrl}" style="color:#3a6b1a;font-weight:bold;text-decoration:none">→ Ver el viaje de septiembre</a>
-                </p>
-                <p style="margin:4px 0 0">
-                  <a href="${toursUrl}" style="color:#3a6b1a;font-weight:bold;text-decoration:none">→ Ver todos los tours guiados</a>
-                </p>
-                <p style="font-size:12px;color:#999;margin-top:28px">
-                  Tours Huasteca Potosina · Si tienes cualquier duda, responde a este correo.
-                </p>
-              </div>`,
+            subject,
+            htmlContent: html,
           });
           logger.info("guia_email_sent", { session_id: session.id });
         } catch (e) {
@@ -277,19 +245,18 @@ export async function POST(req: NextRequest) {
           const adminTo = process.env.ADMIN_EMAIL_TOURS;
           if (adminTo && !emailValido) {
             try {
+              const aviso = buildAvisoPagoIncompletoHtml({
+                confirmationNumber,
+                tourName:      meta.tourName || meta.tourId || "",
+                tourDate:      meta.tourDate || "",
+                totalAmount,
+                paymentIntent: pi.id,
+                receiptEmail:  pi.receipt_email || "",
+              });
               await sendBrevoEmail({
                 to: [{ email: adminTo }],
-                subject: `⚠️ Pago recibido sin confirmación completa — ${confirmationNumber}`,
-                htmlContent: `
-                  <p>Se recibió un pago de tour pero el cliente no completó la pantalla de confirmación.</p>
-                  <ul>
-                    <li><strong>Tour:</strong> ${meta.tourName || meta.tourId}</li>
-                    <li><strong>Fecha:</strong> ${meta.tourDate || "—"}</li>
-                    <li><strong>Monto cobrado:</strong> $${totalAmount.toLocaleString("es-MX")} MXN</li>
-                    <li><strong>PaymentIntent:</strong> ${pi.id}</li>
-                    <li><strong>Email recibo:</strong> ${pi.receipt_email || "—"}</li>
-                  </ul>
-                  <p>Revisa Stripe y contacta al cliente para coordinar el tour.</p>`,
+                subject: aviso.subject,
+                htmlContent: aviso.html,
               });
             } catch (e) {
               logger.error("stripe_webhook_admin_alert_failed", {

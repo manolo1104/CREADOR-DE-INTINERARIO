@@ -8,6 +8,7 @@ import { emailLocale } from "./i18n/emails";
 import { TOURS_DB } from "./tours";
 import { localizeTour } from "./i18n/localize";
 import { GOOGLE_REVIEW_URL } from "./reviewRequest";
+import { C, boton, fotoTour, nota, parrafo, shellCorreo } from "./emailLayout";
 import type { Locale } from "./i18n/config";
 
 /**
@@ -71,32 +72,28 @@ export function buildReviewEmailHtml(d: ReviewEmailInput): { subject: string; ht
   const nombre = (d.customerName || "").trim().split(/\s+/)[0] || (locale === "en" ? "there" : "hola");
   const tour = nombreTour(d.tourName, d.tourSlug, locale).split("—")[0].trim();
 
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1a2e1a;background:#ffffff">
-    <div style="background:#0e1710;padding:22px 24px">
-      <div style="color:#c4882a;font-size:11px;letter-spacing:3px;text-transform:uppercase">Tours Huasteca Potosina</div>
-      <h1 style="font-size:23px;margin:8px 0 0;color:#f5f0e3;font-weight:normal">${T.titulo}</h1>
-    </div>
+  // La foto del recorrido que hizo: no es decoración, es lo que le devuelve el
+  // recuerdo antes de pedirle la reseña.
+  const slug = d.tourSlug && TOURS_DB.some((t) => t.slug === d.tourSlug) ? d.tourSlug : "";
 
-    <div style="padding:24px">
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 16px">${T.saludo(nombre)}</p>
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 22px">${T.intro(tour)}</p>
-      <p style="font-size:15px;line-height:1.6;color:#444;margin:0 0 26px">${T.pedido}</p>
-
-      <div style="text-align:center;margin:0 0 26px">
-        <a href="${GOOGLE_REVIEW_URL}"
-           style="display:inline-block;background:#c4882a;color:#0e1710;text-decoration:none;padding:14px 32px;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:bold">
-          ${T.cta}
-        </a>
-      </div>
-
-      <p style="font-size:13px;line-height:1.6;color:#7d7566;margin:0 0 22px;padding-top:18px;border-top:1px solid #e3ddc9">
-        ${T.honesto}
-      </p>
-
-      <p style="font-size:12px;line-height:1.5;color:#8a7a5a;margin:0">${T.firma}</p>
-    </div>
-  </div>`;
+  const html = shellCorreo({
+    locale,
+    preheader: locale === "en"
+      ? "Huasteca Potosina · San Luis Potosí · Mexico"
+      : "Huasteca Potosina · San Luis Potosí · México",
+    eyebrow: locale === "en" ? "After your trip" : "Después de tu viaje",
+    h1a: T.titulo,
+    entradilla: T.intro(tour),
+    cuerpo: [
+      slug ? fotoTour(slug, tour, 200) : "",
+      slug ? `<div style="height:26px"></div>` : "",
+      parrafo(T.saludo(nombre), "0 0 16px 0"),
+      parrafo(T.pedido, "0"),
+      boton(GOOGLE_REVIEW_URL, T.cta, "dorado"),
+      nota(T.honesto, C.texto, "30px 0 0 0"),
+    ].join(""),
+    origen: T.firma,
+  });
 
   return { subject: T.subject(tour), html };
 }

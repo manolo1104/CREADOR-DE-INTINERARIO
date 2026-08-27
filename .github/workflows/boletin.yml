@@ -1,0 +1,22 @@
+name: Boletín mensual a la base de correos
+
+on:
+  schedule:
+    # Día 3 de cada mes a las 16:00 UTC (10:00 en México). No el día 1: si el
+    # agente de blog publica el último día del mes, el 3 ya está indexado y con
+    # su imagen puesta. Y a media mañana entre semana, no de madrugada.
+    - cron: "0 16 3 * *"
+  workflow_dispatch: {}
+
+jobs:
+  boletin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Enviar el resumen del mes
+        run: |
+          # -f hace que un 401 (secreto mal configurado) falle el job en vez de
+          # pasar desapercibido como si no hubiera nadie a quien escribir.
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/boletin

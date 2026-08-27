@@ -17,14 +17,19 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * Solo se pide reseña a quien reservó EN INGLÉS.
+ * Se pide reseña en los DOS idiomas. Encendido el 26 ago 2026 por Manolo.
  *
- * Es el hueco que hay que llenar: las 492 reseñas de Google están casi todas en
- * español. El correo en español ya está escrito en `reviewEmail.ts`; para
- * encenderlo basta cambiar esto a `["en", "es"]`, pero eso es un correo nuevo a
- * toda la base mexicana y es decisión de Manolo, no del código.
+ * Estuvo solo en inglés a propósito: las 492 reseñas de Google están casi todas
+ * en español y el hueco a llenar era el inglés. Encender el español significa
+ * escribirle también a la base mexicana, que es la grande, y esa era una
+ * decisión suya y no del código.
+ *
+ * ⚠️ La primera corrida alcanza a TODO el que viajó en los últimos
+ * `DIAS_MAXIMOS` (45) días y todavía no tiene la marca `reviewRequestedAt`, no
+ * solo a los de los últimos dos. Conviene mirar antes con `?dry=1`, que enseña
+ * la lista sin enviar ni marcar nada.
  */
-const IDIOMAS_ACTIVOS: readonly string[] = ["en"];
+const IDIOMAS_ACTIVOS: readonly string[] = ["en", "es"];
 
 // POST /api/cron/pedir-resenas
 // Pide reseña de Google a los clientes cuyo tour terminó hace unos días.
@@ -72,6 +77,8 @@ export async function POST(req: NextRequest) {
     if (reviewPedidaEn(b.lineItems)) { yaPedidas++; continue; }
 
     const locale = localeDeReserva(b.lineItems);
+    // Con los dos idiomas activos esto ya no descarta a nadie; se deja porque
+    // es el interruptor, y el contador avisaría si apareciera un locale nuevo.
     if (!IDIOMAS_ACTIVOS.includes(locale)) { otroIdioma++; continue; }
 
     destinatarios.push({ email: b.customerEmail, tour: b.tourName, fecha: b.tourDate });

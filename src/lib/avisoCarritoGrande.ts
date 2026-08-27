@@ -1,6 +1,9 @@
 import { sendBrevoEmail } from "@/lib/brevo";
 import { actividad, logger } from "@/lib/logger";
 import { formatMXN } from "@/lib/tourBooking";
+import {
+  C, bajoBoton, boton, filaDato, nota, shellCorreo, tabla,
+} from "./emailLayout";
 
 /**
  * Aviso a Manolo cuando alguien deja armado un carrito grande.
@@ -21,13 +24,67 @@ import { formatMXN } from "@/lib/tourBooking";
 /** A partir de este importe el carrito deja de ser cosa del automatismo. */
 export const UMBRAL_AVISO_MXN = 10_000;
 
-interface Aviso {
+export interface Aviso {
   total:         number;
   customerEmail: string;
   customerPhone?: string | null;
   tourName:      string;
   tourDate:      string;
   restoreUrl:    string;
+}
+
+/**
+ * El aviso, armado aparte del envío.
+ *
+ * Antes solo existía dentro del `try` que lo manda, así que la única forma de
+ * verlo era provocar un carrito de más de $10,000 en producción. Es el correo
+ * que decide si Manolo llama o no a una venta de cinco cifras: conviene poder
+ * mirarlo.
+ */
+/** "2026-11-14" → "sáb 14 de noviembre". En crudo se lee a base de datos. */
+function fechaLegible(ymd: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || "sin fecha";
+  return new Date(`${ymd}T12:00:00`).toLocaleDateString("es-MX", {
+    weekday: "short", day: "numeric", month: "long",
+  });
+}
+
+export function buildAvisoCarritoGrandeHtml(a: Aviso): { subject: string; html: string } {
+  // El teléfono es opcional en el formulario; sin él, al menos queda el correo.
+  const tel = (a.customerPhone ?? "").replace(/\D/g, "");
+  const waCliente = tel
+    ? `https://wa.me/${tel.length === 10 ? `52${tel}` : tel}?text=${encodeURIComponent(
+        `Hola, soy de Tours Huasteca Potosina. Vi que armaste tu viaje en nuestra página (${a.tourName}). ¿Te ayudo a cerrarlo?`,
+      )}`
+    : null;
+
+  // Este correo es OPERATIVO, no comercial: lo lee Manolo en el celular para
+  // decidir si llama. Lleva la marca puesta, pero el dato manda sobre el
+  // adorno — el importe y el botón de WhatsApp van arriba de todo.
+  const html = shellCorreo({
+    locale: "es",
+    preheader: "Aviso interno · Tours Huasteca Potosina",
+    eyebrow: "Vale la pena una llamada",
+    h1a: `${formatMXN(a.total)} MXN`,
+    h1b: "sin pagar",
+    entradilla: `${a.tourName} · primera fecha: ${fechaLegible(a.tourDate)}`,
+    cuerpo: [
+      waCliente
+        ? boton(waCliente, "Escribirle por WhatsApp", "whatsapp")
+        : nota("No dejó teléfono — solo se le puede escribir por correo.", C.terracota, "0"),
+      waCliente ? bajoBoton("El mensaje ya va escrito. Solo dale enviar.") : "",
+      tabla([
+        filaDato("Correo", a.customerEmail, true),
+        filaDato("Teléfono", tel || "no lo dejó"),
+        filaDato("Viaje", a.tourName),
+        filaDato("Primera fecha", fechaLegible(a.tourDate)),
+      ].join("")),
+      nota(`Su carrito, tal como lo dejó:<br><a href="${a.restoreUrl}" style="color:${C.verde};font-weight:500;word-break:break-all;">${a.restoreUrl}</a>`),
+    ].join(""),
+    pie: `Te llega este aviso porque el carrito pasa de ${formatMXN(UMBRAL_AVISO_MXN)}. Los correos automáticos de recuperación salen igual, a la hora y a las 24 y 72 horas.`,
+  });
+
+  return { subject: `🔔 Carrito de ${formatMXN(a.total)} sin pagar — ${a.customerEmail}`, html };
 }
 
 export async function avisarCarritoGrande(a: Aviso): Promise<void> {
@@ -39,45 +96,12 @@ export async function avisarCarritoGrande(a: Aviso): Promise<void> {
     return;
   }
 
-  // El teléfono es opcional en el formulario; sin él, al menos queda el correo.
-  const tel = (a.customerPhone ?? "").replace(/\D/g, "");
-  const waCliente = tel
-    ? `https://wa.me/${tel.length === 10 ? `52${tel}` : tel}?text=${encodeURIComponent(
-        `Hola, soy de Tours Huasteca Potosina. Vi que armaste tu viaje en nuestra página (${a.tourName}). ¿Te ayudo a cerrarlo?`,
-      )}`
-    : null;
-
   actividad("🔔  CARRITO GRANDE SIN PAGAR", a.customerEmail, formatMXN(a.total), a.tourName, a.tourDate);
 
+  const { subject, html } = buildAvisoCarritoGrandeHtml(a);
+
   try {
-    await sendBrevoEmail({
-      to: [{ email: destino }],
-      subject: `🔔 Carrito de ${formatMXN(a.total)} sin pagar — ${a.customerEmail}`,
-      htmlContent: `
-        <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px">
-          <p style="margin:0 0 4px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Vale la pena una llamada</p>
-          <h1 style="margin:0 0 18px;font-size:24px;color:#1a2e1a">${formatMXN(a.total)} MXN sin pagar</h1>
-          <table style="width:100%;border-collapse:collapse;font-size:14px;color:#444">
-            <tr><td style="padding:6px 0;color:#888">Viaje</td><td style="padding:6px 0"><strong>${a.tourName}</strong></td></tr>
-            <tr><td style="padding:6px 0;color:#888">Primera fecha</td><td style="padding:6px 0">${a.tourDate}</td></tr>
-            <tr><td style="padding:6px 0;color:#888">Correo</td><td style="padding:6px 0">${a.customerEmail}</td></tr>
-            <tr><td style="padding:6px 0;color:#888">Teléfono</td><td style="padding:6px 0">${tel || "no lo dejó"}</td></tr>
-          </table>
-          <div style="margin:22px 0">
-            ${waCliente
-              ? `<a href="${waCliente}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:13px 26px;font-size:13px;letter-spacing:1px;text-transform:uppercase">Escribirle por WhatsApp</a>`
-              : `<p style="margin:0;font-size:13px;color:#a8452c">No dejó teléfono — solo se le puede escribir por correo.</p>`}
-          </div>
-          <p style="margin:0;font-size:13px;color:#666">
-            Su carrito, tal como lo dejó:<br>
-            <a href="${a.restoreUrl}" style="color:#2c6e71">${a.restoreUrl}</a>
-          </p>
-          <p style="margin:20px 0 0;font-size:12px;color:#999;border-top:1px solid #eee;padding-top:14px">
-            Te llega este aviso porque el carrito pasa de ${formatMXN(UMBRAL_AVISO_MXN)}.
-            Los correos automáticos de recuperación salen igual, a la hora y a las 24 y 72 horas.
-          </p>
-        </div>`,
-    });
+    await sendBrevoEmail({ to: [{ email: destino }], subject, htmlContent: html });
   } catch (err) {
     // Que falle el aviso no puede tumbar el guardado del carrito del cliente.
     logger.error("aviso_carrito_grande_failed", {
@@ -85,4 +109,47 @@ export async function avisarCarritoGrande(a: Aviso): Promise<void> {
       reason: err instanceof Error ? err.message : "desconocido",
     });
   }
+}
+
+// ── Aviso de pago sin confirmación ─────────────────────────────────────────
+
+export interface AvisoPagoIncompleto {
+  confirmationNumber: string;
+  tourName:      string;
+  tourDate:      string;
+  totalAmount:   number;
+  paymentIntent: string;
+  receiptEmail:  string;
+}
+
+/**
+ * El aviso de "entró un pago y no pudimos confirmarle al cliente".
+ *
+ * Vivía dentro del webhook de Stripe, o sea que solo se podía ver provocando un
+ * pago con un correo inválido. Es la red de seguridad del sistema: si esto se
+ * ve mal o llega incompleto, un cliente que YA PAGÓ se queda sin noticias.
+ */
+export function buildAvisoPagoIncompletoHtml(a: AvisoPagoIncompleto): { subject: string; html: string } {
+  return {
+    subject: `⚠️ Pago recibido sin confirmación completa — ${a.confirmationNumber}`,
+    html: shellCorreo({
+      locale: "es",
+      preheader: "Aviso interno · Tours Huasteca Potosina",
+      eyebrow: "Requiere tu atención",
+      h1a: "Pago recibido,",
+      h1b: "cliente sin avisar",
+      entradilla: "Entró el dinero pero el cliente no completó la pantalla de confirmación, así que NO recibió su correo. Hay que contactarlo a mano.",
+      cuerpo: [
+        tabla([
+          filaDato("Confirmación", a.confirmationNumber, true),
+          filaDato("Tour", a.tourName || "—"),
+          filaDato("Fecha", a.tourDate ? fechaLegible(a.tourDate) : "—"),
+          filaDato("Monto cobrado", `$${a.totalAmount.toLocaleString("es-MX")} MXN`),
+          filaDato("PaymentIntent", a.paymentIntent),
+          filaDato("Email del recibo", a.receiptEmail || "—"),
+        ].join("")),
+        nota("Revisa Stripe y contacta al cliente para coordinar el tour.", C.terracota),
+      ].join(""),
+    }),
+  };
 }

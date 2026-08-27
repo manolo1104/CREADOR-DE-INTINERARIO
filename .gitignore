@@ -29,3 +29,6 @@ backups-imagenes/
 
 # Worktrees temporales de Claude Code.
 .claude/worktrees/
+
+# Vistas previas de correo generadas en local (src/scripts/previsualizar-en-navegador.ts)
+public/_previsualizacion/

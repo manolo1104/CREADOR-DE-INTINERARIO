@@ -150,7 +150,14 @@ export interface EmailMessages {
     saludo: (nombre: string) => string;
     confirmacion: string;
     paquete: string;
-    fechaTentativa: string;
+    /** La fecha del PRIMER tour del paquete, no una estimación. */
+    fechaInicio: string;
+    preheader: string;
+    eyebrow: string;
+    h1a: string;
+    h1b: string;
+    entradilla: string;
+    resumenPago: string;
     personas: string;
     precio: string;
     pagoInicial: (pct: number) => string;
@@ -328,7 +335,13 @@ const ES: EmailMessages = {
     saludo: (nombre) => `Hola ${nombre}, gracias por reservar con nosotros. Aquí está tu confirmación:`,
     confirmacion: "Confirmación",
     paquete: "Paquete",
-    fechaTentativa: "Fecha tentativa",
+    fechaInicio: "Fecha de inicio · primer tour",
+    preheader: "Huasteca Potosina · San Luis Potosí · México",
+    eyebrow: "Confirmación de Paquete",
+    h1a: "¡Tu viaje está",
+    h1b: "reservado!",
+    entradilla: "Ya tienes lugar. Aquí abajo está tu viaje completo, día por día, con lo que incluye y lo que falta por cubrir.",
+    resumenPago: "Resumen de pago",
     personas: "Personas",
     // Ya no es "el precio del paquete": el publicado cubre a dos y aquí va el
     // total real, con la gente extra, la noche extra y la habitación elegida.
@@ -511,7 +524,13 @@ const EN: EmailMessages = {
     saludo: (nombre) => `Hi ${nombre}, thank you for booking with us. Here's your confirmation:`,
     confirmacion: "Confirmation",
     paquete: "Package",
-    fechaTentativa: "Approximate date",
+    fechaInicio: "Start date · first tour",
+    preheader: "Huasteca Potosina · San Luis Potosí · Mexico",
+    eyebrow: "Package Confirmation",
+    h1a: "Your trip is",
+    h1b: "booked!",
+    entradilla: "Your spot is secured. Below is your full trip, day by day, with what's included and what's left to pay.",
+    resumenPago: "Payment summary",
     personas: "People",
     precio: "Your trip total",
     pagoInicial: (pct) => `Initial payment (${pct}%)`,

@@ -46,10 +46,17 @@ async function arrancarSecuencia(
     // El primer correo solo se manda una vez, aunque use el recomendador varias.
     if (!esNuevo) return;
 
+    // Van TODAS las respuestas del formulario, no solo dos. Con `dias` de 2 o
+    // más, este correo deja de ser "aquí tienes un tour" y arma el viaje día
+    // por día; sin `intereses` y sin `origen` no podría decir por qué cada día
+    // le toca a él ni dónde le conviene dormir.
     const contenido = buildLeadSequenceEmail({
       paso: 1,
-      grupo: typeof ctx.grupo === "string" ? ctx.grupo : null,
-      dias:  typeof ctx.dias  === "string" ? ctx.dias  : null,
+      email:  email as string,
+      grupo:  typeof ctx.grupo  === "string" ? ctx.grupo  : null,
+      dias:   typeof ctx.dias   === "string" ? ctx.dias   : null,
+      origen: typeof ctx.origen === "string" ? ctx.origen : null,
+      intereses: Array.isArray(ctx.intereses) ? ctx.intereses.map(String) : [],
       tourPrincipal:  slugDe(ctx.primaryId),
       tourSecundario: slugDe(ctx.secondaryId),
     });
@@ -60,7 +67,7 @@ async function arrancarSecuencia(
       where: { email, fuente: "Recomendador" },
       data:  { emailsSent: 1, lastEmailAt: new Date() },
     });
-    logActividad("📧  SECUENCIA 1/4", email, nombreDe(ctx.primaryId));
+    logActividad("📧  SECUENCIA 1/5", email, nombreDe(ctx.primaryId));
   } catch (e) {
     logger.error("secuencia_lead_paso1_failed", {
       reason: e instanceof Error ? e.message : "desconocido",
