@@ -514,8 +514,16 @@ export function RecommenderShell() {
     }));
   }
 
-  // Compuerta de correo: se pide el email ANTES de correr el agente. Se guarda
-  // el lead (aunque falle no bloquea la recomendación) y luego se genera el plan.
+  // Compuerta de correo: se pide el email ANTES de correr el agente y se manda
+  // en la misma petición que genera el plan.
+  //
+  // Aquí había además una llamada suelta a `/api/guardar-email` con la fuente
+  // "Recomendador". Parecía inofensiva —solo anotaba el correo en la hoja— pero
+  // de paso creaba la fila del lead, y como salía primero, `/api/recomendar-tour`
+  // ya no veía a la persona como nueva y NO le mandaba su propuesta al instante:
+  // le llegaba en la siguiente corrida del cron, hasta una hora después. La hoja
+  // la escribe ahora la propia ruta del recomendador, que es la única que sabe
+  // qué se le recomendó.
   async function submitCorreo() {
     const e = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
@@ -523,11 +531,6 @@ export function RecommenderShell() {
       return;
     }
     setEmailError("");
-    fetch("/api/guardar-email", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email: e, fuente: "Recomendador" }),
-    }).catch(() => {});
     submit(e);
   }
 

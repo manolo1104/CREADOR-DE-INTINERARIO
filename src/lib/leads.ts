@@ -125,17 +125,37 @@ export async function registrarLead(
       return { id: existente.id, esNuevo: false };
     }
 
-    const creado = await prisma.lead.create({
-      data: {
-        email,
-        fuente,
-        ...datos,
-        emailsSent:  pasosYaEnviados,
-        lastEmailAt: pasosYaEnviados > 0 ? new Date() : undefined,
-      },
-      select: { id: true },
-    });
-    return { id: creado.id, esNuevo: true };
+    try {
+      const creado = await prisma.lead.create({
+        data: {
+          email,
+          fuente,
+          ...datos,
+          emailsSent:  pasosYaEnviados,
+          lastEmailAt: pasosYaEnviados > 0 ? new Date() : undefined,
+        },
+        select: { id: true },
+      });
+      return { id: creado.id, esNuevo: true };
+    } catch (e) {
+      // Entre el `findUnique` de arriba y este `create` cabe otra petición: dos
+      // pestañas, o el visitante que pulsa dos veces. La que llega segunda
+      // choca con el índice único (email, fuente) y antes se iba con `null`,
+      // que para quien llama significa "no pude registrarlo" — y en el
+      // recomendador eso era quedarse sin mandar la propuesta.
+      //
+      // No es un error: la fila que hacía falta ya existe. Se actualiza y se
+      // devuelve como existente, que es exactamente lo que es.
+      if (typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002") {
+        const ahora = await prisma.lead.update({
+          where:  { email_fuente: { email, fuente } },
+          data:   datos,
+          select: { id: true },
+        });
+        return { id: ahora.id, esNuevo: false };
+      }
+      throw e;
+    }
   } catch (err) {
     // Nunca debe tumbar la respuesta al usuario: si esto falla, el lead sigue
     // guardado en la hoja y solo se pierde la secuencia.
