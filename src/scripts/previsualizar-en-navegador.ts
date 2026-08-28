@@ -116,10 +116,19 @@ export function correos(): { n: number; nombre: string; subject: string; html: s
   out.push({ n: 13, nombre: "Guía Definitiva", ...buildGuiaEmailHtml({ sessionId: "cs_test_vistaprevia" }) });
 
   // ── El boletín mensual, en sus tres temporadas ───────────────────────────
+  // 🔴 Artículos REALES, con su slug tal como vive en la base. Los tres de antes
+  // ("que-hacer-en-xilitla", "tamul-mejor-epoca", "huasteca-con-ninos") estaban
+  // inventados: la vista previa se veía perfecta y los tres enlaces daban 404 en
+  // producción. Una vista previa que enseña enlaces que no existen es peor que
+  // no tenerla, porque se revisa y se da por buena.
+  //
+  // El tercero conserva a propósito el sufijo `-2026`: la mitad de los artículos
+  // de la base lo trae, y así la vista previa ejercita el mismo camino que
+  // seguirá el boletín real. Comprobarlos: npx tsx src/scripts/verificar-enlaces-correos.ts
   const POSTS = [
-    { slug: "que-hacer-en-xilitla", title: "Qué hacer en Xilitla en un fin de semana", excerpt: "Las Pozas al abrir, el mercado a media mañana y dónde comer sin fila.", coverImageUrl: null },
-    { slug: "tamul-mejor-epoca",    title: "Cuándo ver la Cascada de Tamul turquesa", excerpt: "El color depende de la temporada. Aquí están los meses y por qué.", coverImageUrl: null },
-    { slug: "huasteca-con-ninos",   title: "La Huasteca con niños: qué sí y qué no", excerpt: "Qué recorridos aguantan de verdad y a partir de qué edad.", coverImageUrl: null },
+    { slug: "hacer-guia-definitiva-para-visitar-xilitla-todo-lo-que-necesitas-saber", title: "Guía definitiva para visitar Xilitla: todo lo que necesitas saber antes de ir", excerpt: "Las Pozas, clima, cómo llegar, precios y lo que conviene saber antes de salir.", coverImageUrl: null },
+    { slug: "cascada-de-tamul-la-guia-definitiva-para-visitarla",                     title: "Cascada de Tamul: la guía definitiva para visitarla",                          excerpt: "Precios, horarios, cómo llegar y qué esperar en la cascada más alta de México.", coverImageUrl: null },
+    { slug: "huasteca-potosina-con-ninos-la-ruta-familiar-perfecta-2026",             title: "Huasteca Potosina con niños: la ruta familiar perfecta",                      excerpt: "Qué recorridos aguantan de verdad, a partir de qué edad y cuánto cuesta.", coverImageUrl: null },
   ];
   ([3, 8, 12] as const).forEach((mes, i) => {
     out.push({

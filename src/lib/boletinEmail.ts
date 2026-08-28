@@ -18,7 +18,11 @@
  *
  *  1. LA TEMPORADA. Es lo único que cambia de verdad mes a mes y lo único que
  *     justifica el correo. Va primero, y con su matiz honesto incluido.
- *  2. LO QUE ESCRIBIMOS. Los artículos nuevos, con foto. Es contenido, no venta.
+ *  2. LO QUE ESCRIBIMOS. Los artículos nuevos: título, entradilla y enlace.
+ *     Sin foto a propósito — las portadas del blog pesan de 260 a 850 KB y
+ *     tres de ellas convierten el boletín en un correo que tarda en abrir.
+ *     La única foto es la del recorrido destacado, la ligera de
+ *     `public/imagenes/correo/`. Es contenido, no venta.
  *  3. UN CONSEJO. Práctico y corto. Lo que sabe alguien que vive ahí.
  *
  * La venta va al final y suave: un botón. Quien lleva ocho meses en la lista sin
@@ -27,6 +31,7 @@
  */
 
 import { TOURS_DB } from "./tours";
+import { normalizaSlugBlog } from "./blogDestinoMap";
 import { temporadaDe, nombreMes } from "./temporada";
 import {
   BASE, C, WA, bajoBoton, barra, boton, fotoTour, nota, parrafo, shellCorreo, tabla, titulo,
@@ -85,18 +90,26 @@ export function buildBoletinEmail(d: BoletinInput): { subject: string; html: str
 
   const postsHtml = d.posts.length
     ? barra(d.posts.length === 1 ? "Lo que escribimos este mes" : "Lo que escribimos este mes") +
-      tabla(d.posts.slice(0, 3).map((p, i) => `
+      tabla(d.posts.slice(0, 3).map((p, i) => {
+        // La URL buena es la del sitemap: sin el año. Los slugs de la base
+        // todavía traen `-2026` en la mitad de los artículos y `next.config.mjs`
+        // los redirige (308) a la versión limpia. Mandar el slug crudo funciona
+        // de casualidad —por esa redirección— y añade un salto que algunos
+        // clientes de correo y filtros corporativos no siguen.
+        const url = `${BASE}/blog/${normalizaSlugBlog(p.slug)}`;
+        return `
         <tr>
           <td style="border:1px solid ${C.borde};${i === 0 ? "" : "border-top:none;"}background-color:${C.tarjeta};padding:18px 22px;">
             <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;color:${C.oscuro};line-height:1.3;">
-              <a href="${BASE}/blog/${p.slug}" style="color:${C.oscuro};">${p.title}</a>
+              <a href="${url}" style="color:${C.oscuro};">${p.title}</a>
             </p>
             <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.texto};line-height:1.7;">${p.excerpt}</p>
             <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;">
-              <a href="${BASE}/blog/${p.slug}" style="color:${C.verde};font-weight:500;">Leerlo →</a>
+              <a href="${url}" style="color:${C.verde};font-weight:500;">Leerlo →</a>
             </p>
           </td>
-        </tr>`).join(""))
+        </tr>`;
+      }).join(""))
     : "";
 
   const html = shellCorreo({
