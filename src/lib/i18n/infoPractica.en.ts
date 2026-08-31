@@ -1,6 +1,7 @@
 import type { Locale } from "./config";
 import type { FAQCategory } from "@/components/FAQAccordion";
 
+import { GRUPO_MAX } from "@/lib/tours";
 /**
  * Traducción de /info-practica, la guía práctica de viaje.
  *
@@ -677,7 +678,7 @@ const ES: InfoPracticaContent = {
         },
         {
           q: "¿Cuántas personas hay en cada tour?",
-          a: "Nuestros grupos son pequeños, máximo 12 personas, para garantizar una experiencia personalizada. También ofrecemos tours privados para tu grupo.",
+          a: `Nuestros grupos son pequeños, máximo ${GRUPO_MAX} personas, para garantizar una experiencia personalizada. Si van más, habla con el equipo: armamos una salida privada para tu grupo.`,
         },
       ],
     },
@@ -1249,7 +1250,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "How many people are on each tour?",
-          a: "Our groups are small, a maximum of 12 people, to keep the experience personal. We also offer private tours for your own group.",
+          a: `Our groups are small, a maximum of ${GRUPO_MAX} people, to keep the experience personal. Traveling with more? Talk to the team and we'll arrange a private departure for your group.`,
         },
       ],
     },

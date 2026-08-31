@@ -1,5 +1,6 @@
 import type { Locale } from "./config";
 
+import { GRUPO_MAX } from "@/lib/tours";
 /**
  * Traducción de /nosotros.
  *
@@ -168,7 +169,7 @@ const ES: NosotrosContent = {
     { titulo: "Seguridad primero", texto: "Todos nuestros guías tienen certificación en primeros auxilios, rescate acuático y manejo de grupos en entornos naturales.", fotoAlt: "Carlos Rodríguez — guía certificado con equipo de seguridad" },
     { titulo: "Turismo responsable", texto: "Aforos limitados, cero plásticos y $30 MXN de cada tour van al Fondo de Conservación Huasteca.", fotoAlt: "Grupo en canoa en el Cañón del Tampaón — bajo impacto" },
     { titulo: "Experiencia auténtica", texto: "No seguimos guiones. Cada recorrido se adapta al ritmo y los intereses de tu grupo para vivir la Huasteca de verdad.", fotoAlt: "Cueva del Agua — destinos inaccesibles solo con guía local" },
-    { titulo: "Grupos pequeños", texto: "Máximo 12 personas por grupo. Atención personalizada y acceso a rincones que los autobuses turísticos nunca verán.", fotoAlt: "Grupo pequeño en el río — experiencia personalizada" },
+    { titulo: "Grupos pequeños", texto: `Máximo ${GRUPO_MAX} personas por grupo. Si son más, habla con el equipo y armamos una salida privada. Atención personalizada y acceso a rincones que los autobuses turísticos nunca verán.`, fotoAlt: "Grupo pequeño en el río — experiencia personalizada" },
     { titulo: "Mejora constante", texto: "Cada temporada actualizamos protocolos, rutas y equipamiento. Capacitación continua con SECTUR.", fotoAlt: "Sótano de las Huahuas al amanecer — acceso exclusivo" },
   ],
 
@@ -353,7 +354,7 @@ const EN: NosotrosContent = {
     { titulo: "Safety first", texto: "Every one of our guides is certified in first aid, water rescue and leading groups in natural settings.", fotoAlt: "Carlos Rodríguez — certified guide with safety gear" },
     { titulo: "Responsible tourism", texto: "Limited group sizes, zero plastics, and $30 MXN from every tour goes to the Huasteca Conservation Fund.", fotoAlt: "Group canoeing through the Tampaón Canyon — low impact" },
     { titulo: "An authentic experience", texto: "We don't follow scripts. Each tour adapts to your group's pace and interests so you experience the real Huasteca.", fotoAlt: "Water Cave — places you can only reach with a local guide" },
-    { titulo: "Small groups", texto: "A maximum of 12 people per group. Personal attention and access to corners the tour buses will never see.", fotoAlt: "A small group on the river — a personal experience" },
+    { titulo: "Small groups", texto: `A maximum of ${GRUPO_MAX} people per group. Traveling with more? Talk to the team and we'll arrange a private departure. Personal attention and access to corners the tour buses will never see.`, fotoAlt: "A small group on the river — a personal experience" },
     { titulo: "Constant improvement", texto: "Every season we update protocols, routes and equipment. Ongoing training with SECTUR.", fotoAlt: "Sótano de las Huahuas at dawn — exclusive access" },
   ],
 

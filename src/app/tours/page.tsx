@@ -13,6 +13,7 @@ import { PageViewTracker } from "@/components/PageViewTracker";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
 
+import { GRUPO_MAX, GRUPO_MIN } from "@/lib/tours";
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const en = locale === "en";
@@ -409,17 +410,17 @@ export default function ToursPage() {
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border border-white/10 overflow-hidden">
           <div className="p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-white/10">
-            <span className="reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">{en ? "Groups · 2–12 people" : "Grupos · 2–12 personas"}</span>
+            <span className="reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">{en ? `Groups · ${GRUPO_MIN}–${GRUPO_MAX} people` : `Grupos · ${GRUPO_MIN}–${GRUPO_MAX} personas`}</span>
             <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>{en ? "Shared group tours" : "Tours en grupo compartido"}</h2>
             <p className="text-crema/60 font-dm text-sm leading-relaxed mb-6">
               {en
-                ? "Experience it with other travelers. Small groups of max. 12 people to guarantee personal attention, access to exclusive corners and a pace no tour bus can offer."
-                : "Vive la experiencia con otros viajeros. Grupos pequeños de máximo 12 personas para garantizar atención personalizada, acceso a rincones exclusivos y un ritmo que ningún autobús turístico puede ofrecer."}
+                ? `Experience it with other travelers. Small groups of max. ${GRUPO_MAX} people to guarantee personal attention, access to exclusive corners and a pace no tour bus can offer. Traveling with more? Talk to the team and we'll arrange a private departure.`
+                : `Vive la experiencia con otros viajeros. Grupos pequeños de máximo ${GRUPO_MAX} personas para garantizar atención personalizada, acceso a rincones exclusivos y un ritmo que ningún autobús turístico puede ofrecer. ¿Son más? Habla con el equipo y armamos una salida privada.`}
             </p>
             <ul className="space-y-2 mb-7">
               {(en
-                ? ["Max. 12 people per group", "Dedicated guide the whole trip", "Transport from your accommodation", `From $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN per person`]
-                : ["Máximo 12 personas por grupo", "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles", `Precio desde $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN por persona`]
+                ? [`Max. ${GRUPO_MAX} people per group — more? talk to the team`, "Dedicated guide the whole trip", "Transport from your accommodation", `From $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN per person`]
+                : [`Máximo ${GRUPO_MAX} personas por grupo — si son más, habla con el equipo`, "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles", `Precio desde $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN por persona`]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-verde-vivo mt-0.5 flex-shrink-0">✓</span>{item}</li>
               ))}

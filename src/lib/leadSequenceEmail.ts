@@ -13,6 +13,7 @@
 import { TOURS_DB, type Tour } from "./tours";
 import { CIUDADES_ORIGEN } from "./ciudadesOrigen";
 import { temporadaDe, nombreMes } from "./temporada";
+import { GRUPO_MAX } from "@/lib/tours";
 import {
   BASE, C, WA, bajoBoton, barra, boton, fotoTour, nota, parrafo, shellCorreo, tabla, titulo,
 } from "./emailLayout";
@@ -193,7 +194,7 @@ function porQueEsteDia(t: Tour, d: LeadEmailInput, dia: number, usados: Set<stri
   if (t.duracion_hrs <= 6) {
     candidatas.push({ llave: "ligero", texto: `Son ${t.duracion_hrs} h — el día más ligero del viaje, bueno para cerrar sin prisa.` });
   }
-  if (d.grupo === "En pareja" && t.groupMax <= 12) {
+  if (d.grupo === "En pareja" && t.groupMax <= GRUPO_MAX) {
     candidatas.push({ llave: "grupo", texto: `Grupos de máximo ${t.groupMax} personas: no es un camión de turistas.` });
   }
   if (t.destinos.length >= 3) {

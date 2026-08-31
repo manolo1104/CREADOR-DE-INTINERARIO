@@ -1,4 +1,4 @@
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, GRUPO_MAX } from "@/lib/tours";
 import { FONDOS, tarjetaOG, OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og/tarjeta";
 
 // Este archivo reexportaba la tarjeta española, así que quien compartía
@@ -15,7 +15,7 @@ export default function Image() {
     eyebrow: "San Luis Potosí · Mexico",
     titulo: `${TOURS_DB.length} Guided Tours`,
     subtitulo: "Huasteca Potosina",
-    pills: ["Transport included", "Breakfast included", "Certified guides", "Max. 12 people"],
+    pills: ["Transport included", "Breakfast included", "Certified guides", `Max. ${GRUPO_MAX} people`],
     estrellas: "4.9 · 492 reviews · Best Tour Operator, North America",
   });
 }

@@ -4,6 +4,8 @@ import { getEmails, emailLocale } from "./i18n/emails";
 import { localizeTour } from "./i18n/localize";
 import { localizePaquete } from "./i18n/paquetes.en";
 import type { Locale } from "./i18n/config";
+import { extrasDe, calcExtraLine, totalExtras } from "./admin/extras";
+import { desgloseCotizacion } from "./admin/totalesCotizacion";
 
 /**
  * Lo que incluye ESE tour, tomado del catálogo.
@@ -69,6 +71,8 @@ export function buildTourEmailHtml(data: {
   partySize?:        number;  // tamaño real del grupo; tiene prioridad para mostrar participantes
   lineItems?:        any[];   // [{tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}, ...] (+ un objeto _meta)
   packageItems?:     any[];   // [{hotel,habitacion,noches,habitaciones,checkin,checkout,subtotal}, ...]
+  /** Items sueltos: comida, transporte, guía privado. Ver `src/lib/admin/extras.ts`. */
+  extraItems?:       any[];
   /** Idioma en que el cliente reservó. Cae al español si no viene. */
   locale?:           string;
 }): string {
@@ -275,6 +279,36 @@ export function buildTourEmailHtml(data: {
             }).join("")}
           </table>` : "";
 
+  /**
+   * Lo que se contrató ADEMÁS del recorrido y del hotel: la comida, el
+   * transporte, el guía privado. Lo que va incluido se dice "Incluido" en vez
+   * de $0 — un cero al lado de "comida" se lee como que no la hay.
+   *
+   * `costoUnitario` NO se toca aquí: es lo que nos cuesta a nosotros y no sale
+   * del panel por ningún lado.
+   */
+  const extras = extrasDe(data.extraItems);
+  const extrasHtml = extras.length ? `
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+            <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:16px 22px;">
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">${T.extrasTitulo}</p>
+            </td></tr>
+            ${extras.map((ex) => {
+              const cobro = calcExtraLine(ex);
+              const sub   = [ex.detalle, ex.cantidad > 1 ? T.extraCantidad(ex.cantidad) : ""].filter(Boolean).join(" · ");
+              return `
+            <tr>
+              <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${ex.concepto}</p>
+                ${sub ? `<p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${sub}</p>` : ""}
+              </td>
+              <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
+                <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:${cobro > 0 ? "#1a2e1a" : "#3a6b1a"};">${cobro > 0 ? fmxEmail(cobro) : T.extraIncluido}</p>
+              </td>
+            </tr>`;
+            }).join("")}
+          </table>` : "";
+
   return `<!DOCTYPE html>
 <html lang="${locale === "en" ? "en" : "es"}">
 <head>
@@ -368,6 +402,7 @@ export function buildTourEmailHtml(data: {
           </table>
           ${detallesHtml}
           ${lodgingHtml}
+          ${extrasHtml}
 
           <!-- TOTAL -->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#1a2e1a;margin:28px 0;">
@@ -543,10 +578,12 @@ export function buildTourQuoteEmailHtml(data: {
   totalAmount:   number;
   notes?:        string;
   partySize?:    number;  // tamaño real del grupo (evita sumar las personas de cada tour)
-  lineItems?:    { tourName: string; tourSlug?: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number }[];
+  lineItems?:    { tourName: string; tourSlug?: string; tourDate: string; adults: number; children?: number; childrenMid?: number; childrenSmall?: number; subtotal: number; vehiculo?: string; unidades?: number; addOns?: { id?: string; nombre?: string; cantidad?: number; subtotal?: number }[]; eleccion?: string }[];
   // Hospedaje cotizado. Antes no llegaba al correo aunque la cotización del
   // sistema sí lo incluye → el cliente no veía el hotel/noches ni su subtotal.
   packageItems?: { hotel?: string; habitacion?: string; noches?: number; habitaciones?: number; checkin?: string; checkout?: string; subtotal?: number; _meta?: unknown }[];
+  /** Items sueltos cotizados: comida, transporte, guía privado. */
+  extraItems?:   unknown;
   /** Idioma del cliente. Cae al español si no viene. */
   locale?:       string;
 }): string {
@@ -598,6 +635,27 @@ export function buildTourQuoteEmailHtml(data: {
   const totalParticipants = data.adults + data.children;
   const participantsText  = `${C.adultos(data.adults)}${data.children > 0 ? ` · ${C.menores(data.children)}` : ""}`;
 
+  /**
+   * Lo contratado ADEMÁS del recorrido dentro del mismo renglón: la actividad
+   * opcional (el Salto de las 7 Cascadas) y la elección obligatoria.
+   * Va con su importe porque está dentro del subtotal de la línea.
+   */
+  const extrasDeLinea = (it: any): string => {
+    const filas: string[] = [];
+    for (const a of Array.isArray(it?.addOns) ? it.addOns : []) {
+      const cant = Math.max(1, Number(a?.cantidad) || 1);
+      const imp  = a?.subtotal != null ? ` · ${fmx(Number(a.subtotal))}` : "";
+      const base = it.tourSlug ? TOURS_DB.find((t) => t.slug === it.tourSlug) : undefined;
+      const nom  = locale === "es"
+        ? (a?.nombre || a?.id || "")
+        : (base ? localizeTour(base, locale).addOns?.find((x) => x.id === a?.id)?.nombre : undefined) || a?.nombre || a?.id || "";
+      filas.push(`${C.addOnLinea(String(nom), cant)}${imp}`);
+    }
+    if (it?.eleccion) filas.push(C.elegiste(String(it.eleccion)));
+    if (!filas.length) return "";
+    return `<p style="margin:5px 0 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#3a6b1a;line-height:1.7">${filas.join("<br>")}</p>`;
+  };
+
   // Tabla de items si hay paquete multi-tour
   const itemsRows = (data.lineItems && data.lineItems.length > 1)
     ? data.lineItems.map(it => `
@@ -606,6 +664,7 @@ export function buildTourQuoteEmailHtml(data: {
         <td style="padding:14px 0;vertical-align:top;width:65%">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${it.vehiculo ? `${formatDate(it.tourDate)} · ${C.vehiculos(Math.max(1, Number(it.unidades) || 1))}` : `${formatDate(it.tourDate)} · ${C.adultos(it.adults)}${(it.childrenMid ?? 0) > 0 ? ` · ${T.ninos(it.childrenMid!)} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${T.ninos(it.childrenSmall!)} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${T.ninos(it.children!)}` : ""}`}</p>
+          ${extrasDeLinea(it)}
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(it.subtotal)}</p>
@@ -618,6 +677,7 @@ export function buildTourQuoteEmailHtml(data: {
         <td style="padding:14px 0;vertical-align:top">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${data.tourName}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(data.tourDate)} · ${participantsText}</p>
+          ${extrasDeLinea(data.lineItems?.[0])}
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(data.totalAmount)}</p>
@@ -651,6 +711,41 @@ export function buildTourQuoteEmailHtml(data: {
             </tr>`;
             }).join("")}
           </table>` : "";
+
+  // Lo cotizado además del recorrido y del hotel. Lo que va sin cargo se dice
+  // "Incluido": el cliente tiene que ver por escrito que la comida entra.
+  const extrasQ = extrasDe(data.extraItems);
+
+  /**
+   * El desglose del dinero, con el MISMO cálculo que el PDF (ver
+   * `src/lib/admin/totalesCotizacion.ts`). Antes este correo solo decía "Total
+   * cotizado": ni el descuento que se le había hecho al cliente, ni cuánto
+   * tenía que dar para apartar.
+   */
+  const metaQ = (Array.isArray(data.packageItems) ? data.packageItems.find((p: any) => p && p._meta) : null) ?? {};
+  const sumaLineas =
+    (data.lineItems ?? []).reduce((s, l) => s + (Number(l.subtotal) || 0), 0) +
+    packages.reduce((s, p) => s + (Number(p.subtotal) || 0), 0) +
+    totalExtras(extrasQ);
+  const desglose = desgloseCotizacion(sumaLineas, data.totalAmount, metaQ as any);
+  const extrasHtml = extrasQ.length ? `
+          <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">${T.extrasTitulo}</p>
+          ${extrasQ.map((ex) => {
+            const cobro = calcExtraLine(ex);
+            const sub   = [ex.detalle, ex.cantidad > 1 ? T.extraCantidad(ex.cantidad) : ""].filter(Boolean).join(" · ");
+            return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3;">
+      <tr>
+        <td style="padding:14px 0;vertical-align:top;width:65%">
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${ex.concepto}</p>
+          ${sub ? `<p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${sub}</p>` : ""}
+        </td>
+        <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:${cobro > 0 ? "#1a2e1a" : "#3a6b1a"};margin:0">${cobro > 0 ? fmx(cobro) : T.extraIncluido}</p>
+        </td>
+      </tr>
+    </table>`;
+          }).join("")}` : "";
 
   return `<!DOCTYPE html>
 <html lang="${locale === "en" ? "en" : "es"}">
@@ -733,9 +828,29 @@ export function buildTourQuoteEmailHtml(data: {
           <p style="margin:-8px 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${T.grupoDe(Number(data.partySize))}</p>` : ""}
           ${itemsRows}
           ${lodgingHtml}
+          ${extrasHtml}
+
+          <!-- DESGLOSE: lo que se descontó, antes del total -->
+          ${(desglose.ajuste !== 0 || desglose.descuento > 0) ? `
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0 0">
+            <tr>
+              <td style="padding:5px 0;font-family:'DM Sans',Arial;font-size:13px;color:#6a6a5a">${T.precioLista}</td>
+              <td style="padding:5px 0;text-align:right;font-family:'DM Sans',Arial;font-size:13px;color:#6a6a5a">${fmx(sumaLineas)}</td>
+            </tr>
+            ${desglose.ajuste !== 0 ? `
+            <tr>
+              <td style="padding:5px 0;font-family:'DM Sans',Arial;font-size:13px;color:#6a6a5a">${T.ajustePrecio}</td>
+              <td style="padding:5px 0;text-align:right;font-family:'DM Sans',Arial;font-size:13px;color:#6a6a5a">${desglose.ajuste > 0 ? "+" : "−"}${fmx(Math.abs(desglose.ajuste))}</td>
+            </tr>` : ""}
+            ${desglose.descuento > 0 ? `
+            <tr>
+              <td style="padding:5px 0;font-family:'DM Sans',Arial;font-size:13px;color:#3a6b1a;font-weight:500">${T.descuentoAplicado}</td>
+              <td style="padding:5px 0;text-align:right;font-family:'DM Sans',Arial;font-size:13px;color:#3a6b1a;font-weight:500">−${fmx(desglose.descuento)}</td>
+            </tr>` : ""}
+          </table>` : ""}
 
           <!-- TOTAL -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#1a2e1a;margin:24px 0">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#1a2e1a;margin:24px 0 0">
             <tr><td class="mobile-p" style="padding:22px 28px">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
@@ -745,6 +860,27 @@ export function buildTourQuoteEmailHtml(data: {
                   </td>
                 </tr>
               </table>
+            </td></tr>
+          </table>
+
+          <!-- ANTICIPO: cuánto hay que dar HOY para apartar -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #c4882a;background-color:#fdf9f0;margin:0 0 24px">
+            <tr><td class="mobile-p" style="padding:18px 28px">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td><p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a">${T.anticipoApartar(desglose.anticipoPct)}</p></td>
+                  <td style="text-align:right">
+                    <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:500;color:#9a4a1e">${fmx(desglose.anticipo)}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-top:6px"><p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a">${T.saldoDia}</p></td>
+                  <td style="padding-top:6px;text-align:right">
+                    <p style="margin:0;font-family:'DM Sans',Arial;font-size:14px;color:#1a2e1a">${fmx(desglose.saldo)}</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:12px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a;line-height:1.6">${T.anticipoNota}</p>
             </td></tr>
           </table>
 

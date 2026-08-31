@@ -5,6 +5,7 @@ import { TRASLADOS } from "@/lib/traslados";
 import { formatMXN } from "@/lib/tourBooking";
 import { fmtMoney } from "./format";
 
+import { GRUPO_MAX } from "@/lib/tours";
 /**
  * Traducción de /preguntas-frecuentes.
  *
@@ -154,7 +155,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Es seguro viajar a la Huasteca Potosina?",
-      a: "Sí. Es uno de los destinos de naturaleza más visitados del centro-norte de México y recibe viajeros nacionales e internacionales todo el año. Para mayor tranquilidad recomendamos recorrer con guías certificados NOM-09, manejar de día por la sierra y seguir siempre las indicaciones de seguridad en ríos y cascadas. Nuestros grupos son pequeños (máximo 6 a 12 personas) y cada tour incluye equipo de seguridad y botiquín.",
+      a: `Sí. Es uno de los destinos de naturaleza más visitados del centro-norte de México y recibe viajeros nacionales e internacionales todo el año. Para mayor tranquilidad recomendamos recorrer con guías certificados NOM-09, manejar de día por la sierra y seguir siempre las indicaciones de seguridad en ríos y cascadas. Nuestros grupos son pequeños (máximo ${GRUPO_MAX} personas) y cada tour incluye equipo de seguridad y botiquín.`,
     },
     {
       q: "¿Qué llevar a las cascadas de la Huasteca Potosina?",
@@ -194,7 +195,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Hacen tours privados o para grupos grandes?",
-      a: "Sí. Los tours regulares operan en grupos pequeños de 6 a 12 personas. Para salidas privadas, grupos de más de 12, empresas o escuelas, escríbenos por WhatsApp con tus fechas y el número de personas y te armamos una cotización a la medida.",
+      a: `Sí. Los tours regulares operan en grupos pequeños de hasta ${GRUPO_MAX} personas. Para salidas privadas, grupos de más de ${GRUPO_MAX}, empresas o escuelas, habla con el equipo por WhatsApp con tus fechas y el número de personas y te armamos una cotización a la medida.`,
     },
     {
       q: "¿Los guías hablan inglés?",
@@ -272,7 +273,7 @@ const EN: FaqContent = {
     },
     {
       q: "Is the Huasteca Potosina safe to travel to?",
-      a: "Yes. It is one of the most visited nature destinations in central-northern Mexico and receives Mexican and international travelers year-round. For extra peace of mind we recommend traveling with NOM-09 certified guides, driving the mountain roads during daylight, and always following the safety instructions at rivers and waterfalls. Our groups are small (6 to 12 people maximum) and every tour includes safety gear and a first-aid kit.",
+      a: `Yes. It is one of the most visited nature destinations in central-northern Mexico and receives Mexican and international travelers year-round. For extra peace of mind we recommend traveling with NOM-09 certified guides, driving the mountain roads during daylight, and always following the safety instructions at rivers and waterfalls. Our groups are small (up to ${GRUPO_MAX} people) and every tour includes safety gear and a first-aid kit.`,
     },
     {
       q: "What should I pack for the waterfalls?",
@@ -312,7 +313,7 @@ const EN: FaqContent = {
     },
     {
       q: "Do you run private tours or tours for large groups?",
-      a: "Yes. Regular tours run in small groups of 6 to 12 people. For private departures, groups larger than 12, companies or schools, message us on WhatsApp with your dates and headcount and we'll put together a custom quote.",
+      a: `Yes. Regular tours run in small groups of up to ${GRUPO_MAX} people. For private departures, groups larger than ${GRUPO_MAX}, companies or schools, talk to the team on WhatsApp with your dates and headcount and we'll put together a custom quote.`,
     },
     {
       q: "Do the guides speak English?",

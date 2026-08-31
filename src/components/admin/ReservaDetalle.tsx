@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { TourBooking } from "@prisma/client";
-import { X, BedDouble, Paperclip, FileText, ImageIcon, MapPin } from "lucide-react";
+import { X, BedDouble, Paperclip, FileText, ImageIcon, MapPin, Utensils } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, metaDe, type LineaTour } from "@/lib/admin/reserva";
+import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
 import type { Evidencia } from "@/components/admin/PagoProveedorCell";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
@@ -54,12 +55,14 @@ export default function ReservaDetalle({
   const grupo    = grupoDe(b as any);
   const pkgs     = ((b as any).packageItems ?? []) as any[];
   const hospedaje = Array.isArray(pkgs) ? pkgs.filter(p => p && !p._meta) : [];
+  const extras   = extrasDe((b as any).extraItems);
 
   const rawDeposito = (b as any).depositoPagado ?? 0;
   const deposito    = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
   const pendiente   = Math.max(0, b.totalAmount - deposito);
   const sumaLineas  = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
-                    + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0);
+                    + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
+                    + totalExtras(extras);
 
   const pagoProv    = (b as any).pagoProveedor as boolean | null;
   const montoProv   = (b as any).pagoProveedorMonto ?? 0;
@@ -171,6 +174,42 @@ export default function ReservaDetalle({
                   </div>
                 ))}
               </div>
+            </Seccion>
+          )}
+
+          {/* Extras: lo que hay que OPERAR y cobrar además del recorrido */}
+          {extras.length > 0 && (
+            <Seccion titulo="Extras e items incluidos">
+              <div className="space-y-2">
+                {extras.map((ex, i) => {
+                  const cobro = calcExtraLine(ex);
+                  const costo = costoExtraLine(ex);
+                  return (
+                    <div key={i} className="flex items-start gap-3 bg-[#FAFAF8] border border-[#1B4332]/8 rounded-sm p-3">
+                      <Utensils className="w-4 h-4 text-[#C4882A] shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#1B4332] font-dm text-sm font-medium">
+                          {ex.concepto}{ex.cantidad > 1 && <span className="text-[#1B4332]/45"> × {ex.cantidad}</span>}
+                        </p>
+                        {ex.detalle && <p className="text-[#1B4332]/55 font-dm text-xs mt-0.5">{ex.detalle}</p>}
+                        {costo > 0 && (
+                          <p className="text-[#1B4332]/40 font-dm text-xs mt-0.5">
+                            Te cuesta {fmx(costo)} · te deja {fmx(cobro - costo)}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`font-dm text-sm font-medium whitespace-nowrap ${ex.incluido || cobro === 0 ? "text-[#40916C]" : "text-[#C4882A]"}`}>
+                        {ex.incluido || cobro === 0 ? "Incluido" : fmx(cobro)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {costoExtras(extras) > 0 && (
+                <p className="text-[#1B4332]/40 font-dm text-xs mt-2">
+                  Los extras cobran {fmx(totalExtras(extras))} y te cuestan {fmx(costoExtras(extras))}. Lo que te cuestan solo lo ves tú: no sale en el PDF ni en el correo del cliente.
+                </p>
+              )}
             </Seccion>
           )}
 

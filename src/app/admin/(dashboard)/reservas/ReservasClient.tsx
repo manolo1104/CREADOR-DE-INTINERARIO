@@ -4,10 +4,11 @@ import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine } from "@/components/admin/ReservaModal";
+import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import PagoProveedorCell, { type Evidencia } from "@/components/admin/PagoProveedorCell";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
+import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -61,8 +62,8 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, initialEvidencias = [] }:
-  { initialBookings: TourBooking[]; initialEvidencias?: Evidencia[] },
+  { initialBookings, initialEvidencias = [], presetsExtras = EXTRAS_PRESET }:
+  { initialBookings: TourBooking[]; initialEvidencias?: Evidencia[]; presetsExtras?: PresetExtra[] },
 ) {
   const [bookings,      setBookings]      = useState(initialBookings);
   const [evidencias,    setEvidencias]    = useState<Evidencia[]>(initialEvidencias);
@@ -169,7 +170,8 @@ export default function ReservasClient(
     // calculado (precio ajustado, descuento de una cotización convertida, etc.)
     // lo cargamos como total editado para no perderlo al reabrir/guardar.
     const calcTotal = lines.reduce((s, l) => s + calcLine(l), 0)
-                    + (storedPkgs ?? []).reduce((s, p) => s + calcPackageLine(p), 0);
+                    + (storedPkgs ?? []).reduce((s, p) => s + calcPackageLine(p), 0)
+                    + totalExtras(extrasDe((b as any).extraItems));
 
     setForm({
       customerName:   b.customerName,
@@ -178,6 +180,7 @@ export default function ReservasClient(
       notes:          b.notes || "",
       lines,
       packages:       storedPkgs ?? [],
+      extras:         extrasDe((b as any).extraItems),
       totalOverride:  b.totalAmount !== calcTotal ? String(b.totalAmount) : "",
       depositoPagado: String((b as any).depositoPagado ?? 0),
       metodoPago:     meta.metodoPago  || "Transferencia",
@@ -194,9 +197,11 @@ export default function ReservasClient(
       ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
     ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
+    const extraItems   = (form.extras ?? []).filter(e => e.concepto.trim()).map(normalizarExtra);
     const toursTotal   = lineItems.reduce((s, l) => s + ((l as any).subtotal ?? 0), 0);
     const pkgsTotal    = packageItems.reduce((s, p) => s + p.subtotal, 0);
-    const calcTotal    = toursTotal + pkgsTotal;
+    const extrasTotal  = totalExtras(extraItems);
+    const calcTotal    = toursTotal + pkgsTotal + extrasTotal;
     const totalAmount  = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
     const primaryLine  = form.lines[0];
     const tourNames    = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
@@ -211,6 +216,7 @@ export default function ReservasClient(
       totalAmount,
       lineItems,
       packageItems,
+      extraItems,
       depositoPagado: Number(form.depositoPagado) || 0,
       customerName:   form.customerName,
       customerEmail:  form.customerEmail,
@@ -288,6 +294,11 @@ export default function ReservasClient(
       const dif  = t ? (DIFIC[t.dificultad] || t.dificultad) : "—";
       const fd   = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short" }) : "—";
       const num  = String(i + 1).padStart(2, "0");
+      const opcionales = addOnsDeTour(l.tourSlug)
+        .map(a => ({ a, n: cantidadAddOn(l, a.id) }))
+        .filter(x => x.n > 0)
+        .map(({ a, n }) => `<span><span class="k">Incluye</span> ${a.nombre} · ${n} ${n === 1 ? "persona" : "personas"}</span>`)
+        .join("");
       return `<div class="day">
         <div class="num">${num}</div>
         <div>
@@ -296,6 +307,7 @@ export default function ReservasClient(
             <span><span class="k">Fecha</span> ${fd}</span>
             <span><span class="k">Dur.</span> ${dur}</span>
             <span><span class="k">Dif.</span> ${dif}</span>
+            ${opcionales}
           </div>
         </div>
         <div class="pickup">
@@ -333,6 +345,31 @@ export default function ReservasClient(
       : `<div class="stay-none">Sin hospedaje — esta reserva es solo de tours.</div>`;
     const lodgingBlock = `<div class="lodging"><h3>Hospedaje</h3>${lodgingRows}</div>`;
 
+    // Extras contratados (comida, transporte, guía privado). El cliente ve el
+    // concepto y su importe; lo que a nosotros nos costó NO sale del panel.
+    const PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>`;
+    const extras   = extrasDe((b as any).extraItems);
+    const extrasBlock = extras.length
+      ? `<div class="lodging"><h3>Incluye además</h3>${extras.map(ex => {
+          const cobro = calcExtraLine(ex);
+          const cant  = ex.cantidad > 1 ? `<span><span class="k">Cantidad</span> ${ex.cantidad}</span>` : "";
+          const monto = ex.incluido || cobro === 0
+            ? `<span><span class="k">Costo</span> Incluido</span>`
+            : `<span><span class="k">Importe</span> $${cobro.toLocaleString("es-MX")}</span>`;
+          return `<div class="stay">
+            <div class="stay-ico">${PLUS_SVG}</div>
+            <div>
+              <h4 class="name">${ex.concepto}</h4>
+              <div class="meta">
+                ${ex.detalle ? `<span>${ex.detalle}</span>` : ""}
+                ${cant}
+                ${monto}
+              </div>
+            </div>
+          </div>`;
+        }).join("")}</div>`
+      : "";
+
     win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Confirmación ${b.confirmationNumber}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
@@ -340,8 +377,50 @@ export default function ReservasClient(
 :root{--negro:#0e1710;--verde-profundo:#1a2e1a;--verde-selva:#3a6b1a;--verde-vivo:#5a9e2a;--lima:#8fbe3a;--crema:#f4edd8;--arena:#e6d4b0;--dorado:#c4882a;--terracota:#9a4a1e;--display:'Cormorant Garamond',Georgia,serif;--dm:'DM Sans',system-ui,sans-serif;}
 @page{size:A4 portrait;margin:0;}*{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(--negro);}
-.page{width:210mm;height:296mm;background:var(--crema);position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;}
-@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}html,body{background:white;}.page{margin:0;box-shadow:none;}}
+/* 🔴 Antes: height fijo + overflow:hidden. Con varios recorridos y hospedaje el
+   itinerario empujaba hacia abajo las condiciones (cancelación, saldo, el día
+   del tour) y la firma, y el voucher salía sin ellas. Ahora la hoja crece, se
+   aprieta sola hasta caber, y si aun así no cabe sigue en otra página. */
+.page{width:210mm;min-height:296mm;background:var(--crema);position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:visible;display:flex;flex-direction:column;}
+.page.fluida{display:block;}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  html,body{background:var(--crema);}
+  .page{margin:0;box-shadow:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+  .day,.stay,.keyinfo,.practical,.terms-strip,.terms-strip div,.foot,.summary{break-inside:avoid;page-break-inside:avoid;}
+}
+
+/* ── Compactado automático, dos niveles ────────────────────────────────── */
+.compacta .hero{padding:7mm 12mm 5mm;}
+.compacta .hero h1{font-size:25pt;}
+.compacta .summary{padding:4mm 12mm;}
+.compacta .body{padding:4mm 12mm;gap:5mm;}
+.compacta .itin h3,.compacta .practical h3,.compacta .keyinfo h3{font-size:11.5pt;margin-bottom:2mm;}
+.compacta .day{padding:1.7mm 0;}
+.compacta .day .name,.compacta .stay .name{font-size:10pt;}
+.compacta .day .meta,.compacta .stay .meta{font-size:6.8pt;}
+.compacta .day .num{font-size:15pt;}
+.compacta .stay{padding:1.7mm 0;}
+.compacta .keyinfo{padding:3mm 4mm;}
+.compacta .keyinfo .row{font-size:7.8pt;padding:.6mm 0;}
+.compacta .practical{padding:3mm 4mm;}
+.compacta .practical li{font-size:6.8pt;line-height:1.25;}
+.compacta .terms-strip{padding:4mm 12mm 3mm;}
+.compacta .terms-strip p{font-size:6.8pt;line-height:1.35;}
+.compacta .terms-strip h3{font-size:10pt;}
+
+.compacta2 .hero{padding:5.5mm 11mm 4mm;}
+.compacta2 .hero h1{font-size:21pt;}
+.compacta2 .summary{padding:3mm 11mm;}
+.compacta2 .body{padding:3mm 11mm;gap:4mm;}
+.compacta2 .day{padding:1.2mm 0;}
+.compacta2 .day .name,.compacta2 .stay .name{font-size:9pt;}
+.compacta2 .day .meta,.compacta2 .stay .meta{font-size:6.3pt;}
+.compacta2 .day .num{font-size:13pt;}
+.compacta2 .stay{padding:1.2mm 0;}
+.compacta2 .keyinfo .row{font-size:7.2pt;}
+.compacta2 .practical li{font-size:6.3pt;line-height:1.2;}
+.compacta2 .terms-strip p{font-size:6.3pt;line-height:1.3;}
 .hero{background:var(--negro);color:var(--crema);padding:9mm 14mm 7mm;position:relative;}
 .hero::after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(135deg,rgba(244,237,216,.04) 0 2px,transparent 2px 14px);pointer-events:none;}
 .hero>*{position:relative;z-index:1;}
@@ -443,6 +522,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       <h3>Itinerario <em style="font-style:italic;color:var(--dorado)">día por día</em></h3>
       ${dayRows}
       ${lodgingBlock}
+      ${extrasBlock}
     </div>
     <div class="right-col">
       <div class="keyinfo">
@@ -478,6 +558,21 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <a class="wa" href="https://wa.me/524891251458"><span class="dot">●</span><span><span class="lbl">WhatsApp soporte</span><div class="num">+52 489 125 1458</div></span></a>
   </div>
 </section>
+<script>
+/* El voucher se mide contra una A4 real y se aprieta solo hasta caber. */
+(function () {
+  var page = document.querySelector('.page');
+  var sonda = document.createElement('div');
+  sonda.style.cssText = 'position:absolute;visibility:hidden;height:296mm;top:0;';
+  document.body.appendChild(sonda);
+  var A4 = sonda.offsetHeight;
+  sonda.remove();
+  var alto = function () { return page.getBoundingClientRect().height; };
+  if (alto() > A4 + 2) page.classList.add('compacta');
+  if (alto() > A4 + 2) page.classList.add('compacta2');
+  if (alto() > A4 + 2) page.classList.add('fluida');
+})();
+</script>
 </body></html>`);
     win.document.close();
     setTimeout(() => win.print(), 1000);
@@ -777,11 +872,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       )}
 
       {modal === "new" && (
-        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm}
+        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras}
           onSave={saveNew} onClose={() => setModal(null)} saving={saving} />
       )}
       {modal === "edit" && (
-        <ReservaModal title="Editar Reserva" form={form} setForm={setForm}
+        <ReservaModal title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}
     </div>

@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
+import ExtrasEditor from "@/components/admin/ExtrasEditor";
+import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
+import { grupoParaGuardar } from "@/lib/admin/reserva";
+import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
 
 const fmx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 
@@ -18,6 +22,59 @@ export interface LineItem {
   ruta?:         string;
   vehiculo?:     string;
   unidades?:     number;
+  /**
+   * Actividades opcionales del recorrido (ej. el Salto de las 7 Cascadas en el
+   * Paraíso Escalonado). El precio se relee SIEMPRE del catálogo al cobrar: lo
+   * que se guarda aquí es un registro de lo que se contrató, no la tarifa.
+   */
+  addOns?:       LineaAddOn[];
+}
+
+export interface LineaAddOn {
+  id:       string;
+  nombre:   string;
+  /** A cuántas personas del grupo se les suma. */
+  cantidad: number;
+  precio:   number;
+  subtotal: number;
+}
+
+/** Las actividades opcionales que ofrece ese recorrido, según el catálogo. */
+export function addOnsDeTour(slug: string) {
+  return TOURS_DB.find(t => t.slug === slug)?.addOns ?? [];
+}
+
+/** Cuánta gente lleva contratada esa actividad en esta línea. */
+export function cantidadAddOn(l: Pick<LineItem, "addOns">, id: string): number {
+  return Math.max(0, l.addOns?.find(a => a.id === id)?.cantidad ?? 0);
+}
+
+/**
+ * Lo que suman las actividades opcionales de una línea.
+ *
+ * El precio se toma del CATÁLOGO, nunca del objeto guardado: si mañana el
+ * Salto sube a $400, una cotización nueva lo cobra a $400 aunque el formulario
+ * traiga el número viejo pegado.
+ */
+export function calcAddOnsLinea(l: LineItem): number {
+  const cat = addOnsDeTour(l.tourSlug);
+  if (!cat.length) return 0;
+  return (l.addOns ?? []).reduce((s, a) => {
+    const def = cat.find(x => x.id === a.id);
+    return def ? s + def.precio * Math.max(0, a.cantidad || 0) : s;
+  }, 0);
+}
+
+/** Pone (o quita) una actividad opcional en la línea, ya con su precio y subtotal. */
+export function conAddOn(l: LineItem, id: string, cantidad: number): LineItem {
+  const def = addOnsDeTour(l.tourSlug).find(a => a.id === id);
+  if (!def) return l;
+  const resto = (l.addOns ?? []).filter(a => a.id !== id);
+  const n = Math.max(0, Math.round(cantidad) || 0);
+  const addOns = n > 0
+    ? [...resto, { id: def.id, nombre: def.nombre, cantidad: n, precio: def.precio, subtotal: def.precio * n }]
+    : resto;
+  return { ...l, addOns: addOns.length ? addOns : undefined };
 }
 
 /** Tour cobrado por vehículo (RZR): precio = matriz flota×ruta, NO por persona. */
@@ -44,6 +101,8 @@ export interface ReservaFormState {
   notes:          string;
   lines:          LineItem[];
   packages:       PackageItem[];
+  /** Comida, transporte, guía privado… lo que va aparte del recorrido y del hotel. */
+  extras:         ExtraItem[];
   totalOverride:  string;
   depositoPagado: string;
   metodoPago:     string;
@@ -72,7 +131,7 @@ const EMPTY_PACKAGE: PackageItem = {
 export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
-  lines: [{ ...EMPTY_LINE }], packages: [], totalOverride: "", depositoPagado: "",
+  lines: [{ ...EMPTY_LINE }], packages: [], extras: [], totalOverride: "", depositoPagado: "",
   metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
   numPersonas: "",
 };
@@ -81,17 +140,19 @@ export function calcTourLine(l: LineItem): number {
   const t = TOURS_DB.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
   // Tours por vehículo (RZR): la matriz flota×ruta manda; los niños no cambian el precio.
-  if (t.precioUnidad === "vehiculo" && t.rutas && t.flota) {
-    const rutaIdx  = Math.max(0, t.rutas.findIndex(r => r.nombre === l.ruta));
-    const veh      = t.flota.find(v => v.nombre === l.vehiculo) ?? t.flota[0];
-    const unidades = Math.max(1, l.unidades ?? 1);
-    return (veh?.precios[rutaIdx] ?? t.precio) * unidades;
-  }
-  return (
-    t.precio * l.adults +
-    Math.round(t.precio * 0.7) * (l.childrenMid   ?? 0) +
-    Math.round(t.precio * 0.5) * (l.childrenSmall ?? 0)
-  );
+  const base = (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
+    ? (() => {
+        const rutaIdx  = Math.max(0, t.rutas!.findIndex(r => r.nombre === l.ruta));
+        const veh      = t.flota!.find(v => v.nombre === l.vehiculo) ?? t.flota![0];
+        const unidades = Math.max(1, l.unidades ?? 1);
+        return (veh?.precios[rutaIdx] ?? t.precio) * unidades;
+      })()
+    : (
+        t.precio * l.adults +
+        Math.round(t.precio * 0.7) * (l.childrenMid   ?? 0) +
+        Math.round(t.precio * 0.5) * (l.childrenSmall ?? 0)
+      );
+  return base + calcAddOnsLinea(l);
 }
 
 /** Nombre descriptivo de una línea por vehículo, para reservas/correo: "RZR — Ruta X · Vehículo ×2". */
@@ -107,8 +168,84 @@ export function calcPackageLine(p: PackageItem): number {
   return p.precioPorNoche * p.noches * p.habitaciones;
 }
 
+/**
+ * Mantiene coherentes check-in, noches y check-out.
+ *
+ * Antes eran tres campos sueltos: se podía cobrar 2 noches con fechas de 4, y
+ * el cliente recibía una cotización que se contradecía a sí misma. Ahora dos
+ * mandan y el tercero se calcula:
+ *   · cambias la entrada o las noches  → se recalcula la salida
+ *   · cambias la salida                → se recalculan las noches
+ */
+export function sincronizarNoches(p: PackageItem, campo: "checkin" | "checkout" | "noches"): PackageItem {
+  const up = { ...p };
+  if (campo === "checkout" && up.checkin && up.checkout) {
+    const n = diffDiasYMD(up.checkin, up.checkout);
+    // Una salida anterior a la entrada no es una estancia: se deja 1 noche.
+    up.noches = Math.max(1, n);
+  } else if (up.checkin) {
+    up.noches   = Math.max(1, Math.round(Number(up.noches)) || 1);
+    up.checkout = addDaysYMD(up.checkin, up.noches);
+  } else {
+    up.noches = Math.max(1, Math.round(Number(up.noches)) || 1);
+  }
+  up.subtotal = calcPackageLine(up);
+  return up;
+}
+
+/**
+ * Selector de actividades opcionales de un recorrido. Solo aparece cuando el
+ * catálogo del tour trae alguna (hoy: el Salto de las 7 Cascadas en el Paraíso
+ * Escalonado). El precio es del catálogo y no se puede teclear: lo único que se
+ * elige es a cuánta gente se le suma.
+ */
+export function AddOnsLinea({ line, personas, onChange }: {
+  line:     LineItem;
+  personas: number;
+  onChange: (linea: LineItem) => void;
+}) {
+  const cat = addOnsDeTour(line.tourSlug);
+  if (!cat.length) return null;
+  const tope = Math.max(1, personas || 1);
+
+  return (
+    <div className="border border-[#C4882A]/30 bg-[#C4882A]/5 rounded-sm p-2.5 space-y-2">
+      <p className="text-[9px] tracking-[2px] uppercase text-[#C4882A]/90 font-dm">Actividad opcional</p>
+      {cat.map(a => {
+        const n = cantidadAddOn(line, a.id);
+        return (
+          <div key={a.id} className="space-y-1">
+            <div className="flex items-end gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[#1B4332] font-dm text-xs font-medium">{a.nombre}</p>
+                <p className="text-[#1B4332]/45 font-dm text-[10px]">{fmx(a.precio)} por persona</p>
+              </div>
+              <div className="w-24 shrink-0">
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Personas</label>
+                <input type="number" min={0} max={tope} value={n}
+                  onChange={e => onChange(conAddOn(line, a.id, Math.min(tope, Math.max(0, Number(e.target.value) || 0))))}
+                  className="w-full border border-[#C4882A]/40 text-[#1B4332] font-dm text-sm px-2 py-2 focus:outline-none focus:border-[#C4882A] rounded-sm bg-white" />
+              </div>
+            </div>
+            {n > 0 && (
+              <p className="text-right text-[11px] font-dm text-[#C4882A]">
+                {n} × {fmx(a.precio)} = <span className="font-medium">{fmx(a.precio * n)}</span>
+              </p>
+            )}
+          </div>
+        );
+      })}
+      <p className="text-[10px] font-dm text-[#1B4332]/40">
+        Va dentro del subtotal del recorrido y se nombra en el PDF y en el correo.
+      </p>
+    </div>
+  );
+}
+
 interface Props {
   title:   string;
+  /** Los conceptos con sus precios, tal como Manolo los dejó en el Cotizador. */
+  presetsExtras?: PresetExtra[];
   form:    ReservaFormState;
   setForm: (f: ReservaFormState | ((p: ReservaFormState) => ReservaFormState)) => void;
   onSave:  () => void;
@@ -116,7 +253,7 @@ interface Props {
   saving:  boolean;
 }
 
-export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: Props) {
+export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET }: Props) {
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
 
@@ -124,7 +261,12 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
 
   const toursTotal    = form.lines.reduce((s, l) => s + calcTourLine(l), 0);
   const packagesTotal = form.packages.reduce((s, p) => s + calcPackageLine(p), 0);
-  const calcTotal     = toursTotal + packagesTotal;
+  const extrasTotal   = totalExtras(form.extras ?? []);
+  // El grupo real (máximo por tour, no la suma), para llenar la cantidad de los
+  // extras que se cobran por persona.
+  const grupoActual   = grupoParaGuardar(form.lines, form.numPersonas);
+  const personasGrupo = Number(form.numPersonas) || (grupoActual.adults + grupoActual.children);
+  const calcTotal     = toursTotal + packagesTotal + extrasTotal;
   const finalTotal    = form.totalOverride !== "" ? Number(form.totalOverride) || 0 : calcTotal;
   const deposito      = Number(form.depositoPagado) || 0;
   const pendiente     = Math.max(0, finalTotal - deposito);
@@ -178,6 +320,9 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
         if (field === "habitacion") {
           const preset = HABITACIONES_PRESET.find(h => h.label === val);
           if (preset) up.precioPorNoche = preset.precio;
+        }
+        if (field === "checkin" || field === "checkout" || field === "noches") {
+          return sincronizarNoches(up, field);
         }
         up.subtotal = calcPackageLine(up);
         return up;
@@ -375,6 +520,17 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                           </>
                         )}
                         {line.tourSlug && (
+                          <AddOnsLinea
+                            line={line}
+                            personas={Number(form.numPersonas) || (line.adults + (line.childrenMid ?? 0) + (line.childrenSmall ?? 0))}
+                            onChange={nueva => setForm(f => ({
+                              ...f,
+                              lines: f.lines.map((x, idx) => idx === i ? { ...nueva, subtotal: calcTourLine(nueva) } : x),
+                              totalOverride: "",
+                            }))}
+                          />
+                        )}
+                        {line.tourSlug && (
                           <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcTourLine(line))}</p>
                         )}
                       </div>
@@ -471,18 +627,33 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
                 </div>
               </div>
 
+              {/* Extras: comida, transporte, guía privado… */}
+              <ExtrasEditor
+                extras={form.extras ?? []}
+                personas={personasGrupo}
+                presets={presetsExtras}
+                onChange={extras => setForm(f => ({ ...f, extras, totalOverride: "" }))}
+              />
+
               {/* Resumen running */}
               {calcTotal > 0 && (
                 <div className="bg-[#FAFAF8]/70 border border-[#52B788]/20 rounded-sm px-4 py-3">
-                  {packagesTotal > 0 && (
-                    <>
-                      <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1">
+                  {(packagesTotal > 0 || extrasTotal > 0) && (
+                    <div className="mb-2 pb-2 border-b border-[#52B788]/15 space-y-1">
+                      <div className="flex justify-between text-xs font-dm text-[#1B4332]/50">
                         <span>Tours</span><span>{fmx(toursTotal)}</span>
                       </div>
-                      <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15">
-                        <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
-                      </div>
-                    </>
+                      {packagesTotal > 0 && (
+                        <div className="flex justify-between text-xs font-dm text-[#40916C]">
+                          <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
+                        </div>
+                      )}
+                      {extrasTotal > 0 && (
+                        <div className="flex justify-between text-xs font-dm text-[#C4882A]">
+                          <span>Extras</span><span>{fmx(extrasTotal)}</span>
+                        </div>
+                      )}
+                    </div>
                   )}
                   <div className="flex justify-between items-center">
                     <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Total estimado</span>
@@ -498,15 +669,22 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving }: 
             <div className="space-y-4">
               {/* Total editable */}
               <div className="border border-[#52B788]/30 bg-[#52B788]/6 px-4 py-3 rounded-sm">
-                {packagesTotal > 0 && (
-                  <>
-                    <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1">
+                {(packagesTotal > 0 || extrasTotal > 0) && (
+                  <div className="mb-2 pb-2 border-b border-[#52B788]/15 space-y-1">
+                    <div className="flex justify-between text-xs font-dm text-[#1B4332]/50">
                       <span>Tours</span><span>{fmx(toursTotal)}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15">
-                      <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
-                    </div>
-                  </>
+                    {packagesTotal > 0 && (
+                      <div className="flex justify-between text-xs font-dm text-[#40916C]">
+                        <span>Hospedaje</span><span>{fmx(packagesTotal)}</span>
+                      </div>
+                    )}
+                    {extrasTotal > 0 && (
+                      <div className="flex justify-between text-xs font-dm text-[#C4882A]">
+                        <span>Extras</span><span>{fmx(extrasTotal)}</span>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">

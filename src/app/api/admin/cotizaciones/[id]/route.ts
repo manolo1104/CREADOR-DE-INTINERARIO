@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const QUOTE_FIELDS = [
   "tourName", "tourSlug", "tourDate", "adults", "children", "totalAmount",
   "customerName", "customerEmail", "customerPhone", "notes",
-  "lineItems", "packageItems", "status",
+  "lineItems", "packageItems", "extraItems", "status",
 ] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

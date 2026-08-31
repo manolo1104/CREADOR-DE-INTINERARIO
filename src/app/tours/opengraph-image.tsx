@@ -1,4 +1,4 @@
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, GRUPO_MAX } from "@/lib/tours";
 import { FONDOS, tarjetaOG, OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og/tarjeta";
 
 // Se pasa a la tarjeta compartida (`src/lib/og/tarjeta.tsx`). De paso desaparecen
@@ -16,7 +16,7 @@ export default function Image() {
     eyebrow: "San Luis Potosí · México",
     titulo: `${TOURS_DB.length} Tours Guiados`,
     subtitulo: "Huasteca Potosina",
-    pills: ["Transporte incluido", "Desayuno típico", "Guías NOM-09", "Máx. 12 personas"],
+    pills: ["Transporte incluido", "Desayuno típico", "Guías NOM-09", `Máx. ${GRUPO_MAX} personas`],
     estrellas: "4.9 · 492 reseñas · Mejor Tour Operador Norteamérica",
   });
 }

@@ -391,7 +391,7 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     9,
     reviewCount:      127,
     groupMin:         2,
-    groupMax:         12,
+    groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  8500,
     nombre:           "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
@@ -448,7 +448,7 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     8,
     reviewCount:      84,
     groupMin:         2,
-    groupMax:         12,
+    groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  7500,
     nombre:           "Ruta Surrealista — Edward James, Manantiales & Selva",
@@ -503,7 +503,7 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     7,
     reviewCount:      96,
     groupMin:         2,
-    groupMax:         12,
+    groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  7000,
     nombre:           "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
@@ -558,7 +558,7 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     8,
     reviewCount:      112,
     groupMin:         2,
-    groupMax:         12,
+    groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  8000,
     nombre:           "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
@@ -624,7 +624,7 @@ export const TOURS_DB: Tour[] = [
     duracion_hrs:     10,
     reviewCount:      73,
     groupMin:         2,
-    groupMax:         12,
+    groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  8500,
     nombre:           "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
@@ -780,3 +780,22 @@ export const TOURS_DB: Tour[] = [
     ],
   },
 ];
+
+/**
+ * El grupo más grande que sacamos, leído del catálogo.
+ *
+ * 🔴 Estaba escrito a mano ("máximo 12 personas") en 16 lugares del sitio: la
+ * página de tours, las FAQ, nosotros, info práctica, contacto, las imágenes de
+ * compartir y hasta la página de sustentabilidad, que lo presentaba como un
+ * compromiso ambiental. Al subir el cupo a 14 todos esos textos quedaron
+ * mintiendo a la vez, y alguien podía reservar 14 en línea leyendo que el
+ * máximo eran 12. Es el mismo error que ya había pasado con los precios.
+ *
+ * Ahora sale de aquí: se cambia `groupMax` de un recorrido y el sitio entero
+ * se entera solo.
+ */
+export const GRUPO_MAX = Math.max(...TOURS_DB.map((t) => t.groupMax));
+
+/** El grupo mínimo con el que sale un recorrido. */
+export const GRUPO_MIN = Math.min(...TOURS_DB.map((t) => t.groupMin));
+

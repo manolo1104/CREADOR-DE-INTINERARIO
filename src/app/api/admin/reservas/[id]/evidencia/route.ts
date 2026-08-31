@@ -1,21 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { MAX_BYTES_EVIDENCIA, TIPOS_OK, tipoDeArchivo } from "@/lib/admin/evidencia";
 
 export const dynamic = "force-dynamic";
-
-/** 5 MB: una captura de transferencia o un PDF de banco caben de sobra.
- *  El archivo se guarda en Postgres (Railway no tiene disco persistente), así
- *  que el tope evita que el listado del panel engorde sin control. */
-const MAX_BYTES = 5 * 1024 * 1024;
-
-const TIPOS_OK = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-]);
 
 // GET → metadatos de las evidencias de una reserva (NUNCA los bytes).
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -46,13 +33,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!(archivo instanceof File) || archivo.size === 0) {
       return NextResponse.json({ error: "No llegó ningún archivo" }, { status: 400 });
     }
-    if (archivo.size > MAX_BYTES) {
+    if (archivo.size > MAX_BYTES_EVIDENCIA) {
       return NextResponse.json(
         { error: `El archivo pesa ${(archivo.size / 1024 / 1024).toFixed(1)} MB. El máximo son 5 MB.` },
         { status: 413 },
       );
     }
-    const tipoMime = archivo.type || "application/octet-stream";
+    const tipoMime = tipoDeArchivo(archivo.name, archivo.type);
     if (!TIPOS_OK.has(tipoMime)) {
       return NextResponse.json(
         { error: "Solo se aceptan PDF o imágenes (JPG, PNG, WEBP, HEIC)." },

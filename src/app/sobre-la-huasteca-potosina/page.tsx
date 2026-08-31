@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Thermometer, Calendar, Globe, Mountain, Droplet } from "lucide-react";
 
+import { GRUPO_MAX } from "@/lib/tours";
 const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
@@ -247,7 +248,7 @@ export default function SobreLaHuastecaPage() {
         </h2>
         <p className="text-crema/55 font-dm text-sm mb-8 max-w-md mx-auto leading-relaxed">
           Tours guiados con transporte, desayuno, guía certificado y todo el equipo incluido.
-          Grupos máximo 12 personas.
+          Grupos máximo {GRUPO_MAX} personas — si son más, habla con el equipo y armamos una salida privada.
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link

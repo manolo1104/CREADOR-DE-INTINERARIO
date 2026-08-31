@@ -27,6 +27,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       partySize:    Number(meta.numPersonas) || undefined,
       lineItems:    Array.isArray((q as any).lineItems) ? (q as any).lineItems : undefined,
       packageItems: Array.isArray((q as any).packageItems) ? (q as any).packageItems : undefined,
+      extraItems:   (q as any).extraItems ?? undefined,
       // Idioma del cliente, guardado en el `_meta` de la cotización.
       locale:       meta.locale,
     });

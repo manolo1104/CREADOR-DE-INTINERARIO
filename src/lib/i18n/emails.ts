@@ -108,6 +108,10 @@ export interface EmailMessages {
     addOnLinea: (nombre: string, cantidad: number) => string;
     /** Elección obligatoria del recorrido (ej. Siete Cascadas o Tamasopo). */
     elegiste: (opcion: string) => string;
+    /** Items sueltos: comida, transporte, guía privado. */
+    extrasTitulo: string;
+    extraIncluido: string;
+    extraCantidad: (n: number) => string;
   };
 
 
@@ -142,6 +146,17 @@ export interface EmailMessages {
     nochesHotel: string;
     ninos: (n: number) => string;
     hospedajeTitulo: string;
+    /** Items sueltos cotizados: comida, transporte, guía privado. */
+    extrasTitulo: string;
+    extraIncluido: string;
+    extraCantidad: (n: number) => string;
+    /** El desglose del dinero: qué se descontó y cuánto hay que dar para apartar. */
+    precioLista: string;
+    ajustePrecio: string;
+    descuentoAplicado: string;
+    anticipoApartar: (pct: number) => string;
+    saldoDia: string;
+    anticipoNota: string;
   };
 
   paquete: {
@@ -293,6 +308,9 @@ const ES: EmailMessages = {
     pickupDefault: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. Confirma tu dirección exacta por WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "persona" : "personas"}`,
     elegiste: (opcion) => `Elegiste: ${opcion}`,
+    extrasTitulo: "Incluye además",
+    extraIncluido: "Incluido",
+    extraCantidad: (n) => `Cantidad: ${n}`,
   },
 
 
@@ -327,6 +345,15 @@ const ES: EmailMessages = {
     nochesHotel: "🏨 Noches de hotel",
     ninos: (n) => `${n} niño${n !== 1 ? "s" : ""}`,
     hospedajeTitulo: "Habitación",
+    extrasTitulo: "Incluye además",
+    extraIncluido: "Incluido",
+    extraCantidad: (n) => `Cantidad: ${n}`,
+    precioLista: "Precio de lista",
+    ajustePrecio: "Ajuste de precio",
+    descuentoAplicado: "Descuento aplicado",
+    anticipoApartar: (pct) => `Anticipo para apartar (${pct} %)`,
+    saldoDia: "Saldo el día del primer recorrido",
+    anticipoNota: "Con el anticipo queda apartado tu lugar. El resto se paga el día del primer recorrido en efectivo, transferencia o tarjeta.",
   },
 
   paquete: {
@@ -482,6 +509,9 @@ const EN: EmailMessages = {
     pickupDefault: "We pick you up at your lodging in Xilitla or Ciudad Valles. Confirm your exact address on WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "person" : "people"}`,
     elegiste: (opcion) => `You chose: ${opcion}`,
+    extrasTitulo: "Also included",
+    extraIncluido: "Included",
+    extraCantidad: (n) => `Quantity: ${n}`,
   },
 
 
@@ -516,6 +546,15 @@ const EN: EmailMessages = {
     nochesHotel: "🏨 Hotel nights",
     ninos: (n) => `${n} child${n !== 1 ? "ren" : ""}`,
     hospedajeTitulo: "Room",
+    extrasTitulo: "Also included",
+    extraIncluido: "Included",
+    extraCantidad: (n) => `Quantity: ${n}`,
+    precioLista: "List price",
+    ajustePrecio: "Price adjustment",
+    descuentoAplicado: "Discount applied",
+    anticipoApartar: (pct) => `Deposit to hold your spot (${pct}%)`,
+    saldoDia: "Balance on the day of the first tour",
+    anticipoNota: "The deposit holds your spot. The balance is paid on the day of the first tour in cash, by transfer or by card.",
   },
 
   paquete: {

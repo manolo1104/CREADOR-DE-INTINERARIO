@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         notes:                 body.notes || null,
         lineItems:             body.lineItems    ?? undefined,
         packageItems:          body.packageItems ?? undefined,
+        extraItems:            body.extraItems   ?? undefined,
         status:                body.status || "paid",
       },
     });

@@ -7,6 +7,7 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
 
+import { GRUPO_MAX } from "@/lib/tours";
 /**
  * Sala de prensa, SOLO en inglés y sin equivalente en español.
  *
@@ -210,7 +211,7 @@ export default function PressPage() {
               ["Las Pozas", "Open Wednesday–Monday, 09:00–18:00. Closed Tuesdays. Entry $180 MXN"],
               ["Company founded", "Guiding since 2010; incorporated in 2019"],
               ["Guides", "NOM-09 SECTUR certified, born in the region"],
-              ["Group size", "12 people maximum"],
+              ["Group size", `${GRUPO_MAX} people maximum — larger groups by arrangement with the team`],
               ["Catalogue", `${nTours} guided day tours across ${nDestinos} documented sites`],
               ["Recognition", "Arival Best Tour Operator, North America, 2023"],
               ["Reviews", "4.9 average across 492 Google reviews · 10,000+ travelers"],

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Leaf, Droplet, Users, TreePine, Heart, Shield, Sun, Recycle } from "lucide-react";
 
+import { GRUPO_MAX } from "@/lib/tours";
 const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sustentabilidad y Conservación — Tours Huasteca Potosina",
@@ -54,7 +55,7 @@ const COMPROMISOS = [
     Icon: Sun,
     titulo: "Límite de aforo",
     texto:
-      "Ningún grupo nuestro supera 12 personas. Esto reduce el impacto por pisoteo, la contaminación sonora y el estrés en fauna silvestre.",
+      `Ningún grupo nuestro supera ${GRUPO_MAX} personas. Esto reduce el impacto por pisoteo, la contaminación sonora y el estrés en fauna silvestre.`,
   },
   {
     Icon: Heart,

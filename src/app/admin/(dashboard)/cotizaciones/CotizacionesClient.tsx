@@ -4,9 +4,18 @@ import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName } from "@/components/admin/ReservaModal";
+import { type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName, sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
+import { addDaysYMD } from "@/lib/dates";
+import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
+import { PAQUETES_PANEL, cargarPaquete } from "@/lib/admin/paquetesPanel";
+import { Package } from "lucide-react";
 import { grupoDe, grupoParaGuardar, grupoLargo } from "@/lib/admin/reserva";
+import ExtrasEditor from "@/components/admin/ExtrasEditor";
+import {
+  type ExtraItem, type PresetExtra, EXTRAS_PRESET, extrasDe, totalExtras,
+  calcExtraLine, normalizarExtra, extrasCobrados, extrasIncluidos,
+} from "@/lib/admin/extras";
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   borrador: { label: "Borrador",  cls: "bg-gray-100 text-gray-600"     },
@@ -41,9 +50,15 @@ function cleanPackages(pkgs: any[]): PackageItem[] {
 // Mismo cálculo que las reservas (incluye tours por vehículo como el RZR).
 const calcLine = calcTourLine;
 
+/** Escapa el texto libre que se inyecta en el HTML del PDF. */
+const esc = (t: string) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+
 const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
-export default function CotizacionesClient({ initialQuotes }: { initialQuotes: TourQuote[] }) {
+export default function CotizacionesClient(
+  { initialQuotes, presetsExtras = EXTRAS_PRESET }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[] },
+) {
   const [quotes,         setQuotes]         = useState(initialQuotes);
   const [search,         setSearch]         = useState("");
   const [modal,          setModal]          = useState<"new" | "edit" | null>(null);
@@ -51,12 +66,14 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
   const [form,           setForm]           = useState(EMPTY_FORM);
   const [lines,          setLines]          = useState<LineItem[]>([{ ...EMPTY_LINE }]);
   const [packages,       setPackages]       = useState<PackageItem[]>([]);
+  const [extras,         setExtras]         = useState<ExtraItem[]>([]);
   const [priceOverride,  setPriceOverride]  = useState<string>("");
   const [editingPrice,   setEditingPrice]   = useState(false);
   // Descuento
   const [discountType,   setDiscountType]   = useState<"percent" | "fixed">("percent");
   const [discountValue,  setDiscountValue]  = useState<string>("");
-  const [anticipo,       setAnticipo]       = useState<string>("");
+  const [anticipoTipo,   setAnticipoTipo]   = useState<"percent" | "fixed">("percent");
+  const [anticipoValor,  setAnticipoValor]  = useState<string>("");
   const [vigencia,       setVigencia]       = useState<string>("7dias");
   const [numPersonas,    setNumPersonas]    = useState<string>("");
   const [saving,         setSaving]         = useState(false);
@@ -68,7 +85,12 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
 
   const toursTotal = lines.reduce((s, l) => s + calcLine(l), 0);
   const pkgsTotal  = packages.reduce((s, p) => s + calcPackageLine(p), 0);
-  const calcTotal  = toursTotal + pkgsTotal;
+  const extrasTotal = totalExtras(extras);
+  // Cuánta gente va, para llenar solo la cantidad de los extras que se cobran
+  // por cabeza. Es el grupo (máximo por tour), nunca la suma de los tours.
+  const grupoActual   = grupoParaGuardar(lines, numPersonas);
+  const personasGrupo = Number(numPersonas) || (grupoActual.adults + grupoActual.children);
+  const calcTotal  = toursTotal + pkgsTotal + extrasTotal;
   const baseTotal  = priceOverride !== "" ? Number(priceOverride) || 0 : calcTotal;
   const discountAmt = discountValue !== ""
     ? discountType === "percent"
@@ -76,9 +98,24 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       : Number(discountValue) || 0
     : 0;
   const finalTotal = Math.max(0, baseTotal - discountAmt);
+  // El anticipo se puede fijar de las dos formas: "el 30 %" o "$4,000".
+  // En porcentaje se recalcula solo si cambia el total; en monto se respeta el
+  // número tal cual. Vacío = la mitad, que es lo que se pedía siempre.
+  const anticipoNum = anticipoValor === ""
+    ? Math.round(finalTotal * 0.5)
+    : anticipoTipo === "percent"
+      // Se topa en el total en las dos formas: un "150 %" tecleado sin querer
+      // no debe pedirle al cliente más dinero del que cuesta el viaje.
+      ? Math.min(finalTotal, Math.round(finalTotal * ((Number(anticipoValor) || 0) / 100)))
+      : Math.min(Number(anticipoValor) || 0, finalTotal);
+  const anticipoPct = finalTotal > 0 ? Math.round((anticipoNum / finalTotal) * 100) : 0;
+  const saldoRestante = Math.max(0, finalTotal - anticipoNum);
+
+  const esFecha = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
   function updateLine(i: number, field: keyof LineItem, val: string | number) {
-    setLines(ls => ls.map((l, idx) => {
+    setLines(ls => {
+      const next = ls.map((l, idx) => {
       if (idx !== i) return l;
       const up = { ...l, [field]: val };
       if (field === "tourSlug") {
@@ -99,11 +136,77 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       if (esTourVehiculo(up.tourSlug)) up.tourName = vehiculoLineName(up);
       up.subtotal = calcLine(up);
       return up;
+      });
+
+      // Un viaje se arma en días seguidos: al poner la fecha de un recorrido,
+      // los que van DESPUÉS se acomodan al día siguiente, y al siguiente.
+      // Solo hacia abajo: los recorridos de arriba ya se decidieron, y pisarlos
+      // convertiría corregir una fecha en rehacer el itinerario entero.
+      if (field === "tourDate" && esFecha(val)) {
+        for (let j = i + 1; j < next.length; j++) {
+          next[j] = { ...next[j], tourDate: addDaysYMD(val, j - i) };
+        }
+      }
+      return next;
+    });
+    if (priceOverride !== "") setPriceOverride("");
+  }
+
+  /** Editar una habitación. Entrada, noches y salida quedan siempre cuadradas. */
+  function updatePkg(i: number, campo: keyof PackageItem, valor: string | number) {
+    setPackages(ps => ps.map((p, idx) => {
+      if (idx !== i) return p;
+      const up = { ...p, [campo]: valor } as PackageItem;
+      if (campo === "checkin" || campo === "checkout" || campo === "noches") {
+        return sincronizarNoches(up, campo);
+      }
+      up.subtotal = calcPackageLine(up);
+      return up;
     }));
     if (priceOverride !== "") setPriceOverride("");
   }
 
-  function addLine()         { setLines(ls => [...ls, { ...EMPTY_LINE }]); }
+  /**
+   * Cargar un paquete completo de un clic: sus recorridos en días seguidos y
+   * sus noches de hotel. Reemplaza lo que hubiera —de eso avisa el aviso— y
+   * respeta la fecha de inicio y el número de adultos que ya estaban puestos.
+   */
+  function cargarPaquetePanel(slug: string) {
+    const fechaInicio = lines.map(l => l.tourDate).filter(Boolean).sort()[0] || "";
+    const adultos     = Number(numPersonas) || Math.max(...lines.map(l => l.adults || 0), 2);
+    const carga = cargarPaquete(
+      slug, fechaInicio, adultos,
+      HABITACIONES_PRESET[0].precio, HABITACIONES_PRESET[0].label,
+      EMPTY_PACKAGE.hotel,
+    );
+    if (!carga) { flash("❌ No se encontró ese paquete"); return; }
+
+    setLines(carga.lineas.map(l => ({ ...l, subtotal: calcLine(l) })));
+    setPackages([carga.habitacion]);
+    if (numPersonas === "") setNumPersonas(String(adultos));
+    setPriceOverride("");
+    const nombre = PAQUETES_PANEL.find(p => p.slug === slug)?.nombre ?? slug;
+    flash(
+      carga.eleccion
+        ? `✅ ${nombre} cargado · el día ${carga.eleccion.dia} quedó con ${carga.eleccion.elegido}; la otra opción es ${carga.eleccion.alternativa}`
+        : `✅ ${nombre} cargado · revisa fechas y personas`,
+    );
+  }
+
+  /** La habitación nueva entra el día del primer tour y sale a las noches que dure. */
+  function addPackage() {
+    const primeraFecha = lines.map(l => l.tourDate).filter(Boolean).sort()[0] || "";
+    setPackages(ps => [...ps, sincronizarNoches({ ...EMPTY_PACKAGE, checkin: primeraFecha }, "checkin")]);
+    if (priceOverride !== "") setPriceOverride("");
+  }
+
+  function addLine() {
+    setLines(ls => {
+      // El recorrido nuevo nace el día después del último con fecha.
+      const ultima = [...ls].reverse().find(l => esFecha(l.tourDate))?.tourDate;
+      return [...ls, { ...EMPTY_LINE, tourDate: ultima ? addDaysYMD(ultima, 1) : "" }];
+    });
+  }
   function removeLine(i: number) { if (lines.length > 1) setLines(ls => ls.filter((_, idx) => idx !== i)); }
 
   function flash(m: string) {
@@ -118,8 +221,9 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     setForm(EMPTY_FORM);
     setLines([{ ...EMPTY_LINE }]);
     setPackages([]);
+    setExtras([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
-    setAnticipo(""); setVigencia("7dias"); setNumPersonas("");
+    setAnticipoTipo("percent"); setAnticipoValor(""); setVigencia("7dias"); setNumPersonas("");
     setStep(1);
     setModal("new");
   }
@@ -140,13 +244,24 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const meta = getMeta(rawPkgs);
     const editPkgs = cleanPackages(rawPkgs);
     setPackages(editPkgs);
-    setAnticipo(meta.anticipo != null ? String(meta.anticipo) : "");
+    const editExtras = extrasDe((q as any).extraItems);
+    setExtras(editExtras);
+    // Formato nuevo: se guardó si fue % o monto. Las cotizaciones viejas solo
+    // tienen el importe, así que se restauran como monto fijo.
+    if ((meta as any).anticipoTipo) {
+      setAnticipoTipo((meta as any).anticipoTipo === "fixed" ? "fixed" : "percent");
+      setAnticipoValor((meta as any).anticipoValor != null ? String((meta as any).anticipoValor) : "");
+    } else {
+      setAnticipoTipo("fixed");
+      setAnticipoValor(meta.anticipo != null ? String(meta.anticipo) : "");
+    }
     setVigencia(meta.vigencia || "7dias");
     setNumPersonas(meta.numPersonas ? String(meta.numPersonas) : "");
 
     // Restaurar precio editado y descuento.
     const calc = editLines.reduce((s, l) => s + calcLine(l), 0)
-               + editPkgs.reduce((s, p) => s + calcPackageLine(p), 0);
+               + editPkgs.reduce((s, p) => s + calcPackageLine(p), 0)
+               + totalExtras(editExtras);
     if (meta.priceOverride != null || meta.discountValue != null) {
       // Formato nuevo: descuento y precio editado guardados explícitamente.
       setPriceOverride(meta.priceOverride != null ? String(meta.priceOverride) : "");
@@ -169,10 +284,15 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
-    const anticipoNum  = anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5);
+    const extraItems   = extras.filter(e => e.concepto.trim()).map(normalizarExtra);
     const packageItems = [
       {
+        // `anticipo` sigue siendo el IMPORTE: es lo que leen el PDF, el correo
+        // y la reserva. El tipo y el valor van aparte solo para poder reabrir
+        // la cotización y ver "30 %" en vez de un número suelto.
         _meta: true, anticipo: anticipoNum, vigencia,
+        anticipoTipo,
+        anticipoValor: anticipoValor !== "" ? Number(anticipoValor) : null,
         // Tamaño real del grupo (el mismo grupo va a todos los tours; no se suma por tour).
         numPersonas: numPersonas !== "" ? Number(numPersonas) : null,
         // Guardar el precio editado y el descuento para restaurarlos al reabrir.
@@ -187,7 +307,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       tourDate: lines[0].tourDate,
       // El grupo, NO la suma por tour (ver src/lib/admin/reserva.ts).
       ...grupoParaGuardar(lines, numPersonas),
-      totalAmount: finalTotal, lineItems, packageItems,
+      totalAmount: finalTotal, lineItems, packageItems, extraItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
     };
@@ -271,6 +391,10 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
       ...tourLines,
     ];
 
+    // Los extras viajan tal cual a la reserva: la comida que se cotizó es la
+    // misma que hay que operar y cobrar el día del tour.
+    const extraItems   = extrasDe((q as any).extraItems);
+
     const r = await fetch("/api/admin/reservas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -289,6 +413,7 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
         depositoPagado: anticipo, // anticipo acordado en la cotización
         lineItems,
         packageItems,
+        extraItems,
         customerName:   q.customerName,
         customerEmail:  q.customerEmail,
         customerPhone:  q.customerPhone,
@@ -338,11 +463,23 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
     const vigLabel = meta.vigencia === "48h" ? "48 horas" : meta.vigencia === "15dias" ? "15 días" : meta.vigencia === "30dias" ? "30 días" : "7 días";
     const fmt      = (d: Date) => d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 
-    const anticipoNum = meta.anticipo != null ? meta.anticipo : Math.round(q.totalAmount * 0.5);
-    const saldo       = Math.max(0, q.totalAmount - anticipoNum);
     const toursTotal  = items.reduce((s, l) => s + calcLine(l), 0);
     const pkgsTotal   = pkgs.reduce((s, p) => s + calcPackageLine(p), 0);
-    const descuento   = Math.max(0, toursTotal + pkgsTotal - q.totalAmount);
+    // Los extras cobrados son parte del precio: sin contarlos aquí, la comida
+    // aparte se pintaba en el PDF como si fuera un "descuento aplicado".
+    const extrasQ         = extrasDe((q as any).extraItems);
+    const extrasCobradosQ = extrasCobrados(extrasQ);
+    const extrasIncluidosQ = extrasIncluidos(extrasQ);
+    const extrasTotalQ    = totalExtras(extrasQ);
+    // El desglose sale de un solo sitio, el mismo que usa el correo: si se
+    // calculara aquí a mano, el papel y el correo de la misma cotización
+    // podrían decir cosas distintas.
+    const sumaLineas  = toursTotal + pkgsTotal + extrasTotalQ;
+    const desglose    = desgloseCotizacion(sumaLineas, q.totalAmount, meta as any);
+    const descuento   = desglose.descuento;
+    const ajuste      = desglose.ajuste;
+    const anticipoNum = desglose.anticipo;
+    const saldo       = desglose.saldo;
 
     const tourDates    = items.map(l => l.tourDate).filter(Boolean).sort();
     const checkouts    = pkgs.map(p => p.checkout).filter(Boolean).sort();
@@ -373,12 +510,25 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
             (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (<6)` : "",
           ].filter(Boolean).join(" · ");
       const fd = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
-      return `<div class="row"><div><div class="tour-name">${l.tourName}</div><div class="tour-sub">${sub}</div></div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
+      // La actividad opcional se cobra dentro de este renglón: si no se nombra,
+      // el cliente ve un importe más alto que el precio del tour sin explicación.
+      // El precio se lee del catálogo, el mismo que usó el cobro.
+      const opcionales = addOnsDeTour(l.tourSlug)
+        .map(a => ({ a, n: cantidadAddOn(l, a.id) }))
+        .filter(x => x.n > 0)
+        .map(({ a, n }) => `+ ${esc(a.nombre)} · ${n} ${n === 1 ? "persona" : "personas"} · $${(a.precio * n).toLocaleString("es-MX")}`)
+        .join("<br/>");
+      return `<div class="row"><div><div class="tour-name">${l.tourName}</div><div class="tour-sub">${sub}</div>${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const hospRows = pkgs.map(p => {
       const fechas = [p.checkin ? fDate(p.checkin) : "", p.checkout ? fDate(p.checkout) : ""].filter(Boolean).join(" → ");
       return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${p.hotel} — ${p.habitacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
+    }).join("");
+
+    const extraRows = extrasCobradosQ.map(ex => {
+      const sub = ex.detalle ? esc(ex.detalle) : "Servicio adicional contratado";
+      return `<div class="row"><div><div class="tour-name">${esc(ex.concepto)}</div><div class="tour-sub">${sub}</div></div><div class="num">—</div><div class="num right">${ex.cantidad}</div><div class="amt right">$${calcExtraLine(ex).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Cotización ${q.quoteNumber}</title>
@@ -388,8 +538,75 @@ export default function CotizacionesClient({ initialQuotes }: { initialQuotes: T
 :root{--negro:#0e1710;--verde-selva:#3a6b1a;--lima:#8fbe3a;--crema:#f4edd8;--dorado:#c4882a;--terracota:#9a4a1e;--display:'Cormorant Garamond',Georgia,serif;--dm:'DM Sans',system-ui,sans-serif;}
 @page{size:A4 portrait;margin:0;}*{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(--negro);}
-.page{width:210mm;height:296mm;background:var(--crema);overflow:hidden;position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:10mm 14mm 10mm;display:flex;flex-direction:column;}
-@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}html,body{background:white;}.page{margin:0;box-shadow:none;}}
+/* 🔴 Antes: height fijo + overflow:hidden. Con 5 recorridos y 2 habitaciones el
+   contenido medía 378 mm en una hoja de 296: "Sí incluye" arrancaba en el
+   milímetro 315 y los términos en el 348, así que los dos se cortaban enteros y
+   la cotización salía SIN decir qué incluye ni cuáles son las condiciones.
+   Ahora la hoja crece y, si hace falta, sigue en una segunda página. */
+.page{width:210mm;min-height:296mm;background:var(--crema);overflow:visible;position:relative;margin:24px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:10mm 14mm 10mm;display:flex;flex-direction:column;}
+/* Cuando hay muchos renglones la hoja deja de ser una caja flex: así el
+   contenido puede partirse entre páginas en vez de apretarse en una. */
+.page.fluida{display:block;}
+.page.fluida .foot{margin-top:6mm;}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  html,body{background:var(--crema);}
+  /* box-decoration-break:clone repite fondo y márgenes internos en la segunda
+     página: sin esto el texto de la página 2 arranca pegado al borde del papel. */
+  .page{margin:0;box-shadow:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
+  /* Nada se parte a la mitad: ni un recorrido, ni la lista de lo que incluye,
+     ni las condiciones. */
+  .row,.checks,.checks div,.foot,.card,.totals,.head{break-inside:avoid;page-break-inside:avoid;}
+}
+
+/* ── Modo compacto: hasta ~9 renglones la cotización sigue cabiendo en UNA hoja
+   sin perder nada, solo con la letra y los aires más ajustados. ───────────── */
+.compacta{padding:8mm 12mm;}
+.compacta .title-block h1{font-size:22pt;}
+.compacta .title-block{margin-top:2mm;}
+.compacta .two-col{margin-top:3mm;gap:4mm;}
+.compacta .card{padding:3mm 4mm;}
+.compacta .card h3{font-size:11pt;margin-bottom:2mm;}
+.compacta .card .field{gap:1.5mm 4mm;}
+.compacta .card .field .v{font-size:8pt;}
+.compacta .tour-table{margin-top:3mm;}
+.compacta .head-row{padding:1.5mm 0;}
+.compacta .row{padding:1.6mm 0;}
+.compacta .tour-name{font-size:9.5pt;}
+.compacta .tour-sub{font-size:6.8pt;}
+.compacta .amt{font-size:10.5pt;}
+.compacta .totals{margin-top:3mm;}
+.compacta .line{font-size:8pt;padding:.5mm 0;}
+.compacta .line.grand{padding:2mm 3mm;margin-top:1.5mm;}
+.compacta .line.grand .v{font-size:15pt;}
+.compacta .checks{margin-top:3mm;gap:4mm;}
+.compacta .checks h4{font-size:10pt;margin:0 0 1.5mm;}
+.compacta .checks li{font-size:6.8pt;line-height:1.25;}
+.compacta .foot{padding-top:3mm;}
+.compacta .terms{font-size:6.8pt;line-height:1.35;}
+.compacta .note{font-size:6.8pt;}
+.compacta .cta{padding:2mm 5mm;}
+
+/* Segundo nivel: solo se enciende si con el primero todavía no cabe. */
+.compacta2{padding:7mm 11mm;}
+.compacta2 .head{padding-bottom:2.5mm;}
+.compacta2 .title-block h1{font-size:18pt;}
+.compacta2 .stamp{width:14mm;height:14mm;}
+.compacta2 .contact{font-size:6.5pt;}
+.compacta2 .two-col{margin-top:2.5mm;gap:3mm;}
+.compacta2 .card{padding:2.5mm 3mm;}
+.compacta2 .card h3{font-size:10pt;}
+.compacta2 .card .field .v{font-size:7.5pt;}
+.compacta2 .row{padding:1.2mm 0;}
+.compacta2 .tour-name{font-size:9pt;}
+.compacta2 .tour-sub{font-size:6.3pt;}
+.compacta2 .amt{font-size:9.5pt;}
+.compacta2 .line{font-size:7.5pt;}
+.compacta2 .line.grand .v{font-size:13pt;}
+.compacta2 .checks li{font-size:6.3pt;line-height:1.2;}
+.compacta2 .checks h4{font-size:9pt;}
+.compacta2 .terms{font-size:6.3pt;line-height:1.3;}
+.compacta2 .note{font-size:6.3pt;}
 .head{display:grid;grid-template-columns:1fr auto;align-items:flex-start;padding-bottom:4mm;border-bottom:1px solid rgba(14,23,16,.18);}
 .brand{display:flex;align-items:baseline;gap:5mm;}.wordmark{font-family:var(--display);font-size:15pt;letter-spacing:4px;text-transform:uppercase;line-height:1;color:var(--negro);}
 .contact{font-size:7.5pt;line-height:1.5;color:rgba(14,23,16,.65);margin-top:2mm;font-family:ui-monospace,monospace;}
@@ -486,7 +703,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   <div class="tour-table">
     <div class="head-row"><span>Concepto</span><span>Fecha</span><span class="right">Pers.</span><span class="right">Subtotal MXN</span></div>
-    ${tourRows}${hospRows}
+    ${tourRows}${hospRows}${extraRows}
   </div>
 
   <div class="totals">
@@ -494,9 +711,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div class="calc">
       <div class="line"><span>Subtotal tours</span><span class="num">$${toursTotal.toLocaleString("es-MX")}</span></div>
       ${pkgsTotal > 0 ? `<div class="line"><span>Subtotal hospedaje</span><span class="num">$${pkgsTotal.toLocaleString("es-MX")}</span></div>` : ""}
+      ${extrasTotalQ > 0 ? `<div class="line"><span>Subtotal extras</span><span class="num">$${extrasTotalQ.toLocaleString("es-MX")}</span></div>` : ""}
+      ${ajuste !== 0 ? `<div class="line"><span>Ajuste de precio</span><span class="num">${ajuste > 0 ? "+" : "−"}$${Math.abs(ajuste).toLocaleString("es-MX")}</span></div>` : ""}
       ${descuento > 0 ? `<div class="line sub-line"><span>Descuento aplicado</span><span class="num">−$${descuento.toLocaleString("es-MX")}</span></div>` : ""}
       <div class="line grand"><span class="k">Total</span><span class="v">$${q.totalAmount.toLocaleString("es-MX")}</span></div>
-      <div class="line deposit"><span>Anticipo para reservar</span><span class="num">$${anticipoNum.toLocaleString("es-MX")}</span></div>
+      <div class="line deposit"><span>Anticipo para reservar (${desglose.anticipoPct} %)</span><span class="num">$${anticipoNum.toLocaleString("es-MX")}</span></div>
       <div class="line"><span>Saldo al inicio del tour</span><span class="num">$${saldo.toLocaleString("es-MX")}</span></div>
     </div>
   </div>
@@ -507,6 +726,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         <li>Transporte desde y hacia tu hotel</li><li>Desayuno típico</li>
         <li>Entradas a todos los parques</li><li>Guía certificado NOM-09 SECTUR</li>
         <li>Equipo de seguridad</li><li>Seguro de viajero</li><li>Fotografías del recorrido</li>
+        ${extrasIncluidosQ.map(ex => `<li>${esc(ex.concepto)}${ex.detalle ? ` — ${esc(ex.detalle)}` : ""}</li>`).join("")}
       </ul>
     </div>
     <div><h4>No incluye</h4>
@@ -524,8 +744,25 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   </div>
 
   <span class="runfoot">Cotización № ${q.quoteNumber}</span>
-  <span class="pageno">Página 1 de 1</span>
 </section>
+<script>
+/* La hoja se mide contra una A4 real y se aprieta sola hasta caber. Se hace
+   aquí y no con un número de renglones fijo porque lo que ocupa no son los
+   renglones: son los nombres largos, las notas del cliente y el hospedaje. */
+(function () {
+  var page = document.querySelector('.page');
+  var sonda = document.createElement('div');
+  sonda.style.cssText = 'position:absolute;visibility:hidden;height:296mm;top:0;';
+  document.body.appendChild(sonda);
+  var A4 = sonda.offsetHeight;
+  sonda.remove();
+  var alto = function () { return page.getBoundingClientRect().height; };
+  if (alto() > A4 + 2) page.classList.add('compacta');
+  if (alto() > A4 + 2) page.classList.add('compacta2');
+  /* Si ni así cabe, se deja fluir a una segunda página en vez de recortar. */
+  if (alto() > A4 + 2) page.classList.add('fluida');
+})();
+</script>
 </body></html>`);
     win.document.close();
     setTimeout(() => win.print(), 1000);
@@ -797,6 +1034,28 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   </p>
                 </div>
 
+                {/* Cargar un paquete ya armado */}
+                <div className="bg-[#1B4332]/4 border border-[#1B4332]/12 rounded-sm p-3">
+                  <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-2 flex items-center gap-1.5">
+                    <Package className="w-3 h-3" />Armar desde un paquete
+                  </p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {PAQUETES_PANEL.map(p => (
+                      <button key={p.slug} type="button" onClick={() => { playClick(); cargarPaquetePanel(p.slug); }}
+                        className="text-left border border-[#1B4332]/25 text-[#1B4332] px-2.5 py-1.5 rounded-sm hover:bg-[#1B4332]/8 transition-colors">
+                        <span className="block text-xs font-dm font-medium">{p.nombre}</span>
+                        <span className="block text-[10px] font-dm text-[#1B4332]/45">
+                          {p.recorridos} recorridos · {p.duracion}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] font-dm text-[#1B4332]/40 mt-2">
+                    Pone los recorridos en días seguidos y las noches de hotel. Reemplaza lo que ya hayas capturado.
+                    Después solo ajustas fechas y personas.
+                  </p>
+                </div>
+
                 {/* Tours */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -881,6 +1140,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                               </div>
                             </>
                           )}
+                          {line.tourSlug && (
+                            <AddOnsLinea
+                              line={line}
+                              personas={Number(numPersonas) || (line.adults + (line.childrenMid ?? 0) + (line.childrenSmall ?? 0))}
+                              onChange={nueva => {
+                                setLines(ls => ls.map((x, idx) => idx === i ? { ...nueva, subtotal: calcLine(nueva) } : x));
+                                if (priceOverride !== "") setPriceOverride("");
+                              }}
+                            />
+                          )}
                           {line.tourSlug && <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcLine(line))}</p>}
                         </div>
                       </div>
@@ -894,7 +1163,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm flex items-center gap-1.5">
                       <BedDouble className="w-3 h-3" />Hospedaje (opcional)
                     </p>
-                    <button type="button" onClick={() => setPackages(ps => [...ps, { ...EMPTY_PACKAGE }])}
+                    <button type="button" onClick={addPackage}
                       className="flex items-center gap-1 text-xs font-dm text-[#40916C] border border-[#40916C]/30 px-2 py-1 hover:bg-[#40916C]/8 transition-colors rounded-sm">
                       <Plus className="w-3 h-3" />Agregar habitación
                     </button>
@@ -918,7 +1187,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           <div>
                             <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Hotel</label>
                             <input type="text" value={pkg.hotel} className={inputCls}
-                              onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, hotel: e.target.value } : p))} />
+                              onChange={e => updatePkg(i, "hotel", e.target.value)} />
                           </div>
                           <div>
                             <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Tipo de habitación</label>
@@ -932,37 +1201,40 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                               ))}
                             </div>
                             <input type="text" value={pkg.habitacion} placeholder="Personalizar..." className={inputCls}
-                              onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, habitacion: e.target.value } : p))} />
+                              onChange={e => updatePkg(i, "habitacion", e.target.value)} />
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Noches</label>
                               <input type="number" min={1} max={30} value={pkg.noches} className={inputCls}
-                                onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, noches: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
+                                onChange={e => updatePkg(i, "noches", Number(e.target.value))} />
                             </div>
                             <div>
                               <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Hab.</label>
                               <input type="number" min={1} max={10} value={pkg.habitaciones} className={inputCls}
-                                onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, habitaciones: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
+                                onChange={e => updatePkg(i, "habitaciones", Math.max(1, Number(e.target.value) || 1))} />
                             </div>
                             <div>
                               <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">$/noche</label>
                               <input type="number" min={0} value={pkg.precioPorNoche} className={inputCls}
-                                onChange={e => setPackages(ps => ps.map((p, idx) => { if (idx !== i) return p; const u = { ...p, precioPorNoche: Number(e.target.value) }; return { ...u, subtotal: calcPackageLine(u) }; }))} />
+                                onChange={e => updatePkg(i, "precioPorNoche", Math.max(0, Number(e.target.value) || 0))} />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Check-in</label>
                               <input type="date" value={pkg.checkin} className={inputCls}
-                                onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, checkin: e.target.value } : p))} />
+                                onChange={e => updatePkg(i, "checkin", e.target.value)} />
                             </div>
                             <div>
                               <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Check-out</label>
                               <input type="date" value={pkg.checkout} className={inputCls}
-                                onChange={e => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, checkout: e.target.value } : p))} />
+                                onChange={e => updatePkg(i, "checkout", e.target.value)} />
                             </div>
                           </div>
+                          <p className="text-[10px] font-dm text-[#1B4332]/40">
+                            La salida se calcula sola con las noches. Si cambias la salida a mano, se recalculan las noches.
+                          </p>
                           <p className="text-right text-xs font-dm text-[#40916C] font-medium">
                             Subtotal: {fmx(calcPackageLine(pkg))}
                             <span className="text-[#1B4332]/35 font-normal ml-1">({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})</span>
@@ -973,14 +1245,23 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   </div>
                 </div>
 
+                {/* Extras: comida, transporte, guía privado… */}
+                <ExtrasEditor
+                  extras={extras}
+                  personas={personasGrupo}
+                  presets={presetsExtras}
+                  onChange={next => { setExtras(next); if (priceOverride !== "") setPriceOverride(""); }}
+                />
+
                 {/* Running total */}
                 {calcTotal > 0 && (
                   <div className="bg-[#FAFAF8]/70 border border-[#52B788]/20 rounded-sm px-4 py-3">
-                    {pkgsTotal > 0 && (
-                      <>
-                        <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
-                        <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>
-                      </>
+                    {(pkgsTotal > 0 || extrasTotal > 0) && (
+                      <div className="mb-2 pb-2 border-b border-[#52B788]/15 space-y-1">
+                        <div className="flex justify-between text-xs font-dm text-[#1B4332]/50"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
+                        {pkgsTotal > 0 && <div className="flex justify-between text-xs font-dm text-[#40916C]"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>}
+                        {extrasTotal > 0 && <div className="flex justify-between text-xs font-dm text-[#C4882A]"><span>Extras</span><span>{fmx(extrasTotal)}</span></div>}
+                      </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Total estimado</span>
@@ -1007,11 +1288,12 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
                 {/* Precio editable */}
                 <div className="border border-[#52B788]/30 bg-[#52B788]/6 px-4 py-3 rounded-sm">
-                  {pkgsTotal > 0 && (
-                    <>
-                      <div className="flex justify-between text-xs font-dm text-[#1B4332]/50 mb-1"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
-                      <div className="flex justify-between text-xs font-dm text-[#40916C] mb-2 pb-2 border-b border-[#52B788]/15"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>
-                    </>
+                  {(pkgsTotal > 0 || extrasTotal > 0) && (
+                    <div className="mb-2 pb-2 border-b border-[#52B788]/15 space-y-1">
+                      <div className="flex justify-between text-xs font-dm text-[#1B4332]/50"><span>Tours</span><span>{fmx(toursTotal)}</span></div>
+                      {pkgsTotal > 0 && <div className="flex justify-between text-xs font-dm text-[#40916C]"><span>Hospedaje</span><span>{fmx(pkgsTotal)}</span></div>}
+                      {extrasTotal > 0 && <div className="flex justify-between text-xs font-dm text-[#C4882A]"><span>Extras</span><span>{fmx(extrasTotal)}</span></div>}
+                    </div>
                   )}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1">
@@ -1077,27 +1359,53 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   </div>
                 )}
 
-                {/* Anticipo */}
+                {/* Anticipo: por porcentaje o por monto */}
                 <div className="border border-[#C9484A]/20 bg-[#C9484A]/5 px-4 py-3 rounded-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Anticipo para reservar</p>
-                    <button type="button" onClick={() => setAnticipo(String(Math.round(finalTotal * 0.5)))}
-                      className="text-[9px] font-dm text-[#C9484A] border border-[#C9484A]/30 px-2 py-1 rounded-sm hover:bg-[#C9484A]/10 transition-colors">
-                      50% = {fmx(Math.round(finalTotal * 0.5))}
-                    </button>
+                  <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-2">Anticipo para reservar</p>
+
+                  <div className="flex gap-2 items-center">
+                    <div className="flex border border-[#1B4332]/15 rounded-sm overflow-hidden">
+                      <button type="button" onClick={() => setAnticipoTipo("percent")}
+                        className={`px-3 py-2 text-xs font-dm transition-colors ${anticipoTipo === "percent" ? "bg-[#C9484A] text-white" : "bg-white text-[#1B4332]/60 hover:bg-[#FAFAF8]"}`}>%</button>
+                      <button type="button" onClick={() => setAnticipoTipo("fixed")}
+                        className={`px-3 py-2 text-xs font-dm transition-colors ${anticipoTipo === "fixed" ? "bg-[#C9484A] text-white" : "bg-white text-[#1B4332]/60 hover:bg-[#FAFAF8]"}`}>$</button>
+                    </div>
+                    <input type="number" min={0} value={anticipoValor}
+                      onChange={e => setAnticipoValor(e.target.value)}
+                      placeholder={anticipoTipo === "percent" ? "50" : String(Math.round(finalTotal * 0.5))}
+                      className={`flex-1 ${inputCls}`} />
+                    {anticipoValor !== "" && (
+                      <button type="button" onClick={() => setAnticipoValor("")} className="text-[#1B4332]/30 hover:text-red-500">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#1B4332]/50 font-dm text-sm">$</span>
-                    <input type="number" min={0} value={anticipo}
-                      onChange={e => setAnticipo(e.target.value)}
-                      placeholder={String(Math.round(finalTotal * 0.5))}
-                      className={inputCls} />
-                    <span className="text-[#1B4332]/50 font-dm text-sm">MXN</span>
+
+                  {/* Atajos: los tres anticipos que se usan de verdad. */}
+                  <div className="flex gap-1.5 flex-wrap mt-2">
+                    {[30, 50, 100].map(p => (
+                      <button key={p} type="button"
+                        onClick={() => { setAnticipoTipo("percent"); setAnticipoValor(String(p)); }}
+                        className={`text-[10px] font-dm px-2 py-1 rounded border transition-colors ${
+                          anticipoTipo === "percent" && anticipoValor === String(p)
+                            ? "bg-[#C9484A] text-white border-[#C9484A]"
+                            : "border-[#C9484A]/30 text-[#C9484A] hover:bg-[#C9484A]/10"
+                        }`}>
+                        {p === 100 ? "Pago completo" : `${p}%`} · {fmx(Math.round(finalTotal * (p / 100)))}
+                      </button>
+                    ))}
                   </div>
+
                   {finalTotal > 0 && (
-                    <p className="mt-1.5 text-[10px] font-dm text-[#1B4332]/50">
-                      Saldo al tour: {fmx(Math.max(0, finalTotal - (anticipo !== "" ? Number(anticipo) : Math.round(finalTotal * 0.5))))}
-                    </p>
+                    <div className="mt-2.5 pt-2.5 border-t border-[#C9484A]/15 space-y-0.5">
+                      <p className="flex justify-between text-xs font-dm text-[#1B4332]">
+                        <span>Anticipo{anticipoValor === "" && " (50% por omisión)"}</span>
+                        <span className="font-medium">{fmx(anticipoNum)} <span className="text-[#1B4332]/40">({anticipoPct}%)</span></span>
+                      </p>
+                      <p className="flex justify-between text-xs font-dm text-[#1B4332]/50">
+                        <span>Saldo el día del tour</span><span>{fmx(saldoRestante)}</span>
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>

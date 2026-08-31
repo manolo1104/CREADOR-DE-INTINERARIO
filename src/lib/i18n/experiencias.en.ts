@@ -1,5 +1,6 @@
 import type { Locale } from "./config";
 
+import { GRUPO_MAX } from "@/lib/tours";
 /**
  * Traducción de /experiencias (la página y su grid con filtros).
  *
@@ -129,7 +130,7 @@ const ES: ExperienciasContent = {
   ctaH2a: "¿Listo para",
   ctaH2Enfasis: "reservar?",
   ctaTexto:
-    "Transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. 12 personas. Cancelación gratis con 48h de antelación.",
+    `Transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. ${GRUPO_MAX} personas — si son más, habla con el equipo. Cancelación gratis con 48h de antelación.`,
   ctaBoton: "Ver todos los tours →",
 
   faqTituloA: "Preguntas",

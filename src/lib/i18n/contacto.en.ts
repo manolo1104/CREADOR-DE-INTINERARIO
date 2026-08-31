@@ -1,5 +1,6 @@
 import type { Locale } from "./config";
 
+import { GRUPO_MAX } from "@/lib/tours";
 /**
  * Traducción de /contacto.
  *
@@ -122,7 +123,7 @@ const ES: ContactoContent = {
 
   gruposTitulo: "Grupos y facturación",
   gruposTextoA:
-    "Para grupos de más de 12 personas, salidas privadas, empresas o escuelas, escríbenos por WhatsApp o a",
+    `Para grupos de más de ${GRUPO_MAX} personas, salidas privadas, empresas o escuelas, habla con el equipo por WhatsApp o escríbenos a`,
   gruposTextoB: "con las fechas y el número de personas, y te armamos una cotización.",
 
   privacidadPre: "Sobre el tratamiento de tus datos, consulta el",

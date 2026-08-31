@@ -40,6 +40,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       partySize:          Number(meta.numPersonas) || undefined,
       lineItems:          rawLines.filter((l: any) => l && !l._meta),
       packageItems:       Array.isArray((b as any).packageItems) ? (b as any).packageItems : [],
+      extraItems:         (b as any).extraItems ?? [],
       // Reenviar en el idioma en que el cliente compró (guardado en `_meta`).
       locale:             meta.locale,
     });

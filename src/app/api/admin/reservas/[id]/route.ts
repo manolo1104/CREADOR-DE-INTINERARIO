@@ -7,7 +7,7 @@ const BOOKING_FIELDS = [
   "tourId", "tourName", "tourSlug", "tourDate", "adults", "children",
   "totalAmount", "depositoPagado", "promoCode", "promoDiscount",
   "customerName", "customerEmail", "customerPhone", "notes",
-  "lineItems", "packageItems", "status",
+  "lineItems", "packageItems", "extraItems", "status",
   "pagoProveedor", "pagoProveedorMonto", "pagoProveedorFecha", "pagoProveedorNota",
 ] as const;
 

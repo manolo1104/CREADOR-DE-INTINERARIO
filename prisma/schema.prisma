@@ -88,58 +88,64 @@ model Activity {
 }
 
 model Itinerary {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String?
   title      String
-  days       Int      @default(3)
-  budget     String   @default("moderado")
-  traveler   String   @default("Solo/Sola")
+  days       Int       @default(3)
+  budget     String    @default("moderado")
+  traveler   String    @default("Solo/Sola")
   interests  String[]
-  activities Json     // JSONB: { day: number, destinationIds: string[], notes: string }[]
+  activities Json // JSONB: { day: number, destinationIds: string[], notes: string }[]
   totalCost  Float?
-  shareToken String?  @unique @default(cuid())
-  user       User?    @relation(fields: [userId], references: [id])
+  shareToken String?   @unique @default(cuid())
+  user       User?     @relation(fields: [userId], references: [id])
   bookings   Booking[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Booking {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   userId        String?
   activityId    String?
   itineraryId   String?
-  stripeSession String?   @unique
-  status        String    @default("pending") // pending | paid | cancelled
+  stripeSession String?    @unique
+  status        String     @default("pending") // pending | paid | cancelled
   totalAmount   Float
   customerEmail String?
   customerName  String?
   notes         String?
-  user          User?     @relation(fields: [userId], references: [id])
-  activity      Activity? @relation(fields: [activityId], references: [id])
+  user          User?      @relation(fields: [userId], references: [id])
+  activity      Activity?  @relation(fields: [activityId], references: [id])
   itinerary     Itinerary? @relation(fields: [itineraryId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model TourQuote {
-  id           String   @id @default(cuid())
-  quoteNumber  String   @unique
-  tourName     String
-  tourSlug     String
-  tourDate     String
-  adults       Int      @default(1)
-  children     Int      @default(0)
-  totalAmount  Int
+  id            String   @id @default(cuid())
+  quoteNumber   String   @unique
+  tourName      String
+  tourSlug      String
+  tourDate      String
+  adults        Int      @default(1)
+  children      Int      @default(0)
+  totalAmount   Int
   customerName  String
   customerEmail String
   customerPhone String?
-  notes        String?
-  lineItems    Json?    // [{tourSlug,tourName,tourDate,adults,children,subtotal}]
-  packageItems Json?    // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
-  status       String   @default("borrador") // borrador | enviada | aceptada | expirada
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  notes         String?
+  lineItems     Json? // [{tourSlug,tourName,tourDate,adults,children,subtotal}]
+  packageItems  Json? // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
+  /// Items sueltos que no son recorrido ni hotel: la comida, el transporte, el
+  /// guía privado. Ver `src/lib/admin/extras.ts`.
+  /// Columna propia y NULLABLE a propósito: `npm start` corre
+  /// `prisma db push --accept-data-loss` en producción y una columna
+  /// obligatoria sobre filas existentes tumba el despliegue.
+  extraItems    Json? // [{concepto,detalle,cantidad,precioUnitario,incluido,costoUnitario,subtotal}]
+  status        String   @default("borrador") // borrador | enviada | aceptada | expirada
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([customerEmail])
   @@index([status])
@@ -153,18 +159,18 @@ model TourQuote {
 /// Guardar la recomendación permite que la secuencia hable de SU tour, no de
 /// "nuestros tours".
 model Lead {
-  id        String   @id @default(cuid())
-  email     String
-  fuente    String   @default("Recomendador") // Recomendador | Itinerario 3 días | Blog | Destino: X
+  id     String @id @default(cuid())
+  email  String
+  fuente String @default("Recomendador") // Recomendador | Itinerario 3 días | Blog | Destino: X
 
   // Contexto del recomendador (todo opcional: otras fuentes no lo tienen)
-  grupo          String?  // pareja, familia, amigos…
+  grupo          String? // pareja, familia, amigos…
   dias           String?
-  origen         String?  // ciudad de la que viene
+  origen         String? // ciudad de la que viene
   intereses      String[] @default([])
-  tourPrincipal  String?  // slug
-  tourSecundario String?  // slug
-  paquete        String?  // slug
+  tourPrincipal  String? // slug
+  tourSecundario String? // slug
+  paquete        String? // slug
 
   // Estado de la secuencia
   emailsSent  Int       @default(0)
@@ -182,14 +188,14 @@ model Lead {
 /// al pago, ni desde qué página. Aquí quedan para poder medirlo.
 model TrackEvent {
   id        String   @id @default(cuid())
-  event     String   // TOUR_PAGE_VIEW, CHECKOUT_STARTED, PAGO_FALLIDO, BOOKING_CONFIRMED…
-  sid       String?  // sesión del visitante (sessionStorage), para seguir su recorrido
+  event     String // TOUR_PAGE_VIEW, CHECKOUT_STARTED, PAGO_FALLIDO, BOOKING_CONFIRMED…
+  sid       String? // sesión del visitante (sessionStorage), para seguir su recorrido
   path      String?
   tourSlug  String?
-  amount    Int?     // MXN, cuando el evento tiene monto
-  device    String?  // movil | escritorio
-  referrer  String?  // de dónde llegó
-  data      Json?    // el resto del payload, sin esquema fijo
+  amount    Int? // MXN, cuando el evento tiene monto
+  device    String? // movil | escritorio
+  referrer  String? // de dónde llegó
+  data      Json? // el resto del payload, sin esquema fijo
   createdAt DateTime @default(now())
 
   @@index([event, createdAt])
@@ -234,36 +240,39 @@ model AbandonedCart {
 }
 
 model TourBooking {
-  id                    String   @id @default(cuid())
-  confirmationNumber    String   @unique
+  id                    String    @id @default(cuid())
+  confirmationNumber    String    @unique
   tourId                String
   tourName              String
   tourSlug              String
   tourDate              String
-  adults                Int      @default(1)
-  children              Int      @default(0)
+  adults                Int       @default(1)
+  children              Int       @default(0)
   totalAmount           Int
   promoCode             String?
-  promoDiscount         Int      @default(0)
-  stripePaymentIntentId String?  @unique // evita 2 reservas para el mismo pago (carrera cliente/webhook)
+  promoDiscount         Int       @default(0)
+  stripePaymentIntentId String?   @unique // evita 2 reservas para el mismo pago (carrera cliente/webhook)
   customerName          String
   customerEmail         String
   customerPhone         String?
   notes                 String?
-  lineItems             Json?    // [{tourSlug,tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}]
-  packageItems          Json?    // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
-  depositoPagado        Int      @default(0)
+  lineItems             Json? // [{tourSlug,tourName,tourDate,adults,childrenMid,childrenSmall,subtotal}]
+  packageItems          Json? // [{habitacion,hotel,noches,habitaciones,precioPorNoche,checkin,checkout,subtotal}]
+  /// Items sueltos que no son recorrido ni hotel (comida, transporte, guía
+  /// privado). Mismo formato que en TourQuote: ver `src/lib/admin/extras.ts`.
+  extraItems            Json? // [{concepto,detalle,cantidad,precioUnitario,incluido,costoUnitario,subtotal}]
+  depositoPagado        Int       @default(0)
   // Control de pagos al proveedor de servicios (lanchero, guía, transporte).
   // null = sin marcar · true = ya le pagué · false = marcado como NO pagado.
   // Campos opcionales a propósito: `prisma db push` corre en cada arranque de
   // Railway y una columna obligatoria sobre filas existentes tumba el deploy.
   pagoProveedor         Boolean?
-  pagoProveedorMonto    Int      @default(0)
+  pagoProveedorMonto    Int       @default(0)
   pagoProveedorFecha    DateTime?
   pagoProveedorNota     String?
-  status                String   @default("pending")
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  status                String    @default("pending")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([customerEmail])
   @@index([tourDate])
@@ -274,19 +283,19 @@ model BlogPost {
   id                String   @id @default(cuid())
   slug              String   @unique
   title             String
-  metaTitle         String?                   // SEO title (max 60 chars)
+  metaTitle         String? // SEO title (max 60 chars)
   metaDescription   String   @db.Text
   focusKeyword      String
   secondaryKeywords String[]
   excerpt           String   @db.Text
   content           String   @db.Text
-  authorBio         String?  @db.Text        // HTML block — bio de Manolo Covarrubias
-  schemaMarkup      String?  @db.Text        // JSON-LD Article+Person
+  authorBio         String?  @db.Text // HTML block — bio de Manolo Covarrubias
+  schemaMarkup      String?  @db.Text // JSON-LD Article+Person
   coverImageUrl     String?
   coverImageAlt     String?
-  coverImageFile    String?                   // nombre de archivo slug-based
-  internalLinks     String[]                  // slugs de posts relacionados
-  externalSources   String[] @default([])     // fuentes citadas
+  coverImageFile    String? // nombre de archivo slug-based
+  internalLinks     String[] // slugs de posts relacionados
+  externalSources   String[] @default([]) // fuentes citadas
   tags              String[]
   readingTime       Int      @default(5)
   published         Boolean  @default(true)
@@ -315,4 +324,70 @@ model PagoProveedorEvidencia {
   createdAt     DateTime @default(now())
 
   @@index([bookingId])
+}
+
+/// Lo que a NOSOTROS nos cuesta operar cada recorrido. Sin esto el panel sabe
+/// perfectamente cuánto se cobró y nada de cuánto se ganó: el margen se
+/// calculaba de cabeza, tour por tour, cada vez que había que decidir un
+/// descuento.
+///
+/// Un renglón por recorrido (`tourSlug` es la llave: el catálogo vive en
+/// `src/lib/tours.ts`, aquí solo van los costos). El desglose se guarda en JSON
+/// porque los conceptos cambian por tour —lancha en Tamul, entradas en Micos,
+/// gasolina en el RZR— y no hay una lista fija que valga para los diez.
+///
+/// Cada concepto dice si se paga POR PERSONA o FIJO POR SALIDA. Esa distinción
+/// es la que da la respuesta real: el costo fijo se reparte entre más gente, y
+/// por eso un grupo grande aguanta un descuento que uno de dos no aguanta.
+model TourCosto {
+  tourSlug  String   @id
+  conceptos Json // [{concepto, monto, tipo: "persona" | "fijo"}]
+  notas     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Los precios de los items que no son recorrido: la comida, el transporte, las
+/// bebidas. Lo que se le COBRA al cliente y lo que a nosotros nos CUESTA.
+///
+/// Existe para que estos números dejen de vivir en el código. Estaban puestos a
+/// mano (la comida a $200) y cambiarlos cuando sube el proveedor obligaba a
+/// tocar el repositorio: un precio que solo un programador puede mover es un
+/// precio que se queda viejo.
+///
+/// Son SUGERENCIAS, no reglas: rellenan el item al crearlo y después se pisan
+/// cotización por cotización. Lo que se le prometió a un cliente vive en su
+/// cotización, no aquí, así que subir un precio nunca reescribe el pasado.
+model PrecioExtra {
+  concepto   String   @id
+  detalle    String?
+  precio     Int      @default(0) // lo que se le cobra al cliente, por unidad
+  costo      Int      @default(0) // lo que nos cuesta a nosotros, por unidad
+  porPersona Boolean  @default(true)
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// Lo que cobra un PROVEEDOR de servicios por llevar al grupo, todo incluido
+/// (transporte, guía, desayuno y entradas) y por persona.
+///
+/// Es un modelo de costo distinto al propio y por eso vive aparte de
+/// `TourCosto`: aquí no hay "por persona + fijo por salida" que separar, hay
+/// una tarifa por cabeza que BAJA conforme crece el grupo. Con 2 personas la
+/// Ruta Surrealista cuesta $1,100 cada una; con 20, $850. Mezclar los dos
+/// modelos en una sola tabla obligaría a que cada consulta supiera cuál es.
+///
+/// La llave es el recorrido, y cuando el mismo recorrido tiene dos versiones
+/// con precio distinto —la Ruta Acuática se cotiza aparte según se vaya a las
+/// Siete Cascadas o a Tamasopo— se le pega la variante: `<slug>::<varianteId>`.
+model TarifaProveedor {
+  clave     String   @id
+  tourSlug  String
+  variante  String?
+  nombre    String
+  tarifas   Json // [{personas, precio}] — escalones de 2 a 20
+  orden     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

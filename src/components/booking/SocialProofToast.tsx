@@ -1,4 +1,5 @@
 "use client";
+import { GRUPO_MAX } from "@/lib/tours";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
@@ -16,7 +17,7 @@ const PRUEBAS_ES: { texto: string; fuente: string }[] = [
   { texto: "Cancelación gratuita hasta 48 horas antes del tour", fuente: "Sin preguntas" },
   { texto: "Transporte, desayuno, entradas y guía: todo incluido", fuente: "Sin costos ocultos" },
   { texto: "Salidas todos los días del año", fuente: "Reserva con 24h de anticipación" },
-  { texto: "Grupos pequeños de máximo 12 personas", fuente: "Atención personalizada" },
+  { texto: `Grupos pequeños de máximo ${GRUPO_MAX} personas`, fuente: "Atención personalizada" },
 ];
 
 const PRUEBAS_EN: { texto: string; fuente: string }[] = [
@@ -27,7 +28,7 @@ const PRUEBAS_EN: { texto: string; fuente: string }[] = [
   { texto: "Free cancellation up to 48 hours before the tour", fuente: "No questions asked" },
   { texto: "Transport, breakfast, entrance fees and guide all included", fuente: "No hidden costs" },
   { texto: "Departures every day of the year", fuente: "Book 24h in advance" },
-  { texto: "Small groups of max. 12 people", fuente: "Personalized attention" },
+  { texto: `Small groups of max. ${GRUPO_MAX} people`, fuente: "Personalized attention" },
 ];
 
 /**

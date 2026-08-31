@@ -246,7 +246,7 @@ export default function PagoProveedorCell({
               <input
                 ref={fileRef}
                 type="file"
-                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
                 onChange={e => { const f = e.target.files?.[0]; if (f) subirArchivo(f); }}
                 className="hidden"
               />

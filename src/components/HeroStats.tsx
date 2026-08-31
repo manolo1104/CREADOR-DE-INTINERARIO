@@ -1,4 +1,5 @@
 "use client";
+import { GRUPO_MAX } from "@/lib/tours";
 
 import { useRef, useEffect, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
@@ -70,13 +71,13 @@ export function HeroStats({ destinosCount }: { destinosCount: number }) {
     ? [
         { num: String(destinosCount), label: "Unique destinations" },
         { num: "Departures",          label: "Every day" },
-        { num: "Max. 12",             label: "People per group" },
+        { num: `Max. ${GRUPO_MAX}`,     label: "People per group" },
         { num: "Guides",              label: "NOM-09 certified" },
       ]
     : [
         { num: String(destinosCount), label: "Destinos Únicos" },
         { num: "Salidas",             label: "Todos los días" },
-        { num: "Máx. 12",             label: "Personas por grupo" },
+        { num: `Máx. ${GRUPO_MAX}`,     label: "Personas por grupo" },
         { num: "Guías",               label: "Certificados NOM-09" },
       ];
 

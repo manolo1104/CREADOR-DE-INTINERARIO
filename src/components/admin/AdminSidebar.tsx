@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/reservas",     icon: BookOpen,        label: "Reservas"                   },
   { href: "/admin/calendario",   icon: Calendar,        label: "Calendario"                 },
   { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones"               },
+  { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador"                  },
   { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ingresos"                   },
   { href: "/admin/clientes",     icon: Users,           label: "Clientes"                   },
 ];
