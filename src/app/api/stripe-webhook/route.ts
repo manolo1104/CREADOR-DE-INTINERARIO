@@ -71,6 +71,87 @@ export async function POST(req: NextRequest) {
         logger.warn("guia_email_no_address", { session_id: session.id });
       }
     }
+
+    // ── Inscripción al curso "Turismo con IA" ─────────────────────────────────
+    // El webhook es la fuente de verdad de la compra: marca el lead como alumno
+    // y manda la bienvenida (C1) con el calendario adjunto. La condición del
+    // correo no es "acabo de marcar la compra" sino "no se le ha mandado C1",
+    // reclamada de forma atómica: el cron mira exactamente lo mismo y sin esa
+    // guarda la bienvenida podría salir dos veces.
+    if (meta.producto === "curso_ia" && session.payment_status === "paid") {
+      const email = (session.customer_details?.email || session.customer_email || "")
+        .trim().toLowerCase();
+      actividad("🎓  INSCRIPCIÓN CURSO", mxn((session.amount_total ?? 0) / 100), email);
+
+      if (email) {
+        try {
+          const alumno = await prisma.cursoLead.upsert({
+            where: { email },
+            create: {
+              email,
+              nombre: meta.nombre || session.customer_details?.name || null,
+              whatsapp: meta.whatsapp || null,
+              origen: "checkout",
+              compro: true,
+              comproAt: new Date(),
+              montoMxn: Math.round((session.amount_total ?? 0) / 100),
+              stripeSessionId: session.id,
+            },
+            update: {
+              compro: true,
+              comproAt: new Date(),
+              montoMxn: Math.round((session.amount_total ?? 0) / 100),
+              stripeSessionId: session.id,
+              status: "activo",
+              ...(meta.nombre ? { nombre: meta.nombre } : {}),
+              ...(meta.whatsapp ? { whatsapp: meta.whatsapp } : {}),
+            },
+          });
+
+          const claim = await prisma.cursoLead.updateMany({
+            where: { id: alumno.id, NOT: { correosEnviados: { has: "C1" } } },
+            data: { correosEnviados: { push: "C1" } },
+          });
+
+          if (claim.count === 1) {
+            try {
+              const { correoPorId, REMITENTE_CURSO } = await import("@/lib/cursoEmail");
+              const { buildCalendarioIcs } = await import("@/lib/curso");
+              const pagados = await prisma.cursoLead.count({ where: { compro: true } });
+              const { subject, html } = correoPorId("C1")!.build({
+                lead: alumno, ahora: new Date(), pagados,
+              });
+              await sendBrevoEmail({
+                to: [{ email, name: alumno.nombre ?? undefined }],
+                bcc: process.env.ADMIN_EMAIL_TOURS ? [{ email: process.env.ADMIN_EMAIL_TOURS }] : undefined,
+                subject,
+                htmlContent: html,
+                senderName: REMITENTE_CURSO,
+                attachments: [{
+                  name: "curso-turismo-con-ia.ics",
+                  content: Buffer.from(buildCalendarioIcs()).toString("base64"),
+                }],
+              });
+              logger.info("curso_bienvenida_sent", { session_id: session.id });
+            } catch (e) {
+              // Despojar el C1 reclamado: así el cron sí lo repesca.
+              await prisma.cursoLead.update({
+                where: { id: alumno.id },
+                data: { correosEnviados: { set: alumno.correosEnviados.filter((c) => c !== "C1") } },
+              }).catch(() => {});
+              throw e;
+            }
+          }
+        } catch (e) {
+          // El cron repesca C1 en su siguiente corrida (due: siempre).
+          logger.error("curso_bienvenida_failed", {
+            reason: e instanceof Error ? e.message : "unknown",
+          });
+        }
+      } else {
+        logger.warn("curso_sin_email", { session_id: session.id });
+      }
+    }
   }
 
   // ── Red de seguridad para reservas de tour ────────────────────────────────

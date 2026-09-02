@@ -391,3 +391,36 @@ model TarifaProveedor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ── Curso "Turismo con IA" (funnel /curso) ──────────────────────────────────
+// Un solo registro por persona: lead, registrado al taller, checkout iniciado
+// y alumno son ESTADOS del mismo renglón, no tablas distintas. Los correos de
+// las secuencias A/B/C/D/W se marcan por ID en `correosEnviados` y los manda
+// /api/cron/curso — la condición es siempre "este correo no se le ha mandado",
+// reclamada de forma atómica (misma lección que el correo de bienvenida del
+// recomendador: preguntar-y-luego-escribir deja ventana para mandarlo doble).
+model CursoLead {
+  id          String  @id @default(cuid())
+  email       String  @unique
+  nombre      String?
+  whatsapp    String?
+  tipoNegocio String? // Agencia | Guía | Operador | Hotel | Otro
+  ciudad      String?
+  origen      String  @default("landing") // landing | webinar | whatsapp | checkout
+
+  webinar Boolean @default(false) // registrado al taller gratuito del 10 sep
+
+  correosEnviados String[] @default([]) // IDs: A1..A7, B1..B3, C1..C14, D1..D4, W1..W3
+
+  checkoutIniciadoAt DateTime?
+  compro             Boolean   @default(false)
+  comproAt           DateTime?
+  montoMxn           Int?
+  stripeSessionId    String?
+
+  status    String   @default("activo") // activo | baja
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, compro])
+}

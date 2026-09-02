@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
      * Lo que NO se toca: las reservas. Una confirmación de compra no es
      * publicidad y se sigue mandando.
      */
-    const [leads, carritos, cotizaciones] = await prisma.$transaction([
+    const [leads, carritos, cotizaciones, curso] = await prisma.$transaction([
       prisma.lead.updateMany({
         where: { email, status: { not: "baja" } },
         data:  { status: "baja" },
@@ -59,6 +59,13 @@ export async function POST(req: NextRequest) {
         where: { customerEmail: email, status: "enviada" },
         data:  { status: "expirada" },
       }),
+      // Curso "Turismo con IA": solo prospectos. A un ALUMNO no se le apagan
+      // sus recordatorios de sesión por un enlace viejo de marketing — sus
+      // correos de la secuencia C no son publicidad (y por eso no llevan baja).
+      prisma.cursoLead.updateMany({
+        where: { email, compro: false, status: { not: "baja" } },
+        data:  { status: "baja" },
+      }),
     ]);
 
     actividad(
@@ -66,6 +73,7 @@ export async function POST(req: NextRequest) {
       `${leads.count} lista`,
       `${carritos.count} carrito(s)`,
       `${cotizaciones.count} cotización(es)`,
+      `${curso.count} curso`,
     );
     // Los contadores pueden venir en 0 si ya estaba dado de baja: para la
     // persona el resultado es el mismo y no tiene por qué ver un error.

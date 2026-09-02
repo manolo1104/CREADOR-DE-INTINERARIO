@@ -42,6 +42,19 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   // el pie completo —decenas de enlaces de salida— justo debajo del botón de
   // pagar. `/reservar` a secas es el catálogo y sí lleva pie.
   const isCheckout = /^\/reservar-(tour|paquete)\/|^\/reservar\/carrito/.test(pathname);
+  // El funnel del curso (/curso) es un embudo autocontenido: sin navbar del
+  // sitio, sin pie con decenas de ligas, sin botón flotante de reservar tours.
+  // Cada elemento de ésos es una salida del embudo. Trae su propia barra,
+  // su propio pie y su propio botón de WhatsApp.
+  const isCurso = pathname.startsWith("/curso");
+  if (isCurso) {
+    return (
+      <>
+        {children}
+        <CookieBanner />
+      </>
+    );
+  }
   return (
     <>
       {!isAdmin && <ScrollProgressBar />}

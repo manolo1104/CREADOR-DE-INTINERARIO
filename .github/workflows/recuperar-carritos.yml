@@ -36,3 +36,9 @@ jobs:
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/secuencia-cotizaciones
+
+      - name: Secuencias del curso Turismo con IA
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/curso
