@@ -123,7 +123,29 @@ export function Calculadora() {
           Son {pesos(r.dinero * 12)} al año.
         </p>
 
-        <dl className="mt-7 space-y-3 border-t border-azul/25 pt-6 font-dm text-[15px]">
+        {/* La barra. Ver crecer lo que se pierde duele más que leer el
+            número, y es la mitad del argumento de la página. */}
+        <div className="mt-7">
+          <div className="flex items-baseline justify-between gap-4 font-mono text-[10.5px] uppercase tracking-[0.14em]">
+            <span className="text-azul-vivo">Contestas a tiempo</span>
+            <span className="text-hielo-3">Se te van</span>
+          </div>
+          {/* Rojo de fondo (lo que se pierde) y azul encima, que se encoge
+              con `scaleX`. En capas y no con `flex`, porque animar el ancho
+              dispara cálculo de posición en cada cuadro; `transform` no. */}
+          <div className="relative mt-2 h-3 w-full overflow-hidden bg-[#F0736A]" aria-hidden="true">
+            <span
+              className="barra-perdida absolute inset-0 bg-azul"
+              style={{ ["--parte" as string]: rapido / 100 }}
+            />
+          </div>
+          <p className="mt-2 font-dm text-[13px] text-hielo-3">
+            De cada 10 cotizaciones, {Math.round(rapido / 10)} las contestas a tiempo y{" "}
+            {10 - Math.round(rapido / 10)} se enfrían.
+          </p>
+        </div>
+
+        <dl className="mt-6 space-y-3 border-t border-azul/25 pt-6 font-dm text-[15px]">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-hielo/70">Cotizaciones al mes</dt>
             <dd className="font-mono font-medium text-hielo tabular-nums">{Math.round(r.cotsMes)}</dd>

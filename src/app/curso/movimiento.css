@@ -1,0 +1,284 @@
+/* ============================================================
+   MOVIMIENTO DEL FUNNEL DEL CURSO
+   Sólo lo carga /curso: el resto del sitio no se entera.
+
+   Casi todo corre con `animation-timeline`, que trabaja FUERA
+   del hilo principal: el visitante empuja la animación con el
+   dedo y no hay un solo listener de scroll.
+
+   Reglas que no se rompen:
+   - Sólo transform, opacity, filter y clip-path.
+   - `ease-in` no existe aquí: arranca lento justo cuando el ojo
+     más mira y hace sentir lenta toda la página.
+   - Lo que se ve muchas veces NO se anima. Por eso la cuenta
+     regresiva no tiene ni una animación.
+   - Movimiento reducido = `animation: none`, no "más rápido".
+   ============================================================ */
+
+:root {
+  --sale: cubic-bezier(0.23, 1, 0.32, 1);
+  --panel: cubic-bezier(0.32, 0.72, 0, 1);
+  interpolate-size: allow-keywords;
+}
+
+/* ============================================================
+   1 · ACORDEÓN DE PREGUNTAS
+   El cambio brusco clásico. No es espectáculo: es que no se
+   sienta mal hecho.
+   ============================================================ */
+.curso-faq details::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition: block-size 260ms var(--panel), content-visibility 260ms allow-discrete;
+}
+.curso-faq details[open]::details-content {
+  block-size: auto;
+}
+
+/* ============================================================
+   2 · APARICIÓN AL ENTRAR
+   Cada bloque llega desde abajo cuando entra en pantalla. El
+   escalonado NO se hace con animation-delay: con línea de
+   tiempo de scroll el retraso no existe, el avance lo marca la
+   posición. Se corre el animation-range.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .entra {
+      animation: entrar linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 60%;
+    }
+    @keyframes entrar {
+      from { opacity: 0; transform: translateY(26px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Los hermanos de una rejilla entran en cascada porque cada
+       uno arranca un poco más tarde EN EL RECORRIDO, no en el reloj. */
+    .cascada > *:nth-child(1) { animation-range: entry 5%  entry 55%; }
+    .cascada > *:nth-child(2) { animation-range: entry 12% entry 62%; }
+    .cascada > *:nth-child(3) { animation-range: entry 19% entry 69%; }
+    .cascada > *:nth-child(4) { animation-range: entry 26% entry 76%; }
+    .cascada > *:nth-child(5) { animation-range: entry 33% entry 83%; }
+    .cascada > * {
+      animation: entrar linear both;
+      animation-timeline: view();
+    }
+  }
+}
+
+/* ============================================================
+   3 · EL PROGRAMA: LA LÍNEA QUE SE DIBUJA
+   La secuencia ES el contenido. Sentir que pasan las cuatro
+   semanas mientras bajas es entender el curso sin leerlo.
+   ============================================================ */
+.linea-programa {
+  position: relative;
+}
+.linea-programa::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: var(--linea-programa-color, #1F2A37);
+}
+.linea-programa::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: #3B8CFF;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .linea-programa::after {
+      animation: dibujar linear both;
+      animation-timeline: view();
+      animation-range: entry 30% exit 40%;
+    }
+    @keyframes dibujar {
+      from { transform: scaleY(0); }
+      to   { transform: scaleY(1); }
+    }
+
+    /* Cada semana se enciende cuando llega al centro de la pantalla. */
+    .semana-punto {
+      animation: encender linear both;
+      animation-timeline: view();
+      animation-range: entry 60% entry 95%;
+    }
+    @keyframes encender {
+      from { background: #1F2A37; box-shadow: none; transform: scale(0.8); }
+      to   { background: #3B8CFF; box-shadow: 0 0 0 5px rgba(59,140,255,.16); transform: scale(1); }
+    }
+    .semana-entregable {
+      animation: entrar linear both;
+      animation-timeline: view();
+      animation-range: entry 55% entry 90%;
+    }
+  }
+}
+
+/* ============================================================
+   4 · ANTES / DESPUÉS: EL "HOY" SE CUBRE
+   Primero ves el problema, luego lo tapa la solución. La
+   comparación se vuelve una frase con sujeto y predicado.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .fila-cambio .despues {
+      clip-path: inset(0 100% 0 0);
+      animation: destapar linear both;
+      animation-timeline: view();
+      animation-range: entry 25% entry 85%;
+    }
+    @keyframes destapar {
+      from { clip-path: inset(0 100% 0 0); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+    .fila-cambio .hoy {
+      animation: apagar linear both;
+      animation-timeline: view();
+      animation-range: entry 25% entry 85%;
+    }
+    @keyframes apagar {
+      from { opacity: 1; }
+      to   { opacity: .45; }
+    }
+  }
+}
+
+/* ============================================================
+   5 · EL AGENTE CONTESTANDO
+   La única animación de la página que no decora: DEMUESTRA el
+   producto. Cada burbuja entra en su tramo del recorrido.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .chat-burbuja {
+      animation: burbuja linear both;
+      animation-timeline: view(block);
+      /* El contenedor comparte la línea de tiempo: sin esto cada
+         burbuja usaría la suya y se desincronizarían. */
+      animation-timeline: --chat;
+    }
+    .chat-hilo { view-timeline: --chat block; }
+
+    @keyframes burbuja {
+      from { opacity: 0; transform: translateY(14px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+    /* OJO con el rango. `contain` SÓLO existe si el sujeto cabe entero en
+       la pantalla: si el hilo es más alto que la ventana, ese rango mide
+       cero, la animación nunca avanza y las burbujas se quedan INVISIBLES
+       para siempre. Aquí el hilo mide 912 px y una ventana típica 959: cabía
+       por 47 px, o sea por accidente. `cover` existe siempre. */
+    .chat-burbuja:nth-child(1) { animation-range: cover 14% cover 24%; }
+    .chat-burbuja:nth-child(2) { animation-range: cover 21% cover 31%; }
+    .chat-burbuja:nth-child(3) { animation-range: cover 28% cover 38%; }
+    .chat-burbuja:nth-child(4) { animation-range: cover 35% cover 45%; }
+    .chat-burbuja:nth-child(5) { animation-range: cover 42% cover 52%; }
+    .chat-burbuja:nth-child(6) { animation-range: cover 49% cover 59%; }
+    .chat-burbuja:nth-child(7) { animation-range: cover 56% cover 66%; }
+
+    /* Los tres puntitos sólo mientras "escribe": desaparecen
+       cuando llega la respuesta. */
+    .chat-puntos i {
+      animation: puntear 1.1s ease-in-out infinite;
+    }
+    .chat-puntos i:nth-child(2) { animation-delay: .18s; }
+    .chat-puntos i:nth-child(3) { animation-delay: .36s; }
+    @keyframes puntear {
+      0%, 60%, 100% { opacity: .25; transform: translateY(0); }
+      30%           { opacity: 1;   transform: translateY(-3px); }
+    }
+  }
+}
+
+/* ============================================================
+   6 · BARRA DE AVANCE DE LECTURA
+   Orientación en una página larga. Va pegada a la barra fija.
+   ============================================================ */
+.avance-curso {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  background: #3B8CFF;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+  .avance-curso {
+    animation: avanzar linear both;
+    animation-timeline: scroll(root block);
+  }
+  @keyframes avanzar {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+}
+
+/* ============================================================
+   7 · PRESIONAR Y PASAR EL CURSOR
+   160 ms al presionar, 200 ms al hover. Todo hover detrás de
+   (hover:hover): en el celular se queda pegado al tocar.
+   ============================================================ */
+.presionable {
+  transition: transform 160ms var(--sale), background-color 200ms var(--sale),
+    border-color 200ms var(--sale), box-shadow 200ms var(--sale);
+}
+.presionable:active { transform: scale(0.97); }
+
+@media (hover: hover) and (pointer: fine) {
+  .presionable:hover { transform: translateY(-1.5px); }
+  .presionable:active { transform: translateY(0) scale(0.97); }
+
+  .fila-hover { transition: transform 200ms var(--sale), background-color 200ms var(--sale); }
+  .fila-hover:hover { transform: translateX(4px); }
+}
+
+/* El botón principal se inclina hacia el cursor. Las variables las
+   escribe el JS directo sobre el elemento, nunca en un padre: cambiar
+   una variable heredable recalcula el estilo de TODOS los hijos. */
+.iman {
+  transform: translate(var(--iman-x, 0px), var(--iman-y, 0px));
+  transition: transform 260ms var(--sale);
+}
+.iman[data-cerca] { transition: transform 90ms linear; }
+
+/* ============================================================
+   8 · LA CALCULADORA DIBUJA LO QUE PIERDES
+   Ver la barra crecer duele más que leer un número.
+   ============================================================ */
+.barra-perdida {
+  transform-origin: 0 50%;
+  transform: scaleX(var(--parte, 0));
+  transition: transform 420ms var(--panel);
+}
+
+/* ============================================================
+   9 · MOVIMIENTO REDUCIDO
+   No es apagar todo: es quitar el desplazamiento y dejar lo que
+   ayuda a entender. Y nunca acelerar a 0.01s, que salta al
+   último fotograma y descuadra.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .entra, .cascada > *, .semana-punto, .semana-entregable,
+  .chat-burbuja, .linea-programa::after, .fila-cambio .despues,
+  .fila-cambio .hoy, .chat-puntos i, .avance-curso {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+  .linea-programa::after { transform: scaleY(1) !important; }
+  .semana-punto { background: #3B8CFF !important; }
+  .presionable, .iman, .barra-perdida { transition-duration: 120ms !important; }
+}

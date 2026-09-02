@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+// Todo lo que se mueve en el funnel vive aquí. Sólo lo carga /curso.
+import "./movimiento.css";
+
 /**
  * Layout del funnel del curso "Turismo con IA".
  *

@@ -317,6 +317,9 @@ export function BarraCurso({
     <>
       {/* Escritorio: barra superior fija */}
       <div className="fixed inset-x-0 top-0 z-[80] hidden md:flex items-center justify-center gap-6 bg-tinta/95 px-6 py-2.5 text-hielo backdrop-blur-sm">
+        {/* Cuánto llevas leído. Orientación en una página larga; la empuja
+            el scroll, no un listener. */}
+        <i aria-hidden="true" className="avance-curso" />
         <span className="font-dm text-sm tracking-wide opacity-90">{etiqueta}</span>
         <CuentaRegresiva limiteIso={limiteIso} />
         <BotonComprar
@@ -364,46 +367,67 @@ export function Cifra({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const corrido = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
-    const final = () => {
-      el.textContent = `${prefijo}${hasta.toLocaleString("es-MX")}${sufijo}`;
+    const pinta = (v: number) => {
+      el.textContent = `${prefijo}${Math.round(v).toLocaleString("es-MX")}${sufijo}`;
     };
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      final();
+      pinta(hasta);
       return;
     }
 
-    const io = new IntersectionObserver(
+    // El número lo empuja el SCROLL, no un reloj: si subes, baja. Que la
+    // cifra crezca porque tú bajas hace que se sienta tuya y no leída.
+    //
+    // No hay listener de scroll: se lee la posición dentro de un
+    // requestAnimationFrame, y ese bucle sólo corre mientras el elemento
+    // está en pantalla. Fuera de vista se apaga solo.
+    let vivo = false;
+    let raf = 0;
+
+    const cuadro = () => {
+      const r = el.getBoundingClientRect();
+      const alto = window.innerHeight || 1;
+      // 0 cuando el elemento entra por abajo, 1 cuando llega a media pantalla
+      const avance = Math.min(1, Math.max(0, (alto - r.top) / (alto * 0.55)));
+      const suave = 1 - Math.pow(1 - avance, 3);
+      pinta(hasta * suave);
+      if (vivo) raf = requestAnimationFrame(cuadro);
+    };
+
+    const ojo = new IntersectionObserver(
       ([e]) => {
-        if (!e.isIntersecting || corrido.current) return;
-        corrido.current = true;
-        const dur = 1_200;
-        const t0 = performance.now();
-        // Actualiza textContent directo (nada de estado de React por frame).
-        const paso = (t: number) => {
-          const p = Math.min(1, (t - t0) / dur);
-          const eased = 1 - Math.pow(1 - p, 3); // ease-out cúbico
-          el.textContent = `${prefijo}${Math.round(hasta * eased).toLocaleString("es-MX")}${sufijo}`;
-          if (p < 1) requestAnimationFrame(paso);
-        };
-        requestAnimationFrame(paso);
-        io.disconnect();
+        if (e.isIntersecting && !vivo) {
+          vivo = true;
+          raf = requestAnimationFrame(cuadro);
+        } else if (!e.isIntersecting && vivo) {
+          vivo = false;
+          cancelAnimationFrame(raf);
+          // Al salir por arriba se deja en el valor final, no a medias.
+          if (e.boundingClientRect.top < 0) pinta(hasta);
+        }
       },
-      { threshold: 0.4 }
+      { threshold: 0 }
     );
-    io.observe(el);
-    return () => io.disconnect();
+    ojo.observe(el);
+
+    return () => {
+      vivo = false;
+      cancelAnimationFrame(raf);
+      ojo.disconnect();
+    };
   }, [hasta, prefijo, sufijo]);
 
   return (
     <span ref={ref} className={className}>
-      {prefijo}0{sufijo}
+      {prefijo}
+      {hasta.toLocaleString("es-MX")}
+      {sufijo}
     </span>
   );
 }

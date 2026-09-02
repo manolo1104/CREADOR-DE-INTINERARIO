@@ -8,6 +8,8 @@ import {
 import {
   BarraCurso, BotonComprar, Cifra, CuentaRegresiva, FormLead,
 } from "@/components/curso/CursoCliente";
+import { ChatAgente } from "@/components/curso/ChatAgente";
+import { Iman } from "@/components/curso/Iman";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,7 @@ export default async function CursoPage() {
   const ctaPrimario = `Reservar mi lugar · ${mxnCurso(pv.precio)}`;
 
   const claseCtaDorado =
-    "inline-block whitespace-nowrap bg-azul px-5 py-5 text-center font-dm text-[14px] font-semibold uppercase tracking-[1px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.98] sm:px-10 sm:text-base sm:tracking-[2px]";
+    "presionable iman inline-block whitespace-nowrap bg-azul px-5 py-5 text-center font-dm text-[14px] font-semibold uppercase tracking-[1px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.98] sm:px-10 sm:text-base sm:tracking-[2px]";
 
   return (
     <main className="bg-tinta text-hielo md:pt-[52px]">
@@ -58,6 +60,7 @@ export default async function CursoPage() {
         </div>
       )}
 
+      <Iman />
       <BarraCurso
         precio={pv.precio}
         esFundador={pv.esFundador}
@@ -170,7 +173,7 @@ export default async function CursoPage() {
       {/* ══ HISTORIA / PRUEBA ══ Bloque oscuro: el sistema existe y se ve */}
       <section className="bg-tinta-2 px-5 py-16 text-hielo md:py-24">
         <div className="mx-auto max-w-6xl">
-          <h2 className="max-w-[20ch] font-sora text-4xl font-semibold leading-tight md:text-5xl">
+          <h2 className="entra max-w-[20ch] font-sora text-4xl font-semibold leading-tight md:text-5xl">
             Lo construí para mi negocio. Ahora lo construyes tú.
           </h2>
           <div className="mt-8 grid gap-12 md:grid-cols-[3fr_2fr] md:gap-16">
@@ -245,9 +248,34 @@ export default async function CursoPage() {
         </div>
       </section>
 
+      {/* ══ EL AGENTE, EN VIVO ══ La demostración, no la descripción.
+          Las burbujas entran empujadas por el scroll: el visitante ve la
+          conversación ocurrir a su ritmo. */}
+      <section className="mx-auto max-w-5xl px-5 py-16 md:py-24">
+        <div className="grid items-center gap-12 md:grid-cols-[5fr_6fr] md:gap-16">
+          <div>
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
+              Baja despacio
+            </p>
+            <h2 className="entra mt-4 max-w-[16ch] font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
+              Así contesta cuando tú ya te dormiste
+            </h2>
+            <p className="entra mt-6 max-w-[46ch] font-dm text-lg leading-relaxed text-hielo/75">
+              No es una maqueta ni un guion. Es el agente que hoy contesta el
+              WhatsApp de Huasteca Potosina Tours, cotizando con los precios
+              reales de la Expedición Tamul.
+            </p>
+            <p className="entra mt-5 max-w-[46ch] font-dm text-lg leading-relaxed text-hielo/75">
+              Cotiza, aparta y cobra. Yo me entero a la mañana siguiente.
+            </p>
+          </div>
+          <ChatAgente />
+        </div>
+      </section>
+
       {/* ══ PROGRAMA ══ Línea de 4 semanas, cada una con su entregable */}
       <section id="programa" className="mx-auto max-w-4xl scroll-mt-16 px-5 py-16 md:py-24">
-        <h2 className="font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
+        <h2 className="entra font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
           Qué construyes en 4 semanas
         </h2>
         <p className="mt-4 max-w-[56ch] font-dm text-lg leading-relaxed text-hielo/75">
@@ -255,9 +283,10 @@ export default async function CursoPage() {
           taller abierto el sábado para revisar tu proyecto. Cada semana termina
           con algo tuyo, publicado y funcionando.
         </p>
-        <ol className="mt-12 space-y-0">
+        <ol className="linea-programa mt-12 space-y-0 pl-8 sm:pl-10">
           {PROGRAMA.map((s, i) => (
-            <li key={s.semana} className={`grid gap-5 py-9 sm:grid-cols-[auto_1fr] sm:gap-8 ${i > 0 ? "border-t border-linea" : ""}`}>
+            <li key={s.semana} className={`relative grid gap-5 py-9 sm:grid-cols-[auto_1fr] sm:gap-8 ${i > 0 ? "border-t border-linea" : ""}`}>
+              <span aria-hidden="true" className="semana-punto absolute -left-8 top-11 h-3 w-3 rounded-full sm:-left-10" />
               <div className="font-sora text-6xl font-light leading-none text-azul-vivo sm:w-20">
                 {s.semana}
               </div>
@@ -273,7 +302,7 @@ export default async function CursoPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-5 inline-block bg-azul-humo px-4 py-2.5 font-dm text-base font-medium text-hielo">
+                <p className="semana-entregable mt-5 inline-block bg-azul-humo px-4 py-2.5 font-dm text-base font-medium text-hielo">
                   Te llevas: {s.entregable.charAt(0).toLowerCase() + s.entregable.slice(1)}
                 </p>
               </div>
@@ -288,7 +317,7 @@ export default async function CursoPage() {
           de un vistazo. Aquí el azul es el hondo: el claro no aguanta. */}
       <section className="bg-blanco px-5 py-16 text-tinta md:py-24">
         <div className="mx-auto max-w-4xl">
-          <h2 className="font-sora text-4xl font-semibold leading-tight text-tinta md:text-5xl">
+          <h2 className="entra font-sora text-4xl font-semibold leading-tight text-tinta md:text-5xl">
             Tu negocio, antes y después
           </h2>
           <div className="mt-10">
@@ -297,12 +326,12 @@ export default async function CursoPage() {
               <span className="text-azul-hondo">En 4 semanas</span>
             </div>
             {ANTES_DESPUES.map(([antes, despues], i) => (
-              <div key={antes} className={`grid gap-2 py-6 sm:grid-cols-2 sm:gap-8 ${i > 0 ? "border-t border-linea-clara" : "sm:border-t sm:border-linea-clara"}`}>
-                <p className="font-dm text-lg leading-relaxed text-grafito">
+              <div key={antes} className={`fila-cambio grid gap-2 py-6 sm:grid-cols-2 sm:gap-8 ${i > 0 ? "border-t border-linea-clara" : "sm:border-t sm:border-linea-clara"}`}>
+                <p className="hoy font-dm text-lg leading-relaxed text-grafito">
                   <span className="mr-2 font-semibold uppercase tracking-wide text-grafito/70 sm:hidden">Hoy:</span>
                   {antes}
                 </p>
-                <p className="font-dm text-lg font-medium leading-relaxed text-tinta">
+                <p className="despues font-dm text-lg font-medium leading-relaxed text-tinta">
                   <span className="mr-2 font-semibold uppercase tracking-wide text-azul-hondo sm:hidden">Después:</span>
                   {despues}
                 </p>
@@ -314,7 +343,7 @@ export default async function CursoPage() {
 
       {/* ══ QUÉ INCLUYE + BONOS ══ */}
       <section className="mx-auto max-w-4xl px-5 py-16 md:py-24">
-        <h2 className="font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
+        <h2 className="entra font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
           Todo lo que recibes
         </h2>
         <ul className="mt-8 space-y-4">
@@ -359,7 +388,7 @@ export default async function CursoPage() {
       {/* ══ INVERSIÓN ══ */}
       <section id="inversion" className="scroll-mt-16 bg-tinta-2 px-5 py-16 text-hielo md:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-sora text-4xl font-semibold leading-tight md:text-5xl">
+          <h2 className="entra font-sora text-4xl font-semibold leading-tight md:text-5xl">
             Tu inversión
           </h2>
 
@@ -434,7 +463,7 @@ export default async function CursoPage() {
 
       {/* ══ PARA QUIÉN ══ */}
       <section className="mx-auto max-w-4xl px-5 py-16 md:py-24">
-        <h2 className="font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
+        <h2 className="entra font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
           ¿Es para ti?
         </h2>
         <div className="mt-10 grid gap-10 md:grid-cols-2">
@@ -471,8 +500,8 @@ export default async function CursoPage() {
       {/* El segundo bloque blanco. Las preguntas se leen mejor en claro, y
           deja el cierre negro que sigue con todo el peso. */}
       <section className="bg-blanco px-5 py-16 text-tinta md:py-24">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="font-sora text-4xl font-semibold leading-tight text-tinta md:text-5xl">
+        <div className="curso-faq mx-auto max-w-3xl">
+          <h2 className="entra font-sora text-4xl font-semibold leading-tight text-tinta md:text-5xl">
             Las dudas de siempre
           </h2>
           <div className="mt-8">
@@ -507,7 +536,7 @@ export default async function CursoPage() {
           {/* Antes de la noche 3 este cierre NO puede decir "la próxima cohorte
               es en enero": las inscripciones ni siquiera han abierto, y es a
               donde va a dar quien pique el botón de compra. */}
-          <h2 className="font-sora text-4xl font-semibold leading-tight md:text-6xl">
+          <h2 className="entra font-sora text-4xl font-semibold leading-tight md:text-6xl">
             {yaAbrio ? (
               <>
                 La próxima cohorte es en enero.
