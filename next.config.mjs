@@ -40,6 +40,16 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // ── Ligas cortas de la campaña del curso ────────────────────────────
+      // Van a mano en mensajes de WhatsApp y en 26 correos: /taller se teclea
+      // y se dicta mucho mejor que /curso/webinar. Son redirects y no
+      // rewrites a propósito: el navbar del sitio se apaga con
+      // `pathname.startsWith("/curso")`, y con un rewrite la URL seguiría
+      // siendo /taller, así que el navbar volvería a aparecer encima del
+      // embudo.
+      { source: "/taller", destination: "/curso/webinar", permanent: false },
+      { source: "/calculadora", destination: "/curso/calculadora", permanent: false },
+
       // ── Apex sin www → www ───────────────────────────────────────────────
       // Todo el sitio se declara canónico en `www` (canonical, hreflang y
       // sitemap), así que el apex NO debe servir una segunda copia: redirige.

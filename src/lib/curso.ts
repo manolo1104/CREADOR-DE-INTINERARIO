@@ -34,14 +34,63 @@ export const PRECIOS = {
 } as const;
 
 // ── Fechas (todas con -06:00 explícito) ────────────────────────────────────
+//
+// OJO con el orden, que es la trampa que tenía este archivo: la oferta del
+// curso se presenta EN VIVO al final de la noche 3 del taller (10 sep). Si el
+// precio de fundador venciera antes de esa noche, nadie alcanzaría a
+// comprarlo. Por eso finFundador va DESPUÉS del taller, no antes.
 export const FECHAS = {
-  finFundador: new Date("2026-09-08T23:59:59-06:00"),
+  aperturaOferta: new Date("2026-09-10T20:00:00-06:00"), // durante la noche 3
+  finFundador: new Date("2026-09-12T23:59:59-06:00"),
   cierreInscripciones: new Date("2026-09-13T23:59:59-06:00"),
   inicioCohorte: new Date("2026-09-15T19:00:00-06:00"),
-  webinar: new Date("2026-09-10T19:00:00-06:00"),
+  /** La noche 1 del taller. Se conserva el nombre por compatibilidad. */
+  webinar: new Date("2026-09-08T19:00:00-06:00"),
   finCohorte: new Date("2026-10-09T23:59:59-06:00"),
   proximaCohorte: "enero de 2027",
 } as const;
+
+/**
+ * El taller gratuito: TRES noches seguidas, no una.
+ * Tres horas de verme construir cambian por completo con qué convicción se
+ * compra el día 3. La sala es LA MISMA las tres noches, a propósito: una sola
+ * liga que recordar, para ellos y para Manolo.
+ */
+export const TALLER_NOCHES = [
+  {
+    n: 1,
+    fecha: new Date("2026-09-08T19:00:00-06:00"),
+    titulo: "La decisión que define todo",
+    puntos: [
+      "Por qué tu negocio necesita un sistema y no cinco herramientas sueltas.",
+      "Abro mi panel real de Huasteca Potosina Tours y te enseño los números en pantalla.",
+      "Construyo una página de tours desde cero, en 20 minutos, mientras miras.",
+    ],
+    workbook: "El mapa de tu sistema",
+  },
+  {
+    n: 2,
+    fecha: new Date("2026-09-09T19:00:00-06:00"),
+    titulo: "Tu mejor vendedor no duerme",
+    puntos: [
+      "Construyo un agente de WhatsApp para una agencia, en vivo, de principio a fin.",
+      "Cómo cotiza, cómo agenda y en qué momento exacto te pasa la conversación a ti.",
+      "El error que hace que un agente suene a robot, y cómo se quita en dos líneas.",
+    ],
+    workbook: "El guion de tu agente",
+  },
+  {
+    n: 3,
+    fecha: new Date("2026-09-10T19:00:00-06:00"),
+    titulo: "Piloto automático",
+    puntos: [
+      "Confirmación, cobro y recordatorio, funcionando solos.",
+      "El panel donde ves reservas, ingresos, ocupación y comisiones en una sola pantalla.",
+      "Y al final: cómo hacemos esto mismo, con tu negocio, durante 4 semanas.",
+    ],
+    workbook: "Tus 3 automatizaciones",
+  },
+] as const;
 
 /** Las 8 sesiones en vivo (mar y jue, 19:00–20:30 CDMX). */
 export const SESIONES = [
@@ -55,7 +104,8 @@ export const SESIONES = [
   { n: 8, fecha: new Date("2026-10-08T19:00:00-06:00"), tema: "Demo final de cada alumno + tu plan de 90 días" },
 ] as const;
 
-/** Los 4 talleres abiertos de revisión (sábados 10:00–11:30 CDMX). */
+/** Los 4 talleres abiertos de revisión del CURSO (sábados 10:00–11:30 CDMX).
+ *  No confundir con TALLER_NOCHES, que es el taller gratuito de 3 noches. */
 export const TALLERES = [
   { n: 1, fecha: new Date("2026-09-19T10:00:00-06:00") },
   { n: 2, fecha: new Date("2026-09-26T10:00:00-06:00") },
@@ -66,10 +116,16 @@ export const TALLERES = [
 // ── Ligas que Manolo aún tiene que crear (el sitio y los correos degradan
 //    con gracia mientras sean null: "te mando la liga un día antes") ────────
 export const LINKS = {
-  zoomSesiones: null as string | null, // liga de Zoom de las sesiones
-  zoomWebinar: null as string | null, // liga de Zoom del taller gratuito del 10 sep
-  comunidadWhatsApp: null as string | null, // grupo de WhatsApp de alumnos
-  grabacionWebinar: null as string | null, // grabación del taller (para B3 y D4)
+  /** Sala de las 8 sesiones del curso. Falta crearla. */
+  salaSesiones: null as string | null,
+  /** Sala del taller gratuito. LA MISMA las tres noches. */
+  salaTaller: "https://meet.google.com/vpi-ejed-nkv" as string | null,
+  /** Grupo de WhatsApp del TALLER: ahí van las ligas y los workbooks. */
+  grupoTaller: "https://chat.whatsapp.com/KLq7pyfjarHG3CgwivrkxL?mode=gi_t" as string | null,
+  /** Grupo de los que YA pagaron. Es otro distinto. Falta crearlo. */
+  comunidadWhatsApp: null as string | null,
+  /** Grabación del taller, para quien no pudo entrar (B3 y D4). */
+  grabacionWebinar: null as string | null,
 } as const;
 
 // ── WhatsApp de Manolo (el mismo del sitio de Tours) ───────────────────────
@@ -119,7 +175,7 @@ export const PROGRAMA = [
 
 // ── Qué incluye ────────────────────────────────────────────────────────────
 export const INCLUYE = [
-  "8 sesiones en vivo por Zoom (12 horas) con grabaciones de por vida",
+  "8 sesiones en vivo por Google Meet (12 horas) con grabaciones de por vida",
   "4 talleres abiertos los sábados para revisar TU proyecto en vivo",
   "Plantillas listas: página web, prompts del agente, flujos, panel base",
   "Comunidad de alumnos en WhatsApp, durante y después del curso",
@@ -221,9 +277,9 @@ export type PrecioVigente = {
 };
 
 /**
- * El precio de fundador aplica si AÚN no pasa el 8 sep 23:59 CDMX y hay menos
+ * El precio de fundador aplica si AÚN no pasa el 12 sep 23:59 CDMX y hay menos
  * de 15 pagados. Después (o lleno el cupo fundador): precio regular hasta el
- * cierre de inscripciones.
+ * cierre de inscripciones del 13.
  */
 export function precioVigente(ahora: Date, pagados: number): PrecioVigente {
   const esFundador =
@@ -234,7 +290,20 @@ export function precioVigente(ahora: Date, pagados: number): PrecioVigente {
 }
 
 export function inscripcionesAbiertas(ahora: Date, pagados: number): boolean {
-  return ahora.getTime() <= FECHAS.cierreInscripciones.getTime() && pagados < PRECIOS.cupoTotal;
+  return (
+    ofertaAbierta(ahora) &&
+    ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
+    pagados < PRECIOS.cupoTotal
+  );
+}
+
+/**
+ * La oferta del curso se presenta en vivo al final de la noche 3. Antes de ese
+ * momento la página no puede pedir dinero: no hay nada que comprar todavía, y
+ * el camino correcto es el taller gratuito.
+ */
+export function ofertaAbierta(ahora: Date): boolean {
+  return ahora.getTime() >= FECHAS.aperturaOferta.getTime();
 }
 
 // ── Formato de fechas en español, SIEMPRE en CDMX ──────────────────────────
@@ -271,7 +340,7 @@ export function buildCalendarioIcs(): string {
       `DTSTART:${icsFecha(s.fecha)}`,
       `DTEND:${icsFecha(new Date(s.fecha.getTime() + dur90))}`,
       `SUMMARY:Turismo con IA · Sesión ${s.n}: ${s.tema}`,
-      `DESCRIPTION:Sesión en vivo por Zoom.${LINKS.zoomSesiones ? ` Liga: ${LINKS.zoomSesiones}` : " La liga llega por correo."}`,
+      `DESCRIPTION:Sesión en vivo por Google Meet.${LINKS.salaSesiones ? ` Liga: ${LINKS.salaSesiones}` : " La liga llega por correo."}`,
       "END:VEVENT",
     ].join("\r\n"));
   }
@@ -282,7 +351,7 @@ export function buildCalendarioIcs(): string {
       `DTSTART:${icsFecha(t.fecha)}`,
       `DTEND:${icsFecha(new Date(t.fecha.getTime() + dur90))}`,
       `SUMMARY:Turismo con IA · Taller abierto ${t.n} (revisión de proyectos)`,
-      `DESCRIPTION:Taller abierto por Zoom: trae tu proyecto y lo revisamos en vivo.`,
+      `DESCRIPTION:Taller abierto por Google Meet: trae tu proyecto y lo revisamos en vivo.`,
       "END:VEVENT",
     ].join("\r\n"));
   }

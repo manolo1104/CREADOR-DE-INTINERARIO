@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   ANTES_DESPUES, BONOS, CIFRAS, DOLORES, FAQS, FECHAS, GARANTIA, INCLUYE,
   NO_ES_PARA, PARA_QUIEN, PRECIOS, PROGRAMA, VALOR_BONOS, WHATSAPP_CURSO,
-  fechaLarga, inscripcionesAbiertas, mxnCurso, precioVigente,
+  fechaLarga, inscripcionesAbiertas, mxnCurso, ofertaAbierta, precioVigente,
 } from "@/lib/curso";
 import {
   BarraCurso, BotonComprar, Cifra, CuentaRegresiva, FormLead,
@@ -28,6 +28,7 @@ export default async function CursoPage() {
     .catch(() => 0);
   const pv = precioVigente(ahora, pagados);
   const abierto = inscripcionesAbiertas(ahora, pagados);
+  const yaAbrio = ofertaAbierta(ahora);
   const lugares = PRECIOS.cupoTotal - pagados;
 
   const ctaPrimario = `Reservar mi lugar · ${mxnCurso(pv.precio)}`;
@@ -37,6 +38,26 @@ export default async function CursoPage() {
 
   return (
     <main className="bg-crema text-negro md:pt-[52px]">
+      {/* Antes de la noche 3 del taller la oferta todavía no existe. La página
+          no puede pedir dinero por algo que aún no se ha presentado, así que
+          en vez de disimularlo lo dice y manda al taller, que es el camino. */}
+      {!yaAbrio && (
+        <div className="border-b border-dorado/40 bg-dorado/15 px-5 py-4">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-dm text-base leading-snug text-negro/85">
+              <strong className="text-verde-profundo">Las inscripciones abren el jueves 10</strong>
+              , al final de la tercera noche del taller gratuito. Ahí explico todo esto en vivo.
+            </p>
+            <a
+              href="/curso/webinar"
+              className="inline-block shrink-0 whitespace-nowrap bg-verde-profundo px-6 py-3.5 text-center font-dm text-[13px] font-semibold uppercase tracking-[1px] text-crema transition-transform duration-200 ease-out active:scale-[0.98]"
+            >
+              Ir al taller gratis
+            </a>
+          </div>
+        </div>
+      )}
+
       <BarraCurso
         precio={pv.precio}
         esFundador={pv.esFundador}
@@ -478,23 +499,49 @@ export default async function CursoPage() {
       {/* ══ CIERRE ══ */}
       <section id="cierre" className="scroll-mt-16 bg-verde-profundo px-5 py-16 text-crema md:py-24">
         <div className="mx-auto max-w-3xl text-center">
+          {/* Antes de la noche 3 este cierre NO puede decir "la próxima cohorte
+              es en enero": las inscripciones ni siquiera han abierto, y es a
+              donde va a dar quien pique el botón de compra. */}
           <h2 className="font-cormorant text-4xl font-semibold leading-tight md:text-6xl">
-            La próxima cohorte es en enero.
-            <br />
-            Este precio no vuelve.
+            {yaAbrio ? (
+              <>
+                La próxima cohorte es en enero.
+                <br />
+                Este precio no vuelve.
+              </>
+            ) : (
+              <>
+                Las inscripciones abren el jueves 10.
+                <br />
+                Te espero en el taller.
+              </>
+            )}
           </h2>
           <p className="mx-auto mt-5 max-w-[46ch] font-dm text-xl leading-relaxed text-crema/85">
-            Yo ya lo hice dos veces: en los tours y en el hotel, sin anuncios.
-            Ahora te toca a ti.
+            {yaAbrio
+              ? "Yo ya lo hice dos veces: en los tours y en el hotel, sin anuncios. Ahora te toca a ti."
+              : "Tres noches gratis, del 8 al 10 de septiembre. Al final de la tercera abro las inscripciones y explico todo esto en vivo, con el precio de fundador."}
           </p>
+          {!yaAbrio && (
+            <div className="mt-8">
+              <a
+                href="/curso/webinar"
+                className="inline-block bg-dorado px-10 py-5 font-dm text-[14px] font-semibold uppercase tracking-[2px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-terracota hover:text-crema active:scale-[0.98]"
+              >
+                Reservar mi lugar gratis
+              </a>
+            </div>
+          )}
 
           <div className="mt-10 text-arena">
             <CuentaRegresiva limiteIso={pv.limite.toISOString()} grande />
           </div>
           <p className="mt-4 font-dm text-base text-crema/70">
-            {pv.esFundador
-              ? `para que termine el precio de fundador de ${mxnCurso(PRECIOS.fundador)}`
-              : "para que cierren las inscripciones de la cohorte 1"}
+            {!yaAbrio
+              ? `para que termine el precio de fundador de ${mxnCurso(PRECIOS.fundador)}, que abre el jueves 10`
+              : pv.esFundador
+                ? `para que termine el precio de fundador de ${mxnCurso(PRECIOS.fundador)}`
+                : "para que cierren las inscripciones de la cohorte 1"}
           </p>
 
           {pagados >= 3 && (

@@ -1,77 +1,117 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { CIFRAS, FECHAS, fechaLarga, horaCorta, mxnCurso } from "@/lib/curso";
+import { CIFRAS, TALLER_NOCHES, fechaLarga, horaCorta, mxnCurso } from "@/lib/curso";
 import { FormLead } from "@/components/curso/CursoCliente";
 
 export const metadata: Metadata = {
-  title: "Taller gratuito: cómo automaticé Huasteca Potosina Tours",
+  title: "Taller gratuito de 3 noches: Turismo con IA en vivo",
   description:
-    "Taller en vivo por Zoom: el sistema real (página, agente de WhatsApp y panel) con el que Huasteca Potosina Tours vendió más de $500,000 MXN en 4 meses sin publicidad.",
+    "Tres noches en vivo, sin costo: construyo frente a ti la página, el agente de WhatsApp y las automatizaciones con las que Huasteca Potosina Tours vendió más de $500,000 MXN en 4 meses sin publicidad.",
   robots: { index: false, follow: false },
 };
 
 /**
- * /curso/webinar — registro al taller gratuito del 10 de septiembre.
+ * /curso/webinar — registro al taller gratuito de TRES noches (8, 9 y 10 sep).
  * Una sola acción posible: apartar lugar. Sin barra de compra, sin salidas.
+ *
+ * Por qué tres y no una: la oferta del curso se presenta al final de la noche
+ * 3, a gente que ya lleva tres horas viéndome construir. Eso no se parece en
+ * nada a vender desde una página fría.
  */
 export default function WebinarPage() {
-  const puntos = [
-    "El sistema completo funcionando: la página, el agente contestando el WhatsApp y el panel con los números",
-    `Cómo se hicieron más de ${mxnCurso(CIFRAS.toursVentas4m)} en ventas en 4 meses con $0 de publicidad`,
-    "Qué puedes automatizar tú primero, aunque no sepas programar",
-    "Al final: preguntas abiertas, las que quieras",
-  ];
+  const dia = (d: Date) => fechaLarga(d).replace(/^(\w)/, (m) => m.toUpperCase());
 
   return (
     <main className="flex min-h-[100dvh] flex-col bg-crema text-negro">
       <section className="mx-auto w-full max-w-3xl flex-1 px-5 py-14 md:py-20">
         <p className="font-dm text-xs font-medium uppercase tracking-[2.5px] text-verde-selva">
-          Taller gratuito en vivo · para negocios turísticos
+          Taller gratuito en vivo · 3 noches · para negocios turísticos
         </p>
         <h1 className="mt-4 font-cormorant text-[2.6rem] font-semibold leading-[1.05] text-verde-profundo sm:text-6xl">
-          Cómo automaticé Huasteca Potosina Tours
+          En 3 noches construyo el sistema que opera mis dos negocios
         </h1>
         <p className="mt-5 font-dm text-xl leading-relaxed text-negro/80">
-          {fechaLarga(FECHAS.webinar)} · {horaCorta(FECHAS.webinar)} (hora del
-          centro) · por Zoom · sin costo
+          8, 9 y 10 de septiembre · {horaCorta(TALLER_NOCHES[0].fecha)} (hora del
+          centro) · por Google Meet · sin costo
+        </p>
+        <p className="mt-4 font-dm text-lg leading-relaxed text-negro/70">
+          No hay diapositivas. Comparto pantalla y construyo, y tú ves cada clic,
+          incluidos los que salen mal.
         </p>
 
-        <div className="mt-8 grid gap-10 md:grid-cols-[3fr_2fr] md:gap-12">
+        <div className="mt-10 grid gap-10 md:grid-cols-[3fr_2fr] md:gap-12">
+          <ol className="space-y-8">
+            {TALLER_NOCHES.map((noche) => (
+              <li key={noche.n}>
+                <p className="font-dm text-xs font-semibold uppercase tracking-[2px] text-dorado">
+                  Noche {noche.n} · {dia(noche.fecha)}
+                </p>
+                <h2 className="mt-1.5 font-cormorant text-3xl font-semibold text-verde-profundo">
+                  {noche.titulo}
+                </h2>
+                <ul className="mt-3 space-y-2.5">
+                  {noche.puntos.map((p) => (
+                    <li
+                      key={p}
+                      className="flex items-start gap-3 font-dm text-base leading-relaxed text-negro/80"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        className="mt-1.5 h-4 w-4 shrink-0 text-verde-selva"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 inline-block border border-dorado/40 bg-dorado/10 px-3 py-1.5 font-dm text-sm text-negro/75">
+                  Workbook {noche.n}: {noche.workbook}
+                </p>
+              </li>
+            ))}
+          </ol>
+
           <div>
-            <p className="font-dm text-lg leading-relaxed text-negro/80">
-              Voy a enseñar el sistema real, no diapositivas:
-            </p>
-            <ul className="mt-5 space-y-3.5">
-              {puntos.map((p) => (
-                <li key={p} className="flex items-start gap-3.5 font-dm text-lg leading-relaxed text-negro/85">
-                  <svg aria-hidden="true" className="mt-1.5 h-5 w-5 shrink-0 text-verde-selva" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                  {p}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <figure>
-            <div className="relative aspect-[4/3] overflow-hidden border border-negro/10 bg-white shadow-[0_20px_50px_-20px_rgba(26,46,26,0.4)]">
-              <Image
-                src="/imagenes/curso/panel.jpg"
-                alt="El panel de control de Huasteca Potosina Tours"
-                fill
-                sizes="(max-width: 768px) 100vw, 40vw"
-                className="object-cover object-top"
-              />
+            <figure>
+              <div className="relative aspect-[4/3] overflow-hidden border border-negro/10 bg-white shadow-[0_20px_50px_-20px_rgba(26,46,26,0.4)]">
+                <Image
+                  src="/imagenes/curso/panel.jpg"
+                  alt="El panel de control de Huasteca Potosina Tours"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                  className="object-cover object-top"
+                />
+              </div>
+              <figcaption className="mt-3 font-dm text-sm text-negro/60">
+                La noche 1 abro este panel en vivo: {mxnCurso(CIFRAS.toursVentas4m)} en
+                ventas en 4 meses, con {mxnCurso(CIFRAS.publicidadPagada)} de publicidad.
+              </figcaption>
+            </figure>
+
+            <div className="mt-8 border border-negro/15 bg-white/60 p-5">
+              <p className="font-dm text-sm leading-relaxed text-negro/75">
+                <strong className="text-verde-profundo">La grabación dura 24 horas.</strong>{" "}
+                Los workbooks van protegidos con una contraseña que sólo digo en vivo. Si
+                faltas, te quedas sin él.
+              </p>
             </div>
-            <figcaption className="mt-3 font-dm text-sm text-negro/60">
-              Esto es lo que ves en el taller: el panel real, en vivo.
-            </figcaption>
-          </figure>
+          </div>
         </div>
 
-        <div className="mt-12 border border-negro/15 bg-white/70 p-6 sm:p-8">
+        <div id="registro" className="mt-12 border border-negro/15 bg-white/70 p-6 sm:p-8">
           <h2 className="font-cormorant text-3xl font-semibold text-verde-profundo">
-            Aparta tu lugar
+            Reserva tu lugar
           </h2>
           <p className="mt-2 font-dm text-base text-negro/70">
-            Te llega la confirmación por correo y la liga de Zoom un día antes.
+            Es gratis y son tres noches. Te llega la confirmación por correo, con la liga y
+            el grupo de WhatsApp donde mando los workbooks.
           </p>
           <div className="mt-6">
             <FormLead webinar />
@@ -82,7 +122,13 @@ export default function WebinarPage() {
       <footer className="bg-negro px-5 py-8 text-center font-dm text-sm text-crema/60">
         <p>
           Manolo · Huasteca Potosina Tours ·{" "}
-          <a href="/aviso-de-privacidad" className="underline hover:text-crema">Aviso de privacidad</a>
+          <a href="/aviso-de-privacidad" className="underline hover:text-crema">
+            Aviso de privacidad
+          </a>
+        </p>
+        <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-crema/40">
+          Este sitio no es parte de Facebook ni de Meta Platforms, y no está avalado por
+          ellos de ninguna forma.
         </p>
       </footer>
     </main>

@@ -21,6 +21,7 @@ import {
 } from "@/lib/emailLayout";
 import {
   BONOS, CIFRAS, FECHAS, GARANTIA, LINKS, PRECIOS, PROGRAMA, SESIONES,
+  TALLER_NOCHES,
   fechaLarga, horaCorta, mxnCurso, precioVigente,
 } from "@/lib/curso";
 
@@ -30,16 +31,24 @@ const URL_CURSO = `${BASE}/curso`;
 const HORA_CDMX = (ms: string) => new Date(ms).getTime();
 
 // Momentos fijos del calendario (CDMX = -06:00 todo el año)
+// Momentos fijos. El orden importa: la oferta se presenta la noche del 10, así
+// que TODO lo que habla de precio va después de esa hora, no antes.
 const T = {
-  a6: HORA_CDMX("2026-09-07T09:00:00-06:00"),
-  a7: HORA_CDMX("2026-09-08T18:00:00-06:00"),
-  d1: HORA_CDMX("2026-09-11T09:00:00-06:00"),
-  d2: HORA_CDMX("2026-09-12T09:00:00-06:00"),
+  // El taller: 8, 9 y 10 de septiembre a las 7 pm
+  w2: HORA_CDMX("2026-09-08T09:00:00-06:00"), // mañana de la noche 1
+  w3: HORA_CDMX("2026-09-08T18:30:00-06:00"), // 30 min antes de la noche 1
+  w4: HORA_CDMX("2026-09-09T09:00:00-06:00"), // grabación N1 + aviso noche 2
+  w5: HORA_CDMX("2026-09-09T18:30:00-06:00"), // 30 min antes de la noche 2
+  w6: HORA_CDMX("2026-09-10T09:00:00-06:00"), // grabación N2 + aviso noche 3
+  w7: HORA_CDMX("2026-09-10T18:30:00-06:00"), // 30 min antes de la noche 3
+  // El cierre, ya con la oferta presentada
+  d1: HORA_CDMX("2026-09-10T22:00:00-06:00"), // al salir de la noche 3
+  d2: HORA_CDMX("2026-09-11T09:00:00-06:00"),
+  a6: HORA_CDMX("2026-09-11T18:00:00-06:00"), // mañana sube el precio
+  a7: HORA_CDMX("2026-09-12T18:00:00-06:00"), // últimas 6 horas
   d3: HORA_CDMX("2026-09-13T12:00:00-06:00"),
   d4: HORA_CDMX("2026-09-14T10:00:00-06:00"),
-  w2: HORA_CDMX("2026-09-10T09:00:00-06:00"),
-  w3: HORA_CDMX("2026-09-10T18:00:00-06:00"),
-  c2: HORA_CDMX("2026-09-12T10:00:00-06:00"),
+  c2: HORA_CDMX("2026-09-14T10:00:00-06:00"), // víspera del arranque
   c11: HORA_CDMX("2026-09-20T10:00:00-06:00"),
   c12: HORA_CDMX("2026-10-09T10:00:00-06:00"),
 } as const;
@@ -224,7 +233,7 @@ const A: CorreoCurso[] = [
     due: ({ lead, ahora }) =>
       ahora.getTime() >= T.a6 &&
       ahora.getTime() <= FECHAS.finFundador.getTime() &&
-      lead.createdAt.getTime() < HORA_CDMX("2026-09-07T00:00:00-06:00"),
+      lead.createdAt.getTime() < HORA_CDMX("2026-09-11T12:00:00-06:00"),
     build: (cx) => ({
       subject: "Mañana se acaba el precio de fundador",
       html: shellCurso({
@@ -247,7 +256,7 @@ const A: CorreoCurso[] = [
     due: ({ lead, ahora }) =>
       ahora.getTime() >= T.a7 &&
       ahora.getTime() <= FECHAS.finFundador.getTime() &&
-      lead.createdAt.getTime() < HORA_CDMX("2026-09-08T12:00:00-06:00"),
+      lead.createdAt.getTime() < HORA_CDMX("2026-09-12T12:00:00-06:00"),
     build: (cx) => ({
       subject: "Última llamada: 6 horas",
       html: shellCurso({
@@ -336,28 +345,125 @@ const B: CorreoCurso[] = [
   },
 ];
 
-// ── Secuencia W — Taller gratuito del 10 de septiembre ─────────────────────
+// ── Secuencia W — El taller gratuito de 3 noches (8, 9 y 10 de septiembre) ──
+//
+// Siete envíos. Son los que llenan la sala: un taller con 200 registrados y
+// sin recordatorios se llena con 30 personas. El correo de la grabación es el
+// que más trabaja, porque la grabación CADUCA y la contraseña del workbook
+// sólo se dice en vivo: eso convierte "algún día la veo" en "tengo que estar".
+
+/** Liga del taller, o la promesa de mandarla, según exista o no. */
+const botonSala = (texto: string) =>
+  LINKS.salaTaller
+    ? boton(LINKS.salaTaller, texto, "verde")
+    : parrafo("<strong>La liga te llega en un correo aparte y en el grupo de WhatsApp.</strong>");
+
+/** El grupo del taller, donde van las ligas y los workbooks. */
+const bloqueGrupo = () =>
+  LINKS.grupoTaller
+    ? boton(LINKS.grupoTaller, "Entrar al grupo de WhatsApp", "verde")
+    : parrafo("<strong>En un momento te mando la liga del grupo de WhatsApp del taller.</strong>");
+
+/** Recordatorio de media hora antes, para las noches 2 y 3. */
+function avisoNoche(id: string, n: 2 | 3, cuando: number): CorreoCurso {
+  const noche = TALLER_NOCHES[n - 1];
+  return {
+    id,
+    due: ({ lead, ahora }) =>
+      lead.webinar && ahora.getTime() >= cuando && lead.createdAt.getTime() < cuando,
+    build: (cx) => ({
+      subject: n === 3 ? "Última noche, en 30 minutos" : "Noche 2 en 30 minutos",
+      html: shellCurso({
+        preheader: `${noche.titulo} · 7:00 pm hora del centro`,
+        eyebrow: `Noche ${n}`,
+        h1a: n === 3 ? "Última noche," : "Noche 2,",
+        h1b: "en 30 minutos",
+        cuerpo: [
+          parrafo(
+            n === 3
+              ? `${saludo(cx.lead)} Hoy cerramos. Confirmación, cobro y recordatorio funcionando solos, más el panel. Y al final te cuento cómo hacemos esto mismo con tu negocio en cuatro semanas: quédate hasta ahí, porque esa parte no queda en la grabación.`
+              : `${saludo(cx.lead)} Ayer armamos el mapa. Hoy armamos el vendedor: construyo un agente de WhatsApp de principio a fin, en vivo.`
+          ),
+          botonSala("Entrar al taller"),
+        ].join(""),
+        paraBaja: cx.lead.email,
+      }),
+    }),
+  };
+}
+
+/** La grabación de anoche, que caduca en 24 horas. */
+function correoGrabacion(id: string, nocheVista: 1 | 2, cuando: number): CorreoCurso {
+  const siguiente = TALLER_NOCHES[nocheVista];
+  return {
+    id,
+    due: ({ lead, ahora }) =>
+      lead.webinar && ahora.getTime() >= cuando && lead.createdAt.getTime() < cuando,
+    build: (cx) => ({
+      subject: "La grabación de anoche (se cae en 24 horas)",
+      html: shellCurso({
+        preheader: `Hoy a las 7: ${siguiente.titulo}`,
+        eyebrow: `Noche ${nocheVista} · grabación`,
+        h1a: "La grabación",
+        h1b: "de anoche",
+        cuerpo: [
+          parrafo(
+            LINKS.grabacionWebinar
+              ? `${saludo(cx.lead)} Aquí está la grabación de la noche ${nocheVista}. La dejo arriba hasta mañana a esta hora y después la bajo.`
+              : `${saludo(cx.lead)} La grabación de la noche ${nocheVista} está en el grupo de WhatsApp del taller. La dejo arriba hasta mañana a esta hora y después la bajo.`
+          ),
+          parrafo(
+            `Una cosa: la contraseña del workbook <strong>“${TALLER_NOCHES[nocheVista - 1].workbook}”</strong> la dije en vivo y no la escribo en ningún lado. Si no estuviste, hoy la vuelvo a decir.`
+          ),
+          regla(),
+          parrafo(`Hoy a las 7:00 pm, noche ${nocheVista + 1}: <strong>${siguiente.titulo}</strong>.`, "0 0 6px 0"),
+          botonSala("Entrar al taller"),
+        ].join(""),
+        paraBaja: cx.lead.email,
+      }),
+    }),
+  };
+}
 
 const W: CorreoCurso[] = [
   {
     id: "W1",
     due: ({ lead }) => lead.webinar,
     build: (cx) => ({
-      subject: "Listo: tu lugar en el taller gratuito del jueves 10",
+      subject: "[Acción requerida] Tu lugar en el taller: haz estas 3 cosas",
       html: shellCurso({
-        preheader: `${fechaLarga(FECHAS.webinar)} a las ${horaCorta(FECHAS.webinar)} · en vivo por Zoom`,
+        preheader: "8, 9 y 10 de septiembre, 7 pm · tres noches en vivo, sin costo",
         eyebrow: "Taller gratuito",
-        h1a: "Nos vemos el",
-        h1b: "jueves 10",
+        h1a: "Tres noches,",
+        h1b: "en vivo",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} Ya quedó tu registro al taller <strong>“Cómo automaticé Huasteca Potosina Tours”</strong>: ${fechaLarga(FECHAS.webinar)} a las ${horaCorta(FECHAS.webinar)} (hora del centro), en vivo por Zoom.`),
-          parrafo("Voy a mostrar el sistema real, no diapositivas: la página, el agente contestando el WhatsApp y el panel con los números."),
-          LINKS.zoomWebinar
-            ? boton(LINKS.zoomWebinar, "Guardar mi liga de Zoom", "verde")
-            : parrafo("La liga de Zoom te llega por este mismo correo un día antes."),
+          parrafo(
+            `${saludo(cx.lead)} Ya quedó tu lugar en <strong>Turismo con IA en vivo</strong>: ${TALLER_NOCHES.map((n) => fechaLarga(n.fecha).replace(/^\w+, /, "")).join(", ")} de septiembre, a las 7:00 pm hora del centro, por Google Meet.`
+          ),
+          parrafo(
+            "No voy a darte teoría. Voy a construir frente a ti, clic por clic, lo mismo que me dio más de " +
+              mxnCurso(CIFRAS.total4m) +
+              " en cuatro meses sin pagar un solo anuncio."
+          ),
           regla(),
-          parrafo(`Mientras tanto, aquí está el programa del curso que abre el ${fechaLarga(FECHAS.inicioCohorte)}:`, "0 0 6px 0"),
-          ctaReservar(cx, "Ver el programa"),
+          parrafo("<strong>Para que no te pierdas nada, haz esto hoy:</strong>", "0 0 10px 0"),
+          parrafo(
+            "<strong>1) Entra al grupo de WhatsApp del taller.</strong> Ahí mando la liga de cada noche, los workbooks y el material extra. No lo comparto en ningún otro lado.",
+            "0 0 10px 0"
+          ),
+          bloqueGrupo(),
+          parrafo(
+            `<strong>2) Aparta las tres noches.</strong> Cada una trae un workbook, pero está protegido con contraseña, y la contraseña sólo la digo en vivo. Si faltas, te quedas sin él.`,
+            "18px 0 10px 0"
+          ),
+          botonSala("Guardar mi liga del taller"),
+          parrafo(
+            "<strong>3) Saca tu número.</strong> La mayoría de las agencias no pierde clientes por precio: los pierde por contestar tarde. Contesta 3 preguntas y te digo cuántos pesos se te van cada mes por WhatsApps sin responder.",
+            "18px 0 10px 0"
+          ),
+          boton(`${BASE}/curso/calculadora`, "Ver cuánto pierdo", "dorado"),
+          regla(),
+          parrafo("Haz estas tres cosas hoy y llegas listo al martes.", "0 0 0 0"),
         ].join(""),
         paraBaja: cx.lead.email,
       }),
@@ -368,17 +474,18 @@ const W: CorreoCurso[] = [
     due: ({ lead, ahora }) =>
       lead.webinar && ahora.getTime() >= T.w2 && lead.createdAt.getTime() < T.w2,
     build: (cx) => ({
-      subject: "Es hoy a las 7 pm: el taller en vivo",
+      subject: "hoy a las 7",
       html: shellCurso({
-        preheader: "Cómo automaticé Huasteca Potosina Tours, con el sistema real",
-        eyebrow: "Es hoy",
-        h1a: "Hoy a las 7 pm,",
-        h1b: "en vivo",
+        preheader: TALLER_NOCHES[0].titulo,
+        eyebrow: "Noche 1",
+        h1a: "Hoy es",
+        h1b: "la noche 1",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} Hoy ${fechaLarga(FECHAS.webinar)} a las ${horaCorta(FECHAS.webinar)} nos vemos en Zoom. Trae papel: voy a enseñar el sistema completo con mis números reales.`),
-          LINKS.zoomWebinar
-            ? boton(LINKS.zoomWebinar, "Entrar al taller (Zoom)", "verde")
-            : parrafo("<strong>La liga de Zoom te llega en un correo aparte antes de las 6 pm.</strong>"),
+          parrafo(
+            `${saludo(cx.lead)} Abro mi panel real de Huasteca Potosina Tours, te enseño los números en pantalla y construyo una página de tours desde cero en 20 minutos, mientras miras.`
+          ),
+          parrafo("7:00 pm, hora del centro. Trae papel: al final doy la contraseña del primer workbook."),
+          botonSala("Entrar al taller"),
         ].join(""),
         paraBaja: cx.lead.email,
       }),
@@ -389,22 +496,24 @@ const W: CorreoCurso[] = [
     due: ({ lead, ahora }) =>
       lead.webinar && ahora.getTime() >= T.w3 && lead.createdAt.getTime() < T.w3,
     build: (cx) => ({
-      subject: "Empezamos en una hora",
+      subject: "empezamos en 30 minutos",
       html: shellCurso({
-        preheader: "El taller en vivo empieza a las 7 pm",
-        eyebrow: "En una hora",
+        preheader: "La noche 1 arranca a las 7:00 pm",
+        eyebrow: "En 30 minutos",
         h1a: "Empezamos",
-        h1b: "a las 7",
+        h1b: "en media hora",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} En una hora arrancamos. Conéctate unos minutos antes.`),
-          LINKS.zoomWebinar
-            ? boton(LINKS.zoomWebinar, "Entrar al taller (Zoom)", "verde")
-            : parrafo("<strong>Revisa tu bandeja: la liga de Zoom va en un correo aparte.</strong>"),
+          parrafo(`${saludo(cx.lead)} En media hora. Conéctate unos minutos antes.`),
+          botonSala("Entrar al taller"),
         ].join(""),
         paraBaja: cx.lead.email,
       }),
     }),
   },
+  correoGrabacion("W4", 1, T.w4),
+  avisoNoche("W5", 2, T.w5),
+  correoGrabacion("W6", 2, T.w6),
+  avisoNoche("W7", 3, T.w7),
 ];
 
 // ── Secuencia D — Cierre de cohorte (11–14 sep) ────────────────────────────
@@ -414,14 +523,14 @@ const D: CorreoCurso[] = [
     id: "D1",
     due: ({ ahora }) => ahora.getTime() >= T.d1 && ahora.getTime() <= FECHAS.cierreInscripciones.getTime(),
     build: (cx) => ({
-      subject: "Cerramos inscripciones el sábado",
+      subject: "Cerramos el domingo",
       html: shellCurso({
         preheader: `El martes ${fechaLarga(FECHAS.inicioCohorte)} arrancamos; no se puede entrar a medias`,
         eyebrow: "Cierre",
-        h1a: "El sábado cerramos",
+        h1a: "El domingo cerramos",
         h1b: "inscripciones",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} El martes ${fechaLarga(FECHAS.inicioCohorte)} a las 7 pm arranca la cohorte, y como cada semana construye sobre la anterior, no se puede entrar a medias: las inscripciones cierran el <strong>sábado ${fechaLarga(FECHAS.cierreInscripciones)} a las 11:59 pm</strong>.`),
+          parrafo(`${saludo(cx.lead)} El martes ${fechaLarga(FECHAS.inicioCohorte)} a las 7 pm arranca la cohorte, y como cada semana construye sobre la anterior, no se puede entrar a medias: las inscripciones cierran el <strong>${fechaLarga(FECHAS.cierreInscripciones)} a las 11:59 pm</strong>.`),
           parrafo("Ya hay dentro agencias, guías y hoteles. En la semana 1 todos publican su página; en la 2, su agente de WhatsApp."),
           ctaReservar(cx),
           lineaCupo(cx.pagados),
@@ -499,9 +608,9 @@ const cuerpoBienvenida = (cx: ContextoCorreo) => [
   parrafo(`${saludo(cx.lead)} Ya eres parte de la cohorte 1 de <strong>Turismo con IA</strong>. Tu pago quedó registrado y tu lugar está apartado. A partir de hoy, esto deja de ser un curso que compraste y empieza a ser un sistema que construyes.`),
   barra("Tus fechas"),
   parrafo(`Arrancamos el <strong>${fechaLarga(FECHAS.inicioCohorte)} a las ${horaCorta(FECHAS.inicioCohorte)}</strong> (hora del centro). Son 8 sesiones en vivo, martes y jueves de 7:00 a 8:30 pm, más 4 talleres abiertos los sábados a las 10:00 am. Va adjunto el calendario para que lo agregues a tu teléfono de un toque.`),
-  LINKS.zoomSesiones
-    ? boton(LINKS.zoomSesiones, "Guardar la liga de Zoom", "verde")
-    : parrafo("<strong>La liga de Zoom te llega por correo antes de la primera sesión.</strong>"),
+  LINKS.salaSesiones
+    ? boton(LINKS.salaSesiones, "Guardar la liga de Google Meet", "verde")
+    : parrafo("<strong>La liga de Google Meet te llega por correo antes de la primera sesión.</strong>"),
   barra("La comunidad"),
   parrafo(
     LINKS.comunidadWhatsApp
@@ -562,10 +671,10 @@ const C_SERIE: CorreoCurso[] = [
         h1a: "Hoy empieza",
         h1b: "tu sistema",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} Hoy a las <strong>${horaCorta(SESIONES[0].fecha)}</strong> nos vemos en Zoom. Sesión 1: ${SESIONES[0].tema.toLowerCase()}.`),
-          LINKS.zoomSesiones
-            ? boton(LINKS.zoomSesiones, "Entrar a la sesión (Zoom)", "verde")
-            : parrafo("<strong>La liga de Zoom va en un correo aparte hoy mismo.</strong>"),
+          parrafo(`${saludo(cx.lead)} Hoy a las <strong>${horaCorta(SESIONES[0].fecha)}</strong> nos vemos en Google Meet. Sesión 1: ${SESIONES[0].tema.toLowerCase()}.`),
+          LINKS.salaSesiones
+            ? boton(LINKS.salaSesiones, "Entrar a la sesión", "verde")
+            : parrafo("<strong>La liga de Google Meet va en un correo aparte hoy mismo.</strong>"),
           parrafo("Ten a la mano tu hoja del negocio. Nos vemos al rato."),
         ].join(""),
       }),
@@ -579,15 +688,15 @@ const C_SERIE: CorreoCurso[] = [
       subject: `Hoy 7 pm · Sesión ${s.n}: ${s.tema}`,
       html: shellCurso({
         alumno: true,
-        preheader: "Nos vemos en Zoom a las 7:00 pm (hora del centro)",
+        preheader: "Nos vemos en Google Meet a las 7:00 pm (hora del centro)",
         eyebrow: `Sesión ${s.n} de 8`,
         h1a: "Hoy a las 7,",
         h1b: "en vivo",
         cuerpo: [
           parrafo(`${saludo(cx.lead)} Hoy a las <strong>${horaCorta(s.fecha)}</strong>: <strong>${s.tema}</strong>.`),
-          LINKS.zoomSesiones
-            ? boton(LINKS.zoomSesiones, "Entrar a la sesión (Zoom)", "verde")
-            : parrafo("<strong>Usa la misma liga de Zoom de siempre.</strong>"),
+          LINKS.salaSesiones
+            ? boton(LINKS.salaSesiones, "Entrar a la sesión", "verde")
+            : parrafo("<strong>Usa la misma liga de Google Meet de siempre.</strong>"),
           parrafo("Si no llegas, queda grabada; pero en vivo puedes preguntar sobre TU proyecto."),
         ].join(""),
       }),

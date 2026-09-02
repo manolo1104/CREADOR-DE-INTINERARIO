@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import {
-  FECHAS, PRECIOS, WHATSAPP_CURSO, fechaLarga, horaCorta, inscripcionesAbiertas,
-  mxnCurso, precioVigente,
+  FECHAS, LINKS, PRECIOS, TALLER_NOCHES, WHATSAPP_CURSO, fechaLarga, horaCorta,
+  inscripcionesAbiertas, mxnCurso, ofertaAbierta, precioVigente,
 } from "@/lib/curso";
 import { BotonComprar } from "@/components/curso/CursoCliente";
 
@@ -25,6 +25,35 @@ export default async function GraciasPage({
     .catch(() => 0);
   const pv = precioVigente(ahora, pagados);
   const abierto = inscripcionesAbiertas(ahora, pagados);
+  const yaAbrio = ofertaAbierta(ahora);
+
+  /* La escalera de compromisos. Cada "sí" chiquito hace más probable el
+     grande: quien entra al grupo, aparta las noches y saca su número llega
+     a la noche 1 con otra actitud. Por eso van AQUÍ y no en un correo que
+     tal vez no abra. */
+  const tareas = [
+    {
+      t: "Entra al grupo de WhatsApp del taller",
+      d: "Ahí mando la liga de cada noche, los workbooks y el material extra. No lo comparto en ningún otro lado.",
+      href: LINKS.grupoTaller,
+      cta: "Entrar al grupo",
+      falta: "En un momento te mando la liga del grupo por correo.",
+    },
+    {
+      t: "Aparta las tres noches",
+      d: "8, 9 y 10 de septiembre, 7 pm. Cada noche trae un workbook protegido con contraseña, y la contraseña sólo la digo en vivo. Si faltas, te quedas sin él.",
+      href: LINKS.salaTaller,
+      cta: "Guardar la liga",
+      falta: "Te mando la liga por correo antes del martes.",
+    },
+    {
+      t: "Saca tu número de reservas perdidas",
+      d: "La mayoría de las agencias no pierde clientes por precio: los pierde por contestar tarde. Contesta 3 preguntas y sabrás cuánto se te va cada mes. Llega al martes sabiendo tu número.",
+      href: "/curso/calculadora",
+      cta: "Ver cuánto pierdo",
+      falta: "",
+    },
+  ];
 
   return (
     <main className="flex min-h-[100dvh] flex-col bg-crema text-negro">
@@ -37,10 +66,55 @@ export default async function GraciasPage({
         </h1>
         <p className="mt-6 font-dm text-xl leading-relaxed text-negro/80">
           {esTaller
-            ? `Nos vemos el ${fechaLarga(FECHAS.webinar)} a las ${horaCorta(FECHAS.webinar)} (hora del centro), en vivo por Zoom. Te acabo de mandar la confirmación por correo; la liga de Zoom llega un día antes.`
+            ? `Son tres noches: 8, 9 y 10 de septiembre a las ${horaCorta(TALLER_NOCHES[0].fecha)} (hora del centro), en vivo por Google Meet. Te acabo de mandar la confirmación por correo.`
             : "Te acabo de mandar el programa completo por correo. Si no lo ves en unos minutos, revisa la carpeta de promociones o de no deseados."}
         </p>
 
+        {esTaller && (
+          <div className="mt-10">
+            <h2 className="font-cormorant text-3xl font-semibold text-verde-profundo">
+              Falta lo importante: que sí estés el martes.
+            </h2>
+            <p className="mt-3 font-dm text-lg leading-relaxed text-negro/75">
+              Cada año se registra mucha gente a talleres a los que nunca entra. Estas tres
+              cosas toman dos minutos y son la diferencia. Hazlas ahora, antes de cerrar
+              esta pestaña.
+            </p>
+            <ol className="mt-7 divide-y divide-negro/12 border-y border-negro/12">
+              {tareas.map((x, i) => (
+                <li key={x.t} className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 py-6">
+                  <span
+                    aria-hidden="true"
+                    className="row-span-3 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-verde-profundo font-cormorant text-lg font-semibold text-lima"
+                  >
+                    {i + 1}
+                  </span>
+                  <h3 className="font-cormorant text-2xl font-semibold text-verde-profundo">
+                    {x.t}
+                  </h3>
+                  <p className="font-dm text-base leading-relaxed text-negro/75">{x.d}</p>
+                  <div>
+                    {x.href ? (
+                      <a
+                        href={x.href}
+                        {...(x.href.startsWith("http")
+                          ? { target: "_blank", rel: "noopener noreferrer" }
+                          : {})}
+                        className="mt-1 inline-block border border-verde-selva/50 px-5 py-3 font-dm text-sm font-medium uppercase tracking-[1px] text-verde-selva transition-colors duration-200 hover:bg-verde-selva/10"
+                      >
+                        {x.cta}
+                      </a>
+                    ) : (
+                      <p className="mt-1 font-dm text-sm text-negro/55">{x.falta}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {(!esTaller || yaAbrio) && (
         <div className="mt-10 border border-negro/15 bg-white/70 p-7">
           <h2 className="font-cormorant text-3xl font-semibold text-verde-profundo">
             ¿Ya lo tienes claro?
@@ -60,6 +134,7 @@ export default async function GraciasPage({
             </BotonComprar>
           </div>
         </div>
+        )}
 
         <p className="mt-10 font-dm text-lg text-negro/75">
           ¿Prefieres preguntarme algo antes?{" "}
