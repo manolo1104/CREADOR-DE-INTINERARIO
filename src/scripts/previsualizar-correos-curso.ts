@@ -55,7 +55,10 @@ const LEAD: CursoLead = {
 
 /** Cuándo tendría sentido cada bloque, para la cinta de contexto. */
 const CUANDO: Record<string, string> = {
-  A1: "al dejar su correo en /curso",
+  T1: "al dejar su correo en /curso, sin registrarse al taller",
+  T2: "+1 día · qué pasa en cada noche",
+  T3: "7 sep, 6 pm · mañana empieza",
+  A1: "al dejar su correo en /curso, ya pasado el taller",
   A2: "+1 día", A3: "+2 días", A4: "+3 días", A5: "+4 días",
   A6: "11 sep, 6 pm · mañana sube el precio",
   A7: "12 sep, 6 pm · últimas 6 horas",
@@ -78,7 +81,8 @@ const cuandoDe = (id: string) =>
   CUANDO[id] ?? (id.startsWith("C") ? "ya es alumno" : "según su avance");
 
 const bloqueDe = (id: string) =>
-  id.startsWith("A") ? "Dejó su correo en la página del curso"
+  id.startsWith("T") ? "Dejó su correo pero NO se ha registrado al taller"
+  : id.startsWith("A") ? "Dejó su correo en la página del curso"
   : id.startsWith("W") ? "Se registró al taller gratuito"
   : id.startsWith("B") ? "Empezó a pagar y no terminó"
   : id.startsWith("D") ? "No compró: cierre de inscripciones"
@@ -111,6 +115,7 @@ async function main() {
 
   // El orden en el que los VIVE una persona, no el orden del archivo.
   const orden = [
+    ...CORREOS_PROSPECTO.filter((c) => c.id.startsWith("T")),
     ...CORREOS_PROSPECTO.filter((c) => c.id.startsWith("W")),
     ...CORREOS_PROSPECTO.filter((c) => c.id.startsWith("A")),
     ...CORREOS_PROSPECTO.filter((c) => c.id.startsWith("B")),

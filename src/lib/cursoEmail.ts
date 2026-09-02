@@ -15,10 +15,13 @@
  */
 
 import type { CursoLead } from "@prisma/client";
+// La piel de estos correos es la del funnel (negra, azul eléctrico y blanco),
+// no la crema de la marca de tours: es otro producto y otro público. Misma
+// API, así que sólo cambia de dónde vienen las piezas.
 import {
   BASE, C, WA,
   barra, bajoBoton, boton, nota, parrafo, regla, shellCorreo, tabla, titulo,
-} from "@/lib/emailLayout";
+} from "@/lib/cursoEmailLayout";
 import {
   BONOS, CIFRAS, FECHAS, GARANTIA, LINKS, PRECIOS, PROGRAMA, SESIONES,
   TALLER_NOCHES,
@@ -80,7 +83,7 @@ const saludo = (lead: CursoLead) =>
 /** "Quedan N lugares de 25" — solo cuando la cifra ya empuja de verdad. */
 const lineaCupo = (pagados: number) =>
   pagados >= 3
-    ? nota(`<strong>${PRECIOS.cupoTotal - pagados} lugares disponibles</strong> de ${PRECIOS.cupoTotal}. La cohorte arranca el ${fechaLarga(FECHAS.inicioCohorte)}.`, C.terracota)
+    ? nota(`<strong>${PRECIOS.cupoTotal - pagados} lugares disponibles</strong> de ${PRECIOS.cupoTotal}. La cohorte arranca el ${fechaLarga(FECHAS.inicioCohorte)}.`, C.azulVivo)
     : nota(`Cupo real: ${PRECIOS.cupoTotal} lugares. La cohorte arranca el ${fechaLarga(FECHAS.inicioCohorte)}.`);
 
 const ctaReservar = (cx: ContextoCorreo, texto = "Reservar mi lugar") => {
@@ -95,7 +98,7 @@ const ctaReservar = (cx: ContextoCorreo, texto = "Reservar mi lugar") => {
   ].join("");
 };
 
-const firmaWhats = `¿Dudas? Responde a este correo o escríbeme por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a>. Te contesto yo.`;
+const firmaWhats = `¿Dudas? Responde a este correo o escríbeme por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.azulVivo};font-weight:500;">+52 489 125 1458</a>. Te contesto yo.`;
 
 const shellCurso = (d: {
   preheader: string; eyebrow: string; h1a: string; h1b?: string;
@@ -112,6 +115,110 @@ const shellCurso = (d: {
   });
 };
 
+// ── Secuencia T — Que se registren al taller ───────────────────────────────
+//
+// Con el taller como puerta de entrada, quien deja su correo en /curso y NO
+// se registra está a medio camino. Estos tres correos existen para cerrar ese
+// hueco, y los tres se apagan solos en cuanto la persona se registra: la
+// condición es `!lead.webinar`, así que el momento en que pasa a true toda la
+// secuencia deja de existir para ella y arranca la W.
+//
+// Van ANTES que la A en el registro, y la A queda esperando a que el taller
+// termine: si no, el cron alternaría "ven al taller" con "compra el curso" y
+// la persona recibiría dos conversaciones distintas el mismo día.
+
+const noRegistrado = ({ lead, ahora }: ContextoCorreo) =>
+  !lead.webinar && ahora.getTime() <= FECHAS.aperturaOferta.getTime();
+
+const SEC_TALLER: CorreoCurso[] = [
+  {
+    id: "T1",
+    due: (cx) => noRegistrado(cx),
+    build: (cx) => ({
+      subject: "Tu programa, y algo mejor que leerlo",
+      html: shellCurso({
+        preheader: "El programa completo, y tres noches para verlo funcionando",
+        eyebrow: "Turismo con IA",
+        h1a: "Aquí está tu",
+        h1b: "programa",
+        cuerpo: [
+          parrafo(`${saludo(cx.lead)} Te dejo el programa completo de las 4 semanas: qué se construye cada una y con qué sales.`),
+          boton(URL_CURSO, "Ver el programa"),
+          regla("30px 0 26px 0"),
+          titulo("Pero antes de que decidas nada"),
+          parrafo(
+            `El <strong>8, 9 y 10 de septiembre</strong> doy tres noches en vivo, gratis, donde construyo frente a ti lo mismo que le enseño al curso: una página, un agente de WhatsApp y las automatizaciones. Sin diapositivas: comparto pantalla y lo armo, y tú ves cada clic.`
+          ),
+          parrafo(
+            `Ir es la forma más barata de saber si esto es para ti. Y si al final no lo es, te quedas con tres noches de cosas aplicables.`
+          ),
+          boton(`${BASE}/taller`, "Reservar mi lugar gratis", "dorado"),
+          bajoBoton("Es gratis y no pide tarjeta."),
+        ].join(""),
+        paraBaja: cx.lead.email,
+      }),
+    }),
+  },
+  {
+    id: "T2",
+    due: (cx) => noRegistrado(cx) && cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
+    build: (cx) => ({
+      subject: "Qué pasa en cada una de las tres noches",
+      html: shellCurso({
+        preheader: "8, 9 y 10 de septiembre · 7 pm · sin costo",
+        eyebrow: "El taller",
+        h1a: "Tres noches,",
+        h1b: "una hora cada una",
+        cuerpo: [
+          parrafo(`${saludo(cx.lead)} Para que sepas exactamente a qué entras:`),
+          ...TALLER_NOCHES.map((n) =>
+            [
+              barra(`Noche ${n.n} · ${fechaLarga(n.fecha).replace(/^\w+, /, "")}`, n.n === 1 ? 24 : 26),
+              parrafo(`<strong style="color:${C.claro};">${n.titulo}</strong>`, "16px 0 10px 0"),
+              parrafo(n.puntos.join("<br>"), "0 0 0 0"),
+            ].join("")
+          ),
+          regla("30px 0 24px 0"),
+          parrafo(
+            `Cada noche trae un workbook, pero va protegido con una contraseña que sólo digo en vivo. Si faltas, te quedas sin él.`
+          ),
+          boton(`${BASE}/taller`, "Reservar mi lugar gratis", "dorado"),
+        ].join(""),
+        paraBaja: cx.lead.email,
+      }),
+    }),
+  },
+  {
+    id: "T3",
+    due: (cx) => noRegistrado(cx) && cx.ahora.getTime() >= HORA_CDMX("2026-09-07T18:00:00-06:00"),
+    build: (cx) => ({
+      subject: "mañana empieza (y no lo repito)",
+      html: shellCurso({
+        preheader: "La noche 1 es mañana a las 7. Después ya no hay forma de entrar.",
+        eyebrow: "Última llamada",
+        h1a: "Mañana",
+        h1b: "a las 7",
+        cuerpo: [
+          parrafo(
+            `${saludo(cx.lead)} Mañana arranca la noche 1 y no voy a repetir el taller: la siguiente vez que enseñe esto en vivo será con la cohorte de enero.`
+          ),
+          parrafo(
+            `Si te registras hoy, mañana a las 7 me ves abrir mi panel real y construir una página de tours desde cero en 20 minutos.`
+          ),
+          boton(`${BASE}/taller`, "Reservar mi lugar gratis", "dorado"),
+          bajoBoton("Gratis, tres noches, sin tarjeta."),
+          nota(
+            `Si no es tu momento, está perfecto y no te vuelvo a escribir del taller. Sigo por aquí cuando lo sea.`,
+            C.tenue,
+            "26px 0 0 0"
+          ),
+        ].join(""),
+        paraBaja: cx.lead.email,
+      }),
+    }),
+  },
+];
+
 // ── Secuencia A — Nurture ──────────────────────────────────────────────────
 
 const A: CorreoCurso[] = [
@@ -119,7 +226,8 @@ const A: CorreoCurso[] = [
     id: "A1",
     // Inmediato (lo intenta la propia ruta; el cron lo repesca si Brevo falló).
     // Quien llegó por el taller gratuito recibe W1 en su lugar.
-    due: ({ lead }) => lead.origen !== "webinar",
+    due: ({ lead, ahora }) =>
+      lead.origen !== "webinar" && ahora.getTime() > FECHAS.aperturaOferta.getTime(),
     build: (cx) => ({
       subject: "Tu programa completo del curso Turismo con IA",
       html: shellCurso({
@@ -146,7 +254,9 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A2",
-    due: ({ lead, ahora }) => ahora.getTime() >= lead.createdAt.getTime() + 1 * DIA,
+    due: ({ lead, ahora }) =>
+      ahora.getTime() >= lead.createdAt.getTime() + 1 * DIA &&
+      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
     build: (cx) => ({
       subject: "$500,000 en 4 meses sin pagar un solo anuncio",
       html: shellCurso({
@@ -158,7 +268,7 @@ const A: CorreoCurso[] = [
           parrafo(`${saludo(cx.lead)} Cuando arranqué los tours no había dinero para anuncios. Las cotizaciones salían a mano, las reservas vivían en un Excel y el WhatsApp no paraba ni en la cena.`),
           parrafo("En vez de contratar una agencia, construí con IA la página, un agente que atiende el WhatsApp y las automatizaciones de cobro y seguimiento."),
           parrafo(`El resultado: más de <strong>${mxnCurso(CIFRAS.toursVentas4m)} en ventas</strong> en los primeros 4 meses. Repetí la fórmula en el hotel: más de <strong>${mxnCurso(CIFRAS.hotelReservas4m)} en reservas</strong> en el mismo plazo. Publicidad pagada: <strong>$0</strong>. El único gasto fijo fue la suscripción de IA.`),
-          nota("No fue suerte ni presupuesto. Fue el sistema. Y el sistema se puede copiar: eso es exactamente lo que hacemos en las 4 semanas.", C.verde),
+          nota("No fue suerte ni presupuesto. Fue el sistema. Y el sistema se puede copiar: eso es exactamente lo que hacemos en las 4 semanas.", C.azulVivo),
           ctaReservar(cx, "Ver el programa"),
         ].join(""),
         paraBaja: cx.lead.email,
@@ -167,7 +277,9 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A3",
-    due: ({ lead, ahora }) => ahora.getTime() >= lead.createdAt.getTime() + 2 * DIA,
+    due: ({ lead, ahora }) =>
+      ahora.getTime() >= lead.createdAt.getTime() + 2 * DIA &&
+      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
     build: (cx) => ({
       subject: "Mi agente cerró una reserva mientras yo manejaba",
       html: shellCurso({
@@ -187,7 +299,9 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A4",
-    due: ({ lead, ahora }) => ahora.getTime() >= lead.createdAt.getTime() + 3 * DIA,
+    due: ({ lead, ahora }) =>
+      ahora.getTime() >= lead.createdAt.getTime() + 3 * DIA &&
+      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
     build: (cx) => ({
       subject: "“Manolo, es que yo no sé programar”",
       html: shellCurso({
@@ -199,7 +313,7 @@ const A: CorreoCurso[] = [
           parrafo(`${saludo(cx.lead)} Es la duda que más me repiten. Y la entiendo, porque yo tampoco soy ingeniero: estudié turismo.`),
           parrafo("La IA escribe el código. Tu trabajo es DIRIGIR: decirle qué necesita tu negocio, revisar que quede bien y pedirle cambios en español. Si sabes explicarle a un empleado nuevo cómo trabajas, sabes hacer esto."),
           parrafo("¿El tiempo? 3 horas a la semana en vivo y unas 2 de práctica. Las grabaciones quedan para siempre, y los sábados revisamos TU proyecto en los talleres abiertos hasta destrabarlo."),
-          nota(`${GARANTIA.nombre}: ${GARANTIA.texto}`, C.verde),
+          nota(`${GARANTIA.nombre}: ${GARANTIA.texto}`, C.azulVivo),
           ctaReservar(cx),
         ].join(""),
         paraBaja: cx.lead.email,
@@ -208,7 +322,9 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A5",
-    due: ({ lead, ahora }) => ahora.getTime() >= lead.createdAt.getTime() + 4 * DIA,
+    due: ({ lead, ahora }) =>
+      ahora.getTime() >= lead.createdAt.getTime() + 4 * DIA &&
+      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
     build: (cx) => ({
       subject: "Lo que te cuesta NO tener este sistema",
       html: shellCurso({
@@ -334,7 +450,7 @@ const B: CorreoCurso[] = [
           parrafo(`${saludo(cx.lead)} Si no es el momento, está perfecto: un curso al que entras a medias no te sirve, y prefiero que llegues cuando puedas aprovecharlo.`),
           parrafo(
             LINKS.grabacionWebinar
-              ? `Te dejo la <a href="${LINKS.grabacionWebinar}" style="color:${C.verde};font-weight:500;">grabación de mi taller gratuito</a>: ahí muestro el sistema real funcionando. Sin costo, sin registro.`
+              ? `Te dejo la <a href="${LINKS.grabacionWebinar}" style="color:${C.azulVivo};font-weight:500;">grabación de mi taller gratuito</a>: ahí muestro el sistema real funcionando. Sin costo, sin registro.`
               : "Si quieres, respóndeme con la palabra “grabación” y te mando el taller gratuito donde muestro el sistema real funcionando."
           ),
           parrafo("Cuando abra la siguiente cohorte, serás de los primeros en saberlo."),
@@ -591,7 +707,7 @@ const D: CorreoCurso[] = [
           parrafo(`${saludo(cx.lead)} La cohorte 1 ya arrancó. Gracias por haberte asomado, de verdad.`),
           parrafo(
             LINKS.grabacionWebinar
-              ? `Te regalo la <a href="${LINKS.grabacionWebinar}" style="color:${C.verde};font-weight:500;">grabación del taller</a> donde muestro el sistema completo. Es tuya, sin costo.`
+              ? `Te regalo la <a href="${LINKS.grabacionWebinar}" style="color:${C.azulVivo};font-weight:500;">grabación del taller</a> donde muestro el sistema completo. Es tuya, sin costo.`
               : "Si quieres ver el sistema completo funcionando, respóndeme “grabación” y te mando el taller gratuito grabado."
           ),
           parrafo(`Cuando abra la cohorte de ${FECHAS.proximaCohorte}, te aviso a ti primero. Mientras tanto te escribiré de vez en cuando con algo útil de IA para turismo, nada más.`),
@@ -620,7 +736,7 @@ const cuerpoBienvenida = (cx: ContextoCorreo) => [
   ...(LINKS.comunidadWhatsApp ? [boton(LINKS.comunidadWhatsApp, "Entrar a la comunidad", "whatsapp")] : []),
   barra("Tu tarea antes del martes"),
   parrafo("Escribe en una hoja, a mano si quieres: qué vendes, a quién, tus 3 productos estrella con precios, y las 5 preguntas que más te repiten los clientes. Con esa hoja construimos TODO lo demás. No necesitas instalar nada todavía: eso lo hacemos juntos en la sesión 1."),
-  nota(`${GARANTIA.nombre}: ${GARANTIA.texto}`, C.verde),
+  nota(`${GARANTIA.nombre}: ${GARANTIA.texto}`, C.azulVivo),
 ];
 
 const C_SERIE: CorreoCurso[] = [
@@ -748,8 +864,11 @@ const C_SERIE: CorreoCurso[] = [
 // → A (nurture). Un lead recibe a lo sumo UN correo por corrida.
 
 export const CORREOS_ALUMNO: CorreoCurso[] = C_SERIE;
-export const CORREOS_PROSPECTO: CorreoCurso[] = [...B, ...W, ...D, ...A];
+// El orden manda: el cron recorre esta lista y manda el PRIMERO que toque.
+// B primero (un pago a medias es la señal más caliente), luego el taller,
+// luego el empujón a registrarse, el cierre y al final la nutrición larga.
+export const CORREOS_PROSPECTO: CorreoCurso[] = [...B, ...W, ...SEC_TALLER, ...D, ...A];
 
 export function correoPorId(id: string): CorreoCurso | undefined {
-  return [...C_SERIE, ...B, ...W, ...D, ...A].find((c) => c.id === id);
+  return [...C_SERIE, ...B, ...W, ...SEC_TALLER, ...D, ...A].find((c) => c.id === id);
 }

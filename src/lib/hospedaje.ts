@@ -6,6 +6,13 @@
  * dependen de la OCUPACIÓN, no del tipo de cama: King y Doble cuestan lo mismo.
  * Lo único que cambia el precio es si la habitación tiene vista a la montaña.
  *
+ * ⚠️ NO son las mismas tarifas que cobra el sitio del propio hotel
+ * (paraisoencantado.com), y eso es A PROPÓSITO: ahí la Jungla está en
+ * $2,000 (2 pax) / $2,500 (3–4) desde el ajuste de precios del 6 de julio de
+ * 2026, y aquí se queda en $1,900 / $2,400. Es la tarifa de paquete de Tours
+ * Huasteca, decidida por Manolo el 23 de agosto de 2026. NO las "empates" con
+ * las del hotel creyendo que es un error.
+ *
  * ⚠️ Ojo con `paquetes.ts`, que modela la Jungla como un suplemento fijo de
  * $400/noche. Con estas tarifas la diferencia es de $400 a dos personas pero de
  * $500 a tres o cuatro, así que aquí se usan las tarifas directas en vez de
