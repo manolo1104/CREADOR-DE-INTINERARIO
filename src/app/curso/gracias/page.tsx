@@ -56,15 +56,15 @@ export default async function GraciasPage({
   ];
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-crema text-negro">
+    <main className="flex min-h-[100dvh] flex-col bg-tinta text-hielo">
       <section className="mx-auto w-full max-w-2xl flex-1 px-5 py-16 md:py-24">
-        <p className="font-dm text-xs font-medium uppercase tracking-[2.5px] text-verde-selva">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
           Turismo con IA
         </p>
-        <h1 className="mt-4 font-cormorant text-5xl font-semibold leading-[1.05] text-verde-profundo md:text-6xl">
+        <h1 className="mt-4 font-sora text-5xl font-semibold leading-[1.05] text-hielo md:text-6xl">
           {esTaller ? "Tu lugar en el taller está apartado." : "Listo. Va en camino."}
         </h1>
-        <p className="mt-6 font-dm text-xl leading-relaxed text-negro/80">
+        <p className="mt-6 font-dm text-xl leading-relaxed text-hielo/80">
           {esTaller
             ? `Son tres noches: 8, 9 y 10 de septiembre a las ${horaCorta(TALLER_NOCHES[0].fecha)} (hora del centro), en vivo por Google Meet. Te acabo de mandar la confirmación por correo.`
             : "Te acabo de mandar el programa completo por correo. Si no lo ves en unos minutos, revisa la carpeta de promociones o de no deseados."}
@@ -72,27 +72,27 @@ export default async function GraciasPage({
 
         {esTaller && (
           <div className="mt-10">
-            <h2 className="font-cormorant text-3xl font-semibold text-verde-profundo">
+            <h2 className="font-sora text-3xl font-semibold text-hielo">
               Falta lo importante: que sí estés el martes.
             </h2>
-            <p className="mt-3 font-dm text-lg leading-relaxed text-negro/75">
+            <p className="mt-3 font-dm text-lg leading-relaxed text-hielo/75">
               Cada año se registra mucha gente a talleres a los que nunca entra. Estas tres
               cosas toman dos minutos y son la diferencia. Hazlas ahora, antes de cerrar
               esta pestaña.
             </p>
-            <ol className="mt-7 divide-y divide-negro/12 border-y border-negro/12">
+            <ol className="mt-7 divide-y divide-linea/12 border-y border-linea">
               {tareas.map((x, i) => (
                 <li key={x.t} className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 py-6">
                   <span
                     aria-hidden="true"
-                    className="row-span-3 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-verde-profundo font-cormorant text-lg font-semibold text-lima"
+                    className="row-span-3 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-tinta-2 font-sora text-lg font-semibold text-azul-vivo"
                   >
                     {i + 1}
                   </span>
-                  <h3 className="font-cormorant text-2xl font-semibold text-verde-profundo">
+                  <h3 className="font-sora text-2xl font-semibold text-hielo">
                     {x.t}
                   </h3>
-                  <p className="font-dm text-base leading-relaxed text-negro/75">{x.d}</p>
+                  <p className="font-dm text-base leading-relaxed text-hielo/75">{x.d}</p>
                   <div>
                     {x.href ? (
                       <a
@@ -100,12 +100,12 @@ export default async function GraciasPage({
                         {...(x.href.startsWith("http")
                           ? { target: "_blank", rel: "noopener noreferrer" }
                           : {})}
-                        className="mt-1 inline-block border border-verde-selva/50 px-5 py-3 font-dm text-sm font-medium uppercase tracking-[1px] text-verde-selva transition-colors duration-200 hover:bg-verde-selva/10"
+                        className="mt-1 inline-block border border-azul/50 px-5 py-3 font-dm text-sm font-medium uppercase tracking-[1px] text-azul-vivo transition-colors duration-200 hover:bg-azul-humo"
                       >
                         {x.cta}
                       </a>
                     ) : (
-                      <p className="mt-1 font-dm text-sm text-negro/55">{x.falta}</p>
+                      <p className="mt-1 font-dm text-sm text-hielo/55">{x.falta}</p>
                     )}
                   </div>
                 </li>
@@ -115,11 +115,11 @@ export default async function GraciasPage({
         )}
 
         {(!esTaller || yaAbrio) && (
-        <div className="mt-10 border border-negro/15 bg-white/70 p-7">
-          <h2 className="font-cormorant text-3xl font-semibold text-verde-profundo">
+        <div className="mt-10 border border-linea bg-tinta-2 p-7">
+          <h2 className="font-sora text-3xl font-semibold text-hielo">
             ¿Ya lo tienes claro?
           </h2>
-          <p className="mt-3 font-dm text-lg leading-relaxed text-negro/75">
+          <p className="mt-3 font-dm text-lg leading-relaxed text-hielo/75">
             {pv.esFundador
               ? `El precio de fundador de ${mxnCurso(PRECIOS.fundador)} (en vez de ${mxnCurso(PRECIOS.regular)}) dura hasta el ${fechaLarga(FECHAS.finFundador)} o hasta llenarse los primeros ${PRECIOS.cupoFundador} lugares. No hace falta esperar el correo para entrar.`
               : `Las inscripciones cierran el ${fechaLarga(FECHAS.cierreInscripciones)}. No hace falta esperar el correo para entrar.`}
@@ -128,7 +128,7 @@ export default async function GraciasPage({
             <BotonComprar
               precio={pv.precio}
               abierto={abierto}
-              className="inline-block bg-dorado px-10 py-5 font-dm text-base font-semibold uppercase tracking-[2px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-terracota hover:text-crema active:scale-[0.98]"
+              className="inline-block bg-azul px-10 py-5 font-dm text-base font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.98]"
             >
               Reservar mi lugar · {mxnCurso(pv.precio)}
             </BotonComprar>
@@ -136,19 +136,19 @@ export default async function GraciasPage({
         </div>
         )}
 
-        <p className="mt-10 font-dm text-lg text-negro/75">
+        <p className="mt-10 font-dm text-lg text-hielo/75">
           ¿Prefieres preguntarme algo antes?{" "}
-          <a href={WHATSAPP_CURSO} target="_blank" rel="noopener noreferrer" className="font-medium text-verde-selva underline">
+          <a href={WHATSAPP_CURSO} target="_blank" rel="noopener noreferrer" className="font-medium text-azul-vivo underline">
             Escríbeme por WhatsApp
           </a>
           , te contesto yo.
         </p>
       </section>
 
-      <footer className="bg-negro px-5 py-8 text-center font-dm text-sm text-crema/60">
+      <footer className="bg-tinta-2 px-5 py-8 text-center font-dm text-sm text-hielo/60">
         <p>
           Manolo · Huasteca Potosina Tours ·{" "}
-          <a href="/aviso-de-privacidad" className="underline hover:text-crema">Aviso de privacidad</a>
+          <a href="/aviso-de-privacidad" className="underline hover:text-hielo">Aviso de privacidad</a>
         </p>
       </footer>
     </main>

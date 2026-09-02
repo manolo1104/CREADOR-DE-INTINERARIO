@@ -30,15 +30,15 @@ export default function BienvenidoPage() {
   ];
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-crema text-negro">
+    <main className="flex min-h-[100dvh] flex-col bg-tinta text-hielo">
       <section className="mx-auto w-full max-w-2xl flex-1 px-5 py-16 md:py-24">
-        <p className="font-dm text-xs font-medium uppercase tracking-[2.5px] text-verde-selva">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
           Turismo con IA · Cohorte 1
         </p>
-        <h1 className="mt-4 font-cormorant text-5xl font-semibold leading-[1.05] text-verde-profundo md:text-6xl">
+        <h1 className="mt-4 font-sora text-5xl font-semibold leading-[1.05] text-hielo md:text-6xl">
           Estás dentro.
         </h1>
-        <p className="mt-6 font-dm text-xl leading-relaxed text-negro/80">
+        <p className="mt-6 font-dm text-xl leading-relaxed text-hielo/80">
           Tu pago quedó registrado y tu lugar está apartado. A partir de hoy,
           esto deja de ser un curso que compraste y empieza a ser un sistema
           que construyes.
@@ -46,11 +46,11 @@ export default function BienvenidoPage() {
 
         <ol className="mt-10 space-y-0">
           {pasos.map((p, i) => (
-            <li key={p.t} className={`grid grid-cols-[auto_1fr] gap-5 py-6 ${i > 0 ? "border-t border-negro/10" : ""}`}>
-              <span className="font-cormorant text-4xl font-light leading-none text-dorado">{i + 1}</span>
+            <li key={p.t} className={`grid grid-cols-[auto_1fr] gap-5 py-6 ${i > 0 ? "border-t border-linea" : ""}`}>
+              <span className="font-sora text-4xl font-light leading-none text-azul-vivo">{i + 1}</span>
               <div>
-                <h2 className="font-dm text-lg font-semibold text-verde-profundo">{p.t}</h2>
-                <p className="mt-1.5 font-dm text-lg leading-relaxed text-negro/75">{p.d}</p>
+                <h2 className="font-dm text-lg font-semibold text-hielo">{p.t}</h2>
+                <p className="mt-1.5 font-dm text-lg leading-relaxed text-hielo/75">{p.d}</p>
               </div>
             </li>
           ))}
@@ -59,7 +59,7 @@ export default function BienvenidoPage() {
         <div className="mt-6 flex flex-col gap-4 sm:flex-row">
           <a
             href="/curso/calendario.ics"
-            className="inline-block bg-verde-selva px-8 py-4 text-center font-dm text-base font-semibold uppercase tracking-[2px] text-crema transition-[background-color,transform] duration-200 ease-out hover:bg-verde-vivo active:scale-[0.98]"
+            className="inline-block bg-azul px-8 py-4 text-center font-dm text-base font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo active:scale-[0.98]"
           >
             Agregar fechas a mi calendario
           </a>
@@ -68,30 +68,30 @@ export default function BienvenidoPage() {
               href={LINKS.comunidadWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block bg-[#25d366] px-8 py-4 text-center font-dm text-base font-semibold uppercase tracking-[2px] text-white transition-transform duration-150 ease-out active:scale-[0.98]"
+              className="inline-block bg-[#25d366] px-8 py-4 text-center font-dm text-base font-semibold uppercase tracking-[2px] text-hielo transition-transform duration-150 ease-out active:scale-[0.98]"
             >
               Entrar a la comunidad
             </a>
           )}
         </div>
 
-        <div className="mt-10 border border-verde-selva/25 bg-white/60 p-6">
-          <p className="font-dm text-base leading-relaxed text-negro/75">
-            <strong className="text-verde-profundo">{GARANTIA.nombre}.</strong>{" "}
+        <div className="mt-10 border border-azul/25 bg-tinta-2 p-6">
+          <p className="font-dm text-base leading-relaxed text-hielo/75">
+            <strong className="text-hielo">{GARANTIA.nombre}.</strong>{" "}
             {GARANTIA.texto}
           </p>
         </div>
 
-        <p className="mt-8 font-dm text-lg text-negro/75">
+        <p className="mt-8 font-dm text-lg text-hielo/75">
           ¿Algo no llegó o tienes una duda?{" "}
-          <a href={WHATSAPP_CURSO} target="_blank" rel="noopener noreferrer" className="font-medium text-verde-selva underline">
+          <a href={WHATSAPP_CURSO} target="_blank" rel="noopener noreferrer" className="font-medium text-azul-vivo underline">
             Escríbeme por WhatsApp
           </a>
           .
         </p>
       </section>
 
-      <footer className="bg-negro px-5 py-8 text-center font-dm text-sm text-crema/60">
+      <footer className="bg-tinta-2 px-5 py-8 text-center font-dm text-sm text-hielo/60">
         <p>Manolo · Huasteca Potosina Tours</p>
       </footer>
     </main>

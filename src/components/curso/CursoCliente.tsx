@@ -65,9 +65,11 @@ export function CuentaRegresiva({
   }, [limite]);
 
   // Antes de hidratar: hueco del mismo tamaño para que nada brinque.
+  // Monoespaciada y tabular: los dígitos no bailan al cambiar cada segundo,
+  // y en una página de tecnología el número se lee como dato, no como texto.
   const caja = grande
-    ? "min-w-[3.2ch] text-4xl sm:text-6xl font-cormorant font-semibold"
-    : "min-w-[2.6ch] text-base font-dm font-semibold tabular-nums";
+    ? "min-w-[3.2ch] text-4xl sm:text-6xl font-mono font-bold tabular-nums"
+    : "min-w-[2.6ch] text-base font-mono font-bold tabular-nums";
 
   const unidades = t
     ? [
@@ -188,7 +190,7 @@ export function BotonComprar({
 
       {open && (
         <div
-          className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-negro/60 p-0 sm:p-6"
+          className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-tinta/70 p-0 sm:p-6"
           onClick={(e) => e.target === e.currentTarget && setOpen(false)}
           role="dialog"
           aria-modal="true"
@@ -196,14 +198,14 @@ export function BotonComprar({
         >
           <div
             ref={dialogRef}
-            className="w-full sm:max-w-md bg-crema p-6 sm:p-8 shadow-2xl animate-slide-up"
+            className="w-full sm:max-w-md bg-tinta p-6 sm:p-8 shadow-2xl animate-slide-up"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-cormorant text-3xl text-verde-profundo leading-tight">
+                <h3 className="font-sora text-3xl text-hielo leading-tight">
                   Reservar mi lugar
                 </h3>
-                <p className="mt-1 font-dm text-base text-negro/70">
+                <p className="mt-1 font-dm text-base text-hielo/70">
                   ${precio.toLocaleString("es-MX")} MXN · o 3 pagos sin intereses
                 </p>
               </div>
@@ -211,7 +213,7 @@ export function BotonComprar({
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Cerrar"
-                className="shrink-0 p-2 -m-2 text-negro/50 hover:text-negro transition-colors"
+                className="shrink-0 p-2 -m-2 text-hielo/50 hover:text-hielo transition-colors"
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
@@ -219,17 +221,17 @@ export function BotonComprar({
 
             <form onSubmit={pagar} className="mt-6 space-y-4">
               <label className="block">
-                <span className="font-dm text-sm font-medium text-verde-profundo">Tu nombre</span>
+                <span className="font-dm text-sm font-medium text-hielo">Tu nombre</span>
                 <input
                   required
                   value={datos.nombre}
                   onChange={(e) => setDatos({ ...datos, nombre: e.target.value })}
                   autoComplete="name"
-                  className="mt-1.5 w-full border border-negro/25 bg-white px-4 py-3.5 font-dm text-lg text-negro focus:outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/30"
+                  className="mt-1.5 w-full border border-linea bg-tinta-2 px-4 py-3.5 font-dm text-lg text-hielo focus:outline-none focus:border-azul focus:ring-2 focus:ring-azul/30"
                 />
               </label>
               <label className="block">
-                <span className="font-dm text-sm font-medium text-verde-profundo">Tu correo</span>
+                <span className="font-dm text-sm font-medium text-hielo">Tu correo</span>
                 <input
                   required
                   type="email"
@@ -237,24 +239,24 @@ export function BotonComprar({
                   onChange={(e) => setDatos({ ...datos, email: e.target.value })}
                   autoComplete="email"
                   inputMode="email"
-                  className="mt-1.5 w-full border border-negro/25 bg-white px-4 py-3.5 font-dm text-lg text-negro focus:outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/30"
+                  className="mt-1.5 w-full border border-linea bg-tinta-2 px-4 py-3.5 font-dm text-lg text-hielo focus:outline-none focus:border-azul focus:ring-2 focus:ring-azul/30"
                 />
               </label>
               <label className="block">
-                <span className="font-dm text-sm font-medium text-verde-profundo">
-                  Tu WhatsApp <span className="font-normal text-negro/50">(opcional)</span>
+                <span className="font-dm text-sm font-medium text-hielo">
+                  Tu WhatsApp <span className="font-normal text-hielo/50">(opcional)</span>
                 </span>
                 <input
                   value={datos.whatsapp}
                   onChange={(e) => setDatos({ ...datos, whatsapp: e.target.value })}
                   autoComplete="tel"
                   inputMode="tel"
-                  className="mt-1.5 w-full border border-negro/25 bg-white px-4 py-3.5 font-dm text-lg text-negro focus:outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/30"
+                  className="mt-1.5 w-full border border-linea bg-tinta-2 px-4 py-3.5 font-dm text-lg text-hielo focus:outline-none focus:border-azul focus:ring-2 focus:ring-azul/30"
                 />
               </label>
 
               {error && (
-                <p className="border border-terracota/40 bg-terracota/10 px-4 py-3 font-dm text-base text-terracota">
+                <p className="border border-azul/40 bg-azul-humo px-4 py-3 font-dm text-base text-azul-vivo">
                   {error}
                 </p>
               )}
@@ -262,11 +264,11 @@ export function BotonComprar({
               <button
                 type="submit"
                 disabled={enviando}
-                className="w-full bg-dorado px-6 py-4 font-dm text-base font-semibold uppercase tracking-[2px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-terracota hover:text-crema active:scale-[0.98] disabled:opacity-60"
+                className="w-full bg-azul px-6 py-4 font-dm text-base font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.98] disabled:opacity-60"
               >
                 {enviando ? "Abriendo el pago seguro…" : "Ir al pago seguro"}
               </button>
-              <p className="text-center font-dm text-sm text-negro/60">
+              <p className="text-center font-dm text-sm text-hielo/60">
                 Pago protegido por Stripe. Garantía de las 2 primeras sesiones:
                 si no es para ti, te devuelvo el 100%.
               </p>
@@ -314,13 +316,13 @@ export function BarraCurso({
   return (
     <>
       {/* Escritorio: barra superior fija */}
-      <div className="fixed inset-x-0 top-0 z-[80] hidden md:flex items-center justify-center gap-6 bg-verde-profundo/95 px-6 py-2.5 text-crema backdrop-blur-sm">
+      <div className="fixed inset-x-0 top-0 z-[80] hidden md:flex items-center justify-center gap-6 bg-tinta/95 px-6 py-2.5 text-hielo backdrop-blur-sm">
         <span className="font-dm text-sm tracking-wide opacity-90">{etiqueta}</span>
         <CuentaRegresiva limiteIso={limiteIso} />
         <BotonComprar
           precio={precio}
           abierto={abierto}
-          className="bg-dorado px-6 py-2.5 font-dm text-sm font-semibold uppercase tracking-[2px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-terracota hover:text-crema active:scale-[0.97]"
+          className="bg-azul px-6 py-2.5 font-dm text-sm font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.97]"
         >
           Reservar mi lugar
         </BotonComprar>
@@ -328,7 +330,7 @@ export function BarraCurso({
 
       {/* Móvil: barra inferior, aparece tras el hero */}
       <div
-        className={`fixed inset-x-0 bottom-0 z-[55] flex md:hidden items-center gap-3 bg-verde-profundo/95 px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))] text-crema backdrop-blur-sm transition-transform duration-300 ease-out ${
+        className={`fixed inset-x-0 bottom-0 z-[55] flex md:hidden items-center gap-3 bg-tinta/95 px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))] text-hielo backdrop-blur-sm transition-transform duration-300 ease-out ${
           visible ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -339,7 +341,7 @@ export function BarraCurso({
         <BotonComprar
           precio={precio}
           abierto={abierto}
-          className="shrink-0 bg-dorado px-5 py-3.5 font-dm text-sm font-semibold uppercase tracking-[1.5px] text-negro active:scale-[0.97] transition-transform duration-150 ease-out"
+          className="shrink-0 bg-azul px-5 py-3.5 font-dm text-sm font-semibold uppercase tracking-[1.5px] text-tinta active:scale-[0.97] transition-transform duration-150 ease-out"
         >
           Reservar
         </BotonComprar>
@@ -452,7 +454,7 @@ export function FormLead({ webinar = false }: { webinar?: boolean }) {
   }
 
   const input =
-    "mt-1.5 w-full border border-negro/25 bg-white px-4 py-3.5 font-dm text-lg text-negro focus:outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/30";
+    "mt-1.5 w-full border border-linea bg-tinta-2 px-4 py-3.5 font-dm text-lg text-hielo focus:outline-none focus:border-azul focus:ring-2 focus:ring-azul/30";
 
   return (
     <form onSubmit={enviar} className="space-y-4 text-left">
@@ -461,21 +463,21 @@ export function FormLead({ webinar = false }: { webinar?: boolean }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="font-dm text-sm font-medium text-verde-profundo">Tu nombre</span>
+          <span className="font-dm text-sm font-medium text-hielo">Tu nombre</span>
           <input required name="nombre" autoComplete="name" className={input} />
         </label>
         <label className="block">
-          <span className="font-dm text-sm font-medium text-verde-profundo">Tu correo</span>
+          <span className="font-dm text-sm font-medium text-hielo">Tu correo</span>
           <input required type="email" name="email" autoComplete="email" inputMode="email" className={input} />
         </label>
         <label className="block">
-          <span className="font-dm text-sm font-medium text-verde-profundo">
-            Tu WhatsApp <span className="font-normal text-negro/50">(opcional)</span>
+          <span className="font-dm text-sm font-medium text-hielo">
+            Tu WhatsApp <span className="font-normal text-hielo/50">(opcional)</span>
           </span>
           <input name="whatsapp" autoComplete="tel" inputMode="tel" className={input} />
         </label>
         <label className="block">
-          <span className="font-dm text-sm font-medium text-verde-profundo">Tu negocio</span>
+          <span className="font-dm text-sm font-medium text-hielo">Tu negocio</span>
           <select name="tipo_negocio" required defaultValue="" className={`${input} appearance-none`}>
             <option value="" disabled>
               Elige una opción
@@ -487,30 +489,30 @@ export function FormLead({ webinar = false }: { webinar?: boolean }) {
         </label>
       </div>
       <label className="block sm:max-w-[calc(50%-0.5rem)]">
-        <span className="font-dm text-sm font-medium text-verde-profundo">
-          Tu ciudad <span className="font-normal text-negro/50">(opcional)</span>
+        <span className="font-dm text-sm font-medium text-hielo">
+          Tu ciudad <span className="font-normal text-hielo/50">(opcional)</span>
         </span>
         <input name="ciudad" autoComplete="address-level2" className={input} />
       </label>
 
       <label className="flex items-start gap-3 pt-1">
-        <input required type="checkbox" name="consent" className="mt-1 h-5 w-5 shrink-0 accent-verde-selva" />
-        <span className="font-dm text-base text-negro/75">
+        <input required type="checkbox" name="consent" className="mt-1 h-5 w-5 shrink-0 accent-azul" />
+        <span className="font-dm text-base text-hielo/75">
           Acepto recibir información del curso.{" "}
-          <a href="/aviso-de-privacidad" target="_blank" className="text-verde-selva underline">
+          <a href="/aviso-de-privacidad" target="_blank" className="text-azul-vivo underline">
             Aviso de privacidad
           </a>
         </span>
       </label>
 
       {error && (
-        <p className="border border-terracota/40 bg-terracota/10 px-4 py-3 font-dm text-base text-terracota">{error}</p>
+        <p className="border border-azul/40 bg-azul-humo px-4 py-3 font-dm text-base text-azul-vivo">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={enviando}
-        className="w-full sm:w-auto bg-verde-selva px-10 py-4 font-dm text-base font-semibold uppercase tracking-[2px] text-crema transition-[background-color,transform] duration-200 ease-out hover:bg-verde-vivo active:scale-[0.98] disabled:opacity-60"
+        className="w-full sm:w-auto bg-azul px-10 py-4 font-dm text-base font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo active:scale-[0.98] disabled:opacity-60"
       >
         {enviando
           ? "Un momento…"

@@ -15,15 +15,15 @@ export const metadata: Metadata = {
  */
 export default function CalculadoraPage() {
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-crema text-negro">
+    <main className="flex min-h-[100dvh] flex-col bg-tinta text-hielo">
       <section className="mx-auto w-full max-w-4xl flex-1 px-5 py-14 md:py-20">
-        <p className="font-dm text-xs font-medium uppercase tracking-[2.5px] text-verde-selva">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
           Calculadora de reservas perdidas
         </p>
-        <h1 className="mt-4 max-w-[19ch] font-cormorant text-[2.4rem] font-semibold leading-[1.05] text-verde-profundo sm:text-5xl">
+        <h1 className="mt-4 max-w-[19ch] font-sora text-[2.4rem] font-semibold leading-[1.05] text-hielo sm:text-5xl">
           La mayoría no pierde clientes por precio. Los pierde por contestar tarde.
         </h1>
-        <p className="mt-5 max-w-[52ch] font-dm text-lg leading-relaxed text-negro/75">
+        <p className="mt-5 max-w-[52ch] font-dm text-lg leading-relaxed text-hielo/75">
           Mueve las tres barras con tus números reales. No pido tu correo y no guardo nada:
           el resultado se calcula en tu propio celular.
         </p>
@@ -33,14 +33,14 @@ export default function CalculadoraPage() {
         </div>
       </section>
 
-      <footer className="bg-negro px-5 py-8 text-center font-dm text-sm text-crema/60">
+      <footer className="bg-tinta-2 px-5 py-8 text-center font-dm text-sm text-hielo/60">
         <p>
           Manolo · Huasteca Potosina Tours ·{" "}
-          <a href="/curso/webinar" className="underline hover:text-crema">
+          <a href="/curso/webinar" className="underline hover:text-hielo">
             El taller
           </a>{" "}
           ·{" "}
-          <a href="/aviso-de-privacidad" className="underline hover:text-crema">
+          <a href="/aviso-de-privacidad" className="underline hover:text-hielo">
             Aviso de privacidad
           </a>
         </p>

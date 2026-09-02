@@ -22,19 +22,19 @@ export default function WebinarPage() {
   const dia = (d: Date) => fechaLarga(d).replace(/^(\w)/, (m) => m.toUpperCase());
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-crema text-negro">
+    <main className="flex min-h-[100dvh] flex-col bg-tinta text-hielo">
       <section className="mx-auto w-full max-w-3xl flex-1 px-5 py-14 md:py-20">
-        <p className="font-dm text-xs font-medium uppercase tracking-[2.5px] text-verde-selva">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
           Taller gratuito en vivo · 3 noches · para negocios turísticos
         </p>
-        <h1 className="mt-4 font-cormorant text-[2.6rem] font-semibold leading-[1.05] text-verde-profundo sm:text-6xl">
+        <h1 className="mt-4 font-sora text-[2.6rem] font-semibold leading-[1.05] text-hielo sm:text-6xl">
           En 3 noches construyo el sistema que opera mis dos negocios
         </h1>
-        <p className="mt-5 font-dm text-xl leading-relaxed text-negro/80">
+        <p className="mt-5 font-dm text-xl leading-relaxed text-hielo/80">
           8, 9 y 10 de septiembre · {horaCorta(TALLER_NOCHES[0].fecha)} (hora del
           centro) · por Google Meet · sin costo
         </p>
-        <p className="mt-4 font-dm text-lg leading-relaxed text-negro/70">
+        <p className="mt-4 font-dm text-lg leading-relaxed text-hielo/70">
           No hay diapositivas. Comparto pantalla y construyo, y tú ves cada clic,
           incluidos los que salen mal.
         </p>
@@ -43,21 +43,21 @@ export default function WebinarPage() {
           <ol className="space-y-8">
             {TALLER_NOCHES.map((noche) => (
               <li key={noche.n}>
-                <p className="font-dm text-xs font-semibold uppercase tracking-[2px] text-dorado">
+                <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
                   Noche {noche.n} · {dia(noche.fecha)}
                 </p>
-                <h2 className="mt-1.5 font-cormorant text-3xl font-semibold text-verde-profundo">
+                <h2 className="mt-1.5 font-sora text-3xl font-semibold text-hielo">
                   {noche.titulo}
                 </h2>
                 <ul className="mt-3 space-y-2.5">
                   {noche.puntos.map((p) => (
                     <li
                       key={p}
-                      className="flex items-start gap-3 font-dm text-base leading-relaxed text-negro/80"
+                      className="flex items-start gap-3 font-dm text-base leading-relaxed text-hielo/80"
                     >
                       <svg
                         aria-hidden="true"
-                        className="mt-1.5 h-4 w-4 shrink-0 text-verde-selva"
+                        className="mt-1.5 h-4 w-4 shrink-0 text-azul-vivo"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -71,7 +71,7 @@ export default function WebinarPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 inline-block border border-dorado/40 bg-dorado/10 px-3 py-1.5 font-dm text-sm text-negro/75">
+                <p className="mt-3 inline-block border border-azul/40 bg-azul-humo px-3 py-1.5 font-dm text-sm text-hielo/75">
                   Workbook {noche.n}: {noche.workbook}
                 </p>
               </li>
@@ -80,7 +80,7 @@ export default function WebinarPage() {
 
           <div>
             <figure>
-              <div className="relative aspect-[4/3] overflow-hidden border border-negro/10 bg-white shadow-[0_20px_50px_-20px_rgba(26,46,26,0.4)]">
+              <div className="relative aspect-[4/3] overflow-hidden border border-linea bg-tinta-2 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)]">
                 <Image
                   src="/imagenes/curso/panel.jpg"
                   alt="El panel de control de Huasteca Potosina Tours"
@@ -89,15 +89,15 @@ export default function WebinarPage() {
                   className="object-cover object-top"
                 />
               </div>
-              <figcaption className="mt-3 font-dm text-sm text-negro/60">
+              <figcaption className="mt-3 font-dm text-sm text-hielo/60">
                 La noche 1 abro este panel en vivo: {mxnCurso(CIFRAS.toursVentas4m)} en
                 ventas en 4 meses, con {mxnCurso(CIFRAS.publicidadPagada)} de publicidad.
               </figcaption>
             </figure>
 
-            <div className="mt-8 border border-negro/15 bg-white/60 p-5">
-              <p className="font-dm text-sm leading-relaxed text-negro/75">
-                <strong className="text-verde-profundo">La grabación dura 24 horas.</strong>{" "}
+            <div className="mt-8 border border-linea bg-tinta-2 p-5">
+              <p className="font-dm text-sm leading-relaxed text-hielo/75">
+                <strong className="text-hielo">La grabación dura 24 horas.</strong>{" "}
                 Los workbooks van protegidos con una contraseña que sólo digo en vivo. Si
                 faltas, te quedas sin él.
               </p>
@@ -105,11 +105,11 @@ export default function WebinarPage() {
           </div>
         </div>
 
-        <div id="registro" className="mt-12 border border-negro/15 bg-white/70 p-6 sm:p-8">
-          <h2 className="font-cormorant text-3xl font-semibold text-verde-profundo">
+        <div id="registro" className="mt-12 border border-linea bg-tinta-2 p-6 sm:p-8">
+          <h2 className="font-sora text-3xl font-semibold text-hielo">
             Reserva tu lugar
           </h2>
-          <p className="mt-2 font-dm text-base text-negro/70">
+          <p className="mt-2 font-dm text-base text-hielo/70">
             Es gratis y son tres noches. Te llega la confirmación por correo, con la liga y
             el grupo de WhatsApp donde mando los workbooks.
           </p>
@@ -119,14 +119,14 @@ export default function WebinarPage() {
         </div>
       </section>
 
-      <footer className="bg-negro px-5 py-8 text-center font-dm text-sm text-crema/60">
+      <footer className="bg-tinta-2 px-5 py-8 text-center font-dm text-sm text-hielo/60">
         <p>
           Manolo · Huasteca Potosina Tours ·{" "}
-          <a href="/aviso-de-privacidad" className="underline hover:text-crema">
+          <a href="/aviso-de-privacidad" className="underline hover:text-hielo">
             Aviso de privacidad
           </a>
         </p>
-        <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-crema/40">
+        <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-hielo/40">
           Este sitio no es parte de Facebook ni de Meta Platforms, y no está avalado por
           ellos de ninguna forma.
         </p>

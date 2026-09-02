@@ -41,10 +41,10 @@ function Barra({
 }) {
   return (
     <div className="mb-7 last:mb-0">
-      <label htmlFor={id} className="block font-dm text-base leading-snug text-negro/85">
+      <label htmlFor={id} className="block font-dm text-base leading-snug text-hielo/85">
         {etiqueta}
       </label>
-      <p className="mt-1.5 font-cormorant text-3xl font-semibold leading-none text-dorado tabular-nums">
+      <p className="mt-1.5 font-mono text-3xl font-bold leading-none text-azul-vivo tabular-nums">
         {muestra}
       </p>
       <input
@@ -55,9 +55,9 @@ function Barra({
         step={paso}
         value={valor}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2.5 h-7 w-full accent-dorado"
+        className="mt-2.5 h-7 w-full accent-azul"
       />
-      <p className="font-dm text-sm text-negro/50">{ayuda}</p>
+      <p className="font-dm text-sm text-hielo/50">{ayuda}</p>
     </div>
   );
 }
@@ -76,7 +76,7 @@ export function Calculadora() {
 
   return (
     <div className="grid gap-7 md:grid-cols-2 md:gap-9">
-      <div className="border border-negro/15 bg-white/70 p-6 sm:p-7">
+      <div className="border border-linea bg-tinta-2 p-6 sm:p-7">
         <Barra
           id="cots"
           etiqueta="¿Cuántas cotizaciones te llegan por WhatsApp a la semana?"
@@ -112,29 +112,29 @@ export function Calculadora() {
         />
       </div>
 
-      <div className="bg-verde-profundo p-6 text-crema sm:p-8">
-        <p className="font-dm text-xs font-medium uppercase tracking-[2.5px] text-lima">
+      <div className="bg-tinta-2 p-6 text-hielo sm:p-8">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
           Se te está yendo, cada mes
         </p>
-        <p className="mt-3 whitespace-nowrap font-cormorant text-[3.4rem] font-semibold leading-none text-white tabular-nums sm:text-6xl">
+        <p className="mt-3 whitespace-nowrap font-mono text-[3.1rem] font-bold leading-none text-hielo tabular-nums sm:text-[3.8rem]">
           {pesos(r.dinero)}
         </p>
-        <p className="mt-2.5 font-dm text-lg text-crema/70">
+        <p className="mt-2.5 font-dm text-lg text-hielo/70">
           Son {pesos(r.dinero * 12)} al año.
         </p>
 
-        <dl className="mt-7 space-y-3 border-t border-lima/25 pt-6 font-dm text-[15px]">
+        <dl className="mt-7 space-y-3 border-t border-azul/25 pt-6 font-dm text-[15px]">
           <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-crema/70">Cotizaciones al mes</dt>
-            <dd className="font-medium text-white tabular-nums">{Math.round(r.cotsMes)}</dd>
+            <dt className="text-hielo/70">Cotizaciones al mes</dt>
+            <dd className="font-mono font-medium text-hielo tabular-nums">{Math.round(r.cotsMes)}</dd>
           </div>
           <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-crema/70">Las que contestas tarde</dt>
-            <dd className="font-medium text-white tabular-nums">{Math.round(r.tarde)}</dd>
+            <dt className="text-hielo/70">Las que contestas tarde</dt>
+            <dd className="font-mono font-medium text-hielo tabular-nums">{Math.round(r.tarde)}</dd>
           </div>
           <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-crema/70">Ventas que eso te cuesta</dt>
-            <dd className="font-medium text-white tabular-nums">
+            <dt className="text-hielo/70">Ventas que eso te cuesta</dt>
+            <dd className="font-mono font-medium text-hielo tabular-nums">
               {r.ventas.toFixed(1).replace(".0", "")}
             </dd>
           </div>
@@ -143,14 +143,14 @@ export function Calculadora() {
         <a
           href="/curso/webinar#registro"
           onClick={() => trackCtaClick("curso_lead", "calculadora")}
-          className="mt-7 block bg-dorado px-6 py-4 text-center font-dm text-base font-medium text-negro transition hover:bg-dorado/90 active:scale-[0.98]"
+          className="mt-7 block bg-azul px-6 py-4 text-center font-dm text-base font-semibold text-tinta transition hover:bg-azul-vivo active:scale-[0.98]"
         >
           Reservar mi lugar gratis
         </a>
 
-        <p className="mt-4 font-dm text-[13px] leading-relaxed text-crema/50">
+        <p className="mt-4 font-dm text-[13px] leading-relaxed text-hielo/50">
           El supuesto: contestar en menos de 10 minutos te hace cerrar{" "}
-          <strong className="text-crema/75">una de cada cuatro</strong> cotizaciones más
+          <strong className="text-hielo/75">una de cada cuatro</strong> cotizaciones más
           que contestar tarde. Es conservador y lo puedes discutir. Lo que importa aquí es
           el orden de magnitud, no el decimal. En el taller construyo en vivo el agente que
           contesta esas cotizaciones por ti.

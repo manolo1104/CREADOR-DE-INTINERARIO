@@ -21,10 +21,28 @@ const config: Config = {
         dorado: "#c4882a",
         terracota: "#9a4a1e",
         agua: "#3a8aaa",
+
+        // ── Piel del funnel del curso (/curso) ──────────────────────────
+        // Negro con sesgo frío (nunca #000, que aplana), blanco roto y un
+        // solo azul eléctrico. El azul de BOTÓN lleva texto tinta encima
+        // (6.9:1); el azul de TEXTO sobre negro es el claro (7.5:1).
+        tinta: "#07090C",
+        "tinta-2": "#0D1117",
+        "tinta-3": "#141B24",
+        linea: "#1F2A37",
+        "linea-2": "#2C3A4B",
+        hielo: "#F2F6FC",
+        "hielo-2": "#9FB0C6",
+        "hielo-3": "#64748B",
+        azul: "#3B8CFF",
+        "azul-vivo": "#63A6FF",
+        "azul-humo": "#12233F",
       },
       fontFamily: {
         cormorant: ["var(--font-cormorant)", "serif"],
         dm: ["var(--font-dm-sans)", "sans-serif"],
+        sora: ["var(--font-sora)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       keyframes: {
         "slide-up": {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, JetBrains_Mono, Sora } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ItinerarioProvider } from "@/context/ItinerarioContext";
@@ -19,6 +19,23 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500"],
   variable: "--font-dm-sans",
+});
+
+// Sólo las usa el funnel del curso (/curso): ahí la piel es negra y técnica,
+// no la de la marca de tours. Se cargan aquí porque next/font vive en el
+// layout raíz, pero ninguna página de tours las referencia.
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
+  variable: "--font-sora",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+  variable: "--font-mono",
 });
 
 /**
@@ -76,7 +93,7 @@ export function generateMetadata(): Metadata {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = asLocale(headers().get("x-locale"));
   return (
-    <html lang={locale} className={`${cormorant.variable} ${dmSans.variable}`}>
+    <html lang={locale} className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${mono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico?v=2" sizes="32x32" />
         <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
