@@ -13,7 +13,18 @@ export const runtime = "nodejs";
  */
 export async function GET() {
   const ahora = new Date();
-  const pagados = await prisma.cursoLead.count({ where: { compro: true } });
+
+  // Si la base no responde (o la tabla aún no existe, antes del primer
+  // despliegue), se cuenta 0 en vez de reventar con un 500. La página ya
+  // degrada así: el contador simplemente no se dibuja. Un endpoint que
+  // truena deja la barra de precio de la landing sin datos.
+  const pagados = await prisma.cursoLead
+    .count({ where: { compro: true } })
+    .catch((e) => {
+      console.error("[curso/cupo] sin base:", e instanceof Error ? e.message : e);
+      return 0;
+    });
+
   const pv = precioVigente(ahora, pagados);
 
   return NextResponse.json(
