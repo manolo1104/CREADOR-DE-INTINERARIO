@@ -132,8 +132,8 @@ export const LINKS = {
   salaTaller: "https://meet.google.com/vpi-ejed-nkv" as string | null,
   /** Grupo de WhatsApp del TALLER: ahí van las ligas y los workbooks. */
   grupoTaller: "https://chat.whatsapp.com/KLq7pyfjarHG3CgwivrkxL?mode=gi_t" as string | null,
-  /** Grupo de los que YA pagaron. Es otro distinto. Falta crearlo. */
-  comunidadWhatsApp: null as string | null,
+  /** Grupo de los que YA pagaron. Es OTRO, distinto al del taller. */
+  comunidadWhatsApp: "https://chat.whatsapp.com/Hu4kiqal2bOBlD0pWogQRQ?mode=gi_t" as string | null,
   /** Grabación del taller, para quien no pudo entrar (B3 y D4). */
   grabacionWebinar: null as string | null,
 } as const;
