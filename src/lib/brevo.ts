@@ -13,6 +13,9 @@ interface BrevoEmailParams {
   bcc?: BrevoRecipient[];
   subject: string;
   htmlContent: string;
+  /** Versión de texto plano. Cuando va, Gmail y los clientes sin HTML muestran
+   *  ESTO en vez de una traducción automática del HTML. */
+  textContent?: string;
   senderName?: string;
   senderEmail?: string;
   attachments?: BrevoAttachment[];
@@ -43,6 +46,7 @@ export async function sendBrevoEmail(params: BrevoEmailParams) {
       ...(params.bcc?.length ? { bcc: params.bcc } : {}),
       subject: params.subject,
       htmlContent: params.htmlContent,
+      ...(params.textContent ? { textContent: params.textContent } : {}),
       ...(params.attachments?.length ? { attachment: params.attachments } : {}),
     }),
   });

@@ -74,8 +74,13 @@ export async function POST(req: NextRequest) {
 
     actividad("🎓  LEAD CURSO", origen, email);
 
-    // Primer correo al instante: W1 si vino por el taller, A1 si no.
-    const idCorreo = esWebinar ? "W1" : "A1";
+    // Primer correo al instante: W0 si vino por el taller, A1 si no.
+    //
+    // W0 es la confirmación corta de texto plano; W1 (el de las 3 tareas) sale
+    // 20 minutos después, en la siguiente corrida del cron. Separarlos es lo
+    // que hace que la primera vez que este remitente toca una bandeja fría lo
+    // haga con un correo que parece escrito a mano, y no con una campaña.
+    const idCorreo = esWebinar ? "W0" : "A1";
     const claim = await prisma.cursoLead.updateMany({
       where: { id: lead.id, NOT: { correosEnviados: { has: idCorreo } } },
       data: { correosEnviados: { push: idCorreo } },
@@ -90,11 +95,12 @@ export async function POST(req: NextRequest) {
           pagados,
         };
         const correo = correoPorId(idCorreo)!;
-        const { subject, html } = correo.build(cx);
+        const { subject, html, texto } = correo.build(cx);
         await sendBrevoEmail({
           to: [{ email, name: nombre ?? undefined }],
           subject,
           htmlContent: html,
+          ...(texto ? { textContent: texto } : {}),
           senderName: REMITENTE_CURSO,
         });
       } catch (e) {

@@ -4,7 +4,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import {
   CORREOS_ALUMNO, CORREOS_PROSPECTO, REMITENTE_CURSO, type ContextoCorreo,
 } from "@/lib/cursoEmail";
-import { buildCalendarioIcs } from "@/lib/curso";
+import { buildCalendarioIcs, buildTallerIcs } from "@/lib/curso";
 import { actividad, logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -81,19 +81,30 @@ export async function POST(req: NextRequest) {
       if (claim.count === 0) break;
 
       try {
-        const { subject, html } = correo.build(cx);
+        const { subject, html, texto, adjunto } = correo.build(cx);
+        // Cuál .ics va adjunto lo declara el propio correo (`adjunto`), no un
+        // `if` por ID aquí: así un correo nuevo no obliga a tocar el cron.
+        // C1 (bienvenida del alumno) sigue llevando el calendario del curso.
+        const ics = adjunto ?? (correo.id === "C1" ? "curso" : undefined);
         await sendBrevoEmail({
           to: [{ email: lead.email, name: lead.nombre ?? undefined }],
           subject,
           htmlContent: html,
+          ...(texto ? { textContent: texto } : {}),
           senderName: REMITENTE_CURSO,
-          // La bienvenida del alumno lleva el calendario de sesiones adjunto.
-          ...(correo.id === "C1"
+          ...(ics
             ? {
-                attachments: [{
-                  name: "curso-turismo-con-ia.ics",
-                  content: Buffer.from(buildCalendarioIcs()).toString("base64"),
-                }],
+                attachments: [
+                  ics === "taller"
+                    ? {
+                        name: "taller-turismo-con-ia.ics",
+                        content: Buffer.from(buildTallerIcs()).toString("base64"),
+                      }
+                    : {
+                        name: "curso-turismo-con-ia.ics",
+                        content: Buffer.from(buildCalendarioIcs()).toString("base64"),
+                      },
+                ],
               }
             : {}),
         });

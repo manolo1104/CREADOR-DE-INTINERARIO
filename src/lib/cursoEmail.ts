@@ -22,10 +22,11 @@ import {
   BASE, C, WA,
   barra, bajoBoton, boton, nota, parrafo, regla, shellCorreo, tabla, titulo,
 } from "@/lib/cursoEmailLayout";
+import { linkBaja } from "@/lib/baja";
 import {
   BONOS, CIFRAS, FECHAS, GARANTIA, LINKS, PRECIOS, PROGRAMA, SESIONES,
   TALLER_NOCHES,
-  fechaLarga, horaCorta, mxnCurso, precioVigente,
+  fechaLarga, fechaSinDia, NOCHES_TEXTO, horaCorta, mxnCurso, precioVigente,
 } from "@/lib/curso";
 
 export const REMITENTE_CURSO = "Manolo · Huasteca Potosina Tours";
@@ -70,7 +71,15 @@ export interface CorreoCurso {
   id: string;
   /** ¿Ya toca mandarlo? (la condición "no se le ha mandado" la pone el cron) */
   due: (cx: ContextoCorreo) => boolean;
-  build: (cx: ContextoCorreo) => { subject: string; html: string };
+  build: (cx: ContextoCorreo) => {
+    subject: string;
+    html: string;
+    /** Versión de texto plano. Sólo la traen los correos "escritos a mano"
+     *  (shellPlano); en los demás Brevo genera la suya. */
+    texto?: string;
+    /** El .ics que va adjunto, si lo lleva. Lo resuelve el cron. */
+    adjunto?: "taller" | "curso";
+  };
 }
 
 // ── Piezas compartidas ─────────────────────────────────────────────────────
@@ -99,6 +108,58 @@ const ctaReservar = (cx: ContextoCorreo, texto = "Reservar mi lugar") => {
 };
 
 const firmaWhats = `¿Dudas? Responde a este correo o escríbeme por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.azulVivo};font-weight:500;">+52 489 125 1458</a>. Te contesto yo.`;
+
+/**
+ * Envoltorio de correo PLANO: el que parece escrito a mano.
+ *
+ * Un correo con fondo negro, logo y tres botones es, para una bandeja que no
+ * conoce al remitente, la firma exacta de una campaña — y se va a Promociones.
+ * Los correos cuyo trabajo es que la persona CONTESTE (la confirmación W0 y
+ * las preguntas del cierre) no llevan diseño: fuente del sistema, negro sobre
+ * blanco, enlaces subrayados y nada más. La baja sigue estando, porque es
+ * obligatoria, pero en una línea de texto como la escribiría una persona.
+ *
+ * Se manda además `texto` en el `textContent` de Brevo, para que la versión
+ * sin HTML sea idéntica y no un revoltijo de etiquetas.
+ */
+function shellPlano(d: { cuerpo: string[]; paraBaja?: string }): { html: string; texto: string } {
+  const enlaces: string[] = [];
+  const html = d.cuerpo
+    .map((linea) => `<p style="margin:0 0 16px 0;">${linea}</p>`)
+    .join("");
+
+  // Versión de texto: los enlaces se sacan a pie de correo, numerados, que es
+  // como se leen bien sin HTML.
+  const texto = d.cuerpo
+    .map((linea) =>
+      linea
+        .replace(/<a href="([^"]+)"[^>]*>([^<]*)<\/a>/g, (_m, href: string, txt: string) => {
+          enlaces.push(href);
+          return `${txt} [${enlaces.length}]`;
+        })
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, " ")
+    )
+    .join("\n\n");
+
+  const pieBaja = d.paraBaja
+    ? `Si no quieres saber más de esto, te das de baja aquí: ${linkBaja(d.paraBaja, BASE)}`
+    : "";
+
+  return {
+    html:
+      `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.6;color:#1a1a1a;max-width:600px;">` +
+      html +
+      (pieBaja
+        ? `<p style="margin:24px 0 0 0;font-size:12px;color:#888;">Si no quieres saber más de esto, <a href="${linkBaja(d.paraBaja!, BASE)}" style="color:#888;">te das de baja aquí</a>.</p>`
+        : "") +
+      `</div>`,
+    texto: pieBaja
+      ? `${texto}\n\n${enlaces.map((u, i) => `[${i + 1}] ${u}`).join("\n")}\n\n--\n${pieBaja}`
+      : `${texto}\n\n${enlaces.map((u, i) => `[${i + 1}] ${u}`).join("\n")}`,
+  };
+}
 
 const shellCurso = (d: {
   preheader: string; eyebrow: string; h1a: string; h1b?: string;
@@ -147,7 +208,7 @@ const SEC_TALLER: CorreoCurso[] = [
           regla("30px 0 26px 0"),
           titulo("Pero antes de que decidas nada"),
           parrafo(
-            `El <strong>8, 9 y 10 de septiembre</strong> doy tres noches en vivo, gratis, donde construyo frente a ti lo mismo que le enseño al curso: una página, un agente de WhatsApp y las automatizaciones. Sin diapositivas: comparto pantalla y lo armo, y tú ves cada clic.`
+            `El <strong>${NOCHES_TEXTO}</strong> doy tres noches en vivo, gratis, donde construyo frente a ti lo mismo que le enseño al curso: una página, un agente de WhatsApp y las automatizaciones. Sin diapositivas: comparto pantalla y lo armo, y tú ves cada clic.`
           ),
           parrafo(
             `Ir es la forma más barata de saber si esto es para ti. Y si al final no lo es, te quedas con tres noches de cosas aplicables.`
@@ -165,7 +226,7 @@ const SEC_TALLER: CorreoCurso[] = [
     build: (cx) => ({
       subject: "Qué pasa en cada una de las tres noches",
       html: shellCurso({
-        preheader: "8, 9 y 10 de septiembre · 7 pm · sin costo",
+        preheader: `${NOCHES_TEXTO} · 7 pm · sin costo`,
         eyebrow: "El taller",
         h1a: "Tres noches,",
         h1b: "una hora cada una",
@@ -173,7 +234,7 @@ const SEC_TALLER: CorreoCurso[] = [
           parrafo(`${saludo(cx.lead)} Para que sepas exactamente a qué entras:`),
           ...TALLER_NOCHES.map((n) =>
             [
-              barra(`Noche ${n.n} · ${fechaLarga(n.fecha).replace(/^\w+, /, "")}`, n.n === 1 ? 24 : 26),
+              barra(`Noche ${n.n} · ${fechaSinDia(n.fecha)}`, n.n === 1 ? 24 : 26),
               parrafo(`<strong style="color:${C.claro};">${n.titulo}</strong>`, "16px 0 10px 0"),
               parrafo(n.puntos.join("<br>"), "0 0 0 0"),
             ].join("")
@@ -353,12 +414,12 @@ const A: CorreoCurso[] = [
     build: (cx) => ({
       subject: "Mañana se acaba el precio de fundador",
       html: shellCurso({
-        preheader: `De ${mxnCurso(PRECIOS.fundador)} a ${mxnCurso(PRECIOS.regular)} el 9 de septiembre`,
+        preheader: `De ${mxnCurso(PRECIOS.fundador)} a ${mxnCurso(PRECIOS.regular)} el ${fechaSinDia(FECHAS.finFundador)}`,
         eyebrow: "Aviso",
         h1a: "Mañana sube",
         h1b: "el precio",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} Corto y claro: el precio de fundador de <strong>${mxnCurso(PRECIOS.fundador)}</strong> termina mañana ${fechaLarga(FECHAS.finFundador)} a las 11:59 pm. Después queda en ${mxnCurso(PRECIOS.regular)}.`),
+          parrafo(`${saludo(cx.lead)} Corto y claro: el precio de fundador de <strong>${mxnCurso(PRECIOS.fundador)}</strong> termina mañana ${fechaSinDia(FECHAS.finFundador)} a las 11:59 pm. Después queda en ${mxnCurso(PRECIOS.regular)}.`),
           parrafo(`También desaparecen los 3 bonos de fundador: la auditoría 1 a 1 conmigo, el Kit Huasteca y la sesión de IA para redes (${mxnCurso(BONOS.reduce((s, b) => s + b.valor, 0))} en valor).`),
           ctaReservar(cx, "Asegurar precio de fundador"),
           lineaCupo(cx.pagados),
@@ -543,18 +604,50 @@ function correoGrabacion(id: string, nocheVista: 1 | 2, cuando: number): CorreoC
 
 const W: CorreoCurso[] = [
   {
-    id: "W1",
+    /**
+     * W0 — la confirmación de seis líneas, en texto plano, que sale AL
+     * INSTANTE del formulario.
+     *
+     * Antes W1 hacía dos trabajos a la vez: confirmar (transaccional) y pedir
+     * tres acciones (marketing). Separarlos da dos cosas: (1) la primera
+     * bandeja que toca este remitente recibe un correo que parece escrito a
+     * mano, que es lo que entra a Principal, y (2) W1 llega después ya
+     * "buscado", porque W0 dice exactamente qué asunto buscar. Es el patrón
+     * de Iman y la razón por la que sus correos no se van a Promociones.
+     */
+    id: "W0",
     due: ({ lead }) => lead.webinar,
+    build: (cx) => {
+      const { html, texto } = shellPlano({
+        cuerpo: [
+          `${saludo(cx.lead)}`,
+          `Confirmado: tienes lugar en el taller. Son tres noches, ${NOCHES_TEXTO}, a las 7:00 pm hora del centro.`,
+          `En un rato te llega otro correo mío con el asunto <strong>“[Acción requerida] Tu lugar en el taller”</strong>. Ese trae la liga, el grupo de WhatsApp y tres cosas que te van a tomar dos minutos. Búscalo; si no lo ves en Principal, mira en Promociones y arrástralo a Principal.`,
+          `Si me respondes cualquier cosa a este correo —aunque sea “ok”— te llego siempre a la bandeja de entrada. Lo leo yo.`,
+          `Nos vemos el ${fechaLarga(TALLER_NOCHES[0].fecha)}.`,
+          `Manolo<br>Huasteca Potosina Tours`,
+        ],
+        paraBaja: cx.lead.email,
+      });
+      return { subject: "Confirmado: tu lugar en el taller", html, texto };
+    },
+  },
+  {
+    id: "W1",
+    // 20 minutos después de W0: dos aperturas separadas, no dos correos
+    // golpeados en el mismo minuto.
+    due: ({ lead, ahora }) =>
+      lead.webinar && ahora.getTime() >= lead.createdAt.getTime() + 20 * 60 * 1000,
     build: (cx) => ({
       subject: "[Acción requerida] Tu lugar en el taller: haz estas 3 cosas",
       html: shellCurso({
-        preheader: "8, 9 y 10 de septiembre, 7 pm · tres noches en vivo, sin costo",
+        preheader: `${NOCHES_TEXTO}, 7 pm · tres noches en vivo, sin costo`,
         eyebrow: "Taller gratuito",
         h1a: "Tres noches,",
         h1b: "en vivo",
         cuerpo: [
           parrafo(
-            `${saludo(cx.lead)} Ya quedó tu lugar en <strong>Turismo con IA en vivo</strong>: ${TALLER_NOCHES.map((n) => fechaLarga(n.fecha).replace(/^\w+, /, "")).join(", ")} de septiembre, a las 7:00 pm hora del centro, por Google Meet.`
+            `${saludo(cx.lead)} Ya quedó tu lugar en <strong>Turismo con IA en vivo</strong>: ${NOCHES_TEXTO}, a las 7:00 pm hora del centro, por Google Meet.`
           ),
           parrafo(
             "No voy a darte teoría. Voy a construir frente a ti, clic por clic, lo mismo que me dio más de " +
@@ -572,17 +665,26 @@ const W: CorreoCurso[] = [
             `<strong>2) Aparta las tres noches.</strong> Cada una trae un workbook, pero está protegido con contraseña, y la contraseña sólo la digo en vivo. Si faltas, te quedas sin él.`,
             "18px 0 10px 0"
           ),
-          botonSala("Guardar mi liga del taller"),
+          boton(`${BASE}/curso/taller.ics`, "Agregar las 3 noches a mi calendario", "dorado"),
+          bajoBoton("Va con la liga de la sala dentro y un aviso 30 minutos antes de cada noche."),
           parrafo(
             "<strong>3) Saca tu número.</strong> La mayoría de las agencias no pierde clientes por precio: los pierde por contestar tarde. Contesta 3 preguntas y te digo cuántos pesos se te van cada mes por WhatsApps sin responder.",
             "18px 0 10px 0"
           ),
-          boton(`${BASE}/curso/calculadora`, "Ver cuánto pierdo", "dorado"),
+          boton(`${BASE}/curso/calculadora?ref=registrado`, "Ver cuánto pierdo", "dorado"),
           regla(),
-          parrafo("Haz estas tres cosas hoy y llegas listo al martes.", "0 0 0 0"),
+          parrafo("Haz estas tres cosas hoy y llegas listo al martes.", "0 0 10px 0"),
+          /* La petición de respuesta no es un adorno: una sola contestación le
+             dice a Gmail que este remitente es conocido, y a partir de ahí los
+             seis correos del taller le llegan a Principal a esa persona. */
+          parrafo(
+            "Y cuando termines las tres, <strong>respóndeme “listo”</strong> a este correo. Con eso sé que te llegó, y además te aseguras de que los siguientes no se te vayan a Promociones.",
+            "0 0 0 0"
+          ),
         ].join(""),
         paraBaja: cx.lead.email,
       }),
+      adjunto: "taller",
     }),
   },
   {
@@ -641,12 +743,12 @@ const D: CorreoCurso[] = [
     build: (cx) => ({
       subject: "Cerramos el domingo",
       html: shellCurso({
-        preheader: `El martes ${fechaLarga(FECHAS.inicioCohorte)} arrancamos; no se puede entrar a medias`,
+        preheader: `El ${fechaLarga(FECHAS.inicioCohorte)} arrancamos; no se puede entrar a medias`,
         eyebrow: "Cierre",
         h1a: "El domingo cerramos",
         h1b: "inscripciones",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} El martes ${fechaLarga(FECHAS.inicioCohorte)} a las 7 pm arranca la cohorte, y como cada semana construye sobre la anterior, no se puede entrar a medias: las inscripciones cierran el <strong>${fechaLarga(FECHAS.cierreInscripciones)} a las 11:59 pm</strong>.`),
+          parrafo(`${saludo(cx.lead)} El ${fechaLarga(FECHAS.inicioCohorte)} a las 7 pm arranca la cohorte, y como cada semana construye sobre la anterior, no se puede entrar a medias: las inscripciones cierran el <strong>${fechaLarga(FECHAS.cierreInscripciones)} a las 11:59 pm</strong>.`),
           parrafo("Ya hay dentro agencias, guías y hoteles. En la semana 1 todos publican su página; en la 2, su agente de WhatsApp."),
           ctaReservar(cx),
           lineaCupo(cx.pagados),

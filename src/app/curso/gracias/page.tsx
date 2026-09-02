@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import {
-  FECHAS, LINKS, PRECIOS, TALLER_NOCHES, WHATSAPP_CURSO, fechaLarga, horaCorta,
+  FECHAS, LINKS, NOCHES_TEXTO, PRECIOS, TALLER_NOCHES, WHATSAPP_CURSO, fechaLarga, horaCorta,
   inscripcionesAbiertas, mxnCurso, ofertaAbierta, precioVigente,
 } from "@/lib/curso";
-import { BotonComprar } from "@/components/curso/CursoCliente";
+import { ApartarTaller, BotonComprar } from "@/components/curso/CursoCliente";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,15 @@ export default async function GraciasPage({
      tal vez no abra. */
   const tareas = [
     {
+      /* Va primero porque es la única que caduca: el correo acaba de llegar y
+         moverlo a Principal ahora entrena a Gmail para los seis que faltan. */
+      t: "Busca mi correo y muévelo a Principal",
+      d: "Te acabo de escribir con el asunto “Confirmado: tu lugar en el taller”. Si no está en Principal, búscalo en Promociones y arrástralo. Si le das a responder y me escribes “ok”, mejor todavía: así los avisos de cada noche te llegan seguro.",
+      href: "",
+      cta: "",
+      falta: "",
+    },
+    {
       t: "Entra al grupo de WhatsApp del taller",
       d: "Ahí mando la liga de cada noche, los workbooks y el material extra. No lo comparto en ningún otro lado.",
       href: LINKS.grupoTaller,
@@ -41,15 +50,17 @@ export default async function GraciasPage({
     },
     {
       t: "Aparta las tres noches",
-      d: "8, 9 y 10 de septiembre, 7 pm. Cada noche trae un workbook protegido con contraseña, y la contraseña sólo la digo en vivo. Si faltas, te quedas sin él.",
-      href: LINKS.salaTaller,
-      cta: "Guardar la liga",
+      d: `${NOCHES_TEXTO}, 7 pm. Cada noche trae un workbook protegido con contraseña, y la contraseña sólo la digo en vivo. Si faltas, te quedas sin él.`,
+      /* "Apartar las noches" tiene que poner algo en el calendario. El botón
+         abría la sala de Meet: un cuarto vacío seis días antes. */
+      href: "/curso/taller.ics",
+      cta: "Agregar las 3 noches",
       falta: "Te mando la liga por correo antes del martes.",
     },
     {
       t: "Saca tu número de reservas perdidas",
       d: "La mayoría de las agencias no pierde clientes por precio: los pierde por contestar tarde. Contesta 3 preguntas y sabrás cuánto se te va cada mes. Llega al martes sabiendo tu número.",
-      href: "/curso/calculadora",
+      href: "/curso/calculadora?ref=registrado",
       cta: "Ver cuánto pierdo",
       falta: "",
     },
@@ -66,7 +77,7 @@ export default async function GraciasPage({
         </h1>
         <p className="mt-6 font-dm text-xl leading-relaxed text-hielo/80">
           {esTaller
-            ? `Son tres noches: 8, 9 y 10 de septiembre a las ${horaCorta(TALLER_NOCHES[0].fecha)} (hora del centro), en vivo por Google Meet. Te acabo de mandar la confirmación por correo.`
+            ? `Son tres noches: ${NOCHES_TEXTO} a las ${horaCorta(TALLER_NOCHES[0].fecha)} (hora del centro), en vivo por Google Meet. Te acabo de mandar la confirmación por correo.`
             : "Te acabo de mandar el programa completo por correo. Si no lo ves en unos minutos, revisa la carpeta de promociones o de no deseados."}
         </p>
 
@@ -76,9 +87,9 @@ export default async function GraciasPage({
               Falta lo importante: que sí estés el martes.
             </h2>
             <p className="mt-3 font-dm text-lg leading-relaxed text-hielo/75">
-              Cada año se registra mucha gente a talleres a los que nunca entra. Estas tres
-              cosas toman dos minutos y son la diferencia. Hazlas ahora, antes de cerrar
-              esta pestaña.
+              Cada año se registra mucha gente a talleres a los que nunca entra. Estas
+              cuatro cosas toman dos minutos y son la diferencia. Hazlas ahora, antes de
+              cerrar esta pestaña.
             </p>
             <ol className="mt-7 divide-y divide-linea/12 border-y border-linea">
               {tareas.map((x, i) => (
@@ -93,7 +104,7 @@ export default async function GraciasPage({
                     {x.t}
                   </h3>
                   <p className="font-dm text-base leading-relaxed text-hielo/75">{x.d}</p>
-                  <div>
+                  <div className={x.href || x.falta ? "" : "hidden"}>
                     {x.href ? (
                       <a
                         href={x.href}
@@ -114,7 +125,33 @@ export default async function GraciasPage({
           </div>
         )}
 
-        {(!esTaller || yaAbrio) && (
+        {/* ══ PRE-TALLER ══ Quien pidió el programa antes de que abra la oferta NO
+            puede comprar todavía: el botón de $9,900 sólo hacía scroll, y eso
+            quema la confianza justo en la página que la acaba de ganar. En su
+            lugar, el único paso que sí existe hoy: apartar el taller, con un
+            clic, porque su correo y su consentimiento ya están dados. */}
+        {!esTaller && !yaAbrio && (
+          <div className="mt-10 border border-linea bg-tinta-2 p-7">
+            <h2 className="font-sora text-3xl font-semibold text-hielo">
+              Ya que estás aquí: las inscripciones abren el {fechaLarga(FECHAS.aperturaOferta)}.
+            </h2>
+            <p className="mt-3 font-dm text-lg leading-relaxed text-hielo/75">
+              El programa te dice qué construyes. El taller te lo enseño construyéndolo:
+              tres noches en vivo, gratis, el {NOCHES_TEXTO} a las{" "}
+              {horaCorta(TALLER_NOCHES[0].fecha)} Al final de la noche 3 abro las
+              inscripciones del curso, y para entonces ya sabrás si soy para ti.
+            </p>
+            <div className="mt-6">
+              <ApartarTaller className="inline-block bg-azul px-10 py-5 font-dm text-base font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.98] disabled:opacity-60" />
+            </div>
+            <p className="mt-4 font-dm text-sm text-hielo/55">
+              Sin costo y sin tarjeta. Si ya te registraste al taller, ignora esto:
+              tu lugar está apartado.
+            </p>
+          </div>
+        )}
+
+        {yaAbrio && (
         <div className="mt-10 border border-linea bg-tinta-2 p-7">
           <h2 className="font-sora text-3xl font-semibold text-hielo">
             ¿Ya lo tienes claro?

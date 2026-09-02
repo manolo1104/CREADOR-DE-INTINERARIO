@@ -319,11 +319,68 @@ export function ofertaAbierta(ahora: Date): boolean {
 // ── Formato de fechas en español, SIEMPRE en CDMX ──────────────────────────
 const TZ = "America/Mexico_City";
 
+/**
+ * "jueves 10 de septiembre".
+ *
+ * Intl devuelve "jueves, 10 de septiembre" CON coma, y en este proyecto la
+ * fecha siempre va metida dentro de una frase ("cierran el ___ a las 11:59"),
+ * donde esa coma parte la oración en dos. Se quita aquí una vez, no en cada
+ * sitio que la usa.
+ */
 export function fechaLarga(d: Date): string {
   return new Intl.DateTimeFormat("es-MX", {
     weekday: "long", day: "numeric", month: "long", timeZone: TZ,
+  }).format(d).replace(", ", " ");
+}
+
+/**
+ * "9 de septiembre", SIN el día de la semana.
+ *
+ * Existe porque quitarle el día a `fechaLarga` con una expresión regular es
+ * una trampa: `\w` de JavaScript NO cubre los acentos, así que `/^\w+, /`
+ * limpia "lunes, 8" pero NO "miércoles, 9" (se detiene en la "é"). Ese fallo
+ * salió en producción en el correo W1 —"8 de septiembre, miércoles, 9 de
+ * septiembre, 10 de septiembre"—, que es el que recibe TODO el que se
+ * registra al taller. Se formatea sin el día desde el principio, no se
+ * recorta después.
+ */
+export function fechaSinDia(d: Date): string {
+  return new Intl.DateTimeFormat("es-MX", {
+    day: "numeric", month: "long", timeZone: TZ,
   }).format(d);
 }
+
+/** Sólo el número del día ("9"), para enumerar fechas del mismo mes. */
+export function diaDelMes(d: Date): string {
+  return new Intl.DateTimeFormat("es-MX", { day: "numeric", timeZone: TZ }).format(d);
+}
+
+/** Sólo el mes en minúscula ("septiembre"). */
+export function mesLargo(d: Date): string {
+  return new Intl.DateTimeFormat("es-MX", { month: "long", timeZone: TZ }).format(d);
+}
+
+/**
+ * "8, 9 y 10 de septiembre" — las tres noches del taller en una sola frase.
+ *
+ * Estaba escrito a mano en 6 sitios (dos páginas y cuatro correos). Si Manolo
+ * mueve una noche, mover la constante ya no basta: hay que cazar el texto.
+ * Aquí se arma desde TALLER_NOCHES y se comparte, como manda la regla de este
+ * archivo. Sirve para cualquier mes y para noches que crucen de mes.
+ */
+export const nochesTexto = (): string => {
+  const dias = TALLER_NOCHES.map((n) => diaDelMes(n.fecha));
+  const meses = new Set(TALLER_NOCHES.map((n) => mesLargo(n.fecha)));
+  // Si las tres noches caen en el mismo mes, el mes se dice una sola vez.
+  if (meses.size === 1) {
+    return `${dias.slice(0, -1).join(", ")} y ${dias.at(-1)} de ${mesLargo(TALLER_NOCHES[0].fecha)}`;
+  }
+  const completas = TALLER_NOCHES.map((n) => fechaSinDia(n.fecha));
+  return `${completas.slice(0, -1).join(", ")} y ${completas.at(-1)}`;
+};
+
+/** El mismo dato, ya listo para pegarse en un texto: "8, 9 y 10 de septiembre". */
+export const NOCHES_TEXTO = nochesTexto();
 
 export function horaCorta(d: Date): string {
   return new Intl.DateTimeFormat("es-MX", {
@@ -366,6 +423,10 @@ export function buildCalendarioIcs(): string {
     ].join("\r\n"));
   }
 
+  return envolverIcs(eventos);
+}
+
+function envolverIcs(eventos: string[]): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -375,4 +436,46 @@ export function buildCalendarioIcs(): string {
     ...eventos,
     "END:VCALENDAR",
   ].join("\r\n");
+}
+
+/**
+ * El calendario de las TRES noches del taller gratuito.
+ *
+ * Antes, el botón "Guardar la liga" de /curso/gracias abría la sala de Meet:
+ * un cuarto vacío seis días antes del taller. "Apartar las noches" tiene que
+ * poner algo en el calendario del teléfono — con la liga dentro, para que el
+ * día 8 a las 7 pm el recordatorio traiga el botón de entrar.
+ *
+ * Cada noche dura 90 minutos y lleva una alarma 30 minutos antes: es el
+ * recordatorio que no depende de que abran el correo.
+ */
+export function buildTallerIcs(): string {
+  const dur90 = 90 * 60 * 1000;
+  const liga = LINKS.salaTaller;
+
+  const eventos = TALLER_NOCHES.map((n) =>
+    [
+      "BEGIN:VEVENT",
+      `UID:curso-ia-taller-noche-${n.n}@huasteca-potosina.com`,
+      `DTSTART:${icsFecha(n.fecha)}`,
+      `DTEND:${icsFecha(new Date(n.fecha.getTime() + dur90))}`,
+      `SUMMARY:Turismo con IA · Noche ${n.n}: ${n.titulo}`,
+      ...(liga ? [`LOCATION:${liga}`, `URL:${liga}`] : []),
+      `DESCRIPTION:${[
+        `Noche ${n.n} de 3 del taller gratuito.`,
+        ...n.puntos,
+        `Workbook: ${n.workbook} (la contraseña se dice en vivo).`,
+        liga ? `Entrar: ${liga}` : "La liga llega por correo y por el grupo de WhatsApp.",
+      ].join("\\n")}`,
+      // Aviso 30 min antes, dentro del propio evento.
+      "BEGIN:VALARM",
+      "TRIGGER:-PT30M",
+      "ACTION:DISPLAY",
+      `DESCRIPTION:En 30 minutos empieza la noche ${n.n} del taller`,
+      "END:VALARM",
+      "END:VEVENT",
+    ].join("\r\n")
+  );
+
+  return envolverIcs(eventos);
 }

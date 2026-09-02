@@ -68,7 +68,7 @@ export function CuentaRegresiva({
   // Monoespaciada y tabular: los dígitos no bailan al cambiar cada segundo,
   // y en una página de tecnología el número se lee como dato, no como texto.
   const caja = grande
-    ? "min-w-[3.2ch] text-4xl sm:text-6xl font-mono font-bold tabular-nums"
+    ? "min-w-[2.4ch] text-[1.85rem] sm:text-6xl font-mono font-bold tabular-nums"
     : "min-w-[2.6ch] text-base font-mono font-bold tabular-nums";
 
   const unidades = t
@@ -87,7 +87,7 @@ export function CuentaRegresiva({
 
   return (
     <span
-      className={`inline-flex items-baseline ${grande ? "gap-4 sm:gap-6" : "gap-2"}`}
+      className={`inline-flex items-baseline ${grande ? "gap-3 sm:gap-6" : "gap-2"}`}
       role="timer"
       aria-label="Tiempo restante"
     >
@@ -114,11 +114,17 @@ export function CuentaRegresiva({
 export function BotonComprar({
   precio,
   abierto,
+  yaAbrio = true,
+  textoTaller = "Reservar mi lugar en el taller gratis",
   className,
   children,
 }: {
   precio: number;
   abierto: boolean;
+  /** ¿Ya se presentó la oferta (noche 3 del taller)? Antes de eso no hay nada
+   *  que comprar: el botón se convierte en el camino que SÍ existe. */
+  yaAbrio?: boolean;
+  textoTaller?: string;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -180,6 +186,18 @@ export function BotonComprar({
       setError("No pudimos iniciar el pago. Revisa tu conexión e intenta de nuevo.");
       setEnviando(false);
     }
+  }
+
+  /* Antes de la noche 3 no existe la oferta. Un botón de "$9,900" que sólo
+     hace scroll es peor que no tener botón: el visitante frío no distingue
+     "todavía no" de "está roto". Va DESPUÉS de los hooks, para no romper su
+     orden entre renders. */
+  if (!yaAbrio) {
+    return (
+      <a href="/curso/webinar" className={className}>
+        {textoTaller}
+      </a>
+    );
   }
 
   return (
@@ -287,11 +305,16 @@ export function BarraCurso({
   esFundador,
   limiteIso,
   abierto,
+  yaAbrio = true,
+  tallerIso,
 }: {
   precio: number;
   esFundador: boolean;
   limiteIso: string;
   abierto: boolean;
+  yaAbrio?: boolean;
+  /** Inicio de la noche 1 del taller, para la cuenta regresiva de pre-taller. */
+  tallerIso?: string;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -310,8 +333,17 @@ export function BarraCurso({
     return () => io.disconnect();
   }, []);
 
-  const etiqueta = esFundador ? "El precio de fundador termina en" : "Inscripciones cierran en";
-  const etiquetaCorta = esFundador ? "El precio sube en" : "Cierra en";
+  /* La cuenta regresiva tiene que medir lo que el visitante puede hacer HOY.
+     Antes del 10, contar hacia el fin de un precio que ni siquiera ha abierto
+     es una urgencia falsa: cuenta hacia el taller, que es lo que sí empieza. */
+  const preTaller = !yaAbrio && !!tallerIso;
+  const cuentaIso = preTaller ? tallerIso! : limiteIso;
+  const etiqueta = preTaller
+    ? "El taller gratuito empieza en"
+    : esFundador
+      ? "El precio de fundador termina en"
+      : "Inscripciones cierran en";
+  const etiquetaCorta = preTaller ? "El taller empieza en" : esFundador ? "El precio sube en" : "Cierra en";
 
   return (
     <>
@@ -321,10 +353,12 @@ export function BarraCurso({
             el scroll, no un listener. */}
         <i aria-hidden="true" className="avance-curso" />
         <span className="font-dm text-sm tracking-wide opacity-90">{etiqueta}</span>
-        <CuentaRegresiva limiteIso={limiteIso} />
+        <CuentaRegresiva limiteIso={cuentaIso} />
         <BotonComprar
           precio={precio}
           abierto={abierto}
+          yaAbrio={yaAbrio}
+          textoTaller="Ir al taller gratis"
           className="bg-azul px-6 py-2.5 font-dm text-sm font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.97]"
         >
           Reservar mi lugar
@@ -339,11 +373,13 @@ export function BarraCurso({
       >
         <div className="min-w-0 flex-1 leading-tight">
           <p className="truncate font-dm text-[11px] uppercase tracking-[1px] opacity-80">{etiquetaCorta}</p>
-          <CuentaRegresiva limiteIso={limiteIso} />
+          <CuentaRegresiva limiteIso={cuentaIso} />
         </div>
         <BotonComprar
           precio={precio}
           abierto={abierto}
+          yaAbrio={yaAbrio}
+          textoTaller="Al taller"
           className="shrink-0 bg-azul px-5 py-3.5 font-dm text-sm font-semibold uppercase tracking-[1.5px] text-tinta active:scale-[0.97] transition-transform duration-150 ease-out"
         >
           Reservar
@@ -372,12 +408,19 @@ export function Cifra({
     const el = ref.current;
     if (!el) return;
 
-    const pinta = (v: number) => {
-      el.textContent = `${prefijo}${Math.round(v).toLocaleString("es-MX")}${sufijo}`;
+    /* Los valores intermedios se redondean a una cifra GRUESA (+$430,000, no
+       +$433,786). Alguien que hace captura a medio scroll comparte un número
+       que se lee como aproximación, nunca como un dato preciso distinto al
+       del texto. Al llegar arriba se pinta la cifra exacta. */
+    const paso = Math.max(1, Math.pow(10, Math.max(0, Math.floor(Math.log10(hasta)) - 1)));
+
+    const pinta = (v: number, exacto = false) => {
+      const n = exacto ? hasta : Math.round(v / paso) * paso;
+      el.textContent = `${prefijo}${n.toLocaleString("es-MX")}${sufijo}`;
     };
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      pinta(hasta);
+      pinta(hasta, true);
       return;
     }
 
@@ -396,7 +439,7 @@ export function Cifra({
       // 0 cuando el elemento entra por abajo, 1 cuando llega a media pantalla
       const avance = Math.min(1, Math.max(0, (alto - r.top) / (alto * 0.55)));
       const suave = 1 - Math.pow(1 - avance, 3);
-      pinta(hasta * suave);
+      pinta(hasta * suave, suave > 0.98);
       if (vivo) raf = requestAnimationFrame(cuadro);
     };
 
@@ -409,7 +452,7 @@ export function Cifra({
           vivo = false;
           cancelAnimationFrame(raf);
           // Al salir por arriba se deja en el valor final, no a medias.
-          if (e.boundingClientRect.top < 0) pinta(hasta);
+          if (e.boundingClientRect.top < 0) pinta(hasta, true);
         }
       },
       { threshold: 0 }
@@ -545,5 +588,78 @@ export function FormLead({ webinar = false }: { webinar?: boolean }) {
             : "Mándame el programa completo"}
       </button>
     </form>
+  );
+}
+
+// ── Apartar el taller con un clic ──────────────────────────────────────────
+
+/**
+ * El puente entre "pedí el programa" y "estoy registrado al taller".
+ *
+ * Quien llega a /curso/gracias acaba de dejar nombre, correo y consentimiento
+ * en el formulario del programa: pedirle que llene OTRO formulario para el
+ * taller gratuito es pedirle que pague dos veces el mismo peaje. Los datos ya
+ * están en localStorage (los guarda `FormLead`), así que aquí basta un botón.
+ *
+ * Si no hay datos guardados (otro navegador, modo privado, llegó por un link
+ * directo), degrada a la landing del taller en vez de fallar.
+ */
+export function ApartarTaller({ className = "" }: { className?: string }) {
+  const router = useRouter();
+  const [datos, setDatos] = useState<{ nombre?: string; email?: string; whatsapp?: string } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => setDatos(leerDatos()), []);
+
+  const apartar = useCallback(async () => {
+    if (!datos?.email) return;
+    setEnviando(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/curso/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: datos.nombre ?? "",
+          email: datos.email,
+          whatsapp: datos.whatsapp ?? "",
+          // Ya lo dio en el formulario del programa, en esta misma sesión.
+          consent: true,
+          webinar: true,
+          sitio: "",
+        }),
+      });
+      if (!res.ok) throw new Error("no ok");
+      trackCtaClick("curso_lead", "taller_un_clic");
+      router.push("/curso/gracias?taller=1");
+    } catch {
+      setError("No pudimos apartarte. Abre el formulario del taller y lo hacemos ahí.");
+      setEnviando(false);
+    }
+  }, [datos, router]);
+
+  // Antes de leer localStorage no sabemos cuál de los dos botones toca: se
+  // pinta el que funciona siempre, para no parpadear ni mentir.
+  if (datos === null || !datos.email) {
+    return (
+      <a href="/curso/webinar" className={className}>
+        Sí, apartar mi lugar en el taller
+      </a>
+    );
+  }
+
+  return (
+    <>
+      <button type="button" onClick={apartar} disabled={enviando} className={className}>
+        {enviando ? "Apartando…" : "Sí, apártame · es gratis"}
+      </button>
+      {error && (
+        <p className="mt-3 font-dm text-sm text-azul-vivo">
+          {error}{" "}
+          <a href="/curso/webinar" className="underline">Ir al formulario</a>
+        </p>
+      )}
+    </>
   );
 }

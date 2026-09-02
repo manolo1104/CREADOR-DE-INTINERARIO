@@ -2,7 +2,8 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import {
   ANTES_DESPUES, BONOS, CIFRAS, DOLORES, FAQS, FECHAS, GARANTIA, INCLUYE,
-  NO_ES_PARA, PARA_QUIEN, PRECIOS, PROGRAMA, VALOR_BONOS, WHATSAPP_CURSO,
+  NO_ES_PARA, NOCHES_TEXTO, PARA_QUIEN, PRECIOS, PROGRAMA, TALLER_NOCHES,
+  VALOR_BONOS, WHATSAPP_CURSO,
   fechaLarga, inscripcionesAbiertas, mxnCurso, ofertaAbierta, precioVigente,
 } from "@/lib/curso";
 import {
@@ -47,7 +48,9 @@ export default async function CursoPage() {
         <div className="border-b border-azul/40 bg-azul-humo px-5 py-4">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-dm text-base leading-snug text-hielo/85">
-              <strong className="text-hielo">Las inscripciones abren el jueves 10</strong>
+              <strong className="text-hielo">
+                Las inscripciones abren el {fechaLarga(FECHAS.aperturaOferta)}
+              </strong>
               , al final de la tercera noche del taller gratuito. Ahí explico todo esto en vivo.
             </p>
             <a
@@ -66,6 +69,8 @@ export default async function CursoPage() {
         esFundador={pv.esFundador}
         limiteIso={pv.limite.toISOString()}
         abierto={abierto}
+        yaAbrio={yaAbrio}
+        tallerIso={TALLER_NOCHES[0].fecha.toISOString()}
       />
 
       {/* ══ HERO ══ Split: mensaje a la izquierda, el panel real a la derecha */}
@@ -84,7 +89,13 @@ export default async function CursoPage() {
             mismo sistema para tu negocio, conmigo.
           </p>
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <BotonComprar precio={pv.precio} abierto={abierto} className={claseCtaDorado}>
+            <BotonComprar
+              precio={pv.precio}
+              abierto={abierto}
+              yaAbrio={yaAbrio}
+              textoTaller="Ir al taller gratis"
+              className={claseCtaDorado}
+            >
               {ctaPrimario}
             </BotonComprar>
             <a
@@ -408,8 +419,13 @@ export default async function CursoPage() {
                   o 3 pagos de {mxnCurso(Math.round(PRECIOS.fundador / 3))} sin intereses
                 </p>
                 <p className="mt-5 font-dm text-base text-azul-vivo">
-                  Solo los primeros {PRECIOS.cupoFundador} lugares, hasta el {fechaLarga(FECHAS.finFundador)}.
+                  Para los primeros {PRECIOS.cupoFundador} lugares, hasta el {fechaLarga(FECHAS.finFundador)}.
                   Después: {mxnCurso(PRECIOS.regular)} y sin bonos.
+                </p>
+                {/* Los dos números convivían sin explicarse y parecían un error. */}
+                <p className="mt-2 font-dm text-sm text-hielo/60">
+                  La cohorte es de {PRECIOS.cupoTotal} lugares en total; los primeros{" "}
+                  {PRECIOS.cupoFundador} entran con precio de fundador.
                 </p>
               </>
             ) : (
@@ -427,12 +443,23 @@ export default async function CursoPage() {
             )}
 
             <div className="mt-8">
-              <BotonComprar precio={pv.precio} abierto={abierto} className={`${claseCtaDorado} w-full sm:w-auto`}>
+              <BotonComprar
+                precio={pv.precio}
+                abierto={abierto}
+                yaAbrio={yaAbrio}
+                textoTaller="Apartar mi lugar gratis"
+                className={`${claseCtaDorado} w-full sm:w-auto`}
+              >
                 {ctaPrimario}
               </BotonComprar>
             </div>
+            {/* Bajo el botón: en pre-taller la promesa NO puede ser "pago
+                seguro", porque no hay pago. El precio se muestra por
+                transparencia, pero se dice cuándo se puede pagar. */}
             <p className="mt-4 font-dm text-sm text-hielo/60">
-              Pago seguro con Stripe · tarjeta de crédito o débito
+              {yaAbrio
+                ? "Pago seguro con Stripe · tarjeta de crédito o débito"
+                : `Las inscripciones se abren el ${fechaLarga(FECHAS.aperturaOferta)}, al final de la noche 3 del taller. Te enseño el precio desde ahora para que llegues con la cuenta hecha.`}
             </p>
           </div>
 
@@ -545,7 +572,7 @@ export default async function CursoPage() {
               </>
             ) : (
               <>
-                Las inscripciones abren el jueves 10.
+                Las inscripciones abren el {fechaLarga(FECHAS.aperturaOferta)}.
                 <br />
                 Te espero en el taller.
               </>
@@ -554,7 +581,7 @@ export default async function CursoPage() {
           <p className="mx-auto mt-5 max-w-[46ch] font-dm text-xl leading-relaxed text-hielo/85">
             {yaAbrio
               ? "Yo ya lo hice dos veces: en los tours y en el hotel, sin anuncios. Ahora te toca a ti."
-              : "Tres noches gratis, del 8 al 10 de septiembre. Al final de la tercera abro las inscripciones y explico todo esto en vivo, con el precio de fundador."}
+              : `Tres noches gratis: ${NOCHES_TEXTO}. Al final de la tercera abro las inscripciones y explico todo esto en vivo, con el precio de fundador.`}
           </p>
           {!yaAbrio && (
             <div className="mt-8">
@@ -562,17 +589,20 @@ export default async function CursoPage() {
                 href="/curso/webinar"
                 className="inline-block bg-azul px-10 py-5 font-dm text-[14px] font-semibold uppercase tracking-[2px] text-tinta transition-[background-color,transform] duration-200 ease-out hover:bg-azul-vivo hover:text-tinta active:scale-[0.98]"
               >
-                Reservar mi lugar gratis
+                Apartar mi lugar gratis
               </a>
             </div>
           )}
 
           <div className="mt-10 text-azul-vivo">
-            <CuentaRegresiva limiteIso={pv.limite.toISOString()} grande />
+            <CuentaRegresiva
+              limiteIso={(yaAbrio ? pv.limite : TALLER_NOCHES[0].fecha).toISOString()}
+              grande
+            />
           </div>
           <p className="mt-4 font-dm text-base text-hielo/70">
             {!yaAbrio
-              ? `para que termine el precio de fundador de ${mxnCurso(PRECIOS.fundador)}, que abre el jueves 10`
+              ? "para la noche 1 del taller gratuito"
               : pv.esFundador
                 ? `para que termine el precio de fundador de ${mxnCurso(PRECIOS.fundador)}`
                 : "para que cierren las inscripciones de la cohorte 1"}
@@ -593,7 +623,13 @@ export default async function CursoPage() {
           )}
 
           <div className="mt-10">
-            <BotonComprar precio={pv.precio} abierto={abierto} className={claseCtaDorado}>
+            <BotonComprar
+              precio={pv.precio}
+              abierto={abierto}
+              yaAbrio={yaAbrio}
+              textoTaller="Apartar mi lugar gratis"
+              className={claseCtaDorado}
+            >
               {ctaPrimario}
             </BotonComprar>
           </div>

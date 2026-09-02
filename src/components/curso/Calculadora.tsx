@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { trackCtaClick } from "@/lib/analytics";
+import { WHATSAPP_CURSO } from "@/lib/curso";
 
 /**
  * Calculadora de reservas perdidas.
@@ -66,6 +67,14 @@ export function Calculadora() {
   const [cots, setCots] = useState(12);
   const [rapido, setRapido] = useState(40);
   const [ticket, setTicket] = useState(2500);
+  /* Quien llega desde W1 o desde /gracias YA está registrado: ofrecerle
+     "reservar mi lugar gratis" es mandarlo a hacer algo que ya hizo. El link
+     de esos dos sitios trae ?ref=registrado. */
+  const [registrado, setRegistrado] = useState(false);
+
+  useEffect(() => {
+    setRegistrado(new URLSearchParams(window.location.search).get("ref") === "registrado");
+  }, []);
 
   const r = useMemo(() => {
     const cotsMes = cots * SEMANAS_MES;
@@ -73,6 +82,18 @@ export function Calculadora() {
     const ventas = tarde * BRECHA;
     return { cotsMes, tarde, ventas, dinero: ventas * ticket };
   }, [cots, rapido, ticket]);
+
+  /* El número en el <title>: la captura de pantalla que van a compartir sale
+     con la cifra, y la pestaña también la lleva. */
+  useEffect(() => {
+    document.title = `Se me van ${pesos(r.dinero)} al mes · Calculadora de reservas perdidas`;
+  }, [r.dinero]);
+
+  const compartir =
+    "https://wa.me/524891251458?text=" +
+    encodeURIComponent(
+      `Hola Manolo, saqué mi número en tu calculadora: se me van ${pesos(r.dinero)} al mes por contestar tarde.`
+    );
 
   return (
     <div className="grid gap-7 md:grid-cols-2 md:gap-9">
@@ -162,13 +183,41 @@ export function Calculadora() {
           </div>
         </dl>
 
+        {/* El resultado se convierte en conversación: el número llega a tu
+            WhatsApp y además es material real para la noche 2. */}
         <a
-          href="/curso/webinar#registro"
-          onClick={() => trackCtaClick("curso_lead", "calculadora")}
+          href={compartir}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackCtaClick("curso_lead", "calculadora_whatsapp")}
           className="mt-7 block bg-azul px-6 py-4 text-center font-dm text-base font-semibold text-tinta transition hover:bg-azul-vivo active:scale-[0.98]"
         >
-          Reservar mi lugar gratis
+          Mandarme mi número por WhatsApp
         </a>
+
+        {registrado ? (
+          <p className="mt-4 text-center font-dm text-[15px] leading-relaxed text-hielo/70">
+            Tu lugar en el taller ya está apartado. Llega el martes con este número
+            a la mano:{" "}
+            <a
+              href={WHATSAPP_CURSO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-azul-vivo underline"
+            >
+              cualquier duda, escríbeme
+            </a>
+            .
+          </p>
+        ) : (
+          <a
+            href="/curso/webinar#registro"
+            onClick={() => trackCtaClick("curso_lead", "calculadora")}
+            className="mt-3 block border border-azul/50 px-6 py-4 text-center font-dm text-base font-semibold text-azul-vivo transition hover:bg-azul-humo active:scale-[0.98]"
+          >
+            Reservar mi lugar en el taller gratis
+          </a>
+        )}
 
         <p className="mt-4 font-dm text-[13px] leading-relaxed text-hielo/50">
           El supuesto: contestar en menos de 10 minutos te hace cerrar{" "}
