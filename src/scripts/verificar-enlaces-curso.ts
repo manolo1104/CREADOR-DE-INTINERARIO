@@ -30,7 +30,9 @@ async function main() {
   const urls = new Map<string, string[]>();
   for (const c of [...CORREOS_PROSPECTO, ...CORREOS_ALUMNO]) {
     const { html } = c.build(cx);
-    for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
+    const re = /(?:href|src)="([^"]+)"/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) !== null) {
       const u = m[1];
       if (u.startsWith("mailto:") || u.startsWith("#")) continue;
       if (!urls.has(u)) urls.set(u, []);
@@ -39,7 +41,7 @@ async function main() {
   }
 
   let malos = 0;
-  for (const [u, ids] of [...urls].sort()) {
+  for (const [u, ids] of Array.from(urls.entries()).sort()) {
     const abs = u.startsWith("http") ? u : HOST + u;
     const externo = !abs.includes("localhost") && !abs.includes("huasteca-potosina");
     if (externo) { console.log(`  ·   externo  ${abs.slice(0, 72)}  [${ids.join(",")}]`); continue; }

@@ -294,6 +294,30 @@ const info = {
   transporte:
     "El traslado redondo desde el hospedaje (Xilitla o Ciudad Valles) SÍ está incluido en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática. NO está incluido en: RZR (sale de la base en Xilitla), rappel en Tamul (punto de encuentro en el embarcadero; se coordina aparte con costo adicional) ni buceo en Media Luna (el cliente llega a Rioverde). Nunca digas 'todos los tours incluyen transporte'.",
   hotelHabitacionesUrl: HOTEL_HABITACIONES_URL,
+  // ── Servicios del Hotel Paraíso Encantado ────────────────────────────────
+  // Solo lo que está CONFIRMADO en el sitio del hotel y en el cerebro de su
+  // propio bot. Lo que aparece en una sola fuente o se contradice entre
+  // fuentes (horario de check-out, precio de la Jungla) NO se pone aquí: el
+  // bot de tours no puede prometer por el hotel lo que el hotel no sostiene.
+  hotelServicios: {
+    nombre: "Hotel Paraíso Encantado",
+    ubicacion: "En La Conchita, Xilitla, a 400 m (5 min caminando) del Jardín Surrealista de Edward James — Las Pozas.",
+    servicios: [
+      "Alberca al aire libre para todos los huéspedes (9:00 AM a 9:00 PM)",
+      "Restaurante El Papán Huasteco dentro del hotel (8:00 AM a 8:00 PM), cocina huasteca: zacahuil, bocoles, café de olla",
+      "WiFi en todo el hotel",
+      "Estacionamiento privado gratuito",
+      "Aire acondicionado y agua caliente en las habitaciones",
+      "Terraza con vista a la sierra y a la selva",
+    ],
+    spaPrivado: "4 de las 13 suites tienen piscina spa o tina de hidromasaje PRIVADA (no compartida). De las que ofrecemos en los paquetes, la Jungla es la que la trae.",
+    // ⚠️ El desayuno del hotel NO va incluido en la tarifa de la habitación.
+    // El desayuno que sí incluyen los tours es una parada en El Taco Loco,
+    // camino a los destinos — no es en el hotel y solo aplica los días de tour.
+    desayuno: "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El RZR, el rappel y el buceo no incluyen ningún alimento.",
+    mascotas: "No se admiten mascotas.",
+    fumar: "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera.",
+  },
   mejorTemporada:
     "La temporada seca (noviembre a abril) suele tener el agua más turquesa y los caminos en mejores condiciones. En lluvias (jul–sep) algunos ríos crecen y ciertas salidas (rafting) dependen del nivel del agua.",
   salida: empresa.salida,

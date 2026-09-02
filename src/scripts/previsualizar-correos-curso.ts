@@ -124,10 +124,10 @@ async function main() {
   });
 
   console.log(`\n${piezas.length} correos que puede recibir una persona:\n`);
-  for (const [i, p] of piezas.entries()) {
+  piezas.forEach((p, i) => {
     console.log(`  ${String(i + 1).padStart(2)}. ${p.id.padEnd(4)} ${p.subject}`);
     console.log(`      ${cuandoDe(p.id)}`);
-  }
+  });
 
   if (soloListar) {
     console.log("\n(--listar: no se mandó ninguno)\n");
@@ -136,7 +136,8 @@ async function main() {
 
   console.log(`\nMandando a ${destino}...\n`);
   let bien = 0;
-  for (const [i, p] of piezas.entries()) {
+  for (let i = 0; i < piezas.length; i++) {
+    const p = piezas[i];
     const n = i + 1;
     try {
       await sendBrevoEmail({
