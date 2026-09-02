@@ -14,6 +14,16 @@
 // ── Cifras de prueba (confirmadas por Manolo el 1 sep 2026: son reales y las
 //    respalda en vivo en el curso) ──────────────────────────────────────────
 export const CIFRAS = {
+  // Leídos del panel /admin/ingresos el 2 de septiembre de 2026. Son el
+  // acumulado de TODA la operación (may–sep 2026, 47 reservas), no de los
+  // primeros 4 meses: por eso viven aparte y no se mezclan con la cifra de
+  // abajo. "Vendido" es el valor total de las reservas, cobrado o no;
+  // "cobrado" es el dinero que ya entró.
+  vendidoTotal: 527_900,
+  cobradoTotal: 439_800,
+  reservasTotal: 47,
+  medidoEn: "septiembre de 2026",
+
   toursVentas4m: 500_000, // MXN, ventas de Huasteca Potosina Tours, primeros 4 meses
   hotelReservas4m: 300_000, // MXN, reservas del hotel, primeros 4 meses
   publicidadPagada: 0,

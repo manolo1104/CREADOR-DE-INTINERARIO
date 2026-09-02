@@ -68,7 +68,7 @@ export default function BienvenidoPage() {
               href={LINKS.comunidadWhatsApp}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block bg-[#25d366] px-8 py-4 text-center font-dm text-base font-semibold uppercase tracking-[2px] text-hielo transition-transform duration-150 ease-out active:scale-[0.98]"
+              className="inline-block bg-[#25d366] px-8 py-4 text-center font-dm text-base font-semibold uppercase tracking-[2px] text-tinta transition-transform duration-150 ease-out active:scale-[0.98]"
             >
               Entrar a la comunidad
             </a>

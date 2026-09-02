@@ -90,8 +90,10 @@ export default function WebinarPage() {
                 />
               </div>
               <figcaption className="mt-3 font-dm text-sm text-hielo/60">
-                La noche 1 abro este panel en vivo: {mxnCurso(CIFRAS.toursVentas4m)} en
-                ventas en 4 meses, con {mxnCurso(CIFRAS.publicidadPagada)} de publicidad.
+                La noche 1 abro este panel en vivo. Hoy va en{" "}
+                <span className="font-mono text-hielo">{mxnCurso(CIFRAS.vendidoTotal)}</span>{" "}
+                vendidos en {CIFRAS.reservasTotal} reservas, con{" "}
+                {mxnCurso(CIFRAS.publicidadPagada)} de publicidad.
               </figcaption>
             </figure>
 

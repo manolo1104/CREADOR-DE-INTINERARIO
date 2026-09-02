@@ -37,6 +37,13 @@ const config: Config = {
         azul: "#3B8CFF",
         "azul-vivo": "#63A6FF",
         "azul-humo": "#12233F",
+        // Para los bloques BLANCOS que rompen el negro. El azul de la piel
+        // oscura (#63A6FF) sobre blanco da 2.3:1 y reprueba: sobre claro se
+        // usa este, que da 6.6:1.
+        blanco: "#FFFFFF",
+        "azul-hondo": "#0F56E0",
+        "linea-clara": "#DCE3EC",
+        grafito: "#3A4655",
       },
       fontFamily: {
         cormorant: ["var(--font-cormorant)", "serif"],
