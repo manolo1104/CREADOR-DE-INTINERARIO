@@ -40,14 +40,33 @@ const HORA_CDMX = (ms: string) => new Date(ms).getTime();
 const T = {
   // El taller: 8, 9 y 10 de septiembre a las 7 pm
   w2: HORA_CDMX("2026-09-08T09:00:00-06:00"), // mañana de la noche 1
-  w3: HORA_CDMX("2026-09-08T18:30:00-06:00"), // 30 min antes de la noche 1
+  // 🔴 Estos tres decían "en 30 minutos" y salían a las 18:30. NO SE PUEDE:
+  // el cron de GitHub está programado cada hora y en 29 corridas medidas
+  // (29 ago–3 sep) NINGUNA llegó dentro de esa hora — media real 4.08 h,
+  // máximo 7.79 h. Un correo disparado a las 18:30 llegaba a las 20:33, con la
+  // sesión ya terminada, prometiendo que empezaba en media hora.
+  //
+  // Ahora salen a las 14:00 y el texto dice la HORA, no una cuenta atrás: da
+  // igual si llega a las 15:00 o a las 21:00, nunca miente. El recordatorio de
+  // verdad, el de "empezamos ya", va por el grupo de WhatsApp, que es
+  // instantáneo y no depende de nadie.
+  w3: HORA_CDMX("2026-09-08T14:00:00-06:00"), // tarde de la noche 1
   w4: HORA_CDMX("2026-09-09T09:00:00-06:00"), // grabación N1 + aviso noche 2
-  w5: HORA_CDMX("2026-09-09T18:30:00-06:00"), // 30 min antes de la noche 2
+  w5: HORA_CDMX("2026-09-09T14:00:00-06:00"), // tarde de la noche 2
   w6: HORA_CDMX("2026-09-10T09:00:00-06:00"), // grabación N2 + aviso noche 3
-  w7: HORA_CDMX("2026-09-10T18:30:00-06:00"), // 30 min antes de la noche 3
+  w7: HORA_CDMX("2026-09-10T14:00:00-06:00"), // tarde de la noche 3
   // El cierre, ya con la oferta presentada
   d1: HORA_CDMX("2026-09-10T22:00:00-06:00"), // al salir de la noche 3
   d2: HORA_CDMX("2026-09-11T09:00:00-06:00"),
+  // 🔴 A2..A5 iban a "createdAt + 1, 2, 3 y 4 días" Y "después de que abra la
+  // oferta". Para quien se registró el 3, esas cuatro condiciones se cumplían
+  // TODAS la noche del 10, y el cron las escupía una cada ~4 h: seis correos el
+  // día 11. Ahora cada uno tiene su hora fija dentro de la ventana de cierre,
+  // así que el reparto no depende de cuándo entró la persona.
+  a2: HORA_CDMX("2026-09-11T13:00:00-06:00"),
+  a3: HORA_CDMX("2026-09-12T10:00:00-06:00"),
+  a4: HORA_CDMX("2026-09-12T15:00:00-06:00"),
+  a5: HORA_CDMX("2026-09-13T09:00:00-06:00"),
   a6: HORA_CDMX("2026-09-11T18:00:00-06:00"), // mañana sube el precio
   a7: HORA_CDMX("2026-09-12T18:00:00-06:00"), // últimas 6 horas
   d3: HORA_CDMX("2026-09-13T12:00:00-06:00"),
@@ -282,6 +301,22 @@ const SEC_TALLER: CorreoCurso[] = [
 
 // ── Secuencia A — Nurture ──────────────────────────────────────────────────
 
+/**
+ * 🔴 La secuencia A NO se le manda a quien vino por el taller.
+ *
+ * A2..A5 se disparan a los 1, 2, 3 y 4 días del registro **y** después de que
+ * abre la oferta (10 sep 20:00). Para alguien que se registró el 3, esas cuatro
+ * condiciones se cumplen TODAS a la vez esa noche — y como el cron manda uno
+ * por corrida cada ~4 h, recibía A2, A3, A4, A5, A6, D1 y D2: siete correos en
+ * 36 horas. Eso no vende, da de baja.
+ *
+ * Y no hace falta: quien fue al taller ya recibió ocho correos (W0–W7), me vio
+ * construir tres noches y escuchó la oferta en vivo. Lo que le toca es el
+ * cierre (D1–D4), no el nurture de quien nunca vino. La A se queda para quien
+ * pidió el programa y no se registró.
+ */
+const soloNoTaller = (cx: ContextoCorreo) => !cx.lead.webinar;
+
 const A: CorreoCurso[] = [
   {
     id: "A1",
@@ -315,9 +350,14 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A2",
-    due: ({ lead, ahora }) =>
-      ahora.getTime() >= lead.createdAt.getTime() + 1 * DIA &&
-      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
+    // Hora fija, no "N días desde que se registró": si no, se amontonan.
+    // Y sigue exigiendo que lleve al menos un día dentro, para no dispararle
+    // toda la secuencia a quien entra el último día.
+    due: (cx) =>
+      soloNoTaller(cx) &&
+      cx.ahora.getTime() >= T.a2 &&
+      cx.ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
+      cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
     build: (cx) => ({
       subject: "$500,000 en 4 meses sin pagar un solo anuncio",
       html: shellCurso({
@@ -338,9 +378,14 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A3",
-    due: ({ lead, ahora }) =>
-      ahora.getTime() >= lead.createdAt.getTime() + 2 * DIA &&
-      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
+    // Hora fija, no "N días desde que se registró": si no, se amontonan.
+    // Y sigue exigiendo que lleve al menos un día dentro, para no dispararle
+    // toda la secuencia a quien entra el último día.
+    due: (cx) =>
+      soloNoTaller(cx) &&
+      cx.ahora.getTime() >= T.a3 &&
+      cx.ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
+      cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
     build: (cx) => ({
       subject: "Mi agente cerró una reserva mientras yo manejaba",
       html: shellCurso({
@@ -360,9 +405,14 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A4",
-    due: ({ lead, ahora }) =>
-      ahora.getTime() >= lead.createdAt.getTime() + 3 * DIA &&
-      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
+    // Hora fija, no "N días desde que se registró": si no, se amontonan.
+    // Y sigue exigiendo que lleve al menos un día dentro, para no dispararle
+    // toda la secuencia a quien entra el último día.
+    due: (cx) =>
+      soloNoTaller(cx) &&
+      cx.ahora.getTime() >= T.a4 &&
+      cx.ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
+      cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
     build: (cx) => ({
       subject: "“Manolo, es que yo no sé programar”",
       html: shellCurso({
@@ -383,9 +433,14 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A5",
-    due: ({ lead, ahora }) =>
-      ahora.getTime() >= lead.createdAt.getTime() + 4 * DIA &&
-      ahora.getTime() > FECHAS.aperturaOferta.getTime(),
+    // Hora fija, no "N días desde que se registró": si no, se amontonan.
+    // Y sigue exigiendo que lleve al menos un día dentro, para no dispararle
+    // toda la secuencia a quien entra el último día.
+    due: (cx) =>
+      soloNoTaller(cx) &&
+      cx.ahora.getTime() >= T.a5 &&
+      cx.ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
+      cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
     build: (cx) => ({
       subject: "Lo que te cuesta NO tener este sistema",
       html: shellCurso({
@@ -407,10 +462,11 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A6",
-    due: ({ lead, ahora }) =>
-      ahora.getTime() >= T.a6 &&
-      ahora.getTime() <= FECHAS.finFundador.getTime() &&
-      lead.createdAt.getTime() < HORA_CDMX("2026-09-11T12:00:00-06:00"),
+    due: (cx) =>
+      soloNoTaller(cx) &&
+      cx.ahora.getTime() >= T.a6 &&
+      cx.ahora.getTime() <= FECHAS.finFundador.getTime() &&
+      cx.lead.createdAt.getTime() < HORA_CDMX("2026-09-11T12:00:00-06:00"),
     build: (cx) => ({
       subject: "Mañana se acaba el precio de fundador",
       html: shellCurso({
@@ -430,10 +486,11 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A7",
-    due: ({ lead, ahora }) =>
-      ahora.getTime() >= T.a7 &&
-      ahora.getTime() <= FECHAS.finFundador.getTime() &&
-      lead.createdAt.getTime() < HORA_CDMX("2026-09-12T12:00:00-06:00"),
+    due: (cx) =>
+      soloNoTaller(cx) &&
+      cx.ahora.getTime() >= T.a7 &&
+      cx.ahora.getTime() <= FECHAS.finFundador.getTime() &&
+      cx.lead.createdAt.getTime() < HORA_CDMX("2026-09-12T12:00:00-06:00"),
     build: (cx) => ({
       subject: "Última llamada: 6 horas",
       html: shellCurso({
@@ -549,12 +606,12 @@ function avisoNoche(id: string, n: 2 | 3, cuando: number): CorreoCurso {
     due: ({ lead, ahora }) =>
       lead.webinar && ahora.getTime() >= cuando && lead.createdAt.getTime() < cuando,
     build: (cx) => ({
-      subject: n === 3 ? "Última noche, en 30 minutos" : "Noche 2 en 30 minutos",
+      subject: n === 3 ? "Última noche: hoy a las 7" : "Noche 2: hoy a las 7",
       html: shellCurso({
         preheader: `${noche.titulo} · 7:00 pm hora del centro`,
         eyebrow: `Noche ${n}`,
-        h1a: n === 3 ? "Última noche," : "Noche 2,",
-        h1b: "en 30 minutos",
+        h1a: n === 3 ? "Última noche:" : "Noche 2:",
+        h1b: "hoy a las 7",
         cuerpo: [
           parrafo(
             n === 3
@@ -714,14 +771,14 @@ const W: CorreoCurso[] = [
     due: ({ lead, ahora }) =>
       lead.webinar && ahora.getTime() >= T.w3 && lead.createdAt.getTime() < T.w3,
     build: (cx) => ({
-      subject: "empezamos en 30 minutos",
+      subject: "Es hoy: noche 1 a las 7",
       html: shellCurso({
-        preheader: "La noche 1 arranca a las 7:00 pm",
-        eyebrow: "En 30 minutos",
-        h1a: "Empezamos",
-        h1b: "en media hora",
+        preheader: "La noche 1 arranca a las 7:00 pm hora del centro",
+        eyebrow: "Hoy",
+        h1a: "Noche 1,",
+        h1b: "hoy a las 7",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} En media hora. Conéctate unos minutos antes.`),
+          parrafo(`${saludo(cx.lead)} Es hoy a las 7:00 pm, hora del centro. Conéctate unos minutos antes; empiezo puntual y la primera media hora es la que arma el mapa.`),
           botonSala("Entrar al taller"),
         ].join(""),
         paraBaja: cx.lead.email,
