@@ -10,6 +10,9 @@ export const runtime = "nodejs";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/** A dónde llega el aviso de cada registro. El buzón que Manolo sí mira. */
+const AVISO_A = process.env.CURSO_AVISO_EMAIL || "daftpunkmanolo@gmail.com";
+
 /**
  * POST /api/curso/lead — captura de lead del curso "Turismo con IA".
  *
@@ -131,6 +134,50 @@ export async function POST(req: NextRequest) {
           data: { correosEnviados: { set: lead.correosEnviados.filter((c) => c !== idCorreo) } },
         }).catch(() => {});
       }
+    }
+
+    // ── El aviso a Manolo ────────────────────────────────────────────────
+    //
+    // Sin esto, un registro sólo dejaba rastro en `console.log`, o sea en los
+    // logs de Railway. Nadie mira los logs de Railway durante una campaña.
+    //
+    // Va DESPUÉS de responderle a la persona en el orden de importancia, y con
+    // su propio try/catch: si el aviso falla, el registro sigue siendo válido.
+    // Nunca al revés.
+    try {
+      const cuando = new Date().toLocaleString("es-MX", {
+        timeZone: "America/Mexico_City",
+        weekday: "long", day: "numeric", month: "long",
+        hour: "numeric", minute: "2-digit", hour12: true,
+      });
+      const total = await prisma.cursoLead.count({
+        where: esWebinar ? { webinar: true, status: "activo" } : { status: "activo" },
+      });
+      const fila = (k: string, v: string | null) =>
+        v ? `<tr><td style="padding:3px 14px 3px 0;color:#777">${k}</td><td style="padding:3px 0"><strong>${v}</strong></td></tr>` : "";
+      await sendBrevoEmail({
+        to: [{ email: AVISO_A }],
+        subject: esWebinar
+          ? `🎓 ${nombre ?? email} se registró al taller (${total})`
+          : `📄 ${nombre ?? email} pidió el programa`,
+        htmlContent:
+          `<div style="font-family:system-ui,-apple-system,Arial,sans-serif;font-size:15px;color:#111">` +
+          `<p style="margin:0 0 12px"><strong>${esWebinar ? "Registro al taller" : "Pidió el programa"}</strong> · ${cuando}</p>` +
+          `<table style="border-collapse:collapse;font-size:14px">` +
+          fila("Nombre", nombre) + fila("Correo", email) + fila("WhatsApp", whatsapp) +
+          fila("Negocio", tipoNegocio) + fila("Ciudad", ciudad) +
+          `</table>` +
+          (whatsapp
+            ? `<p style="margin:14px 0 0"><a href="https://wa.me/${whatsapp.replace(/\D/g, "")}" style="color:#0F56E0">Escribirle por WhatsApp</a></p>`
+            : "") +
+          `<p style="margin:16px 0 0;color:#777;font-size:13px">Van ${total} ${esWebinar ? "registrados al taller" : "leads"}. Lista completa en /admin/curso.</p>` +
+          `</div>`,
+        senderName: "Aviso · Turismo con IA",
+      });
+    } catch (e) {
+      logger.error("curso_lead_aviso_failed", {
+        reason: e instanceof Error ? e.message : "unknown",
+      });
     }
 
     return NextResponse.json({ ok: true });
