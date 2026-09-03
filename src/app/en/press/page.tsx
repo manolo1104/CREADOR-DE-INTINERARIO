@@ -250,7 +250,7 @@ export default function PressPage() {
             <h3 className="font-dm text-[11px] tracking-[2.5px] uppercase text-verde-selva mb-4">Terms, in plain language</h3>
             <ul className="flex flex-col gap-3 font-dm text-sm text-negro/65 leading-relaxed">
               <li><strong className="text-negro/85">Free for editorial use.</strong> Print or online, in any outlet.</li>
-              <li><strong className="text-negro/85">Credit &ldquo;Tours Huasteca Potosina&rdquo; with a link</strong> to huasteca-potosina.com. That is the whole fee.</li>
+              <li><strong className="text-negro/85">Credit &ldquo;Tours Huasteca Potosina&rdquo; with a link</strong> to www.huasteca-potosina.com. That is the whole fee.</li>
               <li><strong className="text-negro/85">Not for advertising</strong> or resale without written permission.</li>
               <li><strong className="text-negro/85">Higher resolution on request.</strong> What is on this page is sized for the web; write to us and we will send originals.</li>
               <li><strong className="text-negro/85">Shooting on site?</strong> We can arrange access, a local guide and transport. Tell us your dates.</li>

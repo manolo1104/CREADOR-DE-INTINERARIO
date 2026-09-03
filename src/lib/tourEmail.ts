@@ -1136,7 +1136,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
 
         <tr><td style="background:#f4edd8;padding:18px 32px;text-align:center">
           <p style="font-family:Arial;font-size:11px;color:#8a7a5a;margin:0">
-            <a href="${base}" style="color:#8a7a5a;text-decoration:none">huasteca-potosina.com</a> · Xilitla, San Luis Potosí
+            <a href="${base}" style="color:#8a7a5a;text-decoration:none">www.huasteca-potosina.com</a> · Xilitla, San Luis Potosí
           </p>
         </td></tr>
 

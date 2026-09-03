@@ -537,11 +537,27 @@ export function FormLead({ webinar = false }: { webinar?: boolean }) {
           <span className="font-dm text-sm font-medium text-hielo">Tu correo</span>
           <input required type="email" name="email" autoComplete="email" inputMode="email" className={input} />
         </label>
+        {/* En el taller el WhatsApp es OBLIGATORIO y en la petición del programa
+            no. No es capricho: la liga de cada noche y el aviso de "empezamos en
+            30 minutos" se mandan por ahí. Un correo en Promociones lo abre el
+            10-15 %; un WhatsApp, casi todos. Pedirlo cuesta algunos registros y
+            gana asistencia, que es lo que decide la noche 3. */}
         <label className="block">
           <span className="font-dm text-sm font-medium text-hielo">
-            Tu WhatsApp <span className="font-normal text-hielo/50">(opcional)</span>
+            Tu WhatsApp{" "}
+            <span className="font-normal text-hielo/50">
+              {webinar ? "(ahí te mando la liga)" : "(opcional)"}
+            </span>
           </span>
-          <input name="whatsapp" autoComplete="tel" inputMode="tel" className={input} />
+          <input
+            name="whatsapp"
+            autoComplete="tel"
+            inputMode="tel"
+            required={webinar}
+            defaultValue={webinar ? "+52 " : undefined}
+            placeholder={webinar ? "+52 55 1234 5678" : undefined}
+            className={input}
+          />
         </label>
         <label className="block">
           <span className="font-dm text-sm font-medium text-hielo">Tu negocio</span>

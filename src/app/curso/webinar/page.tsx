@@ -3,6 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { CIFRAS, NOCHES_TEXTO, TALLER_NOCHES, fechaLarga, horaCorta, mxnCurso } from "@/lib/curso";
 import { FormLead } from "@/components/curso/CursoCliente";
+import { LoopSetup } from "@/components/curso/LoopSetup";
 
 export const metadata: Metadata = {
   title: "Taller gratuito de 3 noches: Turismo con IA en vivo",
@@ -66,7 +67,7 @@ export default async function WebinarPage() {
         <div className="mt-8">
           <BotonRegistro className="w-full sm:w-auto">Apartar mi lugar gratis</BotonRegistro>
           <p className="mt-3 font-dm text-sm text-hielo/55">
-            Sin costo y sin tarjeta. Sólo tu nombre y tu correo.
+            Sin costo y sin tarjeta. Nombre, correo y WhatsApp.
             {registrados >= 8 && (
               <> Ya somos <span className="font-mono text-azul-vivo">{registrados}</span> apartados.</>
             )}
@@ -156,9 +157,10 @@ export default async function WebinarPage() {
 
             <div className="mt-8 border border-linea bg-tinta-2 p-5">
               <p className="font-dm text-sm leading-relaxed text-hielo/75">
-                <strong className="text-hielo">La grabación dura 24 horas.</strong>{" "}
-                Los workbooks van protegidos con una contraseña que sólo digo en vivo. Si
-                faltas, te quedas sin él.
+                <strong className="text-hielo">Sólo recibe la liga quien está registrado.</strong>{" "}
+                No la comparto en público y la sala tiene tope de lugares. La grabación
+                dura 24 horas, y los workbooks van protegidos con una contraseña que sólo
+                digo en vivo: si faltas, te quedas sin él.
               </p>
             </div>
           </div>
@@ -201,38 +203,98 @@ export default async function WebinarPage() {
         </div>
 
         {/* ══ POR QUÉ ESCUCHARME ══ La página no decía en ningún lado quién soy.
-            Cuatro líneas y las credenciales que importan a este gremio. */}
+            La foto no es decoración: es la credencial, con la fecha dentro, y
+            respalda el "recién egresado" sin que haya que pedir que me crean. */}
         <div className="mt-14 border-t border-linea pt-10">
           <p className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-azul-vivo">
             Por qué escucharme
           </p>
-          <h2 className="mt-3 font-sora text-3xl font-semibold text-hielo md:text-4xl">
-            Estudié turismo, no computación.
+          <h2 className="mt-3 max-w-[22ch] font-sora text-3xl font-semibold leading-tight text-hielo md:text-4xl">
+            No estudié computación. Estudié cómo se transforman los negocios.
           </h2>
-          <div className="mt-5 space-y-4 font-dm text-lg leading-relaxed text-hielo/80">
-            <p>
-              Soy Manolo. Llevo <strong className="text-hielo">Huasteca Potosina Tours</strong>,
-              un hotel en la Huasteca y <strong className="text-hielo">Kora</strong>, una
-              plataforma para hoteles pequeños.
-            </p>
-            <p>
-              Arranqué los tours sin un peso de publicidad. En vez de pagar anuncios,
-              construí con IA la página, el agente que contesta el WhatsApp y las
-              automatizaciones de cobro y seguimiento.
-            </p>
-            <p>
-              En los primeros 4 meses: más de {mxnCurso(CIFRAS.toursVentas4m)} en ventas de
-              tours y más de {mxnCurso(CIFRAS.hotelReservas4m)} en reservas del hotel. Cero
-              publicidad pagada; el único gasto fijo es la suscripción de IA,{" "}
-              {CIFRAS.gastoIa}.
-            </p>
-            <p className="border-l-2 border-azul pl-5 font-sora text-2xl italic leading-snug text-hielo">
-              “No te voy a enseñar teoría de IA. Te voy a enseñar lo que uso todos los días.”
-            </p>
+
+          <div className="mt-8 grid gap-8 md:grid-cols-[5fr_4fr] md:gap-12">
+            <div className="space-y-4 font-dm text-lg leading-relaxed text-hielo/80">
+              <p>
+                Soy Manolo Covarrubias. Acabo de egresar de la licenciatura en{" "}
+                <strong className="text-hielo">
+                  Estrategia y Transformación de Negocios
+                </strong>{" "}
+                del Tec de Monterrey, campus Ciudad de México.
+              </p>
+              <p>
+                Empecé hace unos meses automatizando el negocio de mis papás. Funcionó, así
+                que emprendí lo mío: <strong className="text-hielo">Huasteca Potosina
+                Tours</strong>. En cuatro meses vendí más de{" "}
+                {mxnCurso(CIFRAS.toursVentas4m)} en tours, sin pagar un peso de publicidad.
+              </p>
+              <p>
+                Y no fue sólo la página y el panel. Fue el sistema completo, y esa es la
+                parte que casi nadie te enseña:
+              </p>
+              <ul className="space-y-2.5 border-l-2 border-azul pl-5 text-base">
+                {[
+                  "Aparecer primero en Google cuando alguien busca lo que tú vendes.",
+                  "Ver qué páginas traen el tráfico que de verdad compra, y cuáles no.",
+                  "Las piezas que convierten a un curioso en una reserva pagada.",
+                  "El embudo de ventas entero, diseñado y armado pieza por pieza.",
+                ].map((t) => (
+                  <li key={t} className="flex items-start gap-3 text-hielo/85">
+                    <svg
+                      aria-hidden="true"
+                      className="mt-1.5 h-4 w-4 shrink-0 text-azul-vivo"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <p>
+                Todo con IA, construido por mí.{" "}
+                <strong className="text-hielo">
+                  Y todo eso es lo que vas a construir tú en el curso.
+                </strong>
+              </p>
+            </div>
+
+            <figure className="md:pt-1">
+              <div className="relative aspect-[5/4] overflow-hidden border border-linea bg-tinta-2 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)]">
+                <Image
+                  src="/imagenes/curso/manolo-titulo.jpg"
+                  alt="Manolo Covarrubias firmando su título de Licenciado en Estrategia y Transformación de Negocios en el Tec de Monterrey, campus Ciudad de México, junio de 2026"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 45vw"
+                  className="object-cover object-top"
+                />
+              </div>
+              <figcaption className="mt-3 font-dm text-sm leading-relaxed text-hielo/60">
+                Junio de 2026, campus Ciudad de México. Firmando el título de{" "}
+                <span className="text-hielo/80">
+                  Licenciado en Estrategia y Transformación de Negocios
+                </span>
+                .
+              </figcaption>
+            </figure>
+
+            {/* El papel arriba, el trabajo abajo. La cita es el pie del bucle
+                porque describe literalmente lo que se está viendo. */}
+            <figure className="md:col-start-2">
+              <div className="relative aspect-[9/16] max-h-[420px] overflow-hidden border border-linea bg-tinta-2">
+                <LoopSetup />
+              </div>
+              <figcaption className="mt-4 border-l-2 border-azul pl-5 font-sora text-2xl italic leading-snug text-hielo">
+                “No te voy a enseñar teoría de IA. Te voy a enseñar lo que uso
+                todos los días.”
+              </figcaption>
+            </figure>
           </div>
-          <p className="mt-5 font-dm text-sm leading-relaxed text-hielo/50">
-            Son resultados propios, de mis negocios, y no garantizan resultados
-            individuales. Los abro en pantalla durante la noche 1.
+
+          <p className="mt-8 font-dm text-sm leading-relaxed text-hielo/50">
+            Las cifras son de mis negocios y no garantizan resultados individuales.
+            Abro el panel en pantalla durante la noche 1 para que las veas tú.
           </p>
         </div>
 
@@ -241,8 +303,10 @@ export default async function WebinarPage() {
             Reserva tu lugar
           </h2>
           <p className="mt-2 font-dm text-base text-hielo/70">
-            Es gratis y son tres noches. Te llega la confirmación por correo, con la liga y
-            el grupo de WhatsApp donde mando los workbooks.
+            Es gratis, son tres noches y no pide tarjeta.{" "}
+            <strong className="text-hielo">La liga de cada noche te la mando por WhatsApp</strong>{" "}
+            —ahí no se pierde—, y la confirmación por correo con el grupo donde subo los
+            workbooks.
           </p>
           <div className="mt-6">
             <FormLead webinar />

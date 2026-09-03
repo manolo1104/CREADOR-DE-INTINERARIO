@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import {
-  ANTES_DESPUES, BONOS, CIFRAS, DOLORES, FAQS, FECHAS, GARANTIA, INCLUYE,
+  ANTES_DESPUES, BONOS, CASOS, CIFRAS, DOLORES, FAQS, FECHAS, GARANTIA, INCLUYE,
   NO_ES_PARA, NOCHES_TEXTO, PARA_QUIEN, PRECIOS, PROGRAMA, TALLER_NOCHES,
   VALOR_BONOS, WHATSAPP_CURSO,
   fechaLarga, inscripcionesAbiertas, mxnCurso, ofertaAbierta, precioVigente,
@@ -160,6 +160,42 @@ export default async function CursoPage() {
         </div>
       </section>
 
+      {/* ══ CASOS ══ La cifra sola no prueba nada: lo que convence es el
+          "antes" y el "cómo". Son los dos negocios propios; tras la cohorte 1
+          se suman alumnos con esta misma estructura. */}
+      <section className="mx-auto max-w-5xl px-5 py-16 md:py-20">
+        <h2 className="max-w-[20ch] font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
+          Dos negocios, el mismo sistema.
+        </h2>
+        <div className="mt-10 grid gap-px bg-linea md:grid-cols-2">
+          {CASOS.map((c) => (
+            <article key={c.quien} className="bg-tinta p-6 sm:p-7 md:p-8">
+              <p className="font-sora text-[2.05rem] font-semibold leading-none text-azul-vivo sm:text-5xl md:text-6xl">
+                +{mxnCurso(c.cifra)}
+              </p>
+              <p className="mt-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-hielo/55">
+                {c.plazo} · {c.quien}
+              </p>
+              <dl className="mt-6 space-y-4 font-dm text-base leading-relaxed">
+                <div>
+                  <dt className="font-semibold text-hielo">Antes</dt>
+                  <dd className="mt-1 text-hielo/75">{c.antes}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-hielo">Cómo</dt>
+                  <dd className="mt-1 text-hielo/75">{c.como}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
+        <p className="mt-6 font-dm text-sm text-hielo/50">
+          Son mis propios negocios, no casos de alumnos: la cohorte 1 empieza el{" "}
+          {fechaLarga(FECHAS.inicioCohorte)}. Resultados propios; no garantizan
+          resultados individuales.
+        </p>
+      </section>
+
       {/* ══ DOLORES ══ En las palabras exactas del gremio */}
       <section className="mx-auto max-w-5xl px-5 py-16 md:py-24">
         <h2 className="max-w-[18ch] font-sora text-4xl font-semibold leading-tight text-hielo md:text-5xl">
@@ -179,6 +215,11 @@ export default async function CursoPage() {
           a las 11 de la noche, con las reservas en un Excel. Hasta que dejé de
           hacerlo a mano.
         </p>
+        {/* La absolución. Una lista de dolores sin esto se lee como un regaño y
+            la gente se va; con esto, se queda. */}
+        <p className="mt-5 max-w-[58ch] font-sora text-2xl leading-snug text-hielo">
+          No es culpa tuya: te vendieron herramientas sueltas, nunca un sistema.
+        </p>
       </section>
 
       {/* ══ HISTORIA / PRUEBA ══ Bloque oscuro: el sistema existe y se ve */}
@@ -190,9 +231,10 @@ export default async function CursoPage() {
           <div className="mt-8 grid gap-12 md:grid-cols-[3fr_2fr] md:gap-16">
             <div className="space-y-5 font-dm text-lg leading-relaxed text-hielo/85">
               <p>
-                Soy Manolo. Llevo <strong className="text-hielo">Huasteca Potosina Tours</strong>,
+                Soy Manolo Covarrubias. Llevo <strong className="text-hielo">Huasteca Potosina Tours</strong>,
                 un hotel en la Huasteca y Kora, una plataforma para hoteles.
-                Estudié turismo, no computación.
+                Estudié Estrategia y Transformación de Negocios en el Tec de
+                Monterrey: negocios, no ingeniería.
               </p>
               <p>
                 Arranqué los tours sin presupuesto de marketing. En vez de pagar
@@ -578,6 +620,12 @@ export default async function CursoPage() {
               </>
             )}
           </h2>
+          {/* Lo que mueve a un dueño de negocio no es el miedo a perder: es
+              saber que el de al lado ya lo hizo. */}
+          <p className="mx-auto mt-6 max-w-[52ch] font-sora text-2xl italic leading-snug text-hielo/90">
+            Hay agencias en tu misma región que ya cotizan a las 11 de la noche
+            sin estar despiertas. No son mejores que tú. Ya tienen el sistema.
+          </p>
           <p className="mx-auto mt-5 max-w-[46ch] font-dm text-xl leading-relaxed text-hielo/85">
             {yaAbrio
               ? "Yo ya lo hice dos veces: en los tours y en el hotel, sin anuncios. Ahora te toca a ti."

@@ -223,7 +223,7 @@
           "structure": "Problema → Solución → Promesa",
           "paragraph_1": "Identifica el dolor o duda del viajero. No empieces con 'Si estás...'",
           "paragraph_2": "Declara la solución. Incluye keyword secundaria. Añade frase de intención: 'Si buscas [keyword principal] de forma segura y sin perderte, aquí tienes la información actualizada para [año].'",
-          "paragraph_3": "Frase E-E-A-T obligatoria: 'En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana.'"
+          "paragraph_3": "Frase E-E-A-T obligatoria: 'En www.huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana.'"
         },
 
         "body_sections": {
@@ -283,7 +283,7 @@
     "voice_and_style": {
       "identity": "Plataforma regional de turismo de la Huasteca Potosina. Expertos locales que conocen cada cascada, ruta y operador de tours de la región.",
       "tone": "cercano, experto local, persuasivo sin hipérboles",
-      "eeat_signal": "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana.",
+      "eeat_signal": "En www.huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana.",
 
       "formatting_rules": {
         "paragraph_max_lines": 3,

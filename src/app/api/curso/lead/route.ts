@@ -50,6 +50,24 @@ export async function POST(req: NextRequest) {
     const esWebinar = body.webinar === true;
     const origen = esWebinar ? "webinar" : "landing";
 
+    // El WhatsApp es obligatorio SOLO para el taller: por ahí van la liga de
+    // cada noche y el aviso de "empezamos en 30 minutos". El `required` del
+    // formulario es una cortesía para quien lo llena; la regla vive aquí,
+    // porque el navegador se puede saltar.
+    //
+    // Se piden 10 dígitos como mínimo (México sin lada de país) y se guarda tal
+    // cual lo escribió la persona: normalizarlo a E.164 aquí rompería los
+    // números que ya están en la tabla.
+    if (esWebinar) {
+      const digitos = String(body.whatsapp ?? "").replace(/\D/g, "");
+      if (digitos.length < 10) {
+        return NextResponse.json(
+          { error: "Necesito tu WhatsApp: por ahí te mando la liga de cada noche." },
+          { status: 400 }
+        );
+      }
+    }
+
     if (body.consent !== true) {
       return NextResponse.json(
         { error: "Necesitamos tu autorización para enviarte la información." },

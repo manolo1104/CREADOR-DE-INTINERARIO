@@ -51,7 +51,7 @@ export default function TerminosPage() {
         <P>
           Estas condiciones rigen la contratación de los servicios turísticos que{" "}
           <strong className="text-verde-profundo">{CONTACTO.nombreComercial}</strong> ofrece a través de{" "}
-          <span className="text-verde-profundo">huasteca-potosina.com</span> y por sus canales de atención.
+          <span className="text-verde-profundo">www.huasteca-potosina.com</span> y por sus canales de atención.
           Al reservar un tour aceptas lo que se describe a continuación.
         </P>
 

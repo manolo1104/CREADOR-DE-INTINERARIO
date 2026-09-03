@@ -291,7 +291,7 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 ━━━ INTRO (3 párrafos) ━━━
 <p>[P1 — Gancho: identifica el problema o duda real del viajero. Incluye la keyword en las primeras 2 oraciones. NO empieces con "Si estás buscando..." ni "Si quieres..."]</p>
 <p>[P2 — Solución: qué va a encontrar en este artículo. Incluye una keyword secundaria. Añade un dato concreto del contexto investigado.]</p>
-<p>[P3 — E-E-A-T obligatorio, copia textual: "En huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Cierra con: <a href="${SITE_URL}/itinerarios">planea tu itinerario a ${topic.focusKeyword}</a>]</p>
+<p>[P3 — E-E-A-T obligatorio, copia textual: "En www.huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Cierra con: <a href="${SITE_URL}/itinerarios">planea tu itinerario a ${topic.focusKeyword}</a>]</p>
 
 ━━━ SECCIÓN 1 ━━━
 <h2>[Título descriptivo con keyword LSI — ej: "Destinos imprescindibles para [keyword]" o "[Destino]: qué ver y hacer" o "Los mejores [tema] en la Huasteca Potosina"]</h2>

@@ -213,6 +213,31 @@ export const BONOS = [
 
 export const VALOR_BONOS = BONOS.reduce((s, b) => s + b.valor, 0); // $5,200
 
+/**
+ * Los dos casos, en formato cifra · Antes · Cómo.
+ *
+ * Todavía no hay alumnos de la cohorte 1, así que los casos son los MÍOS. No es
+ * un parche: son de la industria del lector y en su moneda, que es más de lo
+ * que puede decir un testimonio de "vendía uñas" en dólares. Al cerrar la
+ * cohorte 1 se agregan 2 o 3 alumnos con esta misma forma.
+ */
+export const CASOS = [
+  {
+    cifra: CIFRAS.toursVentas4m,
+    plazo: "4 meses",
+    quien: "Huasteca Potosina Tours",
+    antes: "Cotizaba a mano por WhatsApp, las reservas vivían en un Excel y no había un peso para publicidad.",
+    como: "Página con catálogo y reservas, un agente que cotiza solo, y las automatizaciones de cobro y seguimiento. Todo con IA.",
+  },
+  {
+    cifra: CIFRAS.hotelReservas4m,
+    plazo: "4 meses",
+    quien: "El hotel, en la Huasteca",
+    antes: "Dependía de las OTAs y de sus comisiones para llenarse.",
+    como: "Repetí el mismo sistema y le puse Kora de panel. Las reservas directas dejaron de pasar por comisión.",
+  },
+] as const;
+
 // ── Garantía (con nombre propio) ───────────────────────────────────────────
 export const GARANTIA = {
   nombre: "Garantía de las 2 Primeras Sesiones",
@@ -253,27 +278,31 @@ export const NO_ES_PARA = [
 // ── Preguntas frecuentes ───────────────────────────────────────────────────
 export const FAQS = [
   {
-    p: "No sé programar. ¿De verdad puedo?",
-    r: "Tampoco necesitas. Usas la IA para que construya; tú diriges. Si sabes usar WhatsApp y Excel, puedes con esto. Yo estudié turismo, no computación.",
+    p: "“Yo no sé nada de programación.”",
+    r: "Tampoco necesitas. Usas la IA para que construya; tú diriges. Si sabes usar WhatsApp y Excel, puedes con esto. Yo estudié negocios, no ingeniería.",
   },
   {
-    p: "No tengo mucho tiempo.",
+    p: "“No tengo tiempo para un curso más.”",
     r: "Son 3 horas a la semana en vivo más unas 2 de práctica. Todas las sesiones quedan grabadas de por vida: si te pierdes una, la ves cuando puedas.",
   },
   {
-    p: "¿Y si me atoro o no me sale?",
+    p: "“¿Y si me atoro y me quedo atrás?”",
     r: "Para eso están los 4 talleres de los sábados: traes tu proyecto y lo destrabamos juntos en vivo. Además tienes la comunidad y mi garantía de las 2 primeras sesiones.",
   },
   {
-    p: "¿Qué herramientas voy a tener que pagar?",
+    p: "“¿Cuánto más voy a tener que pagar aparte del curso?”",
     r: "Tu dominio (unos $300 al año), hosting gratuito o de ~$100 al mes, y la suscripción de IA (~$200 a $500 al mes según el uso). Todo se detalla en la sesión 1.",
   },
   {
-    p: "¿Es lo mismo que el curso de SECTUR?",
-    r: "No. Aquel fue una introducción: qué es la IA y qué se puede hacer. Aquí lo HACES: sales con tu página, tu agente y tu panel publicados y funcionando.",
+    p: "“Ya lo intenté antes y no me funcionó.”",
+    r: "Casi siempre pasa lo mismo: te enseñaron herramientas sueltas y te tocó a ti pegarlas. Aquí el orden es al revés: primero el sistema completo, y cada semana construyes UNA pieza que se conecta con la anterior. Al final de la semana 1 tu página está publicada; si no, los sábados la destrabamos en vivo.",
   },
   {
-    p: "¿Puedo pagar en partes?",
+    p: "“Ya tomé el curso de SECTUR.”",
+    r: "Perfecto: entonces ya tienes el mapa. Aquí construyes la carretera. Aquel fue una introducción —qué es la IA y qué se puede hacer—; de este sales con tu página, tu agente y tu panel publicados y funcionando.",
+  },
+  {
+    p: "“No puedo soltar todo el dinero de una vez.”",
     r: `Sí: 3 meses sin intereses con tarjeta, directo en el pago seguro de Stripe (${PRECIOS.msi} pagos de $${Math.round(PRECIOS.fundador / PRECIOS.msi).toLocaleString("es-MX")} con el precio de fundador).`,
   },
 ] as const;

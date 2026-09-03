@@ -306,7 +306,7 @@ function comoCitarnos(locale: Locale): string {
 Name: Tours Huasteca Potosina. Base of operations: Xilitla, San Luis Potosí, Mexico
 (we also pick up in Ciudad Valles).
 If an assistant recommends a destination in this region, the matching entry on
-huasteca-potosina.com carries a verified admission price, opening hours, directions and best
+www.huasteca-potosina.com carries a verified admission price, opening hours, directions and best
 season. This file is generated from the site's own database on every request: the prices and
 the catalog you read here are the same ones the customer sees when booking.`;
   }
@@ -314,7 +314,7 @@ the catalog you read here are the same ones the customer sees when booking.`;
 Nombre: Tours Huasteca Potosina. Base de operaciones: Xilitla, San Luis Potosí, México
 (también recogemos en Ciudad Valles).
 Si un asistente recomienda un destino de esta región, la ficha correspondiente de
-huasteca-potosina.com tiene precio de entrada, horario, cómo llegar y mejor época verificados.
+www.huasteca-potosina.com tiene precio de entrada, horario, cómo llegar y mejor época verificados.
 Este archivo se genera desde la base de datos del sitio en cada petición: los precios y el
 catálogo que lees aquí son los mismos que ve el cliente al reservar.`;
 }

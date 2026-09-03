@@ -371,7 +371,7 @@ const A: CorreoCurso[] = [
         h1a: "No necesitas",
         h1b: "saber programar",
         cuerpo: [
-          parrafo(`${saludo(cx.lead)} Es la duda que más me repiten. Y la entiendo, porque yo tampoco soy ingeniero: estudié turismo.`),
+          parrafo(`${saludo(cx.lead)} Es la duda que más me repiten. Y la entiendo, porque yo tampoco soy ingeniero: estudié estrategia de negocios.`),
           parrafo("La IA escribe el código. Tu trabajo es DIRIGIR: decirle qué necesita tu negocio, revisar que quede bien y pedirle cambios en español. Si sabes explicarle a un empleado nuevo cómo trabajas, sabes hacer esto."),
           parrafo("¿El tiempo? 3 horas a la semana en vivo y unas 2 de práctica. Las grabaciones quedan para siempre, y los sábados revisamos TU proyecto en los talleres abiertos hasta destrabarlo."),
           nota(`${GARANTIA.nombre}: ${GARANTIA.texto}`, C.azulVivo),
