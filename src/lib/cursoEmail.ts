@@ -64,8 +64,10 @@ const T = {
   // día 11. Ahora cada uno tiene su hora fija dentro de la ventana de cierre,
   // así que el reparto no depende de cuándo entró la persona.
   a2: HORA_CDMX("2026-09-11T13:00:00-06:00"),
+  // a2 y a3 quedan pausados en esta cohorte; sus horas se conservan por si se
+  // reactivan en enero.
   a3: HORA_CDMX("2026-09-12T10:00:00-06:00"),
-  a4: HORA_CDMX("2026-09-12T15:00:00-06:00"),
+  a4: HORA_CDMX("2026-09-12T10:00:00-06:00"),
   a5: HORA_CDMX("2026-09-13T09:00:00-06:00"),
   a6: HORA_CDMX("2026-09-11T18:00:00-06:00"), // mañana sube el precio
   a7: HORA_CDMX("2026-09-12T18:00:00-06:00"), // últimas 6 horas
@@ -350,14 +352,12 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A2",
-    // Hora fija, no "N días desde que se registró": si no, se amontonan.
-    // Y sigue exigiendo que lleve al menos un día dentro, para no dispararle
-    // toda la secuencia a quien entra el último día.
-    due: (cx) =>
-      soloNoTaller(cx) &&
-      cx.ahora.getTime() >= T.a2 &&
-      cx.ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
-      cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
+    // 🔴 PAUSADO en la cohorte 1. Del 11 al 13 de septiembre ya salen cuatro
+    // correos de fecha límite (D1, A6, A7, D3) más D2 y A5. La cifra de los $500,000 ya la leyó en la landing, en A1, en T1, T2 y T3.
+    // Repetirla una sexta vez en la ventana de cierre no añade nada.
+    // El texto se conserva tal cual para la cohorte de enero, donde la ventana
+    // es más larga: sólo hay que devolverle su condición.
+    due: () => false,
     build: (cx) => ({
       subject: "$500,000 en 4 meses sin pagar un solo anuncio",
       html: shellCurso({
@@ -378,14 +378,12 @@ const A: CorreoCurso[] = [
   },
   {
     id: "A3",
-    // Hora fija, no "N días desde que se registró": si no, se amontonan.
-    // Y sigue exigiendo que lleve al menos un día dentro, para no dispararle
-    // toda la secuencia a quien entra el último día.
-    due: (cx) =>
-      soloNoTaller(cx) &&
-      cx.ahora.getTime() >= T.a3 &&
-      cx.ahora.getTime() <= FECHAS.cierreInscripciones.getTime() &&
-      cx.ahora.getTime() >= cx.lead.createdAt.getTime() + 1 * DIA,
+    // 🔴 PAUSADO en la cohorte 1. Del 11 al 13 de septiembre ya salen cuatro
+    // correos de fecha límite (D1, A6, A7, D3) más D2 y A5. Es una historia de embudo alto. En tres días con cuatro avisos de fecha
+    // límite, una anécdota no ayuda a decidir: distrae.
+    // El texto se conserva tal cual para la cohorte de enero, donde la ventana
+    // es más larga: sólo hay que devolverle su condición.
+    due: () => false,
     build: (cx) => ({
       subject: "Mi agente cerró una reserva mientras yo manejaba",
       html: shellCurso({
