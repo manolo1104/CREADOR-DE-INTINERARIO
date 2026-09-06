@@ -87,8 +87,6 @@ import {
   C, WA, bajoBoton, boton, filaMoney, fotoTour, garantias, shellCorreo,
 } from "./emailLayout";
 
-const ANTICIPO_PCT = 30;
-
 /** "2 adultos · 1 de 6 a 10 años · 1 menor de 6" — el desglose que importa. */
 function gente(l: CartEmailLinea, locale: Locale): string {
   const c = getEmails(locale).carrito;

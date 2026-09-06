@@ -72,7 +72,11 @@ export interface BookingMessages {
     verDetalles: string;
     horas: string;
     hastaPersonas: (n: number) => string;
-    apartasConLabel: string;
+    /** Antes era la etiqueta "Apartas con" seguida del 30 % del precio. Mentía:
+     *  la tarjeta lleva UN recorrido al carrito y un solo día sin hotel se cobra
+     *  completo (`pctACobrar`). Ahora cuenta la regla, que además empuja al
+     *  segundo día, que es donde está el ticket grande. */
+    notaPago: string;
     vistaRapida: string;
     vistaRapidaDe: (tour: string) => string;
     informacionDe: (tour: string) => string;
@@ -86,7 +90,7 @@ export interface BookingMessages {
     queSeVisita: string;
     incluye: string;
     apartasCon: (monto: string) => string;
-    precioUnidadYAnticipo: (unidad: string, anticipo: string) => string;
+    precioUnidadYPago: (unidad: string) => string;
     reservarEsteRecorrido: string;
     verFichaCompleta: string;
   };
@@ -171,6 +175,13 @@ export interface BookingMessages {
     // Hospedaje
     hospedajeTitulo: string;
     hospedajeSub: string;
+    /** Lo que se ve SIN abrir nada: cuántas habitaciones, desde cuánto y qué tiene el hotel. */
+    hospedajeResumen: (n: number, precio: string) => string;
+    hospedajeVerHabitaciones: string;
+    /** Botón corto para volver atrás cuando ya se abrieron las habitaciones. */
+    hospedajeYaTengo: string;
+    /** Frase, no etiqueta: en gris y a secas parecía un botón desactivado. */
+    hospedajeSaltar: string;
     elegida: string;
     vistaMontana: string;
     hastaPersonasDesde: (max: number, precio: string) => string;
@@ -211,7 +222,10 @@ export interface BookingMessages {
     unMomento: string;
     continuarAlPago: string;
     continuar: string;
-    pagasHoy: string;
+    /** Recibe el porcentaje REAL que se cobra hoy (`pctACobrar`), no un 30 fijo:
+     *  un viaje de un solo día sin hotel se cobra completo y el letrero decía
+     *  "30 %" encima del importe del 100 %. */
+    pagasHoy: (pct: number) => string;
     necesitamosNombreCorreo: string;
     noSePudoIniciar: string;
     noSePudoConectar: string;
@@ -313,6 +327,22 @@ export interface BookingMessages {
   };
 
   // ── Calendario ────────────────────────────────────────────────────────────
+  /**
+   * El módulo de reserva de la FICHA del tour: fecha, personas y total sin
+   * cambiar de pantalla. Vive aparte de `carrito` porque son dos momentos
+   * distintos —aquí se elige un recorrido, allá se arma el viaje— y mezclarlos
+   * acababa con textos que no encajaban en ninguno de los dos.
+   */
+  ficha: {
+    cuandoVas: string;
+    cuantosVan: string;
+    total: string;
+    reservar: (monto: string) => string;
+    continuar: string;
+    puedesCambiarlo: string;
+    grupoLleno: (max: number) => string;
+  };
+
   calendario: {
     dias: [string, string, string, string, string, string, string];
     proximosDias: string;
@@ -366,7 +396,9 @@ export interface BookingMessages {
     verCarrito: string;
     recorridos: (n: number) => string;
     resumen: (n: number, total: string) => string;
-    apartasCon: (monto: string) => string;
+    /** `pct` es lo que se cobra HOY (`pctACobrar`). Con el 100 % no se "aparta"
+     *  nada: se paga el viaje entero, y llamarlo anticipo era mentira. */
+    apartasCon: (monto: string, pct: number) => string;
     anticipo: string;
     agregado: string;
     enTuCarrito: string;
@@ -377,6 +409,10 @@ export interface BookingMessages {
     mxnPersona: string;
     mxnVehiculo: string;
     agregar: string;
+    /** Botón de la barra móvil cuando la ficha trae módulo de reserva. */
+    elegirFecha: string;
+    /** Con hotel en el carrito esta barra NO puede calcular el total: lo dice en vez de inventarlo. */
+    masHospedaje: string;
     desde: string;
     preguntarWhatsapp: string;
   };
@@ -518,7 +554,7 @@ const es: BookingMessages = {
     verDetalles: "Ver detalles",
     horas: "horas",
     hastaPersonas: (n) => `hasta ${n} personas`,
-    apartasConLabel: "Apartas con",
+    notaPago: "Un recorrido se paga completo · desde 2 días apartas con el 30 %",
     vistaRapida: "Vista rápida",
     vistaRapidaDe: (tour) => `Vista rápida de ${tour}`,
     informacionDe: (tour) => `Información de ${tour}`,
@@ -532,7 +568,7 @@ const es: BookingMessages = {
     queSeVisita: "Qué se visita",
     incluye: "Incluye",
     apartasCon: (monto) => `Apartas con ${monto}`,
-    precioUnidadYAnticipo: (unidad, anticipo) => `MXN ${unidad} · apartas con ${anticipo}`,
+    precioUnidadYPago: (unidad) => `MXN ${unidad} · pago completo al reservar`,
     reservarEsteRecorrido: "Reservar este recorrido",
     verFichaCompleta: "Ver ficha completa",
   },
@@ -618,6 +654,11 @@ const es: BookingMessages = {
     hospedajeTitulo: "¿Quieres que también te hospedemos?",
     hospedajeSub:
       "En nuestro Hotel Paraíso Encantado, en Xilitla. Es opcional: pasamos por ti aunque te quedes en otro lado.",
+    hospedajeResumen: (n, precio) =>
+      `${n} habitaciones desde ${precio} por noche · alberca, restaurante y a 7 min del centro de Xilitla`,
+    hospedajeVerHabitaciones: "Ver habitaciones y precios",
+    hospedajeYaTengo: "Ya tengo dónde dormir",
+    hospedajeSaltar: "¿Ya reservaste en otro lado? Sigue sin hospedaje: te recogemos ahí igual.",
     elegida: "Elegida",
     vistaMontana: "Vista a la montaña",
     hastaPersonasDesde: (max, precio) => `hasta ${max} personas · desde ${precio}/noche`,
@@ -662,7 +703,7 @@ const es: BookingMessages = {
     unMomento: "Un momento…",
     continuarAlPago: "Continuar al pago →",
     continuar: "Continuar →",
-    pagasHoy: "Pagas hoy (30 %)",
+    pagasHoy: (pct) => `Pagas hoy (${pct} %)`,
     necesitamosNombreCorreo: "Necesitamos tu nombre y tu correo para mandarte la confirmación.",
     noSePudoIniciar: "No se pudo iniciar el pago.",
     noSePudoConectar: "No se pudo conectar. Revisa tu internet e intenta de nuevo.",
@@ -785,6 +826,16 @@ const es: BookingMessages = {
     saldoDia: "Saldo el día del primer recorrido",
   },
 
+  ficha: {
+    cuandoVas: "¿Cuándo vas?",
+    cuantosVan: "¿Cuántos van?",
+    total: "Total",
+    reservar: (monto) => `Reservar ${monto}`,
+    continuar: "Elegir fecha y reservar",
+    puedesCambiarlo: "Puedes cambiar fecha y personas en el siguiente paso.",
+    grupoLleno: (max) => `Este recorrido sale con grupos de máximo ${max} personas. ¿Van más? Escríbenos y armamos una salida privada.`,
+  },
+
   calendario: {
     dias: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"],
     proximosDias: "Próximos días",
@@ -835,7 +886,7 @@ const es: BookingMessages = {
     verCarrito: "Ver carrito",
     recorridos: (n) => `${n} recorrido${n !== 1 ? "s" : ""}`,
     resumen: (n, total) => `${n} ${n === 1 ? "recorrido" : "recorridos"} · ${total} MXN`,
-    apartasCon: (monto) => `Apartas con ${monto}`,
+    apartasCon: (monto, pct) => (pct >= 100 ? `Pagas hoy ${monto}` : `Apartas con ${monto}`),
     anticipo: "Anticipo",
     agregado: "Agregado",
     enTuCarrito: "En tu carrito",
@@ -846,6 +897,8 @@ const es: BookingMessages = {
     mxnPersona: "MXN/persona",
     mxnVehiculo: "MXN/vehículo",
     agregar: "Agregar",
+    elegirFecha: "Elegir fecha",
+    masHospedaje: "+ hospedaje · ver total",
     desde: "Desde",
     preguntarWhatsapp: "Preguntar por WhatsApp",
   },
@@ -1026,7 +1079,7 @@ const en: BookingMessages = {
     verDetalles: "See details",
     horas: "hours",
     hastaPersonas: (n) => `up to ${n} people`,
-    apartasConLabel: "Hold it with",
+    notaPago: "A single tour is paid in full · from 2 days you pay just 30 % today",
     vistaRapida: "Quick look",
     vistaRapidaDe: (tour) => `Quick look at ${tour}`,
     informacionDe: (tour) => `About ${tour}`,
@@ -1040,7 +1093,7 @@ const en: BookingMessages = {
     queSeVisita: "What you'll visit",
     incluye: "Includes",
     apartasCon: (monto) => `Hold it with ${monto}`,
-    precioUnidadYAnticipo: (unidad, anticipo) => `MXN ${unidad} · hold it with ${anticipo}`,
+    precioUnidadYPago: (unidad) => `MXN ${unidad} · paid in full at booking`,
     reservarEsteRecorrido: "Book this tour",
     verFichaCompleta: "See full page",
   },
@@ -1126,6 +1179,11 @@ const en: BookingMessages = {
     hospedajeTitulo: "Would you like us to host you too?",
     hospedajeSub:
       "At our Hotel Paraíso Encantado, in Xilitla. It's optional: we pick you up even if you stay somewhere else.",
+    hospedajeResumen: (n, precio) =>
+      `${n} rooms from ${precio} per night · pool, restaurant, 7 min from downtown Xilitla`,
+    hospedajeVerHabitaciones: "See rooms and prices",
+    hospedajeYaTengo: "I already have a place",
+    hospedajeSaltar: "Already booked elsewhere? Skip this: we pick you up there just the same.",
     elegida: "Selected",
     vistaMontana: "Mountain view",
     hastaPersonasDesde: (max, precio) => `up to ${max} people · from ${precio}/night`,
@@ -1170,7 +1228,7 @@ const en: BookingMessages = {
     unMomento: "One moment…",
     continuarAlPago: "Continue to payment →",
     continuar: "Continue →",
-    pagasHoy: "You pay today (30 %)",
+    pagasHoy: (pct) => `You pay today (${pct} %)`,
     necesitamosNombreCorreo: "We need your name and email to send you the confirmation.",
     noSePudoIniciar: "We couldn't start the payment.",
     noSePudoConectar: "We couldn't connect. Check your internet and try again.",
@@ -1299,6 +1357,16 @@ const en: BookingMessages = {
     saldoDia: "Balance on your first tour day",
   },
 
+  ficha: {
+    cuandoVas: "When are you going?",
+    cuantosVan: "How many of you?",
+    total: "Total",
+    reservar: (monto) => `Book ${monto}`,
+    continuar: "Pick a date and book",
+    puedesCambiarlo: "You can change the date and party size on the next step.",
+    grupoLleno: (max) => `This tour runs with groups of up to ${max}. More of you? Message us and we'll set up a private departure.`,
+  },
+
   calendario: {
     dias: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
     proximosDias: "Next few days",
@@ -1349,7 +1417,7 @@ const en: BookingMessages = {
     verCarrito: "View cart",
     recorridos: (n) => `${n} tour${n !== 1 ? "s" : ""}`,
     resumen: (n, total) => `${n} ${n === 1 ? "tour" : "tours"} · ${total} MXN`,
-    apartasCon: (monto) => `Hold it with ${monto}`,
+    apartasCon: (monto, pct) => (pct >= 100 ? `You pay today ${monto}` : `Hold it with ${monto}`),
     anticipo: "Deposit",
     agregado: "Added",
     enTuCarrito: "In your cart",
@@ -1360,6 +1428,8 @@ const en: BookingMessages = {
     mxnPersona: "MXN/person",
     mxnVehiculo: "MXN/vehicle",
     agregar: "Add",
+    elegirFecha: "Pick a date",
+    masHospedaje: "+ lodging · see total",
     desde: "From",
     preguntarWhatsapp: "Ask on WhatsApp",
   },

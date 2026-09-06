@@ -206,7 +206,17 @@ export function resumirCarrito(items: CarritoItem[]): ResumenCarrito {
   }
 
   const total    = totalSinDescuento - ahorroMultiple;
-  const dias     = new Set(items.map((i) => i.tourDate).filter(Boolean)).size;
+  // Un recorrido = un día. No es una suposición: `carrito-payment-intent`
+  // RECHAZA el cobro si dos renglones comparten fecha, porque cada recorrido
+  // ocupa la jornada entera.
+  //
+  // Antes se contaban las fechas ya elegidas (`new Set(...).filter(Boolean)`),
+  // y los recorridos entran al carrito SIN fecha —se elige dentro—. Así que un
+  // viaje de cuatro días recién armado contaba 0 días, caía en la rama del
+  // "un solo día" y la barra anunciaba "Pagas hoy (100 %) · $18,900" cuando el
+  // cobro real iba a ser el 30 %: $5,670. Tres veces y media de más, justo en
+  // la pantalla donde la gente decide.
+  const dias     = items.length;
   // Sin hospedaje aquí: `resumirCarrito` solo conoce los recorridos. La página
   // recalcula el porcentaje cuando el cliente agrega hotel.
   const pct      = pctACobrar(dias);
