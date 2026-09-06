@@ -138,6 +138,9 @@ export async function POST(req: NextRequest) {
     await prisma.tourBooking.create({
       data: {
         confirmationNumber: folio,
+        // Esta ruta la llama el bot de WhatsApp: la venta se cerró en el chat,
+        // no en la web. Es el único sitio que lo sabe con certeza.
+        origen:   "whatsapp",
         tourId:   tour.id,
         tourName: tour.nombre,
         tourSlug: tour.slug,

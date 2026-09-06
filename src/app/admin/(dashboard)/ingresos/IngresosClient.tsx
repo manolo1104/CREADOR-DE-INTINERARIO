@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
+import { ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
 
 const BarChart      = dynamic(() => import("recharts").then(m => m.BarChart),      { ssr: false });
 const Bar           = dynamic(() => import("recharts").then(m => m.Bar),            { ssr: false });
@@ -28,6 +29,7 @@ interface KPIs {
   porMesVenta: Serie[];
   porMesTour:  Serie[];
   toursMasVendidos: { nombre: string; count: number; ingresos: number }[];
+  porOrigen: { origen: OrigenReserva; count: number; ingresos: number }[];
 }
 
 function KpiCard({ label, value, sub, extra, delta }: {
@@ -152,6 +154,44 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
                     <td className="py-2.5 pr-4 text-[#1B4332]/80">{t.nombre}</td>
                     <td className="py-2.5 pr-4 text-center text-[#1B4332]/60">{t.count}</td>
                     <td className="py-2.5 text-right text-[#52B788] font-medium">${t.ingresos.toLocaleString("es-MX")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        }
+      </div>
+
+      {/* Por dónde entra el dinero */}
+      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5 mt-6">
+        <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1">Por dónde entró la reserva</p>
+        <p className="text-[#1B4332]/40 font-dm text-xs mb-4">
+          Google Analytics solo ve lo que se paga en la web. Esta tabla ve todo, y es la única forma de saber si
+          el sitio cierra ventas o solo trae gente que luego escribe por WhatsApp.{" "}
+          <strong className="font-medium text-[#1B4332]/60">
+            Las reservas anteriores a septiembre de 2026 salen como &laquo;Web&raquo; porque el dato no se guardaba:
+            revísalas antes de sacar conclusiones.
+          </strong>
+        </p>
+        {kpis.porOrigen.length === 0
+          ? <p className="text-[#1B4332]/30 font-dm text-sm">Sin datos aún</p>
+          : <table className="w-full font-dm text-sm">
+              <thead>
+                <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/40 text-[10px] uppercase tracking-[1px]">
+                  <th className="text-left py-2 pr-4">Origen</th>
+                  <th className="text-center py-2 pr-4">Reservas</th>
+                  <th className="text-center py-2 pr-4">Ticket medio</th>
+                  <th className="text-right py-2">Cobrado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {kpis.porOrigen.map(o => (
+                  <tr key={o.origen} className="border-b border-[#1B4332]/6">
+                    <td className="py-2.5 pr-4 text-[#1B4332]/80">{ORIGEN_ETIQUETA[o.origen]}</td>
+                    <td className="py-2.5 pr-4 text-center text-[#1B4332]/60">{o.count}</td>
+                    <td className="py-2.5 pr-4 text-center text-[#1B4332]/60">
+                      ${Math.round(o.ingresos / o.count).toLocaleString("es-MX")}
+                    </td>
+                    <td className="py-2.5 text-right text-[#52B788] font-medium">${o.ingresos.toLocaleString("es-MX")}</td>
                   </tr>
                 ))}
               </tbody>

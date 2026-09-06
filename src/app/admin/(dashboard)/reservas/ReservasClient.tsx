@@ -10,6 +10,7 @@ import PagoProveedorCell, { type Evidencia } from "@/components/admin/PagoProvee
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
+import { origenValido } from "@/lib/origenReserva";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -187,6 +188,10 @@ export default function ReservasClient(
       folioPago:      meta.folioPago   || "",
       pickupLugar:    meta.pickupLugar || "Lobby de tu hotel en Xilitla",
       numPersonas:    meta.numPersonas ? String(meta.numPersonas) : "",
+      // Al EDITAR se respeta lo guardado (las reservas viejas traen el "web"
+      // del default). Al CREAR manda `EMPTY_RESERVA_FORM`, que arranca en
+      // WhatsApp porque es de donde vienen las capturas a mano.
+      origen:         origenValido((b as any).origen),
     });
     setModal("edit");
   }
@@ -222,6 +227,9 @@ export default function ReservasClient(
       customerEmail:  form.customerEmail,
       customerPhone:  form.customerPhone,
       notes:          form.notes,
+      // Columna de verdad, no `_meta`: el desglose de ingresos agrupa por ella
+      // y lo que vive dentro de `lineItems` no se puede agrupar.
+      origen:         form.origen,
     };
   }
 
