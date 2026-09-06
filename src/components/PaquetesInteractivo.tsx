@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Moon, MapPin, Star } from "lucide-react";
+import { Check, Moon, MapPin, Star, CreditCard } from "lucide-react";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
+import { trackPackageInquiry } from "@/lib/analytics";
 import type { Paquete } from "@/lib/paquetes";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
@@ -361,14 +362,15 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
           <span className="flex-shrink-0 text-[9px] tracking-[2px] uppercase text-crema/25 font-dm hidden sm:block mr-1">
             {t.reservarLabel}
           </span>
+          {/* Mandaba los tres paquetes a WhatsApp aunque el checkout en línea ya
+              existe: era el único camino de esta página que no cerraba la venta
+              sin que alguien contestara un chat. La ficha individual ya lo hacía
+              bien (`PaqueteFormCta`), esta barra se había quedado atrás. */}
           {paquetes.map((p) => (
-            <a
+            <Link
               key={p.id}
-              href={`https://wa.me/524891251458?text=${encodeURIComponent(
-                t.waPaquete(p.nombre, `$${p.precio.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`)
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={lp(`/reservar-paquete/${p.slug}`)}
+              onClick={() => trackPackageInquiry(p.nombre, p.precio)}
               className={`flex-shrink-0 flex items-center gap-3 px-4 py-2 border transition-all duration-200 group ${
                 p.destacado
                   ? "border-dorado/60 bg-dorado/10 hover:bg-dorado/20"
@@ -384,13 +386,11 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
                   <span className="font-dm text-[8px] text-crema/25 ml-1">MXN</span>
                 </p>
               </div>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+              <CreditCard
                 className={`w-3.5 h-3.5 flex-shrink-0 group-hover:text-verde-vivo transition-colors ${p.destacado ? "text-dorado/50" : "text-crema/20"}`}
-              >
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
-              </svg>
-            </a>
+                aria-hidden="true"
+              />
+            </Link>
           ))}
           <button
             onClick={() => gridRef.current?.scrollIntoView({ behavior: "smooth" })}
