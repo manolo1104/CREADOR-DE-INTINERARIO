@@ -2006,7 +2006,7 @@ export default function CarritoPage() {
       {!cobro && (
         <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-negro/10 bg-crema/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
           <div className="min-w-0">
-            <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/45 leading-none">{t.pagasHoy}</p>
+            <p className="font-dm text-[10px] tracking-[1.5px] uppercase text-negro/45 leading-none">{t.pagasHoy(pctHoy)}</p>
             <p className="font-cormorant text-dorado text-xl leading-tight">{formatMXN(anticipo)} MXN</p>
             {resumen.ahorroMultiple > 0 && (
               <p className="font-dm text-[10px] text-verde-selva leading-none mt-0.5 truncate">
