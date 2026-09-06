@@ -7,6 +7,7 @@ import { buildAvisoPagoIncompletoHtml } from "@/lib/avisoCarritoGrande";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 import { leerJson, reconstruirLineas } from "@/lib/webhookRecuperacion";
+import { enviarCompraGA4 } from "@/lib/ga4Server";
 
 export const runtime = "nodejs";
 
@@ -168,6 +169,13 @@ export async function POST(req: NextRequest) {
           where: { stripePaymentIntentId: pi.id },
         });
 
+        // El folio con el que esta venta se contará en Google Analytics. Se
+        // decide ANTES de la rama de recuperación porque el `purchase` se manda
+        // en los dos casos —la reserva ya existía o la acabamos de crear— y
+        // tiene que ser el MISMO número que manda el navegador, o GA4 no puede
+        // deduplicar y la venta se cuenta dos veces.
+        let folioParaGA4 = existing?.confirmationNumber ?? "";
+
         if (!existing) {
           const cobrado = Math.round((pi.amount_received || pi.amount) / 100);
           // El precio completo llega en metadata. Con anticipo (30 %) es mayor
@@ -249,6 +257,8 @@ export async function POST(req: NextRequest) {
               status:                "paid",
             },
           });
+
+          folioParaGA4 = confirmationNumber;
 
           logger.info("stripe_webhook_booking_recovered", {
             payment_intent: pi.id,
@@ -346,6 +356,38 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+
+        // ── La venta, contada desde el servidor ─────────────────────────────
+        // Va FUERA del `if (!existing)`: ahí dentro solo están las reservas que
+        // hubo que recuperar porque el cliente cerró la pestaña —la minoría—, y
+        // lo que falta medir es el total. Aquí llegan las dos ramas.
+        //
+        // Con la reserva ya creada por el navegador, éste manda el mismo
+        // `transaction_id` y GA4 se queda con una sola: es deduplicación, no
+        // doble conteo.
+        const lineasGA4 = reconstruirLineas(meta);
+        await enviarCompraGA4({
+          transactionId: folioParaGA4 || pi.id,
+          clientId:      meta.gaClientId || null,
+          value:         Math.round((pi.amount_received || pi.amount) / 100),
+          paymentPlan:   Number(meta.pctPagado) || undefined,
+          hasHotel:      !!meta.hospedaje,
+          hasTransfer:   !!meta.traslado,
+          items: lineasGA4.length
+            ? lineasGA4.map((l) => ({
+                item_id:   l.tourSlug || meta.tourSlug || meta.tourId,
+                item_name: l.tourName,
+                price:     l.subtotal ?? 0,
+                quantity:  (l.adults ?? 0) + (l.children ?? 0) || 1,
+              }))
+            // Tour suelto: la metadata no trae `items`, los datos van planos.
+            : [{
+                item_id:   meta.tourSlug || meta.tourId,
+                item_name: meta.tourName || "Tour Huasteca",
+                price:     Number(meta.totalCompleto) || Math.round((pi.amount_received || pi.amount) / 100),
+                quantity:  (Number(meta.adults) || 1) + (Number(meta.children) || 0),
+              }],
+        });
       } catch (e) {
         // P2002 = el cliente ya registró la reserva (carrera normal, no es fallo):
         // el @unique en stripePaymentIntentId impidió la doble reserva.

@@ -28,7 +28,7 @@ import { TourCalendar } from "@/components/booking/TourCalendar";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
 import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
 import { BotonCompartir } from "@/components/booking/BotonCompartir";
-import { trackTourEvent, sessionId } from "@/lib/tourTracker";
+import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
 /**
@@ -264,8 +264,14 @@ function PagoCarrito({ cobro, datos, onListo }: {
       const totalAdultos = cobro.lineItems.reduce((s, l) => s + l.adults, 0);
       const totalNinos   = cobro.lineItems.reduce((s, l) => s + l.children, 0);
 
-      trackPurchase({
-        confirmationNumber: confirmationNumber || cobro.paymentIntentId,
+      // Solo se cuenta la venta si tenemos el FOLIO. Antes, cuando el correo
+      // fallaba, se mandaba el id del PaymentIntent como número de transacción
+      // — y el servidor manda el folio: eran dos identificadores distintos para
+      // la misma venta, así que GA4 no podía deduplicarlos y la contaba dos
+      // veces. Sin folio no se manda nada: el webhook la registra igual, con el
+      // número bueno.
+      if (confirmationNumber) trackPurchase({
+        confirmationNumber,
         tourId:   primero.tourName,
         tourName: resumen,
         total:    cobro.amount,
@@ -893,6 +899,11 @@ export default function CarritoPage() {
           customerName:  name.trim(),
           customerEmail: email.trim(),
           sid:           sessionId(),
+          // Identidad de Google Analytics. Viaja hasta la metadata de Stripe
+          // porque el webhook —que es quien se entera SIEMPRE de la compra— no
+          // tiene cookies: sin esto la venta le llegaría a GA4 sin canal de
+          // origen, que es justo lo que se quiere medir.
+          gaClientId:    ga4ClientId(),
           items,
           hospedaje: conHotel
             ? { habitaciones: habs, noches, checkin, checkout }
