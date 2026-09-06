@@ -7,6 +7,7 @@ import { trackTourEvent } from "@/lib/tourTracker";
 import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
+import { ID_MODULO_RESERVA } from "@/components/booking/ReservaFichaTour";
 
 interface Props {
   tourSlug: string;
@@ -18,9 +19,11 @@ interface Props {
   waHref?:  string;
   /** De dónde sale la barra, para poder medir aparte la de tours y la de destinos. */
   source?:  "mobile_bar" | "destino_bar";
+  /** La ficha trae módulo de reserva (fecha + personas): el botón baja a él en vez de saltar al carrito. */
+  conModulo?: boolean;
 }
 
-export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar" }: Props) {
+export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar", conModulo = false }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
   const { locale, en, lp } = useLocale();
   const t = getBooking(locale).barra;
@@ -82,6 +85,22 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
           {t.enTuCarrito}
         </Link>
+      ) : conModulo ? (
+        /* Con módulo de reserva en la ficha, mandar al carrito era saltarse la
+           pantalla donde la persona ya está convencida para preguntarle lo
+           mismo en otra. Aquí se le baja al módulo y elige ahí; el carrito
+           llega con fecha y personas puestas. */
+        <button
+          type="button"
+          onClick={() => {
+            track();
+            document.getElementById(ID_MODULO_RESERVA)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+          className={ctaClass}
+        >
+          <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+          {t.elegirFecha}
+        </button>
       ) : (
         <Link href={lp(`/reservar/carrito?agregar=${tourSlug}`)} onClick={track} className={ctaClass}>
           <Lock className="w-3.5 h-3.5" aria-hidden="true" />

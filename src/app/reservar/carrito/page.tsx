@@ -458,6 +458,31 @@ export default function CarritoPage() {
     const pedidos = params.getAll("agregar").filter(Boolean);
     const token   = params.get("recuperar");
 
+    // Fecha y personas elegidas en la FICHA del tour, para no volver a
+    // preguntarlas. Solo tienen sentido con UN recorrido: con varios `agregar`
+    // no hay forma de saber a cuál pertenecen.
+    //
+    // Se valida en vez de confiar: esto viene de la URL, y una fecha de ayer o
+    // un "adultos=999" metería en el carrito un renglón que el servidor
+    // rechazaría al cobrar, con un error a destiempo y sin explicación.
+    const extras: Partial<Omit<CarritoItem, "uid">> = {};
+    if (pedidos.length === 1) {
+      const fechaURL = params.get("fecha") ?? "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fechaURL) && fechaURL >= minBookingDate()) {
+        extras.tourDate = fechaURL;
+      }
+      const entero = (clave: string, tope: number) => {
+        const n = Number(params.get(clave));
+        return Number.isInteger(n) && n >= 0 && n <= tope ? n : undefined;
+      };
+      const adultos = entero("adultos", 30);
+      const mid     = entero("ninosMid", 30);
+      const small   = entero("ninosSmall", 30);
+      if (adultos !== undefined && adultos > 0) extras.adults = adultos;
+      if (mid     !== undefined) extras.childrenMid   = mid;
+      if (small   !== undefined) extras.childrenSmall = small;
+    }
+
     let carrito = leerCarrito();
 
     // `?recuperar=<token>` es el link de los correos de rescate. Va PRIMERO y
@@ -522,7 +547,7 @@ export default function CarritoPage() {
           aResaltar ??= yaEsta.uid;
           continue;
         }
-        const nuevo = itemDesdeSlug(pedido);
+        const nuevo = itemDesdeSlug(pedido, extras);
         if (nuevo) {
           carrito = agregarAlCarrito(nuevo);
           aResaltar ??= carrito[carrito.length - 1]?.uid ?? null;

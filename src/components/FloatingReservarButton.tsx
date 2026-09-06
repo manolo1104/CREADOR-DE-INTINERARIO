@@ -70,6 +70,17 @@ export function FloatingReservarButton() {
   const visibility = conBarraInferior ? "hidden lg:flex" : "flex";
 
   /**
+   * En la ficha de un tour el botón de reservar sobra: el sidebar ya trae el
+   * módulo de reserva completo —fecha, personas y total— y en móvil está la
+   * barra inferior. Dejarlo era un segundo botón dorado compitiendo con el
+   * verde de al lado y, en escritorio, tapando el final del propio sidebar.
+   *
+   * WhatsApp se queda en las dos: preguntar y reservar no son lo mismo, y es
+   * el canal por el que se cierra buena parte de las ventas.
+   */
+  const reservarVisibility = tourSlugMatch ? "hidden" : visibility;
+
+  /**
    * La barra del carrito ocupa el pie de la pantalla en cuanto hay algo dentro,
    * y estos botones aterrizaban justo encima —en móvil Y en escritorio, porque
    * esa barra no se esconde en pantallas grandes—. Cuando está, se suben.
@@ -83,7 +94,11 @@ export function FloatingReservarButton() {
   // una clase armada con plantilla (`bottom-[${x}px]`) nunca llegaría a la hoja
   // de estilos. Son los mismos 24 y 86 de siempre, más los 72 de la barra.
   const abajoReservar = sobreBarraCarrito ? "bottom-[96px]"  : "bottom-6";
-  const abajoWhatsApp = sobreBarraCarrito ? "bottom-[158px]" : "bottom-[86px]";
+  // Sin el botón de reservar debajo (ficha de tour), WhatsApp se queda solo y
+  // los 86 px lo dejarían levitando sobre un hueco: baja al ras.
+  const abajoWhatsApp = tourSlugMatch
+    ? (sobreBarraCarrito ? "bottom-[96px]" : "bottom-6")
+    : (sobreBarraCarrito ? "bottom-[158px]" : "bottom-[86px]");
 
   return (
     <>
@@ -117,7 +132,7 @@ export function FloatingReservarButton() {
                    bg-dorado hover:bg-terracota text-negro hover:text-crema
                    pl-4 pr-5 py-3.5 rounded-full shadow-xl shadow-black/40
                    transition-all duration-300 hover:scale-105
-                   ${visibility}`}
+                   ${reservarVisibility}`}
       >
         {LOCK_SVG}
         {/* El texto iba oculto en móvil (`hidden sm:block`), así que el botón
