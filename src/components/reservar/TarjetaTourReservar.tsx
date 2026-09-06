@@ -24,10 +24,9 @@ import { getBooking } from "@/lib/i18n/booking";
  * abra además la vista rápida.
  */
 export function TarjetaTourReservar({
-  tour, anticipo, esTop, delay,
+  tour, esTop, delay,
 }: {
   tour: Tour;
-  anticipo: number;
   esTop: boolean;
   delay: number;
 }) {
@@ -136,7 +135,7 @@ export function TarjetaTourReservar({
               </span>
             </p>
             <p className="text-[11px] font-dm text-crema/55 mb-4">
-              {t.apartasConLabel} <strong className="text-crema/85">{formatMXN(anticipo)}</strong>
+              {t.notaPago}
             </p>
 
             <div className="flex gap-2" onClick={noPropagar}>
@@ -233,7 +232,7 @@ export function TarjetaTourReservar({
               <div className="flex items-baseline gap-2 border-t border-white/10 pt-4">
                 <span className="font-cormorant text-dorado text-3xl font-light leading-none">{formatMXN(tour.precio)}</span>
                 <span className="text-[11px] text-crema/45 font-dm">
-                  {t.precioUnidadYAnticipo(porVehiculo ? t.porVehiculo : t.porPersona, formatMXN(anticipo))}
+                  {t.precioUnidadYPago(porVehiculo ? t.porVehiculo : t.porPersona)}
                 </span>
               </div>
 

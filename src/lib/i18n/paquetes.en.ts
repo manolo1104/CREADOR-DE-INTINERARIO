@@ -863,9 +863,13 @@ const FORM_ES: PaqueteFormUI = {
   abriendoWhatsapp: "✓ Abriendo WhatsApp…",
   consultarDisponibilidad: "Consultar disponibilidad →",
   o: "o",
-  reservarConTarjeta: "Reservar con tarjeta (10/50/100%)",
+  // Decían 10 %, y el checkout de paquetes solo ofrece 30, 50 o 100
+  // (`PCTS_PAQUETE` en `lib/paquetePricing.ts`). Prometían un anticipo que no
+  // existe, tres veces más barato que el mínimo real, en el producto de ticket
+  // más alto del sitio.
+  reservarConTarjeta: "Reservar con tarjeta (30/50/100%)",
   reservarEnLinea: "Reservar en línea →",
-  reservaSegura: "Pago seguro con Stripe · Apple Pay y Google Pay · Aparta desde el 10 %",
+  reservaSegura: "Pago seguro con Stripe · Apple Pay y Google Pay · Aparta desde el 30 %",
   oConsultaAntes: "o consulta antes por WhatsApp",
   reservarEstePaquete: "Reservar este paquete",
   waMsg: (paquete, nombre, fecha, personas) =>
@@ -882,9 +886,9 @@ const FORM_EN: PaqueteFormUI = {
   abriendoWhatsapp: "✓ Opening WhatsApp…",
   consultarDisponibilidad: "Check availability →",
   o: "or",
-  reservarConTarjeta: "Pay by card (10/50/100%)",
+  reservarConTarjeta: "Pay by card (30/50/100%)",
   reservarEnLinea: "Book online →",
-  reservaSegura: "Secure payment with Stripe · Apple Pay and Google Pay · Hold it from 10 %",
+  reservaSegura: "Secure payment with Stripe · Apple Pay and Google Pay · Hold it from 30 %",
   oConsultaAntes: "or ask us first on WhatsApp",
   reservarEstePaquete: "Book this package",
   waMsg: (paquete, nombre, fecha, personas) =>

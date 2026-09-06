@@ -42,8 +42,6 @@ export function generateMetadata(): Metadata {
   };
 }
 
-const ANTICIPO = 0.3;
-
 /** Orden del catálogo: primero lo que la gente reserva de verdad. */
 function ordenarPorReservas(tours: Tour[], stats: ReservasStats | null): Tour[] {
   if (!stats) return tours;
@@ -214,7 +212,6 @@ export default async function ReservarPage() {
             <TarjetaTourReservar
               key={tour.id}
               tour={tour}
-              anticipo={Math.round(tour.precio * ANTICIPO)}
               esTop={stats?.masReservado === tour.slug}
               delay={Math.min(i, 8) * 60}
             />

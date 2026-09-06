@@ -8,8 +8,10 @@ import {
   CARRITO_EVENT,
   leerCarrito,
   resumirCarrito,
+  pctACobrar,
   type CarritoItem,
 } from "@/lib/carrito";
+import { leerExtras } from "@/lib/carritoExtras";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { formatMXN } from "@/lib/tourBooking";
@@ -59,7 +61,18 @@ export function CarritoBar() {
   // sin ninguna señal de que hay un carrito empezado.
   const cede = hayBarraDeTour(pathname) ? "hidden lg:block" : "block";
 
-  const { total, anticipo } = resumirCarrito(items);
+  // `pct` viene de `pctACobrar`: con un solo día y sin hotel es 100, y entonces
+  // el texto no puede hablar de apartar — se está pagando el viaje completo.
+  //
+  // `resumirCarrito` solo conoce los recorridos, y el hospedaje también manda:
+  // una noche de hotel devuelve el viaje al 30 %. Sin mirarlo, esta barra
+  // anunciaba "Pagas hoy" el total completo a alguien que en el carrito veía
+  // el 30 %, y son dos cifras distintas para la misma compra.
+  const conHotel = leerExtras().conHotel;
+  const resumen  = resumirCarrito(items);
+  const total    = resumen.total;
+  const pct      = pctACobrar(resumen.dias, conHotel);
+  const anticipo = Math.round((total * pct) / 100);
 
   return (
     <div className={`${cede} fixed bottom-0 left-0 right-0 z-[45] border-t border-dorado/30 bg-negro/97 backdrop-blur-sm px-4 py-3`}>
@@ -71,7 +84,10 @@ export function CarritoBar() {
               {t.resumen(items.length, formatMXN(total))}
             </p>
             <p className="font-dm text-[10px] text-crema/45 leading-tight">
-              {t.apartasCon(formatMXN(anticipo))}
+              {/* Con hotel, esta barra ve los recorridos pero no la cotización
+                  del hospedaje: daría una cifra menor que la del carrito. Se
+                  dice, en vez de inventar un número que luego no cuadra. */}
+              {conHotel ? t.masHospedaje : t.apartasCon(formatMXN(anticipo), pct)}
             </p>
           </div>
         </div>
