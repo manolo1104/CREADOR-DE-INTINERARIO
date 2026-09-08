@@ -21,9 +21,9 @@
             "Tours Xilitla"
           ],
           "enfoque_agente": "Proveer información de valor y mencionar sutilmente la venta de itinerarios personalizados.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "hacer-guia-definitiva-para-visitar-xilitla-todo-lo-que-necesitas-saber",
+          "fecha_publicacion": "2026-08-16T14:28:01.826Z"
         },
         {
           "id": 2,
@@ -34,9 +34,9 @@
             "Hotel Paraíso Encantado"
           ],
           "enfoque_agente": "Destacar la ubicación del hotel como ventaja competitiva principal.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "hoteles-cerca-de-las-pozas-5-razones-para-hospedarte-cerca-del-jardin",
+          "fecha_publicacion": "2026-07-16T15:44:02.770Z"
         },
         {
           "id": 3,
@@ -101,9 +101,9 @@
             "Costos entradas"
           ],
           "enfoque_agente": "Desglose de costos y promoción de paquetes de hotel + tours para optimizar el presupuesto.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "precios-presupuesto-para-viajar-a-xilitla-cuanto-cuesta-un-fin",
+          "fecha_publicacion": "2026-08-21T14:41:46.358Z"
         },
         {
           "id": 8,
@@ -127,9 +127,9 @@
             "Tours Xilitla"
           ],
           "enfoque_agente": "Comparativa y CTA para comprar el itinerario o tour hacia estos destinos.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "sotano-de-las-golondrinas-vs-sotano-de-las-huahuas-cual-visitar",
+          "fecha_publicacion": "2026-07-11T15:00:48.729Z"
         },
         {
           "id": 10,
@@ -153,9 +153,9 @@
             "Hotel para parejas"
           ],
           "enfoque_agente": "Promocionar habitaciones de lujo, cenas en el restaurante y tours privados.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "xilitla-en-pareja-escapada-romantica-planes-para-parejas-en-la-huastec",
+          "fecha_publicacion": "2026-07-07T03:03:17.668Z"
         },
         {
           "id": 12,
@@ -223,9 +223,9 @@
             "Hotel Paraíso Encantado"
           ],
           "enfoque_agente": "Educación al cliente para aumentar márgenes de ganancia sin intermediarios.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "reservar-hotel-xilitla-por-que-reservar-directo-en-nuestro-sitio-web-e",
+          "fecha_publicacion": "2026-08-01T15:05:43.793Z"
         },
         {
           "id": 17,
@@ -236,9 +236,9 @@
             "Cultura"
           ],
           "enfoque_agente": "Información turística con enlace a itinerarios culturales.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "museo-leonora-carrington-leonora-carrington-en-xilitla-guia-para-visit",
+          "fecha_publicacion": "2026-07-21T15:50:27.368Z"
         },
         {
           "id": 18,
@@ -275,9 +275,9 @@
             "Papan Huasteco"
           ],
           "enfoque_agente": "Destacar la calidad del café servido en el restaurante y su origen.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "altura-la-tradicion-del-cafe-en-xilitla-de-la-planta-a-tu-taza",
+          "fecha_publicacion": "2026-08-11T15:02:20.926Z"
         },
         {
           "id": 21,
@@ -315,9 +315,9 @@
             "Vida nocturna tranquila"
           ],
           "enfoque_agente": "Impulsar las ventas nocturnas y el consumo interno del huésped.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
+          "estado": "publicado",
+          "slug_publicado": "cena-xilitla-cena-especial-en-papan-huasteco-nuestra-carta-d-2026",
+          "fecha_publicacion": "2026-04-11T09:28:47.983Z"
         },
         {
           "id": 24,
@@ -331,6 +331,357 @@
           "estado": "publicado",
           "slug_publicado": "opiniones-resena-lo-que-dicen-nuestros-huespedes-de-paraiso-2026",
           "fecha_publicacion": "2026-04-24T19:53:32.659Z"
+        }
+      ]
+    },
+    "mes_3": {
+      "enfoque": "Destinos con nombre propio y temporada (sep–oct)",
+      "articulos": [
+        {
+          "id": 25,
+          "titulo": "Siete Cascadas de Tamasopo: guía completa 2026",
+          "palabras_clave": [
+            "siete cascadas tamasopo",
+            "cascadas tamasopo como llegar",
+            "tamasopo que hacer",
+            "hacienda los gomez"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 26,
+          "titulo": "Xantolo en la Huasteca Potosina: la fiesta de muertos, guía 2026",
+          "palabras_clave": [
+            "xantolo huasteca potosina",
+            "dia de muertos huasteca",
+            "xantolo fechas",
+            "danza de los viejos"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 27,
+          "titulo": "Cascadas de Minas Viejas: guía completa 2026",
+          "palabras_clave": [
+            "minas viejas",
+            "cascadas minas viejas como llegar",
+            "minas viejas precio",
+            "el naranjo slp"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 28,
+          "titulo": "La Huasteca Potosina en octubre: clima, ríos y qué esperar",
+          "palabras_clave": [
+            "huasteca potosina en octubre",
+            "clima huasteca octubre",
+            "fin de lluvias huasteca",
+            "cascadas en octubre"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 29,
+          "titulo": "Nacimiento de Tambaque: guía completa 2026",
+          "palabras_clave": [
+            "nacimiento tambaque",
+            "tambaque aquismon",
+            "balneario tambaque precio",
+            "agua turquesa huasteca"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 30,
+          "titulo": "Laguna de la Media Luna: manantiales y buceo, guía 2026",
+          "palabras_clave": [
+            "laguna media luna",
+            "media luna rioverde",
+            "buceo media luna",
+            "media luna precio"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 31,
+          "titulo": "Aquismón Pueblo Mágico: qué ver y cómo llegar 2026",
+          "palabras_clave": [
+            "aquismon pueblo magico",
+            "que hacer en aquismon",
+            "aquismon como llegar",
+            "tamul aquismon"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 32,
+          "titulo": "Xantolo en Xilitla: qué días es y dónde vivirlo",
+          "palabras_clave": [
+            "xantolo xilitla",
+            "xilitla dia de muertos",
+            "xantolo fechas xilitla",
+            "altares huastecos"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 33,
+          "titulo": "El Trampolín de Tamasopo: guía, precio y cómo llegar 2026",
+          "palabras_clave": [
+            "el trampolin tamasopo",
+            "trampolin rio tamasopo",
+            "tamasopo balneario gratis",
+            "cascadas tamasopo"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 34,
+          "titulo": "Voladores de Tamaletón: dónde y cuándo verlos",
+          "palabras_clave": [
+            "voladores de tamaleton",
+            "danza voladores huasteca",
+            "tamaleton tancanhuitz",
+            "ritual teenek"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 35,
+          "titulo": "Cascada El Salto y El Aguacate: guía 2026",
+          "palabras_clave": [
+            "cascada el salto",
+            "el salto el naranjo",
+            "cascada el aguacate",
+            "cascadas el naranjo slp"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        }
+      ]
+    },
+    "mes_4": {
+      "enfoque": "Destinos con nombre propio y temporada (nov–dic)",
+      "articulos": [
+        {
+          "id": 36,
+          "titulo": "La Huasteca Potosina en noviembre: puentes, clima y cascadas",
+          "palabras_clave": [
+            "huasteca potosina en noviembre",
+            "puente de noviembre huasteca",
+            "clima huasteca noviembre",
+            "viajar huasteca otoño"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 37,
+          "titulo": "Zona Arqueológica de Tamohí (El Consuelo): guía 2026",
+          "palabras_clave": [
+            "tamohi el consuelo",
+            "zona arqueologica tamohi",
+            "tamohi tamuin",
+            "arqueologia huasteca"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 38,
+          "titulo": "Cuevas de Mantetzulel: guía completa 2026",
+          "palabras_clave": [
+            "cuevas de mantetzulel",
+            "mantetzulel aquismon",
+            "cuevas huasteca potosina",
+            "sitio sagrado teenek"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 39,
+          "titulo": "La Trinidad: el bosque de niebla de Xilitla, guía 2026",
+          "palabras_clave": [
+            "la trinidad xilitla",
+            "bosque de niebla xilitla",
+            "mar de nubes xilitla",
+            "la trinidad como llegar"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 40,
+          "titulo": "Balneario Taninul: aguas termales, guía 2026",
+          "palabras_clave": [
+            "balneario taninul",
+            "taninul aguas termales",
+            "taninul ciudad valles",
+            "hotel taninul"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 41,
+          "titulo": "La Huasteca Potosina en diciembre: qué abre en vacaciones",
+          "palabras_clave": [
+            "huasteca potosina en diciembre",
+            "huasteca en navidad",
+            "vacaciones diciembre huasteca",
+            "clima huasteca diciembre"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 42,
+          "titulo": "Río Axtla y 'el Chalán': guía 2026",
+          "palabras_clave": [
+            "rio axtla chalan",
+            "axtla de terrazas",
+            "el chalan axtla",
+            "rio axtla balneario"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 43,
+          "titulo": "Poza Azul y el Rancho El Zapote (Coxcatlán): guía 2026",
+          "palabras_clave": [
+            "poza azul coxcatlan",
+            "rancho el zapote cascada",
+            "coxcatlan slp que hacer",
+            "poza azul huasteca"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 44,
+          "titulo": "Navidad y Año Nuevo en la Huasteca Potosina: qué hacer",
+          "palabras_clave": [
+            "navidad huasteca potosina",
+            "año nuevo huasteca",
+            "que hacer diciembre huasteca",
+            "posadas huastecas"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 45,
+          "titulo": "Hacienda Los Gómez: guía y qué esperar 2026",
+          "palabras_clave": [
+            "hacienda los gomez",
+            "hacienda los gomez tamasopo",
+            "los gomez precio",
+            "tamasopo hacienda"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 46,
+          "titulo": "Olla de la Luz y Cueva del Salitre: dos secretos de Xilitla",
+          "palabras_clave": [
+            "olla de la luz",
+            "cueva del salitre xilitla",
+            "cerro de la luz",
+            "xilitla lugares secretos"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        }
+      ]
+    },
+    "mes_5": {
+      "enfoque": "Reserva: si una corrida falla o sobra hueco",
+      "articulos": [
+        {
+          "id": 47,
+          "titulo": "Rappel en la Cascada de Tamul: qué se siente y qué necesitas",
+          "palabras_clave": [
+            "rappel tamul",
+            "rappel cascada tamul",
+            "rappel huasteca potosina",
+            "tamul aventura"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 48,
+          "titulo": "Texquitote y el son huasteco: dónde escuchar huapango en vivo",
+          "palabras_clave": [
+            "son huasteco texquitote",
+            "huapango huasteco en vivo",
+            "texquitote slp",
+            "musica huasteca tradicional"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
         }
       ]
     }
