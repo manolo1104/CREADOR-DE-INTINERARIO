@@ -76,7 +76,7 @@ export const TALLER_NOCHES = [
       "Abro mi panel real de Huasteca Potosina Tours y te enseño los números en pantalla.",
       "Construyo una página de tours desde cero, en 20 minutos, mientras miras.",
     ],
-    workbook: "El mapa de tu sistema",
+    workbook: "El brief de tu página",
   },
   {
     n: 2,
