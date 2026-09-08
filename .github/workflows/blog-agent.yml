@@ -16,6 +16,13 @@ on:
         type: boolean
         default: false
 
+# El agente marca el tema como publicado en blog-agent/topics.json, y ese
+# archivo tiene que VOLVER al repositorio o la próxima corrida vuelve a
+# empezar por el mismo tema. Sin este bloque el GITHUB_TOKEN cae en el
+# `contents: read` por defecto y el push muere con un 403.
+permissions:
+  contents: write
+
 jobs:
   generate-post:
     runs-on: ubuntu-latest
@@ -52,3 +59,24 @@ jobs:
             ARGS="$ARGS --topic '${{ github.event.inputs.topic }}'"
           fi
           node index.js $ARGS
+
+      # Sin esto, entre el 26 de agosto y el 6 de septiembre de 2026 el cron
+      # salió cuatro veces en verde REESCRIBIENDO artículos ya publicados: el
+      # estado se guardaba en el runner y se tiraba con la máquina, así que
+      # cada corrida creía que no había publicado nada.
+      #
+      # `git diff --quiet` evita commits vacíos en las corridas en seco.
+      # Se hace aquí y no dentro de index.js a propósito: si falla, se ve en
+      # rojo en Actions en vez de morir en un catch que solo avisaba.
+      - name: Guardar el estado del calendario
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- blog-agent/topics.json; then
+            echo "topics.json sin cambios — nada que guardar."
+            exit 0
+          fi
+          git add blog-agent/topics.json
+          git commit -m "chore(blog): marcar tema publicado en el calendario"
+          git push origin HEAD:${{ github.ref_name }}

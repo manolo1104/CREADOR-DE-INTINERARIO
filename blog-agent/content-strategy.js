@@ -7,6 +7,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { generateSlug, normalizeStr } from "./slug.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -215,7 +216,26 @@ export function inferCategoryByKeyword(focusKeyword, title, secondaryKeywords = 
 
 // ── Seleccionar tema del día ───────────────────────────────
 
-export function getDailyTopic(usedSlugs = [], customTitle = null) {
+/**
+ * Elige el tema del día descartando los que YA están publicados.
+ *
+ * `postsExistentes` son los que devuelve `GET /api/blog/create`: traen `slug` y
+ * `focusKeyword`. Se comprueban las dos cosas porque fallan por motivos
+ * distintos —un título reescrito cambia el slug pero no la keyword; una keyword
+ * retocada deja el mismo slug— y basta con que coincida una para saber que el
+ * artículo existe.
+ *
+ * ⚠️ El filtro anterior no podía acertar NUNCA. Pegaba la keyword con guiones
+ * (`precios xilitla` → `precios-xilitla`) y la buscaba dentro del slug, pero
+ * `generateSlug` INTERCALA: antepone solo las palabras de la keyword que faltan
+ * en el título, así que el slug real era
+ * `precios-presupuesto-para-viajar-a-xilitla-…` y la keyword nunca aparecía
+ * contigua. Encima ese `replace` no normalizaba acentos, así que "qué hacer"
+ * quedaba en `qu-hacer`. Resultado: entre el 26 ago y el 6 sep de 2026 el
+ * agente eligió cuatro temas ya publicados y, como la API hace *upsert* por
+ * slug, sobrescribió cuatro artículos indexados sin que nada fallara.
+ */
+export function getDailyTopic(postsExistentes = [], customTitle = null) {
   const jsonTopics = loadTopicsFromJson();
   const TOPICS = jsonTopics.length > 0 ? [...jsonTopics, ...FALLBACK_TOPICS] : FALLBACK_TOPICS;
 
@@ -224,26 +244,36 @@ export function getDailyTopic(usedSlugs = [], customTitle = null) {
       t.title.toLowerCase().includes(customTitle.toLowerCase()) ||
       t.focusKeyword.toLowerCase().includes(customTitle.toLowerCase())
     );
+    // `--topic` es una orden explícita de una persona: se respeta aunque el tema
+    // ya esté publicado (sirve para reescribir uno a propósito).
     if (found) return found;
   }
 
-  // Filtrar temas ya usados (por similitud de keyword)
+  const slugsUsados     = new Set(postsExistentes.map(p => p.slug).filter(Boolean));
+  const keywordsUsadas  = new Set(
+    postsExistentes.map(p => normalizeStr(p.focusKeyword || "")).filter(Boolean)
+  );
+
   const available = TOPICS.filter(t => {
-    const wouldBeSlug = t.focusKeyword.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    return !usedSlugs.some(s => s.includes(wouldBeSlug) || wouldBeSlug.includes(s.substring(0, 15)));
+    const slug = generateSlug(t.title, t.focusKeyword);
+    return !slugsUsados.has(slug) && !keywordsUsadas.has(normalizeStr(t.focusKeyword || ""));
   });
 
   if (available.length === 0) {
-    console.log("♻️ Todos los temas usados — reiniciando ciclo");
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-    return TOPICS[dayOfYear % TOPICS.length];
+    // Antes se reciclaba por día del año y se seguía adelante. Eso es lo que
+    // convirtió un calendario agotado en cuatro artículos pisados: el cron
+    // salía en verde mientras destruía contenido. Ahora se para.
+    throw new Error(
+      `Se acabaron los temas: los ${TOPICS.length} del calendario ya están publicados. ` +
+      `Añade temas nuevos a blog-agent/topics.json antes de la próxima corrida.`
+    );
   }
 
-  // Rotar por día del año para consistencia
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  return available[dayOfYear % available.length];
-}
-
-export function getUsedSlugs() {
-  return [];
+  // El PRIMERO disponible, en el orden del calendario. Antes rotaba por día del
+  // año, y eso convertía el calendario editorial en una bolsa: el 8 de
+  // septiembre eligió el artículo de noviembre. Con temas de temporada
+  // —Xantolo, Navidad, "la Huasteca en octubre"— salir fuera de fecha es salir
+  // para nada: se publican para que Google los tenga indexados ANTES de que la
+  // gente los busque.
+  return available[0];
 }

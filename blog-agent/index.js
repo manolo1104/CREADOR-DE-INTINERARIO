@@ -16,8 +16,8 @@ import fetch from "node-fetch";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 import { getDailyTopic, inferCategoryByKeyword } from "./content-strategy.js";
+import { generateSlug, validateSlug } from "./slug.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,101 +58,10 @@ async function callWithRetry(fn, retries = 2) {
   }
 }
 
-// ── Corrección 2: Slug — generación y validación ────────────
-
-function normalizeStr(str) {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-}
-
-const MAX_SLUG = 70;
-
-function slugWords(slug) {
-  return slug.split("-").filter(Boolean);
-}
-
-/** Recorta sin partir palabras: siempre corta en un guion, nunca a media sílaba. */
-function truncateAtWord(slug, max) {
-  if (slug.length <= max) return slug;
-  const cut = slug.slice(0, max + 1);
-  const lastDash = cut.lastIndexOf("-");
-  const trimmed = lastDash > 0 ? cut.slice(0, lastDash) : slug.slice(0, max);
-  return trimmed.replace(/-+$/, "");
-}
-
-/** Palabras vacías: no aportan SEO, afean el final de un slug recortado y no
- *  deben anteponerse sueltas ("con-actividades-…", "hacer-en-guia-…"). */
-const STOP_WORDS = new Set([
-  "de", "del", "en", "el", "la", "los", "las", "un", "una", "unos", "unas",
-  "y", "o", "a", "al", "con", "por", "para", "su", "sus", "que", "es", "lo",
-  "mi", "tu", "se", "no", "si", "como", "mas",
-]);
-
-/** La keyword está cubierta si todas sus palabras CON CONTENIDO aparecen en el
- *  slug. Las vacías se ignoran: exigirlas abortaba publicaciones válidas. */
-function coversKeyword(slug, keywordSlug) {
-  const words = new Set(slugWords(slug));
-  return slugWords(keywordSlug)
-    .filter((w) => !STOP_WORDS.has(w))
-    .every((w) => words.has(w));
-}
-
-function trimStopWords(slug) {
-  const words = slugWords(slug);
-  while (words.length > 1 && STOP_WORDS.has(words[words.length - 1])) words.pop();
-  return words.join("-");
-}
-
-function generateSlug(title, primaryKeyword, _year) {
-  // No incluir el año en el slug — SEO atemporal
-  const keywordSlug = normalizeStr(primaryKeyword);
-  const titleSlug   = normalizeStr(title);
-
-  // Se antepone SOLO lo que falta de la keyword, no la keyword entera.
-  // Anteponerla completa duplicaba términos que el título ya traía:
-  // "seguridad-xilitla-consejos-de-seguridad-…" o
-  // "museo-leonora-carrington-leonora-carrington-en-xilitla-…".
-  const enTitulo = new Set(slugWords(titleSlug));
-  const faltantes = slugWords(keywordSlug).filter(
-    (w) => !enTitulo.has(w) && !STOP_WORDS.has(w)
-  );
-
-  let finalSlug = faltantes.length
-    ? `${faltantes.join("-")}-${titleSlug}`
-    : titleSlug;
-
-  // Antes: .slice(0, 70) cortaba a media palabra y dejaba en producción slugs
-  // como "…guia-para-visit" o "…la-mejor-epoca-par".
-  finalSlug = trimStopWords(truncateAtWord(finalSlug, MAX_SLUG));
-
-  // Si el recorte se llevó parte de la keyword, se reconstruye con la keyword
-  // al frente para que sobreviva al límite de longitud.
-  if (!coversKeyword(finalSlug, keywordSlug)) {
-    const kw = slugWords(keywordSlug);
-    const resto = slugWords(titleSlug).filter((w) => !kw.includes(w)).join("-");
-    finalSlug = trimStopWords(truncateAtWord(`${keywordSlug}-${resto}`, MAX_SLUG));
-  }
-
-  return finalSlug;
-}
-
-function validateSlug(slug, primaryKeyword) {
-  // Validación por palabras, coherente con generateSlug. Antes exigía la frase
-  // contigua, lo que abortaba la publicación cuando el título traía las
-  // palabras de la keyword en otro orden.
-  if (!coversKeyword(slug, normalizeStr(primaryKeyword))) {
-    throw new Error(
-      `SLUG INVÁLIDO: "${slug}" no contiene la keyword "${primaryKeyword}". Abortando publicación.`
-    );
-  }
-  return true;
-}
+// ── Slug: generación y validación ──────────────────────────
+// Vive en `slug.js` desde el 8 sep 2026: `content-strategy.js` necesita el
+// MISMO slug para saber si un tema ya está publicado, y no puede importarlo
+// de aquí (este archivo corre `main()` al importarse).
 
 // ── Banco de imágenes desde images.json ─────────────────────
 
@@ -893,47 +802,16 @@ function markTopicAsPublished(topicId, slug) {
       fs.writeFileSync(topicsPath, JSON.stringify(data, null, 2), "utf-8");
       console.log(`   ✅ Topic ${topicId} marcado como publicado en topics.json`);
 
-      // Commit topics.json
-      try {
-        execSync(`git add topics.json && git commit -m "chore: marcar topic ${topicId} como publicado"`, {
-          cwd: __dirname,
-          stdio: "pipe",
-        });
-        console.log(`   ✅ Commit de topics.json realizado`);
-      } catch {
-        console.warn(`   ⚠️  No se pudo commitear topics.json (no fatal)`);
-      }
+      // Aquí NO se commitea. Lo hace el workflow, que es donde se ve si
+      // falla: el `execSync` que había aquí moría en silencio en CI —el
+      // runner no tiene identidad de git configurada— y su catch solo
+      // avisaba "no fatal". Por eso NINGUNA corrida del cron llegó nunca a
+      // guardar estado, y el calendario se quedó congelado desde mayo.
     }
   } catch (e) {
     console.warn(`   ⚠️  No se pudo actualizar topics.json: ${e.message}`);
   }
 }
-
-function revertTopicState(topicId) {
-  const topicsPath = path.join(__dirname, "topics.json");
-  try {
-    const raw = fs.readFileSync(topicsPath, "utf-8");
-    const data = JSON.parse(raw);
-    const calendario = data.calendario_editorial || {};
-
-    for (const [, mesData] of Object.entries(calendario)) {
-      for (const article of mesData?.articulos || []) {
-        if (article.id === topicId) {
-          article.estado = "pendiente";
-          article.slug_publicado = null;
-          article.fecha_publicacion = null;
-          break;
-        }
-      }
-    }
-
-    fs.writeFileSync(topicsPath, JSON.stringify(data, null, 2), "utf-8");
-    console.log(`   ↩️  Topic ${topicId} revertido a pendiente`);
-  } catch {
-    console.warn(`   ⚠️  No se pudo revertir topic ${topicId}`);
-  }
-}
-
 // ── Guardar copia local en HTML ──────────────────────────────
 
 function saveLocalHTML(post) {
@@ -1095,24 +973,34 @@ async function main() {
   loadDataBanks();
   const imagesBank = loadImagesBank();
 
-  // Paso 2: Cargar posts existentes para links y slug dedup
+  // Paso 2: Cargar posts existentes para links y para descartar temas repetidos.
+  //
+  // ⚠️ Esta lista es lo ÚNICO que impide sobrescribir un artículo: sin ella no
+  // se descarta nada, se elige un tema ya publicado y la API —que hace upsert
+  // por slug— lo pisa. Antes el error se tragaba en silencio (`catch {}`) y se
+  // seguía con la lista vacía, que es la peor combinación posible: publicar a
+  // ciegas encima de lo que ya existe. Ahora se para.
   let postsExistentes = [];
-  if (BLOG_SECRET) {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/blog/create`, {
-        headers: { "Authorization": `Bearer ${BLOG_SECRET}` },
-      });
-      const data = await res.json();
-      postsExistentes = data.posts || [];
-      console.log(`\n📚 Posts existentes: ${postsExistentes.length}`);
-      if (postsExistentes.length > 0) {
-        console.log(`   Slugs: ${postsExistentes.map(p => p.slug).join(", ")}`);
-      }
-    } catch { /* continuar */ }
+  if (!BLOG_SECRET) {
+    throw new Error("Falta BLOG_AGENT_SECRET: sin él no se puede saber qué está publicado.");
   }
+  const res = await fetch(`${API_BASE_URL}/api/blog/create`, {
+    headers: { "Authorization": `Bearer ${BLOG_SECRET}` },
+  });
+  if (!res.ok) {
+    throw new Error(`No se pudo leer los posts existentes (${res.status} ${res.statusText}) desde ${API_BASE_URL}.`);
+  }
+  const data = await res.json();
+  postsExistentes = data.posts || [];
+  if (postsExistentes.length === 0) {
+    throw new Error("La API devolvió cero posts. Con el blog vacío no puede ser: algo va mal en la lectura.");
+  }
+  console.log(`\n📚 Posts existentes: ${postsExistentes.length}`);
 
-  const usedSlugs = postsExistentes.map(p => p.slug);
-  const topic = getDailyTopic(usedSlugs, CUSTOM_TOPIC);
+  // Van los posts COMPLETOS, no solo los slugs: `getDailyTopic` necesita también
+  // el `focusKeyword` de cada uno para descartar un tema aunque su título haya
+  // cambiado y el slug ya no coincida.
+  const topic = getDailyTopic(postsExistentes, CUSTOM_TOPIC);
 
   // Re-inferir categoría por regla semántica
   topic.category = inferCategoryByKeyword(
@@ -1190,25 +1078,22 @@ async function main() {
   }
   console.log(`   ✅ URLs: sin [repo] placeholder`);
 
-  // ── Paso 10: Marcar topic como publicado (Corrección 6) ──
   const topicId = topic.id;
-  if (topicId && !DRY_RUN) {
-    markTopicAsPublished(topicId, post.slug);
-  }
 
   // ── Guardar copia HTML local ──
   saveLocalHTML(post);
 
-  // ── Paso 11: Publicar en CMS ──
-  let publishResult;
-  try {
-    publishResult = await publishPost(post);
-  } catch (e) {
-    // Corrección 6: Revertir topic si publicación falla
-    if (topicId && !DRY_RUN) {
-      revertTopicState(topicId);
-    }
-    throw e;
+  // ── Paso 10: Publicar en CMS ──
+  const publishResult = await publishPost(post);
+
+  // ── Paso 11: Marcar el topic como publicado ──
+  // DESPUÉS de publicar, no antes. Marcarlo primero obligaba a existir a
+  // `revertTopicState` para deshacerlo cuando la publicación fallaba — y ese
+  // revert reescribía el archivo pero no deshacía el commit que ya se había
+  // hecho, así que dejaba el estado y el repositorio diciendo cosas distintas.
+  // Si `publishPost` lanza, aquí no se llega y no hay nada que revertir.
+  if (topicId && !DRY_RUN) {
+    markTopicAsPublished(topicId, post.slug);
   }
 
   // ── Paso 12: Verificar schema (ya ocurre dentro de publishPost) ──
