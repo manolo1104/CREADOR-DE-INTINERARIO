@@ -50,6 +50,13 @@ const nextConfig = {
       { source: "/taller", destination: "/curso/webinar", permanent: false },
       { source: "/calculadora", destination: "/curso/calculadora", permanent: false },
 
+      // El cuaderno de la noche 1 estuvo unas horas colgado en su ruta
+      // estática, que Next sirve sin pasar por ningún código: por ahí no había
+      // nada que contar. Ahora vive en /curso/workbook/1, que sí anota la
+      // descarga. Este redirect existe por si esa primera liga alcanzó a
+      // salir a algún lado.
+      { source: "/curso/workbook-noche-1.pdf", destination: "/curso/workbook/1", permanent: false },
+
       // ── Apex sin www → www ───────────────────────────────────────────────
       // Todo el sitio se declara canónico en `www` (canonical, hreflang y
       // sitemap), así que el apex NO debe servir una segunda copia: redirige.

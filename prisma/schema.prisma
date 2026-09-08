@@ -424,3 +424,23 @@ model CursoLead {
 
   @@index([status, compro])
 }
+
+/// Una descarga de un workbook del taller.
+///
+/// El workbook se reparte por el grupo de WhatsApp, con UNA sola liga para
+/// todos, así que la descarga no puede saber quién es quien la pide. Lo que sí
+/// se puede medir es cuántos aparatos distintos la pidieron, y eso ya contesta
+/// la pregunta que importa: de los que se registraron, ¿cuántos se llevaron el
+/// cuaderno?
+///
+/// No se guarda la IP: se guarda un hash de IP + navegador. Sirve para no
+/// contar cinco veces a quien lo abre cinco veces, y no sirve para nada más.
+model CursoDescarga {
+  id        String   @id @default(cuid())
+  noche     Int // 1 | 2 | 3
+  huella    String // sha256(ip + user-agent + sal). Nunca la IP en claro.
+  createdAt DateTime @default(now())
+
+  @@index([noche, createdAt])
+  @@index([noche, huella])
+}
