@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TOURS_DB, tourDurTexto } from "@/lib/tours";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
 
 const URL = `${SITE}/tours-en-ciudad-valles`;
 
@@ -69,13 +70,9 @@ export default function ToursCiudadVallesPage() {
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
-          { "@type": "ListItem", position: 2, name: "Tours en Ciudad Valles", item: URL },
-        ],
-      },
+      // Mismas migas, ahora por el ayudante compartido de `lib/jsonld`.
+      // Landing sólo en español: sin escalón de idioma.
+      buildBreadcrumbNode([{ name: "Tours en Ciudad Valles", path: "/tours-en-ciudad-valles" }]),
       {
         "@type": "ItemList",
         name: "Tours con salida desde Ciudad Valles",

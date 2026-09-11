@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
 
 const URL = `${SITE}/que-hacer-en-la-huasteca-potosina`;
 
@@ -176,13 +177,12 @@ export default function QueHacerPage() {
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
-          { "@type": "ListItem", position: 2, name: "Qué hacer en la Huasteca Potosina", item: URL },
-        ],
-      },
+      // Mismas migas, ahora por el ayudante compartido de `lib/jsonld`: el
+      // "Inicio" y la URL absoluta dejan de escribirse a mano en cada página.
+      // Esta guía sólo existe en español, así que no lleva escalón de idioma.
+      buildBreadcrumbNode([
+        { name: "Qué hacer en la Huasteca Potosina", path: "/que-hacer-en-la-huasteca-potosina" },
+      ]),
       {
         "@type": "ItemList",
         name: "Qué hacer en la Huasteca Potosina",
@@ -211,9 +211,12 @@ export default function QueHacerPage() {
 
       {/* ── HERO ── */}
       <section className="relative px-6 pt-36 pb-20 overflow-hidden">
+        {/* El alt decía sólo el nombre y un superlativo. Ahora describe lo que
+            se ve y dónde está: los datos (105 m, río Tampaón, Aquismón) salen
+            de DESTINOS_DB, no de la cabeza de nadie. */}
         <Image
           src="/imagenes/cascada-de-tamul/hero.jpg"
-          alt="Cascada de Tamul, la caída de agua más alta de San Luis Potosí"
+          alt="Cascada de Tamul, de 105 metros de caída, vista desde el río Tampaón entre los paredones del cañón, en Aquismón, San Luis Potosí"
           fill
           className="object-cover object-center"
           priority

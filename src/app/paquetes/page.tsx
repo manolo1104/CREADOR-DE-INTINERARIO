@@ -7,8 +7,8 @@ import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { RESENAS_PAQUETES, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
-import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
-import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI } from "@/lib/i18n/paquetes.en";
+import { buildOrganizationNode, buildHotelNode, ORG_REF } from "@/lib/jsonld";
+import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI, formatoMXN } from "@/lib/i18n/paquetes.en";
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -39,6 +39,19 @@ export default function PaquetesPage() {
   const lp       = (path: string) => localePath(path, locale);
   const paquetes = getLocalizedPaquetes(locale);
   const faqs     = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
+  // La frase que enumera los paquetes en la introducción se arma con los datos
+  // reales: si mañana cambia un precio o una duración en `paquetes.ts`, el
+  // párrafo cambia con ellos en vez de quedarse mintiendo.
+  const listaPaquetes = paquetes.map(
+    (p) => `${en ? "the " : "el "}${p.nombre} (${p.duracion}, ${formatoMXN(p.precio, locale)} MXN ${p.precioLabel})`,
+  );
+  const introLista =
+    listaPaquetes.length > 1
+      ? listaPaquetes.slice(0, -1).join(", ") + t.introUneY + listaPaquetes[listaPaquetes.length - 1]
+      : listaPaquetes.join("");
+  // El precio publicado es por pareja: el "desde… por persona" sale de dividirlo
+  // entre dos, no de un número escrito a mano.
+  const introPorPersona = formatoMXN(Math.round(Math.min(...paquetes.map((p) => p.precio)) / 2), locale);
   // Viaje en grupo del 16 al 19 de septiembre de 2026: hoy no lo enlaza ninguna
   // página pública. El aviso se apaga solo en cuanto pasa la fecha para que
   // /paquetes no siga mandando gente a un viaje que ya salió. El offset -06:00
@@ -71,6 +84,69 @@ export default function PaquetesPage() {
           priceCurrency: "MXN",
           availability: "https://schema.org/InStock",
           url: localeUrl(`/paquetes/${p.slug}`, locale),
+        },
+      })),
+      // Un paquete de varios días es un VIAJE, no un artículo de catálogo. El
+      // `Product` de arriba se queda —es el que entienden los comparadores de
+      // comercio— y al lado va el `TouristTrip`, que es el único tipo que
+      // admite el itinerario día por día, el punto de partida y la duración.
+      // Misma forma que el de /paquetes/[slug] para que las dos páginas no
+      // describan el mismo viaje de dos maneras distintas.
+      // 🔴 Sin `aggregateRating` ni `Review`, igual que el `Product`: no hay
+      // reseñas contadas por paquete y no se inventan.
+      ...paquetes.map((p) => ({
+        "@type": "TouristTrip",
+        name: p.nombre,
+        description: t.productDescripcion(p.subtitulo, p.duracion),
+        url: localeUrl(`/paquetes/${p.slug}`, locale),
+        image: `${SITE}${p.imagen}`,
+        inLanguage: locale === "en" ? "en" : "es-MX",
+        touristType: p.perfiles,
+        provider: ORG_REF,
+        // `dias` sale de PAQUETES_DB: 3, 4 o 5 días → P3D, P4D, P5D.
+        duration: `P${p.dias}D`,
+        // Todos los paquetes arrancan y terminan en Xilitla: el traslado hasta
+        // allá no va incluido, y decirlo también en los datos evita que una IA
+        // suponga que el viaje sale de la Ciudad de México.
+        tripOrigin: {
+          "@type": "Place",
+          name: "Xilitla, San Luis Potosí",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Xilitla",
+            addressRegion: "San Luis Potosí",
+            postalCode: "79900",
+            addressCountry: "MX",
+          },
+        },
+        itinerary: {
+          "@type": "ItemList",
+          numberOfItems: p.itinerario.length,
+          itemListElement: p.itinerario.map((d) => ({
+            "@type": "ListItem",
+            position: d.dia,
+            item: {
+              "@type": "TouristAttraction",
+              name: d.titulo,
+              description: d.descripcion,
+              address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+            },
+          })),
+        },
+        offers: {
+          "@type": "Offer",
+          price: p.precio,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url: localeUrl(`/paquetes/${p.slug}`, locale),
+          // El precio publicado es POR PAREJA (2 personas), no por persona.
+          description: `${formatoMXN(p.precio, locale)} MXN ${p.precioLabel} · ${p.duracion}`,
+          eligibleQuantity: {
+            "@type": "QuantitativeValue",
+            value: 2,
+            unitText: en ? "people" : "personas",
+          },
+          seller: ORG_REF,
         },
       })),
       {
@@ -125,23 +201,20 @@ export default function PaquetesPage() {
               sin los días y sin Xilitla — justo las palabras con las que la
               gente busca ("paquetes huasteca potosina todo incluido",
               "tour huasteca potosina 3 días" en posición 38, "paquetes a
-              xilitla"). Va en línea y no en `paquetes.en.ts` porque ese archivo
-              no es de este grupo; conviene devolverlo ahí cuando se pueda. */}
+              xilitla"). El texto vive en `paquetes.en.ts`, como el resto. */}
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            {en ? "✦ Tours + Hotel in Xilitla · 3, 4 or 5 days" : "✦ Tours + Hotel en Xilitla · 3, 4 o 5 días"}
+            {t.heroEyebrow}
           </p>
           <h1 className="reveal-up font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(38px,6vw,70px)" }}>
-            {en ? "Huasteca Potosina Packages" : "Paquetes Huasteca Potosina"}
-            <em className="shimmer-gold block italic">{en ? "All Inclusive" : "Todo Incluido"}</em>
+            {t.heroH1a}
+            <em className="shimmer-gold block italic">{t.heroH1b}</em>
           </h1>
           {/* "traslados"/"transfers" a secas contradecía la FAQ de esta misma
               página ("¿El precio incluye el traslado hasta Xilitla?" → "No viene
               incluido") y el `noIncluye` de los tres paquetes. Lo que sí cubre
               el precio es el transporte del hotel a cada tour y de regreso. */}
           <p className="reveal-up text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8" style={{ animationDelay: "80ms" }}>
-            {en
-              ? "All-inclusive 3, 4 and 5-day trips through the Huasteca Potosina: guided tours, transport to every tour and a hotel in Xilitla. You stay at the "
-              : "Viajes de 3, 4 o 5 días todo incluido por la Huasteca Potosina: tours guiados, transporte a cada tour y hotel en Xilitla. Te hospedas en el "}
+            {t.heroIntro1}
             <strong className="text-crema">{t.heroHotel}</strong>
             {t.heroIntro2}
           </p>
@@ -193,6 +266,30 @@ export default function PaquetesPage() {
           </div>
         </div>
       )}
+
+      {/* ── QUÉ ES UN PAQUETE ──
+          La página tenía 1.605 palabras y casi todas vivían dentro de tarjetas:
+          quien llegaba buscando "paquetes huasteca potosina todo incluido" o
+          "tour huasteca potosina 3 días" no encontraba en ninguna frase entera
+          qué incluye, desde dónde sale, cuánto cuesta ni cómo se reserva. Esto
+          lo dice en prosa, con cada dato sacado de `paquetes.ts`, para que se
+          pueda leer —y citar— sin abrir una sola tarjeta. */}
+      <section id="que-incluye" className="border-b border-white/6 bg-negro py-14 px-6 scroll-mt-24">
+        <div className="max-w-3xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-3">
+            {t.introEyebrow}
+          </p>
+          <h2 className="reveal-up font-cormorant font-light text-crema leading-tight mb-6" style={{ fontSize: "clamp(26px,4vw,40px)" }}>
+            {t.introH2a}<em className="shimmer-gold">{t.introH2b}</em>
+          </h2>
+          <div className="space-y-4 text-crema/65 font-dm text-sm leading-relaxed">
+            <p>{t.introP1(introLista, introPorPersona)}</p>
+            <p>{t.introP2}</p>
+            <p>{t.introP3}</p>
+            <p>{t.introP4}</p>
+          </div>
+        </div>
+      </section>
 
       {/* ── SI VIENES DE CDMX ── */}
       <section id="si-vienes-de-cdmx" className="relative border-b border-white/6 bg-gradient-to-b from-verde-profundo/45 to-negro py-16 px-6 overflow-hidden scroll-mt-24">

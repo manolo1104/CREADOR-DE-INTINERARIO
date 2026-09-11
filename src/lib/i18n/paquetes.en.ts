@@ -1,5 +1,6 @@
 import type { Locale } from "./config";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, type Paquete, type Habitacion } from "@/lib/paquetes";
+import { TOURS_DB } from "@/lib/tours";
 
 /**
  * Traducciones al inglés de los PAQUETES y de todo lo que los rodea (hotel,
@@ -335,6 +336,95 @@ export function getLocalizedLogistica(locale: Locale): typeof LOGISTICA {
 // ── Preguntas frecuentes ────────────────────────────────────────────────────
 
 /**
+ * Cifras para las preguntas frecuentes y la introducción: TODAS se calculan
+ * desde `PAQUETES_DB` y `TOURS_DB`. Ninguna se escribe a mano, porque una
+ * respuesta que cita un precio es justo la que envejece sin que nadie se entere
+ * —y es la que copian los buscadores de IA.
+ */
+export function formatoMXN(n: number, locale: Locale): string {
+  return `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+}
+
+const PAQ_ORDENADOS = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias);
+const PAQ_CORTO = PAQ_ORDENADOS[0];
+/** Los tours que se cobran por persona; el RZR va por vehículo y no compara. */
+const PRECIOS_TOUR_PERSONA = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
+const TOUR_MIN = Math.min(...PRECIOS_TOUR_PERSONA);
+const TOUR_MAX = Math.max(...PRECIOS_TOUR_PERSONA);
+/** El precio publicado es por pareja (2 personas). */
+const POR_PERSONA_CORTO = Math.round(PAQ_CORTO.precio / 2);
+
+/**
+ * Las preguntas que la gente sí escribe en Google y que esta página no
+ * contestaba: cuánto cuesta el viaje, cuántos días hacen falta, los menores, el
+ * cambio de fecha y en qué se diferencia del tour suelto.
+ *
+ * ⚠️ NO se publica ninguna cifra de ahorro frente a comprar suelto. Rehaciendo
+ * la cuenta con los datos del repositorio (precios de `TOURS_DB` × 2 personas +
+ * noches a la tarifa de `paquetePricing`, con la 3.ª noche gratis) el paquete de
+ * 4 días sale MÁS CARO que comprado por piezas. Mientras esa cuenta no cuadre,
+ * la respuesta dice qué cambia, no cuánto se ahorra.
+ *
+ * ⚠️ La escalera de cancelación (48 h / 24 h) es la de los TOURS DE UN DÍA: la
+ * propia `politica-de-cancelacion` dice que "los paquetes con hospedaje tienen
+ * condiciones propias de hotel que te confirmamos al reservar". Por eso la
+ * respuesta la atribuye a los tours y no promete esos reembolsos por el
+ * paquete: si el sitio dijera lo contrario, hablaría con dos voces.
+ *
+ * ⚠️ Estas preguntas salen también en /paquetes/[slug], que llama al mismo
+ * `getLocalizedFaqs`. Están escritas para leerse en las dos páginas.
+ */
+function faqsExtra(locale: Locale): { q: string; a: string }[] {
+  const m = (n: number) => formatoMXN(n, locale);
+  if (locale === "en") {
+    return [
+      {
+        q: "How much does a trip to the Huasteca Potosina cost?",
+        a: `An all-inclusive package with hotel starts at ${m(PAQ_CORTO.precio)} MXN per couple for ${PAQ_CORTO.dias} days and ${PAQ_CORTO.noches} nights — that is ${m(POR_PERSONA_CORTO)} MXN per person with lodging, tours, entrance fees, certified guides and breakfasts included. ${PAQ_ORDENADOS.slice(1).map((p, i) => `${i === 0 ? "The" : "the"} ${p.dias}-day package costs ${m(p.precio)} MXN`).join(" and ")}, also per couple. If you only want tours and no lodging, single-day tours run from ${m(TOUR_MIN)} to ${m(TOUR_MAX)} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
+      },
+      {
+        q: "How many days do I need for the Huasteca Potosina?",
+        a: "Three days and two nights are enough for the two star tours, the El Meco Waterfalls and the Tamul Expedition — that is the Adventure Package. With four days and three nights you also fit in Edward James's Surrealist Garden in Xilitla and a third day of your choice, either Stepped Paradise (Minas Viejas and Micos) or the Water Route at Puente de Dios. With five days and four nights you do four different tours without repeating a destination and without changing hotel. The packages start at three days because the day you arrive is already a tour day.",
+      },
+      {
+        q: "Can I bring children? How much do they pay?",
+        a: "Yes. The published package price covers two adults; from the third person on, we add what that person actually uses — a bed and a ticket for each tour. Children aged 6 to 10 pay 70% of each tour ticket and under-6s pay 50%, worked out automatically when you book. Up to 4 people sleep in one room; from the fifth on a second room is needed. Groups of more than 12 people we quote by hand on WhatsApp.",
+      },
+      {
+        q: "Can I change the dates of my package?",
+        a: "Date changes are arranged on WhatsApp, and it helps to tell us as soon as you know: a package also holds hotel rooms, so its change and cancellation terms are the hotel's own and we confirm them to you in writing when you book. The policy published on this site covers the one-day tours: cancel 48 hours or more before and you get 100% of what you paid back; between 48 and 24 hours we keep 50%; with less than 24 hours there is no refund, but you can reschedule once at no extra cost within the following 12 months. If we are the ones who cancel — a storm, a weather alert or a site closure — you choose between a 100% refund and rescheduling free of charge.",
+      },
+      {
+        q: "What is the difference between a package and buying the tours separately?",
+        a: "A package puts into a single booking the same guided tours we sell individually, the nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days and an itinerary already laid out day by day so the tours don't clash — plus one person coordinating the whole trip. Buying separately, you book and pay for each tour on its own and arrange the hotel yourself, which gives you more freedom over the dates. If you want the two figures side by side for your dates, message us on WhatsApp and we'll do both sums.",
+      },
+    ];
+  }
+  return [
+    {
+      q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
+      a: `Un paquete todo incluido con hotel arranca en ${m(PAQ_CORTO.precio)} MXN por pareja por ${PAQ_CORTO.dias} días y ${PAQ_CORTO.noches} noches, es decir ${m(POR_PERSONA_CORTO)} MXN por persona con hospedaje, tours, entradas, guías certificados y desayunos incluidos. ${PAQ_ORDENADOS.slice(1).map((p, i) => `${i === 0 ? "El" : "el"} de ${p.dias} días cuesta ${m(p.precio)} MXN`).join(" y ")}, también por pareja. Si solo quieres recorridos, sin hospedaje, los tours de un día van de ${m(TOUR_MIN)} a ${m(TOUR_MAX)} MXN por persona. A eso se suma tu traslado hasta Xilitla, las comidas y las cenas, que no van incluidos.`,
+    },
+    {
+      q: "¿Cuántos días necesito para conocer la Huasteca Potosina?",
+      a: "Con 3 días y 2 noches te alcanza para los dos recorridos estrella, las Cascadas del Meco y la Expedición Tamul: ese es el Paquete Aventura. Con 4 días y 3 noches entra además el Jardín Surrealista de Edward James en Xilitla y un tercer día a elegir entre el Paraíso Escalonado (Minas Viejas y Micos) o la Ruta Acuática del Puente de Dios. Con 5 días y 4 noches haces cuatro recorridos distintos sin repetir destino y sin cambiar de hotel. Los paquetes empiezan en 3 días porque el día de llegada ya es día de tour.",
+    },
+    {
+      q: "¿Puedo llevar niños? ¿Cuánto pagan los menores?",
+      a: "Sí. El precio publicado del paquete cubre a dos adultos; desde la tercera persona se suma lo que de verdad ocupa: su lugar para dormir y un boleto de cada tour. Los niños de 6 a 10 años pagan el 70 % del boleto de cada recorrido y los menores de 6 años el 50 %, y el descuento se calcula solo al reservar. En una habitación duermen hasta 4 personas; desde la quinta hace falta una segunda habitación. Los grupos de más de 12 personas los cotizamos a mano por WhatsApp.",
+    },
+    {
+      q: "¿Puedo cambiar la fecha de mi paquete?",
+      a: "Los cambios de fecha se piden por WhatsApp y conviene avisarnos en cuanto los sepas: el paquete también aparta habitaciones de hotel, así que sus condiciones de cambio y cancelación son las del hotel y te las confirmamos por escrito al reservar. La política publicada en este sitio cubre los tours de un día: cancelando con 48 horas o más de anticipación te devolvemos el 100 % de lo pagado; entre 48 y 24 horas se retiene el 50 %; con menos de 24 horas no hay reembolso, pero puedes reagendar una vez sin costo dentro de los 12 meses siguientes. Si cancelamos nosotros —por tormenta, alerta meteorológica o cierre del paraje— eliges entre el reembolso del 100 % o reagendar sin costo.",
+    },
+    {
+      q: "¿En qué se diferencia el paquete de comprar los tours por separado?",
+      a: "El paquete reúne en una sola reserva los mismos recorridos guiados que vendemos sueltos, las noches en el Hotel Paraíso Encantado de Xilitla, el desayuno buffet los días de tour y un itinerario ya armado día por día para que los recorridos no se empalmen, con una sola persona coordinando el viaje completo. Comprando por separado reservas y pagas cada tour por su cuenta y el hotel lo apartas tú, lo que te da más libertad con las fechas. Si quieres las dos cifras lado a lado para tus fechas, escríbenos por WhatsApp y te hacemos las dos cuentas.",
+    },
+  ];
+}
+
+/**
  * La respuesta del traslado se arma con los precios reales de `TRASLADOS`, igual
  * que en español: la cifra sale del catálogo, no de aquí.
  */
@@ -342,7 +432,7 @@ export function getLocalizedFaqs(
   locale: Locale,
   trasladosTexto: string,
 ): { q: string; a: string }[] {
-  if (locale === "es") return [...FAQS_PAQUETES];
+  if (locale === "es") return [...FAQS_PAQUETES, ...faqsExtra("es")];
   return [
     {
       q: "Is the price per person or per couple?",
@@ -368,6 +458,7 @@ export function getLocalizedFaqs(
       q: "How do you confirm availability?",
       a: "When you send us your enquiry on WhatsApp we check hotel availability and dates in real time. We reply in under 1 hour, and you don't need to pay anything up front to hold your dates.",
     },
+    ...faqsExtra("en"),
   ];
 }
 
@@ -385,6 +476,19 @@ export interface PaquetesUI {
   productDescripcion: (subtitulo: string, duracion: string) => string;
   howToNombre: string;
   howToDescripcion: string;
+  // Introducción que responde (qué es un paquete, qué incluye, desde cuánto,
+  // dónde se duerme y cómo se reserva). Las cifras NO viven aquí: llegan
+  // armadas desde PAQUETES_DB.
+  introEyebrow: string;
+  introH2a: string;
+  introH2b: string;
+  /** `lista` son los paquetes con su duración y su precio; `porPersona`, el más barato dividido entre dos. */
+  introP1: (lista: string, porPersona: string) => string;
+  introP2: string;
+  introP3: string;
+  introP4: string;
+  /** Conector para unir la lista de paquetes en una frase. */
+  introUneY: string;
   // Hero
   heroEyebrow: string;
   heroH1a: string;
@@ -446,10 +550,26 @@ const UI_ES: PaquetesUI = {
   howToNombre: "Cómo llegar a Xilitla desde la Ciudad de México",
   howToDescripcion:
     "Ruta recomendada en autobús nocturno desde CDMX para aprovechar el primer día completo de tour en la Huasteca Potosina.",
-  heroEyebrow: "✦ Tours + Hospedaje · Todo Coordinado",
-  heroH1a: "Paquetes",
-  heroH1b: " Todo Incluido",
-  heroIntro1: "Combinamos nuestros tours guiados con hospedaje en ",
+  introEyebrow: "✦ Antes de elegir",
+  introH2a: "Qué es exactamente un ",
+  introH2b: "paquete todo incluido",
+  introP1: (lista, porPersona) =>
+    `Un paquete de Tours Huasteca Potosina es un viaje con los recorridos y el hotel ya resueltos en una sola reserva. Hay tres, todos con base en Xilitla, San Luis Potosí: ${lista}. Los precios son por pareja, es decir por dos personas, así que el más corto sale en ${porPersona} MXN por persona.`,
+  introP2:
+    "En los tres duermes en el Hotel Paraíso Encantado de Xilitla, a minutos del Jardín Surrealista de Edward James. El precio cubre las noches de hotel, el desayuno buffet los días de tour, los recorridos completos con guías certificados NOM-09 SECTUR, las entradas a todas las atracciones, el equipo de seguridad, el seguro de viaje, la fotografía del recorrido y el transporte del hotel al inicio de cada tour y de regreso.",
+  introP3:
+    "Lo que no entra en el precio es el traslado hasta Xilitla —llegas por tu cuenta, aunque te lo cotizamos aparte como traslado privado—, las comidas y las cenas, y el suplemento de $400 MXN por noche de la habitación Jungla, la única con vista a la montaña. El día 1 ya es día de tour: la camioneta sale del hotel entre las 8:30 y las 9:00 de la mañana, así que si llegas esa misma mañana conviene estar en Xilitla antes de las 9; si prefieres llegar la víspera, puedes añadir una noche extra al reservar.",
+  introP4:
+    "Para reservar escríbenos por WhatsApp: confirmamos la disponibilidad del hotel y de tus fechas en menos de una hora y no necesitas pagar nada por adelantado para apartar. Si prefieres pagar con tarjeta, desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo. El precio publicado cubre a dos adultos; si van más personas, la tercera suma hotel y boletos y la cuarta solo boletos, y los niños de 6 a 10 años pagan el 70 % del boleto de cada tour y los menores de 6 años el 50 %.",
+  introUneY: " y ",
+  // Las tres cadenas del hero volvieron aquí desde `paquetes/page.tsx`, donde
+  // la FASE 1 las dejó en línea porque ese archivo no era suyo: en línea, el
+  // español y el inglés se editan por separado y acaban divergiendo.
+  heroEyebrow: "✦ Tours + Hotel en Xilitla · 3, 4 o 5 días",
+  heroH1a: "Paquetes Huasteca Potosina",
+  heroH1b: "Todo Incluido",
+  heroIntro1:
+    "Viajes de 3, 4 o 5 días todo incluido por la Huasteca Potosina: tours guiados, transporte a cada tour y hotel en Xilitla. Te hospedas en el ",
   heroHotel: "Hotel Paraíso Encantado Xilitla",
   heroIntro2: ". Tú solo preocúpate por llegar — nosotros nos encargamos del resto.",
   googleReviews: "Google Reviews",
@@ -513,10 +633,23 @@ const UI_EN: PaquetesUI = {
   howToNombre: "How to get to Xilitla from Mexico City",
   howToDescripcion:
     "The recommended overnight bus route from Mexico City so you get a full first day of touring in the Huasteca Potosina.",
-  heroEyebrow: "✦ Tours + Lodging · All Arranged",
-  heroH1a: "All-Inclusive",
-  heroH1b: " Packages",
-  heroIntro1: "We combine our guided tours with a stay at ",
+  introEyebrow: "✦ Before you choose",
+  introH2a: "What an ",
+  introH2b: "all-inclusive package really is",
+  introP1: (lista, porPersona) =>
+    `A Tours Huasteca Potosina package is a trip with the tours and the hotel already settled in a single booking. There are three, all based in Xilitla, San Luis Potosí: ${lista}. Prices are per couple, meaning two people, so the shortest one works out at ${porPersona} MXN per person.`,
+  introP2:
+    "In all three you sleep at Hotel Paraíso Encantado in Xilitla, minutes from Edward James's Surrealist Garden. The price covers the hotel nights, buffet breakfast on tour days, the full guided tours with NOM-09 SECTUR certified guides, entrance to every attraction, safety equipment, travel insurance, tour photography, and transport from the hotel to the start of each tour and back.",
+  introP3:
+    "What the price does not cover is getting to Xilitla itself — you make your own way there, though we quote a private transfer separately —, lunches and dinners, and the $400 MXN per night supplement for the Jungla room, the only one with a mountain view. Day 1 is already a tour day: the van leaves the hotel between 8:30 and 9:00 in the morning, so if you arrive that same morning you should be in Xilitla before 9; if you'd rather come the evening before, you can add an extra night when you book.",
+  introP4:
+    "To book, message us on WhatsApp: we confirm hotel availability and your dates in under an hour and you don't need to pay anything up front to hold them. If you'd rather pay by card, from 2 days you hold your place with 30%, and a single one-day tour is paid in full. The published price covers two adults; if more people come, the third adds hotel and tour tickets and the fourth adds tickets only, while children aged 6 to 10 pay 70% of each tour ticket and under-6s pay 50%.",
+  introUneY: " and ",
+  heroEyebrow: "✦ Tours + Hotel in Xilitla · 3, 4 or 5 days",
+  heroH1a: "Huasteca Potosina Packages",
+  heroH1b: "All Inclusive",
+  heroIntro1:
+    "All-inclusive 3, 4 and 5-day trips through the Huasteca Potosina: guided tours, transport to every tour and a hotel in Xilitla. You stay at the ",
   heroHotel: "Hotel Paraíso Encantado Xilitla",
   heroIntro2: ". All you have to worry about is getting here — we take care of the rest.",
   googleReviews: "Google Reviews",

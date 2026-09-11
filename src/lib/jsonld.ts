@@ -1,7 +1,7 @@
 import { Destino } from "./destinos";
 import { RATING_DESTINO } from "./destinoData";
 import { CONTACTO } from "./contacto";
-import { localePath, type Locale } from "./i18n/config";
+import { localePath, localeUrl, type Locale } from "./i18n/config";
 
 const BASE_URL = "https://www.huasteca-potosina.com";
 
@@ -124,6 +124,54 @@ export function buildHotelNode(locale: Locale = "es") {
     parentOrganization: ORG_REF,
     sameAs: ["https://www.instagram.com/_paraiso_encantado/"],
   };
+}
+
+/**
+ * Un escalón de la ruta de migas, SIN el "Inicio" (lo pone el ayudante).
+ * `path` es la ruta interna sin prefijo de idioma ("/destinos"), igual que en
+ * `buildAlternates`: así el inglés sale solo y nadie escribe "/en/..." a mano.
+ */
+export interface Crumb {
+  name: string;
+  path: string;
+}
+
+/**
+ * `BreadcrumbList` reutilizable — el nodo suelto, para meterlo en un `@graph`.
+ *
+ * Existía el mismo objeto copiado a mano en más de veinte páginas, y en las que
+ * no se copió simplemente no hay migas: /info-practica, la SEGUNDA página del
+ * sitio por impresiones, publicaba sus preguntas frecuentes sin decirle a Google
+ * dónde encaja. El "Inicio" se genera aquí para que ninguna página pueda
+ * olvidarlo ni traducirlo distinto, y las URLs salen de `localeUrl`, que es la
+ * misma función que firma los canónicos (home sin barra final incluida).
+ *
+ * La jerarquía se pasa tal cual está el menú: /destinos, /experiencias e
+ * /info-practica cuelgan de la home, no unas de otras.
+ */
+export function buildBreadcrumbNode(crumbs: Crumb[], locale: Locale = "es") {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: locale === "en" ? "Home" : "Inicio",
+        item: localeUrl("/", locale),
+      },
+      ...crumbs.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 2,
+        name: c.name,
+        item: localeUrl(c.path, locale),
+      })),
+    ],
+  };
+}
+
+/** Igual que `buildBreadcrumbNode` pero como documento suelto, con `@context`. */
+export function buildBreadcrumbJsonLd(crumbs: Crumb[], locale: Locale = "es") {
+  return { "@context": "https://schema.org", ...buildBreadcrumbNode(crumbs, locale) };
 }
 
 export interface DestinoFaq {
@@ -312,29 +360,15 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
         inLanguage,
         mainEntity: buildFAQs(d, locale),
       },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            position: 1,
-            name: locale === "en" ? "Home" : "Inicio",
-            item: `${BASE_URL}${localePath("/", locale)}`,
-          },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: locale === "en" ? "Destinations" : "Destinos",
-            item: `${BASE_URL}${localePath("/destinos", locale)}`,
-          },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: d.nombre,
-            item: url,
-          },
+      // Mismas migas de siempre (Inicio › Destinos › la ficha), ahora por el
+      // ayudante compartido en vez de un objeto escrito a mano.
+      buildBreadcrumbNode(
+        [
+          { name: locale === "en" ? "Destinations" : "Destinos", path: "/destinos" },
+          { name: d.nombre, path: `/destinos/${d.slug}` },
         ],
-      },
+        locale,
+      ),
     ],
   };
 }

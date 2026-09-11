@@ -19,6 +19,8 @@ import {
 
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { getInfoPractica, type InfoPracticaContent } from "@/lib/i18n/infoPractica.en";
+import { getDict } from "@/lib/i18n/messages";
+import { buildBreadcrumbJsonLd } from "@/lib/jsonld";
 
 /**
  * Title y H1 españoles, reescritos por CTR (sep 2026).
@@ -141,9 +143,20 @@ export default function InfoPracticaPage() {
   const lp = (path: string) => localePath(path, locale);
   const en = locale === "en";
 
+  // Esta página publicaba su FAQPage sin una sola miga de pan, y es la SEGUNDA
+  // del sitio por impresiones (16.910): Google sabía qué responde, no dónde
+  // vive. El nombre del escalón es el MISMO que el del menú (`dict.nav
+  // .infoPractica`) para que la ruta del resultado y el enlace de navegación se
+  // llamen igual. Cuelga de la home, como en el menú y en el pie.
+  const breadcrumbSchema = buildBreadcrumbJsonLd(
+    [{ name: getDict(locale).nav.infoPractica, path: "/info-practica" }],
+    locale,
+  );
+
   return (
     <main className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(t, locale)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
       {/* Hero */}
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">

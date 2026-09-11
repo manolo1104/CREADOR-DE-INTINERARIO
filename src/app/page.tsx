@@ -131,6 +131,74 @@ export default async function HomePage() {
   // permite a Google y a los buscadores de IA saber que hablan del mismo negocio.
   const agencySchema = buildOrganizationJsonLd(locale);
 
+  // El inicio enseñaba 3 tours y 3 paquetes con su precio a la vista y NINGUNO
+  // existía para una máquina: solo emitía WebSite y la ficha de empresa. Estas
+  // dos listas son exactamente lo que se ve en pantalla —los mismos 3 y 3,
+  // leídos de TOURS_DB y PAQUETES_DB—, así que no pueden quedarse desfasadas.
+  // Sin `aggregateRating` a propósito: el único que hay vive en el nodo de
+  // empresa y no se copia a los elementos.
+  const destacadosItemListSchema = {
+    "@context": "https://schema.org", "@type": "ItemList",
+    name: en ? "Featured Huasteca Potosina tours" : "Tours destacados de la Huasteca Potosina",
+    url: `${SITE_URL}${lp("/")}`,
+    inLanguage: en ? "en" : "es-MX",
+    numberOfItems: toursHome.length,
+    itemListElement: toursHome.map((t, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "TouristTrip",
+        name: t.nombre,
+        description: t.descripcion,
+        url: `${SITE_URL}${lp(`/tours/${t.slug}`)}`,
+        image: t.imagen_hero?.startsWith("http") ? t.imagen_hero : `${SITE_URL}${t.imagen_hero}`,
+        provider: ORG_REF,
+        offers: {
+          "@type": "Offer",
+          price: t.precio,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url: `${SITE_URL}${lp(`/tours/${t.slug}`)}`,
+          // El RZR se cobra por vehículo, no por persona: si la máquina no lo
+          // lee, el precio miente. Sale de `precioUnidad`, no de la cabeza.
+          description: t.precioUnidad === "vehiculo"
+            ? (en ? "Price per vehicle" : "Precio por vehículo")
+            : (en ? "Price per person"  : "Precio por persona"),
+        },
+      },
+    })),
+  };
+
+  // Los paquetes solo se pintan en español (la sección va dentro de `!en`), así
+  // que la lista tampoco se emite en inglés: declararía algo que no está.
+  const paquetesItemListSchema = {
+    "@context": "https://schema.org", "@type": "ItemList",
+    name: "Paquetes todo incluido de la Huasteca Potosina",
+    url: `${SITE_URL}/`,
+    inLanguage: "es-MX",
+    numberOfItems: PAQUETES_DB.length,
+    itemListElement: PAQUETES_DB.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "Product",
+        name: p.nombre,
+        description: `${p.subtitulo}. ${p.duracion} con tours y hospedaje incluidos.`,
+        image: `${SITE_URL}${p.imagen}`,
+        url: `${SITE_URL}/paquetes/${p.slug}`,
+        brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
+        offers: {
+          "@type": "Offer",
+          price: p.precio,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url: `${SITE_URL}/paquetes/${p.slug}`,
+          description: `Precio ${p.precioLabel}`,
+        },
+      },
+    })),
+  };
+
   const TESTIMONIOS = en
     ? [
         { img: "/imagenes/reviews/reviewer-turquoise-group.png", imgAlt: "Group of travelers in the turquoise waters of the Huasteca", foto: "/imagenes/reviews/reviewer-5.jpg", quote: "Incredible experience! The turquoise water is like nothing we'd ever seen. Our guide was outstanding — he knew every detail of the region and looked after us the whole time. We already booked to come back with more family!", nombre: "Carlos M.", meta: "Monterrey, N.L. · All Huasteca Tour · Mar 2026" },
@@ -147,6 +215,10 @@ export default async function HomePage() {
     <main id="main-content" className="min-h-screen bg-crema">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(agencySchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(destacadosItemListSchema) }} />
+      {!en && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(paquetesItemListSchema) }} />
+      )}
 
       {/* ── HERO ── */}
       <section
@@ -337,9 +409,13 @@ export default async function HomePage() {
           </h2>
           <div className="heading-underline" aria-hidden="true" />
           <p className="reveal-up reveal-d1 text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
+            {/* El precio vivía solo dentro de la insignia de cada tarjeta: un
+                "$1,550" suelto en un <span> no se puede citar. El número sale
+                de TOURS_DB (el mismo Math.min que usa la meta description), no
+                escrito a mano. */}
             {en
-              ? `${TOURS_DB.length} guided tours with transport, breakfast and a certified guide included`
-              : `${TOURS_DB.length} recorridos guiados con transporte, desayuno y guía certificado incluidos`}
+              ? `${TOURS_DB.length} guided tours with transport, breakfast and a certified guide included, from $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN per person.`
+              : `${TOURS_DB.length} recorridos guiados con transporte, desayuno y guía certificado incluidos, desde $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN por persona.`}
           </p>
         </div>
 
@@ -372,7 +448,13 @@ export default async function HomePage() {
               </h2>
               <div className="heading-underline" aria-hidden="true" />
               <p className="reveal-up reveal-d1 text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
+                {/* Duración y precio también en prosa: en las tarjetas viven
+                    dentro de insignias sueltas y así no se pueden citar. Todo
+                    sale de PAQUETES_DB (dias, precio, precioLabel). */}
                 Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
+                {" "}Los {PAQUETES_DB.length} paquetes van de {Math.min(...PAQUETES_DB.map((p) => p.dias))} a {Math.max(...PAQUETES_DB.map((p) => p.dias))} días
+                {" "}y cuestan de ${Math.min(...PAQUETES_DB.map((p) => p.precio)).toLocaleString("es-MX")} a ${Math.max(...PAQUETES_DB.map((p) => p.precio)).toLocaleString("es-MX")} MXN {new Set(PAQUETES_DB.map((p) => p.precioLabel)).size === 1 ? PAQUETES_DB[0].precioLabel : "según el paquete"}.
+                {" "}Desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo.
               </p>
             </div>
 
@@ -534,12 +616,25 @@ export default async function HomePage() {
                   {/* Copy escrito para el mercado americano: contra Costa Rica
                       no se gana con adjetivos, se gana con el precio real. Los
                       paquetes son POR PAREJA — ese es el dato que convierte. */}
+                  {/* Misma frase citable que en español (paridad ES/EN), y
+                      aquí pesa más todavía: un lector americano no ha oído el
+                      nombre en su vida. Fuente: llmsTxt.ts (GEOGRAFIA). */}
+                  <p>The Huasteca Potosina is a natural region in the northeast of the state of San Luis Potosí, Mexico: Ciudad Valles is its hub city and Xilitla — the Pueblo Mágico where we are based — sits about 2.5 hours from Tampico airport (TAM).</p>
                   <p>Tampico is a short hop from Texas, and from the airport it&apos;s two and a half hours to Xilitla — in a private vehicle, driven by us. You sleep in a Pueblo Mágico, in our own hotel, not on a resort strip.</p>
                   <p>Every guide holds NOM-09, Mexico&apos;s federal guiding certification, and travel insurance is in the price for every traveler on every tour. Groups stop at twelve. Fully bilingual guides are available — just ask when you book.</p>
                   <p>Five days, four nights, every tour, the hotel and the insurance: <strong className="text-verde-profundo">$16,500 MXN for two people</strong>. The price you see on our booking page is the price you pay.</p>
                 </>
               ) : (
                 <>
+                  {/* La consulta que más impresiones trae al inicio es
+                      "huasteca potosina" a secas, y detrás de ella hay alguien
+                      que todavía no sabe DÓNDE queda ni cómo se llega. Esta
+                      frase es la única del inicio que se puede citar sola.
+                      Todos sus datos salen de GEOGRAFIA y COMO_LLEGAR en
+                      src/lib/llmsTxt.ts: noreste de San Luis Potosí, hub en
+                      Ciudad Valles, base en Xilitla, Tampico (TAM) a ~2.5 h y
+                      CDMX a 5.5–6 h por 339 km de sierra. */}
+                  <p>La Huasteca Potosina es una región natural del noreste del estado de San Luis Potosí, en México: su ciudad de entrada es Ciudad Valles y su Pueblo Mágico es Xilitla, donde tenemos nuestra base. Se llega en avión a Tampico (TAM), a unas 2.5 horas de Xilitla, o por carretera desde la Ciudad de México en 5.5 a 6 horas de auto —339 km de sierra—; en autobús, la salida nocturna desde la Terminal Central del Norte llega a Xilitla a la mañana siguiente.</p>
                   <p>La Huasteca Potosina es una de las regiones más biodiversas de México, donde la selva tropical coexiste con cañones kársticos, cascadas turquesas y tradiciones milenarias de la cultura Huasteca, reconocida por la UNESCO.</p>
                   <p>Aquí el tiempo se mide diferente: por el vuelo circular de miles de vencejos al amanecer sobre el Sótano de las Golondrinas, por el color cambiante del agua del Tamul entre enero y octubre, por la luz que atraviesa el Puente de Dios solo entre las 11 y las 13 horas.</p>
                   <p>No es solo un destino. Es una experiencia que redefine lo que significa la naturaleza en México.</p>

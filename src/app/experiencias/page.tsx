@@ -9,6 +9,7 @@ import { TourCard } from "@/components/TourCard";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { getExperiencias, conNumero } from "@/lib/i18n/experiencias.en";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
 
 /**
  * Oferta de schema.org a partir del texto libre de `precio_entrada`.
@@ -102,13 +103,11 @@ export default function ExperienciasPage() {
           },
         })),
       },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: t.breadcrumbHome, item: localeUrl("/", locale) },
-          { "@type": "ListItem", position: 2, name: t.breadcrumbActual, item: url },
-        ],
-      },
+      // Mismas migas, ahora por el ayudante compartido de `lib/jsonld`. El
+      // "Inicio" lo pone él (era `t.breadcrumbHome`, el único sitio donde esa
+      // cadena se traducía a mano). /experiencias cuelga de la home, igual que
+      // /destinos: en el menú y en el pie son dos entradas hermanas.
+      buildBreadcrumbNode([{ name: t.breadcrumbActual, path: "/experiencias" }], locale),
       {
         "@type": "FAQPage",
         inLanguage: t.inLanguage,

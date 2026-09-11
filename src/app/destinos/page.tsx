@@ -4,6 +4,7 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import DestinosClient from "./DestinosClient";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeDestino } from "@/lib/i18n/localize";
+import { buildBreadcrumbJsonLd } from "@/lib/jsonld";
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -68,9 +69,19 @@ export default function DestinosPage() {
     }),
   };
 
+  // El índice publicaba su ItemList pero NINGUNA miga de pan: cada ficha
+  // declaraba "Inicio › Destinos › ficha" y el escalón intermedio no existía
+  // como tal en el grafo. /destinos cuelga directamente de la home (así está en
+  // el menú y en el pie), así que son dos niveles, no tres.
+  const breadcrumbSchema = buildBreadcrumbJsonLd(
+    [{ name: locale === "en" ? "Destinations" : "Destinos", path: "/destinos" }],
+    locale,
+  );
+
   return (
     <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(destinosListSchema) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     <main className="min-h-screen">
       <section className="bg-gradient-to-b from-verde-profundo/80 via-verde-profundo/30 to-negro px-6 pt-32 pb-16 text-center">
         <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
