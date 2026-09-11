@@ -64,8 +64,12 @@ export async function POST(req: NextRequest) {
     // habitación Jungla el total real es MUCHO mayor, así que la reserva
     // quedaba grabada con un total corto y el saldo por cobrar salía chiquito
     // en el correo, en el panel, en los KPIs y en el voucher que se le entrega
-    // al cliente. En un Gran Huasteca de 5 personas con noche extra al 30 % se
-    // perdían $29,575 de saldo que nadie iba a cobrar.
+    // al cliente. Cuando se detectó, una Odisea Huasteca —que entonces se
+    // llamaba Gran Huasteca— de 5 personas con noche extra al 30 % perdía
+    // $29,575 de saldo que nadie iba a cobrar. Esa cifra está medida con los
+    // precios de entonces; los cinco paquetes de hoy cuestan otra cosa, pero el
+    // agujero era de la fórmula, no del catálogo, así que renombrar o cambiar
+    // paquetes no lo cierra: lo cierra leer el total de la metadata.
     const cobrado   = Math.round((pi.amount_received || pi.amount) / 100);
     const totalMeta = Math.round(Number(meta.totalCompleto) || 0);
     const totalFull = totalMeta > 0 ? totalMeta : paquete.precio;

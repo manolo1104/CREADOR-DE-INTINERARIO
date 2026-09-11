@@ -257,55 +257,68 @@ export interface Resena {
 // Reseñas ESPECÍFICAS por paquete — cada página de detalle muestra testimonios
 // de gente que sí hizo ESE paquete (prueba social relevante al producto).
 export const RESENAS_POR_PAQUETE: Record<string, Resena[]> = {
-  aventura: [
+  "luna-de-miel": [
     {
-      nombre: "Claudia M.", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-30.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "El Paquete Aventura superó todas mis expectativas. La Expedición Tamul al amanecer es algo que nunca voy a olvidar — ver los pericos salir del sótano con mis propios ojos fue mágico. El hotel es perfecto, y los guías saben exactamente cuándo llegar a cada lugar para la mejor luz.",
+      nombre: "Claudia M.", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-30.jpg", estrellas: 5, tour: "Luna de Miel",
+      texto: "La Luna de Miel superó todas mis expectativas. El primer día es solo Las Pozas, con toda la calma, y el segundo la Expedición Tamul: ver a los miles de loros entrar en espiral al sótano al atardecer fue mágico. Al volver, la habitación ya estaba con velas y la cena puesta en la terraza.",
     },
     {
-      nombre: "La familia Herrera", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-32.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "Viajamos con dos niños de 8 y 11 años con el Paquete Aventura. Todo perfectamente coordinado — los guías pacientes y el ritmo ideal para los niños. Las Cascadas del Meco los dejó boquiabiertos. El hotel los trató como reyes.",
-    },
-    {
-      nombre: "Diego R.", ciudad: "Querétaro", foto: "/imagenes/reviews/reviewer-5.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "El Paquete Aventura es el balance perfecto: dos días, los dos tours más impresionantes y sin sentir prisa. Ver la Cascada de Tamul de cerca te deja sin palabras. Volvería sin pensarlo.",
+      nombre: "Roberto & Ana", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-31.jpg", estrellas: 5, tour: "Luna de Miel",
+      texto: "Fuimos con la Luna de Miel y fue el mejor viaje que hemos hecho en pareja. El jardín de Edward James, con la luz cayendo entre los arcos... no se puede describir. La suite tiene su propia piscina y la cena en la terraza fue el cierre perfecto. Ya queremos volver para hacer la Odisea Huasteca.",
     },
   ],
-  completo: [
+  familiar: [
     {
-      nombre: "Roberto & Ana", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-31.jpg", estrellas: 5, tour: "Paquete Completo",
-      texto: "Fuimos con el Paquete Completo y fue el mejor viaje que hemos hecho en pareja. El Puente de Dios con la luz entrando por el arco... no se puede describir. El desayuno del hotel, increíble. Ya queremos volver para hacer el Gran Huasteca.",
+      nombre: "La familia Herrera", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-32.jpg", estrellas: 5, tour: "Paquete Familiar",
+      texto: "Viajamos con dos niños de 8 y 11 años con el Paquete Familiar. Todo perfectamente coordinado — los guías pacientes y el ritmo ideal para los niños. Las Cascadas del Meco los dejaron boquiabiertos y en Micos se metieron al agua con chaleco sin un solo susto. El hotel los trató como reyes.",
     },
     {
-      nombre: "Mariana L.", ciudad: "Puebla", foto: "/imagenes/reviews/reviewer-12.jpg", estrellas: 5, tour: "Paquete Completo",
-      texto: "Hicimos el Paquete Completo en familia: tres días de tours distintos, Las Pozas el primer día y el sótano al amanecer. Cada día algo nuevo sin tener que cambiar de hotel. La logística, impecable.",
-    },
-    {
-      nombre: "Jorge y Paty", ciudad: "León", foto: "/imagenes/reviews/reviewer-8.jpg", estrellas: 5, tour: "Paquete Completo",
-      texto: "El Paquete Completo nos dejó conocer lo mejor de la Huasteca sin agotarnos. Los guías ajustaron el ritmo a nuestros tiempos y nos dejaron elegir el tercer día. Repetiríamos sin dudar.",
+      nombre: "Mariana L.", ciudad: "Puebla", foto: "/imagenes/reviews/reviewer-12.jpg", estrellas: 5, tour: "Paquete Familiar",
+      texto: "Hicimos el Paquete Familiar: tres días de tours distintos, el Meco el primero y el jardín de Edward James el segundo, que fue el que más les gustó a los niños. Ninguna caminata larga y cada día algo nuevo sin cambiar de hotel. La logística, impecable.",
     },
   ],
-  "gran-huasteca": [
+  "aventura-extrema": [
     {
-      nombre: "Andrea & Sofía", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-turquoise-group.png", estrellas: 5, tour: "Paquete Gran Huasteca",
-      texto: "El Paquete Gran Huasteca es otro nivel. Cuatro días seguidos de tours sin repetir un solo lugar: Las Pozas, los sótanos, Tamul, las Cascadas del Meco y el Puente de Dios. Terminamos agotadas y felices. Si vas a ir, ve por este.",
+      nombre: "Diego R.", ciudad: "Querétaro", foto: "/imagenes/reviews/reviewer-5.jpg", estrellas: 5, tour: "Aventura Extrema",
+      texto: "Aventura Extrema son tres días de tour y cada uno más fuerte que el anterior. El primer día ves la Cascada de Tamul desde la canoa y el tercero bajas por esa misma pared colgado de la cuerda. Te deja sin palabras. Volvería sin pensarlo.",
     },
     {
-      nombre: "Familia Vázquez", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-familia-tamul.png", estrellas: 5, tour: "Paquete Gran Huasteca",
-      texto: "Veníamos con la duda de si 5 días eran demasiado y nos quedamos cortos. El Gran Huasteca te deja vivir la Huasteca completa, con calma y durmiendo siempre en el mismo hotel. La organización, impecable.",
+      nombre: "Luis M.", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-tamul-grupo.jpg", estrellas: 5, tour: "Aventura Extrema",
+      texto: "Hice Aventura Extrema con amigos. Los rápidos Clase III del Tampaón nos dejaron muertos de risa y al día siguiente ya estábamos en el rappel frente a Tamul, con un guía en la cuerda todo el tiempo. Pide condición física, pero se puede sin experiencia previa.",
+    },
+  ],
+  "tu-huasteca": [
+    {
+      nombre: "Andrea & Sofía", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-turquoise-group.png", estrellas: 5, tour: "Tu Huasteca",
+      texto: "Tu Huasteca es otro nivel. Cuatro días seguidos de tour y los elegimos nosotras: el jardín de Edward James, Tamul, el Puente de Dios y las Cascadas del Meco. Terminamos agotadas y felices. Si vas a ir, ve por este.",
     },
     {
-      nombre: "Luis M.", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-tamul-grupo.jpg", estrellas: 5, tour: "Paquete Gran Huasteca",
-      texto: "Hice el Gran Huasteca con amigos. Cada día un escenario distinto y los guías sabían exactamente a qué hora llegar a cada sitio. El último día, el arco de luz del Puente de Dios, fue el cierre perfecto.",
+      nombre: "Jorge y Paty", ciudad: "León", foto: "/imagenes/reviews/reviewer-8.jpg", estrellas: 5, tour: "Tu Huasteca",
+      texto: "Con Tu Huasteca armamos el viaje a nuestra medida: elegimos los cuatro recorridos al reservar y cambiamos uno una semana antes sin ningún problema. Salimos del mismo hotel los cuatro días, sin rehacer maletas. Repetiríamos sin dudar.",
+    },
+  ],
+  "odisea-huasteca": [
+    {
+      nombre: "Familia Vázquez", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-familia-tamul.png", estrellas: 5, tour: "Odisea Huasteca",
+      texto: "Veníamos con la duda de si cinco días de tour eran demasiados y nos quedamos cortos. La Odisea Huasteca te deja vivir la Huasteca completa, con calma y durmiendo siempre en el mismo hotel. El día a elegir lo usamos en el Puente de Dios. La organización, impecable.",
+    },
+    {
+      nombre: "Gerardo P.", ciudad: "Aguascalientes", foto: "/imagenes/reviews/reviewer-23.jpg", estrellas: 5, tour: "Odisea Huasteca",
+      texto: "Era nuestra primera vez en la Huasteca y no queríamos volver con la lista a medias. Cinco días de tour y ninguno se parece al anterior: Edward James, Tamul con los pericos, Minas Viejas y Micos. Cerrar en la finca de café fue el descanso que no sabíamos que necesitábamos.",
     },
   ],
 };
 
-// Mezcla para la página de listado: una reseña de cada paquete.
+/**
+ * Mezcla para la página de listado. La rejilla es de TRES columnas, así que no
+ * caben los cinco paquetes: se escoge un testimonio por PERFIL DE VIAJERO, que
+ * es el criterio con el que está ordenado el catálogo — pareja, familia y el
+ * que viene a verlo todo.
+ */
 export const RESENAS_PAQUETES: Resena[] = [
-  RESENAS_POR_PAQUETE.aventura[0],
-  RESENAS_POR_PAQUETE["gran-huasteca"][0],
-  RESENAS_POR_PAQUETE.completo[0],
+  RESENAS_POR_PAQUETE["luna-de-miel"][0],
+  RESENAS_POR_PAQUETE.familiar[0],
+  RESENAS_POR_PAQUETE["odisea-huasteca"][1],
 ];
 
 // ── FAQ compartido para las páginas de detalle ──────────────────────────────

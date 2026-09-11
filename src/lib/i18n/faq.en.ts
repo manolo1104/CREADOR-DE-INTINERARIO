@@ -167,7 +167,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Se puede conocer la Huasteca Potosina en 3 días?",
-      a: "Sí. Con 3 días bien organizados se cubre lo esencial: la Cascada de Tamul, Las Pozas de Edward James en Xilitla y un día de cascadas turquesa (Micos, Minas Viejas o el Puente de Dios en Tamasopo). Nuestro Paquete Aventura de 3 días / 2 noches está diseñado justo para eso. Con 4 o 5 días se recorre con más calma y se incluyen más destinos.",
+      a: "Sí. En 3 días cabe lo esencial de la Huasteca: la Cascada de Tamul y Las Pozas de Edward James en Xilitla. Nuestro paquete Luna de Miel (3 días / 2 noches) hace exactamente ese recorrido, pensado para parejas. Para añadir un día completo de cascadas turquesa —Minas Viejas, Micos o las Cascadas del Meco— hacen falta 4 días: es lo que recorre el Paquete Familiar. Con 5 o 6 días se va con más calma y sin repetir un solo lugar.",
     },
     {
       q: "¿Qué es el Sótano de las Golondrinas?",
@@ -285,7 +285,7 @@ const EN: FaqContent = {
     },
     {
       q: "Can I see the Huasteca Potosina in 3 days?",
-      a: "Yes. Three well-organized days cover the essentials: the Tamul waterfall, Edward James' Las Pozas in Xilitla, and a day of turquoise waterfalls (Micos, Minas Viejas or Puente de Dios in Tamasopo). Our 3-day / 2-night Adventure Package is built for exactly that. With 4 or 5 days you go at a calmer pace and cover more ground.",
+      a: "Yes. Three days fit the essentials: the Tamul waterfall and Edward James' Las Pozas in Xilitla. Our Honeymoon package (3 days / 2 nights) does exactly that route, designed for couples. To add a full day of turquoise waterfalls — Minas Viejas, Micos or Cascadas del Meco — you need 4 days: that is what the Family Package covers. With 5 or 6 days you go at a calmer pace and never repeat a place.",
     },
     {
       q: "What is the Sótano de las Golondrinas?",

@@ -63,11 +63,13 @@ const nextConfig = {
       // viaja. Sus direcciones llevaban meses indexadas y salían en enlaces de
       // WhatsApp y correos, así que se redirigen al equivalente más cercano en
       // vez de dejarlas en 404. Permanentes (301) porque no van a volver.
+      // El emparejamiento lo fijó Manolo el 11 sep: Gran Huasteca es hoy la
+      // Odisea, y el Completo es Tu Huasteca. No se deduce del código.
       { source: "/paquetes/aventura",      destination: "/paquetes/aventura-extrema", permanent: true },
-      { source: "/paquetes/completo",      destination: "/paquetes/familiar",         permanent: true },
+      { source: "/paquetes/completo",      destination: "/paquetes/tu-huasteca",      permanent: true },
       { source: "/paquetes/gran-huasteca", destination: "/paquetes/odisea-huasteca",  permanent: true },
       { source: "/en/paquetes/aventura",      destination: "/en/paquetes/aventura-extrema", permanent: true },
-      { source: "/en/paquetes/completo",      destination: "/en/paquetes/familiar",         permanent: true },
+      { source: "/en/paquetes/completo",      destination: "/en/paquetes/tu-huasteca",      permanent: true },
       { source: "/en/paquetes/gran-huasteca", destination: "/en/paquetes/odisea-huasteca",  permanent: true },
 
       // ── Apex sin www → www ───────────────────────────────────────────────

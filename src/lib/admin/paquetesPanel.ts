@@ -1,11 +1,15 @@
 // Cargar un paquete ya armado dentro de una cotización.
 //
-// Los tres paquetes (Aventura, Completo, Gran Huasteca) tienen su itinerario
-// día por día en el catálogo, con el slug del recorrido de cada día. Antes eso
-// solo servía para pintar la página pública: para cotizar un Gran Huasteca
-// había que elegir a mano los cuatro recorridos, sus cuatro fechas seguidas y
-// las noches de hotel — cuatro minutos y cuatro oportunidades de equivocarse,
-// varias veces al día.
+// Los paquetes del catálogo —hoy cinco, ordenados por quién viaja y no por
+// duración— tienen su itinerario día por día, con el slug del recorrido de cada
+// día. Antes eso solo servía para pintar la página pública: para cotizar la
+// Odisea Huasteca había que elegir a mano sus cinco recorridos, sus cinco
+// fechas seguidas y las noches de hotel — cinco minutos y cinco oportunidades
+// de equivocarse, varias veces al día.
+//
+// Cuántos son y cómo se llaman NO se escribe aquí: sale de `PAQUETES_DB`, así
+// que el panel siguió los cinco nuevos sin tocar este archivo. Si mañana son
+// seis, tampoco hay que volver.
 //
 // Aquí se traduce ese itinerario a las líneas del formulario. El precio NO se
 // toca: cada recorrido se cotiza a su tarifa del catálogo y el descuento de
@@ -103,7 +107,9 @@ export function cargarPaquete(
     subtotal:       hotelPorNoche * noches * habitaciones,
   };
 
-  // Un paquete puede dejar un día a elección del cliente (el Completo lo hace).
+  // Un paquete puede dejar días a elección del cliente: hoy lo hacen Tu
+  // Huasteca, que deja elegir los CUATRO días de tour, y la Odisea Huasteca,
+  // que deja elegir el del día 4. De ahí que `cuantos` no sea siempre 1.
   // Se carga la primera opción —la que elige la mayoría— y se dice en pantalla
   // cuál es la otra, para no cotizar en silencio algo que el cliente no pidió.
   const e = paquete.eleccionTour;
