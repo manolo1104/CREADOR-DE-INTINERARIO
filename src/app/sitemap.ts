@@ -118,6 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tours-en-ciudad-valles`,            changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/grupos`,                            changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tours-en-xilitla`,                  changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/politica-de-cancelacion`, changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE}/aviso-de-privacidad`,     changeFrequency: "yearly",  priority: 0.3 },
