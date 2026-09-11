@@ -238,8 +238,15 @@ function buildOpeningHours(d: Destino) {
 
 export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
   const url = `${BASE_URL}${localePath(`/destinos/${d.slug}`, locale)}`;
-  const precio = d.precio_entrada.match(/\d+/)?.[0] || "0";
-  const esGratis = /libre|gratis|free/i.test(d.precio_entrada);
+  // 🔴 El precio que se le declara a Google sale del campo NUMÉRICO del destino,
+  // nunca de parsear `precio_entrada`. Ese texto lleva formato: el `\d+` que
+  // vivía aquí se paraba en la coma de millares y el rafting del Tampaón
+  // publicaba una entrada de 1 peso cobrando $1,950 —un error de 1,950 veces—,
+  // y el `/gratis/` declaraba gratuito al museo Leonora Carrington porque su
+  // tarifa termina en "menores de 12 años gratis". Sin campo numérico no se
+  // publica oferta: mejor callar un precio que inventarlo.
+  const precioMxn = d.precio_entrada_mxn;
+  const esGratis = precioMxn === 0;
   const imagen = d.imagen_hero || d.imagen_galeria[0];
   const inLanguage = locale === "en" ? "en" : "es-MX";
 
@@ -265,12 +272,13 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
           addressCountry: "MX",
         },
         openingHoursSpecification: buildOpeningHours(d),
-        // Sin Offer cuando no hay tarifa publicada ni es gratuito ("Consultar")
-        ...(esGratis || precio !== "0"
+        // Sin Offer cuando no hay tarifa por persona clara ("Consultar", cuotas
+        // por grupo, rangos): esos destinos no traen `precio_entrada_mxn`.
+        ...(precioMxn !== undefined
           ? {
               offers: {
                 "@type": "Offer",
-                price: esGratis ? "0" : precio,
+                price: String(precioMxn),
                 priceCurrency: "MXN",
                 availability: "https://schema.org/InStock",
               },

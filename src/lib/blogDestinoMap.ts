@@ -61,6 +61,20 @@ export function normalizaSlugBlog(slug: string): string {
   return slug.replace(/-20\d{2}$/, "");
 }
 
+/**
+ * ÚNICA fuente de verdad de la forma de una URL de artículo.
+ *
+ * 18 de los 40 slugs de la base arrastran sufijo de año y `next.config.mjs` los
+ * redirige (308) a la versión sin año. Escribir `/blog/${post.slug}` a mano
+ * dejaba el `canonical` de esos 18 apuntando a una redirección — y Google
+ * descarta un canonical que redirige — mientras el sitemap sí los normalizaba.
+ * Todo lo que imprima una URL de blog (canonical, JSON-LD, enlaces internos,
+ * los dos sitemaps) tiene que pasar por aquí.
+ */
+export function urlBlog(slug: string): string {
+  return `/blog/${normalizaSlugBlog(slug)}`;
+}
+
 export function destinoDeBlog(slug: string): BlogDestino | undefined {
   return MAPA[slug] ?? MAPA[normalizaSlugBlog(slug)];
 }
@@ -79,4 +93,87 @@ const POR_DESTINO: Record<string, string> = (() => {
 
 export function blogDeDestino(destinoSlug: string): string | undefined {
   return POR_DESTINO[destinoSlug];
+}
+
+// ── Artículo → qué se le vende ───────────────────────────────────────────────
+
+/**
+ * `MAPA` sólo llega hasta la ficha de destino, que tampoco cobra. Este segundo
+ * mapa lleva el artículo hasta lo que SÍ se compra: un tour concreto, un
+ * paquete concreto, o el catálogo cuando el artículo es transversal (clima,
+ * cómo llegar, cuánto cuesta) y no habla de un solo lugar.
+ *
+ * Los `href` están verificados contra `TOURS_DB` (`src/lib/tours.ts`) y
+ * `PAQUETES_DB` (`src/lib/paquetes.ts`): `expedicion-tamul`,
+ * `ruta-acuatica-puente-de-dios`, `paraiso-escalonado-minas-micos`, `completo`.
+ * Ojo: los slugs de URL de los tours NO son sus `id` (`expedicion-tamul` vs
+ * `tour-tamul`).
+ *
+ * No existe un "paquete familiar" como tal: el que las familias compran es el
+ * Paquete Completo (sus propios `perfiles` dicen "Familias"), así que ahí van
+ * los dos artículos de niños.
+ */
+export interface OfertaBlog {
+  /** Ruta interna ya verificada. */
+  href: string;
+  /** Ancla descriptiva: dice a dónde lleva sin leer lo de alrededor. */
+  ancla: string;
+  /** Media línea de contexto bajo el enlace. */
+  nota: string;
+}
+
+const TOUR_TAMUL: OfertaBlog = {
+  href: "/tours/expedicion-tamul",
+  ancla: "Ver la Expedición Tamul — sótano, cañón y cascada",
+  nota: "Un día completo, lancha incluida. Salidas todos los días.",
+};
+const TOUR_PUENTE_DIOS: OfertaBlog = {
+  href: "/tours/ruta-acuatica-puente-de-dios",
+  ancla: "Ver la Ruta Acuática al Puente de Dios",
+  nota: "Puente de Dios más Siete Cascadas o Tamasopo, en un solo día.",
+};
+const TOUR_MICOS: OfertaBlog = {
+  href: "/tours/paraiso-escalonado-minas-micos",
+  ancla: "Ver el tour a Cascadas de Micos y Minas Viejas",
+  nota: "Las dos cascadas escalonadas en el mismo recorrido.",
+};
+const CATALOGO_TOURS: OfertaBlog = {
+  href: "/tours",
+  ancla: "Ver los tours guiados de la Huasteca Potosina",
+  nota: "Diez recorridos con guía certificado, entradas y transporte.",
+};
+const CATALOGO_PAQUETES: OfertaBlog = {
+  href: "/paquetes",
+  ancla: "Paquetes todo incluido con hotel en Xilitla",
+  nota: "De 3 a 5 días: hotel, tours y traslados en un solo precio.",
+};
+const PAQUETE_FAMILIAS: OfertaBlog = {
+  href: "/paquetes/completo",
+  ancla: "Paquete Completo Huasteca — 4 días con hotel, el de las familias",
+  nota: "Tres días de tours y el tercero lo eligen ustedes.",
+};
+const PRECIOS: OfertaBlog = {
+  href: "/precios",
+  ancla: "Precios de tours y paquetes, actualizados",
+  nota: "Qué incluye cada uno y qué no, sin letras chiquitas.",
+};
+
+/** Clave = slug ya normalizado (sin sufijo de año). */
+const OFERTAS: Record<string, OfertaBlog[]> = {
+  "mejor-epoca-para-visitar-la-huasteca-potosina": [CATALOGO_TOURS, CATALOGO_PAQUETES],
+  "cascada-de-tamul-la-guia-definitiva-para-visitarla": [TOUR_TAMUL],
+  "cascada-tamul-como-llegar": [TOUR_TAMUL],
+  "puente-de-dios-tamasopo-el-portal-de-luz-de-la-huasteca": [TOUR_PUENTE_DIOS],
+  "cascadas-de-micos-guia-completa-para-tu-visita": [TOUR_MICOS],
+  "como-llegar-a-xilitla-rutas-desde-cdmx-monterrey-y-slp": [CATALOGO_PAQUETES],
+  "itinerario-huasteca-potosina-3-dias-3-dias-en-la-huasteca-po": [CATALOGO_PAQUETES],
+  "itinerario-xilitla-itinerario-perfecto-de-3-dias-en-xilitla": [CATALOGO_PAQUETES],
+  "huasteca-potosina-con-ninos-la-ruta-familiar-perfecta": [PAQUETE_FAMILIAS],
+  "xilitla-con-ninos-actividades-para-ninos-en-xilitla-viajando": [PAQUETE_FAMILIAS],
+  "cuanto-cuesta-huasteca-potosina": [PRECIOS, CATALOGO_PAQUETES],
+};
+
+/** Qué se le ofrece a este artículo. Vacío = no hay oferta específica. */
+export function ofertasDeBlog(slug: string): OfertaBlog[] {
+  return OFERTAS[normalizaSlugBlog(slug)] ?? [];
 }

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
+import Link from "next/link";
 import { Star, TreePine, UtensilsCrossed, MapPin, Bus } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
@@ -33,10 +34,16 @@ export function generateMetadata(): Metadata {
 
 export default function PaquetesPage() {
   const locale   = asLocale(headers().get("x-locale"));
+  const en       = locale === "en";
   const t        = getPaquetesUI(locale);
   const lp       = (path: string) => localePath(path, locale);
   const paquetes = getLocalizedPaquetes(locale);
   const faqs     = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
+  // Viaje en grupo del 16 al 19 de septiembre de 2026: hoy no lo enlaza ninguna
+  // página pública. El aviso se apaga solo en cuanto pasa la fecha para que
+  // /paquetes no siga mandando gente a un viaje que ya salió. El offset -06:00
+  // va escrito: el servidor corre en UTC y sin él el corte se adelanta 6 horas.
+  const viajeSepVigente = Date.now() < new Date("2026-09-19T23:59:59-06:00").getTime();
   const paquetesSchema = {
     "@context": "https://schema.org",
     "@graph": [
@@ -113,15 +120,28 @@ export default function PaquetesPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-negro/70 via-negro/55 to-negro/85" />
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
+          {/* El title ya decía "Todo Incluido" y el cuerpo no lo acompañaba: el
+              H1 era sólo "Paquetes / Todo Incluido", sin "Huasteca Potosina",
+              sin los días y sin Xilitla — justo las palabras con las que la
+              gente busca ("paquetes huasteca potosina todo incluido",
+              "tour huasteca potosina 3 días" en posición 38, "paquetes a
+              xilitla"). Va en línea y no en `paquetes.en.ts` porque ese archivo
+              no es de este grupo; conviene devolverlo ahí cuando se pueda. */}
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            {t.heroEyebrow}
+            {en ? "✦ Tours + Hotel in Xilitla · 3, 4 or 5 days" : "✦ Tours + Hotel en Xilitla · 3, 4 o 5 días"}
           </p>
           <h1 className="reveal-up font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(38px,6vw,70px)" }}>
-            {t.heroH1a}
-            <em className="shimmer-gold block italic">{t.heroH1b}</em>
+            {en ? "Huasteca Potosina Packages" : "Paquetes Huasteca Potosina"}
+            <em className="shimmer-gold block italic">{en ? "All Inclusive" : "Todo Incluido"}</em>
           </h1>
+          {/* "traslados"/"transfers" a secas contradecía la FAQ de esta misma
+              página ("¿El precio incluye el traslado hasta Xilitla?" → "No viene
+              incluido") y el `noIncluye` de los tres paquetes. Lo que sí cubre
+              el precio es el transporte del hotel a cada tour y de regreso. */}
           <p className="reveal-up text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8" style={{ animationDelay: "80ms" }}>
-            {t.heroIntro1}
+            {en
+              ? "All-inclusive 3, 4 and 5-day trips through the Huasteca Potosina: guided tours, transport to every tour and a hotel in Xilitla. You stay at the "
+              : "Viajes de 3, 4 o 5 días todo incluido por la Huasteca Potosina: tours guiados, transporte a cada tour y hotel en Xilitla. Te hospedas en el "}
             <strong className="text-crema">{t.heroHotel}</strong>
             {t.heroIntro2}
           </p>
@@ -147,6 +167,32 @@ export default function PaquetesPage() {
           </div>
         </div>
       </section>
+
+      {/* ── VIAJE EN GRUPO DE SEPTIEMBRE ──
+          Datos tomados tal cual de /viaje-septiembre: 16–19 sep 2026, 4 días,
+          3 noches, 3 recorridos, desde $7,900 MXN por persona, 16 lugares. */}
+      {viajeSepVigente && (
+        <div className="border-b border-white/6 bg-terracota/12">
+          <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <p className="text-[9px] tracking-[3px] uppercase text-dorado font-dm mb-1">
+                {en ? "Group departure · Sep 16–19, 2026" : "Salida en grupo · 16–19 de septiembre 2026"}
+              </p>
+              <p className="text-crema/85 font-dm text-[13px] leading-relaxed">
+                {en
+                  ? "Leaving from Mexico City: 4 days, 3 nights in Xilitla and 3 all-inclusive guided tours, from $7,900 MXN per person. Only 16 spots."
+                  : "Salimos desde CDMX: 4 días, 3 noches en Xilitla y 3 recorridos guiados todo incluido, desde $7,900 MXN por persona. Solo 16 lugares."}
+              </p>
+            </div>
+            <Link
+              href={lp("/viaje-septiembre")}
+              className="flex-shrink-0 border border-dorado/60 text-dorado hover:bg-dorado hover:text-negro px-6 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors whitespace-nowrap"
+            >
+              {en ? "See the September trip →" : "Ver el viaje de septiembre →"}
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ── SI VIENES DE CDMX ── */}
       <section id="si-vienes-de-cdmx" className="relative border-b border-white/6 bg-gradient-to-b from-verde-profundo/45 to-negro py-16 px-6 overflow-hidden scroll-mt-24">

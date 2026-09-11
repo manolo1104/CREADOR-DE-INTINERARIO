@@ -118,7 +118,7 @@ const ES: ExperienciasContent = {
     "{N} destinos únicos — cascadas turquesas, aventura extrema, arte surrealista y aguas termales. Una experiencia para cada tipo de viajero.",
 
   bannerEyebrow: "✦ 4.9★ · 492 reseñas de Google",
-  bannerTexto: "Diez recorridos con todo incluido. Apartas con el 30 % y cancelas gratis hasta 48 h antes.",
+  bannerTexto: "Diez recorridos con todo incluido. Desde 2 días apartas con el 30 % y cancelas gratis hasta 48 h antes.",
   bannerCta: "Ver recorridos y reservar →",
   bannerVisible: true,
 
@@ -211,7 +211,7 @@ const EN: ExperienciasContent = {
   // El banner anunciaba el planificador (`/recomendar`, solo-ES) y por eso
   // estaba apagado en inglés. Ahora lleva al motor, que sí está traducido.
   bannerEyebrow: "✦ 4.9★ · 492 Google reviews",
-  bannerTexto: "Ten all-inclusive tours. Book with a 30 % deposit, cancel free up to 48 h before.",
+  bannerTexto: "Ten all-inclusive tours. From 2 days on, a 30 % deposit books it; cancel free up to 48 h before.",
   bannerCta: "See tours and book →",
   bannerVisible: true,
 

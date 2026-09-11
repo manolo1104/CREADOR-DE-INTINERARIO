@@ -171,7 +171,14 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           </p>
           <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
             {money(t.precio)}
-            <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN / {en ? "person" : "persona"}</span>
+            <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">
+              {/* La unidad sale de `precioUnidad`, no escrita a mano: el RZR se
+                  cobra por vehículo (2 a 6 plazas) y la tarjeta lo anunciaba por
+                  persona, inflando el precio percibido hasta seis veces. */}
+              {t.precioUnidad === "vehiculo"
+                ? (en ? "MXN / vehicle" : "MXN / vehículo")
+                : (en ? "MXN / person"  : "MXN / persona")}
+            </span>
           </p>
         </div>
 

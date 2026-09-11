@@ -179,7 +179,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Cómo reservo y cuánto tengo que pagar por adelantado?",
-      a: "Reservas en línea desde la página del tour: eliges fecha y número de personas, y apartas con un anticipo del 30 %. El saldo lo liquidas el día del tour, en efectivo o con tarjeta. También puedes pagar el 100 % al reservar si prefieres llegar sin pendientes.",
+      a: "Reservas en línea desde la página del tour: eliges fecha y número de personas. Un recorrido de un solo día se paga completo al reservar; desde dos días apartas con el 30 % y liquidas el saldo el día del tour, en efectivo o con tarjeta. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes.",
     },
     {
       q: "¿Puedo pagar con tarjeta? ¿Es seguro?",
@@ -297,7 +297,7 @@ const EN: FaqContent = {
     },
     {
       q: "How do I book, and how much do I pay up front?",
-      a: "You book online from the tour page: pick a date and the number of travelers, and hold your spot with a 30% deposit. The balance is due on the day of the tour, in cash or by card. You can also pay 100% at booking if you'd rather arrive with nothing pending.",
+      a: "You book online from the tour page: pick a date and the number of travelers. A single-day tour is paid in full when you book; from two days on you hold your spot with a 30% deposit and the balance is due on the day of the tour, in cash or by card. You can also pay 100% up front if you'd rather arrive with nothing pending.",
     },
     {
       q: "Can I pay by card? Is it secure?",

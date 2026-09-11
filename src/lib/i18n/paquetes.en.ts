@@ -77,7 +77,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     noIncluye: [
       "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
       "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400/night)",
+      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
       "Tips and personal expenses",
     ],
     valor: [
@@ -140,7 +140,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     noIncluye: [
       "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
       "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400/night)",
+      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
       "Tips and personal expenses",
     ],
     valor: [
@@ -202,7 +202,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     noIncluye: [
       "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
       "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400/night)",
+      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
       "Tips and personal expenses",
     ],
     valor: [
@@ -354,7 +354,7 @@ export function getLocalizedFaqs(
     },
     {
       q: "How do I get to Xilitla from Mexico City?",
-      a: "The most practical way is the overnight bus from the Terminal Central del Norte (~10:15 PM, Servicios Coordinados / ETN), which reaches Xilitla around 6:30 AM for about $650 per person. A taxi of roughly $60 drops you at the hotel in 7 minutes. Since you arrive at dawn, we give you your room early so you can rest, and your first tour starts that same day: you don't lose Day 1.",
+      a: "The most practical way is the overnight bus from the Terminal Central del Norte (~10:15 PM, Servicios Coordinados / ETN), which reaches Xilitla around 6:30 AM for about $650 MXN per person. A taxi of roughly $60 MXN drops you at the hotel in 7 minutes. Since you arrive at dawn, we give you your room early so you can rest, and your first tour starts that same day: you don't lose Day 1.",
     },
     {
       q: "Can I choose my room?",
@@ -528,8 +528,8 @@ const UI_EN: PaquetesUI = {
   cdmxIntro:
     "With the overnight bus from Mexico City you get a full first day: you arrive at dawn, rest at the hotel and set off on your first tour that same morning.",
   cdmxPasos: [
-    { n: "1", t: "Overnight bus", d: "You leave the Terminal Central del Norte at around 10:15 PM (Servicios Coordinados / ETN). Roughly $650 per person." },
-    { n: "2", t: "You wake up in Xilitla", d: "You reach the Xilitla bus station around 6:30 AM. A taxi of about $60 drops you at the hotel in some 7 minutes." },
+    { n: "1", t: "Overnight bus", d: "You leave the Terminal Central del Norte at around 10:15 PM (Servicios Coordinados / ETN). Roughly $650 MXN per person." },
+    { n: "2", t: "You wake up in Xilitla", d: "You reach the Xilitla bus station around 6:30 AM. A taxi of about $60 MXN drops you at the hotel in some 7 minutes." },
     { n: "3", t: "You rest on arrival", d: "We give you your room early so you can sleep for a while before heading out. Breakfast is already included in your tour." },
     { n: "4", t: "A full tour on Day 1", d: "That same morning our van picks you up and your first tour begins. You don't lose your arrival day." },
   ],

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { BlogFilters } from "@/components/BlogFilters";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
+import { urlBlog } from "@/lib/blogDestinoMap";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -67,7 +68,7 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
           "@type": "ListItem",
           position: i + 1,
           name: p.title,
-          url: `${SITE}/blog/${p.slug}`,
+          url: `${SITE}${urlBlog(p.slug)}`,
           description: p.excerpt.slice(0, 155),
         })),
       },
@@ -119,7 +120,7 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
         <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-white/8">
           <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ 4.9★ · 492 reseñas de Google</p>
           <h2 className="reveal-up font-cormorant font-light text-crema text-3xl mb-4">¿Listo para reservar tu viaje?</h2>
-          <p className="text-crema/50 font-dm font-light mb-8">Diez recorridos con todo incluido. Apartas con el 30 % y cancelas gratis hasta 48 h antes.</p>
+          <p className="text-crema/50 font-dm font-light mb-8">Diez recorridos con todo incluido. Apartas con el 30 %; los tours de un día se pagan completos. Cancelas gratis hasta 48 h antes.</p>
           <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
             Ver recorridos y reservar →
           </Link>

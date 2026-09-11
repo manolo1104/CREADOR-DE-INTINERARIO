@@ -1,4 +1,4 @@
-import { TOURS_DB, type Tour } from "@/lib/tours";
+import { TOURS_DB, conPrecio, type Tour } from "@/lib/tours";
 import { DESTINOS_DB, type Destino } from "@/lib/destinos";
 import type { Locale } from "./config";
 import { TOURS_EN } from "./tours.en";
@@ -15,8 +15,11 @@ export function localizeTour(tour: Tour, locale: Locale): Tour {
     ...tour,
     nombre: t.nombre ?? tour.nombre,
     tagline: t.tagline ?? tour.tagline,
-    descripcion: t.descripcion ?? tour.descripcion,
-    descripcionLarga: t.descripcionLarga ?? tour.descripcionLarga,
+    // El `{precio}` de una descripción se resuelve con el precio del recorrido,
+    // igual que en `TOURS_DB` pero con el agrupado de miles del inglés. El
+    // fallback ya viene resuelto (llega desde `TOURS_DB`), así que no se toca.
+    descripcion: t.descripcion ? conPrecio(t.descripcion, tour.precio, "en") : tour.descripcion,
+    descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, tour.precio, "en") : tour.descripcionLarga,
     tipo: t.tipo ?? tour.tipo,
     urgencia: t.urgencia ?? tour.urgencia,
     destinos: t.destinos ?? tour.destinos,

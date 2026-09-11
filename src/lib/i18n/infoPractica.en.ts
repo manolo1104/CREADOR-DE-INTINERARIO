@@ -207,7 +207,11 @@ export interface InfoPracticaContent {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ES: InfoPracticaContent = {
-  metaTitle: "Info Práctica — Cómo Llegar, Cuándo ir y Dónde Quedarse | Huasteca Potosina",
+  // 11 sep 2026: medía 75 caracteres y Google corta en ~60, así que el
+  // resultado se leía "…y Dónde Qued…". Éste mide 55 y abre por lo que la
+  // gente teclea: "huasteca potosina como llegar" (2.666 impresiones) y
+  // "clima en la huasteca potosina" (1.763).
+  metaTitle: "Huasteca Potosina — Cómo Llegar, Clima y Dónde Quedarse",
   metaDescription:
     "Todo lo que necesitas antes de viajar a la Huasteca Potosina: vuelos desde CDMX, temporadas, hospedaje en Ciudad Valles y Xilitla, presupuesto y consejos locales.",
   ogTitle: "Info Práctica — Guía Completa para viajar a la Huasteca Potosina",
@@ -216,8 +220,8 @@ const ES: InfoPracticaContent = {
   twitterDescription: "Cómo llegar, cuándo ir, dónde quedarse, presupuesto y qué llevar.",
 
   heroEyebrow: "Todo lo que necesitas saber",
-  heroH1a: "Guía Práctica de ",
-  heroH1b: "Viaje",
+  heroH1a: "Guía Práctica de la ",
+  heroH1b: "Huasteca Potosina",
   heroIntro:
     "Todo lo que necesitas para llegar, moverte, hospedarte y disfrutar la Huasteca Potosina sin sorpresas desagradables.",
   navLabels: [
@@ -695,9 +699,11 @@ const ES: InfoPracticaContent = {
         },
         {
           // CORREGIDO (13 ago 2026): antes decía que se paga el total al
-          // reservar; el carrito cobra el 30 % (`ANTICIPO_PCT`).
+          // reservar. Y 11 sep: tampoco es siempre el 30 %. La regla vive en
+          // `pctACobrar`: un recorrido de un solo día sin hospedaje se cobra
+          // COMPLETO y solo lo demás aparta con el 30 %.
           q: "¿Necesito pagar el total al reservar?",
-          a: "No. Apartas tu lugar con el 30 % del total, pagado en línea de forma segura con tarjeta, y liquidas el resto el día del tour, en efectivo o con tarjeta. Si prefieres otro medio de pago, escríbenos por WhatsApp y lo coordinamos.",
+          a: "Depende del viaje: un recorrido de un solo día, sin hospedaje, se paga completo al reservar. Si son dos días o más, o llevas hospedaje, apartas con el 30 % del total en línea de forma segura con tarjeta y liquidas el resto el día del tour, en efectivo o con tarjeta. Si prefieres otro medio de pago, escríbenos por WhatsApp y lo coordinamos.",
         },
       ],
     },
@@ -860,9 +866,9 @@ const EN: InfoPracticaContent = {
     "If you're in a group of 4 or more, renting a car in Valles usually works out cheaper than taxis and gives you complete freedom over your timings. Many destinations have no regular transport before 8am.",
   reservaTransporte: "Book your transport",
   afiliados: [
-    { nombre: "ADO · Bus", sub: "Mexico City → Valles from $600" },
-    { nombre: "Rentalcars · Car", sub: "Valles from ~$800/day" },
-    { nombre: "Kayak · Flights", sub: "Mexico City → SLP from $1,200" },
+    { nombre: "ADO · Bus", sub: "Mexico City → Valles from $600 MXN" },
+    { nombre: "Rentalcars · Car", sub: "Valles from ~$800 MXN/day" },
+    { nombre: "Kayak · Flights", sub: "Mexico City → SLP from $1,200 MXN" },
   ],
 
   cuandoIntro: "The Huasteca welcomes visitors all year round, but each season has its own character.",
@@ -1044,7 +1050,7 @@ const EN: InfoPracticaContent = {
       nivel: "Premium",
       rango: "$1,500+ MXN",
       incluye: [
-        "Boutique hotel or luxury guesthouse ($800+)",
+        "Boutique hotel or luxury guesthouse ($800+ MXN)",
         "Gourmet Huastec restaurant",
         "Private guided tour + premium activities",
         "Your own rental car",
@@ -1267,7 +1273,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "Do I have to pay in full when I book?",
-          a: "No. You hold your place with 30 % of the total, paid securely online by card, and settle the rest on the day of the tour, in cash or by card. If you'd rather pay another way, message us on WhatsApp and we'll sort it out.",
+          a: "It depends on the trip: a single-day tour with no lodging is paid in full when you book. From two days on, or with lodging, you hold your place with 30 % of the total paid securely online by card and settle the rest on the day of the tour, in cash or by card. If you'd rather pay another way, message us on WhatsApp and we'll sort it out.",
         },
       ],
     },
@@ -1302,7 +1308,7 @@ const EN: InfoPracticaContent = {
     "3, 5 and 7-day itineraries ready to print",
   ],
   guiaGarantia: "Secure payment · Instant download · 7-day guarantee",
-  guiaCta: "Download the guide → $49",
+  guiaCta: "Download the guide → $49 MXN",
 
   ctaH2a: "Ready to ",
   ctaH2b: "plan your trip?",

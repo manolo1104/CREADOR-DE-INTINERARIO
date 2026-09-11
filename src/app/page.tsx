@@ -22,6 +22,7 @@ import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour } from "@/lib/i18n/localize";
+import { urlBlog } from "@/lib/blogDestinoMap";
 import { TRASLADOS, tarifaTraslado } from "@/lib/traslados";
 import {
   Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
@@ -31,6 +32,13 @@ import {
 } from "lucide-react";
 
 const SITE_URL = SITE;
+
+/**
+ * Fin del viaje grupal de septiembre (19 sep 2026, hora de la Huasteca). El
+ * aviso del inicio se apaga solo: si se queda escrito a mano, en octubre el
+ * inicio sigue anunciando una salida que ya ocurrió.
+ */
+const VIAJE_SEP_FIN_MS = new Date("2026-09-19T23:59:00-06:00").getTime();
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -43,8 +51,8 @@ export function generateMetadata(): Metadata {
   const nTours = TOURS_DB.length;
   const desde = `$${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")}`;
   const description = locale === "en"
-    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. Book with 30% deposit, free cancellation.`
-    : `Tours guiados desde Xilitla, con hotel y restaurante propios. ${nTours} recorridos con guía NOM-09 y seguro, desde ${desde}. Aparta con el 30 % y cancela gratis.`;
+    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. From 2 days, 30% deposit. Free cancellation.`
+    : `Tours guiados desde Xilitla, con hotel y restaurante propios. ${nTours} recorridos con guía NOM-09 y seguro, desde ${desde}. Desde 2 días apartas con el 30 % y cancelas gratis.`;
   return {
     title,
     description,
@@ -191,8 +199,6 @@ export default async function HomePage() {
             </span>
           </div>
 
-          <VisitantesEnVivo en={en} />
-
           <div className="flex flex-wrap gap-4 justify-center mb-10">
             <MagneticButton>
               {/* Dorado = "reservar" en todo el sitio (es el color del botón del
@@ -204,8 +210,14 @@ export default async function HomePage() {
                 className="bg-dorado text-negro px-10 py-4 text-sm tracking-[2px] uppercase font-dm font-medium hover:bg-terracota hover:text-crema transition-colors duration-300 flex flex-col items-center gap-0.5"
               >
                 <span>{en ? "Book a tour →" : "Reservar tour →"}</span>
+                {/* Decía "Apartas con el 30 %" encima del botón que lleva al
+                    motor, donde la mayoría reserva UN recorrido de un día —y
+                    ésos se cobran completos (`pctACobrar`)—. La promesa del
+                    30 % se movió a donde sí aplica (el cierre, que habla de
+                    sumar noches); aquí queda la única garantía que es cierta
+                    en los dos casos. */}
                 <span className="text-[9px] tracking-[1.5px] uppercase text-negro/55 font-normal">
-                  {en ? "30% deposit · Free cancellation 48h" : "Apartas con el 30 %"}
+                  {en ? "Free cancellation up to 48 h" : "Cancelas gratis 48 h antes"}
                 </span>
               </Link>
             </MagneticButton>
@@ -223,6 +235,12 @@ export default async function HomePage() {
             </MagneticButton>
           </div>
 
+          {/* Vive DEBAJO de los botones a propósito: monta después de cargar y,
+              arriba, su píldora empujaba los dos botones de reserva hacia abajo
+              justo cuando el dedo iba a tocarlos. Además reserva su propio alto
+              (ver el componente), así que nada se mueve cuando aparece. */}
+          <VisitantesEnVivo en={en} />
+
           <ClimaHero en={en} />
 
           <div className="mb-10 bg-white/10 backdrop-blur-sm border border-white/20 px-5 py-2.5 rounded-full">
@@ -232,6 +250,39 @@ export default async function HomePage() {
           <HeroStats destinosCount={DESTINOS_DB.length} />
         </div>
       </section>
+
+      {/* ── VIAJE EN GRUPO DE SEPTIEMBRE ───────────────────────────────────
+          `/viaje-septiembre` sale en Google (368 impresiones, posición 9,9) y
+          NINGUNA página pública la enlazaba: desde el sitio no había forma de
+          llegar. Va pegada al hero —lo primero que aparece al bajar, un solo
+          gesto en móvil— y se apaga sola al terminar el viaje. Las cifras son
+          las de esa misma página: 16–19 de sep, 4 días / 3 noches, 3 recorridos,
+          desde $7,900 por persona en ocupación doble y 16 lugares. */}
+      {Date.now() < VIAJE_SEP_FIN_MS && (
+        <section
+          aria-label={en ? "Group trip from Mexico City, September 16–19" : "Viaje en grupo desde CDMX, 16 al 19 de septiembre"}
+          className="bg-negro border-b border-dorado/25 px-6 py-4"
+        >
+          <Link href={lp("/viaje-septiembre")} className="group max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-center">
+            <span className="bg-dorado text-negro text-[9px] font-dm font-bold tracking-[2px] uppercase px-2.5 py-1">
+              {en ? "Scheduled departure" : "Salida programada"}
+            </span>
+            <span className="font-dm text-crema text-sm group-hover:text-dorado transition-colors">
+              {en
+                ? "Group trip to the Huasteca from Mexico City · September 16–19"
+                : "Viaje en grupo a la Huasteca desde CDMX · 16-19 de septiembre"}
+            </span>
+            <span className="font-dm text-crema/45 text-xs">
+              {en
+                ? "4 days · 3 tours · from $7,900 MXN/person · 16 spots"
+                : "4 días · 3 recorridos · desde $7,900 MXN/persona · 16 lugares"}
+            </span>
+            <span className="font-dm text-dorado text-[10px] tracking-[2px] uppercase">
+              {en ? "See the trip →" : "Ver el viaje →"}
+            </span>
+          </Link>
+        </section>
+      )}
 
       {/* ── BADGES BANNER ── */}
       <section aria-label={en ? "Awards and recognition" : "Premios y reconocimientos"} className="bg-negro py-5 border-b border-white/8">
@@ -301,7 +352,10 @@ export default async function HomePage() {
         <div className="text-center mt-10">
           <MagneticButton className="inline-block">
             <Link href={lp("/tours")} className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200">
-              {en ? "View all tours" : "Ver todos los tours"}
+              {/* El ancla decía "Ver todos los tours": ni Google ni el lector
+                  saben cuántos ni de qué. El número sale de TOURS_DB, así que
+                  no puede quedarse viejo. */}
+              {en ? `See the ${TOURS_DB.length} guided tours` : `Ver los ${TOURS_DB.length} tours guiados`}
             </Link>
           </MagneticButton>
         </div>
@@ -359,9 +413,17 @@ export default async function HomePage() {
             <div className="text-center mt-10">
               <MagneticButton className="inline-block">
                 <Link href="/paquetes" className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200">
-                  Ver todos los paquetes
+                  Ver los {PAQUETES_DB.length} paquetes con hotel incluido
                 </Link>
               </MagneticButton>
+              {/* /precios no estaba enlazada desde ninguna parte del inicio, y es
+                  la página que responde la pregunta que trae a la gente. Sólo en
+                  español: no existe /en/precios. */}
+              <p className="mt-5">
+                <Link href="/precios" className="text-xs tracking-[1.5px] uppercase font-dm text-negro/45 hover:text-verde-selva underline underline-offset-4 decoration-negro/20 transition-colors">
+                  Ver la lista de precios 2026 de tours y paquetes →
+                </Link>
+              </p>
             </div>
           </div>
         </section>
@@ -424,8 +486,12 @@ export default async function HomePage() {
               <div className="heading-underline" aria-hidden="true" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* urlBlog quita el sufijo de año: 18 de los 40 artículos lo
+                  arrastran y esa forma responde 308. Enlazar el slug crudo
+                  mandaba a la portada —la página con más clics del sitio— a
+                  una redirección. */}
               {recentPosts.map((post) => (
-                <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
+                <Link key={post.slug} href={urlBlog(post.slug)} className="group">
                   <article className="bg-white border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors h-full flex flex-col rounded-xl shadow-sm">
                     {post.coverImageUrl && (
                       <div className="aspect-video overflow-hidden">
@@ -565,7 +631,10 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-12 pt-8 border-t border-negro/10 flex flex-wrap gap-x-8 gap-y-3 text-[11px] tracking-[1.5px] uppercase font-dm text-negro/50">
-              <span>30% deposit to reserve</span>
+              {/* Este renglón habla de "every tour", y un tour de un día sin
+                  hotel se cobra entero (`pctACobrar`): el 30 % a secas mentía
+                  justo en el producto más vendido. */}
+              <span>A single tour is paid in full · 30% deposit from 2 days</span>
               <span className="text-negro/15">|</span>
               <span>Free cancellation up to 48 h</span>
               <span className="text-negro/15">|</span>
@@ -676,8 +745,8 @@ export default async function HomePage() {
               escasez honesta es la temporada seca, no un colapso inventado. */}
           <p className="reveal-up reveal-d1 text-crema/60 font-dm text-sm leading-relaxed max-w-xl mx-auto mb-9">
             {en
-              ? "We'd like to keep the rivers the way they are — that's why our groups stop at twelve and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. 30% deposit, free cancellation up to 48 h before."
-              : "Elige tus recorridos, súmale las noches que necesites y aparta con el 30 %. Cancelas gratis hasta 48 h antes."}
+              ? "We'd like to keep the rivers the way they are — that's why our groups stop at twelve and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. From two days a 30% deposit holds it; a single-day tour is paid in full. Free cancellation up to 48 h before."
+              : "Elige tus recorridos y súmale las noches que necesites: desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo. Cancelas gratis hasta 48 h antes."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <MagneticButton className="inline-block">

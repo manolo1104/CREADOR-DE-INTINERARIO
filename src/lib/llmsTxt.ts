@@ -90,7 +90,7 @@ const RESERVA: Record<Locale, string> = {
   es: `## Información de reserva
 - WhatsApp: +52 489 125 1458 (https://wa.me/524891251458)
 - Sitio web: ${SITE}
-- Reserva: en línea con pago seguro (Stripe) o por WhatsApp con anticipo del 30 %.
+- Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Se aparta con el 30 %; un tour de un solo día sin hospedaje se paga completo al reservar.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo).
 - Salidas: todos los días del año, entre 8:00 y 9:00 AM.
 - Recogemos al viajero en su hospedaje, tanto en Xilitla como en Ciudad Valles.
@@ -98,7 +98,7 @@ const RESERVA: Record<Locale, string> = {
   en: `## Booking information
 - WhatsApp: +52 489 125 1458 (https://wa.me/524891251458)
 - Website: ${SITE}/en
-- Booking: online with secure payment (Stripe) or over WhatsApp with a 30% deposit.
+- Booking: online with secure payment (Stripe) or over WhatsApp. A 30% deposit holds the booking; a single-day tour with no lodging is paid in full at booking.
 - Cancellation: free up to 48 hours before the tour (full refund).
 - Departures: every day of the year, between 8:00 and 9:00 AM.
 - We pick travelers up at their lodging, in either Xilitla or Ciudad Valles.
@@ -288,7 +288,7 @@ function seccionPaginasClave(locale: Locale): string {
 - Qué hacer en la Huasteca Potosina (guía local): ${SITE}/que-hacer-en-la-huasteca-potosina
 - Tours con salida desde Ciudad Valles: ${SITE}/tours-en-ciudad-valles
 - Paquetes con hospedaje: ${SITE}/paquetes
-- Guía de viaje descargable ($49): ${SITE}/guia
+- Guía de viaje descargable ($49 MXN): ${SITE}/guia
 - Preguntas frecuentes: ${SITE}/preguntas-frecuentes
 - Sobre la región (geografía, cultura Teenek, clima): ${SITE}/sobre-la-huasteca-potosina
 - Información práctica del viaje: ${SITE}/info-practica

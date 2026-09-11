@@ -29,9 +29,12 @@ export function generateMetadata(): Metadata {
   const title = en
     ? `Adventure Tours in the Huasteca Potosina, Mexico · From ${desdeTxt}`
     : `Tours Huasteca Potosina 2026 · Todo Incluido desde ${desdeTxt}`;
+  // La regla real vive en `pctACobrar` (src/lib/carrito.ts): un viaje de un
+  // solo día sin hotel se cobra al 100 %. Esta página vende justo eso, así que
+  // "Aparta con el 30 %" a secas era falso para casi todo lo que lista.
   const description = en
-    ? `Waterfalls, caves, rafting and a surrealist jungle garden. ${nTours} guided day tours with transport, breakfast, entry fees, insurance and a certified guide. 30% deposit, free cancellation.`
-    : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Aparta con el 30 %.`;
+    ? `Waterfalls, caves, rafting and a surrealist jungle garden. ${nTours} guided day tours with transport, breakfast, entry fees, insurance and a certified guide. Free cancellation. One-day tours are paid in full; two days or more hold with 30%.`
+    : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Un tour de un día se paga completo; de dos días en adelante apartas con el 30 %.`;
   return {
     title,
     description,
@@ -117,6 +120,14 @@ export default function ToursPage() {
   const COMO_FUNCIONA = en ? COMO_FUNCIONA_EN : COMO_FUNCIONA_ES;
   const TESTIMONIOS = en ? TESTIMONIOS_EN : TESTIMONIOS_ES;
   const waGeneral = en ? "Hi, I'd like information about your Huasteca Potosina tours." : WA_MESSAGES.tourGeneral;
+  // El privado se cobra POR EL GRUPO COMPLETO, no por pareja. El dato ya vive
+  // en `privateMinPrice` (5 tours, de $7,000 a $8,500) y es el mismo que
+  // publican /precios y la ficha de cada tour. Aquí decía "Desde $3,200 MXN
+  // para 2 personas": $3,800 por debajo del precio real, la discrepancia de
+  // precio más grande del sitio. Se calcula para que no vuelva a desfasarse.
+  const privadoMin = Math.min(
+    ...TOURS_DB.filter((t) => t.privateAvailable && t.privateMinPrice).map((t) => t.privateMinPrice!)
+  );
 
   const toursItemListSchema = {
     "@context": "https://schema.org",
@@ -159,13 +170,15 @@ export default function ToursPage() {
         <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           {en ? "All-inclusive tours" : "Tours con todo incluido"}
         </p>
+        {/* El H1 decía sólo "Huasteca": las consultas que venden llevan las dos
+            palabras ("huasteca potosina tours", 3.114 impresiones en pos. 6). */}
         <h1 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(42px,7vw,80px)" }}>
-          {en ? <>Guided <em className="shimmer-gold">Tours</em> in the Huasteca</> : <>Tours <em className="shimmer-gold">Guiados</em> por la Huasteca</>}
+          {en ? <>Guided <em className="shimmer-gold">Tours</em> in the Huasteca Potosina</> : <>Tours <em className="shimmer-gold">Guiados</em> por la Huasteca Potosina</>}
         </h1>
         <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
           {en
-            ? `${tours.length} tours designed to experience the Huasteca worry-free. Transport, breakfast, entrance fees and a certified guide included in every trip.`
-            : `${tours.length} tours diseñados para vivir la Huasteca sin preocupaciones. Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.`}
+            ? `${tours.length} tours designed to experience the Huasteca Potosina worry-free. Transport, breakfast, entrance fees and a certified guide included in every trip.`
+            : `${tours.length} tours diseñados para vivir la Huasteca Potosina sin preocupaciones. Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.`}
         </p>
         <div className="inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
           <Calendar className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
@@ -440,8 +453,8 @@ export default function ToursPage() {
             </p>
             <ul className="space-y-2 mb-7">
               {(en
-                ? ["A private transport unit just for your group", "Move at your own pace — no fixed schedules or waiting", "Your guide entirely at your disposal all day", "A custom itinerary tailored to you", "From $3,200 MXN for 2 people", "Discounts for large groups"]
-                : ["Unidad de transporte privada solo para tu grupo", "Se mueven a sus tiempos — sin horarios fijos ni esperas", "Tu guía a tu entera disposición todo el día", "Itinerario personalizado a tu medida", "Desde $3,200 MXN para 2 personas", "Descuentos para grupos grandes"]
+                ? ["A private transport unit just for your group", "Move at your own pace — no fixed schedules or waiting", "Your guide entirely at your disposal all day", "A custom itinerary tailored to you", `From ${money(privadoMin)} MXN for the whole group`, "Discounts for large groups"]
+                : ["Unidad de transporte privada solo para tu grupo", "Se mueven a sus tiempos — sin horarios fijos ni esperas", "Tu guía a tu entera disposición todo el día", "Itinerario personalizado a tu medida", `Desde ${money(privadoMin)} MXN por el grupo completo`, "Descuentos para grupos grandes"]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-dorado mt-0.5 flex-shrink-0">✦</span>{item}</li>
               ))}

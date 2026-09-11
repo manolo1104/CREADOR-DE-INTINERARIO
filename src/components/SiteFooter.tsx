@@ -7,6 +7,7 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { localizeDestino } from "@/lib/i18n/localize";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { CONTACTO } from "@/lib/contacto";
+import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 
@@ -37,12 +38,23 @@ export function SiteFooter() {
         { label: "FAQ", href: lp("/preguntas-frecuentes") },
       ]
     : [
+        // El pie inglés enlazaba Tours y Paquetes desde el principio; el español
+        // no, y son las dos páginas que más lo necesitan (/tours en posición
+        // 18,7 y /paquetes en 14,5). Multiplicado por las ~190 páginas del
+        // sitio son ~380 enlaces internos con ancla descriptiva que no existían.
+        // Las anclas dicen de qué va el destino a propósito: "Tours" a secas no
+        // le enseña nada a Google ni al lector.
         { label: "Reservar un tour", href: "/reservar" },
-        { label: "Precios de tours", href: "/precios" },
+        { label: "Tours en la Huasteca Potosina", href: "/tours" },
+        { label: "Paquetes todo incluido con hotel", href: "/paquetes" },
+        { label: "Precios de los tours 2026", href: "/precios" },
+        // Publicada y en cero clics y cero impresiones en cuatro meses: nada
+        // del sitio la enlazaba.
+        { label: "¿Xilitla o Ciudad Valles? Dónde hospedarte", href: "/xilitla-o-ciudad-valles" },
         { label: "Preguntas frecuentes", href: "/preguntas-frecuentes" },
         { label: "Qué hacer en la Huasteca", href: "/que-hacer-en-la-huasteca-potosina" },
         { label: "Tours en Ciudad Valles", href: "/tours-en-ciudad-valles" },
-        { label: "Info Práctica", href: "/info-practica" },
+        { label: "Cómo llegar a la Huasteca Potosina", href: "/info-practica" },
         { label: "¿Qué tour es para mí?", href: "/recomendar" },
         { label: "Blog", href: "/blog" },
         { label: "Sobre la Huasteca", href: "/sobre-la-huasteca-potosina" },
@@ -180,27 +192,41 @@ export function SiteFooter() {
         </div>
 
         {/* Landings de origen. Sin enlaces internos son páginas huérfanas: el
-            sitemap las declara, pero nada del sitio las respalda. */}
-        {en && (
-          <div className="border-t border-white/8 pt-8 pb-8 mb-2">
-            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-4">
-              Traveling from
-            </h3>
-            <ul className="flex flex-wrap gap-x-6 gap-y-2">
-              {CIUDADES_ORIGEN_EN.map((c) => (
-                <li key={c.slug}>
-                  <Link
-                    href={`/en/from/${c.slug}`}
-                    className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
-                  >
-                    <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
-                    {c.nombre}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+            sitemap las declara, pero nada del sitio las respalda. El bloque se
+            pintaba SOLO en inglés, así que eso era exactamente lo que les
+            pasaba a /desde/cdmx y /desde/monterrey: cero enlaces internos, y
+            Monterrey ya estaba en posición 5,81 sin ningún apoyo. */}
+        <div className="border-t border-white/8 pt-8 pb-8 mb-2">
+          <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-4">
+            {en ? "Traveling from" : "Viajando desde"}
+          </h3>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            {(en
+              ? CIUDADES_ORIGEN_EN.map((c) => ({
+                  slug: c.slug,
+                  href: `/en/from/${c.slug}`,
+                  label: c.nombre,
+                }))
+              : CIUDADES_ORIGEN.map((c) => ({
+                  slug: c.slug,
+                  href: `/desde/${c.slug}`,
+                  // Ancla descriptiva, no el nombre pelado: es la frase que se
+                  // busca ("la huasteca potosina desde cdmx").
+                  label: `La Huasteca Potosina desde ${c.nombre}`,
+                }))
+            ).map((c) => (
+              <li key={c.slug}>
+                <Link
+                  href={c.href}
+                  className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
+                >
+                  <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                  {c.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
           <span>

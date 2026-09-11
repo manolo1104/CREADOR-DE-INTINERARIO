@@ -23,7 +23,19 @@ const LLM_BOTS = [
 ];
 
 // Rutas privadas/sin valor SEO que ningún bot debe rastrear.
-const PRIVATE_PATHS = ["/admin", "/api/", "/planear"];
+//
+// OJO con lo que NO está aquí:
+// - `/planear` se quitó a propósito. Estaba bloqueada Y aun así indexada (41
+//   impresiones, posición 18,41). Bloquear en robots.txt impide RASTREAR, no
+//   INDEXAR: mientras Google no pueda entrar, tampoco puede leer el noindex y
+//   la URL se queda en el índice para siempre. Ahora entra, lee el
+//   `robots: { index: false }` de src/app/planear/page.tsx y la saca.
+//   Si algún día se vuelve a encender el generador, el camino inverso es
+//   quitar ese noindex, NO volver a poner el Disallow.
+// - `/_next/image` tampoco: todas las fotos del sitio se sirven por ahí
+//   (next/image), así que bloquearlo dejaría a Googlebot-Image sin poder
+//   descargar las imágenes tal y como aparecen en las páginas.
+const PRIVATE_PATHS = ["/admin", "/api/"];
 
 export default function robots(): MetadataRoute.Robots {
   return {

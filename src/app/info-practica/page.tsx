@@ -19,6 +19,23 @@ import {
 
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { getInfoPractica, type InfoPracticaContent } from "@/lib/i18n/infoPractica.en";
+
+/**
+ * Title y H1 españoles, reescritos por CTR (sep 2026).
+ *
+ * El title anterior medía 75 caracteres y Google corta en ~60, así que en el
+ * buscador se leía "Info Práctica — Cómo Llegar, Cuándo ir y Dónde Qued…".
+ * La página tiene 16.910 impresiones en posición 7,95 —la segunda del sitio—
+ * y solo entraba el 0,70 %. Su gemela inglesa mide 64 caracteres y hace
+ * 4,69 %. Este mide 55 y abre con lo que la gente teclea de verdad: "huasteca
+ * potosina como llegar" (2.666 impresiones), "clima en la huasteca potosina"
+ * (1.763) y el hospedaje, que es lo que se vende.
+ *
+ * El H1 decía "Guía Práctica de Viaje": ni la marca ni la región aparecían.
+ *
+ * Las cadenas viven en `src/lib/i18n/infoPractica.en.ts`, como el resto.
+ */
+
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const t = getInfoPractica(locale);

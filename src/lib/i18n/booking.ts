@@ -486,11 +486,11 @@ export interface BookingMessages {
 
 const es: BookingMessages = {
   catalogo: {
-    metaTitle: "Reservar tour en la Huasteca Potosina — Aparta con el 30 %",
+    metaTitle: "Reservar tour en la Huasteca Potosina — Aparta con el 30 % desde 2 días",
     metaDescription:
-      "Aparta con el 30 % y cancela gratis hasta 48 h antes. Transporte desde tu hospedaje, guía NOM-09, entradas y seguro de viaje incluidos. Liquidas el día del tour.",
+      "Aparta con el 30 % desde 2 días; un solo día se paga completo. Cancela gratis hasta 48 h antes. Transporte desde tu hospedaje, guía NOM-09, entradas y seguro incluidos.",
     ogTitle: "Reservar tour en la Huasteca Potosina",
-    ogDescription: "Aparta con el 30 %. Cancelación gratuita hasta 48 h antes.",
+    ogDescription: "Aparta con el 30 % desde 2 días (uno solo se paga completo). Cancelación gratuita hasta 48 h antes.",
     eyebrow: "Motor de reservas",
     h1: "Elige tu recorrido y aparta tu lugar",
     introApartas: "No pagas todo hoy: ",
@@ -507,8 +507,8 @@ const es: BookingMessages = {
     ],
     pasos: [
       { n: "1", t: "Elige tus recorridos", s: "Puedes juntar varios días en un solo carrito y pagarlos de una vez." },
-      { n: "2", t: "Pago seguro con tarjeta", s: "Eliges fecha y personas. Los viajes de varios días se apartan con el 30 %." },
-      { n: "3", t: "Liquidas el día del tour", s: "En efectivo o tarjeta, al llegar." },
+      { n: "2", t: "Pago seguro con tarjeta", s: "Eliges fecha y personas. Los viajes de varios días se apartan con el 30 %; uno solo se paga completo." },
+      { n: "3", t: "Liquidas el día del tour", s: "Si quedó saldo, en efectivo o con tarjeta al llegar." },
     ],
     todosLosRecorridos: "Todos los recorridos",
     conteo: (n, desde) => `${n} recorridos · desde ${desde} MXN`,
@@ -524,7 +524,7 @@ const es: BookingMessages = {
     sinRiesgoTitulo: "Reservar aquí no tiene riesgo",
     sinRiesgo: [
       "Cancelación gratuita hasta 48 h antes del tour, sin preguntas y sin penalización.",
-      "Hoy solo pagas el 30 %. El resto lo liquidas el día del recorrido.",
+      "Desde 2 días, hoy solo pagas el 30 % y liquidas el resto el día del recorrido; un solo día se paga completo.",
       "El precio que ves es el final: transporte, entradas, guía, equipo y seguro incluidos.",
       "Si el clima obliga a suspender, se reprograma o se devuelve el anticipo.",
       "Pago con tarjeta procesado por Stripe. Nosotros no guardamos tus datos bancarios.",
@@ -737,7 +737,7 @@ const es: BookingMessages = {
         `Hospedaje: ${hab} — ${noches} noche(s) — ${huespedes} huésped(es) — ${total}`,
       terceraGratis: (ahorro) => `(ya con la 3.ª noche gratis: ahorro de ${ahorro})`,
       totalViaje: (total) => `Total del viaje: ${total} MXN`,
-      anticipo: (monto) => `Anticipo (30 %): ${monto} MXN`,
+      anticipo: (monto) => `Pago de hoy: ${monto} MXN`,
       saldo: (monto) => `Saldo el día del primer recorrido: ${monto} MXN`,
       aNombreDe: (nombre) => `A nombre de: ${nombre}`,
       pendiente: "(pendiente)",
@@ -767,7 +767,7 @@ const es: BookingMessages = {
     faq: [
       {
         q: "¿Cuánto pago hoy y cuándo el resto?",
-        a: "Hoy apartas con el 30 % del total. El saldo lo liquidas el día del primer recorrido, en efectivo o con tarjeta, al llegar.",
+        a: "Si tu viaje es de varios días, hoy apartas con el 30 % y el saldo lo liquidas el día del primer recorrido, en efectivo o con tarjeta. Un recorrido de un solo día, sin hospedaje, se paga completo al reservar.",
       },
       {
         q: "¿Puedo cancelar?",
@@ -1011,11 +1011,11 @@ const es: BookingMessages = {
 
 const en: BookingMessages = {
   catalogo: {
-    metaTitle: "Book a Huasteca Potosina tour — Hold your spot with 30 %",
+    metaTitle: "Book a Huasteca Potosina tour — 30 % deposit from 2 days",
     metaDescription:
-      "Pay 30 % today and cancel free up to 48 h before. Pickup at your lodging, NOM-09 certified guide, entrance fees and travel insurance included. Settle the rest on tour day.",
+      "Pay 30 % today from 2 days on; a single day is paid in full. Free cancellation up to 48 h before. Pickup at your lodging, NOM-09 guide, entrance fees and insurance included.",
     ogTitle: "Book a Huasteca Potosina tour",
-    ogDescription: "Hold your spot with 30 %. Free cancellation up to 48 h before.",
+    ogDescription: "30 % deposit from 2 days (a single day is paid in full). Free cancellation up to 48 h before.",
     eyebrow: "Booking engine",
     h1: "Pick your tour and hold your spot",
     introApartas: "You don't pay it all today: ",
@@ -1032,8 +1032,8 @@ const en: BookingMessages = {
     ],
     pasos: [
       { n: "1", t: "Pick your tours", s: "You can put several days in one cart and pay for them all at once." },
-      { n: "2", t: "Hold with 30 %", s: "Choose your date and party. Secure card payment." },
-      { n: "3", t: "Settle on tour day", s: "Cash or card, when you arrive." },
+      { n: "2", t: "Hold with 30 %", s: "Choose your date and party. Secure card payment; a single day is paid in full." },
+      { n: "3", t: "Settle on tour day", s: "If a balance is left, cash or card when you arrive." },
     ],
     todosLosRecorridos: "All tours",
     conteo: (n, desde) => `${n} tours · from ${desde} MXN`,
@@ -1049,7 +1049,7 @@ const en: BookingMessages = {
     sinRiesgoTitulo: "Booking here carries no risk",
     sinRiesgo: [
       "Free cancellation up to 48 h before the tour, no questions and no penalty.",
-      "Today you only pay 30 %. You settle the rest on tour day.",
+      "From 2 days on you only pay 30 % today and settle the rest on tour day; a single day is paid in full.",
       "The price you see is final: transport, entrance fees, guide, gear and insurance included.",
       "If the weather forces a cancellation, we reschedule or refund your deposit.",
       "Card payment processed by Stripe. We never store your bank details.",
@@ -1262,7 +1262,7 @@ const en: BookingMessages = {
         `Lodging: ${hab} — ${noches} night(s) — ${huespedes} guest(s) — ${total}`,
       terceraGratis: (ahorro) => `(3rd night already free: ${ahorro} saved)`,
       totalViaje: (total) => `Trip total: ${total} MXN`,
-      anticipo: (monto) => `Deposit (30 %): ${monto} MXN`,
+      anticipo: (monto) => `Due today: ${monto} MXN`,
       saldo: (monto) => `Balance on the first tour day: ${monto} MXN`,
       aNombreDe: (nombre) => `Under the name: ${nombre}`,
       pendiente: "(pending)",
@@ -1295,7 +1295,7 @@ const en: BookingMessages = {
     faq: [
       {
         q: "How much do I pay today and when do I pay the rest?",
-        a: "Today you hold your spot with 30 % of the total. You settle the balance on the day of your first tour, in cash or by card, when you arrive.",
+        a: "On a multi-day trip you pay 30 % of the total today and settle the balance on the day of your first tour, in cash or by card. A single-day tour with no lodging is paid in full when you book.",
       },
       {
         q: "Can I cancel?",

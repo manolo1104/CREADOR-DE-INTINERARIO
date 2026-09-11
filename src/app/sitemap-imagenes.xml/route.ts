@@ -2,6 +2,7 @@ import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { altsGaleriaDestino } from "@/lib/altImagenes";
+import { urlBlog } from "@/lib/blogDestinoMap";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -48,7 +49,10 @@ async function blogEntradas(): Promise<Entrada[]> {
     return posts
       .filter((p) => !!p.coverImageUrl)
       .map((p) => ({
-        loc: `${BASE}/blog/${p.slug}`,
+        // `urlBlog` y no `p.slug`: 18 slugs arrastran sufijo de año y se
+        // redirigen (308). Publicar la forma cruda mandaba a Google a rastrear
+        // URLs que redirigen, y contradecía al sitemap.xml, que sí normaliza.
+        loc: `${BASE}${urlBlog(p.slug)}`,
         imagenes: [{ url: abs(p.coverImageUrl!), titulo: p.title }],
       }));
   } catch {

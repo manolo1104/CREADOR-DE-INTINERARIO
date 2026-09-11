@@ -213,7 +213,7 @@ export const TOURS_DESTACADOS = [
   "paraiso-escalonado-minas-micos",
 ] as const;
 
-export const TOURS_DB: Tour[] = [
+const TOURS_RAW: Tour[] = [
   {
     id:               "tour-rzr-xilitla",
     slug:             "rzr-xilitla",
@@ -703,7 +703,7 @@ export const TOURS_DB: Tour[] = [
     precio:           1300,
     urgencia:         "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
     descripcion:
-      "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,200 MXN por persona.",
+      "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. {precio} por persona.",
     descripcionLarga:
       "Respirar bajo el agua nunca había sido tan fácil y accesible: el requisito más importante es tu deseo de hacerlo, el resto corre por nuestra cuenta. Este es un programa 'Descubre el Buceo' (Discover Scuba Diving) diseñado para que logres tu sueño de descubrir el buceo aunque nunca hayas puesto un tanque en la espalda.\n\nLo hacemos en la Laguna de la Media Luna, en Rioverde, San Luis Potosí, de aguas frescas y cristalinas — un lugar ideal para vivir tu primera inmersión con calma y seguridad.\n\nSe requieren solamente 4 horas de capacitación. Durante ese tiempo aprendes los principios básicos del buceo con equipo SCUBA, incluyendo el equipo y las técnicas de buceo. Primero recibes una breve orientación de un instructor certificado PADI; después pones a prueba tus habilidades en aguas poco profundas, ganando confianza y seguridad, y cuando estés listo desciendes entre 5 y 10 metros por debajo de la superficie, siempre acompañado.\n\nTu día incluye el instructor PADI, el equipo de buceo y las fotografías digitales del recuerdo. Solo necesitas traer traje de baño, toalla y dinero para la entrada al parque. Es una actividad para mayores de 10 años con buena salud; no es apta para personas con problemas respiratorios, cardiovasculares o afecciones de oído, ni para mujeres embarazadas, y no puedes bucear bajo efectos de alcohol o drogas.\n\n¡Diversión y aventura bajo el agua! Si siempre quisiste saber qué se siente respirar bajo el agua, este es tu momento.",
     destinos: [
@@ -748,7 +748,7 @@ export const TOURS_DB: Tour[] = [
     precioUnidad:     "persona",
     urgencia:         "Grupos pequeños en finca — se reserva con anticipación",
     descripcion:
-      "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 por persona.",
+      "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. {precio} por persona.",
     descripcionLarga:
       "Xilitla huele a café mucho antes de que llegues a la finca. La sierra que rodea al pueblo está sembrada de cafetales bajo sombra, y esta travesía te lleva justo ahí: al lugar donde nace la taza que te tomas por la mañana.\n\nEl trayecto ya es parte de la experiencia. Te recogemos en tu hospedaje en Xilitla y subimos a la finca en RZR, por los caminos de terracería que atraviesan la selva húmeda — el mismo tipo de vehículo de nuestros recorridos off-road, pero aquí el destino es un cafetal.\n\nEn la finca te recibe la familia cafetalera. Caminas entre las matas, aprendes a distinguir el grano maduro del que todavía no lo está, y sigues el proceso completo: la cosecha a mano, el despulpado, el patio de secado donde el grano se extiende al sol y se remueve durante días, y por último el tostado en el tambor, cuando el olor lo llena todo.\n\nEl final es la cata. Frente a los platos con el grano verde, el tostado y el molido, aprendes a oler y a probar como lo hacen los catadores, y te sirven el café de esa misma finca. Muchos se van con un paquete bajo el brazo.\n\nEs un recorrido tranquilo, sin exigencia física, ideal para ir en pareja, con amigos o con la familia. Dura alrededor de 5 horas y sale con un mínimo de 2 personas.",
     destinos: [
@@ -780,6 +780,31 @@ export const TOURS_DB: Tour[] = [
     ],
   },
 ];
+
+/**
+ * El precio escrito DENTRO de una descripción se pone como `{precio}` y se
+ * sustituye aquí con el campo `precio` del propio recorrido.
+ *
+ * 🔴 Nació de un desfase real: la descripción del buceo decía "$1,200 MXN por
+ * persona" y el campo cobraba $1,300 quince palabras más abajo. Ese $1,200
+ * viajaba además a la vista previa de WhatsApp y Facebook, porque la
+ * metadescripción de /tours/[slug] sale de `descripcion`. Con el marcador ya no
+ * hay dos números que mantener de acuerdo: hay uno, el que cobra el checkout.
+ *
+ * El formato replica `fmtMoney` de `i18n/format.ts` a propósito: esto es la capa
+ * de datos y no debe importar la de idioma.
+ */
+export function conPrecio(texto: string, precio: number, locale: "es" | "en" = "es"): string {
+  const fmt = `$${precio.toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN`;
+  return texto.replace(/\{precio\}/g, fmt);
+}
+
+/** El catálogo que ve todo el sitio: el de arriba, ya con sus precios resueltos. */
+export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => ({
+  ...t,
+  descripcion: conPrecio(t.descripcion, t.precio),
+  descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, t.precio) : t.descripcionLarga,
+}));
 
 /**
  * El grupo más grande que sacamos, leído del catálogo.

@@ -6,11 +6,100 @@ import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { GuiaDelLugar } from "@/components/blog/GuiaDelLugar";
 import { TOURS_DB } from "@/lib/tours";
 import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
+import { urlBlog, ofertasDeBlog } from "@/lib/blogDestinoMap";
 
 export const dynamic = "force-dynamic";
 
 const SITE = "https://www.huasteca-potosina.com";
 const RAILWAY_REGEX = /https:\/\/creador-de-intinerario-production\.up\.railway\.app/gi;
+
+/**
+ * `/itinerarios` NUNCA existió: da 404. El contenido guardado en la base la
+ * enlaza más de 110 veces desde 37 de los 40 artículos, y encima promete un
+ * planificador con IA que está apagado (`/planear` carga, pero su generador,
+ * `/api/generate`, devuelve 503). Como el HTML
+ * vive en la base y no en el repo, se corrige al vuelo al renderizar: el enlace
+ * va a lo que sí se puede comprar y el ancla deja de prometer un itinerario.
+ */
+const ANCLA_ITINERARIOS = /<a\s+href="[^"]*\/itinerarios\/?(?:\?[^"]*)?"([^>]*)>([\s\S]*?)<\/a>/gi;
+
+/** Dominio dado de baja: el hotel vive en paraisoencantado.com. */
+const DOMINIO_MUERTO = /https?:\/\/(?:www\.)?paraisoencantadoxilitla\.lat/gi;
+
+function mayusculaInicial(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function reescribeEnlacesItinerarios(html: string): string {
+  return html.replace(ANCLA_ITINERARIOS, (_todo, attrs: string, interior: string, pos: number, completo: string) => {
+    const texto = interior.replace(/<[^>]+>/g, "").trim();
+    const plano = texto.toLowerCase();
+    // Un enlace traía `title="Planea tu itinerario en Xilitla"`: el texto visible
+    // quedaba corregido y el tooltip seguía prometiendo el planificador.
+    const attrsLimpios = attrs.replace(/\s+title="[^"]*itinerario[^"]*"/gi, "");
+
+    // Botón de caja CTA ("Crear mi itinerario gratis →", "Ver itinerarios →"):
+    // el que más se ve y el que más miente. Va al catálogo de paquetes, que es
+    // lo que de verdad resuelve "quiero que me armen el viaje".
+    if (/crear mi itinerario|ver itinerarios/.test(plano)) {
+      const flecha = interior.includes("→") ? " →" : "";
+      return `<a href="/paquetes"${attrsLimpios}>Paquetes todo incluido con hotel en Xilitla${flecha}</a>`;
+    }
+
+    // Enlaces dentro del texto. Se respeta la forma verbal de la frase que los
+    // rodea para no dejar un "puedes reserva…": infinitivo si venía en
+    // infinitivo, imperativo si venía en imperativo, sustantivo si no hay verbo.
+    let ancla: string;
+    if (/^planear\b/.test(plano))      ancla = "reservar tu tour guiado en la Huasteca Potosina";
+    else if (/^planea\b/.test(plano))  ancla = "reserva tu tour guiado en la Huasteca Potosina";
+    // "Consulta nuestra sección de <a>…</a>": con el ancla posesiva salía
+    // "nuestra sección de nuestro catálogo". Si la frase ya trae el posesivo,
+    // se usa la variante sin él.
+    else if (/nuestr[oa]s?\b[^.<>]{0,40}$/i.test(completo.slice(Math.max(0, pos - 60), pos)))
+                                       ancla = "tours guiados por la Huasteca Potosina";
+    else                               ancla = "nuestro catálogo de tours guiados";
+    if (/^[A-ZÁÉÍÓÚÑ]/.test(texto)) ancla = mayusculaInicial(ancla);
+    return `<a href="/tours"${attrsLimpios}>${ancla}</a>`;
+  });
+}
+
+/**
+ * Los dos párrafos de las cajas CTA que venden el planificador apagado. Se
+ * aplican ANTES de reescribir los enlaces, porque en 3 artículos la frase lleva
+ * el `<a>` dentro (de ahí el `[\s\S]{0,160}?`) y hay que sustituirla entera.
+ * Si la base cambia el texto, el `replace` no encuentra nada y no rompe nada.
+ */
+const PROMESAS_FALSAS: [RegExp, string][] = [
+  [
+    /Nuestro planificador con IA arma tu recorrido en minutos, con tiempos reales y distancias\./gi,
+    "Nosotros armamos el recorrido: hotel en Xilitla, tours y traslados en un solo paquete, con fechas y precio en firme.",
+  ],
+  [
+    /O planea tu propio recorrido con[\s\S]{0,200}?creador de itinerarios[^.]{0,40}?\./gi,
+    "O deja que te armemos el viaje completo de varios días.",
+  ],
+  // 🔴 Estos NO los ve `reescribeEnlacesItinerarios`: su `href` ya era /tours,
+  // así que el enlace funciona y lo que miente es el TEXTO. Son cinco en el
+  // artículo nº1 (1.106 clics) y prometen un creador de itinerarios que no
+  // existe: quien hace clic esperando un planificador aterriza en un catálogo.
+  [
+    /<a([^>]*href="\/tours"[^>]*)>\s*Crear mi itinerario gratis\s*→?\s*<\/a>/gi,
+    '<a$1>Ver los tours guiados de la Huasteca Potosina →</a>',
+  ],
+  [
+    /<a([^>]*href="\/tours"[^>]*)>\s*nuestro creador de itinerarios(?: gratuito)?\s*<\/a>/gi,
+    '<a$1>nuestro catálogo de tours guiados</a>',
+  ],
+  [
+    /<a([^>]*href="\/tours"[^>]*)>\s*el creador de itinerarios(?: gratuito)?\s*<\/a>/gi,
+    '<a$1>el catálogo de tours guiados</a>',
+  ],
+  // Variante propia del artículo nº1 (1.106 clics), el que más tráfico recibe.
+  [
+    /Nuestro creador de itinerarios te arma una ruta personalizada según la temporada que elijas y los días que tengas disponibles\./gi,
+    "Te armamos la ruta según la temporada que elijas y los días que tengas: hotel, tours y traslados en un solo paquete.",
+  ],
+];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,7 +220,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       images:        imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: post.coverImageAlt || title }] : [],
     },
     twitter: { card: "summary_large_image", title, description, images: imageUrl ? [imageUrl] : [] },
-    alternates: { canonical: `${SITE}/blog/${post.slug}` },
+    // `urlBlog` y no `post.slug`: 18 slugs arrastran sufijo de año y el
+    // canonical apuntaba a una URL que responde 308.
+    alternates: { canonical: `${SITE}${urlBlog(post.slug)}` },
   };
 }
 
@@ -144,6 +235,9 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const related    = await getRelatedPosts(post.slug, post.tags, post.internalLinks ?? []);
   const relevantTour = inferTour(post.tags, post.focusKeyword);
   const promoPost  = isPromocional(post.tags, post.title);
+  const ofertas    = ofertasDeBlog(post.slug);
+  // La URL canónica del artículo, una sola vez: canonical, JSON-LD y migas.
+  const urlCanonica = `${SITE}${urlBlog(post.slug)}`;
 
   // ── Schema: BlogPosting (Article) ────────────────────────────────────────
   const wordCount = Math.round((post.content || "").replace(/<[^>]+>/g, " ").split(/\s+/).length);
@@ -173,10 +267,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       url:     post.coverImageUrl,
       description: post.coverImageAlt || post.title,
     } : undefined,
-    url:            `${SITE}/blog/${post.slug}`,
+    url:            urlCanonica,
     keywords:       [post.focusKeyword, ...post.secondaryKeywords].join(", "),
     articleSection: post.tags[0] || "Turismo",
-    mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE}/blog/${post.slug}` },
+    mainEntityOfPage: { "@type": "WebPage", "@id": urlCanonica },
   });
 
   // ── Schema: BreadcrumbList + FAQPage ────────────────────────────────────
@@ -187,7 +281,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
         { "@type": "ListItem", position: 2, name: "Blog",   item: `${SITE}/blog` },
-        { "@type": "ListItem", position: 3, name: post.tags[0] || "Artículo", item: `${SITE}/blog/${post.slug}` },
+        { "@type": "ListItem", position: 3, name: post.tags[0] || "Artículo", item: urlCanonica },
       ],
     },
   ];
@@ -204,11 +298,16 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const enhancedSchema = JSON.stringify({ "@context": "https://schema.org", "@graph": graphNodes });
 
   // ── Content processing ───────────────────────────────────────────────────
-  const fullContent = (post.content || "")
+  const contenidoBase = (post.content || "")
     .replace(RAILWAY_REGEX, SITE)
+    .replace(DOMINIO_MUERTO, "https://paraisoencantado.com")
     .replace(/href="\/planear[^"]*"/gi, `href="${SITE}/planear"`)
     .replace(/<h1[^>]*>/gi, "<h2>")
     .replace(/<\/h1>/gi, "</h2>");
+
+  const fullContent = reescribeEnlacesItinerarios(
+    PROMESAS_FALSAS.reduce((html, [busca, pon]) => html.replace(busca, pon), contenidoBase),
+  );
 
   const [contentFirst, contentSecond] = splitAtMidpoint(fullContent);
   const safeSchema = blogPostingSchema.replace(RAILWAY_REGEX, SITE);
@@ -311,6 +410,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               {/* Content first half */}
               <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentFirst }} />
 
+              {/* El MISMO tour de la barra lateral, dentro del artículo. La
+                  barra está oculta por CSS bajo 1024 px y el 88 % del tráfico
+                  es móvil: ahí el único enlace a una ficha de tour no existía.
+                  `lg:hidden` evita que en escritorio salga dos veces. */}
+              {relevantTour && <TarjetaTour tour={relevantTour} className="lg:hidden my-10" />}
+
               {/* Ficha del lugar + tours que lo visitan. Va a mitad del
                   artículo: es donde el lector ya decidió que quiere ir. */}
               <GuiaDelLugar blogSlug={post.slug} />
@@ -349,55 +454,44 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </div>
               </div>
 
-              {/* CTA final */}
+              {/* CTA final. Cuando el artículo tiene un destino comercial en
+                  `ofertasDeBlog` se enlaza ESO y no el catálogo genérico: el
+                  lector de Tamul sale al tour de Tamul, no a "ver recorridos". */}
               <div className="my-12 p-8 bg-forest border border-lima/20 text-center">
                 <p className="text-[9px] tracking-[3px] uppercase text-lima/70 font-dm mb-3">✦ Salidas todos los días</p>
-                <h3 className="font-display text-2xl text-crema mb-3">Reserva tu tour en la Huasteca Potosina</h3>
+                <h3 className="font-display text-2xl text-crema mb-3">
+                  {ofertas.length ? "De la guía al viaje" : "Reserva tu tour en la Huasteca Potosina"}
+                </h3>
                 <p className="text-crema/50 font-dm font-light text-sm mb-6">
-                  Todo incluido: transporte desde tu hospedaje, guía certificado, entradas y comida. Apartas con el 30 % y cancelas gratis hasta 48 h antes.
+                  Todo incluido: transporte desde tu hospedaje, guía certificado, entradas y comida.
+                  Apartas con el 30 %; los tours de un día se pagan completos. Cancelas gratis hasta 48 h antes.
                 </p>
-                <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
-                  Ver recorridos y reservar →
-                </Link>
+                {ofertas.length > 0 ? (
+                  <div className="flex flex-col gap-3 max-w-md mx-auto">
+                    {ofertas.map((o) => (
+                      <Link
+                        key={o.href}
+                        href={o.href}
+                        className="block border border-dorado/40 hover:border-dorado bg-dorado/5 hover:bg-dorado/10 px-6 py-4 transition-colors text-left"
+                      >
+                        <span className="block font-dm text-sm text-crema leading-snug">{o.ancla} →</span>
+                        <span className="block font-dm font-light text-xs text-crema/45 mt-1">{o.nota}</span>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
+                    Ver recorridos y reservar →
+                  </Link>
+                )}
               </div>
             </article>
 
             {/* ── SIDEBAR STICKY ── */}
             <aside className="lg:sticky lg:top-24 space-y-5 hidden lg:block">
 
-              {/* Tour relevante */}
-              {relevantTour && (
-                <div className="border border-verde-selva/25 bg-verde-selva/8 p-5">
-                  <p className="text-[8px] tracking-[2px] uppercase font-dm text-verde-vivo mb-3">📍 Tour relacionado</p>
-                  {relevantTour.imagen_hero && (
-                    <div className="relative aspect-video overflow-hidden mb-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={relevantTour.imagen_hero} alt={relevantTour.nombre} className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                  )}
-                  <p className="font-cormorant text-crema text-base leading-snug mb-1">{relevantTour.nombre}</p>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[9px] font-dm text-dorado">★ 4.9</span>
-                    <span className="text-[9px] font-dm text-crema/40">· Todo incluido</span>
-                  </div>
-                  <p className="font-cormorant text-dorado text-lg leading-none mb-3">
-                    ${relevantTour.precio.toLocaleString("es-MX")}
-                    <span className="font-dm text-[10px] text-crema/40 ml-1">
-                      {relevantTour.precioUnidad === "vehiculo" ? "MXN/vehículo" : "MXN/persona"}
-                    </span>
-                  </p>
-                  <div className="space-y-2">
-                    <Link
-                      href={`/reservar/carrito?agregar=${relevantTour.slug}`}
-                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
-                      Reservar →
-                    </Link>
-                    <Link href={`/tours/${relevantTour.slug}`} className="block text-center border border-white/15 hover:border-verde-selva/40 text-crema/50 hover:text-crema text-[9px] tracking-[2px] uppercase font-dm py-2 transition-colors">
-                      Ver tour completo
-                    </Link>
-                  </div>
-                </div>
-              )}
+              {/* Tour relevante (escritorio; en móvil va dentro del artículo) */}
+              {relevantTour && <TarjetaTour tour={relevantTour} />}
 
               {/* AI recommender */}
               <div className="border border-white/10 bg-negro/30 p-5 text-center">
@@ -415,7 +509,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   <p className="text-[8px] tracking-[2px] uppercase font-dm text-crema/35 mb-4">Artículos relacionados</p>
                   <div className="space-y-4">
                     {related.slice(0, 3).map((r) => (
-                      <Link key={r.slug} href={`/blog/${r.slug}`} className="group flex gap-3 items-start">
+                      <Link key={r.slug} href={urlBlog(r.slug)} className="group flex gap-3 items-start">
                         {r.coverImageUrl && (
                           <div className="w-14 h-14 overflow-hidden flex-shrink-0">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -450,7 +544,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               </div>
               <div className="grid md:grid-cols-3 gap-6">
                 {related.map(p => (
-                  <Link key={p.slug} href={`/blog/${p.slug}`} className="group">
+                  <Link key={p.slug} href={urlBlog(p.slug)} className="group">
                     <article className="bg-forest border border-white/8 hover:border-lima/30 transition-colors overflow-hidden h-full flex flex-col">
                       {p.coverImageUrl && (
                         <div className="aspect-video overflow-hidden">
@@ -479,5 +573,52 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * La tarjeta del tour relacionado. Vivía suelta dentro de la barra lateral, que
+ * es `hidden lg:block`: el único enlace del artículo a una ficha de tour no se
+ * veía en móvil, o sea para el 88 % del tráfico. Ahora es un componente y se
+ * pinta en los dos sitios, cada uno con su `className` de visibilidad.
+ */
+function TarjetaTour({
+  tour,
+  className = "",
+}: {
+  tour: (typeof TOURS_DB)[number];
+  className?: string;
+}) {
+  return (
+    <div className={`border border-verde-selva/25 bg-verde-selva/8 p-5 ${className}`}>
+      <p className="text-[8px] tracking-[2px] uppercase font-dm text-verde-vivo mb-3">📍 Tour relacionado</p>
+      {tour.imagen_hero && (
+        <div className="relative aspect-video overflow-hidden mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={tour.imagen_hero} alt={tour.nombre} className="w-full h-full object-cover" loading="lazy" />
+        </div>
+      )}
+      <p className="font-cormorant text-crema text-base leading-snug mb-1">{tour.nombre}</p>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-[9px] font-dm text-dorado">★ 4.9</span>
+        <span className="text-[9px] font-dm text-crema/40">· Todo incluido</span>
+      </div>
+      <p className="font-cormorant text-dorado text-lg leading-none mb-3">
+        ${tour.precio.toLocaleString("es-MX")}
+        <span className="font-dm text-[10px] text-crema/40 ml-1">
+          {tour.precioUnidad === "vehiculo" ? "MXN/vehículo" : "MXN/persona"}
+        </span>
+      </p>
+      <div className="space-y-2">
+        <Link
+          href={`/reservar/carrito?agregar=${tour.slug}`}
+          className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
+          Reservar →
+        </Link>
+        <Link href={`/tours/${tour.slug}`} className="block text-center border border-white/15 hover:border-verde-selva/40 text-crema/50 hover:text-crema text-[9px] tracking-[2px] uppercase font-dm py-2 transition-colors">
+          Ver tour completo
+        </Link>
+      </div>
+    </div>
   );
 }

@@ -10,6 +10,30 @@ import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i1
 import { getExperiencias, conNumero } from "@/lib/i18n/experiencias.en";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
 
+/**
+ * Oferta de schema.org a partir del texto libre de `precio_entrada`.
+ *
+ * Antes el JSON-LD hacía `precio_entrada.match(/\d+/)?.[0] || "0"`, y esos
+ * textos son prosa, no cifras: "$1,950 MXN (tour completo…)" devolvía **1**
+ * —la coma de millares corta el match— y "Consultar acceso localmente" o
+ * "Sin tarifa oficial publicada" devolvían **0**, es decir, Google leía
+ * "gratis". Publicar un precio falso en datos estructurados es peor que no
+ * publicar ninguno, así que ahora sólo se declara `offers` cuando el texto es
+ * un importe limpio o una entrada libre declarada; en cualquier otro caso
+ * (rangos, varias tarifas, extras, "consultar") el destino se queda sin oferta.
+ */
+function ofertaEntrada(precio: string) {
+  const txt = precio.trim();
+  if (/^(acceso libre|entrada libre|free (access|admission))\b/i.test(txt)) {
+    return { "@type": "Offer", price: "0", priceCurrency: "MXN", availability: "https://schema.org/InStock" };
+  }
+  // Un solo importe, seguido como mucho de "MXN", "por persona" y un paréntesis
+  // aclaratorio que no contenga otro precio.
+  const m = txt.match(/^\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\s*MXN)?(?:\s*(?:por persona|per person))?(?:\s*\([^$)]*\))?$/i);
+  if (!m) return undefined;
+  return { "@type": "Offer", price: m[1].replace(/,/g, ""), priceCurrency: "MXN", availability: "https://schema.org/InStock" };
+}
+
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const t = getExperiencias(locale);
@@ -74,12 +98,7 @@ export default function ExperienciasPage() {
               addressRegion: "San Luis Potosí",
               addressCountry: "MX",
             },
-            offers: {
-              "@type": "Offer",
-              price: d.precio_entrada.match(/\d+/)?.[0] || "0",
-              priceCurrency: "MXN",
-              availability: "https://schema.org/InStock",
-            },
+            offers: ofertaEntrada(d.precio_entrada),
           },
         })),
       },
@@ -134,6 +153,10 @@ export default function ExperienciasPage() {
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-0.5">{t.bannerEyebrow}</p>
+              {/* El "Apartas con el 30 %" a secas (falso para un tour de un
+                  solo día según `pctACobrar`) ya quedó corregido en el propio
+                  `experiencias.en.ts`: sobrescribirlo aquí dejaría esa cadena
+                  muerta en los dos idiomas. */}
               <p className="text-crema font-dm text-sm">{t.bannerTexto}</p>
             </div>
             <Link

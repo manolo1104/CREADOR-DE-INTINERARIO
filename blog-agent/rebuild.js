@@ -170,18 +170,18 @@ function buildCTAs(topic) {
 </div>`;
 
   const CTA_ITINERARIO = `<div class="cta-block cta-itinerario">
-  <p class="cta-headline">¿Ya tienes tu itinerario para la Huasteca?</p>
-  <p class="cta-subtext">Nuestro planificador con IA arma tu recorrido en minutos, con tiempos reales y distancias.</p>
-  <a href="${SITE_URL}/itinerarios" class="cta-button cta-button--secondary">Crear mi itinerario gratis →</a>
+  <p class="cta-headline">¿Prefieres que te lo armemos nosotros?</p>
+  <p class="cta-subtext">Paquetes de 3, 4 y 5 días con hotel en Xilitla, tours, traslados y desayunos incluidos.</p>
+  <a href="${SITE_URL}/paquetes" class="cta-button cta-button--secondary">Paquetes todo incluido con hotel en Xilitla →</a>
 </div>`;
 
   const CTA_FINAL = `<div class="cta-block cta-final">
   <p class="cta-headline">Reserva tu experiencia en la Huasteca Potosina</p>
   <p class="cta-subtext-1">Tours con guías locales · Grupos reducidos · Sin estrés</p>
-  <p class="cta-subtext-2">O planea tu propio recorrido con nuestro creador de itinerarios.</p>
+  <p class="cta-subtext-2">O deja que te armemos el viaje completo, con hotel y traslados.</p>
   <div class="cta-buttons">
     <a href="${SITE_URL}/tours" class="cta-button cta-button--primary">Ver todos los tours →</a>
-    <a href="${SITE_URL}/itinerarios" class="cta-button cta-button--secondary">Crear mi itinerario →</a>
+    <a href="${SITE_URL}/paquetes" class="cta-button cta-button--secondary">Paquetes todo incluido con hotel →</a>
   </div>
 </div>`;
 
@@ -200,7 +200,7 @@ function validateInternalLinks(content, postsExistentes) {
     if (existingSlugs.has(slug)) { validCount++; return match; }
     console.warn(`   ⚠️  Slug no verificado: /blog/${slug} → redirigiendo`);
     if (/tour|guia|precio|reserva|actividad|cascada|rafting|aventura/.test(slug)) return `href="${SITE_URL}/tours"`;
-    if (/itinerario|ruta|plan|dia/.test(slug)) return `href="${SITE_URL}/itinerarios"`;
+    if (/itinerario|ruta|plan|dia/.test(slug)) return `href="${SITE_URL}/paquetes"`;
     return `href="${SITE_URL}/blog"`;
   });
 
@@ -272,7 +272,7 @@ CONTEXTO:
 ${researchContext || "(Usa tu conocimiento)"}
 
 LINKS INTERNOS VERIFICADOS (SOLO enlazar a estos): ${verifiedSlugs}
-Si necesitas enlazar a un blog pero no existe slug verificado, usa ${SITE_URL}/tours (actividades) o ${SITE_URL}/itinerarios (planificación) o ${SITE_URL}/blog (general). NUNCA inventes un slug.
+Si necesitas enlazar a un blog pero no existe slug verificado, usa ${SITE_URL}/tours (actividades) o ${SITE_URL}/paquetes (viaje completo con hotel) o ${SITE_URL}/blog (general). NUNCA inventes un slug.
 
 KEYWORD DENSITY:
 La keyword principal es: "${topic.focusKeyword}"
@@ -291,7 +291,7 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 ━━━ INTRO (3 párrafos) ━━━
 <p>[P1 — Gancho: identifica el problema o duda real del viajero. Incluye la keyword en las primeras 2 oraciones. NO empieces con "Si estás buscando..." ni "Si quieres..."]</p>
 <p>[P2 — Solución: qué va a encontrar en este artículo. Incluye una keyword secundaria. Añade un dato concreto del contexto investigado.]</p>
-<p>[P3 — E-E-A-T obligatorio, copia textual: "En www.huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Cierra con: <a href="${SITE_URL}/itinerarios">planea tu itinerario a ${topic.focusKeyword}</a>]</p>
+<p>[P3 — E-E-A-T obligatorio, copia textual: "En www.huasteca-potosina.com trabajamos con guías y operadores locales de la región. Esta guía se actualiza con experiencias reales de quienes recorren la Huasteca Potosina cada semana." Cierra con: <a href="${SITE_URL}/paquetes">paquetes todo incluido para visitar ${topic.focusKeyword}</a>]</p>
 
 ━━━ SECCIÓN 1 ━━━
 <h2>[Título descriptivo con keyword LSI — ej: "Destinos imprescindibles para [keyword]" o "[Destino]: qué ver y hacer" o "Los mejores [tema] en la Huasteca Potosina"]</h2>
@@ -318,7 +318,7 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 
 <h3>[Subtema — logística o costos]</h3>
 <p>[2-3 oraciones. Desglose de costos o logística con datos del contexto investigado. Incluye <strong> en cada cifra.]</p>
-<p>[2-3 oraciones. Link interno Tipo A a otro post relacionado si existe, si no a ${SITE_URL}/itinerarios.]</p>
+<p>[2-3 oraciones. Link interno Tipo A a otro post relacionado si existe, si no a ${SITE_URL}/paquetes.]</p>
 
 ━━━ SECCIÓN 3 ━━━
 <h2>[Tercer título — consejos prácticos. Formato: "Consejos antes de visitar [destino]" o "Qué llevar y cómo preparar tu viaje a [tema]"]</h2>
@@ -407,7 +407,7 @@ Respuesta: JSON puro sin markdown.
   post.coverImageUrl  = images.hero.url;
   post.coverImageAlt  = images.hero.alt;
   post.coverImageFile = `${slug}.jpg`;
-  post.internalLinks  = [`${SITE_URL}/tours`, `${SITE_URL}/itinerarios`];
+  post.internalLinks  = [`${SITE_URL}/tours`, `${SITE_URL}/paquetes`];
   post.externalSources = post.externalSources || [];
 
   // Category

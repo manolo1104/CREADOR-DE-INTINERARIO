@@ -34,6 +34,16 @@ async function getBlogPosts(): Promise<{ slug: string; updatedAt: Date; coverIma
   }
 }
 
+// SOBRE `lastModified`: solo lo llevan las URLs con una fecha REAL en la base
+// (los artículos del blog, con su `updatedAt`). Las rutas estáticas lo tenían
+// puesto a `new Date()`, y como el sitemap es `force-dynamic` eso significaba
+// que 150 de las 190 URLs decían "modificada hace un segundo" en CADA petición.
+// Un sitemap que afirma que todo cambió siempre no informa de nada: Google
+// deja de creerle y acaba ignorando el campo en todo el archivo, incluidos los
+// artículos donde la fecha sí era buena. La alternativa —una constante escrita
+// a mano por sección— envejece mal en cuanto nadie la actualiza, así que se
+// omite: `lastmod` es opcional y "sin dato" es mejor que "dato falso".
+//
 // Rutas bilingües (es en raíz, en bajo /en): genera 2 entradas (es + en) con
 // hreflang recíprocos (es-MX, en, x-default) en cada una.
 function bilingual(
@@ -44,7 +54,8 @@ function bilingual(
   const enUrl = path === "/" ? `${BASE}/en` : `${BASE}/en${path}`;
   const languages = { "es-MX": esUrl, en: enUrl, "x-default": esUrl };
   const common = {
-    lastModified: opts.lastModified ?? new Date(),
+    // Sin fecha real no se escribe `lastModified`: ver la nota de arriba.
+    ...(opts.lastModified ? { lastModified: opts.lastModified } : {}),
     changeFrequency: opts.changeFrequency,
     priority: opts.priority,
     images: opts.images,
@@ -81,12 +92,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // La sala de prensa se dirige a periodistas estadounidenses: un editor que
   // busca "huasteca potosina press" tiene que encontrarla, así que va indexada.
   const enOnlyStatic: MetadataRoute.Sitemap = [
-    { url: `${BASE}/en/press`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE}/en/press`, changeFrequency: "monthly", priority: 0.5 },
     // Landings de origen para EE.UU. No tienen espejo español a propósito: un
     // lector mexicano no busca "cómo llegar desde Houston".
     ...CIUDADES_ORIGEN_EN.map((c) => ({
       url: `${BASE}/en/from/${c.slug}`,
-      lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
@@ -95,24 +105,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Páginas solo en español (aún sin versión /en).
   // Regla: toda página pública e indexable debe estar aquí. Se excluyen a propósito
   // las transaccionales (/reservar-*, /guia/descarga, /confirmacion-tour), el panel
-  // /admin y /planear (bloqueada en robots.ts).
+  // /admin y /planear (ya no bloqueada en robots.ts, pero marcada `noindex` en
+  // su propia página mientras el generador de itinerarios siga devolviendo 503).
   const esOnlyStatic: MetadataRoute.Sitemap = [
-    { url: `${BASE}/blog`,                  lastModified: new Date(), changeFrequency: "daily",   priority: 0.8 },
-    { url: `${BASE}/creditos`,              lastModified: new Date(), changeFrequency: "yearly",  priority: 0.2 },
-    { url: `${BASE}/recomendar`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/precios`,       lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/guia`,          lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/sobre-la-huasteca-potosina`,        lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/sustentabilidad-y-conservacion`,    lastModified: new Date(), changeFrequency: "yearly",  priority: 0.4 },
-    { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/tours-en-ciudad-valles`,            lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/politica-de-cancelacion`, lastModified: new Date(), changeFrequency: "yearly",  priority: 0.6 },
-    { url: `${BASE}/terminos`,                lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
-    { url: `${BASE}/aviso-de-privacidad`,     lastModified: new Date(), changeFrequency: "yearly",  priority: 0.3 },
-    { url: `${BASE}/xilitla-o-ciudad-valles`,           lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/blog`,                  changeFrequency: "daily",   priority: 0.8 },
+    { url: `${BASE}/creditos`,              changeFrequency: "yearly",  priority: 0.2 },
+    { url: `${BASE}/recomendar`,    changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/precios`,       changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/guia`,          changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/sobre-la-huasteca-potosina`,        changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/sustentabilidad-y-conservacion`,    changeFrequency: "yearly",  priority: 0.4 },
+    { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tours-en-ciudad-valles`,            changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/politica-de-cancelacion`, changeFrequency: "yearly",  priority: 0.6 },
+    { url: `${BASE}/terminos`,                changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE}/aviso-de-privacidad`,     changeFrequency: "yearly",  priority: 0.3 },
+    { url: `${BASE}/xilitla-o-ciudad-valles`,           changeFrequency: "monthly", priority: 0.8 },
     ...CIUDADES_ORIGEN.map((c) => ({
       url: `${BASE}/desde/${c.slug}`,
-      lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
