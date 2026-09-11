@@ -89,11 +89,57 @@ function costoHotelPorNoche(personas: number, vistaMontana = false, reparto?: nu
   );
 }
 
-/** Los tours del itinerario que tienen ficha y precio por persona. */
-export function toursDelPaquete(paquete: Paquete) {
-  return paquete.itinerario
+/**
+ * Los slugs que el cliente eligió, tal como viajan por Stripe: "uno,dos,tres".
+ * Un solo campo de texto vale para el paquete que elige un día y para el que
+ * elige los cuatro; así la metadata del pago no cambia de forma.
+ */
+export function parseEleccion(v: unknown): string[] {
+  return String(v ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+}
+
+/** El más caro de una lista de opciones, para no cotizar de menos. */
+function precioMasAlto(opciones: { slug: string }[]): number {
+  return opciones.reduce((max, o) => {
+    const t = TOURS_DB.find((x) => x.slug === o.slug);
+    return t && t.precioUnidad !== "vehiculo" ? Math.max(max, t.precio) : max;
+  }, 0);
+}
+
+/**
+ * Los tours que se cobran por persona en este paquete.
+ *
+ * Normalmente son los del itinerario. Pero "Tu Huasteca" es a la carta: su
+ * itinerario no nombra ningún tour porque los nombra el cliente, así que ahí
+ * los que cuentan son los que eligió. Importa para el dinero, no para la
+ * decoración: `extraTours` cobra un boleto de CADA tour por cada persona
+ * arriba de dos, y un paquete de cuatro recorridos que devolviera una lista
+ * vacía dejaría viajar gratis a la tercera persona.
+ */
+export function toursDelPaquete(paquete: Paquete, elegidos: string[] = []) {
+  const delItinerario = paquete.itinerario
     .map((d) => d.tourSlug)
-    .filter((s): s is string => !!s)
+    .filter((s): s is string => !!s);
+
+  let slugs: string[] = delItinerario;
+
+  if (!delItinerario.length && paquete.eleccionTour) {
+    const opciones   = paquete.eleccionTour.opciones;
+    const permitidos = new Set(opciones.map((o) => o.slug));
+    // Sin repetidos: el mismo recorrido dos veces sería un día duplicado, y
+    // cobrarlo dos veces a la gente extra sería cobrar de más.
+    const validos    = Array.from(new Set(elegidos)).filter((s) => permitidos.has(s));
+    // Lo que todavía no ha elegido se cotiza al recorrido MÁS CARO de la
+    // lista: conforme elige, el precio en pantalla solo puede bajar. Al revés
+    // —cotizar en cero lo no elegido— un grupo de cinco vería un total corto
+    // hasta el último clic.
+    const faltan = Math.max(0, (paquete.eleccionTour.cuantos ?? 1) - validos.length);
+    const techo  = precioMasAlto(opciones);
+    const tope   = opciones.find((o) => TOURS_DB.find((x) => x.slug === o.slug)?.precio === techo)?.slug;
+    slugs = [...validos, ...(tope ? Array(faltan).fill(tope) : [])];
+  }
+
+  return slugs
     .map((slug) => TOURS_DB.find((t) => t.slug === slug))
     .filter((t): t is NonNullable<typeof t> => !!t)
     // Los tours que se cobran por vehículo no tienen precio por persona, así
@@ -187,11 +233,18 @@ export function computePaqueteCharge(input: {
   const nochesTotalCobradas  = nochesTotales  - nochesGratis(nochesTotales);
 
   const reparto = Array.isArray(input.reparto) ? input.reparto.map((n) => Number(n) || 0) : undefined;
-  const hotelReal      = costoHotelPorNoche(personas, vistaMontana, reparto) * nochesTotalCobradas;
-  const hotelIncluido  = costoHotelPorNoche(2, false)                        * nochesBaseCobradas;
+  // Lo que el precio publicado ya cubre. Casi siempre es una habitación de dos
+  // con vista a la selva; la Luna de Miel declara `habitacionIncluida:
+  // "montana"` porque su precio YA lleva la suite Jungla. Sin esa distinción,
+  // el checkout le sumaba la diferencia de la Jungla a un paquete cuya ficha
+  // promete la Jungla incluida: $400 por noche cobrados dos veces.
+  const montanaIncluida = paquete.habitacionIncluida === "montana";
+  const hotelReal      = costoHotelPorNoche(personas, vistaMontana, reparto)  * nochesTotalCobradas;
+  const hotelIncluido  = costoHotelPorNoche(2, montanaIncluida)               * nochesBaseCobradas;
   const extraHotel     = Math.max(0, hotelReal - hotelIncluido);
 
-  const toursPorPersona = toursDelPaquete(paquete).reduce((s, t) => s + t.precio, 0);
+  const toursPorPersona = toursDelPaquete(paquete, parseEleccion(input.tourElegido))
+    .reduce((s, t) => s + t.precio, 0);
   // Misma escala de menores que en los tours sueltos: 70 % de 6 a 10 años y
   // 50 % por debajo de 6.
   const extraTours = Math.round(

@@ -181,16 +181,24 @@ body {
 }
 
 /* ── Grid stagger reveal ── */
+/*
+ * La tarjeta entra descubriéndose desde abajo. El recorte de ARRIBA va en
+ * negativo a propósito: la animación lleva `both`, así que el estado final
+ * (`inset(... 0% ...)`) se queda pegado para siempre y recorta al borde de la
+ * caja. En /tours el logotipo del tour se apoya a caballo del borde superior y
+ * la mitad de fuera desaparecía: no era un z-index ni un overflow, era este
+ * clip-path que sigue activo cuando la animación ya acabó.
+ */
 @keyframes card-reveal {
   0% {
     opacity: 0;
     transform: translateY(20px);
-    clip-path: inset(0 0 14% 0);
+    clip-path: inset(-60% 0 14% 0);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    clip-path: inset(0 0 0% 0);
+    clip-path: inset(-60% 0 0% 0);
   }
 }
 .stagger-reveal {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T21:21:01.908Z",
+  "generatedAt": "2026-09-11T04:28:24.374Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -226,8 +226,8 @@
       "duracionTexto": "5 h",
       "precio": 1700,
       "precioUnidad": "persona",
-      "groupMin": 2,
-      "groupMax": 8,
+      "groupMin": 4,
+      "groupMax": 10,
       "soloAdultos": false,
       "privateAvailable": false,
       "privateMinPrice": null,
@@ -286,7 +286,7 @@
       "duracionTexto": "7 h",
       "precio": 1950,
       "precioUnidad": "persona",
-      "groupMin": 4,
+      "groupMin": 5,
       "groupMax": 8,
       "soloAdultos": false,
       "privateAvailable": false,
@@ -348,7 +348,7 @@
     {
       "id": "tour-tamul",
       "slug": "expedicion-tamul",
-      "nombre": "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
+      "nombre": "Expedición Tamul — Tamul, Cueva del Agua y Sótano",
       "tipo": "Aventura & Naturaleza",
       "dificultad": "media",
       "duracionHrs": 9,
@@ -356,7 +356,7 @@
       "precio": 1550,
       "precioUnidad": "persona",
       "groupMin": 2,
-      "groupMax": 12,
+      "groupMax": 14,
       "soloAdultos": false,
       "privateAvailable": true,
       "privateMinPrice": 8500,
@@ -410,7 +410,7 @@
     {
       "id": "tour-edward-james",
       "slug": "ruta-surrealista-edward-james",
-      "nombre": "Ruta Surrealista — Edward James, Manantiales & Selva",
+      "nombre": "Ruta Surrealista — Edward James, Manantiales, Cuevas y Castillo",
       "tipo": "Cultura & Naturaleza",
       "dificultad": "baja",
       "duracionHrs": 8,
@@ -418,7 +418,7 @@
       "precio": 1400,
       "precioUnidad": "persona",
       "groupMin": 2,
-      "groupMax": 10,
+      "groupMax": 14,
       "soloAdultos": false,
       "privateAvailable": true,
       "privateMinPrice": 7500,
@@ -437,7 +437,6 @@
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-        "Fotografías del recorrido",
         "Botiquín de primeros auxilios"
       ],
       "noIncluye": [
@@ -473,15 +472,15 @@
     {
       "id": "tour-meco",
       "slug": "cascadas-del-meco",
-      "nombre": "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
+      "nombre": "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto",
       "tipo": "Cascadas & Fotografía",
       "dificultad": "baja",
-      "duracionHrs": 7,
-      "duracionTexto": "8–10 h",
+      "duracionHrs": 10,
+      "duracionTexto": "10 h",
       "precio": 1700,
       "precioUnidad": "persona",
       "groupMin": 2,
-      "groupMax": 8,
+      "groupMax": 14,
       "soloAdultos": false,
       "privateAvailable": true,
       "privateMinPrice": 7000,
@@ -499,7 +498,6 @@
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-        "Fotografías del recorrido",
         "Botiquín de primeros auxilios"
       ],
       "noIncluye": [
@@ -507,7 +505,7 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 6:30 PM (~10 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -538,12 +536,12 @@
       "nombre": "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
       "tipo": "Cascadas & Bienestar",
       "dificultad": "baja",
-      "duracionHrs": 8,
-      "duracionTexto": "8–10 h",
+      "duracionHrs": 10,
+      "duracionTexto": "10 h",
       "precio": 1600,
       "precioUnidad": "persona",
       "groupMin": 2,
-      "groupMax": 12,
+      "groupMax": 14,
       "soloAdultos": false,
       "privateAvailable": true,
       "privateMinPrice": 8000,
@@ -560,7 +558,6 @@
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-        "Fotografías del recorrido",
         "Botiquín de primeros auxilios"
       ],
       "noIncluye": [
@@ -568,7 +565,7 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 6:30 PM (~10 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -596,15 +593,15 @@
     {
       "id": "tour-puente-dios",
       "slug": "ruta-acuatica-puente-de-dios",
-      "nombre": "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
+      "nombre": "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
       "tipo": "Aventura Acuática",
       "dificultad": "media",
       "duracionHrs": 10,
-      "duracionTexto": "8–10 h",
+      "duracionTexto": "10 h",
       "precio": 1600,
       "precioUnidad": "persona",
       "groupMin": 2,
-      "groupMax": 10,
+      "groupMax": 14,
       "soloAdultos": false,
       "privateAvailable": true,
       "privateMinPrice": 8500,
@@ -622,7 +619,6 @@
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
-        "Fotografías del recorrido",
         "Botiquín de primeros auxilios"
       ],
       "noIncluye": [
@@ -630,7 +626,7 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Inicia aprox. 8:30 AM y dura entre 8 y 10 horas (día completo). Los horarios exactos se confirman al reservar.",
+      "horario": "Inicia aprox. 8:30 AM y termina aprox. 6:30 PM (~10 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -665,8 +661,8 @@
       "duracionTexto": "4 h",
       "precio": 1300,
       "precioUnidad": "persona",
-      "groupMin": 1,
-      "groupMax": 8,
+      "groupMin": 2,
+      "groupMax": 10,
       "soloAdultos": true,
       "privateAvailable": false,
       "privateMinPrice": null,
@@ -778,79 +774,83 @@
   ],
   "paquetes": [
     {
-      "id": "aventura",
-      "slug": "aventura",
-      "nombre": "Paquete Aventura",
-      "subtitulo": "El mejor dúo de la región",
+      "id": "luna-de-miel",
+      "slug": "luna-de-miel",
+      "nombre": "Luna de Miel",
+      "subtitulo": "La Huasteca de a dos, sin prisa",
       "duracion": "3 días / 2 noches",
       "dias": 3,
       "noches": 2,
-      "precio": 9000,
+      "precio": 9800,
       "precioLabel": "por pareja",
-      "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura",
-      "badge": "Más popular",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/luna-de-miel",
+      "badge": "Lunamieleros",
       "perfiles": [
-        "Amigos aventureros",
-        "Parejas activas",
-        "El clásico"
+        "Recién casados",
+        "Parejas",
+        "Aniversarios",
+        "Ritmo tranquilo"
       ],
+      "habitaciones": [
+        "Jungla",
+        "Suite Flor de Liz 2"
+      ],
+      "habitacionAsignada": true,
       "tours": [
-        "Cascadas del Meco — Turquesas, Mirador & El Gran Salto (Día 1)",
-        "Expedición Tamul — Sótano, Cañón & Cueva del Agua (Día 2)"
+        "Las Pozas, el jardín surrealista de Edward James (Día 1)",
+        "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 2)"
       ],
+      "eleccion": null,
       "itinerario": [
         {
           "dia": 1,
-          "tipo": "tour",
-          "titulo": "Llegada + Cascadas del Meco",
-          "tourSlug": "cascadas-del-meco",
-          "descripcion": "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), te entregamos la habitación temprano para descansar y ese mismo día arrancamos con las cascadas turquesa de El Naranjo — un primer día suave y espectacular."
+          "tipo": "llegada",
+          "titulo": "Llegada, check-in y el jardín de Edward James",
+          "tourSlug": null,
+          "descripcion": "Llegan, hacen check-in y el único plan del día es Las Pozas, el jardín escultórico que Edward James levantó en la selva. Nada más: ni madrugar ni carretera. El jardín recibe de 9 de la mañana a 4 de la tarde y el último recorrido guiado sale justo a las 4 y dura dos horas, así que llegar a media tarde tampoco les quita el día."
         },
         {
           "dia": 2,
           "tipo": "tour",
-          "titulo": "Expedición Tamul",
+          "titulo": "Expedición Tamul y cena romántica",
           "tourSlug": "expedicion-tamul",
-          "descripcion": "El día más completo de aventura: ya descansado, salimos temprano para aprovechar la mejor luz y el caudal del río — mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua."
+          "descripcion": "El día grande: canoa por el Cañón del Tampaón hasta los 105 metros de la Cascada de Tamul, clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer, cuando salen los pericos. Al volver, la habitación los espera con velas y pétalos, su botella lista y la cena emplatándose: un platillo formal en la terraza privada."
         },
         {
           "dia": 3,
           "tipo": "salida",
           "titulo": "Salida",
           "tourSlug": null,
-          "descripcion": "Check-out y regreso a casa con la memoria llena de la Huasteca. El desayuno buffet va incluido solo los días de tour."
+          "descripcion": "Desayuno y camino a casa. El desayuno buffet va incluido solo los días de tour."
         }
       ],
       "incluye": [
-        "2 noches en Hotel Paraíso Encantado Xilitla",
+        "2 noches en la suite Jungla del Hotel Paraíso Encantado, con terraza privada, vista a la montaña y piscina de spa al exterior",
         "Desayuno buffet los días de tour",
-        "Tour Expedición Tamul completo",
-        "Tour Cascadas del Meco completo",
-        "Transporte del hotel al inicio de cada tour y de regreso",
+        "Cena romántica la segunda noche: platillo formal y botella de vino",
+        "La habitación preparada con velas y pétalos para esa noche",
+        "Entrada y recorrido guiado en Las Pozas, el jardín de Edward James",
+        "Tour Expedición Tamul completo, de día entero",
+        "Transporte del hotel a Las Pozas y al inicio del tour del día 2, ida y vuelta",
         "Guías certificados NOM-09 SECTUR",
         "Entradas a todas las atracciones",
         "Equipo de seguridad",
         "Seguro de viaje",
-        "Fotografía del recorrido"
+        "Fotografía y video del recorrido"
       ],
       "noIncluye": [
         "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
-        "Comidas y cenas (excepto desayunos)",
-        "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Comidas y cenas, salvo los desayunos y la cena romántica del día 2",
         "Propinas y gastos personales"
       ],
       "valor": [
         {
-          "item": "2 noches hotel (2 pax)",
-          "precio": "$5,600"
+          "item": "2 noches suite Jungla (2 pax)",
+          "precio": "$3,800"
         },
         {
-          "item": "Expedición Tamul",
-          "precio": "$2,900"
-        },
-        {
-          "item": "Cascadas del Meco",
-          "precio": "$3,200"
+          "item": "Expedición Tamul (2 pax)",
+          "precio": "$3,100"
         },
         {
           "item": "Transporte 2 días",
@@ -858,72 +858,198 @@
         },
         {
           "item": "Entradas + guías",
-          "precio": "$900"
+          "precio": "$800"
+        },
+        {
+          "item": "Fotografía y video del recorrido",
+          "precio": "$1,600"
         }
       ]
     },
     {
-      "id": "completo",
-      "slug": "completo",
-      "nombre": "Paquete Completo Huasteca",
-      "subtitulo": "La experiencia definitiva",
+      "id": "familiar",
+      "slug": "familiar",
+      "nombre": "Paquete Familiar",
+      "subtitulo": "Tres días que los niños sí aguantan",
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
       "precio": 12500,
       "precioLabel": "por pareja",
-      "url": "https://www.huasteca-potosina.com/reservar-paquete/completo",
-      "badge": null,
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/familiar",
+      "badge": "Más popular",
       "perfiles": [
-        "Familias",
+        "Familias con niños",
         "Grupos",
-        "Experiencia total"
+        "Dificultad baja"
       ],
+      "habitaciones": [
+        "Orquídeas 2",
+        "Bromelias 1",
+        "Lirios 2",
+        "Jungla"
+      ],
+      "habitacionAsignada": false,
       "tours": [
-        "Ruta Surrealista — Edward James (Día 1)",
-        "Expedición Tamul — Sótano & Cascada (Día 2)",
-        "Paraíso Escalonado o Ruta Acuática (Día 3)"
+        "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto (Día 1)",
+        "Ruta Surrealista — Edward James, Manantiales, Cuevas y Castillo (Día 2)",
+        "Paraíso Escalonado — Minas Viejas & Cascadas de Micos (Día 3)"
       ],
+      "eleccion": null,
       "itinerario": [
         {
           "dia": 1,
           "tipo": "tour",
-          "titulo": "Llegada + Ruta Surrealista (Edward James)",
-          "tourSlug": "ruta-surrealista-edward-james",
-          "descripcion": "Te recibimos y haces check-in en el hotel. Como Las Pozas está a minutos, ese mismo día visitamos el jardín surrealista de Edward James."
+          "titulo": "Llegada + Cascadas del Meco",
+          "tourSlug": "cascadas-del-meco",
+          "descripcion": "Si llegan en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. Pozas turquesa, mirador panorámico y chaleco para todos: el primer día es el que engancha a los niños."
         },
         {
           "dia": 2,
           "tipo": "tour",
-          "titulo": "Expedición Tamul",
-          "tourSlug": "expedicion-tamul",
-          "descripcion": "El día grande: mirador al Sótano de las Huahuas, Cascada de Tamul en lancha y Cueva del Agua."
+          "titulo": "Las Pozas de Edward James",
+          "tourSlug": "ruta-surrealista-edward-james",
+          "descripcion": "Un día de caminar poco y mirar mucho: el jardín de escaleras que no llevan a ningún lado suele ser el recuerdo que más cuentan los niños al volver. Cierra en los manantiales de Huichihuayán."
         },
         {
           "dia": 3,
           "tipo": "tour",
-          "titulo": "Paraíso Escalonado (o Ruta Acuática, a elegir)",
+          "titulo": "Minas Viejas y Cascadas de Micos",
           "tourSlug": "paraiso-escalonado-minas-micos",
-          "descripcion": "Minas Viejas y Cascadas de Micos. Si prefieres, lo cambiamos por la Ruta Acuática del Puente de Dios."
+          "descripcion": "El día de agua tranquila. Las terrazas de Minas Viejas son escalones naturales con poza en cada nivel, y en Micos se nada con chaleco. Sin exigencia física."
         },
         {
           "dia": 4,
           "tipo": "salida",
           "titulo": "Salida",
           "tourSlug": null,
-          "descripcion": "Check-out y regreso a casa con la memoria llena. El desayuno buffet va incluido solo los días de tour."
+          "descripcion": "Desayuno, check-out y camino a casa."
         }
       ],
       "incluye": [
         "3 noches en Hotel Paraíso Encantado Xilitla",
         "Desayuno buffet los días de tour",
-        "3 tours completos ya seleccionados: Ruta Surrealista Edward James, Expedición Tamul y Paraíso Escalonado",
+        "Tour Cascadas del Meco completo",
+        "Tour Ruta Surrealista completo",
+        "Tour Paraíso Escalonado completo",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
         "Entradas a todas las atracciones",
-        "Equipo de seguridad",
+        "Chalecos salvavidas para toda la familia",
         "Seguro de viaje",
-        "Fotografías y video de cada recorrido"
+        "Fotografía y video del recorrido"
+      ],
+      "noIncluye": [
+        "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
+        "Los niños se cotizan aparte: de 6 a 10 años pagan el 70 % y menores de 6 el 50 % de la parte de tours",
+        "Habitación adicional o cama extra para los niños (escríbenos y te la cotizamos)",
+        "Comidas y cenas (excepto desayunos)",
+        "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Propinas y gastos personales"
+      ],
+      "valor": [
+        {
+          "item": "3 noches hotel (2 pax)",
+          "precio": "$8,400"
+        },
+        {
+          "item": "Cascadas del Meco (2 pax)",
+          "precio": "$3,400"
+        },
+        {
+          "item": "Ruta Surrealista (2 pax)",
+          "precio": "$2,800"
+        },
+        {
+          "item": "Paraíso Escalonado (2 pax)",
+          "precio": "$3,200"
+        },
+        {
+          "item": "Transporte 3 días",
+          "precio": "$1,200"
+        },
+        {
+          "item": "Entradas + guías",
+          "precio": "$1,200"
+        },
+        {
+          "item": "Fotografía y video del recorrido",
+          "precio": "$1,600"
+        }
+      ]
+    },
+    {
+      "id": "aventura-extrema",
+      "slug": "aventura-extrema",
+      "nombre": "Aventura Extrema",
+      "subtitulo": "Cuerda, rápidos y la caída más alta de México",
+      "duracion": "4 días / 3 noches",
+      "dias": 4,
+      "noches": 3,
+      "precio": 13500,
+      "precioLabel": "por pareja",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura-extrema",
+      "badge": "Adrenalina",
+      "perfiles": [
+        "Amigos aventureros",
+        "Adrenalina",
+        "Buena condición física"
+      ],
+      "habitaciones": [
+        "Orquídeas 2",
+        "Bromelias 1",
+        "Lirios 2",
+        "Jungla"
+      ],
+      "habitacionAsignada": false,
+      "tours": [
+        "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 1)",
+        "Rafting en el Río Tampaón — Rápidos Clase III (Día 2)",
+        "Rappel en la Cascada de Tamul (Día 3)"
+      ],
+      "eleccion": null,
+      "itinerario": [
+        {
+          "dia": 1,
+          "tipo": "tour",
+          "titulo": "Llegada + Expedición Tamul",
+          "tourSlug": "expedicion-tamul",
+          "descripcion": "El día que sirve de reconocimiento: navegas el Cañón del Tampaón hasta la Cascada de Tamul y ves desde abajo la pared por la que vas a bajar el día 3. Clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer."
+        },
+        {
+          "dia": 2,
+          "tipo": "tour",
+          "titulo": "Rafting en el Río Tampaón",
+          "tourSlug": "rafting-rio-tampaon",
+          "descripcion": "Rápidos Clase III en el mismo río, con el cañón cerrándose sobre la balsa. Casco, chaleco y guía de río en cada embarcación."
+        },
+        {
+          "dia": 3,
+          "tipo": "tour",
+          "titulo": "Rappel en la Cascada de Tamul",
+          "tourSlug": "rappel-tamul",
+          "descripcion": "El descenso frente a la caída más alta de México. Se baja con equipo certificado y guía en la cuerda; no hace falta experiencia previa, pero sí no tenerle miedo al vacío."
+        },
+        {
+          "dia": 4,
+          "tipo": "salida",
+          "titulo": "Salida",
+          "tourSlug": null,
+          "descripcion": "Desayuno, check-out y camino a casa."
+        }
+      ],
+      "incluye": [
+        "3 noches en Hotel Paraíso Encantado Xilitla",
+        "Desayuno buffet los días de tour",
+        "Tour Expedición Tamul completo",
+        "Tour Rafting en el Río Tampaón completo",
+        "Tour Rappel en la Cascada de Tamul completo",
+        "Transporte del hotel al inicio de cada tour y de regreso",
+        "Guías certificados NOM-09 SECTUR y guía de cuerda en el rappel",
+        "Entradas a todas las atracciones",
+        "Equipo de seguridad: arnés, casco y chaleco",
+        "Seguro de viaje",
+        "Fotografía y video del recorrido"
       ],
       "noIncluye": [
         "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
@@ -937,96 +1063,122 @@
           "precio": "$8,400"
         },
         {
-          "item": "3 tours completos",
-          "precio": "$5,800"
+          "item": "Expedición Tamul (2 pax)",
+          "precio": "$3,100"
+        },
+        {
+          "item": "Rafting Río Tampaón (2 pax)",
+          "precio": "$3,900"
+        },
+        {
+          "item": "Rappel Cascada de Tamul (2 pax)",
+          "precio": "$3,400"
         },
         {
           "item": "Transporte 3 días",
           "precio": "$1,200"
         },
         {
-          "item": "Fotos + video del recorrido",
-          "precio": "$1,600"
+          "item": "Entradas, guías y equipo de seguridad",
+          "precio": "$1,200"
         },
         {
-          "item": "Entradas + guías",
-          "precio": "$1,200"
+          "item": "Fotografía y video del recorrido",
+          "precio": "$1,600"
         }
       ]
     },
     {
-      "id": "gran-huasteca",
-      "slug": "gran-huasteca",
-      "nombre": "Paquete Gran Huasteca",
-      "subtitulo": "Lo ves todo — la Huasteca completa",
+      "id": "tu-huasteca",
+      "slug": "tu-huasteca",
+      "nombre": "Tu Huasteca",
+      "subtitulo": "Cuatro días de tour que eliges tú",
       "duracion": "5 días / 4 noches",
       "dias": 5,
       "noches": 4,
-      "precio": 16500,
+      "precio": 18000,
       "precioLabel": "por pareja",
-      "url": "https://www.huasteca-potosina.com/reservar-paquete/gran-huasteca",
-      "badge": "El más completo",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/tu-huasteca",
+      "badge": "Tú lo armas",
       "perfiles": [
-        "Lo ven todo",
-        "Grupos",
-        "Experiencia total"
+        "Tú eliges",
+        "Segunda visita",
+        "Grupos de amigos"
       ],
+      "habitaciones": [
+        "Orquídeas 2",
+        "Bromelias 1",
+        "Lirios 2",
+        "Jungla"
+      ],
+      "habitacionAsignada": false,
       "tours": [
-        "Ruta Surrealista — Edward James (Día 1)",
-        "Expedición Tamul — Sótano & Cascada (Día 2)",
-        "Cascadas del Meco — Turquesas (Día 3)",
-        "Ruta Acuática Puente de Dios (Día 4)"
+        "Cuatro recorridos completos, a elegir de una lista de seis",
+        "Se eligen al reservar y se pueden cambiar hasta 7 días antes"
       ],
+      "eleccion": {
+        "cuantos": 4,
+        "dia": null,
+        "opciones": [
+          "Ruta Surrealista",
+          "Expedición Tamul",
+          "Paraíso Escalonado",
+          "Ruta Acuática",
+          "Cascadas del Meco",
+          "Rappel en la Cascada de Tamul"
+        ]
+      },
       "itinerario": [
         {
           "dia": 1,
           "tipo": "tour",
-          "titulo": "Llegada + Ruta Surrealista (Edward James)",
-          "tourSlug": "ruta-surrealista-edward-james",
-          "descripcion": "Si llegas en el autobús de la mañana a Xilitla (~6:30 AM), arrancamos ese mismo día con Las Pozas, a minutos del hotel."
+          "titulo": "Llegada + tu primer recorrido",
+          "tourSlug": null,
+          "descripcion": "Si llegas en el autobús de la mañana, te entregamos la habitación temprano y salimos ese mismo día: el día 1 ya es día de tour. Cuál de los cuatro va primero lo acomodamos contigo según el clima y la distancia."
         },
         {
           "dia": 2,
           "tipo": "tour",
-          "titulo": "Expedición Tamul",
-          "tourSlug": "expedicion-tamul",
-          "descripcion": "Mirador al Sótano de las Huahuas, Cascada de Tamul en lancha de remo y Cueva del Agua."
+          "titulo": "Tu segundo recorrido",
+          "tourSlug": null,
+          "descripcion": "Ordenamos los cuatro para que no hagas dos días largos seguidos: Tamul y el rappel son los que más piden madrugar, así que rara vez caen pegados."
         },
         {
           "dia": 3,
           "tipo": "tour",
-          "titulo": "Cascadas del Meco",
-          "tourSlug": "cascadas-del-meco",
-          "descripcion": "Las cascadas turquesa de El Naranjo, miradores y pozas para nadar."
+          "titulo": "Tu tercer recorrido",
+          "tourSlug": null,
+          "descripcion": "Sales del mismo hotel todos los días. No hay maletas que rehacer ni check-outs de por medio."
         },
         {
           "dia": 4,
           "tipo": "tour",
-          "titulo": "Ruta Acuática Puente de Dios",
-          "tourSlug": "ruta-acuatica-puente-de-dios",
-          "descripcion": "El arco de luz del Puente de Dios en Tamasopo, hacienda y siete cascadas."
+          "titulo": "Tu cuarto recorrido",
+          "tourSlug": null,
+          "descripcion": "El último día de tour lo dejamos del lado de Xilitla siempre que se pueda, para que la vuelta al hotel sea corta."
         },
         {
           "dia": 5,
           "tipo": "salida",
           "titulo": "Salida",
           "tourSlug": null,
-          "descripcion": "Check-out y regreso a casa con la memoria llena de la Huasteca completa. El desayuno buffet va incluido solo los días de tour."
+          "descripcion": "Desayuno, check-out y camino a casa."
         }
       ],
       "incluye": [
         "4 noches en Hotel Paraíso Encantado Xilitla",
         "Desayuno buffet los días de tour",
-        "4 tours completos (Edward James, Expedición Tamul, Cascadas del Meco y Ruta Acuática Puente de Dios)",
+        "4 recorridos completos, elegidos por ti de una lista de seis",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
         "Entradas a todas las atracciones",
         "Equipo de seguridad",
         "Seguro de viaje",
-        "Fotografías y video de cada recorrido"
+        "Fotografía y video de cada recorrido"
       ],
       "noIncluye": [
         "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
+        "Rafting en el Río Tampaón y recorridos en RZR: se contratan aparte y te los cotizamos",
         "Comidas y cenas (excepto desayunos)",
         "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
         "Propinas y gastos personales"
@@ -1037,19 +1189,159 @@
           "precio": "$11,200"
         },
         {
-          "item": "4 tours completos",
-          "precio": "$7,700"
+          "item": "4 recorridos a elegir (2 pax)",
+          "precio": "$12,800"
         },
         {
           "item": "Transporte 4 días",
           "precio": "$1,600"
         },
         {
-          "item": "Fotos + video del recorrido",
+          "item": "Entradas + guías",
           "precio": "$1,600"
         },
         {
+          "item": "Fotografía y video del recorrido",
+          "precio": "$1,600"
+        }
+      ]
+    },
+    {
+      "id": "odisea-huasteca",
+      "slug": "odisea-huasteca",
+      "nombre": "Odisea Huasteca",
+      "subtitulo": "Cinco días de tours sin repetir un solo lugar",
+      "duracion": "6 días / 5 noches",
+      "dias": 6,
+      "noches": 5,
+      "precio": 20500,
+      "precioLabel": "por pareja",
+      "url": "https://www.huasteca-potosina.com/reservar-paquete/odisea-huasteca",
+      "badge": "Lo ves todo",
+      "perfiles": [
+        "Lo ven todo",
+        "Primera vez en la Huasteca",
+        "Sin repetir destino"
+      ],
+      "habitaciones": [
+        "Orquídeas 2",
+        "Bromelias 1",
+        "Lirios 2",
+        "Jungla"
+      ],
+      "habitacionAsignada": false,
+      "tours": [
+        "Ruta Surrealista — Edward James, Manantiales, Cuevas y Castillo (Día 1)",
+        "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 2)",
+        "Paraíso Escalonado — Minas Viejas & Cascadas de Micos (Día 3)",
+        "Ruta Acuática o Cascadas del Meco, a elegir (Día 4)",
+        "Travesía del Café — Finca Cafetalera de Xilitla (Día 5)"
+      ],
+      "eleccion": {
+        "cuantos": 1,
+        "dia": 4,
+        "opciones": [
+          "Ruta Acuática — Puente de Dios",
+          "Cascadas del Meco"
+        ]
+      },
+      "itinerario": [
+        {
+          "dia": 1,
+          "tipo": "tour",
+          "titulo": "Llegada + Las Pozas de Edward James",
+          "tourSlug": "ruta-surrealista-edward-james",
+          "descripcion": "Arrancamos por lo más cercano al hotel y lo menos exigente: el jardín surrealista, los manantiales de Huichihuayán y la Cueva de las Quilas."
+        },
+        {
+          "dia": 2,
+          "tipo": "tour",
+          "titulo": "Expedición Tamul",
+          "tourSlug": "expedicion-tamul",
+          "descripcion": "El día grande. Canoa por el Cañón del Tampaón hasta la Cascada de Tamul, clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer, cuando salen los pericos."
+        },
+        {
+          "dia": 3,
+          "tipo": "tour",
+          "titulo": "Minas Viejas y Cascadas de Micos",
+          "tourSlug": "paraiso-escalonado-minas-micos",
+          "descripcion": "Día de agua y descanso después del día más largo: terrazas de travertino en Minas Viejas y las siete caídas de Micos."
+        },
+        {
+          "dia": 4,
+          "tipo": "tour",
+          "titulo": "El día que eliges",
+          "tourSlug": "ruta-acuatica-puente-de-dios",
+          "descripcion": "Puente de Dios, la cueva natural con el río corriendo por dentro, o las Cascadas del Meco con su mirador. Los dos cuestan lo mismo, así que la elección no mueve el precio: elige el que te falte."
+        },
+        {
+          "dia": 5,
+          "tipo": "tour",
+          "titulo": "Travesía del Café",
+          "tourSlug": "travesia-del-cafe",
+          "descripcion": "El cierre tranquilo: una finca cafetalera de la sierra de Xilitla, de la mata a la taza, para bajar el ritmo antes de manejar de vuelta."
+        },
+        {
+          "dia": 6,
+          "tipo": "salida",
+          "titulo": "Salida",
+          "tourSlug": null,
+          "descripcion": "Desayuno, check-out y camino a casa."
+        }
+      ],
+      "incluye": [
+        "5 noches en Hotel Paraíso Encantado Xilitla",
+        "Desayuno buffet los días de tour",
+        "5 tours completos sin repetir destino",
+        "Un día a elegir entre Ruta Acuática y Cascadas del Meco",
+        "Transporte del hotel al inicio de cada tour y de regreso",
+        "Guías certificados NOM-09 SECTUR",
+        "Entradas a todas las atracciones",
+        "Equipo de seguridad",
+        "Seguro de viaje",
+        "Fotografía y video de cada recorrido"
+      ],
+      "noIncluye": [
+        "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
+        "Comidas y cenas (excepto desayunos)",
+        "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Propinas y gastos personales"
+      ],
+      "valor": [
+        {
+          "item": "5 noches hotel (2 pax)",
+          "precio": "$14,000"
+        },
+        {
+          "item": "Ruta Surrealista (2 pax)",
+          "precio": "$2,800"
+        },
+        {
+          "item": "Expedición Tamul (2 pax)",
+          "precio": "$3,100"
+        },
+        {
+          "item": "Paraíso Escalonado (2 pax)",
+          "precio": "$3,200"
+        },
+        {
+          "item": "Día a elegir (2 pax)",
+          "precio": "$3,200"
+        },
+        {
+          "item": "Travesía del Café (2 pax)",
+          "precio": "$1,800"
+        },
+        {
+          "item": "Transporte 5 días",
+          "precio": "$2,000"
+        },
+        {
           "item": "Entradas + guías",
+          "precio": "$2,000"
+        },
+        {
+          "item": "Fotografía y video del recorrido",
           "precio": "$1,600"
         }
       ]
@@ -1084,9 +1376,17 @@
       "nombre": "Jungla",
       "vista": "Montaña",
       "suplemento": 400,
-      "descripcion": "Habitación con vista directa a la montaña — la favorita para despertar con el paisaje de la sierra.",
+      "descripcion": "Suite con terraza privada, vista directa a la montaña y piscina de spa al exterior — la favorita para despertar con el paisaje de la sierra.",
       "url": "https://www.paraisoencantado.com/habitaciones/jungla",
       "hotelNombre": "Jungla"
+    },
+    {
+      "nombre": "Suite Flor de Liz 2",
+      "vista": "Montaña",
+      "suplemento": 400,
+      "descripcion": "Terraza con vista al pueblo y spa privado al aire libre — las mismas prestaciones que la Jungla.",
+      "url": "https://www.paraisoencantado.com/habitaciones",
+      "hotelNombre": "Suite Flor de Liz 2"
     }
   ],
   "logistica": {
@@ -1196,7 +1496,7 @@
     },
     {
       "q": "¿Puedo elegir mi habitación?",
-      "a": "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la habitación Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche."
+      "a": "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la suite Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche. En el paquete Luna de Miel la Jungla ya va incluida, sin suplemento."
     },
     {
       "q": "¿El precio incluye el traslado hasta Xilitla?",
@@ -2977,6 +3277,22 @@
     "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet; la comida de mediodía NUNCA está incluida en ningún tour. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen SOLO los desayunos del hotel: comidas y cenas van por cuenta del cliente.",
     "transporte": "El traslado redondo desde el hospedaje (Xilitla o Ciudad Valles) SÍ está incluido en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática. NO está incluido en: RZR (sale de la base en Xilitla), rappel en Tamul (punto de encuentro en el embarcadero; se coordina aparte con costo adicional) ni buceo en Media Luna (el cliente llega a Rioverde). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
+    "hotelServicios": {
+      "nombre": "Hotel Paraíso Encantado",
+      "ubicacion": "En La Conchita, Xilitla, a 400 m (5 min caminando) del Jardín Surrealista de Edward James — Las Pozas.",
+      "servicios": [
+        "Alberca al aire libre para todos los huéspedes (9:00 AM a 9:00 PM)",
+        "Restaurante El Papán Huasteco dentro del hotel (8:00 AM a 8:00 PM), cocina huasteca: zacahuil, bocoles, café de olla",
+        "WiFi en todo el hotel",
+        "Estacionamiento privado gratuito",
+        "Aire acondicionado y agua caliente en las habitaciones",
+        "Terraza con vista a la sierra y a la selva"
+      ],
+      "spaPrivado": "4 de las 13 suites tienen piscina spa o tina de hidromasaje PRIVADA (no compartida). De las que ofrecemos en los paquetes, la Jungla es la que la trae.",
+      "desayuno": "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El RZR, el rappel y el buceo no incluyen ningún alimento.",
+      "mascotas": "No se admiten mascotas.",
+      "fumar": "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera."
+    },
     "mejorTemporada": "La temporada seca (noviembre a abril) suele tener el agua más turquesa y los caminos en mejores condiciones. En lluvias (jul–sep) algunos ríos crecen y ciertas salidas (rafting) dependen del nivel del agua.",
     "salida": "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",
     "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",

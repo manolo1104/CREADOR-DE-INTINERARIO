@@ -92,7 +92,7 @@ export default async function HomePage() {
   const recentPosts = en ? [] : await getRandomPosts();
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
   // En el inicio mostramos solo 3 tours destacados; el botón lleva al catálogo completo.
-  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "rzr-xilitla"];
+  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "ruta-surrealista-edward-james"];
   const toursHome = HOME_TOUR_SLUGS.map((s) => tours.find((t) => t.slug === s)).filter(Boolean) as typeof tours;
 
   const CATEGORIAS = [
@@ -292,7 +292,9 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Más aire arriba y entre filas: el logotipo del tour sale por encima
+            del borde de su tarjeta y sin esto se montaba sobre la de arriba. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16 pt-10">
           {toursHome.map((t) => (
             <TourCard key={t.slug} tour={t} variant="compact" />
           ))}
@@ -324,7 +326,6 @@ export default async function HomePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {PAQUETES_DB.map((p) => {
-                const ahorro = p.valor.reduce((a, v) => a + parseInt(v.precio.replace(/[^0-9]/g, ""), 10), 0) - p.precio;
                 return (
                   <Link key={p.id} href={`/paquetes/${p.slug}`} className="group block border border-negro/10 bg-white overflow-hidden rounded-xl shadow-sm hover:border-verde-selva/40 transition-colors">
                     <div className="relative h-44 overflow-hidden">
@@ -344,9 +345,6 @@ export default async function HomePage() {
                         <span className="font-cormorant text-dorado text-3xl leading-none">${p.precio.toLocaleString("es-MX")}</span>
                         <span className="text-negro/40 font-dm text-[10px]">MXN {p.precioLabel}</span>
                       </div>
-                      {ahorro > 0 && (
-                        <p className="text-[10px] font-dm text-verde-selva font-medium mb-4">✓ Ahorras ${ahorro.toLocaleString("es-MX")} MXN vs. por separado</p>
-                      )}
                       <span className="inline-flex items-center gap-1.5 text-[10px] tracking-[2px] uppercase text-verde-selva group-hover:text-verde-vivo font-dm font-medium transition-colors">
                         Ver el paquete día por día →
                       </span>

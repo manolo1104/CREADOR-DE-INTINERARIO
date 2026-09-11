@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAgentAuth } from "@/lib/agentAuth";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { calcTourTotal, validatePromoCode, minBookingDate } from "@/lib/tourBooking";
 import { DATOS_BANCO } from "@/lib/bot/bankData";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { metaAlEnviar, conMeta } from "@/lib/quoteFollowUp";
 import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
 
 /** Envía por correo la cotización del bot. Devuelve true si se envió. */
@@ -166,7 +167,11 @@ export async function POST(req: NextRequest) {
             subtotal,
           },
         ],
-        status: "pending",
+        // "borrador", no "pending": ese estado no existe en el panel
+        // (`borrador | enviada | aceptada | expirada`), así que estas
+        // cotizaciones aparecían sin etiqueta y fuera del conteo del tablero.
+        // Pasa a "enviada" abajo, y solo si el correo de verdad salió.
+        status: "borrador",
       },
     });
   } catch (e: any) {
@@ -182,9 +187,80 @@ export async function POST(req: NextRequest) {
     notes: notes ? String(notes) : undefined,
   });
 
+  // El estado y el arranque del seguimiento se escriben DESPUÉS del envío: si
+  // Brevo falla, la cotización no puede decir "enviada" ni contar los días de
+  // la secuencia desde un correo que nadie recibió.
+  if (emailEnviado) {
+    try {
+      const creada = await prisma.tourQuote.findUnique({ where: { quoteNumber: folio } });
+      await prisma.tourQuote.update({
+        where: { quoteNumber: folio },
+        data:  {
+          status:    "enviada",
+          lineItems: conMeta(creada?.lineItems, metaAlEnviar(String(tourDate), "es")) as never,
+        },
+      });
+    } catch (e: any) {
+      console.error("❌ bot/quote seguimiento:", e?.message);
+    }
+  }
+
+  // ── Resumen para WhatsApp ──────────────────────────────────────
+  // El cliente pide la cotización POR WHATSAPP, no solo por correo: mucha
+  // gente da un correo que no revisa en el momento, y quedarse esperando el
+  // mail mata la venta. Se arma aquí y no en el modelo, por lo mismo que en
+  // /api/bot/paquete: pedirlo por prompt hacía que el bot se saltara el
+  // desglose y soltara la CLABE sin decir qué se estaba apartando.
+  const fmx = (n: number) => `$${n.toLocaleString("es-MX")}`;
+  const fechaLarga = (d: string) => {
+    const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+    return r.charAt(0).toUpperCase() + r.slice(1);
+  };
+  // Los niños se desglosan: decir solo "4 personas" esconde que unos pagan el
+  // 70 % y el cliente no puede cuadrar el total con lo que pidió.
+  const desglosePersonas = [
+    `${nAdults} adulto${nAdults !== 1 ? "s" : ""}`,
+    nMid > 0 ? `${nMid} niño${nMid !== 1 ? "s" : ""} 6–10` : "",
+    nSmall > 0 ? `${nSmall} menor${nSmall !== 1 ? "es" : ""} de 6` : "",
+  ].filter(Boolean).join(" + ");
+
+  // ⚠️ El transporte NO es igual en todos los tours (el RZR sale de la base en
+  // Xilitla, el buceo se encuentra en Rioverde, el rappel en el embarcadero).
+  // Se lee del "incluye" de ESTE tour en vez de prometer recogida siempre.
+  const incluyeTour = incluyeDeTour(tour);
+  const traeTraslado = /(transporte|traslado)[^.]*desde tu (hotel|hospedaje)/i.test(incluyeTour.join(" · "));
+
+  const anticipo = Math.round(total * 0.3);
+  const resumenWhatsApp = [
+    `📋 *Tu cotización* — folio ${folio}`,
+    "",
+    `*${tour.nombre}*`,
+    `${fechaLarga(String(tourDate))}`,
+    `${desglosePersonas} · ${fmx(total)}`,
+    ...(promoApplied ? [`Descuento aplicado: *${promoApplied}* (−${fmx(subtotal - total)})`] : []),
+    "",
+    "*Incluye:*",
+    ...incluyeTour.map((i) => `• ${i}`),
+    "",
+    `*Total: ${fmx(total)} MXN*`,
+    `*Apartas hoy con ${fmx(anticipo)}* (30 %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del recorrido.`,
+    "",
+    traeTraslado
+      ? "Pasamos por ti a tu hospedaje, en Xilitla o en Ciudad Valles — no necesitas hospedarte con nosotros."
+      : "Este recorrido no incluye traslado desde tu hospedaje: el punto de encuentro te lo confirmamos al reservar.",
+    "Cancelas gratis hasta 48 h antes, con reembolso completo.",
+    "",
+    `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares se llenan rápido.`,
+    "",
+    `⚠️ Al hacer la transferencia, pon *${folio}* como concepto — con eso identificamos tu pago.`,
+  ].join("\n");
+
   return NextResponse.json({
     folio,
     total,
+    anticipo,
+    pctAnticipo: 30,
+    saldo: total - anticipo,
     moneda: "MXN",
     personas: totalPersonas,
     tourName: tour.nombre,
@@ -192,5 +268,7 @@ export async function POST(req: NextRequest) {
     datosBanco: DATOS_BANCO,
     linkPago: `${appUrl}/reservar-tour/${tour.slug}`,
     emailEnviado,
+    resumenWhatsApp,
+    instruccion: "MANDA `resumenWhatsApp` TAL CUAL como primer mensaje, antes de cualquier dato bancario.",
   });
 }

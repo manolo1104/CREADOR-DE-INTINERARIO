@@ -13,7 +13,7 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, tourDurTexto } from "../lib/tours";
 import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
-import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
+import { PAQUETES_DB, HABITACIONES, habitacionesDePaquete, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
 import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
@@ -224,7 +224,22 @@ const paquetes = PAQUETES_DB.map((p) => ({
   url: `${empresa.sitio}/reservar-paquete/${p.slug}`,
   badge: p.badge || null,
   perfiles: p.perfiles,
+  // Las habitaciones que ofrece ESTE paquete, en orden: la primera es la que
+  // se asigna. Sin esto Camila ofrecía Orquídeas en la Luna de Miel, que se
+  // vende con la suite Jungla puesta.
+  habitaciones: habitacionesDePaquete(p).map((h) => h.nombre),
+  habitacionAsignada: !!p.habitaciones?.length,
   tours: p.tours,
+  // Los recorridos que el cliente ELIGE. Sin esto, de "Tu Huasteca" Camila
+  // sabía que son cuatro a elegir y no cuáles, así que no podía contestar la
+  // primera pregunta que hace cualquiera: ¿entre qué elijo?
+  eleccion: p.eleccionTour
+    ? {
+        cuantos: p.eleccionTour.cuantos ?? 1,
+        dia: p.eleccionTour.dia ?? null,
+        opciones: p.eleccionTour.opciones.map((o) => o.nombre),
+      }
+    : null,
   itinerario: p.itinerario.map((d) => ({
     dia: d.dia,
     tipo: d.tipo,

@@ -3,11 +3,17 @@
   "version": "1.0.0",
   "description": "Bot de WhatsApp para Tours Huasteca Potosina (agente Claude)",
   "main": "index.js",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node index.js",
+    "chat": "node simulador.js",
     "test": "node test-chat.js",
-    "check": "node --check index.js && node --check agent.js && node --check catalog.js && node --check knowledge.js && node --check api-client.js && node --check sessions.js && node --check test-chat.js"
+    "check": "node --check index.js && node --check agent.js && node --check buffer.js && node --check catalog.js && node --check knowledge.js && node --check api-client.js && node --check sessions.js && node --check test-chat.js && node --check test-espera.js && node --check test-historial.js && node --check simulador.js",
+    "test-espera": "node test-espera.js",
+    "test-historial": "node test-historial.js",
+    "medir-prompt": "node medir-prompt.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",

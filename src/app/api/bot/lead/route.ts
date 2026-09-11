@@ -184,7 +184,9 @@ export async function POST(req: NextRequest) {
     const hab = habitacion
       ? HABITACIONES.find((h) => norm(h.nombre) === norm(habitacion) || norm(h.nombre).includes(norm(habitacion)) || (norm(habitacion) && norm(habitacion).includes(norm(h.nombre))))
       : null;
-    const suplemento = (hab?.suplemento ?? 0) * paq.noches;
+    // Un paquete que ya incluye la habitación de montaña no vuelve a cobrarla:
+    // la Luna de Miel la lleva en el precio publicado.
+    const suplemento = paq.habitacionIncluida === "montana" ? 0 : (hab?.suplemento ?? 0) * paq.noches;
     const total = paq.precio + suplemento;
     const folio = folioNuevo();
     const nPersonas = Math.max(1, parseInt(String(personas), 10) || 2);

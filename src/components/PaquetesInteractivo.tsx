@@ -4,158 +4,114 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, Moon, MapPin, Star, CreditCard } from "lucide-react";
+import { TourCollage } from "@/components/TourCollage";
+import { PatronDestinos } from "@/components/PatronDestinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import { trackPackageInquiry } from "@/lib/analytics";
-import type { Paquete } from "@/lib/paquetes";
+import { collagePaquete, type Paquete } from "@/lib/paquetes";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
 
 export type { Paquete };
 
-// ── Savings counter ──────────────────────────────────────────────
 
-function SavingsCounter({ ahorro }: { ahorro: number }) {
-  // Arranca en el ahorro real: sin JS (o antes de hidratar) nunca se ve "Ahorras $0".
-  const [count, setCount] = useState(ahorro);
-  const ref = useRef<HTMLSpanElement>(null);
-  const animated = useRef(false);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !animated.current) {
-          animated.current = true;
-          const start = performance.now();
-          const dur = 900;
-          const tick = (now: number) => {
-            const t = Math.min((now - start) / dur, 1);
-            const eased = 1 - (1 - t) ** 3;
-            setCount(Math.round(eased * ahorro));
-            if (t < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [ahorro]);
-
-  return (
-    <span ref={ref}>
-      <em className="shimmer-gold font-cormorant not-italic" style={{ fontSize: "13px" }}>
-        ${count.toLocaleString("es-MX")}
-      </em>
-    </span>
-  );
-}
-
-// ── Package card ─────────────────────────────────────────────────
-
-function PaqueteCard({
-  p,
-  estado,
-}: {
-  p: Paquete;
-  estado: "normal" | "destacado" | "atenuado";
-}) {
+/**
+ * `ancha` es la tarjeta que cierra la rejilla cuando los paquetes son impares.
+ * Con cinco paquetes en dos columnas, el último se quedaba solo y dejaba media
+ * fila vacía. Al ocupar el ancho completo, la foto pasa al lado y el contenido
+ * a su derecha: la fila se ve terminada y no es una tarjeta estirada.
+ */
+function PaqueteCard({ p, ancha = false }: { p: Paquete; ancha?: boolean }) {
   const { locale, lp } = useLocale();
   const t = getPaquetesInteractivoUI(locale);
-  const totalValor = p.valor.reduce(
-    (acc, v) => acc + parseInt(v.precio.replace(/[^0-9]/g, ""), 10),
-    0
-  );
-  const ahorro = totalValor - p.precio;
+  // En la tarjeta ancha la foto va de pie y estrecha: con cuatro franjas cada
+  // una queda en un sliver donde no se distingue el lugar. Se quedan dos.
+  const fotos  = collagePaquete(p);
+  const panels = (ancha ? fotos.slice(0, 2) : fotos).map((src) => ({ src }));
 
   return (
     <article
-      className={`relative flex flex-col border overflow-hidden transition-all duration-500 hover:border-verde-vivo/50 ${
-        p.destacado ? "border-dorado/50 bg-verde-profundo" : "border-white/10 bg-negro/60"
-      } ${
-        estado === "destacado"
-          ? "ring-2 ring-dorado/70 shadow-[0_0_36px_rgba(196,136,42,0.22)]"
-          : estado === "atenuado"
-          ? "opacity-40 scale-[0.98] pointer-events-none"
-          : ""
-      }`}
+      /* Misma geometría que las tarjetas de /tours —esquinas redondeadas, mismo
+         borde, mismo hover— pero con superficie de cristal en vez de negro
+         plano: capa translúcida, desenfoque del fondo y un filo claro arriba,
+         que es de donde se supone que viene la luz. */
+      className={`relative rounded-xl border backdrop-blur-2xl transition-all duration-300 hover:border-verde-selva/60 ${
+        ancha ? "flex flex-col lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,40%)_1fr]" : "flex flex-col"
+      } ${p.destacado ? "border-dorado/70" : "border-white/70"}`}
+      /* Cristal CLARO, como el widget del clima del inicio: tinte muy
+         transparente, desenfoque fuerte y un filo brillante arriba. Aquí el
+         tinte es blanco y no negro, porque la franja es clara: el patrón de
+         iconos se ve a través, desenfocado, que es justo el efecto. Con el
+         fondo claro el texto pasa a oscuro; en crema no se leería nada. */
+      style={{
+        background: p.destacado
+          ? "linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,251,240,.44) 55%)"
+          : "linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.38) 55%)",
+        boxShadow:
+          "inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(255,255,255,.35), 0 22px 52px rgba(26,46,26,.18)",
+      }}
     >
       {p.badge && (
-        <div className="absolute top-4 right-4 z-10 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5">
+        <div className="absolute top-3 right-3 z-20 rounded-full bg-dorado/90 backdrop-blur-sm text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5">
           {p.badge}
         </div>
       )}
-      {estado === "destacado" && (
-        <div className="absolute top-4 left-4 z-10 bg-verde-selva text-crema text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-lima animate-pulse" />
-          {t.tuRecomendado}
-        </div>
-      )}
-
-      <div className="relative h-44 overflow-hidden">
-        <Image
-          src={p.imagen}
-          alt={p.nombre}
-          fill
-          className="object-cover"
-          loading="lazy"
-          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
-        <div className="absolute bottom-3 left-4">
-          <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm flex items-center gap-1.5">
-            <Moon className="w-3 h-3" /> {p.duracion}
-          </p>
-        </div>
+      {/* Una foto por tour incluido, cortadas en diagonal: la misma pieza que
+          usa /tours, así que el paquete se lee como la suma de sus tours. */}
+      <div className={`relative flex-shrink-0 overflow-hidden ${
+        ancha ? "h-48 rounded-t-xl lg:h-auto lg:rounded-l-xl lg:rounded-tr-none" : "h-48 rounded-t-xl"
+      }`}>
+        <TourCollage panels={panels} nombre={p.nombre} movil={2} />
+        <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-negro/35 pointer-events-none" />
+        <span className="absolute bottom-3 left-3 z-10 rounded-full bg-negro/70 backdrop-blur-sm text-crema/85 text-[9px] font-dm tracking-[1px] px-2.5 py-1 flex items-center gap-1.5">
+          <Moon className="w-3 h-3" aria-hidden="true" /> {p.duracion}
+        </span>
       </div>
 
-      <div className="px-6 pt-5 pb-3">
-        <h2 className="font-cormorant font-light text-crema leading-tight mb-1" style={{ fontSize: "clamp(20px,2.5vw,27px)" }}>
+      <div className={`px-6 pt-5 pb-3 ${ancha ? "lg:col-start-2" : ""}`}>
+        <h2 className="font-cormorant font-light text-negro leading-tight mb-1" style={{ fontSize: "clamp(20px,2.5vw,27px)" }}>
           {p.nombre}
         </h2>
-        <p className="text-crema/50 font-dm text-xs mb-3">{p.subtitulo}</p>
+        <p className="text-negro/70 font-dm text-xs mb-3">{p.subtitulo}</p>
 
         {/* Perfil chips — idea 1 */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {p.perfiles.map((chip) => (
-            <span key={chip} className="text-[9px] tracking-[0.5px] border border-verde-selva/25 text-verde-vivo/60 px-2 py-0.5 font-dm">
+            <span key={chip} className="rounded-full text-[9px] tracking-[0.5px] border border-verde-selva/40 bg-verde-selva/12 text-verde-selva px-2.5 py-1 font-dm font-medium">
               {chip}
             </span>
           ))}
         </div>
 
-        {/* Precio + ahorro animado — idea 2 */}
-        <div className="mb-4">
+        {/* Precio y ahorro, sobre su propia placa de cristal: es el dato por el
+            que la gente compara, y suelto entre listas se perdía. */}
+        <div
+          className="rounded-xl border border-white/80 bg-white/45 backdrop-blur-md px-4 py-3 mb-4"
+          style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.14)" }}
+        >
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="font-cormorant text-dorado" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
+            <span className="font-cormorant text-terracota" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
               ${p.precio.toLocaleString("es-MX")}
             </span>
-            <span className="text-crema/40 font-dm text-[10px] ml-1">MXN {p.precioLabel}</span>
+            <span className="text-negro/65 font-dm text-[10px] ml-1">MXN {p.precioLabel}</span>
           </div>
-          {ahorro > 0 && (
-            <p className="text-[10px] font-dm text-verde-vivo font-medium">
-              ✓ Ahorras <SavingsCounter ahorro={ahorro} /> MXN vs. separado
-            </p>
-          )}
         </div>
 
-        <div className="flex items-center gap-1.5 bg-dorado/10 border border-dorado/25 px-3 py-2 mb-5">
+        <div className="flex items-center gap-1.5 rounded-lg border border-dorado/60 bg-dorado/15 backdrop-blur-sm px-3 py-2 mb-5">
           <span className="w-1.5 h-1.5 bg-dorado rounded-full animate-pulse flex-shrink-0" />
-          <p className="text-[10px] font-dm text-dorado/90 font-medium">{p.urgencia}</p>
+          <p className="text-[10px] font-dm text-negro/80 font-medium">{p.urgencia}</p>
         </div>
 
         {p.tours.length > 0 && (
           <div className="mb-4">
-            <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2 flex items-center gap-1.5">
+            <p className="text-[9px] tracking-[2px] uppercase text-negro/60 font-dm mb-2 flex items-center gap-1.5">
               <MapPin className="w-3 h-3" /> {t.toursIncluidos}
             </p>
             <ul className="space-y-1.5">
               {p.tours.map((t) => (
-                <li key={t} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
-                  <Star className="w-3 h-3 text-dorado/70 flex-shrink-0 mt-0.5" />
+                <li key={t} className="flex items-start gap-2 text-[11px] text-negro/80 font-dm">
+                  <Star className="w-3 h-3 text-terracota flex-shrink-0 mt-0.5" />
                   {t}
                 </li>
               ))}
@@ -164,50 +120,28 @@ function PaqueteCard({
         )}
 
         <div className="mb-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">{t.queIncluye}</p>
+          <p className="text-[9px] tracking-[2px] uppercase text-negro/60 font-dm mb-2">{t.queIncluye}</p>
           <ul className="space-y-1.5">
             {p.incluye.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
-                <Check className="w-3 h-3 text-verde-vivo flex-shrink-0 mt-0.5" />
+              <li key={item} className="flex items-start gap-2 text-[11px] text-negro/80 font-dm">
+                <Check className="w-3 h-3 text-verde-selva flex-shrink-0 mt-0.5" />
                 {item}
               </li>
             ))}
           </ul>
         </div>
 
-        <details className="mb-5 border border-white/10">
-          <summary className="cursor-pointer px-3 py-2.5 text-[10px] tracking-[1px] uppercase font-dm text-crema/50 hover:text-crema transition-colors list-none flex items-center justify-between">
-            {t.verDesglose}
-            <span className="text-verde-vivo text-base leading-none">+</span>
-          </summary>
-          <div className="border-t border-white/8 px-3 py-3 space-y-2">
-            {p.valor.map((v) => (
-              <div key={v.item} className="flex justify-between text-[11px] font-dm">
-                <span className="text-crema/55">{v.item}</span>
-                <span className="text-crema/80 font-medium">{v.precio} MXN</span>
-              </div>
-            ))}
-            <div className="flex justify-between text-[11px] font-dm border-t border-white/8 pt-2 mt-1">
-              <span className="text-crema/55">{t.valorTotal}</span>
-              <span className="text-crema/80 font-medium line-through">${totalValor.toLocaleString()} MXN</span>
-            </div>
-            <div className="flex justify-between text-[12px] font-dm font-medium">
-              <span className="text-verde-vivo">{t.precioPaquete}</span>
-              <span className="text-dorado">${p.precio.toLocaleString()} MXN</span>
-            </div>
-          </div>
-        </details>
       </div>
 
-      <div className="mt-auto px-6 pb-6">
+      <div className={`px-6 pb-6 ${ancha ? "lg:col-start-2" : "mt-auto"}`}>
         <Link
           href={lp(`/paquetes/${p.slug}`)}
-          className="flex items-center justify-center gap-2 w-full mb-3 py-3 text-[10px] tracking-[2px] uppercase font-dm border border-verde-selva/40 text-verde-vivo hover:border-verde-vivo hover:bg-verde-selva/10 transition-colors"
+          className="flex items-center justify-center gap-2 w-full mb-3 py-3 rounded text-[10px] tracking-[2px] uppercase font-dm border border-verde-selva/60 text-verde-selva hover:border-verde-selva hover:bg-verde-selva/10 active:scale-[0.98] transition-[color,background-color,border-color,transform] duration-200 ease-out"
         >
           {t.verDiaPorDia}
         </Link>
         <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
-        <p className="text-center text-[9px] text-crema/25 font-dm mt-3">
+        <p className="text-center text-[9px] text-negro/60 font-dm mt-3">
           {t.reservaFlexible}
         </p>
       </div>
@@ -215,33 +149,14 @@ function PaqueteCard({
   );
 }
 
-// ── Quiz — idea 4 ─────────────────────────────────────────────────
-
-/**
- * El quiz guarda el ÍNDICE de la respuesta, no su texto.
- *
- * Antes comparaba contra la cadena literal ("2 noches"): en inglés el botón dice
- * "2 nights" y ninguna comparación casaba, así que el quiz se quedaba mudo y
- * nunca recomendaba un paquete. El índice es el mismo en los dos idiomas.
- */
-const PAQUETE_POR_NOCHES = ["aventura", "completo", "gran-huasteca"] as const;
-
-function getRecomendado(nochesIdx: number | null): string | null {
-  return nochesIdx === null ? null : PAQUETE_POR_NOCHES[nochesIdx] ?? null;
-}
-
 // ── Main ─────────────────────────────────────────────────────────
 
 export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
   const { locale, lp } = useLocale();
   const t = getPaquetesInteractivoUI(locale);
-  const [noches, setNoches] = useState<number | null>(null);
-  const [vibe,   setVibe]   = useState<number | null>(null);
   const [showSticky, setShowSticky] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const recomendado = getRecomendado(noches);
-  const needsVibe   = false; // la recomendación depende solo de las noches
 
   useEffect(() => {
     const el = gridRef.current;
@@ -256,97 +171,24 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
     return () => obs.disconnect();
   }, []);
 
-  const getEstado = (id: string): "normal" | "destacado" | "atenuado" => {
-    if (!recomendado) return "normal";
-    return id === recomendado ? "destacado" : "atenuado";
-  };
-
   return (
     <>
-      {/* ── QUIZ ── idea 4 */}
-      <section className="bg-verde-profundo/10 border-y border-white/6 py-10 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-[9px] tracking-[4px] uppercase text-verde-vivo font-dm mb-2">
-            {t.quizEyebrow}
-          </p>
-          <h2 className="font-cormorant font-light text-crema mb-8" style={{ fontSize: "clamp(20px,3vw,30px)" }}>
-            {t.quizH2a}<em className="shimmer-gold">{t.quizH2b}</em>
-          </h2>
-
-          <div className="space-y-6">
-            {/* Q1 */}
-            <div>
-              <p className="text-[10px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
-                {t.quizP1}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {t.nochesOpts.map((opt, i) => (
-                  <button
-                    key={opt}
-                    onClick={() => { setNoches(noches === i ? null : i); setVibe(null); }}
-                    className={`px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm border transition-all duration-200 ${
-                      noches === i
-                        ? "bg-dorado text-negro border-dorado"
-                        : "border-white/20 text-crema/60 hover:border-dorado/50 hover:text-crema"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Q2 */}
-            <div className={`transition-opacity duration-300 ${noches !== null ? "opacity-100" : "opacity-30 pointer-events-none"}`}>
-              <p className="text-[10px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
-                {t.quizP2}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {t.vibeOpts.map((opt, i) => (
-                  <button
-                    key={opt}
-                    onClick={() => setVibe(vibe === i ? null : i)}
-                    className={`px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm border transition-all duration-200 ${
-                      vibe === i
-                        ? "bg-verde-selva text-crema border-verde-selva"
-                        : "border-white/20 text-crema/60 hover:border-verde-vivo/50 hover:text-crema"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Resultado */}
-            {noches !== null && (
-              <div className="animate-fade-in">
-                {needsVibe ? (
-                  <p className="text-crema/40 font-dm text-sm">
-                    {t.eligeTipo}
-                  </p>
-                ) : recomendado ? (
-                  <div className="border border-dorado/30 bg-dorado/8 px-6 py-4 max-w-sm mx-auto">
-                    <p className="text-[9px] tracking-[2px] uppercase text-dorado/70 font-dm mb-1">{t.tuPaqueteIdeal}</p>
-                    {/* El nombre sale del propio catálogo ya localizado, no de
-                        una tabla aparte que había que mantener a mano. */}
-                    <p className="font-cormorant text-dorado text-xl font-light">
-                      {paquetes.find((p) => p.id === recomendado)?.nombre}
-                    </p>
-                    <p className="text-[10px] text-crema/40 font-dm mt-1">{t.miraDestacado}</p>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── GRID ── */}
-      <section className="max-w-6xl mx-auto px-6 py-16" ref={gridRef}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {paquetes.map((p) => (
-            <PaqueteCard key={p.id} p={p} estado={getEstado(p.id)} />
+      {/* ── GRID ──
+          Única franja clara del sitio, por decisión de Manolo: el catálogo de
+          paquetes se despega del resto y las tarjetas oscuras flotan encima.
+          Los bordes llevan una línea para que el corte con las secciones
+          oscuras de arriba y abajo se lea como intencionado. */}
+      <section className="relative overflow-hidden py-16 border-y border-negro/10" ref={gridRef} style={{ background: "linear-gradient(180deg, #f6f1e2, #e9dfc6)" }}>
+        {/* Iconos de lo que se visita, esparcidos detrás de las tarjetas. */}
+        <PatronDestinos />
+        <div className="relative max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {paquetes.map((p, i) => (
+            <PaqueteCard
+              key={p.id}
+              p={p}
+              // Sólo el último, y sólo si se queda solo en su fila.
+              ancha={paquetes.length % 2 === 1 && i === paquetes.length - 1}
+            />
           ))}
         </div>
       </section>

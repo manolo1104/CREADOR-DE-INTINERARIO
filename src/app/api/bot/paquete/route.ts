@@ -377,6 +377,10 @@ export async function POST(req: NextRequest) {
         ...(hosp.nochesGratis > 0
           ? [`🎁 *${hosp.nochesGratis} noche${hosp.nochesGratis !== 1 ? "s" : ""} de regalo* (cada 3ra noche va por nuestra cuenta) — te ahorras ${fmx(hosp.ahorro)}.`]
           : []),
+        // El desayuno es el reclamo más caro de tener en recepción: el cliente
+        // que se hospeda 3 noches y hace 2 tours da por hecho que desayuna los
+        // 3 días. Va escrito en el resumen, no a criterio del modelo.
+        `☕ Desayuno incluido SOLO los ${lineItems.length} día${lineItems.length !== 1 ? "s" : ""} de recorrido (es una parada en El Taco Loco camino a los destinos, no en el hotel). El día de llegada y el de salida el desayuno se paga aparte en el restaurante del hotel.`,
       ]
     : [];
 

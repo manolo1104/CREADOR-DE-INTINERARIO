@@ -62,17 +62,17 @@ export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
             <CreditCard className="w-3.5 h-3.5" />
             {t.reservarEnLinea}
           </Link>
-          <p className="text-center text-[9px] font-dm text-crema/35 mt-2">{t.reservaSegura}</p>
+          <p className="text-center text-[9px] font-dm text-negro/60 mt-2">{t.reservaSegura}</p>
 
           <div className="flex items-center gap-2 pt-4 pb-1">
-            <span className="h-px flex-1 bg-crema/15" />
-            <span className="text-[9px] tracking-[1.5px] uppercase text-crema/30 font-dm">{t.oConsultaAntes}</span>
-            <span className="h-px flex-1 bg-crema/15" />
+            <span className="h-px flex-1 bg-negro/15" />
+            <span className="text-[9px] tracking-[1.5px] uppercase text-negro/60 font-dm">{t.oConsultaAntes}</span>
+            <span className="h-px flex-1 bg-negro/15" />
           </div>
         </div>
       )}
 
-      <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm mb-3 flex items-center gap-1.5">
+      <p className="text-[9px] tracking-[2px] uppercase text-negro/60 font-dm mb-3 flex items-center gap-1.5">
         <MessageCircle className="w-3 h-3" /> {t.consultaRapida}
       </p>
 
@@ -82,7 +82,7 @@ export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
         required
-        className="w-full border border-crema/20 bg-white/5 text-crema placeholder:text-crema/30 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-vivo transition-colors"
+        className="w-full rounded border border-negro/25 bg-white/60 text-negro placeholder:text-negro/50 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva transition-colors"
       />
 
       <div className="grid grid-cols-2 gap-2">
@@ -91,7 +91,7 @@ export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
           placeholder={t.fechaTentativa}
           value={fecha}
           onChange={(e) => setFecha(e.target.value)}
-          className="w-full border border-crema/20 bg-white/5 text-crema placeholder:text-crema/30 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-vivo transition-colors"
+          className="w-full rounded border border-negro/25 bg-white/60 text-negro placeholder:text-negro/50 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva transition-colors"
         />
         <input
           type="number"
@@ -100,7 +100,7 @@ export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
           max={30}
           value={personas}
           onChange={(e) => setPersonas(e.target.value)}
-          className="w-full border border-crema/20 bg-white/5 text-crema placeholder:text-crema/30 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-vivo transition-colors"
+          className="w-full rounded border border-negro/25 bg-white/60 text-negro placeholder:text-negro/50 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva transition-colors"
         />
       </div>
 
@@ -111,7 +111,7 @@ export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
             ? "bg-verde-selva text-crema"
             : slug
               // Ya hay un CTA principal arriba: este queda como salida secundaria.
-              ? "border border-[#25D366]/50 text-[#25D366] hover:bg-[#25D366]/10"
+              ? "border border-[#075E54]/60 text-[#075E54] hover:bg-[#075E54]/10"
               : destacado
                 ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"
                 : "bg-[#25D366] hover:bg-[#20ba59] text-white"

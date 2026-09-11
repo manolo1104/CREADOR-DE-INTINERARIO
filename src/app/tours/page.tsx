@@ -1,10 +1,10 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
-import { TOURS_DB, TOURS_DESTACADOS, tourDurTexto } from "@/lib/tours";
-import { GuideProfile } from "@/components/GuideProfile";
+import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto } from "@/lib/tours";
+import { TourCollage } from "@/components/TourCollage";
+import { TourEmblem } from "@/components/TourEmblem";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
 import { Award, Bus, Calendar, Camera, CheckCircle2, Clock, MessageCircle, Star, Users } from "lucide-react";
@@ -109,10 +109,9 @@ export default function ToursPage() {
   const lp = (p: string) => localePath(p, locale);
   const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
-  // Destacados primero: son los que concentran el interés real (ver TOURS_DESTACADOS).
-  const destacados = tours.filter((t) => (TOURS_DESTACADOS as readonly string[]).includes(t.slug));
-  const otros      = tours.filter((t) => !(TOURS_DESTACADOS as readonly string[]).includes(t.slug));
-  const ordenados  = [...destacados, ...otros];
+  // El orden lo decide lo que de verdad se vende (TOURS_RANKING, del panel), no
+  // una lista escrita a mano.
+  const ordenados = [...tours].sort((a, b) => rankTour(a.slug) - rankTour(b.slug));
   const BADGES = en ? BADGES_EN : BADGES_ES;
   const COMO_FUNCIONA = en ? COMO_FUNCIONA_EN : COMO_FUNCIONA_ES;
   const TESTIMONIOS = en ? TESTIMONIOS_EN : TESTIMONIOS_ES;
@@ -202,82 +201,135 @@ export default function ToursPage() {
         </div>
       </section>
 
-      {/* ── ANCLAS ── */}
-      <nav aria-label={en ? "Jump to a tour" : "Ir directamente al tour"} className="sticky sticky-subnav z-40 bg-negro/98 backdrop-blur-md border-b border-white/8 py-3 px-6 overflow-x-auto scrollbar-none" style={{ top: "var(--navbar-offset, 64px)" }}>
-        <ul className="flex items-center justify-center gap-1 min-w-max mx-auto">
-          {tours.map((t) => (
-            <li key={t.id}>
-              <a href={`#${t.id}`} className="inline-flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-[1.5px] uppercase font-dm text-crema/55 hover:text-crema hover:bg-white/8 border border-transparent hover:border-white/10 transition-all duration-150">
-                <span className="text-verde-vivo text-[8px]">→</span>
-                {t.nombre.split(" ").slice(0, 2).join(" ")}
-              </a>
-            </li>
-          ))}
+      {/* ── CATEGORÍAS ──
+          Antes esta barra listaba los 10 tours cortando el nombre a dos
+          palabras, así que decía "CASCADAS DEL" y "TRAVESÍA DEL". Ahora lleva a
+          las tres familias, que sí caben enteras. */}
+      <nav aria-label={en ? "Tour categories" : "Categorías de tours"} className="sticky sticky-subnav z-40 bg-negro/98 backdrop-blur-md border-b border-white/8 px-6 overflow-x-auto scrollbar-none" style={{ top: "var(--navbar-offset, 64px)" }}>
+        <ul className="flex items-center justify-start sm:justify-center gap-2 min-w-max mx-auto py-2.5">
+          {TOUR_CATEGORIAS.map((c) => {
+            const n = tours.filter((t) => t.categoria === c.id).length;
+            if (!n) return null;
+            return (
+              <li key={c.id}>
+                <a
+                  href={`#${c.id}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/12 px-4 py-2 text-[10px] tracking-[1.5px] uppercase font-dm text-crema/65 hover:text-crema hover:border-verde-vivo/50 hover:bg-verde-selva/15 active:scale-[0.97] transition-[color,background-color,border-color,transform] duration-200 ease-out"
+                >
+                  {en ? c.labelEn : c.label}
+                  <span className="text-verde-vivo/75 font-dm text-[10px] tabular-nums">{n}</span>
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
-      <GuideProfile />
-
-      {/* ── BADGES ── */}
-      <section className="relative bg-verde-profundo/20 border-y border-white/6 py-12 px-6 overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-8 font-dm">{en ? "Why choose us" : "Por qué elegirnos"}</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
-            {BADGES.map((item, i) => (
-              <div key={item.title} className="reveal-up border border-white/8 bg-negro/30 p-4" style={{ animationDelay: `${i * 55}ms` }}>
-                <item.Icon className="w-6 h-6 text-verde-selva mx-auto mb-2" aria-hidden="true" />
-                <p className="font-cormorant text-crema text-sm mb-0.5 leading-tight">{item.title}</p>
-                <p className="text-[9px] text-crema/40 font-dm tracking-wide">{item.sub}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* ── FRANJA DE CONFIANZA ──
+          Eran seis cajas de 4 rem con título de sección encima: 250 px que
+          había que pasar para llegar al catálogo. Ahora es una franja de una
+          línea; dice lo mismo y cuesta un scroll corto. */}
+      <section className="border-b border-white/6 bg-verde-profundo/25">
+        <ul className="max-w-6xl mx-auto px-6 py-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-5 gap-y-3.5">
+          {BADGES.map((item) => (
+            <li key={item.title} className="flex items-center gap-2.5 min-w-0">
+              <item.Icon className="w-[18px] h-[18px] text-verde-vivo flex-shrink-0" aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="block font-dm text-[11.5px] text-crema/85 leading-tight truncate">{item.title}</span>
+                <span className="block font-dm text-[9.5px] text-crema/40 leading-tight truncate mt-0.5">{item.sub}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <PageViewTracker event="TOURS_LIST_VIEW" data={{ total: tours.length }} />
 
-      {/* ── TOURS GRID ──
-          Los cuatro destacados (≈66 % del interés real) van arriba; el resto
-          queda bajo "Otros recorridos". Nadie pierde su página ni su SEO. */}
-      <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-20">
-        {otros.length > 0 && (
-          <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-6">
-            {en ? "Most booked" : "Los más reservados"}
-          </p>
-        )}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {ordenados.map((tour, tourIndex) => (
-            <Fragment key={tour.id}>
-            {tourIndex === destacados.length && (
-              <p className="lg:col-span-2 text-[9px] tracking-[3px] uppercase text-crema/35 font-dm pt-8 border-t border-white/8">
-                {en ? "Other tours" : "Otros recorridos"}
-              </p>
-            )}
-            <article id={tour.id} className="stagger-reveal group relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-colors duration-300 flex flex-col scroll-mt-28 overflow-hidden" style={{ animationDelay: `${tourIndex * 80}ms` }}>
+      {/* ── CATÁLOGO POR CATEGORÍA ──
+          Las tres familias sustituyen al par "Los más reservados / Otros
+          recorridos": el visitante llega sabiendo si quiere mojarse o no.
+          Dentro de cada familia manda el orden real de venta del panel
+          (TOURS_RANKING), no una lista escrita a mano. Ninguna URL cambia. */}
+      <section id="tours-grid" className="max-w-6xl mx-auto px-6 py-16">
+        {TOUR_CATEGORIAS.map((cat) => {
+          const deLaCat = ordenados.filter((t) => t.categoria === cat.id);
+          if (!deLaCat.length) return null;
+          return (
+            <div key={cat.id} id={cat.id} className="scroll-mt-32 mb-16 last:mb-0">
+              <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-white/10 pt-6 mb-14">
+                <h2 className="font-cormorant font-light text-crema leading-tight" style={{ fontSize: "clamp(26px,3.2vw,38px)" }}>
+                  {en ? cat.labelEn : cat.label}
+                </h2>
+                <p className="font-dm text-[12.5px] text-crema/45 leading-relaxed">{en ? cat.descEn : cat.desc}</p>
+                <span className="ml-auto font-dm text-[10px] tracking-[2px] uppercase text-verde-vivo/75 tabular-nums">
+                  {deLaCat.length} {deLaCat.length === 1 ? "tour" : "tours"}
+                </span>
+              </header>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-16">
+                {deLaCat.map((tour, tourIndex) => {
+                  const panels = tourCollage(tour);
+                  return (
+            <article id={tour.id} key={tour.id} className="stagger-reveal group relative rounded-xl border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300 flex flex-col scroll-mt-32" style={{ animationDelay: `${tourIndex * 70}ms` }}>
               <Link href={lp(`/tours/${tour.slug}`)} aria-label={`${en ? "View full tour" : "Ver tour completo"}: ${tour.nombre}`} className="absolute inset-0 z-0" />
 
-              {/* ── IMAGEN ── */}
-              {tour.imagen_hero && (
-                <div className="relative h-56 overflow-hidden flex-shrink-0">
-                  <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover transition-transform duration-500 ease-out group-hover:scale-105" sizes="(max-width: 1024px) 100vw, 50vw" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-negro/30" />
-                  <span className={`absolute top-3 left-3 text-[9px] tracking-[1px] uppercase border px-2 py-0.5 font-dm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
-                    {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
-                  </span>
-                  <span className="absolute top-3 right-3 bg-verde-selva/90 text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1">
-                    {en ? "Daily departures" : "Salidas todos los días"}
-                  </span>
-                  <span className="absolute bottom-3 left-3 bg-negro/70 text-crema/80 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                    ⏱ {tourDurTexto(tour, en ? " hours" : " horas")}
-                  </span>
-                </div>
+              {/* ── COLLAGE ──
+                  Dos o tres fotos del recorrido cortadas en diagonal, en vez de
+                  una sola: la tarjeta enseña de una vez que el tour visita
+                  varios lugares distintos. */}
+              <div className="relative h-56 flex-shrink-0 rounded-t-xl overflow-hidden">
+                <TourCollage panels={panels} nombre={tour.nombre} />
+                <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-negro/35 pointer-events-none" />
+                <span className={`absolute top-3 left-3 z-10 text-[9px] tracking-[1px] uppercase border px-2.5 py-1 rounded-full font-dm bg-negro/60 backdrop-blur-sm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
+                  {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
+                </span>
+                {/* Con logotipo el aviso baja a la esquina de abajo: arriba al
+                    centro se le montaba encima en pantallas de teléfono. Esa
+                    esquina está libre porque el sello SVG solo sale cuando el
+                    tour NO tiene logotipo. */}
+                <span className={`absolute z-10 bg-verde-selva/90 backdrop-blur-sm text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-full ${tour.logo ? "bottom-3 right-3" : "top-3 right-3"}`}>
+                  {en ? "Daily departures" : "Salidas todos los días"}
+                </span>
+                <span className="absolute bottom-3 left-3 z-10 bg-negro/70 backdrop-blur-sm text-crema/85 text-[9px] font-dm tracking-[1px] px-2.5 py-1 rounded-full">
+                  {tourDurTexto(tour, en ? " hours" : " horas")}
+                </span>
+                {/* Sin logotipo propio, el tour lleva su sello SVG en la foto. */}
+                {!tour.logo && (
+                  <TourEmblem
+                    slug={tour.slug}
+                    categoria={tour.categoria}
+                    size={86}
+                    idSuffix="-card"
+                    className="absolute bottom-3 right-3 z-20 transition-transform duration-300 ease-out group-hover:scale-105"
+                  />
+                )}
+              </div>
+
+              {tour.logo && (
+                <Image
+                  src={tour.logo}
+                  alt=""
+                  aria-hidden="true"
+                  width={620}
+                  height={250}
+                  /* A caballo del borde de arriba: la mitad dentro de la tarjeta y la
+                     mitad fuera. Por eso el <article> no lleva `overflow-hidden`
+                     (las esquinas redondeadas de la foto las pone su contenedor):
+                     si recortara, la mitad de fuera desaparecería. */
+                  className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 z-30 w-[36%] max-w-none h-auto drop-shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out group-hover:scale-[1.06]"
+                />
               )}
 
               {/* ── INFO ── */}
               <div className="flex flex-col flex-1 p-7">
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{tour.tipo}</p>
-                <h2 className="font-cormorant text-crema text-2xl leading-tight mb-1">{tour.nombre}</h2>
+                {/* El nombre del tour se ve SIEMPRE, tenga logotipo o no: el
+                    logo va sobre la foto y el nombre completo es lo que dice a
+                    dónde se va. Antes se ocultaba a la vista cuando había logo
+                    y el visitante perdía la mitad del título. */}
+                <h3 className="font-cormorant text-crema text-2xl leading-tight mb-1">
+                  {tour.nombre}
+                </h3>
                 <p className="text-[10px] tracking-[1px] uppercase text-dorado/70 font-dm mb-3">{tour.tagline}</p>
 
                 {/* Breve descripción de lo que se hace en el recorrido */}
@@ -295,7 +347,7 @@ export default function ToursPage() {
                   <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">{en ? "Stops on this tour" : "Visitas en este recorrido"}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {tour.destinos.map((d) => (
-                      <span key={d} className="text-[10px] font-dm text-crema/60 border border-white/10 bg-white/[0.03] px-2 py-0.5 rounded-sm">
+                      <span key={d} className="text-[10px] font-dm text-crema/60 border border-white/10 bg-white/[0.03] px-2 py-0.5 rounded-full">
                         {d}
                       </span>
                     ))}
@@ -307,7 +359,7 @@ export default function ToursPage() {
                     {tourDurTexto(tour)}
                   </span>
                   <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "max." : "máx."} {tour.groupMax}</span>
-                  <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
+                  <span className="text-verde-vivo/70 font-medium">{en ? "Daily departures" : "Salidas diarias"}</span>
                 </div>
 
                 <div className="mb-5">
@@ -323,6 +375,22 @@ export default function ToursPage() {
                   </p>
                 </div>
 
+                {/* Actividades opcionales con costo aparte. El dato ya vivía en
+                    `addOns` y solo se veía al reservar: quien comparaba en el
+                    catálogo no sabía que el salto se paga aparte. */}
+                {tour.addOns && tour.addOns.length > 0 && (
+                  <ul className="mb-5 space-y-1">
+                    {tour.addOns.map((extra) => (
+                      <li key={extra.id} className="flex items-center justify-between gap-3 text-[10.5px] font-dm border border-white/10 bg-white/[0.03] rounded px-2.5 py-1.5">
+                        <span className="text-crema/70">{extra.nombre}</span>
+                        <span className="text-dorado whitespace-nowrap">
+                          +{money(extra.precio)} {en ? "per person" : "por persona"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {/* Señal de urgencia honesta (campo real por tour) + CTA */}
                 <div className="mt-auto">
                   {tour.urgencia && (
@@ -331,17 +399,20 @@ export default function ToursPage() {
                       <span>{tour.urgencia}</span>
                     </p>
                   )}
-                  <span className="block text-center bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3.5 transition-colors duration-200">
+                  <span className="block text-center rounded bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3.5 transition-colors duration-200">
                     {en ? "View full tour →" : "Ver tour completo →"}
                   </span>
                 </div>
               </div>
             </article>
-            </Fragment>
-          ))}
-        </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
         {!en && (
-          <p className="text-center text-crema/50 font-dm text-xs mt-10">
+          <p className="text-center text-crema/50 font-dm text-xs mt-12">
             ¿Comparando opciones? Consulta la{" "}
             <Link href="/precios" className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2">
               lista completa de precios de tours y paquetes →

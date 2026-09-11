@@ -166,7 +166,7 @@ export default function ExperienciasPage() {
               {conNumero(t.toursVerTodos, TOURS_DB.length, locale)}
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-x-6 gap-y-16 pt-10 sm:grid-cols-2 lg:grid-cols-4">
             {TOURS_DESTACADOS.map((slug) => {
               const tour = TOURS_DB.find((t) => t.slug === slug);
               return tour ? (

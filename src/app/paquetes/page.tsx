@@ -104,9 +104,12 @@ export default function PaquetesPage() {
 
       {/* ── HERO ── */}
       <section className="relative px-6 pt-36 pb-28 overflow-hidden min-h-[520px] flex items-center">
+        {/* El skybike de las Cascadas de Micos. La ruta dice
+            `cascadas-minas-viejas` porque la foto entró por la galería de ese
+            tour, que visita los dos sitios; el lugar de la foto es Micos. */}
         <Image
-          src="/imagenes/cascada-de-tamul/hero.jpg"
-          alt="Cascada de Tamul — Huasteca Potosina"
+          src="/imagenes/cascadas-minas-viejas/gallery-new-8.jpg"
+          alt="Skybike sobre las pozas turquesa de las Cascadas de Micos, Huasteca Potosina"
           fill
           className="object-cover object-center"
           priority
@@ -144,6 +147,77 @@ export default function PaquetesPage() {
               <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
               <p className="text-[9px] font-dm text-crema/50">{t.bookingOp}</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── NOTA ── */}
+      <div className="border-b border-white/6 bg-dorado/8">
+        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
+          <p className="text-[11px] text-dorado/80 font-dm">
+            {t.notaWhatsapp}
+          </p>
+        </div>
+      </div>
+
+      {/* ── PAQUETES + BARRA FIJA ── */}
+      <PaquetesInteractivo paquetes={paquetes} />
+
+      {/* ── RESEÑAS ── */}
+      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
+        <FloatingLeaves count={12} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
+            {t.resenasTitulo}
+            {t.resenasEnEspanol && (
+              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
+            )}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {RESENAS_PAQUETES.map((r) => (
+              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(r.estrellas)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
+                  ))}
+                </div>
+                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
+                  &ldquo;{r.texto}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <img src={r.foto} alt={r.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
+                  <div>
+                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
+                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOTEL INFO ── */}
+      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
+        <FloatingLeaves count={14} />
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
+            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
+          </h2>
+          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
+            {t.hotelIntro}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
+              const text = t.hotelPuntos[i];
+              return (
+              <div key={text} className="border border-white/10 bg-negro/30 px-4 py-4 text-center">
+                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
+                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
+              </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -187,77 +261,6 @@ export default function PaquetesPage() {
               {t.cdmxAutoAvion1}
               <span className="text-crema/60">&ldquo;{t.cdmxComoLlegar}&rdquo;</span>{t.cdmxAutoAvion2}
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── RESEÑAS ── */}
-      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
-        <FloatingLeaves count={12} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
-            {t.resenasTitulo}
-            {t.resenasEnEspanol && (
-              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
-            )}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {RESENAS_PAQUETES.map((r) => (
-              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(r.estrellas)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
-                  ))}
-                </div>
-                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
-                  &ldquo;{r.texto}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <img src={r.foto} alt={r.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
-                  <div>
-                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
-                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── NOTA ── */}
-      <div className="border-b border-white/6 bg-dorado/8">
-        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
-          <p className="text-[11px] text-dorado/80 font-dm">
-            {t.notaWhatsapp}
-          </p>
-        </div>
-      </div>
-
-      {/* ── QUIZ + PAQUETES + STICKY BAR ── */}
-      <PaquetesInteractivo paquetes={paquetes} />
-
-      {/* ── HOTEL INFO ── */}
-      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
-            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
-          </h2>
-          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
-            {t.hotelIntro}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
-              const text = t.hotelPuntos[i];
-              return (
-              <div key={text} className="border border-white/10 bg-negro/30 px-4 py-4 text-center">
-                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
-                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
-              </div>
-              );
-            })}
           </div>
         </div>
       </section>

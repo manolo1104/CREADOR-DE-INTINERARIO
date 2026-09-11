@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { getPaquete, HABITACIONES } from "@/lib/paquetes";
+import { getPaquete, habitacionesDePaquete, habitacionAsignada } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION, PCTS_PAQUETE, type PctPaquete } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
@@ -107,6 +107,10 @@ export default function ReservarPaquetePage() {
   const base = getPaquete(params.slug);
   const paquete = base ? localizePaquete(base, locale) : undefined;
   const HABITACIONES_LOC = getLocalizedHabitaciones(locale);
+  // Las que ofrece ESTE paquete, en su orden. La Luna de Miel no da a elegir:
+  // trae la suite Jungla puesta y detrás sólo su reemplazo.
+  const habsDelPaquete  = base ? habitacionesDePaquete(base) : [];
+  const habAsignada     = base ? habitacionAsignada(base) : false;
 
   const [fecha, setFecha]       = useState("");
   const [personas, setPersonas] = useState(2);            // adultos
@@ -116,8 +120,13 @@ export default function ReservarPaquetePage() {
   // ⚠️ Cuando el cliente ya eligió habitación concreta, MANDA ella: la vista y
   // la tarifa salen de ese cuarto, no de la casilla de arriba. Si aún no elige,
   // se usa la casilla para que el precio no aparezca vacío.
-  /** El día que el cliente elige, cuando el paquete lo ofrece. */
-  const [tourElegido,   setTourElegido]   = useState<string>("");
+  /**
+   * Los recorridos que elige el cliente. Son una LISTA porque hay dos formas
+   * de elegir: la Odisea elige uno (el día 4) y Tu Huasteca elige los cuatro.
+   * Viajan al servidor como un solo texto separado por comas, así la metadata
+   * del pago no cambia de forma según el paquete.
+   */
+  const [toursElegidos, setToursElegidos] = useState<string[]>([]);
   /** Cómo se reparte la gente entre habitaciones. */
   const [repartoHab,    setRepartoHab]    = useState<number[]>([]);
   /** Llegar la víspera: el día 1 es día de tour y se sale a las 8:30–9:00. */
@@ -163,6 +172,20 @@ export default function ReservarPaquetePage() {
       })
       .catch(() => {});
   }, []);
+
+  // El paquete que trae la habitación puesta la deja ya seleccionada: pedirle
+  // al cliente que "elija" la única que se le da es un paso vacío, y sin
+  // elegirla el botón de pagar se quedaba bloqueado pidiendo una habitación.
+  useEffect(() => {
+    if (!habAsignada || habitacionId) return;
+    const primera = habsDelPaquete[0];
+    if (!primera) return;
+    setHabitacionId(primera.id);
+    setVistaMontana(!!HABITACIONES_HOTEL.find((h) => h.id === primera.id)?.vistaMontana);
+    // `habsDelPaquete` se reconstruye en cada render; su primer id es lo único
+    // que importa aquí.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habAsignada, habitacionId, habsDelPaquete[0]?.id]);
 
   if (!paquete) {
     return (
@@ -211,11 +234,36 @@ export default function ReservarPaquetePage() {
     setRepartoHab(nuevo);
   }
 
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, pct });
+  // ── Elección de recorridos ────────────────────────────────────────────────
+  const eleccion       = paquete.eleccionTour;
+  const cuantosElegir  = eleccion?.cuantos ?? 1;
+  /** Elegir varios recorridos en vez de un día suelto: el paquete a la carta. */
+  const eleccionMulti  = cuantosElegir > 1;
+  const tourElegido    = toursElegidos.join(",");
+  const faltanPorElegir = Math.max(0, cuantosElegir - toursElegidos.length);
+
+  function alternarTour(slug: string) {
+    setToursElegidos((previos) => {
+      if (previos.includes(slug)) return previos.filter((s) => s !== slug);
+      if (!eleccionMulti) return [slug];
+      // Al llegar al tope no se apaga solo el más viejo: el cliente tiene que
+      // quitar uno a propósito, si no parece que la pantalla le borró algo.
+      if (previos.length >= cuantosElegir) return previos;
+      return [...previos, slug];
+    });
+  }
+
+  const nombresElegidos = toursElegidos
+    .map((slug) => eleccion?.opciones.find((o) => o.slug === slug)?.nombre ?? "")
+    .filter(Boolean);
+
+  // `tourElegido` entra al cálculo porque en el paquete a la carta los boletos
+  // de la gente extra son los de los recorridos que de verdad eligió.
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, tourElegido, pct });
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
-  const toursIncluidos = toursDelPaquete(paquete);
+  const toursIncluidos = toursDelPaquete(paquete, toursElegidos);
 
   async function goToPay() {
     setError("");
@@ -230,8 +278,10 @@ export default function ReservarPaquetePage() {
       setError(t.errHabitacion);
       return;
     }
-    if (paquete!.eleccionTour && !tourElegido) {
-      setError(t.errEleccion(paquete!.eleccionTour.dia));
+    if (eleccion && toursElegidos.length !== cuantosElegir) {
+      setError(eleccionMulti || eleccion.dia === undefined
+        ? t.errEleccionMulti(cuantosElegir)
+        : t.errEleccion(eleccion.dia));
       return;
     }
     setLoading(true);
@@ -306,7 +356,11 @@ export default function ReservarPaquetePage() {
               fecha ? t.compartirSalida(fecha) : "",
               t.compartirPersonas(personas, childrenMid + childrenSmall),
               habElegida ? t.compartirHabitacion(habElegida.nombre) : "",
-              tourElegido ? t.compartirDia(paquete.eleccionTour!.dia, paquete.eleccionTour?.opciones.find((o) => o.slug === tourElegido)?.nombre ?? "") : "",
+              nombresElegidos.length
+                ? (eleccionMulti || eleccion?.dia === undefined
+                    ? t.compartirElegidos(nombresElegidos.join(", "))
+                    : t.compartirDia(eleccion.dia, nombresElegidos[0]))
+                : "",
               nocheExtra ? t.compartirNocheExtra : "",
               t.compartirTotal(fmx(totalReal)),
             ].filter(Boolean).join("\n")}
@@ -503,21 +557,58 @@ export default function ReservarPaquetePage() {
               cliente pagaba un día "a elegir" sin elegirlo, y al equipo le
               llegaba la reserva sin saber a dónde llevarlo. Los dos valen lo
               mismo, así que la elección no mueve el precio. */}
-            {paquete.eleccionTour && (
+            {eleccion && (
               <section className="bg-white border border-negro/8 p-6">
-                <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{paquete.eleccionTour.titulo}</h2>
+                <div className="flex items-start justify-between gap-4 mb-1">
+                  <h2 className="font-cormorant text-verde-profundo text-xl">{eleccion.titulo}</h2>
+                  {/* El contador sólo tiene sentido cuando se eligen varios:
+                      con uno, el propio botón marcado ya lo dice todo. */}
+                  {eleccionMulti && (
+                    <span className={`flex-shrink-0 font-dm text-xs tabular-nums px-2.5 py-1 border ${
+                      faltanPorElegir === 0
+                        ? "border-verde-selva/40 bg-verde-selva/8 text-verde-selva"
+                        : "border-negro/15 text-negro/50"
+                    }`}>
+                      {toursElegidos.length}/{cuantosElegir}
+                    </span>
+                  )}
+                </div>
                 <p className="font-dm text-xs text-negro/45 mb-5">
-                  {t.eleccionDia(paquete.eleccionTour.dia)}
+                  {eleccionMulti || eleccion.dia === undefined
+                    ? t.eleccionMultiSub(cuantosElegir, eleccion.opciones.length)
+                    : t.eleccionDia(eleccion.dia)}
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {paquete.eleccionTour.opciones.map((o) => {
-                    const activa = tourElegido === o.slug;
+                  {eleccion.opciones.map((o) => {
+                    const activa = toursElegidos.includes(o.slug);
+                    // Lleno y sin marcar: se puede pulsar, pero no entra. Se
+                    // apaga para que se vea que primero hay que soltar otro.
+                    const lleno  = eleccionMulti && !activa && faltanPorElegir === 0;
                     return (
-                      <button key={o.slug} type="button" onClick={() => setTourElegido(o.slug)}
-                        className={`text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      <button
+                        key={o.slug}
+                        type="button"
+                        onClick={() => alternarTour(o.slug)}
+                        disabled={lleno}
+                        aria-pressed={activa}
+                        className={`text-left border p-4 transition-colors ${
+                          activa
+                            ? "border-verde-selva bg-verde-selva/5"
+                            : lleno
+                              ? "border-negro/10 opacity-45 cursor-not-allowed"
+                              : "border-negro/15 hover:border-negro/30"
+                        }`}
+                      >
                         <span className="flex items-start gap-2">
-                          <span className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
-                            {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
+                          {/* Redondo para elegir uno, cuadrado para elegir
+                              varios: es la señal de siempre de si al marcar
+                              este se apaga el otro. */}
+                          <span className={`mt-0.5 w-4 h-4 border-2 flex-shrink-0 flex items-center justify-center ${
+                            eleccionMulti ? "rounded-sm" : "rounded-full"
+                          } ${activa ? "border-verde-selva bg-verde-selva" : "border-negro/25"}`}>
+                            {activa && (eleccionMulti
+                              ? <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                              : <span className="w-2 h-2 rounded-full bg-white" />)}
                           </span>
                           <span className="min-w-0">
                             <span className="block font-dm text-sm text-negro/85 font-medium leading-snug">{o.nombre}</span>
@@ -528,8 +619,10 @@ export default function ReservarPaquetePage() {
                     );
                   })}
                 </div>
-                {!tourElegido && (
-                  <p className="font-dm text-[11px] text-terracota mt-3">{t.eleccionElige}</p>
+                {faltanPorElegir > 0 && (
+                  <p className="font-dm text-[11px] text-terracota mt-3">
+                    {eleccionMulti ? t.eleccionMultiFaltan(faltanPorElegir) : t.eleccionElige}
+                  </p>
                 )}
               </section>
             )}
@@ -602,7 +695,11 @@ export default function ReservarPaquetePage() {
               <p className="font-dm text-xs text-negro/45 mb-5">
                 {t.nochesEnHotel(paquete.noches)}
               </p>
-              <div className="grid sm:grid-cols-2 gap-3">
+              {/* Elegir entre selva y montaña sólo tiene sentido si el paquete
+                  ofrece las dos. En la Luna de Miel las dos habitaciones son de
+                  montaña: el selector no elegía nada y sí enseñaba un
+                  suplemento que ese paquete no cobra. */}
+              <div className={`grid sm:grid-cols-2 gap-3 ${habAsignada ? "hidden" : ""}`}>
                 {[
                   { m: false, t: t.vistaSelva,   s: t.vistaSelvaSub },
                   { m: true,  t: t.vistaMontana, s: t.vistaMontanaSub },
@@ -653,16 +750,24 @@ export default function ReservarPaquetePage() {
                 // las suites cuestan bastante más por noche y no entran en el
                 // precio publicado—. La ficha (fotos, cupo, características) se
                 // toma de la copia del sistema del hotel, cruzando por id.
-                const grupo = HABITACIONES_HOTEL.filter(
-                  (h) => HABITACIONES.some((p) => p.id === h.id) && h.vistaMontana === vistaMontana,
-                );
+                const grupo = habAsignada
+                  // Asignadas: van las dos, en el orden del paquete —primero la
+                  // que se da, después el reemplazo— y no se filtran por vista.
+                  ? habsDelPaquete
+                      .map((p) => HABITACIONES_HOTEL.find((h) => h.id === p.id))
+                      .filter((h): h is (typeof HABITACIONES_HOTEL)[number] => !!h)
+                  : HABITACIONES_HOTEL.filter(
+                      (h) => habsDelPaquete.some((p) => p.id === h.id) && h.vistaMontana === vistaMontana,
+                    );
                 if (grupo.length === 0) return null;
                 return (
                   <div className="mt-5 pt-5 border-t border-negro/8">
                     <p className="font-dm text-[11px] tracking-[1.5px] uppercase text-negro/40 mb-3">
-                      {grupo.length === 1 ? t.laHabitacion : t.eligeTuHabitacion}
+                      {habAsignada ? t.tuHabitacionYReemplazo : grupo.length === 1 ? t.laHabitacion : t.eligeTuHabitacion}
                     </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {/* Tantas columnas como habitaciones haya, hasta tres: con
+                        dos, la rejilla de tres dejaba un hueco al lado. */}
+                    <div className={`grid gap-3 ${grupo.length <= 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
                       {grupo.map((h) => {
                         // Cabe el grupo entero en esta habitación, o hacen falta
                         // varias y entonces el cupo no descarta ninguna.
