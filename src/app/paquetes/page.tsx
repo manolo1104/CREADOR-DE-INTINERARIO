@@ -441,6 +441,26 @@ export default function PaquetesPage() {
         </div>
       </section>
 
+      {/* ── GRUPOS ──
+          Quien llega buscando paquetes y viene con 40 personas necesita saber
+          que hay otra puerta: el motor tope en 12 y estos precios son por
+          pareja. Sin esto, el lead se va creyendo que no cabemos. */}
+      <section className="px-6 pb-16">
+        <div className="max-w-3xl mx-auto border border-white/10 p-7 text-center">
+          <h2 className="font-cormorant font-light text-crema text-2xl mb-3">¿Vienen en grupo grande?</h2>
+          <p className="font-dm text-sm text-crema/65 leading-relaxed mb-5">
+            Estos precios están calculados para dos personas. Si organizas el viaje de una escuela, una empresa o un
+            grupo familiar grande, se cotiza aparte y hay descuento según el número de personas.
+          </p>
+          <Link
+            href={lp("/grupos")}
+            className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-7 py-3 hover:bg-dorado hover:text-negro transition-all"
+          >
+            Viajes de grupo y escolares →
+          </Link>
+        </div>
+      </section>
+
       {/* ── FAQ ── */}
       <section className="max-w-3xl mx-auto px-6 py-16">
         <h2 className="reveal-up font-cormorant text-crema text-2xl mb-8 text-center">{t.faqTitulo}<em className="text-dorado">{t.faqTituloEm}</em></h2>

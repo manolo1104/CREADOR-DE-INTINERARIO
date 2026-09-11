@@ -26,6 +26,21 @@ export const WA_MESSAGES = {
   general:
     "Hola, quiero información sobre los tours de la Huasteca. ¿Qué opciones tienen disponibles?",
 
+  /**
+   * Grupos (escuelas, empresas, agencias). Pide de entrada los tres datos sin
+   * los que no se puede cotizar: fechas, cuántos son y de dónde salen. Las dos
+   * organizadoras reales del 11 sep tardaron varios mensajes en darlos, y una
+   * de ellas escribió primero para preguntar por cortesías. Que el primer
+   * mensaje ya los traiga ahorra tres idas y vueltas.
+   */
+  grupos:
+    "Hola, quiero cotizar un viaje de grupo a la Huasteca Potosina.\n\n" +
+    "· Fechas aproximadas:\n" +
+    "· Número de personas (aprox.):\n" +
+    "· Ciudad de salida:\n" +
+    "· Tipo de grupo (escuela, empresa, familia, agencia):\n" +
+    "· Días que tenemos:",
+
   faq: (tour: string, pregunta: string) =>
     `Hola, tengo una pregunta sobre el tour "${tour}": ${pregunta}`,
 };

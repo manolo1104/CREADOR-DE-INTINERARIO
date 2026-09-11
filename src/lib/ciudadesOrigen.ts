@@ -1,3 +1,4 @@
+import { PAQUETES_DB } from "@/lib/paquetes";
 /**
  * Landings por ciudad de origen.
  *
@@ -25,7 +26,15 @@ export interface CiudadOrigen {
   razonBase: string;
   llegadas: { modo: string; detalle: string }[];
   /** Slug del paquete que mejor le queda a esa distancia. */
-  paqueteSugerido: string;
+  /**
+   * Slug de un paquete de `PAQUETES_DB`. Va tipado contra el catálogo a
+   * propósito: cuando los paquetes cambiaron el 10 sep 2026 estos campos
+   * decían "aventura" y "completo", que dejaron de existir, y el `?? [0]` de
+   * `/desde/[ciudad]` hacía caer las dos páginas al primero de la lista sin
+   * avisar. Resultado: a quien venía de Monterrey se le ofrecía el paquete de
+   * Luna de Miel. Tipado así, el mismo error no compila.
+   */
+  paqueteSugerido: (typeof PAQUETES_DB)[number]["slug"];
   faqs: { q: string; a: string }[];
 }
 
@@ -54,7 +63,7 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
           "El aeropuerto más práctico es Tampico (TAM), a ~2.5 h de Xilitla. Desde ahí conviene renta de auto o transfer privado.",
       },
     ],
-    paqueteSugerido: "aventura",
+    paqueteSugerido: "aventura-extrema",
     faqs: [
       {
         q: "¿Pierdo un día viajando desde CDMX?",
@@ -94,7 +103,7 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
           "Tampico (TAM) es el aeropuerto más cercano, a ~2 h de Ciudad Valles. Desde ahí conviene renta de auto o transfer privado.",
       },
     ],
-    paqueteSugerido: "completo",
+    paqueteSugerido: "tu-huasteca",
     faqs: [
       {
         q: "¿Me conviene quedarme en Ciudad Valles o en Xilitla viniendo de Monterrey?",

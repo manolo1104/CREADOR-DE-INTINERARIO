@@ -48,6 +48,9 @@ export function SiteFooter() {
         { label: "Tours en la Huasteca Potosina", href: "/tours" },
         { label: "Paquetes todo incluido con hotel", href: "/paquetes" },
         { label: "Precios de los tours 2026", href: "/precios" },
+        // Escuelas, empresas y agencias: se cotizan aparte, no pasan por el
+        // motor de reservas. Entra al pie para que no nazca huérfana.
+        { label: "Viajes de grupo y escolares", href: "/grupos" },
         // Publicada y en cero clics y cero impresiones en cuatro meses: nada
         // del sitio la enlazaba.
         { label: "¿Xilitla o Ciudad Valles? Dónde hospedarte", href: "/xilitla-o-ciudad-valles" },
