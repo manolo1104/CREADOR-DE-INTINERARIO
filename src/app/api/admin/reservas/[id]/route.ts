@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { origenValido } from "@/lib/origenReserva";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     for (const k of BOOKING_FIELDS) {
       if (body[k] !== undefined) data[k] = body[k];
     }
+    // El resto de la lista se copia tal cual; el origen no, porque alimenta el
+    // desglose de ingresos y una cadena libre lo convertiría en otra columna
+    // sin agrupar.
+    if (body.origen !== undefined) data.origen = origenValido(body.origen);
     const updated = await prisma.tourBooking.update({
       where: { id: params.id },
       data,

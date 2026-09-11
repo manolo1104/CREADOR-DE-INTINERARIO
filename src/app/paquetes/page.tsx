@@ -41,16 +41,38 @@ export default function PaquetesPage() {
   const faqs     = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
   // La frase que enumera los paquetes en la introducción se arma con los datos
   // reales: si mañana cambia un precio o una duración en `paquetes.ts`, el
-  // párrafo cambia con ellos en vez de quedarse mintiendo.
-  const listaPaquetes = paquetes.map(
-    (p) => `${en ? "the " : "el "}${p.nombre} (${p.duracion}, ${formatoMXN(p.precio, locale)} MXN ${p.precioLabel})`,
-  );
+  // párrafo cambia con ellos en vez de quedarse mintiendo. Por eso el cambio de
+  // catálogo —tres paquetes ordenados por duración pasaron a cinco ordenados
+  // por tipo de viajero— no dejó aquí ni un nombre ni un precio viejo.
+  //
+  // Cada entrada abre con el perfil al que va dirigido el paquete (`perfiles[0]`
+  // de PAQUETES_DB, que sí se traduce en `localizePaquete`) porque la línea
+  // nueva ya no es un escalafón de días: el cliente elige por quién viaja
+  // —pareja, familia, aventura fuerte, a la carta o el recorrido largo— y la
+  // duración es una consecuencia, no el criterio.
+  //
+  // Sin artículo delante del nombre. Antes decía `el ${nombre}` y colaba porque
+  // los tres paquetes viejos se llamaban "Paquete Aventura/Completo/Gran
+  // Huasteca": el artículo masculino concordaba con "Paquete". Con la línea
+  // nueva sólo uno de los cinco empieza por "Paquete", así que ese mismo
+  // código escribía «el Luna de Miel», «el Aventura Extrema», «el Odisea
+  // Huasteca» —femeninos— y «el Tu Huasteca», que además ya lleva su propio
+  // determinante; en inglés salía «the Your Huasteca». La enumeración va detrás
+  // de dos puntos en `introP1`, así que sin artículo se lee bien en los dos
+  // idiomas y no hace falta una tabla de géneros por nombre.
+  const listaPaquetes = paquetes.map((p) => {
+    const perfil = p.perfiles[0] ? `${p.perfiles[0].toLowerCase()}, ` : "";
+    return `${p.nombre} (${perfil}${p.duracion}, ${formatoMXN(p.precio, locale)} MXN ${p.precioLabel})`;
+  });
   const introLista =
     listaPaquetes.length > 1
       ? listaPaquetes.slice(0, -1).join(", ") + t.introUneY + listaPaquetes[listaPaquetes.length - 1]
       : listaPaquetes.join("");
   // El precio publicado es por pareja: el "desde… por persona" sale de dividirlo
-  // entre dos, no de un número escrito a mano.
+  // entre dos, no de un número escrito a mano. Es el MÁS BARATO de los cinco
+  // (hoy la Luna de Miel, $9,800), no "el más corto": que el más barato sea
+  // además el de menos días es una coincidencia del catálogo de hoy, así que la
+  // frase que lo recibe en `paquetes.en.ts` tiene que decir "desde".
   const introPorPersona = formatoMXN(Math.round(Math.min(...paquetes.map((p) => p.precio)) / 2), locale);
   // Viaje en grupo del 16 al 19 de septiembre de 2026: hoy no lo enlaza ninguna
   // página pública. El aviso se apaga solo en cuanto pasa la fecha para que
@@ -103,7 +125,9 @@ export default function PaquetesPage() {
         inLanguage: locale === "en" ? "en" : "es-MX",
         touristType: p.perfiles,
         provider: ORG_REF,
-        // `dias` sale de PAQUETES_DB: 3, 4 o 5 días → P3D, P4D, P5D.
+        // `dias` sale de PAQUETES_DB: hoy 3, 4, 5 y 6 días → P3D, P4D, P5D,
+        // P6D. Sale del dato, no de una lista escrita a mano: la línea nueva
+        // tiene dos paquetes de 4 días y uno de 6 que antes no existían.
         duration: `P${p.dias}D`,
         // Todos los paquetes arrancan y terminan en Xilitla: el traslado hasta
         // allá no va incluido, y decirlo también en los datos evita que una IA
@@ -187,9 +211,12 @@ export default function PaquetesPage() {
 
       {/* ── HERO ── */}
       <section className="relative px-6 pt-36 pb-28 overflow-hidden min-h-[520px] flex items-center">
+        {/* El skybike de las Cascadas de Micos. La ruta dice
+            `cascadas-minas-viejas` porque la foto entró por la galería de ese
+            tour, que visita los dos sitios; el lugar de la foto es Micos. */}
         <Image
-          src="/imagenes/cascada-de-tamul/hero.jpg"
-          alt="Cascada de Tamul — Huasteca Potosina"
+          src="/imagenes/cascadas-minas-viejas/gallery-new-8.jpg"
+          alt="Skybike sobre las pozas turquesa de las Cascadas de Micos, Huasteca Potosina"
           fill
           className="object-cover object-center"
           priority
@@ -211,7 +238,7 @@ export default function PaquetesPage() {
           </h1>
           {/* "traslados"/"transfers" a secas contradecía la FAQ de esta misma
               página ("¿El precio incluye el traslado hasta Xilitla?" → "No viene
-              incluido") y el `noIncluye` de los tres paquetes. Lo que sí cubre
+              incluido") y el `noIncluye` de los cinco paquetes. Lo que sí cubre
               el precio es el transporte del hotel a cada tour y de regreso. */}
           <p className="reveal-up text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8" style={{ animationDelay: "80ms" }}>
             {t.heroIntro1}
@@ -243,7 +270,10 @@ export default function PaquetesPage() {
 
       {/* ── VIAJE EN GRUPO DE SEPTIEMBRE ──
           Datos tomados tal cual de /viaje-septiembre: 16–19 sep 2026, 4 días,
-          3 noches, 3 recorridos, desde $7,900 MXN por persona, 16 lugares. */}
+          3 noches, 3 recorridos, desde $7,900 MXN por persona, 16 lugares.
+          No es uno de los cinco paquetes del catálogo —es una salida con fecha
+          fija— así que el cambio de línea de producto no lo toca. Va aquí
+          arriba porque ninguna otra página pública lo enlaza. */}
       {viajeSepVigente && (
         <div className="border-b border-white/6 bg-terracota/12">
           <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -273,7 +303,13 @@ export default function PaquetesPage() {
           "tour huasteca potosina 3 días" no encontraba en ninguna frase entera
           qué incluye, desde dónde sale, cuánto cuesta ni cómo se reserva. Esto
           lo dice en prosa, con cada dato sacado de `paquetes.ts`, para que se
-          pueda leer —y citar— sin abrir una sola tarjeta. */}
+          pueda leer —y citar— sin abrir una sola tarjeta.
+
+          El párrafo de apertura recibe `introLista` e `introPorPersona`, los
+          dos calculados arriba a partir de PAQUETES_DB: la enumeración de los
+          paquetes no se escribe a mano en ningún idioma, así que el cambio de
+          catálogo (tres paquetes por duración → cinco por tipo de viajero) la
+          reescribió sola. El resto del texto vive en `paquetes.en.ts`. */}
       <section id="que-incluye" className="border-b border-white/6 bg-negro py-14 px-6 scroll-mt-24">
         <div className="max-w-3xl mx-auto">
           <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-3">
@@ -287,6 +323,77 @@ export default function PaquetesPage() {
             <p>{t.introP2}</p>
             <p>{t.introP3}</p>
             <p>{t.introP4}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── NOTA ── */}
+      <div className="border-b border-white/6 bg-dorado/8">
+        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
+          <p className="text-[11px] text-dorado/80 font-dm">
+            {t.notaWhatsapp}
+          </p>
+        </div>
+      </div>
+
+      {/* ── PAQUETES + BARRA FIJA ── */}
+      <PaquetesInteractivo paquetes={paquetes} />
+
+      {/* ── RESEÑAS ── */}
+      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
+        <FloatingLeaves count={12} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
+            {t.resenasTitulo}
+            {t.resenasEnEspanol && (
+              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
+            )}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {RESENAS_PAQUETES.map((r) => (
+              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(r.estrellas)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
+                  ))}
+                </div>
+                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
+                  &ldquo;{r.texto}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <img src={r.foto} alt={r.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
+                  <div>
+                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
+                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOTEL INFO ── */}
+      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
+        <FloatingLeaves count={14} />
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
+            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
+          </h2>
+          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
+            {t.hotelIntro}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
+              const text = t.hotelPuntos[i];
+              return (
+              <div key={text} className="border border-white/10 bg-negro/30 px-4 py-4 text-center">
+                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
+                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
+              </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -330,77 +437,6 @@ export default function PaquetesPage() {
               {t.cdmxAutoAvion1}
               <span className="text-crema/60">&ldquo;{t.cdmxComoLlegar}&rdquo;</span>{t.cdmxAutoAvion2}
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── RESEÑAS ── */}
-      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
-        <FloatingLeaves count={12} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
-            {t.resenasTitulo}
-            {t.resenasEnEspanol && (
-              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
-            )}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {RESENAS_PAQUETES.map((r) => (
-              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(r.estrellas)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
-                  ))}
-                </div>
-                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
-                  &ldquo;{r.texto}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <img src={r.foto} alt={r.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
-                  <div>
-                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
-                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── NOTA ── */}
-      <div className="border-b border-white/6 bg-dorado/8">
-        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
-          <p className="text-[11px] text-dorado/80 font-dm">
-            {t.notaWhatsapp}
-          </p>
-        </div>
-      </div>
-
-      {/* ── QUIZ + PAQUETES + STICKY BAR ── */}
-      <PaquetesInteractivo paquetes={paquetes} />
-
-      {/* ── HOTEL INFO ── */}
-      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
-            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
-          </h2>
-          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
-            {t.hotelIntro}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
-              const text = t.hotelPuntos[i];
-              return (
-              <div key={text} className="border border-white/10 bg-negro/30 px-4 py-4 text-center">
-                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
-                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
-              </div>
-              );
-            })}
           </div>
         </div>
       </section>

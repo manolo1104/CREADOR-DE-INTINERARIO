@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { hoyMX, ymdMX, partsMX, addDaysYMD, weekdayYMD } from "@/lib/dates";
 import type { TourBooking } from "@prisma/client";
 import { TOURS_DB } from "@/lib/tours";
+import { ORIGENES, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 
 type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" | "totalAmount">;
 
@@ -109,6 +110,26 @@ export async function calcKPIs() {
   });
   const toursMasVendidos = Object.values(porTour).sort((a, b) => b.count - a.count).slice(0, 8);
 
+  // ── De dónde viene el dinero ───────────────────────────────────────────────
+  // La pregunta que no se podía contestar: ¿el sitio vende, o solo informa y
+  // la venta la cierra el chat? Aquí no se prorratea nada — una reserva tiene
+  // UN origen — así que es un conteo directo.
+  //
+  // Ojo al leerlo los primeros meses: las reservas anteriores a este campo
+  // heredaron "web" del default, así que ese renglón viene inflado hasta que
+  // se repasen a mano.
+  const porOrigenAcc: Record<string, { origen: OrigenReserva; count: number; ingresos: number }> = {};
+  paid.forEach(b => {
+    const origen = origenValido((b as { origen?: unknown }).origen);
+    porOrigenAcc[origen] ??= { origen, count: 0, ingresos: 0 };
+    porOrigenAcc[origen].count++;
+    porOrigenAcc[origen].ingresos += montoCobrado(b);
+  });
+  const porOrigen = ORIGENES
+    .map(o => porOrigenAcc[o] ?? { origen: o, count: 0, ingresos: 0 })
+    .filter(x => x.count > 0)
+    .sort((a, b) => b.ingresos - a.ingresos);
+
   // ── Series mensuales ───────────────────────────────────────────────────────
   const etiqueta = (yy: number, mm: number) =>
     new Date(yy, mm, 1).toLocaleDateString("es-MX", { month: "short", year: "2-digit" });
@@ -152,5 +173,6 @@ export async function calcKPIs() {
     porMesVenta,
     porMesTour,
     toursMasVendidos,
+    porOrigen,
   };
 }

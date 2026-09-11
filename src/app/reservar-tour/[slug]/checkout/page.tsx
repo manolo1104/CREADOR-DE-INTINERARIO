@@ -13,7 +13,7 @@ import type { TourBookingState } from "@/lib/tourBooking";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { trackPurchase } from "@/lib/analytics";
-import { trackTourEvent, sessionId } from "@/lib/tourTracker";
+import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
 
 const stripePromise = loadStripe(
@@ -161,7 +161,11 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
         const data = await res.json();
         const confirmationNumber = data.confirmationNumber || "HP" + Date.now().toString(36).toUpperCase();
 
-        trackPurchase({
+        // Solo con el folio REAL del servidor. El de reserva (`"HP" + ahora`)
+        // sirve para que la pantalla no se quede vacía, pero como número de
+        // transacción sería inventado: el webhook manda el suyo y GA4 contaría
+        // la misma venta dos veces al no poder emparejarlos.
+        if (data.confirmationNumber) trackPurchase({
           confirmationNumber,
           tourId:   booking.tourId,
           tourName: booking.tourName,
@@ -407,6 +411,9 @@ export default function CheckoutTourPage() {
         // Va el id de sesión para que el evento del pago se pueda ligar con el
         // resto del recorrido de esa misma persona en el embudo.
         sid: sessionId(),
+        // Y la identidad de Google Analytics, que el webhook necesita para que
+        // la venta no llegue a GA4 como un usuario nuevo sin canal de origen.
+        gaClientId: ga4ClientId(),
         // El monto lo calcula el servidor a partir de estos datos (no se envía amount).
         tourDetails: {
           tourId:        state.tourId,

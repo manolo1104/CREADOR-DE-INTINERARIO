@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, hospedaje, traslado, locale } = await req.json();
+    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -176,6 +176,13 @@ export async function POST(req: NextRequest) {
         saldo:         String(saldo),
         locale:        locale === "en" ? "en" : "es",
         source:        "huasteca-potosina.com",
+        // Identidad de Google Analytics y de nuestro propio embudo. El webhook
+        // es el único que se entera de TODAS las compras (la pestaña cerrada,
+        // el pago en `processing`, el bloqueador de anuncios) y no tiene
+        // cookies: si no viajan aquí, la venta llega a GA4 sin saber de dónde
+        // vino. Stripe admite 500 caracteres por valor; ambos son cortos.
+        gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
+        sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
       },
     });
 

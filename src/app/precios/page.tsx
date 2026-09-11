@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { TOURS_DB, tourDurRange, tourDurTexto } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
@@ -43,9 +43,16 @@ const HORAS = TOURS_DB.flatMap((t) => tourDurRange(t));
 const HRS_MIN = Math.min(...HORAS);
 const HRS_MAX = Math.max(...HORAS);
 
-// Días que cubren los paquetes (3 a 5 hoy): también del catálogo.
+// Días que cubren los paquetes: también del catálogo, y sin la cifra escrita
+// en el comentario — la línea pasó de 3 paquetes de 3-5 días a 5 de 3-6.
 const DIAS_MIN = Math.min(...PAQUETES_DB.map((p) => p.dias));
 const DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
+// Cuántos días de recorrido trae un paquete. NO se cuenta `p.tours.length`:
+// en «Tu Huasteca» ese campo son dos líneas de explicación ("Cuatro recorridos
+// completos, a elegir de una lista de seis"), no la lista de tours, así que
+// contarlo diría "2 tours" de un paquete que trae cuatro. El itinerario sí es
+// fiable: los cinco paquetes cierran con un único día de tipo `salida`.
+const diasDeTour = (p: Paquete) => p.itinerario.filter((d) => d.tipo !== "salida").length;
 
 // Tours con formato privado: el dato ya vivía en el catálogo sin publicarse.
 const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable && t.privateMinPrice);
@@ -72,10 +79,37 @@ const PRIVADOS_CUANTOS = (locale: Locale) =>
 function preciosUI(locale: Locale) {
   const en = locale === "en";
   const paquetes = getLocalizedPaquetes(locale);
-  const paq3 = paquetes.find((p) => p.dias === 3);
+  /**
+   * El paquete más corto, para la consulta "cuánto cuesta un viaje de N días".
+   *
+   * Antes esto buscaba `p.dias === 3` y devolvía el paquete de 3 días de la
+   * escalera por duración. La línea se rehízo: ahora son cinco paquetes
+   * ordenados por QUIÉN viaja, y el más corto es el de Luna de Miel. Contestar
+   * "¿cuánto cuesta un viaje de 3 días?" con un paquete de luna de miel, a
+   * secas, desorienta: esa consulta la teclea cualquiera, no una pareja de
+   * recién casados. Así que la respuesta dice las tres cosas —que es el más
+   * corto, para quién está hecho, y qué hay al lado— y todas salen del
+   * catálogo, ninguna escrita a mano.
+   */
+  const porDias = [...paquetes].sort((a, b) => a.dias - b.dias || a.precio - b.precio);
+  const paqCorto: Paquete | undefined = porDias[0];
+  const otros = porDias.slice(1);
   // Un paquete se cotiza por pareja; el precio por persona es la mitad y es la
   // cifra con la que la gente compara contra un tour suelto.
-  const paq3PorPersona = paq3 ? money(Math.round(paq3.precio / 2)) : "";
+  const paqCortoPorPersona = paqCorto ? money(Math.round(paqCorto.precio / 2)) : "";
+  // Para quién está hecho: sale de `perfiles`, no de una etiqueta escrita aquí.
+  const paqCortoPerfiles = (paqCorto?.perfiles ?? [])
+    .slice(0, 2)
+    .map((x) => x.toLowerCase())
+    .join(en ? " and " : " y ");
+  // La frase que impide leer el más corto como si fuera la oferta general.
+  const otrosDias = otros.map((x) => x.dias);
+  const otrosPrecios = otros.map((x) => x.precio);
+  const otrosTexto = otros.length
+    ? en
+      ? ` The rest of the packages are not sorted by length but by who is traveling (${otros.map((x) => x.nombre).join(", ")}): ${Math.min(...otrosDias)} to ${Math.max(...otrosDias)} days, from ${money(Math.min(...otrosPrecios))} to ${money(Math.max(...otrosPrecios))} MXN per couple.`
+      : ` Los demás paquetes no se ordenan por duración sino por quién viaja (${otros.map((x) => x.nombre).join(", ")}): de ${Math.min(...otrosDias)} a ${Math.max(...otrosDias)} días y de ${money(Math.min(...otrosPrecios))} a ${money(Math.max(...otrosPrecios))} MXN por pareja.`
+    : "";
   // Nombre corto del recorrido por vehículo, del catálogo (ya localizado): el
   // nombre completo lleva un subtítulo tras el guion largo que no cabe en prosa.
   const rzrNombre = RZR ? localizeTour(RZR, locale).nombre.split(" — ")[0] : "";
@@ -86,11 +120,11 @@ function preciosUI(locale: Locale) {
           q: "How much does it cost to visit the Huasteca Potosina?",
           a: `It depends on how many days you stay. A guided all-inclusive day tour in the Huasteca Potosina costs between ${RANGO_MIN} and ${RANGO_MAX} MXN per person (Mexican pesos), with transport, breakfast, entrance fees and a certified guide included. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} to ${PAQ_MAX} MXN per couple with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800–$1,100 MXN each way) plus your lunches and dinners, which are not included.`,
         },
-        ...(paq3
+        ...(paqCorto
           ? [
               {
-                q: "How much does a 3-day trip to the Huasteca Potosina with hotel cost?",
-                a: `The ${paq3.nombre} costs ${money(paq3.precio)} MXN per couple — ${paq3PorPersona} MXN per person — for ${paq3.duracion}. It includes ${paq3.noches} nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, ${paq3.tours.length} complete guided tours, transport from the hotel to each tour and back, entrance fees, NOM-09 SECTUR certified guides, safety gear and travel insurance. It does not include getting to Xilitla, or lunches and dinners.`,
+                q: `How much does a ${paqCorto.dias}-day trip to the Huasteca Potosina with hotel cost?`,
+                a: `The shortest trip with hotel we run is ${paqCorto.duracion}: the ${paqCorto.nombre} package, built for ${paqCortoPerfiles}, at ${money(paqCorto.precio)} MXN per couple — ${paqCortoPorPersona} MXN per person. It includes ${paqCorto.noches} nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, ${diasDeTour(paqCorto)} days of guided touring, transport from the hotel to each tour and back, entrance fees, NOM-09 SECTUR certified guides, safety gear and travel insurance. It does not include getting to Xilitla, or lunches and dinners.${otrosTexto}`,
               },
             ]
           : []),
@@ -124,11 +158,11 @@ function preciosUI(locale: Locale) {
           q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
           a: `Depende de los días y del plan. Un tour guiado de un día todo incluido en la Huasteca Potosina cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de ${DIAS_MIN} a ${DIAS_MAX} días con hotel y tours va de ${PAQ_MIN} a ${PAQ_MAX} MXN por pareja con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas, que no van incluidas.`,
         },
-        ...(paq3
+        ...(paqCorto
           ? [
               {
-                q: "¿Cuánto cuesta un viaje de 3 días a la Huasteca Potosina con hotel?",
-                a: `El ${paq3.nombre} cuesta ${money(paq3.precio)} MXN por pareja —${paq3PorPersona} MXN por persona— e incluye ${paq3.duracion}: ${paq3.noches} noches en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, ${paq3.tours.length} tours guiados completos, transporte del hotel al inicio de cada tour y de regreso, entradas, guías certificados NOM-09 SECTUR, equipo de seguridad y seguro de viaje. No incluye el traslado hasta Xilitla ni las comidas y cenas.`,
+                q: `¿Cuánto cuesta un viaje de ${paqCorto.dias} días a la Huasteca Potosina con hotel?`,
+                a: `El viaje con hotel más corto que armamos es de ${paqCorto.duracion}: el paquete ${paqCorto.nombre}, hecho para ${paqCortoPerfiles}, en ${money(paqCorto.precio)} MXN por pareja —${paqCortoPorPersona} MXN por persona—. Incluye ${paqCorto.noches} noches en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, ${diasDeTour(paqCorto)} días de recorrido guiado, transporte del hotel al inicio de cada tour y de regreso, entradas, guías certificados NOM-09 SECTUR, equipo de seguridad y seguro de viaje. No incluye el traslado hasta Xilitla ni las comidas y cenas.${otrosTexto}`,
               },
             ]
           : []),
@@ -247,7 +281,7 @@ function preciosUI(locale: Locale) {
     paqProsa:
       (en ? "In detail: " : "En detalle: ") +
       paquetes
-        .map((p) => `${p.nombre}, ${money(p.precio)} MXN ${p.precioLabel} (${p.duracion}, ${p.tours.length} tours)`)
+        .map((p) => `${p.nombre}, ${money(p.precio)} MXN ${p.precioLabel} (${p.duracion}, ${diasDeTour(p)} ${en ? "tour days" : "días de recorrido"})`)
         .join("; ") +
       (en
         ? ". All packages include lodging at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, transport, entrance fees, NOM-09 certified guides and travel insurance; they do not include getting to Xilitla, or lunches and dinners."
@@ -348,7 +382,7 @@ export default function PreciosPage() {
   const paquetes = t.paquetes;
 
   /**
-   * Los 48 importes de esta página, legibles por máquina.
+   * Todos los importes de esta página, legibles por máquina.
    *
    * Hasta ahora /precios era la única página comercial que no le daba a Google
    * ni un solo precio estructurado: los números vivían dentro de la tabla y
@@ -543,7 +577,7 @@ export default function PreciosPage() {
         <div className="max-w-5xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-2">{t.paqTitulo}</h2>
           <p className="text-crema/60 font-dm text-sm mb-8 max-w-2xl">{t.paqIntro}</p>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {paquetes.map((p) => (
               <Link
                 key={p.slug}

@@ -306,6 +306,12 @@ interface Props {
   titulo?: string;
   /** Ofrece "Quitar fecha" dentro de la hoja. */
   permitirLimpiar?: boolean;
+  /**
+   * Color del BOTÓN que abre la hoja. El carrito vive sobre fondo claro y la
+   * ficha de tour sobre fondo oscuro; con un solo tema, el botón salía
+   * invisible en una de las dos. La hoja siempre es clara: es un modal.
+   */
+  tema?: "claro" | "oscuro";
 }
 
 export function TourCalendar({
@@ -316,6 +322,7 @@ export function TourCalendar({
   placeholder,
   titulo,
   permitirLimpiar = false,
+  tema = "claro",
 }: Props) {
   const { locale } = useLocale();
   const t = getBooking(locale).calendario;
@@ -399,9 +406,13 @@ export function TourCalendar({
       aria-haspopup="dialog"
       aria-expanded={abierto}
       className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 border font-dm text-sm transition-colors ${
-        value
-          ? "border-verde-selva bg-verde-selva/5 text-negro/80"
-          : "border-terracota/60 bg-crema text-terracota"
+        tema === "oscuro"
+          ? value
+            ? "border-verde-vivo/60 bg-verde-vivo/10 text-crema"
+            : "border-crema/20 bg-negro/40 text-crema/70 hover:border-crema/40"
+          : value
+            ? "border-verde-selva bg-verde-selva/5 text-negro/80"
+            : "border-terracota/60 bg-crema text-terracota"
       }`}
     >
       <span className="truncate text-left">{value ? formatDisplay(value, locale) : textoPlaceholder}</span>

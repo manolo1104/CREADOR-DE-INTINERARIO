@@ -105,13 +105,20 @@ export function blogDeDestino(destinoSlug: string): string | undefined {
  *
  * Los `href` están verificados contra `TOURS_DB` (`src/lib/tours.ts`) y
  * `PAQUETES_DB` (`src/lib/paquetes.ts`): `expedicion-tamul`,
- * `ruta-acuatica-puente-de-dios`, `paraiso-escalonado-minas-micos`, `completo`.
+ * `ruta-acuatica-puente-de-dios`, `paraiso-escalonado-minas-micos`, `familiar`.
  * Ojo: los slugs de URL de los tours NO son sus `id` (`expedicion-tamul` vs
  * `tour-tamul`).
  *
- * No existe un "paquete familiar" como tal: el que las familias compran es el
- * Paquete Completo (sus propios `perfiles` dicen "Familias"), así que ahí van
- * los dos artículos de niños.
+ * Cada `href` apunta al slug VIVO, nunca a uno redirigido. La línea de paquetes
+ * se rehízo entera: los tres de antes (`aventura`, `completo`, `gran-huasteca`)
+ * ya no existen y `next.config.mjs` los redirige (301) a los cinco nuevos. Un
+ * 301 no rompe nada para el visitante, pero un enlace interno que pasa por una
+ * redirección es exactamente lo que esta fase vino a quitar del blog: aquí se
+ * escribe el destino final.
+ *
+ * Ahora sí existe un paquete hecho para familias —`familiar`, cuyos `perfiles`
+ * dicen "Familias con niños" y cuyos tres recorridos son de dificultad baja—,
+ * así que ahí van los dos artículos de niños.
  */
 export interface OfertaBlog {
   /** Ruta interna ya verificada. */
@@ -145,12 +152,12 @@ const CATALOGO_TOURS: OfertaBlog = {
 const CATALOGO_PAQUETES: OfertaBlog = {
   href: "/paquetes",
   ancla: "Paquetes todo incluido con hotel en Xilitla",
-  nota: "De 3 a 5 días: hotel, tours y traslados en un solo precio.",
+  nota: "De 3 a 6 días: hotel, tours y transporte a cada tour en un solo precio.",
 };
 const PAQUETE_FAMILIAS: OfertaBlog = {
-  href: "/paquetes/completo",
-  ancla: "Paquete Completo Huasteca — 4 días con hotel, el de las familias",
-  nota: "Tres días de tours y el tercero lo eligen ustedes.",
+  href: "/paquetes/familiar",
+  ancla: "Paquete Familiar Huasteca — 4 días con hotel y 3 de tour",
+  nota: "Los tres recorridos son de dificultad baja: sin caminatas largas ni descensos.",
 };
 const PRECIOS: OfertaBlog = {
   href: "/precios",

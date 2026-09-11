@@ -188,6 +188,8 @@ export interface EmailMessages {
     /** Llegó la víspera: el check-in es el día ANTERIOR al primer tour. */
     nocheExtraNota: string;
     eligeDia: (dia: number) => string;
+    /** Cuando el paquete deja a elección TODOS los recorridos, no un día. */
+    eligeRecorridos: string;
     tuItinerario: string;
     diaN: (n: number) => string;
     todoIncluido: string;
@@ -389,6 +391,7 @@ const ES: EmailMessages = {
     noches: (n) => `${n} ${n === 1 ? "noche" : "noches"}`,
     nocheExtraNota: "Llegas la víspera · check-in desde las 3:00 PM",
     eligeDia: (dia) => `Tu elección del día ${dia}`,
+    eligeRecorridos: "Los recorridos que elegiste",
     tuItinerario: "Tu itinerario",
     diaN: (n) => `Día ${n}`,
     todoIncluido: "Todo lo que incluye",
@@ -588,6 +591,7 @@ const EN: EmailMessages = {
     noches: (n) => `${n} ${n === 1 ? "night" : "nights"}`,
     nocheExtraNota: "You arrive the night before · check-in from 3:00 PM",
     eligeDia: (dia) => `Your choice for day ${dia}`,
+    eligeRecorridos: "The tours you chose",
     tuItinerario: "Your itinerary",
     diaN: (n) => `Day ${n}`,
     todoIncluido: "Everything included",

@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════
 // Tours Huasteca Potosina — Bot de WhatsApp (proceso principal)
-// whatsapp-web.js + agente Claude. Comportamientos: debounce, pausa por
-// humano, escalación, comandos del dueño.
+// whatsapp-web.js + agente Claude. Comportamientos: espera por ráfaga de
+// mensajes, pausa por humano, escalación, comandos del dueño.
 // ════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -10,9 +10,16 @@ const qrcode = require("qrcode-terminal");
 const { processMessage, needsHuman } = require("./agent");
 const { confirmarReserva } = require("./api-client");
 const { clearSession, getSession, pushHistory } = require("./sessions");
+const { crearGestorDeRafagas } = require("./buffer");
 
 const OWNER = (process.env.OWNER_WHATSAPP_NUMBER || "").replace(/\D/g, "");
-const DEBOUNCE_MS = Number(process.env.MESSAGE_DEBOUNCE_MS || 2500);
+// El cliente manda RÁFAGAS: "hola", "somos 4", "para el sábado". El bot espera
+// a que deje de escribir y contesta UNA vez a todo junto.
+// · DEBOUNCE_MS: cada mensaje nuevo reinicia este reloj (ventana deslizante).
+// · DEBOUNCE_MAX_MS: tope duro desde el PRIMER mensaje de la ráfaga. Sin él,
+//   quien escribe cada 14 s no recibiría respuesta nunca.
+const DEBOUNCE_MS = Number(process.env.MESSAGE_DEBOUNCE_MS || 15000);
+const DEBOUNCE_MAX_MS = Number(process.env.MESSAGE_DEBOUNCE_MAX_MS || 90000);
 // Cuando el dueño escribe manualmente en un chat, el bot se pausa este tiempo (default 5 min).
 const HUMAN_TAKEOVER_MS = Number(process.env.HUMAN_TAKEOVER_MS || 5 * 60 * 1000); // 5 min
 
@@ -55,7 +62,6 @@ const client = new Client({
 
 // ── Estado en memoria ─────────────────────────────────────────
 const pausedChats = new Map();         // chatId -> expiresAt
-const buffers = new Map();             // chatId -> { texts:[], timer }
 const recentBotOutgoing = new Map();   // chatId -> expiresAt (para no auto-pausar)
 
 function digitsOnly(s = "") { return String(s).replace(/\D/g, ""); }
@@ -89,6 +95,9 @@ function isRecentBotOutgoing(chatId) {
 function pauseChat(chatId, ms = HUMAN_TAKEOVER_MS) {
   const k = normalizeChatId(chatId);
   pausedChats.set(k, Date.now() + ms);
+  // Si había una ráfaga esperando, se descarta: la conversación la toma un
+  // humano y sería absurdo que el bot contestara 30 s después por encima.
+  rafagas.descartar(k);
   const until = new Date(Date.now() + ms).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
   console.log(`⏸️  Pausado ${k} (humano) hasta ${until}`);
 }
@@ -110,6 +119,16 @@ async function sendReply(chatId, text) {
 client.on("qr", (qr) => {
   console.log("\n📱 Escanea este QR con el WhatsApp del negocio (Dispositivos vinculados):\n");
   qrcode.generate(qr, { small: true });
+  // El QR caduca en ~60 s y WhatsApp manda uno nuevo. Si se pide por `QR_OUT_FILE`,
+  // se guarda tambien el texto crudo para poder pintarlo fuera de la terminal
+  // (imagen, panel web, etc.) sin tener que leer el dibujo ASCII.
+  if (process.env.QR_OUT_FILE) {
+    try {
+      require("fs").writeFileSync(process.env.QR_OUT_FILE, qr);
+    } catch (e) {
+      console.error("   no pude guardar el QR en QR_OUT_FILE:", e.message);
+    }
+  }
 });
 client.on("authenticated", () => console.log("🔐 Autenticado."));
 client.on("ready", () => {
@@ -152,30 +171,34 @@ client.on("message", async (msg) => {
       return;
     }
 
+    // Marco el mensaje como LEÍDO de inmediato. El bot va a tardar 30 s o más
+    // en contestar; sin las palomitas azules el cliente siente que nadie lo vio.
+    msg.getChat().then((c) => c.sendSeen()).catch(() => {});
+
     bufferMessage(msg.from, body);
   } catch (e) {
     console.error("❌ message handler:", e.message);
   }
 });
 
-// Debounce: junta mensajes seguidos y responde una vez
+// ── Espera antes de responder ─────────────────────────────────
+// La mecánica (ventana deslizante, tope y candado) vive en buffer.js.
+// Aquí solo va QUÉ hacer cuando la ráfaga ya está completa.
+const rafagas = crearGestorDeRafagas({
+  debounceMs: DEBOUNCE_MS,
+  maxMs: DEBOUNCE_MAX_MS,
+  responder: atenderRafaga,
+  onError: (e) => console.error("❌ ráfaga:", e && e.message),
+});
+
 function bufferMessage(chatId, text) {
-  let buf = buffers.get(chatId);
-  if (!buf) { buf = { texts: [], timer: null }; buffers.set(chatId, buf); }
-  buf.texts.push(text);
-  if (buf.timer) clearTimeout(buf.timer);
-  buf.timer = setTimeout(() => flushBuffer(chatId), DEBOUNCE_MS);
+  rafagas.recibir(chatId, text);
 }
 
-async function flushBuffer(chatId) {
-  const buf = buffers.get(chatId);
-  if (!buf) return;
-  buffers.delete(chatId);
-  const text = buf.texts.join("\n").trim();
-  if (!text) return;
+async function atenderRafaga(chatId, text, info) {
   if (isPaused(chatId)) return;
 
-  console.log(`📨 [${chatId.split("@")[0]}] ${text.substring(0, 80)}`);
+  console.log(`📨 [${chatId.split("@")[0]}] ${info.mensajes} mensaje(s) juntos tras ${Math.round(info.esperaMs / 1000)}s: ${text.substring(0, 80)}`);
 
   // Escalación a humano
   if (needsHuman(text)) {
@@ -183,14 +206,22 @@ async function flushBuffer(chatId) {
     return;
   }
 
+  let escribiendo = null;
   try {
     const chat = await client.getChatById(chatId).catch(() => null);
-    if (chat) chat.sendStateTyping().catch(() => {});
+    if (chat) {
+      // El "escribiendo…" de WhatsApp se apaga solo a los ~25 s. Lo refresco
+      // mientras el modelo piensa para que el cliente no vea el chat mudo.
+      chat.sendStateTyping().catch(() => {});
+      escribiendo = setInterval(() => chat.sendStateTyping().catch(() => {}), 10000);
+    }
     const reply = await processMessage(chatId, text);
     await sendReply(chatId, reply);
   } catch (e) {
     console.error(`❌ procesando ${chatId}:`, e.message);
     await sendReply(chatId, "Disculpa, tuve un problema técnico momentáneo. ¿Me escribes de nuevo en un momento? 🙏").catch(() => {});
+  } finally {
+    if (escribiendo) clearInterval(escribiendo);
   }
 }
 
@@ -239,7 +270,7 @@ async function handleOwnerCommand(msg, body) {
 
   switch (cmd.toLowerCase()) {
     case "/status":
-      return reply(`✅ Bot activo. Chats en pausa: ${pausedChats.size}.`);
+      return reply(`✅ Bot activo.\n⏸️ Chats en pausa: ${pausedChats.size}\n⏳ Ráfagas esperando: ${rafagas.enEspera()}\n🧠 Modelo: ${process.env.BOT_MODEL || "claude-haiku-4-5"}\n⌛ Espera: ${DEBOUNCE_MS / 1000}s (tope ${DEBOUNCE_MAX_MS / 1000}s)`);
     case "/help":
       return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume el anticipo del 30 %)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
     case "/confirma": {

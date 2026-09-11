@@ -188,7 +188,10 @@ export default function CotizacionesClient(
     const nombre = PAQUETES_PANEL.find(p => p.slug === slug)?.nombre ?? slug;
     flash(
       carga.eleccion
-        ? `✅ ${nombre} cargado · el día ${carga.eleccion.dia} quedó con ${carga.eleccion.elegido}; la otra opción es ${carga.eleccion.alternativa}`
+        ? (carga.eleccion.dia === undefined
+            // Paquete a la carta: no hay un día suelto, se precargan varios.
+            ? `✅ ${nombre} cargado · quedó con ${carga.eleccion.elegido}${carga.eleccion.alternativa ? `; también puedes ofrecer ${carga.eleccion.alternativa}` : ""}`
+            : `✅ ${nombre} cargado · el día ${carga.eleccion.dia} quedó con ${carga.eleccion.elegido}; la otra opción es ${carga.eleccion.alternativa}`)
         : `✅ ${nombre} cargado · revisa fechas y personas`,
     );
   }

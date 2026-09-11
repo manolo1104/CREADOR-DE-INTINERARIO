@@ -7,6 +7,7 @@ import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
 import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
+import { ORIGENES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 
 const fmx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 
@@ -109,6 +110,8 @@ export interface ReservaFormState {
   folioPago:      string;
   pickupLugar:    string;
   numPersonas:    string;  // tamaño real del grupo (para el email; evita sumar por tour)
+  /** Por dónde entró: es COLUMNA de la base, no `_meta`, porque hay que agrupar por ella. */
+  origen:         OrigenReserva;
 }
 
 const HABITACIONES_PRESET = [
@@ -134,6 +137,9 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
   lines: [{ ...EMPTY_LINE }], packages: [], extras: [], totalOverride: "", depositoPagado: "",
   metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
   numPersonas: "",
+  // Una reserva que se captura a mano viene casi siempre del chat: ése es el
+  // valor que ahorra clics y el que menos se va a quedar mal puesto.
+  origen: "whatsapp",
 };
 
 export function calcTourLine(l: LineItem): number {
@@ -759,6 +765,21 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   <input type="text" value={form.folioPago} placeholder="TXN-00000 / —"
                     onChange={e => setForm(f => ({ ...f, folioPago: e.target.value }))} className={inputCls} />
                 </div>
+              </div>
+
+              {/* ── Origen ───────────────────────────────────────────────────
+                  El dato que faltaba para saber si el sitio vende o solo
+                  informa: sin él, once reservas en el panel contra cuatro
+                  compras en GA4 no se pueden explicar. */}
+              <div>
+                <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">¿Por dónde entró?</label>
+                <select value={form.origen}
+                  onChange={e => setForm(f => ({ ...f, origen: origenValido(e.target.value) }))}
+                  className={inputCls}>
+                  {ORIGENES.map(o => (
+                    <option key={o} value={o}>{ORIGEN_ETIQUETA[o]}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Pickup */}

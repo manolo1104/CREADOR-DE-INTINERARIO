@@ -57,6 +57,19 @@ const nextConfig = {
       // salir a algún lado.
       { source: "/curso/workbook-noche-1.pdf", destination: "/curso/workbook/1", permanent: false },
 
+      // ── Paquetes viejos → paquetes por tipo de viajero ───────────────────
+      // El 10 sep 2026 los tres paquetes dejaron de ordenarse por duración
+      // (aventura / completo / gran-huasteca) y pasaron a ordenarse por quién
+      // viaja. Sus direcciones llevaban meses indexadas y salían en enlaces de
+      // WhatsApp y correos, así que se redirigen al equivalente más cercano en
+      // vez de dejarlas en 404. Permanentes (301) porque no van a volver.
+      { source: "/paquetes/aventura",      destination: "/paquetes/aventura-extrema", permanent: true },
+      { source: "/paquetes/completo",      destination: "/paquetes/familiar",         permanent: true },
+      { source: "/paquetes/gran-huasteca", destination: "/paquetes/odisea-huasteca",  permanent: true },
+      { source: "/en/paquetes/aventura",      destination: "/en/paquetes/aventura-extrema", permanent: true },
+      { source: "/en/paquetes/completo",      destination: "/en/paquetes/familiar",         permanent: true },
+      { source: "/en/paquetes/gran-huasteca", destination: "/en/paquetes/odisea-huasteca",  permanent: true },
+
       // ── Apex sin www → www ───────────────────────────────────────────────
       // Todo el sitio se declara canónico en `www` (canonical, hreflang y
       // sitemap), así que el apex NO debe servir una segunda copia: redirige.

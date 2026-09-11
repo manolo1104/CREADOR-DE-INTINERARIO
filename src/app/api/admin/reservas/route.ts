@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cerrarCarritosDe, toursDeReserva } from "@/lib/cerrarCarrito";
+import { origenValido } from "@/lib/origenReserva";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,9 @@ export async function POST(req: NextRequest) {
         packageItems:          body.packageItems ?? undefined,
         extraItems:            body.extraItems   ?? undefined,
         status:                body.status || "paid",
+        // Una reserva capturada a mano casi nunca entró por la web: por eso el
+        // formulario la marca y aquí solo se normaliza.
+        origen:                origenValido(body.origen),
       },
     });
     // La venta ya está cerrada: apaga el carrito abandonado que la originó.

@@ -271,12 +271,22 @@ model TourBooking {
   pagoProveedorFecha    DateTime?
   pagoProveedorNota     String?
   status                String    @default("pending")
+  /// Por dónde entró la reserva: web | whatsapp | telefono | walkin | ota.
+  /// GA4 registraba 4 compras mientras el panel mostraba once: sin este campo
+  /// no se puede saber si falta medición o si la venta se cerró por chat, y
+  /// sin saberlo no se puede decidir dónde invertir.
+  /// Con `@default` a propósito: `prisma db push` corre en cada arranque de
+  /// Railway y una columna obligatoria sobre filas existentes tumba el deploy.
+  /// Las reservas anteriores a este campo quedan como "web": es el valor que
+  /// más probablemente les corresponde, pero conviene revisarlas a mano.
+  origen                String    @default("web")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
   @@index([customerEmail])
   @@index([tourDate])
   @@index([status])
+  @@index([origen])
 }
 
 model BlogPost {

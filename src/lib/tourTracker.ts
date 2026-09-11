@@ -20,6 +20,27 @@ function getSessionId(): string {
   return sid;
 }
 
+/**
+ * El `client_id` que usa Google Analytics para saber que dos visitas son la
+ * misma persona. Vive en la cookie `_ga`, con el formato `GA1.1.<id>.<epoch>`,
+ * y el id son las dos últimas partes juntas.
+ *
+ * Hace falta mandarlo al servidor porque la compra se confirma en el webhook de
+ * Stripe, que no tiene cookies. Sin él, GA4 registra la venta como un usuario
+ * nuevo sin origen: el ingreso aparece, pero "¿qué canal lo trajo?" —la
+ * pregunta por la que se mide— se queda sin respuesta.
+ *
+ * Devuelve null si no hay cookie (primera visita antes de que gtag cargue, o un
+ * bloqueador). El servidor sabe qué hacer con eso.
+ */
+export function ga4ClientId(): string | null {
+  if (typeof document === "undefined") return null;
+  const cookie = document.cookie.split("; ").find((c) => c.startsWith("_ga="));
+  if (!cookie) return null;
+  const partes = cookie.slice("_ga=".length).split(".");
+  return partes.length >= 4 ? `${partes[2]}.${partes[3]}` : null;
+}
+
 /** movil | escritorio — responde "¿esta gente entra desde el celular?". */
 function getDevice(): string {
   if (typeof window === "undefined") return "desconocido";

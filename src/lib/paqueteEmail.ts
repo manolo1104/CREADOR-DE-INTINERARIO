@@ -227,7 +227,14 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
             ${dato(T.personas, T.grupoLinea(d.adultos, d.nMid, d.nSmall))}
             ${d.habitacion ? dato(T.habitacion, d.habitacion) : ""}
             ${d.checkin ? dato(T.entradaHotel, `${fechaLarga(d.checkin, L)}<br><span style="font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#8a7a5a;">${T.noches(d.nochesHotel)}</span>`) : ""}
-            ${d.eleccionNombre && d.paquete.eleccionTour ? dato(T.eligeDia(d.paquete.eleccionTour.dia), d.eleccionNombre) : ""}
+            ${d.eleccionNombre && d.paquete.eleccionTour
+              ? dato(
+                  d.paquete.eleccionTour.dia === undefined
+                    ? T.eligeRecorridos
+                    : T.eligeDia(d.paquete.eleccionTour.dia),
+                  d.eleccionNombre,
+                )
+              : ""}
           </table>
           ${d.nocheExtra ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-left:2px solid #c4882a;margin:16px 0 0 0;">

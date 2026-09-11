@@ -28,7 +28,7 @@ import { TourCalendar } from "@/components/booking/TourCalendar";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
 import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
 import { BotonCompartir } from "@/components/booking/BotonCompartir";
-import { trackTourEvent, sessionId } from "@/lib/tourTracker";
+import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
 /**
@@ -37,6 +37,15 @@ import { trackPurchase } from "@/lib/analytics";
  * (política de cancelación, fichas de tour): ahí no se inventa ninguna
  * condición nueva.
  */
+
+/**
+ * La noche más barata del hotel, para el "desde $X" que se enseña sin abrir
+ * nada. Sale del catálogo en vez de escribirse a mano: si mañana cambia una
+ * tarifa, el reclamo cambia con ella y no se queda mintiendo.
+ */
+const precioHotelDesde = Math.min(
+  ...HABITACIONES_HOTEL.flatMap((h) => Object.values(h.tarifas)),
+);
 
 /**
  * El nombre corto de un recorrido en el idioma del visitante.
@@ -255,8 +264,14 @@ function PagoCarrito({ cobro, datos, onListo }: {
       const totalAdultos = cobro.lineItems.reduce((s, l) => s + l.adults, 0);
       const totalNinos   = cobro.lineItems.reduce((s, l) => s + l.children, 0);
 
-      trackPurchase({
-        confirmationNumber: confirmationNumber || cobro.paymentIntentId,
+      // Solo se cuenta la venta si tenemos el FOLIO. Antes, cuando el correo
+      // fallaba, se mandaba el id del PaymentIntent como número de transacción
+      // — y el servidor manda el folio: eran dos identificadores distintos para
+      // la misma venta, así que GA4 no podía deduplicarlos y la contaba dos
+      // veces. Sin folio no se manda nada: el webhook la registra igual, con el
+      // número bueno.
+      if (confirmationNumber) trackPurchase({
+        confirmationNumber,
         tourId:   primero.tourName,
         tourName: resumen,
         total:    cobro.amount,
@@ -449,6 +464,31 @@ export default function CarritoPage() {
     const pedidos = params.getAll("agregar").filter(Boolean);
     const token   = params.get("recuperar");
 
+    // Fecha y personas elegidas en la FICHA del tour, para no volver a
+    // preguntarlas. Solo tienen sentido con UN recorrido: con varios `agregar`
+    // no hay forma de saber a cuál pertenecen.
+    //
+    // Se valida en vez de confiar: esto viene de la URL, y una fecha de ayer o
+    // un "adultos=999" metería en el carrito un renglón que el servidor
+    // rechazaría al cobrar, con un error a destiempo y sin explicación.
+    const extras: Partial<Omit<CarritoItem, "uid">> = {};
+    if (pedidos.length === 1) {
+      const fechaURL = params.get("fecha") ?? "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fechaURL) && fechaURL >= minBookingDate()) {
+        extras.tourDate = fechaURL;
+      }
+      const entero = (clave: string, tope: number) => {
+        const n = Number(params.get(clave));
+        return Number.isInteger(n) && n >= 0 && n <= tope ? n : undefined;
+      };
+      const adultos = entero("adultos", 30);
+      const mid     = entero("ninosMid", 30);
+      const small   = entero("ninosSmall", 30);
+      if (adultos !== undefined && adultos > 0) extras.adults = adultos;
+      if (mid     !== undefined) extras.childrenMid   = mid;
+      if (small   !== undefined) extras.childrenSmall = small;
+    }
+
     let carrito = leerCarrito();
 
     // `?recuperar=<token>` es el link de los correos de rescate. Va PRIMERO y
@@ -513,7 +553,7 @@ export default function CarritoPage() {
           aResaltar ??= yaEsta.uid;
           continue;
         }
-        const nuevo = itemDesdeSlug(pedido);
+        const nuevo = itemDesdeSlug(pedido, extras);
         if (nuevo) {
           carrito = agregarAlCarrito(nuevo);
           aResaltar ??= carrito[carrito.length - 1]?.uid ?? null;
@@ -859,6 +899,11 @@ export default function CarritoPage() {
           customerName:  name.trim(),
           customerEmail: email.trim(),
           sid:           sessionId(),
+          // Identidad de Google Analytics. Viaja hasta la metadata de Stripe
+          // porque el webhook —que es quien se entera SIEMPRE de la compra— no
+          // tiene cookies: sin esto la venta le llegaría a GA4 sin canal de
+          // origen, que es justo lo que se quiere medir.
+          gaClientId:    ga4ClientId(),
           items,
           hospedaje: conHotel
             ? { habitaciones: habs, noches, checkin, checkout }
@@ -1475,27 +1520,72 @@ export default function CarritoPage() {
               Apagado por defecto y dicho con todas sus letras: la promesa del
               sitio es que pasamos por ti a CUALQUIER hospedaje, y muchos ya
               vienen con hotel. Ofrecerlo sin presionar es la diferencia entre
-              un extra y una molestia. */}
+              un extra y una molestia.
+
+              Pero estaba DEMASIADO apagado: era una casilla sin marcar, y las
+              habitaciones —con su foto y su precio— solo aparecían si alguien
+              adivinaba que había algo detrás. Las reservas que llevan hotel
+              promedian $18,137 contra $7,669 las que no; esconder el mayor
+              multiplicador del ticket detrás de un clic a ciegas era caro.
+              Ahora la oferta se ve sin abrir nada, y "ya tengo hospedaje"
+              sigue siendo un camino explícito, no una omisión. */}
           <section className="mt-8 border border-negro/10 bg-white p-5">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={conHotel}
-                onChange={(e) => { setConHotel(e.target.checked); setCobro(null); }}
-                className="mt-1 w-4 h-4 accent-verde-selva"
-              />
-              <span>
-                <span className="block font-cormorant text-verde-profundo text-xl">
-                  {t.hospedajeTitulo}
-                </span>
-                <span className="block font-dm text-[12px] text-negro/50 mt-0.5">
-                  {t.hospedajeSub}
-                </span>
-              </span>
-            </label>
+            <div>
+              <p className="font-cormorant text-verde-profundo text-xl">
+                {t.hospedajeTitulo}
+              </p>
+              <p className="font-dm text-[12px] text-negro/50 mt-0.5">
+                {t.hospedajeSub}
+              </p>
+            </div>
+
+            {!conHotel && (
+              <div className="mt-4">
+                {/* Tres habitaciones asomando: el precio y la foto son lo que
+                    convence, y estaban a un clic de distancia que nadie daba. */}
+                <div className="grid grid-cols-3 gap-2">
+                  {HABITACIONES_HOTEL.slice(0, 3).map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => { setConHotel(true); setCobro(null); }}
+                      className="group text-left border border-negro/10 hover:border-verde-selva overflow-hidden transition-colors"
+                    >
+                      <span className="relative block h-20">
+                        <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 33vw, 180px" />
+                      </span>
+                      <span className="block px-2 py-1.5 font-dm text-[11px] text-negro/60 truncate">{h.nombre}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="font-dm text-[12px] text-negro/55 mt-3">
+                  {t.hospedajeResumen(HABITACIONES_HOTEL.length, formatMXN(precioHotelDesde))}
+                </p>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => { setConHotel(true); setCobro(null); }}
+                    className="bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+                  >
+                    {t.hospedajeVerHabitaciones}
+                  </button>
+                  <p className="font-dm text-[11px] text-negro/40 mt-2">{t.hospedajeSaltar}</p>
+                </div>
+              </div>
+            )}
 
             {conHotel && (
               <div className="mt-5 space-y-4">
+                {/* La salida. Al quitar la casilla había que dejar la puerta de
+                    vuelta a la vista: sin esto, quien abre por curiosidad se
+                    queda con un hotel que no pidió. */}
+                <button
+                  type="button"
+                  onClick={() => { setConHotel(false); setCobro(null); }}
+                  className="font-dm text-[11px] text-negro/45 hover:text-verde-selva underline underline-offset-2 transition-colors"
+                >
+                  ← {t.hospedajeYaTengo}
+                </button>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {HABITACIONES_HOTEL.map((h) => {
                     const idx    = habs.findIndex((x) => x.habitacionId === h.id);
@@ -1668,6 +1758,19 @@ export default function CarritoPage() {
                 </span>
               </span>
             </label>
+
+            {/* Las ciudades y sus precios, sin abrir nada. Mismo problema que
+                el hospedaje: el dato que decide —"desde cuánto sale que me
+                lleven"— vivía detrás de una casilla apagada, así que quien no
+                la marcaba no llegaba a saber que el traslado existía. Aquí solo
+                se asoma el precio; elegir sigue siendo un acto deliberado. */}
+            {!conTraslado && (
+              <p className="font-dm text-[12px] text-negro/55 mt-3">
+                {TRASLADOS.map((r) => `${r.ciudad} ${t.desdeRedondo(formatMXN(precioBase(r)))}`).join(" · ")}
+                {" · "}
+                <span className="text-negro/40">{t.trasladoPorVehiculo}</span>
+              </p>
+            )}
 
             {conTraslado && (
               <div className="mt-5 space-y-4">

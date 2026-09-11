@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, tourDetails, sid } = await req.json();
+    const { customerEmail, customerName, tourDetails, sid, gaClientId } = await req.json();
 
     // La fecha nunca se validaba en el servidor: se podía cobrar una reserva
     // para ayer o para dentro de dos años tocando el sessionStorage.
@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
           totalCompleto: String(veh.total),
           pctPagado:     String(veh.pct),
           saldo:         String(veh.saldo),
+          // Identidad de Google Analytics y del embudo propio: el webhook es el
+          // único que se entera de todas las compras y no tiene cookies.
+          gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
+          sid:             typeof sid === "string" ? sid.slice(0, 60) : "",
           source:        "huasteca-potosina.com",
         },
       });
@@ -136,6 +140,10 @@ export async function POST(req: NextRequest) {
         pctPagado:     String(charge.pct),
         saldo:         String(charge.saldo),
         addOns:        charge.addOns.map((a) => `${a.nombre} x${a.cantidad}`).join(", ").slice(0, 480),
+        // Identidad de Google Analytics y del embudo propio: el webhook es el
+        // único que se entera de todas las compras y no tiene cookies.
+        gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
+        sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
         source:        "huasteca-potosina.com",
       },
     });

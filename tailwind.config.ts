@@ -52,6 +52,17 @@ const config: Config = {
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       keyframes: {
+        // Entrada del visor de fotos: nunca desde scale(0) — nada en el mundo
+        // real aparece de la nada — y con ease-out, que es lo que se siente
+        // inmediato al abrir.
+        "visor-fondo": {
+          "0%":   { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "visor-marco": {
+          "0%":   { opacity: "0", transform: "scale(.96) translateY(8px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
         "slide-up": {
           "0%":   { transform: "translateY(12px)", opacity: "0" },
           "100%": { transform: "translateY(0)",    opacity: "1" },
@@ -80,6 +91,8 @@ const config: Config = {
       },
       animation: {
         "slide-up":   "slide-up 0.25s ease-out forwards",
+        "visor-fondo": "visor-fondo 180ms ease-out forwards",
+        "visor-marco": "visor-marco 220ms cubic-bezier(0.23,1,0.32,1) forwards",
         shrink:       "shrink linear forwards",
         "price-bump": "price-bump 180ms cubic-bezier(0.34,1.56,0.64,1)",
         "date-pop":   "date-pop 220ms cubic-bezier(0.34,1.56,0.64,1)",

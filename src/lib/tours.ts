@@ -132,6 +132,21 @@ export function incluyePropioDeTour(t: Pick<Tour, "incluye">): string[] {
   return incluyeDeTour(t).filter((x) => !siempre.has(claveIncluye(x)));
 }
 
+export type TourCategoria = "ecoturismo" | "aventura" | "extremo";
+
+/** Las tres familias de /tours, en el orden en que se muestran. */
+export const TOUR_CATEGORIAS: { id: TourCategoria; label: string; labelEn: string; desc: string; descEn: string }[] = [
+  { id: "ecoturismo", label: "Ecoturismo",             labelEn: "Ecotourism",
+    desc: "Cascadas, selva y cultura a ritmo tranquilo.",
+    descEn: "Waterfalls, jungle and culture at an easy pace." },
+  { id: "aventura",   label: "Aventura",               labelEn: "Adventure",
+    desc: "Canoa, kayak, buceo y off-road. Te vas a mojar.",
+    descEn: "Canoe, kayak, diving and off-road. You will get wet." },
+  { id: "extremo",    label: "Actividades extremas",   labelEn: "Extreme activities",
+    desc: "Cuerda, casco y rápidos. Para quien busca adrenalina.",
+    descEn: "Ropes, helmets and rapids. For the adrenaline seekers." },
+];
+
 export interface Tour {
   id:               string;
   nombre:           string;
@@ -166,8 +181,28 @@ export interface Tour {
   duracion_hrs:     number;
   icon:             string;
   tipo:             string;
+  /** Familia bajo la que se agrupa el tour en /tours. `tipo` sigue siendo el
+   *  subtítulo libre de la tarjeta; esto es la pestaña a la que pertenece. */
+  categoria:        TourCategoria;
   dificultad:       "baja" | "media" | "alta";
   imagen_hero:      string;
+  /**
+   * Logotipo propio del tour (letras con el paisaje dentro), sin fondo.
+   * Si está, manda sobre el sello SVG de TourEmblem.
+   * Cómo se prepara uno nuevo: `scripts/README-logos.md`.
+   */
+  logo?:            string;
+  /**
+   * Las fotos del collage de la tarjeta, UNA POR DESTINO y en el mismo orden
+   * que `destinos`. Sin esto se tomaban las primeras de la galería, que suelen
+   * ser tres fotos del mismo sitio: la tarjeta enseñaba tres veces la cascada
+   * y ninguna de la cueva ni del sótano.
+   *
+   * Una entrada puede ser la ruta sola o `{ src, pos }`, donde `pos` mueve el
+   * encuadre dentro de la franja (`object-position`) para que no se quede
+   * fuera lo que da sentido a la foto.
+   */
+  collage?:         (string | { src: string; pos?: string })[];
   imagenes:         string[];
   urgencia?:        string;
   reviewCount:      number;
@@ -201,22 +236,89 @@ export function tourDurTexto(t: Pick<Tour, "duracionRango" | "rutas" | "duracion
 }
 
 /**
- * Los cuatro tours que concentran el interés real de los visitantes (Ruta
- * Surrealista y Tamul solos son ~47 % de las vistas). Se muestran primero en
- * /tours y en /experiencias; los otros cinco siguen existiendo, con su página y
- * su SEO intactos, bajo "Otros recorridos". Menos opciones arriba = más cierre.
+ * Las imágenes del collage de la tarjeta en /tours: una por parada del
+ * recorrido y en el orden en que se visitan.
+ *
+ * Si el tour trae `collage` (la lista curada a mano) se usa esa. Si no, se cae
+ * al hero más la galería, que era lo único que había antes y solía dar tres
+ * fotos del mismo sitio.
  */
-export const TOURS_DESTACADOS = [
-  "ruta-surrealista-edward-james",
+export function tourCollage(
+  t: Pick<Tour, "imagen_hero" | "imagenes" | "gallery" | "destinos" | "collage">,
+): { src: string; alt?: string; pos?: string }[] {
+  const alts = new Map((t.gallery ?? []).map((g) => [g.src, g.alt]));
+
+  // Hasta CUATRO cuando la lista está curada a mano: hay recorridos de cuatro
+  // paradas. El relleno automático de abajo se queda en tres, porque ahí las
+  // fotos salen de la galería y la cuarta suele repetir sitio.
+  if (t.collage?.length) {
+    return t.collage.slice(0, 4).map((e) => {
+      const { src, pos } = typeof e === "string" ? { src: e, pos: undefined } : e;
+      return { src, alt: alts.get(src), pos };
+    });
+  }
+
+  const vistos = new Set<string>();
+  const pool: { src: string; alt?: string }[] = [];
+  const meter = (src?: string) => {
+    if (!src || vistos.has(src)) return;
+    vistos.add(src);
+    pool.push({ src, alt: alts.get(src) });
+  };
+  meter(t.imagen_hero);
+  for (const g of t.gallery ?? []) meter(g.src);
+  for (const src of t.imagenes ?? []) meter(src);
+
+  const quiere = (t.destinos?.length ?? 0) >= 3 ? 3 : 2;
+  return pool.slice(0, Math.min(quiere, pool.length));
+}
+
+/**
+ * Orden real de venta, del panel de admin (corte del 10 sep 2026): reservas
+ * pagadas e ingreso por tour. Manda en /tours dentro de cada categoría y en
+ * todo lo que muestre "destacados".
+ *
+ *   expedicion-tamul                 37   $170,373
+ *   cascadas-del-meco                21   $109,990
+ *   ruta-surrealista-edward-james    16   $54,370
+ *   ruta-acuatica-puente-de-dios     12   $57,256
+ *   paraiso-escalonado-minas-micos    8   $32,817
+ *   rzr-xilitla                       2   $7,600
+ *   travesia-del-cafe                 0
+ *
+ * Los tres que no aparecen en el corte (rappel, rafting, buceo) van al final.
+ * Antes esta lista se había escrito a mano y ponía el RZR entre los cuatro
+ * destacados con 2 reservas, por delante de las Cascadas del Meco con 21.
+ */
+export const TOURS_RANKING = [
   "expedicion-tamul",
-  "rzr-xilitla",
+  "cascadas-del-meco",
+  "ruta-surrealista-edward-james",
+  "ruta-acuatica-puente-de-dios",
   "paraiso-escalonado-minas-micos",
+  "rzr-xilitla",
+  "travesia-del-cafe",
 ] as const;
 
+/** Posición en el ranking; lo que no vendió nada va al final, no al principio. */
+export function rankTour(slug: string): number {
+  const i = (TOURS_RANKING as readonly string[]).indexOf(slug);
+  return i === -1 ? TOURS_RANKING.length : i;
+}
+
+/** Los cuatro que más venden. Se derivan del ranking: una sola fuente. */
+export const TOURS_DESTACADOS: readonly string[] = TOURS_RANKING.slice(0, 4);
+
+/**
+ * El catálogo EN CRUDO. No se exporta a propósito: las descripciones todavía
+ * traen el marcador `{precio}` sin resolver. Lo que consume el sitio es
+ * `TOURS_DB`, más abajo, que es este mismo catálogo con los precios ya puestos.
+ */
 const TOURS_RAW: Tour[] = [
   {
     id:               "tour-rzr-xilitla",
     slug:             "rzr-xilitla",
+    categoria:        "aventura",
     icon:             "Compass",
     tipo:             "Aventura Off-Road",
     dificultad:       "media",
@@ -267,6 +369,11 @@ const TOURS_RAW: Tour[] = [
       "4 rutas a elegir: Nanacatli, Miradores, Nacimiento o Trinidad",
     ],
     imagen_hero: "/imagenes/tours/rzr-xilitla/hero.jpg",
+    collage: [
+      "/imagenes/tours/rzr-xilitla/gallery-3.jpg",
+      "/imagenes/tours/rzr-xilitla/gallery-1.jpg",
+      "/imagenes/tours/rzr-xilitla/gallery-2.jpg",
+    ],
     imagenes: ["/imagenes/tours/rzr-xilitla/hero.jpg", "/imagenes/tours/rzr-xilitla/gallery-1.jpg"],
     gallery: [
       { src: "/imagenes/tours/rzr-xilitla/gallery-1.jpg", alt: "Grupo de amigos posando sobre un RZR Pro en un mirador de montaña durante el recorrido off-road en Xilitla", hasRealPeople: true },
@@ -278,6 +385,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-rappel-tamul",
     slug:             "rappel-tamul",
+    categoria:        "extremo",
     icon:             "Mountain",
     tipo:             "Aventura Extrema",
     dificultad:       "alta",
@@ -309,6 +417,11 @@ const TOURS_RAW: Tour[] = [
       "Fotografía con cámaras de acción",
     ],
     imagen_hero: "/imagenes/tours/rappel-tamul/hero.jpg",
+    collage: [
+      "/imagenes/tours/rappel-tamul/gallery-4.jpg",
+      "/imagenes/tours/rappel-tamul/hero.jpg",
+      "/imagenes/tours/rappel-tamul/gallery-3.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/rappel-tamul/hero.jpg",
       "/imagenes/tours/rappel-tamul/gallery-6.jpg",
@@ -326,6 +439,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-rafting-tampaon",
     slug:             "rafting-rio-tampaon",
+    categoria:        "extremo",
     icon:             "Waves",
     tipo:             "Rafting & Adrenalina",
     dificultad:       "media",
@@ -366,6 +480,11 @@ const TOURS_RAW: Tour[] = [
       "Paradas para nadar en los tramos tranquilos del cañón",
     ],
     imagen_hero: "/imagenes/rio-tampaon-rafting/gallery-5.webp",
+    collage: [
+      "/imagenes/rio-tampaon-rafting/tour-1.jpg",
+      "/imagenes/rio-tampaon-rafting/gallery-8.jpg",
+      "/imagenes/rio-tampaon-rafting/tour-2.jpg",
+    ],
     imagenes: [
       "/imagenes/rio-tampaon-rafting/gallery-5.webp",
       "/imagenes/rio-tampaon-rafting/tour-1.jpg",
@@ -384,6 +503,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-tamul",
     slug:             "expedicion-tamul",
+    categoria:        "ecoturismo",
     duracionRango:    [8, 10],
     icon:             "Waves",
     tipo:             "Aventura & Naturaleza",
@@ -394,7 +514,7 @@ const TOURS_RAW: Tour[] = [
     groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  8500,
-    nombre:           "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
+    nombre:           "Expedición Tamul — Tamul, Cueva del Agua y Sótano",
     tagline:          "El tour más completo de la Huasteca en un solo día",
     precio:           1550,
     precioOriginal:   1720,
@@ -422,6 +542,12 @@ const TOURS_RAW: Tour[] = [
       "Paseo en canoa por el Cañón del Tampaón",
     ],
     imagen_hero: "/imagenes/tours/tamul/hero.jpg",
+    logo: "/imagenes/tours/logos/expedicion-tamul-v3.webp",
+    collage: [
+      "/imagenes/tours/tamul/hero.jpg",
+      "/imagenes/tours/tamul/gallery-1.jpg",
+      "/imagenes/tours/tamul/gallery-6.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/tamul/hero.jpg",
       "/imagenes/tours/tamul/gallery-3.jpg",
@@ -441,6 +567,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-edward-james",
     slug:             "ruta-surrealista-edward-james",
+    categoria:        "ecoturismo",
     duracionRango:    [8, 10],
     icon:             "Leaf",
     tipo:             "Cultura & Naturaleza",
@@ -451,7 +578,7 @@ const TOURS_RAW: Tour[] = [
     groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  7500,
-    nombre:           "Ruta Surrealista — Edward James, Manantiales & Selva",
+    nombre:           "Ruta Surrealista — Edward James, Manantiales, Cuevas y Castillo",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
     precio:           1400,
     precioOriginal:   1560,
@@ -476,6 +603,15 @@ const TOURS_RAW: Tour[] = [
       "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/tours/edward-james/hero.jpg",
+    logo: "/imagenes/tours/logos/ruta-surrealista-edward-james.webp",
+    // Cuatro paradas, cuatro fotos, en el orden en que se visitan: Las Pozas,
+    // Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud.
+    collage: [
+      "/imagenes/tours/edward-james/gallery-2.jpg",
+      "/imagenes/tours/edward-james/gallery-4.jpg",
+      "/imagenes/tours/edward-james/gallery-6.jpg",
+      "/imagenes/tours/edward-james/gallery-3.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/edward-james/hero.jpg",
       "/imagenes/tours/edward-james/gallery-1.jpg",
@@ -496,17 +632,17 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-meco",
     slug:             "cascadas-del-meco",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
     icon:             "Droplet",
     tipo:             "Cascadas & Fotografía",
     dificultad:       "baja",
-    duracion_hrs:     7,
+    duracion_hrs:     10,
     reviewCount:      96,
     groupMin:         2,
     groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  7000,
-    nombre:           "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
+    nombre:           "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto",
     tagline:          "Tres caídas de agua, tres emociones distintas",
     precio:           1700,
     precioOriginal:   1890,
@@ -530,6 +666,14 @@ const TOURS_RAW: Tour[] = [
       "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/cascada-el-meco/hero.jpg",
+    logo: "/imagenes/tours/logos/cascadas-del-meco.webp",
+    collage: [
+      "/imagenes/cascada-el-meco/gallery-3.jpg",
+      // Corrida a la derecha: la chica sentada en el borde está en ese lado y
+      // centrada se quedaba fuera de la franja.
+      { src: "/imagenes/cascada-el-meco/gallery-7.jpg", pos: "68% center" },
+      "/imagenes/cascada-el-salto/gallery-2.jpg",
+    ],
     imagenes: ["/imagenes/cascada-el-meco/hero.jpg"],
     gallery: [
       { src: "/imagenes/cascada-el-meco/hero.jpg",        alt: "Dos turistas en paddleboard frente a la Cascada del Meco — aguas turquesas de la Huasteca Potosina", hasRealPeople: true },
@@ -551,11 +695,11 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-minas-micos",
     slug:             "paraiso-escalonado-minas-micos",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
     icon:             "Mountain",
     tipo:             "Cascadas & Bienestar",
     dificultad:       "baja",
-    duracion_hrs:     8,
+    duracion_hrs:     10,
     reviewCount:      112,
     groupMin:         2,
     groupMax:         14,
@@ -595,6 +739,11 @@ const TOURS_RAW: Tour[] = [
       },
     ],
     imagen_hero: "/imagenes/cascadas-minas-viejas/hero-new.jpg",
+    logo: "/imagenes/tours/logos/paraiso-escalonado-minas-micos.webp",
+    collage: [
+      "/imagenes/cascadas-minas-viejas/hero-new.jpg",
+      "/imagenes/cascadas-minas-viejas/gallery-new-8.jpg",
+    ],
     imagenes: [
       "/imagenes/cascadas-minas-viejas/hero-new.jpg",
       "/imagenes/cascadas-minas-viejas/gallery-new-1.jpg",
@@ -617,7 +766,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-puente-dios",
     slug:             "ruta-acuatica-puente-de-dios",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
     icon:             "Anchor",
     tipo:             "Aventura Acuática",
     dificultad:       "media",
@@ -627,7 +776,7 @@ const TOURS_RAW: Tour[] = [
     groupMax:         14,
     privateAvailable: true,
     privateMinPrice:  8500,
-    nombre:           "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
+    nombre:           "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
     precioOriginal:   1780,
@@ -661,6 +810,12 @@ const TOURS_RAW: Tour[] = [
       "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
+    logo: "/imagenes/tours/logos/ruta-acuatica-puente-de-dios.webp",
+    collage: [
+      "/imagenes/puente-de-dios-tamasopo/gallery-13.jpg",
+      "/imagenes/puente-de-dios-tamasopo/gallery-new-14.jpg",
+      "/imagenes/puente-de-dios-tamasopo/gallery-new-1.jpg",
+    ],
     imagenes: [
       "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
       "/imagenes/puente-de-dios-tamasopo/gallery-new-1.jpg",
@@ -689,6 +844,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-buceo-media-luna",
     slug:             "buceo-media-luna",
+    categoria:        "aventura",
     icon:             "Anchor",
     tipo:             "Buceo & Naturaleza",
     dificultad:       "baja",
@@ -720,6 +876,11 @@ const TOURS_RAW: Tour[] = [
       "Inmersión guiada de 5 a 10 metros de profundidad",
     ],
     imagen_hero: "/imagenes/tours/buceo-media-luna/hero.jpg",
+    collage: [
+      "/imagenes/tours/buceo-media-luna/gallery-3.jpg",
+      "/imagenes/tours/buceo-media-luna/hero.jpg",
+      "/imagenes/tours/buceo-media-luna/gallery-2.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/buceo-media-luna/hero.jpg",
       "/imagenes/tours/buceo-media-luna/gallery-1.jpg",
@@ -734,6 +895,7 @@ const TOURS_RAW: Tour[] = [
   {
     id:               "tour-travesia-cafe",
     slug:             "travesia-del-cafe",
+    categoria:        "ecoturismo",
     icon:             "Leaf",
     tipo:             "Cultura & Sabor",
     dificultad:       "baja",
@@ -764,6 +926,11 @@ const TOURS_RAW: Tour[] = [
       "Cata de café recién tostado",
     ],
     imagen_hero: "/imagenes/tours/travesia-del-cafe/hero.jpg",
+    collage: [
+      "/imagenes/tours/travesia-del-cafe/hero.jpg",
+      "/imagenes/tours/travesia-del-cafe/gallery-7.jpg",
+      "/imagenes/tours/travesia-del-cafe/gallery-2.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/travesia-del-cafe/hero.jpg",
       "/imagenes/tours/travesia-del-cafe/gallery-1.jpg",

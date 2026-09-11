@@ -149,7 +149,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   },
 
   "expedicion-tamul": {
-    nombre: "Tamul Expedition — Sinkhole, Canyon & Water Cave",
+    nombre: "Tamul Expedition — Tamul, Water Cave and Sinkhole",
     tagline: "The most complete tour of the Huasteca in a single day",
     tipo: "Adventure & Nature",
     urgencia: "Our most booked tour — fills up on weekends",
@@ -186,7 +186,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   },
 
   "ruta-surrealista-edward-james": {
-    nombre: "Surrealist Route — Edward James, Springs & Jungle",
+    nombre: "Surrealist Route — Edward James, Springs, Caves and Castle",
     tagline: "Art, water and mystery in a journey of unique contrasts",
     tipo: "Culture & Nature",
     urgencia: "High demand in the Nov–Mar season",
@@ -223,7 +223,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   },
 
   "cascadas-del-meco": {
-    nombre: "El Meco Waterfalls — Turquoise Pools, Lookout & The Great Falls",
+    nombre: "El Meco Waterfalls — El Meco, Panoramic Lookout and The Great Falls",
     tagline: "Three waterfalls, three different thrills",
     tipo: "Waterfalls & Photography",
     urgencia: "A photographers' favorite — limited spots",
@@ -309,11 +309,11 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     eleccion: {
       titulo: "There isn't time for both in one day. Which do you prefer?",
       opciones: [
-        { nombre: "Hacienda Los Gómez + Siete Cascadas", nota: "They're in the same spot, so you see both. What most people choose." },
+        { nombre: "Los Gómez Hacienda + Seven Waterfalls", nota: "They're in the same spot, so you see both. What most people choose." },
         { nombre: "Tamasopo Waterfalls", nota: "Wider, more open pools for a relaxed swim." },
       ],
     },
-    nombre: "Water Route — Puente de Dios, Hacienda & Seven Waterfalls",
+    nombre: "Water Route — Puente de Dios & Tamasopo Waterfalls",
     tagline: "The most refreshing and complete journey in the region",
     tipo: "Water Adventure",
     urgencia: "Our most complete tour — last spots available",

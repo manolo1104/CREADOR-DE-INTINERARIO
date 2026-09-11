@@ -4,11 +4,11 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft, Moon, Star, Check, X, MapPin, Camera, Bed, Mountain,
+  ArrowLeft, Moon, Star, Check, X, MapPin, Bed, Mountain,
   Car, Plane, Bus, Sparkles, Clock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { PAQUETES_DB, getPaquete, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
+import { PAQUETES_DB, getPaquete, collagePaquete, habitacionesDePaquete, habitacionAsignada, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, buildHotelNode, ORG_REF } from "@/lib/jsonld";
 import {
@@ -19,6 +19,8 @@ import { localizeTour } from "@/lib/i18n/localize";
 import { TOURS_DB, type Tour } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
+import { TourCollage } from "@/components/TourCollage";
+import { HabitacionesDelPaquete } from "@/components/HabitacionesDelPaquete";
 import { waLink } from "@/lib/whatsapp";
 
 interface FotoDia { src: string; lugar: string }
@@ -161,12 +163,18 @@ export default function PaqueteDetallePage({ params }: Props) {
   if (!base) notFound();
   const p = localizePaquete(base, locale);
 
-  const HABITACIONES = getLocalizedHabitaciones(locale);
+  // Las que ofrece ESTE paquete y en su orden: la primera es la asignada.
+  // La Luna de Miel no da a elegir —viene con la suite Jungla puesta— y por eso
+  // enseñarle las cuatro de siempre contradecía su propia ficha.
+  const habsLoc     = getLocalizedHabitaciones(locale);
+  const idsDelPaq   = habitacionesDePaquete(base!).map((h) => h.id);
+  const HABITACIONES = idsDelPaq
+    .map((id) => habsLoc.find((h) => h.id === id))
+    .filter((h): h is (typeof habsLoc)[number] => !!h);
+  const asignada    = habitacionAsignada(base!);
   const LOGISTICA    = getLocalizedLogistica(locale);
   const faqs         = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
 
-  const totalValor = p.valor.reduce((acc, v) => acc + parseInt(v.precio.replace(/[^0-9]/g, ""), 10), 0);
-  const ahorro = totalValor - p.precio;
   const waMsg = t.waMsg(p.nombre, p.duracion, `$${num(p.precio)}`);
   const resenas = RESENAS_POR_PAQUETE[p.slug] ?? RESENAS_PAQUETES;
 
@@ -241,21 +249,38 @@ export default function PaqueteDetallePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", ...buildHotelNode(locale) }) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(paqueteSchema) }} />
 
-      {/* ── HERO ── */}
+      {/* ── HERO ──
+          Una foto POR RECORRIDO, cortadas en diagonal y en el orden en que se
+          visitan: la misma pieza que usan la tarjeta del paquete y las de
+          /tours, así que la ficha se lee como la suma de sus recorridos en
+          lugar de como una postal suelta. Con una sola foto se pinta entera,
+          que es el caso de un paquete sin collage curado. */}
       <section className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
-        <Image src={p.imagen} alt={p.nombre} fill priority className="object-cover" sizes="100vw" />
-        <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/80 to-negro/30" />
-        <div className="relative z-10 px-6 md:px-16 py-14 max-w-5xl mx-auto w-full">
-          <Link href={lp("/paquetes")} className="inline-flex items-center gap-1.5 text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors mb-6">
+        <TourCollage
+          panels={collagePaquete(p).map((src) => ({ src }))}
+          nombre={p.nombre}
+          priority
+          movil={2}
+          anchoCompleto
+        />
+        {/* El degradado sube más que en la tarjeta: aquí encima va el nombre, el
+            precio y el botón, y el collage trae partes claras (el agua turquesa
+            de Micos y Minas Viejas) donde el texto crema se perdía. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/85 to-negro/45" />
+        {/* El relleno de arriba deja libre la barra de navegación fija: el hero
+            alinea abajo, pero cuando el contenido crece se comía los 76 px de
+            la barra y el enlace de volver quedaba debajo del menú. */}
+        <div className="relative z-10 px-6 md:px-16 pt-28 pb-14 max-w-5xl mx-auto w-full">
+          <Link href={lp("/paquetes")} className="flex w-fit items-center gap-1.5 text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors mb-6 [text-shadow:0_1px_8px_rgba(0,0,0,0.85)]">
             <ArrowLeft className="w-3 h-3" /> {t.todosLosPaquetes}
           </Link>
           {p.badge && (
             <span className="inline-block bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 mb-4">{p.badge}</span>
           )}
           <h1 className="font-cormorant font-light text-crema mb-2 [text-shadow:0_2px_14px_rgba(0,0,0,0.65)]" style={{ fontSize: "clamp(34px,6vw,60px)" }}>{p.nombre}</h1>
-          <p className="text-crema/85 font-dm text-sm mb-5 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]">{p.subtitulo}</p>
+          <p className="text-crema/85 font-dm text-sm mb-5 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{p.subtitulo}</p>
 
-          {/* Precio + ahorro sobre tarjeta translúcida oscura — máximo contraste (WCAG AA) */}
+          {/* Precio sobre tarjeta translúcida oscura — máximo contraste (WCAG AA) */}
           <div className="inline-flex flex-wrap items-center gap-x-5 gap-y-1.5 bg-negro/70 backdrop-blur-md border border-white/15 px-5 py-3.5 mb-6 rounded">
             <span className="flex items-center gap-1.5 text-[11px] tracking-[1px] uppercase text-crema/85 font-dm">
               <Moon className="w-3.5 h-3.5 text-verde-vivo" /> {p.duracion}
@@ -263,9 +288,6 @@ export default function PaqueteDetallePage({ params }: Props) {
             <span className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
               ${num(p.precio)} <span className="font-dm text-[11px] text-crema/65">MXN {p.precioLabel}</span>
             </span>
-            {ahorro > 0 && (
-              <span className="text-[11px] font-dm text-lima font-semibold">{t.ahorras(`$${num(ahorro)}`)}</span>
-            )}
           </div>
 
           <div>
@@ -276,6 +298,57 @@ export default function PaqueteDetallePage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {/* ── LOS RECORRIDOS QUE SE ELIGEN ──
+          Sólo en el paquete a la carta. Es lo que de verdad se está comprando:
+          sin esta sección, "Tu Huasteca" sería una ficha de cinco días que no
+          nombra un solo lugar. */}
+      {p.eleccionTour && p.eleccionTour.dia === undefined && (
+        <section className="max-w-5xl mx-auto px-6 pt-16">
+          <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(24px,4vw,40px)" }}>{t.eligeTitulo}</h2>
+          <p className="text-crema/60 font-dm text-sm leading-relaxed max-w-2xl mb-8">
+            {t.eligeSub(p.eleccionTour.cuantos ?? 1, p.eleccionTour.opciones.length)}
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {p.eleccionTour.opciones.map((o) => {
+              const tourBase = TOURS_DB.find((x) => x.slug === o.slug);
+              const tour = tourBase ? localizeTour(tourBase, locale) : undefined;
+              const horas = tourBase?.duracionRango
+                ? `${tourBase.duracionRango[0]}-${tourBase.duracionRango[1]}`
+                : String(tourBase?.duracion_hrs ?? "");
+              return (
+                <Link
+                  key={o.slug}
+                  href={lp(`/tours/${o.slug}`)}
+                  className="group block border border-white/10 hover:border-verde-selva/60 transition-colors"
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    {tourBase && (
+                      <Image
+                        src={tourBase.imagen_hero}
+                        alt={tour?.nombre ?? o.nombre}
+                        fill
+                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
+                    {horas && (
+                      <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-negro/70 backdrop-blur-sm px-2.5 py-1 text-[9px] font-dm tracking-[1px] text-crema/90">
+                        <Clock className="w-3 h-3 text-verde-vivo" aria-hidden="true" /> {t.eligeHoras(horas)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-cormorant text-crema text-lg leading-tight mb-1.5">{o.nombre}</h3>
+                    {o.nota && <p className="text-crema/55 font-dm text-[12px] leading-snug">{o.nota}</p>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── ITINERARIO DÍA POR DÍA ── */}
       <section className="max-w-5xl mx-auto px-6 py-16">
@@ -340,6 +413,48 @@ export default function PaqueteDetallePage({ params }: Props) {
                       </Link>
                     </>
                   )}
+
+                  {/* Lo que sólo trae este paquete, dentro del día en que pasa.
+                      Hoy es la cena romántica de la Luna de Miel: como ocurre
+                      al volver del tour del día 2, se cuenta ahí y no en una
+                      sección aparte a la que hay que llegar tres pantallas
+                      después. */}
+                  {p.galeriaExtra?.dia === d.dia && (
+                    <div className="mt-8 border-l-2 border-dorado/50 pl-5">
+                      <h4 className="font-cormorant text-crema text-xl mb-2">{p.galeriaExtra.titulo}</h4>
+                      <p className="text-crema/60 font-dm text-sm leading-relaxed mb-4">{p.galeriaExtra.texto}</p>
+                      {/* Fotos de pie y de noche. La de en medio baja un poco en
+                          pantalla ancha: tres rectángulos idénticos alineados se
+                          leen como plantilla, escalonados se leen como serie. */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {p.galeriaExtra.fotos.map((f, i) => (
+                          <div key={f.src} className={`relative aspect-[3/4] overflow-hidden rounded ${i === 1 ? "sm:mt-6" : ""}`}>
+                            <Image src={f.src} alt={f.alt} fill className="object-cover" sizes="(max-width: 640px) 100vw, 260px" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* El día que visita un lugar suelto, sin ser un tour del
+                      catálogo: trae sus propias fotos y enlaza a la página de
+                      ese destino, no a la de un recorrido que no se hace. */}
+                  {!tour && d.fotos?.length && (
+                    <>
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        {d.fotos.map((src) => (
+                          <div key={src} className="relative aspect-[4/3] overflow-hidden rounded">
+                            <Image src={src} alt={d.titulo} fill className="object-cover" sizes="(max-width: 768px) 33vw, 240px" />
+                          </div>
+                        ))}
+                      </div>
+                      {d.destinoSlug && (
+                        <Link href={lp(`/destinos/${d.destinoSlug}`)} className="inline-flex items-center gap-1.5 text-[10px] tracking-[2px] uppercase text-verde-vivo hover:text-lima font-dm transition-colors">
+                          <MapPin className="w-3 h-3" /> {t.verDestino}
+                        </Link>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -378,32 +493,40 @@ export default function PaqueteDetallePage({ params }: Props) {
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-2 flex items-center gap-1.5"><Bed className="w-3.5 h-3.5" /> {t.tuHospedaje}</p>
         <h2 className="font-cormorant font-light text-crema mb-3" style={{ fontSize: "clamp(24px,4vw,40px)" }}>{t.hotelTitulo}</h2>
         <p className="text-crema/60 font-dm text-sm leading-relaxed max-w-2xl mb-8">
-          {t.hotelIntro}
+          {asignada ? t.hotelIntroAsignada(HABITACIONES[0]?.nombre ?? "") : t.hotelIntro}
         </p>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {HABITACIONES.map((h) => (
-            <div key={h.id} className="border border-white/10 bg-negro/50 overflow-hidden flex flex-col">
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <Image src={h.imagen} alt={t.habitacionAlt(h.nombre)} fill className="object-cover" sizes="(max-width: 640px) 100vw, 25vw" />
-                {h.suplemento ? (
-                  <span className="absolute top-2 right-2 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1px] uppercase px-2 py-1 flex items-center gap-1">
-                    <Mountain className="w-3 h-3" /> {t.porNoche(h.suplemento)}
-                  </span>
-                ) : (
-                  <span className="absolute top-2 right-2 bg-verde-selva/90 text-crema text-[9px] font-dm tracking-[1px] uppercase px-2 py-1">{t.incluida}</span>
-                )}
-              </div>
-              <div className="p-4 flex flex-col flex-1">
-                <h3 className="font-cormorant text-crema text-lg leading-tight">{h.nombre}</h3>
-                <p className="text-[10px] tracking-[1px] uppercase text-verde-vivo/70 font-dm mb-2">{t.vista} {h.vista}</p>
-                <p className="text-crema/55 font-dm text-xs leading-relaxed">{h.descripcion}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <HabitacionesDelPaquete
+          columnas={asignada ? 2 : 4}
+          verFotos={t.verFotos}
+          habitaciones={HABITACIONES.map((h, i) => ({
+            id: h.id,
+            nombre: h.nombre,
+            imagen: h.imagen,
+            vista: `${t.vista} ${h.vista}`,
+            descripcion: h.descripcion,
+            alt: t.habitacionAlt(h.nombre),
+            // Con habitación asignada el distintivo dice cuál es la tuya y cuál
+            // el reemplazo; si no, dice si está incluida o qué suplemento tiene.
+            etiqueta: asignada
+              ? (i === 0 ? t.habitacionTuya : t.habitacionReemplazo)
+              : h.suplemento && p.habitacionIncluida !== "montana"
+                ? t.porNoche(h.suplemento)
+                : t.incluida,
+            destacada: asignada
+              ? i === 0
+              : !!(h.suplemento && p.habitacionIncluida !== "montana"),
+          }))}
+        />
+
+        {/* El aviso del suplemento no vale para un paquete que ya trae la suite
+            de montaña: ahí se dice justo lo contrario. */}
         <p className="text-[11px] text-crema/40 font-dm mt-4">
-          {t.notaJungla1}<strong className="text-crema/70">{t.notaJunglaHab}</strong>{t.notaJungla2}<strong className="text-dorado">{t.notaJunglaPrecio}</strong>{t.notaJungla3}
+          {asignada
+            ? t.notaReemplazo(HABITACIONES[0]?.nombre ?? "", HABITACIONES[1]?.nombre ?? "")
+            : p.habitacionIncluida === "montana"
+            ? t.notaJunglaIncluida(t.notaJunglaHab)
+            : <>{t.notaJungla1}<strong className="text-crema/70">{t.notaJunglaHab}</strong>{t.notaJungla2}<strong className="text-dorado">{t.notaJunglaPrecio}</strong>{t.notaJungla3}</>}
         </p>
       </section>
 
@@ -442,34 +565,16 @@ export default function PaqueteDetallePage({ params }: Props) {
         </div>
       </section>
 
-      {/* ── RESERVA (form + desglose de valor) ── */}
+      {/* ── RESERVA ──
+          Antes eran dos columnas: el formulario y, al lado, el desglose de lo
+          que costaría cada cosa por separado. Quitado el desglose, el
+          formulario se queda solo y centrado en vez de ocupar media pantalla. */}
       <section className="max-w-5xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-2 gap-8 items-start">
+        <div className="max-w-xl mx-auto">
           <div className="border border-white/10 bg-negro/50 p-6">
             <h2 className="font-cormorant text-crema text-2xl mb-1">{t.reservaTu(p.nombre)}</h2>
             <p className="text-crema/50 font-dm text-xs mb-5">{t.sinPagoAnticipado}</p>
             <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
-          </div>
-          <div className="border border-white/10 bg-negro/40 p-6">
-            <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-3">{t.loQuePagarias}</p>
-            <div className="space-y-2 mb-3">
-              {p.valor.map((v) => (
-                <div key={v.item} className="flex justify-between text-[12px] font-dm">
-                  <span className="text-crema/55">{v.item}</span>
-                  <span className="text-crema/80 font-medium">{v.precio} MXN</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between text-[12px] font-dm border-t border-white/8 pt-2">
-              <span className="text-crema/55">{t.valorPorSeparado}</span>
-              <span className="text-crema/80 font-medium line-through">${totalValor.toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN</span>
-            </div>
-            <div className="flex justify-between text-sm font-dm font-medium mt-1">
-              <span className="text-verde-vivo">{t.precioDelPaquete}</span>
-              <span className="text-dorado font-cormorant text-xl">${p.precio.toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN</span>
-            </div>
-            {ahorro > 0 && <p className="text-[11px] text-verde-vivo font-dm mt-2">{t.ahorrasCorto(`$${num(ahorro)}`)}</p>}
-            <p className="text-[10px] text-crema/35 font-dm mt-4 flex items-center gap-1.5"><Camera className="w-3 h-3" /> {t.precioPorPareja}</p>
           </div>
         </div>
       </section>
