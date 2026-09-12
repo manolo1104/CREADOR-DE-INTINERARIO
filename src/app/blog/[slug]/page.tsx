@@ -110,6 +110,23 @@ function formatSeoTitle(raw: string): string {
   return raw.slice(0, 57) + "…";
 }
 
+/**
+ * El `@type` que declara el JSON-LD guardado en la fila, o null si no hay, no
+ * parsea o no declara ninguno. Sirve para decidir si ese bloque escrito a mano
+ * aporta algo que la plantilla no sepa producir; si solo repite Article o
+ * BlogPosting, gana la plantilla, que es más completa.
+ */
+function tipoDeSchema(crudo: string | null | undefined): string | null {
+  if (!crudo) return null;
+  try {
+    const d = JSON.parse(crudo);
+    const t = Array.isArray(d) ? d[0]?.["@type"] : d?.["@type"];
+    return typeof t === "string" ? t : Array.isArray(t) ? (t[0] ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
 function extractFAQs(html: string): { question: string; answer: string }[] {
   const re = /<details[^>]*>[\s\S]*?<summary[^>]*>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi;
   const results: { question: string; answer: string }[] = [];
@@ -240,8 +257,20 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const urlCanonica = `${SITE}${urlBlog(post.slug)}`;
 
   // ── Schema: BlogPosting (Article) ────────────────────────────────────────
+  //
+  // 🔴 El `schemaMarkup` guardado en la fila ya NO sustituye a este bloque: se
+  // publica ADEMÁS, y solo si aporta un tipo que la plantilla no produce.
+  //
+  // Antes sustituía siempre, y tres artículos —los tres de intención
+  // comercial— salían peor que los otros 38 (medido el 12 sep 2026 contra las
+  // 41 fichas en producción): «cuánto cuesta» y «hospedaje cerca de cascadas»
+  // publicaban un `Article` escrito a mano SIN imagen, keywords,
+  // articleSection ni mainEntityOfPage; y «mejor época» guardaba un `FAQPage`,
+  // que al ocupar esta ranura dejaba al artículo **sin ningún tipo de
+  // artículo**: Google no sabía que era un artículo.
   const wordCount = Math.round((post.content || "").replace(/<[^>]+>/g, " ").split(/\s+/).length);
-  const blogPostingSchema = post.schemaMarkup || JSON.stringify({
+  const tipoGuardado = tipoDeSchema(post.schemaMarkup);
+  const blogPostingSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type":    "BlogPosting",
     headline:   post.title,
@@ -297,6 +326,16 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   }
   const enhancedSchema = JSON.stringify({ "@context": "https://schema.org", "@graph": graphNodes });
 
+  // El bloque guardado a mano se publica solo si aporta un tipo que esta
+  // plantilla no emite ya. Así un HowTo o un VideoObject escrito para un
+  // artículo concreto sigue saliendo, pero un Article, un BlogPosting o un
+  // FAQPage repetido no duplica lo que la plantilla acaba de declarar.
+  const yaDeclarados = new Set(
+    ["Article", "BlogPosting", "BreadcrumbList", ...(faqs.length > 0 ? ["FAQPage"] : [])],
+  );
+  const schemaGuardadoExtra =
+    post.schemaMarkup && tipoGuardado && !yaDeclarados.has(tipoGuardado) ? post.schemaMarkup : null;
+
   // ── Content processing ───────────────────────────────────────────────────
   const contenidoBase = (post.content || "")
     .replace(RAILWAY_REGEX, SITE)
@@ -349,6 +388,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeSchema }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: enhancedSchema }} />
+      {schemaGuardadoExtra && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: schemaGuardadoExtra.replace(RAILWAY_REGEX, SITE) }}
+        />
+      )}
 
       <main className="min-h-screen bg-jungle pt-24 pb-20">
         <div className="max-w-6xl mx-auto px-6">
