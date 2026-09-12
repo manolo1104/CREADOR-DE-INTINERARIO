@@ -545,6 +545,20 @@ export const PAQUETES_DB: Paquete[] = [
     imagen: "/imagenes/rio-tampaon-rafting/tour-1.jpg",
     urgencia: "El rafting pide edad mínima y saber nadar; los saltos de Micos son opcionales",
     perfiles: ["Amigos aventureros", "Adrenalina", "Buena condición física"],
+    // 🔴 Lista curada a mano, que manda sobre `collagePaquete()`. La derivación
+    // toma la PRIMERA foto del collage de cada tour, y ahí salían mal dos de
+    // tres: del RZR salía la del punto de encuentro —vehículo parado entre las
+    // banderas de la base— y del Paraíso Escalonado una aérea de Minas Viejas.
+    // Ninguna de las dos enseña lo que se compra. Estas tres sí, y van en el
+    // orden de los días: el RZR en el mirador con la sierra detrás, la balsa
+    // entrando al rápido (se eligió `tour-4`, casi cuadrada y con las caras
+    // centradas, porque en una franja diagonal estrecha una foto apaisada se
+    // recorta a pura salpicadura) y el salto de Micos en el aire.
+    collage: [
+      "/imagenes/tours/rzr-xilitla/gallery-1.jpg",
+      "/imagenes/rio-tampaon-rafting/tour-4.jpg",
+      "/imagenes/cascadas-minas-viejas/gallery-new-5.jpg",
+    ],
     tours: [
       "Recorrido en RZR por Xilitla — Off-road el día de llegada (Día 1)",
       "Rafting en el Río Tampaón — Rápidos Clase III (Día 2)",
