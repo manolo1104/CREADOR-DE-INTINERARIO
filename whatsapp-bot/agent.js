@@ -374,12 +374,12 @@ const tools = [
   },
   {
     name: "disponibilidad_habitaciones",
-    description: "Consulta SOLO LECTURA qué habitaciones del Hotel Paraíso Encantado están disponibles para unas fechas (se asoma al calendario del hotel, sin apartar ni reservar nada). Úsala al cerrar un paquete. Pasa la llegada (checkin) y las noches del paquete (Aventura 2, Completo 3, Gran Huasteca 4); la salida se calcula sola. Si no se puede verificar, avisa que el equipo confirma.",
+    description: `Consulta SOLO LECTURA qué habitaciones del Hotel Paraíso Encantado están disponibles para unas fechas (se asoma al calendario del hotel, sin apartar ni reservar nada). Úsala al cerrar un paquete. Pasa la llegada (checkin) y las noches del paquete (${paquetesNochesTexto()}); la salida se calcula sola. Si no se puede verificar, avisa que el equipo confirma.`,
     input_schema: {
       type: "object",
       properties: {
         checkin: { type: "string", description: "Fecha de llegada (AAAA-MM-DD)" },
-        noches: { type: "number", description: "Noches del paquete (Aventura 2, Completo 3, Gran Huasteca 4). La salida = llegada + noches." },
+        noches: { type: "number", description: `Noches del paquete (${paquetesNochesTexto()}). La salida = llegada + noches.` },
         checkout: { type: "string", description: "Fecha de salida (AAAA-MM-DD). Solo si NO das 'noches'." },
       },
       required: ["checkin"],
@@ -747,6 +747,14 @@ function paquetesTexto() {
   ).join("\n");
 }
 
+// Las noches de cada paquete, para que el prompt no las lleve escritas a mano:
+// la lista anterior decía «Aventura 2, Completo 3, Gran Huasteca 4», tres
+// paquetes que ya no existen, y con ella el bot calculaba mal la fecha de
+// salida de los cinco que sí existen.
+function paquetesNochesTexto() {
+  return PAQUETES.map((p) => `${p.nombre} ${p.noches}`).join(", ");
+}
+
 function destinosTexto() {
   const porZona = {};
   for (const d of DESTINOS) (porZona[d.zona] = porZona[d.zona] || []).push(d.nombre);
@@ -897,8 +905,8 @@ ${INFO.hotelServicios.servicios.map((x) => "   • " + x).join("\n")}
 🎒 PAQUETES FIJOS (tours + hotel)
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ${paquetesTexto()}
-Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla) y son *por pareja* (2 personas). Detalle: *obtener_paquete*. Lista: *listar_paquetes*.
-Para cerrar uno: (1) pide solo la *fecha de llegada* y valídala — *NO calcules tú la salida*: la calculan las herramientas con checkin + noches (Aventura 2, Completo 3, Gran Huasteca 4). (2) Consulta *disponibilidad_habitaciones* y dile qué habitaciones hay (si "verificado" es false, avisa que el equipo confirma). (3) Comparte los *links* de las habitaciones disponibles. (4) Toma personas, nombre y correo y usa *registrar_cotizacion* (tipo "paquete", con checkin). La habitación *Jungla* tiene +$400/noche. La fecha de salida que muestres es la que devuelven las herramientas (campo "checkout"). NO apartas ni cobras: la reserva final la confirma el equipo.
+Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla). Cada precio viene con su unidad en *precioLabel*: cítalos siempre juntos, tal cual, sin multiplicar ni dividir la cifra. Detalle: *obtener_paquete*. Lista: *listar_paquetes*.
+Para cerrar uno: (1) pide solo la *fecha de llegada* y valídala — *NO calcules tú la salida*: la calculan las herramientas con checkin + noches (${paquetesNochesTexto()}). (2) Consulta *disponibilidad_habitaciones* y dile qué habitaciones hay (si "verificado" es false, avisa que el equipo confirma). (3) Comparte los *links* de las habitaciones disponibles. (4) Toma personas, nombre y correo y usa *registrar_cotizacion* (tipo "paquete", con checkin). La habitación *Jungla* tiene +$400/noche. La fecha de salida que muestres es la que devuelven las herramientas (campo "checkout"). NO apartas ni cobras: la reserva final la confirma el equipo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 📍 DESTINOS (${DESTINOS.length})

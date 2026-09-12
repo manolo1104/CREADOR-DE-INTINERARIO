@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T04:28:24.374Z",
+  "generatedAt": "2026-09-12T21:52:45.355Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -667,7 +667,7 @@
       "privateAvailable": false,
       "privateMinPrice": null,
       "tagline": "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
-      "pitch": "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,200 MXN por persona.",
+      "pitch": "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,300 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/buceo-media-luna",
       "destinos": [
         "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
@@ -729,7 +729,7 @@
       "privateAvailable": false,
       "privateMinPrice": null,
       "tagline": "El sabor de Xilitla, desde la mata hasta la taza",
-      "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 por persona.",
+      "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/travesia-del-cafe",
       "destinos": [
         "Cafetal bajo sombra de la sierra de Xilitla",
@@ -783,6 +783,7 @@
       "noches": 2,
       "precio": 9800,
       "precioLabel": "por pareja",
+      "precioTotalPareja": 9800,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/luna-de-miel",
       "badge": "Lunamieleros",
       "perfiles": [
@@ -874,8 +875,9 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 12500,
-      "precioLabel": "por pareja",
+      "precio": 6250,
+      "precioLabel": "por persona",
+      "precioTotalPareja": 12500,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/familiar",
       "badge": "Más popular",
       "perfiles": [
@@ -982,12 +984,13 @@
       "id": "aventura-extrema",
       "slug": "aventura-extrema",
       "nombre": "Aventura Extrema",
-      "subtitulo": "Cuerda, rápidos y la caída más alta de México",
+      "subtitulo": "Rápidos, saltos de cascada y sierra en todoterreno",
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 13500,
-      "precioLabel": "por pareja",
+      "precio": 7250,
+      "precioLabel": "por persona",
+      "precioTotalPareja": 14500,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura-extrema",
       "badge": "Adrenalina",
       "perfiles": [
@@ -1003,32 +1006,32 @@
       ],
       "habitacionAsignada": false,
       "tours": [
-        "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 1)",
+        "Recorrido en RZR por Xilitla — Off-road el día de llegada (Día 1)",
         "Rafting en el Río Tampaón — Rápidos Clase III (Día 2)",
-        "Rappel en la Cascada de Tamul (Día 3)"
+        "Paraíso Escalonado — Saltos en Micos y Minas Viejas (Día 3)"
       ],
       "eleccion": null,
       "itinerario": [
         {
           "dia": 1,
           "tipo": "tour",
-          "titulo": "Llegada + Expedición Tamul",
-          "tourSlug": "expedicion-tamul",
-          "descripcion": "El día que sirve de reconocimiento: navegas el Cañón del Tampaón hasta la Cascada de Tamul y ves desde abajo la pared por la que vas a bajar el día 3. Clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer."
+          "titulo": "Llegada + Recorrido en RZR",
+          "tourSlug": "rzr-xilitla",
+          "descripcion": "El único recorrido que sale de Xilitla mismo, así que se hace el día que llegas sin perder la mañana: manejas tu propio todoterreno por la selva, con guía instructor que abre la ruta. De 2 a 5 horas según la ruta que elijan. El vehículo es uno para los dos."
         },
         {
           "dia": 2,
           "tipo": "tour",
           "titulo": "Rafting en el Río Tampaón",
           "tourSlug": "rafting-rio-tampaon",
-          "descripcion": "Rápidos Clase III en el mismo río, con el cañón cerrándose sobre la balsa. Casco, chaleco y guía de río en cada embarcación."
+          "descripcion": "14 kilómetros de rápidos Clase III con el cañón cerrándose sobre la balsa. Casco, chaleco y guía de río en cada embarcación, y comida incluida antes o después. No hace falta experiencia: el briefing de remado va antes de entrar al agua."
         },
         {
           "dia": 3,
           "tipo": "tour",
-          "titulo": "Rappel en la Cascada de Tamul",
-          "tourSlug": "rappel-tamul",
-          "descripcion": "El descenso frente a la caída más alta de México. Se baja con equipo certificado y guía en la cuerda; no hace falta experiencia previa, pero sí no tenerle miedo al vacío."
+          "titulo": "Saltos en Micos y Minas Viejas",
+          "tourSlug": "paraiso-escalonado-minas-micos",
+          "descripcion": "El día grande, diez horas: las cascadas escalonadas de Micos, donde se salta de un nivel a otro con chaleco y guía, y Minas Viejas, con su caída triple sobre pozas turquesa. Los saltos son opcionales — se puede bajar por la orilla."
         },
         {
           "dia": 4,
@@ -1041,20 +1044,21 @@
       "incluye": [
         "3 noches en Hotel Paraíso Encantado Xilitla",
         "Desayuno buffet los días de tour",
-        "Tour Expedición Tamul completo",
-        "Tour Rafting en el Río Tampaón completo",
-        "Tour Rappel en la Cascada de Tamul completo",
+        "Recorrido en RZR completo — un vehículo para los dos, con gasolina",
+        "Tour Rafting en el Río Tampaón completo, con comida incluida ese día",
+        "Tour Paraíso Escalonado completo — Micos y Minas Viejas",
         "Transporte del hotel al inicio de cada tour y de regreso",
-        "Guías certificados NOM-09 SECTUR y guía de cuerda en el rappel",
+        "Guías certificados NOM-09 SECTUR y guía instructor en el RZR",
         "Entradas a todas las atracciones",
-        "Equipo de seguridad: arnés, casco y chaleco",
+        "Equipo de seguridad: casco, goggles y chaleco salvavidas",
         "Seguro de viaje",
         "Fotografía y video del recorrido"
       ],
       "noIncluye": [
         "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
-        "Comidas y cenas (excepto desayunos)",
+        "Comidas y cenas (excepto desayunos y la comida del día de rafting)",
         "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+        "Cambio a una unidad de RZR más grande o a una ruta más larga",
         "Propinas y gastos personales"
       ],
       "valor": [
@@ -1063,24 +1067,16 @@
           "precio": "$8,400"
         },
         {
-          "item": "Expedición Tamul (2 pax)",
-          "precio": "$3,100"
-        },
-        {
           "item": "Rafting Río Tampaón (2 pax)",
           "precio": "$3,900"
         },
         {
-          "item": "Rappel Cascada de Tamul (2 pax)",
-          "precio": "$3,400"
+          "item": "Paraíso Escalonado — Micos y Minas Viejas (2 pax)",
+          "precio": "$3,200"
         },
         {
-          "item": "Transporte 3 días",
-          "precio": "$1,200"
-        },
-        {
-          "item": "Entradas, guías y equipo de seguridad",
-          "precio": "$1,200"
+          "item": "Recorrido en RZR (1 vehículo para los dos)",
+          "precio": "$1,600"
         },
         {
           "item": "Fotografía y video del recorrido",
@@ -1096,8 +1092,9 @@
       "duracion": "5 días / 4 noches",
       "dias": 5,
       "noches": 4,
-      "precio": 18000,
-      "precioLabel": "por pareja",
+      "precio": 9000,
+      "precioLabel": "por persona",
+      "precioTotalPareja": 18000,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/tu-huasteca",
       "badge": "Tú lo armas",
       "perfiles": [
@@ -1214,8 +1211,9 @@
       "duracion": "6 días / 5 noches",
       "dias": 6,
       "noches": 5,
-      "precio": 20500,
-      "precioLabel": "por pareja",
+      "precio": 10250,
+      "precioLabel": "por persona",
+      "precioTotalPareja": 20500,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/odisea-huasteca",
       "badge": "Lo ves todo",
       "perfiles": [
@@ -1484,7 +1482,7 @@
   "faqsPaquetes": [
     {
       "q": "¿El precio es por persona o por pareja?",
-      "a": "Los precios de los paquetes son por pareja (2 personas). Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
+      "a": "Casi todos se anuncian por persona: la cifra que ves en la tarjeta es lo que paga un viajero, con dos personas compartiendo habitación. La excepción es el paquete de Luna de Miel, que es un viaje de dos y por eso se vende por pareja. Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
     },
     {
       "q": "¿Cómo llego a Xilitla?",
@@ -3299,6 +3297,6 @@
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "pagoTours": "Los tours cobrados por persona se pagan con tarjeta en línea (confirmación instantánea) o por transferencia (cotización con folio). El RZR (por vehículo) y los paquetes se confirman por WhatsApp con el equipo.",
     "pagoEntradas": "Si visitas los destinos por tu cuenta, la entrada suele ser SOLO EFECTIVO y muchos sitios no tienen cajero cerca.",
-    "paquetes": "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio es por pareja (2 personas)."
+    "paquetes": "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio de cada paquete viene con su etiqueta en `precioLabel`: casi todos se anuncian POR PERSONA (dos personas comparten habitación) y solo el de Luna de Miel se vende por pareja. Cita la cifra con su etiqueta, tal cual, sin multiplicarla ni dividirla."
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { TOUR_ACTIVITIES } from "@/lib/tourActivities";
 import { rateLimit } from "@/lib/rateLimit";
 // alias: en este archivo `actividad` ya es el nivel de actividad del formulario
@@ -277,7 +277,7 @@ ${paquete ? `
 PAQUETE RECOMENDADO PARA SUS DÍAS (ya seleccionado, NO lo cambies):
 - Nombre: ${paquete.nombre} (${paquete.duracion})
 - Slug: ${paquete.slug}
-- Precio: $${paquete.precio.toLocaleString("es-MX")} MXN ${paquete.precioLabel} (2 personas)
+- Precio: $${precioVisible(paquete).toLocaleString("es-MX")} MXN ${paquete.precioLabel} (cifra ANUNCIADA; cítala tal cual, con su etiqueta, y no la multipliques ni la dividas)
 - Incluye: ${paquete.incluye.slice(0, 6).join("; ")}
 - Itinerario: ${paquete.itinerario.map((d, i) => `Día ${i + 1}: ${d.titulo}`).join(" · ")}
 - Hospedaje: Hotel Paraíso Encantado, Xilitla` : ""}
@@ -299,7 +299,7 @@ REGLAS DE REDACCIÓN:
 2. El "highlight" es una frase de máximo 10 palabras que capture POR QUÉ es perfecto PARA ELLOS.
 3. Para el tour secundario: 2-3 oraciones explicando qué lo diferencia y por qué también encaja.
 4. Tono: cálido, experto, como un amigo local — no un folleto turístico. Nada genérico.${paquete ? `
-5. Como el viajero tiene ${dias}, TAMBIÉN redacta "paqueteReason": 3-4 oraciones vendiendo el paquete indicado arriba como EL plan completo para sus días — conecta su perfil (grupo, intereses, origen) con el itinerario día por día y el hospedaje en Xilitla, y menciona que todo va coordinado (tours + hotel + transporte local). Sé honesto: el precio es por pareja. Los tours primary/secondary deben ser los que más encajen con su perfil DE ENTRE los incluidos en el itinerario del paquete cuando sea posible.` : ""}
+5. Como el viajero tiene ${dias}, TAMBIÉN redacta "paqueteReason": 3-4 oraciones vendiendo el paquete indicado arriba como EL plan completo para sus días — conecta su perfil (grupo, intereses, origen) con el itinerario día por día y el hospedaje en Xilitla, y menciona que todo va coordinado (tours + hotel + transporte local). Sé honesto con el precio: la cifra de arriba es ${paquete.precioLabel} y así hay que decirla. Los tours primary/secondary deben ser los que más encajen con su perfil DE ENTRE los incluidos en el itinerario del paquete cuando sea posible.` : ""}
 
 Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después):
 {

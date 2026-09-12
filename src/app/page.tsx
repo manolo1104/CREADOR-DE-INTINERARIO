@@ -4,7 +4,7 @@ import Image from "next/image";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
@@ -188,16 +188,45 @@ export default async function HomePage() {
         url: `${SITE_URL}/paquetes/${p.slug}`,
         brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
         offers: {
+          // 🔴 EXACTAMENTE la misma forma que el `Offer` de /paquetes y de
+          // /paquetes/[slug]: las tres páginas describen el MISMO `url` de
+          // producto, así que si aquí el `price` fuera el total de la pareja
+          // ($12,500) y allí el que se enseña ($6,250), Google vería dos
+          // precios distintos para la misma oferta y se quedaría con el que
+          // quisiera. El `price` es el importe que se ENSEÑA (`precioVisible`);
+          // lo que cobra el motor no se pierde: `priceSpecification` dice a
+          // cuánta gente corresponde ese importe y `eligibleQuantity` que la
+          // reserva arranca en dos personas, que es justo lo que cobra el
+          // checkout. Mismo patrón que /tours con el RZR, que va por vehículo.
           "@type": "Offer",
-          price: p.precio,
+          price: precioVisible(p),
           priceCurrency: "MXN",
           availability: "https://schema.org/InStock",
           url: `${SITE_URL}/paquetes/${p.slug}`,
-          description: `Precio ${p.precioLabel}`,
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: precioVisible(p),
+            priceCurrency: "MXN",
+            unitText: p.precioPorPersona ? "por persona" : "por pareja (2 personas)",
+          },
+          eligibleQuantity: {
+            "@type": "QuantitativeValue",
+            minValue: 2,
+            unitText: "personas",
+          },
+          description: `$${precioVisible(p).toLocaleString("es-MX")} MXN ${p.precioLabel} · ${p.duracion}`,
         },
       },
     })),
   };
+
+  // 🔴 La cifra citable del bloque en inglés («contra Costa Rica se gana con el
+  // precio real») estaba escrita A MANO: decía «$16,500 MXN for two people» y
+  // ningún paquete costaba eso — Tu Huasteca, que es el de 5 días / 4 noches
+  // que describe la frase, son $18,000 la pareja. Ahora sale de PAQUETES_DB.
+  // Va con `p.precio` a propósito: la frase dice «for two people», o sea el
+  // total de la pareja, no `precioVisible`.
+  const paqueteIngles = PAQUETES_DB.find((p) => p.slug === "tu-huasteca") ?? PAQUETES_DB[0];
 
   const TESTIMONIOS = en
     ? [
@@ -452,10 +481,14 @@ export default async function HomePage() {
               <p className="reveal-up reveal-d1 text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
                 {/* Duración y precio también en prosa: en las tarjetas viven
                     dentro de insignias sueltas y así no se pueden citar. Todo
-                    sale de PAQUETES_DB (dias, precio, precioLabel). */}
+                    sale de PAQUETES_DB (dias, precioLabel) y del ayudante
+                    `precioVisible`. El rango se calcula sobre `precioVisible`,
+                    NO sobre `p.precio`: con `p.precio` diría «de $9.800 a
+                    $20.500» mientras las tarjetas de abajo enseñan de $6.250 a
+                    $10.250, dos cifras que no cuadran en la misma página. */}
                 Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
                 {" "}Los {PAQUETES_DB.length} paquetes van de {Math.min(...PAQUETES_DB.map((p) => p.dias))} a {Math.max(...PAQUETES_DB.map((p) => p.dias))} días
-                {" "}y cuestan de ${Math.min(...PAQUETES_DB.map((p) => p.precio)).toLocaleString("es-MX")} a ${Math.max(...PAQUETES_DB.map((p) => p.precio)).toLocaleString("es-MX")} MXN {new Set(PAQUETES_DB.map((p) => p.precioLabel)).size === 1 ? PAQUETES_DB[0].precioLabel : "según el paquete"}.
+                {" "}y cuestan de ${Math.min(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} a ${Math.max(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} MXN {new Set(PAQUETES_DB.map((p) => p.precioLabel)).size === 1 ? PAQUETES_DB[0].precioLabel : "según el paquete"}.
                 {" "}Desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo.
               </p>
             </div>
@@ -478,7 +511,7 @@ export default async function HomePage() {
                       <h3 className="font-cormorant text-verde-profundo text-xl leading-tight mb-1">{p.nombre}</h3>
                       <p className="text-negro/45 font-dm text-xs mb-4">{p.subtitulo}</p>
                       <div className="flex items-baseline gap-2 mb-2">
-                        <span className="font-cormorant text-dorado text-3xl leading-none">${p.precio.toLocaleString("es-MX")}</span>
+                        <span className="font-cormorant text-dorado text-3xl leading-none">${precioVisible(p).toLocaleString("es-MX")}</span>
                         <span className="text-negro/40 font-dm text-[10px]">MXN {p.precioLabel}</span>
                       </div>
                       <span className="inline-flex items-center gap-1.5 text-[10px] tracking-[2px] uppercase text-verde-selva group-hover:text-verde-vivo font-dm font-medium transition-colors">
@@ -620,7 +653,7 @@ export default async function HomePage() {
                   <p>The Huasteca Potosina is a natural region in the northeast of the state of San Luis Potosí, Mexico: Ciudad Valles is its hub city and Xilitla — the Pueblo Mágico where we are based — sits about 2.5 hours from Tampico airport (TAM).</p>
                   <p>Tampico is a short hop from Texas, and from the airport it&apos;s two and a half hours to Xilitla — in a private vehicle, driven by us. You sleep in a Pueblo Mágico, in our own hotel, not on a resort strip.</p>
                   <p>Every guide holds NOM-09, Mexico&apos;s federal guiding certification, and travel insurance is in the price for every traveler on every tour. Groups stop at twelve. Fully bilingual guides are available — just ask when you book.</p>
-                  <p>Five days, four nights, every tour, the hotel and the insurance: <strong className="text-verde-profundo">$16,500 MXN for two people</strong>. The price you see on our booking page is the price you pay.</p>
+                  <p>{paqueteIngles.dias} days, {paqueteIngles.noches} nights, the tours, the hotel and the insurance: <strong className="text-verde-profundo">${paqueteIngles.precio.toLocaleString("en-US")} MXN for two people</strong>. The price you see on our booking page is the price you pay.</p>
                 </>
               ) : (
                 <>

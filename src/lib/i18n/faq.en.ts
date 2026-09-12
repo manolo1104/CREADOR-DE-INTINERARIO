@@ -1,9 +1,10 @@
 import type { Locale } from "./config";
 import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { TRASLADOS } from "@/lib/traslados";
 import { formatMXN } from "@/lib/tourBooking";
 import { fmtMoney } from "./format";
+import { localizePaquete } from "./paquetes.en";
 
 import { GRUPO_MAX } from "@/lib/tours";
 /**
@@ -93,11 +94,48 @@ const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").
 const PRECIO_MIN_N = Math.min(...preciosPorPersona);
 const PRECIO_MAX_N = Math.max(...preciosPorPersona);
 
-const preciosPaquete = PAQUETES_DB.map((p) => p.precio);
-const PAQ_MIN_N = Math.min(...preciosPaquete);
-const PAQ_MAX_N = Math.max(...preciosPaquete);
-const PAQ_DIAS_MIN = Math.min(...PAQUETES_DB.map((p) => p.dias));
-const PAQ_DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
+/**
+ * El rango de paquetes sale de lo que se ENSEÑA (`precioVisible`), nunca de
+ * `p.precio`, que es siempre el total de la pareja porque es el contrato del
+ * motor de cobro. Con `p.precio` esta FAQ diría «de $9,800 a $20,500» mientras
+ * las tarjetas del mismo sitio dicen «$6,250 por persona»: dos cifras que no
+ * cuadran, y el visitante encuentra la contradicción en un minuto.
+ *
+ * Los días se toman del paquete que de verdad marca cada extremo, no del
+ * mínimo y el máximo sueltos: al ordenar por precio visible el más barato deja
+ * de ser el más corto, y emparejar las dos cifras a ciegas inventa un paquete
+ * que no existe.
+ */
+const paqBarato = PAQUETES_DB.reduce((a, b) => (precioVisible(b) < precioVisible(a) ? b : a));
+const paqCaro = PAQUETES_DB.reduce((a, b) => (precioVisible(b) > precioVisible(a) ? b : a));
+const PAQ_MIN_N = precioVisible(paqBarato);
+const PAQ_MAX_N = precioVisible(paqCaro);
+const PAQ_DIAS_MIN = paqBarato.dias;
+const PAQ_DIAS_MAX = paqCaro.dias;
+
+/** La unidad de los dos extremos del rango; si no coinciden, no se afirma una. */
+const PAQ_UNIDAD_ES =
+  paqBarato.precioLabel === paqCaro.precioLabel ? paqBarato.precioLabel : "según el paquete";
+const PAQ_UNIDAD_EN =
+  paqBarato.precioPorPersona === paqCaro.precioPorPersona
+    ? paqBarato.precioPorPersona
+      ? "per person"
+      : "per couple"
+    : "depending on the package";
+
+/** Los que NO se venden por persona, para no afirmar que todos lo son. */
+const PAQ_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
+const PAQ_NOTA_ES = PAQ_PAREJA.length
+  ? ` La excepción es ${PAQ_PAREJA.map(
+      (p) => `${p.nombre}, que se vende por pareja en ${formatMXN(p.precio)} MXN los dos`,
+    ).join("; ")}.`
+  : "";
+const PAQ_NOTA_EN = PAQ_PAREJA.length
+  ? ` The exception is ${PAQ_PAREJA.map(
+      (p) =>
+        `${localizePaquete(p, "en").nombre}, sold per couple at ${fmtMoney(p.precio, "en")} for the two of you`,
+    ).join("; ")}.`
+  : "";
 
 /** Tarifa de grupo chico (1–4 pax) de una ruta de traslado, para la FAQ inglesa. */
 const trasladoBase = (slug: string) =>
@@ -139,7 +177,7 @@ const ES: FaqContent = {
   faqs: [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina?",
-      a: `Nuestros tours guiados de un día cuestan entre ${formatMXN(PRECIO_MIN_N)} y ${formatMXN(PRECIO_MAX_N)} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${formatMXN(precioTour("tour-edward-james"))}, Expedición Tamul ${formatMXN(precioTour("tour-tamul"))}, Cascadas del Meco ${formatMXN(precioTour("tour-meco"))}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${formatMXN(precioTour("tour-rzr-xilitla"))} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de ${formatMXN(PAQ_MIN_N)} (${PAQ_DIAS_MIN} días) a ${formatMXN(PAQ_MAX_N)} MXN (${PAQ_DIAS_MAX} días) por pareja.`,
+      a: `Nuestros tours guiados de un día cuestan entre ${formatMXN(PRECIO_MIN_N)} y ${formatMXN(PRECIO_MAX_N)} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${formatMXN(precioTour("tour-edward-james"))}, Expedición Tamul ${formatMXN(precioTour("tour-tamul"))}, Cascadas del Meco ${formatMXN(precioTour("tour-meco"))}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${formatMXN(precioTour("tour-rzr-xilitla"))} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de ${formatMXN(PAQ_MIN_N)} (${PAQ_DIAS_MIN} días) a ${formatMXN(PAQ_MAX_N)} MXN (${PAQ_DIAS_MAX} días) ${PAQ_UNIDAD_ES}.${PAQ_NOTA_ES}`,
     },
     {
       q: "¿Qué incluyen los tours?",
@@ -253,7 +291,7 @@ const EN: FaqContent = {
   faqs: [
     {
       q: "How much does a tour in the Huasteca Potosina cost?",
-      a: `Our guided day tours run between ${fmtMoney(PRECIO_MIN_N, "en")} and ${fmtMoney(PRECIO_MAX_N, "en")} per person depending on the route, and they are all-inclusive. The most popular ones: the Surrealist Route (Edward James) at ${fmtMoney(precioTour("tour-edward-james"), "en")}, the Tamul Expedition at ${fmtMoney(precioTour("tour-tamul"), "en")}, and Cascadas del Meco at ${fmtMoney(precioTour("tour-meco"), "en")}. The RZR ride around Xilitla is priced per vehicle, starting at ${fmtMoney(precioTour("tour-rzr-xilitla"), "en")} per unit. If you'd rather stay several days with lodging included, our packages go from ${fmtMoney(PAQ_MIN_N, "en")} (${PAQ_DIAS_MIN} days) to ${fmtMoney(PAQ_MAX_N, "en")} (${PAQ_DIAS_MAX} days) — and that price is for two people, not per person.`,
+      a: `Our guided day tours run between ${fmtMoney(PRECIO_MIN_N, "en")} and ${fmtMoney(PRECIO_MAX_N, "en")} per person depending on the route, and they are all-inclusive. The most popular ones: the Surrealist Route (Edward James) at ${fmtMoney(precioTour("tour-edward-james"), "en")}, the Tamul Expedition at ${fmtMoney(precioTour("tour-tamul"), "en")}, and Cascadas del Meco at ${fmtMoney(precioTour("tour-meco"), "en")}. The RZR ride around Xilitla is priced per vehicle, starting at ${fmtMoney(precioTour("tour-rzr-xilitla"), "en")} per unit. If you'd rather stay several days with lodging included, our packages go from ${fmtMoney(PAQ_MIN_N, "en")} (${PAQ_DIAS_MIN} days) to ${fmtMoney(PAQ_MAX_N, "en")} (${PAQ_DIAS_MAX} days) ${PAQ_UNIDAD_EN}.${PAQ_NOTA_EN}`,
     },
     {
       q: "What's included in the tours?",

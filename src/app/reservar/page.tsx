@@ -10,6 +10,8 @@ import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats"
 import { waLink } from "@/lib/whatsapp";
 import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
+import { precioVisible } from "@/lib/paquetes";
+import { PCTS_PAQUETE } from "@/lib/paquetePricing";
 import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
@@ -276,13 +278,19 @@ export default async function ReservarPage() {
                 <div className="mt-auto pt-4 border-t border-white/8">
                   <p className="flex items-baseline gap-2 mb-0.5">
                     <span className="font-cormorant text-dorado text-3xl font-light leading-none">
-                      {formatMXN(paq.precio)}
+                      {formatMXN(precioVisible(paq))}
                     </span>
                     <span className="text-[10px] text-crema/40 font-dm">MXN {paq.precioLabel}</span>
                   </p>
+                  {/* El anticipo se saca de PCTS_PAQUETE (el motor sólo acepta
+                      30/50/100 %), no de un 0.1 escrito a mano: la tarjeta
+                      ofrecía $1,450 y el checkout más barato pide $4,350.
+                      Y va sobre `paq.precio` —el total de los dos— con su
+                      porcentaje a la vista, para que no se lea como anticipo
+                      por persona debajo del titular «por persona». */}
                   <p className="text-[11px] font-dm text-crema/55 mb-4">
-                    {en ? "Reserve from " : "Apartas desde "}
-                    <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * 0.1))}</strong>
+                    {en ? `Reserve from (${PCTS_PAQUETE[0]}%) ` : `Apartas desde (${PCTS_PAQUETE[0]} %) `}
+                    <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * PCTS_PAQUETE[0] / 100))}</strong>
                   </p>
 
                   <div className="flex gap-2">

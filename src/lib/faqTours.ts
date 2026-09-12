@@ -1,8 +1,9 @@
 import { TOURS_DB, tourDurRange, GRUPO_MAX } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { fmtMoney, fmtNumber } from "@/lib/i18n/format";
 import { localizeTour } from "@/lib/i18n/localize";
+import { localizePaquete } from "@/lib/i18n/paquetes.en";
 import type { Locale } from "@/lib/i18n/config";
 
 /**
@@ -62,7 +63,18 @@ function nombreCorto(t: (typeof TOURS_DB)[number], locale: Locale): string {
 const DIA_COMPLETO = TOURS_DB.filter((t) => tourDurRange(t)[1] === DUR_MAX);
 const DIA_COMPLETO_MIN = Math.min(...DIA_COMPLETO.map((t) => tourDurRange(t)[0]));
 
-const paqueteMasBarato = [...PAQUETES_DB].sort((a, b) => a.precio - b.precio)[0];
+/**
+ * El más barato DE LO QUE SE ENSEÑA. Ordenar por `p.precio` mezclaba peras con
+ * manzanas desde el 12 sep 2026: ese campo es siempre el total de la pareja
+ * —lo que cobra el motor— y cuatro de los cinco paquetes se anuncian por
+ * persona, así que el barato de verdad se decide con `precioVisible()`.
+ */
+const paqueteMasBarato = [...PAQUETES_DB].sort(
+  (a, b) => precioVisible(a) - precioVisible(b),
+)[0];
+
+/** Los paquetes que NO se anuncian por persona (hoy, solo la Luna de Miel). */
+const PAQ_POR_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
 
 export function getToursFaqs(locale: Locale): FaqTour[] {
   const en = locale === "en";
@@ -72,6 +84,31 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     const t = TOURS_DB.find((x) => x.slug === slug);
     return t ? nombreCorto(t, locale) : "";
   };
+
+  /** «por persona» / «por pareja» de UN paquete, en el idioma pedido. */
+  const etiqueta = (p: Paquete) =>
+    en ? (p.precioPorPersona ? "per person" : "per couple") : p.precioLabel;
+
+  /**
+   * Cómo se cobra un paquete, armado desde `precioPorPersona` —el mismo campo
+   * que decide `precioVisible()`— y no escrito a mano. Decir "todos por
+   * persona" sería falso mientras la Luna de Miel se venda por pareja; y si
+   * mañana todos se anuncian igual, la salvedad desaparece sola.
+   */
+  const todosPorPareja = PAQ_POR_PAREJA.length === PAQUETES_DB.length;
+  const nombresPareja = PAQ_POR_PAREJA.map((p) => localizePaquete(p, locale).nombre);
+  const lista = new Intl.ListFormat(en ? "en" : "es-MX", { type: "conjunction" }).format(
+    nombresPareja,
+  );
+  const salvedad =
+    nombresPareja.length && !todosPorPareja
+      ? en
+        ? ` (${lista} ${nombresPareja.length > 1 ? "are" : "is"} priced per couple)`
+        : ` (${lista} se cobra${nombresPareja.length > 1 ? "n" : ""} por pareja)`
+      : "";
+  const comoSeCobra = en
+    ? `priced ${todosPorPareja ? "per couple" : "per person"}${salvedad}`
+    : `se cobra ${todosPorPareja ? "por pareja" : "por persona"}${salvedad}`;
 
   if (en) {
     return [
@@ -105,7 +142,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
       },
       {
         q: "What's the difference between a single tour and a package with lodging?",
-        a: `A tour is a one-day departure priced per person, from ${m(PRECIO_MIN)}, with transport from your accommodation, entrance fees and guide included, but no hotel. A package is several days with lodging included at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, the tours themselves, transport from the hotel to the start of each tour, entrance fees and certified guides; it is priced per couple (2 people), from ${m(paqueteMasBarato.precio)} for the ${paqueteMasBarato.dias}-day / ${paqueteMasBarato.noches}-night package. Payment differs too: a single-day tour is paid in full, while from two days on you hold with ${ANTICIPO_PCT}%. Regular tours run in small groups of up to ${GRUPO_MAX} people either way.`,
+        a: `A tour is a one-day departure priced per person, from ${m(PRECIO_MIN)}, with transport from your accommodation, entrance fees and guide included, but no hotel. A package is several days with lodging included at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, the tours themselves, transport from the hotel to the start of each tour, entrance fees and certified guides; it is ${comoSeCobra}, from ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} for the ${paqueteMasBarato.dias}-day / ${paqueteMasBarato.noches}-night package. Payment differs too: a single-day tour is paid in full, while from two days on you hold with ${ANTICIPO_PCT}%. Regular tours run in small groups of up to ${GRUPO_MAX} people either way.`,
       },
     ];
   }
@@ -141,7 +178,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     },
     {
       q: "¿Cuál es la diferencia entre un tour suelto y un paquete con hospedaje?",
-      a: `Un tour es una salida de un día que se cobra por persona, desde ${m(PRECIO_MIN)}, e incluye traslado desde tu hospedaje, entradas y guía, pero no el hotel. Un paquete son varios días con hospedaje incluido en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, los tours, el transporte del hotel al inicio de cada recorrido, las entradas y los guías certificados; se cobra por pareja (2 personas) y va desde ${m(paqueteMasBarato.precio)} el de ${paqueteMasBarato.dias} días / ${paqueteMasBarato.noches} noches. El pago también cambia: un recorrido suelto de un día se paga completo, mientras que desde 2 días apartas con el ${ANTICIPO_PCT} %. En los dos casos los tours regulares salen en grupos pequeños de máximo ${GRUPO_MAX} personas.`,
+      a: `Un tour es una salida de un día que se cobra por persona, desde ${m(PRECIO_MIN)}, e incluye traslado desde tu hospedaje, entradas y guía, pero no el hotel. Un paquete son varios días con hospedaje incluido en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, los tours, el transporte del hotel al inicio de cada recorrido, las entradas y los guías certificados; ${comoSeCobra} y va desde ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} el de ${paqueteMasBarato.dias} días / ${paqueteMasBarato.noches} noches. El pago también cambia: un recorrido suelto de un día se paga completo, mientras que desde 2 días apartas con el ${ANTICIPO_PCT} %. En los dos casos los tours regulares salen en grupos pequeños de máximo ${GRUPO_MAX} personas.`,
     },
   ];
 }

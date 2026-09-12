@@ -35,8 +35,22 @@ export interface Paquete {
   duracion: string;
   dias: number;
   noches: number;
+  /**
+   * 🔴 SIEMPRE el total DE LA PAREJA, pase lo que pase con la etiqueta. Es el
+   * contrato del motor de cobro: `paquetePricing.ts` hace
+   * `total = precio + extraHotel + extraTours` y calcula el hotel como «lo que
+   * cuestan las habitaciones que hacen falta» MENOS «la de dos que ya venía
+   * aquí». Si este número pasara a ser por persona, Stripe cobraría la mitad.
+   * Para enseñarlo al visitante se usa `precioVisible()`, no este campo.
+   */
   precio: number;
   precioLabel: string;
+  /**
+   * El precio se ENSEÑA dividido entre dos y con etiqueta «por persona».
+   * Decisión de Manolo del 12 sep 2026: todos menos Luna de Miel, que se
+   * sigue vendiendo por pareja porque es un viaje de dos.
+   */
+  precioPorPersona?: boolean;
   /** marca un precio provisional pendiente de confirmar antes de publicar */
   precioProvisional?: boolean;
   /**
@@ -482,7 +496,8 @@ export const PAQUETES_DB: Paquete[] = [
     noches: 3,
     precio: 12500,
     precioProvisional: true,
-    precioLabel: "por pareja",
+    precioLabel: "por persona",
+    precioPorPersona: true,
     badge: "Más popular",
     destacado: true,
     imagen: "/imagenes/cascada-el-meco/hero.jpg",
@@ -538,9 +553,10 @@ export const PAQUETES_DB: Paquete[] = [
     duracion: "4 días / 3 noches",
     dias: 4,
     noches: 3,
-    precio: 13500,
+    precio: 14500,
     precioProvisional: true,
-    precioLabel: "por pareja",
+    precioLabel: "por persona",
+    precioPorPersona: true,
     badge: "Adrenalina",
     imagen: "/imagenes/rio-tampaon-rafting/tour-1.jpg",
     urgencia: "El rafting pide edad mínima y saber nadar; los saltos de Micos son opcionales",
@@ -614,7 +630,8 @@ export const PAQUETES_DB: Paquete[] = [
     noches: 4,
     precio: 18000,
     precioProvisional: true,
-    precioLabel: "por pareja",
+    precioLabel: "por persona",
+    precioPorPersona: true,
     badge: "Tú lo armas",
     /**
      * Curado a mano, en contra de lo que saldría solo. Derivarlo de la lista
@@ -701,7 +718,8 @@ export const PAQUETES_DB: Paquete[] = [
     noches: 5,
     precio: 20500,
     precioProvisional: true,
-    precioLabel: "por pareja",
+    precioLabel: "por persona",
+    precioPorPersona: true,
     badge: "Lo ves todo",
     imagen: "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
     urgencia: "Cinco días de tours y una sola maleta: se duerme siempre en el mismo hotel",
@@ -794,6 +812,16 @@ export function collagePaquete(p: Paquete): string[] {
     if (fotos.length === 4) break;
   }
   return fotos.length ? fotos : [p.imagen];
+}
+
+/**
+ * El importe que se ENSEÑA. `p.precio` es siempre el total de la pareja porque
+ * es lo que cobra el motor; esto es lo único que debe pintarse en pantalla,
+ * junto a `p.precioLabel`. Enseñar `p.precio` al lado de una etiqueta «por
+ * persona» anunciaría el doble de lo que cuesta.
+ */
+export function precioVisible(p: Paquete): number {
+  return p.precioPorPersona ? Math.round(p.precio / 2) : p.precio;
 }
 
 export function getPaquete(slug: string): Paquete | undefined {

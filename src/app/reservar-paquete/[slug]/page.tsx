@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { getPaquete, habitacionesDePaquete, habitacionAsignada } from "@/lib/paquetes";
+import { getPaquete, habitacionesDePaquete, habitacionAsignada, precioVisible } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION, PCTS_PAQUETE, type PctPaquete } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
@@ -343,7 +343,17 @@ export default function ReservarPaquetePage() {
           <div className="flex-1 min-w-0">
             <p className="text-[9px] tracking-[2px] uppercase text-verde-selva/70 font-dm mb-1">{paquete.duracion}</p>
             <h1 className="font-cormorant text-verde-profundo text-xl leading-snug">{paquete.nombre}</h1>
-            <p className="font-dm text-sm text-negro/50 mt-1">{fmx(paquete.precio)} MXN <span className="text-negro/40">{paquete.precioLabel}</span></p>
+            {/* Aquí se PAGA, así que lo de arriba tiene que cuadrar con lo que
+                cobra el motor. Se enseña el precio por persona —el mismo que
+                trae el visitante del catálogo; si aquí apareciera el total de
+                la pareja parecería que el precio subió al entrar— y debajo, el
+                total de dos con la MISMA etiqueta que usa el desglose de más
+                abajo (`t.paqueteBase`), que es de donde sale el cobro. Pintar
+                `paquete.precio` junto a "por persona" anunciaría el doble. */}
+            <p className="font-dm text-sm text-negro/50 mt-1">{fmx(precioVisible(paquete))} MXN <span className="text-negro/40">{paquete.precioLabel}</span></p>
+            {paquete.precioPorPersona && (
+              <p className="font-dm text-xs text-negro/40 mt-0.5">{t.paqueteBase} · {fmx(paquete.precio)} MXN</p>
+            )}
           </div>
           {/* Compartir el paquete con quien decide, ya con lo que lleva
             configurado —fecha, gente, habitación— en el texto del mensaje.
@@ -491,7 +501,9 @@ export default function ReservarPaquetePage() {
                 soltaba miles de pesos a ciegas. */}
             <section className="bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.tuViajeDiaPorDia}</h2>
-              <p className="font-dm text-xs text-negro/45 mb-5">{paquete.duracion} · {paquete.precioLabel}</p>
+              {/* La etiqueta sola ("· por persona") se quedaba sin referente al
+                  dejar de ser "por pareja": va con su importe visible. */}
+              <p className="font-dm text-xs text-negro/45 mb-5">{paquete.duracion} · {fmx(precioVisible(paquete))} MXN {paquete.precioLabel}</p>
 
               <ol className="space-y-3 mb-6">
                 {paquete.itinerario.map((dia, i) => (

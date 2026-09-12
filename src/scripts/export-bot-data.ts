@@ -13,7 +13,14 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, tourDurTexto } from "../lib/tours";
 import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
-import { PAQUETES_DB, HABITACIONES, habitacionesDePaquete, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
+import { PAQUETES_DB, HABITACIONES, habitacionesDePaquete, LOGISTICA, precioVisible } from "../lib/paquetes";
+// 🔴 `FAQS_PAQUETES_ES`, no el `FAQS_PAQUETES` pelado del catálogo: la respuesta
+// de «¿el precio es por persona o por pareja?» sigue diciendo allí «son por
+// pareja (2 personas)». Camila lee estas FAQ tal cual, así que con la del
+// catálogo se contradecía a sí misma dentro del mismo cerebro: la ficha del
+// paquete le dice «$6,250 por persona» y la FAQ «los precios son por pareja».
+// Es el mismo texto que sirve la web en español (`getLocalizedFaqs("es")`).
+import { FAQS_PAQUETES_ES } from "../lib/i18n/paquetes.en";
 import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
@@ -217,8 +224,14 @@ const paquetes = PAQUETES_DB.map((p) => ({
   duracion: p.duracion,
   dias: p.dias,
   noches: p.noches,
-  precio: p.precio,
+  // 🔴 `precio` es la cifra ANUNCIADA y va SIEMPRE con `precioLabel`: Camila
+  // cita las dos juntas (agent.js → listar_paquetes). Si aquí fuera el total de
+  // la pareja, con la etiqueta «por persona» el bot cobraría el DOBLE.
+  precio: precioVisible(p),
   precioLabel: p.precioLabel,
+  // El total de la pareja, que es lo que cobra el motor de reservas. No se
+  // cita al cliente: es la referencia para cuadrar contra el checkout.
+  precioTotalPareja: p.precio,
   // La URL donde SE RESERVA este paquete. Sin esto Camila no tenía ningún link
   // que mandar y el cliente acababa en el catálogo de tours, sin su paquete.
   url: `${empresa.sitio}/reservar-paquete/${p.slug}`,
@@ -343,7 +356,7 @@ const info = {
   pagoEntradas:
     "Si visitas los destinos por tu cuenta, la entrada suele ser SOLO EFECTIVO y muchos sitios no tienen cajero cerca.",
   paquetes:
-    "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio es por pareja (2 personas).",
+    "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio de cada paquete viene con su etiqueta en `precioLabel`: casi todos se anuncian POR PERSONA (dos personas comparten habitación) y solo el de Luna de Miel se vende por pareja. Cita la cifra con su etiqueta, tal cual, sin multiplicarla ni dividirla.",
 };
 
 // ── Escribir ─────────────────────────────────────────────────────────────────
@@ -366,7 +379,7 @@ const out = {
       precio: t.precio,
     })),
   })),
-  faqsPaquetes: FAQS_PAQUETES,
+  faqsPaquetes: FAQS_PAQUETES_ES,
   destinos,
   destinoTour,
   destinoTourCerca,

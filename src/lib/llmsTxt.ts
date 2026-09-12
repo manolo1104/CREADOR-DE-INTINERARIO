@@ -20,7 +20,7 @@
  */
 
 import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
@@ -204,28 +204,52 @@ function seccionTours(locale: Locale): string {
   return `${titulo}\n${lineas.join("\n")}`;
 }
 
+/**
+ * La unidad en la que se ANUNCIA un paquete.
+ *
+ * Sale de `precioPorPersona` y no de `precioLabel` porque la etiqueta es texto
+ * suelto y duplicado (catálogo español y `paquetes.en.ts`): si una de las dos
+ * copias se queda en "per couple" pegada a un importe ya dividido entre dos,
+ * este archivo publica la mitad del precio real —el mismo desfase que arrastró
+ * durante meses—. Derivarla del campo que usa `precioVisible()` para dividir
+ * mantiene importe y unidad atados.
+ */
+function unidadPaquete(p: Paquete, locale: Locale): string {
+  if (p.precioPorPersona) return locale === "en" ? "per person" : "por persona";
+  return locale === "en" ? "per couple" : "por pareja";
+}
+
 function seccionPaquetes(locale: Locale): string {
   const paquetes = getLocalizedPaquetes(locale);
+  // `precioVisible` y NO `p.precio`: el campo del catálogo es siempre el total
+  // de la pareja —lo que cobra el motor— y publicarlo junto a «por persona»
+  // citaría al viajero el doble de lo que cuesta.
   const lineas = paquetes.map((p) =>
     locale === "en"
-      ? `- ${p.nombre} — ${p.dias} days / ${p.noches} nights: ${mxn(p.precio)} ${p.precioLabel}\n  ${url(`/paquetes/${p.slug}`, locale)}`
-      : `- ${p.nombre} — ${p.dias} días / ${p.noches} noches: ${mxn(p.precio)} ${p.precioLabel}\n  ${url(`/paquetes/${p.slug}`, locale)}`,
+      ? `- ${p.nombre} — ${p.dias} days / ${p.noches} nights: ${mxn(precioVisible(p))} ${unidadPaquete(p, locale)}\n  ${url(`/paquetes/${p.slug}`, locale)}`
+      : `- ${p.nombre} — ${p.dias} días / ${p.noches} noches: ${mxn(precioVisible(p))} ${unidadPaquete(p, locale)}\n  ${url(`/paquetes/${p.slug}`, locale)}`,
   );
 
   if (locale === "en") {
     return `## Multi-day packages (tours + hotel in Xilitla)
 ${lineas.join("\n")}
+Each amount above is the advertised price, with its unit. The ones marked "per person" are
+quoted on a base of two adults: a package is not sold to fewer than 2 people, and from the
+third traveler on you add their bed and one ticket per tour.
 They include lodging at the Hotel Paraíso Encantado (in Xilitla — it is ours), breakfasts,
 local transport to each activity, entrance fees and certified guides. They do NOT include
 getting to Xilitla itself.
-Side-by-side comparison: ${url("/paquetes", locale)}`;
+Side-by-side comparison of all ${paquetes.length}: ${url("/paquetes", locale)}`;
   }
 
   return `## Paquetes de varios días (tours + hotel en Xilitla)
 ${lineas.join("\n")}
+Cada importe de arriba es el precio anunciado, con su unidad. Los que dicen «por persona» se
+cotizan sobre una base de dos adultos: el paquete no se vende a menos de 2 personas, y desde
+la tercera se suma su lugar para dormir y un boleto de cada tour.
 Incluyen hospedaje en el Hotel Paraíso Encantado (Xilitla, nuestro), desayunos, transporte
 local a cada recorrido, entradas y guías certificados. NO incluyen el traslado hasta Xilitla.
-Comparativa de los tres: ${url("/paquetes", locale)}`;
+Comparativa de los ${paquetes.length}: ${url("/paquetes", locale)}`;
 }
 
 function seccionDestinos(locale: Locale): string {

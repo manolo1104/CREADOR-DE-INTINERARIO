@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CIUDADES_ORIGEN, getCiudadOrigen } from "@/lib/ciudadesOrigen";
 import { TOURS_DB, TOURS_DESTACADOS } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { getTraslado } from "@/lib/traslados";
 import { TrasladoTabla } from "@/components/TrasladoTabla";
 import { waLink } from "@/lib/whatsapp";
@@ -154,13 +154,20 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
                 {paquete.nombre} · {paquete.dias} días / {paquete.noches} noches
               </Link>
               <span className="font-dm text-lima whitespace-nowrap">
-                ${paquete.precio.toLocaleString("es-MX")}
+                ${precioVisible(paquete).toLocaleString("es-MX")}
                 <span className="text-crema/35 text-xs"> {paquete.precioLabel}</span>
               </span>
             </div>
             <p className="text-crema/55 font-dm text-sm leading-relaxed">
               Incluye hospedaje en nuestro hotel en Xilitla, desayunos, transporte a cada recorrido,
-              entradas y guías certificados. Apartas con el 30 % y cancelas gratis hasta 48 h antes.
+              entradas y guías certificados.{" "}
+              {/* Paridad con /en/from/[city]: el importe de arriba es por persona en cuatro de los
+                  cinco paquetes, pero el 30 % se aparta sobre el total de dos. Sin esta frase el
+                  visitante calcula el anticipo sobre la mitad. El total sale de `paquete.precio`. */}
+              {paquete.precioPorPersona
+                ? `Ese precio es por persona; la reserva es para dos, así que el viaje suma $${paquete.precio.toLocaleString("es-MX")} MXN.`
+                : "Ese precio cubre a dos personas, no a una."}{" "}
+              Apartas con el 30 % y cancelas gratis hasta 48 h antes.
             </p>
           </div>
 

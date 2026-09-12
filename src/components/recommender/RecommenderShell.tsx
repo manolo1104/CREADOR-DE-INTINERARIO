@@ -11,7 +11,7 @@ import {
   CalendarDays, Moon,
 } from "lucide-react";
 import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
-import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 
 // ── Social proof & urgency data per tour ──────────────────────────────────────
 
@@ -425,10 +425,10 @@ function PaqueteResultCard({
         <div className="flex items-end justify-between gap-4 mt-4">
           <div>
             <p className="font-cormorant text-verde-profundo font-light" style={{ fontSize: "28px", lineHeight: 1 }}>
-              ${paquete.precio.toLocaleString()} <span className="text-base text-negro/40">MXN</span>
+              ${precioVisible(paquete).toLocaleString()} <span className="text-base text-negro/40">MXN</span>
             </p>
             <p className="font-dm text-[10px] text-negro/40 mt-0.5">
-              {paquete.precioLabel} (2 personas) · tours + hotel + transporte local
+              {paquete.precioLabel} · tours + hotel + transporte local
             </p>
           </div>
           <Link

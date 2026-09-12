@@ -8,7 +8,7 @@ import { TourCollage } from "@/components/TourCollage";
 import { PatronDestinos } from "@/components/PatronDestinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import { trackPackageInquiry } from "@/lib/analytics";
-import { collagePaquete, type Paquete } from "@/lib/paquetes";
+import { collagePaquete, precioVisible, type Paquete } from "@/lib/paquetes";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
 
@@ -85,14 +85,17 @@ function PaqueteCard({ p, ancha = false }: { p: Paquete; ancha?: boolean }) {
         </div>
 
         {/* Precio y ahorro, sobre su propia placa de cristal: es el dato por el
-            que la gente compara, y suelto entre listas se perdía. */}
+            que la gente compara, y suelto entre listas se perdía.
+            Se pinta `precioVisible(p)`, nunca `p.precio`: al lado de la
+            etiqueta «por persona», `p.precio` —que es el total de la pareja—
+            anunciaría el doble de lo que cuesta. */}
         <div
           className="rounded-xl border border-white/80 bg-white/45 backdrop-blur-md px-4 py-3 mb-4"
           style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.14)" }}
         >
           <div className="flex items-baseline gap-2 mb-1">
             <span className="font-cormorant text-terracota" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
-              ${p.precio.toLocaleString("es-MX")}
+              ${precioVisible(p).toLocaleString("es-MX")}
             </span>
             <span className="text-negro/65 font-dm text-[10px] ml-1">MXN {p.precioLabel}</span>
           </div>
@@ -224,8 +227,11 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
                   {p.destacado ? "★ " : ""}{p.nombre.replace(/^Paquete |\s*Package$/g, "")}
                 </p>
                 <p className={`font-cormorant leading-none ${p.destacado ? "text-dorado" : "text-crema/70"}`} style={{ fontSize: "15px" }}>
-                  ${p.precio.toLocaleString("es-MX")}
-                  <span className="font-dm text-[8px] text-crema/25 ml-1">MXN</span>
+                  {/* El mismo importe que la tarjeta (`precioVisible`) y su
+                      etiqueta: con `p.precio` la barra decía $12.500 mientras
+                      la tarjeta de arriba decía $6.250 por persona. */}
+                  ${precioVisible(p).toLocaleString("es-MX")}
+                  <span className="font-dm text-[8px] text-crema/25 ml-1">MXN {p.precioLabel}</span>
                 </p>
               </div>
               <CreditCard

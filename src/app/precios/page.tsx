@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { TOURS_DB, tourDurRange, tourDurTexto } from "@/lib/tours";
-import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
@@ -24,9 +24,47 @@ const RANGO_MIN = `$${Math.min(...preciosPorPersona).toLocaleString("es-MX")}`;
 const RANGO_MAX = `$${Math.max(...preciosPorPersona).toLocaleString("es-MX")}`;
 // Derivado del catálogo: estos importes estaban escritos a mano en la respuesta
 // de abajo y se quedaron viejos en cuanto cambió un paquete.
-const preciosPaquete = PAQUETES_DB.map((p) => p.precio);
-const PAQ_MIN = `$${Math.min(...preciosPaquete).toLocaleString("es-MX")}`;
-const PAQ_MAX = `$${Math.max(...preciosPaquete).toLocaleString("es-MX")}`;
+//
+// El rango se calcula sobre `precioVisible`, que es el importe que se ANUNCIA
+// —la mitad en los paquetes por persona—, no sobre `p.precio`, que es siempre
+// el total de la pareja que cobra el motor. Mezclar los dos publicaría un rango
+// de $9,800 a $20,500 cuando lo que esta página enseña va de $6,250 a $10,250.
+const PAQ_VISIBLES = PAQUETES_DB.map((p) => ({ p, v: precioVisible(p) }));
+const PAQ_BARATO = PAQ_VISIBLES.reduce((a, b) => (b.v < a.v ? b : a));
+const PAQ_CARO = PAQ_VISIBLES.reduce((a, b) => (b.v > a.v ? b : a));
+const PAQ_MIN = money(PAQ_BARATO.v);
+const PAQ_MAX = money(PAQ_CARO.v);
+
+/**
+ * La unidad en la que se ANUNCIA un paquete.
+ *
+ * Sale de `precioPorPersona` y NO de `precioLabel`: la etiqueta es texto suelto
+ * que vive por duplicado (catálogo español y `paquetes.en.ts`), y en cuanto una
+ * de las dos copias se queda en "per couple" junto a un importe ya dividido
+ * entre dos, la página anuncia la mitad de lo que cobra el checkout. La unidad
+ * se deriva del mismo campo que usa `precioVisible()` para dividir, así que
+ * importe y etiqueta no pueden desincronizarse.
+ */
+const unidadPaquete = (p: Paquete, locale: Locale) =>
+  p.precioPorPersona
+    ? locale === "en"
+      ? "per person"
+      : "por persona"
+    : locale === "en"
+      ? "per couple"
+      : "por pareja";
+
+/**
+ * La unidad de un CONJUNTO de paquetes. Solo se puede afirmar una si todos se
+ * anuncian igual; si no, la frase deja de afirmar unidad en vez de mentir sobre
+ * uno de los extremos del rango.
+ */
+const unidadComun = (lista: Paquete[], locale: Locale) =>
+  lista.length && lista.every((p) => !!p.precioPorPersona === !!lista[0].precioPorPersona)
+    ? unidadPaquete(lista[0], locale)
+    : locale === "en"
+      ? "depending on the package"
+      : "según el paquete";
 const RZR = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
 const RZR_DESDE = `$${(RZR?.precio ?? 0).toLocaleString("es-MX")}`;
 // Techo real del RZR: el vehículo más caro en la ruta más larga. Sale de
@@ -94,9 +132,11 @@ function preciosUI(locale: Locale) {
   const porDias = [...paquetes].sort((a, b) => a.dias - b.dias || a.precio - b.precio);
   const paqCorto: Paquete | undefined = porDias[0];
   const otros = porDias.slice(1);
-  // Un paquete se cotiza por pareja; el precio por persona es la mitad y es la
-  // cifra con la que la gente compara contra un tour suelto.
-  const paqCortoPorPersona = paqCorto ? money(Math.round(paqCorto.precio / 2)) : "";
+  // La unidad de los dos extremos del rango de paquetes (PAQ_MIN–PAQ_MAX).
+  const unidadRango = unidadComun([PAQ_BARATO.p, PAQ_CARO.p], locale);
+  // Los paquetes que NO se anuncian por persona, para nombrar la excepción sin
+  // escribirla a mano.
+  const excepcionPareja = paquetes.filter((p) => !p.precioPorPersona).map((p) => p.nombre).join(", ");
   // Para quién está hecho: sale de `perfiles`, no de una etiqueta escrita aquí.
   const paqCortoPerfiles = (paqCorto?.perfiles ?? [])
     .slice(0, 2)
@@ -104,11 +144,11 @@ function preciosUI(locale: Locale) {
     .join(en ? " and " : " y ");
   // La frase que impide leer el más corto como si fuera la oferta general.
   const otrosDias = otros.map((x) => x.dias);
-  const otrosPrecios = otros.map((x) => x.precio);
+  const otrosPrecios = otros.map((x) => precioVisible(x));
   const otrosTexto = otros.length
     ? en
-      ? ` The rest of the packages are not sorted by length but by who is traveling (${otros.map((x) => x.nombre).join(", ")}): ${Math.min(...otrosDias)} to ${Math.max(...otrosDias)} days, from ${money(Math.min(...otrosPrecios))} to ${money(Math.max(...otrosPrecios))} MXN per couple.`
-      : ` Los demás paquetes no se ordenan por duración sino por quién viaja (${otros.map((x) => x.nombre).join(", ")}): de ${Math.min(...otrosDias)} a ${Math.max(...otrosDias)} días y de ${money(Math.min(...otrosPrecios))} a ${money(Math.max(...otrosPrecios))} MXN por pareja.`
+      ? ` The rest of the packages are not sorted by length but by who is traveling (${otros.map((x) => x.nombre).join(", ")}): ${Math.min(...otrosDias)} to ${Math.max(...otrosDias)} days, from ${money(Math.min(...otrosPrecios))} to ${money(Math.max(...otrosPrecios))} MXN ${unidadComun(otros, locale)}.`
+      : ` Los demás paquetes no se ordenan por duración sino por quién viaja (${otros.map((x) => x.nombre).join(", ")}): de ${Math.min(...otrosDias)} a ${Math.max(...otrosDias)} días y de ${money(Math.min(...otrosPrecios))} a ${money(Math.max(...otrosPrecios))} MXN ${unidadComun(otros, locale)}.`
     : "";
   // Nombre corto del recorrido por vehículo, del catálogo (ya localizado): el
   // nombre completo lleva un subtítulo tras el guion largo que no cabe en prosa.
@@ -118,19 +158,19 @@ function preciosUI(locale: Locale) {
     ? [
         {
           q: "How much does it cost to visit the Huasteca Potosina?",
-          a: `It depends on how many days you stay. A guided all-inclusive day tour in the Huasteca Potosina costs between ${RANGO_MIN} and ${RANGO_MAX} MXN per person (Mexican pesos), with transport, breakfast, entrance fees and a certified guide included. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} to ${PAQ_MAX} MXN per couple with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800–$1,100 MXN each way) plus your lunches and dinners, which are not included.`,
+          a: `It depends on how many days you stay. A guided all-inclusive day tour in the Huasteca Potosina costs between ${RANGO_MIN} and ${RANGO_MAX} MXN per person (Mexican pesos), with transport, breakfast, entrance fees and a certified guide included. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} to ${PAQ_MAX} MXN ${unidadRango} with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800–$1,100 MXN each way) plus your lunches and dinners, which are not included.`,
         },
         ...(paqCorto
           ? [
               {
                 q: `How much does a ${paqCorto.dias}-day trip to the Huasteca Potosina with hotel cost?`,
-                a: `The shortest trip with hotel we run is ${paqCorto.duracion}: the ${paqCorto.nombre} package, built for ${paqCortoPerfiles}, at ${money(paqCorto.precio)} MXN per couple — ${paqCortoPorPersona} MXN per person. It includes ${paqCorto.noches} nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, ${diasDeTour(paqCorto)} days of guided touring, transport from the hotel to each tour and back, entrance fees, NOM-09 SECTUR certified guides, safety gear and travel insurance. It does not include getting to Xilitla, or lunches and dinners.${otrosTexto}`,
+                a: `The shortest trip with hotel we run is ${paqCorto.duracion}: the ${paqCorto.nombre} package, built for ${paqCortoPerfiles}, at ${money(precioVisible(paqCorto))} MXN ${unidadPaquete(paqCorto, locale)}. It includes ${paqCorto.noches} nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, ${diasDeTour(paqCorto)} days of guided touring, transport from the hotel to each tour and back, entrance fees, NOM-09 SECTUR certified guides, safety gear and travel insurance. It does not include getting to Xilitla, or lunches and dinners.${otrosTexto}`,
               },
             ]
           : []),
         {
           q: "Are tour prices per person?",
-          a: `Yes. Every day tour in the Huasteca Potosina is priced per person in Mexican pesos, except the RZR Off-Road Ride in Xilitla, which is priced per vehicle (from ${RZR_DESDE} MXN per unit, seating 2 to 6 people depending on the model, up to ${money(RZR_MAX)} MXN for the largest vehicle on the longest route). Packages with hotel are quoted per couple (2 people).`,
+          a: `Yes. Every day tour in the Huasteca Potosina is priced per person in Mexican pesos, except the RZR Off-Road Ride in Xilitla, which is priced per vehicle (from ${RZR_DESDE} MXN per unit, seating 2 to 6 people depending on the model, up to ${money(RZR_MAX)} MXN for the largest vehicle on the longest route). Packages with hotel are advertised per person too, quoted on a base of two adults${excepcionPareja ? `, except ${excepcionPareja}, which is sold per couple` : ""}: the per-person amount is paid for each of the two adults in that base, and from the third traveler on you add their bed and one ticket per tour.`,
         },
         {
           q: "What is included in the price, and what is not?",
@@ -156,19 +196,19 @@ function preciosUI(locale: Locale) {
     : [
         {
           q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
-          a: `Depende de los días y del plan. Un tour guiado de un día todo incluido en la Huasteca Potosina cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de ${DIAS_MIN} a ${DIAS_MAX} días con hotel y tours va de ${PAQ_MIN} a ${PAQ_MAX} MXN por pareja con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas, que no van incluidas.`,
+          a: `Depende de los días y del plan. Un tour guiado de un día todo incluido en la Huasteca Potosina cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de ${DIAS_MIN} a ${DIAS_MAX} días con hotel y tours va de ${PAQ_MIN} a ${PAQ_MAX} MXN ${unidadRango} con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas, que no van incluidas.`,
         },
         ...(paqCorto
           ? [
               {
                 q: `¿Cuánto cuesta un viaje de ${paqCorto.dias} días a la Huasteca Potosina con hotel?`,
-                a: `El viaje con hotel más corto que armamos es de ${paqCorto.duracion}: el paquete ${paqCorto.nombre}, hecho para ${paqCortoPerfiles}, en ${money(paqCorto.precio)} MXN por pareja —${paqCortoPorPersona} MXN por persona—. Incluye ${paqCorto.noches} noches en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, ${diasDeTour(paqCorto)} días de recorrido guiado, transporte del hotel al inicio de cada tour y de regreso, entradas, guías certificados NOM-09 SECTUR, equipo de seguridad y seguro de viaje. No incluye el traslado hasta Xilitla ni las comidas y cenas.${otrosTexto}`,
+                a: `El viaje con hotel más corto que armamos es de ${paqCorto.duracion}: el paquete ${paqCorto.nombre}, hecho para ${paqCortoPerfiles}, en ${money(precioVisible(paqCorto))} MXN ${unidadPaquete(paqCorto, locale)}. Incluye ${paqCorto.noches} noches en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, ${diasDeTour(paqCorto)} días de recorrido guiado, transporte del hotel al inicio de cada tour y de regreso, entradas, guías certificados NOM-09 SECTUR, equipo de seguridad y seguro de viaje. No incluye el traslado hasta Xilitla ni las comidas y cenas.${otrosTexto}`,
               },
             ]
           : []),
         {
           q: "¿Los precios de los tours son por persona?",
-          a: `Sí, todos los tours de un día se cobran por persona, excepto el Recorrido en RZR por Xilitla, que se cobra por vehículo (desde ${RZR_DESDE} MXN por unidad, para 2 a 6 ocupantes según el modelo, y hasta ${money(RZR_MAX)} MXN en el vehículo más grande de la ruta más larga). Los paquetes con hotel se cotizan por pareja (2 personas).`,
+          a: `Sí, todos los tours de un día se cobran por persona, excepto el Recorrido en RZR por Xilitla, que se cobra por vehículo (desde ${RZR_DESDE} MXN por unidad, para 2 a 6 ocupantes según el modelo, y hasta ${money(RZR_MAX)} MXN en el vehículo más grande de la ruta más larga). Los paquetes con hotel también se anuncian por persona, sobre una base de dos adultos${excepcionPareja ? `, salvo ${excepcionPareja}, que se vende por pareja` : ""}: el importe por persona se paga por cada uno de los dos adultos de esa base, y desde la tercera persona se suma su lugar para dormir y un boleto de cada tour.`,
         },
         {
           q: "¿Qué incluye el precio del tour y qué no?",
@@ -203,8 +243,8 @@ function preciosUI(locale: Locale) {
       ? `Huasteca Potosina Tour Prices 2026 · From ${RANGO_MIN} MXN per Person`
       : "Precios de Tours en la Huasteca Potosina 2026",
     metaDescription: en
-      ? `The full 2026 price list, in Mexican pesos: all-inclusive day tours from ${RANGO_MIN} MXN per person and ${DIAS_MIN}–${DIAS_MAX} day packages with hotel from ${PAQ_MIN} MXN per couple. No hidden costs, discounts for children.`
-      : `Lista completa de precios 2026: tours de un día todo incluido desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN por pareja. Sin costos ocultos y con descuento para niños.`,
+      ? `The full 2026 price list, in Mexican pesos: all-inclusive day tours from ${RANGO_MIN} MXN per person and ${DIAS_MIN}–${DIAS_MAX} day packages with hotel from ${PAQ_MIN} MXN ${unidadRango}. No hidden costs, discounts for children.`
+      : `Lista completa de precios 2026: tours de un día todo incluido desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN ${unidadRango}. Sin costos ocultos y con descuento para niños.`,
     keywords: en
       ? [
           "huasteca potosina tour prices",
@@ -237,8 +277,8 @@ function preciosUI(locale: Locale) {
       ? "Huasteca Potosina tour and package prices 2026"
       : "Precios de tours y paquetes en la Huasteca Potosina 2026",
     itemListDescripcion: en
-      ? "Full price list: guided day tours priced per person and multi-day packages with hotel priced per couple. All amounts in Mexican pesos (MXN)."
-      : "Lista completa de precios: tours guiados de un día por persona y paquetes de varios días con hotel por pareja. Todos los importes en pesos mexicanos (MXN).",
+      ? `Full price list: guided day tours priced per person and multi-day packages with hotel priced ${unidadRango}. All amounts in Mexican pesos (MXN).`
+      : `Lista completa de precios: tours guiados de un día por persona y paquetes de varios días con hotel ${unidadRango}. Todos los importes en pesos mexicanos (MXN).`,
     unidadPersona: en ? "per person" : "por persona",
     unidadVehiculo: en ? "per vehicle" : "por vehículo",
 
@@ -246,15 +286,15 @@ function preciosUI(locale: Locale) {
     h1Antes: en ? "Tour Prices in the " : "Precios de Tours en la ",
     h1Em: "Huasteca Potosina",
     heroP: en
-      ? `Guided day tours from ${RANGO_MIN} MXN per person and packages with hotel from ${PAQ_MIN} MXN per couple. The price you see includes transport, breakfast, entrance fees and a NOM-09 certified guide — no hidden costs on arrival.`
-      : `Tours guiados de un día desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN por pareja. El precio que ves incluye transporte, desayuno, entradas y guía certificado NOM-09 — sin costos ocultos al llegar.`,
+      ? `Guided day tours from ${RANGO_MIN} MXN per person and packages with hotel from ${PAQ_MIN} MXN ${unidadRango}. The price you see includes transport, breakfast, entrance fees and a NOM-09 certified guide — no hidden costs on arrival.`
+      : `Tours guiados de un día desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN ${unidadRango}. El precio que ves incluye transporte, desayuno, entradas y guía certificado NOM-09 — sin costos ocultos al llegar.`,
     // Cuidado con esta frase: el conteo TOTAL de recorridos y el rango de
     // precio POR PERSONA no son el mismo conjunto. El RZR se cobra por
     // vehículo y no entra en el rango — decir "los 10 cuestan entre $900 y
     // $1,950 por persona" sería falso.
     heroProsa: en
-      ? `In short: the ${N_TOURS_DIA} day tours last ${HRS_MIN} to ${HRS_MAX} hours. ${N_TOURS_PERSONA} of them are priced per person, between ${RANGO_MIN} and ${RANGO_MAX} MXN, and the ${rzrNombre} is priced per vehicle, from ${RZR_DESDE} MXN. The packages with hotel run ${DIAS_MIN} to ${DIAS_MAX} days and cost between ${PAQ_MIN} and ${PAQ_MAX} MXN per couple.`
-      : `En corto: los ${N_TOURS_DIA} tours de un día duran de ${HRS_MIN} a ${HRS_MAX} horas. ${N_TOURS_PERSONA} se cobran por persona, entre ${RANGO_MIN} y ${RANGO_MAX} MXN, y el ${rzrNombre} se cobra por vehículo, desde ${RZR_DESDE} MXN. Los paquetes con hotel van de ${DIAS_MIN} a ${DIAS_MAX} días y cuestan entre ${PAQ_MIN} y ${PAQ_MAX} MXN por pareja.`,
+      ? `In short: the ${N_TOURS_DIA} day tours last ${HRS_MIN} to ${HRS_MAX} hours. ${N_TOURS_PERSONA} of them are priced per person, between ${RANGO_MIN} and ${RANGO_MAX} MXN, and the ${rzrNombre} is priced per vehicle, from ${RZR_DESDE} MXN. The packages with hotel run ${DIAS_MIN} to ${DIAS_MAX} days and cost between ${PAQ_MIN} and ${PAQ_MAX} MXN ${unidadRango}.`
+      : `En corto: los ${N_TOURS_DIA} tours de un día duran de ${HRS_MIN} a ${HRS_MAX} horas. ${N_TOURS_PERSONA} se cobran por persona, entre ${RANGO_MIN} y ${RANGO_MAX} MXN, y el ${rzrNombre} se cobra por vehículo, desde ${RZR_DESDE} MXN. Los paquetes con hotel van de ${DIAS_MIN} a ${DIAS_MAX} días y cuestan entre ${PAQ_MIN} y ${PAQ_MAX} MXN ${unidadRango}.`,
     monedaNota: en
       ? "Every amount on this page is in Mexican pesos (MXN), not US dollars."
       : "Todos los importes de esta página están en pesos mexicanos (MXN).",
@@ -274,14 +314,13 @@ function preciosUI(locale: Locale) {
 
     paqTitulo: en ? "How much does a full trip cost?" : "¿Cuánto cuesta un viaje completo?",
     paqIntro: en
-      ? "If you're staying several days, the packages combine tours + lodging at Hotel Paraíso Encantado in Xilitla, all coordinated. Prices per couple (2 people):"
-      : "Si vienes varios días, los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado de Xilitla, con todo coordinado. Precios por pareja (2 personas):",
-    paqPorPareja: en ? "MXN per couple" : "MXN por pareja",
+      ? "If you're staying several days, the packages combine tours + lodging at Hotel Paraíso Encantado in Xilitla, all coordinated. Each amount carries its own unit, and every package is quoted on a base of two adults:"
+      : "Si vienes varios días, los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado de Xilitla, con todo coordinado. Cada importe lleva su unidad y la base de todos los paquetes son dos adultos:",
     // Los mismos precios de las tarjetas, dichos en una frase que se puede citar.
     paqProsa:
       (en ? "In detail: " : "En detalle: ") +
       paquetes
-        .map((p) => `${p.nombre}, ${money(p.precio)} MXN ${p.precioLabel} (${p.duracion}, ${diasDeTour(p)} ${en ? "tour days" : "días de recorrido"})`)
+        .map((p) => `${p.nombre}, ${money(precioVisible(p))} MXN ${unidadPaquete(p, locale)} (${p.duracion}, ${diasDeTour(p)} ${en ? "tour days" : "días de recorrido"})`)
         .join("; ") +
       (en
         ? ". All packages include lodging at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, transport, entrance fees, NOM-09 certified guides and travel insurance; they do not include getting to Xilitla, or lunches and dinners."
@@ -461,17 +500,22 @@ export default function PreciosPage() {
               image: `${SITE}${p.imagen}`,
               url: localeUrl(`/paquetes/${p.slug}`, locale),
               brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
+              // El importe estructurado es el que se ANUNCIA y va siempre con
+              // su unidad: `p.precio` es el total de la pareja, y publicarlo
+              // junto a un `unitText` "por persona" declararía el doble de lo
+              // que cuesta. Al revés —la mitad sin decir que es por persona—
+              // declararía la mitad de lo que cobra el checkout.
               offers: {
                 "@type": "Offer",
-                price: p.precio,
+                price: precioVisible(p),
                 priceCurrency: "MXN",
                 availability: "https://schema.org/InStock",
                 url: localeUrl(`/paquetes/${p.slug}`, locale),
                 priceSpecification: {
                   "@type": "UnitPriceSpecification",
-                  price: p.precio,
+                  price: precioVisible(p),
                   priceCurrency: "MXN",
-                  unitText: p.precioLabel,
+                  unitText: unidadPaquete(p, locale),
                 },
               },
             },
@@ -589,7 +633,8 @@ export default function PreciosPage() {
                   {p.nombre}
                 </h3>
                 <p className="font-cormorant text-dorado text-3xl">
-                  {money(p.precio)} <span className="font-dm text-crema/40 text-xs">{t.paqPorPareja}</span>
+                  {money(precioVisible(p))}{" "}
+                  <span className="font-dm text-crema/40 text-xs">MXN {unidadPaquete(p, locale)}</span>
                 </p>
               </Link>
             ))}

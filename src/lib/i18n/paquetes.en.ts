@@ -1,5 +1,5 @@
 import type { Locale } from "./config";
-import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, type Paquete, type Habitacion } from "@/lib/paquetes";
+import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, precioVisible, type Paquete, type Habitacion } from "@/lib/paquetes";
 import { TOURS_DB } from "@/lib/tours";
 
 /**
@@ -106,7 +106,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     nombre: "Family Package",
     subtitulo: "Three days the kids can actually handle",
     duracion: "4 days / 3 nights",
-    precioLabel: "per couple",
+    precioLabel: "per person",
     badge: "Most popular",
     urgencia: "All three tours are rated easy: no long hikes, no descents",
     perfiles: ["Families with kids", "Groups", "Easy difficulty"],
@@ -169,7 +169,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     nombre: "Extreme Adventure",
     subtitulo: "Ropes, rapids and the highest waterfall in Mexico",
     duracion: "4 days / 3 nights",
-    precioLabel: "per couple",
+    precioLabel: "per person",
     badge: "Adrenaline",
     urgencia: "Rappelling and rafting require good physical condition and a minimum age",
     perfiles: ["Adventurous friends", "Adrenaline", "Good physical condition"],
@@ -230,7 +230,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     nombre: "Your Huasteca",
     subtitulo: "Four tour days, and you pick them",
     duracion: "5 days / 4 nights",
-    precioLabel: "per couple",
+    precioLabel: "per person",
     badge: "You build it",
     urgencia: "The only package where you decide the itinerary, tour by tour",
     perfiles: ["You choose", "Second visit", "Groups of friends"],
@@ -302,7 +302,7 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
     nombre: "Huasteca Odyssey",
     subtitulo: "Five days of tours without repeating a single place",
     duracion: "6 days / 5 nights",
-    precioLabel: "per couple",
+    precioLabel: "per person",
     badge: "See it all",
     urgencia: "Five days of tours and one suitcase: you sleep at the same hotel every night",
     perfiles: ["See it all", "First time in the Huasteca", "No repeated stops"],
@@ -529,14 +529,23 @@ const PAQ_LARGO = PAQ_ORDENADOS[PAQ_ORDENADOS.length - 1];
  * El catálogo YA NO se ordena por duración sino por quién viaja, así que el más
  * barato no tiene por qué ser el más corto: se busca por precio, no por
  * posición. Hoy coinciden; el día que dejen de coincidir, el texto sigue bien.
+ *
+ * 🔴 Se compara por `precioVisible`, que es la cifra ANUNCIADA, no por
+ * `p.precio`, que es el total de la pareja. Mezclarlos ordena peras con
+ * manzanas: por `precio` el más barato sería la Luna de Miel ($9.800 por
+ * pareja) cuando en pantalla el más barato es el Familiar ($6.250 por persona).
  */
-const PAQ_BARATO = [...PAQUETES_DB].sort((a, b) => a.precio - b.precio)[0];
+const PAQ_BARATO = [...PAQUETES_DB].sort((a, b) => precioVisible(a) - precioVisible(b))[0];
 /** Los tours que se cobran por persona; el RZR va por vehículo y no compara. */
 const PRECIOS_TOUR_PERSONA = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
 const TOUR_MIN = Math.min(...PRECIOS_TOUR_PERSONA);
 const TOUR_MAX = Math.max(...PRECIOS_TOUR_PERSONA);
-/** El precio publicado es por pareja (2 personas). */
-const POR_PERSONA_BARATO = Math.round(PAQ_BARATO.precio / 2);
+/**
+ * La cifra que se ANUNCIA del más barato. `precioVisible` ya divide entre dos
+ * cuando el paquete se vende por persona, así que aquí no se vuelve a dividir:
+ * hacerlo enseñaría la mitad de la mitad.
+ */
+const VISIBLE_BARATO = precioVisible(PAQ_BARATO);
 
 /**
  * Un renglón por paquete con lo que dice `PAQUETES_DB`: nombre, duración y
@@ -545,8 +554,19 @@ const POR_PERSONA_BARATO = Math.round(PAQ_BARATO.precio / 2);
  */
 function fichaPaquete(p: Paquete, locale: Locale, conSubtitulo = false): string {
   const l = localizePaquete(p, locale);
-  const ficha = `${l.nombre} (${l.duracion}, ${formatoMXN(p.precio, locale)} MXN ${l.precioLabel})`;
+  const ficha = `${l.nombre} (${l.duracion}, ${formatoMXN(precioVisible(p), locale)} MXN ${l.precioLabel})`;
   return conSubtitulo ? `${ficha}: ${l.subtitulo}` : ficha;
+}
+
+/**
+ * La etiqueta del paquete ya traducida («por persona» / «per person»).
+ *
+ * Va SIEMPRE pegada a `precioVisible()`: escribir «por persona» a mano al lado
+ * de una cifra anunciaría el doble el día que un paquete cambie de régimen —la
+ * Luna de Miel se sigue vendiendo por pareja.
+ */
+function etiquetaPrecio(p: Paquete, locale: Locale): string {
+  return localizePaquete(p, locale).precioLabel;
 }
 
 /** Los paquetes que no son ni el más barato ni el más largo. */
@@ -603,7 +623,7 @@ function faqsExtra(locale: Locale): { q: string; a: string }[] {
     return [
       {
         q: "How much does a trip to the Huasteca Potosina cost?",
-        a: `An all-inclusive package with hotel starts at ${m(PAQ_BARATO.precio)} MXN per couple for ${PAQ_BARATO.dias} days and ${PAQ_BARATO.noches} nights — that is ${m(POR_PERSONA_BARATO)} MXN per person with lodging, tours, entrance fees, certified guides and breakfasts included. The longest one, ${PAQ_LARGO.dias} days and ${PAQ_LARGO.noches} nights, costs ${m(PAQ_LARGO.precio)} MXN, also per couple. In between sit the rest: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. If you only want tours and no lodging, single-day tours run from ${m(TOUR_MIN)} to ${m(TOUR_MAX)} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
+        a: `An all-inclusive package with hotel starts at ${m(VISIBLE_BARATO)} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} for ${PAQ_BARATO.dias} days and ${PAQ_BARATO.noches} nights, with lodging, tours, entrance fees, certified guides and breakfasts included. The longest one, ${PAQ_LARGO.dias} days and ${PAQ_LARGO.noches} nights, costs ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. In between sit the rest: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. If you only want tours and no lodging, single-day tours run from ${m(TOUR_MIN)} to ${m(TOUR_MAX)} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
       },
       {
         q: "How many days do I need for the Huasteca Potosina?",
@@ -626,7 +646,7 @@ function faqsExtra(locale: Locale): { q: string; a: string }[] {
   return [
     {
       q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
-      a: `Un paquete todo incluido con hotel arranca en ${m(PAQ_BARATO.precio)} MXN por pareja por ${PAQ_BARATO.dias} días y ${PAQ_BARATO.noches} noches, es decir ${m(POR_PERSONA_BARATO)} MXN por persona con hospedaje, tours, entradas, guías certificados y desayunos incluidos. El más largo, de ${PAQ_LARGO.dias} días y ${PAQ_LARGO.noches} noches, cuesta ${m(PAQ_LARGO.precio)} MXN, también por pareja. En medio quedan los demás: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. Si solo quieres recorridos, sin hospedaje, los tours de un día van de ${m(TOUR_MIN)} a ${m(TOUR_MAX)} MXN por persona. A eso se suma tu traslado hasta Xilitla, las comidas y las cenas, que no van incluidos.`,
+      a: `Un paquete todo incluido con hotel arranca en ${m(VISIBLE_BARATO)} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} por ${PAQ_BARATO.dias} días y ${PAQ_BARATO.noches} noches, con hospedaje, tours, entradas, guías certificados y desayunos incluidos. El más largo, de ${PAQ_LARGO.dias} días y ${PAQ_LARGO.noches} noches, cuesta ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. En medio quedan los demás: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. Si solo quieres recorridos, sin hospedaje, los tours de un día van de ${m(TOUR_MIN)} a ${m(TOUR_MAX)} MXN por persona. A eso se suma tu traslado hasta Xilitla, las comidas y las cenas, que no van incluidos.`,
     },
     {
       q: "¿Cuántos días necesito para conocer la Huasteca Potosina?",
@@ -648,6 +668,31 @@ function faqsExtra(locale: Locale): { q: string; a: string }[] {
 }
 
 /**
+ * La respuesta española de «¿por persona o por pareja?».
+ *
+ * 🔴 La de `FAQS_PAQUETES` (en `paquetes.ts`) sigue diciendo «los precios de
+ * los paquetes son por pareja (2 personas)»: desde el 12 sep 2026 eso es falso
+ * en cuatro de los cinco, y se servía —también dentro del JSON-LD de FAQPage—
+ * a dos dedos de una tarjeta que dice «$6,250 MXN por persona». Se sustituye
+ * aquí, que es el único sitio por el que pasan las FAQ de los dos idiomas,
+ * porque `paquetes.ts` es el catálogo y no se toca. Es el espejo exacto de la
+ * inglesa de abajo; si un día se arregla en el catálogo, esto sobra.
+ *
+ * Se busca POR SU PREGUNTA, no por su posición: si alguien la reordena o la
+ * corrige en el catálogo, el `map` simplemente deja de encontrar nada que
+ * cambiar en vez de pisar la respuesta equivocada.
+ */
+const FAQ_UNIDAD_ES = {
+  q: "¿El precio es por persona o por pareja?",
+  a: "Casi todos se anuncian por persona: la cifra que ves en la tarjeta es lo que paga un viajero, con dos personas compartiendo habitación. La excepción es el paquete de Luna de Miel, que es un viaje de dos y por eso se vende por pareja. Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp.",
+};
+
+/** `FAQS_PAQUETES` con la unidad del precio ya corregida. */
+export const FAQS_PAQUETES_ES = FAQS_PAQUETES.map((f) =>
+  f.q === FAQ_UNIDAD_ES.q ? FAQ_UNIDAD_ES : f,
+);
+
+/**
  * La respuesta del traslado se arma con los precios reales de `TRASLADOS`, igual
  * que en español: la cifra sale del catálogo, no de aquí.
  */
@@ -655,11 +700,11 @@ export function getLocalizedFaqs(
   locale: Locale,
   trasladosTexto: string,
 ): { q: string; a: string }[] {
-  if (locale === "es") return [...FAQS_PAQUETES, ...faqsExtra("es")];
+  if (locale === "es") return [...FAQS_PAQUETES_ES, ...faqsExtra("es")];
   return [
     {
       q: "Is the price per person or per couple?",
-      a: "Package prices are per couple (2 people). For groups, families or extra people we put together a quote tailored to you — message us on WhatsApp.",
+      a: "Almost all of them are advertised per person: the figure on the card is what one traveller pays, with two people sharing a room. The Honeymoon package is the exception — it is a trip for two, so its price is per couple. For groups, families or extra people we put together a quote tailored to you — message us on WhatsApp.",
     },
     {
       q: "How do I get to Xilitla?",
@@ -755,7 +800,7 @@ export interface PaquetesUI {
 const UI_ES: PaquetesUI = {
   metaTitle: "Paquetes Huasteca Potosina — Tours + Hotel Todo Incluido",
   metaDescription:
-    `Paquetes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días: tours guiados + hotel en Xilitla, todo incluido. Transporte, desayunos, entradas y guías certificados NOM-09. Precios por pareja.`,
+    `Paquetes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días: tours guiados + hotel en Xilitla, todo incluido. Transporte, desayunos, entradas y guías certificados NOM-09. Precios por persona, salvo el de Luna de Miel.`,
   keywords: [
     "paquetes huasteca potosina",
     "paquetes todo incluido huasteca potosina",
@@ -769,7 +814,7 @@ const UI_ES: PaquetesUI = {
   breadcrumbInicio: "Inicio",
   breadcrumbPaquetes: "Paquetes Todo Incluido",
   productDescripcion: (subtitulo, duracion) =>
-    `${subtitulo} · ${duracion} · Tours + hotel en Xilitla, todo incluido. Precio por pareja (2 personas).`,
+    `${subtitulo} · ${duracion} · Tours + hotel en Xilitla, todo incluido.`,
   howToNombre: "Cómo llegar a Xilitla desde la Ciudad de México",
   howToDescripcion:
     "Ruta recomendada en autobús nocturno desde CDMX para aprovechar el primer día completo de tour en la Huasteca Potosina.",
@@ -777,7 +822,7 @@ const UI_ES: PaquetesUI = {
   introH2a: "Qué es exactamente un ",
   introH2b: "paquete todo incluido",
   introP1: (lista, porPersona) =>
-    `Un paquete de Tours Huasteca Potosina es un viaje con los recorridos y el hotel ya resueltos en una sola reserva. No están ordenados por duración sino por quién viaja: hay uno pensado para parejas, uno para familias con niños, uno de aventura fuerte con cuerda y rápidos, uno que armas tú recorrido por recorrido y uno largo para no repetir destino. Todos tienen base en Xilitla, San Luis Potosí: ${lista}. Los precios son por pareja, es decir por dos personas, así que el más barato sale en ${porPersona} MXN por persona.`,
+    `Un paquete de Tours Huasteca Potosina es un viaje con los recorridos y el hotel ya resueltos en una sola reserva. No están ordenados por duración sino por quién viaja: hay uno pensado para parejas, uno para familias con niños, uno de aventura fuerte con cuerda y rápidos, uno que armas tú recorrido por recorrido y uno largo para no repetir destino. Todos tienen base en Xilitla, San Luis Potosí: ${lista}. Los precios se anuncian por persona —la excepción es el de Luna de Miel, que se vende por pareja porque es un viaje de dos—, y el más barato sale en ${porPersona} MXN por persona.`,
   introP2:
     "En todos duermes en el Hotel Paraíso Encantado de Xilitla, a minutos del Jardín Surrealista de Edward James; el de Luna de Miel se vende con la suite Jungla puesta, con su terraza privada y su piscina de spa. El precio cubre las noches de hotel, el desayuno buffet los días de tour, los recorridos completos con guías certificados NOM-09 SECTUR, las entradas a todas las atracciones, el equipo de seguridad, el seguro de viaje, la fotografía y el video del recorrido y el transporte del hotel al inicio de cada tour y de regreso.",
   introP3:
@@ -838,7 +883,7 @@ const UI_ES: PaquetesUI = {
 const UI_EN: PaquetesUI = {
   metaTitle: "Huasteca Potosina Packages — Tours + Hotel, All Inclusive",
   metaDescription:
-    `${PAQ_CORTO.dias} to ${PAQ_LARGO.dias}-day packages: guided tours + a hotel in Xilitla, all inclusive. Transport, breakfasts, entrance fees and NOM-09 certified guides. Prices per couple.`,
+    `${PAQ_CORTO.dias} to ${PAQ_LARGO.dias}-day packages: guided tours + a hotel in Xilitla, all inclusive. Transport, breakfasts, entrance fees and NOM-09 certified guides. Prices per person, except the Honeymoon one.`,
   keywords: [
     "huasteca potosina packages",
     "all inclusive huasteca potosina",
@@ -852,7 +897,7 @@ const UI_EN: PaquetesUI = {
   breadcrumbInicio: "Home",
   breadcrumbPaquetes: "All-Inclusive Packages",
   productDescripcion: (subtitulo, duracion) =>
-    `${subtitulo} · ${duracion} · Tours + hotel in Xilitla, all inclusive. Price per couple (2 people).`,
+    `${subtitulo} · ${duracion} · Tours + hotel in Xilitla, all inclusive.`,
   howToNombre: "How to get to Xilitla from Mexico City",
   howToDescripcion:
     "The recommended overnight bus route from Mexico City so you get a full first day of touring in the Huasteca Potosina.",
@@ -860,7 +905,7 @@ const UI_EN: PaquetesUI = {
   introH2a: "What an ",
   introH2b: "all-inclusive package really is",
   introP1: (lista, porPersona) =>
-    `A Tours Huasteca Potosina package is a trip with the tours and the hotel already settled in a single booking. They are not sorted by length but by who is travelling: there is one for couples, one for families with children, one of hard adventure with ropes and rapids, one you put together tour by tour and one long enough not to repeat a destination. All of them are based in Xilitla, San Luis Potosí: ${lista}. Prices are per couple, meaning two people, so the cheapest one works out at ${porPersona} MXN per person.`,
+    `A Tours Huasteca Potosina package is a trip with the tours and the hotel already settled in a single booking. They are not sorted by length but by who is travelling: there is one for couples, one for families with children, one of hard adventure with ropes and rapids, one you put together tour by tour and one long enough not to repeat a destination. All of them are based in Xilitla, San Luis Potosí: ${lista}. Prices are advertised per person — the Honeymoon package is the exception, sold per couple because it is a trip for two — and the cheapest one works out at ${porPersona} MXN per person.`,
   introP2:
     "In every one of them you sleep at Hotel Paraíso Encantado in Xilitla, minutes from Edward James's Surrealist Garden; the Honeymoon package comes with the Jungla suite already in it, with its private terrace and outdoor spa pool. The price covers the hotel nights, buffet breakfast on tour days, the full guided tours with NOM-09 SECTUR certified guides, entrance to every attraction, safety equipment, travel insurance, photography and video of the trip, and transport from the hotel to the start of each tour and back.",
   introP3:
@@ -1066,7 +1111,7 @@ const DET_ES: PaqueteDetalleUI = {
   ahorras: (monto) => `✓ Ahorras ${monto} MXN vs. por separado`,
   reservarWhatsapp: "Reservar por WhatsApp →",
   waMsg: (nombre, duracion, precio) =>
-    `Hola, me interesa el ${nombre} (${duracion}, ${precio} MXN). ¿Tienen disponibilidad?`,
+    `Hola, me interesa el ${nombre} (${duracion}, ${precio}). ¿Tienen disponibilidad?`,
   planCompleto: "El plan completo",
   itinerarioTitulo: "Itinerario día por día",
   eligeTitulo: "De aquí salen tus recorridos",
@@ -1106,7 +1151,7 @@ const DET_ES: PaqueteDetalleUI = {
   loQuePagarias: "Lo que pagarías por separado",
   valorPorSeparado: "Valor por separado",
   precioDelPaquete: "Precio del paquete",
-  precioPorPareja: "Precio por pareja. Grupos y personas adicionales se cotizan aparte.",
+  precioPorPareja: "Precio por persona, dos por habitación. Grupos y personas adicionales se cotizan aparte.",
   ahorrasCorto: (monto) => `✓ Ahorras ${monto} MXN`,
   resenasTitulo: "Lo que dicen quienes ya hicieron este paquete",
   resenasEnEspanol: "",
@@ -1142,7 +1187,7 @@ const DET_EN: PaqueteDetalleUI = {
   ahorras: (monto) => `✓ You save ${monto} MXN vs. booking separately`,
   reservarWhatsapp: "Book on WhatsApp →",
   waMsg: (nombre, duracion, precio) =>
-    `Hi, I'm interested in the ${nombre} (${duracion}, ${precio} MXN). Do you have availability?`,
+    `Hi, I'm interested in the ${nombre} (${duracion}, ${precio}). Do you have availability?`,
   planCompleto: "The full plan",
   itinerarioTitulo: "Day-by-day itinerary",
   eligeTitulo: "Your tours come from this list",
@@ -1182,7 +1227,7 @@ const DET_EN: PaqueteDetalleUI = {
   loQuePagarias: "What you'd pay separately",
   valorPorSeparado: "Value if booked separately",
   precioDelPaquete: "Package price",
-  precioPorPareja: "Price per couple. Groups and extra people are quoted separately.",
+  precioPorPareja: "Price per person, two sharing a room. Groups and extra people are quoted separately.",
   ahorrasCorto: (monto) => `✓ You save ${monto} MXN`,
   resenasTitulo: "What people who've done this package say",
   resenasEnEspanol: "In their own words (Spanish).",

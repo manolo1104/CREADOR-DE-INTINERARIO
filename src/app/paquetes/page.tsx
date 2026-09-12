@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Star, TreePine, UtensilsCrossed, MapPin, Bus } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO } from "@/lib/paquetes";
+import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildHotelNode, ORG_REF } from "@/lib/jsonld";
 import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI, formatoMXN } from "@/lib/i18n/paquetes.en";
@@ -62,18 +62,25 @@ export default function PaquetesPage() {
   // idiomas y no hace falta una tabla de géneros por nombre.
   const listaPaquetes = paquetes.map((p) => {
     const perfil = p.perfiles[0] ? `${p.perfiles[0].toLowerCase()}, ` : "";
-    return `${p.nombre} (${perfil}${p.duracion}, ${formatoMXN(p.precio, locale)} MXN ${p.precioLabel})`;
+    // 🔴 `precioVisible(p)`, nunca `p.precio`: `p.precio` es el total de la
+    // pareja que cobra el motor, y al lado de la etiqueta «por persona» de
+    // `p.precioLabel` anunciaría el doble. La Luna de Miel no necesita caso
+    // aparte: no es por persona, así que el ayudante le devuelve su precio tal
+    // cual y sale con su «por pareja».
+    return `${p.nombre} (${perfil}${p.duracion}, ${formatoMXN(precioVisible(p), locale)} MXN ${p.precioLabel})`;
   });
   const introLista =
     listaPaquetes.length > 1
       ? listaPaquetes.slice(0, -1).join(", ") + t.introUneY + listaPaquetes[listaPaquetes.length - 1]
       : listaPaquetes.join("");
-  // El precio publicado es por pareja: el "desde… por persona" sale de dividirlo
-  // entre dos, no de un número escrito a mano. Es el MÁS BARATO de los cinco
-  // (hoy la Luna de Miel, $9,800), no "el más corto": que el más barato sea
-  // además el de menos días es una coincidencia del catálogo de hoy, así que la
-  // frase que lo recibe en `paquetes.en.ts` tiene que decir "desde".
-  const introPorPersona = formatoMXN(Math.round(Math.min(...paquetes.map((p) => p.precio)) / 2), locale);
+  // El "desde…" se calcula sobre lo que se ENSEÑA, no sobre `p.precio`: si se
+  // sacara el mínimo de los totales de pareja se mezclarían peras con manzanas
+  // —hoy daría $9,800 (Luna de Miel) cuando el importe más barato en pantalla
+  // es $6,250 del Paquete Familiar—. Por eso el mínimo va sobre `precioVisible`,
+  // que ya devuelve por persona los cuatro que lo son y por pareja la Luna de
+  // Miel. Es el MÁS BARATO de los cinco, no "el más corto", así que la frase
+  // que lo recibe en `paquetes.en.ts` tiene que decir "desde".
+  const introPorPersona = formatoMXN(Math.min(...paquetes.map((p) => precioVisible(p))), locale);
   // Viaje en grupo del 16 al 19 de septiembre de 2026: hoy no lo enlaza ninguna
   // página pública. El aviso se apaga solo en cuanto pasa la fecha para que
   // /paquetes no siga mandando gente a un viaje que ya salió. El offset -06:00
@@ -102,8 +109,30 @@ export default function PaquetesPage() {
         brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
         offers: {
           "@type": "Offer",
-          price: p.precio,
+          // 🔴 El `price` es el importe que se ENSEÑA en la página
+          // (`precioVisible`), no el total de la pareja: si el marcado dijera
+          // $14,500 y la página $7,250, el desajuste lo canta cualquier
+          // validador. Lo que cobra el motor no se pierde por eso: el
+          // `priceSpecification` dice a cuánta gente corresponde ese importe
+          // —«por persona» en cuatro, «por pareja (2 personas)» en la Luna de
+          // Miel— y `eligibleQuantity` que la reserva arranca en dos personas,
+          // que es justo lo que cobra el checkout. Mismo patrón que /tours con
+          // el RZR, que se cobra por vehículo.
+          price: precioVisible(p),
           priceCurrency: "MXN",
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: precioVisible(p),
+            priceCurrency: "MXN",
+            unitText: p.precioPorPersona
+              ? (en ? "per person" : "por persona")
+              : (en ? "per couple (2 people)" : "por pareja (2 personas)"),
+          },
+          eligibleQuantity: {
+            "@type": "QuantitativeValue",
+            minValue: 2,
+            unitText: en ? "people" : "personas",
+          },
           availability: "https://schema.org/InStock",
           url: localeUrl(`/paquetes/${p.slug}`, locale),
         },
@@ -159,17 +188,35 @@ export default function PaquetesPage() {
         },
         offers: {
           "@type": "Offer",
-          price: p.precio,
+          // 🔴 El `price` es el importe que se ENSEÑA en la página
+          // (`precioVisible`), no el total de la pareja: si el marcado dijera
+          // $14,500 y la página $7,250, el desajuste lo canta cualquier
+          // validador. Lo que cobra el motor no se pierde por eso: el
+          // `priceSpecification` dice a cuánta gente corresponde ese importe
+          // —«por persona» en cuatro, «por pareja (2 personas)» en la Luna de
+          // Miel— y `eligibleQuantity` que la reserva arranca en dos personas,
+          // que es justo lo que cobra el checkout. Mismo patrón que /tours con
+          // el RZR, que se cobra por vehículo.
+          price: precioVisible(p),
           priceCurrency: "MXN",
-          availability: "https://schema.org/InStock",
-          url: localeUrl(`/paquetes/${p.slug}`, locale),
-          // El precio publicado es POR PAREJA (2 personas), no por persona.
-          description: `${formatoMXN(p.precio, locale)} MXN ${p.precioLabel} · ${p.duracion}`,
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: precioVisible(p),
+            priceCurrency: "MXN",
+            unitText: p.precioPorPersona
+              ? (en ? "per person" : "por persona")
+              : (en ? "per couple (2 people)" : "por pareja (2 personas)"),
+          },
           eligibleQuantity: {
             "@type": "QuantitativeValue",
-            value: 2,
+            minValue: 2,
             unitText: en ? "people" : "personas",
           },
+          availability: "https://schema.org/InStock",
+          url: localeUrl(`/paquetes/${p.slug}`, locale),
+          // La descripción repite el importe visible con SU etiqueta, que es la
+          // del catálogo: nunca `p.precio` al lado de `p.precioLabel`.
+          description: `${formatoMXN(precioVisible(p), locale)} MXN ${p.precioLabel} · ${p.duracion}`,
           seller: ORG_REF,
         },
       })),
@@ -443,20 +490,32 @@ export default function PaquetesPage() {
 
       {/* ── GRUPOS ──
           Quien llega buscando paquetes y viene con 40 personas necesita saber
-          que hay otra puerta: el motor tope en 12 y estos precios son por
-          pareja. Sin esto, el lead se va creyendo que no cabemos. */}
+          que hay otra puerta: el motor tope en 12 y la base de cálculo son dos
+          personas. Sin esto, el lead se va creyendo que no cabemos.
+
+          El texto decía «estos precios están calculados para dos personas» y con
+          la etiqueta nueva se lee como si el importe de la tarjeta fuera el de
+          dos. Lo que sigue siendo cierto es la BASE del cálculo, no la unidad en
+          que se enseña: por eso la frase remite a la etiqueta de cada tarjeta en
+          vez de decidir por las cinco. Sin números escritos a mano.
+
+          El bloque estaba sólo en español y en /en/paquetes salía tal cual;
+          entra su inglés de paso, que si no la sección quedaba a medias. */}
       <section className="px-6 pb-16">
         <div className="max-w-3xl mx-auto border border-white/10 p-7 text-center">
-          <h2 className="font-cormorant font-light text-crema text-2xl mb-3">¿Vienen en grupo grande?</h2>
+          <h2 className="font-cormorant font-light text-crema text-2xl mb-3">
+            {en ? "Travelling as a big group?" : "¿Vienen en grupo grande?"}
+          </h2>
           <p className="font-dm text-sm text-crema/65 leading-relaxed mb-5">
-            Estos precios están calculados para dos personas. Si organizas el viaje de una escuela, una empresa o un
-            grupo familiar grande, se cotiza aparte y hay descuento según el número de personas.
+            {en
+              ? "The prices above are worked out for a trip of two: each package says under its price whether it is per person or per couple. If you're organising the trip of a school, a company or a large family group, we quote it separately and there's a discount depending on the number of people."
+              : "Los precios de arriba están calculados sobre un viaje de dos personas: cada paquete dice debajo de su importe si es por persona o por pareja. Si organizas el viaje de una escuela, una empresa o un grupo familiar grande, se cotiza aparte y hay descuento según el número de personas."}
           </p>
           <Link
             href={lp("/grupos")}
             className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-7 py-3 hover:bg-dorado hover:text-negro transition-all"
           >
-            Viajes de grupo y escolares →
+            {en ? "Group and school trips →" : "Viajes de grupo y escolares →"}
           </Link>
         </div>
       </section>

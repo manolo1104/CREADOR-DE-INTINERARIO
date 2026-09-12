@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TOURS_DB, tourDurTexto } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
@@ -76,10 +76,35 @@ export const metadata: Metadata = {
  * Responden al racimo comercial. Lo informacional se enlaza, no se contesta
  * aquí: esos artículos ya están entre el puesto 4 y el 9.
  */
+const DIAS_MIN = Math.min(...PAQUETES_DB.map((p) => p.dias));
+const DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
+
+/**
+ * Cómo se ANUNCIAN los precios, leído de `precioPorPersona` —el mismo campo
+ * que decide `precioVisible()`— en vez de afirmarlo a mano.
+ *
+ * 🔴 Esta página decía «el precio está calculado para dos personas»: desde el
+ * 12 sep 2026 cuatro de los cinco paquetes se anuncian por persona y solo la
+ * Luna de Miel sigue siendo por pareja, así que ni «todos por pareja» ni
+ * «todos por persona» son ciertos. Armada desde el catálogo, la frase se
+ * corrige sola el día que cambie un paquete.
+ */
+const PAQ_POR_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
+const listaEs = (xs: string[]) =>
+  new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
+const NOTA_PRECIOS =
+  PAQ_POR_PAREJA.length === 0
+    ? "Los precios son por persona."
+    : PAQ_POR_PAREJA.length === PAQUETES_DB.length
+      ? "Los precios son por pareja."
+      : `Los precios son por persona, salvo ${listaEs(
+          PAQ_POR_PAREJA.map((p) => p.nombre),
+        )}, que se vende${PAQ_POR_PAREJA.length > 1 ? "n" : ""} por pareja.`;
+
 const FAQS_XI: { q: string; a: string }[] = [
   {
     q: "¿Qué incluye un paquete a Xilitla?",
-    a: "Las noches en nuestro hotel de Xilitla, los recorridos guiados de cada día con transporte, las entradas, el desayuno y el guía certificado NOM-09 con seguro de viajero. Los paquetes van de 3 a 6 días y el precio está calculado para dos personas; si son más, se ajusta.",
+    a: `Las noches en nuestro hotel de Xilitla, los recorridos guiados de cada día con transporte, las entradas, el desayuno y el guía certificado NOM-09 con seguro de viajero. Los paquetes van de ${DIAS_MIN} a ${DIAS_MAX} días. ${NOTA_PRECIOS} Desde la tercera persona se suman su lugar en cada recorrido y la habitación que haga falta; los menores pagan menos.`,
   },
   {
     q: "¿Por qué quedarse en Xilitla y no en Ciudad Valles?",
@@ -109,8 +134,6 @@ export default function ToursEnXilitlaPage() {
   // Los paquetes salen todos de aquí: el hotel está en Xilitla.
   const paquetes = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias);
   const rzr = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
-  const diasMin = Math.min(...paquetes.map((p) => p.dias));
-  const diasMax = Math.max(...paquetes.map((p) => p.dias));
 
   const schema = {
     "@context": "https://schema.org",
@@ -178,8 +201,8 @@ export default function ToursEnXilitlaPage() {
             Paquetes con hotel en Xilitla
           </h2>
           <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-8">
-            De {diasMin} a {diasMax} días, todo incluido: las noches en el hotel, los recorridos de cada día con
-            transporte y entradas, el desayuno y el guía. Los precios son para dos personas.
+            De {DIAS_MIN} a {DIAS_MAX} días, todo incluido: las noches en el hotel, los recorridos de cada día con
+            transporte y entradas, el desayuno y el guía. {NOTA_PRECIOS}
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             {paquetes.map((p) => (
@@ -194,8 +217,12 @@ export default function ToursEnXilitlaPage() {
                 </h3>
                 <p className="font-dm text-xs text-crema/50 leading-relaxed mb-3 flex-1">{p.subtitulo}</p>
                 <p className="font-dm text-sm">
-                  <span className="font-cormorant text-dorado text-2xl">{money(p.precio)}</span>
-                  <span className="text-crema/40 text-xs"> MXN por pareja · todo incluido</span>
+                  {/* 🔴 `precioVisible()`, nunca `p.precio`: ese campo es el total de la
+                      pareja que cobra el motor, y pintarlo junto a «por persona» anunciaría
+                      el doble. La etiqueta sale del mismo paquete, así que la Luna de Miel
+                      sigue diciendo «por pareja» sin trato especial. */}
+                  <span className="font-cormorant text-dorado text-2xl">{money(precioVisible(p))}</span>
+                  <span className="text-crema/40 text-xs"> MXN {p.precioLabel} · todo incluido</span>
                 </p>
               </Link>
             ))}

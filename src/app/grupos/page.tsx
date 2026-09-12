@@ -138,6 +138,27 @@ const COMO_FUNCIONA = [
   },
 ];
 
+/**
+ * Cómo se anuncian los precios del catálogo de paquetes, leído de
+ * `precioPorPersona` —el mismo campo que decide `precioVisible()`—.
+ *
+ * 🔴 Esta página decía «están calculados para dos personas»: desde el 12 sep
+ * 2026 cuatro de los cinco paquetes se anuncian por persona y solo la Luna de
+ * Miel se sigue vendiendo por pareja. La segunda mitad de la frase —que no son
+ * tarifa de grupo— sigue siendo verdad y se queda.
+ */
+const PAQ_POR_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
+const listaEs = (xs: string[]) =>
+  new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
+const COMO_SE_ANUNCIAN =
+  PAQ_POR_PAREJA.length === 0
+    ? "por persona"
+    : PAQ_POR_PAREJA.length === PAQUETES_DB.length
+      ? "por pareja"
+      : `por persona —salvo ${listaEs(
+          PAQ_POR_PAREJA.map((p) => p.nombre),
+        )}, que se anuncia${PAQ_POR_PAREJA.length > 1 ? "n" : ""} por pareja—`;
+
 export default function GruposPage() {
   const nTours = TOURS_DB.length;
   const diasMin = Math.min(...PAQUETES_DB.map((p) => p.dias));
@@ -269,7 +290,7 @@ export default function GruposPage() {
             . Sirven como referencia del tipo de itinerario que armamos y del ritmo de cada día.
           </p>
           <p className="font-dm text-sm text-crema/45 leading-relaxed">
-            Los precios que verás ahí están calculados para dos personas y no son la tarifa de un grupo. El precio de
+            Los precios que verás ahí se anuncian {COMO_SE_ANUNCIAN} y no son la tarifa de un grupo. El precio de
             tu grupo sale en la cotización y depende del número de personas, los días y lo que decidas incluir.
           </p>
         </div>

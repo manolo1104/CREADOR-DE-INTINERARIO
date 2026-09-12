@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CIUDADES_ORIGEN_EN, getCiudadOrigenEn } from "@/lib/ciudadesOrigenEn";
 import { TOURS_DB, TOURS_DESTACADOS } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { localizePaquete } from "@/lib/i18n/paquetes.en";
 import { localizeTour } from "@/lib/i18n/localize";
 import { getTraslado } from "@/lib/traslados";
@@ -187,14 +187,20 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
                 {paquete.nombre} · {paquete.dias} days / {paquete.noches} nights
               </Link>
               <span className="font-dm text-lima whitespace-nowrap">
-                ${paquete.precio.toLocaleString("en-US")}
+                ${precioVisible(paquete).toLocaleString("en-US")}
                 <span className="text-crema/35 text-xs"> MXN {paquete.precioLabel}</span>
               </span>
             </div>
             <p className="text-crema/55 font-dm text-sm leading-relaxed">
               Includes lodging at our own hotel in Xilitla, breakfasts, transportation to every site,
-              all entrance fees and certified guides. That price covers two people, not one. Hold it
-              with a 30% deposit and cancel free up to 48 hours before.
+              all entrance fees and certified guides.{" "}
+              {/* El precio de arriba se enseña por persona en cuatro de los cinco paquetes; la
+                  Luna de Miel se sigue vendiendo por pareja. La frase decía "that price covers
+                  two people, not one" para TODOS y ahora sería falsa en cuatro. */}
+              {paquete.precioPorPersona
+                ? `That price is per person; the booking is for two, so the trip totals $${paquete.precio.toLocaleString("en-US")} MXN.`
+                : "That price covers two people, not one."}{" "}
+              Hold it with a 30% deposit and cancel free up to 48 hours before.
             </p>
           </div>
 
