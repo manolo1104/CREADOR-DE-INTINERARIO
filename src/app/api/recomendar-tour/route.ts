@@ -65,7 +65,7 @@ async function mandarPropuesta(
  * La contracara de leerlo del catálogo: desde septiembre hay DOS paquetes de 4 días
  * (Familiar y Aventura Extrema), así que "el más largo que quepa" ya no señala uno solo.
  * Mientras el desempate lo decidió el orden de `PAQUETES_DB`, una "Familia con niños"
- * que pedía 4 días recibía Aventura Extrema —rafting Clase III y rappel en Tamul—, justo
+ * que pedía 4 días recibía Aventura Extrema —rafting Clase III y saltos en Micos—, justo
  * lo que la regla de seguridad del prompt prohíbe recomendarle a una familia. Esa regla
  * protege los TOURS, pero el paquete lo elegía el servidor antes y sin mirar el grupo.
  * Por eso ahora, y SÓLO cuando hay empate en días, el grupo desempata: se prefiere el

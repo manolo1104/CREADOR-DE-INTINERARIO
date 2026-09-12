@@ -280,11 +280,11 @@ export const RESENAS_POR_PAQUETE: Record<string, Resena[]> = {
   "aventura-extrema": [
     {
       nombre: "Diego R.", ciudad: "Querétaro", foto: "/imagenes/reviews/reviewer-5.jpg", estrellas: 5, tour: "Aventura Extrema",
-      texto: "Aventura Extrema son tres días de tour y cada uno más fuerte que el anterior. El primer día ves la Cascada de Tamul desde la canoa y el tercero bajas por esa misma pared colgado de la cuerda. Te deja sin palabras. Volvería sin pensarlo.",
+      texto: "Aventura Extrema son tres días de tour y cada uno más fuerte que el anterior. El de llegada ya vas manejando el todoterreno por la sierra, y el último te avientas los saltos de Micos. Te deja sin palabras. Volvería sin pensarlo.",
     },
     {
       nombre: "Luis M.", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-tamul-grupo.jpg", estrellas: 5, tour: "Aventura Extrema",
-      texto: "Hice Aventura Extrema con amigos. Los rápidos Clase III del Tampaón nos dejaron muertos de risa y al día siguiente ya estábamos en el rappel frente a Tamul, con un guía en la cuerda todo el tiempo. Pide condición física, pero se puede sin experiencia previa.",
+      texto: "Hice Aventura Extrema con amigos. Los rápidos Clase III del Tampaón nos dejaron muertos de risa y al día siguiente ya estábamos saltando las cascadas de Micos con chaleco y guía. Pide condición física, pero se puede sin experiencia previa.",
     },
   ],
   "tu-huasteca": [
@@ -534,7 +534,7 @@ export const PAQUETES_DB: Paquete[] = [
     id: "aventura-extrema",
     slug: "aventura-extrema",
     nombre: "Aventura Extrema",
-    subtitulo: "Cuerda, rápidos y la caída más alta de México",
+    subtitulo: "Rápidos, saltos de cascada y sierra en todoterreno",
     duracion: "4 días / 3 noches",
     dias: 4,
     noches: 3,
@@ -542,46 +542,51 @@ export const PAQUETES_DB: Paquete[] = [
     precioProvisional: true,
     precioLabel: "por pareja",
     badge: "Adrenalina",
-    imagen: "/imagenes/tours/rappel-tamul/hero.jpg",
-    urgencia: "Rappel y rafting piden buena condición física y edad mínima",
+    imagen: "/imagenes/rio-tampaon-rafting/tour-1.jpg",
+    urgencia: "El rafting pide edad mínima y saber nadar; los saltos de Micos son opcionales",
     perfiles: ["Amigos aventureros", "Adrenalina", "Buena condición física"],
     tours: [
-      "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 1)",
+      "Recorrido en RZR por Xilitla — Off-road el día de llegada (Día 1)",
       "Rafting en el Río Tampaón — Rápidos Clase III (Día 2)",
-      "Rappel en la Cascada de Tamul (Día 3)",
+      "Paraíso Escalonado — Saltos en Micos y Minas Viejas (Día 3)",
     ],
     itinerario: [
-      { dia: 1, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Llegada + Expedición Tamul", descripcion: "El día que sirve de reconocimiento: navegas el Cañón del Tampaón hasta la Cascada de Tamul y ves desde abajo la pared por la que vas a bajar el día 3. Clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer." },
-      { dia: 2, tipo: "tour", tourSlug: "rafting-rio-tampaon", titulo: "Rafting en el Río Tampaón", descripcion: "Rápidos Clase III en el mismo río, con el cañón cerrándose sobre la balsa. Casco, chaleco y guía de río en cada embarcación." },
-      { dia: 3, tipo: "tour", tourSlug: "rappel-tamul", titulo: "Rappel en la Cascada de Tamul", descripcion: "El descenso frente a la caída más alta de México. Se baja con equipo certificado y guía en la cuerda; no hace falta experiencia previa, pero sí no tenerle miedo al vacío." },
+      { dia: 1, tipo: "tour", tourSlug: "rzr-xilitla", titulo: "Llegada + Recorrido en RZR", descripcion: "El único recorrido que sale de Xilitla mismo, así que se hace el día que llegas sin perder la mañana: manejas tu propio todoterreno por la selva, con guía instructor que abre la ruta. De 2 a 5 horas según la ruta que elijan. El vehículo es uno para los dos." },
+      { dia: 2, tipo: "tour", tourSlug: "rafting-rio-tampaon", titulo: "Rafting en el Río Tampaón", descripcion: "14 kilómetros de rápidos Clase III con el cañón cerrándose sobre la balsa. Casco, chaleco y guía de río en cada embarcación, y comida incluida antes o después. No hace falta experiencia: el briefing de remado va antes de entrar al agua." },
+      { dia: 3, tipo: "tour", tourSlug: "paraiso-escalonado-minas-micos", titulo: "Saltos en Micos y Minas Viejas", descripcion: "El día grande, diez horas: las cascadas escalonadas de Micos, donde se salta de un nivel a otro con chaleco y guía, y Minas Viejas, con su caída triple sobre pozas turquesa. Los saltos son opcionales — se puede bajar por la orilla." },
       { dia: 4, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y camino a casa." },
     ],
     incluye: [
       "3 noches en Hotel Paraíso Encantado Xilitla",
       "Desayuno buffet los días de tour",
-      "Tour Expedición Tamul completo",
-      "Tour Rafting en el Río Tampaón completo",
-      "Tour Rappel en la Cascada de Tamul completo",
+      "Recorrido en RZR completo — un vehículo para los dos, con gasolina",
+      "Tour Rafting en el Río Tampaón completo, con comida incluida ese día",
+      "Tour Paraíso Escalonado completo — Micos y Minas Viejas",
       "Transporte del hotel al inicio de cada tour y de regreso",
-      "Guías certificados NOM-09 SECTUR y guía de cuerda en el rappel",
+      "Guías certificados NOM-09 SECTUR y guía instructor en el RZR",
       "Entradas a todas las atracciones",
-      "Equipo de seguridad: arnés, casco y chaleco",
+      "Equipo de seguridad: casco, goggles y chaleco salvavidas",
       "Seguro de viaje",
       "Fotografía y video del recorrido",
     ],
     noIncluye: [
-      "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
-      "Comidas y cenas (excepto desayunos)",
+      "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección \'Cómo llegar\')",
+      "Comidas y cenas (excepto desayunos y la comida del día de rafting)",
       "Suplemento de habitación Jungla con vista a la montaña (+$400/noche)",
+      "Cambio a una unidad de RZR más grande o a una ruta más larga",
       "Propinas y gastos personales",
     ],
+    // 🔴 El desglose NO vuelve a sumar transporte, entradas ni guías por
+    // separado: ya van dentro del precio de cada recorrido (mírese el `incluye`
+    // de cada tour en `tours.ts`). Sumarlos aparte inflaba el ahorro.
+    // Cuentas con los precios del propio catálogo, para 2 personas:
+    //   rafting 1.950×2 = 3.900 · Paraíso Escalonado 1.600×2 = 3.200
+    //   RZR 1.600 POR VEHÍCULO, no por persona (ruta Nanacatli, la de entrada)
     valor: [
       { item: "3 noches hotel (2 pax)", precio: "$8,400" },
-      { item: "Expedición Tamul (2 pax)", precio: "$3,100" },
       { item: "Rafting Río Tampaón (2 pax)", precio: "$3,900" },
-      { item: "Rappel Cascada de Tamul (2 pax)", precio: "$3,400" },
-      { item: "Transporte 3 días", precio: "$1,200" },
-      { item: "Entradas, guías y equipo de seguridad", precio: "$1,200" },
+      { item: "Paraíso Escalonado — Micos y Minas Viejas (2 pax)", precio: "$3,200" },
+      { item: "Recorrido en RZR (1 vehículo para los dos)", precio: "$1,600" },
       { item: "Fotografía y video del recorrido", precio: "$1,600" },
     ],
   },
