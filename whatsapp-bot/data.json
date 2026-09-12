@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T21:52:45.355Z",
+  "generatedAt": "2026-09-12T22:04:41.184Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -988,9 +988,9 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 7250,
+      "precio": 6450,
       "precioLabel": "por persona",
-      "precioTotalPareja": 14500,
+      "precioTotalPareja": 12900,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura-extrema",
       "badge": "Adrenalina",
       "perfiles": [

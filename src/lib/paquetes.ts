@@ -553,7 +553,11 @@ export const PAQUETES_DB: Paquete[] = [
     duracion: "4 días / 3 noches",
     dias: 4,
     noches: 3,
-    precio: 14500,
+    // $6,450 por persona, que es lo que se anuncia. Manolo lo bajó desde
+    // $7,250 el 12 sep 2026 sabiendo que queda ~$300 por debajo de lo que
+    // cuestan sus tres tours y sus tres noches comprados sueltos ($13,200):
+    // se lo puse delante con el desglose y aun así lo decidió así.
+    precio: 12900,
     precioProvisional: true,
     precioLabel: "por persona",
     precioPorPersona: true,
