@@ -104,17 +104,73 @@ function fraseDuracion(t: Parameters<typeof tourDurRange>[0], locale: Locale): s
  * («| Tour Huasteca $1,550 MXN») y, si no cabe, la corta; solo cuando ninguna
  * entra se recorta el nombre.
  */
-function construirTitulo(nombre: string, precioTxt: string, hayRango: boolean, locale: Locale): string {
+/**
+ * El lugar que se anuncia en el title sale de `destinos` —lo que el tour VISITA
+ * de verdad—, no de partir el nombre por el guion. El nombre de casa ("Ruta
+ * Acuática", "Paraíso Escalonado") no lo teclea nadie; el lugar sí:
+ * "Puente de Dios" solo son 11.242 impresiones, y están además Edward James,
+ * Las Pozas, Minas Viejas, Micos y Media Luna.
+ */
+function lugarDelTour(destinos: string[] | undefined, head: string): string {
+  const crudo = (destinos ?? [])[0];
+  if (!crudo) return "";
+  // "Puente de Dios", no "A elegir: Hacienda… (mismo lugar)".
+  let d = crudo.replace(/\([^)]*\)/g, "").split(/\s+—\s+|:\s+/).pop()!.trim();
+  if (!d) return "";
+  if (d.length > 22) {
+    // Se va acortando por la izquierda hasta que quepa, quedándose siempre con
+    // el final, que es donde está el nombre propio:
+    //   "Jardín Surrealista Edward James"          → "Edward James"
+    //   "Cafetal bajo sombra de la sierra de Xilitla" → "Xilitla"
+    //   "Cascadas de Minas Viejas"                 → "Minas Viejas"
+    const palabras = d.split(/\s+/);
+    d = "";
+    for (let i = 1; i < palabras.length; i++) {
+      const cola = palabras.slice(i).join(" ");
+      if (cola.length <= 22 && /^[A-ZÁÉÍÓÚÑ]/.test(cola)) { d = cola; break; }
+    }
+  }
+  if (!d) return "";
+  // Si la cabeza ya lo nombra, repetirlo solo gasta caracteres.
+  const nucleo = d.split(/\s+/).pop()!.toLowerCase();
+  return head.toLowerCase().includes(nucleo) ? "" : d;
+}
+
+function construirTitulo(
+  nombre: string,
+  precioTxt: string,
+  hayRango: boolean,
+  locale: Locale,
+  destinos?: string[],
+): string {
   const desde = hayRango ? (locale === "en" ? "from " : "desde ") : "";
   const sufijos = locale === "en"
-    ? [` | Huasteca Tour ${desde}${precioTxt} MXN`, ` | Tour ${desde}${precioTxt} MXN`]
-    : [` | Tour Huasteca ${desde}${precioTxt} MXN`, ` | Tour ${desde}${precioTxt} MXN`];
-  const corto = nombreCortoTour(nombre);
-  for (const sufijo of sufijos) {
-    if (corto.length + sufijo.length <= MAX_TITLE) return corto + sufijo;
+    ? [` | Huasteca Tour ${desde}${precioTxt} MXN`, ` | Tour ${desde}${precioTxt} MXN`, ` | ${desde}${precioTxt} MXN`]
+    : [` | Tour Huasteca ${desde}${precioTxt} MXN`, ` | Tour ${desde}${precioTxt} MXN`, ` | ${desde}${precioTxt} MXN`];
+
+  const head = nombre.split(/\s*[—–]\s*/)[0].trim();
+  // Sin el verbo de arranque cabe el lugar: "Descubre el Buceo en la Laguna de
+  // la Media Luna" perdía "de la Media Luna" al recortarse por la cola.
+  const headCorto = head.replace(/^(Descubre el|Descubre|Conoce el|Conoce|Vive el|Vive|Discover the|Discover|Experience the|Experience)\s+/i, "");
+  const lugar = lugarDelTour(destinos, head);
+
+  const bases = [
+    lugar ? `${head}: ${lugar}` : "",
+    lugar ? `${headCorto}: ${lugar}` : "",
+    head,
+    headCorto,
+  ].filter(Boolean);
+
+  for (const base of bases) {
+    for (const sufijo of sufijos) {
+      if (base.length + sufijo.length <= MAX_TITLE) return base + sufijo;
+    }
   }
-  return nombreCortoTour(nombre, MAX_TITLE - sufijos[0].length) + sufijos[0];
+  // Último recurso: recortar el nombre de casa, nunca el lugar.
+  return nombreCortoTour(headCorto, MAX_TITLE - sufijos[2].length) + sufijos[2];
 }
+
+
 
 /**
  * Descripción del SERP: por debajo de 155 caracteres y con el precio DENTRO.
@@ -203,7 +259,7 @@ export function generateMetadata({ params }: Props): Metadata {
   const image = tour.imagen_hero?.startsWith("http") ? tour.imagen_hero : `${SITE}${tour.imagen_hero}`;
   const [precioMin, precioMax] = rangoPrecio(base);
   const esVehiculo = base.precioUnidad === "vehiculo";
-  const title = construirTitulo(tour.nombre, `$${fmtNumber(precioMin, locale)}`, precioMax > precioMin, locale);
+  const title = construirTitulo(tour.nombre, `$${fmtNumber(precioMin, locale)}`, precioMax > precioMin, locale, base.destinos);
   const description = construirDescripcion(
     nombreCortoTour(tour.nombre),
     regionTour(base.id, locale),

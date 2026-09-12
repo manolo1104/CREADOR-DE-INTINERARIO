@@ -31,6 +31,7 @@ export function SiteFooter() {
         { label: "Book a tour", href: lp("/reservar") },
         { label: "All-inclusive packages", href: lp("/paquetes") },
         { label: "Tours", href: lp("/tours") },
+        { label: "Tour prices 2026", href: lp("/precios") },
         { label: "Destinations", href: lp("/destinos") },
         { label: "Things to do", href: lp("/experiencias") },
         { label: "About us", href: lp("/nosotros") },

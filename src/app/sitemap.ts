@@ -112,6 +112,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/creditos`,              changeFrequency: "yearly",  priority: 0.2 },
     { url: `${BASE}/recomendar`,    changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/precios`,       changeFrequency: "monthly", priority: 0.8 },
+    // 🔴 Se creó en la fase 2 y se quedó fuera del sitemap y sin un solo
+    // enlace entrante: 0 impresiones en 117 días. Una página que nadie
+    // declara y nadie enlaza no existe para Google.
+    { url: `${BASE}/en/precios`,    changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/guia`,          changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sobre-la-huasteca-potosina`,        changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sustentabilidad-y-conservacion`,    changeFrequency: "yearly",  priority: 0.4 },
