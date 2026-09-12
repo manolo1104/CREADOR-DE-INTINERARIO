@@ -926,6 +926,7 @@ const TOURS_RAW: Tour[] = [
       "Cata de café recién tostado",
     ],
     imagen_hero: "/imagenes/tours/travesia-del-cafe/hero.jpg",
+    logo: "/imagenes/tours/logos/travesia-del-cafe.webp",
     collage: [
       "/imagenes/tours/travesia-del-cafe/hero.jpg",
       "/imagenes/tours/travesia-del-cafe/gallery-7.jpg",
