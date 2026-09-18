@@ -4,6 +4,7 @@ import { actividad } from "@/lib/logger";
 // Bots, crawlers y escáneres: no son visitantes reales, no ensucian el feed.
 // Vive en su propio archivo porque la descarga de workbooks usa el mismo filtro.
 import { esBot } from "@/lib/bots";
+import { puedeVer, rolDesdeToken, seccionRestringida, type RolAdmin } from "@/lib/admin/usuarios";
 
 // Origen legible de la visita (de dónde llegó).
 function fuenteReferrer(ref: string | null): string {
@@ -31,15 +32,16 @@ const TRACKED_PATHS = ["/", "/planear", "/destinos", "/experiencias", "/info-pra
 // Rutas /api/admin que deben permanecer públicas (no requieren sesión)
 const PUBLIC_ADMIN_API = ["/api/admin/login", "/api/admin/logout"];
 
-async function isValidSession(req: NextRequest): Promise<boolean> {
-  if (!secret) return false; // sin secreto configurado → nadie pasa
+// Devuelve el rol de quien viene en la cookie, o null si no hay sesión válida.
+async function rolDeSesion(req: NextRequest): Promise<RolAdmin | null> {
+  if (!secret) return null; // sin secreto configurado → nadie pasa
   const token = req.cookies.get("admin_session")?.value;
-  if (!token) return false;
+  if (!token) return null;
   try {
-    await jwtVerify(token, secret);
-    return true;
+    const { payload } = await jwtVerify(token, secret);
+    return rolDesdeToken(payload.rol);
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -49,17 +51,28 @@ export async function middleware(req: NextRequest) {
   // ── Protección de las APIs de admin ───────────────────────────────────────
   // (van antes que las páginas: responden 401 JSON en vez de redirigir)
   if (pathname.startsWith("/api/admin") && !PUBLIC_ADMIN_API.includes(pathname)) {
-    if (!(await isValidSession(req))) {
+    const rol = await rolDeSesion(req);
+    if (!rol) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+    const seccion = seccionRestringida(pathname);
+    if (seccion && !puedeVer(rol, seccion)) {
+      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     }
   }
 
   // ── Protección de las páginas /admin ──────────────────────────────────────
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
-    if (!(await isValidSession(req))) {
+    const rol = await rolDeSesion(req);
+    if (!rol) {
       const res = NextResponse.redirect(new URL("/admin/login", req.url));
       res.cookies.delete("admin_session");
       return res;
+    }
+    // Sesión buena, pero sección que su rol no ve: de vuelta al inicio del panel.
+    const seccion = seccionRestringida(pathname);
+    if (seccion && !puedeVer(rol, seccion)) {
+      return NextResponse.redirect(new URL("/admin", req.url));
     }
   }
 

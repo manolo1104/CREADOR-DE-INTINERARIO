@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TOURS_DB } from "@/lib/tours";
 import { conceptosDe } from "@/lib/admin/costos";
+import { registrarEnBitacora } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,13 @@ export async function PUT(req: NextRequest) {
       where:  { tourSlug },
       create: { tourSlug, conceptos: conceptos as never, notas },
       update: { conceptos: conceptos as never, notas },
+    });
+
+    await registrarEnBitacora({
+      accion:     "modificó",
+      entidad:    "precios",
+      referencia: tourSlug,
+      resumen:    `Costos del recorrido "${tourSlug}" (${conceptos.length} concepto${conceptos.length === 1 ? "" : "s"})`,
     });
 
     return NextResponse.json({ ok: true, tourSlug, conceptos, notas });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
 import { buildAvisoPagoIncompletoHtml } from "@/lib/avisoCarritoGrande";
@@ -259,6 +260,14 @@ export async function POST(req: NextRequest) {
           });
 
           folioParaGA4 = confirmationNumber;
+
+          await registrarEnBitacora({
+            accion:     "creó",
+            entidad:    "reserva",
+            referencia: confirmationNumber,
+            resumen:    `Reserva ${confirmationNumber} — ${meta.customerName || "cliente sin nombre"}, ${meta.tourName || "Tour Huasteca"} el ${meta.tourDate || "sin fecha"}, ${pesos(totalAmount)} (pago en línea, recuperada por el webhook)`,
+            actor:      SISTEMA,
+          });
 
           logger.info("stripe_webhook_booking_recovered", {
             payment_intent: pi.id,

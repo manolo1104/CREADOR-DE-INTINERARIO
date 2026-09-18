@@ -25,11 +25,13 @@ interface Props {
   monthReservas:    number;
   pendingAmount:    number;
   activeQuotes:     number;
+  /** Ingresos del mes: solo para quien puede ver los números del negocio. */
+  verDinero?:       boolean;
 }
 
 export default function DashboardClient({
   todayBookings, upcomingBookings, recentBookings, pendingQuotes,
-  monthIngresos, monthReservas, pendingAmount, activeQuotes,
+  monthIngresos, monthReservas, pendingAmount, activeQuotes, verDinero = true,
 }: Props) {
   const today      = new Date();
   const dateStr    = today.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -56,12 +58,20 @@ export default function DashboardClient({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Ingresos este mes</p>
-          <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1"><CountUp value={monthIngresos} format={fmx} /></p>
-          <p className="text-[#1B4332]/40 font-dm text-xs">{monthReservas} reservas</p>
-        </div>
+      <div className={`grid grid-cols-2 gap-4 mb-7 ${verDinero ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+        {verDinero ? (
+          <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+            <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Ingresos este mes</p>
+            <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1"><CountUp value={monthIngresos} format={fmx} /></p>
+            <p className="text-[#1B4332]/40 font-dm text-xs">{monthReservas} reservas</p>
+          </div>
+        ) : (
+          <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+            <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Reservas este mes</p>
+            <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1"><CountUp value={monthReservas} /></p>
+            <p className="text-[#1B4332]/40 font-dm text-xs">creadas este mes</p>
+          </div>
+        )}
 
         <div className={`border rounded-sm p-5 ${todayBookings.length > 0 ? "bg-[#1B4332] border-[#1B4332]" : "bg-white border-[#1B4332]/10"}`}>
           <p className={`text-[9px] tracking-[2px] uppercase font-dm mb-2 ${todayBookings.length > 0 ? "text-white/60" : "text-[#1B4332]/40"}`}>Tours hoy</p>
@@ -240,7 +250,10 @@ export default function DashboardClient({
         {[
           { href: "/admin/reservas",   icon: BookOpen,   label: "Reservas",   color: "#1B4332" },
           { href: "/admin/calendario", icon: Calendar,   label: "Calendario", color: "#1a4e8a" },
-          { href: "/admin/ingresos",   icon: TrendingUp, label: "Ingresos",   color: "#52B788" },
+          // El atajo a Ingresos solo para quien puede ver los números del negocio.
+          ...(verDinero
+            ? [{ href: "/admin/ingresos", icon: TrendingUp, label: "Ingresos", color: "#52B788" }]
+            : [{ href: "/admin/cotizaciones", icon: FileText, label: "Cotizaciones", color: "#52B788" }]),
           { href: "/admin/clientes",   icon: Users,      label: "Clientes",   color: "#7a3a6a" },
         ].map(({ href, icon: Icon, label, color }) => (
           <Link key={href} href={href}

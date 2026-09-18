@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
+import { usuariosAdmin, type UsuarioAdmin } from "./usuarios";
 
 // Sin fallback: si falta ADMIN_JWT_SECRET la app no puede firmar/verificar sesiones.
 function getSecret(): Uint8Array {
@@ -10,9 +11,13 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(raw);
 }
 
-export async function createToken(): Promise<string> {
-  const adminUser = process.env.ADMIN_USERNAME || "manolo";
-  return new SignJWT({ role: "admin", user: adminUser })
+export async function createToken(usuario: UsuarioAdmin): Promise<string> {
+  return new SignJWT({
+    role:   "admin",
+    user:   usuario.user,
+    rol:    usuario.rol,
+    nombre: usuario.nombre,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -24,17 +29,21 @@ export async function verifyToken(token: string) {
   return payload;
 }
 
-export async function checkCredentials(username: string, password: string): Promise<boolean> {
-  const expectedUser = (process.env.ADMIN_USERNAME || "manolo").toLowerCase();
-  const validUser = (username || "").toLowerCase() === expectedUser;
-  if (!validUser) return false;
+// Devuelve el usuario que entró, o null si usuario/contraseña no cuadran.
+export async function checkCredentials(
+  username: string,
+  password: string,
+): Promise<UsuarioAdmin | null> {
+  const tecleado = (username || "").trim().toLowerCase();
+  const usuario = usuariosAdmin().find(u => u.user === tecleado);
+  if (!usuario) return null;
 
   // Preferir hash bcrypt; si no, contraseña en texto plano por env.
-  // Sin ninguna de las dos configurada → login deshabilitado (fail closed).
-  const hash = process.env.ADMIN_PASSWORD_HASH;
-  if (hash) return bcrypt.compare(password, hash);
+  // Sin ninguna de las dos configurada → ese usuario no puede entrar (fail closed).
+  const hash = process.env[usuario.envPasswordHash];
+  if (hash) return (await bcrypt.compare(password, hash)) ? usuario : null;
 
-  const plain = process.env.ADMIN_PASSWORD;
-  if (!plain) return false;
-  return password === plain;
+  const plain = process.env[usuario.envPassword];
+  if (!plain) return null;
+  return password === plain ? usuario : null;
 }

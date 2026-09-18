@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,13 @@ export async function POST(req: NextRequest) {
         status:        "borrador",
       },
     });
+    await registrarEnBitacora({
+      accion:     "creó",
+      entidad:    "cotización",
+      referencia: quote.quoteNumber,
+      resumen:    `Cotización ${quote.quoteNumber} — ${quote.customerName}, ${quote.tourName || "sin tour"} el ${quote.tourDate || "sin fecha"}, ${pesos(quote.totalAmount)}`,
+    });
+
     return NextResponse.json({ ok: true, id: quote.id, quoteNumber });
   } catch (e: any) {
     console.error("admin/cotizaciones POST:", e?.message);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { MAX_BYTES_EVIDENCIA, TIPOS_OK, tipoDeArchivo } from "@/lib/admin/evidencia";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const reserva = await prisma.tourBooking.findUnique({
       where: { id: params.id },
-      select: { id: true },
+      select: { id: true, confirmationNumber: true, customerName: true },
     });
     if (!reserva) return NextResponse.json({ error: "La reserva no existe" }, { status: 404 });
 
@@ -58,6 +59,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
       select: { id: true, bookingId: true, nombreArchivo: true, tipoMime: true, tamanoBytes: true, createdAt: true },
     });
+    await registrarEnBitacora({
+      accion:     "creó",
+      entidad:    "comprobante",
+      referencia: reserva.confirmationNumber,
+      resumen:    `Comprobante "${creada.nombreArchivo}" en la reserva ${reserva.confirmationNumber} (${reserva.customerName})`,
+    });
+
     return NextResponse.json({ ok: true, evidencia: creada });
   } catch (e: any) {
     console.error("admin/evidencia POST:", e?.message);

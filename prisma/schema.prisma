@@ -454,3 +454,27 @@ model CursoDescarga {
   @@index([noche, createdAt])
   @@index([noche, huella])
 }
+
+// ── Bitácora del panel ──────────────────────────────────────────────────────
+// Quién hizo qué, y cuándo. Solo la ve el dueño (rol "dueno" en
+// src/lib/admin/usuarios.ts). Se escribe desde `registrarEnBitacora()`, que
+// NUNCA lanza excepción: si la bitácora falla, la reserva se guarda igual.
+// `detalle` guarda el antes/después de cada campo que cambió, ya traducido a
+// español, para poder leer el renglón sin abrir la base de datos.
+model Bitacora {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  usuario String // "erick" — el usuario con el que entró
+  nombre  String // "Erick" — cómo se muestra
+  rol     String // dueno | socio | operacion | sistema
+
+  accion     String // creó | modificó | eliminó | envió | entró | intento fallido
+  entidad    String // reserva | cotización | precios | comprobante | panel
+  referencia String? // folio visible: HP-XXXX, COT-XXXX
+  resumen    String // renglón legible tal cual se muestra en el panel
+  detalle    Json? // [{campo, antes, despues}] cuando fue una modificación
+
+  @@index([createdAt])
+  @@index([usuario, createdAt])
+}

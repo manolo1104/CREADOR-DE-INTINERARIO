@@ -3,21 +3,26 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
+import { puedeVer, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
 
-const NAV = [
-  { href: "/admin",              icon: LayoutDashboard, label: "Inicio",       exact: true  },
-  { href: "/admin/reservas",     icon: BookOpen,        label: "Reservas"                   },
-  { href: "/admin/calendario",   icon: Calendar,        label: "Calendario"                 },
-  { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones"               },
-  { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador"                  },
-  { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ingresos"                   },
-  { href: "/admin/clientes",     icon: Users,           label: "Clientes"                   },
-  { href: "/admin/curso",        icon: GraduationCap,   label: "Curso IA"                   },
+const NAV: {
+  href: string; icon: typeof BookOpen; label: string;
+  seccion: SeccionAdmin; exact?: boolean;
+}[] = [
+  { href: "/admin",              icon: LayoutDashboard, label: "Inicio",       seccion: "inicio", exact: true },
+  { href: "/admin/reservas",     icon: BookOpen,        label: "Reservas",     seccion: "reservas"      },
+  { href: "/admin/calendario",   icon: Calendar,        label: "Calendario",   seccion: "calendario"    },
+  { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones", seccion: "cotizaciones"  },
+  { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador",    seccion: "cotizador"     },
+  { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ingresos",     seccion: "ingresos"      },
+  { href: "/admin/clientes",     icon: Users,           label: "Clientes",     seccion: "clientes"      },
+  { href: "/admin/curso",        icon: GraduationCap,   label: "Curso IA",     seccion: "curso"         },
+  { href: "/admin/bitacora",     icon: ScrollText,      label: "Bitácora",     seccion: "bitacora"      },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ rol = "dueno", nombre = "" }: { rol?: RolAdmin; nombre?: string }) {
   const pathname = usePathname();
   const router   = useRouter();
   const [open, setOpen] = useState(false);
@@ -32,7 +37,7 @@ export default function AdminSidebar() {
 
   const navItems = (
     <nav className="flex-1 px-3 py-4 space-y-0.5">
-      {NAV.map(({ href, icon: Icon, label, exact }) => {
+      {NAV.filter(({ seccion }) => puedeVer(rol, seccion)).map(({ href, icon: Icon, label, exact }) => {
         const active = exact ? pathname === href : pathname.startsWith(href);
         return (
           <Link key={href} href={href} onClick={() => { playClick(); setOpen(false); }}
@@ -61,6 +66,9 @@ export default function AdminSidebar() {
             <div className="font-cormorant text-[#1B4332] text-lg tracking-[3px] uppercase">HUASTECA</div>
             <div className="text-[8px] tracking-[3px] uppercase text-[#52B788] font-dm mt-0.5">Admin Panel</div>
           </Link>
+          {nombre && (
+            <p className="text-[10px] font-dm text-[#1B4332]/45 mt-2">Sesión de {nombre}</p>
+          )}
         </div>
         {navItems}
         <div className="px-3 py-4 border-t border-[#1B4332]/10 space-y-0.5">
