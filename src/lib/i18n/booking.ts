@@ -939,7 +939,7 @@ const es: BookingMessages = {
       {
         num: "02",
         title: "Confirma por WhatsApp",
-        text: "Envíanos tu número de confirmación al +52 489 125 1458. Te responderemos para coordinar tu punto de recogida exacto.",
+        text: "Envíanos tu número de confirmación al +52 489 109 0388. Te responderemos para coordinar tu punto de recogida exacto.",
       },
       {
         num: "03",
@@ -957,7 +957,7 @@ const es: BookingMessages = {
         text: "Preséntate en el punto acordado con tu guía y muestra tu número de confirmación. ¡El resto lo hacemos nosotros!",
       },
     ],
-    confirmarWhatsapp: "Confirmar por WhatsApp · +52 489 125 1458",
+    confirmarWhatsapp: "Confirmar por WhatsApp · +52 489 109 0388",
     compartirReserva: "Compartir mi reserva",
     enlaceCopiado: "¡Enlace copiado! Compártelo 🎉",
     agregarCalendario: "Agregar al calendario",
@@ -972,7 +972,7 @@ const es: BookingMessages = {
       `¡Acabo de reservar "${tour}" en la Huasteca Potosina! 🌊 ¿Quién se apunta al próximo? 👉 ${url}`,
     compartirTitulo: "Mi tour en la Huasteca Potosina",
     icsDescripcion: (folio, personas) =>
-      `Confirmación ${folio}. ${personas} participante(s). Te contactaremos por WhatsApp (+52 489 125 1458) un día antes para coordinar la hora exacta de recogida.`,
+      `Confirmación ${folio}. ${personas} participante(s). Te contactaremos por WhatsApp (+52 489 109 0388) un día antes para coordinar la hora exacta de recogida.`,
   },
 
   validacion: {
@@ -1470,7 +1470,7 @@ const en: BookingMessages = {
       {
         num: "02",
         title: "Confirm on WhatsApp",
-        text: "Send us your confirmation number at +52 489 125 1458. We'll reply to arrange your exact pickup point.",
+        text: "Send us your confirmation number at +52 489 109 0388. We'll reply to arrange your exact pickup point.",
       },
       {
         num: "03",
@@ -1488,7 +1488,7 @@ const en: BookingMessages = {
         text: "Meet your guide at the agreed point and show your confirmation number. We'll take care of the rest!",
       },
     ],
-    confirmarWhatsapp: "Confirm on WhatsApp · +52 489 125 1458",
+    confirmarWhatsapp: "Confirm on WhatsApp · +52 489 109 0388",
     compartirReserva: "Share my booking",
     enlaceCopiado: "Link copied! Share it 🎉",
     agregarCalendario: "Add to calendar",
@@ -1503,7 +1503,7 @@ const en: BookingMessages = {
       `I just booked "${tour}" in the Huasteca Potosina! 🌊 Who's coming on the next one? 👉 ${url}`,
     compartirTitulo: "My tour in the Huasteca Potosina",
     icsDescripcion: (folio, personas) =>
-      `Confirmation ${folio}. ${personas} participant(s). We'll contact you on WhatsApp (+52 489 125 1458) the day before to arrange the exact pickup time.`,
+      `Confirmation ${folio}. ${personas} participant(s). We'll contact you on WhatsApp (+52 489 109 0388) the day before to arrange the exact pickup time.`,
   },
 
   validacion: {

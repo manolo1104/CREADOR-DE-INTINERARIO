@@ -344,7 +344,7 @@ function TourResultCard({
         {/* WhatsApp for primary */}
         {isPrimary && (
           <a
-            href={`https://wa.me/524891251458?text=${encodeURIComponent(
+            href={`https://wa.me/524891090388?text=${encodeURIComponent(
               `Hola, el recomendador IA me sugirió el tour "${tour.nombre}" para ${grupo} desde ${origen}. ¿Tienen disponibilidad?`
             )}`}
             target="_blank"
@@ -441,7 +441,7 @@ function PaqueteResultCard({
         </div>
 
         <a
-          href={`https://wa.me/524891251458?text=${encodeURIComponent(
+          href={`https://wa.me/524891090388?text=${encodeURIComponent(
             `Hola, el recomendador IA me sugirió el ${paquete.nombre} (${paquete.duracion}) para ${grupo} desde ${origen}, con ${dias} disponibles. ¿Tienen disponibilidad?`
           )}`}
           target="_blank"

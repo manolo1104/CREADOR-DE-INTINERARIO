@@ -50,7 +50,7 @@ function toUSD(precioStr: string): string {
 }
 
 function waLink(mensaje: string): string {
-  return `https://wa.me/524891251458?text=${encodeURIComponent(mensaje)}`;
+  return `https://wa.me/524891090388?text=${encodeURIComponent(mensaje)}`;
 }
 
 export default function ExperienciasClient() {

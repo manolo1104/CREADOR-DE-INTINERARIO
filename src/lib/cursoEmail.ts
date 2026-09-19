@@ -128,7 +128,7 @@ const ctaReservar = (cx: ContextoCorreo, texto = "Reservar mi lugar") => {
   ].join("");
 };
 
-const firmaWhats = `¿Dudas? Responde a este correo o escríbeme por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.azulVivo};font-weight:500;">+52 489 125 1458</a>. Te contesto yo.`;
+const firmaWhats = `¿Dudas? Responde a este correo o escríbeme por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.azulVivo};font-weight:500;">+52 489 109 0388</a>. Te contesto yo.`;
 
 /**
  * Envoltorio de correo PLANO: el que parece escrito a mano.

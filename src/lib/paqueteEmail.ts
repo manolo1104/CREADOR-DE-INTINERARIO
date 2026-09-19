@@ -21,7 +21,7 @@ import type { Paquete } from "./paquetes";
 import type { Locale } from "./i18n/config";
 
 const BASE = "https://www.huasteca-potosina.com";
-const WA   = "524891251458";
+const WA   = "524891090388";
 
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")} MXN`;
 
@@ -272,7 +272,7 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
             <tr><td style="border-top:1px solid #d4ccbc;padding:22px 0 0 0;">
               <p style="margin:0 0 14px 0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:#8a7a5a;line-height:1.7;">${T.guiaAdjunta}</p>
               <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:#3a3a2e;line-height:1.7;">
-                ${T.dudas.replace("+52 489 125 1458", `<a href="https://wa.me/${WA}" style="color:#3a6b1a;font-weight:500;">+52 489 125 1458</a>`)}
+                ${T.dudas.replace("+52 489 109 0388", `<a href="https://wa.me/${WA}" style="color:#3a6b1a;font-weight:500;">+52 489 109 0388</a>`)}
               </p>
             </td></tr>
           </table>

@@ -18,7 +18,7 @@ import {
 import type { Locale } from "./i18n/config";
 
 const BASE = "https://www.huasteca-potosina.com";
-const WA   = "524891251458";
+const WA   = "524891090388";
 
 export type QuotePaso = 2 | 3 | 4;
 

@@ -422,7 +422,7 @@ export default function InfoPracticaPage() {
                 ))}
               </ul>
               <a
-                href="https://wa.me/524891251458?text=Hola%2C%20me%20interesa%20hospedarme%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
+                href="https://wa.me/524891090388?text=Hola%2C%20me%20interesa%20hospedarme%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/50 hover:border-dorado hover:bg-dorado/10 px-4 py-1.5 transition-all"
@@ -441,7 +441,7 @@ export default function InfoPracticaPage() {
           <div className="flex items-center gap-2 ml-4 -mt-2">
             <span className="text-dorado text-sm">→</span>
             <Link
-              href="https://wa.me/524891251458?text=Hola%2C%20quiero%20reservar%20el%20Hotel%20Para%C3%ADso%20Encantado%20con%20tarifa%20especial%20de%20tour"
+              href="https://wa.me/524891090388?text=Hola%2C%20quiero%20reservar%20el%20Hotel%20Para%C3%ADso%20Encantado%20con%20tarifa%20especial%20de%20tour"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-dm text-dorado hover:text-lima underline underline-offset-2 transition-colors"
@@ -521,7 +521,7 @@ export default function InfoPracticaPage() {
                 {t.reservasTexto}
               </p>
               <a
-                href="https://wa.me/524891251458?text=Hola%2C%20quisiera%20reservar%20habitaci%C3%B3n%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
+                href="https://wa.me/524891090388?text=Hola%2C%20quisiera%20reservar%20habitaci%C3%B3n%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-[#25D366] border border-[#25D366]/40 hover:border-[#25D366] hover:bg-[#25D366]/10 px-4 py-2 transition-all rounded"

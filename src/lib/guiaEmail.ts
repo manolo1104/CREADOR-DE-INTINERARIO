@@ -45,7 +45,7 @@ export function buildGuiaEmailHtml(d: GuiaEmailInput): { subject: string; html: 
       boton(tripUrl, "Ver el viaje de septiembre"),
       bajoBoton(`¿Prefieres armarlo tú? <a href="${toursUrl}" style="color:${C.verde};font-weight:500;">Mira los tours sueltos</a>.`),
     ].join(""),
-    pie: `¿Alguna duda? Responde a este correo o escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a>.`,
+    pie: `¿Alguna duda? Responde a este correo o escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a>.`,
   });
 
   return { subject: "Tu Guía Definitiva de la Huasteca Potosina 🌿 — descárgala aquí", html };

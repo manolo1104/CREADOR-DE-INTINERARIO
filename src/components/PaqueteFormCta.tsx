@@ -7,7 +7,7 @@ import { trackPackageInquiry, trackWhatsapp } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaqueteFormUI } from "@/lib/i18n/paquetes.en";
 
-const WA_NUMBER = "524891251458";
+const WA_NUMBER = "524891090388";
 
 interface Props {
   packageName: string;

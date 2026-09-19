@@ -23,7 +23,7 @@
 import { linkBaja } from "./baja";
 
 export const BASE = "https://www.huasteca-potosina.com";
-export const WA = "524891251458";
+export const WA = "524891090388";
 
 /** La paleta del funnel, tal cual la define `tailwind.config.ts`. */
 export const C = {

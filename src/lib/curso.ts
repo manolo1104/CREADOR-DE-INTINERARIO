@@ -166,7 +166,7 @@ export const LINKS = {
 
 // ── WhatsApp de Manolo (el mismo del sitio de Tours) ───────────────────────
 export const WHATSAPP_CURSO =
-  "https://wa.me/524891251458?text=" +
+  "https://wa.me/524891090388?text=" +
   encodeURIComponent("Hola Manolo, tengo una duda sobre el curso Turismo con IA");
 
 // ── El programa (4 semanas → 4 entregables publicados) ─────────────────────

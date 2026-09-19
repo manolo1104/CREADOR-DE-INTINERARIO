@@ -3,9 +3,9 @@ import { headers } from "next/headers";
 import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
 
 const WA_LLEGADA_ES =
-  "https://wa.me/524891251458?text=Hola%2C%20tengo%20dudas%20sobre%20c%C3%B3mo%20llegar%20al%20punto%20de%20salida%20del%20tour.";
+  "https://wa.me/524891090388?text=Hola%2C%20tengo%20dudas%20sobre%20c%C3%B3mo%20llegar%20al%20punto%20de%20salida%20del%20tour.";
 const WA_LLEGADA_EN =
-  "https://wa.me/524891251458?text=Hi%2C%20I%20have%20questions%20about%20how%20to%20reach%20the%20tour%20departure%20point.";
+  "https://wa.me/524891090388?text=Hi%2C%20I%20have%20questions%20about%20how%20to%20reach%20the%20tour%20departure%20point.";
 
 // Nota: aquí ya no se muestra el mapa del Hotel Paraíso Encantado. Los tours no
 // salen de un punto fijo: pasamos por el cliente a SU hospedaje, en Xilitla o en

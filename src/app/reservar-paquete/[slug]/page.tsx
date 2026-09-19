@@ -25,7 +25,7 @@ const stripePromise = loadStripe(
   "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
 );
 
-const WA_NUMBER = "524891251458";
+const WA_NUMBER = "524891090388";
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 /**
  * Los porcentajes no dependen del idioma; sus etiquetas sí (ver el diccionario).
@@ -332,7 +332,7 @@ export default function ReservarPaquetePage() {
         </Link>
         <a href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t.waReservar(paquete.nombre))}`} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2 text-verde-selva hover:text-verde-vivo transition-colors">
-          <MessageCircle className="w-4 h-4" /><span className="font-dm text-sm font-medium">+52 489 125 1458</span>
+          <MessageCircle className="w-4 h-4" /><span className="font-dm text-sm font-medium">+52 489 109 0388</span>
         </a>
       </div>
 

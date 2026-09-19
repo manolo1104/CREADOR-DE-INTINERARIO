@@ -1,4 +1,4 @@
-const WA_NUMBER = "524891251458";
+const WA_NUMBER = "524891090388";
 
 export function waLink(message: string): string {
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`;

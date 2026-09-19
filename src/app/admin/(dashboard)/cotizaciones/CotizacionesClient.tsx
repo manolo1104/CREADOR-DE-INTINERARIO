@@ -661,7 +661,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   <header class="head">
     <div>
       <div class="brand"><span class="wordmark">HUASTECA POTOSINA TOURS</span></div>
-      <div class="contact">Manolo Covarrubias · guía local&#10;hola@huasteca-potosina.com · WhatsApp +52 489 125 1458&#10;Xilitla, San Luis Potosí, México · Operador SECTUR</div>
+      <div class="contact">Manolo Covarrubias · guía local&#10;hola@huasteca-potosina.com · WhatsApp +52 489 109 0388&#10;Xilitla, San Luis Potosí, México · Operador SECTUR</div>
     </div>
     <div class="stamp">
       <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;">
@@ -743,7 +743,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   <div class="foot">
     <div class="terms">Para apartar tu lugar realiza el pago del anticipo a la cuenta indicada o por transferencia. Recibirás confirmación por WhatsApp. Cancelación gratuita hasta 48 h antes del primer tour; posteriores aplican cargo del 50%. El saldo se paga el día del tour en efectivo, transferencia o tarjeta (3% comisión).</div>
-    <a class="cta" href="https://wa.me/524891251458"><div class="lbl">Confirmar por WhatsApp</div><div class="num">+52 489 125 1458</div></a>
+    <a class="cta" href="https://wa.me/524891090388"><div class="lbl">Confirmar por WhatsApp</div><div class="num">+52 489 109 0388</div></a>
   </div>
 
   <span class="runfoot">Cotización № ${q.quoteNumber}</span>
@@ -772,7 +772,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   }
 
   function waMsg(q: TourQuote) {
-    const ph = (q.customerPhone || "524891251458").replace(/\D/g, "");
+    const ph = (q.customerPhone || "524891090388").replace(/\D/g, "");
     return `https://wa.me/${ph}?text=${encodeURIComponent(`Hola ${q.customerName}, tu cotización *${q.quoteNumber}*:\n\n*${q.tourName}*\nTotal: *${fmx(q.totalAmount)}*\nVálida 48 horas.\n\n¿Confirmamos?`)}`;
   }
 

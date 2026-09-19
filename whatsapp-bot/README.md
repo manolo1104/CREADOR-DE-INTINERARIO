@@ -92,7 +92,7 @@ npm start              # conecta a WhatsApp (escanea el QR de la terminal)
 
 ## ⚠️ Prerrequisito importante
 Requiere una **línea/número de WhatsApp DEDICADO**, distinto del número del bot del
-hotel y del 524891251458 (un número = una sola sesión de WhatsApp).
+hotel y del 524891090388 (un número = una sola sesión de WhatsApp).
 
 ## Mantener en sync (AUTOMÁTICO)
 El "cerebro" del bot vive en **`data.json`**, que se **genera** desde la fuente de la

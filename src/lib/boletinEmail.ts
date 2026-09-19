@@ -147,7 +147,7 @@ export function buildBoletinEmail(d: BoletinInput): { subject: string; html: str
         : boton(`${BASE}/tours`, "Ver los recorridos"),
       bajoBoton("Sin prisa. Apartas con el 30 % y cancelas gratis hasta 48 h antes."),
     ].join(""),
-    pie: `¿Vas a venir y tienes dudas de fechas o de clima? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de una hora.`,
+    pie: `¿Vas a venir y tienes dudas de fechas o de clima? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de una hora.`,
     origen: "Te llega una vez al mes porque dejaste tu correo en nuestro sitio.",
     paraBaja: d.email,
   });

@@ -547,7 +547,7 @@ export default function PaquetesPage() {
             {t.ctaTexto}
           </p>
           <a
-            href={`https://wa.me/524891251458?text=${encodeURIComponent(t.ctaWa)}`}
+            href={`https://wa.me/524891090388?text=${encodeURIComponent(t.ctaWa)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"

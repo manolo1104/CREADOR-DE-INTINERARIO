@@ -648,7 +648,7 @@ export default function ToursPage() {
           </p>
           <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
             {WA_SVG}
-            +52 489 125 1458
+            +52 489 109 0388
           </a>
           <p className="mt-4 text-[10px] text-crema/50 font-dm">
             {en ? "✓ Free cancellation up to 48h before · No hidden fees" : "✓ Cancelación gratuita con 48h de anticipación · Sin cargos ocultos"}

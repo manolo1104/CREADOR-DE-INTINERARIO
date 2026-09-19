@@ -223,7 +223,7 @@ const ES: EmailMessages = {
       recordatorio3: {
         subject: (t) => `¿Apartamos tu lugar para ${t}?`,
         titulo: "Aparta tu lugar",
-        intro: "Si tu viaje es de dos días o más, no hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour (un recorrido de un solo día se paga completo). Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 125 1458.",
+        intro: "Si tu viaje es de dos días o más, no hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour (un recorrido de un solo día se paga completo). Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
         cta: "Apartar mi lugar",
       },
     },
@@ -340,7 +340,7 @@ const ES: EmailMessages = {
     escribenosFolio: "Escríbenos tu número de cotización:",
     reservarEnLinea: "🌐 Reservar en línea",
     pagaConTarjeta: "Paga con tarjeta de forma rápida y segura",
-    btnWhatsapp: "WhatsApp +52 489 125 1458",
+    btnWhatsapp: "WhatsApp +52 489 109 0388",
     btnReservar: "Reservar y pagar en línea",
     vence: "Esta cotización vence en 48 horas · Sujeta a disponibilidad",
     hospedajeIncluido: "Hospedaje incluido",
@@ -379,7 +379,7 @@ const ES: EmailMessages = {
     saldoPendiente: "Saldo pendiente",
     notaSaldo: "El saldo restante se cubre antes o durante tu llegada. Te contactaremos por WhatsApp para coordinar fechas y detalles.",
     notaLiquidado: "Tu paquete está pagado al 100%. Te contactaremos por WhatsApp para coordinar los detalles.",
-    dudas: "¿Dudas? Escríbenos por WhatsApp al +52 489 125 1458.",
+    dudas: "¿Dudas? Escríbenos por WhatsApp al +52 489 109 0388.",
     grupoLinea: (adultos, mid, small) =>
       [
         `${adultos} ${adultos === 1 ? "adulto" : "adultos"}`,
@@ -425,7 +425,7 @@ const EN: EmailMessages = {
       recordatorio3: {
         subject: (t) => `Shall we hold your place for ${t}?`,
         titulo: "Hold your place",
-        intro: "If your trip runs two days or more you don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour (a single-day tour is paid in full). Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 125 1458.",
+        intro: "If your trip runs two days or more you don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour (a single-day tour is paid in full). Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
         cta: "Hold my place",
       },
     },
@@ -542,7 +542,7 @@ const EN: EmailMessages = {
     escribenosFolio: "Send us your quote number:",
     reservarEnLinea: "🌐 Book online",
     pagaConTarjeta: "Pay by card, quick and secure",
-    btnWhatsapp: "WhatsApp +52 489 125 1458",
+    btnWhatsapp: "WhatsApp +52 489 109 0388",
     btnReservar: "Book and pay online",
     vence: "This quote expires in 48 hours · Subject to availability",
     hospedajeIncluido: "Lodging included",
@@ -579,7 +579,7 @@ const EN: EmailMessages = {
     saldoPendiente: "Outstanding balance",
     notaSaldo: "The remaining balance is settled before or during your arrival. We'll contact you on WhatsApp to arrange dates and details.",
     notaLiquidado: "Your package is paid in full. We'll contact you on WhatsApp to arrange the details.",
-    dudas: "Questions? Message us on WhatsApp at +52 489 125 1458.",
+    dudas: "Questions? Message us on WhatsApp at +52 489 109 0388.",
     grupoLinea: (adultos, mid, small) =>
       [
         `${adultos} ${adultos === 1 ? "adult" : "adults"}`,

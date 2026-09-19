@@ -61,7 +61,7 @@ export function BlogNewsletterInline({
             Te enviamos el itinerario de 3 días a <strong className="text-crema/70">{email}</strong>.
             Si no aparece, revisa spam o pídelo por{" "}
             <a
-              href="https://wa.me/524891251458?text=Hola%2C%20quiero%20el%20itinerario%20de%203%20d%C3%ADas%20en%20la%20Huasteca"
+              href="https://wa.me/524891090388?text=Hola%2C%20quiero%20el%20itinerario%20de%203%20d%C3%ADas%20en%20la%20Huasteca"
               className="text-verde-vivo underline"
               target="_blank"
               rel="noopener noreferrer"
@@ -110,7 +110,7 @@ export function BlogNewsletterInline({
         <p className="mt-2 text-terracota font-dm text-xs" role="alert">
           {error}{" "}
           <a
-            href="https://wa.me/524891251458?text=Hola%2C%20quiero%20el%20itinerario%20de%203%20d%C3%ADas%20en%20la%20Huasteca"
+            href="https://wa.me/524891090388?text=Hola%2C%20quiero%20el%20itinerario%20de%203%20d%C3%ADas%20en%20la%20Huasteca"
             className="underline"
             target="_blank"
             rel="noopener noreferrer"

@@ -172,7 +172,7 @@ export default function NosotrosPage() {
   const locale = asLocale(headers().get("x-locale"));
   const t  = getNosotros(locale);
   const lp = (path: string) => localePath(path, locale);
-  const WA = `https://wa.me/524891251458?text=${encodeURIComponent(t.waMsg)}`;
+  const WA = `https://wa.me/524891090388?text=${encodeURIComponent(t.waMsg)}`;
 
   return (
     <main id="main-content" className="min-h-screen bg-crema">

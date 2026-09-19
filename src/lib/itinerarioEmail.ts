@@ -151,7 +151,7 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
         </td></tr>`),
       boton(`${BASE}/guia`, "Verla — $49 MXN", "dorado"),
     ].join(""),
-    pie: `¿Dudas sobre fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de 1 hora.`,
+    pie: `¿Dudas sobre fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de 1 hora.`,
     origen: "Recibiste este correo porque pediste el itinerario en nuestro sitio.",
     paraBaja: email,
   });

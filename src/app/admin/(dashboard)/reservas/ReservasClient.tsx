@@ -557,7 +557,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   <div class="foot">
     <p class="text"><strong>Manolo Covarrubias</strong>, fundador & guía local · Xilitla, SLP — gracias por elegir vivir la Huasteca con nosotros.</p>
-    <a class="wa" href="https://wa.me/524891251458"><span class="dot">●</span><span><span class="lbl">WhatsApp soporte</span><div class="num">+52 489 125 1458</div></span></a>
+    <a class="wa" href="https://wa.me/524891090388"><span class="dot">●</span><span><span class="lbl">WhatsApp soporte</span><div class="num">+52 489 109 0388</div></span></a>
   </div>
 </section>
 <script>

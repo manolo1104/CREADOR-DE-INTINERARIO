@@ -92,7 +92,7 @@ function PagoCarrito({ cobro, datos, onListo }: {
   const [error,   setError]   = useState("");
 
   const wa = t.waPagoAlterno;
-  const waPagoAlterno = `https://wa.me/524891251458?text=${encodeURIComponent(
+  const waPagoAlterno = `https://wa.me/524891090388?text=${encodeURIComponent(
     [
       wa.intro,
       "",
@@ -680,7 +680,7 @@ export default function CarritoPage() {
 
   // Mensaje del rescate: lleva lo que el cliente ya eligió para que no tenga
   // que repetirlo. Sin esto el chat arranca con "hola" y se pierde el contexto.
-  const waRescate = `https://wa.me/524891251458?text=${encodeURIComponent(
+  const waRescate = `https://wa.me/524891090388?text=${encodeURIComponent(
     [
       t.waRescate.intro,
       "",
@@ -1176,7 +1176,7 @@ export default function CarritoPage() {
                           <p className="font-dm text-[11px] text-negro/70 leading-snug">
                             {t.saleAPartirDeIntro}<strong>{t.saleAPartirDe(tour.groupMin)}</strong>. {t.vanMenos}{" "}
                             <a
-                              href={`https://wa.me/524891251458?text=${encodeURIComponent(
+                              href={`https://wa.me/524891090388?text=${encodeURIComponent(
                                 t.waGrupoMinimo(personasDeItem(i), nombreCorto(i.tourSlug, i.tourName, locale)),
                               )}`}
                               target="_blank" rel="noopener noreferrer"
@@ -1819,7 +1819,7 @@ export default function CarritoPage() {
                       <p className="font-dm text-[12px] text-terracota">
                         {t.trasladoGrupoGrande(paxTraslado)}
                         <a
-                          href={`https://wa.me/524891251458?text=${encodeURIComponent(
+                          href={`https://wa.me/524891090388?text=${encodeURIComponent(
                             t.waTrasladoGrande(paxTraslado, rutaTraslado.ciudad),
                           )}`}
                           target="_blank" rel="noopener noreferrer"
@@ -2093,7 +2093,7 @@ export default function CarritoPage() {
           </div>
           <p className="font-dm text-[11px] text-negro/40 mt-3">
             {t.otraDuda}{" "}
-            <a href={`https://wa.me/524891251458?text=${encodeURIComponent(t.waDudaAntesDePagar)}`}
+            <a href={`https://wa.me/524891090388?text=${encodeURIComponent(t.waDudaAntesDePagar)}`}
                target="_blank" rel="noopener noreferrer"
                className="text-verde-selva underline underline-offset-2">{t.escribenosWhatsapp}</a>{t.antesDePagarCola}
           </p>

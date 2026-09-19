@@ -207,7 +207,7 @@ export default function SustentabilidadPage() {
       <section className="py-16 px-6 text-center bg-crema">
         <p className="text-negro/50 font-dm text-sm mb-4">¿Tienes preguntas sobre nuestras prácticas sustentables?</p>
         <a
-          href="https://wa.me/524891251458?text=Hola%2C%20quisiera%20saber%20m%C3%A1s%20sobre%20sustentabilidad"
+          href="https://wa.me/524891090388?text=Hola%2C%20quisiera%20saber%20m%C3%A1s%20sobre%20sustentabilidad"
           target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
         >

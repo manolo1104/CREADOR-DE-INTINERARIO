@@ -88,7 +88,7 @@ const CABECERA: Record<Locale, string> = {
 
 const RESERVA: Record<Locale, string> = {
   es: `## Información de reserva
-- WhatsApp: +52 489 125 1458 (https://wa.me/524891251458)
+- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Sitio web: ${SITE}
 - Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Se aparta con el 30 %; un tour de un solo día sin hospedaje se paga completo al reservar.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo).
@@ -96,7 +96,7 @@ const RESERVA: Record<Locale, string> = {
 - Recogemos al viajero en su hospedaje, tanto en Xilitla como en Ciudad Valles.
 - Precio por persona (el RZR se cobra por vehículo). Niños de 6 a 10 años pagan ~70 % y menores de 6 ~50 % del precio adulto.`,
   en: `## Booking information
-- WhatsApp: +52 489 125 1458 (https://wa.me/524891251458)
+- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Website: ${SITE}/en
 - Booking: online with secure payment (Stripe) or over WhatsApp. A 30% deposit holds the booking; a single-day tour with no lodging is paid in full at booking.
 - Cancellation: free up to 48 hours before the tour (full refund).

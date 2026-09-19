@@ -62,7 +62,7 @@ function wrap(cab: Cabecera, contenido: string, footer = true, email?: string | 
     entradilla: cab.entradilla,
     cuerpo: contenido,
     pie: footer
-      ? `¿Dudas de fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de 1 hora.`
+      ? `¿Dudas de fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de 1 hora.`
       : undefined,
     origen: footer ? "Recibes esto porque dejaste tu correo en nuestro sitio." : undefined,
     // Con el enlace real ya no hace falta pedirle que responda "baja" y que

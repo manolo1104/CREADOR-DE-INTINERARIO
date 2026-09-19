@@ -21,7 +21,7 @@ const stripePromise = loadStripe(
   "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
 );
 
-const WA_NUMBER = "524891251458";
+const WA_NUMBER = "524891090388";
 
 // ── Formulario ────────────────────────────────────────────────────────────────
 
@@ -344,7 +344,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
           rel="noopener noreferrer"
           className="underline hover:text-verde-selva transition-colors"
         >
-          Escríbenos al +52 489 125 1458
+          Escríbenos al +52 489 109 0388
         </a>
       </div>
 
@@ -489,7 +489,7 @@ export default function CheckoutTourPage() {
           className="flex items-center gap-2 text-verde-selva hover:text-verde-vivo transition-colors group"
         >
           <MessageCircle className="w-4 h-4" />
-          <span className="font-dm text-sm font-medium">+52 489 125 1458</span>
+          <span className="font-dm text-sm font-medium">+52 489 109 0388</span>
           <span className="hidden sm:block text-[10px] text-negro/40 font-dm group-hover:text-negro/60 transition-colors">
             · ¿Dudas? Escríbenos
           </span>

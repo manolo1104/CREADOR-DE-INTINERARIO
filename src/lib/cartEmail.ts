@@ -188,7 +188,7 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
       bajoBoton(T.ctaSub),
       garantias([...T.garantias]),
     ].join(""),
-    pie: `${T.prefieresChat} <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a>.`,
+    pie: `${T.prefieresChat} <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a>.`,
     origen: T.yaNoInteresa,
     paraBaja: d.email ?? undefined,
   });

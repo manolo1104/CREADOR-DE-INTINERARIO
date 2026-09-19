@@ -37,7 +37,7 @@ const LEAD: CursoLead = {
   id: "vista-previa",
   email: destino,
   nombre: "Manolo",
-  whatsapp: "4891251458",
+  whatsapp: "4891090388",
   tipoNegocio: "Agencia",
   ciudad: "Ciudad Valles",
   origen: "webinar",
