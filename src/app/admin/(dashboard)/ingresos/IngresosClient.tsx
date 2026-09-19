@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
-import EstadoResultados from "./EstadoResultados";
+import CorteClient from "./CorteClient";
 
 const BarChart      = dynamic(() => import("recharts").then(m => m.BarChart),      { ssr: false });
 const Bar           = dynamic(() => import("recharts").then(m => m.Bar),            { ssr: false });
@@ -57,14 +57,25 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="font-cormorant text-[#1B4332] text-2xl font-light mb-2">Ingresos &amp; Métricas</h1>
-      <p className="text-[#1B4332]/50 font-dm text-sm mb-6">
-        <strong className="font-medium text-[#1B4332]/70">Cobrado</strong> es el dinero que ya entró (anticipos y pagos completos).{" "}
-        <strong className="font-medium text-[#1B4332]/70">Vendido</strong> es el valor total de las reservas, cobrado o no.
+      <h1 className="font-cormorant text-[#1B4332] text-2xl font-light mb-1">Corte</h1>
+      <p className="text-[#1B4332]/50 font-dm text-sm mb-5">
+        Qué se vendió, qué costó y qué quedó. Del día, de la semana o del mes.
       </p>
 
-      {/* El corte del negocio va arriba: es la pregunta que se contesta a diario. */}
-      <EstadoResultados />
+      {/* El corte es la pantalla: lo demás es contexto y vive más abajo. */}
+      <CorteClient />
+
+      {/* ── Acumulados y análisis de fondo ─────────────────────────────────
+          Antes esto ERA la pestaña. Se queda porque contesta otras preguntas
+          (cómo va el año, de dónde llegan las ventas), pero deja de competir
+          con el corte, que es lo que se mira a diario. */}
+      <details className="mt-8 group">
+        <summary className="cursor-pointer list-none flex items-center gap-2 text-[#1B4332]/60 hover:text-[#1B4332] font-dm text-sm py-2 border-t border-[#1B4332]/10 pt-5">
+          <span className="text-[10px] tracking-[2px] uppercase">Acumulados del año y de dónde llegan las ventas</span>
+          <span className="text-[#1B4332]/30 group-open:hidden">mostrar</span>
+          <span className="text-[#1B4332]/30 hidden group-open:inline">ocultar</span>
+        </summary>
+        <div className="pt-5">
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KpiCard label="Esta semana"     value={fmx(kpis.semana.ingresos)} sub={`${kpis.semana.reservas} reservas`} extra={`Vendido: ${fmx(kpis.semana.vendido)}`} />
@@ -202,6 +213,8 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
             </table>
         }
       </div>
+        </div>
+      </details>
     </div>
   );
 }
