@@ -16,6 +16,10 @@
  *
  * NO borra ni modifica importes, fechas ni conceptos: sólo clasifica.
  */
+import { cargarEnv, describeBase } from "./_env";
+
+cargarEnv();
+
 import { PrismaClient } from "@prisma/client";
 import { categoriaPorNombre, esDirecta } from "../lib/admin/categorias";
 
@@ -23,6 +27,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const aplicar = process.argv.includes("--aplicar");
+  console.log(`\nBase de datos: ${describeBase()}`);
   const todos = await prisma.movimiento.findMany({ orderBy: { fecha: "asc" } });
 
   const pendientes = todos.filter(m => {

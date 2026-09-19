@@ -11,6 +11,10 @@
  * EXTREMO ALTO a propósito: el margen que enseñe el panel es entonces el peor
  * caso. Un descuento decidido con ese número nunca se queda corto.
  */
+import { cargarEnv, describeBase } from "./_env";
+
+cargarEnv();
+
 import { PrismaClient } from "@prisma/client";
 import { TOURS_DB } from "../lib/tours";
 import { costoDeLinea, type ConceptoCosto } from "../lib/admin/costos";
@@ -41,6 +45,7 @@ const COSTOS: CostosDeTour[] = [
 
 async function main() {
   const aplicar = process.argv.includes("--aplicar");
+  console.log(`\nBase de datos: ${describeBase()}`);
 
   for (const c of COSTOS) {
     const tour = TOURS_DB.find(t => t.slug === c.slug);
