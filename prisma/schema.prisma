@@ -500,10 +500,17 @@ model GastoCorte {
   concepto  String
   monto     Int
   nota      String?
+  /// Si el costo es de UNA salida (el lanchero de los Ruiz), aquí va el id de
+  /// su reserva y el corte lo resta a esa reserva, no al día. Vacío = gasto
+  /// general del periodo (gasolina, sueldos, publicidad).
+  /// Sin llave foránea a propósito: si la reserva se borra, el gasto no debe
+  /// desaparecer del corte de un mes que ya se cerró.
+  reservaId String?
   /// Quién lo capturó, para poder preguntarle.
   creadoPor String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([fecha])
+  @@index([reservaId])
 }

@@ -37,19 +37,35 @@ export async function POST(req: NextRequest) {
     if (monto <= 0) return NextResponse.json({ error: "El monto tiene que ser mayor a cero" }, { status: 400 });
     if (!ES_FECHA.test(fecha)) return NextResponse.json({ error: "Fecha inválida" }, { status: 400 });
 
+    // Si viene ligado a una salida, la reserva tiene que existir: un id
+    // inventado dejaría el costo fuera de todos los cortes, sin avisar.
+    const reservaId = body?.reservaId ? String(body.reservaId) : null;
+    let folio: string | null = null;
+    if (reservaId) {
+      const reserva = await prisma.tourBooking.findUnique({
+        where:  { id: reservaId },
+        select: { confirmationNumber: true },
+      });
+      if (!reserva) return NextResponse.json({ error: "Esa reserva no existe" }, { status: 400 });
+      folio = reserva.confirmationNumber;
+    }
+
     const sesion = await sesionActual();
     const gasto = await prisma.gastoCorte.create({
       data: {
-        fecha, concepto, monto,
+        fecha, concepto, monto, reservaId,
         nota:      body?.nota ? String(body.nota).slice(0, 300) : null,
         creadoPor: sesion?.nombre ?? null,
       },
     });
 
     await registrarEnBitacora({
-      accion:  "creó",
-      entidad: "gasto",
-      resumen: `Gasto "${concepto}" por ${pesos(monto)} con fecha ${fecha}`,
+      accion:     "creó",
+      entidad:    "costo",
+      referencia: folio ?? undefined,
+      resumen:    folio
+        ? `Costo "${concepto}" por ${pesos(monto)} en la reserva ${folio}`
+        : `Gasto "${concepto}" por ${pesos(monto)} con fecha ${fecha}`,
     });
 
     return NextResponse.json({ ok: true, gasto });
@@ -70,9 +86,9 @@ export async function DELETE(req: NextRequest) {
 
     await registrarEnBitacora({
       accion:  "eliminó",
-      entidad: "gasto",
+      entidad: "costo",
       resumen: antes
-        ? `Gasto "${antes.concepto}" de ${pesos(antes.monto)} (${antes.fecha})`
+        ? `${antes.reservaId ? "Costo" : "Gasto"} "${antes.concepto}" de ${pesos(antes.monto)} (${antes.fecha})`
         : `Gasto ${id} (ya no estaba en la base)`,
     });
 

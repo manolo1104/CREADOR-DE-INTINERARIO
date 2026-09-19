@@ -6,7 +6,6 @@ import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHo
 import { TOURS_DB } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
-import PagoProveedorCell, { type Evidencia } from "@/components/admin/PagoProveedorCell";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
@@ -63,11 +62,10 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, initialEvidencias = [], presetsExtras = EXTRAS_PRESET }:
-  { initialBookings: TourBooking[]; initialEvidencias?: Evidencia[]; presetsExtras?: PresetExtra[] },
+  { initialBookings, presetsExtras = EXTRAS_PRESET }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[] },
 ) {
   const [bookings,      setBookings]      = useState(initialBookings);
-  const [evidencias,    setEvidencias]    = useState<Evidencia[]>(initialEvidencias);
   const [detalle,       setDetalle]       = useState<TourBooking | null>(null);
   const [search,        setSearch]        = useState("");
   const [statusFilter,  setStatusFilter]  = useState<"all" | "paid" | "pending" | "cancelled">("all");
@@ -98,22 +96,6 @@ export default function ReservasClient(
     return Array.from(vistos).sort((a, b) => a.localeCompare(b, "es"));
   }, [bookings]);
 
-  // Las evidencias llegan en una sola lista (metadatos, sin los bytes) y se
-  // agrupan aquí para no hacer un filter por fila en cada render.
-  const evidenciasPorReserva = useMemo(() => {
-    const m: Record<string, Evidencia[]> = {};
-    for (const e of evidencias) (m[e.bookingId] ||= []).push(e);
-    return m;
-  }, [evidencias]);
-
-  function patchProveedor(id: string, patch: Record<string, unknown>) {
-    setBookings(bs => bs.map(x => x.id === id ? { ...x, ...patch } as TourBooking : x));
-  }
-
-  function setEvidenciasDe(bookingId: string, lista: Evidencia[]) {
-    setEvidencias(prev => [...prev.filter(e => e.bookingId !== bookingId), ...lista]);
-  }
-
   function flash(m: string) {
     setMsg(m);
     if (m.startsWith("✅")) playSuccess();
@@ -125,10 +107,6 @@ export default function ReservasClient(
     setLoading(true);
     const r = await fetch("/api/admin/reservas");
     if (r.ok) setBookings(await r.json());
-    // Las evidencias viven en otra tabla: se recargan aparte para que el
-    // contador de adjuntos no quede desfasado tras refrescar.
-    const e = await fetch("/api/admin/evidencia").catch(() => null);
-    if (e?.ok) setEvidencias(await e.json());
     setLoading(false);
   }
 
@@ -774,17 +752,6 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
               </div>
-              <div className="mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
-                <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1.5">Pago al proveedor</p>
-                <PagoProveedorCell
-                  reserva={b as any}
-                  evidencias={evidenciasPorReserva[b.id] ?? []}
-                  onChange={patchProveedor}
-                  onEvidencias={setEvidenciasDe}
-                  flash={flash}
-                  compacto
-                />
-              </div>
             </div>
           );
         })}
@@ -796,13 +763,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">
               <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Guía","Total","Anticipo","Estado","Acciones","Proveedor"].map(h => (
-                  <th key={h} className={`py-3 px-3 text-left font-dm ${h === "Proveedor" ? "sticky right-0 z-20 bg-[#FAFAF8] border-l border-[#1B4332]/10 w-[150px] min-w-[150px]" : ""}`}>{h}</th>
+                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Guía","Total","Anticipo","Estado","Acciones"].map(h => (
+                  <th key={h} className="py-3 px-3 text-left font-dm">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={12} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={11} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
                 const rawDeposito = (b as any).depositoPagado ?? 0;
                 const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
@@ -877,16 +844,6 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
-                    <td className="py-3 px-3 w-[150px] min-w-[150px] whitespace-nowrap sticky right-0 z-10 bg-white border-l border-[#1B4332]/10"
-                        onClick={e => e.stopPropagation()}>
-                      <PagoProveedorCell
-                        reserva={b as any}
-                        evidencias={evidenciasPorReserva[b.id] ?? []}
-                        onChange={patchProveedor}
-                        onEvidencias={setEvidenciasDe}
-                        flash={flash}
-                      />
-                    </td>
                   </tr>
                 );
               })}
@@ -896,11 +853,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       </div>
 
       {detalle && (
-        <ReservaDetalle
-          reserva={detalle}
-          evidencias={evidenciasPorReserva[detalle.id] ?? []}
-          onClose={() => setDetalle(null)}
-        />
+        <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} />
       )}
 
       {modal === "new" && (

@@ -3,11 +3,10 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { TourBooking } from "@prisma/client";
-import { X, BedDouble, Paperclip, FileText, ImageIcon, MapPin, Utensils } from "lucide-react";
+import { X, BedDouble, MapPin, Utensils } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, metaDe, type LineaTour } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
-import type { Evidencia } from "@/components/admin/PagoProveedorCell";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) =>
@@ -37,9 +36,9 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
 }
 
 export default function ReservaDetalle({
-  reserva: b, evidencias, onClose,
+  reserva: b, onClose,
 }: {
-  reserva: TourBooking; evidencias: Evidencia[]; onClose: () => void;
+  reserva: TourBooking; onClose: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -64,9 +63,6 @@ export default function ReservaDetalle({
                     + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
                     + totalExtras(extras);
 
-  const pagoProv    = (b as any).pagoProveedor as boolean | null;
-  const montoProv   = (b as any).pagoProveedorMonto ?? 0;
-  const notaProv    = (b as any).pagoProveedorNota as string | null;
 
   const nombreTour = (l: LineaTour) =>
     TOURS_DB.find(t => t.slug === l.tourSlug)?.nombre || l.tourName || l.tourSlug || "—";
@@ -242,42 +238,17 @@ export default function ReservaDetalle({
             )}
           </Seccion>
 
-          {/* Proveedor */}
-          <Seccion titulo="Pago al proveedor">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Dato label="Estado">
-                {pagoProv === true  && <span className="text-green-700 font-medium">Ya le pagué</span>}
-                {pagoProv === false && <span className="text-red-600 font-medium">Sin pagar</span>}
-                {pagoProv == null   && <span className="text-[#1B4332]/40">Sin marcar</span>}
-              </Dato>
-              <Dato label="Monto pagado">{montoProv > 0 ? fmx(montoProv) : <span className="text-[#1B4332]/40">—</span>}</Dato>
-              <Dato label="Nota">{notaProv || <span className="text-[#1B4332]/30">—</span>}</Dato>
-            </div>
-            {evidencias.length > 0 && (
-              <ul className="mt-3 space-y-1">
-                {evidencias.map(ev => (
-                  <li key={ev.id} className="flex items-center gap-2 text-xs font-dm">
-                    {ev.tipoMime === "application/pdf"
-                      ? <FileText className="w-3.5 h-3.5 text-red-600/70 shrink-0" />
-                      : <ImageIcon className="w-3.5 h-3.5 text-[#52B788] shrink-0" />}
-                    <a href={`/api/admin/evidencia/${ev.id}`} target="_blank" rel="noopener noreferrer"
-                       className="text-[#1B4332]/75 hover:text-[#1B4332] hover:underline truncate">
-                      {ev.nombreArchivo}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {evidencias.length === 0 && (
-              <p className="flex items-center gap-1.5 text-[#1B4332]/30 font-dm text-xs mt-3">
-                <Paperclip className="w-3 h-3" />Sin comprobante adjunto
-              </p>
-            )}
-          </Seccion>
-
           {/* Logística y notas */}
           <Seccion titulo="Logística">
             <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <Dato label="Guía asignado">
+                  {(b as any).guia || <span className="text-orange-600/70">Sin asignar</span>}
+                </Dato>
+                <Dato label="Idioma del tour">
+                  {(b as any).idiomaTour === "en" ? "Inglés" : "Español"}
+                </Dato>
+              </div>
               <Dato label="Punto de encuentro">
                 <span className="flex items-start gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-[#1B4332]/40 shrink-0 mt-0.5" />

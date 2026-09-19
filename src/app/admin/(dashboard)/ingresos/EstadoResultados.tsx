@@ -71,9 +71,10 @@ export default function EstadoResultados() {
   const [gConcepto, setGConcepto] = useState("");
   const [gMonto,    setGMonto]    = useState("");
   const [gFecha,    setGFecha]    = useState(() => hoyMX());
+  const [gReserva,  setGReserva]  = useState("");   // "" = gasto general del periodo
   const [guardando, setGuardando] = useState(false);
 
-  // Costo de una reserva, editable sin salir del corte
+  // Captura rápida del costo de una salida, sin salir del corte
   const [editando, setEditando] = useState<string | null>(null);
   const [costoTecleado, setCostoTecleado] = useState("");
 
@@ -104,7 +105,10 @@ export default function EstadoResultados() {
     setGuardando(true);
     const r = await fetch("/api/admin/gastos", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ concepto: gConcepto.trim(), monto: Number(gMonto), fecha: gFecha }),
+      body: JSON.stringify({
+        concepto: gConcepto.trim(), monto: Number(gMonto), fecha: gFecha,
+        reservaId: gReserva || undefined,
+      }),
     });
     setGuardando(false);
     if (r.ok) { setGConcepto(""); setGMonto(""); cargar(); }
@@ -115,11 +119,19 @@ export default function EstadoResultados() {
     cargar();
   }
 
-  async function guardarCosto(reservaId: string) {
+  // El costo de una salida es un renglón de costo ligado a su reserva: así se
+  // puede capturar varias veces (lancha, comida, gasolina) sin pisar el anterior.
+  async function guardarCosto(reservaId: string, fecha: string) {
     const monto = Math.round(Number(costoTecleado) || 0);
-    await fetch(`/api/admin/reservas/${reservaId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pagoProveedorMonto: monto, pagoProveedor: monto > 0 }),
+    if (monto <= 0) { setEditando(null); setCostoTecleado(""); return; }
+    await fetch("/api/admin/gastos", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        concepto: "Costo de la salida",
+        monto,
+        fecha: fecha || hoyMX(),
+        reservaId,
+      }),
     });
     setEditando(null);
     setCostoTecleado("");
@@ -133,10 +145,10 @@ export default function EstadoResultados() {
       [],
       ["RESULTADO"],
       ["Ventas", datos.ventas],
-      ["Pagado a proveedor", -datos.costoProveedor],
+      ["Costos de las salidas", -datos.costoSalidas],
       ["Costo de extras", -datos.costoExtras],
       ["Comisión de pago en línea", -datos.comision],
-      ["Gastos capturados", -datos.gastosManuales],
+      ["Gastos generales", -datos.gastosGenerales],
       ["Utilidad", datos.utilidad],
       ["Margen %", datos.margen],
       [],
@@ -147,9 +159,12 @@ export default function EstadoResultados() {
         r.venta, r.costoTotal, r.utilidad, r.margen,
       ]),
       [],
-      ["GASTOS CAPTURADOS"],
-      ["Fecha", "Concepto", "Monto", "Quién lo capturó"],
-      ...datos.gastos.map(g => [g.fecha, g.concepto, g.monto, g.creadoPor ?? ""]),
+      ["COSTOS Y GASTOS CAPTURADOS"],
+      ["Fecha", "Concepto", "Monto", "De la reserva", "Quién lo capturó"],
+      ...datos.gastos.map(g => [
+        g.fecha, g.concepto, g.monto,
+        folioDe(g.reservaId, datos), g.creadoPor ?? "",
+      ]),
     ];
     const csv = filas.map(f => f.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
@@ -233,10 +248,10 @@ export default function EstadoResultados() {
             <div className="font-dm text-sm">
               <Renglon etiqueta="Ventas" valor={datos.ventas} fuerte />
               <div className="pl-3 border-l-2 border-[#1B4332]/8 my-2">
-                <Renglon etiqueta="Pagado a proveedor"        valor={-datos.costoProveedor} />
-                <Renglon etiqueta="Costo de extras"            valor={-datos.costoExtras} />
-                <Renglon etiqueta="Comisión de pago en línea"  valor={-datos.comision} />
-                <Renglon etiqueta="Gastos capturados a mano"   valor={-datos.gastosManuales} />
+                <Renglon etiqueta="Costos de las salidas"       valor={-datos.costoSalidas} />
+                <Renglon etiqueta="Costo de extras"             valor={-datos.costoExtras} />
+                <Renglon etiqueta="Comisión de pago en línea"   valor={-datos.comision} />
+                <Renglon etiqueta="Gastos generales"            valor={-datos.gastosGenerales} />
               </div>
               <Renglon etiqueta="Total de costos" valor={-datos.costoTotal} />
               <div className="border-t border-[#1B4332]/15 mt-2 pt-2">
@@ -302,19 +317,19 @@ export default function EstadoResultados() {
                           <input autoFocus type="number" value={costoTecleado}
                             onChange={e => setCostoTecleado(e.target.value)}
                             onKeyDown={e => {
-                              if (e.key === "Enter") guardarCosto(r.id);
+                              if (e.key === "Enter") guardarCosto(r.id, r.fechaTour);
                               if (e.key === "Escape") { setEditando(null); setCostoTecleado(""); }
                             }}
                             className="w-24 border border-[#1B4332]/30 px-1.5 py-0.5 text-right rounded-sm focus:outline-none focus:border-[#1B4332]" />
-                          <button onClick={() => guardarCosto(r.id)}
+                          <button onClick={() => guardarCosto(r.id, r.fechaTour)}
                             className="text-[#52B788] hover:text-[#1B6B45] text-[10px] uppercase tracking-[1px]">OK</button>
                         </span>
                       ) : (
                         <button
-                          onClick={() => { setEditando(r.id); setCostoTecleado(String(r.costoProveedor || "")); }}
-                          title="Escribir lo que costó esta salida"
+                          onClick={() => { setEditando(r.id); setCostoTecleado(""); }}
+                          title="Agregar lo que costó esta salida"
                           className={`hover:underline ${r.costoRegistrado ? "text-[#1B4332]/70" : "text-orange-600"}`}>
-                          {r.costoRegistrado ? fmx(r.costoTotal) : "capturar"}
+                          {r.costoRegistrado ? `${fmx(r.costoTotal)} +` : "capturar"}
                         </button>
                       )}
                     </td>
@@ -329,7 +344,7 @@ export default function EstadoResultados() {
 
           {/* ── Gastos a mano ────────────────────────────────────────────── */}
           <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mt-6 mb-2">
-            Gastos capturados a mano
+            Costos y gastos capturados
           </p>
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <input type="text" value={gConcepto} onChange={e => setGConcepto(e.target.value)}
@@ -339,6 +354,14 @@ export default function EstadoResultados() {
               className="w-28 border border-[#1B4332]/15 text-[#1B4332] text-xs font-dm px-2.5 py-2 rounded-sm focus:outline-none focus:border-[#1B4332] placeholder:text-[#1B4332]/30" />
             <input type="date" value={gFecha} onChange={e => setGFecha(e.target.value)}
               className="border border-[#1B4332]/15 text-[#1B4332] text-xs font-dm px-2 py-2 rounded-sm focus:outline-none focus:border-[#1B4332]" />
+            <select value={gReserva} onChange={e => setGReserva(e.target.value)}
+              title="Si el costo es de una salida en concreto, elígela y se resta a esa reserva"
+              className="border border-[#1B4332]/15 text-[#1B4332] text-xs font-dm px-2 py-2 rounded-sm focus:outline-none focus:border-[#1B4332] max-w-[220px]">
+              <option value="">Gasto general del periodo</option>
+              {datos.reservas.map(r => (
+                <option key={r.id} value={r.id}>{r.folio} · {r.cliente}</option>
+              ))}
+            </select>
             <button onClick={agregarGasto} disabled={guardando || !gConcepto.trim() || !(Number(gMonto) > 0)}
               className="flex items-center gap-1.5 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-3 py-2 text-[11px] font-dm uppercase tracking-[1px] rounded-sm transition-colors disabled:opacity-40">
               <Plus className="w-3.5 h-3.5" />Agregar
@@ -347,14 +370,19 @@ export default function EstadoResultados() {
 
           {datos.gastos.length === 0 ? (
             <p className="text-[#1B4332]/30 font-dm text-xs py-2">
-              Sin gastos capturados en este periodo.
+              Sin costos capturados en este periodo.
             </p>
           ) : (
             <div className="border border-[#1B4332]/10 rounded-sm overflow-hidden">
               {datos.gastos.map(g => (
                 <div key={g.id} className="flex items-center gap-3 px-3 py-2 border-b border-[#1B4332]/6 last:border-0 text-xs font-dm">
                   <span className="text-[#1B4332]/45 w-14 flex-shrink-0">{fDia(g.fecha)}</span>
-                  <span className="flex-1 text-[#1B4332] min-w-0 truncate">{g.concepto}</span>
+                  <span className="flex-1 text-[#1B4332] min-w-0 truncate">
+                    {g.concepto}
+                    {g.reservaId && (
+                      <span className="text-[#1B4332]/40 ml-1.5">· {folioDe(g.reservaId, datos) || "otra salida"}</span>
+                    )}
+                  </span>
                   {g.creadoPor && <span className="text-[#1B4332]/35 hidden sm:inline">{g.creadoPor}</span>}
                   <span className="text-[#C9484A]">−{fmx(g.monto)}</span>
                   <button onClick={() => borrarGasto(g.id)} title="Borrar este gasto"
@@ -369,6 +397,12 @@ export default function EstadoResultados() {
       )}
     </div>
   );
+}
+
+/** El folio de la reserva a la que se ligó un costo, si está en este corte. */
+function folioDe(reservaId: string | null, datos: Datos): string {
+  if (!reservaId) return "";
+  return datos.reservas.find(r => r.id === reservaId)?.folio ?? "";
 }
 
 function Renglon({ etiqueta, valor, fuerte, extra }: {
