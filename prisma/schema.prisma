@@ -271,6 +271,14 @@ model TourBooking {
   pagoProveedorFecha    DateTime?
   pagoProveedorNota     String?
   status                String    @default("pending")
+  /// Quién sale a guiar esta reserva. Texto libre a propósito: los guías
+  /// cambian con la temporada y una tabla aparte obligaría a darlos de alta
+  /// antes de poder asignarlos. El panel ofrece los nombres ya usados.
+  guia                  String?
+  /// En qué idioma sale el tour: es | en. No es el idioma en que escribe el
+  /// cliente (eso vive en el `_meta` de lineItems), sino en cuál tiene que
+  /// guiar quien sale: alguien puede escribir en español y pedirlo en inglés.
+  idiomaTour            String    @default("es")
   /// Por dónde entró la reserva: web | whatsapp | telefono | walkin | ota.
   /// GA4 registraba 4 compras mientras el panel mostraba once: sin este campo
   /// no se puede saber si falta medición o si la venta se cerró por chat, y
@@ -477,4 +485,25 @@ model Bitacora {
 
   @@index([createdAt])
   @@index([usuario, createdAt])
+}
+
+// ── Gastos del corte, capturados a mano ─────────────────────────────────────
+// Lo que no cuelga de ninguna reserva: gasolina de la camioneta, sueldos,
+// publicidad, renta, una refacción. Sin esto el corte enseña lo que dejan las
+// salidas, no lo que gana el negocio.
+//
+// `fecha` es YYYY-MM-DD, igual que `tourDate`: así el corte por día y por
+// semana no pelea con zonas horarias.
+model GastoCorte {
+  id        String   @id @default(cuid())
+  fecha     String
+  concepto  String
+  monto     Int
+  nota      String?
+  /// Quién lo capturó, para poder preguntarle.
+  creadoPor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
 }

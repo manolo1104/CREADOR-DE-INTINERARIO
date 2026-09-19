@@ -13,6 +13,7 @@ const BOOKING_FIELDS = [
   "customerName", "customerEmail", "customerPhone", "notes",
   "lineItems", "packageItems", "extraItems", "status",
   "pagoProveedor", "pagoProveedorMonto", "pagoProveedorFecha", "pagoProveedorNota",
+  "guia", "idiomaTour",
 ] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

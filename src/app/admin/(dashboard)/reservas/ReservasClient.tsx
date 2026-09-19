@@ -86,6 +86,18 @@ export default function ReservasClient(
   const [dateTo,        setDateTo]        = useState("");
   const today = useMemo(() => todayMX(), []);
 
+  // Los guías que ya se han asignado alguna vez. Salen de las propias
+  // reservas: no hace falta darlos de alta en ningún lado, y el nombre se
+  // ofrece al escribir para que "Beto" no acabe guardado de cuatro maneras.
+  const guiasConocidos = useMemo(() => {
+    const vistos = new Set<string>();
+    for (const b of bookings) {
+      const g = ((b as any).guia || "").trim();
+      if (g) vistos.add(g);
+    }
+    return Array.from(vistos).sort((a, b) => a.localeCompare(b, "es"));
+  }, [bookings]);
+
   // Las evidencias llegan en una sola lista (metadatos, sin los bytes) y se
   // agrupan aquí para no hacer un filter por fila en cada render.
   const evidenciasPorReserva = useMemo(() => {
@@ -192,6 +204,8 @@ export default function ReservasClient(
       // del default). Al CREAR manda `EMPTY_RESERVA_FORM`, que arranca en
       // WhatsApp porque es de donde vienen las capturas a mano.
       origen:         origenValido((b as any).origen),
+      guia:           (b as any).guia || "",
+      idiomaTour:     (b as any).idiomaTour === "en" ? "en" : "es",
     });
     setModal("edit");
   }
@@ -230,6 +244,8 @@ export default function ReservasClient(
       // Columna de verdad, no `_meta`: el desglose de ingresos agrupa por ella
       // y lo que vive dentro de `lineItems` no se puede agrupar.
       origen:         form.origen,
+      guia:           form.guia.trim(),
+      idiomaTour:     form.idiomaTour === "en" ? "en" : "es",
     };
   }
 
@@ -780,13 +796,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">
               <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Total","Anticipo","Estado","Acciones","Proveedor"].map(h => (
+                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Guía","Total","Anticipo","Estado","Acciones","Proveedor"].map(h => (
                   <th key={h} className={`py-3 px-3 text-left font-dm ${h === "Proveedor" ? "sticky right-0 z-20 bg-[#FAFAF8] border-l border-[#1B4332]/10 w-[150px] min-w-[150px]" : ""}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && <tr><td colSpan={11} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={12} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
                 const rawDeposito = (b as any).depositoPagado ?? 0;
                 const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
@@ -809,6 +825,14 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     <td className="py-3 px-3 text-[#1B4332]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
                     <td className="py-3 px-3">{b.status !== "cancelled" ? <DaysChip d={daysToTour(b.tourDate, today)} /> : <span className="text-[#1B4332]/20 text-xs">—</span>}</td>
                     <td className="py-3 px-3 text-[#1B4332]/70 text-xs" title={grupoLargo(grupoDe(b as any))}>{grupoCorto(grupoDe(b as any))}</td>
+                    <td className="py-3 px-3 text-xs whitespace-nowrap">
+                      {(b as any).guia
+                        ? <span className="text-[#1B4332]/75">{(b as any).guia}</span>
+                        : <span className="text-orange-600/70" title="Nadie asignado todavía">Sin asignar</span>}
+                      {(b as any).idiomaTour === "en" && (
+                        <span className="ml-1 text-[9px] tracking-[1px] uppercase bg-[#1a4e8a]/10 text-[#1a4e8a] px-1.5 py-0.5 rounded-sm" title="El tour sale en inglés">EN</span>
+                      )}
+                    </td>
                     <td className="py-3 px-3 text-[#52B788] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
                     <td className="py-3 px-3 text-xs">
                       {deposito > 0 ? (
@@ -880,11 +904,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       )}
 
       {modal === "new" && (
-        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras}
+        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
           onSave={saveNew} onClose={() => setModal(null)} saving={saving} />
       )}
       {modal === "edit" && (
-        <ReservaModal title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras}
+        <ReservaModal title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}
     </div>

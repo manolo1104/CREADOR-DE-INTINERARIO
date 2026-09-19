@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
+import EstadoResultados from "./EstadoResultados";
 
 const BarChart      = dynamic(() => import("recharts").then(m => m.BarChart),      { ssr: false });
 const Bar           = dynamic(() => import("recharts").then(m => m.Bar),            { ssr: false });
@@ -61,6 +62,9 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
         <strong className="font-medium text-[#1B4332]/70">Cobrado</strong> es el dinero que ya entró (anticipos y pagos completos).{" "}
         <strong className="font-medium text-[#1B4332]/70">Vendido</strong> es el valor total de las reservas, cobrado o no.
       </p>
+
+      {/* El corte del negocio va arriba: es la pregunta que se contesta a diario. */}
+      <EstadoResultados />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KpiCard label="Esta semana"     value={fmx(kpis.semana.ingresos)} sub={`${kpis.semana.reservas} reservas`} extra={`Vendido: ${fmx(kpis.semana.vendido)}`} />

@@ -112,6 +112,10 @@ export interface ReservaFormState {
   numPersonas:    string;  // tamaño real del grupo (para el email; evita sumar por tour)
   /** Por dónde entró: es COLUMNA de la base, no `_meta`, porque hay que agrupar por ella. */
   origen:         OrigenReserva;
+  /** Quién sale a guiar. Vacío = sin asignar todavía. */
+  guia:           string;
+  /** En qué idioma sale el tour: "es" | "en". */
+  idiomaTour:     string;
 }
 
 const HABITACIONES_PRESET = [
@@ -140,6 +144,8 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
   // Una reserva que se captura a mano viene casi siempre del chat: ése es el
   // valor que ahorra clics y el que menos se va a quedar mal puesto.
   origen: "whatsapp",
+  guia: "",
+  idiomaTour: "es",
 };
 
 export function calcTourLine(l: LineItem): number {
@@ -252,6 +258,8 @@ interface Props {
   title:   string;
   /** Los conceptos con sus precios, tal como Manolo los dejó en el Cotizador. */
   presetsExtras?: PresetExtra[];
+  /** Guías ya usados en otras reservas: se ofrecen para no teclearlos de nuevo. */
+  guiasConocidos?: string[];
   form:    ReservaFormState;
   setForm: (f: ReservaFormState | ((p: ReservaFormState) => ReservaFormState)) => void;
   onSave:  () => void;
@@ -259,7 +267,7 @@ interface Props {
   saving:  boolean;
 }
 
-export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET }: Props) {
+export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [] }: Props) {
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
 
@@ -780,6 +788,30 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                     <option key={o} value={o}>{ORIGEN_ETIQUETA[o]}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* ── Quién sale y en qué idioma ───────────────────────────────
+                  El guía se escribe (los nombres cambian con la temporada),
+                  pero el panel ofrece los que ya se han usado para no teclear
+                  el mismo nombre de veinte formas distintas. */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Guía asignado</label>
+                  <input type="text" list="guias-usados" value={form.guia} placeholder="Sin asignar"
+                    onChange={e => setForm(f => ({ ...f, guia: e.target.value }))} className={inputCls} />
+                  <datalist id="guias-usados">
+                    {guiasConocidos.map(g => <option key={g} value={g} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Idioma del tour</label>
+                  <select value={form.idiomaTour}
+                    onChange={e => setForm(f => ({ ...f, idiomaTour: e.target.value === "en" ? "en" : "es" }))}
+                    className={inputCls}>
+                    <option value="es">Español</option>
+                    <option value="en">Inglés</option>
+                  </select>
+                </div>
               </div>
 
               {/* Pickup */}

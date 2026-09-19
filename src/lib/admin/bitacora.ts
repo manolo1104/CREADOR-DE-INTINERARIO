@@ -75,6 +75,8 @@ export const ETIQUETAS_RESERVA: Record<string, string> = {
   pagoProveedor:      "pago al proveedor",
   pagoProveedorMonto: "monto al proveedor",
   pagoProveedorNota:  "nota del proveedor",
+  guia:               "guía asignado",
+  idiomaTour:         "idioma del tour",
 };
 
 export const ETIQUETAS_COTIZACION: Record<string, string> = {

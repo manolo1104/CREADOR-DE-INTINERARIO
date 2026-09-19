@@ -25,6 +25,9 @@ interface Salida {
   personas: number;
   monto: number;
   confirmationNumber: string;
+  /** Quién sale ese día, y en qué idioma. Se planea con esto a la vista. */
+  guia: string;
+  idiomaTour: string;
 }
 
 export default function CalendarioClient({ bookings }: { bookings: TourBooking[] }) {
@@ -57,6 +60,8 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
         personas:     (Number(l.adults) || 0) + (Number(l.childrenMid) || 0) + (Number(l.childrenSmall) || 0) + (Number(l.children) || 0),
         monto:        l.subtotal != null ? Number(l.subtotal) : b.totalAmount,
         confirmationNumber: b.confirmationNumber,
+        guia:         ((b as any).guia || "") as string,
+        idiomaTour:   ((b as any).idiomaTour || "es") as string,
       }));
     }
     return [{
@@ -68,6 +73,8 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
       personas:     b.adults + b.children,
       monto:        b.totalAmount,
       confirmationNumber: b.confirmationNumber,
+      guia:         ((b as any).guia || "") as string,
+      idiomaTour:   ((b as any).idiomaTour || "es") as string,
     }];
   });
 
@@ -134,6 +141,8 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
                       className="text-[9px] font-dm px-1 py-0.5 truncate rounded-sm"
                     >
                       {s.customerName.split(" ")[0]} · {s.personas}p
+                      {s.guia && <> · {s.guia.split(" ")[0]}</>}
+                      {s.idiomaTour === "en" && " · EN"}
                     </div>
                   ))}
                   {dayBookings.length > 3 && (
@@ -177,6 +186,12 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
                     <span>{s.personas} persona{s.personas !== 1 ? "s" : ""}</span>
                     <span className="text-[#52B788]">${s.monto.toLocaleString("es-MX")}</span>
                   </div>
+                  <p className="text-[10px] font-dm mt-1">
+                    {s.guia
+                      ? <span className="text-[#1B4332]/70">Guía: {s.guia}</span>
+                      : <span className="text-orange-600/80">Sin guía asignado</span>}
+                    {s.idiomaTour === "en" && <span className="ml-1 text-[#1a4e8a]">· en inglés</span>}
+                  </p>
                   <p className="font-mono text-[9px] text-[#1B4332] mt-1">{s.confirmationNumber}</p>
                 </div>
               ))}

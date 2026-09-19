@@ -53,6 +53,9 @@ export function rolDesdeToken(valor: unknown): RolAdmin {
 const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
   { prefijo: "/admin/ingresos",   seccion: "ingresos" },
   { prefijo: "/api/admin/kpis",   seccion: "ingresos" },
+  // El corte y los gastos enseñan utilidad y márgenes: mismo candado que Ingresos.
+  { prefijo: "/api/admin/estado-resultados", seccion: "ingresos" },
+  { prefijo: "/api/admin/gastos",            seccion: "ingresos" },
   { prefijo: "/admin/curso",      seccion: "curso"    },
   { prefijo: "/api/admin/curso",  seccion: "curso"    },
   { prefijo: "/admin/bitacora",     seccion: "bitacora" },

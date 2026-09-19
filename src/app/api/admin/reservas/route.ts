@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
         packageItems:          body.packageItems ?? undefined,
         extraItems:            body.extraItems   ?? undefined,
         status:                body.status || "paid",
+        guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
+        idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
         // Una reserva capturada a mano casi nunca entró por la web: por eso el
         // formulario la marca y aquí solo se normaliza.
         origen:                origenValido(body.origen),
