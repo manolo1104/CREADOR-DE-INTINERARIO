@@ -70,12 +70,12 @@ export const PERIODICIDADES = ["mensual", "trimestral", "anual"] as const;
  */
 export function categoriaPorNombre(concepto: string): string {
   const t = concepto.toLowerCase();
-  if (/gu[íi]a|guide/.test(t))                               return "guia";
+  if (/gu[íi]a(?!s? de las)|guide/.test(t))                   return "guia";
   if (/veh[íi]culo|camioneta|transporte|traslado|van/.test(t)) return "vehiculo";
   if (/gasolina|caseta|combustible|diesel|peaje/.test(t))     return "gasolina";
   if (/entrada|acceso|parque|embarcadero|estacionamiento/.test(t)) return "entrada";
   if (/comida|desayuno|aliment|lunch|refrig/.test(t))         return "alimentos";
-  if (/lancha|canoa|rappel|tirolesa|equipo|actividad|seguro/.test(t)) return "actividad";
+  if (/lancha|lanchero|canoa|rappel|tirolesa|equipo|actividad|seguro|balsa|guagua|s[óo]tano/.test(t)) return "actividad";
   if (/comisi[óo]n/.test(t))                                  return "comision";
   return "otroDirecto";
 }

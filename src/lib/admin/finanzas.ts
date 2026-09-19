@@ -567,16 +567,28 @@ export async function calcFinanzas(
   const movsSocios = await prisma.movimiento.findMany({
     where: { socioId: { not: null }, anulado: false, fecha: { gte: desde, lte: hasta } },
   });
-  const socios: RepartoSocio[] = sociosFilas.map((s: Socio) => {
+  // Redondear el porcentaje de cada socio deja centavos sueltos: con 50/50 y
+  // una utilidad impar, la suma del reparto no cuadraba con la utilidad del
+  // estado de resultados. El sobrante (±1 peso) se le carga al socio de MAYOR
+  // participación —no al último de la lista, que podría tener 0% y acabar con
+  // un peso negativo—. Así el reparto siempre suma exactamente la utilidad.
+  const reparto = sociosFilas.map(s => Math.round(er.utilidadOperativa * (s.porcentaje / 100)));
+  const residuo = er.utilidadOperativa - reparto.reduce((a, b) => a + b, 0);
+  if (residuo !== 0 && sociosFilas.length > 0) {
+    let mayor = 0;
+    sociosFilas.forEach((s, i) => { if (s.porcentaje > sociosFilas[mayor].porcentaje) mayor = i; });
+    if (sociosFilas[mayor].porcentaje > 0) reparto[mayor] += residuo;
+  }
+
+  const socios: RepartoSocio[] = sociosFilas.map((s: Socio, i: number) => {
     const suyos       = movsSocios.filter(m => m.socioId === s.id);
     const reembolsos  = suyos.filter(m => m.tipo === "reembolso").reduce((a, m) => a + entero(m.monto), 0);
     const distribuido = suyos.filter(m => m.tipo === "distribucion").reduce((a, m) => a + entero(m.monto), 0);
-    const correspond  = Math.round(er.utilidadOperativa * (s.porcentaje / 100));
     return {
       id: s.id, nombre: s.nombre, porcentaje: s.porcentaje,
-      utilidadCorrespondiente: correspond,
+      utilidadCorrespondiente: reparto[i],
       reembolsos, distribuido,
-      pendiente: correspond - distribuido,
+      pendiente: reparto[i] - distribuido,
     };
   });
 
