@@ -8,7 +8,8 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
-  | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora";
+  | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
+  | "finanzas" | "socios";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -23,11 +24,14 @@ export interface UsuarioAdmin {
 const OPERACION: SeccionAdmin[] = [
   "inicio", "reservas", "calendario", "cotizaciones", "cotizador", "clientes",
 ];
-// socio: todo lo de tours, incluidos ingresos. Sin el Curso de IA (otro negocio).
-const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos"];
-// dueño: todo. La bitácora (quién hizo qué) es SOLO suya: si quien está siendo
-// registrado pudiera leerla, dejaría de servir para lo que se hizo.
-const DUENO: SeccionAdmin[] = [...SOCIO, "curso", "bitacora"];
+// socio: todo lo de tours, ventas y finanzas. Sin el Curso de IA (otro
+// negocio) y sin la configuración de la sociedad: ver el reparto es una cosa,
+// poder cambiarse el porcentaje es otra.
+const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "finanzas"];
+// dueño: todo. La bitácora (quién hizo qué) y la configuración de socios son
+// SOLO suyas: si quien está siendo registrado pudiera leerla o repartirse la
+// utilidad, dejarían de servir para lo que se hicieron.
+const DUENO: SeccionAdmin[] = [...SOCIO, "curso", "bitacora", "socios"];
 
 export const SECCIONES_POR_ROL: Record<RolAdmin, SeccionAdmin[]> = {
   dueno:     DUENO,
@@ -37,6 +41,27 @@ export const SECCIONES_POR_ROL: Record<RolAdmin, SeccionAdmin[]> = {
 
 export function puedeVer(rol: RolAdmin, seccion: SeccionAdmin): boolean {
   return SECCIONES_POR_ROL[rol].includes(seccion);
+}
+
+// ── Qué se puede TOCAR, no solo ver ─────────────────────────────────────────
+// Ver una cifra y poder cambiarla son permisos distintos. Operación captura lo
+// que gastó en su salida —es quien lo sabe— pero no toca los gastos de la
+// empresa, ni el reparto, ni cierra un corte.
+export type AccionFinanciera =
+  | "capturarCostoDeSalida"   // el lanchero de la reserva de hoy
+  | "capturarGastoGeneral"    // hosting, publicidad, contabilidad
+  | "anularMovimiento"        // deshacer un movimiento (queda el rastro)
+  | "cerrarCorte"
+  | "configurarSocios";
+
+const PERMISOS_FINANCIEROS: Record<RolAdmin, AccionFinanciera[]> = {
+  operacion: ["capturarCostoDeSalida"],
+  socio:     ["capturarCostoDeSalida", "capturarGastoGeneral", "anularMovimiento", "cerrarCorte"],
+  dueno:     ["capturarCostoDeSalida", "capturarGastoGeneral", "anularMovimiento", "cerrarCorte", "configurarSocios"],
+};
+
+export function puedeHacer(rol: RolAdmin, accion: AccionFinanciera): boolean {
+  return PERMISOS_FINANCIEROS[rol].includes(accion);
 }
 
 // Un token viejo (emitido antes de que existieran los roles) no trae rol:
@@ -54,8 +79,13 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
   { prefijo: "/admin/ingresos",   seccion: "ingresos" },
   { prefijo: "/api/admin/kpis",   seccion: "ingresos" },
   // El corte y los gastos enseñan utilidad y márgenes: mismo candado que Ingresos.
-  { prefijo: "/api/admin/gastos",            seccion: "ingresos" },
-  { prefijo: "/api/admin/corte",             seccion: "ingresos" },
+  // /api/admin/movimientos NO se restringe por sección a propósito: quien opera
+  // captura el costo de SU salida (es quien lo sabe) aunque no vea Finanzas.
+  // Qué puede registrar cada quien se decide dentro de la ruta, con puedeHacer().
+  { prefijo: "/admin/finanzas",              seccion: "finanzas" },
+  { prefijo: "/api/admin/finanzas",          seccion: "finanzas" },
+  { prefijo: "/api/admin/cortes",            seccion: "finanzas" },
+  { prefijo: "/api/admin/socios",            seccion: "socios"   },
   { prefijo: "/admin/curso",      seccion: "curso"    },
   { prefijo: "/api/admin/curso",  seccion: "curso"    },
   { prefijo: "/admin/bitacora",     seccion: "bitacora" },

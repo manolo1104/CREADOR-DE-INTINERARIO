@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Wallet } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
 import { puedeVer, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
 
@@ -16,7 +16,8 @@ const NAV: {
   { href: "/admin/calendario",   icon: Calendar,        label: "Calendario",   seccion: "calendario"    },
   { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones", seccion: "cotizaciones"  },
   { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador",    seccion: "cotizador"     },
-  { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ingresos",     seccion: "ingresos"      },
+  { href: "/admin/finanzas",     icon: Wallet,          label: "Finanzas",     seccion: "finanzas"      },
+  { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ventas",       seccion: "ingresos"      },
   { href: "/admin/clientes",     icon: Users,           label: "Clientes",     seccion: "clientes"      },
   { href: "/admin/curso",        icon: GraduationCap,   label: "Curso IA",     seccion: "curso"         },
   { href: "/admin/bitacora",     icon: ScrollText,      label: "Bitácora",     seccion: "bitacora"      },
