@@ -230,7 +230,7 @@ export default function BitacoraClient({
       </p>
 
       {filtrados.length === 0 && (
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm py-16 text-center">
+        <div className="panel-card py-16 text-center">
           <p className="text-[#1B4332]/30 font-dm text-sm">
             Todavía no hay movimientos que mostrar.
           </p>
@@ -240,7 +240,7 @@ export default function BitacoraClient({
       {porDia.map(({ dia, items }) => (
         <div key={dia} className="mb-5">
           <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">{dia}</p>
-          <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+          <div className="panel-card overflow-hidden">
             {items.map((r, i) => {
               const abierto = abiertos.has(r.id);
               const tieneDetalle = !!r.detalle?.length;

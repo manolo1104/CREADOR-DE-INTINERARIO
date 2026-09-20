@@ -110,7 +110,7 @@ export default function CalendarioClient({ bookings }: { bookings: TourBooking[]
         </div>
       </div>
 
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+      <div className="panel-card overflow-hidden">
         {/* Days of week */}
         <div className="grid grid-cols-7 border-b border-[#1B4332]/10">
           {DIAS.map(d => (

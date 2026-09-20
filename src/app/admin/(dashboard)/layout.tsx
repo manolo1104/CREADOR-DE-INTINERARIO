@@ -9,10 +9,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const sesion = await sesionActual();
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex">
+    // El fondo no es un gris plano: lleva un velo verde muy tenue arriba, que
+    // separa el lienzo de las tarjetas blancas sin que se note de dónde viene.
+    <div className="min-h-screen flex bg-[var(--panel-fondo)]">
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0
+        bg-[radial-gradient(1100px_520px_at_18%_-8%,rgba(27,67,50,0.07),transparent_62%),radial-gradient(760px_420px_at_100%_0%,rgba(82,183,136,0.06),transparent_60%)]" />
+
       <AdminSidebar rol={sesion?.rol ?? "operacion"} nombre={sesion?.nombre ?? ""} />
       <NewBookingWatcher />
-      <main className="flex-1 overflow-auto md:ml-0 pt-14 md:pt-0 bg-[#FAFAF8]">
+
+      <main className="relative z-10 flex-1 min-w-0 overflow-auto pt-14 md:pt-0">
         {children}
       </main>
     </div>

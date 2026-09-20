@@ -39,7 +39,7 @@ export default function ClientesClient({ clientes }: { clientes: Cliente[] }) {
         />
       </div>
 
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+      <div className="panel-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">

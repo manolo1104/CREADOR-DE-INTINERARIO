@@ -758,7 +758,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       </div>
 
       {/* ── Tabla (escritorio) ── */}
-      <div className="hidden md:block bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+      <div className="hidden md:block panel-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">
@@ -800,7 +800,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         <span className="ml-1 text-[9px] tracking-[1px] uppercase bg-[#1a4e8a]/10 text-[#1a4e8a] px-1.5 py-0.5 rounded-sm" title="El tour sale en inglés">EN</span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-[#52B788] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
+                    <td className="panel-cifra py-3 px-3 text-[#2b845c] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
                     <td className="py-3 px-3 text-xs">
                       {deposito > 0 ? (
                         <div>

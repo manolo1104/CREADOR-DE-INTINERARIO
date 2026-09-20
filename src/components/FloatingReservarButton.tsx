@@ -104,6 +104,7 @@ export function FloatingReservarButton() {
     <>
       {/* WhatsApp: el canal #1 de conversión, siempre a un tap (encima del botón Reservar) */}
       <a
+        data-wa-manual="1"
         href={waHref}
         target="_blank"
         rel="noopener noreferrer"

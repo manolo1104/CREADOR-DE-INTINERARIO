@@ -38,74 +38,61 @@ export default function DashboardClient({
   const dateDisplay = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
+    <div className="px-5 sm:px-7 py-6 max-w-[1400px] mx-auto">
+      {/* ── Encabezado ──────────────────────────────────────────────────────
+          Un solo botón primario. Cuando todo pesa igual, nada pesa. */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-cormorant text-[#1B4332] text-2xl font-light">Panel de Control</h1>
-          <p className="text-[#1B4332]/40 font-dm text-sm mt-0.5">{dateDisplay}</p>
+          <p className="panel-eyebrow mb-1.5">{dateDisplay}</p>
+          <h1 className="font-cormorant text-[#16362a] text-[30px] leading-none font-light">
+            {todayBookings.length > 0
+              ? `${todayBookings.length} ${todayBookings.length === 1 ? "salida" : "salidas"} hoy`
+              : "Sin salidas hoy"}
+          </h1>
         </div>
         <div className="flex gap-2">
           <Link href="/admin/reservas"
-            className="flex items-center gap-2 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-4 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
-            <Plus className="w-3.5 h-3.5" />Nueva Reserva
+            className="flex items-center gap-2 bg-[#1B4332] hover:bg-[#16362a] text-white px-3.5 py-2 text-[12px] font-dm rounded-[7px] panel-pulsable panel-foco shadow-[0_1px_2px_rgba(22,54,42,0.12)]">
+            <Plus className="w-3.5 h-3.5" strokeWidth={2} />Nueva reserva
           </Link>
           <Link href="/admin/cotizaciones"
-            className="flex items-center gap-2 border border-[#1B4332]/20 text-[#1B4332]/60 hover:text-[#1B4332] px-4 py-2 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
-            <FileText className="w-3.5 h-3.5" />Nueva Cotización
+            className="flex items-center gap-2 panel-card px-3.5 py-2 text-[12px] font-dm text-[rgba(22,54,42,0.66)] hover:text-[#16362a] panel-pulsable panel-foco">
+            <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />Nueva cotización
           </Link>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className={`grid grid-cols-2 gap-4 mb-7 ${verDinero ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      {/* ── Las cifras del día ──────────────────────────────────────────────
+          Un tamaño para todas y la unidad en gris: así se comparan de un
+          vistazo en vez de competir entre ellas. */}
+      <div className={`grid grid-cols-2 gap-3 mb-6 ${verDinero ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {verDinero ? (
-          <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
-            <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Ingresos este mes</p>
-            <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1"><CountUp value={monthIngresos} format={fmx} /></p>
-            <p className="text-[#1B4332]/40 font-dm text-xs">{monthReservas} reservas</p>
-          </div>
+          <Cifra etiqueta="Ingresos este mes" tono="positivo"
+                 valor={<CountUp value={monthIngresos} format={fmx} />}
+                 pie={`${monthReservas} ${monthReservas === 1 ? "reserva" : "reservas"}`} />
         ) : (
-          <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
-            <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Reservas este mes</p>
-            <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1"><CountUp value={monthReservas} /></p>
-            <p className="text-[#1B4332]/40 font-dm text-xs">creadas este mes</p>
-          </div>
+          <Cifra etiqueta="Reservas este mes" tono="positivo"
+                 valor={<CountUp value={monthReservas} />} pie="creadas este mes" />
         )}
 
-        <div className={`border rounded-sm p-5 ${todayBookings.length > 0 ? "bg-[#1B4332] border-[#1B4332]" : "bg-white border-[#1B4332]/10"}`}>
-          <p className={`text-[9px] tracking-[2px] uppercase font-dm mb-2 ${todayBookings.length > 0 ? "text-white/60" : "text-[#1B4332]/40"}`}>Tours hoy</p>
-          <p className={`font-cormorant text-3xl font-light leading-none mb-1 ${todayBookings.length > 0 ? "text-white" : "text-[#1B4332]/30"}`}>
-            <CountUp value={todayBookings.length} />
-          </p>
-          <p className={`font-dm text-xs ${todayBookings.length > 0 ? "text-white/70" : "text-[#1B4332]/30"}`}>
-            {todayBookings.length > 0
-              ? `${todayBookings.reduce((s, b) => s + grupoDe(b as any).total, 0)} personas`
-              : "Sin tours"}
-          </p>
-        </div>
+        <Cifra etiqueta="Personas hoy" tono={todayBookings.length > 0 ? "acento" : "apagado"}
+               valor={<CountUp value={todayBookings.reduce((s, b) => s + grupoDe(b as any).total, 0)} />}
+               pie={todayBookings.length > 0
+                 ? `en ${todayBookings.length} ${todayBookings.length === 1 ? "salida" : "salidas"}`
+                 : "sin salidas"} />
 
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Pendiente de cobro</p>
-          <p className={`font-cormorant text-3xl font-light leading-none mb-1 ${pendingAmount > 0 ? "text-[#52B788]" : "text-[#1B4332]/30"}`}>
-            {pendingAmount > 0 ? <CountUp value={pendingAmount} format={fmx} /> : "—"}
-          </p>
-          <p className="text-[#1B4332]/40 font-dm text-xs">saldo por cobrar</p>
-        </div>
+        <Cifra etiqueta="Pendiente de cobro" tono={pendingAmount > 0 ? "alerta" : "apagado"}
+               valor={pendingAmount > 0 ? <CountUp value={pendingAmount} format={fmx} /> : "—"}
+               pie="saldo por cobrar" />
 
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">Cotizaciones activas</p>
-          <p className={`font-cormorant text-3xl font-light leading-none mb-1 ${activeQuotes > 0 ? "text-[#1B4332]" : "text-[#1B4332]/30"}`}>
-            <CountUp value={activeQuotes} />
-          </p>
-          <p className="text-[#1B4332]/40 font-dm text-xs">borrador + enviada</p>
-        </div>
+        <Cifra etiqueta="Cotizaciones activas" tono={activeQuotes > 0 ? "neutro" : "apagado"}
+               valor={<CountUp value={activeQuotes} />} pie="borrador y enviadas" />
       </div>
 
       {/* Main 3-column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
         {/* Tours hoy */}
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+        <div className="panel-card overflow-hidden">
           <div className="px-5 py-4 border-b border-[#1B4332]/8 flex items-center justify-between">
             <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Tours de hoy</p>
             <Link href="/admin/calendario" className="text-[#1B4332] hover:text-[#2D5A45] transition-colors">
@@ -133,7 +120,7 @@ export default function DashboardClient({
         </div>
 
         {/* Próximos 7 días */}
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+        <div className="panel-card overflow-hidden">
           <div className="px-5 py-4 border-b border-[#1B4332]/8 flex items-center justify-between">
             <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Próximos 7 días</p>
             <Link href="/admin/reservas" className="text-[#1B4332] hover:text-[#2D5A45] transition-colors">
@@ -175,7 +162,7 @@ export default function DashboardClient({
         </div>
 
         {/* Cotizaciones pendientes */}
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+        <div className="panel-card overflow-hidden">
           <div className="px-5 py-4 border-b border-[#1B4332]/8 flex items-center justify-between">
             <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Cotizaciones pendientes</p>
             <Link href="/admin/cotizaciones" className="text-[#1B4332] hover:text-[#2D5A45] transition-colors">
@@ -211,7 +198,7 @@ export default function DashboardClient({
       </div>
 
       {/* Últimas reservas */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden mb-5">
+      <div className="panel-card overflow-hidden mb-5">
         <div className="px-5 py-4 border-b border-[#1B4332]/8 flex items-center justify-between">
           <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Últimas reservas</p>
           <Link href="/admin/reservas" className="text-[9px] tracking-[1px] uppercase font-dm text-[#1B4332] hover:underline flex items-center gap-1">
@@ -264,6 +251,40 @@ export default function DashboardClient({
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * Una cifra del panel.
+ *
+ * Todas comparten tamaño y peso: la diferencia la marca el color, y solo
+ * cuando significa algo (verde = entró dinero, ámbar = falta cobrarlo). Antes
+ * cada tarjeta elegía su tamaño y la que estaba en verde parecía la
+ * importante aunque no lo fuera.
+ */
+function Cifra({ etiqueta, valor, pie, tono }: {
+  etiqueta: string;
+  valor: React.ReactNode;
+  pie: string;
+  tono: "positivo" | "acento" | "alerta" | "neutro" | "apagado";
+}) {
+  const color = {
+    positivo: "text-[#2b845c]",
+    acento:   "text-[#1B4332]",
+    alerta:   "text-[#a86814]",
+    neutro:   "text-[#16362a]",
+    apagado:  "text-[rgba(22,54,42,0.28)]",
+  }[tono];
+
+  return (
+    <div className="panel-card panel-card-alta px-4 py-3.5">
+      <p className="panel-eyebrow mb-2">{etiqueta}</p>
+      <p className={`panel-cifra font-cormorant text-[28px] leading-none font-light mb-1 ${color}`}>
+        {valor}
+      </p>
+      <p className="text-[11px] font-dm text-[rgba(22,54,42,0.51)]">{pie}</p>
     </div>
   );
 }

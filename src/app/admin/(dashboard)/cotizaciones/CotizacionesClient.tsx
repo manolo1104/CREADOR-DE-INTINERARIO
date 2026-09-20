@@ -883,7 +883,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       </div>
 
       {/* ── Tabla (escritorio) ── */}
-      <div className="hidden md:block bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+      <div className="hidden md:block panel-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">

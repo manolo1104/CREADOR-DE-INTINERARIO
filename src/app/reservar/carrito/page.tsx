@@ -362,6 +362,7 @@ function PagoCarrito({ cobro, datos, onListo }: {
           href={waPagoAlterno}
           target="_blank"
           rel="noopener noreferrer"
+          data-wa-manual="1"
           onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_pago_alterno", amount: cobro.amount, recorridos: cobro.lineItems.length })}
           className="flex items-center justify-center gap-2.5 w-full border border-[#25D366]/60 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
         >
@@ -1180,6 +1181,7 @@ export default function CarritoPage() {
                                 t.waGrupoMinimo(personasDeItem(i), nombreCorto(i.tourSlug, i.tourName, locale)),
                               )}`}
                               target="_blank" rel="noopener noreferrer"
+                              data-wa-manual="1"
                               onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_grupo_minimo", tour: i.tourSlug })}
                               className="text-verde-selva underline underline-offset-2"
                             >
@@ -1823,6 +1825,7 @@ export default function CarritoPage() {
                             t.waTrasladoGrande(paxTraslado, rutaTraslado.ciudad),
                           )}`}
                           target="_blank" rel="noopener noreferrer"
+                          data-wa-manual="1"
                           onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_traslado_grupo_grande", ciudad: rutaTraslado.slug, personas: paxTraslado })}
                           className="underline underline-offset-2"
                         >

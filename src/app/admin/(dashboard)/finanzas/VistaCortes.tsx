@@ -48,7 +48,7 @@ export default function VistaCortes({ datos, permisos, desde, hasta }: {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <h3 className="font-cormorant text-[#1B4332] text-lg font-light mb-1">Cerrar el corte</h3>
         <p className="text-[10px] font-dm text-[#1B4332]/35 mb-3">
           Guarda las cifras del periodo tal como están hoy. Un corte cerrado ya no cambia
@@ -87,7 +87,7 @@ export default function VistaCortes({ datos, permisos, desde, hasta }: {
         )}
       </div>
 
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Cortes cerrados</h3>
           {cortes.length > 0 && (
@@ -104,7 +104,7 @@ export default function VistaCortes({ datos, permisos, desde, hasta }: {
           <p className="text-[#1B4332]/30 font-dm text-xs">Todavía no se ha cerrado ningún corte.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full font-dm text-xs">
+            <table className="w-full font-dm text-xs panel-tabla">
               <thead>
                 <tr className="text-[#1B4332]/45 text-[9px] tracking-[1.5px] uppercase border-b border-[#1B4332]/10">
                   <th className="text-left  py-2 pr-2">Periodo</th>
@@ -123,12 +123,12 @@ export default function VistaCortes({ datos, permisos, desde, hasta }: {
                       {fDiaCorto(c.desde)}{c.desde !== c.hasta && ` — ${fDiaCorto(c.hasta)}`}
                     </td>
                     <td className="py-2 px-2 text-[#1B4332]/55">{c.tipo}</td>
-                    <td className="py-2 px-2 text-right text-[#1B4332]">{fmx(c.resumen.ventas)}</td>
-                    <td className="py-2 px-2 text-right text-[#52B788]">{fmx(c.resumen.cobros)}</td>
-                    <td className="py-2 px-2 text-right text-[#1B4332] font-medium">
+                    <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]">{fmx(c.resumen.ventas)}</td>
+                    <td className="panel-cifra py-2 px-2 text-right text-[#52B788]">{fmx(c.resumen.cobros)}</td>
+                    <td className="panel-cifra py-2 px-2 text-right text-[#1B4332] font-medium">
                       {fmx(c.resumen.utilidadOperativa)} · {c.resumen.margen}%
                     </td>
-                    <td className="py-2 px-2 text-right text-[#1B4332]/60">{fmx(c.resumen.efectivo)}</td>
+                    <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]/60">{fmx(c.resumen.efectivo)}</td>
                     <td className="py-2 pl-2 text-[#1B4332]/45">
                       {c.cerradoPor}
                       <span className="text-[#1B4332]/30 ml-1">

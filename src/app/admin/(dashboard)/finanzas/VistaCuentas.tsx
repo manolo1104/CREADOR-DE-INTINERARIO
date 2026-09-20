@@ -25,7 +25,7 @@ export default function VistaCuentas({ datos, recargar, permisos }: {
   return (
     <div className="space-y-5">
       {/* ── Por cobrar ──────────────────────────────────────────────────── */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Cuentas por cobrar</h3>
           <BotonExportar onClick={() => descargarCSV(`por-cobrar-${datos.desde}`, [
@@ -51,7 +51,7 @@ export default function VistaCuentas({ datos, recargar, permisos }: {
           <p className="text-[#52B788] font-dm text-xs py-2">Todo cobrado en este periodo.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full font-dm text-xs">
+            <table className="w-full font-dm text-xs panel-tabla panel-tabla-movil">
               <thead>
                 <tr className="text-[#1B4332]/45 text-[9px] tracking-[1.5px] uppercase border-b border-[#1B4332]/10">
                   <th className="text-left  py-2 pr-2">Cliente</th>
@@ -66,19 +66,19 @@ export default function VistaCuentas({ datos, recargar, permisos }: {
               <tbody>
                 {porCobrar.map(r => (
                   <tr key={r.id} className="border-b border-[#1B4332]/6">
-                    <td className="py-2 pr-2 text-[#1B4332]">
+                    <td data-etiqueta="Cliente" className="py-2 pr-2 text-[#1B4332]">
                       {r.cliente}
                       {r.telefono && <a href={`https://wa.me/${r.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
                         className="ml-1.5 text-[#52B788] hover:underline text-[10px]">WhatsApp</a>}
                     </td>
-                    <td className="py-2 px-2 font-mono text-[10px] text-[#1B4332]/70">{r.folio}</td>
-                    <td className="py-2 px-2 text-[#1B4332]/55 max-w-[150px] truncate">
+                    <td data-etiqueta="Folio" className="py-2 px-2 font-mono text-[10px] text-[#1B4332]/70">{r.folio}</td>
+                    <td data-etiqueta="Tour" className="py-2 px-2 text-[#1B4332]/55 sm:max-w-[150px] sm:truncate">
                       {r.tour}<span className="text-[#1B4332]/35"> · {fDiaCorto(r.fechaTour)}</span>
                     </td>
-                    <td className="py-2 px-2 text-right text-[#1B4332]/70">{fmx(r.venta)}</td>
-                    <td className="py-2 px-2 text-right text-[#52B788]">{fmx(r.cobrado)}</td>
-                    <td className="py-2 px-2 text-right text-[#1B4332] font-medium">{fmx(r.saldo)}</td>
-                    <td className="py-2 pl-2">
+                    <td data-etiqueta="Total" className="panel-cifra py-2 px-2 text-right text-[#1B4332]/70">{fmx(r.venta)}</td>
+                    <td data-etiqueta="Pagado" className="panel-cifra py-2 px-2 text-right text-[#2b845c]">{fmx(r.cobrado)}</td>
+                    <td data-etiqueta="Saldo" className="panel-cifra py-2 px-2 text-right text-[#1B4332] font-medium">{fmx(r.saldo)}</td>
+                    <td data-etiqueta="Estado" className="py-2 pl-2">
                       <Etiqueta texto={r.estadoPago === "vencido" ? `vencido ${r.diasVencido}d` : r.estadoPago}
                                 tono={TONO_PAGO[r.estadoPago] ?? "gris"} />
                     </td>
@@ -91,7 +91,7 @@ export default function VistaCuentas({ datos, recargar, permisos }: {
       </div>
 
       {/* ── Por pagar ───────────────────────────────────────────────────── */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Cuentas por pagar</h3>
           <BotonExportar onClick={() => descargarCSV(`por-pagar-${datos.desde}`, [
@@ -107,7 +107,7 @@ export default function VistaCuentas({ datos, recargar, permisos }: {
           <p className="text-[#52B788] font-dm text-xs py-2">No debes nada registrado.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full font-dm text-xs">
+            <table className="w-full font-dm text-xs panel-tabla panel-tabla-movil">
               <thead>
                 <tr className="text-[#1B4332]/45 text-[9px] tracking-[1.5px] uppercase border-b border-[#1B4332]/10">
                   <th className="text-left  py-2 pr-2">Proveedor</th>
@@ -121,16 +121,16 @@ export default function VistaCuentas({ datos, recargar, permisos }: {
               <tbody>
                 {datos.porPagar.map(c => (
                   <tr key={c.id} className="border-b border-[#1B4332]/6">
-                    <td className="py-2 pr-2 text-[#1B4332]">{c.proveedor}</td>
-                    <td className="py-2 px-2 text-[#1B4332]/60">
+                    <td data-etiqueta="Proveedor" className="py-2 pr-2 text-[#1B4332]">{c.proveedor}</td>
+                    <td data-etiqueta="Concepto" className="py-2 px-2 text-[#1B4332]/60">
                       {c.concepto}<span className="text-[#1B4332]/35 ml-1.5">{c.categoria}</span>
                     </td>
                     <td className="py-2 px-2 font-mono text-[10px] text-[#1B4332]/55">{c.folio || "—"}</td>
                     <td className="py-2 px-2 text-[#1B4332]/55">
                       {fDiaCorto(c.fecha)}{c.vencePronto && <span className="ml-1"><Etiqueta texto="pronto" tono="naranja" /></span>}
                     </td>
-                    <td className="py-2 px-2 text-right text-[#C9484A] font-medium">{fmx(c.monto)}</td>
-                    <td className="py-2 pl-2 text-right">
+                    <td data-etiqueta="Importe" className="panel-cifra py-2 px-2 text-right text-[#b8413f] font-medium">{fmx(c.monto)}</td>
+                    <td className="panel-cifra py-2 pl-2 text-right">
                       {permisos.anular && (
                         <button onClick={() => marcarPagado(c.id)} title="Marcar como pagado"
                           className="inline-flex items-center gap-1 text-[10px] font-dm text-[#52B788] hover:underline">

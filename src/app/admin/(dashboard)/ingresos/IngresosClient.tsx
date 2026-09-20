@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
+import ClicsWhatsapp from "./ClicsWhatsapp";
+import type { ClicsWhatsapp as DatosClics } from "@/lib/admin/clicsWhatsapp";
 
 const BarChart      = dynamic(() => import("recharts").then(m => m.BarChart),      { ssr: false });
 const Bar           = dynamic(() => import("recharts").then(m => m.Bar),            { ssr: false });
@@ -36,7 +38,7 @@ function KpiCard({ label, value, sub, extra, delta }: {
   label: string; value: string; sub?: string; extra?: string; delta?: number;
 }) {
   return (
-    <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+    <div className="panel-card p-5">
       <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">{label}</p>
       <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1">{value}</p>
       {sub && <p className="text-[#1B4332]/40 font-dm text-xs">{sub}</p>}
@@ -50,7 +52,7 @@ function KpiCard({ label, value, sub, extra, delta }: {
   );
 }
 
-export default function IngresosClient({ kpis }: { kpis: KPIs }) {
+export default function IngresosClient({ kpis, clics }: { kpis: KPIs; clics?: DatosClics }) {
   const [vista, setVista] = useState<"venta" | "tour">("venta");
   const serie = vista === "venta" ? kpis.porMesVenta : kpis.porMesTour;
 
@@ -58,9 +60,11 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
     <div className="p-6 max-w-7xl mx-auto">
       <h1 className="font-cormorant text-[#1B4332] text-2xl font-light mb-1">Ventas &amp; Métricas</h1>
       <p className="text-[#1B4332]/50 font-dm text-sm mb-6">
-        Cómo va el año y de dónde llegan las ventas. El dinero —costos, utilidad
-        y cortes— vive en <strong className="font-medium text-[#1B4332]/70">Finanzas</strong>.
+        Cómo va el año y de dónde llegan las ventas. El dinero (costos, utilidad
+        y cortes) vive en <strong className="font-medium text-[#16362a]">Finanzas</strong>.
       </p>
+
+      {clics && <ClicsWhatsapp datos={clics} />}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KpiCard label="Esta semana"     value={fmx(kpis.semana.ingresos)} sub={`${kpis.semana.reservas} reservas`} extra={`Vendido: ${fmx(kpis.semana.vendido)}`} />
@@ -96,7 +100,7 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
       )}
 
       {/* Chart */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5 mb-8">
+      <div className="panel-card p-5 mb-8">
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
           <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm">
             Cobrado · {vista === "venta" ? "por mes de venta" : "por mes del tour"}
@@ -132,7 +136,7 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
       </div>
 
       {/* Top tours */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1">Tours más vendidos</p>
         <p className="text-[#1B4332]/40 font-dm text-xs mb-4">
           Cuenta TODOS los recorridos de cada reserva, no solo el primero. El dinero de un viaje de varios tours
@@ -162,7 +166,7 @@ export default function IngresosClient({ kpis }: { kpis: KPIs }) {
       </div>
 
       {/* Por dónde entra el dinero */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5 mt-6">
+      <div className="panel-card p-5 mt-6">
         <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1">Por dónde entró la reserva</p>
         <p className="text-[#1B4332]/40 font-dm text-xs mb-4">
           Google Analytics solo ve lo que se paga en la web. Esta tabla ve todo, y es la única forma de saber si

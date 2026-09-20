@@ -21,7 +21,7 @@ export default function VistaTours({ datos }: { datos: Finanzas }) {
   }), { reservas: 0, pasajeros: 0, ventas: 0, costo: 0, utilidad: 0 });
 
   return (
-    <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+    <div className="panel-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div>
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Rentabilidad por tour</h3>
@@ -45,7 +45,7 @@ export default function VistaTours({ datos }: { datos: Finanzas }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full font-dm text-xs">
+        <table className="w-full font-dm text-xs panel-tabla">
           <thead>
             <tr className="text-[#1B4332]/45 text-[9px] tracking-[1.5px] uppercase border-b border-[#1B4332]/10">
               <th className="text-left  py-2 pr-3">Tour</th>
@@ -67,11 +67,11 @@ export default function VistaTours({ datos }: { datos: Finanzas }) {
                 <td className="py-2 pr-3 text-[#1B4332] max-w-[230px] truncate" title={t.nombre}>{t.nombre}</td>
                 <td className="py-2 px-2 text-center text-[#1B4332]/55">{t.reservas}</td>
                 <td className="py-2 px-2 text-center text-[#1B4332]/55">{t.pasajeros}</td>
-                <td className="py-2 px-2 text-right text-[#1B4332]">{fmx(t.ventas)}</td>
-                <td className="py-2 px-2 text-right text-[#1B4332]/55">{fmx(t.ticketPromedio)}</td>
-                <td className="py-2 px-2 text-right text-[#C9484A]/80">{fmx(t.costoTotal)}</td>
-                <td className="py-2 px-2 text-right text-[#1B4332]/45">{fmx(t.costoPorPasajero)}</td>
-                <td className={`py-2 pl-2 text-right font-medium ${t.margen >= 25 ? "text-[#52B788]" : "text-[#C9484A]"}`}>
+                <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]">{fmx(t.ventas)}</td>
+                <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]/55">{fmx(t.ticketPromedio)}</td>
+                <td className="panel-cifra py-2 px-2 text-right text-[#C9484A]/80">{fmx(t.costoTotal)}</td>
+                <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]/45">{fmx(t.costoPorPasajero)}</td>
+                <td className={`panel-cifra py-2 pl-2 text-right font-medium ${t.margen >= 25 ? "text-[#52B788]" : "text-[#C9484A]"}`}>
                   {fmx(t.utilidad)} · {t.margen}%
                 </td>
               </tr>
@@ -81,11 +81,11 @@ export default function VistaTours({ datos }: { datos: Finanzas }) {
                 <td className="py-2 pr-3 text-[#1B4332]">Total</td>
                 <td className="py-2 px-2 text-center text-[#1B4332]/70">{total.reservas}</td>
                 <td className="py-2 px-2 text-center text-[#1B4332]/70">{total.pasajeros}</td>
-                <td className="py-2 px-2 text-right text-[#1B4332]">{fmx(total.ventas)}</td>
+                <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]">{fmx(total.ventas)}</td>
                 <td className="py-2 px-2"></td>
-                <td className="py-2 px-2 text-right text-[#C9484A]/80">{fmx(total.costo)}</td>
+                <td className="panel-cifra py-2 px-2 text-right text-[#C9484A]/80">{fmx(total.costo)}</td>
                 <td className="py-2 px-2"></td>
-                <td className="py-2 pl-2 text-right text-[#52B788]">
+                <td className="panel-cifra py-2 pl-2 text-right text-[#52B788]">
                   {fmx(total.utilidad)} · {total.ventas > 0 ? Math.round((total.utilidad / total.ventas) * 100) : 0}%
                 </td>
               </tr>

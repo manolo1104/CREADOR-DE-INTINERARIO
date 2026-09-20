@@ -59,6 +59,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
+          data-wa-manual="1"
           onClick={trackWa}
           aria-label={t.preguntarWhatsapp}
           className="flex items-center justify-center w-11 h-11 bg-[#25D366] text-white flex-shrink-0 hover:brightness-110 transition-all"

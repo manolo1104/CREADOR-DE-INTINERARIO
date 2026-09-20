@@ -241,6 +241,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             {en ? "View full tour →" : "Ver tour completo →"}
           </span>
           <a
+            data-wa-manual="1"
             href={waLink(en
               ? `Hi, I'm interested in the "${t.nombre}" tour. Could you share availability and prices?`
               : WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}

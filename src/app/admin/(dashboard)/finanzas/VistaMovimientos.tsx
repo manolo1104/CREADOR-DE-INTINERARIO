@@ -60,7 +60,7 @@ export default function VistaMovimientos({ datos, recargar, permisos }: {
   return (
     <div className="space-y-5">
       {/* Alta de gasto general */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <h3 className="font-cormorant text-[#1B4332] text-lg font-light mb-1">Gastos de la empresa</h3>
         <p className="text-[10px] font-dm text-[#1B4332]/35 mb-3">
           Lo que cuesta tener el negocio abierto. No pertenece a ninguna reserva y por eso
@@ -128,7 +128,7 @@ export default function VistaMovimientos({ datos, recargar, permisos }: {
       </div>
 
       {/* Costos de salidas */}
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <div className="flex items-center justify-between gap-3 mb-1">
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Costos de las salidas</h3>
           <BotonExportar onClick={() => descargarCSV(`costos-${datos.desde}`, [

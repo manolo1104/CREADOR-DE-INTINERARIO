@@ -73,11 +73,16 @@ export default function FinanzasClient({ permisos }: { permisos: Permisos }) {
 
       {/* ── Periodo ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex rounded-sm overflow-hidden border border-[#1B4332]/15">
+        {/* En el teléfono los periodos se reparten en una rejilla: antes iban en
+            una sola fila y el último ("Personalizado") se cortaba a la mitad. */}
+        <div className="grid grid-cols-3 sm:flex w-full sm:w-auto gap-1 sm:gap-0
+                        sm:rounded-[7px] sm:overflow-hidden sm:border sm:border-[rgba(27,67,50,0.15)]">
           {PRESETS.map(p => (
             <button key={p.id} onClick={() => elegirPreset(p.id)}
-              className={`px-3 py-2 text-[11px] font-dm tracking-[1px] uppercase transition-colors ${
-                preset === p.id ? "bg-[#1B4332] text-white" : "text-[#1B4332]/60 hover:bg-[#1B4332]/5"
+              className={`px-3 py-2.5 sm:py-2 text-[11px] font-dm rounded-[7px] sm:rounded-none panel-pulsable panel-foco ${
+                preset === p.id
+                  ? "bg-[#1B4332] text-white"
+                  : "bg-white sm:bg-transparent border border-[rgba(27,67,50,0.12)] sm:border-0 text-[rgba(22,54,42,0.66)] hover:bg-[#1B4332]/5"
               }`}>
               {p.label}
             </button>
@@ -105,7 +110,10 @@ export default function FinanzasClient({ permisos }: { permisos: Permisos }) {
       </div>
 
       {/* ── Secciones ────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 mb-5 overflow-x-auto border-b border-[#1B4332]/10">
+      {/* El degradado del borde derecho avisa de que la lista sigue: sin él,
+          en el teléfono parecía que "Cortes" no existía. */}
+      <div className="relative mb-5">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none border-b border-[rgba(27,67,50,0.10)] pr-8">
         {VISTAS.filter(v => v.id !== "socios" || permisos.socios || true).map(v => (
           <button key={v.id} onClick={() => setVista(v.id)}
             className={`px-3 py-2 text-xs font-dm whitespace-nowrap transition-colors border-b-2 -mb-px ${
@@ -116,6 +124,9 @@ export default function FinanzasClient({ permisos }: { permisos: Permisos }) {
             {v.label}
           </button>
         ))}
+        </div>
+        <div aria-hidden className="sm:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-10
+                                    bg-gradient-to-l from-[var(--panel-fondo)] to-transparent" />
       </div>
 
       {cargando && (
@@ -209,7 +220,7 @@ function Resumen({ datos, drill, setDrill, irA }: {
 
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Estado de resultados */}
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+        <div className="panel-card p-5">
           <div className="flex items-baseline justify-between mb-3">
             <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Estado de resultados</h3>
             <span className="text-[9px] font-dm text-[#1B4332]/35 uppercase tracking-[1px]">
@@ -246,7 +257,7 @@ function Resumen({ datos, drill, setDrill, irA }: {
 
         <div className="flex flex-col gap-5">
           {/* Flujo de efectivo */}
-          <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+          <div className="panel-card p-5">
             <h3 className="font-cormorant text-[#1B4332] text-lg font-light mb-1">Flujo de efectivo</h3>
             <p className="text-[10px] font-dm text-[#1B4332]/35 mb-3">
               Utilidad no es efectivo: una venta no es dinero hasta que se cobra.

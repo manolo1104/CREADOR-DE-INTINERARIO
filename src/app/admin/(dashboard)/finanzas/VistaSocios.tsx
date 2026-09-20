@@ -49,7 +49,7 @@ export default function VistaSocios({ datos, recargar, permisos }: {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+      <div className="panel-card p-5">
         <h3 className="font-cormorant text-[#1B4332] text-lg font-light mb-1">Reparto de la utilidad</h3>
         <p className="text-[10px] font-dm text-[#1B4332]/35 mb-4">
           Sobre la utilidad operativa del periodo: {fmx(datos.er.utilidadOperativa)}
@@ -61,7 +61,7 @@ export default function VistaSocios({ datos, recargar, permisos }: {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full font-dm text-xs">
+            <table className="w-full font-dm text-xs panel-tabla">
               <thead>
                 <tr className="text-[#1B4332]/45 text-[9px] tracking-[1.5px] uppercase border-b border-[#1B4332]/10">
                   <th className="text-left  py-2 pr-2">Socio</th>
@@ -77,10 +77,10 @@ export default function VistaSocios({ datos, recargar, permisos }: {
                   <tr key={s.id} className="border-b border-[#1B4332]/6">
                     <td className="py-2 pr-2 text-[#1B4332]">{s.nombre}</td>
                     <td className="py-2 px-2 text-center text-[#1B4332]/60">{s.porcentaje}%</td>
-                    <td className="py-2 px-2 text-right text-[#1B4332]">{fmx(s.utilidadCorrespondiente)}</td>
-                    <td className="py-2 px-2 text-right text-[#52B788]">{fmx(s.distribuido)}</td>
-                    <td className="py-2 px-2 text-right text-[#1B4332] font-medium">{fmx(s.pendiente)}</td>
-                    <td className="py-2 pl-2 text-right text-[#1B4332]/45">{fmx(s.reembolsos)}</td>
+                    <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]">{fmx(s.utilidadCorrespondiente)}</td>
+                    <td className="panel-cifra py-2 px-2 text-right text-[#52B788]">{fmx(s.distribuido)}</td>
+                    <td className="panel-cifra py-2 px-2 text-right text-[#1B4332] font-medium">{fmx(s.pendiente)}</td>
+                    <td className="panel-cifra py-2 pl-2 text-right text-[#1B4332]/45">{fmx(s.reembolsos)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -101,7 +101,7 @@ export default function VistaSocios({ datos, recargar, permisos }: {
       </div>
 
       {permisos.socios && (
-        <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+        <div className="panel-card p-5">
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light mb-1">Socios configurados</h3>
           <p className="text-[10px] font-dm text-[#1B4332]/35 mb-3">
             Suma actual de participaciones: {sumaPct}% {sumaPct > 100 && <span className="text-[#C9484A]">— pasa del 100%</span>}

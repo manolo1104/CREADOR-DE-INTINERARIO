@@ -441,3 +441,235 @@ input[type="tel"]:focus {
   transform: scale(1.008);
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANEL DE ADMINISTRACIÓN — capa de diseño
+   ═══════════════════════════════════════════════════════════════════════════
+   El panel se usa todos los días y durante horas: la prioridad es leer rápido
+   y no cansar, no impresionar. Por eso el vidrio esmerilado vive SOLO en las
+   superficies que flotan sobre el contenido (menú, encabezado pegado,
+   modales). Sobre una tabla de datos el desenfoque compite con las cifras y
+   las vuelve más difíciles de leer, que es justo lo contrario de lo que este
+   panel necesita.
+
+   La marca no se toca: mismo verde, misma crema, mismas tipografías. Lo que
+   cambia es la jerarquía, el ritmo del espacio y los estados. */
+
+:root {
+  /* Superficies, de la más al fondo a la más elevada */
+  --panel-fondo:        #f4f6f3;
+  --panel-fondo-velo:   rgba(27, 67, 50, 0.04);
+  --panel-superficie:   #ffffff;
+  --panel-borde:        rgba(27, 67, 50, 0.10);
+  --panel-borde-fuerte: rgba(27, 67, 50, 0.20);
+
+  /* Tinta: tres pesos y ni uno más, para que la jerarquía se note */
+  --panel-tinta:        #16362a;
+  /* Opacidades calculadas, no elegidas a ojo: 0.66 da 4.59:1 sobre blanco
+     (el mínimo para texto es 4.5) y 0.51 da 3.02:1 para las etiquetas. */
+  --panel-tinta-media:  rgba(22, 54, 42, 0.66);
+  --panel-tinta-suave:  rgba(22, 54, 42, 0.51);
+
+  --panel-acento:       #1B4332;
+  --panel-positivo:     #2b845c;  /* 4.61:1 sobre blanco */
+  --panel-alerta:       #a86814;  /* 4.51:1 sobre blanco */
+  --panel-peligro:      #b8413f;
+
+  /* Sombras teñidas del verde del fondo: una sombra negra pura sobre un
+     fondo cálido se ve sucia. */
+  --panel-sombra-sm: 0 1px 2px rgba(22, 54, 42, 0.05);
+  --panel-sombra:    0 2px 8px -2px rgba(22, 54, 42, 0.08), 0 1px 2px rgba(22, 54, 42, 0.04);
+  --panel-sombra-lg: 0 12px 32px -8px rgba(22, 54, 42, 0.16), 0 2px 6px rgba(22, 54, 42, 0.06);
+
+  --panel-radio:    10px;
+  --panel-radio-sm: 7px;
+}
+
+@layer components {
+  /* ── Vidrio: solo para lo que FLOTA sobre el contenido ────────────────── */
+  .panel-glass {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.82),
+      rgba(255, 255, 255, 0.62)
+    );
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      var(--panel-sombra-lg);
+  }
+
+  /* Barra lateral y encabezado: el mismo material, más apoyado en el verde
+     para que el contenido de en medio siga siendo lo más blanco de la pantalla. */
+  .panel-glass-cromo {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(244, 246, 243, 0.78)
+    );
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border-color: var(--panel-borde);
+  }
+
+  /* Quien pide menos transparencia en su sistema la recibe: el desenfoque se
+     apaga y queda un color sólido. No es un extra, es lo que hace que el
+     panel siga siendo legible para quien lo necesita así. */
+  @media (prefers-reduced-transparency: reduce) {
+    .panel-glass,
+    .panel-glass-cromo {
+      background: var(--panel-superficie);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  /* ── Tarjeta: la superficie de trabajo. Sin vidrio, a propósito. ───────── */
+  .panel-card {
+    background: var(--panel-superficie);
+    border: 1px solid var(--panel-borde);
+    border-radius: var(--panel-radio);
+    box-shadow: var(--panel-sombra-sm);
+  }
+  .panel-card-alta {
+    box-shadow: var(--panel-sombra);
+  }
+
+  /* ── Datos ────────────────────────────────────────────────────────────── */
+  /* Cifras en columna con ancho fijo: sin esto, cambiar un 1 por un 8 mueve
+     la columna entera y el ojo pierde el renglón. */
+  .panel-cifra {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .panel-tabla thead th {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--panel-tinta-media);
+    font-weight: 500;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--panel-borde);
+    background: linear-gradient(180deg, rgba(244, 246, 243, 0.6), transparent);
+  }
+  .panel-tabla tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(27, 67, 50, 0.055);
+  }
+  .panel-tabla tbody tr:last-child td { border-bottom: 0; }
+  .panel-tabla tbody tr { transition: background-color 140ms ease-out; }
+  .panel-tabla tbody tr:hover { background: rgba(27, 67, 50, 0.025); }
+
+  /* ── Etiqueta de sección ──────────────────────────────────────────────── */
+  .panel-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--panel-tinta-suave);
+    font-weight: 500;
+  }
+}
+
+@layer utilities {
+  /* El foco del teclado se ve SIEMPRE. Quitar el anillo de foco para que
+     "se vea limpio" deja el panel inutilizable sin ratón. */
+  .panel-foco:focus-visible {
+    outline: 2px solid var(--panel-acento);
+    outline-offset: 2px;
+    border-radius: var(--panel-radio-sm);
+  }
+
+  /* Respuesta física al pulsar: hundirse un pelo. */
+  .panel-pulsable {
+    transition: transform 120ms ease-out, background-color 140ms ease-out,
+                border-color 140ms ease-out, box-shadow 140ms ease-out;
+  }
+  .panel-pulsable:active { transform: translateY(0.5px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-pulsable,
+    .panel-tabla tbody tr { transition: none; }
+    .panel-pulsable:active { transform: none; }
+  }
+}
+
+/* ── El panel en el teléfono ─────────────────────────────────────────────────
+   Manolo y Erick van a abrir esto desde el celular, en la camioneta y en el
+   embarcadero. Una tabla de ocho columnas ahí se vuelve un carrusel lateral
+   donde no se lee nada: cada fila se convierte en una ficha apilada, con la
+   etiqueta de la columna al lado del dato.
+
+   Se aplica poniendo `data-etiqueta="Venta"` en cada celda; en escritorio el
+   atributo no hace nada. */
+@media (max-width: 640px) {
+  .panel-tabla-movil thead { display: none; }
+
+  .panel-tabla-movil,
+  .panel-tabla-movil tbody,
+  .panel-tabla-movil tr,
+  .panel-tabla-movil td { display: block; width: 100%; }
+
+  .panel-tabla-movil tr {
+    background: var(--panel-superficie);
+    border: 1px solid var(--panel-borde);
+    border-radius: var(--panel-radio);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    box-shadow: var(--panel-sombra-sm);
+  }
+
+  .panel-tabla-movil td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border: 0;
+    text-align: right;
+  }
+
+  /* La etiqueta de la columna, a la izquierda del dato */
+  .panel-tabla-movil td::before {
+    content: attr(data-etiqueta);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--panel-tinta-suave);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  /* Una celda sin etiqueta (la primera, la de acciones) ocupa el ancho entero */
+  .panel-tabla-movil td:not([data-etiqueta]) { justify-content: flex-start; text-align: left; }
+  .panel-tabla-movil td:not([data-etiqueta])::before { content: none; }
+}
+
+/* En el teléfono, todo lo que se toca mide al menos 44px: es la medida con la
+   que un dedo acierta sin pelear. */
+@media (max-width: 768px) {
+  .panel-toque,
+  .panel-toque button,
+  .panel-toque a { min-height: 44px; }
+
+  /* Un campo con letra menor a 16px hace que iOS acerque la pantalla solo al
+     enfocarlo, y deja al usuario perdido dentro del formulario. */
+  .panel-card input,
+  .panel-card select,
+  .panel-card textarea { font-size: 16px; }
+}
+
+/* El contenido respeta la muesca y la barra de gestos del teléfono. */
+.panel-seguro {
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+@layer utilities {
+  /* Lista que se desliza a un lado sin la barra: en el teléfono la barra
+     ocupa espacio y en el escritorio ya se navega con el degradado. */
+  .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}

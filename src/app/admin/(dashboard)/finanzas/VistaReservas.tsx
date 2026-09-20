@@ -34,7 +34,7 @@ export default function VistaReservas({ datos, recargar }: { datos: Finanzas; re
   }
 
   return (
-    <div className="bg-white border border-[#1B4332]/10 rounded-sm p-5">
+    <div className="panel-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div>
           <h3 className="font-cormorant text-[#1B4332] text-lg font-light">Reservas del periodo</h3>
@@ -55,7 +55,7 @@ export default function VistaReservas({ datos, recargar }: { datos: Finanzas; re
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full font-dm text-xs">
+        <table className="w-full font-dm text-xs panel-tabla panel-tabla-movil">
           <thead>
             <tr className="text-[#1B4332]/45 text-[9px] tracking-[1.5px] uppercase border-b border-[#1B4332]/10">
               <th className="w-6"></th>
@@ -118,24 +118,24 @@ function FilaReserva({ r, abierta, onToggle, recargar }: {
         <td className="py-2 text-[#1B4332]/25">
           {abierta ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </td>
-        <td className="py-2 pr-2 font-mono text-[10px] text-[#1B4332]">{r.folio}</td>
-        <td className="py-2 px-2 text-[#1B4332]/65 max-w-[150px] truncate" title={r.tour}>{r.tour}</td>
-        <td className="py-2 px-2 text-[#1B4332]/80 max-w-[130px] truncate">{r.cliente}</td>
-        <td className="py-2 px-2 text-center text-[#1B4332]/55">{r.pasajeros}</td>
-        <td className="py-2 px-2 text-right text-[#1B4332]">{fmx(r.venta)}</td>
-        <td className="py-2 px-2 text-right text-[#52B788]">{fmx(r.cobrado)}</td>
-        <td className="py-2 px-2 text-right">
+        <td data-etiqueta="Folio" className="py-2 pr-2 font-mono text-[10px] text-[#1B4332]">{r.folio}</td>
+        <td data-etiqueta="Tour" className="py-2 px-2 text-[#1B4332]/65 sm:max-w-[150px] sm:truncate" title={r.tour}>{r.tour}</td>
+        <td data-etiqueta="Cliente" className="py-2 px-2 text-[#1B4332]/80 sm:max-w-[130px] sm:truncate">{r.cliente}</td>
+        <td data-etiqueta="Pasajeros" className="py-2 px-2 sm:text-center text-[#1B4332]/55">{r.pasajeros}</td>
+        <td data-etiqueta="Venta" className="panel-cifra py-2 px-2 text-right text-[#1B4332]">{fmx(r.venta)}</td>
+        <td data-etiqueta="Cobrado" className="panel-cifra py-2 px-2 text-right text-[#2b845c]">{fmx(r.cobrado)}</td>
+        <td className="panel-cifra py-2 px-2 text-right">
           {r.saldo > 0
             ? <span className="inline-flex items-center gap-1">
                 {fmx(r.saldo)}<Etiqueta texto={r.estadoPago} tono={TONO_PAGO[r.estadoPago] ?? "gris"} />
               </span>
             : <Etiqueta texto="pagado" tono="verde" />}
         </td>
-        <td className="py-2 px-2 text-right text-[#1B4332]/70">
+        <td className="panel-cifra py-2 px-2 text-right text-[#1B4332]/70">
           {fmx(r.costoDirecto)}
           {r.costoEstimado && <span className="ml-1 text-[#1a4e8a]/70 text-[9px]">est.</span>}
         </td>
-        <td className={`py-2 pl-2 text-right font-medium ${r.margenBajo ? "text-[#C9484A]" : "text-[#52B788]"}`}>
+        <td className={`panel-cifra py-2 pl-2 text-right font-medium ${r.margenBajo ? "text-[#C9484A]" : "text-[#52B788]"}`}>
           {fmx(r.utilidad)} · {r.margen}%
         </td>
       </tr>
