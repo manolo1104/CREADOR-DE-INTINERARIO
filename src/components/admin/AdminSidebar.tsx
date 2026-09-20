@@ -19,8 +19,8 @@ const NAV: {
   { href: "/admin/finanzas",     icon: Wallet,          label: "Finanzas",     seccion: "finanzas"      },
   { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ventas",       seccion: "ingresos"      },
   { href: "/admin/clientes",     icon: Users,           label: "Clientes",     seccion: "clientes"      },
-  { href: "/admin/curso",        icon: GraduationCap,   label: "Curso IA",     seccion: "curso"         },
   { href: "/admin/bitacora",     icon: ScrollText,      label: "Bitácora",     seccion: "bitacora"      },
+  { href: "/admin/curso",        icon: GraduationCap,   label: "Curso IA",     seccion: "curso"         },
 ];
 
 export default function AdminSidebar({ rol = "dueno", nombre = "" }: { rol?: RolAdmin; nombre?: string }) {

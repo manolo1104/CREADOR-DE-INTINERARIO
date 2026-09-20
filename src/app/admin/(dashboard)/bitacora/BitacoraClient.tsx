@@ -18,15 +18,54 @@ export interface Registro {
   detalle:    Cambio[] | null;
 }
 
-// Color por tipo de acción: lo destructivo salta a la vista sin leer.
-const COLOR_ACCION: Record<string, string> = {
-  "creó":            "bg-[#52B788]/12 text-[#1B6B45]",
-  "modificó":        "bg-[#1a4e8a]/10 text-[#1a4e8a]",
-  "eliminó":         "bg-[#C9484A]/12 text-[#A33638]",
-  "envió":           "bg-[#7a3a6a]/10 text-[#7a3a6a]",
-  "entró":           "bg-[#1B4332]/8  text-[#1B4332]/70",
-  "intento fallido": "bg-[#C9484A]/18 text-[#A33638]",
+// Cada acción con su color y su emoji: lo que se creó en verde, lo que se
+// borró en rojo, lo que se tocó en amarillo. La idea es reconocer el renglón
+// de un vistazo, sin leerlo — sobre todo lo destructivo.
+interface EstiloAccion { emoji: string; clase: string; borde: string }
+
+const ESTILO_ACCION: Record<string, EstiloAccion> = {
+  "creó":            { emoji: "🟢", clase: "bg-[#52B788]/15 text-[#1B6B45]",  borde: "border-l-[#52B788]" },
+  "modificó":        { emoji: "🟡", clase: "bg-amber-100 text-amber-800",      borde: "border-l-amber-400" },
+  "eliminó":         { emoji: "🔴", clase: "bg-[#C9484A]/15 text-[#A33638]",   borde: "border-l-[#C9484A]" },
+  "envió":           { emoji: "📨", clase: "bg-[#7a3a6a]/12 text-[#7a3a6a]",   borde: "border-l-[#7a3a6a]" },
+  "entró":           { emoji: "🔑", clase: "bg-[#1B4332]/8 text-[#1B4332]/65", borde: "border-l-[#1B4332]/25" },
+  "intento fallido": { emoji: "⛔", clase: "bg-[#C9484A]/20 text-[#A33638]",   borde: "border-l-[#C9484A]" },
 };
+
+const SIN_ESTILO: EstiloAccion = { emoji: "•", clase: "bg-[#1B4332]/8 text-[#1B4332]/70", borde: "border-l-[#1B4332]/20" };
+const estiloDe = (accion: string) => ESTILO_ACCION[accion] ?? SIN_ESTILO;
+
+// Un emoji por tipo de cosa, para distinguir de golpe una reserva de un gasto.
+const EMOJI_ENTIDAD: Record<string, string> = {
+  reserva:      "🏞️",
+  "cotización": "📄",
+  costo:        "🧾",
+  gasto:        "💸",
+  movimiento:   "💰",
+  precios:      "🏷️",
+  comprobante:  "📎",
+  socio:        "🤝",
+  corte:        "🔒",
+  panel:        "🚪",
+};
+const emojiEntidad = (e: string) => EMOJI_ENTIDAD[e] ?? "•";
+
+// Los tipos que se pueden filtrar. Se listan todos los que el sistema registra
+// hoy: cuando se sumó Finanzas, sus movimientos quedaban fuera del filtro y
+// parecía que la bitácora no los guardaba.
+const TIPOS = [
+  { id: "todo",        label: "Todo" },
+  { id: "reserva",     label: "🏞️ Reservas" },
+  { id: "cotización",  label: "📄 Cotizaciones" },
+  { id: "costo",       label: "🧾 Costos de salidas" },
+  { id: "gasto",       label: "💸 Gastos de la empresa" },
+  { id: "movimiento",  label: "💰 Movimientos anulados o pagados" },
+  { id: "precios",     label: "🏷️ Precios y costos del Cotizador" },
+  { id: "comprobante", label: "📎 Comprobantes" },
+  { id: "socio",       label: "🤝 Socios" },
+  { id: "corte",       label: "🔒 Cortes cerrados" },
+  { id: "panel",       label: "🚪 Entradas al panel" },
+];
 
 const fFecha = (iso: string) =>
   new Date(iso).toLocaleString("es-MX", {
@@ -68,6 +107,25 @@ export default function BitacoraClient({
         .some(v => v?.toLowerCase().includes(q)))
     );
   }, [registros, busca, persona, tipo]);
+
+  // Cuántas veces pasó cada cosa y quién la hizo, sobre lo que está filtrado.
+  const resumen = useMemo(() => {
+    const acciones: Record<string, number> = {};
+    const personas: Record<string, number> = {};
+    for (const r of filtrados) {
+      acciones[r.accion] = (acciones[r.accion] ?? 0) + 1;
+      // Las entradas al panel no dicen nada de lo que alguien HIZO: contarlas
+      // junto a lo demás hacía parecer muy activo a quien solo abrió el panel.
+      if (r.entidad !== "panel") personas[r.nombre] = (personas[r.nombre] ?? 0) + 1;
+    }
+    const orden = ["creó", "modificó", "eliminó", "envió", "entró", "intento fallido"];
+    return {
+      total: filtrados.length,
+      porAccion: Object.entries(acciones)
+        .sort((a, b) => orden.indexOf(a[0]) - orden.indexOf(b[0])),
+      porPersona: Object.entries(personas).sort((a, b) => b[1] - a[1]),
+    };
+  }, [filtrados]);
 
   function alternar(id: string) {
     setAbiertos(prev => {
@@ -141,14 +199,29 @@ export default function BitacoraClient({
         </select>
         <select value={tipo} onChange={e => setTipo(e.target.value)}
           className="bg-white border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm">
-          <option value="todo">Todo</option>
-          <option value="reserva">Reservas</option>
-          <option value="cotización">Cotizaciones</option>
-          <option value="precios">Precios</option>
-          <option value="comprobante">Comprobantes</option>
-          <option value="panel">Entradas al panel</option>
+          {TIPOS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
         </select>
       </div>
+
+      {/* Resumen: qué pasó, en números, antes de leer un solo renglón. */}
+      {resumen.total > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {resumen.porAccion.map(([accion, n]) => (
+            <span key={accion}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-dm ${estiloDe(accion).clase}`}>
+              <span aria-hidden>{estiloDe(accion).emoji}</span>
+              <strong className="font-medium">{n}</strong> {accion}
+            </span>
+          ))}
+          {resumen.porPersona.length > 1 && (
+            <span className="flex items-center gap-2 px-2.5 py-1 text-xs font-dm text-[#1B4332]/45 border border-[#1B4332]/10 rounded-sm">
+              {resumen.porPersona.map(([nombre, n]) => (
+                <span key={nombre}>{nombre}: <strong className="font-medium text-[#1B4332]/70">{n}</strong></span>
+              ))}
+            </span>
+          )}
+        </div>
+      )}
 
       <p className="text-[#1B4332]/40 font-dm text-xs mb-4">
         {filtrados.length} movimiento{filtrados.length === 1 ? "" : "s"}
@@ -175,20 +248,20 @@ export default function BitacoraClient({
                 <div key={r.id} className={i > 0 ? "border-t border-[#1B4332]/6" : ""}>
                   <div
                     onClick={() => tieneDetalle && alternar(r.id)}
-                    className={`flex items-start gap-3 px-4 py-3 ${tieneDetalle ? "cursor-pointer hover:bg-[#FAFAF8]" : ""} transition-colors`}
+                    className={`flex items-start gap-3 px-4 py-3 border-l-[3px] ${estiloDe(r.accion).borde} ${tieneDetalle ? "cursor-pointer hover:bg-[#FAFAF8]" : ""} transition-colors`}
                   >
                     <span className="text-[#1B4332]/35 font-dm text-xs w-14 flex-shrink-0 pt-0.5 tabular-nums">
                       {new Date(r.fecha).toLocaleTimeString("es-MX", {
                         hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City",
                       })}
                     </span>
-                    <span className={`text-[10px] font-dm px-2 py-0.5 rounded-sm flex-shrink-0 ${COLOR_ACCION[r.accion] ?? "bg-[#1B4332]/8 text-[#1B4332]/70"}`}>
-                      {r.accion}
+                    <span className={`text-[10px] font-dm px-2 py-0.5 rounded-sm flex-shrink-0 flex items-center gap-1 ${estiloDe(r.accion).clase}`}>
+                      <span aria-hidden>{estiloDe(r.accion).emoji}</span>{r.accion}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-dm text-sm text-[#1B4332]">
                         <span className="font-medium">{r.nombre}</span>
-                        <span className="text-[#1B4332]/50"> · {r.entidad}</span>
+                        <span className="text-[#1B4332]/50"> · {emojiEntidad(r.entidad)} {r.entidad}</span>
                       </p>
                       <p className="font-dm text-xs text-[#1B4332]/60 mt-0.5 break-words">{r.resumen}</p>
 
