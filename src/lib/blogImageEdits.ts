@@ -24,19 +24,63 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── Lote 21-sep-2026 (b) ──────────────────────────────────────────────────
+  // Minas Viejas — la imagen del cuerpo era la cascada EL AGUACATE, que es OTRO
+  // lugar. Ahora lleva una foto de la propia Minas Viejas. De paso se reescribe
+  // el alt, que era una ristra de palabras clave del agente.
+  "cascadas-de-minas-viejas-guia-completa-2026": {
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/cascada-el-aguacate/gallery-1.webp",
+        to: "https://www.huasteca-potosina.com/imagenes/cascadas-minas-viejas/gallery-5.jpg",
+      },
+      {
+        from: 'alt="cascadas minas viejas como llegar guía viaje Huasteca Potosina"',
+        to: 'alt="Pareja con chaleco salvavidas frente a la cascada de Minas Viejas y su poza turquesa, El Naranjo, San Luis Potosí"',
+      },
+    ],
+  },
+
+  // Huasteca en octubre — compartía portada con el de Minas Viejas (el agente
+  // repite fotos). La imagen del cuerpo pasa a la caída de Tamul de lado.
+  // 🔴 El pie decía que Tamul está en San Martín Chalchicuautla: está en
+  // AQUISMÓN. Error del agente, corregido aquí.
+  "la-huasteca-potosina-en-octubre-clima-rios-y-que-esperar": {
+    // ⚠️ La portada la eligió Manolo sabiendo que trae la marca de agua de
+    // Shutterstock (se le avisó el 21 sep y decidió usarla igual).
+    coverImageUrl:
+      "https://www.huasteca-potosina.com/imagenes/blog/la-huasteca-potosina-en-octubre-clima-rios-y-que-esperar/hero.jpg",
+    coverImageAlt:
+      "Vista aérea de la cascada de Tamul cayendo sobre el río Gallinas, con el agua turquesa entre la selva de Aquismón, San Luis Potosí",
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/cascada-de-tamul/gallery-1.jpg",
+        to: "https://www.huasteca-potosina.com/imagenes/cascada-de-tamul/cascada-lateral.jpg",
+      },
+      {
+        from: 'alt="clima huasteca octubre guía viaje Huasteca Potosina"',
+        to: 'alt="La cascada de Tamul cayendo con fuerza sobre el río Gallinas en octubre, cuando alcanza su mayor caudal"',
+      },
+      {
+        from: "ubicada en el municipio de San Martín Chalchicuautla",
+        to: "ubicada en el municipio de Aquismón",
+      },
+    ],
+  },
+
   // ── Lote 21-sep-2026 ──────────────────────────────────────────────────────
   // Xantolo — el blog de la fiesta de muertos estaba ilustrado con CASCADAS
   // (Castillo de la Salud de hero, Laguna Media Luna en el texto): fotos
   // bonitas que no tienen nada que ver con lo que cuenta el artículo. Fotos
   // nuevas: el altar con su arco de cempasúchil, y el sahumerio de copal.
   "xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia-2026": {
-    coverImageUrl: "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg",
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg",
     coverImageAlt:
       "Altar de Xantolo en la Huasteca Potosina: arco de flores de cempasúchil, veladoras encendidas y retratos de los difuntos",
     contentReplace: [
       {
         from: "https://www.huasteca-potosina.com/imagenes/laguna-media-luna/gallery-1.avif",
-        to: "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/imagen-2.jpg",
+        to: "https://www.huasteca-potosina.com/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/imagen-2.jpg",
       },
     ],
   },
