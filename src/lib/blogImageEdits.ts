@@ -24,6 +24,23 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── Lote 21-sep-2026 ──────────────────────────────────────────────────────
+  // Xantolo — el blog de la fiesta de muertos estaba ilustrado con CASCADAS
+  // (Castillo de la Salud de hero, Laguna Media Luna en el texto): fotos
+  // bonitas que no tienen nada que ver con lo que cuenta el artículo. Fotos
+  // nuevas: el altar con su arco de cempasúchil, y el sahumerio de copal.
+  "xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia-2026": {
+    coverImageUrl: "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg",
+    coverImageAlt:
+      "Altar de Xantolo en la Huasteca Potosina: arco de flores de cempasúchil, veladoras encendidas y retratos de los difuntos",
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/laguna-media-luna/gallery-1.avif",
+        to: "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/imagen-2.jpg",
+      },
+    ],
+  },
+
   // ── Lote 24-jul-2026 ──────────────────────────────────────────────────────
   // Xilitla en Pareja — hero: pareja brindando con vino en la terraza; imagen dos: cena romántica a la luz de velas. Archivos nuevos en public/imagenes/blog/xilitla-en-pareja/.
   "xilitla-en-pareja-escapada-romantica-planes-para-parejas-en-la-huastec": {

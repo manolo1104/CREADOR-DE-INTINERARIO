@@ -595,3 +595,53 @@ model CorteCerrado {
   @@index([desde])
 }
 
+// ── Links de pago ───────────────────────────────────────────────────────────
+// Un cobro suelto que se manda por WhatsApp: título, monto y una liga que el
+// cliente abre para pagar con tarjeta.
+//
+// La liga la emite Stripe (Payment Link) y se guarda aquí para poder ver de un
+// vistazo cuáles se pagaron y cuáles llevan días sin abrirse. Sin esta tabla el
+// panel tendría que preguntarle a Stripe cada vez, y no habría forma de saber
+// quién creó cada cobro ni para qué era.
+//
+// `reservaId` es opcional: cuando el cobro es el saldo de una reserva, al
+// pagarse se le abona a ESA reserva y el saldo pendiente baja solo.
+model LinkPago {
+  id     String @id @default(cuid())
+  titulo String
+  /// Pesos enteros, como el resto del panel. Stripe trabaja en centavos: la
+  /// conversión vive en un solo sitio (`src/lib/admin/linksPago.ts`).
+  monto  Int
+  nota   String?
+
+  /// activo | pagado | cancelado
+  estado String @default("activo")
+
+  /// Lo que devuelve Stripe al crear el cobro.
+  stripeLinkId  String  @unique
+  stripePriceId String?
+  url           String
+
+  /// Para quién es el cobro (solo para reconocerlo en la lista).
+  cliente String?
+
+  /// Si el cobro es de una reserva, al pagarse se le abona a ella.
+  reservaId String?
+  /// Si el anticipo es de una cotización, al pagarse la cotización se marca
+  /// como aceptada: el cliente ya puso dinero, dejó de ser una propuesta.
+  cotizacionId String?
+
+  pagadoAt          DateTime?
+  stripeSessionId   String?
+  /// Lo que Stripe dice que se cobró de verdad, por si difiere del monto.
+  montoPagado       Int?
+  correoDelPagador  String?
+
+  creadoPor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado, createdAt])
+  @@index([reservaId])
+  @@index([cotizacionId])
+}

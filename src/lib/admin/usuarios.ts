@@ -9,7 +9,7 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
   | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
-  | "finanzas" | "socios";
+  | "finanzas" | "socios" | "cobros";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -23,6 +23,9 @@ export interface UsuarioAdmin {
 // operación: todo lo necesario para cerrar reservas, sin ver los números del negocio.
 const OPERACION: SeccionAdmin[] = [
   "inicio", "reservas", "calendario", "cotizaciones", "cotizador", "clientes",
+  // Cobrar es parte de cerrar la venta: quien atiende el WhatsApp tiene que
+  // poder mandar la liga de pago sin pedírsela a nadie.
+  "cobros",
 ];
 // socio: todo lo de tours, ventas y finanzas. Sin el Curso de IA (otro
 // negocio) y sin la configuración de la sociedad: ver el reparto es una cosa,
@@ -82,6 +85,8 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
   // /api/admin/movimientos NO se restringe por sección a propósito: quien opera
   // captura el costo de SU salida (es quien lo sabe) aunque no vea Finanzas.
   // Qué puede registrar cada quien se decide dentro de la ruta, con puedeHacer().
+  { prefijo: "/admin/cobros",                seccion: "cobros"   },
+  { prefijo: "/api/admin/links-pago",        seccion: "cobros"   },
   { prefijo: "/admin/finanzas",              seccion: "finanzas" },
   { prefijo: "/api/admin/finanzas",          seccion: "finanzas" },
   { prefijo: "/api/admin/cortes",            seccion: "finanzas" },

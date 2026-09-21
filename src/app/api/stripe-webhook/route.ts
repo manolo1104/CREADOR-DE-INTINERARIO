@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { marcarLinkPagado } from "@/lib/admin/linksPago";
 import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
@@ -44,6 +45,28 @@ export async function POST(req: NextRequest) {
       session_id: session.id,
       payment_status: session.payment_status,
     });
+
+    // ── Cobro por liga creada desde el panel ──────────────────────────────
+    // La liga vive en Stripe; aquí se marca como pagada para que el panel lo
+    // diga sin tener que preguntarle a Stripe. Si el cobro era el saldo de una
+    // reserva, se le abona a ESA reserva y su saldo pendiente baja solo.
+    if (session.payment_link && session.payment_status === "paid") {
+      try {
+        await marcarLinkPagado(
+          String(session.payment_link),
+          session.id,
+          Math.round((session.amount_total ?? 0) / 100),
+          session.customer_details?.email || session.customer_email || null,
+        );
+      } catch (e) {
+        // Un fallo aquí no puede tumbar el webhook: Stripe reintentaría y el
+        // resto de los avisos (correos, reservas) se mandarían dos veces.
+        logger.error("link_pago_webhook_failed", {
+          reason: e instanceof Error ? e.message : "desconocido",
+          payment_link: String(session.payment_link),
+        });
+      }
+    }
 
     // ── Entrega de la "Guía Definitiva" (infoproducto) por correo ──────────────
     // El webhook es la fuente de verdad: el correo llega aunque el cliente cierre
