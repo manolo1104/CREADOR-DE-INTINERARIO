@@ -9,7 +9,7 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
   | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
-  | "finanzas" | "socios" | "cobros";
+  | "finanzas" | "socios" | "cobros" | "fotos";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -26,6 +26,8 @@ const OPERACION: SeccionAdmin[] = [
   // Cobrar es parte de cerrar la venta: quien atiende el WhatsApp tiene que
   // poder mandar la liga de pago sin pedírsela a nadie.
   "cobros",
+  // Quien regresa del tour con la cámara es quien sube las fotos.
+  "fotos",
 ];
 // socio: todo lo de tours, ventas y finanzas. Sin el Curso de IA (otro
 // negocio) y sin la configuración de la sociedad: ver el reparto es una cosa,
