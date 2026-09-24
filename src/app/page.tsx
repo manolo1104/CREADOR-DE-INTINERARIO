@@ -12,6 +12,7 @@ import { StatTile } from "@/components/StatTile";
 import { MagneticButton } from "@/components/MagneticButton";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { HeroStats } from "@/components/HeroStats";
+import { HeroVideo } from "@/components/HeroVideo";
 import { ClimaHero } from "@/components/ClimaHero";
 import { VisitantesEnVivo } from "@/components/VisitantesEnVivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
@@ -252,10 +253,20 @@ export default async function HomePage() {
       {/* ── HERO ── */}
       <section
         aria-label={en ? "Welcome to the Huasteca Potosina" : "Bienvenida a la Huasteca Potosina"}
-        className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 overflow-hidden"
+        className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 bg-negro overflow-hidden supports-[overflow:clip]:overflow-clip"
       >
+        {/* El video se queda FIJO a la pantalla mientras se baja por el hero.
+            El hero mide casi dos pantallas en el teléfono (390×1514) y más de
+            una en escritorio (1440×1347): estirado a todo el hero, el corte
+            vertical perdía más de la mitad del ancho. Así siempre se ve el
+            cuadro completo y el texto pasa por encima.
+            `overflow-clip` y no `hidden`: `hidden` crea un contenedor de
+            scroll y apaga el `sticky`. Safari < 16 no conoce `clip`, se queda
+            con `hidden` y el video simplemente no se pega (se ve bien igual). */}
         <div className="absolute inset-0" aria-hidden="true">
-          <Image src="/imagenes/hero-home.jpg" alt={en ? "Paddle surf on the turquoise waters of the Huasteca Potosina" : "Paddle surf en las aguas turquesas de la Huasteca Potosina"} fill className="object-cover object-center" priority quality={90} />
+          <div className="sticky top-0 h-lvh w-full overflow-hidden">
+            <HeroVideo alt={en ? "Tamul Waterfall in the Huasteca Potosina" : "Cascada de Tamul en la Huasteca Potosina"} />
+          </div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-negro/60 via-negro/50 to-negro/85" />
 

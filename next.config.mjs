@@ -30,6 +30,15 @@ const nextConfig = {
         ],
       },
       {
+        // Video del hero: pesa 2–4 MB, que no se vuelva a bajar en cada
+        // visita. Inmutable porque el nombre lleva versión (-v2, -v3…): un video
+        // nuevo se sube con otro nombre, nunca encima (ver HeroVideo.tsx).
+        source: "/video/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
         // Caché para logos y favicon.
         source: "/logos/:path*",
         headers: [
