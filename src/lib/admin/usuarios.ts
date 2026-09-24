@@ -22,17 +22,23 @@ export interface UsuarioAdmin {
 // ── Permisos por rol ────────────────────────────────────────────────────────
 // operación: todo lo necesario para cerrar reservas, sin ver los números del negocio.
 const OPERACION: SeccionAdmin[] = [
-  "inicio", "reservas", "calendario", "cotizaciones", "cotizador", "clientes",
+  "inicio", "reservas", "calendario", "cotizaciones", "clientes",
   // Cobrar es parte de cerrar la venta: quien atiende el WhatsApp tiene que
   // poder mandar la liga de pago sin pedírsela a nadie.
   "cobros",
   // Quien regresa del tour con la cámara es quien sube las fotos.
   "fotos",
+  // El Cotizador NO: enseña lo que nos cuesta cada tour y el margen que deja.
+  // Estaba dentro y contradecía la propia definición del rol —"sin ver los
+  // números del negocio"—. Fuera por decisión de Manolo, 23 sep 2026.
 ];
 // socio: todo lo de tours, ventas y finanzas. Sin el Curso de IA (otro
 // negocio) y sin la configuración de la sociedad: ver el reparto es una cosa,
 // poder cambiarse el porcentaje es otra.
-const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "finanzas"];
+// ⚠️ El Cotizador entra AQUÍ y no en OPERACION. OPERACION es la base de los
+// otros dos roles: lo que se le quita, se le quita también al socio y al
+// dueño. Al sacarlo de ahí se quedó sin él TODO el mundo, Manolo incluido.
+const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "finanzas", "cotizador"];
 // dueño: todo. La bitácora (quién hizo qué) y la configuración de socios son
 // SOLO suyas: si quien está siendo registrado pudiera leerla o repartirse la
 // utilidad, dejarían de servir para lo que se hicieron.
@@ -97,6 +103,13 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
   { prefijo: "/api/admin/curso",  seccion: "curso"    },
   { prefijo: "/admin/bitacora",     seccion: "bitacora" },
   { prefijo: "/api/admin/bitacora", seccion: "bitacora" },
+  // 🔴 El Cotizador enseña costos y márgenes. Sin estas líneas, quitarlo del
+  // rol sólo lo borraba del MENÚ: quien escribiera la dirección a mano entraba
+  // igual, y sus tres APIs seguían contestando a cualquiera con sesión.
+  { prefijo: "/admin/cotizador",              seccion: "cotizador" },
+  { prefijo: "/api/admin/costos",             seccion: "cotizador" },
+  { prefijo: "/api/admin/precios-extras",     seccion: "cotizador" },
+  { prefijo: "/api/admin/tarifas-proveedor",  seccion: "cotizador" },
 ];
 
 export function seccionRestringida(pathname: string): SeccionAdmin | null {

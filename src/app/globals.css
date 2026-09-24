@@ -38,6 +38,19 @@ body {
   max-width: 100%;
 }
 
+/* Los enlaces internos bajan deslizándose en vez de saltar de golpe.
+   `scroll-padding-top` deja libre la barra fija de arriba. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--navbar-offset) + 16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 @layer utilities {
   .text-gradient-dorado {
     background: linear-gradient(135deg, #c4882a, #8fbe3a);

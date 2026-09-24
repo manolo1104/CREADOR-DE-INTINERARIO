@@ -41,6 +41,8 @@ export interface InfoPracticaContent {
   heroIntro: string;
   /** Solo las etiquetas; los `href` (anclas) no cambian. */
   navLabels: string[];
+  /** Etiqueta accesible del índice pegajoso. */
+  tituloIndice: string;
 
   tituloComoLlegar: string;
   tituloCuandoViajar: string;
@@ -224,9 +226,13 @@ const ES: InfoPracticaContent = {
   heroH1b: "Huasteca Potosina",
   heroIntro:
     "Todo lo que necesitas para llegar, moverte, hospedarte y disfrutar la Huasteca Potosina sin sorpresas desagradables.",
+  tituloIndice: "Secciones de la guía",
+  // ⚠️ El orden es el de la PÁGINA, no uno cualquiera: se empareja por posición
+  // con `IDS_SECCIONES` y el índice marca en qué sección vas. Con los dos
+  // órdenes distintos, marcaba una sección que no era.
   navLabels: [
-    "Cómo llegar", "Cuándo viajar", "Dónde quedarse", "Hotel Paraíso", "Dónde comer",
-    "Presupuesto", "Itinerarios", "Qué llevar", "Mapa", "Seguridad",
+    "Cómo llegar", "Cuándo viajar", "Dónde quedarse", "Hotel Paraíso", "Mapa",
+    "Dónde comer", "Presupuesto", "Itinerarios", "Qué llevar", "Seguridad",
   ],
 
   tituloComoLlegar: "Cómo llegar",
@@ -257,7 +263,7 @@ const ES: InfoPracticaContent = {
       titulo: "En autobús",
       items: [
         "ADO GL desde CDMX (Terminal Norte) → Ciudad Valles: ~8 horas",
-        "Precio aprox: $600–900 MXN por persona (clase ejecutiva)",
+        "Precio aprox: $600-900 MXN por persona (clase ejecutiva)",
         "Salidas frecuentes: 10pm, 11:30pm, 12am (llegada madrugada)",
         "También desde Monterrey: ~4.5h, desde Tampico: ~2h",
       ],
@@ -266,8 +272,8 @@ const ES: InfoPracticaContent = {
       titulo: "En coche",
       items: [
         "Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ~6.5 a 7h",
-        "Desde Monterrey: 340km por MEX-85 — ~4h",
-        "Desde San Luis Potosí capital: 260km — ~3h",
+        "Desde Monterrey: 340 km por la MEX-85, unas 4 h",
+        "Desde San Luis Potosí capital: 260 km, unas 3 h",
         "Autopista de cuota recomendada: segura y rápida",
         "Gasolina disponible en Valles. Llenar tanque antes de excursiones",
       ],
@@ -276,10 +282,10 @@ const ES: InfoPracticaContent = {
       titulo: "Transporte local",
       items: [
         "Combis (minivanes) conectan Valles con Micos, Tamasopo, Tamuín",
-        "Precio combi: $35–80 MXN dependiendo la ruta",
-        "Taxis colectivos a destinos populares: $50–120 MXN p/p",
+        "Precio combi: $35-80 MXN dependiendo la ruta",
+        "Taxis colectivos a destinos populares: $50-120 MXN p/p",
         "Renta de auto recomendada para mayor flexibilidad",
-        "Moto taxi disponible en zonas rurales (~$30–50 MXN)",
+        "Moto taxi disponible en zonas rurales (~$30-50 MXN)",
       ],
     },
   ],
@@ -296,37 +302,37 @@ const ES: InfoPracticaContent = {
   ],
 
   cuandoIntro: "La Huasteca recibe visitantes todo el año, pero cada temporada tiene su carácter.",
-  fotoSecaAlt: "Cueva del Agua con agua turquesa — temporada seca Nov–Mar",
-  fotoSecaPie: "Nov–Mar · Agua turquesa",
+  fotoSecaAlt: "Cueva del Agua con agua turquesa — temporada seca Nov-Mar",
+  fotoSecaPie: "De noviembre a marzo, agua turquesa",
   fotoVerdeAlt: "Sótano de las Huahuas con vegetación verde exuberante — temporada lluvias",
-  fotoVerdePie: "Jun–Oct · Verde intenso",
+  fotoVerdePie: "De junio a octubre, verde intenso",
   temporadas: [
     {
-      meses: "Noviembre — Marzo",
+      meses: "De noviembre a marzo",
       etiqueta: "Temporada ideal",
       puntos: [
         "Cascadas en su nivel óptimo de caudal y color turquesa",
-        "Clima fresco (18–26°C), menos humedad",
+        "Clima fresco (18-26°C), menos humedad",
         "Sótano de Golondrinas: vencejos activos en sus mejores vuelos",
         "Tamtoc: visitable sin calor extremo",
         "Temporada alta de turismo: reservar hospedaje con anticipación",
       ],
     },
     {
-      meses: "Abril — Mayo",
-      etiqueta: "Primavera — Transición",
+      meses: "De abril a mayo",
+      etiqueta: "Primavera, de transición",
       puntos: [
-        "Temperaturas suben (28–38°C), especialmente en Tamuín",
+        "Temperaturas suben (28-38°C), especialmente en Tamuín",
         "Cascadas aún con buen caudal, color intenso",
         "Semana Santa: muy concurrido, precios al alza",
         "Ideal para Tamul y Las Pozas (follaje exuberante)",
       ],
     },
     {
-      meses: "Junio — Octubre",
+      meses: "De junio a octubre",
       etiqueta: "Temporada de lluvia",
       puntos: [
-        "Lluvias frecuentes (especialmente julio–septiembre)",
+        "Lluvias frecuentes (especialmente julio-septiembre)",
         "Vegetación explosivamente verde y fotogénica",
         "Ríos crecidos: algunas actividades acuáticas se suspenden",
         "Menos turistas, precios más bajos",
@@ -337,11 +343,11 @@ const ES: InfoPracticaContent = {
   verToursTemporada: "Ver tours disponibles para esta temporada",
   tablaCabeceras: ["Mes", "Temperatura", "Lluvia", "Cascadas"],
   tablaFilas: [
-    { mes: "Ene–Feb", temp: "18–26°C", lluvia: "Poca", cascadas: "Excelente" },
-    { mes: "Mar–May", temp: "24–36°C", lluvia: "Moderada", cascadas: "Muy buena" },
-    { mes: "Jun–Sep", temp: "26–34°C", lluvia: "Alta", cascadas: "Variable" },
-    { mes: "Oct–Nov", temp: "22–30°C", lluvia: "Bajando", cascadas: "Buena" },
-    { mes: "Dic", temp: "16–24°C", lluvia: "Poca", cascadas: "Muy buena" },
+    { mes: "Ene-Feb", temp: "18-26°C", lluvia: "Poca", cascadas: "Excelente" },
+    { mes: "Mar-May", temp: "24-36°C", lluvia: "Moderada", cascadas: "Muy buena" },
+    { mes: "Jun-Sep", temp: "26-34°C", lluvia: "Alta", cascadas: "Variable" },
+    { mes: "Oct-Nov", temp: "22-30°C", lluvia: "Bajando", cascadas: "Buena" },
+    { mes: "Dic", temp: "16-24°C", lluvia: "Poca", cascadas: "Muy buena" },
   ],
 
   quedarseIntro:
@@ -361,7 +367,7 @@ const ES: InfoPracticaContent = {
   xilitlaTexto1: "El pueblo mágico más cercano a ",
   xilitlaLasPozas: "Las Pozas de Edward James",
   xilitlaTexto2:
-    ". Opciones boutique en casas coloniales con vistas al cañón. Perfecto para 1–2 noches de inmersión cultural.",
+    ". Opciones boutique en casas coloniales con vistas al cañón. Perfecto para 1-2 noches de inmersión cultural.",
   recomendacionEquipo: "Recomendación de nuestro equipo",
   hotelNombre: "Hotel Paraíso Encantado Xilitla",
   hotelTexto:
@@ -414,7 +420,7 @@ const ES: InfoPracticaContent = {
   mapaIntroB: " y ",
   mapaIntroC: ". Todos los destinos principales están a menos de 2 horas entre sí. Puntos clave: ",
   mapaPuntos: ["Cascada de Tamul", "Las Pozas", "Sótano de las Golondrinas", "Puente de Dios"],
-  mapaTitle: "Mapa Huasteca Potosina — destinos principales",
+  mapaTitle: "Mapa de la Huasteca Potosina con los destinos principales",
   mapaDestinos: [
     { label: "Cascada de Tamul", dist: "1.5h desde Valles" },
     { label: "Las Pozas (Xilitla)", dist: "1h desde Valles" },
@@ -451,20 +457,20 @@ const ES: InfoPracticaContent = {
   niveles: [
     {
       nivel: "Económico",
-      rango: "$400–600 MXN",
+      rango: "$400-600 MXN",
       incluye: [
-        "Hospedaje: hostal o camping ($150–200)",
-        "Comida: mercado y puestos locales ($100–150)",
-        "1 destino por día: $60–220 MXN entrada",
-        "Transporte: combis y colectivos ($50–100)",
+        "Hospedaje: hostal o camping ($150-200)",
+        "Comida: mercado y puestos locales ($100-150)",
+        "1 destino por día: $60-220 MXN entrada",
+        "Transporte: combis y colectivos ($50-100)",
       ],
     },
     {
       nivel: "Moderado",
-      rango: "$800–1,500 MXN",
+      rango: "$800-1,500 MXN",
       incluye: [
-        "Hotel 3 estrellas o posada ($400–600)",
-        "Restaurantes y cafés ($200–300)",
+        "Hotel 3 estrellas o posada ($400-600)",
+        "Restaurantes y cafés ($200-300)",
         "2 destinos por día incluidas actividades",
         "Taxi o renta compartida de auto",
         "Recuerdos y gastos varios",
@@ -497,10 +503,10 @@ const ES: InfoPracticaContent = {
     {
       etiqueta: "Intenso",
       dias: "3 Días",
-      sub: "Lo esencial — para fines de semana largos",
+      sub: "Lo esencial para fines de semana largos",
       pasos: [
         { dia: "Día 1", lugar: "Llegada a Ciudad Valles · Noche en Valles o Xilitla" },
-        { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 8:00–9:00 am · Noche Xilitla" },
+        { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 8:00-9:00 am · Noche Xilitla" },
         { dia: "Día 3", lugar: "Las Pozas (Edward James) · Regreso tarde" },
       ],
       cta: "Ver tour Tamul →",
@@ -553,7 +559,7 @@ const ES: InfoPracticaContent = {
     {
       titulo: "Ropa",
       items: [
-        "Ropa dry-fit o de secado rápido (2–3 mudas)",
+        "Ropa dry-fit o de secado rápido (2-3 mudas)",
         "Traje de baño (llevar 2 si habrá días seguidos de agua)",
         "Camiseta manga larga para sol y repelente",
         "Chamarra ligera para el Sótano de Golondrinas (6°C en el fondo)",
@@ -664,7 +670,7 @@ const ES: InfoPracticaContent = {
         },
         {
           q: "¿Qué nivel físico se requiere?",
-          a: "Depende del tour. Cada ficha indica el nivel (Fácil / Moderado). Los tours Fácil son aptos para toda la familia. Los Moderado requieren poder caminar 3–5 km en terreno irregular.",
+          a: "Depende del tour. Cada ficha indica el nivel (Fácil / Moderado). Los tours Fácil son aptos para toda la familia. Los Moderado requieren poder caminar 3-5 km en terreno irregular.",
         },
         {
           // CORREGIDO (13 ago 2026): antes decía "menores de 4 no pagan" y
@@ -760,22 +766,22 @@ const ES: InfoPracticaContent = {
     cascadasValores: { Excelente: "Excelente", "Muy buena": "Muy buena", Buena: "Buena", Variable: "Variable" },
     recomendaciones: {
       ideal: {
-        titulo: "Temporada ideal — ¡Excelente elección!",
-        texto: "Las cascadas están en su caudal óptimo con el agua turquesa característico de la Huasteca. Clima fresco (16–30°C) y agradable. Es temporada alta — reserva hospedaje y tours con anticipación.",
+        titulo: "Temporada ideal, la mejor época",
+        texto: "Las cascadas están en su caudal óptimo con el agua turquesa característico de la Huasteca. Clima fresco (16-30°C) y agradable. Es temporada alta — reserva hospedaje y tours con anticipación.",
         tours: ["Expedición Tamul + Sótano de las Huahuas", "Ruta Surrealista (Las Pozas)", "Cascadas del Meco"],
       },
       buena: {
-        titulo: "Buena temporada — Bien para visitar",
+        titulo: "Buena temporada para visitar",
         texto: "El agua conserva su color intenso. Las temperaturas suben — actívate temprano por las mañanas. Ideal para tours con sombra natural como Las Pozas o los ríos. Menos concurrencia que temporada alta.",
         tours: ["Ruta Surrealista (Las Pozas)", "Paraíso Escalonado + Minas Viejas y Micos", "Ruta Acuática Puente de Dios"],
       },
       caluroso: {
-        titulo: "Temporada calurosa — Prepárate bien",
-        texto: "28–38°C en zonas bajas. Hidratación constante, actívate antes de las 10am. Las pozas se disfrutan mucho — el agua fresca es un alivio. Evita Tamtoc (sin sombra). Lleva sombrero y ropa UV.",
+        titulo: "Temporada calurosa: prepárate bien",
+        texto: "28-38°C en zonas bajas. Hidratación constante, actívate antes de las 10am. Las pozas se disfrutan mucho — el agua fresca es un alivio. Evita Tamtoc (sin sombra). Lleva sombrero y ropa UV.",
         tours: ["Paraíso Escalonado + Minas Viejas y Micos (pozas frescas)", "Ruta Acuática Puente de Dios"],
       },
       lluvia: {
-        titulo: "Temporada de lluvias — Consulta condiciones",
+        titulo: "Temporada de lluvias: consulta condiciones",
         texto: "Vegetación explosivamente verde y muy fotogénica. Algunos tours de río pueden suspenderse por corrientes altas (especialmente Tamul en septiembre). Menos turistas y precios más bajos. Consulta antes de reservar.",
         tours: ["Ruta Surrealista (Las Pozas — siempre operamos)", "Paraíso Escalonado + Minas Viejas y Micos"],
       },
@@ -800,9 +806,10 @@ const EN: InfoPracticaContent = {
   heroH1b: "Travel Guide",
   heroIntro:
     "Everything you need to get here, get around, find a bed and enjoy the Huasteca Potosina without any nasty surprises.",
+  tituloIndice: "Guide sections",
   navLabels: [
-    "Getting there", "When to go", "Where to stay", "Hotel Paraíso", "Where to eat",
-    "Budget", "Itineraries", "What to pack", "Map", "Safety",
+    "Getting there", "When to go", "Where to stay", "Hotel Paraíso", "Map",
+    "Where to eat", "Budget", "Itineraries", "What to pack", "Safety",
   ],
 
   tituloComoLlegar: "Getting there",
@@ -833,7 +840,7 @@ const EN: InfoPracticaContent = {
       titulo: "By bus",
       items: [
         "ADO GL from Mexico City (Terminal Norte) → Ciudad Valles: ~8 hours",
-        "Approx. price: $600–900 MXN per person (executive class)",
+        "Approx. price: $600-900 MXN per person (executive class)",
         "Frequent departures: 10pm, 11:30pm, 12am (arriving before dawn)",
         "Also from Monterrey: ~4.5h, from Tampico: ~2h",
       ],
@@ -842,8 +849,8 @@ const EN: InfoPracticaContent = {
       titulo: "By car",
       items: [
         "From Mexico City: 430km (267 mi) on the Mex-85 / MEX-70 toll highway — ~6.5 to 7h",
-        "From Monterrey: 340km on the MEX-85 — ~4h",
-        "From the city of San Luis Potosí: 260km — ~3h",
+        "From Monterrey: 340 km on the MEX-85, about 4 h",
+        "From the city of San Luis Potosí: 260 km, about 3 h",
         "The toll motorway is recommended: safe and fast",
         "Fuel available in Valles. Fill up before heading out on trips",
       ],
@@ -852,10 +859,10 @@ const EN: InfoPracticaContent = {
       titulo: "Local transport",
       items: [
         "Combis (minivans) connect Valles with Micos, Tamasopo and Tamuín",
-        "Combi fare: $35–80 MXN depending on the route",
-        "Shared taxis to popular destinations: $50–120 MXN per person",
+        "Combi fare: $35-80 MXN depending on the route",
+        "Shared taxis to popular destinations: $50-120 MXN per person",
         "A rental car is recommended for more flexibility",
-        "Moto-taxis available in rural areas (~$30–50 MXN)",
+        "Moto-taxis available in rural areas (~$30-50 MXN)",
       ],
     },
   ],
@@ -872,37 +879,37 @@ const EN: InfoPracticaContent = {
   ],
 
   cuandoIntro: "The Huasteca welcomes visitors all year round, but each season has its own character.",
-  fotoSecaAlt: "The Water Cave with turquoise water — dry season Nov–Mar",
-  fotoSecaPie: "Nov–Mar · Turquoise water",
+  fotoSecaAlt: "The Water Cave with turquoise water — dry season Nov-Mar",
+  fotoSecaPie: "November to March, turquoise water",
   fotoVerdeAlt: "Sótano de las Huahuas with lush green vegetation — rainy season",
-  fotoVerdePie: "Jun–Oct · Deep green",
+  fotoVerdePie: "June to October, deep green",
   temporadas: [
     {
-      meses: "November — March",
+      meses: "November to March",
       etiqueta: "The best season",
       puntos: [
         "Waterfalls at their best flow and turquoise color",
-        "Cool weather (18–26°C), less humidity",
+        "Cool weather (18-26°C), less humidity",
         "Sótano de Golondrinas: the swifts are at their most active",
         "Tamtoc: visitable without extreme heat",
         "High season: book accommodation well in advance",
       ],
     },
     {
-      meses: "April — May",
-      etiqueta: "Spring — Transition",
+      meses: "April to May",
+      etiqueta: "Spring, in between",
       puntos: [
-        "Temperatures rise (28–38°C), especially in Tamuín",
+        "Temperatures rise (28-38°C), especially in Tamuín",
         "Waterfalls still flowing well, with intense color",
         "Holy Week: very busy, prices go up",
         "Ideal for Tamul and Las Pozas (lush foliage)",
       ],
     },
     {
-      meses: "June — October",
+      meses: "June to October",
       etiqueta: "Rainy season",
       puntos: [
-        "Frequent rain (especially July–September)",
+        "Frequent rain (especially July-September)",
         "Explosively green, photogenic vegetation",
         "Swollen rivers: some water activities are suspended",
         "Fewer tourists, lower prices",
@@ -913,11 +920,11 @@ const EN: InfoPracticaContent = {
   verToursTemporada: "See the tours available this season",
   tablaCabeceras: ["Month", "Temperature", "Rain", "Waterfalls"],
   tablaFilas: [
-    { mes: "Jan–Feb", temp: "18–26°C", lluvia: "Little", cascadas: "Excellent" },
-    { mes: "Mar–May", temp: "24–36°C", lluvia: "Moderate", cascadas: "Very good" },
-    { mes: "Jun–Sep", temp: "26–34°C", lluvia: "High", cascadas: "Variable" },
-    { mes: "Oct–Nov", temp: "22–30°C", lluvia: "Easing", cascadas: "Good" },
-    { mes: "Dec", temp: "16–24°C", lluvia: "Little", cascadas: "Very good" },
+    { mes: "Jan-Feb", temp: "18-26°C", lluvia: "Little", cascadas: "Excellent" },
+    { mes: "Mar-May", temp: "24-36°C", lluvia: "Moderate", cascadas: "Very good" },
+    { mes: "Jun-Sep", temp: "26-34°C", lluvia: "High", cascadas: "Variable" },
+    { mes: "Oct-Nov", temp: "22-30°C", lluvia: "Easing", cascadas: "Good" },
+    { mes: "Dec", temp: "16-24°C", lluvia: "Little", cascadas: "Very good" },
   ],
 
   quedarseIntro:
@@ -937,7 +944,7 @@ const EN: InfoPracticaContent = {
   xilitlaTexto1: "The Pueblo Mágico closest to ",
   xilitlaLasPozas: "Edward James's Las Pozas",
   xilitlaTexto2:
-    ". Boutique options in colonial houses looking out over the canyon. Perfect for 1–2 nights of cultural immersion.",
+    ". Boutique options in colonial houses looking out over the canyon. Perfect for 1-2 nights of cultural immersion.",
   recomendacionEquipo: "Our team's recommendation",
   hotelNombre: "Hotel Paraíso Encantado Xilitla",
   hotelTexto:
@@ -1019,7 +1026,7 @@ const EN: InfoPracticaContent = {
     "Perfect before or after visiting Las Pozas",
   ],
   papanFotoHeroAlt: "Restaurante Papán Huasteco — authentic regional cooking in Xilitla",
-  papanFotoPlatillosAlt: "Typical Huastec dishes — zacahuil and bocoles",
+  papanFotoPlatillosAlt: "Typical Huastec dishes: zacahuil and bocoles",
   papanFotoFogonAlt: "Wood-fired stove at Restaurante Papán Huasteco",
 
   presupuestoIntro:
@@ -1027,20 +1034,20 @@ const EN: InfoPracticaContent = {
   niveles: [
     {
       nivel: "Budget",
-      rango: "$400–600 MXN",
+      rango: "$400-600 MXN",
       incluye: [
-        "Lodging: hostel or camping ($150–200)",
-        "Food: markets and local stalls ($100–150)",
-        "1 destination per day: $60–220 MXN entry",
-        "Transport: combis and shared taxis ($50–100)",
+        "Lodging: hostel or camping ($150-200)",
+        "Food: markets and local stalls ($100-150)",
+        "1 destination per day: $60-220 MXN entry",
+        "Transport: combis and shared taxis ($50-100)",
       ],
     },
     {
       nivel: "Mid-range",
-      rango: "$800–1,500 MXN",
+      rango: "$800-1,500 MXN",
       incluye: [
-        "3-star hotel or guesthouse ($400–600)",
-        "Restaurants and cafés ($200–300)",
+        "3-star hotel or guesthouse ($400-600)",
+        "Restaurants and cafés ($200-300)",
         "2 destinations per day, activities included",
         "Taxi or a shared car rental",
         "Souvenirs and odds and ends",
@@ -1073,10 +1080,10 @@ const EN: InfoPracticaContent = {
     {
       etiqueta: "Intense",
       dias: "3 Days",
-      sub: "The essentials — for a long weekend",
+      sub: "The essentials for a long weekend",
       pasos: [
         { dia: "Day 1", lugar: "Arrive in Ciudad Valles · Night in Valles or Xilitla" },
-        { dia: "Day 2", lugar: "Tamul + Sótano de las Huahuas tour · Departure 8:00–9:00 am · Night in Xilitla" },
+        { dia: "Day 2", lugar: "Tamul + Sótano de las Huahuas tour · Departure 8:00-9:00 am · Night in Xilitla" },
         { dia: "Day 3", lugar: "Las Pozas (Edward James) · Head back in the afternoon" },
       ],
       cta: "See the Tamul tour →",
@@ -1129,7 +1136,7 @@ const EN: InfoPracticaContent = {
     {
       titulo: "Clothing",
       items: [
-        "Dry-fit or quick-dry clothing (2–3 changes)",
+        "Dry-fit or quick-dry clothing (2-3 changes)",
         "Swimwear (bring 2 if you have consecutive days in the water)",
         "Long-sleeved top for sun and insects",
         "Light jacket for the Sótano de Golondrinas (6°C at the bottom)",
@@ -1240,7 +1247,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "What level of fitness do I need?",
-          a: "It depends on the tour. Each tour page states the level (Easy / Moderate). The Easy tours are suitable for the whole family. The Moderate ones require being able to walk 3–5 km over uneven ground.",
+          a: "It depends on the tour. Each tour page states the level (Easy / Moderate). The Easy tours are suitable for the whole family. The Moderate ones require being able to walk 3-5 km over uneven ground.",
         },
         {
           q: "Can children take part?",
@@ -1330,22 +1337,22 @@ const EN: InfoPracticaContent = {
     cascadasValores: { Excelente: "Excellent", "Muy buena": "Very good", Buena: "Good", Variable: "Variable" },
     recomendaciones: {
       ideal: {
-        titulo: "The best season — excellent choice!",
-        texto: "The waterfalls are at their best flow, with the turquoise water the Huasteca is known for. Cool, pleasant weather (16–30°C). It's high season — book accommodation and tours well ahead.",
+        titulo: "The best season, the ideal time",
+        texto: "The waterfalls are at their best flow, with the turquoise water the Huasteca is known for. Cool, pleasant weather (16-30°C). It's high season — book accommodation and tours well ahead.",
         tours: ["Tamul Expedition + Sótano de las Huahuas", "Surrealist Route (Las Pozas)", "El Meco Waterfalls"],
       },
       buena: {
-        titulo: "Good season — a fine time to visit",
+        titulo: "Good season for a visit",
         texto: "The water keeps its intense color. Temperatures are rising — get going early in the mornings. Ideal for tours with natural shade, like Las Pozas or the rivers. Quieter than high season.",
         tours: ["Surrealist Route (Las Pozas)", "Stepped Paradise + Minas Viejas and Micos", "Water Route, Puente de Dios"],
       },
       caluroso: {
-        titulo: "Hot season — come prepared",
-        texto: "28–38°C in the lowlands. Drink constantly and get going before 10am. The pools are a real pleasure — the cool water is a relief. Avoid Tamtoc (no shade). Bring a hat and UV clothing.",
+        titulo: "Hot season: come prepared",
+        texto: "28-38°C in the lowlands. Drink constantly and get going before 10am. The pools are a real pleasure — the cool water is a relief. Avoid Tamtoc (no shade). Bring a hat and UV clothing.",
         tours: ["Stepped Paradise + Minas Viejas and Micos (cool pools)", "Water Route, Puente de Dios"],
       },
       lluvia: {
-        titulo: "Rainy season — check conditions",
+        titulo: "Rainy season: check conditions",
         texto: "Explosively green and very photogenic vegetation. Some river tours may be suspended because of high currents (especially Tamul in September). Fewer tourists and lower prices. Check with us before booking.",
         tours: ["Surrealist Route (Las Pozas — we always run it)", "Stepped Paradise + Minas Viejas and Micos"],
       },

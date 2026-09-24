@@ -74,12 +74,26 @@ const nextConfig = {
       // vez de dejarlas en 404. Permanentes (301) porque no van a volver.
       // El emparejamiento lo fijó Manolo el 11 sep: Gran Huasteca es hoy la
       // Odisea, y el Completo es Tu Huasteca. No se deduce del código.
-      { source: "/paquetes/aventura",      destination: "/paquetes/aventura-extrema", permanent: true },
-      { source: "/paquetes/completo",      destination: "/paquetes/tu-huasteca",      permanent: true },
-      { source: "/paquetes/gran-huasteca", destination: "/paquetes/odisea-huasteca",  permanent: true },
-      { source: "/en/paquetes/aventura",      destination: "/en/paquetes/aventura-extrema", permanent: true },
-      { source: "/en/paquetes/completo",      destination: "/en/paquetes/tu-huasteca",      permanent: true },
-      { source: "/en/paquetes/gran-huasteca", destination: "/en/paquetes/odisea-huasteca",  permanent: true },
+      // ── 24 sep 2026: catálogo nuevo ──────────────────────────────────────
+      // El Familiar pasa a llamarse Gran Huasteca, "Aventura Extrema" se
+      // convierte en "Paquete Aventura" y "Tu Huasteca" se retira. Las
+      // redirecciones viejas de `gran-huasteca` y `aventura` SE QUITAN porque
+      // esas direcciones ya tienen dueño: si se dejaran, los paquetes serían
+      // inalcanzables, porque las redirecciones se evalúan antes que las
+      // páginas y nada avisa de ello.
+      { source: "/paquetes/completo",            destination: "/paquetes/gran-huasteca",      permanent: true },
+      { source: "/en/paquetes/completo",         destination: "/en/paquetes/gran-huasteca",   permanent: true },
+      { source: "/paquetes/familiar",            destination: "/paquetes/gran-huasteca",      permanent: true },
+      { source: "/en/paquetes/familiar",         destination: "/en/paquetes/gran-huasteca",   permanent: true },
+      { source: "/paquetes/aventura-extrema",    destination: "/paquetes/aventura",           permanent: true },
+      { source: "/en/paquetes/aventura-extrema", destination: "/en/paquetes/aventura",        permanent: true },
+      // La Luna de Miel se retiró el 24 sep 2026. Para quien la buscaba, el
+      // paquete de pareja del catálogo es la Inmersión Huasteca (3 días).
+      { source: "/paquetes/luna-de-miel",        destination: "/paquetes/inmersion-huasteca",    permanent: true },
+      { source: "/en/paquetes/luna-de-miel",     destination: "/en/paquetes/inmersion-huasteca", permanent: true },
+      // "Tu Huasteca" se retiró: el que más se le parece es el Odisea.
+      { source: "/paquetes/tu-huasteca",         destination: "/paquetes/odisea-huasteca",    permanent: true },
+      { source: "/en/paquetes/tu-huasteca",      destination: "/en/paquetes/odisea-huasteca", permanent: true },
 
       // ── Apex sin www → www ───────────────────────────────────────────────
       // Todo el sitio se declara canónico en `www` (canonical, hreflang y

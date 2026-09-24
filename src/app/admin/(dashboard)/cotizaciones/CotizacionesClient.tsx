@@ -2,9 +2,16 @@
 
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
-import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft } from "lucide-react";
+import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName, sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn } from "@/components/admin/ReservaModal";
+import {
+  type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
+  sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn, EMPTY_PACKAGE, HUESPEDES_POR_DEFECTO,
+  aplicarHabitacion, SelectorHabitacion, ConceptoPersonalizado, NotasInternas,
+  SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta,
+} from "@/components/admin/ReservaModal";
+import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
+import { HABITACION_POR_DEFECTO } from "@/lib/admin/habitacionesPanel";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { addDaysYMD } from "@/lib/dates";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
@@ -24,21 +31,12 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   expirada: { label: "Expirada",  cls: "bg-red-100 text-red-700"       },
 };
 
-const HABITACIONES_PRESET = [
-  { label: "Vista Montañas",           precio: 1800 },
-  { label: "Vista Jardines / Piscina", precio: 1500 },
-];
-const EMPTY_PACKAGE: PackageItem = {
-  habitacion: "Vista Montañas", hotel: "Hotel Paraíso Encantado, Xilitla",
-  noches: 2, habitaciones: 1, precioPorNoche: 1800, checkin: "", checkout: "", subtotal: 3600,
-};
-
 const fmx    = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate  = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const fDateL = (d: string) => { if (!d) return "—"; const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return r.charAt(0).toUpperCase() + r.slice(1); };
 
 const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
-const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "" };
+const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "", notasInternas: "" };
 
 function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string; numPersonas?: number | null; priceOverride?: number | null; discountType?: "percent" | "fixed"; discountValue?: number | null } {
   return pkgs.find((p: any) => p._meta) || {};
@@ -60,6 +58,7 @@ export default function CotizacionesClient(
   { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[] },
 ) {
   const [quotes,         setQuotes]         = useState(initialQuotes);
+  const [detalle,        setDetalle]        = useState<TourQuote | null>(null);
   const [search,         setSearch]         = useState("");
   const [modal,          setModal]          = useState<"new" | "edit" | null>(null);
   const [editTarget,     setEditTarget]     = useState<TourQuote | null>(null);
@@ -120,6 +119,16 @@ export default function CotizacionesClient(
       const up = { ...l, [field]: val };
       if (field === "tourSlug") {
         const t = TOURS_DB.find(t => t.slug === val);
+        if (esLineaPersonalizada(String(val))) {
+          // Nace en blanco: el nombre y el precio los pone Manolo.
+          up.tourName      = "";
+          up.precioPersona = 0;
+          up.adults        = Math.max(1, up.adults || 2);
+          delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns;
+          up.subtotal = calcLine(up);
+          return up;
+        }
+        delete up.precioPersona;
         up.tourName = t?.nombre || "";
         if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
           up.ruta = t.rutas[0].nombre; up.vehiculo = t.flota[0].nombre; up.unidades = 1;
@@ -133,6 +142,7 @@ export default function CotizacionesClient(
       if (field === "childrenMid")   up.childrenMid   = Math.max(0, Number(val) || 0);
       if (field === "childrenSmall") up.childrenSmall = Math.max(0, Number(val) || 0);
       if (field === "unidades")      up.unidades      = Math.max(1, Number(val) || 1);
+      if (field === "precioPersona") up.precioPersona = Math.max(0, Number(val) || 0);
       if (esTourVehiculo(up.tourSlug)) up.tourName = vehiculoLineName(up);
       up.subtotal = calcLine(up);
       return up;
@@ -156,6 +166,8 @@ export default function CotizacionesClient(
   function updatePkg(i: number, campo: keyof PackageItem, valor: string | number) {
     setPackages(ps => ps.map((p, idx) => {
       if (idx !== i) return p;
+      if (campo === "habitacion") return aplicarHabitacion(p, String(valor));
+      if (campo === "huespedes")  return aplicarHabitacion(p, p.habitacion, Number(valor));
       const up = { ...p, [campo]: valor } as PackageItem;
       if (campo === "checkin" || campo === "checkout" || campo === "noches") {
         return sincronizarNoches(up, campo);
@@ -176,13 +188,15 @@ export default function CotizacionesClient(
     const adultos     = Number(numPersonas) || Math.max(...lines.map(l => l.adults || 0), 2);
     const carga = cargarPaquete(
       slug, fechaInicio, adultos,
-      HABITACIONES_PRESET[0].precio, HABITACIONES_PRESET[0].label,
+      HABITACION_POR_DEFECTO.tarifas[HUESPEDES_POR_DEFECTO] ?? 0, HABITACION_POR_DEFECTO.label,
       EMPTY_PACKAGE.hotel,
     );
     if (!carga) { flash("❌ No se encontró ese paquete"); return; }
 
     setLines(carga.lineas.map(l => ({ ...l, subtotal: calcLine(l) })));
-    setPackages([carga.habitacion]);
+    // `cargarPaquete` reparte a dos por habitación: ésa es la ocupación con la
+    // que se cotizó, y la que decide el escalón de tarifa si luego se cambia.
+    setPackages([{ ...carga.habitacion, huespedes: HUESPEDES_POR_DEFECTO }]);
     if (numPersonas === "") setNumPersonas(String(adultos));
     setPriceOverride("");
     const nombre = PAQUETES_PANEL.find(p => p.slug === slug)?.nombre ?? slug;
@@ -233,7 +247,14 @@ export default function CotizacionesClient(
 
   function openEdit(q: TourQuote) {
     setEditTarget(q);
-    setForm({ customerName: q.customerName, customerEmail: q.customerEmail || "", customerPhone: q.customerPhone || "", notes: q.notes || "" });
+    const metaNotas = getMeta((q as any).packageItems ?? []) as any;
+    setForm({
+      customerName:  q.customerName,
+      customerEmail: q.customerEmail || "",
+      customerPhone: q.customerPhone || "",
+      notes:         q.notes || "",
+      notasInternas: metaNotas.notasInternas || "",
+    });
     const storedLines = (q as any).lineItems as any[] | null;
     const editLines: LineItem[] = storedLines?.length
       ? storedLines.map(l => ({
@@ -283,7 +304,7 @@ export default function CotizacionesClient(
 
   async function saveQuote() {
     if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
-    if (lines.some(l => !l.tourSlug || !l.tourDate)) { flash("❌ Completa el tour y la fecha en cada línea"); return; }
+    if (!lines.every(lineaCompleta)) { flash("❌ Completa el concepto y la fecha en cada línea"); return; }
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
@@ -302,6 +323,9 @@ export default function CotizacionesClient(
         priceOverride: priceOverride !== "" ? Number(priceOverride) : null,
         discountType,
         discountValue: discountValue !== "" ? Number(discountValue) : null,
+        // Viaja en el `_meta` y NO en la columna `notes`: `notes` se imprime en
+        // el correo y en el PDF del cliente, y esto no puede salir de aquí.
+        notasInternas: form.notasInternas.trim(),
       },
       ...packages.map(p => ({ ...p, subtotal: calcPackageLine(p) })),
     ];
@@ -387,6 +411,8 @@ export default function CotizacionesClient(
         // Rastro de la cotización de origen y del descuento que se le aplicó:
         // sin esto se perdía POR QUÉ el total no cuadra con la suma de líneas.
         cotizacionOrigen: q.quoteNumber,
+        // Lo que se anotó al cotizar sigue haciendo falta al operar el viaje.
+        notasInternas:    (meta as any).notasInternas || "",
         priceOverride:    meta.priceOverride ?? null,
         discountType:     meta.discountType ?? null,
         discountValue:    meta.discountValue ?? null,
@@ -526,7 +552,8 @@ export default function CotizacionesClient(
 
     const hospRows = pkgs.map(p => {
       const fechas = [p.checkin ? fDate(p.checkin) : "", p.checkout ? fDate(p.checkout) : ""].filter(Boolean).join(" → ");
-      return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${p.hotel} — ${p.habitacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
+      const ocupacion = p.huespedes ? ` · ${p.huespedes} ${p.huespedes === 1 ? "persona" : "personas"} por habitación` : "";
+      return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${p.hotel} — ${p.habitacion}${ocupacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const extraRows = extrasCobradosQ.map(ex => {
@@ -853,7 +880,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
           const sinEnviar = q.status === "borrador" && !!q.customerEmail;
           return (
-            <div key={q.id} className="bg-white border border-[#1B4332]/10 rounded-md p-4">
+            <div key={q.id} onClick={() => { playClick(); setDetalle(q); }}
+              className="bg-white border border-[#1B4332]/10 rounded-md p-4 cursor-pointer active:bg-[#FAFAF8]">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</span>
                 <div className="flex items-center gap-1.5">
@@ -867,7 +895,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <p className="text-[#1B4332]/70 text-sm truncate max-w-[60%]">{q.tourName}</p>
                 <span className="text-[#52B788] font-medium text-sm">{fmx(q.totalAmount)}</span>
               </div>
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8">
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
+                <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" className="text-[#1B4332]/50 hover:text-[#1B4332]"><Eye className="w-4 h-4" /></button>
                 {q.status !== "aceptada" && q.status !== "expirada" && (
                   <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
                 )}
@@ -899,7 +928,9 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
                 const sinEnviar = q.status === "borrador" && !!q.customerEmail;
                 return (
-                  <tr key={q.id} className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors">
+                  <tr key={q.id} onClick={() => { playClick(); setDetalle(q); }}
+                    title="Ver la cotización completa"
+                    className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors cursor-pointer">
                     <td className="py-3 px-4 text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</td>
                     <td className="py-3 px-4"><p className="text-[#1B4332] font-medium">{q.customerName}</p><p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p></td>
                     <td className="py-3 px-4 text-[#1B4332]/70 max-w-[200px]"><p className="truncate text-xs">{q.tourName}</p><p className="text-xs text-[#1B4332]/40">{fDate(q.tourDate)}</p></td>
@@ -910,8 +941,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
                       </div>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
+                        <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
                         {q.status !== "aceptada" && q.status !== "expirada" && (
                           <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva"
                             className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
@@ -938,10 +971,14 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {detalle && (
+        <CotizacionDetalle cotizacion={detalle} onClose={() => setDetalle(null)} />
+      )}
+
       {/* Modal nueva/editar cotización */}
       {modal && (() => {
         const step1Valid = !!form.customerName.trim();
-        const step2Valid = lines.every(l => !!l.tourSlug && !!l.tourDate);
+        const step2Valid = lines.every(lineaCompleta);
         const TABS = [
           { n: 1 as const, label: "Cliente" },
           { n: 2 as const, label: "Tours" },
@@ -1015,7 +1052,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   <textarea value={form.notes} rows={3} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                     placeholder="Preferencias, alergias, requerimientos especiales..."
                     className={`${inputCls} resize-none`} />
+                  <p className="text-[10px] font-dm text-[#1B4332]/40 mt-1">
+                    Esto SÍ lo ve el cliente: sale en su correo y en su cotización en PDF.
+                  </p>
                 </div>
+                <NotasInternas
+                  value={form.notasInternas}
+                  onChange={v => setForm(f => ({ ...f, notasInternas: v }))}
+                  inputCls={inputCls}
+                />
               </div>
             )}
 
@@ -1079,7 +1124,12 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           <select value={line.tourSlug} onChange={e => updateLine(i, "tourSlug", e.target.value)} className={inputCls}>
                             <option value="">Seleccionar tour...</option>
                             {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
+                            <option value={SLUG_PERSONALIZADO}>+ Otro concepto (nombre y precio a mano)</option>
                           </select>
+                          {esLineaPersonalizada(line.tourSlug) && (
+                            <ConceptoPersonalizado line={line} inputCls={inputCls}
+                              onField={(campo, valor) => updateLine(i, campo, valor)} />
+                          )}
                           {esTourVehiculo(line.tourSlug) ? (
                             (() => {
                               const t = TOURS_DB.find(t => t.slug === line.tourSlug)!;
@@ -1192,20 +1242,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                             <input type="text" value={pkg.hotel} className={inputCls}
                               onChange={e => updatePkg(i, "hotel", e.target.value)} />
                           </div>
-                          <div>
-                            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Tipo de habitación</label>
-                            <div className="flex gap-1.5 flex-wrap mb-1.5">
-                              {HABITACIONES_PRESET.map(h => (
-                                <button key={h.label} type="button"
-                                  onClick={() => setPackages(ps => ps.map((p, idx) => idx === i ? { ...p, habitacion: h.label, precioPorNoche: h.precio, subtotal: calcPackageLine({ ...p, habitacion: h.label, precioPorNoche: h.precio }) } : p))}
-                                  className={`text-[10px] font-dm px-2 py-1 rounded border transition-colors ${pkg.habitacion === h.label ? "bg-[#40916C] text-white border-[#40916C]" : "border-[#40916C]/30 text-[#40916C] hover:bg-[#40916C]/10"}`}>
-                                  {h.label}
-                                </button>
-                              ))}
-                            </div>
-                            <input type="text" value={pkg.habitacion} placeholder="Personalizar..." className={inputCls}
-                              onChange={e => updatePkg(i, "habitacion", e.target.value)} />
-                          </div>
+                          <SelectorHabitacion pkg={pkg} inputCls={inputCls}
+                            onField={(campo, valor) => updatePkg(i, campo, valor)} />
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Noches</label>
@@ -1240,7 +1278,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           </p>
                           <p className="text-right text-xs font-dm text-[#40916C] font-medium">
                             Subtotal: {fmx(calcPackageLine(pkg))}
-                            <span className="text-[#1B4332]/35 font-normal ml-1">({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})</span>
+                            <span className="text-[#1B4332]/35 font-normal ml-1">
+                              ({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)}
+                              {pkg.huespedes ? ` · ${pkg.huespedes} pers/hab` : ""})
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -1433,7 +1474,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 </button>
               ) : (
                 <button onClick={saveQuote}
-                  disabled={saving || !form.customerName || lines.some(l => !l.tourSlug || !l.tourDate)}
+                  disabled={saving || !form.customerName || !lines.every(lineaCompleta)}
                   className="bg-[#1B4332] hover:bg-[#2D5A45] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-40 rounded-sm">
                   {saving ? "Guardando..." : isEditMode ? "Actualizar cotización" : "Guardar cotización"}
                 </button>

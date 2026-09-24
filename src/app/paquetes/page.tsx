@@ -1,14 +1,13 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
-import Link from "next/link";
-import { Star, TreePine, UtensilsCrossed, MapPin, Bus } from "lucide-react";
+import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible } from "@/lib/paquetes";
+import { RESENAS_PAQUETES, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
-import { buildOrganizationNode, buildHotelNode, ORG_REF } from "@/lib/jsonld";
-import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI, formatoMXN } from "@/lib/i18n/paquetes.en";
+import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
+import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI } from "@/lib/i18n/paquetes.en";
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -34,58 +33,10 @@ export function generateMetadata(): Metadata {
 
 export default function PaquetesPage() {
   const locale   = asLocale(headers().get("x-locale"));
-  const en       = locale === "en";
   const t        = getPaquetesUI(locale);
   const lp       = (path: string) => localePath(path, locale);
   const paquetes = getLocalizedPaquetes(locale);
   const faqs     = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
-  // La frase que enumera los paquetes en la introducción se arma con los datos
-  // reales: si mañana cambia un precio o una duración en `paquetes.ts`, el
-  // párrafo cambia con ellos en vez de quedarse mintiendo. Por eso el cambio de
-  // catálogo —tres paquetes ordenados por duración pasaron a cinco ordenados
-  // por tipo de viajero— no dejó aquí ni un nombre ni un precio viejo.
-  //
-  // Cada entrada abre con el perfil al que va dirigido el paquete (`perfiles[0]`
-  // de PAQUETES_DB, que sí se traduce en `localizePaquete`) porque la línea
-  // nueva ya no es un escalafón de días: el cliente elige por quién viaja
-  // —pareja, familia, aventura fuerte, a la carta o el recorrido largo— y la
-  // duración es una consecuencia, no el criterio.
-  //
-  // Sin artículo delante del nombre. Antes decía `el ${nombre}` y colaba porque
-  // los tres paquetes viejos se llamaban "Paquete Aventura/Completo/Gran
-  // Huasteca": el artículo masculino concordaba con "Paquete". Con la línea
-  // nueva sólo uno de los cinco empieza por "Paquete", así que ese mismo
-  // código escribía «el Luna de Miel», «el Aventura Extrema», «el Odisea
-  // Huasteca» —femeninos— y «el Tu Huasteca», que además ya lleva su propio
-  // determinante; en inglés salía «the Your Huasteca». La enumeración va detrás
-  // de dos puntos en `introP1`, así que sin artículo se lee bien en los dos
-  // idiomas y no hace falta una tabla de géneros por nombre.
-  const listaPaquetes = paquetes.map((p) => {
-    const perfil = p.perfiles[0] ? `${p.perfiles[0].toLowerCase()}, ` : "";
-    // 🔴 `precioVisible(p)`, nunca `p.precio`: `p.precio` es el total de la
-    // pareja que cobra el motor, y al lado de la etiqueta «por persona» de
-    // `p.precioLabel` anunciaría el doble. La Luna de Miel no necesita caso
-    // aparte: no es por persona, así que el ayudante le devuelve su precio tal
-    // cual y sale con su «por pareja».
-    return `${p.nombre} (${perfil}${p.duracion}, ${formatoMXN(precioVisible(p), locale)} MXN ${p.precioLabel})`;
-  });
-  const introLista =
-    listaPaquetes.length > 1
-      ? listaPaquetes.slice(0, -1).join(", ") + t.introUneY + listaPaquetes[listaPaquetes.length - 1]
-      : listaPaquetes.join("");
-  // El "desde…" se calcula sobre lo que se ENSEÑA, no sobre `p.precio`: si se
-  // sacara el mínimo de los totales de pareja se mezclarían peras con manzanas
-  // —hoy daría $9,800 (Luna de Miel) cuando el importe más barato en pantalla
-  // es $6,250 del Paquete Familiar—. Por eso el mínimo va sobre `precioVisible`,
-  // que ya devuelve por persona los cuatro que lo son y por pareja la Luna de
-  // Miel. Es el MÁS BARATO de los cinco, no "el más corto", así que la frase
-  // que lo recibe en `paquetes.en.ts` tiene que decir "desde".
-  const introPorPersona = formatoMXN(Math.min(...paquetes.map((p) => precioVisible(p))), locale);
-  // Viaje en grupo del 16 al 19 de septiembre de 2026: hoy no lo enlaza ninguna
-  // página pública. El aviso se apaga solo en cuanto pasa la fecha para que
-  // /paquetes no siga mandando gente a un viaje que ya salió. El offset -06:00
-  // va escrito: el servidor corre en UTC y sin él el corte se adelanta 6 horas.
-  const viajeSepVigente = Date.now() < new Date("2026-09-19T23:59:59-06:00").getTime();
   const paquetesSchema = {
     "@context": "https://schema.org",
     "@graph": [
@@ -109,115 +60,10 @@ export default function PaquetesPage() {
         brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
         offers: {
           "@type": "Offer",
-          // 🔴 El `price` es el importe que se ENSEÑA en la página
-          // (`precioVisible`), no el total de la pareja: si el marcado dijera
-          // $14,500 y la página $7,250, el desajuste lo canta cualquier
-          // validador. Lo que cobra el motor no se pierde por eso: el
-          // `priceSpecification` dice a cuánta gente corresponde ese importe
-          // —«por persona» en cuatro, «por pareja (2 personas)» en la Luna de
-          // Miel— y `eligibleQuantity` que la reserva arranca en dos personas,
-          // que es justo lo que cobra el checkout. Mismo patrón que /tours con
-          // el RZR, que se cobra por vehículo.
-          price: precioVisible(p),
+          price: p.precio,
           priceCurrency: "MXN",
-          priceSpecification: {
-            "@type": "UnitPriceSpecification",
-            price: precioVisible(p),
-            priceCurrency: "MXN",
-            unitText: p.precioPorPersona
-              ? (en ? "per person" : "por persona")
-              : (en ? "per couple (2 people)" : "por pareja (2 personas)"),
-          },
-          eligibleQuantity: {
-            "@type": "QuantitativeValue",
-            minValue: 2,
-            unitText: en ? "people" : "personas",
-          },
           availability: "https://schema.org/InStock",
           url: localeUrl(`/paquetes/${p.slug}`, locale),
-        },
-      })),
-      // Un paquete de varios días es un VIAJE, no un artículo de catálogo. El
-      // `Product` de arriba se queda —es el que entienden los comparadores de
-      // comercio— y al lado va el `TouristTrip`, que es el único tipo que
-      // admite el itinerario día por día, el punto de partida y la duración.
-      // Misma forma que el de /paquetes/[slug] para que las dos páginas no
-      // describan el mismo viaje de dos maneras distintas.
-      // 🔴 Sin `aggregateRating` ni `Review`, igual que el `Product`: no hay
-      // reseñas contadas por paquete y no se inventan.
-      ...paquetes.map((p) => ({
-        "@type": "TouristTrip",
-        name: p.nombre,
-        description: t.productDescripcion(p.subtitulo, p.duracion),
-        url: localeUrl(`/paquetes/${p.slug}`, locale),
-        image: `${SITE}${p.imagen}`,
-        inLanguage: locale === "en" ? "en" : "es-MX",
-        touristType: p.perfiles,
-        provider: ORG_REF,
-        // `dias` sale de PAQUETES_DB: hoy 3, 4, 5 y 6 días → P3D, P4D, P5D,
-        // P6D. Sale del dato, no de una lista escrita a mano: la línea nueva
-        // tiene dos paquetes de 4 días y uno de 6 que antes no existían.
-        duration: `P${p.dias}D`,
-        // Todos los paquetes arrancan y terminan en Xilitla: el traslado hasta
-        // allá no va incluido, y decirlo también en los datos evita que una IA
-        // suponga que el viaje sale de la Ciudad de México.
-        tripOrigin: {
-          "@type": "Place",
-          name: "Xilitla, San Luis Potosí",
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: "Xilitla",
-            addressRegion: "San Luis Potosí",
-            postalCode: "79900",
-            addressCountry: "MX",
-          },
-        },
-        itinerary: {
-          "@type": "ItemList",
-          numberOfItems: p.itinerario.length,
-          itemListElement: p.itinerario.map((d) => ({
-            "@type": "ListItem",
-            position: d.dia,
-            item: {
-              "@type": "TouristAttraction",
-              name: d.titulo,
-              description: d.descripcion,
-              address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
-            },
-          })),
-        },
-        offers: {
-          "@type": "Offer",
-          // 🔴 El `price` es el importe que se ENSEÑA en la página
-          // (`precioVisible`), no el total de la pareja: si el marcado dijera
-          // $14,500 y la página $7,250, el desajuste lo canta cualquier
-          // validador. Lo que cobra el motor no se pierde por eso: el
-          // `priceSpecification` dice a cuánta gente corresponde ese importe
-          // —«por persona» en cuatro, «por pareja (2 personas)» en la Luna de
-          // Miel— y `eligibleQuantity` que la reserva arranca en dos personas,
-          // que es justo lo que cobra el checkout. Mismo patrón que /tours con
-          // el RZR, que se cobra por vehículo.
-          price: precioVisible(p),
-          priceCurrency: "MXN",
-          priceSpecification: {
-            "@type": "UnitPriceSpecification",
-            price: precioVisible(p),
-            priceCurrency: "MXN",
-            unitText: p.precioPorPersona
-              ? (en ? "per person" : "por persona")
-              : (en ? "per couple (2 people)" : "por pareja (2 personas)"),
-          },
-          eligibleQuantity: {
-            "@type": "QuantitativeValue",
-            minValue: 2,
-            unitText: en ? "people" : "personas",
-          },
-          availability: "https://schema.org/InStock",
-          url: localeUrl(`/paquetes/${p.slug}`, locale),
-          // La descripción repite el importe visible con SU etiqueta, que es la
-          // del catálogo: nunca `p.precio` al lado de `p.precioLabel`.
-          description: `${formatoMXN(precioVisible(p), locale)} MXN ${p.precioLabel} · ${p.duracion}`,
-          seller: ORG_REF,
         },
       })),
       {
@@ -268,14 +114,22 @@ export default function PaquetesPage() {
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-negro/70 via-negro/55 to-negro/85" />
+        {/* El velo sube al 72 % en la franja donde vive el texto: con el 55 %
+            anterior, la cascada dejaba el antetítulo y el párrafo casi ilegibles
+            sobre el agua blanca.
+
+            🔴 Va como degradado escrito a mano y no con clases de Tailwind:
+            `via-negro/72` NO existe en su escala de opacidades, no genera regla
+            y el degradado entero se queda TRANSPARENTE sin avisar de nada. Se
+            ve igual que si no hubiera velo. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(14,23,16,.78) 0%, rgba(14,23,16,.72) 45%, rgba(14,23,16,.92) 100%)",
+          }}
+        />
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          {/* El title ya decía "Todo Incluido" y el cuerpo no lo acompañaba: el
-              H1 era sólo "Paquetes / Todo Incluido", sin "Huasteca Potosina",
-              sin los días y sin Xilitla — justo las palabras con las que la
-              gente busca ("paquetes huasteca potosina todo incluido",
-              "tour huasteca potosina 3 días" en posición 38, "paquetes a
-              xilitla"). El texto vive en `paquetes.en.ts`, como el resto. */}
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             {t.heroEyebrow}
           </p>
@@ -283,103 +137,73 @@ export default function PaquetesPage() {
             {t.heroH1a}
             <em className="shimmer-gold block italic">{t.heroH1b}</em>
           </h1>
-          {/* "traslados"/"transfers" a secas contradecía la FAQ de esta misma
-              página ("¿El precio incluye el traslado hasta Xilitla?" → "No viene
-              incluido") y el `noIncluye` de los cinco paquetes. Lo que sí cubre
-              el precio es el transporte del hotel a cada tour y de regreso. */}
           <p className="reveal-up text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8" style={{ animationDelay: "80ms" }}>
             {t.heroIntro1}
             <strong className="text-crema">{t.heroHotel}</strong>
             {t.heroIntro2}
           </p>
-          <div className="inline-flex items-center gap-3 bg-negro/60 backdrop-blur-sm border border-white/15 px-5 py-3">
-            <div>
-              <div className="flex items-center gap-1 mb-0.5">
-                {"★★★★★".split("").map((s, i) => (
-                  <span key={i} className="text-dorado text-sm">{s}</span>
-                ))}
-              </div>
-              <p className="text-[9px] font-dm text-crema/50 text-left">{t.googleReviews}</p>
-            </div>
-            <div className="border-l border-white/15 pl-3">
-              <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
-              {/* Era "+320" mientras el resto del sitio dice 492: la misma
-                  cifra no puede cambiar según la página que abra el cliente. */}
-              <p className="text-[9px] font-dm text-crema/50">{t.resenasN}</p>
-            </div>
-            <div className="border-l border-white/15 pl-3">
-              <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
-              <p className="text-[9px] font-dm text-crema/50">{t.bookingOp}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── VIAJE EN GRUPO DE SEPTIEMBRE ──
-          Datos tomados tal cual de /viaje-septiembre: 16–19 sep 2026, 4 días,
-          3 noches, 3 recorridos, desde $7,900 MXN por persona, 16 lugares.
-          No es uno de los cinco paquetes del catálogo —es una salida con fecha
-          fija— así que el cambio de línea de producto no lo toca. Va aquí
-          arriba porque ninguna otra página pública lo enlaza. */}
-      {viajeSepVigente && (
-        <div className="border-b border-white/6 bg-terracota/12">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center sm:text-left">
-              <p className="text-[9px] tracking-[3px] uppercase text-dorado font-dm mb-1">
-                {en ? "Group departure · Sep 16–19, 2026" : "Salida en grupo · 16–19 de septiembre 2026"}
-              </p>
-              <p className="text-crema/85 font-dm text-[13px] leading-relaxed">
-                {en
-                  ? "Leaving from Mexico City: 4 days, 3 nights in Xilitla and 3 all-inclusive guided tours, from $7,900 MXN per person. Only 16 spots."
-                  : "Salimos desde CDMX: 4 días, 3 noches en Xilitla y 3 recorridos guiados todo incluido, desde $7,900 MXN por persona. Solo 16 lugares."}
-              </p>
-            </div>
-            <Link
-              href={lp("/viaje-septiembre")}
-              className="flex-shrink-0 border border-dorado/60 text-dorado hover:bg-dorado hover:text-negro px-6 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors whitespace-nowrap"
+          {/* El hero no tenía ni un botón: se leía el título y había que
+              adivinar que los paquetes estaban más abajo. Primero mirar, y
+              para quien ya sabe lo que quiere, el atajo a WhatsApp. */}
+          <div className="reveal-up flex flex-col sm:flex-row items-center justify-center gap-3" style={{ animationDelay: "160ms" }}>
+            <a
+              href="#catalogo"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-verde-selva px-8 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema whitespace-nowrap transition-[background-color,transform] duration-200 hover:bg-verde-vivo active:scale-[0.98]"
             >
-              {en ? "See the September trip →" : "Ver el viaje de septiembre →"}
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* ── QUÉ ES UN PAQUETE ──
-          La página tenía 1.605 palabras y casi todas vivían dentro de tarjetas:
-          quien llegaba buscando "paquetes huasteca potosina todo incluido" o
-          "tour huasteca potosina 3 días" no encontraba en ninguna frase entera
-          qué incluye, desde dónde sale, cuánto cuesta ni cómo se reserva. Esto
-          lo dice en prosa, con cada dato sacado de `paquetes.ts`, para que se
-          pueda leer —y citar— sin abrir una sola tarjeta.
-
-          El párrafo de apertura recibe `introLista` e `introPorPersona`, los
-          dos calculados arriba a partir de PAQUETES_DB: la enumeración de los
-          paquetes no se escribe a mano en ningún idioma, así que el cambio de
-          catálogo (tres paquetes por duración → cinco por tipo de viajero) la
-          reescribió sola. El resto del texto vive en `paquetes.en.ts`. */}
-      <section id="que-incluye" className="border-b border-white/6 bg-negro py-14 px-6 scroll-mt-24">
-        <div className="max-w-3xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-3">
-            {t.introEyebrow}
-          </p>
-          <h2 className="reveal-up font-cormorant font-light text-crema leading-tight mb-6" style={{ fontSize: "clamp(26px,4vw,40px)" }}>
-            {t.introH2a}<em className="shimmer-gold">{t.introH2b}</em>
-          </h2>
-          <div className="space-y-4 text-crema/65 font-dm text-sm leading-relaxed">
-            <p>{t.introP1(introLista, introPorPersona)}</p>
-            <p>{t.introP2}</p>
-            <p>{t.introP3}</p>
-            <p>{t.introP4}</p>
+              {t.heroCta}
+              <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+            <a
+              href={`https://wa.me/524891090388?text=${encodeURIComponent(t.heroWaMsg)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg border border-crema/40 px-8 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema whitespace-nowrap transition-[background-color,border-color,transform] duration-200 hover:border-crema hover:bg-crema/10 active:scale-[0.98]"
+            >
+              <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              {t.heroCtaWa}
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ── NOTA ── */}
-      <div className="border-b border-white/6 bg-dorado/8">
-        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
-          <p className="text-[11px] text-dorado/80 font-dm">
-            {t.notaWhatsapp}
+      {/* ── TEMPORADA ──
+          Sustituye a la franja que sólo repetía la nota de WhatsApp: ahora
+          encabeza con el momento del año y deja la nota como su respaldo. */}
+      <div className="border-b border-white/6 bg-gradient-to-r from-verde-profundo/50 via-dorado/12 to-verde-profundo/50">
+        <div className="max-w-5xl mx-auto px-6 py-5 text-center">
+          <p className="font-cormorant text-crema leading-tight" style={{ fontSize: "clamp(20px,3vw,30px)" }}>
+            {t.bannerTemporada}
           </p>
+          <p className="mt-1.5 text-[11px] font-dm text-crema/60">
+            {t.bannerTemporadaNota}
+          </p>
+        </div>
+      </div>
+
+      {/* ── CONFIANZA ──
+          Las calificaciones salieron del hero: ahí competían con el botón y
+          dejaban el hero con cinco bloques de texto. Aquí siguen viéndose
+          antes de los precios, que es donde hacen falta. */}
+      <div className="border-b border-white/6 bg-negro/60">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-0.5">
+              {"★★★★★".split("").map((s, i) => (
+                <span key={i} className="text-dorado text-sm">{s}</span>
+              ))}
+            </div>
+            <p className="text-[10px] font-dm text-crema/55">{t.googleReviews}</p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
+            {/* Era "+320" mientras el resto del sitio dice 492: la misma
+                cifra no puede cambiar según la página que abra el cliente. */}
+            <p className="text-[10px] font-dm text-crema/55">{t.resenasN}</p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
+            <p className="text-[10px] font-dm text-crema/55">{t.bookingOp}</p>
+          </div>
         </div>
       </div>
 
@@ -396,26 +220,59 @@ export default function PaquetesPage() {
               <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
             )}
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {RESENAS_PAQUETES.map((r) => (
-              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
-                <div className="flex gap-0.5 mb-3">
+          {/* Tres reseñas iguales en tres columnas se leían como una lista de
+              relleno y ninguna se leía entera. Ahora una manda —tamaño de cita,
+              no de tarjeta— y las otras dos la acompañan. */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {RESENAS_PAQUETES.slice(0, 1).map((r) => (
+              <figure
+                key={r.nombre}
+                className="reveal-up lg:col-span-7 rounded-2xl border border-dorado/25 bg-gradient-to-br from-verde-profundo/40 to-negro/60 p-7 flex flex-col"
+              >
+                <div className="flex gap-0.5 mb-4">
                   {[...Array(r.estrellas)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
+                    <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
                   ))}
                 </div>
-                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
+                <blockquote className="font-cormorant font-light italic text-crema/90 leading-snug" style={{ fontSize: "clamp(19px,2.2vw,25px)" }}>
                   &ldquo;{r.texto}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <img src={r.foto} alt={r.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
+                </blockquote>
+                <figcaption className="mt-auto pt-6 flex items-center gap-3">
+                  <img src={r.foto} alt="" aria-hidden="true" className="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-dorado/40" loading="lazy" />
                   <div>
-                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
-                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
+                    <p className="font-dm text-sm text-crema font-medium leading-none">{r.nombre}</p>
+                    <p className="text-[10px] font-dm text-crema/45 mt-1">{r.ciudad} · {r.tour}</p>
                   </div>
-                </div>
-              </div>
+                </figcaption>
+              </figure>
             ))}
+
+            <div className="lg:col-span-5 grid gap-5 content-start">
+              {RESENAS_PAQUETES.slice(1).map((r) => (
+                <figure
+                  key={r.nombre}
+                  className="reveal-up rounded-2xl border border-white/10 bg-negro/50 p-5"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img src={r.foto} alt="" aria-hidden="true" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
+                      <div className="min-w-0">
+                        <p className="font-dm text-xs text-crema/85 font-medium leading-none truncate">{r.nombre}</p>
+                        <p className="text-[9px] font-dm text-crema/35 mt-1 truncate">{r.ciudad} · {r.tour}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-0.5 flex-shrink-0">
+                      {[...Array(r.estrellas)].map((_, i) => (
+                        <Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
+                      ))}
+                    </div>
+                  </div>
+                  <blockquote className="font-dm text-xs text-crema/70 leading-relaxed line-clamp-4">
+                    &ldquo;{r.texto}&rdquo;
+                  </blockquote>
+                </figure>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -485,38 +342,6 @@ export default function PaquetesPage() {
               <span className="text-crema/60">&ldquo;{t.cdmxComoLlegar}&rdquo;</span>{t.cdmxAutoAvion2}
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* ── GRUPOS ──
-          Quien llega buscando paquetes y viene con 40 personas necesita saber
-          que hay otra puerta: el motor tope en 12 y la base de cálculo son dos
-          personas. Sin esto, el lead se va creyendo que no cabemos.
-
-          El texto decía «estos precios están calculados para dos personas» y con
-          la etiqueta nueva se lee como si el importe de la tarjeta fuera el de
-          dos. Lo que sigue siendo cierto es la BASE del cálculo, no la unidad en
-          que se enseña: por eso la frase remite a la etiqueta de cada tarjeta en
-          vez de decidir por las cinco. Sin números escritos a mano.
-
-          El bloque estaba sólo en español y en /en/paquetes salía tal cual;
-          entra su inglés de paso, que si no la sección quedaba a medias. */}
-      <section className="px-6 pb-16">
-        <div className="max-w-3xl mx-auto border border-white/10 p-7 text-center">
-          <h2 className="font-cormorant font-light text-crema text-2xl mb-3">
-            {en ? "Travelling as a big group?" : "¿Vienen en grupo grande?"}
-          </h2>
-          <p className="font-dm text-sm text-crema/65 leading-relaxed mb-5">
-            {en
-              ? "The prices above are worked out for a trip of two: each package says under its price whether it is per person or per couple. If you're organising the trip of a school, a company or a large family group, we quote it separately and there's a discount depending on the number of people."
-              : "Los precios de arriba están calculados sobre un viaje de dos personas: cada paquete dice debajo de su importe si es por persona o por pareja. Si organizas el viaje de una escuela, una empresa o un grupo familiar grande, se cotiza aparte y hay descuento según el número de personas."}
-          </p>
-          <Link
-            href={lp("/grupos")}
-            className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-7 py-3 hover:bg-dorado hover:text-negro transition-all"
-          >
-            {en ? "Group and school trips →" : "Viajes de grupo y escolares →"}
-          </Link>
         </div>
       </section>
 

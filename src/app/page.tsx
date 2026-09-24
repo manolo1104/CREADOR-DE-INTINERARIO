@@ -13,6 +13,7 @@ import { MagneticButton } from "@/components/MagneticButton";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { HeroStats } from "@/components/HeroStats";
 import { HeroVideo } from "@/components/HeroVideo";
+import { CarruselPromos } from "@/components/CarruselPromos";
 import { ClimaHero } from "@/components/ClimaHero";
 import { VisitantesEnVivo } from "@/components/VisitantesEnVivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
@@ -469,7 +470,7 @@ export default async function HomePage() {
 
         <div className="text-center mt-10">
           <MagneticButton className="inline-block">
-            <Link href={lp("/tours")} className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200">
+            <Link href={lp("/tours")} className="inline-block rounded-xl border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
               {/* El ancla decía "Ver todos los tours": ni Google ni el lector
                   saben cuántos ni de qué. El número sale de TOURS_DB, así que
                   no puede quedarse viejo. */}
@@ -481,15 +482,16 @@ export default async function HomePage() {
 
       {/* ── PAQUETES TODO INCLUIDO ── */}
       {!en && (
-        <section aria-label="Paquetes todo incluido: tours + hospedaje" className="bg-arena/40 border-y border-negro/8 py-24 px-6">
+        <section aria-label="Paquetes todo incluido: tours + hospedaje" className="border-y border-white/10 py-20 sm:py-24 px-4 sm:px-6"
+          style={{ background: "linear-gradient(to bottom, #1a2e1a 0%, #0e1710 45%, #1a2e1a 100%)" }}>
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
-              <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
+              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-lima mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
+              <h2 className="reveal-up font-cormorant font-light text-crema" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
                 Paquetes <em className="shimmer-gold">Todo Incluido</em>
               </h2>
               <div className="heading-underline" aria-hidden="true" />
-              <p className="reveal-up reveal-d1 text-negro/45 mt-4 font-dm text-sm max-w-md mx-auto">
+              <p className="reveal-up reveal-d1 text-crema/65 mt-4 font-dm text-sm max-w-md mx-auto">
                 {/* Duración y precio también en prosa: en las tarjetas viven
                     dentro de insignias sueltas y así no se pueden citar. Todo
                     sale de PAQUETES_DB (dias, precioLabel) y del ayudante
@@ -504,39 +506,22 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {PAQUETES_DB.map((p) => {
-                return (
-                  <Link key={p.id} href={`/paquetes/${p.slug}`} className="group block border border-negro/10 bg-white overflow-hidden rounded-xl shadow-sm hover:border-verde-selva/40 transition-colors">
-                    <div className="relative h-44 overflow-hidden">
-                      <Image src={p.imagen} alt={p.nombre} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-negro/75 to-transparent" />
-                      {p.badge && (
-                        <span className="absolute top-3 right-3 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1">{p.badge}</span>
-                      )}
-                      <p className="absolute bottom-3 left-4 text-[9px] tracking-[3px] uppercase text-crema font-dm flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3" aria-hidden="true" /> {p.duracion}
-                      </p>
-                    </div>
-                    <div className="p-6">
-                      <h3 className="font-cormorant text-verde-profundo text-xl leading-tight mb-1">{p.nombre}</h3>
-                      <p className="text-negro/45 font-dm text-xs mb-4">{p.subtitulo}</p>
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <span className="font-cormorant text-dorado text-3xl leading-none">${precioVisible(p).toLocaleString("es-MX")}</span>
-                        <span className="text-negro/40 font-dm text-[10px]">MXN {p.precioLabel}</span>
-                      </div>
-                      <span className="inline-flex items-center gap-1.5 text-[10px] tracking-[2px] uppercase text-verde-selva group-hover:text-verde-vivo font-dm font-medium transition-colors">
-                        Ver el paquete día por día →
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
+            {/* El cartel del paquete que se está promoviendo. Va ANTES de la
+                rejilla a propósito: es la oferta concreta, con su precio y lo
+                que incluye, y la rejilla es el catálogo para quien no la quiera. */}
+            <div className="mb-12 sm:mb-16">
+              <CarruselPromos />
             </div>
+
+            {/* Aquí vivía una rejilla con los 5 paquetes repetidos. Se quitó
+                el 24 sep 2026: el carrusel de arriba ya enseña la oferta con
+                su precio y lo que incluye, y debajo salían otra vez los mismos
+                cinco, más chicos y sin foto propia. El catálogo completo está a
+                un clic, en el botón de abajo. */}
 
             <div className="text-center mt-10">
               <MagneticButton className="inline-block">
-                <Link href="/paquetes" className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 hover:border-verde-selva transition-all duration-200">
+                <Link href="/paquetes" className="inline-block rounded-xl border border-crema/40 text-crema px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-crema/10 [@media(hover:hover)]:hover:border-crema active:scale-[0.97]">
                   Ver los {PAQUETES_DB.length} paquetes con hotel incluido
                 </Link>
               </MagneticButton>
@@ -544,7 +529,7 @@ export default async function HomePage() {
                   la página que responde la pregunta que trae a la gente. Sólo en
                   español: no existe /en/precios. */}
               <p className="mt-5">
-                <Link href="/precios" className="text-xs tracking-[1.5px] uppercase font-dm text-negro/45 hover:text-verde-selva underline underline-offset-4 decoration-negro/20 transition-colors">
+                <Link href="/precios" className="text-xs tracking-[1.5px] uppercase font-dm text-crema/75 hover:text-lima underline underline-offset-4 decoration-crema/35 transition-colors">
                   Ver la lista de precios 2026 de tours y paquetes →
                 </Link>
               </p>
@@ -590,7 +575,7 @@ export default async function HomePage() {
           </div>
 
           <div className="text-center mt-10">
-            <a href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all duration-200">
+            <a href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
               <Star className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
               {en ? "Read all 492 reviews on Google" : "Ver las 492 reseñas en Google"}
             </a>
@@ -636,7 +621,7 @@ export default async function HomePage() {
               ))}
             </div>
             <div className="text-center mt-10">
-              <Link href="/blog" className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all duration-200">
+              <Link href="/blog" className="inline-block rounded-xl border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
                 Ver todos los artículos
               </Link>
             </div>
@@ -894,7 +879,7 @@ export default async function HomePage() {
             <a
               href={waLink(en ? "Hi! I'd like to ask about your Huasteca Potosina tours." : WA_MESSAGES.general)}
               target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-9 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+              className="inline-flex items-center gap-2.5 rounded-xl border border-[#25D366]/50 text-[#25D366] px-9 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-[#25D366] [@media(hover:hover)]:hover:bg-[#25D366]/8 active:scale-[0.97]"
             >
               {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
             </a>

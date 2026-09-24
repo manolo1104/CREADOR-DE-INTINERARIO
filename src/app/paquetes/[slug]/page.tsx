@@ -602,7 +602,7 @@ export default function PaqueteDetallePage({ params }: Props) {
           <div className="border border-white/10 bg-negro/50 p-6">
             <h2 className="font-cormorant text-crema text-2xl mb-1">{t.reservaTu(p.nombre)}</h2>
             <p className="text-crema/50 font-dm text-xs mb-5">{t.sinPagoAnticipado}</p>
-            <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
+            <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} />
           </div>
         </div>
       </section>

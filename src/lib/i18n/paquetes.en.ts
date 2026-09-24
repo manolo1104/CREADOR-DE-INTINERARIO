@@ -39,341 +39,159 @@ export interface PaqueteTranslation {
 }
 
 const PAQUETES_EN: Record<string, PaqueteTranslation> = {
-  "luna-de-miel": {
-    nombre: "Honeymoon",
-    subtitulo: "The Huasteca for two, unhurried",
+  "inmersion-huasteca": {
+    nombre: "Huasteca Immersion",
+    subtitulo: "The highest waterfall and the strangest garden, in three days",
     duracion: "3 days / 2 nights",
     precioLabel: "per couple",
-    badge: "Honeymooners",
-    urgencia: "Includes the Jungla suite with its spa pool and the romantic dinner on the second night",
-    perfiles: ["Newlyweds", "Couples", "Anniversaries", "Easy pace"],
+    badge: "New",
+    urgencia: "The two routes everyone comes for, in the shortest trip we run",
+    perfiles: ["Couples", "First time in the Huasteca", "Easy pace"],
     tours: [
-      "Las Pozas, Edward James' surrealist garden (Day 1)",
+      "Surrealist Route — Edward James, springs, caves and castle (Day 1)",
       "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
     ],
-    galeriaExtra: {
-      titulo: "The second night",
-      texto: "While you are out at Tamul, the hotel team gets the room ready: petals, candles and the lights on. By the time you are back the table is set on your private terrace, with the lights of Xilitla below, your bottle ready and dinner being plated.",
-      alt: [
-        "The bed in the Jungla suite set with rose petals, heart-shaped string lights and towels folded into swans",
-        "The private terrace table at dusk with candles, roses and two wine glasses, the lights of Xilitla behind",
-        "A bottle of wine on ice beside the terrace table, candles lit and the sierra at night",
-      ],
-    },
     itinerario: [
-      {
-        titulo: "Arrival, check-in and Edward James' garden",
-        descripcion: "You arrive, check in, and the only plan of the day is Las Pozas, the sculpture garden Edward James raised in the jungle. Nothing else: no early start, no road. The garden is open from 9 in the morning to 4 in the afternoon and the last guided walk leaves right at 4 and runs two hours, so arriving mid-afternoon still costs you nothing.",
-      },
-      {
-        titulo: "Tamul Expedition and a romantic dinner",
-        descripcion: "The big day: canoe through the Tampaón Canyon to the 105 metres of Tamul Waterfall, cliff jumping at the Water Cave and the Sótano de las Huahuas at dusk, when the parrots fly out. Back at the hotel the room is waiting with candles and petals, your bottle ready and dinner being plated: a formal dish out on your private terrace.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Breakfast and back on the road. The buffet breakfast is included on tour days only.",
-      },
+      { titulo: "Arrival + Surrealist Route", descripcion: "If you arrive on the morning bus we hand over the room early and head out the same day. Edward James' garden, the Huichihuayán springs, the Quilas Cave and the Castillo de la Salud: eight hours of walking little and looking a lot, all on the Xilitla side." },
+      { titulo: "Tamul Expedition", descripcion: "The big day: a canoe up the canyon until you are facing the 105-metre falls, the Water Cave and, at dusk, the Huahuas sinkhole. Nine hours, with an early start." },
+      { titulo: "Departure", descripcion: "Breakfast, check-out and the road home." },
     ],
     incluye: [
-      "2 nights in the Jungla suite at Hotel Paraíso Encantado, with a private terrace, mountain view and an outdoor spa pool",
-      "Buffet breakfast on tour days",
-      "Romantic dinner on the second night: a formal dish and a bottle of wine",
-      "The room set up with candles and petals for that night",
-      "Entry and a guided walk at Las Pozas, Edward James' garden",
-      "Full Tamul Expedition tour, a whole day",
-      "Transport from the hotel to Las Pozas and to the start of day 2's tour, both ways",
+      "2 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "Full Tamul Expedition tour (9 hours)",
+      "Full Surrealist Route tour (8 hours)",
+      "Transport from the hotel to the start of each tour and back",
       "NOM-09 SECTUR certified guides",
-      "Entrance to every attraction",
-      "Safety equipment",
+      "Entrance fees to every site",
+      "Safety gear and life jacket",
       "Travel insurance",
       "Photography and video of the trip",
     ],
     noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Lunches and dinners, except breakfasts and the romantic dinner on day 2",
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
       "Tips and personal expenses",
     ],
     valor: [
-      "2 nights, Jungla suite (2 people)",
-      "Tamul Expedition (2 people)",
-      "Transport, 2 days",
-      "Entrance fees + guides",
-      "Photography and video of the trip",
+      "2 nights at the hotel (2 pax)",
+      "Tamul Expedition (2 pax)",
+      "Surrealist Route (2 pax)",
     ],
   },
-
-  familiar: {
-    nombre: "Family Package",
-    subtitulo: "Three days the kids can actually handle",
+  "gran-huasteca": {
+    nombre: "Gran Huasteca Package",
+    subtitulo: "The three unmissable routes of the region, in one trip",
     duracion: "4 days / 3 nights",
-    precioLabel: "per person",
-    badge: "Most popular",
-    urgencia: "All three tours are rated easy: no long hikes, no descents",
-    perfiles: ["Families with kids", "Groups", "Easy difficulty"],
+    precioLabel: "per couple",
+    badge: "The big three",
+    urgencia: "The three routes people ask for most: Tamul is in 7 out of 10 bookings",
+    perfiles: ["Couples", "First time in the Huasteca", "The essentials"],
     tours: [
-      "El Meco Waterfalls — El Meco, Panoramic Lookout and The Great Falls (Day 1)",
-      "Surrealist Route — Edward James, Springs, Caves and Castle (Day 2)",
-      "Stepped Paradise — Minas Viejas & Micos Waterfalls (Day 3)",
+      "Surrealist Route — Edward James, springs, caves and castle (Day 1)",
+      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
+      "Cascadas del Meco — Meco, panoramic lookout and El Gran Salto (Day 3)",
     ],
     itinerario: [
-      {
-        titulo: "Arrival + El Meco Waterfalls",
-        descripcion: "If you arrive on the morning bus we hand over the room early and set off the same day. Turquoise pools, a panoramic lookout and a life jacket for everyone: the first day is the one that hooks the kids.",
-      },
-      {
-        titulo: "Edward James' Las Pozas",
-        descripcion: "A day of walking little and looking a lot. The garden of staircases that lead nowhere tends to be the thing children talk about most when they get home. It closes at the springs of Huichihuayán.",
-      },
-      {
-        titulo: "Minas Viejas and Micos Waterfalls",
-        descripcion: "The calm-water day. The terraces at Minas Viejas are natural steps with a pool on every level, and at Micos you swim with a life jacket. Nothing physically demanding.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Breakfast, check out and back on the road.",
-      },
+      { titulo: "Arrival + Surrealist Route", descripcion: "If you arrive on the morning bus we hand over the room early and head out the same day. This is the route on the Xilitla side — Edward James' garden, the Huichihuayán springs, the Quilas Cave and the Castillo de la Salud — so your arrival day is not spent on the road." },
+      { titulo: "Tamul Expedition", descripcion: "The big day: a canoe up the canyon until you are facing the 105-metre falls, the Water Cave on the way back, and the Huahuas sinkhole at dusk, when the parrots pour back in. Nine hours that end on the best moment of the day." },
+      { titulo: "Cascadas del Meco", descripcion: "We start early on purpose: the water at El Meco is turquoise mid-morning and loses its colour once the sun is high. Panoramic lookout, the pools, and a close at the Cascada del Salto." },
+      { titulo: "Departure", descripcion: "Breakfast, check-out and the road home." },
     ],
     incluye: [
-      "3 nights at Hotel Paraíso Encantado Xilitla",
-      "Buffet breakfast on tour days",
-      "Full El Meco Waterfalls tour",
+      "3 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
       "Full Surrealist Route tour",
-      "Full Stepped Paradise tour",
-      "Transport from the hotel to the start of each tour and back",
-      "NOM-09 SECTUR certified guides",
-      "Entrance to every attraction",
-      "Life jackets for the whole family",
-      "Travel insurance",
-      "Photography and video of the trip",
-    ],
-    noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Children are quoted separately: ages 6 to 10 pay 70% and under 6 pay 50% of the tour portion",
-      "An extra room or extra bed for the children (message us and we will quote it)",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
-      "Tips and personal expenses",
-    ],
-    valor: [
-      "3 nights' hotel (2 people)",
-      "El Meco Waterfalls (2 people)",
-      "Surrealist Route (2 people)",
-      "Stepped Paradise (2 people)",
-      "Transport, 3 days",
-      "Entrance fees + guides",
-      "Photography and video of the trip",
-    ],
-  },
-
-  "aventura-extrema": {
-    nombre: "Extreme Adventure",
-    subtitulo: "Ropes, rapids and the highest waterfall in Mexico",
-    duracion: "4 days / 3 nights",
-    precioLabel: "per person",
-    badge: "Adrenaline",
-    urgencia: "Rappelling and rafting require good physical condition and a minimum age",
-    perfiles: ["Adventurous friends", "Adrenaline", "Good physical condition"],
-    tours: [
-      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 1)",
-      "Rafting the Tampaón River — Class III Rapids (Day 2)",
-      "Rappelling at Tamul Waterfall (Day 3)",
-    ],
-    itinerario: [
-      {
-        titulo: "Arrival + Tamul Expedition",
-        descripcion: "The scouting day: you paddle the Tampaón Canyon up to Tamul Waterfall and see from below the wall you will descend on day 3. Cliff jumping at the Water Cave and the Sótano de las Huahuas at dusk.",
-      },
-      {
-        titulo: "Rafting the Tampaón River",
-        descripcion: "Class III rapids on the same river, with the canyon closing in over the raft. Helmet, life jacket and a river guide in every boat.",
-      },
-      {
-        titulo: "Rappelling at Tamul Waterfall",
-        descripcion: "The descent facing the highest waterfall in Mexico. You go down on certified gear with a guide on the rope. No previous experience needed, but you do need to be fine with heights.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Breakfast, check out and back on the road.",
-      },
-    ],
-    incluye: [
-      "3 nights at Hotel Paraíso Encantado Xilitla",
-      "Buffet breakfast on tour days",
       "Full Tamul Expedition tour",
-      "Full Tampaón River rafting tour",
-      "Full Tamul Waterfall rappelling tour",
-      "Transport from the hotel to the start of each tour and back",
-      "NOM-09 SECTUR certified guides and a rope guide on the rappel",
-      "Entrance to every attraction",
-      "Safety equipment: harness, helmet and life jacket",
+      "Full Cascadas del Meco tour",
+      "Transfers from the hotel to the start of each tour and back",
+      "NOM-09 SECTUR certified guides",
+      "Entrance fees to every site",
+      "Safety gear and life jacket",
       "Travel insurance",
       "Photography and video of the trip",
     ],
     noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
       "Tips and personal expenses",
     ],
     valor: [
-      "3 nights' hotel (2 people)",
-      "Tamul Expedition (2 people)",
-      "Tampaón River rafting (2 people)",
-      "Tamul Waterfall rappelling (2 people)",
-      "Transport, 3 days",
-      "Entrance fees, guides and safety equipment",
-      "Photography and video of the trip",
+      "3 nights at the hotel (2 pax)",
+      "Tamul Expedition (2 pax)",
+      "Cascadas del Meco (2 pax)",
+      "Surrealist Route (2 pax)",
     ],
   },
-
-  "tu-huasteca": {
-    nombre: "Your Huasteca",
-    subtitulo: "Four tour days, and you pick them",
-    duracion: "5 days / 4 nights",
-    precioLabel: "per person",
-    badge: "You build it",
-    urgencia: "The only package where you decide the itinerary, tour by tour",
-    perfiles: ["You choose", "Second visit", "Groups of friends"],
+  "aventura": {
+    nombre: "Adventure Package",
+    subtitulo: "Rafting, RZR and the waterfall jumps at Micos",
+    duracion: "4 days / 3 nights",
+    precioLabel: "per couple",
+    badge: "Adrenaline",
+    urgencia: "Class III rafting and cliff jumps: you need to be fit and comfortable in the water",
+    perfiles: ["Adrenaline", "Friends", "Good fitness"],
     tours: [
-      "Four full tours, chosen from a list of six",
-      "You pick them when you book and can swap them up to 7 days before",
-    ],
-    eleccionTour: {
-      titulo: "Pick your four tours",
-      opciones: [
-        { nombre: "Surrealist Route", nota: "Edward James' garden, the springs of Huichihuayán and the Quilas Cave" },
-        { nombre: "Tamul Expedition", nota: "Canoe through the canyon to the 105-metre waterfall, and the parrot sinkhole at dusk" },
-        { nombre: "Stepped Paradise", nota: "The travertine terraces of Minas Viejas and the seven falls at Micos" },
-        { nombre: "Water Route", nota: "The Puente de Dios cave and the Tamasopo waterfalls" },
-        { nombre: "El Meco Waterfalls", nota: "Three waterfalls, the panoramic lookout and El Gran Salto" },
-        { nombre: "Rappelling at Tamul Waterfall", nota: "A roped descent facing the tallest waterfall in Mexico. Asks that you not fear the drop" },
-      ],
-    },
-    itinerario: [
-      {
-        titulo: "Arrival + your first tour",
-        descripcion: "If you arrive on the morning bus we hand you the room early and head out that same day: day 1 is already a tour day. Which of the four goes first we settle with you, based on the weather and the distance.",
-      },
-      {
-        titulo: "Your second tour",
-        descripcion: "We order the four so you never get two long days back to back: Tamul and the rappel are the ones that ask for an early start, so they rarely land side by side.",
-      },
-      {
-        titulo: "Your third tour",
-        descripcion: "You leave from the same hotel every morning. No bags to repack, no check-outs in between.",
-      },
-      {
-        titulo: "Your fourth tour",
-        descripcion: "We keep the last tour day on the Xilitla side whenever we can, so the drive back to the hotel is short.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Breakfast, check-out and the road home.",
-      },
+      "RZR ride — Miradores route, 3 h (Day 1)",
+      "Paraíso Escalonado — Minas Viejas, Micos and the Siete Cascadas jump (Day 2)",
+      "Rafting on the Tampaón River — Class III rapids (Day 3)",
     ],
     incluye: [
-      "4 nights at Hotel Paraíso Encantado Xilitla",
-      "Buffet breakfast on tour days",
-      "4 full tours, chosen by you from a list of six",
-      "Transport from the hotel to the start of each tour and back",
+      "3 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "RZR ride, 3-hour Miradores route (one vehicle for the two of you)",
+      "Full Paraíso Escalonado tour",
+      "The Siete Cascadas jump at Micos, with a rescue guide in the water",
+      "Full Tampaón River rafting, Class III",
+      "Transfers from the hotel to the start of each activity and back",
       "NOM-09 SECTUR certified guides",
-      "Entrance fees to every attraction",
-      "Safety equipment",
+      "Entrance fees to every site",
+      "Safety gear: helmet, life jacket and paddle",
+      "Travel insurance",
+      "Photography and video of the trip",
+    ],
+    noIncluye: [
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
+      "Tips and personal expenses",
+    ],
+  },
+  "odisea-huasteca": {
+    nombre: "Huasteca Odyssey",
+    subtitulo: "Four tour days without repeating a single place",
+    duracion: "5 days / 4 nights",
+    precioLabel: "per couple",
+    badge: "See it all",
+    urgencia: "Four tour days and one suitcase: you sleep in the same hotel every night",
+    perfiles: ["See it all", "First time in the Huasteca", "No repeated stops"],
+    tours: [
+      "Surrealist Route — Edward James, springs, caves and castle (Day 1)",
+      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
+      "Cascadas del Meco — Meco, panoramic lookout and El Gran Salto (Day 3)",
+      "Paraíso Escalonado — Minas Viejas & Cascadas de Micos (Day 4)",
+    ],
+    incluye: [
+      "4 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "Full Surrealist Route tour",
+      "Full Tamul Expedition tour",
+      "Full Cascadas del Meco tour",
+      "Full Paraíso Escalonado tour",
+      "Transfers from the hotel to the start of each tour and back",
+      "NOM-09 SECTUR certified guides",
+      "Entrance fees to every site",
+      "Safety gear and life jacket",
       "Travel insurance",
       "Photography and video of every tour",
     ],
     noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Tampaón River rafting and RZR tours: booked separately, we quote them for you",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
       "Tips and personal expenses",
-    ],
-    valor: [
-      "4 nights' hotel (2 people)",
-      "4 tours of your choice (2 people)",
-      "Transport, 4 days",
-      "Entrance fees and guides",
-      "Photography and video of the trip",
-    ],
-  },
-
-  "odisea-huasteca": {
-    nombre: "Huasteca Odyssey",
-    subtitulo: "Five days of tours without repeating a single place",
-    duracion: "6 days / 5 nights",
-    precioLabel: "per person",
-    badge: "See it all",
-    urgencia: "Five days of tours and one suitcase: you sleep at the same hotel every night",
-    perfiles: ["See it all", "First time in the Huasteca", "No repeated stops"],
-    tours: [
-      "Surrealist Route — Edward James, Springs, Caves and Castle (Day 1)",
-      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
-      "Stepped Paradise — Minas Viejas & Micos Waterfalls (Day 3)",
-      "Water Route or El Meco Waterfalls, your choice (Day 4)",
-      "Coffee Trail — Xilitla Coffee Farm (Day 5)",
-    ],
-    eleccionTour: {
-      titulo: "Day 4 is your call",
-      opciones: [
-        { nombre: "Water Route — Puente de Dios", nota: "The natural cave with the river running past your feet" },
-        { nombre: "El Meco Waterfalls", nota: "Three waterfalls and the panoramic lookout" },
-      ],
-    },
-    itinerario: [
-      {
-        titulo: "Arrival + Edward James' Las Pozas",
-        descripcion: "We start with what is closest to the hotel and least demanding: the surrealist garden, the springs of Huichihuayán and the Quilas Cave.",
-      },
-      {
-        titulo: "Tamul Expedition",
-        descripcion: "The big day. Canoe through the Tampaón Canyon to Tamul Waterfall, cliff jumping at the Water Cave and the Sótano de las Huahuas at dusk, when the parrots fly out.",
-      },
-      {
-        titulo: "Minas Viejas and Micos Waterfalls",
-        descripcion: "A water-and-rest day after the longest one: travertine terraces at Minas Viejas and the seven falls at Micos.",
-      },
-      {
-        titulo: "The day you choose",
-        descripcion: "Puente de Dios, the natural cave with the river running through it, or El Meco Waterfalls with its lookout. Both cost the same, so the choice does not move the price: pick whichever you are missing.",
-      },
-      {
-        titulo: "Coffee Trail",
-        descripcion: "The quiet closer: a coffee farm in the Xilitla highlands, from the plant to the cup, to slow down before the drive back.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Breakfast, check out and back on the road.",
-      },
-    ],
-    incluye: [
-      "5 nights at Hotel Paraíso Encantado Xilitla",
-      "Buffet breakfast on tour days",
-      "5 full tours with no repeated destination",
-      "One day to choose between the Water Route and El Meco Waterfalls",
-      "Transport from the hotel to the start of each tour and back",
-      "NOM-09 SECTUR certified guides",
-      "Entrance to every attraction",
-      "Safety equipment",
-      "Travel insurance",
-      "Photography and video of every trip",
-    ],
-    noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400 MXN/night)",
-      "Tips and personal expenses",
-    ],
-    valor: [
-      "5 nights' hotel (2 people)",
-      "Surrealist Route (2 people)",
-      "Tamul Expedition (2 people)",
-      "Stepped Paradise (2 people)",
-      "Your chosen day (2 people)",
-      "Coffee Trail (2 people)",
-      "Transport, 5 days",
-      "Entrance fees + guides",
-      "Photography and video of the trip",
     ],
   },
 };
@@ -764,6 +582,15 @@ export interface PaquetesUI {
   heroIntro1: string;
   heroHotel: string;
   heroIntro2: string;
+  /** El botón principal del hero: baja al catálogo. */
+  heroCta: string;
+  /** La salida secundaria del hero: preguntar por WhatsApp. */
+  heroCtaWa: string;
+  /** El mensaje con el que se abre ese WhatsApp. */
+  heroWaMsg: string;
+  /** La franja de temporada, justo debajo del hero. */
+  bannerTemporada: string;
+  bannerTemporadaNota: string;
   googleReviews: string;
   resenasN: string;
   bookingOp: string;
@@ -839,7 +666,13 @@ const UI_ES: PaquetesUI = {
   heroIntro1:
     `Viajes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días todo incluido por la Huasteca Potosina: tours guiados, transporte a cada tour y hotel en Xilitla. Te hospedas en el `,
   heroHotel: "Hotel Paraíso Encantado Xilitla",
-  heroIntro2: ". Tú solo preocúpate por llegar — nosotros nos encargamos del resto.",
+  heroIntro2: ". Tú solo te preocupas por llegar; del resto nos encargamos nosotros.",
+  heroCta: "Ver los paquetes",
+  heroCtaWa: "Preguntar por WhatsApp",
+  heroWaMsg: "Hola, estoy viendo los paquetes de la Huasteca. ¿Me ayudas a elegir el que me conviene?",
+  bannerTemporada: "Empieza la mejor temporada en la Huasteca",
+  bannerTemporadaNota:
+    "Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora. Sin pago anticipado.",
   googleReviews: "Google Reviews",
   resenasN: "492 reseñas",
   bookingOp: "Booking · 180 op.",
@@ -919,7 +752,13 @@ const UI_EN: PaquetesUI = {
   heroIntro1:
     `All-inclusive ${PAQ_CORTO.dias}-to-${PAQ_LARGO.dias}-day trips through the Huasteca Potosina: guided tours, transport to every tour and a hotel in Xilitla. You stay at the `,
   heroHotel: "Hotel Paraíso Encantado Xilitla",
-  heroIntro2: ". All you have to worry about is getting here — we take care of the rest.",
+  heroIntro2: ". All you have to worry about is getting here; we take care of the rest.",
+  heroCta: "See the packages",
+  heroCtaWa: "Ask on WhatsApp",
+  heroWaMsg: "Hi, I'm looking at your Huasteca packages. Could you help me pick the right one?",
+  bannerTemporada: "The best season in the Huasteca is starting",
+  bannerTemporadaNota:
+    "Book on WhatsApp and we confirm hotel availability in under an hour. No prepayment.",
   googleReviews: "Google Reviews",
   resenasN: "492 reviews",
   bookingOp: "Booking · 180 reviews",
@@ -982,6 +821,14 @@ export interface PaquetesInteractivoUI {
   precioPaquete: string;
   verDiaPorDia: string;
   reservaFlexible: string;
+  /** Lo que se ahorra frente a armar el mismo viaje por su cuenta. */
+  ahorroBadge: (monto: string) => string;
+  ahorroDetalle: (suelto: string) => string;
+  /** Mover el catálogo y las fotos. Van como etiqueta accesible. */
+  catalogoAnterior: string;
+  catalogoSiguiente: string;
+  fotoAnterior: string;
+  fotoSiguiente: string;
   reservarLabel: string;
   waPaquete: (nombre: string, precio: string) => string;
 }
@@ -993,7 +840,13 @@ const INT_ES: PaquetesInteractivoUI = {
   valorTotal: "Valor total",
   precioPaquete: "Precio paquete",
   verDiaPorDia: "Ver el paquete día por día →",
-  reservaFlexible: "Reserva por WhatsApp o con tarjeta · Cancelación flexible",
+  reservaFlexible: "Te confirmamos disponibilidad antes de pedirte nada. Cancelación flexible.",
+  ahorroBadge: (monto) => `Ahorras ${monto}`,
+  ahorroDetalle: (suelto) => `Armándolo por tu cuenta: ${suelto}`,
+  catalogoAnterior: "Ver el paquete anterior",
+  catalogoSiguiente: "Ver el paquete siguiente",
+  fotoAnterior: "Foto anterior",
+  fotoSiguiente: "Foto siguiente",
   reservarLabel: "Reservar:",
   waPaquete: (nombre, precio) => `Hola, me interesa el ${nombre} (${precio} MXN). ¿Tienen disponibilidad?`,
 };
@@ -1005,7 +858,13 @@ const INT_EN: PaquetesInteractivoUI = {
   valorTotal: "Total value",
   precioPaquete: "Package price",
   verDiaPorDia: "See the package day by day →",
-  reservaFlexible: "Book on WhatsApp or by card · Flexible cancellation",
+  reservaFlexible: "We confirm availability before asking you for anything. Flexible cancellation.",
+  ahorroBadge: (monto) => `You save ${monto}`,
+  ahorroDetalle: (suelto) => `Booking it yourself: ${suelto}`,
+  catalogoAnterior: "Previous package",
+  catalogoSiguiente: "Next package",
+  fotoAnterior: "Previous photo",
+  fotoSiguiente: "Next photo",
   reservarLabel: "Book:",
   waPaquete: (nombre, precio) => `Hi, I'm interested in the ${nombre} (${precio} MXN). Do you have availability?`,
 };

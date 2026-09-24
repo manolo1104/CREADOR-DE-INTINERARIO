@@ -320,7 +320,11 @@ export function cotizarHabitaciones(
   if (n <= 0)              return { ok: false, error: t.faltanNoches };
   if (seleccion.length === 0) return { ok: false, error: t.faltaHabitacion };
 
-  const gratis = nochesGratis(n);
+  // La reserva suelta paga TODAS sus noches: la 3.ª gratis es de los paquetes
+  // (ver `nochesGratis`). Se deja el campo en la respuesta, en cero, para que
+  // las pantallas y los correos que ya lo leen sigan compilando y simplemente
+  // no pinten la línea del regalo.
+  const gratis = 0;
   const cobradas = n - gratis;
 
   const desglose: NonNullable<CotizacionHabitaciones["desglose"]> = [];

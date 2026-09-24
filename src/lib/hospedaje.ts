@@ -99,7 +99,8 @@ export function cotizarHospedaje(input: {
   const vistaMontana = esHabitacionConVista(input.habitacion);
   const tabla = vistaMontana ? TARIFA_POR_NOCHE.montana : TARIFA_POR_NOCHE.estandar;
 
-  const gratis = nochesGratis(noches);
+  // Un viaje a la medida paga todas sus noches: la 3.ª gratis va con el paquete.
+  const gratis = 0;
   const nochesCobradas = noches - gratis;
 
   const desglose = reparto.map((h) => {

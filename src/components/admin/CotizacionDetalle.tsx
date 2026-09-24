@@ -2,19 +2,40 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import type { TourBooking } from "@prisma/client";
-import { X, BedDouble, MapPin, Utensils, EyeOff } from "lucide-react";
+import type { TourQuote } from "@prisma/client";
+import { X, BedDouble, Utensils, EyeOff, CalendarClock } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { grupoDe, grupoLargo, lineasDe, metaDe, type LineaTour } from "@/lib/admin/reserva";
+import { grupoDe, grupoLargo, lineasDe, type LineaTour } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
+import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
+
+/**
+ * La ficha completa de una cotización, sin abrir el editor.
+ *
+ * Es la hermana de `ReservaDetalle`: en reservas ya se podía ver de un vistazo
+ * todo lo cotizado, y en cotizaciones había que entrar a editar —con el riesgo
+ * de tocar algo sin querer— o bajar el PDF para leer lo que decía.
+ *
+ * Enseña ADEMÁS lo que el cliente nunca ve: las notas internas y lo que nos
+ * cuestan los extras.
+ */
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-const STATUS_LABEL: Record<string, string> = { paid: "Pagada", pending: "Pendiente", cancelled: "Cancelada" };
+const STATUS_LABEL: Record<string, string> = {
+  borrador: "Borrador", enviada: "Enviada", aceptada: "Aceptada", expirada: "Expirada",
+};
 const STATUS_STYLE: Record<string, string> = {
-  paid: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800", cancelled: "bg-red-100 text-red-700",
+  borrador: "bg-gray-100 text-gray-600",
+  enviada:  "bg-yellow-100 text-yellow-800",
+  aceptada: "bg-green-100 text-green-800",
+  expirada: "bg-red-100 text-red-700",
+};
+
+const VIGENCIA_LABEL: Record<string, string> = {
+  "48h": "48 horas", "7dias": "7 días", "15dias": "15 días", "30dias": "30 días",
 };
 
 function Dato({ label, children }: { label: string; children: React.ReactNode }) {
@@ -35,34 +56,32 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   );
 }
 
-export default function ReservaDetalle({
-  reserva: b, onClose,
+export default function CotizacionDetalle({
+  cotizacion: q, onClose,
 }: {
-  reserva: TourBooking; onClose: () => void;
+  cotizacion: TourQuote; onClose: () => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
-    // Congelar el fondo mientras la ficha está abierta.
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
   }, [onClose]);
 
-  const lineas   = lineasDe(b as any);
-  const meta     = metaDe(b as any);
-  const grupo    = grupoDe(b as any);
-  const pkgs     = ((b as any).packageItems ?? []) as any[];
-  const hospedaje = Array.isArray(pkgs) ? pkgs.filter(p => p && !p._meta) : [];
-  const extras   = extrasDe((b as any).extraItems);
+  const lineas = lineasDe(q as any);
+  const grupo  = grupoDe(q as any);
+  // En una cotización el `_meta` viaja en packageItems (en las reservas, en lineItems).
+  const rawPkgs   = Array.isArray((q as any).packageItems) ? (q as any).packageItems as any[] : [];
+  const meta      = rawPkgs.find(p => p && p._meta) || {};
+  const hospedaje = rawPkgs.filter(p => p && !p._meta);
+  const extras    = extrasDe((q as any).extraItems);
 
-  const rawDeposito = (b as any).depositoPagado ?? 0;
-  const deposito    = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
-  const pendiente   = Math.max(0, b.totalAmount - deposito);
-  const sumaLineas  = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
-                    + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
-                    + totalExtras(extras);
-
+  const sumaLineas = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
+                   + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
+                   + totalExtras(extras);
+  const desglose   = desgloseCotizacion(sumaLineas, q.totalAmount, meta);
+  const personas   = Number(meta.numPersonas) > 0 ? Number(meta.numPersonas) : grupo.total;
 
   const nombreTour = (l: LineaTour) =>
     TOURS_DB.find(t => t.slug === l.tourSlug)?.nombre || l.tourName || l.tourSlug || "—";
@@ -76,15 +95,12 @@ export default function ReservaDetalle({
         <div className="flex items-start justify-between gap-4 p-5 border-b border-[#1B4332]/10 sticky top-0 bg-white z-10 rounded-t-sm">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs font-medium text-[#1B4332]">{b.confirmationNumber}</span>
-              <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
-                {STATUS_LABEL[b.status] || b.status}
-              </span>
-              <span className="text-[10px] font-dm text-[#1B4332]/40">
-                {b.stripePaymentIntentId ? "Pagó en línea" : "Capturada a mano"}
+              <span className="font-mono text-xs font-medium text-[#1B4332]">{q.quoteNumber}</span>
+              <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${STATUS_STYLE[q.status] || "bg-gray-100 text-gray-600"}`}>
+                {STATUS_LABEL[q.status] || q.status}
               </span>
             </div>
-            <p className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{b.customerName}</p>
+            <p className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{q.customerName}</p>
           </div>
           <button onClick={onClose} className="text-[#1B4332]/40 hover:text-[#1B4332] shrink-0" title="Cerrar (Esc)">
             <X className="w-5 h-5" />
@@ -94,27 +110,27 @@ export default function ReservaDetalle({
         <div className="p-5 space-y-4">
           {/* Contacto y grupo */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Dato label="Correo">{b.customerEmail || <span className="text-[#1B4332]/30">Sin correo</span>}</Dato>
+            <Dato label="Correo">{q.customerEmail || <span className="text-[#1B4332]/30">Sin correo</span>}</Dato>
             <Dato label="Teléfono">
-              {b.customerPhone
-                ? <a href={`https://wa.me/${b.customerPhone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
-                     className="text-[#25D366] hover:underline">{b.customerPhone}</a>
+              {q.customerPhone
+                ? <a href={`https://wa.me/${q.customerPhone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                     className="text-[#25D366] hover:underline">{q.customerPhone}</a>
                 : <span className="text-[#1B4332]/30">Sin teléfono</span>}
             </Dato>
             <Dato label="Personas">
-              <span className="font-medium">{grupo.total}</span>
+              <span className="font-medium">{personas}</span>
               <span className="block text-xs text-[#1B4332]/50">{grupoLargo(grupo)}</span>
             </Dato>
-            <Dato label="Reservada el">
-              {new Date(b.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}
+            <Dato label="Creada el">
+              {new Date(q.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}
             </Dato>
           </div>
 
           {/* Itinerario */}
           <Seccion titulo={`Itinerario · ${lineas.length || 1} ${lineas.length === 1 ? "recorrido" : "recorridos"}`}>
             <div className="space-y-2">
-              {(lineas.length ? lineas : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children, subtotal: b.totalAmount }]).map((l, i) => {
-                const t = TOURS_DB.find(t => t.slug === l.tourSlug);
+              {(lineas.length ? lineas : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children, subtotal: q.totalAmount }]).map((l, i) => {
+                const t   = TOURS_DB.find(t => t.slug === l.tourSlug);
                 const pax = (l.adults ?? 0) + (l.childrenMid ?? (l as any).children ?? 0) + (l.childrenSmall ?? 0);
                 return (
                   <div key={i} className="flex items-start gap-3 bg-[#FAFAF8] border border-[#1B4332]/8 rounded-sm p-3">
@@ -125,20 +141,16 @@ export default function ReservaDetalle({
                         {fDate(l.tourDate || "")}
                         {pax > 0 && ` · ${pax} ${pax === 1 ? "persona" : "personas"}`}
                         {t && ` · ${t.duracion_hrs} h`}
+                        {/* Un concepto que no está en el catálogo se dice con todas sus letras:
+                            si no, parece un recorrido nuestro que alguien borró de la lista. */}
+                        {!t && " · concepto a la medida"}
                       </p>
-                      {/* Lo que hay que OPERAR además del recorrido. El add-on
-                        se cobra y no aparecía por ningún lado: el Salto de las
-                        7 Cascadas necesita guía de rescate y nadie se enteraba. */}
                       {(l.addOns ?? []).length > 0 && (
                         <p className="text-[#52B788] font-dm text-xs mt-1">
-                          {(l.addOns ?? [])
-                            .map(a => `+ ${a.nombre ?? a.id} × ${a.cantidad ?? 1}`)
-                            .join(" · ")}
+                          {(l.addOns ?? []).map(a => `+ ${a.nombre ?? a.id} × ${a.cantidad ?? 1}`).join(" · ")}
                         </p>
                       )}
-                      {l.eleccion && (
-                        <p className="text-[#1B4332]/70 font-dm text-xs mt-1">Eligió: {l.eleccion}</p>
-                      )}
+                      {l.eleccion && <p className="text-[#1B4332]/70 font-dm text-xs mt-1">Eligió: {l.eleccion}</p>}
                     </div>
                     {l.subtotal != null && (
                       <span className="text-[#52B788] font-dm text-sm font-medium whitespace-nowrap">{fmx(l.subtotal)}</span>
@@ -157,7 +169,9 @@ export default function ReservaDetalle({
                   <div key={i} className="flex items-start gap-3 bg-[#FAFAF8] border border-[#1B4332]/8 rounded-sm p-3">
                     <BedDouble className="w-4 h-4 text-[#52B788] shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[#1B4332] font-dm text-sm font-medium">{p.habitacion}{p.hotel ? ` · ${p.hotel}` : ""}</p>
+                      <p className="text-[#1B4332] font-dm text-sm font-medium">
+                        {p.habitacion}{p.hotel ? ` · ${p.hotel}` : ""}
+                      </p>
                       <p className="text-[#1B4332]/55 font-dm text-xs mt-0.5">
                         {p.noches} {p.noches === 1 ? "noche" : "noches"}
                         {(p.habitaciones ?? 1) > 1 && ` · ${p.habitaciones} habitaciones`}
@@ -174,7 +188,7 @@ export default function ReservaDetalle({
             </Seccion>
           )}
 
-          {/* Extras: lo que hay que OPERAR y cobrar además del recorrido */}
+          {/* Extras */}
           {extras.length > 0 && (
             <Seccion titulo="Extras e items incluidos">
               <div className="space-y-2">
@@ -204,60 +218,51 @@ export default function ReservaDetalle({
               </div>
               {costoExtras(extras) > 0 && (
                 <p className="text-[#1B4332]/40 font-dm text-xs mt-2">
-                  Los extras cobran {fmx(totalExtras(extras))} y te cuestan {fmx(costoExtras(extras))}. Lo que te cuestan solo lo ves tú: no sale en el PDF ni en el correo del cliente.
+                  Los extras cobran {fmx(totalExtras(extras))} y te cuestan {fmx(costoExtras(extras))}. Lo que te cuestan solo lo ves tú.
                 </p>
               )}
             </Seccion>
           )}
 
           {/* Dinero */}
-          <Seccion titulo="Cobro al cliente">
+          <Seccion titulo="Lo que se le cotizó">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Dato label="Total"><span className="text-[#52B788] font-medium">{fmx(b.totalAmount)}</span></Dato>
-              <Dato label="Anticipo cobrado">
-                {deposito > 0 ? <span className="text-green-700 font-medium">{fmx(deposito)}</span>
-                              : <span className="text-amber-600">Sin registrar</span>}
+              <Dato label="Total"><span className="text-[#52B788] font-medium">{fmx(q.totalAmount)}</span></Dato>
+              <Dato label="Anticipo para apartar">
+                <span className="text-[#C9484A] font-medium">{fmx(desglose.anticipo)}</span>
+                <span className="block text-xs text-[#1B4332]/45">{desglose.anticipoPct} % del total</span>
               </Dato>
-              <Dato label="Falta por cobrar">
-                {pendiente > 0 ? <span className="text-orange-600 font-medium">{fmx(pendiente)}</span>
-                               : <span className="text-[#1B4332]/40">Liquidado</span>}
-              </Dato>
-              <Dato label="Método">{meta.metodoPago || "—"}{meta.folioPago ? <span className="block text-xs text-[#1B4332]/45 font-mono">{meta.folioPago}</span> : null}</Dato>
-            </div>
-            {sumaLineas > 0 && sumaLineas !== b.totalAmount && (
-              <p className="text-[#1B4332]/45 font-dm text-xs mt-3">
-                Las líneas suman {fmx(sumaLineas)} y el total es {fmx(b.totalAmount)}: hay un precio ajustado a mano
-                {meta.cotizacionOrigen ? ` (viene de la cotización ${meta.cotizacionOrigen})` : ""}
-                {meta.discountValue ? ` · descuento ${meta.discountType === "fixed" ? fmx(Number(meta.discountValue)) : `${meta.discountValue}%`}` : ""}.
-              </p>
-            )}
-            {b.promoCode && (
-              <p className="text-[#1B4332]/45 font-dm text-xs mt-1">
-                Código promocional <span className="font-mono">{b.promoCode}</span>
-                {b.promoDiscount > 0 && ` · −${fmx(b.promoDiscount)}`}
-              </p>
-            )}
-          </Seccion>
-
-          {/* Logística y notas */}
-          <Seccion titulo="Logística">
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <Dato label="Guía asignado">
-                  {(b as any).guia || <span className="text-orange-600/70">Sin asignar</span>}
-                </Dato>
-                <Dato label="Idioma del tour">
-                  {(b as any).idiomaTour === "en" ? "Inglés" : "Español"}
-                </Dato>
-              </div>
-              <Dato label="Punto de encuentro">
-                <span className="flex items-start gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#1B4332]/40 shrink-0 mt-0.5" />
-                  {meta.pickupLugar || "Lobby de tu hotel en Xilitla"}
+              <Dato label="Saldo el día del tour">{fmx(desglose.saldo)}</Dato>
+              <Dato label="Vigencia">
+                <span className="flex items-center gap-1.5">
+                  <CalendarClock className="w-3.5 h-3.5 text-[#1B4332]/40 shrink-0" />
+                  {VIGENCIA_LABEL[meta.vigencia] || "7 días"}
                 </span>
               </Dato>
-              <Dato label="Notas para el cliente (salen en su correo y su comprobante)">
-                {b.notes ? <span className="whitespace-pre-wrap">{b.notes}</span> : <span className="text-[#1B4332]/30">Sin notas</span>}
+            </div>
+            <div className="mt-3 space-y-1">
+              <p className="flex justify-between text-xs font-dm text-[#1B4332]/55 max-w-xs">
+                <span>Suma de los renglones</span><span>{fmx(sumaLineas)}</span>
+              </p>
+              {desglose.ajuste !== 0 && (
+                <p className="flex justify-between text-xs font-dm text-[#1B4332]/55 max-w-xs">
+                  <span>Precio ajustado a mano</span>
+                  <span>{desglose.ajuste > 0 ? "+" : "−"}{fmx(Math.abs(desglose.ajuste))}</span>
+                </p>
+              )}
+              {desglose.descuento > 0 && (
+                <p className="flex justify-between text-xs font-dm text-[#1B4332] max-w-xs">
+                  <span>Descuento aplicado</span><span>−{fmx(desglose.descuento)}</span>
+                </p>
+              )}
+            </div>
+          </Seccion>
+
+          {/* Notas */}
+          <Seccion titulo="Notas">
+            <div className="space-y-3">
+              <Dato label="Notas para el cliente (salen en su correo y su PDF)">
+                {q.notes ? <span className="whitespace-pre-wrap">{q.notes}</span> : <span className="text-[#1B4332]/30">Sin notas</span>}
               </Dato>
               <div className="border border-[#C4882A]/30 bg-[#C4882A]/6 rounded-sm p-3">
                 <p className="flex items-center gap-1.5 text-[9px] tracking-[2px] uppercase text-[#8a6a1a] font-dm mb-1">

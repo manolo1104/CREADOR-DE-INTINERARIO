@@ -93,7 +93,7 @@ export function ClimaWidget() {
         {c.herramienta}
       </p>
       <h3 className="font-cormorant text-crema text-xl mb-1">{c.pregunta}</h3>
-      <p className="text-crema/45 font-dm text-xs mb-6">
+      <p className="text-crema/75 font-dm text-xs mb-6">
         {c.instruccion}
       </p>
 
@@ -163,7 +163,7 @@ export function ClimaWidget() {
       )}
 
       {mes === null && (
-        <p className="text-center text-crema/30 font-dm text-xs py-4">
+        <p className="text-center text-crema/70 font-dm text-xs py-4">
           {c.seleccionaMes}
         </p>
       )}

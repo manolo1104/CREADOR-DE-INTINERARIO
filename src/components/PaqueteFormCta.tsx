@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { MessageCircle, Send, CreditCard } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 import { trackPackageInquiry, trackWhatsapp } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaqueteFormUI } from "@/lib/i18n/paquetes.en";
@@ -13,17 +12,42 @@ interface Props {
   packageName: string;
   price:       number;
   destacado?:  boolean;
-  /** slug del paquete para el flujo de pago con tarjeta (/reservar-paquete/[slug]) */
-  slug?:       string;
+  /**
+   * En el catálogo la tarjeta vive en una fila que se desliza y no puede medir
+   * mil píxeles de alto: el formulario nace cerrado detrás del botón y se abre
+   * al tocarlo. En la ficha del paquete hay sitio de sobra y va abierto.
+   */
+  compacto?:   boolean;
 }
 
-export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
-  const { locale, lp } = useLocale();
+/**
+ * El único camino para reservar un paquete: tres datos y WhatsApp.
+ *
+ * 🔴 Antes había DOS botones compitiendo: "Reservar en línea" con tarjeta
+ * (grande, arriba) y la consulta por WhatsApp (gris, debajo de un separador
+ * "o"). Decisión de Manolo el 23 sep 2026: el pago con tarjeta sale de esta
+ * página. Un paquete de $12,000 no se cierra con un clic a ciegas; se cierra
+ * hablando, y la conversación empieza con el nombre, la fecha y cuántos son.
+ *
+ * El checkout con tarjeta sigue existiendo en `/reservar-paquete/[slug]` para
+ * quien llegue por un enlace directo: lo que se quitó es el botón, no la ruta.
+ */
+export function PaqueteFormCta({ packageName, price, destacado, compacto }: Props) {
+  const { locale } = useLocale();
   const t = getPaqueteFormUI(locale);
+  const [abierto,  setAbierto]  = useState(!compacto);
   const [nombre,   setNombre]   = useState("");
   const [fecha,    setFecha]    = useState("");
   const [personas, setPersonas] = useState("");
   const [sent,     setSent]     = useState(false);
+
+  const inputCls =
+    "w-full rounded-lg border border-negro/20 bg-white/70 text-negro placeholder:text-negro/45 " +
+    "px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/25 transition-colors";
+
+  const botonCls =
+    "flex items-center justify-center gap-2.5 w-full py-4 rounded-lg text-[11px] tracking-[2px] uppercase " +
+    "font-dm font-medium whitespace-nowrap transition-[background-color,transform] duration-200 active:scale-[0.98]";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,92 +65,80 @@ export function PaqueteFormCta({ packageName, price, destacado, slug }: Props) {
     setTimeout(() => setSent(false), 4000);
   }
 
+  // Estado cerrado: un solo botón que abre los tres campos.
+  if (!abierto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className={`${botonCls} ${
+          destacado
+            ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"
+            : "bg-[#25D366] hover:bg-[#1da851] text-white"
+        }`}
+      >
+        <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+        {t.reservarEstePaquete}
+      </button>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-2.5">
-      {/* ── CTA PRINCIPAL: reservar en línea ──────────────────────────────────
-          Antes el botón fuerte era la consulta por WhatsApp y el pago con
-          tarjeta iba debajo, en gris y detrás de un separador "o". El pago en
-          línea es el único camino que cierra la venta sin que alguien conteste
-          un chat, así que es el que se lleva el peso visual. */}
-      {slug && (
-        <div className="mb-4">
-          <Link
-            href={lp(`/reservar-paquete/${slug}`)}
-            onClick={() => trackPackageInquiry(packageName, price)}
-            className={`flex items-center justify-center gap-2.5 w-full py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 ${
-              destacado
-                ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"
-                : "bg-verde-selva hover:bg-verde-vivo text-crema"
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            {t.reservarEnLinea}
-          </Link>
-          <p className="text-center text-[9px] font-dm text-negro/60 mt-2">{t.reservaSegura}</p>
-
-          <div className="flex items-center gap-2 pt-4 pb-1">
-            <span className="h-px flex-1 bg-negro/15" />
-            <span className="text-[9px] tracking-[1.5px] uppercase text-negro/60 font-dm">{t.oConsultaAntes}</span>
-            <span className="h-px flex-1 bg-negro/15" />
-          </div>
-        </div>
-      )}
-
-      <p className="text-[9px] tracking-[2px] uppercase text-negro/60 font-dm mb-3 flex items-center gap-1.5">
-        <MessageCircle className="w-3 h-3" /> {t.consultaRapida}
+      <p className="text-[9px] tracking-[2px] uppercase text-negro/60 font-dm flex items-center gap-1.5">
+        <MessageCircle className="w-3 h-3" aria-hidden="true" /> {t.consultaRapida}
       </p>
 
       <input
         type="text"
         placeholder={t.tuNombre}
+        aria-label={t.tuNombre}
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
         required
-        className="w-full rounded border border-negro/25 bg-white/60 text-negro placeholder:text-negro/50 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva transition-colors"
+        className={inputCls}
       />
 
       <div className="grid grid-cols-2 gap-2">
         <input
           type="text"
           placeholder={t.fechaTentativa}
+          aria-label={t.fechaTentativa}
           value={fecha}
           onChange={(e) => setFecha(e.target.value)}
-          className="w-full rounded border border-negro/25 bg-white/60 text-negro placeholder:text-negro/50 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva transition-colors"
+          className={inputCls}
         />
         <input
           type="number"
           placeholder={t.numPersonas}
+          aria-label={t.numPersonas}
           min={1}
           max={30}
           value={personas}
           onChange={(e) => setPersonas(e.target.value)}
-          className="w-full rounded border border-negro/25 bg-white/60 text-negro placeholder:text-negro/50 px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva transition-colors"
+          className={inputCls}
         />
       </div>
 
       <button
         type="submit"
-        className={`flex items-center justify-center gap-2.5 w-full py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 ${
+        className={`${botonCls} ${
           sent
             ? "bg-verde-selva text-crema"
-            : slug
-              // Ya hay un CTA principal arriba: este queda como salida secundaria.
-              ? "border border-[#075E54]/60 text-[#075E54] hover:bg-[#075E54]/10"
-              : destacado
-                ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"
-                : "bg-[#25D366] hover:bg-[#20ba59] text-white"
+            : destacado
+              ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"
+              : "bg-[#25D366] hover:bg-[#1da851] text-white"
         }`}
       >
         {sent ? (
           <>{t.abriendoWhatsapp}</>
         ) : (
           <>
-            <Send className="w-3.5 h-3.5" />
+            <Send className="w-3.5 h-3.5" aria-hidden="true" />
             {t.consultarDisponibilidad}
           </>
         )}
       </button>
-
     </form>
   );
 }

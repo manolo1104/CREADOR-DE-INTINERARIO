@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil } from "lucide-react";
+import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
 import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
 import { ORIGENES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
+import {
+  HABITACIONES_PANEL, HABITACION_POR_DEFECTO, habitacionPanel, tarifaPanel, maxHuespedesPanel,
+} from "@/lib/admin/habitacionesPanel";
 
 const fmx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 
@@ -29,6 +32,40 @@ export interface LineItem {
    * que se guarda aquí es un registro de lo que se contrató, no la tarifa.
    */
   addOns?:       LineaAddOn[];
+  /**
+   * SOLO en las líneas personalizadas (`tourSlug === SLUG_PERSONALIZADO`): el
+   * precio por persona que se tecleó. En un recorrido del catálogo este campo
+   * no existe, porque su precio se lee del catálogo y no se guarda nunca.
+   */
+  precioPersona?: number;
+}
+
+/**
+ * Un concepto que NO está en el catálogo: un recorrido nuevo, una salida a
+ * medida, un servicio que todavía no tiene ficha. Lleva su propio nombre y su
+ * propio precio por persona, y por lo demás se comporta como cualquier otra
+ * línea (fecha, adultos, niños, subtotal).
+ *
+ * Se guarda como un `tourSlug` reservado en vez de un campo nuevo: así viaja
+ * intacto por el correo, el PDF, la ficha y la conversión a reserva, que ya
+ * saben leer líneas por su nombre y su subtotal. Los dos guiones bajos lo
+ * ponen fuera del alcance de cualquier slug real del catálogo.
+ */
+export const SLUG_PERSONALIZADO = "__personalizado";
+
+/** ¿Esta línea es un concepto escrito a mano? */
+export function esLineaPersonalizada(slug?: string): boolean {
+  return slug === SLUG_PERSONALIZADO;
+}
+
+/**
+ * ¿Se puede guardar esta línea? Concepto y fecha; y si es un concepto escrito a
+ * mano, además su nombre: un renglón sin nombre sale en blanco en la cotización
+ * del cliente y nadie sabe qué se le está cobrando.
+ */
+export function lineaCompleta(l: LineItem): boolean {
+  if (!l.tourSlug || !l.tourDate) return false;
+  return !esLineaPersonalizada(l.tourSlug) || !!(l.tourName || "").trim();
 }
 
 export interface LineaAddOn {
@@ -93,6 +130,15 @@ export interface PackageItem {
   checkin:        string;
   checkout:       string;
   subtotal:       number;
+  /**
+   * Cuánta gente duerme en CADA habitación de este renglón. Es lo que decide el
+   * escalón de tarifa (hasta 2 personas cuesta una cosa, de 3 a 4 otra).
+   *
+   * Opcional a propósito: las cotizaciones y reservas guardadas antes de
+   * septiembre de 2026 no lo traen, y se siguen leyendo con el precio por noche
+   * que se les grabó en su día.
+   */
+  huespedes?:     number;
 }
 
 export interface ReservaFormState {
@@ -116,24 +162,46 @@ export interface ReservaFormState {
   guia:           string;
   /** En qué idioma sale el tour: "es" | "en". */
   idiomaTour:     string;
+  /**
+   * Lo que NO ve el cliente: el trato que se hizo, con quién hay que hablar,
+   * por qué se le bajó el precio. No sale en el correo, ni en el PDF, ni en la
+   * cotización que se le manda. Solo se lee desde el panel.
+   */
+  notasInternas:  string;
 }
 
-const HABITACIONES_PRESET = [
-  { label: "Suite Flor de Liz",    precio: 1900 },
-  { label: "Suite LindaVista",     precio: 1990 },
-  { label: "Suite Lajas",          precio: 1900 },
-  { label: "Suite Jungla",         precio: 1990 },
-  { label: "Lirios",               precio: 1500 },
-  { label: "Orquídeas King",       precio: 1500 },
-  { label: "Orquídeas Doble",      precio: 1500 },
-  { label: "Bromelias",            precio: 1500 },
-  { label: "Helechos",             precio: 1900 },
-];
+/** La habitación nueva nace con 2 personas: es la ocupación normal. */
+export const HUESPEDES_POR_DEFECTO = 2;
 
-const EMPTY_PACKAGE: PackageItem = {
-  habitacion: "Suite Flor de Liz", hotel: "Hotel Paraíso Encantado, Xilitla",
-  noches: 2, habitaciones: 1, precioPorNoche: 1900, checkin: "", checkout: "", subtotal: 3800,
+export const EMPTY_PACKAGE: PackageItem = {
+  habitacion:     HABITACION_POR_DEFECTO.label,
+  hotel:          "Hotel Paraíso Encantado, Xilitla",
+  noches:         2,
+  habitaciones:   1,
+  huespedes:      HUESPEDES_POR_DEFECTO,
+  precioPorNoche: HABITACION_POR_DEFECTO.tarifas[HUESPEDES_POR_DEFECTO] ?? 0,
+  checkin:        "",
+  checkout:       "",
+  subtotal:       (HABITACION_POR_DEFECTO.tarifas[HUESPEDES_POR_DEFECTO] ?? 0) * 2,
 };
+
+/**
+ * Deja la habitación cuadrada al cambiar el cuarto o la ocupación: la gente
+ * nunca pasa del tope del cuarto y el precio por noche se pone solo.
+ *
+ * Si el nombre está escrito a mano (no es del catálogo), `tarifaPanel` devuelve
+ * 0 y se respeta el precio que se haya tecleado: el panel sigue sirviendo para
+ * cotizar un hotel que no es el nuestro.
+ */
+export function aplicarHabitacion(p: PackageItem, nombre: string, huespedes?: number): PackageItem {
+  const max    = maxHuespedesPanel(nombre);
+  const hues   = Math.min(Math.max(1, Math.round(Number(huespedes ?? p.huespedes ?? HUESPEDES_POR_DEFECTO)) || 1), max);
+  const tarifa = tarifaPanel(nombre, hues);
+  const up: PackageItem = { ...p, habitacion: nombre, huespedes: hues };
+  if (tarifa > 0) up.precioPorNoche = tarifa;
+  up.subtotal = calcPackageLine(up);
+  return up;
+}
 
 export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
@@ -146,9 +214,20 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
   origen: "whatsapp",
   guia: "",
   idiomaTour: "es",
+  notasInternas: "",
 };
 
 export function calcTourLine(l: LineItem): number {
+  // Concepto escrito a mano: manda el precio por persona que se tecleó, con el
+  // MISMO descuento de menores que cualquier recorrido del catálogo (6-10 años
+  // pagan el 70 %, menores de 6 el 50 %). Una regla distinta aquí obligaría a
+  // acordarse de cuál aplica en cada renglón.
+  if (esLineaPersonalizada(l.tourSlug)) {
+    const p = Math.max(0, Number(l.precioPersona) || 0);
+    return p * Math.max(0, l.adults || 0)
+         + Math.round(p * 0.7) * (l.childrenMid   ?? 0)
+         + Math.round(p * 0.5) * (l.childrenSmall ?? 0);
+  }
   const t = TOURS_DB.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
   // Tours por vehículo (RZR): la matriz flota×ruta manda; los niños no cambian el precio.
@@ -203,6 +282,134 @@ export function sincronizarNoches(p: PackageItem, campo: "checkin" | "checkout" 
   }
   up.subtotal = calcPackageLine(up);
   return up;
+}
+
+/**
+ * El recuadro de notas internas, igual en cotizaciones y en reservas.
+ *
+ * Vive aquí y no duplicado en cada pantalla porque lo que importa de este campo
+ * es la PROMESA que hace —"esto no sale al cliente"—, y dos recuadros escritos
+ * por separado acaban prometiendo cosas distintas.
+ */
+export function NotasInternas(
+  { value, onChange, inputCls }:
+  { value: string; onChange: (v: string) => void; inputCls: string },
+) {
+  return (
+    <div className="border border-[#C4882A]/30 bg-[#C4882A]/6 rounded-sm p-3">
+      <label className="flex items-center gap-1.5 text-[9px] tracking-[2px] uppercase text-[#8a6a1a] font-dm mb-1">
+        <EyeOff className="w-3 h-3" />Notas internas
+      </label>
+      <textarea value={value} rows={3} onChange={e => onChange(e.target.value)}
+        placeholder="El trato que se hizo, con quién hay que hablar, por qué se le dio ese precio…"
+        className={`${inputCls} resize-none`} />
+      <p className="text-[10px] font-dm text-[#8a6a1a]/70 mt-1">
+        Solo para ti y tu equipo. No sale en el correo del cliente, ni en el PDF, ni en la cotización que se le manda.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Nombre y precio por persona de un concepto que no está en el catálogo.
+ * Compartido por cotizaciones y reservas: el renglón tiene que cobrar igual en
+ * las dos pantallas, porque una cotización se convierte en reserva tal cual.
+ */
+export function ConceptoPersonalizado(
+  { line, onField, inputCls }:
+  { line: LineItem; onField: (campo: keyof LineItem, valor: string | number) => void; inputCls: string },
+) {
+  return (
+    <div className="border border-[#C4882A]/30 bg-[#C4882A]/6 rounded-sm p-2.5 space-y-2">
+      <div>
+        <label className="block text-[9px] tracking-[2px] uppercase text-[#8a6a1a] font-dm mb-1">
+          Nombre del concepto *
+        </label>
+        <input type="text" value={line.tourName} autoFocus
+          placeholder="Ej. Recorrido a la Cascada del Salto"
+          onChange={e => onField("tourName", e.target.value)} className={inputCls} />
+      </div>
+      <div>
+        <label className="block text-[9px] tracking-[2px] uppercase text-[#8a6a1a] font-dm mb-1">
+          Precio por persona
+        </label>
+        <input type="number" min={0} step={50} value={line.precioPersona ?? 0}
+          onChange={e => onField("precioPersona", Number(e.target.value))}
+          className={`${inputCls} max-w-[160px]`} />
+      </div>
+      <p className="text-[10px] font-dm text-[#8a6a1a]/70">
+        Este nombre y este precio son los que verá el cliente. Los niños pagan lo mismo que en
+        cualquier recorrido: 70 % de 6 a 10 años y 50 % los menores de 6.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Elegir el cuarto y cuánta gente duerme en él. El precio por noche se pone
+ * solo con esos dos datos.
+ *
+ * 🔴 Lo que arregla: antes se elegía el cuarto y punto. Una familia de cuatro se
+ * cotizaba al mismo precio que una pareja, y el hotel cobraba la diferencia al
+ * llegar. Ahora la ocupación es parte de la elección y cada escalón enseña su
+ * precio, que es como Manolo cotiza por teléfono.
+ */
+export function SelectorHabitacion(
+  { pkg, onField, inputCls }:
+  { pkg: PackageItem; onField: (campo: keyof PackageItem, valor: string | number) => void; inputCls: string },
+) {
+  const hab   = habitacionPanel(pkg.habitacion);
+  const hues  = Math.min(
+    Math.max(1, Math.round(Number(pkg.huespedes)) || HUESPEDES_POR_DEFECTO),
+    hab?.maxHuespedes ?? 99,
+  );
+  const chip  = (activo: boolean) =>
+    `text-[10px] font-dm px-2 py-1 rounded border transition-colors ${
+      activo ? "bg-[#40916C] text-white border-[#40916C]" : "border-[#40916C]/30 text-[#40916C] hover:bg-[#40916C]/10"
+    }`;
+
+  return (
+    <div className="space-y-2">
+      <div>
+        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Habitación</label>
+        <div className="flex gap-1.5 flex-wrap mb-1.5">
+          {HABITACIONES_PANEL.map(h => (
+            <button key={h.id} type="button" onClick={() => onField("habitacion", h.label)}
+              title={`${h.vista} · hasta ${h.maxHuespedes} personas`}
+              className={chip(pkg.habitacion === h.label)}>
+              {h.label}
+            </button>
+          ))}
+        </div>
+        <input type="text" value={pkg.habitacion} placeholder="…o escribe otro hotel / otra habitación"
+          onChange={e => onField("habitacion", e.target.value)} className={inputCls} />
+      </div>
+
+      {hab ? (
+        <div>
+          <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
+            Personas en la habitación
+          </label>
+          <div className="flex gap-1.5 flex-wrap">
+            {Array.from({ length: hab.maxHuespedes }, (_, k) => k + 1).map(n => (
+              <button key={n} type="button" onClick={() => onField("huespedes", n)}
+                className={chip(hues === n)}>
+                {n} {n === 1 ? "persona" : "personas"} · {fmx(hab.tarifas[n] ?? 0)}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] font-dm text-[#1B4332]/40 mt-1">
+            {hab.vista} · caben hasta {hab.maxHuespedes}. El precio por noche se pone solo;
+            si lo cambias a mano abajo, manda el tuyo.
+          </p>
+        </div>
+      ) : (
+        <p className="text-[10px] font-dm text-[#1B4332]/40">
+          Habitación escrita a mano: el precio por noche lo pones tú abajo.
+        </p>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -286,7 +493,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
   const pendiente     = Math.max(0, finalTotal - deposito);
 
   const step1Valid = !!form.customerName.trim();
-  const step2Valid = form.lines.every(l => !!l.tourSlug && !!l.tourDate);
+  const step2Valid = form.lines.every(lineaCompleta);
   const canSave    = !saving && step1Valid && step2Valid;
 
   function updateLine(i: number, field: keyof LineItem, val: string | number) {
@@ -297,6 +504,16 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
         const up = { ...l, [field]: val };
         if (field === "tourSlug") {
           const t = TOURS_DB.find(t => t.slug === val);
+          if (esLineaPersonalizada(String(val))) {
+            // Nace en blanco: el nombre y el precio los pone Manolo.
+            up.tourName      = "";
+            up.precioPersona = 0;
+            up.adults        = Math.max(1, up.adults || 2);
+            delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns;
+            up.subtotal = calcTourLine(up);
+            return up;
+          }
+          delete up.precioPersona;
           up.tourName = t?.nombre || "";
           if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
             // Al elegir un tour por vehículo: defaults de ruta/vehículo y participantes fuera del precio.
@@ -316,6 +533,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
         if (field === "childrenMid")   up.childrenMid   = Math.max(0, Number(val) || 0);
         if (field === "childrenSmall") up.childrenSmall = Math.max(0, Number(val) || 0);
         if (field === "unidades")      up.unidades      = Math.max(1, Number(val) || 1);
+        if (field === "precioPersona") up.precioPersona = Math.max(0, Number(val) || 0);
         // El nombre de línea de un tour por vehículo lleva ruta/vehículo (así lo ven reservas y el correo).
         if (esTourVehiculo(up.tourSlug)) up.tourName = vehiculoLineName(up);
         up.subtotal = calcTourLine(up);
@@ -330,11 +548,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
       ...f,
       packages: f.packages.map((p, idx) => {
         if (idx !== i) return p;
+        // Cambiar el cuarto o cuánta gente duerme en él vuelve a poner la tarifa.
+        if (field === "habitacion") return aplicarHabitacion(p, String(val));
+        if (field === "huespedes")  return aplicarHabitacion(p, p.habitacion, Number(val));
         const up = { ...p, [field]: val };
-        if (field === "habitacion") {
-          const preset = HABITACIONES_PRESET.find(h => h.label === val);
-          if (preset) up.precioPorNoche = preset.precio;
-        }
         if (field === "checkin" || field === "checkout" || field === "noches") {
           return sincronizarNoches(up, field);
         }
@@ -418,7 +635,15 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Preferencias, alergias, requerimientos especiales..."
                   className={`${inputCls} resize-none`} />
+                <p className="text-[10px] font-dm text-[#1B4332]/40 mt-1">
+                  Esto SÍ lo ve el cliente: sale en su correo y en su comprobante.
+                </p>
               </div>
+              <NotasInternas
+                value={form.notasInternas}
+                onChange={v => setForm(f => ({ ...f, notasInternas: v }))}
+                inputCls={inputCls}
+              />
             </div>
           )}
 
@@ -463,7 +688,12 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                         <select value={line.tourSlug} onChange={e => updateLine(i, "tourSlug", e.target.value)} className={inputCls}>
                           <option value="">Seleccionar tour...</option>
                           {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
+                          <option value={SLUG_PERSONALIZADO}>+ Otro concepto (nombre y precio a mano)</option>
                         </select>
+                        {esLineaPersonalizada(line.tourSlug) && (
+                          <ConceptoPersonalizado line={line} inputCls={inputCls}
+                            onField={(campo, valor) => updateLine(i, campo, valor)} />
+                        )}
                         {esTourVehiculo(line.tourSlug) ? (
                           (() => {
                             const t = TOURS_DB.find(t => t.slug === line.tourSlug)!;
@@ -585,21 +815,8 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                           <input type="text" value={pkg.hotel} className={inputCls}
                             onChange={e => updatePackage(i, "hotel", e.target.value)} />
                         </div>
-                        <div>
-                          <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Tipo de habitación</label>
-                          <div className="flex gap-1.5 flex-wrap mb-1.5">
-                            {HABITACIONES_PRESET.map(h => (
-                              <button key={h.label} type="button" onClick={() => updatePackage(i, "habitacion", h.label)}
-                                className={`text-[10px] font-dm px-2 py-1 rounded border transition-colors ${
-                                  pkg.habitacion === h.label
-                                    ? "bg-[#40916C] text-white border-[#40916C]"
-                                    : "border-[#40916C]/30 text-[#40916C] hover:bg-[#40916C]/10"
-                                }`}>{h.label}</button>
-                            ))}
-                          </div>
-                          <input type="text" value={pkg.habitacion} placeholder="Personalizar descripción..."
-                            onChange={e => updatePackage(i, "habitacion", e.target.value)} className={inputCls} />
-                        </div>
+                        <SelectorHabitacion pkg={pkg} inputCls={inputCls}
+                          onField={(campo, valor) => updatePackage(i, campo, valor)} />
                         <div className="grid grid-cols-3 gap-2">
                           <div>
                             <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Noches</label>
@@ -632,7 +849,8 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                         <p className="text-right text-xs font-dm text-[#40916C] font-medium">
                           Subtotal: {fmx(calcPackageLine(pkg))}
                           <span className="text-[#1B4332]/35 font-normal ml-1">
-                            ({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)})
+                            ({pkg.noches}n × {pkg.habitaciones}hab × {fmx(pkg.precioPorNoche)}
+                            {pkg.huespedes ? ` · ${pkg.huespedes} pers/hab` : ""})
                           </span>
                         </p>
                       </div>

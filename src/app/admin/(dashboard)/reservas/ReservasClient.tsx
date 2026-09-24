@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn } from "@/components/admin/ReservaModal";
+import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
@@ -184,13 +184,21 @@ export default function ReservasClient(
       origen:         origenValido((b as any).origen),
       guia:           (b as any).guia || "",
       idiomaTour:     (b as any).idiomaTour === "en" ? "en" : "es",
+      notasInternas:  meta.notasInternas || "",
     });
     setModal("edit");
   }
 
   function buildPayload(form: ReservaFormState) {
     const lineItems = [
-      { _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago, pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0 },
+      {
+        _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago,
+        pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0,
+        // Viaja en el `_meta` y NO en la columna `notes`: `notes` se imprime en
+        // el correo y en el comprobante del cliente, y esto no puede salir de
+        // aquí. Ver `notasInternas` en ReservaModal.
+        notasInternas: form.notasInternas.trim(),
+      },
       ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
     ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
@@ -229,7 +237,7 @@ export default function ReservasClient(
 
   async function saveNew() {
     if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
-    if (form.lines.some(l => !l.tourSlug || !l.tourDate)) { flash("❌ Completa el tour y la fecha en cada línea"); return; }
+    if (!form.lines.every(lineaCompleta)) { flash("❌ Completa el concepto y la fecha en cada línea"); return; }
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();

@@ -94,9 +94,9 @@ export function SiteFooter() {
           <div>
             <div className="mb-4">
               <div className="font-cormorant text-crema text-2xl font-light tracking-[4px] uppercase">HUASTECA</div>
-              <div className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mt-0.5">Potosina</div>
+              <div className="text-[9px] tracking-[3px] uppercase text-lima font-dm mt-0.5">Potosina</div>
             </div>
-            <p className="text-crema/40 text-xs font-dm leading-relaxed mb-4">
+            <p className="text-crema/75 text-xs font-dm leading-relaxed mb-4">
               {en
                 ? "Local tour operator based in Xilitla, San Luis Potosí. Our own hotel and restaurant, NOM-09 certified guides, daily departures."
                 : "Operadora local con base en Xilitla, San Luis Potosí. Hotel y restaurante propios, guías certificados NOM-09, salidas todos los días."}
@@ -105,20 +105,20 @@ export function SiteFooter() {
               href={CONTACTO.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-xs text-verde-vivo hover:text-lima transition-colors font-dm mb-2"
+              className="block text-xs text-lima hover:text-crema transition-colors font-dm mb-2"
             >
               WhatsApp: {CONTACTO.telefonoDisplay}
             </a>
             <a
               href={`mailto:${CONTACTO.email}`}
-              className="block text-xs text-crema/50 hover:text-crema transition-colors font-dm"
+              className="block text-xs text-crema/75 hover:text-crema transition-colors font-dm"
             >
               {CONTACTO.email}
             </a>
           </div>
 
           <div>
-            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
+            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/70 font-dm mb-5">
               {en ? "Destinations" : "Destinos"}
             </h3>
             <ul className="space-y-3">
@@ -130,7 +130,7 @@ export function SiteFooter() {
                       href={lp(`/destinos/${d.slug}`)}
                       className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                     >
-                      <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                      <span className="text-lima text-xs" aria-hidden="true">→</span>
                       {d.nombre}
                     </Link>
                   </li>
@@ -140,7 +140,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
+            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/70 font-dm mb-5">
               {en ? "Explore" : "Explora"}
             </h3>
             <ul className="space-y-3">
@@ -150,7 +150,7 @@ export function SiteFooter() {
                     href={link.href}
                     className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                   >
-                    <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                    <span className="text-lima text-xs" aria-hidden="true">→</span>
                     {link.label}
                   </Link>
                 </li>
@@ -159,7 +159,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-5">
+            <h3 className="text-[10px] tracking-[3px] uppercase text-crema/70 font-dm mb-5">
               {en ? "Company" : "Empresa"}
             </h3>
             <ul className="space-y-3 mb-6">
@@ -169,7 +169,7 @@ export function SiteFooter() {
                     href={link.href}
                     className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                   >
-                    <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                    <span className="text-lima text-xs" aria-hidden="true">→</span>
                     {link.label}
                   </Link>
                 </li>
@@ -181,7 +181,7 @@ export function SiteFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="w-10 h-10 border border-white/20 hover:border-verde-vivo/60 flex items-center justify-center text-crema/50 hover:text-verde-vivo transition-all"
+                className="w-10 h-10 border border-white/20 hover:border-verde-vivo/60 flex items-center justify-center text-crema/75 hover:text-lima transition-all"
               >
                 <Share2 className="w-4 h-4" aria-hidden="true" />
               </a>
@@ -192,7 +192,7 @@ export function SiteFooter() {
                 <Music2 className="w-4 h-4" aria-hidden="true" />
               </span>
             </div>
-            <p className="text-[10px] tracking-[1px] text-crema/30 font-dm">
+            <p className="text-[10px] tracking-[1px] text-crema/70 font-dm">
               {en ? "14K followers on Facebook" : "14K seguidores en Facebook"}
             </p>
           </div>
@@ -204,7 +204,7 @@ export function SiteFooter() {
             pasaba a /desde/cdmx y /desde/monterrey: cero enlaces internos, y
             Monterrey ya estaba en posición 5,81 sin ningún apoyo. */}
         <div className="border-t border-white/8 pt-8 pb-8 mb-2">
-          <h3 className="text-[10px] tracking-[3px] uppercase text-crema/40 font-dm mb-4">
+          <h3 className="text-[10px] tracking-[3px] uppercase text-crema/70 font-dm mb-4">
             {en ? "Traveling from" : "Viajando desde"}
           </h3>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
@@ -227,7 +227,7 @@ export function SiteFooter() {
                   href={c.href}
                   className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                 >
-                  <span className="text-verde-vivo text-xs" aria-hidden="true">→</span>
+                  <span className="text-lima text-xs" aria-hidden="true">→</span>
                   {c.label}
                 </Link>
               </li>
@@ -235,7 +235,7 @@ export function SiteFooter() {
           </ul>
         </div>
 
-        <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/25 font-dm tracking-wide">
+        <div className="border-t border-white/8 pt-8 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-crema/70 font-dm tracking-wide">
           <span>
             © {new Date().getFullYear()} {CONTACTO.nombreComercial} ·{" "}
             {en ? "All rights reserved" : "Todos los derechos reservados"}
