@@ -241,6 +241,62 @@ export async function registrarCobroSilencioso(d: DatosCobro): Promise<void> {
   }
 }
 
+/**
+ * Corregir un cobro ya registrado: con qué método entró, cuándo, su referencia
+ * y quién lo recibió.
+ *
+ * 🔴 El importe NO se toca aquí. Cambiar cuánto entró es otra cosa —se anula y
+ * se vuelve a registrar, y queda el rastro—; esto es sólo decir bien de dónde
+ * salió un dinero que ya está contado. Sin esto, un cobro que nació como
+ * "efectivo" (o como el renglón de rescate de una reserva vieja) se quedaba así
+ * para siempre y el desglose del corte mentía.
+ */
+export async function editarCobro(
+  id: string,
+  cambios: { metodo?: string; fecha?: string; folio?: string | null; recibidoPor?: string | null },
+  quien: string,
+): Promise<void> {
+  const antes = await prisma.movimiento.findUnique({ where: { id } });
+  if (!antes || antes.tipo !== "cobro") throw new Error("Ese cobro no existe");
+  if (antes.anulado) throw new Error("Un cobro anulado ya no se corrige");
+
+  const metodo = cambios.metodo && metodoValido(cambios.metodo) ? cambios.metodo : (antes.metodoPago ?? "otro");
+  const fecha  = /^\d{4}-\d{2}-\d{2}$/.test(String(cambios.fecha ?? "")) ? String(cambios.fecha) : antes.fecha;
+  const folio  = cambios.folio === undefined ? null : (cambios.folio ? String(cambios.folio).trim().slice(0, 60) : null);
+
+  await prisma.movimiento.update({
+    where: { id },
+    data: {
+      metodoPago:  metodo,
+      fecha,
+      fechaPago:   fecha,
+      // El concepto se rehace para que la bitácora y los listados digan la
+      // verdad: si no, seguiría leyéndose "Cobro efectivo" en un SPEI.
+      concepto:    `Cobro ${etiquetaMetodo(metodo).toLowerCase()}${folio ? ` · ${folio}` : ""}`,
+      recibidoPor: cambios.recibidoPor !== undefined
+        ? (cambios.recibidoPor ? String(cambios.recibidoPor).slice(0, 80) : null)
+        : antes.recibidoPor,
+      // Corregir el método de un efectivo que ya se entregó no lo "des-entrega",
+      // pero si deja de ser efectivo, la entrega pierde sentido.
+      ...(metodo !== "efectivo" ? { entregadoA: null, entregadoAt: null } : {}),
+    },
+  });
+
+  const cambiosLegibles = [
+    antes.metodoPago !== metodo
+      ? { campo: "método", antes: etiquetaMetodo(antes.metodoPago), despues: etiquetaMetodo(metodo) }
+      : null,
+    antes.fecha !== fecha ? { campo: "fecha", antes: antes.fecha, despues: fecha } : null,
+  ].filter(Boolean) as { campo: string; antes: unknown; despues: unknown }[];
+
+  await registrarEnBitacora({
+    accion:  "modificó",
+    entidad: "cobro",
+    resumen: `Corregido un cobro de ${pesos(antes.monto)}: ahora dice ${etiquetaMetodo(metodo).toLowerCase()}`,
+    detalle: cambiosLegibles,
+  });
+}
+
 /** Anular un cobro: no se borra, queda tachado con su motivo. */
 export async function anularCobro(id: string, motivo: string, quien: string): Promise<number> {
   const antes = await prisma.movimiento.findUnique({ where: { id } });

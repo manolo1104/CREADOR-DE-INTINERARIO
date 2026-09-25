@@ -5,7 +5,7 @@ import { puedeHacer } from "@/lib/admin/usuarios";
 import { hoyMX } from "@/lib/dates";
 import { montoCobrado } from "@/lib/admin/kpis";
 import {
-  cobrosDeReserva, registrarCobro, anularCobro, marcarEntregado,
+  cobrosDeReserva, registrarCobro, anularCobro, marcarEntregado, editarCobro,
   metodoValido, requiereComprobante,
 } from "@/lib/admin/cobros";
 
@@ -146,6 +146,41 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       const cobrado = await anularCobro(id, motivo, sesion.nombre);
       return NextResponse.json({ ok: true, cobrado, cobros: await cobrosDeReserva(params.id) });
+    }
+
+    // Corregir con qué método entró un cobro ya registrado. Lo puede hacer
+    // quien registra cobros: decir bien de dónde salió un dinero que ya está
+    // contado no mueve ninguna cifra, sólo el desglose.
+    if (b?.accion === "editar") {
+      if (!puedeHacer(sesion.rol, "registrarCobro")) {
+        return NextResponse.json({ error: "Tu cuenta no puede tocar los cobros" }, { status: 403 });
+      }
+      const id = String(b?.cobroId ?? "");
+      const cobro = await prisma.movimiento.findUnique({ where: { id } });
+      if (!cobro || cobro.reservaId !== params.id) {
+        return NextResponse.json({ error: "Ese cobro no es de esta reserva" }, { status: 404 });
+      }
+      if (b?.metodo !== undefined && !metodoValido(b.metodo)) {
+        return NextResponse.json({ error: "Método de pago desconocido" }, { status: 400 });
+      }
+      await editarCobro(id, {
+        metodo:      b?.metodo,
+        fecha:       b?.fecha,
+        folio:       b?.folio,
+        recibidoPor: b?.recibidoPor,
+      }, sesion.nombre);
+
+      // El comprobante se sube aparte y llega aquí sólo para engancharlo.
+      const evidenciaIds: string[] = Array.isArray(b?.evidenciaIds)
+        ? b.evidenciaIds.filter((x: unknown) => typeof x === "string").slice(0, 10)
+        : [];
+      if (evidenciaIds.length) {
+        await prisma.evidencia.updateMany({
+          where: { id: { in: evidenciaIds }, bookingId: params.id },
+          data:  { movimientoId: id },
+        });
+      }
+      return NextResponse.json({ ok: true, cobros: await cobrosDeReserva(params.id) });
     }
 
     if (b?.accion === "entregar") {

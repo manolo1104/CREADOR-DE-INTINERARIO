@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Banknote, ArrowLeftRight, Building2, CreditCard, MoreHorizontal, Check } from "lucide-react";
+import { X, Loader2, Banknote, ArrowLeftRight, Building2, CreditCard, MoreHorizontal, Check, Pencil } from "lucide-react";
 import { METODOS_COBRO, type MetodoCobro } from "@/lib/admin/metodosCobro";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import Comprobantes, { type ArchivoComprobante } from "./Comprobantes";
@@ -326,26 +326,12 @@ export default function CobroModal({
             )}
             <ul className="space-y-1.5">
               {cobros.map(c => (
-                <li key={c.id}
-                  className={`flex items-center gap-2 text-xs font-dm ${c.anulado ? "opacity-45 line-through" : ""}`}>
-                  <span className="panel-cifra text-[#1B4332] font-medium w-20 shrink-0">{fmx(c.monto)}</span>
-                  <span className="text-[#1B4332]/60 truncate flex-1">
-                    {c.metodoLabel} · {c.fecha}
-                    {c.recibidoPor ? ` · ${c.recibidoPor}` : ""}
-                    {c.entregadoAt ? " · entregado" : ""}
-                  </span>
-                  {c.comprobantes.map(a => (
-                    <a key={a.id} href={`/api/admin/evidencia/${a.id}`} target="_blank" rel="noopener noreferrer"
-                       title={a.nombreArchivo}
-                       className="text-[#52B788] hover:underline shrink-0">📎</a>
-                  ))}
-                  {!c.anulado && (
-                    <button type="button" onClick={() => anular(c)} title="Anular"
-                      className="panel-foco text-[#1B4332]/30 hover:text-red-600 shrink-0 w-11 h-11 -my-3 grid place-items-center">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </li>
+                <Renglon
+                  key={c.id} cobro={c} reservaId={reserva.id}
+                  onAnular={() => anular(c)}
+                  onCambio={(lista, cobrado) => { setCobros(lista); onGuardado(cobrado); }}
+                  flash={flash}
+                />
               ))}
             </ul>
           </div>
@@ -381,4 +367,124 @@ export default function CobroModal({
   );
 
   return typeof document === "undefined" ? null : createPortal(contenido, document.body);
+}
+
+
+/**
+ * Un cobro ya registrado, con la opción de CORREGIR por dónde entró.
+ *
+ * 🔴 Es lo que faltaba: el método se elegía al registrar y después no había
+ * forma de cambiarlo. Un anticipo importado de una cotización, o el renglón que
+ * rescata el dinero de una reserva vieja, se quedaba con un método inventado y
+ * el desglose del corte mentía para siempre. El importe no se toca aquí: para
+ * eso se anula y se vuelve a registrar, y queda el rastro.
+ */
+function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
+  cobro: CobroFila;
+  reservaId: string;
+  onAnular: () => void;
+  onCambio: (cobros: CobroFila[], cobrado: number) => void;
+  flash: (m: string) => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [metodo, setMetodo] = useState(c.metodo);
+  const [folio,  setFolio]  = useState("");
+  const [archivos, setArchivos] = useState<ArchivoComprobante[]>([]);
+
+  async function guardar() {
+    setGuardando(true);
+    const r = await fetch(`/api/admin/reservas/${reservaId}/cobros`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        accion: "editar", cobroId: c.id, metodo, folio,
+        evidenciaIds: archivos.map(a => a.id),
+      }),
+    }).catch(() => null);
+    setGuardando(false);
+    const d = await r?.json().catch(() => null);
+    if (!r?.ok) { playError(); flash(`❌ ${d?.error || "No se pudo corregir"}`); return; }
+    playSuccess();
+    setEditando(false);
+    setArchivos([]);
+    onCambio(d.cobros ?? [], d.cobrado ?? 0);
+  }
+
+  if (editando) {
+    return (
+      <li className="border border-[#1B4332]/15 rounded-sm p-3 bg-[#FAFAF8]">
+        <p className="text-[11px] font-dm text-[#1B4332]/55 mb-2">
+          ¿Por dónde entraron estos <span className="panel-cifra font-medium text-[#1B4332]">{fmx(c.monto)}</span>?
+        </p>
+        <div className="grid grid-cols-2 gap-1.5 mb-2">
+          {METODOS_COBRO.map(m => {
+            const Icono = ICONO[m.id] ?? MoreHorizontal;
+            const activo = metodo === m.id;
+            return (
+              <button
+                key={m.id} type="button"
+                onClick={() => { playClick(); setMetodo(m.id); }}
+                className={`panel-foco panel-pulsable flex items-center gap-1.5 min-h-[44px] px-2 rounded-sm border text-left text-xs font-dm transition-colors ${
+                  activo ? "border-[#1B4332] bg-[#1B4332] text-white"
+                         : "border-[#1B4332]/15 text-[#1B4332]/75 hover:border-[#1B4332]/45"
+                }`}
+              >
+                <Icono className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{m.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <input
+          value={folio} onChange={e => setFolio(e.target.value)}
+          placeholder="Referencia (opcional)"
+          className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332] mb-2"
+        />
+        {c.comprobantes.length === 0 && (
+          <div className="mb-2">
+            <Comprobantes reservaId={reservaId} archivos={archivos} onCambio={setArchivos} flash={flash} />
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setEditando(false)}
+            className="panel-foco min-h-[44px] px-3 text-xs font-dm text-[#1B4332]/55 hover:text-[#1B4332]">
+            Cancelar
+          </button>
+          <button type="button" onClick={guardar} disabled={guardando}
+            className="panel-foco panel-pulsable flex-1 min-h-[44px] flex items-center justify-center gap-1.5 bg-[#1B4332] text-white text-xs font-dm rounded-sm hover:bg-[#143728] disabled:opacity-50">
+            {guardando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+            Guardar
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li className={`flex items-center gap-2 text-xs font-dm ${c.anulado ? "opacity-45 line-through" : ""}`}>
+      <span className="panel-cifra text-[#1B4332] font-medium w-20 shrink-0">{fmx(c.monto)}</span>
+      <span className="text-[#1B4332]/60 truncate flex-1">
+        {c.metodoLabel} · {c.fecha}
+        {c.recibidoPor ? ` · ${c.recibidoPor}` : ""}
+        {c.entregadoAt ? " · entregado" : ""}
+      </span>
+      {c.comprobantes.map(a => (
+        <a key={a.id} href={`/api/admin/evidencia/${a.id}`} target="_blank" rel="noopener noreferrer"
+           title={a.nombreArchivo} className="text-[#52B788] hover:underline shrink-0">📎</a>
+      ))}
+      {!c.anulado && (
+        <>
+          <button type="button" onClick={() => { playClick(); setEditando(true); }} title="Cambiar el método"
+            className="panel-foco text-[#1B4332]/30 hover:text-[#1B4332] shrink-0 w-11 h-11 -my-3 grid place-items-center">
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button type="button" onClick={onAnular} title="Anular"
+            className="panel-foco text-[#1B4332]/30 hover:text-red-600 shrink-0 w-11 h-11 -my-3 grid place-items-center">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </>
+      )}
+    </li>
+  );
 }
