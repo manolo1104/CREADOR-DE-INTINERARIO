@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   const sesion     = await sesionActual();
-  const verDinero  = puedeVer(sesion?.rol ?? "operacion", "ingresos");
+  const verDinero  = puedeVer(sesion?.rol ?? "operacion", "dinero");
   const todayStr   = hoyMX();
   const nextWeek   = addDaysYMD(todayStr, 7);
   const { year, month } = partsMX(new Date());

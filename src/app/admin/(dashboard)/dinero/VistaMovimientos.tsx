@@ -5,7 +5,7 @@ import { Plus, Ban } from "lucide-react";
 import type { Finanzas } from "@/lib/admin/finanzas";
 import { CATEGORIAS_GENERALES, METODOS_PAGO, PERIODICIDADES } from "@/lib/admin/categorias";
 import { fmx, fDiaCorto, Etiqueta, descargarCSV, BotonExportar } from "./ui";
-import type { Permisos } from "./FinanzasClient";
+import type { Permisos } from "./permisos";
 import { hoyMX } from "./useFinanzas";
 
 /**

@@ -1,10 +1,8 @@
-import { calcKPIs } from "@/lib/admin/kpis";
-import { contarClicsWhatsapp } from "@/lib/admin/clicsWhatsapp";
-import IngresosClient from "./IngresosClient";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function IngresosPage() {
-  const [kpis, clics] = await Promise.all([calcKPIs(), contarClicsWhatsapp()]);
-  return <IngresosClient kpis={kpis} clics={clics} />;
+// "Ventas" vivía aquí. Lo suyo (tours más vendidos, origen de la reserva y los
+// clics de WhatsApp) está ahora dentro de /admin/dinero, en "Ver más"; sus
+// tarjetas de KPI se quitaron porque repetían cifras de Finanzas con otro motor.
+export default function IngresosPage() {
+  redirect("/admin/dinero");
 }

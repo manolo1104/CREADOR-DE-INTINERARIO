@@ -239,7 +239,7 @@ export default function DashboardClient({
           { href: "/admin/calendario", icon: Calendar,   label: "Calendario", color: "#1a4e8a" },
           // El atajo a Ingresos solo para quien puede ver los números del negocio.
           ...(verDinero
-            ? [{ href: "/admin/ingresos", icon: TrendingUp, label: "Ingresos", color: "#52B788" }]
+            ? [{ href: "/admin/dinero", icon: TrendingUp, label: "Dinero", color: "#52B788" }]
             : [{ href: "/admin/cotizaciones", icon: FileText, label: "Cotizaciones", color: "#52B788" }]),
           { href: "/admin/clientes",   icon: Users,      label: "Clientes",   color: "#7a3a6a" },
         ].map(({ href, icon: Icon, label, color }) => (

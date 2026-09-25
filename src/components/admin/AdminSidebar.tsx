@@ -31,9 +31,8 @@ const GRUPOS: { titulo: string; items: ItemNav[] }[] = [
   {
     titulo: "Dinero",
     items: [
-      { href: "/admin/finanzas",     icon: Wallet,          label: "Finanzas",     seccion: "finanzas"      },
+      { href: "/admin/dinero",       icon: Wallet,          label: "Dinero",       seccion: "dinero"        },
       { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador",    seccion: "cotizador"     },
-      { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ventas",       seccion: "ingresos"      },
     ],
   },
   {

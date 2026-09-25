@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Info } from "lucide-react";
 import type { Finanzas } from "@/lib/admin/finanzas";
 import { fmx } from "./ui";
-import type { Permisos } from "./FinanzasClient";
+import type { Permisos } from "./permisos";
 import { hoyMX } from "./useFinanzas";
 
 interface Socio {
