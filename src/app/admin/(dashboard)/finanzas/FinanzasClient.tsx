@@ -20,6 +20,8 @@ export interface Permisos {
   anular: boolean;
   cerrarCorte: boolean;
   socios: boolean;
+  /** Dar por recibido el efectivo que trae quien cobró. */
+  entregaEfectivo: boolean;
 }
 
 const PRESETS: { id: Preset; label: string }[] = [

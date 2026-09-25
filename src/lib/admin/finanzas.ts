@@ -24,6 +24,7 @@ import { montoCobrado, saldoPendiente } from "./kpis";
 import { conceptosDe, costoDeLinea, type ConceptoCosto } from "./costos";
 import { costoExtraLine, type ExtraItem } from "./extras";
 import { categoriaDe, categoriaPorNombre, esDirecta } from "./categorias";
+import { etiquetaMetodo, efectivoEnManos as bolsasDeEfectivo, type BolsaDeEfectivo } from "./cobros";
 import { TOURS_DB } from "@/lib/tours";
 import type { TourBooking, Movimiento, Socio } from "@prisma/client";
 
@@ -342,6 +343,11 @@ export interface Finanzas {
   porCobrar: number;
   flujo: Flujo;
 
+  /** Cómo entró el dinero del periodo. Siempre suma exactamente `cobrado`. */
+  desgloseCobros: DesgloseCobros;
+  /** Efectivo cobrado que todavía no entrega quien lo recibió. */
+  efectivoEnManos: BolsaDeEfectivo[];
+
   reservas: ReservaFinanciera[];
   porTour: FilaTour[];
   gastos: Movimiento[];
@@ -352,6 +358,23 @@ export interface Finanzas {
 
   captura: { conCosto: number; estimadas: number; sinDato: number; cobertura: number };
   historico: { etiqueta: string; desde: string; ventas: number; utilidad: number }[];
+}
+
+/**
+ * De qué forma entró el dinero cobrado del periodo.
+ *
+ * 🔴 `sinDesglose` es la clave de que esto no mienta: las reservas anteriores a
+ * los cobros con método traen su importe en `depositoPagado` y ningún renglón
+ * que diga cómo llegó. En vez de repartirlo a ojo entre los métodos, se enseña
+ * aparte — igual que "N reservas sin costo capturado" en el estado de
+ * resultados. Así los renglones SIEMPRE suman el total cobrado.
+ */
+export interface DesgloseCobros {
+  lineas: { metodo: string; label: string; monto: number; cobros: number }[];
+  /** Cobrado que no tiene renglón de cobro: se sabe cuánto, no cómo entró. */
+  sinDesglose: number;
+  reservasSinDesglose: number;
+  total: number;
 }
 
 function erVacio(): EstadoResultados {
@@ -514,6 +537,36 @@ export async function calcFinanzas(
     saldoFinal: flujoNeto,
   };
 
+  // ── Cómo entró el dinero ─────────────────────────────────────────────────
+  // Se arma con los cobros de LAS MISMAS reservas que dan `cobrado`, no con los
+  // cobros cuya fecha cae en el periodo: así los renglones cuadran con el total
+  // aunque el anticipo se haya pagado dos meses antes del tour.
+  const cobrosDelPeriodo = movsReserva.filter(m => m.tipo === "cobro" && !m.anulado);
+  const porMetodo: Record<string, { monto: number; cobros: number }> = {};
+  for (const m of cobrosDelPeriodo) {
+    const k = m.metodoPago ?? "otro";
+    (porMetodo[k] ??= { monto: 0, cobros: 0 });
+    porMetodo[k].monto  += entero(m.monto);
+    porMetodo[k].cobros += 1;
+  }
+  const desglosado = cobrosDelPeriodo.reduce((s, m) => s + entero(m.monto), 0);
+  const reservasSinDesglose = reservas.filter(
+    r => r.cobrado > 0 && !cobrosDelPeriodo.some(m => m.reservaId === r.id),
+  ).length;
+
+  const desgloseCobros: DesgloseCobros = {
+    lineas: Object.entries(porMetodo)
+      .map(([metodo, v]) => ({ metodo, label: etiquetaMetodo(metodo), monto: v.monto, cobros: v.cobros }))
+      .sort((a, b) => b.monto - a.monto),
+    // Nunca negativo: si alguien editó `depositoPagado` a mano por debajo de sus
+    // cobros, el hueco se enseña como cero y no como un renglón imposible.
+    sinDesglose: Math.max(0, cobrado - desglosado),
+    reservasSinDesglose,
+    total: cobrado,
+  };
+
+  const enManos = await bolsasDeEfectivo();
+
   // ── Rentabilidad por tour ────────────────────────────────────────────────
   const mapaTour: Record<string, FilaTour> = {};
   for (const r of reservas) {
@@ -658,6 +711,7 @@ export async function calcFinanzas(
     desde, hasta, base,
     er, erAnterior: erAnt, anteriorDesde: anterior.desde, anteriorHasta: anterior.hasta,
     cobrado, porCobrar, flujo,
+    desgloseCobros, efectivoEnManos: enManos,
     reservas, porTour,
     gastos: movsGenerales.filter(m => !m.anulado),
     porPagar, porPagarTotal,
@@ -681,6 +735,12 @@ export interface ResumenCorte {
   ventas: number; cobros: number; costos: number; gastos: number;
   utilidadBruta: number; utilidadOperativa: number; margen: number;
   efectivo: number; porCobrar: number; porPagar: number; reservas: number;
+  /** Cuánto entró por cada método. Congelado con el resto de la foto. */
+  cobrosPorMetodo?: { metodo: string; label: string; monto: number }[];
+  /** Cobrado sin renglón que diga cómo entró, al cerrar el corte. */
+  cobrosSinDesglose?: number;
+  /** Efectivo que seguía sin entregar el día del cierre. */
+  efectivoSinEntregar?: number;
 }
 
 export function resumirParaCorte(f: Finanzas): ResumenCorte {
@@ -696,5 +756,8 @@ export function resumirParaCorte(f: Finanzas): ResumenCorte {
     porCobrar: f.porCobrar,
     porPagar: f.porPagarTotal,
     reservas: f.reservas.length,
+    cobrosPorMetodo: f.desgloseCobros.lineas.map(l => ({ metodo: l.metodo, label: l.label, monto: l.monto })),
+    cobrosSinDesglose: f.desgloseCobros.sinDesglose,
+    efectivoSinEntregar: f.efectivoEnManos.reduce((s, b) => s + b.monto, 0),
   };
 }

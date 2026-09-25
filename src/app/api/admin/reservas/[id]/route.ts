@@ -59,7 +59,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     // si no, quedarían bytes huérfanos ocupando espacio para siempre.
     // Se lee antes de borrar: después ya no hay a quién nombrar en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
-    await prisma.pagoProveedorEvidencia.deleteMany({ where: { bookingId: params.id } });
+    await prisma.evidencia.deleteMany({ where: { bookingId: params.id } });
     await prisma.tourBooking.delete({ where: { id: params.id } });
 
     await registrarEnBitacora({

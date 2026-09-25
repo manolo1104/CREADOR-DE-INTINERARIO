@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 
 /**
  * Cobros sueltos: título, monto y una liga que se manda por WhatsApp.
@@ -220,13 +221,16 @@ export async function marcarLinkPagado(
 
   // Si el cobro era de una reserva, el dinero se le abona: el panel tiene que
   // reflejar que ya se cobró sin que nadie lo capture a mano.
-  if (link.reservaId) {
-    const reserva = await prisma.tourBooking.findUnique({ where: { id: link.reservaId } });
-    if (reserva) {
-      await prisma.tourBooking.update({
-        where: { id: reserva.id },
-        data:  { depositoPagado: (reserva.depositoPagado ?? 0) + montoPagado },
-      });
-    }
+  //
+  // Se abona registrando un COBRO, no sumando a mano sobre `depositoPagado`:
+  // así la liga pagada aparece en el desglose del corte como "liga de pago" y
+  // `depositoPagado` lo recalcula `sincronizarDeposito()` desde los renglones.
+  if (link.reservaId && montoPagado > 0) {
+    await registrarCobroSilencioso({
+      reservaId: link.reservaId,
+      monto:     montoPagado,
+      metodo:    "stripe",
+      nota:      `Liga de pago: ${link.titulo ?? "sin título"}`,
+    });
   }
 }

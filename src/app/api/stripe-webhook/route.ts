@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { marcarLinkPagado } from "@/lib/admin/linksPago";
+import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
@@ -250,7 +251,7 @@ export async function POST(req: NextRequest) {
             meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
           ].filter(Boolean).join(" | ");
 
-          await prisma.tourBooking.create({
+          const creada = await prisma.tourBooking.create({
             data: {
               confirmationNumber,
               tourId:                meta.tourId,
@@ -283,6 +284,14 @@ export async function POST(req: NextRequest) {
           });
 
           folioParaGA4 = confirmationNumber;
+
+          // Renglón de cobro para el desglose del corte (ver `cobros.ts`).
+          if (cobrado > 0) {
+            await registrarCobroSilencioso({
+              reservaId: creada.id, monto: cobrado, metodo: "stripe",
+              nota: "Pago en línea recuperado por el webhook", reservaRecienCreada: true,
+            });
+          }
 
           await registrarEnBitacora({
             accion:     "creó",

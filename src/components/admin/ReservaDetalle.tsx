@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TourBooking } from "@prisma/client";
 import { X, BedDouble, MapPin, Utensils, EyeOff } from "lucide-react";
@@ -16,6 +16,13 @@ const STATUS_LABEL: Record<string, string> = { paid: "Pagada", pending: "Pendien
 const STATUS_STYLE: Record<string, string> = {
   paid: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800", cancelled: "bg-red-100 text-red-700",
 };
+
+interface CobroDeFicha {
+  id: string; fecha: string; monto: number; metodoLabel: string;
+  recibidoPor: string | null; entregadoAt: string | null; anulado: boolean;
+  motivoAnulacion: string | null;
+  comprobantes: { id: string; nombreArchivo: string; tipoMime: string }[];
+}
 
 function Dato({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -40,6 +47,16 @@ export default function ReservaDetalle({
 }: {
   reserva: TourBooking; onClose: () => void;
 }) {
+  // Los cobros de la reserva: de dónde salió cada peso y con qué comprobante.
+  // Se piden aparte porque los bytes de los archivos no viajan con la reserva.
+  const [cobros, setCobros] = useState<CobroDeFicha[]>([]);
+  useEffect(() => {
+    fetch(`/api/admin/reservas/${b.id}/cobros`)
+      .then(r => r.json())
+      .then(d => setCobros(Array.isArray(d) ? d : []))
+      .catch(() => setCobros([]));
+  }, [b.id]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -236,6 +253,27 @@ export default function ReservaDetalle({
                 Código promocional <span className="font-mono">{b.promoCode}</span>
                 {b.promoDiscount > 0 && ` · −${fmx(b.promoDiscount)}`}
               </p>
+            )}
+
+            {cobros.length > 0 && (
+              <ul className="mt-3 border-t border-[#1B4332]/8 pt-3 space-y-1.5">
+                {cobros.map(c => (
+                  <li key={c.id}
+                    className={`flex items-center gap-2 text-xs font-dm ${c.anulado ? "opacity-45 line-through" : ""}`}
+                    title={c.anulado ? `Anulado: ${c.motivoAnulacion ?? ""}` : undefined}>
+                    <span className="w-24 shrink-0 text-[#1B4332] font-medium">{fmx(c.monto)}</span>
+                    <span className="flex-1 truncate text-[#1B4332]/60">
+                      {c.metodoLabel} · {c.fecha}
+                      {c.recibidoPor ? ` · lo recibió ${c.recibidoPor}` : ""}
+                      {c.entregadoAt ? " · entregado" : ""}
+                    </span>
+                    {c.comprobantes.map(a => (
+                      <a key={a.id} href={`/api/admin/evidencia/${a.id}`} target="_blank" rel="noopener noreferrer"
+                         title={a.nombreArchivo} className="shrink-0 text-[#52B788] hover:underline">📎</a>
+                    ))}
+                  </li>
+                ))}
+              </ul>
             )}
           </Seccion>
 

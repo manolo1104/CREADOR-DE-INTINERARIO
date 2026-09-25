@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
+import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await prisma.tourBooking.create({
+      const creada = await prisma.tourBooking.create({
         data: {
           confirmationNumber,
           tourId:    tourId    || "unknown",
@@ -117,6 +118,14 @@ export async function POST(req: NextRequest) {
           status:         "paid",
         },
       });
+      // El renglón de cobro: sin esto, una venta pagada con tarjeta no aparece
+      // en el desglose "cómo entró el dinero" del corte.
+      if (cobrado > 0) {
+        await registrarCobroSilencioso({
+          reservaId: creada.id, monto: cobrado, metodo: "stripe",
+          nota: "Pago en línea desde el sitio", reservaRecienCreada: true,
+        });
+      }
       await registrarEnBitacora({
         accion:     "creó",
         entidad:    "reserva",

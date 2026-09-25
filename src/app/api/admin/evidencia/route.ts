@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // de reservas sepa cuántos comprobantes tiene cada fila sin cargar archivos.
 export async function GET() {
   try {
-    const evidencias = await prisma.pagoProveedorEvidencia.findMany({
+    const evidencias = await prisma.evidencia.findMany({
       select: { id: true, bookingId: true, nombreArchivo: true, tipoMime: true, tamanoBytes: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     });

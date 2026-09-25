@@ -61,14 +61,19 @@ export function puedeVer(rol: RolAdmin, seccion: SeccionAdmin): boolean {
 export type AccionFinanciera =
   | "capturarCostoDeSalida"   // el lanchero de la reserva de hoy
   | "capturarGastoGeneral"    // hosting, publicidad, contabilidad
+  | "registrarCobro"          // el dinero que entra por una reserva
+  | "marcarEntregaEfectivo"   // dar por recibido el efectivo que trae alguien
   | "anularMovimiento"        // deshacer un movimiento (queda el rastro)
   | "cerrarCorte"
   | "configurarSocios";
 
+// 🔴 Quien VENDE tiene que poder registrar el cobro: es quien recibe el dinero
+// y el único que sabe si llegó en efectivo o por transferencia. Lo que NO puede
+// es dar por entregado ese efectivo — eso lo confirma quien lo recibe.
 const PERMISOS_FINANCIEROS: Record<RolAdmin, AccionFinanciera[]> = {
-  operacion: ["capturarCostoDeSalida"],
-  socio:     ["capturarCostoDeSalida", "capturarGastoGeneral", "anularMovimiento", "cerrarCorte"],
-  dueno:     ["capturarCostoDeSalida", "capturarGastoGeneral", "anularMovimiento", "cerrarCorte", "configurarSocios"],
+  operacion: ["capturarCostoDeSalida", "registrarCobro"],
+  socio:     ["capturarCostoDeSalida", "registrarCobro", "marcarEntregaEfectivo", "capturarGastoGeneral", "anularMovimiento", "cerrarCorte"],
+  dueno:     ["capturarCostoDeSalida", "registrarCobro", "marcarEntregaEfectivo", "capturarGastoGeneral", "anularMovimiento", "cerrarCorte", "configurarSocios"],
 };
 
 export function puedeHacer(rol: RolAdmin, accion: AccionFinanciera): boolean {
