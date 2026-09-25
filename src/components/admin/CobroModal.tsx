@@ -38,6 +38,15 @@ export interface ReservaCobrable {
   totalAmount: number;
   depositoPagado: number;
   stripePaymentIntentId: string | null;
+  /** Lleva el `_meta` con el anticipo acordado al cotizar. */
+  lineItems?: unknown;
+}
+
+/** Lo que se acordó cobrar de entrada al hacer la cotización, si se sabe. */
+function anticipoDe(lineItems: unknown): number {
+  if (!Array.isArray(lineItems)) return 0;
+  const meta = (lineItems as any[]).find(l => l && l._meta);
+  return Math.round(Number(meta?.anticipoAcordado) || 0);
 }
 
 /**
@@ -60,6 +69,12 @@ export default function CobroModal({
     : (reserva.stripePaymentIntentId ? reserva.totalAmount : 0);
   const saldo = Math.max(0, reserva.totalAmount - yaCobrado);
 
+  // 🔴 Lo primero que entra casi nunca es el total: es el anticipo que se
+  // acordó al cotizar. Proponer el saldo entero obligaba a borrarlo y teclear
+  // la cifra que el panel ya sabía.
+  const anticipo  = anticipoDe(reserva.lineItems);
+  const propuesta = yaCobrado === 0 && anticipo > 0 && anticipo <= saldo ? anticipo : saldo;
+
   const [cobros,   setCobros]   = useState<CobroFila[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -76,7 +91,7 @@ export default function CobroModal({
    */
   const sinDesglose = !cargando && yaCobrado > 0 && cobros.length === 0;
 
-  const [monto,       setMonto]       = useState(saldo > 0 ? String(saldo) : "");
+  const [monto,       setMonto]       = useState(propuesta > 0 ? String(propuesta) : "");
   const [montoTocado, setMontoTocado] = useState(false);
   const [metodo,      setMetodo]      = useState<MetodoCobro | "">("");
   const [fecha,       setFecha]       = useState(hoy());
@@ -221,6 +236,9 @@ export default function CobroModal({
           <div>
             <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">
               {sinDesglose ? "¿Cuánto de eso fue con este método?" : "¿Cuánto entró?"}
+              {!sinDesglose && anticipo > 0 && anticipo <= saldo && (
+                <span className="normal-case tracking-normal text-[#1B4332]/35"> · anticipo acordado {fmx(anticipo)}</span>
+              )}
             </label>
             <div className="flex items-center gap-2">
               <span className="font-cormorant text-2xl text-[#1B4332]/50">$</span>
@@ -231,6 +249,12 @@ export default function CobroModal({
                 placeholder="0"
                 className="panel-foco flex-1 min-h-[44px] border border-[#1B4332]/15 rounded-sm px-3 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
               />
+              {anticipo > 0 && anticipo <= saldo && !sinDesglose && (
+                <button type="button" onClick={() => { playClick(); setMonto(String(anticipo)); setMontoTocado(true); }}
+                  className="panel-foco panel-pulsable min-h-[44px] px-3 text-xs font-dm text-[#1B4332]/70 border border-[#1B4332]/15 rounded-sm hover:border-[#1B4332]/40 whitespace-nowrap">
+                  Anticipo
+                </button>
+              )}
               {(saldo > 0 || sinDesglose) && (
                 <button type="button" onClick={() => { playClick(); setMonto(String(sinDesglose ? yaCobrado : saldo)); setMontoTocado(true); }}
                   className="panel-foco panel-pulsable min-h-[44px] px-3 text-xs font-dm text-[#1B4332]/70 border border-[#1B4332]/15 rounded-sm hover:border-[#1B4332]/40">

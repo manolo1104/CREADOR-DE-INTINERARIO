@@ -404,8 +404,15 @@ export default function CotizacionesClient(
     const lineItems    = [
       {
         _meta: true,
-        metodoPago: "Transferencia",
+        // Se deja vacío a propósito: el método de verdad lo pone el cobro que
+        // se registre. Antes se escribía "Transferencia" fijo aunque el cliente
+        // hubiera pagado con liga, y esa mentira viajaba al correo.
+        metodoPago: "",
         folioPago: "",
+        // Lo que se ACORDÓ cobrar de entrada. No es dinero recibido (por eso la
+        // reserva nace pendiente), pero es la cantidad que el modal de cobro
+        // propone: casi siempre lo primero que entra es justo el anticipo.
+        anticipoAcordado: anticipo,
         pickupLugar: "Lobby de tu hotel en Xilitla",
         numPersonas: personas,
         // Rastro de la cotización de origen y del descuento que se le aplicó:
