@@ -1,17 +1,8 @@
 "use client";
 
-/**
- * De dónde viene la venta: el ritmo por mes, qué tour se vende más, por qué
- * canal entra la reserva y los clics de WhatsApp.
- *
- * Era la pantalla "Ventas" (`/admin/ingresos`). Sus tarjetas de KPI y su caja
- * de "Falta por cobrar" se quitaron: repetían —con OTRO motor de cálculo y
- * otros filtros de fecha— cifras que la pantalla de Dinero ya da. Lo que queda
- * es lo único que no estaba en ningún otro lado.
- */
-
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
 import ClicsWhatsapp from "./ClicsWhatsapp";
 import type { ClicsWhatsapp as DatosClics } from "@/lib/admin/clicsWhatsapp";
@@ -30,7 +21,7 @@ const fFull = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 interface Periodo { reservas: number; ingresos: number; vendido: number }
 interface Serie { mes: string; ingresos: number; reservas: number }
 
-export interface KPIs {
+interface KPIs {
   semana: Periodo;
   mes:    Periodo & { delta: number };
   año:    Periodo;
@@ -43,16 +34,70 @@ export interface KPIs {
   porOrigen: { origen: OrigenReserva; count: number; ingresos: number }[];
 }
 
-export interface DatosMarketing { kpis: KPIs; clics?: DatosClics }
+function KpiCard({ label, value, sub, extra, delta }: {
+  label: string; value: string; sub?: string; extra?: string; delta?: number;
+}) {
+  return (
+    <div className="panel-card p-5">
+      <p className="text-[10px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-2">{label}</p>
+      <p className="font-cormorant text-[#52B788] text-3xl font-light leading-none mb-1">{value}</p>
+      {sub && <p className="text-[#1B4332]/40 font-dm text-xs">{sub}</p>}
+      {extra && <p className="text-[#1B4332]/55 font-dm text-xs mt-1">{extra}</p>}
+      {delta !== undefined && (
+        <p className={`font-dm text-xs mt-1 ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+          {delta >= 0 ? "↑" : "↓"} {Math.abs(delta)}% vs mes anterior
+        </p>
+      )}
+    </div>
+  );
+}
 
-export default function BloqueMarketing({ datos }: { datos: DatosMarketing }) {
-  const { kpis, clics } = datos;
+export default function IngresosClient({ kpis, clics }: { kpis: KPIs; clics?: DatosClics }) {
   const [vista, setVista] = useState<"venta" | "tour">("venta");
   const serie = vista === "venta" ? kpis.porMesVenta : kpis.porMesTour;
 
   return (
-    <div className="p-5">
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="font-cormorant text-[#1B4332] text-2xl font-light mb-1">Ventas &amp; Métricas</h1>
+      <p className="text-[#1B4332]/50 font-dm text-sm mb-6">
+        Cómo va el año y de dónde llegan las ventas. El dinero (costos, utilidad
+        y cortes) vive en <strong className="font-medium text-[#16362a]">Finanzas</strong>.
+      </p>
+
       {clics && <ClicsWhatsapp datos={clics} />}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <KpiCard label="Esta semana"     value={fmx(kpis.semana.ingresos)} sub={`${kpis.semana.reservas} reservas`} extra={`Vendido: ${fmx(kpis.semana.vendido)}`} />
+        <KpiCard label="Este mes"        value={fmx(kpis.mes.ingresos)}    sub={`${kpis.mes.reservas} reservas`}    extra={`Vendido: ${fmx(kpis.mes.vendido)}`} delta={kpis.mes.delta} />
+        <KpiCard label="Este año"        value={fmx(kpis.año.ingresos)}    sub={`${kpis.año.reservas} reservas`}    extra={`Vendido: ${fmx(kpis.año.vendido)}`} />
+        <KpiCard label="Total acumulado" value={fmx(kpis.total.ingresos)}  sub={`${kpis.total.reservas} reservas`}  extra={`Vendido: ${fmx(kpis.total.vendido)}`} />
+      </div>
+
+      {/* Saldo por cobrar: la diferencia entre lo vendido y lo cobrado */}
+      {kpis.porCobrar > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-sm p-4 mb-4">
+          <p className="text-[10px] tracking-[2px] uppercase text-orange-700/60 font-dm mb-1">Falta por cobrar</p>
+          <p className="font-cormorant text-orange-700 text-2xl font-light leading-none">{fFull(kpis.porCobrar)}</p>
+          <p className="text-orange-700/60 font-dm text-xs mt-1">
+            Suma de los saldos de todas las reservas no canceladas: {fFull(kpis.total.vendido)} vendido − {fFull(kpis.total.ingresos)} cobrado.
+          </p>
+        </div>
+      )}
+
+      {/* Reservas cuyo importe el panel no puede contar */}
+      {kpis.sinRegistroDePago.cuantas > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-sm p-4 mb-8">
+          <p className="flex items-center gap-2 text-amber-800 font-dm text-sm font-medium mb-1">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {kpis.sinRegistroDePago.cuantas} reserva{kpis.sinRegistroDePago.cuantas !== 1 ? "s" : ""} sin importe registrado
+          </p>
+          <p className="text-amber-800/75 font-dm text-xs">
+            Valen {fFull(kpis.sinRegistroDePago.monto)} pero se capturaron sin anticipo y sin pago por Stripe, así que
+            cuentan como <strong>cero</strong> en “cobrado”. Si ese dinero sí entró, abre la reserva y escribe el
+            anticipo real. Folios: <span className="font-mono">{kpis.sinRegistroDePago.folios.join(", ")}</span>
+          </p>
+        </div>
+      )}
 
       {/* Chart */}
       <div className="panel-card p-5 mb-8">

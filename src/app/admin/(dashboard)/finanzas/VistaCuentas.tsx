@@ -3,7 +3,7 @@
 import { AlertTriangle, Check } from "lucide-react";
 import type { Finanzas } from "@/lib/admin/finanzas";
 import { fmx, fDiaCorto, Etiqueta, TONO_PAGO, descargarCSV, BotonExportar } from "./ui";
-import type { Permisos } from "./permisos";
+import type { Permisos } from "./FinanzasClient";
 import { hoyMX } from "./useFinanzas";
 
 /** Lo que te deben y lo que debes, en la misma pantalla. */

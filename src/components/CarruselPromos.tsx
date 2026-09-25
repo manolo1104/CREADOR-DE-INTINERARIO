@@ -23,11 +23,26 @@ const CADA_MS = 5000;
  *   cambia con los puntos.
  * · **Todas las imágenes se montan a la vez** y sólo cambia la opacidad, así el
  *   cambio no parpadea esperando a que cargue la siguiente.
+ *
+ * 🔴 Montarlas no basta para que se DESCARGUEN. Las que no se ven están en
+ * `opacity: 0`, y el navegador no gasta datos en bajar una imagen invisible
+ * aunque esté dentro de la pantalla: se quedan en `loading="lazy"` sin pedirse
+ * nunca. El carrusel rotaba a un cartel que todavía no existía y el hueco se
+ * quedaba en negro — el de la Odisea, por ser el último, casi siempre.
+ *
+ * Por eso se lleva la cuenta de cuáles ya hacen falta: el primero (con
+ * `priority`, que además es el LCP de la página) y **el siguiente**, que se pide
+ * en cuanto se monta el actual. Así siempre hay uno listo con cinco segundos de
+ * adelanto y no se bajan los cuatro carteles de golpe al abrir el inicio.
  */
 export function CarruselPromos() {
   const promos = PROMOS_PAQUETES;
   const [i, setI] = useState(0);
   const [detenido, setDetenido] = useState(false);
+  /** Índices que ya deben descargarse: el actual, los ya vistos y el siguiente. */
+  const [pedidas, setPedidas] = useState<number[]>(() =>
+    promos.length > 1 ? [0, 1] : [0],
+  );
   /**
    * Quién pidió el cambio. Es lo que decide cuánto tarda:
    * cuando lo pide una persona, el cartel cambia en 200 ms —esperar medio
@@ -53,6 +68,20 @@ export function CarruselPromos() {
       if (timer.current) clearInterval(timer.current);
     };
   }, [promos.length, detenido]);
+
+  // Cada vez que se muestra uno, se pide el siguiente. Un efecto y no un
+  // `setPedidas` dentro del temporizador, para que valga igual cuando el cambio
+  // lo hace una persona con las flechas o con los puntos.
+  useEffect(() => {
+    const siguiente = (i + 1) % promos.length;
+    setPedidas((ps) => {
+      if (ps.includes(i) && ps.includes(siguiente)) return ps;
+      // Sin `Set`: el target de TypeScript del proyecto no baja su iterador.
+      const nuevas = ps.slice();
+      for (const n of [i, siguiente]) if (!nuevas.includes(n)) nuevas.push(n);
+      return nuevas;
+    });
+  }, [i, promos.length]);
 
   if (promos.length === 0) return null;
 
@@ -99,6 +128,9 @@ export function CarruselPromos() {
                 transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)",
               }}
               priority={idx === 0}
+              // Sin esto se quedan en "lazy" y no se descargan nunca: el
+              // navegador no baja una imagen que está en opacidad 0.
+              loading={idx === 0 ? undefined : pedidas.includes(idx) ? "eager" : "lazy"}
             />
           ))}
         </div>

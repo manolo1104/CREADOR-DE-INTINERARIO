@@ -8,10 +8,8 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
-  | "cotizador" | "clientes" | "curso" | "bitacora"
-  // "dinero" era "finanzas", y "ingresos" (el menú lo llamaba "Ventas") ya no
-  // existe: las dos pantallas se fundieron en /admin/dinero.
-  | "dinero" | "socios" | "cobros" | "fotos";
+  | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
+  | "finanzas" | "socios" | "cobros" | "fotos";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -40,7 +38,7 @@ const OPERACION: SeccionAdmin[] = [
 // ⚠️ El Cotizador entra AQUÍ y no en OPERACION. OPERACION es la base de los
 // otros dos roles: lo que se le quita, se le quita también al socio y al
 // dueño. Al sacarlo de ahí se quedó sin él TODO el mundo, Manolo incluido.
-const SOCIO: SeccionAdmin[] = [...OPERACION, "dinero", "cotizador"];
+const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "finanzas", "cotizador"];
 // dueño: todo. La bitácora (quién hizo qué) y la configuración de socios son
 // SOLO suyas: si quien está siendo registrado pudiera leerla o repartirse la
 // utilidad, dejarían de servir para lo que se hicieron.
@@ -94,21 +92,17 @@ export function rolDesdeToken(valor: unknown): RolAdmin {
 // Solo se listan las secciones que algún rol NO puede ver. Todo lo demás del
 // panel es operación básica y lo ven los tres.
 const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
-  { prefijo: "/admin/ingresos",   seccion: "dinero" },
-  { prefijo: "/api/admin/kpis",   seccion: "dinero" },
+  { prefijo: "/admin/ingresos",   seccion: "ingresos" },
+  { prefijo: "/api/admin/kpis",   seccion: "ingresos" },
   // El corte y los gastos enseñan utilidad y márgenes: mismo candado que Ingresos.
   // /api/admin/movimientos NO se restringe por sección a propósito: quien opera
   // captura el costo de SU salida (es quien lo sabe) aunque no vea Finanzas.
   // Qué puede registrar cada quien se decide dentro de la ruta, con puedeHacer().
   { prefijo: "/admin/cobros",                seccion: "cobros"   },
   { prefijo: "/api/admin/links-pago",        seccion: "cobros"   },
-  // 🔴 Las tres direcciones del dinero. La vieja /admin/finanzas sigue listada
-  // aunque hoy sólo redirija: sin la línea, quien no debe ver los números
-  // entraría escribiéndola a mano y la redirección lo llevaría a /admin/dinero.
-  { prefijo: "/admin/dinero",                seccion: "dinero" },
-  { prefijo: "/admin/finanzas",              seccion: "dinero" },
-  { prefijo: "/api/admin/finanzas",          seccion: "dinero" },
-  { prefijo: "/api/admin/cortes",            seccion: "dinero" },
+  { prefijo: "/admin/finanzas",              seccion: "finanzas" },
+  { prefijo: "/api/admin/finanzas",          seccion: "finanzas" },
+  { prefijo: "/api/admin/cortes",            seccion: "finanzas" },
   { prefijo: "/api/admin/socios",            seccion: "socios"   },
   { prefijo: "/admin/curso",      seccion: "curso"    },
   { prefijo: "/api/admin/curso",  seccion: "curso"    },

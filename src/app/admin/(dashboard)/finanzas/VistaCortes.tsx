@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Lock, Loader2, Banknote, HandCoins } from "lucide-react";
 import type { Finanzas } from "@/lib/admin/finanzas";
 import { fmx, fDiaCorto, descargarCSV, BotonExportar } from "./ui";
-import type { Permisos } from "./permisos";
+import type { Permisos } from "./FinanzasClient";
 import { hoyMX } from "./useFinanzas";
 
 interface CorteCerrado {

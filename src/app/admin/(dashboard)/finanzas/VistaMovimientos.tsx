@@ -5,7 +5,7 @@ import { Plus, Ban } from "lucide-react";
 import type { Finanzas } from "@/lib/admin/finanzas";
 import { CATEGORIAS_GENERALES, METODOS_PAGO, PERIODICIDADES } from "@/lib/admin/categorias";
 import { fmx, fDiaCorto, Etiqueta, descargarCSV, BotonExportar } from "./ui";
-import type { Permisos } from "./permisos";
+import type { Permisos } from "./FinanzasClient";
 import { hoyMX } from "./useFinanzas";
 import BorradorCostos from "./BorradorCostos";
 import GastoPorTour from "./GastoPorTour";
@@ -152,7 +152,24 @@ export default function VistaMovimientos({ datos, recargar, permisos }: {
         <p className="panel-eyebrow mb-2 pt-3 border-t border-[#1B4332]/8">Capturar los costos de cada salida</p>
         <BorradorCostos datos={datos} recargar={recargar} />
 
-        <div className="mt-3 text-right font-dm text-xs text-[#1B4332]/60">
+        <details className="mt-3 border-t border-[#1B4332]/8 pt-3">
+          <summary className="panel-foco cursor-pointer font-dm text-[11px] text-[#1B4332]/45 hover:text-[#1B4332] min-h-[44px] flex items-center">
+            Ver los renglones sueltos (para anular alguno)
+          </summary>
+          <div className="mt-2">
+            <Tabla
+              filas={costosDeSalidas.map(m => ({
+                id: m.id, fecha: m.fecha, concepto: m.concepto,
+                extra: [m.folio, m.proveedor].filter(Boolean).join(" · "),
+                monto: m.monto, pagado: m.pagado, recurrente: false,
+              }))}
+              vacio="Todavía no se captura ningún costo de salida en este periodo"
+              onAnular={permisos.anular ? anular : undefined}
+            />
+          </div>
+        </details>
+
+        <div className="mt-2 text-right font-dm text-xs text-[#1B4332]/60">
           Total: <strong className="text-[#C9484A]">{fmx(datos.er.costosDirectosTotal)}</strong>
           {datos.captura.estimadas > 0 && (
             <span className="text-[#1a4e8a]/70 ml-2">
@@ -160,24 +177,6 @@ export default function VistaMovimientos({ datos, recargar, permisos }: {
             </span>
           )}
         </div>
-        {costosDeSalidas.length > 0 && (
-          <details className="mt-3 border-t border-[#1B4332]/8 pt-3">
-            <summary className="panel-foco cursor-pointer font-dm text-[11px] text-[#1B4332]/45 hover:text-[#1B4332] min-h-[44px] flex items-center">
-              Ver los renglones sueltos (para anular alguno)
-            </summary>
-            <div className="mt-2">
-              <Tabla
-                filas={costosDeSalidas.map(m => ({
-                  id: m.id, fecha: m.fecha, concepto: m.concepto,
-                  extra: [m.folio, m.proveedor].filter(Boolean).join(" · "),
-                  monto: m.monto, pagado: m.pagado, recurrente: false,
-                }))}
-                vacio="Todavía no se captura ningún costo de salida en este periodo"
-                onAnular={permisos.anular ? anular : undefined}
-              />
-            </div>
-          </details>
-        )}
       </div>
     </div>
   );
