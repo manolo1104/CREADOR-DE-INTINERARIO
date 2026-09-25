@@ -49,11 +49,14 @@ export interface DatosCobro {
   /** Para los caminos automáticos: la bitácora no tiene sesión que leer. */
   actor?: Actor;
   /**
-   * La reserva ACABA de nacer con su `depositoPagado` ya puesto (checkout de
-   * Stripe). Sin esto, el rescate de reservas viejas vería dinero sin renglones
-   * y crearía un "cobro anterior al desglose" que DUPLICARÍA el importe.
+   * No crear el renglón de rescate. Dos casos, el mismo motivo: el dinero que
+   * ya figura en `depositoPagado` es EXACTAMENTE el que se está registrando, y
+   * rescatarlo además lo duplicaría.
+   *   · la reserva acaba de nacer con su depósito puesto (checkout de Stripe)
+   *   · se está DESGLOSANDO dinero viejo: decir cómo entró algo que ya estaba
+   *     contado, no añadir dinero nuevo.
    */
-  reservaRecienCreada?: boolean;
+  sinRescate?: boolean;
 }
 
 /**
@@ -175,7 +178,7 @@ export async function registrarCobro(d: DatosCobro): Promise<ResultadoCobro> {
   });
   if (!reserva) throw new Error("Esa reserva no existe");
 
-  if (!d.reservaRecienCreada) await asegurarHistorico(d.reservaId);
+  if (!d.sinRescate) await asegurarHistorico(d.reservaId);
 
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(d.fecha ?? "")) ? String(d.fecha) : hoyMX();
   const folio = d.folio ? String(d.folio).trim().slice(0, 60) : null;

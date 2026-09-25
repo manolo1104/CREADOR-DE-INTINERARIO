@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       if (cobrado > 0) {
         await registrarCobroSilencioso({
           reservaId: creada.id, monto: cobrado, metodo: "stripe",
-          nota: "Pago en línea desde el sitio", reservaRecienCreada: true,
+          nota: "Pago en línea desde el sitio", sinRescate: true,
         });
       }
       await registrarEnBitacora({

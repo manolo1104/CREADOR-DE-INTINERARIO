@@ -64,8 +64,20 @@ export default function CobroModal({
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
+  /** El servidor dijo que se pasa del saldo, pero deja confirmarlo. */
+  const [puedeForzar, setPuedeForzar] = useState(false);
+
+  /**
+   * 🔴 Dinero que ya figura cobrado pero sin un solo renglón que diga cómo
+   * entró: las reservas anteriores a este módulo y las que nacen de una
+   * cotización con anticipo acordado. Aquí no se cobra nada nuevo — se
+   * DESGLOSA lo que ya está contado. Sin esto el panel contestaba "esta
+   * reserva solo debe $0" y no dejaba registrar nada.
+   */
+  const sinDesglose = !cargando && yaCobrado > 0 && cobros.length === 0;
 
   const [monto,       setMonto]       = useState(saldo > 0 ? String(saldo) : "");
+  const [montoTocado, setMontoTocado] = useState(false);
   const [metodo,      setMetodo]      = useState<MetodoCobro | "">("");
   const [fecha,       setFecha]       = useState(hoy());
   const [recibidoPor, setRecibidoPor] = useState(quien);
@@ -96,7 +108,13 @@ export default function CobroModal({
       .finally(() => setCargando(false));
   }, [reserva.id]);
 
-  async function guardar() {
+  // En modo desglose el monto por omisión es lo que ya figura cobrado, no el
+  // saldo: es ese dinero el que hay que explicar.
+  useEffect(() => {
+    if (sinDesglose && !montoTocado) setMonto(String(yaCobrado));
+  }, [sinDesglose, montoTocado, yaCobrado]);
+
+  async function guardar(forzar = false) {
     const n = Math.round(Number(monto.replace(/[^\d.]/g, "")) || 0);
     if (n <= 0)   { playError(); flash("❌ Escribe cuánto entró"); return; }
     if (!metodo)  { playError(); flash("❌ Falta decir cómo entró el dinero"); return; }
@@ -111,12 +129,20 @@ export default function CobroModal({
       body:    JSON.stringify({
         monto: n, metodo, fecha, recibidoPor, folio, nota,
         evidenciaIds: archivos.map(a => a.id),
+        desglosar: sinDesglose,
+        forzar,
       }),
     }).catch(() => null);
     setGuardando(false);
 
     const d = await r?.json().catch(() => null);
-    if (!r?.ok) { playError(); flash(`❌ ${d?.error || "No se pudo registrar el cobro"}`); return; }
+    if (!r?.ok) {
+      playError();
+      setPuedeForzar(!!d?.sePuedeForzar);
+      flash(`❌ ${d?.error || "No se pudo registrar el cobro"}`);
+      return;
+    }
+    setPuedeForzar(false);
 
     playSuccess();
     setCobros(d.cobros ?? []);
@@ -178,22 +204,35 @@ export default function CobroModal({
         </div>
 
         <div className="p-4 space-y-4">
+          {sinDesglose && (
+            <div className="border border-amber-300/70 bg-amber-50 rounded-sm px-3 py-2.5">
+              <p className="text-xs font-dm text-amber-900 leading-snug">
+                Esta reserva ya figura con <span className="font-medium">{fmx(yaCobrado)}</span> cobrados,
+                pero no dice cómo entró ese dinero.
+              </p>
+              <p className="text-[11px] font-dm text-amber-800/80 mt-1 leading-snug">
+                Lo que registres aquí <span className="font-medium">no suma de nuevo</span>: explica el dinero
+                que ya estaba contado.
+              </p>
+            </div>
+          )}
+
           {/* Monto */}
           <div>
             <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">
-              ¿Cuánto entró?
+              {sinDesglose ? "¿Cuánto de eso fue con este método?" : "¿Cuánto entró?"}
             </label>
             <div className="flex items-center gap-2">
               <span className="font-cormorant text-2xl text-[#1B4332]/50">$</span>
               <input
                 value={monto}
-                onChange={e => setMonto(e.target.value)}
+                onChange={e => { setMonto(e.target.value); setMontoTocado(true); }}
                 inputMode="numeric"
                 placeholder="0"
                 className="panel-foco flex-1 min-h-[44px] border border-[#1B4332]/15 rounded-sm px-3 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
               />
-              {saldo > 0 && (
-                <button type="button" onClick={() => { playClick(); setMonto(String(saldo)); }}
+              {(saldo > 0 || sinDesglose) && (
+                <button type="button" onClick={() => { playClick(); setMonto(String(sinDesglose ? yaCobrado : saldo)); setMontoTocado(true); }}
                   className="panel-foco panel-pulsable min-h-[44px] px-3 text-xs font-dm text-[#1B4332]/70 border border-[#1B4332]/15 rounded-sm hover:border-[#1B4332]/40">
                   Todo
                 </button>
@@ -312,6 +351,15 @@ export default function CobroModal({
           </div>
 
           {msg && <p className="text-xs font-dm text-[#1B4332]">{msg}</p>}
+          {puedeForzar && (
+            <button
+              type="button"
+              onClick={() => guardar(true)}
+              className="panel-foco panel-pulsable w-full min-h-[44px] border border-amber-400 text-amber-800 bg-amber-50 rounded-sm text-xs font-dm hover:bg-amber-100"
+            >
+              Registrarlo de todos modos (cobré de más)
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 p-4 border-t border-[#1B4332]/10 sticky bottom-0 bg-white rounded-b-sm">
@@ -320,10 +368,12 @@ export default function CobroModal({
             Cancelar
           </button>
           <button
-            onClick={guardar} disabled={guardando}
+            onClick={() => guardar()} disabled={guardando}
             className="panel-foco panel-pulsable flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-[#1B4332] text-white text-sm font-dm rounded-sm hover:bg-[#143728] disabled:opacity-50"
           >
-            {guardando ? <><Loader2 className="w-4 h-4 animate-spin" />Guardando…</> : <><Check className="w-4 h-4" />Registrar cobro</>}
+            {guardando
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Guardando…</>
+              : <><Check className="w-4 h-4" />{sinDesglose ? "Registrar cómo entró" : "Registrar cobro"}</>}
           </button>
         </div>
       </div>

@@ -49,18 +49,46 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       );
     }
 
-    // No se cobra de más: pasarse del total casi siempre es un dedazo.
     const reserva = await prisma.tourBooking.findUnique({
       where: { id: params.id },
       select: { totalAmount: true, depositoPagado: true, stripePaymentIntentId: true },
     });
     if (!reserva) return NextResponse.json({ error: "Esa reserva no existe" }, { status: 404 });
+
     // Mismo criterio que `montoCobrado()`: una reserva pagada por Stripe puede
     // tener el depósito en cero y no deber nada.
-    const saldo = reserva.totalAmount - montoCobrado(reserva);
-    if (monto > saldo && !b?.forzar) {
+    const yaCobrado = montoCobrado(reserva);
+    const saldo     = reserva.totalAmount - yaCobrado;
+
+    // 🔴 DESGLOSAR ≠ COBRAR.
+    // Una reserva que ya figura cobrada pero sin ningún renglón (las anteriores
+    // a este módulo, y las que nacen de una cotización con anticipo acordado)
+    // no necesita dinero nuevo: necesita que alguien diga CÓMO entró el que ya
+    // está contado. Sin este modo, el panel contestaba "esta reserva solo debe
+    // $0" y no había forma de registrar nada.
+    const desglosar = !!b?.desglosar;
+    if (desglosar) {
+      const cuantos = await prisma.movimiento.count({ where: { reservaId: params.id, tipo: "cobro" } });
+      if (cuantos > 0) {
+        return NextResponse.json({ error: "Esta reserva ya dice cómo entró su dinero" }, { status: 400 });
+      }
+      if (monto > yaCobrado) {
+        return NextResponse.json(
+          { error: `Solo figuran $${yaCobrado.toLocaleString("es-MX")} cobrados. Para registrar dinero nuevo, desglosa primero lo que ya había.` },
+          { status: 400 },
+        );
+      }
+    } else if (monto > saldo && !b?.forzar) {
+      // Pasarse del total casi siempre es un dedazo, pero a veces es real
+      // (se sumó gente el día del tour): se avisa y se deja confirmar.
       return NextResponse.json(
-        { error: `Esta reserva solo debe $${saldo.toLocaleString("es-MX")}. Revisa el monto.`, saldo },
+        {
+          error: saldo > 0
+            ? `Esta reserva solo debe $${saldo.toLocaleString("es-MX")}. Revisa el monto.`
+            : "Esta reserva ya está liquidada.",
+          saldo,
+          sePuedeForzar: true,
+        },
         { status: 400 },
       );
     }
@@ -72,8 +100,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       fecha:       b?.fecha,
       recibidoPor: b?.recibidoPor ? String(b.recibidoPor) : sesion.nombre,
       folio:       b?.folio,
-      nota:        b?.nota,
+      nota:        b?.nota ?? (desglosar ? "Se registró cómo entró dinero que ya figuraba cobrado" : null),
       creadoPor:   sesion.nombre,
+      sinRescate:  desglosar,
     });
 
     if (evidenciaIds.length) {

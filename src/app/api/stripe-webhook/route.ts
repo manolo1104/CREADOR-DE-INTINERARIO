@@ -289,7 +289,7 @@ export async function POST(req: NextRequest) {
           if (cobrado > 0) {
             await registrarCobroSilencioso({
               reservaId: creada.id, monto: cobrado, metodo: "stripe",
-              nota: "Pago en línea recuperado por el webhook", reservaRecienCreada: true,
+              nota: "Pago en línea recuperado por el webhook", sinRescate: true,
             });
           }
 

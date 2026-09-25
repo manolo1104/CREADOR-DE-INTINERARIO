@@ -243,9 +243,13 @@ export default function ReservasClient(
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
+    const datos = buildPayload(form);
+    // Pagada sólo si el dinero ya está: antes toda reserva manual nacía "paid"
+    // aunque no se hubiera cobrado un peso, y el corte lo daba por bueno.
+    const status = datos.depositoPagado >= datos.totalAmount && datos.totalAmount > 0 ? "paid" : "pending";
     const r = await fetch("/api/admin/reservas", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmationNumber, status: "paid", ...buildPayload(form) }),
+      body: JSON.stringify({ confirmationNumber, status, ...datos }),
     });
     if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM); flash("✅ Reserva creada"); }
     setSaving(false);
