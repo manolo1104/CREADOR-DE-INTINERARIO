@@ -108,7 +108,9 @@ export function fechaDeCorte(b: TourBooking, base: BaseCorte): string {
 export interface CostoDeCatalogo {
   total: number;
   completo: boolean;
-  lineas: { concepto: string; categoria: string; tipo: "persona" | "fijo"; monto: number; total: number }[];
+  /// `tourSlug`: de qué recorrido salió el renglón. Una reserva puede llevar
+  /// varios, y sin esto no se puede decir qué gasta CADA tour.
+  lineas: { concepto: string; categoria: string; tipo: "persona" | "fijo"; monto: number; total: number; tourSlug: string }[];
 }
 
 export function costoDeCatalogo(
@@ -133,14 +135,14 @@ export function costoDeCatalogo(
         // El Cotizador guarda el concepto en texto libre: se clasifica por su
         // nombre para que el reporte diga "guías $800", no "otros $800".
         categoria: (c as any).categoria ?? categoriaPorNombre(c.concepto),
-        tipo: c.tipo, monto: c.monto, total: t,
+        tipo: c.tipo, monto: c.monto, total: t, tourSlug: slug,
       });
     }
   }
   const extras = extrasDe(b).reduce((s, e) => s + costoExtraLine(e), 0);
   if (extras > 0) {
     total += extras;
-    detalle.push({ concepto: "Extras de la reserva", categoria: "otroDirecto", tipo: "fijo", monto: extras, total: extras });
+    detalle.push({ concepto: "Extras de la reserva", categoria: "otroDirecto", tipo: "fijo", monto: extras, total: extras, tourSlug: "" });
   }
   return { total, completo, lineas: detalle };
 }
@@ -157,6 +159,8 @@ export interface ReservaFinanciera {
   telefono: string;
   tour: string;
   tourSlug: string;
+  /** Todos los recorridos de la reserva, no sólo el primero. */
+  tours: { slug: string; nombre: string }[];
   pasajeros: number;
   precioPorPersona: number;
   guia: string;
@@ -229,6 +233,14 @@ export function armarReserva(
     telefono: b.customerPhone || "",
     tour: b.tourName,
     tourSlug: b.tourSlug,
+    tours: (() => {
+      const ls = lineasDe(b);
+      if (ls.length === 0) return [{ slug: b.tourSlug, nombre: b.tourName }];
+      // Sin Map ni spread de iterador: el target de TS del proyecto no los baja.
+      const vistos: Record<string, string> = {};
+      for (const l of ls) vistos[l.tourSlug || ""] = l.tourName || b.tourName;
+      return Object.keys(vistos).map(slug => ({ slug, nombre: vistos[slug] }));
+    })(),
     pasajeros,
     precioPorPersona: pasajeros > 0 ? Math.round(venta / pasajeros) : venta,
     guia: ((b as any).guia || "") as string,

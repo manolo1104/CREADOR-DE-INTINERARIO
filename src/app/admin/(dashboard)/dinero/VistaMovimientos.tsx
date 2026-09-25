@@ -8,6 +8,7 @@ import { fmx, fDiaCorto, Etiqueta, descargarCSV, BotonExportar } from "./ui";
 import type { Permisos } from "./permisos";
 import { hoyMX } from "./useFinanzas";
 import BorradorCostos from "./BorradorCostos";
+import GastoPorTour from "./GastoPorTour";
 
 /**
  * Los gastos de la empresa. Nunca se cuelgan de una reserva: el hosting no lo
@@ -141,6 +142,14 @@ export default function VistaMovimientos({ datos, recargar, permisos }: {
           Gasolina, guía, entradas, lanchero: lo que cuesta sacar cada tour
         </p>
 
+        {/* En qué se va el dinero de cada recorrido. Va antes que el borrador
+            porque es lo que se mira; el borrador es la herramienta de captura. */}
+        <div className="mb-4">
+          <p className="panel-eyebrow mb-2">Lo que gasta cada tour</p>
+          <GastoPorTour datos={datos} />
+        </div>
+
+        <p className="panel-eyebrow mb-2 pt-3 border-t border-[#1B4332]/8">Capturar los costos de cada salida</p>
         <BorradorCostos datos={datos} recargar={recargar} />
 
         <div className="mt-3 text-right font-dm text-xs text-[#1B4332]/60">
