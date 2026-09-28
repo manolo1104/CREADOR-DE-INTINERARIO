@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { tourCollage, tourDurTexto, etiquetaUnidad, type Tour } from "@/lib/tours";
-import { TourCollage } from "@/components/TourCollage";
+import { TourCarrusel } from "@/components/TourCarrusel";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
 import { trackWhatsapp } from "@/lib/analytics";
@@ -21,9 +21,20 @@ const dificultadConfig = {
 interface Props {
   tour: Tour;
   variant?: "compact" | "default";
+  /**
+   * Si el tour trae logotipo propio, enseñarlo a caballo del borde de arriba.
+   *
+   * 🔴 Apagado por defecto (28 sep 2026, decisión de Manolo). Solo seis de los
+   * catorce recorridos tienen logotipo, así que en una rejilla de tarjetas la
+   * mitad salía con un rótulo enorme encima y la otra mitad sin nada. Y el
+   * estilo de caricatura choca con el serif sobre verde oscuro del resto del
+   * sitio. Se queda encendido SOLO en el inicio, donde salen tres tours
+   * elegidos a mano y los tres lo tienen.
+   */
+  conLogo?: boolean;
 }
 
-export function TourCard({ tour: t, variant = "default" }: Props) {
+export function TourCard({ tour: t, variant = "default", conLogo = false }: Props) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
   const lp = (p: string) => (en ? `/en${p}` : p);
@@ -109,7 +120,12 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             orden salen de `collage` en tours.ts, así que las dos páginas
             enseñan siempre lo mismo. */}
         {panels.length ? (
-          <TourCollage panels={panels} nombre={t.nombre} />
+          <TourCarrusel
+            panels={panels}
+            nombre={t.nombre}
+            href={lp(`/tours/${t.slug}`)}
+            sizes="(min-width: 1024px) 30vw, 100vw"
+          />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-verde-selva/40 via-verde-profundo to-negro" />
         )}
@@ -138,7 +154,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             logotipo. Con logotipo se van al cuerpo de la tarjeta: encima de la
             foto, el título quedaba pegado al logo y sobre agua turquesa no se
             leía. */}
-        {!t.logo && <Titulo />}
+        {!(conLogo && t.logo) && <Titulo />}
       </div>
 
       {/* Logotipo a caballo del borde de arriba, igual que en /tours. Por eso
@@ -147,7 +163,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           Asoma más arriba que en /tours (88 % fuera, no la mitad) porque aquí
           las dos esquinas de arriba llevan etiqueta —tipo y dificultad— y con
           la mitad dentro el logotipo se les montaba encima. */}
-      {t.logo && (
+      {conLogo && t.logo && (
         <Image
           src={t.logo}
           alt=""
@@ -161,7 +177,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
       {/* ── INFO ── */}
       <div className="flex flex-col flex-1 p-4 bg-negro/80 rounded-b-xl">
 
-        {t.logo && (
+        {conLogo && t.logo && (
           <div className="mb-3 pb-3 border-b border-white/8">
             <Titulo enCuerpo />
           </div>

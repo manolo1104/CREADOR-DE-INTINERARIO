@@ -11,7 +11,7 @@ import { headers } from "next/headers";
 // `rankTour` y agrupa por `TOUR_CATEGORIAS`, y no queda ninguna referencia a
 // ellos (verificado con grep antes de quitarlos).
 import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado } from "@/lib/tours";
-import { TourCollage } from "@/components/TourCollage";
+import { TourCarrusel } from "@/components/TourCarrusel";
 import { TourEmblem } from "@/components/TourEmblem";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
@@ -351,28 +351,31 @@ export default function ToursPage() {
             <article id={tour.id} key={tour.id} className="stagger-reveal group relative rounded-xl border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300 flex flex-col scroll-mt-32" style={{ animationDelay: `${tourIndex * 70}ms` }}>
               <Link href={lp(`/tours/${tour.slug}`)} aria-label={`${en ? "View full tour" : "Ver tour completo"}: ${tour.nombre}`} className="absolute inset-0 z-0" />
 
-              {/* ── COLLAGE ──
-                  Dos o tres fotos del recorrido cortadas en diagonal, en vez de
-                  una sola: la tarjeta enseña de una vez que el tour visita
-                  varios lugares distintos. */}
+              {/* ── FOTOS ──
+                  Una a la vez, a tamaño completo, y se pasan deslizando.
+                  Antes era un collage en diagonal de dos a cuatro franjas: cada
+                  franja medía entre 216 y 267 px y a ese tamaño no se reconoce
+                  ningún lugar, que es lo único que la foto tenía que hacer.
+                  Así lo resuelven Airbnb, GetYourGuide y Viator. */}
               <div className="relative h-56 flex-shrink-0 rounded-t-xl overflow-hidden">
-                <TourCollage panels={panels} nombre={tour.nombre} />
+                <TourCarrusel
+                  panels={panels}
+                  nombre={tour.nombre}
+                  href={lp(`/tours/${tour.slug}`)}
+                  sizes="(min-width: 1024px) 45vw, 100vw"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-negro/35 pointer-events-none" />
                 <span className={`absolute top-3 left-3 z-10 text-[9px] tracking-[1px] uppercase border px-2.5 py-1 rounded-full font-dm bg-negro/60 backdrop-blur-sm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
                   {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
                 </span>
-                {/* Con logotipo el aviso baja a la esquina de abajo: arriba al
-                    centro se le montaba encima en pantallas de teléfono. Esa
-                    esquina está libre porque el sello SVG solo sale cuando el
-                    tour NO tiene logotipo. */}
-                <span className={`absolute z-10 bg-verde-selva/90 backdrop-blur-sm text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-full ${tour.logo ? "bottom-3 right-3" : "top-3 right-3"}`}>
+                <span className="absolute top-3 right-3 z-10 bg-verde-selva/90 backdrop-blur-sm text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-full">
                   {en ? "Daily departures" : "Salidas todos los días"}
                 </span>
                 <span className="absolute bottom-3 left-3 z-10 bg-negro/70 backdrop-blur-sm text-crema/85 text-[9px] font-dm tracking-[1px] px-2.5 py-1 rounded-full">
                   {tourDurTexto(tour, en ? " hours" : " horas")}
                 </span>
-                {/* Sin logotipo propio, el tour lleva su sello SVG en la foto. */}
-                {!tour.logo && (
+                {/* El sello SVG del tour, para los que tienen uno. */}
+                {(
                   <TourEmblem
                     slug={tour.slug}
                     categoria={tour.categoria}
@@ -383,20 +386,6 @@ export default function ToursPage() {
                 )}
               </div>
 
-              {tour.logo && (
-                <Image
-                  src={tour.logo}
-                  alt=""
-                  aria-hidden="true"
-                  width={620}
-                  height={250}
-                  /* A caballo del borde de arriba: la mitad dentro de la tarjeta y la
-                     mitad fuera. Por eso el <article> no lleva `overflow-hidden`
-                     (las esquinas redondeadas de la foto las pone su contenedor):
-                     si recortara, la mitad de fuera desaparecería. */
-                  className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 z-30 w-[36%] max-w-none h-auto drop-shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out group-hover:scale-[1.06]"
-                />
-              )}
 
               {/* ── INFO ── */}
               <div className="flex flex-col flex-1 p-7">

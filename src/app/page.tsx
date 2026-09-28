@@ -473,7 +473,7 @@ export default async function HomePage() {
             del borde de su tarjeta y sin esto se montaba sobre la de arriba. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16 pt-10">
           {toursHome.map((t) => (
-            <TourCard key={t.slug} tour={t} variant="compact" />
+            <TourCard key={t.slug} tour={t} variant="compact" conLogo />
           ))}
         </div>
 
