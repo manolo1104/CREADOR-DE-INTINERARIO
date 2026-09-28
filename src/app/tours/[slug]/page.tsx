@@ -837,7 +837,7 @@ export default function TourDetailPage({ params }: Props) {
               aria-label={locale === "en" ? "Huasteca Guarantee" : "Garantía Huasteca"}
               className="flex items-start gap-5 border border-dorado/25 bg-dorado/[0.06] p-5"
             >
-              <SelloGarantia size={72} idSuffix="-ficha" className="flex-shrink-0" />
+              <SelloGarantia size={72} idSuffix="-ficha" variante="plano" className="flex-shrink-0" />
               <div className="min-w-0">
                 <h2 className="font-cormorant text-crema text-xl leading-tight mb-2">
                   {locale === "en" ? "Huasteca Guarantee" : "Garantía Huasteca"}
