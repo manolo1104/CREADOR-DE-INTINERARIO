@@ -4,18 +4,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, Flower2, Flame, Skull, Music, Moon } from "lucide-react";
+import { X, ArrowRight, Check } from "lucide-react";
 import { useLocale } from "@/lib/i18n/useLocale";
 
 /**
- * El aviso de Xantolo: aparece una sola vez, a los 20 segundos.
+ * El aviso de Xantolo: aparece a los 20 segundos y regala la guía por correo.
+ *
+ * Diseño «la fecha manda» (variante 1b del boceto): horizontal, la foto del
+ * sahumerio a la izquierda y, a la derecha, lo primero y más grande son las
+ * TRES NOCHES. Quien ve esto no necesita que le expliquen qué es Xantolo:
+ * necesita saber CUÁNDO es, porque de eso depende si le cuadra el viaje.
  *
  * Es una interrupción, así que se porta como tal:
  *
- *  · Se cierra con Esc, con el fondo, con la X y con el botón de «ahora no».
- *  · Una vez cerrado NO vuelve. Queda anotado en el navegador de quien lo cerró.
- *  · Caduca solo el 3 de noviembre. Nadie tiene que acordarse de quitarlo, y no
- *    hay riesgo de que en enero el sitio siga anunciando una fiesta que ya pasó.
+ *  · Se cierra con Esc, con el fondo, con la X y con «ahora no».
+ *  · Cerrado, no vuelve EN ESTA VISITA. En la siguiente puede volver a salir:
+ *    para eso es `sessionStorage` y no `localStorage`.
+ *  · Si dejó su correo, no vuelve NUNCA —eso sí en `localStorage`—: ya tiene la
+ *    guía y volver a pedírsela es la manera más rápida de perder a alguien.
+ *  · Caduca solo el 3 de noviembre. Nadie tiene que acordarse de quitarlo.
  *  · No sale si el aviso de cookies sigue en pantalla: dos capas encima del
  *    contenido a la vez es lo que hace que la gente cierre la pestaña.
  *  · No sale en el propio artículo de Xantolo —invitar a leer lo que ya estás
@@ -25,68 +32,63 @@ import { useLocale } from "@/lib/i18n/useLocale";
  * `destinos.ts`: del 31 de octubre al 2 de noviembre. No se inventó ninguna.
  */
 
-const CLAVE = "hp_xantolo_2026";
+/** Cerrado: se calla el resto de la visita. */
+const CLAVE_VISITA = "hp_xantolo_visita";
+/** Dio su correo: se calla para siempre. */
+const CLAVE_ENVIADO = "hp_xantolo_2026_guia";
 const SEGUNDOS = 20;
 /** El día que deja de tener sentido. Se compara contra la fecha en México. */
 const CADUCA = "2026-11-03";
+/** 🔴 Sin prefijo de idioma: el blog sólo existe en español y `/en/blog/…` da 404. */
 const SLUG_GUIA = "/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia";
 const FOTO = "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg";
 
-/**
- * El patrón del fondo verde. Cada icono es una de las cosas que el propio
- * texto del aviso nombra, no adorno suelto: el cempasúchil de los arcos, las
- * veladoras del altar, las máscaras de las cuadrillas de danzantes, la música
- * con la que salen, y la luna de los pueblos que no duermen en tres noches.
- *
- * Son los componentes de lucide que ya usa el sitio, no trazos redibujados.
- */
-const ICONOS_XANTOLO = [Flower2, Flame, Skull, Music, Moon];
+/** Los dos colores del boceto. No son del tema del sitio a propósito: Xantolo
+ *  es morado de altar y naranja de cempasúchil, y ese par no existe en la
+ *  paleta verde de la Huasteca. Viven aquí y sólo aquí. */
+const MORADO = "#2a1231";
+const CEMPASUCHIL = "#f29422";
+const CREMA = "#f4edd8";
+
+/** Las tres noches. Si cambian, se cambian aquí y en `xantoloEmail.ts`. */
+const NOCHES = [
+  { dia: "31", mes: { es: "OCT", en: "OCT" } },
+  { dia: "1", mes: { es: "NOV", en: "NOV" } },
+  { dia: "2", mes: { es: "NOV", en: "NOV" } },
+];
 
 /**
- * Ocupa sólo el verde —de donde acaba la foto hacia abajo—, nunca la foto.
+ * El papel picado que cuelga del borde de arriba.
  *
- * El tamaño, el giro y el desplazamiento de cada icono salen del índice: en
- * rejilla perfecta esto se lee como papel milimetrado en vez de textura. Al
- * venir del índice y no de `Math.random()`, el servidor y el navegador pintan
- * lo mismo y no hay desajuste de hidratación.
+ * Una tira, no una guirnalda de fiesta infantil: 22 px de alto y al 22 % de
+ * opacidad. Es un mosaico CSS con una sola banderita dibujada, así que pesa
+ * nada y se repite sola por ancha que sea la ventana.
+ *
+ * 🔴 La primera versión llevaba los calados en círculo —uno arriba y dos
+ * abajo— y en el navegador se leía como una CARA: dos ojos y una boca, una
+ * fila de calaveritas de dibujo animado. Tres rombos en HILERA, a la misma
+ * altura, no forman cara y además es el calado real del papel picado.
  */
-function PatronXantolo() {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-0 top-40 overflow-hidden sm:top-48"
-    >
-      <div className="grid grid-cols-6 place-items-center gap-y-6 pt-4">
-        {Array.from({ length: 30 }).map((_, i) => {
-          const Icono = ICONOS_XANTOLO[i % ICONOS_XANTOLO.length];
-          const giro = ((i * 41) % 29) - 14;      // −14° a +14°
-          const lado = 16 + ((i * 11) % 3) * 5;   // 16 a 26 px
-          const corre = ((i * 19) % 5) - 2;       // −2 a +2 px
-          return (
-            <Icono
-              key={i}
-              strokeWidth={1.25}
-              /* Dorado, que es el acento del aviso y el color del cempasúchil.
-                 Muy bajo a propósito: el titular y el párrafo van encima. */
-              className="text-dorado"
-              style={{
-                width: lado,
-                height: lado,
-                opacity: 0.09 + ((i * 13) % 3) * 0.02,
-                transform: `translateX(${corre}px) rotate(${giro}deg)`,
-              }}
-            />
-          );
-        })}
-      </div>
-    </div>
+const PAPEL_PICADO =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="22" viewBox="0 0 44 22">` +
+      `<path fill="${CEMPASUCHIL}" fill-rule="evenodd" ` +
+      // La bandera, con el borde de abajo festoneado en tres picos.
+      `d="M4 0H40V13L34 19L28 13L22 19L16 13L10 19L4 13Z` +
+      // Tres rombos calados en hilera: el de en medio, mayor.
+      `M22 3.4L25 6.6L22 9.8L19 6.6Z` +
+      `M12.5 4.6L14.6 6.6L12.5 8.6L10.4 6.6Z` +
+      `M31.5 4.6L33.6 6.6L31.5 8.6L29.4 6.6Z"/>` +
+      `</svg>`,
   );
-}
 
 function yaCaduco(): boolean {
   const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
   return hoy >= CADUCA;
 }
+
+type Estado = "forma" | "enviando" | "listo";
 
 export function PopupXantolo() {
   const pathname = usePathname() ?? "";
@@ -94,6 +96,9 @@ export function PopupXantolo() {
   const en = locale === "en";
   const [montado, setMontado] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [estado, setEstado] = useState<Estado>("forma");
+  const [correo, setCorreo] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const panel = useRef<HTMLDivElement>(null);
   const enfocadoAntes = useRef<HTMLElement | null>(null);
 
@@ -105,10 +110,10 @@ export function PopupXantolo() {
   const cerrar = useCallback(() => {
     setVisible(false);
     try {
-      localStorage.setItem(CLAVE, "cerrado");
+      sessionStorage.setItem(CLAVE_VISITA, "cerrado");
     } catch {
       /* Navegación privada o almacenamiento bloqueado: se cierra igual, sólo
-         que podría volver a salir en la próxima visita. No es motivo de error. */
+         que podría volver a salir. No es motivo de error. */
     }
     // Se desmonta después de la salida, que es más corta que la entrada.
     window.setTimeout(() => setMontado(false), 170);
@@ -120,23 +125,24 @@ export function PopupXantolo() {
 
     /* Puerta trasera para revisarlo: `?xantolo=1` lo abre YA, sin los 20
        segundos y sin hacer caso de que ya se haya cerrado antes.
-       Existe porque el comportamiento correcto de cara al visitante —una vez
-       cerrado no vuelve— deja al dueño sin manera de volver a verlo, y
-       vaciarle el almacenamiento del navegador para revisar un aviso no es
-       una instrucción que se le pueda dar a nadie. */
+       Existe porque el comportamiento correcto de cara al visitante deja al
+       dueño sin manera de volver a verlo, y vaciarle el almacenamiento del
+       navegador no es una instrucción que se le pueda dar a nadie. */
     const forzado = new URLSearchParams(window.location.search).get("xantolo") === "1";
 
     if (!forzado && yaCaduco()) return;
-    let visto = false;
+    let calla = false;
     let cookiesPendientes = false;
     try {
-      visto = localStorage.getItem(CLAVE) !== null;
+      calla =
+        sessionStorage.getItem(CLAVE_VISITA) !== null ||
+        localStorage.getItem(CLAVE_ENVIADO) !== null;
       cookiesPendientes = localStorage.getItem("hp_cookie_consent") === null;
     } catch {
       /* Sin almacenamiento no se insiste: mejor no salir que salir siempre. */
       if (!forzado) return;
     }
-    if (!forzado && (visto || cookiesPendientes)) return;
+    if (!forzado && (calla || cookiesPendientes)) return;
 
     const t = window.setTimeout(() => {
       enfocadoAntes.current = document.activeElement as HTMLElement | null;
@@ -153,6 +159,9 @@ export function PopupXantolo() {
   useEffect(() => {
     if (!montado) return;
     const caja = panel.current;
+    /* Se enfoca la X, no el campo de correo: en un celular enfocar un input
+       levanta el teclado de golpe, y eso es una segunda interrupción encima
+       de la primera. */
     caja?.querySelector<HTMLElement>("[data-cerrar]")?.focus();
 
     const tecla = (e: KeyboardEvent) => {
@@ -163,7 +172,7 @@ export function PopupXantolo() {
       }
       if (e.key !== "Tab" || !caja) return;
       const focos = caja.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (!focos.length) return;
       const primero = focos[0];
@@ -180,20 +189,54 @@ export function PopupXantolo() {
     return () => document.removeEventListener("keydown", tecla);
   }, [montado, cerrar]);
 
-  if (!montado) return null;
+  const enviar = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (estado === "enviando") return;
+      setError(null);
+      setEstado("enviando");
+      try {
+        const r = await fetch("/api/xantolo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: correo.trim(), fuente: "Popup Xantolo" }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data?.error || "");
+        /* Ya la tiene: este aviso no vuelve a salirle nunca. */
+        try {
+          localStorage.setItem(CLAVE_ENVIADO, "enviado");
+        } catch {
+          /* Sin almacenamiento sigue funcionando, sólo que podría repetirse. */
+        }
+        setEstado("listo");
+      } catch (err) {
+        setEstado("forma");
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : en
+              ? "We couldn't send it. Try again or read it here."
+              : "No pudimos enviarlo. Intenta de nuevo o léela aquí mismo.",
+        );
+      }
+    },
+    [correo, estado, en],
+  );
 
-  const fechas = en ? "October 31 to November 2, 2026" : "Del 31 de octubre al 2 de noviembre de 2026";
+  if (!montado) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 sm:p-6 transition-opacity duration-200 ease-out ${
+      className={`fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center sm:p-6 transition-opacity duration-200 ease-out ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
       {/* El fondo cierra, pero no es un botón para el lector de pantalla: la X
           y «ahora no» ya hacen ese trabajo y sí se anuncian. */}
       <div
-        className="absolute inset-0 bg-negro/75 backdrop-blur-[2px]"
+        className="absolute inset-0 backdrop-blur-[3px]"
+        style={{ backgroundColor: "rgba(18,8,22,.72)" }}
         onClick={cerrar}
         aria-hidden="true"
       />
@@ -203,25 +246,29 @@ export function PopupXantolo() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="xantolo-titulo"
-        aria-describedby="xantolo-texto"
         /* Nunca desde scale(0): nada aparece de la nada. Entra en 260 ms con la
            curva del resto del sitio y sale en 160, porque al cerrar el usuario
            ya decidió y esperar se siente lento. */
-        className={`popup-xantolo relative z-10 w-full max-w-lg bg-verde-profundo border border-dorado/25 overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.5)] ${
+        className={`popup-xantolo relative z-10 w-full max-w-[800px] overflow-hidden rounded-2xl shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:grid sm:grid-cols-[42%_1fr] ${
           visible ? "popup-xantolo--visible" : ""
         }`}
+        style={{ backgroundColor: MORADO, border: `1px solid ${CEMPASUCHIL}33` }}
       >
         <button
           type="button"
           data-cerrar
           onClick={cerrar}
           aria-label={en ? "Close" : "Cerrar"}
-          className="absolute top-3 right-3 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-negro/50 text-crema/70 hover:text-crema hover:bg-negro/80 transition-colors duration-200 active:scale-95"
+          className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-crema/70 transition-colors duration-200 hover:bg-black/75 hover:text-crema active:scale-95"
         >
-          <X className="w-4 h-4" aria-hidden="true" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
 
-        <div className="relative h-40 sm:h-48 w-full">
+        {/* ── La foto ──────────────────────────────────────────────────────
+            En celular es una franja arriba; en computadora, la columna
+            izquierda completa. El degradado la funde con el morado del panel
+            para que no se vea una costura entre foto y contenido. */}
+        <div className="relative h-36 w-full sm:h-auto sm:min-h-[460px]">
           <Image
             src={FOTO}
             alt={
@@ -231,65 +278,207 @@ export function PopupXantolo() {
             }
             fill
             className="object-cover"
-            sizes="(min-width: 640px) 512px, 100vw"
+            style={{ objectPosition: "60% 50%" }}
+            sizes="(min-width: 640px) 336px, 100vw"
           />
-          {/* 🔴 Medido en el navegador, no supuesto: la línea de fechas cae
-              24 px DENTRO de la foto, y en dorado sobre un altar de cempasúchil
-              —naranja sobre naranja— era ilegible. Hacía falta que el tramo
-              inferior de la imagen fuera OPACO, no traslúcido.
-              Va en `style` y no en clases: con `from-40%` Tailwind no generó
-              nada (las paradas de degradado con porcentaje necesitan que la
-              clase exista en el CSS compilado) y el degradado se quedó como
-              estaba. Un color del tema escrito a mano aquí es feo, pero es
-              verde-profundo (#1a2e1a) y no se puede caer solo. */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 sm:hidden"
             style={{
-              backgroundImage:
-                "linear-gradient(to top, #1a2e1a 0%, #1a2e1a 42%, rgba(26,46,26,0.55) 72%, rgba(26,46,26,0) 100%)",
+              backgroundImage: `linear-gradient(to top, ${MORADO} 0%, ${MORADO}cc 35%, rgba(42,18,49,0) 100%)`,
+            }}
+          />
+          <div
+            className="absolute inset-0 hidden sm:block"
+            style={{
+              backgroundImage: `linear-gradient(to right, rgba(42,18,49,0) 45%, ${MORADO}cc 80%, ${MORADO} 100%)`,
             }}
           />
         </div>
 
-        <PatronXantolo />
+        {/* ── El contenido ────────────────────────────────────────────────── */}
+        <div className="relative -mt-8 px-6 pb-7 sm:mt-0 sm:flex sm:flex-col sm:justify-center sm:px-9 sm:py-10">
+          {/* El papel picado cuelga del borde de arriba del panel, no de la
+              foto: en celular la foto ya ocupa esa franja. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 hidden h-[22px] opacity-[0.22] sm:block"
+            style={{ backgroundImage: `url("${PAPEL_PICADO}")`, backgroundRepeat: "repeat-x" }}
+          />
 
-        {/* `relative` sin más: el contenido queda por encima del patrón porque
-            va después en el DOM y ambos crean contexto propio. */}
-        <div className="relative px-6 pb-6 -mt-6">
-          <p className="text-[10px] tracking-[3px] uppercase text-dorado font-dm mb-2">{fechas}</p>
-          <h2
-            id="xantolo-titulo"
-            className="font-cormorant font-light text-crema leading-tight mb-3"
-            style={{ fontSize: "clamp(26px,5vw,34px)" }}
-          >
-            Xantolo 2026
-          </h2>
-          <p id="xantolo-texto" className="text-crema/65 font-dm text-sm leading-relaxed mb-6">
-            {en
-              ? "The Huasteca does not celebrate Day of the Dead, it celebrates Xantolo: arches of marigolds, masked dancers and towns that stay awake for three nights. We wrote the guide so you know where to go and what not to miss."
-              : "La Huasteca no celebra Día de Muertos, celebra Xantolo: arcos de cempasúchil, cuadrillas de danzantes enmascarados y pueblos que no duermen en tres noches. Escribimos la guía para que sepas a dónde ir y qué no perderte."}
-          </p>
+          {estado === "listo" ? (
+            /* ── Ya está enviado ───────────────────────────────────────────
+               🔴 Medido: el cuadro pasa de 540 a 348 px de alto al confirmar.
+               No se fuerza a que midan igual —dejaría un hueco vacío enorme
+               debajo del «va en camino»— y no molesta porque en celular el
+               cuadro está anclado ABAJO: al encoger, el texto se queda donde
+               estaban los ojos y lo que se mueve es el borde de arriba. En
+               computadora la columna de la foto tiene suelo de 460 px, así
+               que ahí el cuadro ni se inmuta. */
+            <div className="relative">
+              <div
+                className="mb-5 flex h-11 w-11 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${CEMPASUCHIL}1f`, border: `1px solid ${CEMPASUCHIL}59` }}
+              >
+                <Check className="h-5 w-5" style={{ color: CEMPASUCHIL }} aria-hidden="true" />
+              </div>
+              <h2
+                id="xantolo-titulo"
+                className="mb-3 font-cormorant font-light leading-tight text-crema"
+                style={{ fontSize: "clamp(26px,4.4vw,34px)" }}
+              >
+                {en ? "It's on its way" : "Va en camino"}
+              </h2>
+              <p className="mb-7 font-dm text-sm leading-relaxed text-crema/65">
+                {en
+                  ? "Check your inbox — the guide is there. If you don't see it, look in promotions or spam."
+                  : "Revisa tu correo, ahí está la guía. Si no la ves, busca en promociones o en correo no deseado."}
+              </p>
+              <Link
+                href={SLUG_GUIA}
+                onClick={cerrar}
+                className="inline-flex items-center gap-2 font-dm text-[11px] uppercase tracking-[1.6px] text-crema/70 transition-colors duration-200 hover:text-crema"
+              >
+                {en ? "Or read it right now" : "O léela ahora mismo"}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </div>
+          ) : (
+            <div className="relative">
+              <span
+                className="mb-5 inline-block rounded-full px-3 py-1 font-dm text-[10px] uppercase tracking-[1.6px]"
+                style={{
+                  backgroundColor: `${CEMPASUCHIL}1f`,
+                  border: `1px solid ${CEMPASUCHIL}59`,
+                  color: CEMPASUCHIL,
+                }}
+              >
+                {en ? "Free guide" : "Guía gratis"}
+              </span>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* 🔴 Sin `localePath` a propósito: el blog sólo existe en español
-                y `/en/blog/…` devuelve 404. Prefijar el idioma aquí le daba al
-                visitante en inglés un enlace muerto. El día que el blog tenga
-                versión en inglés, esto vuelve a llevar prefijo. */}
-            <Link
-              href={SLUG_GUIA}
-              onClick={cerrar}
-              className="flex-1 text-center bg-dorado text-negro px-6 py-3.5 text-[11px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-200 active:scale-[0.98]"
-            >
-              {en ? "Read the Xantolo guide" : "Leer la guía de Xantolo"}
-            </Link>
-            <button
-              type="button"
-              onClick={cerrar}
-              className="sm:flex-shrink-0 text-center text-crema/45 hover:text-crema/80 px-6 py-3.5 text-[11px] tracking-[3px] uppercase font-dm transition-colors duration-200"
-            >
-              {en ? "Not now" : "Ahora no"}
-            </button>
-          </div>
+              {/* ── La fecha, que es lo que manda ──────────────────────────
+                  Tres noches, tres cifras. Cormorant en 300 y a 76 px: es lo
+                  más grande del cuadro por mucho, porque «cuándo» es la única
+                  pregunta que decide si alguien puede venir o no. */}
+              <div className="mb-5 flex items-end gap-4 sm:gap-6">
+                {NOCHES.map((n, i) => (
+                  <div key={n.dia} className="flex items-end gap-4 sm:gap-6">
+                    {i > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="mb-3 block h-9 w-px"
+                        style={{ backgroundColor: `${CEMPASUCHIL}40` }}
+                      />
+                    )}
+                    <div>
+                      {/* 🔴 `lining-nums` no es adorno: Cormorant Garamond
+                          trae cifras de estilo ANTIGUO por defecto, y así el
+                          «3» baja de la línea, el «1» queda a media altura y
+                          las tres fechas se ven de tamaños distintos. Medido
+                          en el navegador: el 3 se metía encima del «OCT». */}
+                      <span
+                        className="block font-cormorant font-light leading-[0.85]"
+                        style={{
+                          fontSize: "clamp(52px,9vw,76px)",
+                          color: CEMPASUCHIL,
+                          fontVariantNumeric: "lining-nums",
+                          fontFeatureSettings: '"lnum" 1',
+                        }}
+                      >
+                        {n.dia}
+                      </span>
+                      <span className="mt-1.5 block font-dm text-[10px] uppercase tracking-[2.4px] text-crema/45">
+                        {n.mes[en ? "en" : "es"]}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <h2
+                id="xantolo-titulo"
+                className="mb-3 font-cormorant font-light leading-tight text-crema"
+                style={{ fontSize: "clamp(24px,4vw,30px)" }}
+              >
+                {en ? "Xantolo in the Huasteca" : "Xantolo en la Huasteca"}
+              </h2>
+              <p className="mb-6 font-dm text-sm leading-relaxed text-crema/65">
+                {en
+                  ? "Three nights of marigold arches, masked dancers and towns that never sleep. We wrote the guide: which towns, which night, and what not to miss."
+                  : "Tres noches de arcos de cempasúchil, cuadrillas de danzantes y pueblos que no duermen. Escribimos la guía: qué pueblo, qué noche y qué no perderte."}
+              </p>
+
+              <form onSubmit={enviar} noValidate>
+                <div className="flex flex-col gap-2.5 sm:flex-row">
+                  <label htmlFor="xantolo-correo" className="sr-only">
+                    {en ? "Your email" : "Tu correo"}
+                  </label>
+                  <input
+                    id="xantolo-correo"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
+                    placeholder={en ? "your@email.com" : "tu@correo.com"}
+                    disabled={estado === "enviando"}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? "xantolo-error" : undefined}
+                    className="min-w-0 flex-1 px-4 py-3 font-dm text-sm text-crema placeholder:text-crema/35 outline-none transition-colors duration-200 focus:border-crema/60 disabled:opacity-60"
+                    style={{
+                      backgroundColor: "rgba(244,237,216,.08)",
+                      border: "1px solid rgba(244,237,216,.35)",
+                      borderRadius: 10,
+                      color: CREMA,
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={estado === "enviando"}
+                    className="shrink-0 px-5 py-3 font-dm text-[11px] font-medium uppercase tracking-[1.6px] transition-opacity duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+                    style={{ backgroundColor: CEMPASUCHIL, color: MORADO, borderRadius: 10 }}
+                  >
+                    {estado === "enviando"
+                      ? en
+                        ? "Sending…"
+                        : "Enviando…"
+                      : en
+                        ? "Send me the guide"
+                        : "Recibir la guía"}
+                  </button>
+                </div>
+
+                {error && (
+                  <p
+                    id="xantolo-error"
+                    role="alert"
+                    className="mt-2.5 font-dm text-xs leading-relaxed"
+                    style={{ color: CEMPASUCHIL }}
+                  >
+                    {error}
+                  </p>
+                )}
+              </form>
+
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2">
+                <Link
+                  href={SLUG_GUIA}
+                  onClick={cerrar}
+                  className="inline-flex items-center gap-1.5 font-dm text-[11px] uppercase tracking-[1.6px] text-crema/55 transition-colors duration-200 hover:text-crema/90"
+                >
+                  {en ? "I'd rather read it now" : "Prefiero leerla ahora"}
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={cerrar}
+                  className="font-dm text-[11px] uppercase tracking-[1.6px] text-crema/35 transition-colors duration-200 hover:text-crema/70"
+                >
+                  {en ? "Not now" : "Ahora no"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
