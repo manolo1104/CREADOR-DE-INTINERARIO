@@ -11,9 +11,9 @@
 
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { TOURS_DB, tourDurTexto } from "../lib/tours";
+import { TOURS_DB, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, recogidaDeTour, ventanaSalida, regresoDeTour } from "../lib/tours";
 import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
-import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
+import { PAQUETES_DB, HABITACIONES, habitacionesDePaquete, LOGISTICA, FAQS_PAQUETES } from "../lib/paquetes";
 import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
@@ -31,6 +31,10 @@ const NO_INCLUYE: Record<string, string[]> = {
   "paraiso-escalonado-minas-micos": ["Comida de mediodía", "Propinas y gastos personales"],
   "ruta-acuatica-puente-de-dios": ["Comida de mediodía", "Propinas y gastos personales"],
   "buceo-media-luna": ["Transporte hasta la Laguna de la Media Luna (Rioverde)", "Entrada al parque (se paga allá)", "Alimentos — no se incluye ninguna comida, pero en la laguna hay puestos y restaurantes donde comprar", "Traje de baño y toalla"],
+  "eden-en-el-jardin": ["Alimentos y bebidas: empieza muy temprano y no lleva desayuno", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Propinas y gastos personales", "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte"],
+  "gruta-de-xilo": ["Alimentos y bebidas: es un recorrido de noche y no lleva cena", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Ropa de cambio y calzado que se pueda mojar", "Propinas y gastos personales"],
+  "amanecer-de-nubes": ["Alimentos: se sale de madrugada y no lleva desayuno", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Chamarra y calzado de montaña — arriba hace frío de verdad", "Propinas y gastos personales"],
+  "olla-de-la-luz": ["Alimentos: conviene llevar agua y algo de comer para la caminata", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Calzado de senderismo y chamarra o impermeable", "Propinas y gastos personales"],
 };
 
 // ── Hechos que el bot NO debe deducir ni suponer ─────────────────────────────
@@ -43,6 +47,7 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "rzr-xilitla": { incluido: false, detalle: "NO incluye transporte. El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá." },
   "rappel-tamul": { incluido: false, detalle: "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour." },
   "buceo-media-luna": { incluido: false, detalle: "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta." },
+  "eden-en-el-jardin": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Empieza entre 7 y 8 AM: desde Ciudad Valles no se ofrece y se cotiza aparte. Nunca prometas recogida en Ciudad Valles para esta experiencia." },
   "rafting-rio-tampaon": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o Xilitla." },
   "expedicion-tamul": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   "ruta-surrealista-edward-james": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
@@ -51,7 +56,10 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "ruta-acuatica-puente-de-dios": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   // Único tour con traslado incluido pero SOLO dentro de Xilitla: el camino a
   // la finca se hace en RZR y no se sale a Ciudad Valles.
-  "travesia-del-cafe": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. A diferencia del resto de los tours, NO se recoge en Ciudad Valles." },
+  "travesia-del-cafe": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
+  "gruta-de-xilo": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla, y la recogida se hace EN EL RZR. Es un recorrido NOCTURNO. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
+  "amanecer-de-nubes": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Se sale DE MADRUGADA para llegar a la cima antes del amanecer. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
+  "olla-de-la-luz": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
 };
 
 /** Qué comida se incluye. NINGÚN tour es "todo incluido". */
@@ -68,6 +76,9 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   // Medio día: no lleva desayuno. Sí incluye la cata de café de la finca, que
   // no es un alimento del paquete sino parte del recorrido.
   "travesia-del-cafe": { desayuno: false, comida: false, detalle: "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido." },
+  "gruta-de-xilo": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Es un recorrido de noche de unas 3 horas." },
+  "amanecer-de-nubes": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Se sale de madrugada: conviene que el cliente lleve algo para desayunar en la cima." },
+  "olla-de-la-luz": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Conviene que el cliente lleve agua y algo de comer para la caminata." },
 };
 
 /** Qué material visual se entrega. Nunca se describe como "profesional". */
@@ -88,6 +99,9 @@ const IDEAL_PARA: Record<string, string[]> = {
   "ruta-acuatica-puente-de-dios": ["aventura", "amigos", "nadar", "cascadas"],
   "buceo-media-luna": ["primera vez buceando", "mayores de 10 años", "aventura acuática"],
   "travesia-del-cafe": ["familias", "medio día", "el más económico", "cultura y sabor", "ritmo tranquilo"],
+  "gruta-de-xilo": ["aventura", "cuevas", "recorrido de noche", "parejas", "el más económico"],
+  "amanecer-de-nubes": ["senderismo", "amanecer", "montaña", "fotografía", "buena condición física"],
+  "olla-de-la-luz": ["senderismo", "bosque de niebla", "sótanos", "naturaleza", "fotografía"],
 };
 
 // Fuente única en tours.ts — antes había una copia aquí y el endpoint del
@@ -109,37 +123,60 @@ const HAB_HOTEL_NOMBRE: Record<string, string> = {
   "jungla": "Jungla",
 };
 
-/** Formatea una hora decimal (8.5 → "8:30 AM"). */
-function fmtHora(dec: number): string {
-  let h = Math.floor(dec);
-  const m = Math.round((dec - h) * 60);
-  const ampm = h >= 12 ? "PM" : "AM";
-  let h12 = h % 12;
-  if (h12 === 0) h12 = 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
-
-/** Horario aproximado de inicio y fin del recorrido (salida estándar 8:30 AM). */
+/**
+ * Horario de inicio y fin del recorrido.
+ *
+ * 🔴 Antes asumía salida a las 8:30 DE LA MAÑANA para todos. Con la Gruta de
+ * Xilo, que es un recorrido NOCTURNO de 3 h, el bot le decía al cliente que
+ * "inicia aprox. 8:30 AM y termina aprox. 11:30 AM". Ahora la hora sale del
+ * campo `recogida` del catálogo, el mismo que pinta la ficha, y `fmtHora12`
+ * también vive en `tours.ts`: el sitio y el bot ya no pueden decir horas
+ * distintas.
+ */
 function horarioTour(t: (typeof TOURS_DB)[number]): string {
+  // El Edén no sale como los demás: son horarios fijos que pone el jardín, y de
+  // ellos depende que el cliente alcance la hora de acceso previo.
+  if (t.id === "tour-eden-jardin") {
+    return "Horarios FIJOS que pone el jardín: 8:00 AM lunes, miércoles, jueves y viernes; 7:00 AM sábado y domingo; y 5:00 PM de miércoles a lunes. Dura ~3 h. La hora exacta se confirma al apartar la fecha.";
+  }
   if (t.precioUnidad === "vehiculo") {
     return "Inicia por la mañana (aprox. 8:30–9:00 AM); la hora de término depende de la ruta: Nanacatli ~2 h, Miradores ~3 h, Nacimiento y Trinidad ~5 h.";
   }
+  // "Entre 8:00 y 9:00 AM" → "entre 8:00 y 9:00 AM", para que encaje detrás de
+  // "Sale". Quitar el "Entre" entero dejaba "Sale 8:00 y 9:00 AM".
+  const v = ventanaSalida(t, false);
+  const salida = v.charAt(0).toLowerCase() + v.slice(1);
+  const regreso = regresoDeTour(t, false);
   if (t.duracionRango) {
     const [a, b] = t.duracionRango;
-    return `Inicia aprox. 8:30 AM y dura entre ${a} y ${b} horas (día completo). Los horarios exactos se confirman al reservar.`;
+    return `Sale ${salida} y dura entre ${a} y ${b} horas; regresa aprox. ${regreso}. Los horarios exactos se confirman al reservar.`;
   }
-  const inicio = 8.5; // 8:30 AM
-  const fin = inicio + t.duracion_hrs;
-  return `Inicia aprox. 8:30 AM y termina aprox. ${fmtHora(fin)} (~${t.duracion_hrs} h). Los horarios exactos se confirman al reservar.`;
+  return `Sale ${salida} y termina aprox. ${regreso} (~${t.duracion_hrs} h). Los horarios exactos se confirman al reservar.`;
 }
 
-/** Punto de encuentro derivado de los destinos/incluye de cada tour. */
+/**
+ * Punto de encuentro.
+ *
+ * 🔴 Antes lo adivinaba con una expresión regular sobre el texto de "incluye",
+ * y si no encontraba nada devolvía el PRIMER DESTINO del tour. Con la Gruta de
+ * Xilo eso le hacía contestar "Selva de Xilitla (caminata de acceso)" como si
+ * fuera un punto de encuentro. Peor: a los tours que solo recogen en Xilitla
+ * les contestaba "Xilitla o Ciudad Valles", contradiciendo al campo
+ * `transporte` del MISMO objeto. Ahora sale del catálogo.
+ */
 function puntoEncuentro(t: (typeof TOURS_DB)[number]): string {
   const marcado = t.destinos.find((d) => /\(punto de encuentro\)/i.test(d));
   if (marcado) return marcado.replace(/\s*\(punto de encuentro\)/i, "").trim();
-  const incl = t.incluye.join(" · ");
-  if (/(transporte|traslado)[^.]*desde tu (hotel|hospedaje)/i.test(incl)) {
+  const rec = recogidaDeTour(t);
+  if (rec.tipo === "hospedaje") {
     return "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)";
+  }
+  if (rec.tipo === "hospedaje-xilitla") {
+    const veh = rec.vehiculo ? `, en el propio ${rec.vehiculo.es}` : "";
+    return `Pasamos por ti a tu hospedaje EN XILITLA${veh} (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.`;
+  }
+  if (rec.tipo === "base-xilitla") {
+    return "Nuestra base en Xilitla: el cliente llega por su cuenta hasta allá. NO incluye transporte hasta Xilitla.";
   }
   return t.destinos[0] || "Se coordina por WhatsApp";
 }
@@ -164,11 +201,18 @@ const tours = TOURS_DB.map((t) => ({
   duracionTexto: tourDurTexto(t, " h"),
   precio: t.precio,
   precioUnidad: t.precioUnidad || "persona",
+  // Tarifa del GRUPO COMPLETO por escalones (índice 0 = 1 persona). Sin esto
+  // el bot multiplicaría `precio` por el número de personas y cotizaría el
+  // triple de lo que cuesta.
+  tarifaGrupo: t.tarifaGrupo ?? null,
+  // Política propia cuando la del sitio (48 h y reembolso) no aplica.
+  cancelacion: t.cancelacion?.es ?? null,
   groupMin: t.groupMin,
   groupMax: t.groupMax,
   soloAdultos: Boolean(t.soloAdultos),
   privateAvailable: Boolean(t.privateAvailable),
-  privateMinPrice: t.privateMinPrice ?? null,
+  // El privado es el precio normal MÁS un recargo por cabeza, no una tarifa aparte.
+  privateExtraPorPersona: t.privateAvailable ? PRIVADO_EXTRA_POR_PERSONA : null,
   tagline: t.tagline,
   pitch: t.descripcion,
   url: `${empresa.sitio}/tours/${t.slug}`,
@@ -224,7 +268,22 @@ const paquetes = PAQUETES_DB.map((p) => ({
   url: `${empresa.sitio}/reservar-paquete/${p.slug}`,
   badge: p.badge || null,
   perfiles: p.perfiles,
+  // Las habitaciones que ofrece ESTE paquete, en orden: la primera es la que
+  // se asigna. Sin esto Camila ofrecía Orquídeas en la Luna de Miel, que se
+  // vende con la suite Jungla puesta.
+  habitaciones: habitacionesDePaquete(p).map((h) => h.nombre),
+  habitacionAsignada: !!p.habitaciones?.length,
   tours: p.tours,
+  // Los recorridos que el cliente ELIGE. Sin esto, de "Tu Huasteca" Camila
+  // sabía que son cuatro a elegir y no cuáles, así que no podía contestar la
+  // primera pregunta que hace cualquiera: ¿entre qué elijo?
+  eleccion: p.eleccionTour
+    ? {
+        cuantos: p.eleccionTour.cuantos ?? 1,
+        dia: p.eleccionTour.dia ?? null,
+        opciones: p.eleccionTour.opciones.map((o) => o.nombre),
+      }
+    : null,
   itinerario: p.itinerario.map((d) => ({
     dia: d.dia,
     tipo: d.tipo,

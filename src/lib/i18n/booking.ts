@@ -61,6 +61,8 @@ export interface BookingMessages {
     masReservado: string;
     porPersona: string;
     porVehiculo: string;
+    /** Tarifa del grupo completo (ver `precioUnidad: "grupo"` en tours.ts). */
+    porGrupo: string;
     personas: (n: number) => string;
     noches: (n: number) => string;
     porNoche: (precio: string) => string;
@@ -126,6 +128,13 @@ export interface BookingMessages {
     adulto: string;
     de6a10: string;
     menoresDe6: string;
+    /**
+     * Etiqueta del contador cuando el recorrido se cobra por GRUPO: ahí no hay
+     * tramos de menor que mostrar, porque un niño no paga el 70 % de una tarifa
+     * plana. Ver `precioUnidad: "grupo"` en tours.ts.
+     */
+    personaSing: string;
+    personaPl: string;
     menorDe6: string;
     menos: (etiqueta: string, tour: string) => string;
     mas: (etiqueta: string, tour: string) => string;
@@ -163,6 +172,8 @@ export interface BookingMessages {
     pasamosPorTiCola: string;
     porPersona: string;
     porVehiculo: string;
+    /** Tarifa del grupo completo (ver `precioUnidad: "grupo"` en tours.ts). */
+    porGrupo: string;
     personas: (n: number) => string;
     noches: (n: number) => string;
     porNoche: (precio: string) => string;
@@ -170,6 +181,13 @@ export interface BookingMessages {
     antesDePagarCola: string;
     salimosEntre: string;
     salimosEntreFuerte: string;
+    /**
+     * Aviso cuando el carrito lleva un recorrido con reglas propias (horario,
+     * recogida o cancelación distintos). El bloque de logística de abajo habla
+     * por TODO el carrito: sin esto le promete al cliente del Edén salida a las
+     * 8:30, recogida en Ciudad Valles y reembolso a 48 h — tres cosas falsas.
+     */
+    reglasPropias: (tour: string) => string;
     cancelacionGratuita: string;
 
     // Hospedaje
@@ -341,6 +359,18 @@ export interface BookingMessages {
     continuar: string;
     puedesCambiarlo: string;
     grupoLleno: (max: number) => string;
+    /** Contador de un recorrido de tarifa por grupo: una sola casilla, sin tramos de niño. */
+    personas: string;
+    /**
+     * El tope de un recorrido que YA es privado. `grupoLleno` ofrece "armamos
+     * una salida privada", y en el Edén eso es mentira: el máximo de 7 lo pone
+     * el reglamento del jardín y no hay privado que lo suba.
+     */
+    grupoTope: (max: number) => string;
+    /** Aclara que la cifra de abajo es del grupo entero, no de cada quien. */
+    tarifaDelGrupo: (max: number) => string;
+    /** Lo que sale cada uno al dividir la tarifa; solo se enseña si van 2 o más. */
+    porCabeza: (monto: string) => string;
   };
 
   calendario: {
@@ -408,6 +438,8 @@ export interface BookingMessages {
     verTuCarrito: (n: number) => string;
     mxnPersona: string;
     mxnVehiculo: string;
+    /** Tarifa del grupo entero: la barra no puede decir "por persona". */
+    mxnGrupo: string;
     agregar: string;
     /** Botón de la barra móvil cuando la ficha trae módulo de reserva. */
     elegirFecha: string;
@@ -497,7 +529,7 @@ const es: BookingMessages = {
     introY: "apartas con el 30 % si son varios días",
     introMedio: " y liquidas el día del tour. Si algo cambia, ",
     introCancelas: "cancelas gratis hasta 48 h antes",
-    resenasGoogle: "492 reseñas en Google",
+    resenasGoogle: "161 reseñas en Google",
     verlas: "Verlas →",
     confianza: [
       { t: "Apartas con el 30 %", s: "En viajes de varios días. Uno solo se paga completo." },
@@ -526,7 +558,7 @@ const es: BookingMessages = {
       "Cancelación gratuita hasta 48 h antes del tour, sin preguntas y sin penalización.",
       "Hoy solo pagas el 30 %. El resto lo liquidas el día del recorrido.",
       "El precio que ves es el final: transporte, entradas, guía, equipo y seguro incluidos.",
-      "Si el clima obliga a suspender, se reprograma o se devuelve el anticipo.",
+      "Si el río no está en condiciones seguras, eliges tú: reembolso del 100 % o cambiar la fecha sin costo.",
       "Pago con tarjeta procesado por Stripe. Nosotros no guardamos tus datos bancarios.",
       "¿Dudas antes de pagar? Te contestamos por WhatsApp y reservas cuando quieras.",
     ],
@@ -543,6 +575,7 @@ const es: BookingMessages = {
     masReservado: "El más reservado",
     porPersona: "por persona",
     porVehiculo: "por vehículo",
+    porGrupo: "por el grupo",
     personas: (n) => `${n} ${n === 1 ? "persona" : "personas"}`,
     noches: (n) => `${n} noche${n > 1 ? "s" : ""}`,
     porNoche: (precio) => `${precio}/noche`,
@@ -603,6 +636,8 @@ const es: BookingMessages = {
     adulto: "adulto",
     de6a10: "de 6 a 10 años",
     menoresDe6: "menores de 6",
+    personaSing: "persona",
+    personaPl: "personas",
     menorDe6: "menor de 6",
     menos: (etiqueta, tour) => `Menos ${etiqueta} en ${tour}`,
     mas: (etiqueta, tour) => `Más ${etiqueta} en ${tour}`,
@@ -642,6 +677,7 @@ const es: BookingMessages = {
     pasamosPorTiCola: ", y te regresamos al terminar. No necesitas hospedarte con nosotros.",
     porPersona: "por persona",
     porVehiculo: "por vehículo",
+    porGrupo: "por el grupo",
     personas: (n) => `${n} ${n === 1 ? "persona" : "personas"}`,
     noches: (n) => `${n} noche${n > 1 ? "s" : ""}`,
     porNoche: (precio) => `${precio}/noche`,
@@ -649,6 +685,7 @@ const es: BookingMessages = {
     antesDePagarCola: " antes de pagar.",
     salimosEntre: ". La hora exacta de tu recogida te la confirmamos por WhatsApp al reservar.",
     salimosEntreFuerte: "Salimos entre 8:00 y 9:00 AM",
+    reglasPropias: (tour) => `${tour} tiene sus propias reglas: horario, punto de recogida y política de cambios distintos a los de arriba. Los ves completos en su página.`,
     cancelacionGratuita: "Cancelación gratuita hasta 48 h antes, con reembolso completo.",
 
     hospedajeTitulo: "¿Quieres que también te hospedemos?",
@@ -753,9 +790,9 @@ const es: BookingMessages = {
     },
     waDudaAntesDePagar: "Hola, estoy por pagar mi carrito y tengo una pregunta.",
 
-    resenasGoogle: "492 reseñas en Google",
+    resenasGoogle: "161 reseñas en Google",
     verlas: "Verlas →",
-    credenciales: "+10,000 viajeros desde 2019 · Premio Arival 2023 · Guías certificados NOM-09 SECTUR",
+    credenciales: "+10,000 viajeros guiados · Guías certificados NOM-09 SECTUR · Seguro de viaje incluido",
     confianzaCancelas: "Cancelas gratis hasta 48 h antes",
     confianzaPago: (pct) => pct >= 100
       ? "Pago seguro con Stripe · Pagas el total y no queda saldo"
@@ -818,7 +855,7 @@ const es: BookingMessages = {
     pasamosPorTi: "Pasamos por ti a tu hospedaje en ",
     pasamosPorTiFuerte: "Xilitla o Ciudad Valles",
     cancelasGratis: "Cancelas gratis hasta 48 h antes, con reembolso completo.",
-    fotosYVideo: "Fotos y video del recorrido, entregados el mismo día.",
+    fotosYVideo: "Fotos y video del recorrido que toma tu guía, sin costo extra.",
     totalDelViaje: "Total del viaje",
     sumaDeRecorridos: "Suma de los recorridos",
     descuentoVariosRecorridos: "Descuento por varios recorridos",
@@ -834,6 +871,10 @@ const es: BookingMessages = {
     continuar: "Elegir fecha y reservar",
     puedesCambiarlo: "Puedes cambiar fecha y personas en el siguiente paso.",
     grupoLleno: (max) => `Este recorrido sale con grupos de máximo ${max} personas. ¿Van más? Escríbenos y armamos una salida privada.`,
+    personas: "personas",
+    grupoTope: (max) => `${max} personas es el máximo que permite el jardín por experiencia; no se puede ampliar.`,
+    tarifaDelGrupo: (max) => `Tarifa del grupo completo, hasta ${max} personas`,
+    porCabeza: (monto) => `Les sale en ${monto} por persona`,
   },
 
   calendario: {
@@ -896,6 +937,7 @@ const es: BookingMessages = {
     verTuCarrito: (n) => `Ver tu carrito (${n})`,
     mxnPersona: "MXN/persona",
     mxnVehiculo: "MXN/vehículo",
+    mxnGrupo: "MXN/grupo",
     agregar: "Agregar",
     elegirFecha: "Elegir fecha",
     masHospedaje: "+ hospedaje · ver total",
@@ -939,7 +981,7 @@ const es: BookingMessages = {
       {
         num: "02",
         title: "Confirma por WhatsApp",
-        text: "Envíanos tu número de confirmación al +52 489 125 1458. Te responderemos para coordinar tu punto de recogida exacto.",
+        text: "Envíanos tu número de confirmación al +52 489 109 0388. Te responderemos para coordinar tu punto de recogida exacto.",
       },
       {
         num: "03",
@@ -957,7 +999,7 @@ const es: BookingMessages = {
         text: "Preséntate en el punto acordado con tu guía y muestra tu número de confirmación. ¡El resto lo hacemos nosotros!",
       },
     ],
-    confirmarWhatsapp: "Confirmar por WhatsApp · +52 489 125 1458",
+    confirmarWhatsapp: "Confirmar por WhatsApp · +52 489 109 0388",
     compartirReserva: "Compartir mi reserva",
     enlaceCopiado: "¡Enlace copiado! Compártelo 🎉",
     agregarCalendario: "Agregar al calendario",
@@ -972,7 +1014,7 @@ const es: BookingMessages = {
       `¡Acabo de reservar "${tour}" en la Huasteca Potosina! 🌊 ¿Quién se apunta al próximo? 👉 ${url}`,
     compartirTitulo: "Mi tour en la Huasteca Potosina",
     icsDescripcion: (folio, personas) =>
-      `Confirmación ${folio}. ${personas} participante(s). Te contactaremos por WhatsApp (+52 489 125 1458) un día antes para coordinar la hora exacta de recogida.`,
+      `Confirmación ${folio}. ${personas} participante(s). Te contactaremos por WhatsApp (+52 489 109 0388) un día antes para coordinar la hora exacta de recogida.`,
   },
 
   validacion: {
@@ -1022,7 +1064,7 @@ const en: BookingMessages = {
     introY: "hold your spot with 30 % on multi-day trips",
     introMedio: " and settle the rest on tour day. If anything changes, ",
     introCancelas: "cancel free up to 48 h before",
-    resenasGoogle: "492 Google reviews",
+    resenasGoogle: "161 Google reviews",
     verlas: "Read them →",
     confianza: [
       { t: "Hold with 30 %", s: "On multi-day trips. A single day is paid in full." },
@@ -1068,6 +1110,7 @@ const en: BookingMessages = {
     masReservado: "Most booked",
     porPersona: "per person",
     porVehiculo: "per vehicle",
+    porGrupo: "for the group",
     personas: (n) => `${n} ${n === 1 ? "person" : "people"}`,
     noches: (n) => `${n} night${n > 1 ? "s" : ""}`,
     porNoche: (precio) => `${precio}/night`,
@@ -1127,6 +1170,8 @@ const en: BookingMessages = {
     adultos: "adults",
     adulto: "adult",
     de6a10: "ages 6 to 10",
+    personaSing: "person",
+    personaPl: "people",
     menoresDe6: "under 6",
     menorDe6: "under 6",
     menos: (etiqueta, tour) => `Fewer ${etiqueta} on ${tour}`,
@@ -1167,6 +1212,7 @@ const en: BookingMessages = {
     pasamosPorTiCola: ", and bring you back at the end. You don't need to stay with us.",
     porPersona: "per person",
     porVehiculo: "per vehicle",
+    porGrupo: "for the group",
     personas: (n) => `${n} ${n === 1 ? "person" : "people"}`,
     noches: (n) => `${n} night${n > 1 ? "s" : ""}`,
     porNoche: (precio) => `${precio}/night`,
@@ -1174,6 +1220,7 @@ const en: BookingMessages = {
     antesDePagarCola: " before you pay.",
     salimosEntre: ". We confirm your exact pickup time on WhatsApp when you book.",
     salimosEntreFuerte: "We leave between 8:00 and 9:00 AM",
+    reglasPropias: (tour) => `${tour} runs by its own rules: different schedule, pickup point and change policy from the ones above. You can see them in full on its page.`,
     cancelacionGratuita: "Free cancellation up to 48 h before, with a full refund.",
 
     hospedajeTitulo: "Would you like us to host you too?",
@@ -1278,9 +1325,9 @@ const en: BookingMessages = {
     },
     waDudaAntesDePagar: "Hi, I'm about to pay for my cart and I have a question.",
 
-    resenasGoogle: "492 Google reviews",
+    resenasGoogle: "161 Google reviews",
     verlas: "Read them →",
-    credenciales: "+10,000 travellers since 2019 · Arival Award 2023 · NOM-09 SECTUR certified guides",
+    credenciales: "10,000+ travellers guided · NOM-09 SECTUR certified guides · Travel insurance included",
     confianzaCancelas: "Free cancellation up to 48 h before",
     confianzaPago: (pct) => pct >= 100
       ? "Secure payment with Stripe · Paid in full, no balance left"
@@ -1349,7 +1396,7 @@ const en: BookingMessages = {
     pasamosPorTi: "We pick you up at your lodging in ",
     pasamosPorTiFuerte: "Xilitla or Ciudad Valles",
     cancelasGratis: "Cancel free up to 48 h before, with a full refund.",
-    fotosYVideo: "Photos and video of the tour, delivered the same day.",
+    fotosYVideo: "Photos and video of the tour, taken by your guide, at no extra charge.",
     totalDelViaje: "Trip total",
     sumaDeRecorridos: "Tours subtotal",
     descuentoVariosRecorridos: "Multi-tour discount",
@@ -1365,6 +1412,10 @@ const en: BookingMessages = {
     continuar: "Pick a date and book",
     puedesCambiarlo: "You can change the date and party size on the next step.",
     grupoLleno: (max) => `This tour runs with groups of up to ${max}. More of you? Message us and we'll set up a private departure.`,
+    personas: "people",
+    grupoTope: (max) => `${max} people is the maximum the garden allows per experience; it cannot be extended.`,
+    tarifaDelGrupo: (max) => `Flat rate for the whole group, up to ${max} people`,
+    porCabeza: (monto) => `That works out to ${monto} per person`,
   },
 
   calendario: {
@@ -1427,6 +1478,7 @@ const en: BookingMessages = {
     verTuCarrito: (n) => `View your cart (${n})`,
     mxnPersona: "MXN/person",
     mxnVehiculo: "MXN/vehicle",
+    mxnGrupo: "MXN/group",
     agregar: "Add",
     elegirFecha: "Pick a date",
     masHospedaje: "+ lodging · see total",
@@ -1470,7 +1522,7 @@ const en: BookingMessages = {
       {
         num: "02",
         title: "Confirm on WhatsApp",
-        text: "Send us your confirmation number at +52 489 125 1458. We'll reply to arrange your exact pickup point.",
+        text: "Send us your confirmation number at +52 489 109 0388. We'll reply to arrange your exact pickup point.",
       },
       {
         num: "03",
@@ -1488,7 +1540,7 @@ const en: BookingMessages = {
         text: "Meet your guide at the agreed point and show your confirmation number. We'll take care of the rest!",
       },
     ],
-    confirmarWhatsapp: "Confirm on WhatsApp · +52 489 125 1458",
+    confirmarWhatsapp: "Confirm on WhatsApp · +52 489 109 0388",
     compartirReserva: "Share my booking",
     enlaceCopiado: "Link copied! Share it 🎉",
     agregarCalendario: "Add to calendar",
@@ -1503,7 +1555,7 @@ const en: BookingMessages = {
       `I just booked "${tour}" in the Huasteca Potosina! 🌊 Who's coming on the next one? 👉 ${url}`,
     compartirTitulo: "My tour in the Huasteca Potosina",
     icsDescripcion: (folio, personas) =>
-      `Confirmation ${folio}. ${personas} participant(s). We'll contact you on WhatsApp (+52 489 125 1458) the day before to arrange the exact pickup time.`,
+      `Confirmation ${folio}. ${personas} participant(s). We'll contact you on WhatsApp (+52 489 109 0388) the day before to arrange the exact pickup time.`,
   },
 
   validacion: {

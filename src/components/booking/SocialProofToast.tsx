@@ -10,10 +10,10 @@ import { trackTourEvent } from "@/lib/tourTracker";
 // Cada toast muestra un dato cierto de la operación: reseñas reales, premios,
 // certificaciones y políticas. El orden se baraja por sesión (Fisher-Yates).
 const PRUEBAS_ES: { texto: string; fuente: string }[] = [
-  { texto: "4.9★ de promedio en reseñas verificadas de Google", fuente: "492 reseñas reales" },
+  { texto: "4.7★ de promedio en reseñas verificadas de Google", fuente: "161 reseñas reales" },
   { texto: "Más de 10,000 viajeros han recorrido la Huasteca con nosotros", fuente: "Operando desde 2019" },
   { texto: "Guías locales certificados NOM-09 SECTUR", fuente: "Certificación oficial" },
-  { texto: "Mejor Operador de Tours de Norteamérica", fuente: "Premio Arival 2023" },
+  { texto: "Seguro de viaje para todos los integrantes, en todos los tours", fuente: "Incluido en el precio" },
   { texto: "Cancelación gratuita hasta 48 horas antes del tour", fuente: "Sin preguntas" },
   { texto: "Transporte, desayuno, entradas y guía: todo incluido", fuente: "Sin costos ocultos" },
   { texto: "Salidas todos los días del año", fuente: "Reserva con 24h de anticipación" },
@@ -21,10 +21,10 @@ const PRUEBAS_ES: { texto: string; fuente: string }[] = [
 ];
 
 const PRUEBAS_EN: { texto: string; fuente: string }[] = [
-  { texto: "4.9★ average across verified Google reviews", fuente: "492 real reviews" },
+  { texto: "4.7★ average across verified Google reviews", fuente: "161 real reviews" },
   { texto: "Over 10,000 travelers have explored the Huasteca with us", fuente: "Operating since 2019" },
   { texto: "Local guides certified NOM-09 SECTUR", fuente: "Official certification" },
-  { texto: "Best Tour Operator in North America", fuente: "Arival 2023 Award" },
+  { texto: "Travel insurance for everyone, on every tour", fuente: "Included in the price" },
   { texto: "Free cancellation up to 48 hours before the tour", fuente: "No questions asked" },
   { texto: "Transport, breakfast, entrance fees and guide all included", fuente: "No hidden costs" },
   { texto: "Departures every day of the year", fuente: "Book 24h in advance" },

@@ -32,14 +32,16 @@ export const PAQUETES_PANEL: PaquetePanel[] = PAQUETES_DB.map(p => ({
   nombre:     p.nombre.replace(/^Paquete\s+/i, ""),
   duracion:   p.duracion,
   noches:     p.noches,
-  recorridos: p.itinerario.filter(d => d.tipo === "tour" && d.tourSlug).length,
+  // Los días de tour, tengan nombre de tour o no: "Tu Huasteca" los deja a
+  // elección del cliente y aun así son cuatro recorridos, no cero.
+  recorridos: p.itinerario.filter(d => d.tipo === "tour").length,
 }));
 
 export interface CargaPaquete {
   lineas:     LineItem[];
   habitacion: PackageItem;
-  /** Para avisar en pantalla cuando el paquete deja un día a elección. */
-  eleccion?:  { dia: number; titulo: string; elegido: string; alternativa: string };
+  /** Para avisar en pantalla cuando el paquete deja recorridos a elección. */
+  eleccion?:  { dia?: number; titulo: string; elegido: string; alternativa: string };
 }
 
 /**
@@ -61,12 +63,22 @@ export function cargarPaquete(
   const paquete: Paquete | undefined = PAQUETES_DB.find(p => p.slug === slug);
   if (!paquete) return null;
 
-  const dias = paquete.itinerario.filter(d => d.tipo === "tour" && d.tourSlug);
+  const dias = paquete.itinerario.filter(d => d.tipo === "tour");
 
-  const lineas: LineItem[] = dias.map(d => {
-    const tour = TOURS_DB.find(t => t.slug === d.tourSlug);
+  /**
+   * En el paquete a la carta ningún día trae tour: se precargan las primeras
+   * opciones de la lista, en orden, y el vendedor las cambia en pantalla. Sin
+   * esto la cotización salía sin un solo recorrido.
+   */
+  const porDefecto = paquete.itinerario.some(d => d.tourSlug)
+    ? []
+    : (paquete.eleccionTour?.opciones ?? []).slice(0, dias.length).map(o => o.slug);
+
+  const lineas: LineItem[] = dias.map((d, i) => {
+    const slug = d.tourSlug ?? porDefecto[i];
+    const tour = TOURS_DB.find(t => t.slug === slug);
     return {
-      tourSlug:      d.tourSlug!,
+      tourSlug:      slug ?? "",
       tourName:      tour?.nombre ?? d.titulo,
       // Sin fecha de inicio se dejan vacías: es mejor un hueco visible que
       // cuatro fechas inventadas que se manden sin querer.
@@ -95,12 +107,15 @@ export function cargarPaquete(
   // Se carga la primera opción —la que elige la mayoría— y se dice en pantalla
   // cuál es la otra, para no cotizar en silencio algo que el cliente no pidió.
   const e = paquete.eleccionTour;
+  const cuantos = e?.cuantos ?? 1;
   const eleccion = e
     ? {
         dia:         e.dia,
         titulo:      e.titulo,
-        elegido:     e.opciones[0]?.nombre ?? "",
-        alternativa: e.opciones[1]?.nombre ?? "",
+        // Con varios a elegir, lo cargado son los primeros `cuantos` de la
+        // lista y las alternativas son los que quedaron fuera.
+        elegido:     e.opciones.slice(0, cuantos).map(o => o.nombre).join(", "),
+        alternativa: e.opciones.slice(cuantos).map(o => o.nombre).join(", "),
       }
     : undefined;
 

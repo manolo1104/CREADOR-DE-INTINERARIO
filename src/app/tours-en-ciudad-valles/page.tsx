@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, esPorPersona } from "@/lib/tours";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
 
@@ -63,7 +63,9 @@ const FAQS_CV: { q: string; a: string }[] = [
 export default function ToursCiudadVallesPage() {
   const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
   // El RZR tiene base en Xilitla; los demás recorridos recogen en Ciudad Valles.
-  const toursCV = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo");
+  // El Edén en el Jardín también sale SOLO de Xilitla —empieza a las 7 a. m.—,
+  // así que tampoco entra en una página que promete recogerte en Valles.
+  const toursCV = TOURS_DB.filter((t) => esPorPersona(t));
   const rzr = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
 
   const schema = {

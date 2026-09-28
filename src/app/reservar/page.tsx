@@ -154,7 +154,7 @@ export default async function ReservarPage() {
               ))}
             </span>
             <span className="font-dm text-[13px] text-crema/90">
-              <strong className="text-crema">4.9</strong> · {t.resenasGoogle}
+              <strong className="text-crema">4.7</strong> · {t.resenasGoogle}
             </span>
             <span className="font-dm text-[11px] text-crema/45 group-hover:text-crema/70 transition-colors hidden sm:inline">
               {t.verlas}

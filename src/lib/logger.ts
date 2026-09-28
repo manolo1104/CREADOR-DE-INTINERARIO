@@ -61,7 +61,7 @@ export function mxn(n: number | undefined | null): string {
 }
 
 // Nombre corto del tour para el log (recorta el subtítulo de marketing):
-// "Expedición Tamul — Sótano, Cañón & Cueva del Agua" → "Expedición Tamul"
+// "Expedición Tamul — Tamul, Cueva del Agua y Sótano" → "Expedición Tamul"
 export function nombreCorto(n: string | undefined | null): string {
   if (!n) return "";
   return String(n).split(/\s[—–-]\s/)[0].trim();

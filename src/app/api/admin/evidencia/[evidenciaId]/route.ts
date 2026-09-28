@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { registrarEnBitacora } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,27 @@ export async function GET(req: NextRequest, { params }: { params: { evidenciaId:
 
 export async function DELETE(_req: NextRequest, { params }: { params: { evidenciaId: string } }) {
   try {
+    // Se lee antes de borrar para poder decir en la bitácora QUÉ se borró.
+    const ev = await prisma.pagoProveedorEvidencia.findUnique({
+      where:  { id: params.evidenciaId },
+      select: { nombreArchivo: true, bookingId: true },
+    });
     await prisma.pagoProveedorEvidencia.delete({ where: { id: params.evidenciaId } });
+
+    const reserva = ev
+      ? await prisma.tourBooking.findUnique({
+          where:  { id: ev.bookingId },
+          select: { confirmationNumber: true, customerName: true },
+        })
+      : null;
+
+    await registrarEnBitacora({
+      accion:     "eliminó",
+      entidad:    "comprobante",
+      referencia: reserva?.confirmationNumber,
+      resumen:    `Comprobante "${ev?.nombreArchivo ?? params.evidenciaId}"` +
+        (reserva ? ` de la reserva ${reserva.confirmationNumber} (${reserva.customerName})` : ""),
+    });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("admin/evidencia/[id] DELETE:", e?.message);

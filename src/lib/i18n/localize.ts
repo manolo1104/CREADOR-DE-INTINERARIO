@@ -14,6 +14,7 @@ export function localizeTour(tour: Tour, locale: Locale): Tour {
   return {
     ...tour,
     nombre: t.nombre ?? tour.nombre,
+    nombreCorto: t.nombreCorto ?? tour.nombreCorto,
     tagline: t.tagline ?? tour.tagline,
     descripcion: t.descripcion ?? tour.descripcion,
     descripcionLarga: t.descripcionLarga ?? tour.descripcionLarga,
@@ -45,6 +46,14 @@ export function localizeTour(tour: Tour, locale: Locale): Tour {
           })),
         }
       : tour.eleccion,
+    // El día hora por hora: la hora y la foto se conservan; solo cambia el texto.
+    itinerario: t.itinerario && tour.itinerario
+      ? tour.itinerario.map((m, i) => ({
+          ...m,
+          momento: t.itinerario![i]?.momento ?? m.momento,
+          texto:   t.itinerario![i]?.texto   ?? m.texto,
+        }))
+      : tour.itinerario,
     // Las actividades opcionales se COBRAN: tienen que decir en inglés qué son.
     addOns: t.addOns && tour.addOns
       ? tour.addOns.map((a, i) => ({

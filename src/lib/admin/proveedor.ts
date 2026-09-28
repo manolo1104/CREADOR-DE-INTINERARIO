@@ -126,5 +126,5 @@ export function tarifasDeTour(lista: TarifaProveedor[], tourSlug: string): Tarif
 
 /** El nombre del recorrido del catálogo, para la pantalla del proveedor. */
 export function nombreDeTour(tourSlug: string): string {
-  return TOURS_DB.find(t => t.slug === tourSlug)?.nombre.split(" — ")[0] ?? tourSlug;
+  return TOURS_DB.find(t => t.slug === tourSlug)?.nombreCorto ?? tourSlug;
 }

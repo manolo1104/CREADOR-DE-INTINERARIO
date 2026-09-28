@@ -1,6 +1,6 @@
 // Correo de petición de reseña, unos días después del tour.
 //
-// El objetivo real no es "más reseñas": es más reseñas EN INGLÉS. Las 492 de
+// El objetivo real no es "más reseñas": es más reseñas EN INGLÉS. Las 161 de
 // Google están casi todas en español y un visitante estadounidense que no ve a
 // nadie como él asume que el sitio no es para él.
 

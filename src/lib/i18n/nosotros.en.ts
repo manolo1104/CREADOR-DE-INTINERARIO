@@ -92,6 +92,8 @@ export interface NosotrosContent {
   hazClicBadges: string;
   hablarConEquipo: string;
   mxnVehiculo: string;
+  /** Tarifa del grupo completo (`precioUnidad: "grupo"`). */
+  mxnGrupo: string;
   guiasOficiales: string;
 
   garantiasH2Full: string;
@@ -115,8 +117,8 @@ const ES: NosotrosContent = {
     "Empresa familiar de guías nacidos en la Huasteca Potosina. 6+ años desde 2019, certificación NOM-09 SECTUR y el compromiso de mostrarte la región como ningún otro puede hacerlo.",
   ogTitle: "Quiénes Somos — Tours Huasteca Potosina",
   ogDescription:
-    "Guías locales certificados NOM-09 SECTUR. 6+ años desde 2019, 4.9 estrellas en Google, cero incidentes.",
-  twitterDescription: "Guías locales certificados NOM-09 con 6+ años desde 2019. 4.9★ · 492 reseñas.",
+    "Guías locales certificados NOM-09 SECTUR. 6+ años desde 2019, 4.7 estrellas en Google, cero incidentes.",
+  twitterDescription: "Guías locales certificados NOM-09 con 6+ años desde 2019. 4.7★ · 161 reseñas.",
   orgDescription:
     "Operadora turística familiar con raíces en la Huasteca Potosina desde 2010. Guías locales certificados NOM-09 SECTUR que llevan a los viajeros a los rincones que ningún autobús turístico alcanza.",
   waMsg: "Hola, quisiera saber más sobre el equipo.",
@@ -130,7 +132,7 @@ const ES: NosotrosContent = {
   numeros: [
     { num: "+10,000", label: "Viajeros guiados" },
     { num: "15+", label: "Años de experiencia local" },
-    { num: "4.9 ★", label: "Calificación Google" },
+    { num: "4.7 ★", label: "Calificación Google" },
     { num: "0", label: "Incidentes de seguridad" },
   ],
 
@@ -156,10 +158,10 @@ const ES: NosotrosContent = {
   historiaP2:
     "Lo que siguió fueron años de aprendizaje en el campo — pescando en el Tampaón, haciendo rappel en los cañones, conociendo a los ejidatarios que custodian el acceso a los sitios más espectaculares. Cuando los tres guías se unieron en 2015, tenían lo que ninguna agencia puede comprar: quince años de conocimiento local acumulado. En 2019, Manolo — nacido en Xilitla y convencido de que la Huasteca merece ser conocida por el mundo — unió todo ese talento local bajo una misma empresa y una misma misión.",
   historiaCita:
-    "Un grupo de Guadalajara llegó al primer tour en 2020. Escépticos, con sueño, preguntando si valía la pena madrugar. Eran las 5:15 AM cuando llegamos al borde del Sótano. Empezaron a salir los pericos — miles, en espiral, con ese sonido que no existe en ningún otro lugar del mundo. Un señor de unos 55 años se quedó llorando. No podía explicar por qué. Solo decía 'gracias, gracias'. Ese momento fue cuando entendimos que esto no era un negocio de turismo. Era algo más grande.",
+    "Un grupo de Guadalajara llegó al primer tour en 2020. Escépticos, con sueño, preguntando si valía la pena madrugar. Eran las 5:15 AM cuando llegamos al borde del Sótano. Empezaron a salir las aves — miles, en espiral, con ese sonido que no existe en ningún otro lugar del mundo. Un señor de unos 55 años se quedó llorando. No podía explicar por qué. Solo decía 'gracias, gracias'. Ese momento fue cuando entendimos que esto no era un negocio de turismo. Era algo más grande.",
   historiaCitaAutor: "Carlos Rodríguez · Guía Principal · 2020",
   historiaP3:
-    "Hoy, más de quince años después de aquel primer viaje improvisado al Tamul, somos la operadora turística mejor calificada de la región en Google Maps: 492 reseñas verificadas, 4.9 estrellas. Pero seguimos siendo las mismas personas que crecieron aquí.",
+    "Hoy, más de quince años después de aquel primer viaje improvisado al Tamul, somos la operadora turística mejor calificada de la región en Google Maps: 161 reseñas verificadas, 4.7 estrellas. Pero seguimos siendo las mismas personas que crecieron aquí.",
 
   valoresEyebrow: "Lo que nos define",
   valoresH2: "Nuestros",
@@ -219,10 +221,10 @@ const ES: NosotrosContent = {
   testimoniosH2a: "Mencionan a nuestros guías ",
   testimoniosH2b: "por nombre",
   resenasEnEspanol: "",
-  verResenas: "Ver las 492 reseñas verificadas en Google →",
+  verResenas: "Ver las 161 reseñas verificadas en Google →",
 
   garantiasEyebrow: "Respaldo oficial",
-  cuatroNueveEstrellas: "4.9 Estrellas",
+  cuatroNueveEstrellas: "4.7 Estrellas",
   garantiasH2a: "Nuestras ",
   garantiasH2b: "garantías",
   certificaciones: [
@@ -233,11 +235,12 @@ const ES: NosotrosContent = {
     { titulo: "Rescate acuático", sub: "Certificación especializada para tours en cascadas y ríos" },
     { titulo: "Guiando desde 2010", sub: "15 años de experiencia local · Empresa formal fundada en 2019" },
   ],
-  googleLink: "492 reseñas en Google ↗",
+  googleLink: "161 reseñas en Google ↗",
   nom09Titulo: "Certificado NOM-09",
   hazClicBadges: "Haz clic en cada badge para comprobar",
   hablarConEquipo: "Hablar con el equipo →",
   mxnVehiculo: "MXN/vehículo",
+  mxnGrupo: "MXN/grupo",
   guiasOficiales: "Guías oficiales ↗",
 
   garantiasH2Full: "Certificaciones y ",
@@ -263,7 +266,7 @@ const ES: NosotrosContent = {
     { hito: "Pandemia. Cero turistas. En vez de cerrar, usamos el tiempo para certificarnos con SECTUR, capacitar al equipo y apoyar a comunidades locales con distribución de despensas." },
     { hito: "Certificación NOM-09 SECTUR completa del equipo. Expansión a Xilitla y Las Pozas. Alianza oficial con ejido Tamul para acceso exclusivo al amanecer al Sótano de las Huahuas.", ctaLabel: "Este acceso exclusivo es parte de nuestro Tour Tamul →" },
     { hito: "Eliminación total de plásticos de un solo uso. Lanzamiento del kit de bienvenida con cantimplora reutilizable incluida en todos los tours.", ctaLabel: "Conoce nuestro compromiso ambiental →" },
-    { hito: "492 reseñas verificadas en Google Maps con 4.9 estrellas de calificación. Primera temporada en que la demanda superó nuestra capacidad máxima." },
+    { hito: "161 reseñas verificadas en Google Maps con 4.7 estrellas de calificación. Primera temporada en que la demanda superó nuestra capacidad máxima." },
     { hito: "Creación del Fondo de Conservación Huasteca con 3 ejidos socios. Reforestación de 2.4 hectáreas de galería riparia en el Río Tampaón.", ctaLabel: "Conoce el impacto de tu reserva →" },
     { hito: "Lanzamiento de la plataforma digital con planificador de viajes con inteligencia artificial — el primero entre operadores turísticos de la región.", ctaLabel: "Prueba el recomendador IA →" },
   ],
@@ -300,8 +303,8 @@ const EN: NosotrosContent = {
     "A family business of guides born in the Huasteca Potosina. 6+ years since 2019, NOM-09 SECTUR certification and a commitment to show you the region the way no one else can.",
   ogTitle: "About Us — Huasteca Potosina Tours",
   ogDescription:
-    "NOM-09 SECTUR certified local guides. 6+ years since 2019, 4.9 stars on Google, zero incidents.",
-  twitterDescription: "NOM-09 certified local guides with 6+ years since 2019. 4.9★ · 492 reviews.",
+    "NOM-09 SECTUR certified local guides. 6+ years since 2019, 4.7 stars on Google, zero incidents.",
+  twitterDescription: "NOM-09 certified local guides with 6+ years since 2019. 4.7★ · 161 reviews.",
   orgDescription:
     "A family-run tour operator with roots in the Huasteca Potosina since 2010. NOM-09 SECTUR certified local guides who take travellers to the corners no tour bus ever reaches.",
   waMsg: "Hi, I'd like to know more about the team.",
@@ -315,7 +318,7 @@ const EN: NosotrosContent = {
   numeros: [
     { num: "+10,000", label: "Travellers guided" },
     { num: "15+", label: "Years of local experience" },
-    { num: "4.9 ★", label: "Google rating" },
+    { num: "4.7 ★", label: "Google rating" },
     { num: "0", label: "Safety incidents" },
   ],
 
@@ -344,7 +347,7 @@ const EN: NosotrosContent = {
     "A group from Guadalajara turned up for our first tour in 2020. Sceptical, half asleep, asking whether getting up that early was worth it. It was 5:15 AM when we reached the rim of the Sótano. The parakeets began to pour out — thousands of them, spiralling, with a sound that exists nowhere else on earth. A man of about 55 stood there crying. He couldn't explain why. He just kept saying 'thank you, thank you'. That was the moment we understood this wasn't a tourism business. It was something bigger.",
   historiaCitaAutor: "Carlos Rodríguez · Head Guide · 2020",
   historiaP3:
-    "Today, more than fifteen years after that first improvised trip to Tamul, we're the highest-rated tour operator in the region on Google Maps: 492 verified reviews, 4.9 stars. But we're still the same people who grew up here.",
+    "Today, more than fifteen years after that first improvised trip to Tamul, we're the highest-rated tour operator in the region on Google Maps: 161 verified reviews, 4.7 stars. But we're still the same people who grew up here.",
 
   valoresEyebrow: "What defines us",
   valoresH2: "Our",
@@ -404,10 +407,10 @@ const EN: NosotrosContent = {
   testimoniosH2a: "They mention our guides ",
   testimoniosH2b: "by name",
   resenasEnEspanol: "In their own words (Spanish).",
-  verResenas: "See all 492 verified reviews on Google →",
+  verResenas: "See all 161 verified reviews on Google →",
 
   garantiasEyebrow: "Official backing",
-  cuatroNueveEstrellas: "4.9 Stars",
+  cuatroNueveEstrellas: "4.7 Stars",
   garantiasH2a: "Our ",
   garantiasH2b: "guarantees",
   certificaciones: [
@@ -418,11 +421,12 @@ const EN: NosotrosContent = {
     { titulo: "Water rescue", sub: "Specialist certification for waterfall and river tours" },
     { titulo: "Guiding since 2010", sub: "15 years of local experience · Company formally founded in 2019" },
   ],
-  googleLink: "492 reviews on Google ↗",
+  googleLink: "161 reviews on Google ↗",
   nom09Titulo: "NOM-09 certified",
   hazClicBadges: "Click each badge to verify it",
   hablarConEquipo: "Talk to the team →",
   mxnVehiculo: "MXN/vehicle",
+  mxnGrupo: "MXN/group",
   guiasOficiales: "Official guides ↗",
 
   garantiasH2Full: "Certifications and ",
@@ -448,7 +452,7 @@ const EN: NosotrosContent = {
     { hito: "The pandemic. Zero tourists. Instead of closing, we used the time to certify with SECTUR, train the team and support local communities with food-parcel deliveries." },
     { hito: "Full NOM-09 SECTUR certification for the team. Expansion to Xilitla and Las Pozas. Official partnership with the Tamul ejido for exclusive dawn access to the Sótano de las Huahuas.", ctaLabel: "This exclusive access is part of our Tamul Tour →" },
     { hito: "Single-use plastics eliminated entirely. Launch of the welcome kit with a reusable water bottle included on every tour.", ctaLabel: "See our environmental commitment →" },
-    { hito: "492 verified reviews on Google Maps with a 4.9-star rating. The first season where demand outstripped our maximum capacity." },
+    { hito: "161 verified reviews on Google Maps with a 4.7-star rating. The first season where demand outstripped our maximum capacity." },
     { hito: "Creation of the Huasteca Conservation Fund with 3 partner ejidos. Replanting of 2.4 hectares of riparian woodland along the Tampaón River.", ctaLabel: "See the impact of your booking →" },
     { hito: "Launch of the digital platform with an AI trip planner — the first among tour operators in the region.", ctaLabel: "Try the AI recommender →" },
   ],

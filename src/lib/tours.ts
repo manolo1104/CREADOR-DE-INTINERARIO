@@ -15,6 +15,28 @@ export interface TourEleccion {
   opciones: { id: string; nombre: string; nota?: string }[];
 }
 
+/**
+ * Un momento del día, para la sección "Tu día, hora por hora".
+ *
+ * Es lo que más pesa en la decisión de comprar un recorrido y lo que el sitio
+ * no tenía: la ficha decía cuánto dura y qué lugares visita, pero no en qué
+ * orden ni a qué hora, así que quien compara con GetYourGuide o Viator —donde
+ * el itinerario por horas es lo primero que se ve— no tenía con qué.
+ *
+ * ⚠️ Las horas son APROXIMADAS y se validan con el guía antes de publicarlas.
+ * Un recorrido sin `itinerario` no pinta la sección: no se rellena a medias.
+ */
+export interface TourMomento {
+  /** "8:00", "8:00–9:00". Tal cual se enseña. */
+  hora:    string;
+  /** Titular corto del momento: "Recogida", "Canoa a Tamul". */
+  momento: string;
+  /** Dos o tres líneas en segunda persona, como el resto de la ficha. */
+  texto:   string;
+  /** Foto de la galería del propio tour. Opcional: no todos los momentos tienen. */
+  foto?:   string;
+}
+
 /** Actividad opcional que se puede sumar a un tour al reservar. */
 export interface TourAddOn {
   id:          string;
@@ -132,9 +154,90 @@ export function incluyePropioDeTour(t: Pick<Tour, "incluye">): string[] {
   return incluyeDeTour(t).filter((x) => !siempre.has(claveIncluye(x)));
 }
 
+export type TourCategoria = "ecoturismo" | "aventura" | "extremo";
+
+/** Las tres familias de /tours, en el orden en que se muestran. */
+export const TOUR_CATEGORIAS: { id: TourCategoria; label: string; labelEn: string; desc: string; descEn: string }[] = [
+  { id: "ecoturismo", label: "Ecoturismo",             labelEn: "Ecotourism",
+    desc: "Cascadas, selva y cultura a ritmo tranquilo.",
+    descEn: "Waterfalls, jungle and culture at an easy pace." },
+  { id: "aventura",   label: "Aventura",               labelEn: "Adventure",
+    desc: "Canoa, kayak, buceo y off-road. Te vas a mojar.",
+    descEn: "Canoe, kayak, diving and off-road. You will get wet." },
+  { id: "extremo",    label: "Actividades extremas",   labelEn: "Extreme activities",
+    desc: "Cuerda, casco y rápidos. Para quien busca adrenalina.",
+    descEn: "Ropes, helmets and rapids. For the adrenaline seekers." },
+];
+
+/**
+ * Cómo llega el cliente al recorrido.
+ *
+ * 🔴 Existe porque esto se decidía con `tourId === "..."` en CUATRO sitios
+ * —`TourDeparture`, el punto de salida de la ficha, las dos preguntas
+ * frecuentes y el cerebro del bot— y las listas ya se habían desincronizado:
+ * la ficha del Edén prometía recogida "en Xilitla o Ciudad Valles" mientras su
+ * propia pregunta frecuente, 300 px más abajo en la MISMA página, decía "solo
+ * desde Xilitla". Con el cuarto caso especial (la Gruta de Xilo) encadenar otro
+ * `&&` dejaba de ser sostenible.
+ */
+export type RecogidaTipo =
+  /** Pasamos por él a su hospedaje, en Xilitla o en Ciudad Valles. El caso de siempre. */
+  | "hospedaje"
+  /** Pasamos por él SOLO si se hospeda en Xilitla; desde Valles llega por su cuenta al pueblo. */
+  | "hospedaje-xilitla"
+  /** Nos vemos en nuestra base de Xilitla. El transporte hasta Xilitla no se incluye. */
+  | "base-xilitla"
+  /** Nos vemos en el destino mismo (la laguna de la Media Luna, en Rioverde). */
+  | "en-sitio";
+
+export interface TourRecogida {
+  tipo: RecogidaTipo;
+  /**
+   * A qué hora arranca, en decimal y reloj de 24 h: 8 = 8:00 AM, 19 = 7:00 PM,
+   * 8.5 = 8:30 AM.
+   *
+   * 🔴 Vive al lado de `duracion_hrs` a propósito. El regreso se calcula
+   * sumando la duración a esta hora, y cuando la hora estaba clavada a las 8:00
+   * de la mañana dentro de `TourDeparture`, un recorrido NOCTURNO de 3 h
+   * anunciaba "Regreso aprox. 11:00 AM". Quien escriba la duración de un tour
+   * de noche ve este campo en la línea de al lado.
+   */
+  horaInicio?: number;
+  /** Ancho de la ventana de salida, en horas. 1 → "Entre 8:00 y 9:00 AM". 0 → hora exacta. */
+  ventanaHrs?: number;
+  /** El vehículo, cuando NO es la unidad de siempre. */
+  vehiculo?: { es: string; en: string };
+  /** Qué hace quien se hospeda fuera de la zona de recogida. */
+  nota?: { es: string; en: string };
+}
+
 export interface Tour {
   id:               string;
   nombre:           string;
+  /**
+   * El nombre sin el detalle que va tras el guion largo: "Expedición Tamul"
+   * en vez de "Expedición Tamul — Tamul, Cueva del Agua y Sótano".
+   *
+   * 🔴 Hace falta porque el nombre completo se colaba en sitios donde no cabe
+   * o no encaja: el `<title>` salía de 69 caracteres (Google corta en ~60) con
+   * "Tamul" repetido dos veces, y las preguntas frecuentes quedaban como
+   * "¿Qué incluye el Expedición Tamul — Tamul, Cueva del Agua y Sótano?".
+   *
+   * Además el repo derivaba esto mismo a mano en **más de treinta sitios**,
+   * cada uno con su variante del separador (`split("—")` y `split(" — ")`,
+   * unos con `.trim()` y otros no). Los que tienen el objeto del catálogo
+   * delante usan ya este campo; los que solo reciben el nombre guardado en la
+   * base —los correos, el carrito, el panel— pasan por `nombreCortoDe()`, que
+   * es la misma regla escrita una vez.
+   */
+  nombreCorto:      string;
+  /**
+   * El artículo que le corresponde en español, para las frases generadas
+   * ("¿Qué incluye **la** Expedición Tamul?"). Cadena vacía cuando el nombre
+   * ya lo trae —"El Edén en el Jardín"— o cuando no lo lleva.
+   * En inglés siempre es "the", así que no se traduce.
+   */
+  articulo:         "el" | "la" | "los" | "las" | "";
   slug:             string;
   tagline:          string;
   descripcion:      string;
@@ -144,6 +247,8 @@ export interface Tour {
   precio:           number;
   /** Rango de duración a mostrar (ej. [8,10] → "8–10 horas"). Si no, se usa duracion_hrs. */
   duracionRango?:   [number, number];
+  /** Cómo llega el cliente. Sin esto: recogida en su hospedaje, Xilitla o Valles, 8–9 AM. */
+  recogida?:        TourRecogida;
   /**
    * Precio anterior, para tacharlo junto al actual.
    *
@@ -155,33 +260,184 @@ export interface Tour {
    * engañosa. El descuento ahora vive donde está el dinero: en el segundo y el
    * tercer recorrido (`descuentoPorPosicion`).
    *
-   * Si alguna vez SÍ se cobró un precio más alto, se puede volver a poner: toda
-   * la UI que lo pinta sigue en su sitio y se enciende sola.
+   * Volvió a ponerse en seis recorridos, y el 28 sep 2026 se le puso FECHA DE
+   * FIN (`PROMO_VENCE`). Nada que lo pinte debe leer este campo a pelo: hay que
+   * pasar por `precioTachado()`, que lo apaga solo cuando la promoción termina.
    */
   precioOriginal?:  number;
-  /** "persona" (default) usa el flujo de reserva online; "vehiculo" se reserva por WhatsApp. */
-  precioUnidad?:    "persona" | "vehiculo";
+  /**
+   * Cómo se cobra el recorrido:
+   *
+   *   · "persona"  (default) — precio por cabeza, con tarifa de niño.
+   *   · "vehiculo" — el precio es de la unidad (RZR); su propio formulario.
+   *   · "grupo"    — una sola tarifa para TODO el grupo, que sube por escalones
+   *     según cuánta gente va. Es como cobra la Fundación Las Pozas la
+   *     experiencia privada: un grupo de 7 no paga siete veces, paga $4,160.
+   *
+   * Quien pinte un precio tiene que pasar por `etiquetaUnidad()`: escribir
+   * "por persona" junto a una tarifa de grupo anuncia siete veces el precio.
+   */
+  precioUnidad?:    "persona" | "vehiculo" | "grupo";
+  /**
+   * Escalones de la tarifa de grupo, en MXN y por el GRUPO COMPLETO:
+   * el índice 0 es una persona, el 1 son dos, y así hasta `groupMax`.
+   * Solo tiene sentido con `precioUnidad: "grupo"`; `precio` guarda el primer
+   * escalón para que el "desde" del catálogo siga saliendo de un solo sitio.
+   */
+  tarifaGrupo?:     number[];
+  /**
+   * Qué pasa si el cliente cancela, cuando NO aplica la promesa del sitio
+   * ("cancelación gratuita 48 h antes, reembolso completo").
+   *
+   * 🔴 Existe por el Edén en el Jardín: la Fundación Las Pozas NO reembolsa
+   * nunca —solo permite cambiar la fecha con 5 días de anticipación— y el
+   * sitio prometía lo contrario en la ficha, en el JSON-LD de las FAQ y en el
+   * sello de confianza. Prometer un reembolso que el proveedor no devuelve lo
+   * paga la operadora de su bolsa.
+   */
+  cancelacion?:     { es: string; en: string };
+  /**
+   * Sello de exclusividad en el hero: este recorrido no se consigue con otra
+   * operadora de la zona.
+   *
+   * ⚠️ Es una afirmación pública y comprobable. Se pone SOLO cuando el trato
+   * con el proveedor lo respalda; si el proveedor vende la misma experiencia
+   * por su cuenta, el sello se cae solo en cuanto alguien lo busca —el mismo
+   * problema que el «ahorro» inventado de los paquetes—. Sin este campo, el
+   * hero no pinta nada.
+   */
+  exclusivo?:       { es: string; en: string };
   rutas?:           TourRuta[];
   flota?:           TourVehiculo[];
   duracion_hrs:     number;
   icon:             string;
   tipo:             string;
+  /** Familia bajo la que se agrupa el tour en /tours. `tipo` sigue siendo el
+   *  subtítulo libre de la tarjeta; esto es la pestaña a la que pertenece. */
+  categoria:        TourCategoria;
   dificultad:       "baja" | "media" | "alta";
   imagen_hero:      string;
+  /**
+   * Corte VERTICAL (720×1280) para el fondo del hero, y SOLO en teléfonos.
+   * Sin esto, el hero usa `imagen_hero` y se comporta igual que siempre.
+   *
+   * ⚠️ El nombre lleva "Movil" a propósito: en escritorio y en tableta se sigue
+   * viendo la foto, siempre. Un archivo apaisado aquí NO se va a ver en
+   * escritorio, y la caja del hero de una tableta (768×614) se come el 55 % de
+   * un cuadro vertical. Ver `src/components/HeroTourMedia.tsx`.
+   *
+   * Clips CORTOS y MUDOS (10–20 s, sin pista de audio: un MP4 con audio, aunque
+   * vaya en silencio, puede robarle a iOS el control de la música del usuario).
+   * El nombre lleva versión (`-v1`) porque /videos se sirve con caché inmutable
+   * de un año: un vídeo nuevo va con otro nombre, nunca encima.
+   */
+  videoHeroMovil?:  string;
+  /**
+   * Logotipo propio del tour (letras con el paisaje dentro), sin fondo.
+   * Si está, manda sobre el sello SVG de TourEmblem.
+   * Cómo se prepara uno nuevo: `scripts/README-logos.md`.
+   */
+  logo?:            string;
+  /**
+   * Las fotos del collage de la tarjeta, UNA POR DESTINO y en el mismo orden
+   * que `destinos`. Sin esto se tomaban las primeras de la galería, que suelen
+   * ser tres fotos del mismo sitio: la tarjeta enseñaba tres veces la cascada
+   * y ninguna de la cueva ni del sótano.
+   *
+   * Una entrada puede ser la ruta sola o `{ src, pos }`, donde `pos` mueve el
+   * encuadre dentro de la franja (`object-position`) para que no se quede
+   * fuera lo que da sentido a la foto.
+   */
+  collage?:         (string | { src: string; pos?: string })[];
   imagenes:         string[];
   urgencia?:        string;
   reviewCount:      number;
   groupMin:         number;
   groupMax:         number;
   privateAvailable: boolean;
-  privateMinPrice?: number;
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
   soloAdultos?:     boolean;
   gallery:          GalleryImage[];
   /** Actividades opcionales que se ofrecen al reservar este tour. */
   addOns?:          TourAddOn[];
+  /** El día hora por hora. Sin esto, la sección no se pinta. */
+  itinerario?:      TourMomento[];
   /** Elección obligatoria al reservar (ej. Ruta Acuática). */
   eleccion?:        TourEleccion;
+}
+
+/**
+ * Lo que cuesta el GRUPO COMPLETO con `personas` dentro, para los recorridos de
+ * tarifa por escalones. `null` si el recorrido no se cobra así.
+ *
+ * Una sola definición para el navegador y para el servidor: el módulo de
+ * reserva pinta con esto y `computeTourCharge` vuelve a cobrarlo con esto. Si
+ * cada uno hiciera su cuenta, el cliente vería un total y pagaría otro.
+ */
+export function precioGrupo(t: Pick<Tour, "tarifaGrupo">, personas: number): number | null {
+  const tabla = t.tarifaGrupo;
+  if (!tabla?.length) return null;
+  const n = Math.min(Math.max(1, Math.floor(personas) || 1), tabla.length);
+  return tabla[n - 1] ?? null;
+}
+
+/**
+ * ¿Se cobra por cabeza? Las listas que hablan de "precio por persona" —la tabla
+ * de /precios, el rango "desde X hasta Y"— tienen que filtrar con esto y no con
+ * `!== "vehiculo"`: una tarifa de grupo de $2,990 metida ahí subía el techo del
+ * rango y anunciaba por cabeza lo que cuesta el grupo entero.
+ */
+export function esPorPersona(t: Pick<Tour, "precioUnidad">): boolean {
+  return t.precioUnidad === undefined || t.precioUnidad === "persona";
+}
+
+/**
+ * Último día en que se enseña el precio anterior tachado (horario de México,
+ * inclusive: el 1 de noviembre todavía se ve, el 2 ya no).
+ *
+ * 🔴 Existe porque el "10 % OFF" no tenía fecha. Un descuento que no vence no
+ * es una promoción, es el precio de siempre con un adorno: le enseña al
+ * visitante que esperar no cuesta nada —justo lo contrario de la urgencia que
+ * busca— y en México un "precio anterior" permanente puede leerse como
+ * publicidad engañosa. Para prorrogarlo basta con mover esta fecha; para
+ * retirarlo, ponerle una pasada.
+ */
+export const PROMO_VENCE = "2026-11-01";
+
+/** ¿Sigue viva la promoción hoy, en horario de México? */
+export function promoVigente(): boolean {
+  const hoyMX = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  return hoyMX <= PROMO_VENCE;
+}
+
+/**
+ * El precio anterior que se tacha, o `null` si no hay que enseñar ninguno.
+ *
+ * Es el ÚNICO camino permitido para pintar un descuento: devuelve null cuando
+ * la promoción ha vencido, así que las cuatro pantallas que lo muestran se
+ * apagan solas el 2 de noviembre sin que nadie tenga que acordarse.
+ */
+export function precioTachado(t: Pick<Tour, "precio" | "precioOriginal">): number | null {
+  if (!t.precioOriginal || t.precioOriginal <= t.precio) return null;
+  return promoVigente() ? t.precioOriginal : null;
+}
+
+/**
+ * El nombre corto a partir de un nombre guardado (reservas, correos, carrito),
+ * donde no hay objeto del catálogo del que leer `nombreCorto`.
+ *
+ * Acepta las dos formas del separador que conviven en los datos viejos: el
+ * guion largo con espacios y sin ellos.
+ */
+export function nombreCortoDe(nombre: string): string {
+  return nombre.split("—")[0].trim();
+}
+
+/** Qué se escribe junto al precio: "por persona", "por vehículo" o "por grupo". */
+export function etiquetaUnidad(t: Pick<Tour, "precioUnidad">, en = false): string {
+  if (t.precioUnidad === "vehiculo") return en ? "per vehicle" : "por vehículo";
+  if (t.precioUnidad === "grupo")    return en ? "per group"   : "por grupo";
+  return en ? "per person" : "por persona";
 }
 
 /** [min, max] de duración para mostrar: usa duracionRango, o el rango de las rutas (RZR), o el número. */
@@ -200,32 +456,172 @@ export function tourDurTexto(t: Pick<Tour, "duracionRango" | "rutas" | "duracion
   return a === b ? `${a}${unidad}` : `${a}–${b}${unidad}`;
 }
 
+/** Lo que se asume cuando un tour no declara `recogida`: lo que hacen casi todos. */
+const RECOGIDA_DEFAULT = { tipo: "hospedaje" as RecogidaTipo, horaInicio: 8, ventanaHrs: 1 };
+
+/** La recogida de un tour con los valores por defecto ya aplicados. */
+export function recogidaDeTour(t: Pick<Tour, "recogida">) {
+  const r = t.recogida;
+  return {
+    tipo:       r?.tipo       ?? RECOGIDA_DEFAULT.tipo,
+    horaInicio: r?.horaInicio ?? RECOGIDA_DEFAULT.horaInicio,
+    ventanaHrs: r?.ventanaHrs ?? RECOGIDA_DEFAULT.ventanaHrs,
+    vehiculo:   r?.vehiculo,
+    nota:       r?.nota,
+  };
+}
+
 /**
- * Los cuatro tours que concentran el interés real de los visitantes (Ruta
- * Surrealista y Tamul solos son ~47 % de las vistas). Se muestran primero en
- * /tours y en /experiencias; los otros cinco siguen existiendo, con su página y
- * su SEO intactos, bajo "Otros recorridos". Menos opciones arriba = más cierre.
+ * Una hora decimal en reloj de 12 h: 8 → "8:00 AM", 20.5 → "8:30 PM".
+ * Da la vuelta a medianoche, que es justo lo que hace falta para los recorridos
+ * de noche. (Era `fmtHora` dentro de `export-bot-data.ts`; vive aquí para que
+ * el sitio y el bot no puedan decir horas distintas.)
  */
-export const TOURS_DESTACADOS = [
-  "ruta-surrealista-edward-james",
+export function fmtHora12(dec: number): string {
+  const t = ((dec % 24) + 24) % 24;
+  const h = Math.floor(t);
+  const m = Math.round((t - h) * 60);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+/**
+ * Junta dos horas en un rango quitando el meridiano del primero SOLO si
+ * coincide con el del segundo.
+ *
+ * 🔴 El código anterior lo quitaba siempre (`.replace(/ (AM|PM)–/, "–")`), así
+ * que un rango de 11:00 AM a 1:00 PM salía como "11:00–1:00 PM", que cualquiera
+ * lee como las once de la noche.
+ */
+function rango12(a: string, b: string, sep: string): string {
+  const aCorto = a.slice(-2) === b.slice(-2) ? a.slice(0, -3) : a;
+  return `${aCorto}${sep}${b}`;
+}
+
+/** "Entre 8:00 y 9:00 AM" · "A las 7:00 PM" cuando la ventana es de cero. */
+export function ventanaSalida(t: Pick<Tour, "recogida">, en: boolean): string {
+  const { horaInicio, ventanaHrs } = recogidaDeTour(t);
+  if (ventanaHrs <= 0) {
+    return en ? `At ${fmtHora12(horaInicio)}` : `A las ${fmtHora12(horaInicio)}`;
+  }
+  const rango = rango12(fmtHora12(horaInicio), fmtHora12(horaInicio + ventanaHrs), en ? " and " : " y ");
+  return en ? `Between ${rango}` : `Entre ${rango}`;
+}
+
+/**
+ * Hora de regreso: la de salida más la duración real del recorrido.
+ *
+ * 🔴 Estaba clavada en "6:00–7:00 PM" para los once tours; al corregir Tamul a
+ * 12–13 h prometía las siete cuando el recorrido termina a las nueve. Después
+ * pasó a derivarse, pero sumando siempre desde las 8:00 AM, así que un tour
+ * NOCTURNO de 3 h anunciaba un regreso a las 11 de la mañana.
+ */
+export function regresoDeTour(
+  t: Pick<Tour, "recogida" | "duracionRango" | "rutas" | "duracion_hrs">,
+  en: boolean,
+): string {
+  const { horaInicio } = recogidaDeTour(t);
+  const [durMin, durMax] = tourDurRange(t);
+  const finMax = horaInicio + durMax;
+  const siguiente = finMax >= 24 ? (en ? " (next day)" : " (del día siguiente)") : "";
+  const a = fmtHora12(horaInicio + durMin);
+  if (durMin === durMax) return a + siguiente;
+  return rango12(a, fmtHora12(finMax), "–") + siguiente;
+}
+
+/**
+ * Las imágenes del collage de la tarjeta en /tours: una por parada del
+ * recorrido y en el orden en que se visitan.
+ *
+ * Si el tour trae `collage` (la lista curada a mano) se usa esa. Si no, se cae
+ * al hero más la galería, que era lo único que había antes y solía dar tres
+ * fotos del mismo sitio.
+ */
+export function tourCollage(
+  t: Pick<Tour, "imagen_hero" | "imagenes" | "gallery" | "destinos" | "collage">,
+): { src: string; alt?: string; pos?: string }[] {
+  const alts = new Map((t.gallery ?? []).map((g) => [g.src, g.alt]));
+
+  // Hasta CUATRO cuando la lista está curada a mano: hay recorridos de cuatro
+  // paradas. El relleno automático de abajo se queda en tres, porque ahí las
+  // fotos salen de la galería y la cuarta suele repetir sitio.
+  if (t.collage?.length) {
+    return t.collage.slice(0, 4).map((e) => {
+      const { src, pos } = typeof e === "string" ? { src: e, pos: undefined } : e;
+      return { src, alt: alts.get(src), pos };
+    });
+  }
+
+  const vistos = new Set<string>();
+  const pool: { src: string; alt?: string }[] = [];
+  const meter = (src?: string) => {
+    if (!src || vistos.has(src)) return;
+    vistos.add(src);
+    pool.push({ src, alt: alts.get(src) });
+  };
+  meter(t.imagen_hero);
+  for (const g of t.gallery ?? []) meter(g.src);
+  for (const src of t.imagenes ?? []) meter(src);
+
+  const quiere = (t.destinos?.length ?? 0) >= 3 ? 3 : 2;
+  return pool.slice(0, Math.min(quiere, pool.length));
+}
+
+/**
+ * Orden real de venta, del panel de admin (corte del 10 sep 2026): reservas
+ * pagadas e ingreso por tour. Manda en /tours dentro de cada categoría y en
+ * todo lo que muestre "destacados".
+ *
+ *   expedicion-tamul                 37   $170,373
+ *   cascadas-del-meco                21   $109,990
+ *   ruta-surrealista-edward-james    16   $54,370
+ *   ruta-acuatica-puente-de-dios     12   $57,256
+ *   paraiso-escalonado-minas-micos    8   $32,817
+ *   rzr-xilitla                       2   $7,600
+ *   travesia-del-cafe                 0
+ *
+ * Los tres que no aparecen en el corte (rappel, rafting, buceo) van al final.
+ * Antes esta lista se había escrito a mano y ponía el RZR entre los cuatro
+ * destacados con 2 reservas, por delante de las Cascadas del Meco con 21.
+ */
+export const TOURS_RANKING = [
   "expedicion-tamul",
-  "rzr-xilitla",
+  "cascadas-del-meco",
+  "ruta-surrealista-edward-james",
+  "ruta-acuatica-puente-de-dios",
   "paraiso-escalonado-minas-micos",
+  "rzr-xilitla",
+  "travesia-del-cafe",
 ] as const;
+
+/** Posición en el ranking; lo que no vendió nada va al final, no al principio. */
+export function rankTour(slug: string): number {
+  const i = (TOURS_RANKING as readonly string[]).indexOf(slug);
+  return i === -1 ? TOURS_RANKING.length : i;
+}
+
+/** Los cuatro que más venden. Se derivan del ranking: una sola fuente. */
+export const TOURS_DESTACADOS: readonly string[] = TOURS_RANKING.slice(0, 4);
 
 export const TOURS_DB: Tour[] = [
   {
     id:               "tour-rzr-xilitla",
     slug:             "rzr-xilitla",
+    categoria:        "aventura",
     icon:             "Compass",
     tipo:             "Aventura Off-Road",
     dificultad:       "media",
     duracion_hrs:     2,
+    /* Nos vemos en la base de Xilitla: el cliente llega por su cuenta. */
+    recogida:         { tipo: "base-xilitla" },
     reviewCount:      86,
     groupMin:         2,
     groupMax:         6,
     privateAvailable: false,
     nombre:           "Recorrido en RZR por Xilitla — Elige tu Ruta Off-Road",
+    nombreCorto:      "Recorrido en RZR por Xilitla",
+    articulo:         "el",
     tagline:          "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
     precio:           1600,
     precioUnidad:     "vehiculo",
@@ -267,6 +663,11 @@ export const TOURS_DB: Tour[] = [
       "4 rutas a elegir: Nanacatli, Miradores, Nacimiento o Trinidad",
     ],
     imagen_hero: "/imagenes/tours/rzr-xilitla/hero.jpg",
+    collage: [
+      "/imagenes/tours/rzr-xilitla/gallery-3.jpg",
+      "/imagenes/tours/rzr-xilitla/gallery-1.jpg",
+      "/imagenes/tours/rzr-xilitla/gallery-2.jpg",
+    ],
     imagenes: ["/imagenes/tours/rzr-xilitla/hero.jpg", "/imagenes/tours/rzr-xilitla/gallery-1.jpg"],
     gallery: [
       { src: "/imagenes/tours/rzr-xilitla/gallery-1.jpg", alt: "Grupo de amigos posando sobre un RZR Pro en un mirador de montaña durante el recorrido off-road en Xilitla", hasRealPeople: true },
@@ -278,6 +679,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-rappel-tamul",
     slug:             "rappel-tamul",
+    categoria:        "extremo",
     icon:             "Mountain",
     tipo:             "Aventura Extrema",
     dificultad:       "alta",
@@ -286,7 +688,9 @@ export const TOURS_DB: Tour[] = [
     groupMin:         4,
     groupMax:         10,
     privateAvailable: false,
-    nombre:           "Rappel en la Cascada de Tamul — Descenso Frente a la Caída Más Alta de México",
+    nombre:           "Rappel en la Cascada de Tamul — Descenso Frente a la Cascada Más Alta de San Luis Potosí",
+    nombreCorto:      "Rappel en la Cascada de Tamul",
+    articulo:         "el",
     tagline:          "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
     precio:           1700,
     precioOriginal:   1890,
@@ -294,7 +698,7 @@ export const TOURS_DB: Tour[] = [
     descripcion:
       "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
     descripcionLarga:
-      "Hay pocos lugares en el mundo donde puedas colgarte de una cuerda frente a una de las cascadas más altas de su país. La Cascada de Tamul —105 metros de agua desplomándose sobre el Río Tampaón— es el telón de fondo de esta experiencia, y desde el momento en que te asomas al borde del cañón entiendes por qué quienes la hacen no dejan de hablar de ella.\n\nTe recogemos en Ciudad Valles y empezamos en el embarcadero del río, donde te entregamos el equipo completo y nuestros guías de alta montaña te dan el briefing de técnica. No necesitas experiencia previa: el primer descenso es guiado paso a paso y la mayoría de nuestros visitantes nunca habían tocado una cuerda antes. Lo único que necesitas son ganas.\n\nUna vez asegurado al arnés, comienzas a bajar por la pared de roca caliza tapizada de vegetación, con la cascada a un costado lanzando su rocío fresco sobre ti y el agua turquesa del río esperándote abajo. El sonido es ensordecedor, el paisaje es irreal y, durante esos minutos, no existe nada más en el mundo. Nuestro fotógrafo te sigue desde el aire con dron y desde tierra, así que cada segundo queda registrado en foto y video —incluido en tu reserva, sin costo extra.\n\nLa actividad dura entre 3 y 5 horas según el grupo y el clima. El precio incluye el traslado desde Ciudad Valles, todo el equipo de seguridad, el video con dron y las fotografías con cámaras de acción; no incluye alimentos. Si buscas la historia que vas a contar el resto de tu vida, empieza aquí.",
+      "Hay pocos lugares en el mundo donde puedas colgarte de una cuerda frente a una cascada de 105 metros. La Cascada de Tamul —105 metros de agua desplomándose sobre el Río Tampaón— es el telón de fondo de esta experiencia, y desde el momento en que te asomas al borde del cañón entiendes por qué quienes la hacen no dejan de hablar de ella.\n\nTe recogemos en Ciudad Valles y empezamos en el embarcadero del río, donde te entregamos el equipo completo y nuestros guías de alta montaña te dan el briefing de técnica. No necesitas experiencia previa: el primer descenso es guiado paso a paso y la mayoría de nuestros visitantes nunca habían tocado una cuerda antes. Lo único que necesitas son ganas.\n\nUna vez asegurado al arnés, comienzas a bajar por la pared de roca caliza tapizada de vegetación, con la cascada a un costado lanzando su rocío fresco sobre ti y el agua turquesa del río esperándote abajo. El sonido es ensordecedor, el paisaje es irreal y, durante esos minutos, no existe nada más en el mundo. Nuestro fotógrafo te sigue desde el aire con dron y desde tierra, así que cada segundo queda registrado en foto y video —incluido en tu reserva, sin costo extra.\n\nLa actividad dura entre 3 y 5 horas según el grupo y el clima. El precio incluye el traslado desde Ciudad Valles, todo el equipo de seguridad, el video con dron y las fotografías con cámaras de acción; no incluye alimentos. Si buscas la historia que vas a contar el resto de tu vida, empieza aquí.",
     destinos: [
       "Embarcadero del Río Tampaón (inicio del descenso)",
       "Pared de rappel frente a la Cascada de Tamul",
@@ -309,6 +713,30 @@ export const TOURS_DB: Tour[] = [
       "Fotografía con cámaras de acción",
     ],
     imagen_hero: "/imagenes/tours/rappel-tamul/hero.jpg",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón." },
+      { hora: "10:00", momento: "Embarcadero del Tampaón",
+        texto: "Llegas al río y conoces a los guías de alta montaña que van a bajar contigo. Aquí se queda lo que no baja a la pared." },
+      { hora: "10:30", momento: "Equipo y briefing",
+        texto: "Arnés, casco y guantes, y la técnica de descenso practicada en seco antes de asomarte. No necesitas experiencia: el primer rappel es 100 % guiado." },
+      { hora: "11:30", momento: "El descenso",
+        texto: "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. El dron graba desde el aire y las cámaras de acción desde el casco.",
+        foto: "/imagenes/tours/rappel-tamul/hero.jpg" },
+      { hora: "12:00", momento: "Frente a la cortina de agua",
+        texto: "El tramo en el que la pared se tapiza de vegetación y el ruido del agua tapa todo lo demás.",
+        foto: "/imagenes/tours/rappel-tamul/gallery-1.jpg" },
+      { hora: "12:30", momento: "El cañón desde abajo",
+        texto: "Con los pies en el suelo, el río turquesa y la pared que acabas de bajar se ven de otra manera.",
+        foto: "/imagenes/tours/rappel-tamul/gallery-4.jpg" },
+      { hora: "13:00", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje." },
+    ],
+    collage: [
+      "/imagenes/tours/rappel-tamul/gallery-4.jpg",
+      "/imagenes/tours/rappel-tamul/hero.jpg",
+      "/imagenes/tours/rappel-tamul/gallery-3.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/rappel-tamul/hero.jpg",
       "/imagenes/tours/rappel-tamul/gallery-6.jpg",
@@ -318,7 +746,7 @@ export const TOURS_DB: Tour[] = [
       { src: "/imagenes/tours/rappel-tamul/gallery-1.jpg", alt: "Rapelista apoyado en la pared tapizada de vegetación junto a la cortina de agua de la Cascada de Tamul con el cañón turquesa al fondo", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-2.jpg", alt: "Aventurero recostado en el arnés mirando hacia arriba durante el descenso en rappel frente a la Cascada de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-3.jpg", alt: "Mujer con casco blanco extendiendo los brazos en rappel sobre el río turquesa del Tampaón con la cascada al fondo", hasRealPeople: true },
-      { src: "/imagenes/tours/rappel-tamul/gallery-4.jpg", alt: "Vista amplia del descenso en rappel sobre la imponente Cascada de Tamul — la caída más alta de México", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-tamul/gallery-4.jpg", alt: "Vista amplia del descenso en rappel sobre la imponente Cascada de Tamul — la más alta de San Luis Potosí", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-5.jpg", alt: "Rapelista de espaldas descendiendo la pared del cañón del Tampaón junto a la cortina de agua de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-6.jpg", alt: "Mujer con casco sonriendo y haciendo pulgar arriba en rappel, con pájaros volando frente a la Cascada de Tamul", hasRealPeople: true },
     ],
@@ -326,6 +754,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-rafting-tampaon",
     slug:             "rafting-rio-tampaon",
+    categoria:        "extremo",
     icon:             "Waves",
     tipo:             "Rafting & Adrenalina",
     dificultad:       "media",
@@ -338,6 +767,8 @@ export const TOURS_DB: Tour[] = [
     groupMax:         8,
     privateAvailable: false,
     nombre:           "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
+    nombreCorto:      "Rafting en el Río Tampaón",
+    articulo:         "el",
     tagline:          "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
     precio:           1950,
     urgencia:         "Sujeto al nivel del río — la salida se confirma al reservar",
@@ -366,6 +797,32 @@ export const TOURS_DB: Tour[] = [
       "Paradas para nadar en los tramos tranquilos del cañón",
     ],
     imagen_hero: "/imagenes/rio-tampaon-rafting/gallery-5.webp",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla." },
+      { hora: "9:30", momento: "Embarcadero del Tampaón",
+        texto: "Dejas tus cosas y conoces al guía certificado que va DENTRO de tu balsa todo el descenso, no en otra." },
+      { hora: "10:00", momento: "Briefing y remada de práctica",
+        texto: "Casco, chaleco y remo. Las órdenes de remada se practican en agua tranquila antes de entrar a los rápidos. No necesitas saber nadar." },
+      { hora: "10:45", momento: "Primeros rápidos",
+        texto: "Arrancan los 14 kilómetros de descenso. Los primeros rápidos son los que te enseñan a leer el río.",
+        foto: "/imagenes/rio-tampaon-rafting/tour-4.jpg" },
+      { hora: "12:00", momento: "«La Tumba»",
+        texto: "El rápido más técnico del recorrido. Es donde el guía deja de sugerir y empieza a mandar.",
+        foto: "/imagenes/rio-tampaon-rafting/tour-1.jpg" },
+      { hora: "13:00", momento: "Tramo tranquilo: a nadar",
+        texto: "El cañón se abre, el agua se calma y el guía deja que te tires de la balsa a nadar entre las paredes de roca.",
+        foto: "/imagenes/rio-tampaon-rafting/gallery-9.jpg" },
+      { hora: "14:00", momento: "La comida",
+        texto: "Va incluida y tú eliges si la tomas antes o después del descenso. Si la dejaste para el final, es aquí." },
+      { hora: "15:00", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje." },
+    ],
+    collage: [
+      "/imagenes/rio-tampaon-rafting/tour-1.jpg",
+      "/imagenes/rio-tampaon-rafting/gallery-8.jpg",
+      "/imagenes/rio-tampaon-rafting/tour-2.jpg",
+    ],
     imagenes: [
       "/imagenes/rio-tampaon-rafting/gallery-5.webp",
       "/imagenes/rio-tampaon-rafting/tour-1.jpg",
@@ -384,31 +841,33 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-tamul",
     slug:             "expedicion-tamul",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
+    duracionRango:    [12, 13],
     icon:             "Waves",
     tipo:             "Aventura & Naturaleza",
     dificultad:       "media",
-    duracion_hrs:     9,
+    duracion_hrs:     12,
     reviewCount:      127,
     groupMin:         2,
     groupMax:         14,
     privateAvailable: true,
-    privateMinPrice:  8500,
-    nombre:           "Expedición Tamul — Sótano, Cañón & Cueva del Agua",
+    nombre:           "Expedición Tamul — Tamul, Cueva del Agua y Sótano",
+    nombreCorto:      "Expedición Tamul",
+    articulo:         "la",
     tagline:          "El tour más completo de la Huasteca en un solo día",
     precio:           1550,
     precioOriginal:   1720,
     urgencia:         "El más reservado — se llena los fines de semana",
     descripcion:
-      "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de México—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de pericos vuelven y se lanzan en picada al fondo.",
+      "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
     descripcionLarga:
-      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— y el día está armado para terminar justo a la hora del mejor espectáculo.\n\nLa canoa te lleva por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de México con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla.\n\nDe regreso, sin bajarte de la canoa, paramos en la Cueva del Agua: un cenote subterráneo donde la luz entra en haces perfectos y el agua alcanza un turquesa imposible. Aquí sí te metes —se nada y se echan clavados—, y es el momento favorito de casi todos los que hacen este tour.\n\nCerramos en el Sótano de las Huahuas, un abismo de 512 metros, y llegamos a propósito al atardecer: es la hora en que miles de pericos vuelven a casa y se dejan caer en picada dentro del abismo, en espiral, hasta desaparecer. Es de esas cosas que no se explican con una foto. Quienes hacen este tour siempre vuelven, y siempre traen a alguien más.",
+      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— y el día está armado para terminar justo a la hora del mejor espectáculo.\n\nLa canoa te lleva por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de San Luis Potosí con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla.\n\nDe regreso bajas de la canoa y subes a la Cueva del Agua: un cenote donde la luz entra en haces perfectos y el agua alcanza un turquesa imposible. Aquí sí te metes —se nada y se echan clavados—, y es el momento favorito de casi todos los que hacen este tour. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio; la comida del día viene después, ya saliendo de Tamul, y no va incluida.\n\nCerramos en el Sótano de las Huahuas, un abismo de 478 metros, y llegamos a propósito al atardecer: es la hora en que miles de aves —loros y vencejos— vuelven a casa y se dejan caer en picada dentro del abismo, en espiral, hasta desaparecer. Es de esas cosas que no se explican con una foto. Quienes hacen este tour siempre vuelven, y siempre traen a alguien más.",
     // En el orden REAL del día: la Cueva del Agua es parada del mismo paseo en
     // canoa, al regreso, y el Sótano se deja para el atardecer por las aves.
     destinos: [
       "Cascada de Tamul (paseo en canoa)",
-      "Cenote Cueva del Agua (al regreso, en la misma canoa)",
-      "Sótano de las Huahuas al atardecer (regreso de los pericos)",
+      "Cenote Cueva del Agua (al regreso — se nada y se echan clavados)",
+      "Sótano de las Huahuas al atardecer (regreso de las aves)",
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -421,7 +880,44 @@ export const TOURS_DB: Tour[] = [
       "Seguro de viaje para todos los integrantes",
       "Paseo en canoa por el Cañón del Tampaón",
     ],
+    // El día hora por hora. Las horas salen de la operación real y hay que
+    // revalidarlas con el guía cada temporada: en lluvias el río manda.
+    // Ojo con los dos datos que aquí se corrigieron respecto al borrador: el
+    // abismo son 478 m (los 512 son del Sótano de las Golondrinas, que no
+    // operamos) y las aves se nombran como aves, no como pericos.
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hotel, cabaña o Airbnb en Xilitla o Ciudad Valles. No necesitas hospedarte con nosotros.",
+        foto: "/imagenes/tours/tamul/recogida-hotel.jpg" },
+      { hora: "9:30", momento: "Desayuno",
+        texto: "Buffet de platillos huastecos en El Taco Loco, camino al río. Va incluido." },
+      { hora: "11:00", momento: "Canoa a Tamul",
+        texto: "Entras al Cañón del Tampaón en canoa: silencio, el remo sobre el agua y, al fondo, una cascada de 105 metros que se siente en el pecho antes de verla.",
+        foto: "/imagenes/tours/tamul/gallery-3.jpg" },
+      { hora: "12:30", momento: "Fotos frente a la cascada",
+        texto: "Bajas a las piedras del cañón, justo enfrente de la caída, y ahí se toma la foto que todos acaban enseñando al volver. Sin prisa: es el momento del día que más se repite en las cámaras.",
+        foto: "/imagenes/cascada-de-tamul/grupo-piedra.jpg" },
+      { hora: "13:30", momento: "Cueva del Agua",
+        texto: "De regreso bajas de la canoa y subes al cenote de la Cueva del Agua: haces de luz, agua turquesa, y aquí sí te metes —se nada y se echan clavados—. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio. El momento favorito de casi todos.",
+        foto: "/imagenes/tours/tamul/gallery-1.jpg" },
+      { hora: "15:00", momento: "Comida y camino",
+        texto: "La comida del día, ya saliendo de Tamul. No va incluida, así que eliges tú dónde y cuánto gastar. Después, el traslado al Sótano de las Huahuas." },
+      { hora: "17:30", momento: "Sótano de las Huahuas",
+        texto: "Unos 20 minutos de caminata hasta el borde de un abismo de 478 metros. Ahí esperas el atardecer.",
+        foto: "/imagenes/tours/tamul/gallery-6.jpg" },
+      { hora: "18:00", momento: "El espectáculo",
+        texto: "Miles de aves —loros y vencejos— regresan y se dejan caer en espiral hasta desaparecer. Es el final del día y lo que todos acaban grabando.",
+        foto: "/imagenes/sotano-de-las-huahuas/hero.jpg" },
+      { hora: "20:00–21:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje, cansado y feliz." },
+    ],
     imagen_hero: "/imagenes/tours/tamul/hero.jpg",
+    logo: "/imagenes/tours/logos/expedicion-tamul-v3.webp",
+    collage: [
+      "/imagenes/tours/tamul/hero.jpg",
+      "/imagenes/tours/tamul/gallery-1.jpg",
+      "/imagenes/tours/tamul/gallery-6.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/tamul/hero.jpg",
       "/imagenes/tours/tamul/gallery-3.jpg",
@@ -432,7 +928,7 @@ export const TOURS_DB: Tour[] = [
       { src: "/imagenes/tours/tamul/gallery-2.jpg", alt: "Clavado desde las piedras en el Cañón del Tampaón", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-3.jpg", alt: "Canoa feliz en el Cañón del Tampaón — la Cascada de Tamul al fondo", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-4.jpg", alt: "Guerra de agua entre canoas en el río Tampaón", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-6.jpg", alt: "Asomándose al borde del Sótano de las Huahuas — 512 metros de profundidad", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/gallery-6.jpg", alt: "Asomándose al borde del Sótano de las Huahuas — 478 metros de profundidad", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-extra-1.jpg", alt: "Viajera sentada en las rocas del Cañón del Tampaón señalando la Cascada de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-extra-2.jpg", alt: "Aguas turquesas del Río Tampaón con vegetación colgante — Expedición Tamul" },
       { src: "/imagenes/tours/tamul/gallery-extra-3.jpg", alt: "Grupo de turistas remando en canoas en el Río Tampaón con batalla de agua", hasRealPeople: true },
@@ -441,6 +937,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-edward-james",
     slug:             "ruta-surrealista-edward-james",
+    categoria:        "ecoturismo",
     duracionRango:    [8, 10],
     icon:             "Leaf",
     tipo:             "Cultura & Naturaleza",
@@ -450,8 +947,9 @@ export const TOURS_DB: Tour[] = [
     groupMin:         2,
     groupMax:         14,
     privateAvailable: true,
-    privateMinPrice:  7500,
-    nombre:           "Ruta Surrealista — Edward James, Manantiales & Selva",
+    nombre:           "Ruta Surrealista — Edward James, Manantiales, Cuevas y Castillo",
+    nombreCorto:      "Ruta Surrealista",
+    articulo:         "la",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
     precio:           1400,
     precioOriginal:   1560,
@@ -476,6 +974,35 @@ export const TOURS_DB: Tour[] = [
       "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/tours/edward-james/hero.jpg",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
+      { hora: "9:30", momento: "Desayuno",
+        texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
+      { hora: "11:00", momento: "Las Pozas",
+        texto: "El jardín surrealista de Edward James: escaleras que no llevan a ningún lado, columnas de concreto asomando entre la selva y unas dos horas para recorrerlo con guía.",
+        foto: "/imagenes/tours/edward-james/gallery-2.jpg" },
+      { hora: "13:30", momento: "Nacimiento de Huichihuayán",
+        texto: "Agua turquesa saliendo de la roca, con los rayos de luz entrando entre la selva. Aquí sí te metes.",
+        foto: "/imagenes/tours/edward-james/gallery-4.jpg" },
+      { hora: "14:45", momento: "Cueva de las Quilas",
+        texto: "Se entra a la cueva por un cañón estrecho donde la luz cae desde arriba. El cambio de temperatura se siente al cruzar la boca.",
+        foto: "/imagenes/tours/edward-james/gallery-6.jpg" },
+      { hora: "15:45", momento: "Castillo de la Salud",
+        texto: "Torres de colores levantadas entre la selva huasteca, la última parada del día y la más fotogénica al atardecer.",
+        foto: "/imagenes/tours/edward-james/gallery-7.jpg" },
+      { hora: "16:00–18:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje." },
+    ],
+    logo: "/imagenes/tours/logos/ruta-surrealista-edward-james.webp",
+    // Cuatro paradas, cuatro fotos, en el orden en que se visitan: Las Pozas,
+    // Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud.
+    collage: [
+      "/imagenes/tours/edward-james/gallery-2.jpg",
+      "/imagenes/tours/edward-james/gallery-4.jpg",
+      "/imagenes/tours/edward-james/gallery-6.jpg",
+      "/imagenes/tours/edward-james/gallery-3.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/edward-james/hero.jpg",
       "/imagenes/tours/edward-james/gallery-1.jpg",
@@ -494,19 +1021,134 @@ export const TOURS_DB: Tour[] = [
     ],
   },
   {
+    id:               "tour-eden-jardin",
+    slug:             "eden-en-el-jardin",
+    categoria:        "ecoturismo",
+    icon:             "Sparkles",
+    tipo:             "Experiencia Privada",
+    dificultad:       "baja",
+    duracion_hrs:     3,
+    // 🔴 ARREGLO (28 sep): este recorrido NO se recoge en Ciudad Valles. Su
+    // propio `incluye` dice "Traslado redondo desde tu hospedaje EN XILITLA" y
+    // su pregunta frecuente dice "solo desde Xilitla… desde Ciudad Valles habría
+    // que salir de madrugada". Pero `TourDeparture` lo mandaba al caso por
+    // defecto y, 300 px más arriba en la MISMA página, le prometía al cliente
+    // recogida en Valles. Las dos afirmaciones convivían desde el 25 de sep.
+    recogida: {
+      tipo:       "hospedaje-xilitla",
+      horaInicio: 7,   // "entre las 7 y las 8 de la mañana", según su propia FAQ
+      ventanaHrs: 1,
+      nota: {
+        es: "Solo desde Xilitla: la experiencia empieza entre las 7 y las 8 de la mañana y desde Ciudad Valles habría que salir de madrugada. Si te hospedas allá, escríbenos y lo cotizamos aparte.",
+        en: "Xilitla only: the experience starts between 7 and 8 AM, and coming from Ciudad Valles would mean leaving in the middle of the night. If you're staying there, message us and we'll quote it separately.",
+      },
+    },
+    // Sin reseñas: es nuevo. `reviewCount: 0` apaga el aggregateRating del
+    // JSON-LD y el bloque de opiniones — no se inventa una calificación.
+    reviewCount:      0,
+    groupMin:         1,
+    groupMax:         7,
+    // Ya ES privado: ofrecer "también en privado" encima sería absurdo.
+    privateAvailable: false,
+    nombre:           "El Edén en el Jardín — Experiencia Privada en Las Pozas",
+    nombreCorto:      "El Edén en el Jardín",
+    articulo:         "",
+    tagline:          "El jardín de Edward James para ustedes solos, antes de que abra al público",
+    precio:           2990,
+    precioUnidad:     "grupo",
+    // Escalones de la Fundación Las Pozas + nuestro margen. El grupo completo:
+    // 1 persona $2,990 … 7 personas $4,160. Cupo máximo 7 por reglamento.
+    tarifaGrupo:      [2990, 3150, 3320, 3480, 3770, 3970, 4160],
+    urgencia:         "Una sola experiencia al día — la fecha se aparta pagando completo",
+    exclusivo: {
+      es: "Exclusiva de Tours Huasteca Potosina",
+      en: "Only with Tours Huasteca Potosina",
+    },
+    cancelacion: {
+      es: "Esta experiencia no tiene reembolso: para apartar la fecha se paga el 100 % y ese día queda cerrado para todos los demás. Lo que sí puedes hacer es cambiarla avisando con 5 días o más de anticipación, conservando el monto completo durante los 6 meses siguientes. Si el clima obliga a suspender, se reprograma sin costo.",
+      en: "This experience is non-refundable: holding the date requires payment in full, and that day is then closed to everyone else. You can move it instead by telling us 5 or more days ahead, keeping the full amount valid for 6 months. If the weather forces a cancellation, we reschedule at no cost.",
+    },
+    descripcion:
+      "Las Pozas sin nadie más: entras una hora antes de que abra, con guía propio y acceso a rincones cerrados al público. Tres horas en el jardín de Edward James a tu ritmo, incluidos los niveles altos del Palacio de Bambú y la Casa Estudio donde todavía se conserva un poema escrito de su puño y letra. Grupo de hasta 7 personas, tarifa del grupo completo.",
+    descripcionLarga:
+      "Hay una hora en Las Pozas que casi nadie ha visto. Entre las siete y las ocho de la mañana el jardín todavía está cerrado al público: la neblina no ha terminado de subir del río, los pájaros son lo único que se oye y las escaleras que no llevan a ninguna parte se quedan quietas, sin una sola fila esperando para la foto. El Edén en el Jardín es esa hora, y las dos que le siguen.\n\nNo es el recorrido de siempre, más temprano. Es una experiencia privada dentro del Jardín Escultórico Edward James —Monumento Artístico declarado Patrimonio Nacional por el INBAL— para tu grupo y nadie más, con un guía del propio jardín que camina a tu ritmo. Se abren recintos que no forman parte de la visita general y se sube a los niveles superiores del Palacio de Bambú, desde donde el jardín deja de verse por abajo y se entiende de golpe: la selva entera con la arquitectura surrealista creciendo dentro.\n\nEl momento que la gente recuerda es otro. En la Casa Estudio, la cabaña donde Edward James se quedaba a descansar, todavía se conserva un poema escrito de su puño y letra. Nadie lo ha retirado ni lo ha puesto detrás de un cristal. Es el tipo de detalle que no sale en ninguna guía, porque casi nadie llega hasta ahí.\n\nLas tres horas incluyen la ruta de senderismo, la entrada al jardín y el traslado redondo desde tu hospedaje en Xilitla —se sale de madrugada, así que llegar por tu cuenta no es buena idea—. Se opera una sola experiencia al día y el cupo máximo es de siete personas. La tarifa es del grupo completo, no por cabeza: entre más van, menos le toca a cada uno.",
+    destinos: [
+      "Jardín Escultórico Edward James (Las Pozas)",
+      "Palacio de Bambú — niveles superiores",
+      "Casa Estudio de Edward James",
+      "Ruta de senderismo del jardín",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla",
+      "Entrada al Jardín Escultórico Edward James",
+      "Acceso una hora antes de la apertura general, con el jardín vacío",
+      "Guía propio del jardín, en español o en inglés (francés e italiano bajo solicitud)",
+      "Acceso a recintos cerrados al público general, como la Casa Estudio",
+      "Acceso a los niveles superiores del Palacio de Bambú",
+      "Entrada a la ruta de senderismo",
+    ],
+    // 🔴 El hero se elige por dónde cae el TEXTO, no solo por la foto. La
+    // panorámica del Palacio de Bambú (gallery-4) tiene cielo y verde claro
+    // justo detrás del título y el precio, y el degradado del hero no alcanza a
+    // separarlos: se leía mal. Esta trae vegetación densa a la izquierda y luz
+    // cálida, que es además la promesa del recorrido (el jardín vacío al
+    // amanecer). Comprobado en el navegador, no en el diff.
+    imagen_hero: "/imagenes/las-pozas-jardin-surrealista/hero.jpg",
+    itinerario: [
+      { hora: "7:00–8:00", momento: "Recogida en Xilitla",
+        texto: "Pasamos por ti a tu hospedaje. La hora exacta la fija el jardín y te la confirmamos al apartar la fecha." },
+      { hora: "7:30", momento: "El jardín vacío",
+        texto: "Entras una hora antes de que abra al público. Es la única parte del día en que Las Pozas no tiene a nadie más dentro.",
+        foto: "/imagenes/las-pozas-jardin-surrealista/hero.jpg" },
+      { hora: "8:15", momento: "Palacio de Bambú",
+        texto: "Subes a los niveles superiores, que en la visita general están cerrados. Desde arriba se entiende la escala de lo que construyó Edward James.",
+        foto: "/imagenes/las-pozas-jardin-surrealista/gallery-6.jpg" },
+      { hora: "9:00", momento: "Casa Estudio",
+        texto: "El recinto donde se conserva un poema escrito de su puño y letra. No entra el público general.",
+        foto: "/imagenes/las-pozas-jardin-surrealista/gallery-7.jpg" },
+      { hora: "9:30", momento: "Ruta de senderismo",
+        texto: "El cierre por el sendero del jardín, ya con la luz alta entre los helechos.",
+        foto: "/imagenes/las-pozas-jardin-surrealista/gallery-8.jpg" },
+      { hora: "10:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje en Xilitla." },
+    ],
+    // Una foto por parada, en el orden en que se recorren: el jardín, el
+    // Palacio de Bambú, la Casa Estudio y el sendero.
+    collage: [
+      "/imagenes/las-pozas-jardin-surrealista/gallery-4.webp",
+      "/imagenes/las-pozas-jardin-surrealista/gallery-2.jpg",
+      "/imagenes/las-pozas-jardin-surrealista/gallery-7.jpg",
+      "/imagenes/las-pozas-jardin-surrealista/puerta-luna.jpg",
+    ],
+    imagenes: ["/imagenes/las-pozas-jardin-surrealista/hero.jpg"],
+    gallery: [
+      { src: "/imagenes/las-pozas-jardin-surrealista/hero.jpg",         alt: "Las Pozas de Xilitla vacío con la luz cálida de la mañana, antes de abrir al público" },
+      { src: "/imagenes/las-pozas-jardin-surrealista/puerta-luna.jpg",  alt: "Visitante cruzando sola el portal circular de Las Pozas por el sendero de adoquín", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-2.jpg",    alt: "Bajo el Palacio de Bambú: columnas de concreto y una figura recortada en el arco", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-7.jpg",    alt: "Casa Estudio de Edward James cubierta de vegetación, donde se conserva su poema" },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-8.jpg",    alt: "Escalera y arcos surrealistas de Las Pozas con una visitante subiendo entre helechos", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-13.jpg",   alt: "Dos visitantes sentados en lo alto de una estructura del jardín, sin nadie más alrededor", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-6.jpg",    alt: "Visitante con sombrero frente a las columnatas del Palacio de Bambú en Las Pozas", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-12.jpg",   alt: "Esculturas de colores de Las Pozas rodeadas de selva en Xilitla" },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg",    alt: "Torres y escaleras de caracol de Las Pozas recortadas contra el cielo azul" },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-11.webp",  alt: "Vista amplia del Jardín Escultórico Edward James entre la selva de Xilitla" },
+    ],
+  },
+  {
     id:               "tour-meco",
     slug:             "cascadas-del-meco",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
     icon:             "Droplet",
     tipo:             "Cascadas & Fotografía",
     dificultad:       "baja",
-    duracion_hrs:     7,
+    duracion_hrs:     10,
     reviewCount:      96,
     groupMin:         2,
     groupMax:         14,
     privateAvailable: true,
-    privateMinPrice:  7000,
-    nombre:           "Cascadas del Meco — Turquesas, Mirador & El Gran Salto",
+    nombre:           "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto",
+    nombreCorto:      "Cascadas del Meco",
+    articulo:         "las",
     tagline:          "Tres caídas de agua, tres emociones distintas",
     precio:           1700,
     precioOriginal:   1890,
@@ -530,6 +1172,33 @@ export const TOURS_DB: Tour[] = [
       "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/cascada-el-meco/hero.jpg",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
+      { hora: "9:30", momento: "Desayuno",
+        texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
+      { hora: "10:30", momento: "Cascada del Meco",
+        texto: "Llegas cuando el sol entra en ángulo sobre las pozas y el agua se pone turquesa. Se recorre en panga y se nada, con chaleco incluido.",
+        foto: "/imagenes/cascada-el-meco/hero.jpg" },
+      { hora: "12:30", momento: "Mirador panorámico",
+        texto: "Caminata corta y plana hasta el mirador: desde arriba se ven las cascadas escalonadas completas. Apta para adultos mayores.",
+        foto: "/imagenes/cascada-el-meco/gallery-5.jpg" },
+      { hora: "14:00", momento: "Comida",
+        texto: "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar." },
+      { hora: "15:30", momento: "Cascada El Salto",
+        texto: "El cierre: una caída doble sobre pozas escalonadas. A esta hora suele salir el arcoíris en la niebla de la caída.",
+        foto: "/imagenes/cascada-el-meco/gallery-6.jpg" },
+      { hora: "18:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje." },
+    ],
+    logo: "/imagenes/tours/logos/cascadas-del-meco.webp",
+    collage: [
+      "/imagenes/cascada-el-meco/gallery-3.jpg",
+      // Corrida a la derecha: la chica sentada en el borde está en ese lado y
+      // centrada se quedaba fuera de la franja.
+      { src: "/imagenes/cascada-el-meco/gallery-7.jpg", pos: "68% center" },
+      "/imagenes/cascada-el-salto/gallery-2.jpg",
+    ],
     imagenes: ["/imagenes/cascada-el-meco/hero.jpg"],
     gallery: [
       { src: "/imagenes/cascada-el-meco/hero.jpg",        alt: "Dos turistas en paddleboard frente a la Cascada del Meco — aguas turquesas de la Huasteca Potosina", hasRealPeople: true },
@@ -551,17 +1220,18 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-minas-micos",
     slug:             "paraiso-escalonado-minas-micos",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
     icon:             "Mountain",
     tipo:             "Cascadas & Bienestar",
     dificultad:       "baja",
-    duracion_hrs:     8,
+    duracion_hrs:     10,
     reviewCount:      112,
     groupMin:         2,
     groupMax:         14,
     privateAvailable: true,
-    privateMinPrice:  8000,
     nombre:           "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
+    nombreCorto:      "Paraíso Escalonado",
+    articulo:         "el",
     tagline:          "Dos joyas naturales, un día perfecto para desconectar",
     precio:           1600,
     precioOriginal:   1780,
@@ -595,6 +1265,27 @@ export const TOURS_DB: Tour[] = [
       },
     ],
     imagen_hero: "/imagenes/cascadas-minas-viejas/hero-new.jpg",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
+      { hora: "9:30", momento: "Desayuno",
+        texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
+      { hora: "11:00", momento: "Cascadas de Minas Viejas",
+        texto: "Una caída triple sobre pozas color jade, con puente de madera para cruzarlas. Hay chalecos para todos y el agua está entre 18 y 22 °C: refrescante, no helada.",
+        foto: "/imagenes/cascadas-minas-viejas/hero-new.jpg" },
+      { hora: "13:00", momento: "Comida",
+        texto: "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar." },
+      { hora: "14:30", momento: "Cascadas de Micos",
+        texto: "Las pozas escalonadas de Micos, una detrás de otra. Es el tramo del día donde más se mete la gente al agua.",
+        foto: "/imagenes/cascadas-minas-viejas/gallery-new-9.jpg" },
+      { hora: "18:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje." },
+    ],
+    logo: "/imagenes/tours/logos/paraiso-escalonado-minas-micos.webp",
+    collage: [
+      "/imagenes/cascadas-minas-viejas/hero-new.jpg",
+      "/imagenes/cascadas-minas-viejas/gallery-new-8.jpg",
+    ],
     imagenes: [
       "/imagenes/cascadas-minas-viejas/hero-new.jpg",
       "/imagenes/cascadas-minas-viejas/gallery-new-1.jpg",
@@ -617,7 +1308,7 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-puente-dios",
     slug:             "ruta-acuatica-puente-de-dios",
-    duracionRango:    [8, 10],
+    categoria:        "ecoturismo",
     icon:             "Anchor",
     tipo:             "Aventura Acuática",
     dificultad:       "media",
@@ -626,8 +1317,9 @@ export const TOURS_DB: Tour[] = [
     groupMin:         2,
     groupMax:         14,
     privateAvailable: true,
-    privateMinPrice:  8500,
-    nombre:           "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
+    nombre:           "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
+    nombreCorto:      "Ruta Acuática",
+    articulo:         "la",
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
     precioOriginal:   1780,
@@ -661,6 +1353,28 @@ export const TOURS_DB: Tour[] = [
       "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
+      { hora: "9:30", momento: "Desayuno",
+        texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
+      { hora: "11:00", momento: "Puente de Dios",
+        texto: "Se baja por escalones hasta el cañón. Dentro el chaleco es obligatorio y el agua está entre 18 y 22 °C. Cuenta con la bajada si te cuestan las escaleras.",
+        foto: "/imagenes/puente-de-dios-tamasopo/hero-new.webp" },
+      { hora: "13:00", momento: "Comida",
+        texto: "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar." },
+      { hora: "14:30", momento: "Lo que elegiste al reservar",
+        texto: "O la Hacienda Los Gómez con las Siete Cascadas, que están en el mismo lugar, o las Cascadas de Tamasopo con su tobogán natural de travertino. Se visita una de las dos, la que hayas escogido.",
+        foto: "/imagenes/puente-de-dios-tamasopo/gallery-new-10.jpg" },
+      { hora: "18:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje." },
+    ],
+    logo: "/imagenes/tours/logos/ruta-acuatica-puente-de-dios.webp",
+    collage: [
+      "/imagenes/puente-de-dios-tamasopo/gallery-13.jpg",
+      "/imagenes/puente-de-dios-tamasopo/gallery-new-14.jpg",
+      "/imagenes/puente-de-dios-tamasopo/gallery-new-1.jpg",
+    ],
     imagenes: [
       "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
       "/imagenes/puente-de-dios-tamasopo/gallery-new-1.jpg",
@@ -689,16 +1403,21 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-buceo-media-luna",
     slug:             "buceo-media-luna",
+    categoria:        "aventura",
     icon:             "Anchor",
     tipo:             "Buceo & Naturaleza",
     dificultad:       "baja",
     duracion_hrs:     4,
+    /* Nos vemos en la laguna misma, en Rioverde. */
+    recogida:         { tipo: "en-sitio" },
     reviewCount:      31,
     groupMin:         2,
     groupMax:         10,
     privateAvailable: false,
     soloAdultos:      true,
     nombre:           "Descubre el Buceo en la Laguna de la Media Luna — Tu Primera Inmersión con Instructor PADI",
+    nombreCorto:      "Buceo en la Media Luna",
+    articulo:         "el",
     tagline:          "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
     precio:           1300,
     urgencia:         "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
@@ -720,6 +1439,24 @@ export const TOURS_DB: Tour[] = [
       "Inmersión guiada de 5 a 10 metros de profundidad",
     ],
     imagen_hero: "/imagenes/tours/buceo-media-luna/hero.jpg",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Punto de encuentro",
+        texto: "Nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde. Llegas por tu cuenta y la entrada al parque se paga ahí, en efectivo." },
+      { hora: "9:15", momento: "Orientación",
+        texto: "Tu instructor certificado PADI te explica el equipo SCUBA pieza por pieza y cómo respirar bajo el agua. Aquí no hay prisa." },
+      { hora: "10:00", momento: "Práctica en aguas poco profundas",
+        texto: "Las habilidades básicas donde haces pie: vaciar la máscara, recuperar el regulador, controlar la flotación." },
+      { hora: "11:00", momento: "La inmersión",
+        texto: "Bajas de 5 a 10 metros con tu instructor al lado, entre los sabinos sumergidos y el agua cristalina de la laguna. Las fotos van incluidas.",
+        foto: "/imagenes/tours/buceo-media-luna/hero.jpg" },
+      { hora: "12:00", momento: "Cierre",
+        texto: "Se entrega el equipo y te quedas con las fotos digitales de tu primera inmersión." },
+    ],
+    collage: [
+      "/imagenes/tours/buceo-media-luna/gallery-3.jpg",
+      "/imagenes/tours/buceo-media-luna/hero.jpg",
+      "/imagenes/tours/buceo-media-luna/gallery-2.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/buceo-media-luna/hero.jpg",
       "/imagenes/tours/buceo-media-luna/gallery-1.jpg",
@@ -734,15 +1471,30 @@ export const TOURS_DB: Tour[] = [
   {
     id:               "tour-travesia-cafe",
     slug:             "travesia-del-cafe",
+    categoria:        "ecoturismo",
     icon:             "Leaf",
     tipo:             "Cultura & Sabor",
     dificultad:       "baja",
     duracion_hrs:     5,
+    // 🔴 ARREGLO (28 sep): mismo fallo que el Edén. Su `incluye` y su
+    // descripción dicen "desde tu hospedaje EN XILITLA … en RZR", pero como no
+    // figuraba en la lista de casos especiales de `TourDeparture`, la ficha
+    // prometía recogida en Ciudad Valles y una camioneta.
+    recogida: {
+      tipo:     "hospedaje-xilitla",
+      vehiculo: { es: "RZR", en: "RZR (side-by-side)" },
+      nota: {
+        es: "¿Te hospedas en Ciudad Valles? La subida a la finca se hace en RZR desde Xilitla. Sí podemos ir por ti hasta allá con un costo extra de traslado: escríbenos y te lo cotizamos.",
+        en: "Staying in Ciudad Valles? The ride up to the farm leaves from Xilitla in an RZR. We can come and get you there for an extra transfer fee — message us and we'll quote it.",
+      },
+    },
     reviewCount:      43,
     groupMin:         2,
     groupMax:         12,
     privateAvailable: false,
     nombre:           "Travesía del Café — Finca Cafetalera de Xilitla en RZR",
+    nombreCorto:      "Travesía del Café",
+    articulo:         "la",
     tagline:          "El sabor de Xilitla, desde la mata hasta la taza",
     precio:           900,
     precioUnidad:     "persona",
@@ -764,6 +1516,31 @@ export const TOURS_DB: Tour[] = [
       "Cata de café recién tostado",
     ],
     imagen_hero: "/imagenes/tours/travesia-del-cafe/hero.jpg",
+    itinerario: [
+      { hora: "8:00–9:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla. El camino a la finca se hace en RZR, así que sales del pueblo ya en el vehículo." },
+      { hora: "9:15", momento: "Subida a la finca",
+        texto: "Caminos de terracería entre la selva húmeda hasta el cafetal bajo sombra. El trayecto ya es parte de la experiencia." },
+      { hora: "10:00", momento: "El cafetal",
+        texto: "Caminas entre las matas con la familia cafetalera y aprendes a distinguir el grano maduro del que todavía no lo está.",
+        foto: "/imagenes/tours/travesia-del-cafe/hero.jpg" },
+      { hora: "11:00", momento: "El patio de secado",
+        texto: "Donde el grano se extiende al sol y se remueve durante días. Aquí se ve por qué el café tarda tanto en llegar a la taza.",
+        foto: "/imagenes/tours/travesia-del-cafe/gallery-7.jpg" },
+      { hora: "11:45", momento: "La tostaduría",
+        texto: "El tambor girando y el olor llenándolo todo. Es el momento en que la finca huele a lo que te vas a tomar.",
+        foto: "/imagenes/tours/travesia-del-cafe/gallery-2.jpg" },
+      { hora: "12:30", momento: "La cata",
+        texto: "Frente a los platos con el grano verde, el tostado y el molido, aprendes a oler y a probar como lo hacen los catadores. Muchos se van con un paquete bajo el brazo.",
+        foto: "/imagenes/tours/travesia-del-cafe/gallery-6.jpg" },
+      { hora: "13:00", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje en Xilitla." },
+    ],
+    collage: [
+      "/imagenes/tours/travesia-del-cafe/hero.jpg",
+      "/imagenes/tours/travesia-del-cafe/gallery-7.jpg",
+      "/imagenes/tours/travesia-del-cafe/gallery-2.jpg",
+    ],
     imagenes: [
       "/imagenes/tours/travesia-del-cafe/hero.jpg",
       "/imagenes/tours/travesia-del-cafe/gallery-1.jpg",
@@ -777,6 +1554,275 @@ export const TOURS_DB: Tour[] = [
       { src: "/imagenes/tours/travesia-del-cafe/gallery-5.jpg", alt: "Visitantes escuchando la historia de la familia cafetalera dentro de la tostaduría, con las fotos antiguas colgadas del techo", hasRealPeople: true },
       { src: "/imagenes/tours/travesia-del-cafe/gallery-6.jpg", alt: "Brindis con tazas de café durante la cata, con los platos de grano verde, tostado y molido sobre la barra", hasRealPeople: true },
       { src: "/imagenes/tours/travesia-del-cafe/gallery-7.jpg", alt: "Dos visitantes separando granos de café a mano en el patio de secado de la finca", hasRealPeople: true },
+    ],
+  },
+
+  {
+    id:               "tour-gruta-xilo",
+    slug:             "gruta-de-xilo",
+    categoria:        "aventura",
+    icon:             "Compass",
+    tipo:             "Cueva & Noche",
+    dificultad:       "media",
+    duracion_hrs:     3,
+    recogida: {
+      // Híbrido: pasamos por él SOLO si se hospeda en Xilitla; desde Ciudad
+      // Valles sube por su cuenta al punto de encuentro del pueblo.
+      tipo:       "hospedaje-xilitla",
+      // ⚠️ POR CONFIRMAR CON MANOLO. Es un recorrido NOCTURNO y el flyer no da
+      // la hora. Sin este número la ficha sumaba las 3 h a las 8:00 AM y
+      // prometía "Regreso aprox. 11:00 AM".
+      horaInicio: 19,
+      ventanaHrs: 0,
+      vehiculo:   { es: "RZR", en: "RZR (side-by-side)" },
+      nota: {
+        es: "¿Te hospedas en Ciudad Valles? El traslado incluido es solo dentro de Xilitla, pero sí podemos ir por ti hasta allá con un costo extra de traslado: escríbenos y te lo cotizamos.",
+        en: "Staying in Ciudad Valles? The included transfer only covers Xilitla, but we can come and get you there for an extra transfer fee — message us and we'll quote it.",
+      },
+    },
+    // Recorrido nuevo: sin reseñas propias. `reviewCount: 0` apaga el
+    // aggregateRating del JSON-LD y el bloque de opiniones — no se inventa
+    // una calificación (ver src/lib/resenas.ts).
+    reviewCount:      0,
+    groupMin:         2,
+    groupMax:         8,
+    privateAvailable: true,
+    nombre:           "Gruta de Xilo — Recorrido Nocturno por la Cueva de Xilitla",
+    nombreCorto:      "Gruta de Xilo",
+    articulo:         "la",
+    tagline:          "Novecientos metros bajo la sierra, de noche",
+    precio:           900,
+    precioUnidad:     "persona",
+    urgencia:         "Salida nocturna — se reserva con anticipación",
+    descripcion:
+      "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. $900 por persona.",
+    descripcionLarga:
+      "Casi todos los recorridos de la Huasteca se hacen de día. Este no. La Gruta de Xilo se camina de noche, y esa es la mitad de la experiencia: sin el ruido ni el calor del día, lo único que existe es el círculo de luz de tu lámpara y lo que alcanza a iluminar.\n\nEmpieza con una caminata de 15 a 20 minutos por la selva hasta la entrada de la gruta. Ahí se reparten cascos y lámparas frontales, el guía explica por dónde se pisa y se entra.\n\nAdentro son unos 900 metros de recorrido. Las paredes son un catálogo de formaciones: estalactitas que cuelgan de la bóveda, estalagmitas que suben desde el piso, columnas donde las dos se encontraron después de millones de años de gota a gota. Hay tramos amplios donde se camina de pie y tramos donde hay que agacharse; se avanza despacio, en grupo chico.\n\nAl final del recorrido están los jacuzzis: pozas de agua cristalina formadas dentro de la propia gruta. Ahí se hace una dinámica de introspección — apagar las lámparas, quedarse en silencio unos minutos y escuchar la cueva. Es el momento que la gente recuerda.\n\nDura unas 3 horas en total. Pasamos por ti a tu hospedaje en Xilitla en RZR; si te quedas en Ciudad Valles podemos ir por ti con un costo extra de traslado, o subes a Xilitla por tu cuenta. Lleva calzado cerrado que se pueda mojar y ropa de cambio.",
+    destinos: [
+      "Selva de Xilitla (caminata de acceso)",
+      "Gruta de Xilo",
+      "Jacuzzis naturales de la gruta",
+    ],
+    incluye: [
+      "Recogida en RZR desde tu hospedaje en Xilitla",
+      "Taquillas y acceso a la gruta",
+      "Casco y lámpara frontal para cada persona",
+      "Guía acreditado NOM-09 SECTUR",
+      "Botiquín de primeros auxilios",
+    ],
+    // 🔴 La portada se eligió por dónde cae el TEXTO: el título y el precio
+    // caen abajo a la izquierda, donde esta toma tiene roca oscura. Las otras
+    // candidatas tenían formaciones pálidas justo ahí y el título se perdía.
+    imagen_hero: "/imagenes/tours/gruta-de-xilo/hero.jpg",
+    itinerario: [
+      { hora: "7:00 PM", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla, en el propio RZR. Ya está oscureciendo." },
+      { hora: "7:30 PM", momento: "Caminata por la selva",
+        texto: "De 15 a 20 minutos a pie hasta la boca de la gruta. Aquí se reparten cascos y lámparas frontales." },
+      { hora: "8:00 PM", momento: "Entras a la cueva",
+        texto: "El guía explica por dónde se pisa y se entra. A partir de aquí lo único que existe es el círculo de luz de tu lámpara." },
+      { hora: "8:45 PM", momento: "Las formaciones",
+        texto: "Unos 900 metros entre estalactitas, estalagmitas y columnas donde las dos se encontraron después de millones de años de gota a gota.",
+        foto: "/imagenes/tours/gruta-de-xilo/gallery-2.jpg" },
+      { hora: "9:30 PM", momento: "Los jacuzzis y el silencio",
+        texto: "El final del recorrido son pozas de agua cristalina formadas dentro de la gruta. Ahí se apagan las lámparas unos minutos para escuchar la cueva. Es el momento que la gente recuerda.",
+        foto: "/imagenes/tours/gruta-de-xilo/gallery-5.jpg" },
+      { hora: "10:00 PM", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje en Xilitla." },
+    ],
+    collage: [
+      "/imagenes/tours/gruta-de-xilo/hero.jpg",
+      "/imagenes/tours/gruta-de-xilo/gallery-2.jpg",
+      "/imagenes/tours/gruta-de-xilo/gallery-5.jpg",
+    ],
+    imagenes: [
+      "/imagenes/tours/gruta-de-xilo/hero.jpg",
+      "/imagenes/tours/gruta-de-xilo/gallery-1.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/tours/gruta-de-xilo/hero.jpg",      alt: "Grupo avanzando con lámparas frontales por un pasaje inundado de la Gruta de Xilo, con los reflejos en el agua", hasRealPeople: true },
+      { src: "/imagenes/tours/gruta-de-xilo/gallery-1.jpg", alt: "Visitante sentado sobre una formación rocosa mirando la bóveda de la gruta, iluminado solo por su lámpara", hasRealPeople: true },
+      { src: "/imagenes/tours/gruta-de-xilo/gallery-2.jpg", alt: "Visitante con los brazos abiertos frente a las columnas de la Gruta de Xilo, que lo superan varias veces en altura", hasRealPeople: true },
+      { src: "/imagenes/tours/gruta-de-xilo/gallery-3.jpg", alt: "Pareja con casco en cuclillas entre dos columnas de piedra formadas gota a gota dentro de la gruta", hasRealPeople: true },
+      { src: "/imagenes/tours/gruta-de-xilo/gallery-4.jpg", alt: "Guía y visitante de pie sobre una colada de piedra en el agua, al fondo de la Gruta de Xilo", hasRealPeople: true },
+      { src: "/imagenes/tours/gruta-de-xilo/gallery-5.jpg", alt: "Pareja sobre una roca en uno de los jacuzzis naturales de agua cristalina del final del recorrido", hasRealPeople: true },
+    ],
+  },
+
+  {
+    id:               "tour-amanecer-nubes",
+    slug:             "amanecer-de-nubes",
+    categoria:        "aventura",
+    icon:             "Mountain",
+    tipo:             "Senderismo & Amanecer",
+    dificultad:       "media",
+    duracion_hrs:     8,
+    duracionRango:    [7, 8],
+    recogida: {
+      tipo: "hospedaje-xilitla",
+      // ⚠️ POR CONFIRMAR CON MANOLO. Se sale DE MADRUGADA para llegar a la cima
+      // antes del amanecer; con 7-8 h eso devuelve al cliente a media mañana.
+      horaInicio: 3,
+      ventanaHrs: 1,
+      nota: {
+        es: "¿Te hospedas en Ciudad Valles? La salida es de madrugada desde Xilitla. Sí podemos ir por ti hasta allá con un costo extra de traslado: escríbenos y te lo cotizamos.",
+        en: "Staying in Ciudad Valles? We leave from Xilitla in the small hours. We can come and get you there for an extra transfer fee — message us and we'll quote it.",
+      },
+    },
+    reviewCount:      0,
+    groupMin:         2,
+    groupMax:         12,
+    privateAvailable: true,
+    nombre:           "Amanecer de Nubes — Senderismo al Cerro del Pilón",
+    nombreCorto:      "Amanecer de Nubes",
+    articulo:         "el",
+    tagline:          "Llegar a la cima antes que el sol",
+    precio:           1700,
+    precioUnidad:     "persona",
+    urgencia:         "Salida de madrugada — se reserva con un día de anticipación",
+    descripcion:
+      "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando el sol sale por encima de un mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. $1,700 por persona.",
+    descripcionLarga:
+      "Hay un momento, arriba del Cerro del Pilón, en el que el cielo se pone naranja y abajo no se ve la tierra: solo una capa de nubes que tapa los valles de un lado al otro del horizonte. Dura unos minutos. Para verlo hay que estar arriba antes de que amanezca, y por eso este recorrido empieza de madrugada.\n\nSalimos de noche desde tu hospedaje en Xilitla y subimos al bosque de la Trinidad, el bosque de niebla que corona la sierra a casi 2,000 metros. De ahí arranca la caminata: sendero entre pinos y encinos, con lámpara frontal, en subida constante y a oscuras. No hace falta experiencia de montaña, pero sí condición para caminar varias horas en pendiente.\n\nLa llegada a la cima se calcula para coincidir con el amanecer. Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Ahí se para todo: se toman fotos, se desayuna algo y se deja que pase.\n\nLa bajada se hace ya con luz, que es cuando se ve el bosque por el que subiste a ciegas: los madroños, los helechos, la niebla colgada entre los árboles.\n\nEn total son entre 7 y 8 horas contando el traslado. Arriba hace frío de verdad aunque en Xilitla haga calor: lleva chamarra, calzado de montaña con agarre y lámpara. Nosotros ponemos el equipo de seguridad y el guía acreditado.",
+    destinos: [
+      "Bosque de niebla de La Trinidad",
+      "Cerro del Pilón",
+      "Mirador del mar de nubes",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla",
+      "Taquillas y entradas",
+      "Equipo de seguridad",
+      "Guía acreditado NOM-09 SECTUR",
+      "Botiquín de primeros auxilios",
+    ],
+    imagen_hero: "/imagenes/tours/amanecer-de-nubes/hero.jpg",
+    itinerario: [
+      { hora: "3:00–4:00 AM", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla, de noche cerrada. Lleva chamarra: arriba el clima es otro." },
+      { hora: "4:30 AM", momento: "Subida a La Trinidad",
+        texto: "Camino de sierra hasta el bosque de niebla, a casi 2,000 metros. Se sube de noche y con las ventanas empañadas." },
+      { hora: "5:00 AM", momento: "Arranca la caminata",
+        texto: "Sendero entre pinos y encinos, con lámpara frontal y en subida constante. No hace falta experiencia de montaña, pero sí condición." },
+      { hora: "6:45 AM", momento: "La cima",
+        texto: "Llegas al Cerro del Pilón todavía a oscuras. Los últimos metros son de roca y hay tiempo de acomodarse antes de que salga el sol.",
+        foto: "/imagenes/tours/amanecer-de-nubes/gallery-2.jpg" },
+      { hora: "7:00 AM", momento: "El amanecer",
+        texto: "Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Dura unos minutos y ahí se para todo.",
+        foto: "/imagenes/tours/amanecer-de-nubes/hero.jpg" },
+      { hora: "8:30 AM", momento: "La bajada, ya con luz",
+        texto: "Es cuando por fin ves el bosque por el que subiste a ciegas: los madroños, los helechos y la niebla colgada entre los árboles.",
+        foto: "/imagenes/tours/amanecer-de-nubes/gallery-7.jpg" },
+      { hora: "10:00–11:00 AM", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje. Te queda el día entero por delante." },
+    ],
+    collage: [
+      "/imagenes/tours/amanecer-de-nubes/gallery-7.jpg",
+      "/imagenes/tours/amanecer-de-nubes/gallery-2.jpg",
+      "/imagenes/tours/amanecer-de-nubes/hero.jpg",
+    ],
+    imagenes: [
+      "/imagenes/tours/amanecer-de-nubes/hero.jpg",
+      "/imagenes/tours/amanecer-de-nubes/gallery-1.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/tours/amanecer-de-nubes/hero.jpg",      alt: "Guía en la cima del Cerro del Pilón viendo salir el sol sobre el mar de nubes que cubre la sierra", hasRealPeople: true },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-1.jpg", alt: "Excursionista sentado en una roca de la cima, de espaldas, frente al amanecer sobre las nubes", hasRealPeople: true },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-2.jpg", alt: "Dos siluetas de pie sobre la roca más alta del Cerro del Pilón, recortadas contra el sol que sale", hasRealPeople: true },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-3.jpg", alt: "Pareja con casco y lámpara frontal en la cima, con el mar de nubes y el cielo morado detrás", hasRealPeople: true },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-4.jpg", alt: "Los rayos del sol abriéndose sobre el mar de nubes y las montañas de la Huasteca Potosina" },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-5.jpg", alt: "Pareja descansando sobre las rocas de la cima con la franja naranja del amanecer al fondo", hasRealPeople: true },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-6.jpg", alt: "Excursionista de espaldas con su mochila viendo romper el amanecer desde el sendero de la cima", hasRealPeople: true },
+      { src: "/imagenes/tours/amanecer-de-nubes/gallery-7.jpg", alt: "Pinos del bosque de niebla de la Trinidad recortados contra la primera luz naranja del día" },
+    ],
+  },
+
+  {
+    id:               "tour-olla-de-la-luz",
+    slug:             "olla-de-la-luz",
+    categoria:        "ecoturismo",
+    icon:             "Mountain",
+    tipo:             "Sótano & Bosque de Niebla",
+    dificultad:       "media",
+    duracion_hrs:     9,
+    duracionRango:    [8, 9],
+    recogida: {
+      tipo: "hospedaje-xilitla",
+      // ⚠️ POR CONFIRMAR CON MANOLO. Con 8-9 h, salir a las 7 devuelve al
+      // cliente entre las 3 y las 4 de la tarde, con luz para bajar la sierra.
+      horaInicio: 7,
+      ventanaHrs: 1,
+      nota: {
+        es: "¿Te hospedas en Ciudad Valles? El traslado incluido es solo dentro de Xilitla, pero sí podemos ir por ti hasta allá con un costo extra de traslado: escríbenos y te lo cotizamos.",
+        en: "Staying in Ciudad Valles? The included transfer only covers Xilitla, but we can come and get you there for an extra transfer fee — message us and we'll quote it.",
+      },
+    },
+    reviewCount:      0,
+    groupMin:         2,
+    groupMax:         14,
+    privateAvailable: true,
+    nombre:           "Olla de la Luz — El Sótano del Bosque de Niebla de Xilitla",
+    nombreCorto:      "Olla de la Luz",
+    articulo:         "la",
+    tagline:          "Un abismo donde la luz entra como cascada",
+    precio:           1800,
+    precioUnidad:     "persona",
+    urgencia:         "Solo se entra con guía de la comunidad — se reserva con anticipación",
+    descripcion:
+      "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. $1,800 por persona.",
+    descripcionLarga:
+      "La Olla de la Luz es de esos lugares que no se entienden en una foto. Es un sótano vertical de 193 metros de profundidad y 233 de diámetro abierto en lo alto de la sierra de Xilitla: un hueco en el bosque tan grande que en su fondo creció otro bosque, y tan hondo que la luz del sol solo entra por completo unas horas al día.\n\nPara llegar hay que subir primero a La Trinidad, la comunidad náhuatl que vive a unos 14 km de Xilitla, en uno de los bosques de niebla mejor conservados de la Huasteca. La carretera sube casi 2,000 metros por camino de sierra, y cuando llegas el clima ya es otro: fresco, húmedo, con la niebla enredada entre los pinos.\n\nDe ahí arranca la caminata, de unas 2 horas, con guía de la propia comunidad — es la única manera de entrar. Se atraviesan tramos de bosque cerrado, llanos abiertos y varios miradores. El camino pasa entre pinos, cedros y orquídeas, y si hay suerte se cruzan coatíes o se oyen las pavas.\n\nY entonces el bosque se abre. Asomarse al borde de la Olla de la Luz es la clase de vista que recalibra la escala de las cosas: la pared de roca cayendo a plomo, las copas de los árboles allá abajo como brócoli, y el silencio. El guía te enseña dónde pararse y dónde no.\n\nSon entre 8 y 9 horas contando traslados. Lleva calzado de senderismo, chamarra o impermeable, agua y algo de comer. Arriba hace frío aunque en Xilitla estés sudando.",
+    destinos: [
+      "La Trinidad — Bosque de Niebla de Xilitla",
+      "Miradores del Cerro de la Luz",
+      "Olla de la Luz",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla",
+      "Caminata guiada de unas 2 horas entre bosque, llanos y miradores",
+      "Guía acreditado NOM-09 SECTUR",
+      "Equipo de seguridad",
+    ],
+    imagen_hero: "/imagenes/tours/olla-de-la-luz/hero.jpg",
+    itinerario: [
+      { hora: "7:00–8:00", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla. Lleva calzado de senderismo y chamarra o impermeable." },
+      { hora: "8:30", momento: "Subida a La Trinidad",
+        texto: "Unos 14 km de camino de sierra hasta la comunidad náhuatl que vive en lo alto del bosque de niebla. Al llegar el clima ya es otro: fresco y húmedo." },
+      { hora: "9:30", momento: "Arranca la caminata",
+        texto: "Con guía de la propia comunidad, que es la única manera de entrar. El sendero atraviesa bosque cerrado y llanos abiertos.",
+        foto: "/imagenes/tours/olla-de-la-luz/gallery-4.jpg" },
+      { hora: "11:00", momento: "Los miradores",
+        texto: "El camino pasa entre pinos, cedros y orquídeas, con varias paradas de mirador. Con suerte se cruzan coatíes o se oyen las pavas." },
+      { hora: "11:45", momento: "La Olla de la Luz",
+        texto: "El bosque se abre de golpe: 233 metros de diámetro, 193 de caída y otro bosque creciendo en el fondo. El guía te enseña dónde pararte y dónde no.",
+        foto: "/imagenes/tours/olla-de-la-luz/gallery-1.jpg" },
+      { hora: "13:00", momento: "Camino de regreso",
+        texto: "Se deshace el sendero con la luz alta, que es cuando el bosque de niebla enseña lo verde que es.",
+        foto: "/imagenes/tours/olla-de-la-luz/gallery-2.jpg" },
+      { hora: "15:00–16:00", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje en Xilitla." },
+    ],
+    // Primer recorrido del sitio con vídeo de portada. Vertical y de 12 s: se
+    // pinta SOLO en teléfono (`HeroTourMedia`), que es ~75 % del tráfico. En
+    // escritorio ni se descarga y se queda `imagen_hero`.
+    videoHeroMovil: "/videos/tours/olla-de-la-luz-v1.mp4",
+    collage: [
+      "/imagenes/tours/olla-de-la-luz/gallery-4.jpg",
+      "/imagenes/tours/olla-de-la-luz/gallery-3.jpg",
+      "/imagenes/tours/olla-de-la-luz/hero.jpg",
+    ],
+    imagenes: [
+      "/imagenes/tours/olla-de-la-luz/hero.jpg",
+      "/imagenes/tours/olla-de-la-luz/gallery-1.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/tours/olla-de-la-luz/hero.jpg",      alt: "La pared vertical de la Olla de la Luz cayendo a plomo hacia el bosque que creció en su fondo" },
+      { src: "/imagenes/tours/olla-de-la-luz/gallery-1.jpg", alt: "La boca de la Olla de la Luz desde el mirador, con la sierra y el mar de nubes al fondo" },
+      { src: "/imagenes/tours/olla-de-la-luz/gallery-2.jpg", alt: "Vista desde el borde hacia el fondo del sótano, donde las copas de los árboles parecen musgo" },
+      { src: "/imagenes/tours/olla-de-la-luz/gallery-3.jpg", alt: "Guía de pie sobre las rocas kársticas del borde de la Olla de la Luz, entre la niebla del bosque", hasRealPeople: true },
+      { src: "/imagenes/tours/olla-de-la-luz/gallery-4.jpg", alt: "Grupo caminando en fila por el sendero del bosque de niebla de la Trinidad rumbo al sótano", hasRealPeople: true },
+      { src: "/imagenes/tours/olla-de-la-luz/gallery-5.jpg", alt: "Grupo completo posando sobre las rocas del borde de la Olla de la Luz al terminar la caminata", hasRealPeople: true },
     ],
   },
 ];
@@ -794,6 +1840,17 @@ export const TOURS_DB: Tour[] = [
  * Ahora sale de aquí: se cambia `groupMax` de un recorrido y el sitio entero
  * se entera solo.
  */
+/**
+ * Lo que cuesta de más llevar el recorrido en privado, por persona (MXN).
+ *
+ * 🔴 28 sep 2026 — antes cada tour traía un `privateMinPrice` suelto (de $7,000
+ * a $8,500) que se publicaba como "desde X por el grupo completo". No es así
+ * como se cobra: el privado es el precio normal del recorrido **más $250 por
+ * cabeza**. Con la Expedición Tamul para dos, lo que el sitio anunciaba
+ * ($8,500) era más del doble de lo que realmente cuesta ($3,600).
+ */
+export const PRIVADO_EXTRA_POR_PERSONA = 250;
+
 export const GRUPO_MAX = Math.max(...TOURS_DB.map((t) => t.groupMax));
 
 /** El grupo mínimo con el que sale un recorrido. */

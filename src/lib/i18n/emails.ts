@@ -188,6 +188,8 @@ export interface EmailMessages {
     /** Llegó la víspera: el check-in es el día ANTERIOR al primer tour. */
     nocheExtraNota: string;
     eligeDia: (dia: number) => string;
+    /** Cuando el paquete deja a elección TODOS los recorridos, no un día. */
+    eligeRecorridos: string;
     tuItinerario: string;
     diaN: (n: number) => string;
     todoIncluido: string;
@@ -221,7 +223,7 @@ const ES: EmailMessages = {
       recordatorio3: {
         subject: (t) => `¿Apartamos tu lugar para ${t}?`,
         titulo: "Aparta tu lugar con el 30 %",
-        intro: "No hace falta que pagues todo hoy: puedes apartar tu lugar con el 30 % y liquidar el resto el día del tour. Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 125 1458.",
+        intro: "No hace falta que pagues todo hoy: puedes apartar tu lugar con el 30 % y liquidar el resto el día del tour. Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
         cta: "Apartar con el 30 %",
       },
     },
@@ -338,7 +340,7 @@ const ES: EmailMessages = {
     escribenosFolio: "Escríbenos tu número de cotización:",
     reservarEnLinea: "🌐 Reservar en línea",
     pagaConTarjeta: "Paga con tarjeta de forma rápida y segura",
-    btnWhatsapp: "WhatsApp +52 489 125 1458",
+    btnWhatsapp: "WhatsApp +52 489 109 0388",
     btnReservar: "Reservar y pagar en línea",
     vence: "Esta cotización vence en 48 horas · Sujeta a disponibilidad",
     hospedajeIncluido: "Hospedaje incluido",
@@ -377,7 +379,7 @@ const ES: EmailMessages = {
     saldoPendiente: "Saldo pendiente",
     notaSaldo: "El saldo restante se cubre antes o durante tu llegada. Te contactaremos por WhatsApp para coordinar fechas y detalles.",
     notaLiquidado: "Tu paquete está pagado al 100%. Te contactaremos por WhatsApp para coordinar los detalles.",
-    dudas: "¿Dudas? Escríbenos por WhatsApp al +52 489 125 1458.",
+    dudas: "¿Dudas? Escríbenos por WhatsApp al +52 489 109 0388.",
     grupoLinea: (adultos, mid, small) =>
       [
         `${adultos} ${adultos === 1 ? "adulto" : "adultos"}`,
@@ -389,6 +391,7 @@ const ES: EmailMessages = {
     noches: (n) => `${n} ${n === 1 ? "noche" : "noches"}`,
     nocheExtraNota: "Llegas la víspera · check-in desde las 3:00 PM",
     eligeDia: (dia) => `Tu elección del día ${dia}`,
+    eligeRecorridos: "Los recorridos que elegiste",
     tuItinerario: "Tu itinerario",
     diaN: (n) => `Día ${n}`,
     todoIncluido: "Todo lo que incluye",
@@ -422,7 +425,7 @@ const EN: EmailMessages = {
       recordatorio3: {
         subject: (t) => `Shall we hold your place for ${t}?`,
         titulo: "Hold your place with 30 %",
-        intro: "You don't have to pay it all today: you can hold your place with 30 % and settle the rest on the day of the tour. Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 125 1458.",
+        intro: "You don't have to pay it all today: you can hold your place with 30 % and settle the rest on the day of the tour. Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
         cta: "Hold it with 30 %",
       },
     },
@@ -539,7 +542,7 @@ const EN: EmailMessages = {
     escribenosFolio: "Send us your quote number:",
     reservarEnLinea: "🌐 Book online",
     pagaConTarjeta: "Pay by card, quick and secure",
-    btnWhatsapp: "WhatsApp +52 489 125 1458",
+    btnWhatsapp: "WhatsApp +52 489 109 0388",
     btnReservar: "Book and pay online",
     vence: "This quote expires in 48 hours · Subject to availability",
     hospedajeIncluido: "Lodging included",
@@ -576,7 +579,7 @@ const EN: EmailMessages = {
     saldoPendiente: "Outstanding balance",
     notaSaldo: "The remaining balance is settled before or during your arrival. We'll contact you on WhatsApp to arrange dates and details.",
     notaLiquidado: "Your package is paid in full. We'll contact you on WhatsApp to arrange the details.",
-    dudas: "Questions? Message us on WhatsApp at +52 489 125 1458.",
+    dudas: "Questions? Message us on WhatsApp at +52 489 109 0388.",
     grupoLinea: (adultos, mid, small) =>
       [
         `${adultos} ${adultos === 1 ? "adult" : "adults"}`,
@@ -588,6 +591,7 @@ const EN: EmailMessages = {
     noches: (n) => `${n} ${n === 1 ? "night" : "nights"}`,
     nocheExtraNota: "You arrive the night before · check-in from 3:00 PM",
     eligeDia: (dia) => `Your choice for day ${dia}`,
+    eligeRecorridos: "The tours you chose",
     tuItinerario: "Your itinerary",
     diaN: (n) => `Day ${n}`,
     todoIncluido: "Everything included",

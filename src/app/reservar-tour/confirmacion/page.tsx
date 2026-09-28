@@ -289,7 +289,7 @@ export default function ConfirmacionTourPage() {
         {/* ── ACCIONES ── */}
         <div className="space-y-3 mb-6">
           <a
-            href={`https://wa.me/524891251458?text=${waMessage}`}
+            href={`https://wa.me/524891090388?text=${waMessage}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white w-full py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
@@ -329,8 +329,8 @@ export default function ConfirmacionTourPage() {
             hola@huasteca-potosina.com
           </a>
           {" "}{t.oAl}{" "}
-          <a href="https://wa.me/524891251458" target="_blank" rel="noopener noreferrer" className="text-verde-selva underline">
-            +52 489 125 1458
+          <a href="https://wa.me/524891090388" target="_blank" rel="noopener noreferrer" className="text-verde-selva underline">
+            +52 489 109 0388
           </a>
         </p>
 

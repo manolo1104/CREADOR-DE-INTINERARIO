@@ -494,7 +494,7 @@ export function buildTourEmailHtml(data: {
                   ${T.confirmaWhatsapp}
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
-                  <a href="https://wa.me/524891251458" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">+52 489 125 1458</a><br>
+                  <a href="https://wa.me/524891090388" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">+52 489 109 0388</a><br>
                   ${T.enviaTuNumero} <strong>${data.confirmationNumber}</strong>
                 </p>
               </td>
@@ -533,7 +533,7 @@ export function buildTourEmailHtml(data: {
             ${T.preguntas}
           </p>
           <p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:13px;color:#1a2e1a;">
-            📱 <a href="https://wa.me/524891251458" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">WhatsApp: +52 489 125 1458</a>
+            📱 <a href="https://wa.me/524891090388" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">WhatsApp: +52 489 109 0388</a>
           </p>
           <p style="margin:0 0 6px 0;font-family:'DM Sans',Arial;font-size:13px;color:#1a2e1a;">
             📧 <a href="mailto:hola@huasteca-potosina.com" style="color:#1a2e1a;border-bottom:1px solid #d4ccbc;">hola@huasteca-potosina.com</a>
@@ -592,7 +592,7 @@ export function buildTourQuoteEmailHtml(data: {
   const C = getEmails(locale).confirmacion;
   const base     = "https://www.huasteca-potosina.com";
   const pre      = locale === "en" ? "/en" : "";
-  const waUrl    = "https://wa.me/524891251458";
+  const waUrl    = "https://wa.me/524891090388";
   /**
    * A dónde lleva el botón "Reservar y pagar en línea".
    *
@@ -988,7 +988,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
   notes?:       string;
 }): string {
   const base  = "https://www.huasteca-potosina.com";
-  const waUrl = "https://wa.me/524891251458";
+  const waUrl = "https://wa.me/524891090388";
 
   const fmx = (n: number) => `$${Number(n).toLocaleString("es-MX")}`;
   const formatDate = (d: string) => {
@@ -1130,7 +1130,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
         <tr><td style="padding:26px 32px 30px 32px" align="center">
           <a href="${waUrl}" style="display:inline-block;background:#5a9e2a;color:#ffffff;text-decoration:none;font-family:Arial;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:14px 34px">Apartar por WhatsApp</a>
           <p style="font-family:Arial;font-size:11px;color:#8a7a5a;margin:14px 0 0 0">
-            ¿Dudas? Responde este correo o escríbenos al +52 489 125 1458.
+            ¿Dudas? Responde este correo o escríbenos al +52 489 109 0388.
           </p>
         </td></tr>
 

@@ -21,7 +21,7 @@ import type { Paquete } from "./paquetes";
 import type { Locale } from "./i18n/config";
 
 const BASE = "https://www.huasteca-potosina.com";
-const WA   = "524891251458";
+const WA   = "524891090388";
 
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")} MXN`;
 
@@ -227,7 +227,14 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
             ${dato(T.personas, T.grupoLinea(d.adultos, d.nMid, d.nSmall))}
             ${d.habitacion ? dato(T.habitacion, d.habitacion) : ""}
             ${d.checkin ? dato(T.entradaHotel, `${fechaLarga(d.checkin, L)}<br><span style="font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#8a7a5a;">${T.noches(d.nochesHotel)}</span>`) : ""}
-            ${d.eleccionNombre && d.paquete.eleccionTour ? dato(T.eligeDia(d.paquete.eleccionTour.dia), d.eleccionNombre) : ""}
+            ${d.eleccionNombre && d.paquete.eleccionTour
+              ? dato(
+                  d.paquete.eleccionTour.dia === undefined
+                    ? T.eligeRecorridos
+                    : T.eligeDia(d.paquete.eleccionTour.dia),
+                  d.eleccionNombre,
+                )
+              : ""}
           </table>
           ${d.nocheExtra ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-left:2px solid #c4882a;margin:16px 0 0 0;">
@@ -265,7 +272,7 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
             <tr><td style="border-top:1px solid #d4ccbc;padding:22px 0 0 0;">
               <p style="margin:0 0 14px 0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:#8a7a5a;line-height:1.7;">${T.guiaAdjunta}</p>
               <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:#3a3a2e;line-height:1.7;">
-                ${T.dudas.replace("+52 489 125 1458", `<a href="https://wa.me/${WA}" style="color:#3a6b1a;font-weight:500;">+52 489 125 1458</a>`)}
+                ${T.dudas.replace("+52 489 109 0388", `<a href="https://wa.me/${WA}" style="color:#3a6b1a;font-weight:500;">+52 489 109 0388</a>`)}
               </p>
             </td></tr>
           </table>

@@ -14,8 +14,12 @@ interface Props {
   precio:   number;
   tourId?:  string;
   tourName?: string;
-  /** "vehiculo" = precio por vehículo; se reserva por WhatsApp (waHref) en vez del flujo online. */
-  precioUnidad?: "persona" | "vehiculo";
+  /**
+   * "vehiculo" = precio por vehículo; se reserva por WhatsApp (waHref) en vez
+   * del flujo online. "grupo" = una sola tarifa por todos los que van, así que
+   * la barra NO puede decir "por persona" debajo de la cifra.
+   */
+  precioUnidad?: "persona" | "vehiculo" | "grupo";
   waHref?:  string;
   /** De dónde sale la barra, para poder medir aparte la de tours y la de destinos. */
   source?:  "mobile_bar" | "destino_bar";
@@ -25,6 +29,7 @@ interface Props {
 
 export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar", conModulo = false }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
+  const esGrupo    = precioUnidad === "grupo";
   const { locale, en, lp } = useLocale();
   const t = getBooking(locale).barra;
   // Esta barra es la ÚNICA de abajo en las fichas de tour: `CarritoBar` se
@@ -50,7 +55,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
         <p className="font-cormorant text-dorado text-xl leading-none">
           ${precio.toLocaleString(en ? "en-US" : "es-MX")}
           <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">
-            {esVehiculo ? t.mxnVehiculo : t.mxnPersona}
+            {esVehiculo ? t.mxnVehiculo : esGrupo ? t.mxnGrupo : t.mxnPersona}
           </span>
         </p>
       </div>
@@ -59,6 +64,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
+          data-wa-manual="1"
           onClick={trackWa}
           aria-label={t.preguntarWhatsapp}
           className="flex items-center justify-center w-11 h-11 bg-[#25D366] text-white flex-shrink-0 hover:brightness-110 transition-all"

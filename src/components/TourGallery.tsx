@@ -208,83 +208,121 @@ export function TourGallery({ images, tourName }: Props) {
         Todas las fotos son de recorridos reales realizados por nuestro equipo.
       </p>
 
-      {/* ── LIGHTBOX ── */}
+      {/* ── VISOR ──
+          Tres cosas cambiaron: el fondo ya no es negro casi sólido sino
+          translúcido y desenfocado (se intuye la página detrás), la foto va
+          dentro de un marco de cristal en vez de flotar suelta, y las flechas
+          se ven TAMBIÉN en móvil — antes eran `hidden sm:block` y en el
+          teléfono no había forma de pasar de foto salvo adivinando que se
+          podía deslizar. */}
       {lightboxOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`Fotos de ${tourName}`}
-          className="fixed inset-0 z-[200] bg-negro/96 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[200] bg-negro/70 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-visor-fondo motion-reduce:animate-none"
           onClick={closeLightbox}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 text-crema/60 hover:text-crema transition-colors p-2"
-            aria-label="Cerrar galería"
-            autoFocus
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
-          {/* Las flechas se encimaban sobre la foto en pantallas angostas: ahí
-              se ocultan y se navega deslizando, como en la galería de destinos. */}
-          <button
-            onClick={(e) => { e.stopPropagation(); lbPrev(); }}
-            className="hidden sm:block absolute left-4 text-crema/60 hover:text-crema transition-colors p-3"
-            aria-label="Anterior"
-          >
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
           <div
-            className="relative w-full max-w-4xl aspect-[4/3] sm:mx-14"
+            className="relative w-full max-w-5xl animate-visor-marco motion-reduce:animate-none"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src={images[lightboxIdx].src}
-              alt={images[lightboxIdx].alt}
-              fill
-              className="object-contain"
-              sizes="(max-width: 640px) 100vw, 90vw"
-            />
-            {images[lightboxIdx].hasRealPeople && (
-              <span className="absolute bottom-4 left-4 bg-negro/80 text-verde-vivo text-[10px] font-dm px-3 py-1.5 rounded-full border border-verde-vivo/30 flex items-center gap-1.5">
-                <Camera className="w-3.5 h-3.5" aria-hidden="true" />
-                {images[lightboxIdx].caption ?? "Foto real del recorrido"}
-              </span>
-            )}
+            {/* Marco de cristal */}
+            <div
+              className="relative rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-md p-2 sm:p-3"
+              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,.22), 0 24px 70px rgba(0,0,0,.6)" }}
+            >
+              <div className="relative aspect-[4/3] sm:aspect-auto sm:h-[62vh] max-h-[52vh] sm:max-h-none rounded-xl overflow-hidden bg-negro/70">
+                <Image
+                  src={images[lightboxIdx].src}
+                  alt={images[lightboxIdx].alt}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 640px) 96vw, 1000px"
+                />
+                {images[lightboxIdx].hasRealPeople && (
+                  <span className="absolute bottom-3 left-3 bg-negro/75 backdrop-blur-sm text-verde-vivo text-[10px] font-dm px-3 py-1.5 rounded-full border border-verde-vivo/30 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5" aria-hidden="true" />
+                    {images[lightboxIdx].caption ?? "Foto real del recorrido"}
+                  </span>
+                )}
+              </div>
+
+              {/* Pie del marco: dónde estoy y a dónde puedo saltar */}
+              <div className="flex items-center gap-3 px-1.5 pt-2.5 pb-0.5">
+                <p className="font-dm text-[11px] text-crema/55 tabular-nums flex-shrink-0">
+                  <span className="text-crema/85">{lightboxIdx + 1}</span> / {images.length}
+                </p>
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-none ml-auto">
+                  {images.map((img, i) => (
+                    <button
+                      key={img.src + i}
+                      type="button"
+                      onClick={() => setLbIdx(i)}
+                      aria-label={`Ir a la foto ${i + 1}`}
+                      aria-current={i === lightboxIdx}
+                      className={`relative w-11 h-8 rounded overflow-hidden flex-shrink-0 transition-[opacity,box-shadow] duration-200 ease-out active:scale-[0.96] ${
+                        i === lightboxIdx
+                          ? "opacity-100 shadow-[0_0_0_2px_rgba(143,190,58,.9)]"
+                          : "opacity-45 hover:opacity-85"
+                      }`}
+                    >
+                      <Image src={img.src} alt="" fill className="object-cover" sizes="44px" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Flechas: discos de cristal, dentro del marco en móvil y
+                asomando fuera en escritorio. Se ven en los dos tamaños. */}
+            <button
+              onClick={lbPrev}
+              aria-label="Foto anterior"
+              className="absolute left-1 sm:-left-5 top-1/3 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full border border-white/20 bg-negro/55 backdrop-blur-md text-crema/85 hover:text-crema hover:bg-negro/75 active:scale-[0.94] transition-[transform,background-color,color] duration-200 ease-out"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={lbNext}
+              aria-label="Foto siguiente"
+              className="absolute right-1 sm:-right-5 top-1/3 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full border border-white/20 bg-negro/55 backdrop-blur-md text-crema/85 hover:text-crema hover:bg-negro/75 active:scale-[0.94] transition-[transform,background-color,color] duration-200 ease-out"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            <button
+              onClick={closeLightbox}
+              aria-label="Cerrar galería"
+              autoFocus
+              className="absolute -top-3 -right-2 sm:-top-4 sm:-right-4 grid place-items-center w-10 h-10 rounded-full border border-white/20 bg-negro/70 backdrop-blur-md text-crema/80 hover:text-crema hover:bg-negro/90 active:scale-[0.94] transition-[transform,background-color,color] duration-200 ease-out"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <p className="mt-3 text-center font-dm text-[11px] text-crema/45 px-4">
+              {tourName}
+            </p>
           </div>
 
           {/* Vecinas precargadas: sin esto, cada flecha dejaba la pantalla en
               blanco mientras el servidor optimizaba la siguiente imagen. */}
           <div className="hidden" aria-hidden="true">
             {[(lightboxIdx + 1) % images.length, (lightboxIdx - 1 + images.length) % images.length].map((i) => (
-              <Image key={i} src={images[i].src} alt="" width={1} height={1} sizes="90vw" />
+              <Image key={i} src={images[i].src} alt="" width={1} height={1} sizes="1000px" />
             ))}
           </div>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); lbNext(); }}
-            className="hidden sm:block absolute right-4 text-crema/60 hover:text-crema transition-colors p-3"
-            aria-label="Siguiente"
-          >
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-crema/40 font-dm text-xs text-center px-4">
-            {lightboxIdx + 1} / {images.length} — {tourName}
-            <span className="block sm:hidden text-crema/25 mt-1">Desliza para ver más</span>
-          </p>
         </div>
       )}
+
     </>
   );
 }

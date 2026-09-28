@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 import { ItinerarioProvider } from "@/context/ItinerarioContext";
 import { PublicShell } from "@/components/NavbarWrapper";
 import { Analytics } from "@/components/Analytics";
+import WhatsAppClickTracker from "@/components/WhatsAppClickTracker";
 import { asLocale } from "@/lib/i18n/config";
 
 const cormorant = Cormorant_Garamond({
@@ -103,6 +104,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div className="fixed inset-0 -z-10 bg-negro" />
+        {/* Cuenta los clics a WhatsApp de TODO el sitio desde un solo lugar:
+            un enlace nuevo queda medido sin que nadie se acuerde de hacerlo. */}
+        <WhatsAppClickTracker />
         <ItinerarioProvider>
           <Providers>
             <PublicShell>{children}</PublicShell>

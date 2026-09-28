@@ -11,7 +11,7 @@
  * Si algún día se publica otro correo, se agrega aquí y solo aquí.
  */
 
-const WA_NUMBER = "524891251458";
+const WA_NUMBER = "524891090388";
 
 export const CONTACTO = {
   nombreComercial: "Tours Huasteca Potosina",
@@ -21,8 +21,8 @@ export const CONTACTO = {
   /** Buzón de datos personales (ARCO), referenciado en el aviso de privacidad. */
   emailPrivacidad: "privacidad@huasteca-potosina.com",
 
-  telefonoDisplay: "+52 489 125 1458",
-  telefonoE164: "+524891251458",
+  telefonoDisplay: "+52 489 109 0388",
+  telefonoE164: "+524891090388",
   whatsappUrl: `https://wa.me/${WA_NUMBER}`,
 
   /**

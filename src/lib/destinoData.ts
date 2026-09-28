@@ -53,7 +53,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "El Meco tiene la reputación de ser la cascada con el agua más turquesa de la Huasteca. No es marketing: el mineral de calcio que disuelve la roca crea un color que los fotógrafos buscan específicamente. La clave es la hora: llegar entre las 9 y las 11 de la mañana, cuando la luz solar entra perpendicular al cañón. Nuestros guías saben exactamente cuándo posicionarse.",
 
   "sotano-de-las-huahuas":
-    "El Sótano de las Huahuas es el hermano menor del Sótano de las Golondrinas —y tiene algo que su famoso vecino no tiene: accesibilidad y una experiencia más íntima. Los pericos salen en espiral al amanecer mientras la luz del sol apenas toca el borde del abismo. El ruido que hacen juntos, amplificado por las paredes de roca, es uno de los sonidos más extraños y hermosos que existen en la naturaleza.",
+    "El Sótano de las Huahuas es el hermano menor del Sótano de las Golondrinas —y tiene algo que su famoso vecino no tiene: accesibilidad y una experiencia más íntima. Las aves salen en espiral al amanecer mientras la luz del sol apenas toca el borde del abismo. El ruido que hacen juntos, amplificado por las paredes de roca, es uno de los sonidos más extraños y hermosos que existen en la naturaleza.",
 
   "cuevas-de-mantetzulel":
     "Las Cuevas de Mantetzulel guardan un ecosistema subterráneo que muy pocos viajeros conocen: estalactitas de millones de años, murciélagos que navegan en la oscuridad y el eco de tu propia voz amplificado por cavernas de 30 metros de altura. La temperatura al interior es constante: 18°C, sin importar que afuera haga 38°C de calor.",
@@ -122,7 +122,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "Subir a La Trinidad es cambiar de mundo en una hora: del calor de Xilitla al frío y la neblina de uno de los bosques mejor conservados de la Huasteca, a casi dos mil metros. Es una comunidad náhuatl de apenas un centenar de habitantes donde puedes dormir en cabaña, acampar, encender una fogata, asar tu comida y caminar entre madroños enormes hasta miradores, pozas y sótanos. Lo mejor no es un atractivo en particular, sino la sensación de estar muy lejos de todo.",
 
   "olla-de-la-luz":
-    "Coronando el punto más alto del municipio de Xilitla, la Olla de la Luz es un abismo que impone: un sótano de casi 800 metros de diámetro y más de 120 de caída vertical, escondido en lo alto del bosque de niebla. Llegar es parte del premio —una caminata guiada desde La Trinidad, entre pinos y madroños— y asomarse a su boca es una de esas vistas que recalibran la escala de las cosas. No es para ir solo: aquí el guía es tu seguro de vida.",
+    "Coronando el punto más alto del municipio de Xilitla, la Olla de la Luz es un abismo que impone: un sótano de 233 metros de diámetro y 193 de caída vertical, escondido en lo alto del bosque de niebla. Llegar es parte del premio —una caminata guiada desde La Trinidad, entre pinos y madroños— y asomarse a su boca es una de esas vistas que recalibran la escala de las cosas. No es para ir solo: aquí el guía es tu seguro de vida.",
 
   "cueva-del-salitre":
     "A pocos minutos del centro surrealista de Xilitla, la Cueva del Salitre es el lado de adrenalina del Pueblo Mágico: cien metros de boca por trescientos de fondo, con paredes que los escaladores han convertido en cinco rutas y un interior hecho para la espeleología y el rappel. Su nombre viene del salitre que escurre por la roca húmeda. Es la prueba de que en Xilitla la aventura empieza casi en la plaza.",
@@ -273,23 +273,34 @@ export const REVIEWS_POR_DESTINO: Record<string, DestinoReview[]> = {
 
 // ── Rating promedio por destino (para tarjetas del índice) ───────────────────
 
+/**
+ * ⚠️ RETIRADO DEL SITIO el 28 sep 2026 — ya no se publica en ninguna parte.
+ *
+ * Repartía 1,188 reseñas entre 20 destinos, con notas de 4.5 a 4.9, todas
+ * inventadas, y se emitían como `aggregateRating` en los datos estructurados.
+ * El negocio tiene 161 reseñas reales en Google (ver `src/lib/resenas.ts`) y un
+ * destino —un lugar público, no algo que vendamos— no tiene reseñas propias.
+ *
+ * Se conservan los datos por si un día se mide de verdad. NO volver a pintarlos
+ * sin una fuente real detrás.
+ */
 export const RATING_DESTINO: Record<string, { rating: string; count: number }> = {
-  "cascada-de-tamul":             { rating: "4.9", count: 127 },
-  "sotano-de-las-golondrinas":    { rating: "4.9", count: 98  },
-  "sotano-de-las-huahuas":        { rating: "4.9", count: 86  },
+  "cascada-de-tamul":             { rating: "4.7", count: 127 },
+  "sotano-de-las-golondrinas":    { rating: "4.7", count: 98  },
+  "sotano-de-las-huahuas":        { rating: "4.7", count: 86  },
   "las-pozas-jardin-surrealista": { rating: "4.8", count: 84  },
   "cascadas-de-micos":            { rating: "4.7", count: 112 },
   "puente-de-dios-tamasopo":      { rating: "4.8", count: 73  },
   "cascadas-de-tamasopo":         { rating: "4.7", count: 65  },
   "cascadas-minas-viejas":        { rating: "4.8", count: 96  },
-  "cascada-el-meco":              { rating: "4.9", count: 61  },
+  "cascada-el-meco":              { rating: "4.7", count: 61  },
   "cascada-el-salto":             { rating: "4.6", count: 42  },
   "laguna-media-luna":            { rating: "4.8", count: 58  },
   "nacimiento-huichihuayan":      { rating: "4.7", count: 39  },
   "xilitla-pueblo-magico":        { rating: "4.8", count: 51  },
   "zona-arqueologica-tamtoc":     { rating: "4.6", count: 34  },
   "balneario-taninul":            { rating: "4.5", count: 47  },
-  "rio-tampaon-rafting":          { rating: "4.9", count: 29  },
+  "rio-tampaon-rafting":          { rating: "4.7", count: 29  },
   "cuevas-de-mantetzulel":        { rating: "4.6", count: 22  },
   "voladores-tamaleton":          { rating: "4.8", count: 18  },
   "cascada-el-aguacate":          { rating: "4.7", count: 31  },

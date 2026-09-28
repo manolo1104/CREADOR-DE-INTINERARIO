@@ -58,7 +58,7 @@ const LLUVIAS: Temporada = {
 
 const ARRANQUE_SECA: Temporada = {
   nombre:  "Empieza la temporada seca",
-  gancho:  "Se acaban las lluvias y el agua empieza a aclararse. Noviembre y diciembre son de los meses con mejor relación entre color del agua y poca gente.",
+  gancho:  "Se acaban las lluvias y el agua empieza a aclararse. De octubre a diciembre es cuando mejor se combinan el color del agua y la poca gente.",
   matiz:   "En diciembre las fechas de fin de año se llenan primero: si vienes en esas semanas, conviene apartar con tiempo.",
   destaca: ["expedicion-tamul", "cascadas-del-meco", "buceo-media-luna"],
 };
@@ -69,11 +69,62 @@ for (const m of [6])               VENTANAS[m] = SECA;
 for (const m of [7, 8, 9, 10])     VENTANAS[m] = LLUVIAS;
 for (const m of [11, 12])          VENTANAS[m] = ARRANQUE_SECA;
 
+/**
+ * La ventana que el dueño llama «la mejor temporada para venir»: del 5 de
+ * octubre al 31 de diciembre. La fecha de arranque la fijó él el 28 sep 2026.
+ *
+ * 🔴 NO es lo mismo que «el agua más turquesa», que sigue siendo marzo-mayo
+ * (ver `SECA_CLARA`). El sitio afirma las dos cosas y no se contradicen
+ * mientras se digan bien: en primavera el agua se ve mejor PERO hay más gente;
+ * de octubre a diciembre el agua ya bajó clara y todavía no llegan las
+ * multitudes. Por eso el titular del inicio es «la mejor temporada para VENIR»
+ * y nunca «el agua más turquesa»: si se mezclan, el inicio contradice a
+ * /destinos, al boletín y a llms.txt.
+ *
+ * Es mes-día, así que se repite sola cada año y nadie tiene que acordarse.
+ */
+export const MEJOR_TEMPORADA = { inicioMes: 10, inicioDia: 5, finMes: 12, finDia: 31 } as const;
+
+/** Con cuánta anticipación se empieza a anunciar. Antes de eso no es noticia. */
+const DIAS_DE_AVISO = 45;
+
+/** El día de hoy en la Huasteca, no en el servidor (Railway corre en UTC). */
+function hoyEnMexico(ahora?: Date): { y: number; m: number; d: number } {
+  const iso = (ahora ?? new Date()).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const [y, m, d] = iso.split("-").map(Number);
+  return { y, m, d };
+}
+
+export type EstadoTemporada = "cuenta-regresiva" | "dentro" | "fuera";
+
+/**
+ * En qué punto de la mejor temporada estamos y cuántos días faltan.
+ * `ahora` se inyecta sólo para probarlo sin viajar en el tiempo.
+ */
+export function ventanaMejorTemporada(ahora?: Date): { estado: EstadoTemporada; dias: number } {
+  const { y, m, d } = hoyEnMexico(ahora);
+  const DIA = 86_400_000;
+  const hoy    = Date.UTC(y, m - 1, d);
+  const inicio = Date.UTC(y, MEJOR_TEMPORADA.inicioMes - 1, MEJOR_TEMPORADA.inicioDia);
+  const fin    = Date.UTC(y, MEJOR_TEMPORADA.finMes - 1, MEJOR_TEMPORADA.finDia);
+  if (hoy >= inicio && hoy <= fin) return { estado: "dentro", dias: 0 };
+  const faltan = Math.round((inicio - hoy) / DIA);
+  if (faltan > 0 && faltan <= DIAS_DE_AVISO) return { estado: "cuenta-regresiva", dias: faltan };
+  return { estado: "fuera", dias: 0 };
+}
+
 /** La ventana que toca. `mes` es 1–12; por omisión, el mes actual en México. */
-export function temporadaDe(mes?: number): Temporada {
-  const m = mes ?? Number(
-    new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }).slice(5, 7),
-  );
+export function temporadaDe(mes?: number, dia?: number): Temporada {
+  const hoy = hoyEnMexico();
+  const m = mes ?? hoy.m;
+  // Sin día explícito: si preguntan por el mes actual se usa el día de hoy; si
+  // preguntan por otro mes en abstracto, se toma la mitad del mes.
+  const d = dia ?? (mes === undefined ? hoy.d : 15);
+  // 🔴 Octubre se parte en dos. Hasta el día 4 sigue siendo lluvias; del 5 en
+  // adelante arranca la seca (ver MEJOR_TEMPORADA). Sin esto, en octubre el
+  // boletín mandaba «temporada de lluvias» el mismo día que el inicio del sitio
+  // anunciaba la mejor temporada del año.
+  if (m === MEJOR_TEMPORADA.inicioMes && d >= MEJOR_TEMPORADA.inicioDia) return ARRANQUE_SECA;
   return VENTANAS[m] ?? SECA;
 }
 

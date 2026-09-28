@@ -36,7 +36,13 @@ export default function Navbar() {
   // y la confirmación están traducidos. El botón lleva al motor en ambos.
   // (Antes en inglés iba a /en/tours porque /en/reservar daba 404: el visitante
   // que pulsaba "Book" volvía al catálogo y no había forma de reservar.)
-  const reservarHref = lp("/reservar");
+  // 🔴 28 sep 2026 — en la ficha de un tour, "Reservar" mandaba al catálogo
+  // genérico y se perdía el contexto: el visitante que ya está leyendo la
+  // Expedición Tamul acababa en una lista de once recorridos. En esas páginas
+  // el botón baja al módulo de reserva de ESE tour, que ya trae calendario,
+  // personas y total. En el resto del sitio sigue yendo al motor.
+  const enFichaDeTour = /^\/(?:en\/)?tours\/[^/]+$/.test(pathname);
+  const reservarHref = enFichaDeTour ? "#reservar-este-tour" : lp("/reservar");
   const switchHref = counterpartHref(pathname, locale);
 
   const destinosRef = useRef<HTMLDivElement>(null);

@@ -19,7 +19,7 @@
  * que este archivo pueda conocer.
  */
 
-import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, type Tour } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
@@ -76,19 +76,17 @@ const CABECERA: Record<Locale, string> = {
 
 > Operadora turística local certificada en la Huasteca Potosina, San Luis Potosí, México.
 > Tours guiados con todo incluido: transporte, desayuno, entradas, guía certificado
-> NOM-09 SECTUR, equipo de seguridad y fotografías. 4.9★ · 492 reseñas en Google.
-> Premio Arival al Mejor Tour Operador de Norteamérica 2023.`,
+> NOM-09 SECTUR, equipo de seguridad y fotografías. 4.7★ · 161 reseñas en Google.`,
   en: `# Huasteca Potosina Tours
 
 > Certified local tour operator in the Huasteca Potosina, San Luis Potosí, Mexico.
 > All-inclusive guided tours: transport, breakfast, entrance fees, NOM-09 SECTUR
-> certified guide, safety gear and photographs. 4.9★ · 492 Google reviews.
-> Arival Award, Best Tour Operator in North America 2023.`,
+> certified guide, safety gear and photographs. 4.7★ · 161 Google reviews.`,
 };
 
 const RESERVA: Record<Locale, string> = {
   es: `## Información de reserva
-- WhatsApp: +52 489 125 1458 (https://wa.me/524891251458)
+- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Sitio web: ${SITE}
 - Reserva: en línea con pago seguro (Stripe) o por WhatsApp con anticipo del 30 %.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo).
@@ -96,7 +94,7 @@ const RESERVA: Record<Locale, string> = {
 - Recogemos al viajero en su hospedaje, tanto en Xilitla como en Ciudad Valles.
 - Precio por persona (el RZR se cobra por vehículo). Niños de 6 a 10 años pagan ~70 % y menores de 6 ~50 % del precio adulto.`,
   en: `## Booking information
-- WhatsApp: +52 489 125 1458 (https://wa.me/524891251458)
+- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Website: ${SITE}/en
 - Booking: online with secure payment (Stripe) or over WhatsApp with a 30% deposit.
 - Cancellation: free up to 48 hours before the tour (full refund).
@@ -108,14 +106,12 @@ const RESERVA: Record<Locale, string> = {
 
 const CERTIFICACIONES: Record<Locale, string> = {
   es: `## Calificaciones y certificaciones
-- 4.9 / 5 · 492 reseñas verificadas en Google.
+- 4.7 / 5 · 161 reseñas verificadas en Google.
 - Guías certificados NOM-09 SECTUR.
-- Premio Arival al Mejor Tour Operador de Norteamérica 2023.
 - Más de 10,000 viajeros atendidos.`,
   en: `## Ratings and certifications
-- 4.9 / 5 · 492 verified Google reviews.
+- 4.7 / 5 · 161 verified Google reviews.
 - NOM-09 SECTUR certified guides (the Mexican standard for adventure tourism guiding).
-- Arival Award, Best Tour Operator in North America 2023.
 - Over 10,000 travelers served.`,
 };
 
@@ -353,10 +349,10 @@ export function buildLlmsFullTxt(locale: Locale = "es"): string {
       en ? `What it is: ${t.descripcion}` : `Qué es: ${t.descripcion}`,
       en ? `Destinations visited: ${t.destinos.join(", ")}.` : `Destinos que visita: ${t.destinos.join(", ")}.`,
       en ? `Includes: ${t.incluye.join(", ")}.` : `Incluye: ${t.incluye.join(", ")}.`,
-      t.privateAvailable && t.privateMinPrice
+      t.privateAvailable
         ? en
-          ? `A private version is available from ${mxn(t.privateMinPrice)}.`
-          : `Versión privada disponible desde ${mxn(t.privateMinPrice)}.`
+          ? `A private version is available: the regular price plus ${mxn(PRIVADO_EXTRA_POR_PERSONA)} per person.`
+          : `Versión privada disponible: el precio normal más ${mxn(PRIVADO_EXTRA_POR_PERSONA)} por persona.`
         : null,
     ]
       .filter(Boolean)

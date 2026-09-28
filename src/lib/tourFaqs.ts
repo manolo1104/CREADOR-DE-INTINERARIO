@@ -155,4 +155,34 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
       a: "No, está incluida en el precio del tour.",
     },
   ],
+  "tour-eden-jardin": [
+    {
+      q: "¿Qué veo en esta experiencia que no vea en la visita normal a Las Pozas?",
+      a: "Tres cosas. Entras una hora antes de que abra al público, así que el jardín está vacío. Se abren recintos que no forman parte del recorrido general, entre ellos la Casa Estudio, donde todavía se conserva un poema escrito de puño y letra por Edward James. Y se sube a los niveles superiores del Palacio de Bambú, que en la visita normal están cerrados.",
+    },
+    {
+      q: "¿A qué hora empieza?",
+      a: "Lunes, miércoles, jueves y viernes a las 8:00 a. m.; sábados y domingos a las 7:00 a. m. También hay salida de 5:00 p. m. de miércoles a lunes. La hora exacta se confirma al apartar la fecha, porque depende del día.",
+    },
+    {
+      q: "¿Cuántos podemos ir?",
+      a: "De 1 a 7 personas. El máximo lo pone el jardín: no se permite el acceso a más de 7 por experiencia, y en algunas estructuras se sube de una en una por su capacidad de carga.",
+    },
+    {
+      q: "¿En qué idioma es la visita?",
+      a: "Español o inglés, el que prefieras. Francés e italiano se pueden pedir con anticipación y quedan sujetos a disponibilidad del guía.",
+    },
+    {
+      q: "¿Puedo nadar en las pozas?",
+      a: "No. En esta experiencia no se permiten actividades acuáticas — el jardín es Monumento Artístico y Patrimonio Nacional, y las reglas del recinto lo prohíben.",
+    },
+    {
+      q: "¿Puedo llevar dron o tripié?",
+      a: "No. El jardín no permite el acceso con mascotas, drones ni tripiés, y la administración puede negar la entrada de cualquier objeto que considere un riesgo para el patrimonio o que obstruya los caminos. Las fotos con tu cámara o tu teléfono, sin problema.",
+    },
+    {
+      q: "¿Qué pasa si quiero cambiar la fecha?",
+      a: "Se puede, avisando con 5 días o más de anticipación: el monto completo se respeta y lo usas en cualquier fecha disponible dentro de los 6 meses siguientes. Con menos de 5 días, o si no te presentas, no hay cambio ni reembolso. Si el clima obliga a suspender, se reprograma sin costo.",
+    },
+  ],
 };

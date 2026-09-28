@@ -200,6 +200,114 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Sale con un mínimo de 2 personas",
     ],
   },
+
+  "tour-eden-jardin": {
+    // Reemplaza la base: aquí no hay desayuno que excluir ni traslado largo
+    // —el precio ya trae el de Xilitla— y sí hay prohibiciones del recinto que
+    // no aparecen en ningún otro recorrido. Todo sale del reglamento que la
+    // Fundación Las Pozas entrega por escrito, no se inventa nada.
+    noIncluye: [
+      "Cómo llegar a Xilitla (autobús o vuelo); el traslado dentro de Xilitla sí va incluido",
+      "Alimentos y bebidas: la experiencia empieza muy temprano y no lleva desayuno",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
+      "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte",
+    ],
+    reemplazaBase: true,
+    queLlevar: [
+      "Calzado cerrado y con buen agarre: es obligatorio y el sendero amanece húmedo",
+      "Ropa adecuada para caminar en selva; el reglamento del jardín exige vestimenta apropiada",
+      "Una capa ligera: a las 7 de la mañana la sierra está fresca",
+      "Repelente y bloqueador",
+      "Cámara o teléfono (drones y tripiés no están permitidos)",
+      "Efectivo para gastos personales: en el jardín no hay cajero",
+    ],
+    requisitos: [
+      "Máximo 7 personas por experiencia; no se permite el acceso a más",
+      "Hay que ir acompañado del guía en todo momento",
+      "En las estructuras clasificadas de riesgo no pueden subir 7 a la vez; en algunas se sube de una en una",
+      "No se permiten actividades acuáticas",
+      "No se permite el acceso con mascotas, drones ni tripiés",
+      "El jardín es Monumento Artístico y Patrimonio Nacional (INBAL): la administración puede negar el ingreso de objetos que considere un riesgo para el patrimonio",
+    ],
+    edadNota: "No hay edad mínima, pero se camina por escaleras y pisos irregulares durante tres horas y muy temprano. Cuéntanos las edades al reservar y te decimos si conviene.",
+  },
+
+  // ── Los tres recorridos nuevos (28 sep 2026) ────────────────────────────
+  // Ninguno es de agua abierta, así que la base de "qué llevar" —que es la de
+  // ríos y pozas: aqua shoes, traje de baño, bloqueador biodegradable— no
+  // aplica. Los tres traen la suya.
+
+  "tour-gruta-xilo": {
+    reemplazaBase: false,
+    noIncluye: [
+      "Ropa de cambio y calzado que se pueda mojar",
+      "Cómo llegar a Xilitla (el traslado dentro de Xilitla sí va incluido)",
+    ],
+    queLlevar: [
+      "Calzado cerrado con agarre que se pueda mojar: dentro de la gruta se camina sobre roca húmeda",
+      "Una muda completa de ropa seca para el regreso",
+      "Ropa que no te importe ensuciar",
+      "Chamarra ligera: es de noche y dentro de la cueva refresca",
+      "Efectivo para gastos personales",
+      "INE o pasaporte vigente",
+    ],
+    requisitos: [
+      "Es un recorrido NOCTURNO: la caminata de acceso son 15 a 20 minutos por la selva, ya oscureciendo",
+      "Dentro se recorren unos 900 metros; hay tramos donde se camina de pie y tramos donde hay que agacharse",
+      "Casco y lámpara frontal van incluidos y son de uso obligatorio",
+      "Si sufres de claustrofobia, este no es tu recorrido",
+      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles vamos por ti con un costo extra de traslado, o llegas por tu cuenta",
+    ],
+    edadNota: "Cuéntanos las edades al reservar. Es una cueva de noche, con piso irregular y agua: para los más chicos conviene que lo valoremos juntos antes de apartar.",
+  },
+
+  "tour-amanecer-nubes": {
+    reemplazaBase: false,
+    noIncluye: [
+      "Desayuno: se sale de madrugada, conviene que lleves algo para la cima",
+      "Chamarra y calzado de montaña",
+    ],
+    queLlevar: [
+      "Calzado de montaña con buen agarre: se sube de noche y por sendero",
+      "Chamarra que corte el viento — arriba hace frío de verdad aunque en Xilitla haga calor",
+      "Lámpara frontal (llevamos de repuesto, pero la tuya se agradece)",
+      "Agua y algo de comer para desayunar en la cima",
+      "Efectivo para gastos personales",
+      "INE o pasaporte vigente",
+    ],
+    requisitos: [
+      "Se sale DE MADRUGADA para llegar a la cima antes del amanecer",
+      "Son varias horas de caminata en subida constante, buena parte de ellas a oscuras",
+      "No hace falta experiencia de montaña, pero sí condición para caminar en pendiente",
+      "El mar de nubes depende del clima: es frecuente, pero nadie lo puede garantizar",
+      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles vamos por ti con un costo extra de traslado",
+    ],
+    edadNota: "Sin edad mínima marcada, pero es una caminata larga en pendiente y de madrugada. Cuéntanos las edades al reservar y te decimos si conviene.",
+  },
+
+  "tour-olla-de-la-luz": {
+    reemplazaBase: false,
+    noIncluye: [
+      "Alimentos: conviene llevar agua y algo de comer para la caminata",
+      "Calzado de senderismo y chamarra o impermeable",
+    ],
+    queLlevar: [
+      "Calzado de senderismo: son unas 2 horas de camino entre bosque, llanos y miradores",
+      "Chamarra o impermeable — el bosque de niebla es fresco y húmedo todo el año",
+      "Agua y algo de comer",
+      "Cámara: los miradores del camino son la mitad del recorrido",
+      "Efectivo para gastos personales",
+      "INE o pasaporte vigente",
+    ],
+    requisitos: [
+      "Solo se entra con guía de la comunidad de La Trinidad: no se puede llegar por cuenta propia",
+      "El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar",
+      "Es un abismo de 193 metros: no te acerques al borde sin tu guía",
+      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles vamos por ti con un costo extra de traslado",
+    ],
+    edadNota: "Sin edad mínima marcada, pero son unas 2 horas de caminata en altura y el sótano tiene bordes expuestos. Cuéntanos las edades al reservar.",
+  },
 };
 
 /** Lo que NO incluye un tour, ya resuelto contra la base. */

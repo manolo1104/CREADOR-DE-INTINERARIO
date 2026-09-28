@@ -210,7 +210,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
                   <span className="font-dm text-sm text-lima whitespace-nowrap">
                     ${t.precio.toLocaleString("en-US")}
                     <span className="text-crema/35 text-xs">
-                      {" MXN"}{t.precioUnidad === "vehiculo" ? " /vehicle" : " /person"}
+                      {" MXN"}{t.precioUnidad === "vehiculo" ? " /vehicle" : t.precioUnidad === "grupo" ? " /group" : " /person"}
                     </span>
                   </span>
                 </Link>

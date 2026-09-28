@@ -1,5 +1,7 @@
 // Estado del carrito de reserva de tours — persiste en sessionStorage
 
+import { precioGrupo, type Tour } from "./tours";
+
 export interface TourBookingState {
   tourId:        string;
   tourSlug:      string;
@@ -69,6 +71,28 @@ export function calcTourTotal(
   const subtotal = priceAdult * adults + childPriceMid * childrenMid + childPriceSmall * childrenSmall;
   const discount = Math.round(subtotal * promoDiscount / 100);
   return { subtotal, discount, total: subtotal - discount, childPriceMid, childPriceSmall };
+}
+
+/**
+ * Lo que cuesta un recorrido para esta gente, por el camino que le toque:
+ * tarifa del GRUPO COMPLETO por escalones si el tour la tiene, y si no el
+ * precio por cabeza con los tramos de menor.
+ *
+ * 🔴 Existe porque el carrito tenía su propio `calcTourTotal` a pelo y le
+ * pintaba al cliente $11,960 (2,990 × 4) por una experiencia que el servidor
+ * iba a cobrar en $3,480. Todo lo que muestre un total de recorrido tiene que
+ * pasar por aquí; el servidor hace la misma bifurcación en `computeTourCharge`.
+ */
+export function totalRecorrido(
+  tour: Pick<Tour, "precio" | "tarifaGrupo">,
+  adults: number,
+  childrenMid = 0,
+  childrenSmall = 0,
+  promoDiscount = 0,
+): number {
+  const delGrupo = precioGrupo(tour, adults + childrenMid + childrenSmall);
+  if (delGrupo !== null) return delGrupo - Math.round(delGrupo * promoDiscount / 100);
+  return calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount).total;
 }
 
 // ── Códigos promo ────────────────────────────────────────────

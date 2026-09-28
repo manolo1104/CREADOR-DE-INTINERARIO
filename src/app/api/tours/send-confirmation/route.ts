@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
+import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
@@ -116,6 +117,14 @@ export async function POST(req: NextRequest) {
           status:         "paid",
         },
       });
+      await registrarEnBitacora({
+        accion:     "creó",
+        entidad:    "reserva",
+        referencia: confirmationNumber,
+        resumen:    `Reserva ${confirmationNumber} — ${customerName}, ${tourName || "Tour Huasteca"} el ${tourDate || "sin fecha"}, ${pesos(Number(totalAmount))} (reservó en el sitio)`,
+        actor:      SISTEMA,
+      });
+
       const quienes = [
         `${Number(adults) || 1} adulto${(Number(adults) || 1) > 1 ? "s" : ""}`,
         Number(children) ? `${Number(children)} niño${Number(children) > 1 ? "s" : ""}` : "",

@@ -7,13 +7,13 @@ import { usePathname } from "next/navigation";
 const FACTS_ES = [
   "Salidas todos los días del año",
   "Cancelación gratuita hasta 48h antes",
-  "+10,000 viajeros · 4.9★ en Google",
+  "+10,000 viajeros · 4.7★ en Google",
   "Transporte, desayuno y guía incluidos",
 ];
 const FACTS_EN = [
   "Departures every day of the year",
   "Free cancellation up to 48h before",
-  "+10,000 travelers · 4.9★ on Google",
+  "+10,000 travelers · 4.7★ on Google",
   "Transport, breakfast & guide included",
 ];
 

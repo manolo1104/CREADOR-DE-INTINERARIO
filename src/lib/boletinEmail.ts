@@ -73,7 +73,7 @@ const CONSEJOS = [
   "El agua turquesa es de temporada seca. Si vienes en lluvias, vienes por el caudal — que también vale la pena, pero es otra foto.",
   "Nadie hace la Huasteca en un día. Las cascadas quedan lejos unas de otras; con dos días completos ya se siente distinto.",
   "Pregunta antes de descartar un recorrido por edad o condición física. La mayoría admite más gente de la que la foto sugiere.",
-  "Si llueve el día de tu tour, se reprograma sin costo. No pierdas el viaje por el pronóstico de una semana antes.",
+  "Operamos con lluvia ligera: la selva se ve mejor mojada. Solo si el río no es seguro se suspende, y ahí eliges entre reembolso o cambiar la fecha. No pierdas el viaje por el pronóstico de una semana antes.",
 ] as const;
 
 export function buildBoletinEmail(d: BoletinInput): { subject: string; html: string } {
@@ -147,7 +147,7 @@ export function buildBoletinEmail(d: BoletinInput): { subject: string; html: str
         : boton(`${BASE}/tours`, "Ver los recorridos"),
       bajoBoton("Sin prisa. Apartas con el 30 % y cancelas gratis hasta 48 h antes."),
     ].join(""),
-    pie: `¿Vas a venir y tienes dudas de fechas o de clima? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de una hora.`,
+    pie: `¿Vas a venir y tienes dudas de fechas o de clima? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de una hora.`,
     origen: "Te llega una vez al mes porque dejaste tu correo en nuestro sitio.",
     paraBaja: d.email,
   });

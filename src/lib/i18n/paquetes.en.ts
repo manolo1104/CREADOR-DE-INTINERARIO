@@ -29,6 +29,8 @@ export interface PaqueteTranslation {
   /** En el MISMO orden que el itinerario español. */
   itinerario?: { titulo?: string; descripcion?: string }[];
   eleccionTour?: { titulo?: string; opciones?: { nombre?: string; nota?: string }[] };
+  /** En el MISMO orden que las fotos españolas; la ruta no se traduce. */
+  galeriaExtra?: { titulo?: string; texto?: string; alt?: string[] };
   incluye?: string[];
   noIncluye?: string[];
   /** En el MISMO orden; el `precio` es una cifra y no se traduce. */
@@ -36,181 +38,225 @@ export interface PaqueteTranslation {
 }
 
 const PAQUETES_EN: Record<string, PaqueteTranslation> = {
-  aventura: {
-    nombre: "Adventure Package",
-    subtitulo: "The best duo in the region",
+  "luna-de-miel": {
+    nombre: "Honeymoon",
+    subtitulo: "The Huasteca for two, unhurried",
     duracion: "3 days / 2 nights",
     precioLabel: "per couple",
-    badge: "Most popular",
-    urgencia: "The classic — it combines the region's two star tours",
-    perfiles: ["Adventurous friends", "Active couples", "The classic"],
+    badge: "Honeymooners",
+    urgencia: "Includes the Jungla suite with its spa pool and the romantic dinner on the second night",
+    perfiles: ["Newlyweds", "Couples", "Anniversaries", "Easy pace"],
     tours: [
-      "El Meco Waterfalls — Turquoise Pools, Lookout & the Great Falls (Day 1)",
-      "Tamul Expedition — Sinkhole, Canyon & Water Cave (Day 2)",
+      "Las Pozas, Edward James' surrealist garden (Day 1)",
+      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
     ],
-    itinerario: [
-      {
-        titulo: "Arrival + El Meco Waterfalls",
-        descripcion: "If you arrive in Xilitla on the morning bus (~6:30 AM), we give you your room early to rest and that same day we start with the turquoise waterfalls of El Naranjo — a gentle, spectacular first day.",
-      },
-      {
-        titulo: "Tamul Expedition",
-        descripcion: "The fullest day of adventure: rested now, we set off early to make the most of the light and the river's flow — the lookout over the Sótano de las Huahuas, Tamul Waterfall by boat and the Water Cave.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Check out and head home with the Huasteca fresh in your memory. The buffet breakfast is included on tour days only.",
-      },
-    ],
-    incluye: [
-      "2 nights at Hotel Paraíso Encantado Xilitla",
-      "Buffet breakfast on tour days",
-      "Full Tamul Expedition tour",
-      "Full El Meco Waterfalls tour",
-      "Transport from the hotel to the start of each tour and back",
-      "NOM-09 SECTUR certified guides",
-      "Entrance to every attraction",
-      "Safety equipment",
-      "Travel insurance",
-      "Tour photography",
-    ],
-    noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400/night)",
-      "Tips and personal expenses",
-    ],
-    valor: [
-      "2 nights' hotel (2 people)",
-      "Tamul Expedition",
-      "El Meco Waterfalls",
-      "Transport, 2 days",
-      "Entrance fees + guides",
-    ],
-  },
-
-  completo: {
-    nombre: "Complete Huasteca Package",
-    subtitulo: "The definitive experience",
-    duracion: "4 days / 3 nights",
-    precioLabel: "per couple",
-    urgencia: "Three full days of tours — the families' favorite",
-    perfiles: ["Families", "Groups", "The full experience"],
-    tours: [
-      "Surrealist Route — Edward James (Day 1)",
-      "Tamul Expedition — Sinkhole & Waterfall (Day 2)",
-      "Stepped Paradise or the Water Route (Day 3)",
-    ],
-    eleccionTour: {
-      titulo: "Day 3 is yours to choose",
-      opciones: [
-        { nombre: "Stepped Paradise + Minas Viejas and Micos", nota: "Stepped waterfalls and cliff jumps. What most people choose." },
-        { nombre: "Water Route — Puente de Dios", nota: "The natural rock arch with the river running underneath." },
+    galeriaExtra: {
+      titulo: "The second night",
+      texto: "While you are out at Tamul, the hotel team gets the room ready: petals, candles and the lights on. By the time you are back the table is set on your private terrace, with the lights of Xilitla below, your bottle ready and dinner being plated.",
+      alt: [
+        "The bed in the Jungla suite set with rose petals, heart-shaped string lights and towels folded into swans",
+        "The private terrace table at dusk with candles, roses and two wine glasses, the lights of Xilitla behind",
+        "A bottle of wine on ice beside the terrace table, candles lit and the sierra at night",
       ],
     },
     itinerario: [
       {
-        titulo: "Arrival + Surrealist Route (Edward James)",
-        descripcion: "We meet you and you check in at the hotel. Since Las Pozas is minutes away, that same day we visit Edward James's surrealist garden.",
+        titulo: "Arrival, check-in and Edward James' garden",
+        descripcion: "You arrive, check in, and the only plan of the day is Las Pozas, the sculpture garden Edward James raised in the jungle. Nothing else: no early start, no road. The garden is open from 9 in the morning to 4 in the afternoon and the last guided walk leaves right at 4 and runs two hours, so arriving mid-afternoon still costs you nothing.",
       },
       {
-        titulo: "Tamul Expedition",
-        descripcion: "The big day: the lookout over the Sótano de las Huahuas, Tamul Waterfall by boat and the Water Cave.",
-      },
-      {
-        titulo: "Stepped Paradise (or the Water Route, your choice)",
-        descripcion: "Minas Viejas and the Micos Waterfalls. If you'd rather, we swap it for the Water Route at Puente de Dios.",
+        titulo: "Tamul Expedition and a romantic dinner",
+        descripcion: "The big day: canoe through the Tampaón Canyon to the 105 metres of Tamul Waterfall, cliff jumping at the Water Cave and the Sótano de las Huahuas at dusk, when the birds fly out. Back at the hotel the room is waiting with candles and petals, your bottle ready and dinner being plated: a formal dish out on your private terrace.",
       },
       {
         titulo: "Departure",
-        descripcion: "Check out and head home with your memory full. The buffet breakfast is included on tour days only.",
+        descripcion: "Breakfast and back on the road. The buffet breakfast is included on tour days only.",
       },
     ],
     incluye: [
-      "3 nights at Hotel Paraíso Encantado Xilitla",
+      "2 nights in the Jungla suite at Hotel Paraíso Encantado, with a private terrace, mountain view and an outdoor spa pool",
       "Buffet breakfast on tour days",
-      "3 full tours already selected: Edward James Surrealist Route, Tamul Expedition and Stepped Paradise",
-      "Transport from the hotel to the start of each tour and back",
+      "Romantic dinner on the second night: a formal dish and a bottle of wine",
+      "The room set up with candles and petals for that night",
+      "Entry and a guided walk at Las Pozas, Edward James' garden",
+      "Full Tamul Expedition tour, a whole day",
+      "Transport from the hotel to Las Pozas and to the start of day 2's tour, both ways",
       "NOM-09 SECTUR certified guides",
       "Entrance to every attraction",
       "Safety equipment",
       "Travel insurance",
-      "Photos and video of every tour",
+      "Photography and video of the trip",
     ],
     noIncluye: [
       "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400/night)",
+      "Lunches and dinners, except breakfasts and the romantic dinner on day 2",
       "Tips and personal expenses",
     ],
     valor: [
-      "3 nights' hotel (2 people)",
-      "3 full tours",
-      "Transport, 3 days",
-      "Photos + video of the tours",
+      "2 nights, Jungla suite (2 people)",
+      "Tamul Expedition (2 people)",
+      "Transport, 2 days",
       "Entrance fees + guides",
+      "Photography and video of the trip",
+    ],
+  },
+
+  "inmersion-huasteca": {
+    nombre: "Huasteca Immersion: Tamul & Surrealism",
+    subtitulo: "The highest waterfall and the strangest garden, in three days",
+    duracion: "3 days / 2 nights",
+    precioLabel: "per couple",
+    badge: "New",
+    urgencia: "The two routes everyone comes for, in the shortest trip we run",
+    perfiles: ["Couples", "First time in the Huasteca", "Easy pace"],
+    tours: [
+      "Surrealist Route — Edward James, springs, caves and castle (Day 1)",
+      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
+    ],
+    itinerario: [
+      { titulo: "Arrival + Surrealist Route", descripcion: "If you arrive on the morning bus we hand over the room early and head out the same day. Edward James' garden, the Huichihuayán springs, the Quilas Cave and the Castillo de la Salud: eight hours of walking little and looking a lot, all on the Xilitla side." },
+      { titulo: "Tamul Expedition", descripcion: "The big day: a canoe up the canyon until you are facing the 105-metre falls, the Water Cave and, at dusk, the Huahuas sinkhole. Nine hours, with an early start." },
+      { titulo: "Departure", descripcion: "Breakfast, check-out and the road home." },
+    ],
+    incluye: [
+      "2 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "Full Tamul Expedition tour (9 hours)",
+      "Full Surrealist Route tour (8 hours)",
+      "Transport from the hotel to the start of each tour and back",
+      "NOM-09 SECTUR certified guides",
+      "Entrance fees to every site",
+      "Safety gear and life jacket",
+      "Travel insurance",
+      "Photography and video of the trip",
+    ],
+    noIncluye: [
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
+      "Tips and personal expenses",
+    ],
+    valor: [
+      "2 nights at the hotel (2 pax)",
+      "Tamul Expedition (2 pax)",
+      "Surrealist Route (2 pax)",
     ],
   },
 
   "gran-huasteca": {
     nombre: "Gran Huasteca Package",
-    subtitulo: "You see it all — the whole Huasteca",
-    duracion: "5 days / 4 nights",
+    subtitulo: "The three unmissable routes of the region, in one trip",
+    duracion: "4 days / 3 nights",
     precioLabel: "per couple",
-    badge: "The most complete",
-    urgencia: "The most complete experience — four days of tours without repeating a single place",
-    perfiles: ["See everything", "Groups", "The full experience"],
+    badge: "The big three",
+    urgencia: "The three routes people ask for most: Tamul is in 7 out of 10 bookings",
+    perfiles: ["Couples", "First time in the Huasteca", "The essentials"],
     tours: [
-      "Surrealist Route — Edward James (Day 1)",
-      "Tamul Expedition — Sinkhole & Waterfall (Day 2)",
-      "El Meco Waterfalls — Turquoise Pools (Day 3)",
-      "Water Route, Puente de Dios (Day 4)",
+      "Surrealist Route — Edward James, springs, caves and castle (Day 1)",
+      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
+      "Cascadas del Meco — Meco, panoramic lookout and El Gran Salto (Day 3)",
     ],
     itinerario: [
-      {
-        titulo: "Arrival + Surrealist Route (Edward James)",
-        descripcion: "If you arrive in Xilitla on the morning bus (~6:30 AM), we start that same day with Las Pozas, minutes from the hotel.",
-      },
-      {
-        titulo: "Tamul Expedition",
-        descripcion: "The lookout over the Sótano de las Huahuas, Tamul Waterfall by rowing boat and the Water Cave.",
-      },
-      {
-        titulo: "El Meco Waterfalls",
-        descripcion: "The turquoise waterfalls of El Naranjo, lookouts and pools to swim in.",
-      },
-      {
-        titulo: "Water Route, Puente de Dios",
-        descripcion: "The arch of light at Puente de Dios in Tamasopo, the hacienda and seven waterfalls.",
-      },
-      {
-        titulo: "Departure",
-        descripcion: "Check out and head home with the whole Huasteca fresh in your memory. The buffet breakfast is included on tour days only.",
-      },
+      { titulo: "Arrival + Surrealist Route", descripcion: "If you arrive on the morning bus we hand over the room early and head out the same day. This is the route on the Xilitla side — Edward James' garden, the Huichihuayán springs, the Quilas Cave and the Castillo de la Salud — so your arrival day is not spent on the road." },
+      { titulo: "Tamul Expedition", descripcion: "The big day: a canoe up the canyon until you are facing the 105-metre falls, the Water Cave on the way back, and the Huahuas sinkhole at dusk, when the birds pour back in. Nine hours that end on the best moment of the day." },
+      { titulo: "Cascadas del Meco", descripcion: "We start early on purpose: the water at El Meco is turquoise mid-morning and loses its colour once the sun is high. Panoramic lookout, the pools, and a close at the Cascada del Salto." },
+      { titulo: "Departure", descripcion: "Breakfast, check-out and the road home." },
     ],
     incluye: [
-      "4 nights at Hotel Paraíso Encantado Xilitla",
-      "Buffet breakfast on tour days",
-      "4 full tours (Edward James, Tamul Expedition, El Meco Waterfalls and the Water Route at Puente de Dios)",
-      "Transport from the hotel to the start of each tour and back",
+      "3 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "Full Surrealist Route tour",
+      "Full Tamul Expedition tour",
+      "Full Cascadas del Meco tour",
+      "Transfers from the hotel to the start of each tour and back",
       "NOM-09 SECTUR certified guides",
-      "Entrance to every attraction",
-      "Safety equipment",
+      "Entrance fees to every site",
+      "Safety gear and life jacket",
       "Travel insurance",
-      "Photos and video of every tour",
+      "Photography and video of the trip",
     ],
     noIncluye: [
-      "Travel to Xilitla itself (you get there on your own — see the 'How to get here' section)",
-      "Lunches and dinners (breakfasts excepted)",
-      "Supplement for the Jungla room with mountain view (+$400/night)",
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
       "Tips and personal expenses",
     ],
     valor: [
-      "4 nights' hotel (2 people)",
-      "4 full tours",
-      "Transport, 4 days",
-      "Photos + video of the tours",
-      "Entrance fees + guides",
+      "3 nights at the hotel (2 pax)",
+      "Tamul Expedition (2 pax)",
+      "Cascadas del Meco (2 pax)",
+      "Surrealist Route (2 pax)",
+    ],
+  },
+
+  "aventura": {
+    nombre: "Adventure Package",
+    subtitulo: "Rafting, RZR and the waterfall jumps at Micos",
+    duracion: "4 days / 3 nights",
+    precioLabel: "per couple",
+    badge: "Adrenaline",
+    urgencia: "Class III rafting and cliff jumps: you need to be fit and comfortable in the water",
+    perfiles: ["Adrenaline", "Friends", "Good fitness"],
+    tours: [
+      "RZR ride — Miradores route, 3 h (Day 1)",
+      "Paraíso Escalonado — Minas Viejas, Micos and the Siete Cascadas jump (Day 2)",
+      "Rafting on the Tampaón River — Class III rapids (Day 3)",
+    ],
+    incluye: [
+      "3 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "RZR ride, 3-hour Miradores route (one vehicle for the two of you)",
+      "Full Paraíso Escalonado tour",
+      "The Siete Cascadas jump at Micos, with a rescue guide in the water",
+      "Full Tampaón River rafting, Class III",
+      "Transfers from the hotel to the start of each activity and back",
+      "NOM-09 SECTUR certified guides",
+      "Entrance fees to every site",
+      "Safety gear: helmet, life jacket and paddle",
+      "Travel insurance",
+      "Photography and video of the trip",
+    ],
+    noIncluye: [
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
+      "Tips and personal expenses",
+    ],
+  },
+
+  "odisea-huasteca": {
+    nombre: "Huasteca Odyssey",
+    subtitulo: "Four tour days without repeating a single place",
+    duracion: "5 days / 4 nights",
+    precioLabel: "per couple",
+    badge: "See it all",
+    urgencia: "Four tour days and one suitcase: you sleep in the same hotel every night",
+    perfiles: ["See it all", "First time in the Huasteca", "No repeated stops"],
+    tours: [
+      "Surrealist Route — Edward James, springs, caves and castle (Day 1)",
+      "Tamul Expedition — Tamul, Water Cave and Sinkhole (Day 2)",
+      "Cascadas del Meco — Meco, panoramic lookout and El Gran Salto (Day 3)",
+      "Paraíso Escalonado — Minas Viejas & Cascadas de Micos (Day 4)",
+    ],
+    incluye: [
+      "4 nights at Hotel Paraíso Encantado Xilitla, King room with a jungle view",
+      "Breakfast on tour days",
+      "Full Surrealist Route tour",
+      "Full Tamul Expedition tour",
+      "Full Cascadas del Meco tour",
+      "Full Paraíso Escalonado tour",
+      "Transfers from the hotel to the start of each tour and back",
+      "NOM-09 SECTUR certified guides",
+      "Entrance fees to every site",
+      "Safety gear and life jacket",
+      "Travel insurance",
+      "Photography and video of every tour",
+    ],
+    noIncluye: [
+      "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
+      "Lunches and dinners (breakfast is included)",
+      "Mountain-view room (write to us and we will quote the change)",
+      "Tips and personal expenses",
     ],
   },
 };
@@ -239,6 +285,17 @@ export function localizePaquete(p: Paquete, locale: Locale): Paquete {
       : p.itinerario,
     // La elección del día 3 decide a dónde va el cliente: si sale en español,
     // está eligiendo a ciegas.
+    galeriaExtra: t.galeriaExtra && p.galeriaExtra
+      ? {
+          ...p.galeriaExtra,
+          titulo: t.galeriaExtra.titulo ?? p.galeriaExtra.titulo,
+          texto:  t.galeriaExtra.texto  ?? p.galeriaExtra.texto,
+          fotos:  p.galeriaExtra.fotos.map((f, i) => ({
+            ...f,
+            alt: t.galeriaExtra!.alt?.[i] ?? f.alt,
+          })),
+        }
+      : p.galeriaExtra,
     eleccionTour: t.eleccionTour && p.eleccionTour
       ? {
           ...p.eleccionTour,
@@ -276,8 +333,12 @@ const HABITACIONES_EN: Record<string, { descripcion: string; vista: string }> = 
     descripcion: "A bright, welcoming space to rest after a day of tours.",
     vista: "Jungle / garden",
   },
+  "flor-de-liz-2": {
+    descripcion: "A terrace looking over the town and a private outdoor spa — the same features as the Jungla.",
+    vista: "Mountain",
+  },
   jungla: {
-    descripcion: "A room looking straight out at the mountain — the favorite for waking up to the sierra.",
+    descripcion: "A suite with a private terrace, a straight view of the mountain and an outdoor spa pool — the favorite for waking up to the sierra.",
     vista: "Mountain",
   },
 };
@@ -358,7 +419,7 @@ export function getLocalizedFaqs(
     },
     {
       q: "Can I choose my room?",
-      a: "Yes. Hotel Paraíso Encantado has several rooms (Orquídeas, Bromelias, Lirios and Jungla). The jungle-view rooms are included in the price; the Jungla room, with a mountain view, carries a supplement of $400 MXN per night.",
+      a: "Yes. Hotel Paraíso Encantado has several rooms (Orquídeas, Bromelias, Lirios and Jungla). The jungle-view rooms are included in the price; the Jungla suite, with a mountain view, carries a supplement of $400 MXN per night. On the Honeymoon package the Jungla is already included, with no supplement.",
     },
     {
       q: "Does the price include getting to Xilitla?",
@@ -392,6 +453,15 @@ export interface PaquetesUI {
   heroIntro1: string;
   heroHotel: string;
   heroIntro2: string;
+  /** El botón principal del hero: baja al catálogo. */
+  heroCta: string;
+  /** La salida secundaria del hero: preguntar por WhatsApp. */
+  heroCtaWa: string;
+  /** El mensaje con el que se abre ese WhatsApp. */
+  heroWaMsg: string;
+  /** La franja de temporada, justo debajo del hero. */
+  bannerTemporada: string;
+  bannerTemporadaNota: string;
   googleReviews: string;
   resenasN: string;
   bookingOp: string;
@@ -451,9 +521,15 @@ const UI_ES: PaquetesUI = {
   heroH1b: " Todo Incluido",
   heroIntro1: "Combinamos nuestros tours guiados con hospedaje en ",
   heroHotel: "Hotel Paraíso Encantado Xilitla",
-  heroIntro2: ". Tú solo preocúpate por llegar — nosotros nos encargamos del resto.",
+  heroIntro2: ". Tú solo te preocupas por llegar; del resto nos encargamos nosotros.",
+  heroCta: "Ver los paquetes",
+  heroCtaWa: "Preguntar por WhatsApp",
+  heroWaMsg: "Hola, estoy viendo los paquetes de la Huasteca. ¿Me ayudas a elegir el que me conviene?",
+  bannerTemporada: "Empieza la mejor temporada en la Huasteca",
+  bannerTemporadaNota:
+    "Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora. Sin pago anticipado.",
   googleReviews: "Google Reviews",
-  resenasN: "492 reseñas",
+  resenasN: "161 reseñas",
   bookingOp: "Booking · 180 op.",
   cdmxEyebrow: "Si vienes de CDMX",
   cdmxH2a: "Llegas de noche y ",
@@ -518,9 +594,15 @@ const UI_EN: PaquetesUI = {
   heroH1b: " Packages",
   heroIntro1: "We combine our guided tours with a stay at ",
   heroHotel: "Hotel Paraíso Encantado Xilitla",
-  heroIntro2: ". All you have to worry about is getting here — we take care of the rest.",
+  heroIntro2: ". All you have to worry about is getting here; we take care of the rest.",
+  heroCta: "See the packages",
+  heroCtaWa: "Ask on WhatsApp",
+  heroWaMsg: "Hi, I'm looking at your Huasteca packages. Could you help me pick the right one?",
+  bannerTemporada: "The best season in the Huasteca is starting",
+  bannerTemporadaNota:
+    "Book on WhatsApp and we confirm hotel availability in under an hour. No prepayment.",
   googleReviews: "Google Reviews",
-  resenasN: "492 reviews",
+  resenasN: "161 reviews",
   bookingOp: "Booking · 180 reviews",
   cdmxEyebrow: "Coming from Mexico City",
   cdmxH2a: "You arrive at night and ",
@@ -568,7 +650,6 @@ export function getPaquetesUI(locale: Locale): PaquetesUI {
 // ── Interfaz del quiz y las tarjetas (PaquetesInteractivo) ──────────────────
 
 export interface PaquetesInteractivoUI {
-  tuRecomendado: string;
   toursIncluidos: string;
   queIncluye: string;
   verDesglose: string;
@@ -576,63 +657,52 @@ export interface PaquetesInteractivoUI {
   precioPaquete: string;
   verDiaPorDia: string;
   reservaFlexible: string;
-  quizEyebrow: string;
-  quizH2a: string;
-  quizH2b: string;
-  quizP1: string;
-  quizP2: string;
+  /** Lo que se ahorra frente a armar el mismo viaje por su cuenta. */
+  ahorroBadge: (monto: string) => string;
+  ahorroDetalle: (suelto: string) => string;
+  /** Mover el catálogo. Van como etiqueta accesible, no se ven. */
+  catalogoAnterior: string;
+  catalogoSiguiente: string;
+  /** Mover las fotos dentro de una tarjeta. */
+  fotoAnterior: string;
+  fotoSiguiente: string;
   /** Las etiquetas de noches; el ÍNDICE es lo que decide el paquete, no el texto. */
-  nochesOpts: [string, string, string];
-  vibeOpts: [string, string, string];
-  eligeTipo: string;
-  tuPaqueteIdeal: string;
-  miraDestacado: string;
   reservarLabel: string;
   waPaquete: (nombre: string, precio: string) => string;
 }
 
 const INT_ES: PaquetesInteractivoUI = {
-  tuRecomendado: "Tu recomendado",
   toursIncluidos: "Tours incluidos",
   queIncluye: "Qué incluye",
   verDesglose: "Ver desglose de valor incluido",
   valorTotal: "Valor total",
   precioPaquete: "Precio paquete",
   verDiaPorDia: "Ver el paquete día por día →",
-  reservaFlexible: "Reserva por WhatsApp o con tarjeta · Cancelación flexible",
-  quizEyebrow: "✦ Encuentra tu paquete ideal",
-  quizH2a: "Dos preguntas, ",
-  quizH2b: "un paquete perfecto",
-  quizP1: "¿Cuántas noches tienes disponibles?",
-  quizP2: "¿Qué tipo de experiencia buscas?",
-  nochesOpts: ["2 noches", "3 noches", "4 noches"],
-  vibeOpts: ["Arte & naturaleza", "Aventura extrema", "Todo incluido"],
-  eligeTipo: "↑ Elige el tipo de experiencia para ver tu recomendación",
-  tuPaqueteIdeal: "Tu paquete ideal",
-  miraDestacado: "Mira el paquete destacado ↓",
+  reservaFlexible: "Te confirmamos disponibilidad antes de pedirte nada. Cancelación flexible.",
+  ahorroBadge: (monto) => `Ahorras ${monto}`,
+  ahorroDetalle: (suelto) => `Armándolo por tu cuenta: ${suelto}`,
+  catalogoAnterior: "Ver el paquete anterior",
+  catalogoSiguiente: "Ver el paquete siguiente",
+  fotoAnterior: "Foto anterior",
+  fotoSiguiente: "Foto siguiente",
   reservarLabel: "Reservar:",
   waPaquete: (nombre, precio) => `Hola, me interesa el ${nombre} (${precio} MXN). ¿Tienen disponibilidad?`,
 };
 
 const INT_EN: PaquetesInteractivoUI = {
-  tuRecomendado: "Your match",
   toursIncluidos: "Tours included",
   queIncluye: "What's included",
   verDesglose: "See the value breakdown",
   valorTotal: "Total value",
   precioPaquete: "Package price",
   verDiaPorDia: "See the package day by day →",
-  reservaFlexible: "Book on WhatsApp or by card · Flexible cancellation",
-  quizEyebrow: "✦ Find your ideal package",
-  quizH2a: "Two questions, ",
-  quizH2b: "one perfect package",
-  quizP1: "How many nights do you have?",
-  quizP2: "What kind of experience are you after?",
-  nochesOpts: ["2 nights", "3 nights", "4 nights"],
-  vibeOpts: ["Art & nature", "Extreme adventure", "All inclusive"],
-  eligeTipo: "↑ Pick the kind of experience to see your match",
-  tuPaqueteIdeal: "Your ideal package",
-  miraDestacado: "Look at the highlighted package ↓",
+  reservaFlexible: "We confirm availability before asking you for anything. Flexible cancellation.",
+  ahorroBadge: (monto) => `You save ${monto}`,
+  ahorroDetalle: (suelto) => `Booking it yourself: ${suelto}`,
+  catalogoAnterior: "Previous package",
+  catalogoSiguiente: "Next package",
+  fotoAnterior: "Previous photo",
+  fotoSiguiente: "Next photo",
   reservarLabel: "Book:",
   waPaquete: (nombre, precio) => `Hi, I'm interested in the ${nombre} (${precio} MXN). Do you have availability?`,
 };
@@ -661,10 +731,16 @@ export interface PaqueteDetalleUI {
   waMsg: (nombre: string, duracion: string, precio: string) => string;
   planCompleto: string;
   itinerarioTitulo: string;
+  /** Catálogo de recorridos elegibles, en el paquete a la carta. */
+  eligeTitulo: string;
+  eligeSub: (cuantos: number, total: number) => string;
+  eligeHoras: (horas: string) => string;
   llegada: string;
   salida: string;
   diaN: (n: number) => string;
   verTourCompleto: string;
+  /** Para un día que visita un lugar suelto, no un recorrido del catálogo. */
+  verDestino: string;
   queIncluye: string;
   noIncluye: string;
   tuHospedaje: string;
@@ -675,6 +751,15 @@ export interface PaqueteDetalleUI {
   porNoche: (monto: number) => string;
   vista: string;
   notaJungla1: string;
+  /** Cuando el paquete ya trae la suite de montaña, no hay suplemento que anunciar. */
+  notaJunglaIncluida: (habitacion: string) => string;
+  /** Cuando la habitación no se elige: viene puesta, y detrás hay un reemplazo. */
+  hotelIntroAsignada: (habitacion: string) => string;
+  habitacionTuya: string;
+  /** Etiqueta del botón que abre la galería del cuarto. */
+  verFotos: string;
+  habitacionReemplazo: string;
+  notaReemplazo: (habitacion: string, alternativa: string) => string;
   notaJunglaHab: string;
   notaJungla2: string;
   notaJunglaPrecio: string;
@@ -726,10 +811,14 @@ const DET_ES: PaqueteDetalleUI = {
     `Hola, me interesa el ${nombre} (${duracion}, ${precio} MXN). ¿Tienen disponibilidad?`,
   planCompleto: "El plan completo",
   itinerarioTitulo: "Itinerario día por día",
+  eligeTitulo: "De aquí salen tus recorridos",
+  eligeSub: (cuantos, total) => `Eliges ${cuantos} de estos ${total} al reservar. Cuestan lo mismo dentro del paquete, así que la elección no mueve el precio.`,
+  eligeHoras: (horas) => `${horas} h`,
   llegada: "Llegada",
   salida: "Salida",
   diaN: (n) => `Día ${n}`,
   verTourCompleto: "Ver el tour completo →",
+  verDestino: "Conocer el lugar →",
   queIncluye: "Qué incluye",
   noIncluye: "No incluye",
   tuHospedaje: "Tu hospedaje",
@@ -741,6 +830,12 @@ const DET_ES: PaqueteDetalleUI = {
   porNoche: (monto) => `+$${monto}/noche`,
   vista: "Vista:",
   notaJungla1: "Las habitaciones con vista a la selva están incluidas en el precio. La habitación ",
+  notaJunglaIncluida: (habitacion) => `Este paquete ya incluye la suite ${habitacion}, con vista a la montaña: no paga suplemento. Si prefieren una de vista a la selva, el precio es el mismo.`,
+  hotelIntroAsignada: (habitacion) => `A minutos del Jardín Surrealista de Edward James, rodeado de naturaleza y con desayunos de platillos típicos. En este paquete no hay que elegir habitación: viene la suite ${habitacion}.`,
+  habitacionTuya: "Tu habitación",
+  verFotos: "ver todas las fotos",
+  habitacionReemplazo: "Si no hay fechas",
+  notaReemplazo: (habitacion, alternativa) => `La suite ${habitacion} es la que se asigna. Si sus fechas no la tienen libre, entra la ${alternativa}: misma tarifa, misma categoría y las mismas prestaciones —terraza con vista y spa privado al aire libre—. En los dos casos el precio del paquete es el mismo.`,
   notaJunglaHab: "Jungla",
   notaJungla2: ", con vista a la montaña, tiene un suplemento de ",
   notaJunglaPrecio: "$400 MXN por noche",
@@ -792,10 +887,14 @@ const DET_EN: PaqueteDetalleUI = {
     `Hi, I'm interested in the ${nombre} (${duracion}, ${precio} MXN). Do you have availability?`,
   planCompleto: "The full plan",
   itinerarioTitulo: "Day-by-day itinerary",
+  eligeTitulo: "Your tours come from this list",
+  eligeSub: (cuantos, total) => `You pick ${cuantos} of these ${total} when you book. They cost the same inside the package, so your choice does not change the price.`,
+  eligeHoras: (horas) => `${horas} h`,
   llegada: "Arrival",
   salida: "Departure",
   diaN: (n) => `Day ${n}`,
   verTourCompleto: "See the full tour →",
+  verDestino: "About this place →",
   queIncluye: "What's included",
   noIncluye: "Not included",
   tuHospedaje: "Where you'll stay",
@@ -807,6 +906,12 @@ const DET_EN: PaqueteDetalleUI = {
   porNoche: (monto) => `+$${monto}/night`,
   vista: "View:",
   notaJungla1: "The jungle-view rooms are included in the price. The ",
+  notaJunglaIncluida: (habitacion) => `This package already includes the ${habitacion} suite, facing the mountain, with no supplement. If you would rather have a jungle-view room, the price is the same.`,
+  hotelIntroAsignada: (habitacion) => `Minutes from Edward James' Surrealist Garden, surrounded by nature, with breakfasts of regional dishes. On this package there is no room to choose: you get the ${habitacion} suite.`,
+  habitacionTuya: "Your room",
+  verFotos: "see every photo",
+  habitacionReemplazo: "If dates are taken",
+  notaReemplazo: (habitacion, alternativa) => `The ${habitacion} suite is the one assigned. If your dates are already taken, the ${alternativa} steps in: same rate, same category and the same features, a terrace with a view and a private outdoor spa. Either way the package price is the same.`,
   notaJunglaHab: "Jungla",
   notaJungla2: " room, with a mountain view, carries a supplement of ",
   notaJunglaPrecio: "$400 MXN per night",
@@ -916,6 +1021,7 @@ export interface PaqueteCheckoutUI {
   compartirPersonas: (adultos: number, menores: number) => string;
   compartirHabitacion: (hab: string) => string;
   compartirDia: (dia: number, opcion: string) => string;
+  compartirElegidos: (nombres: string) => string;
   compartirNocheExtra: string;
   compartirTotal: (total: string) => string;
   waReservar: (paquete: string) => string;
@@ -958,6 +1064,10 @@ export interface PaqueteCheckoutUI {
   // Elección de tour
   eleccionDia: (dia: number) => string;
   eleccionElige: string;
+  /** Subtítulo cuando el paquete entero es a la carta: "elige 4 de 6". */
+  eleccionMultiSub: (cuantos: number, total: number) => string;
+  /** Cuántos le faltan por elegir. */
+  eleccionMultiFaltan: (n: number) => string;
   // Llegada
   cuandoLlegas: string;
   cuandoLlegasSub: string;
@@ -975,6 +1085,8 @@ export interface PaqueteCheckoutUI {
   porLasNoches: (monto: string, noches: number) => string;
   laHabitacion: string;
   eligeTuHabitacion: string;
+  /** Cuando la habitación viene puesta y la segunda es sólo el reemplazo. */
+  tuHabitacionYReemplazo: string;
   elegida: string;
   verFotosDe: (hab: string) => string;
   hastaPersonas: (n: number) => string;
@@ -1014,6 +1126,7 @@ export interface PaqueteCheckoutUI {
   errCorreoInvalido: string;
   errHabitacion: string;
   errEleccion: (dia: number) => string;
+  errEleccionMulti: (cuantos: number) => string;
   errConexion: string;
   /** El grupo salió del rango que el motor cobra solo. */
   errGrupoNoCotizable: (max: number) => string;
@@ -1058,6 +1171,7 @@ const CHK_ES: PaqueteCheckoutUI = {
     `${adultos} adulto${adultos !== 1 ? "s" : ""}${menores > 0 ? ` · ${menores} menor${menores !== 1 ? "es" : ""}` : ""}`,
   compartirHabitacion: (hab) => `Habitación: ${hab}`,
   compartirDia: (dia, opcion) => `Día ${dia}: ${opcion}`,
+  compartirElegidos: (nombres) => `Recorridos elegidos: ${nombres}`,
   compartirNocheExtra: "Con noche extra (llegada la víspera)",
   compartirTotal: (total) => `Total: ${total} MXN`,
   waReservar: (paquete) => `Hola, quiero reservar el ${paquete}.`,
@@ -1080,7 +1194,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   menores6Nota: "50 % del tour",
   menosDe: (label) => `Menos ${label}`,
   masDe: (label) => `Más ${label}`,
-  bebesNota: "Los bebés menores de 3 no pagan tour. Los menores sí ocupan lugar en la habitación.",
+  bebesNota: "Los menores de 6 años pagan el 50 % del tour y los de 6 a 10 el 70 %. Todos ocupan lugar en la habitación.",
   sonMasDe: (max) => `¿Son más de ${max}?`,
   cotizamosWhatsapp: "Lo cotizamos por WhatsApp",
   waGrupoGrande: (n, paquete) => `Hola, somos ${n} personas y queremos el ${paquete}. ¿Nos lo cotizan?`,
@@ -1097,6 +1211,8 @@ const CHK_ES: PaqueteCheckoutUI = {
   cadaPersonaSuma: (monto, tours) => `Cada persona adicional suma ${monto} de tours (${tours}).`,
   eleccionDia: (dia) => `Día ${dia} de tu itinerario. Cuesta lo mismo en las dos opciones.`,
   eleccionElige: "Elige uno para poder continuar.",
+  eleccionMultiSub: (cuantos, total) => `Elige ${cuantos} de los ${total}. Cuestan lo mismo dentro del paquete, así que la elección no mueve el precio.`,
+  eleccionMultiFaltan: (n) => n === 1 ? "Te falta 1 por elegir." : `Te faltan ${n} por elegir.`,
   cuandoLlegas: "¿Cuándo llegas?",
   cuandoLlegasSub: "Tu primer día ya es día de tour: salimos del hotel entre 8:30 y 9:00 de la mañana.",
   llegoMismoDia: "Llego el mismo día del primer tour",
@@ -1112,6 +1228,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   porLasNoches: (monto, noches) => `+${monto} MXN por las ${noches} noches`,
   laHabitacion: "La habitación",
   eligeTuHabitacion: "Elige tu habitación",
+  tuHabitacionYReemplazo: "Tu habitación, y su reemplazo si no hay fechas",
   elegida: "Elegida",
   verFotosDe: (hab) => `Ver fotos de ${hab}`,
   hastaPersonas: (n) => `Hasta ${n} persona${n > 1 ? "s" : ""}`,
@@ -1152,6 +1269,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   errCorreoInvalido: "El correo no tiene un formato válido.",
   errHabitacion: "Elige tu habitación para continuar.",
   errEleccion: (dia) => `Elige el recorrido del día ${dia} para continuar.`,
+  errEleccionMulti: (cuantos) => `Elige tus ${cuantos} recorridos para continuar.`,
   errConexion: "Error de conexión. Intenta de nuevo.",
   errGrupoNoCotizable: (max) => `No podemos cotizar ese grupo en línea (máximo ${max} personas). Escríbenos por WhatsApp y lo armamos a tu medida.`,
   preparandoPago: "Preparando pago seguro...",
@@ -1190,6 +1308,7 @@ const CHK_EN: PaqueteCheckoutUI = {
     `${adultos} adult${adultos !== 1 ? "s" : ""}${menores > 0 ? ` · ${menores} child${menores !== 1 ? "ren" : ""}` : ""}`,
   compartirHabitacion: (hab) => `Room: ${hab}`,
   compartirDia: (dia, opcion) => `Day ${dia}: ${opcion}`,
+  compartirElegidos: (nombres) => `Tours chosen: ${nombres}`,
   compartirNocheExtra: "With an extra night (arriving the day before)",
   compartirTotal: (total) => `Total: ${total} MXN`,
   waReservar: (paquete) => `Hi, I'd like to book the ${paquete}.`,
@@ -1212,7 +1331,7 @@ const CHK_EN: PaqueteCheckoutUI = {
   menores6Nota: "50 % of the tour",
   menosDe: (label) => `Fewer ${label}`,
   masDe: (label) => `More ${label}`,
-  bebesNota: "Babies under 3 don't pay for the tour. Children do take up a place in the room.",
+  bebesNota: "Children under 6 pay 50 % of the tour and ages 6 to 10 pay 70 %. All of them take up a place in the room.",
   sonMasDe: (max) => `More than ${max} of you?`,
   cotizamosWhatsapp: "We'll quote it on WhatsApp",
   waGrupoGrande: (n, paquete) => `Hi, there are ${n} of us and we'd like the ${paquete}. Could you quote it?`,
@@ -1229,6 +1348,8 @@ const CHK_EN: PaqueteCheckoutUI = {
   cadaPersonaSuma: (monto, tours) => `Each additional person adds ${monto} in tours (${tours}).`,
   eleccionDia: (dia) => `Day ${dia} of your itinerary. Both options cost the same.`,
   eleccionElige: "Choose one to continue.",
+  eleccionMultiSub: (cuantos, total) => `Pick ${cuantos} of the ${total}. They cost the same inside the package, so your choice does not change the price.`,
+  eleccionMultiFaltan: (n) => n === 1 ? "1 left to pick." : `${n} left to pick.`,
   cuandoLlegas: "When do you arrive?",
   cuandoLlegasSub: "Your first day is already a tour day: we leave the hotel between 8:30 and 9:00 in the morning.",
   llegoMismoDia: "I arrive on the day of the first tour",
@@ -1244,6 +1365,7 @@ const CHK_EN: PaqueteCheckoutUI = {
   porLasNoches: (monto, noches) => `+${monto} MXN for the ${noches} nights`,
   laHabitacion: "The room",
   eligeTuHabitacion: "Choose your room",
+  tuHabitacionYReemplazo: "Your room, and its replacement if dates are taken",
   elegida: "Selected",
   verFotosDe: (hab) => `See photos of ${hab}`,
   hastaPersonas: (n) => `Up to ${n} ${n > 1 ? "people" : "person"}`,
@@ -1284,6 +1406,7 @@ const CHK_EN: PaqueteCheckoutUI = {
   errCorreoInvalido: "That email address doesn't look valid.",
   errHabitacion: "Choose your room to continue.",
   errEleccion: (dia) => `Choose the tour for day ${dia} to continue.`,
+  errEleccionMulti: (cuantos) => `Pick your ${cuantos} tours to continue.`,
   errConexion: "Connection error. Please try again.",
   errGrupoNoCotizable: (max) => `We can't quote that group online (${max} people max). Message us on WhatsApp and we'll put it together for you.`,
   preparandoPago: "Preparing secure payment...",

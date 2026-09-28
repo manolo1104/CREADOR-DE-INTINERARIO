@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
 import { metaAlEnviar, conMeta } from "@/lib/quoteFollowUp";
+import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,13 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         lineItems: conMeta(q.lineItems, seq) as never,
       },
     });
+    await registrarEnBitacora({
+      accion:     "envió",
+      entidad:    "cotización",
+      referencia: q.quoteNumber,
+      resumen:    `Cotización ${q.quoteNumber} por ${pesos(q.totalAmount)} a ${to} (${q.customerName})`,
+    });
+
     return NextResponse.json({ ok: true, seguimiento: seq.seqEstado });
   } catch (e: any) {
     console.error("admin/cotizaciones send-email:", e?.message);

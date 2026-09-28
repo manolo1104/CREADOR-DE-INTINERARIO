@@ -101,7 +101,7 @@ export default function DestinosClient() {
         </p>
         {en ? (
           <a
-            href="https://wa.me/524891251458?text=Hi%2C%20I%27d%20like%20help%20planning%20a%20trip%20to%20the%20Huasteca%20Potosina."
+            href="https://wa.me/524891090388?text=Hi%2C%20I%27d%20like%20help%20planning%20a%20trip%20to%20the%20Huasteca%20Potosina."
             target="_blank" rel="noopener noreferrer"
             className="inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
           >

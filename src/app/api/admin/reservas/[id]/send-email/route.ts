@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
+import { registrarEnBitacora } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,13 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         ? `Your tour is confirmed — ${b.confirmationNumber}`
         : `Tu tour está confirmado — ${b.confirmationNumber}`,
       htmlContent: html,
+    });
+
+    await registrarEnBitacora({
+      accion:     "envió",
+      entidad:    "reserva",
+      referencia: b.confirmationNumber,
+      resumen:    `Correo de confirmación de ${b.confirmationNumber} a ${b.customerEmail} (${b.customerName})`,
     });
 
     return NextResponse.json({ ok: true });

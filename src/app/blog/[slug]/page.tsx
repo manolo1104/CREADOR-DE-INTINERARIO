@@ -343,7 +343,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                     </p>
                     <p className="text-crema/45 font-dm font-light text-sm leading-relaxed max-w-md">
                       Nacido en la Huasteca Potosina. Lleva más de 6 años llevando viajeros a los rincones que ningún autobús turístico alcanza.
-                      4.9★ en Google · Premio Arival Mejor Tour Operador Norteamérica 2023.
+                      4.7★ en Google · Guías certificados NOM-09 SECTUR.
                     </p>
                   </div>
                 </div>
@@ -383,7 +383,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   <p className="font-cormorant text-dorado text-lg leading-none mb-3">
                     ${relevantTour.precio.toLocaleString("es-MX")}
                     <span className="font-dm text-[10px] text-crema/40 ml-1">
-                      {relevantTour.precioUnidad === "vehiculo" ? "MXN/vehículo" : "MXN/persona"}
+                      {relevantTour.precioUnidad === "vehiculo" ? "MXN/vehículo" : relevantTour.precioUnidad === "grupo" ? "MXN/grupo" : "MXN/persona"}
                     </span>
                   </p>
                   <div className="space-y-2">

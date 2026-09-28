@@ -12,6 +12,6 @@ export default function Image() {
     titulo: "Huasteca Potosina",
     subtitulo: "Mexico's waterfall country",
     pills: ["Turquoise waterfalls", "Surrealist garden", "Certified guides", "All inclusive"],
-    estrellas: "4.9 · 492 reviews · Best Tour Operator, North America",
+    estrellas: "4.7 · 161 Google reviews · 10,000+ travelers",
   });
 }

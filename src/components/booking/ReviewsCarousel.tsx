@@ -86,7 +86,7 @@ export function ReviewsCarousel() {
         <div className="flex items-center gap-2">
           <StarRow />
           <span className="font-cormorant text-dorado text-base leading-none">4.9</span>
-          <span className="text-crema/45 font-dm text-[10px]">· 492 reseñas verificadas</span>
+          <span className="text-crema/45 font-dm text-[10px]">· 161 reseñas verificadas</span>
         </div>
         <div className="space-y-1">
           {RATING_BARS.map(({ stars, pct }) => (

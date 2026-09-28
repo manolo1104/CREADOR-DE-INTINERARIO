@@ -48,8 +48,15 @@ export function repartirHuespedes(huespedes: number, habitaciones: number): numb
 }
 
 /**
- * Promoción: cada TERCERA noche es gratis (decisión de Manolo, 12 ago 2026).
- * Con 3 noches se cobran 2; con 6 se cobran 4. Aplica por habitación.
+ * Promoción: cada TERCERA noche es gratis.
+ *
+ * ⚠️ Desde el 23 sep 2026 es ventaja **SOLO de los paquetes del catálogo**, así
+ * que este cotizador —que arma viajes a la medida por WhatsApp— ya no la
+ * aplica. Ver el porqué en `nochesGratis` de `src/lib/habitaciones.ts`: con la
+ * promoción suelta, el paquete costaba más que sus partes y no podía anunciar
+ * ningún ahorro.
+ *
+ * Se conserva la función porque el desglose sigue devolviendo el campo.
  */
 export function nochesGratis(noches: number): number {
   return Math.floor(Math.max(0, noches) / 3);
@@ -99,7 +106,8 @@ export function cotizarHospedaje(input: {
   const vistaMontana = esHabitacionConVista(input.habitacion);
   const tabla = vistaMontana ? TARIFA_POR_NOCHE.montana : TARIFA_POR_NOCHE.estandar;
 
-  const gratis = nochesGratis(noches);
+  // Un viaje a la medida paga todas sus noches: la 3.ª gratis va con el paquete.
+  const gratis = 0;
   const nochesCobradas = noches - gratis;
 
   const desglose = reparto.map((h) => {

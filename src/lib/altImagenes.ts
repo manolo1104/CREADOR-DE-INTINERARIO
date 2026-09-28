@@ -51,7 +51,7 @@ const VOCABULARIO: Record<string, { es: string; en: string }> = {
   "letras":             { es: "Las letras monumentales de {n}",            en: "The monumental letters at {n}" },
   "mar-de-nubes":       { es: "El mar de nubes sobre {n}",                 en: "The sea of clouds over {n}" },
   "mirador":            { es: "El mirador de {n}",                         en: "The lookout at {n}" },
-  "pericos":            { es: "Pericos en {n}",                            en: "Parakeets at {n}" },
+  "pericos":            { es: "Miles de aves saliendo en espiral en {n}",   en: "Thousands of birds spiraling out at {n}" },
   "plaza":              { es: "La plaza principal de {n}",                 en: "The main square of {n}" },
   "portal-rojo":        { es: "El portal rojo de {n}",                     en: "The red portal at {n}" },
   "puerta-luna":        { es: "La puerta de la luna de {n}",               en: "The moon gate at {n}" },

@@ -2,7 +2,7 @@
 // El cliente nunca decide el monto a cobrar: aquí se recalcula desde TOURS_DB.
 
 import { TOURS_DB, type Tour, type TourRuta, type TourVehiculo } from "./tours";
-import { calcTourTotal, validatePromoCode } from "./tourBooking";
+import { totalRecorrido, validatePromoCode } from "./tourBooking";
 import { descuentoPorPosicion } from "./carrito";
 
 /**
@@ -78,6 +78,19 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const tour = TOURS_DB.find((t) => t.id === input.tourId || t.slug === input.tourSlug);
   if (!tour) return null;
 
+  // 🔴 En un recorrido de tarifa por grupo el cupo NO es una preferencia
+  // nuestra: el Jardín Escultórico no deja entrar a más de 7 por experiencia.
+  // El `clampInt` de abajo recorta en silencio, así que una petición de 8
+  // acababa cobrada y registrada como 7 — y el día del recorrido se presentan
+  // ocho en la puerta de un Patrimonio Nacional que solo deja pasar a siete.
+  // Aquí se rechaza en vez de recortar.
+  if (tour.tarifaGrupo?.length) {
+    const pedidas = (Number(input.adults) || 0)
+      + (Number(input.childrenMid) || 0)
+      + (Number(input.childrenSmall) || 0);
+    if (pedidas > tour.groupMax) return null;
+  }
+
   // Tours cobrados POR VEHÍCULO (ej. RZR) no se venden por el flujo por persona:
   // el precio depende de ruta + unidad y se cotiza por WhatsApp.
   if (tour.precioUnidad === "vehiculo") return null;
@@ -102,7 +115,10 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const promo = input.promoCode ? validatePromoCode(input.promoCode) : { valid: false, discount: 0 };
   const promoDiscount = promo.valid ? promo.discount : 0;
 
-  const { total: totalTour } = calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount);
+  // Tarifa por GRUPO (ej. el Edén en el Jardín) o precio por cabeza: lo decide
+  // `totalRecorrido`, que es exactamente lo que pinta el carrito y el módulo de
+  // la ficha. Una sola cuenta para lo que se enseña y lo que se cobra.
+  const totalTour = totalRecorrido(tour, adults, childrenMid, childrenSmall, promoDiscount);
 
   // ── Add-ons ───────────────────────────────────────────────────────────────
   // El precio se lee SIEMPRE del catálogo del propio tour, nunca del cliente.
@@ -190,7 +206,7 @@ export function computeVehiculoCharge(input: VehiculoChargeInput): VehiculoCharg
 
 /** Nombre descriptivo de una reserva por vehículo: "RZR — Ruta Nacimiento · Defender ×2". */
 export function vehiculoBookingName(tour: Tour, rutaNombre: string, vehiculoNombre: string, unidades: number): string {
-  const base = tour.nombre.split(" — ")[0];
+  const base = tour.nombreCorto;
   const uni  = unidades > 1 ? ` ×${unidades}` : "";
   return `${base} — ${rutaNombre} · ${vehiculoNombre}${uni}`;
 }
@@ -336,7 +352,17 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
         && ((x as Record<string, unknown>).promoCode as string).trim() !== "",
     );
     if (!conPromo) {
-      const orden = [...lineItems].sort((a, b) => b.subtotal - a.subtotal);
+      // 🔴 Los recorridos de tarifa por grupo quedan FUERA del descuento: su
+      // costo es una tarifa fija que nos cobra un tercero (la Fundación Las
+      // Pozas), no una salida propia donde el costo se reparte. El Edén como
+      // tercer recorrido cobraría $2,958 sobre un costo de $2,675, y el
+      // traslado lo dejaría en pérdida. Los demás renglones se numeran entre
+      // ellos, así que nadie pierde descuento por esto.
+      const descontables = lineItems.filter((l) => {
+        const t = TOURS_DB.find((x) => x.slug === l.tourSlug || x.id === l.tourId);
+        return !t?.tarifaGrupo?.length;
+      });
+      const orden = [...descontables].sort((a, b) => b.subtotal - a.subtotal);
       orden.forEach((linea, i) => {
         const pct = descuentoPorPosicion(i);
         if (pct === 0) return;

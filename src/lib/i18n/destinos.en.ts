@@ -495,7 +495,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
   },
   "sotano-de-las-huahuas": {
     nombre: "Sótano de las Huahuas",
-    descripcion: "A 478m abyss where thousands of parrots and swifts trace spirals at dawn and dusk.",
+    descripcion: "A 478m abyss where thousands of birds — parrots and swifts — trace spirals at dawn and dusk.",
     tipo: "Extreme",
     precio_entrada: "$60 MXN",
     dias_abierto: "Monday to Sunday",
@@ -511,11 +511,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Arriving late without time to see the flight", "Going without a guide — the edge has no railing"],
     seo: {
       metaTitle: "Sótano de las Huahuas 2026 | Bird Spectacle",
-      metaDescription: "Sótano de las Huahuas in Aquismón: 478 m deep and thousands of parrots spiraling at dusk. 2026 guide with hours, the hike and how it differs from Las Golondrinas.",
-      keywords: ["sótano de las huahuas aquismón", "parrot abyss huasteca potosina", "hiking aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
+      metaDescription: "Sótano de las Huahuas in Aquismón: 478 m deep and thousands of birds spiraling at dusk. 2026 guide with hours, the hike and how it differs from Las Golondrinas.",
+      keywords: ["sótano de las huahuas aquismón", "bird abyss huasteca potosina", "hiking aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
       faqPrincipales: [
-        { pregunta: "What time do the birds leave Sótano de las Huahuas?", respuesta: "The parrots leave at dawn (6:00–7:00 AM) and return at dusk (6:00–7:00 PM). Dusk is usually more spectacular because of the light." },
-        { pregunta: "How is Sótano de las Huahuas different from Sótano de las Golondrinas?", respuesta: "Las Golondrinas (376 m free fall) has swifts and the iconic flight is at dawn. Las Huahuas (478 m) is home to green parrots and the best show is at dusk. They're different experiences." },
+        { pregunta: "What time do the birds leave Sótano de las Huahuas?", respuesta: "The birds leave at dawn (6:00–7:00 AM) and return at dusk (6:00–7:00 PM). Dusk is usually more spectacular because of the light." },
+        { pregunta: "How is Sótano de las Huahuas different from Sótano de las Golondrinas?", respuesta: "Las Golondrinas (376 m free fall) has swifts and the iconic flight is at dawn. Las Huahuas (478 m) is home to thousands of birds — green parrots and swifts — and the best show is at dusk. They're different experiences." },
         { pregunta: "Is the hike to Sótano de las Huahuas difficult?", respuesta: "The uphill hike is 30–40 minutes of moderate intensity. It requires hiking shoes and is not suitable for people with serious mobility issues." },
       ],
     },
@@ -1185,14 +1185,14 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     datos_curiosos: [
       "The Cerro de la Luz above it is the highest point in the municipality of Xilitla, reaching ~2,300 m.",
-      "The sinkhole is about 800 m across and its vertical drop is over 120 m.",
+      "The sinkhole is 233 m across and its vertical drop is 193 m.",
     ],
     errores_comunes: [
       "Trying to get there without a local guide",
       "Not allowing for the altitude and the cold of the cloud forest",
     ],
     nombre: "Olla de la Luz — Cerro de la Luz",
-    descripcion: "A huge sinkhole about 800 m across with a vertical shaft over 120 m deep, crowned by Cerro de la Luz, the highest point in the Xilitla municipality. Reached after a hike through the cloud forest from La Trinidad.",
+    descripcion: "A huge sinkhole 233 m across with a vertical shaft 193 m deep, crowned by Cerro de la Luz, the highest point in the Xilitla municipality. Reached after a hike through the cloud forest from La Trinidad.",
     tipo: "Nature & Sinkhole",
     precio_entrada: "Guided route from La Trinidad (~$150–$250 MXN per group)",
     dias_abierto: "Year-round (book in advance)",
@@ -1203,7 +1203,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       faqPrincipales: [
         {
           pregunta: "What is the Olla de la Luz?",
-          respuesta: "It's a large sinkhole (doline) roughly 800 meters across with a vertical drop of more than 120 meters, set high in the Xilitla cloud forest and crowned by the Cerro de la Luz.",
+          respuesta: "It's a large sinkhole (doline) 233 meters across with a vertical drop of 193 meters, set high in the Xilitla cloud forest and crowned by the Cerro de la Luz.",
         },
         {
           pregunta: "How do you get to the Olla de la Luz?",
@@ -1215,7 +1215,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
       ],
       metaTitle: "Olla de la Luz Xilitla | Cerro de la Luz Sinkhole",
-      metaDescription: "The Olla de la Luz: a sinkhole ~800 m across and over 120 m deep crowned by Cerro de la Luz, the highest point in Xilitla. Reached from La Trinidad.",
+      metaDescription: "The Olla de la Luz: a sinkhole 233 m across and 193 m deep crowned by Cerro de la Luz, the highest point in Xilitla. Reached from La Trinidad.",
       keywords: ["olla de la luz xilitla", "hoya de la luz", "cerro de la luz xilitla", "sinkhole xilitla", "la trinidad cloud forest"],
     },
   },

@@ -62,7 +62,7 @@ function wrap(cab: Cabecera, contenido: string, footer = true, email?: string | 
     entradilla: cab.entradilla,
     cuerpo: contenido,
     pie: footer
-      ? `¿Dudas de fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de 1 hora.`
+      ? `¿Dudas de fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de 1 hora.`
       : undefined,
     origen: footer ? "Recibes esto porque dejaste tu correo en nuestro sitio." : undefined,
     // Con el enlace real ya no hace falta pedirle que responda "baja" y que
@@ -294,7 +294,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
   if (!principal) return null;
 
   const urlPrincipal = `${BASE}/tours/${principal.slug}`;
-  const nombreCorto  = principal.nombre.split(" — ")[0];
+  const nombreCorto  = principal.nombreCorto;
   const conQuien     = conQuienViaja(d.grupo);
 
   switch (d.paso) {
@@ -455,7 +455,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
 
           <p style="font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.8;color:#3a3a2e;margin:0 0 6px">
             Y si al final no puedes ir: <strong>cancelación gratuita hasta 48 horas antes</strong>,
-            con reembolso completo y sin preguntas. Si llueve, reprogramamos sin costo.
+            con reembolso completo y sin preguntas. Operamos con lluvia ligera; si el río no es seguro, eliges entre reembolso o cambiar la fecha.
           </p>
           ${boton(linkCarrito(principal.slug), `Apartar mi ${nombreCorto} →`)}
           <p style="text-align:center;font-size:13px;color:#8a7a5a;margin:0">

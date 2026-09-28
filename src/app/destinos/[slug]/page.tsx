@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { resenasTexto } from "@/lib/resenas";
 import { headers } from "next/headers";
 import { Metadata } from "next";
 import Image from "next/image";
@@ -13,7 +14,7 @@ import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
 import { altsGaleriaDestino } from "@/lib/altImagenes";
 import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
 import { blogDeDestino } from "@/lib/blogDestinoMap";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, etiquetaUnidad } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { DestinoGallery } from "@/components/DestinoGallery";
@@ -26,7 +27,6 @@ import {
   NARRATIVA_DESTINO,
   COMBINACION_DESTINO,
   REVIEWS_POR_DESTINO,
-  RATING_DESTINO,
 } from "@/lib/destinoData";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
@@ -86,7 +86,6 @@ export default function DestinoPage({ params }: Props) {
   const guiaSlug         = locale === "en" ? undefined : blogDeDestino(destino.slug);
   const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
   const reviewsDestino   = REVIEWS_POR_DESTINO[destino.slug] ?? [];
-  const rating           = RATING_DESTINO[destino.slug];
   const tourHref         = toursRelacionados[0] ? localePath(`/tours/${toursRelacionados[0].slug}`, locale) : undefined;
   const money            = (n: number) => `$${fmtNumber(n, locale)}`;
   const comboName        = (slug: string, fallback: string) => {
@@ -145,15 +144,15 @@ export default function DestinoPage({ params }: Props) {
             </h1>
             <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-2">{destino.zona} · {destino.tipo}</p>
 
-            {rating && (
-              <div className="flex items-center gap-1.5 mb-4">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_,i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
-                </div>
-                <span className="font-dm text-sm text-dorado font-medium">{rating.rating}</span>
-                <span className="font-dm text-xs text-crema/40">· {rating.count} {dd.opinions}</span>
+            {/* 🔴 28 sep 2026 — la nota por destino se retiró (ver
+                `src/lib/resenas.ts`). Aquí va la del NEGOCIO, que es la única
+                que existe de verdad en Google. */}
+            <div className="flex items-center gap-1.5 mb-4">
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_,i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
               </div>
-            )}
+              <span className="font-dm text-sm text-dorado font-medium">{resenasTexto(locale === "en")}</span>
+            </div>
 
             <p className="text-crema/75 max-w-2xl leading-relaxed text-base mb-5">{destino.descripcion}</p>
 
@@ -188,7 +187,7 @@ export default function DestinoPage({ params }: Props) {
                   {dd.partOfTour(destino.nombre, tourPrincipal.nombre)}
                 </p>
                 <p className="font-dm text-crema/60 text-sm mt-1">
-                  {money(tourPrincipal.precio)} MXN {dd.perPerson}
+                  {money(tourPrincipal.precio)} MXN {tourPrincipal.precioUnidad ? etiquetaUnidad(tourPrincipal, locale === "en") : dd.perPerson}
                   {tourPrincipal.precioUnidad === "vehiculo" ? "" : ` · ${dd.deposit30}`}
                 </p>
               </div>
@@ -380,13 +379,10 @@ export default function DestinoPage({ params }: Props) {
                   <span className="block font-dm text-[11px] text-crema/40 italic mt-1">{dd.resenasEnEspanol}</span>
                 )}
               </h2>
-              {rating && (
-                <div className="flex items-center gap-1.5">
-                  <div className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
-                  <span className="text-dorado font-dm text-sm font-medium">{rating.rating}</span>
-                  <span className="text-crema/40 font-dm text-xs">({rating.count})</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5">
+                <div className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
+                <span className="text-dorado font-dm text-sm font-medium">{resenasTexto(locale === "en")}</span>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {reviewsDestino.map((r) => (
@@ -429,7 +425,7 @@ export default function DestinoPage({ params }: Props) {
                       <h3 className="font-cormorant text-crema text-base leading-snug mb-3">{tour.nombre}</h3>
                       <p className="font-cormorant text-dorado text-xl leading-none mb-4">
                         {money(tour.precio)}
-                        <span className="font-dm text-[10px] text-crema/40 ml-1">MXN / {locale === "en" ? "person" : "persona"}</span>
+                        <span className="font-dm text-[10px] text-crema/40 ml-1">MXN {etiquetaUnidad(tour, locale === "en")}</span>
                       </p>
                       <div className="space-y-2">
                         <Link href={localePath(`/reservar/carrito?agregar=${tour.slug}`, locale)}
@@ -487,7 +483,7 @@ export default function DestinoPage({ params }: Props) {
                         <span className="min-w-0">
                           <span className="block font-dm text-sm text-crema leading-snug">{t.nombre}</span>
                           <span className="block font-dm text-xs text-dorado mt-1">
-                            {money(t.precio)} MXN {t.precioUnidad === "vehiculo" ? "" : dd.perPerson}
+                            {money(t.precio)} MXN {t.precioUnidad === "vehiculo" ? "" : t.precioUnidad === "grupo" ? etiquetaUnidad(t, locale === "en") : dd.perPerson}
                           </span>
                         </span>
                         <span className="ml-auto text-verde-vivo group-hover:translate-x-0.5 transition-transform">→</span>

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
-import { Star, TreePine, UtensilsCrossed, MapPin, Bus } from "lucide-react";
+import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { RESENAS_PAQUETES, TRASLADOS_TEXTO } from "@/lib/paquetes";
@@ -104,14 +104,31 @@ export default function PaquetesPage() {
 
       {/* ── HERO ── */}
       <section className="relative px-6 pt-36 pb-28 overflow-hidden min-h-[520px] flex items-center">
+        {/* El skybike de las Cascadas de Micos. La ruta dice
+            `cascadas-minas-viejas` porque la foto entró por la galería de ese
+            tour, que visita los dos sitios; el lugar de la foto es Micos. */}
         <Image
-          src="/imagenes/cascada-de-tamul/hero.jpg"
-          alt="Cascada de Tamul — Huasteca Potosina"
+          src="/imagenes/cascadas-minas-viejas/gallery-new-8.jpg"
+          alt="Skybike sobre las pozas turquesa de las Cascadas de Micos, Huasteca Potosina"
           fill
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-negro/70 via-negro/55 to-negro/85" />
+        {/* El velo sube al 72 % en la franja donde vive el texto: con el 55 %
+            anterior, la cascada dejaba el antetítulo y el párrafo casi ilegibles
+            sobre el agua blanca.
+
+            🔴 Va como degradado escrito a mano y no con clases de Tailwind:
+            `via-negro/72` NO existe en su escala de opacidades, no genera regla
+            y el degradado entero se queda TRANSPARENTE sin avisar de nada. Se
+            ve igual que si no hubiera velo. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(14,23,16,.78) 0%, rgba(14,23,16,.72) 45%, rgba(14,23,16,.92) 100%)",
+          }}
+        />
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             {t.heroEyebrow}
@@ -125,25 +142,162 @@ export default function PaquetesPage() {
             <strong className="text-crema">{t.heroHotel}</strong>
             {t.heroIntro2}
           </p>
-          <div className="inline-flex items-center gap-3 bg-negro/60 backdrop-blur-sm border border-white/15 px-5 py-3">
-            <div>
-              <div className="flex items-center gap-1 mb-0.5">
-                {"★★★★★".split("").map((s, i) => (
-                  <span key={i} className="text-dorado text-sm">{s}</span>
-                ))}
+          {/* El hero no tenía ni un botón: se leía el título y había que
+              adivinar que los paquetes estaban más abajo. Primero mirar, y
+              para quien ya sabe lo que quiere, el atajo a WhatsApp. */}
+          <div className="reveal-up flex flex-col sm:flex-row items-center justify-center gap-3" style={{ animationDelay: "160ms" }}>
+            <a
+              href="#catalogo"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-verde-selva px-8 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema whitespace-nowrap transition-[background-color,transform] duration-200 hover:bg-verde-vivo active:scale-[0.98]"
+            >
+              {t.heroCta}
+              <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+            <a
+              href={`https://wa.me/524891090388?text=${encodeURIComponent(t.heroWaMsg)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg border border-crema/40 px-8 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema whitespace-nowrap transition-[background-color,border-color,transform] duration-200 hover:border-crema hover:bg-crema/10 active:scale-[0.98]"
+            >
+              <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              {t.heroCtaWa}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TEMPORADA ──
+          Sustituye a la franja que sólo repetía la nota de WhatsApp: ahora
+          encabeza con el momento del año y deja la nota como su respaldo. */}
+      <div className="border-b border-white/6 bg-gradient-to-r from-verde-profundo/50 via-dorado/12 to-verde-profundo/50">
+        <div className="max-w-5xl mx-auto px-6 py-5 text-center">
+          <p className="font-cormorant text-crema leading-tight" style={{ fontSize: "clamp(20px,3vw,30px)" }}>
+            {t.bannerTemporada}
+          </p>
+          <p className="mt-1.5 text-[11px] font-dm text-crema/60">
+            {t.bannerTemporadaNota}
+          </p>
+        </div>
+      </div>
+
+      {/* ── CONFIANZA ──
+          Las calificaciones salieron del hero: ahí competían con el botón y
+          dejaban el hero con cinco bloques de texto. Aquí siguen viéndose
+          antes de los precios, que es donde hacen falta. */}
+      <div className="border-b border-white/6 bg-negro/60">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-0.5">
+              {"★★★★★".split("").map((s, i) => (
+                <span key={i} className="text-dorado text-sm">{s}</span>
+              ))}
+            </div>
+            <p className="text-[10px] font-dm text-crema/55">{t.googleReviews}</p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
+            {/* Era "+320" mientras el resto del sitio dice 161: la misma
+                cifra no puede cambiar según la página que abra el cliente. */}
+            <p className="text-[10px] font-dm text-crema/55">{t.resenasN}</p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
+            <p className="text-[10px] font-dm text-crema/55">{t.bookingOp}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── PAQUETES + BARRA FIJA ── */}
+      <PaquetesInteractivo paquetes={paquetes} />
+
+      {/* ── RESEÑAS ── */}
+      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
+        <FloatingLeaves count={12} />
+        <div className="relative z-10 max-w-5xl mx-auto">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
+            {t.resenasTitulo}
+            {t.resenasEnEspanol && (
+              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
+            )}
+          </p>
+          {/* Tres reseñas iguales en tres columnas se leían como una lista de
+              relleno y ninguna se leía entera. Ahora una manda —tamaño de cita,
+              no de tarjeta— y las otras dos la acompañan. */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {RESENAS_PAQUETES.slice(0, 1).map((r) => (
+              <figure
+                key={r.nombre}
+                className="reveal-up lg:col-span-7 rounded-2xl border border-dorado/25 bg-gradient-to-br from-verde-profundo/40 to-negro/60 p-7 flex flex-col"
+              >
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(r.estrellas)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
+                  ))}
+                </div>
+                <blockquote className="font-cormorant font-light italic text-crema/90 leading-snug" style={{ fontSize: "clamp(19px,2.2vw,25px)" }}>
+                  &ldquo;{r.texto}&rdquo;
+                </blockquote>
+                <figcaption className="mt-auto pt-6 flex items-center gap-3">
+                  <img src={r.foto} alt="" aria-hidden="true" className="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-dorado/40" loading="lazy" />
+                  <div>
+                    <p className="font-dm text-sm text-crema font-medium leading-none">{r.nombre}</p>
+                    <p className="text-[10px] font-dm text-crema/45 mt-1">{r.ciudad} · {r.tour}</p>
+                  </div>
+                </figcaption>
+              </figure>
+            ))}
+
+            <div className="lg:col-span-5 grid gap-5 content-start">
+              {RESENAS_PAQUETES.slice(1).map((r) => (
+                <figure
+                  key={r.nombre}
+                  className="reveal-up rounded-2xl border border-white/10 bg-negro/50 p-5"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img src={r.foto} alt="" aria-hidden="true" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
+                      <div className="min-w-0">
+                        <p className="font-dm text-xs text-crema/85 font-medium leading-none truncate">{r.nombre}</p>
+                        <p className="text-[9px] font-dm text-crema/35 mt-1 truncate">{r.ciudad} · {r.tour}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-0.5 flex-shrink-0">
+                      {[...Array(r.estrellas)].map((_, i) => (
+                        <Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
+                      ))}
+                    </div>
+                  </div>
+                  <blockquote className="font-dm text-xs text-crema/70 leading-relaxed line-clamp-4">
+                    &ldquo;{r.texto}&rdquo;
+                  </blockquote>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOTEL INFO ── */}
+      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
+        <FloatingLeaves count={14} />
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
+          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
+            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
+          </h2>
+          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
+            {t.hotelIntro}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
+              const text = t.hotelPuntos[i];
+              return (
+              <div key={text} className="border border-white/10 bg-negro/30 px-4 py-4 text-center">
+                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
+                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
               </div>
-              <p className="text-[9px] font-dm text-crema/50 text-left">{t.googleReviews}</p>
-            </div>
-            <div className="border-l border-white/15 pl-3">
-              <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
-              {/* Era "+320" mientras el resto del sitio dice 492: la misma
-                  cifra no puede cambiar según la página que abra el cliente. */}
-              <p className="text-[9px] font-dm text-crema/50">{t.resenasN}</p>
-            </div>
-            <div className="border-l border-white/15 pl-3">
-              <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
-              <p className="text-[9px] font-dm text-crema/50">{t.bookingOp}</p>
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -191,77 +345,6 @@ export default function PaquetesPage() {
         </div>
       </section>
 
-      {/* ── RESEÑAS ── */}
-      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
-        <FloatingLeaves count={12} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
-            {t.resenasTitulo}
-            {t.resenasEnEspanol && (
-              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
-            )}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {RESENAS_PAQUETES.map((r) => (
-              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(r.estrellas)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />
-                  ))}
-                </div>
-                <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">
-                  &ldquo;{r.texto}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <img src={r.foto} alt={r.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
-                  <div>
-                    <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
-                    <p className="text-[9px] font-dm text-crema/35 mt-0.5">{r.ciudad} · {r.tour}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── NOTA ── */}
-      <div className="border-b border-white/6 bg-dorado/8">
-        <div className="max-w-5xl mx-auto px-6 py-3.5 text-center">
-          <p className="text-[11px] text-dorado/80 font-dm">
-            {t.notaWhatsapp}
-          </p>
-        </div>
-      </div>
-
-      {/* ── QUIZ + PAQUETES + STICKY BAR ── */}
-      <PaquetesInteractivo paquetes={paquetes} />
-
-      {/* ── HOTEL INFO ── */}
-      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
-            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
-          </h2>
-          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
-            {t.hotelIntro}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
-              const text = t.hotelPuntos[i];
-              return (
-              <div key={text} className="border border-white/10 bg-negro/30 px-4 py-4 text-center">
-                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
-                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
-              </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ── FAQ ── */}
       <section className="max-w-3xl mx-auto px-6 py-16">
         <h2 className="reveal-up font-cormorant text-crema text-2xl mb-8 text-center">{t.faqTitulo}<em className="text-dorado">{t.faqTituloEm}</em></h2>
@@ -289,7 +372,7 @@ export default function PaquetesPage() {
             {t.ctaTexto}
           </p>
           <a
-            href={`https://wa.me/524891251458?text=${encodeURIComponent(t.ctaWa)}`}
+            href={`https://wa.me/524891090388?text=${encodeURIComponent(t.ctaWa)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"

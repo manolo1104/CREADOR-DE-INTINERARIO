@@ -4,9 +4,8 @@ import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye } from "lucide-react";
 import { TOURS_DB } from "@/lib/tours";
-import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn } from "@/components/admin/ReservaModal";
+import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
-import PagoProveedorCell, { type Evidencia } from "@/components/admin/PagoProveedorCell";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
@@ -63,11 +62,10 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, initialEvidencias = [], presetsExtras = EXTRAS_PRESET }:
-  { initialBookings: TourBooking[]; initialEvidencias?: Evidencia[]; presetsExtras?: PresetExtra[] },
+  { initialBookings, presetsExtras = EXTRAS_PRESET }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[] },
 ) {
   const [bookings,      setBookings]      = useState(initialBookings);
-  const [evidencias,    setEvidencias]    = useState<Evidencia[]>(initialEvidencias);
   const [detalle,       setDetalle]       = useState<TourBooking | null>(null);
   const [search,        setSearch]        = useState("");
   const [statusFilter,  setStatusFilter]  = useState<"all" | "paid" | "pending" | "cancelled">("all");
@@ -86,21 +84,17 @@ export default function ReservasClient(
   const [dateTo,        setDateTo]        = useState("");
   const today = useMemo(() => todayMX(), []);
 
-  // Las evidencias llegan en una sola lista (metadatos, sin los bytes) y se
-  // agrupan aquí para no hacer un filter por fila en cada render.
-  const evidenciasPorReserva = useMemo(() => {
-    const m: Record<string, Evidencia[]> = {};
-    for (const e of evidencias) (m[e.bookingId] ||= []).push(e);
-    return m;
-  }, [evidencias]);
-
-  function patchProveedor(id: string, patch: Record<string, unknown>) {
-    setBookings(bs => bs.map(x => x.id === id ? { ...x, ...patch } as TourBooking : x));
-  }
-
-  function setEvidenciasDe(bookingId: string, lista: Evidencia[]) {
-    setEvidencias(prev => [...prev.filter(e => e.bookingId !== bookingId), ...lista]);
-  }
+  // Los guías que ya se han asignado alguna vez. Salen de las propias
+  // reservas: no hace falta darlos de alta en ningún lado, y el nombre se
+  // ofrece al escribir para que "Beto" no acabe guardado de cuatro maneras.
+  const guiasConocidos = useMemo(() => {
+    const vistos = new Set<string>();
+    for (const b of bookings) {
+      const g = ((b as any).guia || "").trim();
+      if (g) vistos.add(g);
+    }
+    return Array.from(vistos).sort((a, b) => a.localeCompare(b, "es"));
+  }, [bookings]);
 
   function flash(m: string) {
     setMsg(m);
@@ -113,10 +107,6 @@ export default function ReservasClient(
     setLoading(true);
     const r = await fetch("/api/admin/reservas");
     if (r.ok) setBookings(await r.json());
-    // Las evidencias viven en otra tabla: se recargan aparte para que el
-    // contador de adjuntos no quede desfasado tras refrescar.
-    const e = await fetch("/api/admin/evidencia").catch(() => null);
-    if (e?.ok) setEvidencias(await e.json());
     setLoading(false);
   }
 
@@ -192,13 +182,23 @@ export default function ReservasClient(
       // del default). Al CREAR manda `EMPTY_RESERVA_FORM`, que arranca en
       // WhatsApp porque es de donde vienen las capturas a mano.
       origen:         origenValido((b as any).origen),
+      guia:           (b as any).guia || "",
+      idiomaTour:     (b as any).idiomaTour === "en" ? "en" : "es",
+      notasInternas:  meta.notasInternas || "",
     });
     setModal("edit");
   }
 
   function buildPayload(form: ReservaFormState) {
     const lineItems = [
-      { _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago, pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0 },
+      {
+        _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago,
+        pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0,
+        // Viaja en el `_meta` y NO en la columna `notes`: `notes` se imprime en
+        // el correo y en el comprobante del cliente, y esto no puede salir de
+        // aquí. Ver `notasInternas` en ReservaModal.
+        notasInternas: form.notasInternas.trim(),
+      },
       ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
     ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
@@ -230,12 +230,14 @@ export default function ReservasClient(
       // Columna de verdad, no `_meta`: el desglose de ingresos agrupa por ella
       // y lo que vive dentro de `lineItems` no se puede agrupar.
       origen:         form.origen,
+      guia:           form.guia.trim(),
+      idiomaTour:     form.idiomaTour === "en" ? "en" : "es",
     };
   }
 
   async function saveNew() {
     if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
-    if (form.lines.some(l => !l.tourSlug || !l.tourDate)) { flash("❌ Completa el tour y la fecha en cada línea"); return; }
+    if (!form.lines.every(lineaCompleta)) { flash("❌ Completa el concepto y la fecha en cada línea"); return; }
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
@@ -563,7 +565,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   <div class="foot">
     <p class="text"><strong>Manolo Covarrubias</strong>, fundador & guía local · Xilitla, SLP — gracias por elegir vivir la Huasteca con nosotros.</p>
-    <a class="wa" href="https://wa.me/524891251458"><span class="dot">●</span><span><span class="lbl">WhatsApp soporte</span><div class="num">+52 489 125 1458</div></span></a>
+    <a class="wa" href="https://wa.me/524891090388"><span class="dot">●</span><span><span class="lbl">WhatsApp soporte</span><div class="num">+52 489 109 0388</div></span></a>
   </div>
 </section>
 <script>
@@ -758,30 +760,19 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
               </div>
-              <div className="mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
-                <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1.5">Pago al proveedor</p>
-                <PagoProveedorCell
-                  reserva={b as any}
-                  evidencias={evidenciasPorReserva[b.id] ?? []}
-                  onChange={patchProveedor}
-                  onEvidencias={setEvidenciasDe}
-                  flash={flash}
-                  compacto
-                />
-              </div>
             </div>
           );
         })}
       </div>
 
       {/* ── Tabla (escritorio) ── */}
-      <div className="hidden md:block bg-white border border-[#1B4332]/10 rounded-sm overflow-hidden">
+      <div className="hidden md:block panel-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
             <thead className="bg-[#FAFAF8]">
               <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Total","Anticipo","Estado","Acciones","Proveedor"].map(h => (
-                  <th key={h} className={`py-3 px-3 text-left font-dm ${h === "Proveedor" ? "sticky right-0 z-20 bg-[#FAFAF8] border-l border-[#1B4332]/10 w-[150px] min-w-[150px]" : ""}`}>{h}</th>
+                {["Confirmación","Cliente","Tour","Fecha","Llega","Personas","Guía","Total","Anticipo","Estado","Acciones"].map(h => (
+                  <th key={h} className="py-3 px-3 text-left font-dm">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -809,7 +800,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     <td className="py-3 px-3 text-[#1B4332]/70 whitespace-nowrap text-xs">{fDate(b.tourDate)}</td>
                     <td className="py-3 px-3">{b.status !== "cancelled" ? <DaysChip d={daysToTour(b.tourDate, today)} /> : <span className="text-[#1B4332]/20 text-xs">—</span>}</td>
                     <td className="py-3 px-3 text-[#1B4332]/70 text-xs" title={grupoLargo(grupoDe(b as any))}>{grupoCorto(grupoDe(b as any))}</td>
-                    <td className="py-3 px-3 text-[#52B788] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
+                    <td className="py-3 px-3 text-xs whitespace-nowrap">
+                      {(b as any).guia
+                        ? <span className="text-[#1B4332]/75">{(b as any).guia}</span>
+                        : <span className="text-orange-600/70" title="Nadie asignado todavía">Sin asignar</span>}
+                      {(b as any).idiomaTour === "en" && (
+                        <span className="ml-1 text-[9px] tracking-[1px] uppercase bg-[#1a4e8a]/10 text-[#1a4e8a] px-1.5 py-0.5 rounded-sm" title="El tour sale en inglés">EN</span>
+                      )}
+                    </td>
+                    <td className="panel-cifra py-3 px-3 text-[#2b845c] font-medium whitespace-nowrap text-xs">{fmx(b.totalAmount)}</td>
                     <td className="py-3 px-3 text-xs">
                       {deposito > 0 ? (
                         <div>
@@ -853,16 +852,6 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
-                    <td className="py-3 px-3 w-[150px] min-w-[150px] whitespace-nowrap sticky right-0 z-10 bg-white border-l border-[#1B4332]/10"
-                        onClick={e => e.stopPropagation()}>
-                      <PagoProveedorCell
-                        reserva={b as any}
-                        evidencias={evidenciasPorReserva[b.id] ?? []}
-                        onChange={patchProveedor}
-                        onEvidencias={setEvidenciasDe}
-                        flash={flash}
-                      />
-                    </td>
                   </tr>
                 );
               })}
@@ -872,19 +861,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       </div>
 
       {detalle && (
-        <ReservaDetalle
-          reserva={detalle}
-          evidencias={evidenciasPorReserva[detalle.id] ?? []}
-          onClose={() => setDetalle(null)}
-        />
+        <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} />
       )}
 
       {modal === "new" && (
-        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras}
+        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
           onSave={saveNew} onClose={() => setModal(null)} saving={saving} />
       )}
       {modal === "edit" && (
-        <ReservaModal title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras}
+        <ReservaModal title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}
     </div>

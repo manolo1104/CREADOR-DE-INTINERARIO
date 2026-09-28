@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { resenasTexto } from "@/lib/resenas";
 import { trackTourEvent } from "@/lib/tourTracker";
 import Link from "next/link";
 import {
@@ -10,7 +11,7 @@ import {
   MessageCircle, ArrowRight, Flame, TrendingUp,
   CalendarDays, Moon,
 } from "lucide-react";
-import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, type Tour, precioTachado } from "@/lib/tours";
 import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
 
 // ── Social proof & urgency data per tour ──────────────────────────────────────
@@ -174,7 +175,7 @@ function SocialProofBar({ tourId, reviewCount }: { tourId: string; reviewCount: 
       </span>
       <span className="flex items-center gap-1.5">
         <Star className="w-3.5 h-3.5 fill-dorado text-dorado" />
-        4.9 · {reviewCount} reseñas verificadas
+        {resenasTexto(false)}
       </span>
       <span className="flex items-center gap-1.5 text-verde-selva font-medium">
         <TrendingUp className="w-3.5 h-3.5" />
@@ -230,7 +231,7 @@ function TourResultCard({
   origen:    string;
 }) {
   const proof = TOUR_PROOF[tour.id];
-  const savings = (tour.precioOriginal ?? tour.precio) - tour.precio;
+  const savings = (precioTachado(tour) ?? tour.precio) - tour.precio;
   const esVehiculo = tour.precioUnidad === "vehiculo";
   const bookHref = `/reservar/carrito?agregar=${tour.slug}`;
 
@@ -309,8 +310,8 @@ function TourResultCard({
         {/* Price + CTA */}
         <div className="flex items-end justify-between gap-4 mt-4">
           <div>
-            {tour.precioOriginal && tour.precioOriginal > tour.precio && (
-              <p className="font-dm text-[11px] text-negro/30 line-through">${tour.precioOriginal.toLocaleString()} MXN</p>
+            {precioTachado(tour) && (
+              <p className="font-dm text-[11px] text-negro/30 line-through">${precioTachado(tour)!.toLocaleString()} MXN</p>
             )}
             <p className="font-cormorant text-verde-profundo font-light" style={{ fontSize: "28px", lineHeight: 1 }}>
               {esVehiculo && <span className="text-base text-negro/40">desde </span>}
@@ -344,7 +345,7 @@ function TourResultCard({
         {/* WhatsApp for primary */}
         {isPrimary && (
           <a
-            href={`https://wa.me/524891251458?text=${encodeURIComponent(
+            href={`https://wa.me/524891090388?text=${encodeURIComponent(
               `Hola, el recomendador IA me sugirió el tour "${tour.nombre}" para ${grupo} desde ${origen}. ¿Tienen disponibilidad?`
             )}`}
             target="_blank"
@@ -441,7 +442,7 @@ function PaqueteResultCard({
         </div>
 
         <a
-          href={`https://wa.me/524891251458?text=${encodeURIComponent(
+          href={`https://wa.me/524891090388?text=${encodeURIComponent(
             `Hola, el recomendador IA me sugirió el ${paquete.nombre} (${paquete.duracion}) para ${grupo} desde ${origen}, con ${dias} disponibles. ¿Tienen disponibilidad?`
           )}`}
           target="_blank"

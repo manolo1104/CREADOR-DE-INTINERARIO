@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guardarPreciosExtras } from "@/lib/admin/preciosExtras";
 import type { PresetExtra } from "@/lib/admin/extras";
+import { registrarEnBitacora } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Falta la lista de precios" }, { status: 400 });
     }
     const guardados = await guardarPreciosExtras(body.precios as PresetExtra[]);
+    await registrarEnBitacora({
+      accion:  "modificó",
+      entidad: "precios",
+      resumen: `Precios de extras (${guardados.length} concepto${guardados.length === 1 ? "" : "s"} en la lista)`,
+    });
+
     return NextResponse.json({ ok: true, precios: guardados });
   } catch (e: any) {
     console.error("admin/precios-extras PUT:", e?.message);

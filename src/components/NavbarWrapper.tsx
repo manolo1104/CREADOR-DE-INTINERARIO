@@ -6,6 +6,7 @@ import { FloatingReservarButton } from "@/components/FloatingReservarButton";
 import { CarritoBar } from "@/components/carrito/CarritoBar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookieBanner } from "@/components/CookieBanner";
+import { PopupXantolo } from "@/components/PopupXantolo";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
 
 function ScrollProgressBar() {
@@ -65,6 +66,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       {!isAdmin && <FloatingReservarButton />}
       {!isAdmin && <CarritoBar />}
       {!isAdmin && <CookieBanner />}
+      {!isAdmin && <PopupXantolo />}
     </>
   );
 }

@@ -16,6 +16,6 @@ export default function Image() {
     titulo: `${TOURS_DB.length} Guided Tours`,
     subtitulo: "Huasteca Potosina",
     pills: ["Transport included", "Breakfast included", "Certified guides", `Max. ${GRUPO_MAX} people`],
-    estrellas: "4.9 · 492 reviews · Best Tour Operator, North America",
+    estrellas: "4.7 · 161 Google reviews · 10,000+ travelers",
   });
 }

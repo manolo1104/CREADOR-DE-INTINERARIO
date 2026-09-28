@@ -30,6 +30,10 @@ const T = {
   paraiso:    { nombre: "Paraíso Escalonado", slug: "paraiso-escalonado-minas-micos" },
   acuatica:   { nombre: "Ruta Acuática",     slug: "ruta-acuatica-puente-de-dios" },
   buceo:      { nombre: "Descubre el Buceo", slug: "buceo-media-luna" },
+  eden:       { nombre: "El Edén en el Jardín", slug: "eden-en-el-jardin" },
+  xilo:       { nombre: "Gruta de Xilo",     slug: "gruta-de-xilo" },
+  amanecer:   { nombre: "Amanecer de Nubes", slug: "amanecer-de-nubes" },
+  olla:       { nombre: "Olla de la Luz",    slug: "olla-de-la-luz" },
 } as const;
 
 /** Marca una referencia como "cerca" (el tour no visita el destino). */
@@ -46,14 +50,14 @@ export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
   "aquismon-pueblo-magico":         [cerca(T.tamul), cerca(T.rafting)],
 
   // ── Xilitla ───────────────────────────────────────────────────────────────
-  "las-pozas-jardin-surrealista":   [T.surrealista, cerca(T.rzr)],
-  "xilitla-pueblo-magico":          [T.surrealista, T.rzr],
+  "las-pozas-jardin-surrealista":   [T.surrealista, T.eden, cerca(T.rzr)],
+  "xilitla-pueblo-magico":          [T.surrealista, T.rzr, cerca(T.eden), cerca(T.xilo)],
   "nacimiento-huichihuayan":        [T.surrealista, T.rzr],
-  "la-trinidad-xilitla":            [T.rzr],
+  "la-trinidad-xilitla":            [T.amanecer, T.olla, T.rzr],
   "cascada-los-comales":            [cerca(T.surrealista), cerca(T.rzr)],
-  "olla-de-la-luz":                 [cerca(T.rzr), cerca(T.surrealista)],
+  "olla-de-la-luz":                 [T.olla, cerca(T.amanecer), cerca(T.rzr)],
   "cueva-del-salitre":              [cerca(T.rzr), cerca(T.surrealista)],
-  "museo-leonora-carrington-xilitla": [cerca(T.surrealista), cerca(T.rzr)],
+  "museo-leonora-carrington-xilitla": [cerca(T.surrealista), cerca(T.rzr), cerca(T.eden)],
 
   // ── Tamasopo ──────────────────────────────────────────────────────────────
   "puente-de-dios-tamasopo":        [T.acuatica],

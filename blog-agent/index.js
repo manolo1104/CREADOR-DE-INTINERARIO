@@ -718,6 +718,19 @@ HEADINGS COMO QUERIES (+25% extracción): Al menos 2 de los H2/H3 deben estar fo
 TABLAS DE COMPARACIÓN (cuando aplique): Si el tema involucra opciones (tours, hospedaje, rutas, precios), añade una tabla HTML simple:
   <table><thead><tr><th>Opción</th><th>Precio</th><th>Incluye</th></tr></thead><tbody>...</tbody></table>
 
+━━━ DATOS QUE NO SE INVENTAN ━━━
+Estos tres se han publicado mal en artículos anteriores. Si el tema los toca,
+va EXACTAMENTE así:
+- La Cascada de Tamul (105 m) es la más alta de SAN LUIS POTOSÍ, NO de México.
+  La más alta del país es Basaseachi, en Chihuahua. Nunca escribas "la cascada
+  más alta de México" ni "del país" refiriéndote a Tamul.
+- Los dos sótanos NO son el mismo y tienen profundidades distintas:
+  Sótano de las HUAHUAS = 478 m, aves al ATARDECER, es el que operamos.
+  Sótano de las GOLONDRINAS = 512 m, vencejos al AMANECER, NO lo operamos.
+  Nunca cruces las cifras ni prometas Golondrinas dentro de un tour.
+- Las aves de las Huahuas se nombran como "aves" (loros y vencejos), no como
+  "pericos" a secas.
+
 ━━━ REGLAS FINALES ━━━
 - NO incluyas bloques CTA (los inyecto yo después)
 - NO uses <h1> en ninguna parte del content

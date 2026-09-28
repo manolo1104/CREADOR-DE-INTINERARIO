@@ -17,6 +17,36 @@ import { TOUR_FAQS, type FAQ } from "../tourFaqs";
  * español — ninguna es nueva.
  */
 export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
+  "tour-eden-jardin": [
+    {
+      q: "What do I see here that I wouldn't see on the regular visit to Las Pozas?",
+      a: "Three things. You go in an hour before it opens to the public, so the garden is empty. Areas that aren't part of the general route are opened for you, including the Studio House, where a poem written in Edward James's own hand is still on the wall. And you climb to the upper levels of the Bamboo Palace, which are closed on the regular visit.",
+    },
+    {
+      q: "What time does it start?",
+      a: "8:00 AM on Monday, Wednesday, Thursday and Friday; 7:00 AM on Saturday and Sunday. There is also a 5:00 PM departure from Wednesday through Monday. We confirm the exact time when you book the date, since it depends on the day.",
+    },
+    {
+      q: "How many of us can go?",
+      a: "Anywhere from 1 to 7 people. The cap comes from the garden itself: no more than 7 per experience, and on some structures you go up one at a time because of their load limits.",
+    },
+    {
+      q: "What language is the tour in?",
+      a: "English or Spanish, whichever you prefer. French and Italian can be requested in advance, subject to guide availability.",
+    },
+    {
+      q: "Can I swim in the pools?",
+      a: "No. Water activities aren't allowed on this experience — the garden is an Artistic Monument and National Heritage site, and the rules of the grounds prohibit it.",
+    },
+    {
+      q: "Can I bring a drone or a tripod?",
+      a: "No. The garden doesn't allow pets, drones or tripods, and management can turn away any object it considers a risk to the site or an obstruction on the paths. Photos with your camera or phone are fine.",
+    },
+    {
+      q: "What if I need to change the date?",
+      a: "You can, as long as you tell us 5 or more days ahead: the full amount is honored and you can use it on any available date within the next 6 months. With less than 5 days' notice, or if you don't show up, there is no change and no refund. If the weather forces a cancellation, we reschedule at no cost.",
+    },
+  ],
   "tour-rzr-xilitla": [
     {
       q: "Do I need a license or any experience to drive the RZR?",

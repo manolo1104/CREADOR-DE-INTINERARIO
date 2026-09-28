@@ -19,7 +19,7 @@ export const maxDuration = 60;
 /**
  * Se pide reseña en los DOS idiomas. Encendido el 26 ago 2026 por Manolo.
  *
- * Estuvo solo en inglés a propósito: las 492 reseñas de Google están casi todas
+ * Estuvo solo en inglés a propósito: las 161 reseñas de Google están casi todas
  * en español y el hueco a llenar era el inglés. Encender el español significa
  * escribirle también a la base mexicana, que es la grande, y esa era una
  * decisión suya y no del código.

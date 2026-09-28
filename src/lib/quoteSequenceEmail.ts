@@ -18,7 +18,7 @@ import {
 import type { Locale } from "./i18n/config";
 
 const BASE = "https://www.huasteca-potosina.com";
-const WA   = "524891251458";
+const WA   = "524891090388";
 
 export type QuotePaso = 2 | 3 | 4;
 
@@ -58,7 +58,7 @@ const TEXTOS = {
         subject: (t: string) => `Aparta tu ${t} con el 30 %`,
         h1a: "No hace falta que",
         h1b: "pagues todo hoy",
-        cuerpo:  "Puedes apartar tu lugar con el 30 % y liquidar el resto el día del recorrido, en efectivo o con tarjeta. Cancelación gratuita hasta 48 horas antes, con reembolso completo. Si llueve, reprogramamos sin costo.",
+        cuerpo:  "Puedes apartar tu lugar con el 30 % y liquidar el resto el día del recorrido, en efectivo o con tarjeta. Cancelación gratuita hasta 48 horas antes, con reembolso completo. Operamos con lluvia ligera; si el río no está en condiciones seguras, eliges entre reembolso del 100 % o cambiar la fecha.",
         cta:     "Apartar con el 30 %",
         pie:     "Los fines de semana y los puentes se llenan primero. Si tienes una fecha en mente, mejor asegurarla.",
       },
@@ -103,7 +103,7 @@ const TEXTOS = {
         subject: (t: string) => `Hold your ${t} with 30 %`,
         h1a: "You don't have to",
         h1b: "pay it all today",
-        cuerpo:  "You can hold your spot with 30 % and settle the rest on the day of the tour, in cash or by card. Free cancellation up to 48 hours before, fully refunded. If it rains, we reschedule at no cost.",
+        cuerpo:  "You can hold your spot with 30 % and settle the rest on the day of the tour, in cash or by card. Free cancellation up to 48 hours before, fully refunded. We run in light rain; if the river isn't safe, you choose between a full refund or a new date.",
         cta:     "Hold my spot with 30 %",
         pie:     "Weekends and long weekends fill up first. If you have a date in mind, it's worth locking it in.",
       },

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getPaquete } from "@/lib/paquetes";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
-import { HABITACIONES } from "@/lib/paquetes";
-import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido } from "@/lib/paquetePricing";
+import { habitacionesDePaquete } from "@/lib/paquetes";
+import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 
@@ -39,10 +39,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Porcentaje de pago inválido." }, { status: 400 });
     }
 
+    // Los recorridos elegidos, validados contra la lista que ESE paquete
+    // ofrece. Importan para el dinero: en el paquete a la carta los boletos de
+    // cada persona extra son los de los recorridos elegidos, así que aceptar
+    // una lista corta o un slug de fuera saldría del bolsillo de Manolo.
+    const eleccion = paquete.eleccionTour;
+    const elegidos = Array.from(new Set(parseEleccion(paqueteDetails?.tourElegido)))
+      .filter((slug) => eleccion?.opciones.some((o) => o.slug === slug));
+    if (eleccion && elegidos.length !== (eleccion.cuantos ?? 1)) {
+      return NextResponse.json(
+        { error: `Elige ${eleccion.cuantos ?? 1} recorrido${(eleccion.cuantos ?? 1) > 1 ? "s" : ""} de la lista para continuar.` },
+        { status: 400 },
+      );
+    }
+
     // La habitación concreta que eligió el cliente, validada contra el catálogo
     // del hotel y contra las que este paquete ofrece.
+    // Contra las que ofrece ESTE paquete, no contra la lista general: la Luna
+    // de Miel sólo da la Jungla y su reemplazo, y aceptar cualquier otra
+    // cobraría el precio de un paquete por una habitación que no vende.
+    const habsDelPaquete = habitacionesDePaquete(paquete);
     const habitacionElegida = HABITACIONES_HOTEL.find(
-      (h) => h.id === paqueteDetails?.habitacionId && HABITACIONES.some((x) => x.id === h.id),
+      (h) => h.id === paqueteDetails?.habitacionId && habsDelPaquete.some((x) => x.id === h.id),
     );
 
     const cobro = computePaqueteCharge({
@@ -59,6 +77,8 @@ export async function POST(req: NextRequest) {
       reparto:       paqueteDetails?.reparto,
       // Llegar la víspera: suma una noche de hotel al total.
       nocheExtra:    paqueteDetails?.nocheExtra,
+      // Ya saneados arriba: el motor cobra los boletos extra de ESTOS tours.
+      tourElegido:   elegidos.join(","),
       pct,
     });
     if (!cobro) {
@@ -98,7 +118,7 @@ export async function POST(req: NextRequest) {
         habitacion:    habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
         // Sin esto el equipo recibe un paquete con un día "a elegir" sin saber
         // qué eligió el cliente, y el reparto de habitaciones se perdía.
-        tourElegido:   String(paqueteDetails?.tourElegido || ""),
+        tourElegido:   elegidos.join(","),
         repartoHab:    Array.isArray(paqueteDetails?.reparto) ? paqueteDetails.reparto.join("+") : "",
         nocheExtra:    cobro.nocheExtra ? "sí — entra la víspera, check-in 3 PM" : "no",
         nochesHotel:   String(cobro.nochesTotales),

@@ -1,4 +1,5 @@
 import { Destino } from "./destinos";
+import { GOOGLE_RATING, GOOGLE_RESENAS } from "./resenas";
 import { RATING_DESTINO } from "./destinoData";
 import { CONTACTO } from "./contacto";
 import { localePath, type Locale } from "./i18n/config";
@@ -69,8 +70,10 @@ export function buildOrganizationNode(locale: Locale = "es", description?: strin
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "06:00", closes: "20:00" },
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday", "Sunday"], opens: "05:00", closes: "20:00" },
     ],
-    aggregateRating: { "@type": "AggregateRating", ratingValue: 4.9, reviewCount: 492, bestRating: 5, worstRating: 1 },
-    award: "Best Tour Operator North America — Arival 2023",
+    aggregateRating: { "@type": "AggregateRating", ratingValue: GOOGLE_RATING, reviewCount: GOOGLE_RESENAS, bestRating: 5, worstRating: 1 },
+    // 🔴 28 sep 2026 — se retiró `award`. Declaraba un premio con nombre,
+    // categoría, región y año sin ninguna fuente que lo respaldara en el sitio.
+    // Los datos estructurados son justo lo que se contrasta.
     sameAs: [CONTACTO.facebook, GOOGLE_REVIEWS_URL, CONTACTO.mapsUrl],
   };
 }
@@ -285,20 +288,12 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
         image: imagen ? `${BASE_URL}${imagen}` : undefined,
         // aggregateRating movido a Product — TouristAttraction no soportado por Google para rich snippets de reseñas
       },
-      // Product: único tipo soportado por Google para AggregateRating rich snippets
-      ...(RATING_DESTINO[d.slug] ? [{
-        "@type": "Product",
-        name: d.nombre,
-        description: d.descripcion,
-        image: imagen ? `${BASE_URL}${imagen}` : undefined,
-        aggregateRating: {
-          "@type":      "AggregateRating",
-          ratingValue:  RATING_DESTINO[d.slug].rating,
-          reviewCount:  RATING_DESTINO[d.slug].count,
-          bestRating:   5,
-          worstRating:  1,
-        },
-      }] : []),
+      // 🔴 28 sep 2026 — retirado el aggregateRating de destinos.
+      // `RATING_DESTINO` repartía 1,188 reseñas entre 20 destinos, con notas de
+      // 4.5 a 4.7, todas inventadas: el negocio tiene 161 reseñas en Google y
+      // un destino (un lugar público, no un producto que vendamos) no tiene
+      // reseñas propias que declarar. El rating real va una sola vez, en la
+      // organización. Ver `src/lib/resenas.ts`.
       {
         "@type": "FAQPage",
         inLanguage,

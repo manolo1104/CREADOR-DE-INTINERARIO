@@ -127,7 +127,7 @@ export function correos(): { n: number; nombre: string; subject: string; html: s
   // seguirá el boletín real. Comprobarlos: npx tsx src/scripts/verificar-enlaces-correos.ts
   const POSTS = [
     { slug: "hacer-guia-definitiva-para-visitar-xilitla-todo-lo-que-necesitas-saber", title: "Guía definitiva para visitar Xilitla: todo lo que necesitas saber antes de ir", excerpt: "Las Pozas, clima, cómo llegar, precios y lo que conviene saber antes de salir.", coverImageUrl: null },
-    { slug: "cascada-de-tamul-la-guia-definitiva-para-visitarla",                     title: "Cascada de Tamul: la guía definitiva para visitarla",                          excerpt: "Precios, horarios, cómo llegar y qué esperar en la cascada más alta de México.", coverImageUrl: null },
+    { slug: "cascada-de-tamul-la-guia-definitiva-para-visitarla",                     title: "Cascada de Tamul: la guía definitiva para visitarla",                          excerpt: "Precios, horarios, cómo llegar y qué esperar en la cascada más alta de San Luis Potosí.", coverImageUrl: null },
     { slug: "huasteca-potosina-con-ninos-la-ruta-familiar-perfecta-2026",             title: "Huasteca Potosina con niños: la ruta familiar perfecta",                      excerpt: "Qué recorridos aguantan de verdad, a partir de qué edad y cuánto cuesta.", coverImageUrl: null },
   ];
   ([3, 8, 12] as const).forEach((mes, i) => {

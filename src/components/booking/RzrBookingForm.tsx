@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveTourBookingState, formatMXN } from "@/lib/tourBooking";
-import { agregarAlCarrito } from "@/lib/carrito";
+import { agregarAlCarrito, pctACobrar } from "@/lib/carrito";
 import { itemDesdeTour } from "@/lib/carritoItems";
 import { computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
 import type { Tour } from "@/lib/tours";
@@ -24,8 +24,13 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
   const [rutaNombre,     setRutaNombre]     = useState(rutas[0]?.nombre ?? "");
   const [vehiculoNombre, setVehiculoNombre] = useState(flota[0]?.nombre ?? "");
   const [unidades,       setUnidades]       = useState(1);
-  // Cuánto se paga hoy: 30 % (aparta tu lugar) o 100 %.
-  const [pct,            setPct]            = useState(30);
+  // 🔴 28 sep 2026 — el RZR es una actividad de 2 a 5 HORAS, o sea de un solo
+  // día, y la regla del negocio es que un día se paga completo (el 30 % es para
+  // viajes de dos días o más, o con hotel). Este formulario arrancaba en 30 % y
+  // dejaba elegir, así que era la única puerta del sitio por la que un tour de
+  // un día se apartaba con anticipo. La regla vive en `pctACobrar` y se aplica
+  // igual en el carrito y en el servidor.
+  const pct = pctACobrar(1, false);
 
   const rutaIdx  = rutas.findIndex((r) => r.nombre === rutaNombre);
   const ruta     = rutas[rutaIdx];
@@ -196,7 +201,7 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
             <div className="mb-3"><ViewersCounter /></div>
             <div className="flex flex-wrap gap-3 text-xs font-dm text-negro/50">
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{ruta?.duracion_hrs ?? tour.duracion_hrs}h</span>
-              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-dorado" />4.9</span>
+              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-dorado" />4.7</span>
             </div>
           </div>
         </div>
@@ -216,30 +221,9 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
             </div>
           </div>
 
-          {/* Cuánto pagar hoy — el anticipo baja la barrera de entrada */}
+          {/* El selector de anticipo se retiró: con un solo día se paga
+              completo (ver `pctACobrar`). Se conserva el resumen de abajo. */}
           <div className="mt-5 border-t border-negro/6 pt-4">
-            <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Cuánto pagas hoy</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { valor: 30,  titulo: "Aparta tu lugar", sub: "30 % hoy" },
-                { valor: 100, titulo: "Pago completo",   sub: "Liquida todo" },
-              ].map((op) => (
-                <button
-                  key={op.valor}
-                  type="button"
-                  onClick={() => setPct(op.valor)}
-                  aria-pressed={pct === op.valor}
-                  className={`text-left px-3 py-2.5 border transition-colors ${
-                    pct === op.valor
-                      ? "border-verde-selva bg-verde-selva/8"
-                      : "border-negro/15 hover:border-negro/30"
-                  }`}
-                >
-                  <span className="block font-dm text-xs font-medium text-negro">{op.titulo}</span>
-                  <span className="block font-dm text-[11px] text-negro/50 mt-0.5">{op.sub}</span>
-                </button>
-              ))}
-            </div>
             <div className="mt-3 flex justify-between items-baseline">
               <span className="font-dm text-sm text-negro/70">Pagas ahora</span>
               <span key={chargeAmount} className="font-cormorant text-xl text-verde-profundo animate-price-bump">

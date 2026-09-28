@@ -77,8 +77,10 @@ async function run() {
   ok(Boolean(ccRzr.error), "crear_cotizacion bloquea el RZR (se confirma por WhatsApp)");
   const buceo = await executeTool("calcular_precio", { slug: "buceo-media-luna", adultos: 1, ninosMid: 1 });
   ok(Boolean(buceo.error), "buceo rechaza niños (solo +10 años)");
-  const raft = await executeTool("calcular_precio", { slug: "rafting-rio-tampaon", adultos: 2 });
-  ok(raft.total === 3900, "rafting 2 adultos = $3,900 ($1,950 c/u)");
+  const raftChico = await executeTool("calcular_precio", { slug: "rafting-rio-tampaon", adultos: 2 });
+  ok(Boolean(raftChico.error), "rafting rechaza 2 personas (el mínimo son 5)");
+  const raft = await executeTool("calcular_precio", { slug: "rafting-rio-tampaon", adultos: 5 });
+  ok(raft.total === 9750, "rafting 5 adultos = $9,750 ($1,950 c/u)");
 
   console.log("honestidad — hechos cerrados por tour:");
   const rappel = await executeTool("obtener_tour", { slug: "rappel-tamul" });
@@ -272,8 +274,126 @@ async function run() {
     soft(!n.includes("salitre") || admite, "no pasa la ficha del Salitre como si fuera la de las Quilas");
   });
 
+
+  // ── EMBUDO DE VENTA ─────────────────────────────────────────
+  console.log("\n══ embudo de venta ══");
+
+  const lineas = (t) => t.split("\n").filter((l) => l.trim()).length;
+  const pidePersonas = (t) => /cu[aá]nt[oa]s? (personas|van|ser[aá]n)|n[uú]mero de personas|para cu[aá]nt/i.test(t);
+  const pideFecha = (t) => /qu[eé] fecha|cu[aá]ndo|fechas? tienes|para cu[aá]ndo|qu[eé] d[ií]as?/i.test(t);
+
+  await scenario("Embudo: saludo suelto", "5210000091@c.us", ["hola"], (r) => {
+    soft(lineas(r) <= 6, `el saludo cabe en 6 líneas (fueron ${lineas(r)})`);
+    ok(pideFecha(r) && pidePersonas(r), "el saludo pide FECHA y PERSONAS de una vez");
+    soft(!/•/.test(r) || lineas(r) <= 6, "no le suelta el catálogo de entrada");
+  });
+
+  await scenario("Embudo: pregunta de precio directa", "5210000092@c.us", [
+    "cuanto cuesta el tour de tamul?",
+  ], (r) => {
+    ok(/1[,.]?550/.test(r), "da el precio por persona ($1,550), no lo esquiva");
+    ok(pideFecha(r) || pidePersonas(r), "y en el mismo mensaje pide fecha o personas");
+  });
+
+  await scenario("Embudo: de hola a propuesta con total", "5210000093@c.us", [
+    "hola",
+    `somos 4 adultos, para el ${fechaFutura(25)}`,
+    "queremos cascadas",
+  ], (r) => {
+    soft(lineas(r) <= 9, `la propuesta cabe en 9 líneas (fueron ${lineas(r)})`);
+    ok(/\$\s?[\d,]{4,}/.test(r), "da un TOTAL en pesos, no solo el precio por persona");
+    soft(/aparta|anticipo|30\s?%/i.test(r), "menciona con cuánto se aparta");
+    ok(/\?/.test(r), "termina preguntando algo (empuja el cierre)");
+  });
+
+  await scenario("Embudo: grupo por debajo del mínimo", "5210000094@c.us", [
+    `somos 2 personas y queremos hacer rafting el ${fechaFutura(30)}`,
+  ], (r) => {
+    ok(/m[ií]nimo|5 personas|no pod|necesit/i.test(r), "avisa que el grupo no llega al mínimo del rafting");
+    ok(!/\$\s?3[,.]?900/.test(r), "NO cotiza $3,900 para 2 personas (ese tour no sale)");
+  });
+
+  // ── OBJECIONES ──────────────────────────────────────────────
+  console.log("\n══ objeciones ══");
+
+  await scenario("Objeción: está caro", "5210000095@c.us", [
+    `hola, somos 2 para el ${fechaFutura(20)}, queremos la expedición tamul`,
+    "uf, está caro",
+  ], (r) => {
+    ok(/incluye|seguro|gu[ií]a|entrada|desayuno/i.test(r), "desglosa lo que sí va incluido");
+    soft(/30\s?%|aparta|anticipo/i.test(r), "recuerda que hoy solo pone el 30 %");
+    ok(!/descuento|rebaja|te lo dejo en/i.test(r), "NO inventa un descuento");
+  });
+
+  await scenario("Objeción: lo voy a pensar", "5210000096@c.us", [
+    `somos 3 para el ${fechaFutura(15)}, la ruta surrealista`,
+    "déjame lo pienso y te aviso",
+  ], (r) => {
+    ok(/48\s?h|48 horas|se llenan|temporada|fin de semana/i.test(r), "usa la vigencia de 48 h o la urgencia real");
+    ok(!/[uú]ltimo lugar|quedan \d+ lugares/i.test(r), "NO inventa escasez ('quedan X lugares')");
+    soft(/\?/.test(r), "vuelve a preguntar por el cierre");
+  });
+
+  await scenario("Objeción: es seguro?", "5210000097@c.us", [
+    "oigan y esto es seguro? me da miedo el agua",
+  ], (r) => {
+    ok(/NOM-?09|certificad|rescate|seguro de viaje/i.test(r), "menciona certificación o seguro");
+    soft(/12|grupos peque/i.test(r), "menciona los grupos pequeños");
+  });
+
+  await scenario("Objeción: pago todo el día del tour", "5210000098@c.us", [
+    `quiero la ruta acuática el ${fechaFutura(18)} para 4`,
+    "puedo pagar todo el mero día del tour?",
+  ], (r) => {
+    ok(/30\s?%|anticipo|aparta/i.test(r), "explica que se aparta con el 30 %");
+    ok(!/claro que s[ií].{0,40}el d[ií]a del tour/i.test(r), "NO dice que sí puede pagar todo el día del tour");
+  });
+
+  // ── REVISIÓN GLOBAL de todo lo que dijo el bot ──────────────
+  console.log("\n══ revisión global de todas las respuestas ══");
+
+  /** Saca el trozo de texto alrededor de lo que falló, para poder arreglarlo. */
+  const contexto = (texto, re) => {
+    const m = texto.match(re);
+    if (!m) return "";
+    const i = Math.max(0, m.index - 55);
+    return "…" + texto.slice(i, m.index + m[0].length + 55).replace(/\n/g, " ") + "…";
+  };
+  const detalle = (lista, re) => lista.map((r) => `\n       ${r.escenario}: ${contexto(r.texto, re)}`).join("");
+
+  // Es una empresa mexicana: el voseo suena a bot extranjero.
+  // OJO: "liquidas" SIN acento es el tú correcto — solo "liquidás" es voseo.
+  const VOSEO = /\b(vos|ten[eé]s|pod[eé]s|quer[eé]s|liquidás|sabés|fijate|contame|decime|vosotros|os invitamos)\b/i;
+  const conVoseo = todasLasRespuestas.filter((r) => VOSEO.test(r.texto));
+  ok(conVoseo.length === 0, `ninguna respuesta usa voseo${detalle(conVoseo, VOSEO)}`);
+
+  // Casi todos los tours son de 8–10 h. Decir "medio día" le arruina el día al cliente.
+  const cortos = new Set(["travesia-del-cafe", "rzr-xilitla"]); // los únicos que sí son cortos
+  const largos = TOURS.filter((t) => !cortos.has(t.slug)).map((t) => norm(t.nombre.split("—")[0].trim()));
+  const inventaDuracion = todasLasRespuestas.filter((r) => {
+    const n = norm(r.texto);
+    if (!/medio d[ií]a|unas horitas|par de horas|actividad corta/.test(n)) return false;
+    return largos.some((nom) => nom.length > 8 && n.includes(nom));
+  });
+  ok(inventaDuracion.length === 0, `no llama "medio día" a un tour de 8–10 h${detalle(inventaDuracion, /medio d[ií]a|unas horitas|par de horas|actividad corta/i)}`);
+
+  // Nunca "todo incluido", en ninguna respuesta de toda la corrida.
+  const TODO_INC = /todo incluido/i;
+  const todoIncluido = todasLasRespuestas.filter((r) => TODO_INC.test(r.texto) && !/no (es|son) "?todo incluido|ning[uú]n (tour|paquete) es/i.test(r.texto));
+  ok(todoIncluido.length === 0, `nunca dice "todo incluido"${detalle(todoIncluido, TODO_INC)}`);
+
+  // Markdown que WhatsApp no entiende, en cualquier respuesta.
+  const MD = /\*\*|^###|^---$/m;
+  const conMarkdown = todasLasRespuestas.filter((r) => MD.test(r.texto));
+  ok(conMarkdown.length === 0, `ninguna respuesta lleva markdown (** ### ---)${detalle(conMarkdown, MD)}`);
+
+  console.log(`  (revisadas ${todasLasRespuestas.length} respuestas)`);
+
   done();
 }
+
+// Todo lo que contestó el bot en la corrida, para revisarlo en bloque al final.
+const todasLasRespuestas = [];
 
 async function scenario(name, phone, turns, check) {
   console.log(`\n— ${name} —`);
@@ -281,12 +401,14 @@ async function scenario(name, phone, turns, check) {
   for (const t of turns) {
     console.log(`  👤 ${t}`);
     last = await processMessage(phone, t);
+    todasLasRespuestas.push({ escenario: name, texto: last });
     console.log(`  🤖 ${last.replace(/\n/g, " ").substring(0, 220)}`);
   }
   try { check(last); } catch (e) { fail++; console.log(`  ❌ check lanzó error: ${e.message}`); }
 }
 
 function done() {
+
   console.log(`\n════════════════════════════════════\nRESULTADO: ${pass} ✅ · ${warn} ⚠️ · ${fail} ❌\n════════════════════════════════════\n`);
   process.exit(fail > 0 ? 1 : 0);
 }

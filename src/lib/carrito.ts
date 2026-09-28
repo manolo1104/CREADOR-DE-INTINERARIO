@@ -178,6 +178,14 @@ export function descuentoPorPosicion(_i: number): number {
   //   if (i <= 0) return 0;
   //   if (i === 1) return 10;
   //   return 15;
+  //
+  // 🔴 AL ENCENDERLO: hay que dejar fuera los recorridos de tarifa por grupo
+  // (`tarifaGrupo` en tours.ts). El servidor ya los excluye en
+  // `tarifarRecorridos`; aquí no se puede filtrar igual porque este módulo NO
+  // importa el catálogo a propósito, así que la exclusión tendría que viajar
+  // en el propio `CarritoItem`. Si no, el carrito pinta un total y el pago
+  // cobra otro — y el Edén en el Jardín, cuyo costo es una tarifa fija que nos
+  // cobra la Fundación Las Pozas, se vendería por debajo de lo que cuesta.
   return 0;
 }
 

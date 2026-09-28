@@ -78,6 +78,7 @@ export function RescatePopup({
           href={mensaje}
           target="_blank"
           rel="noopener noreferrer"
+          data-wa-manual="1"
           onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "rescate_carrito" })}
           className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
         >

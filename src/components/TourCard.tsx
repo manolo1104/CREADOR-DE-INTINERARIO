@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { resenasTexto } from "@/lib/resenas";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { tourDurTexto, type Tour } from "@/lib/tours";
+import { tourCollage, tourDurTexto, etiquetaUnidad, type Tour } from "@/lib/tours";
+import { TourCollage } from "@/components/TourCollage";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users } from "lucide-react";
 import { trackWhatsapp } from "@/lib/analytics";
@@ -28,6 +30,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
   const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   const dif = dificultadConfig[t.dificultad];
   const imageHeight = variant === "compact" ? "h-52 md:h-56" : "h-56 md:h-64";
+  const panels = tourCollage(t);
 
   // Tilt 3D sin framer-motion: variables CSS (--rx/--ry) + transición para el "settle".
   const cardRef = useRef<HTMLElement>(null);
@@ -58,11 +61,30 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
     el.style.setProperty("--ry", "0deg");
   };
 
+  /** El nombre del tour. Va sobre la foto, o dentro de la tarjeta si hay logotipo. */
+  const Titulo = ({ enCuerpo = false }: { enCuerpo?: boolean }) => (
+    <div className={enCuerpo ? "" : "absolute bottom-0 left-0 right-0 px-4 pb-3 z-10"}>
+      <h3 className="font-cormorant text-crema text-lg font-normal leading-tight uppercase tracking-wide">
+        {t.nombre}
+      </h3>
+      <p className="text-crema/50 text-[10px] font-dm tracking-[1px] mt-0.5">
+        {t.tagline}
+      </p>
+      {/* Sin reseñas no se enseña calificación: un tour nuevo mostraría
+          "4.7 · (0 reseñas reales)", que se contradice a sí mismo. */}
+      {t.reviewCount > 0 && (
+        <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
+          <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> {resenasTexto(en)}
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ perspective: "1000px" }} className="h-full">
     <article
       ref={cardRef}
-      className="group relative flex flex-col h-full rounded-xl overflow-hidden border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300 tour-card-shimmer"
+      className="group relative flex flex-col h-full rounded-xl border border-white/10 bg-negro hover:border-verde-vivo/50 transition-colors duration-300 tour-card-shimmer"
       style={{
         transform: "rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))",
         transition: "transform 0.3s cubic-bezier(0.23,1,0.32,1), border-color 0.3s",
@@ -81,15 +103,13 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
       />
 
       {/* ── IMAGEN ── */}
-      <div className={`relative ${imageHeight} overflow-hidden flex-shrink-0`}>
-        {t.imagen_hero ? (
-          <Image
-            src={t.imagen_hero}
-            alt={t.nombre}
-            fill
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-          />
+      <div className={`relative ${imageHeight} overflow-hidden rounded-t-xl flex-shrink-0`}>
+        {/* El mismo collage que en /tours: una foto por parada, en vez de una
+            sola imagen que enseñaba tres veces el mismo sitio. Las fotos y su
+            orden salen de `collage` en tours.ts, así que las dos páginas
+            enseñan siempre lo mismo. */}
+        {panels.length ? (
+          <TourCollage panels={panels} nombre={t.nombre} />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-verde-selva/40 via-verde-profundo to-negro" />
         )}
@@ -114,26 +134,38 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           </span>
         </div>
 
-        {/* Nombre + tagline sobre imagen */}
-        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 z-10">
-          <h3 className="font-cormorant text-crema text-lg font-normal leading-tight uppercase tracking-wide">
-            {t.nombre}
-          </h3>
-          <p className="text-crema/50 text-[10px] font-dm tracking-[1px] mt-0.5">
-            {t.tagline}
-          </p>
-          {/* Sin reseñas no se enseña calificación: un tour nuevo mostraría
-              "4.9 · (0 reseñas reales)", que se contradice a sí mismo. */}
-          {t.reviewCount > 0 && (
-            <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
-              <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> 4.9 · ({t.reviewCount} {en ? "real reviews" : "reseñas reales"})
-            </p>
-          )}
-        </div>
+        {/* Nombre + tagline sobre la imagen — SOLO si el tour no tiene
+            logotipo. Con logotipo se van al cuerpo de la tarjeta: encima de la
+            foto, el título quedaba pegado al logo y sobre agua turquesa no se
+            leía. */}
+        {!t.logo && <Titulo />}
       </div>
 
+      {/* Logotipo a caballo del borde de arriba, igual que en /tours. Por eso
+          el <article> no recorta: el recorte vive en la foto y en el cuerpo,
+          que son los que llevan las esquinas redondeadas.
+          Asoma más arriba que en /tours (88 % fuera, no la mitad) porque aquí
+          las dos esquinas de arriba llevan etiqueta —tipo y dificultad— y con
+          la mitad dentro el logotipo se les montaba encima. */}
+      {t.logo && (
+        <Image
+          src={t.logo}
+          alt=""
+          aria-hidden="true"
+          width={620}
+          height={250}
+          className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[88%] z-30 w-[44%] max-w-none h-auto drop-shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out group-hover:scale-[1.06]"
+        />
+      )}
+
       {/* ── INFO ── */}
-      <div className="flex flex-col flex-1 p-4 bg-negro/80">
+      <div className="flex flex-col flex-1 p-4 bg-negro/80 rounded-b-xl">
+
+        {t.logo && (
+          <div className="mb-3 pb-3 border-b border-white/8">
+            <Titulo enCuerpo />
+          </div>
+        )}
 
         {/* Destinos incluidos */}
         <div className="mb-3">
@@ -171,19 +203,21 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
           </p>
           <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
             {money(t.precio)}
-            <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN / {en ? "person" : "persona"}</span>
+            <span className="font-dm text-[10px] text-crema/40 ml-1 font-normal">MXN {etiquetaUnidad(t, en)}</span>
           </p>
         </div>
 
         {/* Guía asignado */}
         {(() => {
-          const guiaMap: Record<string, { foto: string; nombre: string; rating: string }> = {
-            "tour-tamul":      { foto: "/guides/guia-2.png", nombre: "Miguel Ángel", rating: "5.0" },
-            "tour-puente-dios":{ foto: "/guides/guia-2.png", nombre: "Miguel Ángel", rating: "5.0" },
-            "tour-meco":       { foto: "/guides/guia-3.png", nombre: "José Laredo",  rating: "4.9" },
-            "tour-minas-micos":{ foto: "/guides/guia-3.png", nombre: "José Laredo",  rating: "4.9" },
+          // Sin nota por guía: nadie tiene un perfil de Google propio que la
+          // respalde (ver `src/lib/resenas.ts`). Queda la certificación, que sí.
+          const guiaMap: Record<string, { foto: string; nombre: string }> = {
+            "tour-tamul":      { foto: "/guides/guia-2.png", nombre: "Miguel Ángel" },
+            "tour-puente-dios":{ foto: "/guides/guia-2.png", nombre: "Miguel Ángel" },
+            "tour-meco":       { foto: "/guides/guia-3.png", nombre: "José Laredo" },
+            "tour-minas-micos":{ foto: "/guides/guia-3.png", nombre: "José Laredo" },
           };
-          const g = guiaMap[t.id] ?? { foto: "/guides/guia-1.png", nombre: "Carlos Rodríguez", rating: "4.9" };
+          const g = guiaMap[t.id] ?? { foto: "/guides/guia-1.png", nombre: "Carlos Rodríguez" };
           return (
             <div className="flex items-center gap-2.5 border-t border-white/8 pt-3 mb-3">
               <div className="relative z-10 w-8 h-8 rounded-full overflow-hidden border border-dorado/50 flex-shrink-0">
@@ -191,7 +225,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-dm text-crema/60">{en ? "Your guide:" : "Tu guía:"} <span className="text-crema/85 font-medium">{g.nombre}</span></p>
-                <p className="text-[9px] text-dorado/70 font-dm">★ {g.rating} {en ? "certified" : "certificado"}</p>
+                <p className="text-[9px] text-dorado/70 font-dm">{en ? "NOM-09 SECTUR certified" : "Certificado NOM-09 SECTUR"}</p>
               </div>
             </div>
           );
@@ -203,6 +237,7 @@ export function TourCard({ tour: t, variant = "default" }: Props) {
             {en ? "View full tour →" : "Ver tour completo →"}
           </span>
           <a
+            data-wa-manual="1"
             href={waLink(en
               ? `Hi, I'm interested in the "${t.nombre}" tour. Could you share availability and prices?`
               : WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}

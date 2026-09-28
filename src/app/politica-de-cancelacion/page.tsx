@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE}/politica-de-cancelacion` },
   openGraph: {
     title: "Política de cancelación y clima — Tours Huasteca Potosina",
-    description: "Cancelación gratuita hasta 48 h antes. Si llueve, reprogramamos sin costo.",
+    description: "Cancelación gratuita hasta 48 h antes. Operamos con lluvia ligera; si el río no es seguro, eliges entre reembolso del 100 % o cambiar la fecha.",
     url: `${SITE}/politica-de-cancelacion`,
     type: "website",
   },

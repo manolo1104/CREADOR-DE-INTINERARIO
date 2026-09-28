@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { hoyMX, addDaysYMD, partsMX, mxMonthStart } from "@/lib/dates";
 import { montoCobrado, saldoPendiente } from "@/lib/admin/kpis";
+import { sesionActual } from "@/lib/admin/sesion";
+import { puedeVer } from "@/lib/admin/usuarios";
 import DashboardClient from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
+  const sesion     = await sesionActual();
+  const verDinero  = puedeVer(sesion?.rol ?? "operacion", "ingresos");
   const todayStr   = hoyMX();
   const nextWeek   = addDaysYMD(todayStr, 7);
   const { year, month } = partsMX(new Date());
@@ -49,6 +53,7 @@ export default async function AdminDashboard() {
       pendingQuotes={pendingQuotes}
       monthIngresos={monthIngresos}
       monthReservas={monthBookings.length}
+      verDinero={verDinero}
       pendingAmount={pendingAmount}
       activeQuotes={activeQuotesCount}
     />

@@ -123,12 +123,12 @@ export default function GuiaPage() {
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-center">
           <span className="flex items-center gap-2">
             <span className="text-dorado text-sm tracking-tight">★★★★★</span>
-            <span className="text-[11px] text-crema/65 font-dm">4.9 · 492 reseñas Google</span>
+            <span className="text-[11px] text-crema/65 font-dm">4.7 · 161 reseñas Google</span>
           </span>
           <span className="text-crema/15 hidden sm:inline">·</span>
           <span className="text-[11px] text-crema/55 font-dm">+10,000 viajeros guiados</span>
           <span className="text-crema/15 hidden sm:inline">·</span>
-          <span className="text-[11px] text-crema/55 font-dm">Premio Arival 2023</span>
+          <span className="text-[11px] text-crema/55 font-dm">Guías NOM-09 SECTUR</span>
           <span className="text-crema/15 hidden sm:inline">·</span>
           <span className="text-[11px] text-crema/55 font-dm">Guías NOM-09 SECTUR</span>
           <span className="text-crema/15 hidden sm:inline">·</span>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { calcTourTotal } from "@/lib/tourBooking";
+import { precioGrupo } from "@/lib/tours";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackBeginCheckout, trackDateSelected, trackParticipants } from "@/lib/analytics";
@@ -41,6 +42,7 @@ export function ReservaFichaTour({
   soloMayores,
   nombre,
   tourId,
+  tarifaGrupo,
 }: {
   slug: string;
   precio: number;
@@ -50,19 +52,32 @@ export function ReservaFichaTour({
   soloMayores: boolean;
   nombre: string;
   tourId: string;
+  /**
+   * Escalones de tarifa por GRUPO (ver `tours.ts`). Si viene, el módulo cobra
+   * una sola cifra por todos: un contador de personas en vez de tres tramos de
+   * edad, porque el proveedor cobra la experiencia completa y un niño no paga
+   * el 70 % de nada.
+   */
+  tarifaGrupo?: number[];
 }) {
   const { locale, lp } = useLocale();
   const t = getBooking(locale).carrito;
   const tf = getBooking(locale).ficha;
 
-  const minAdultos = Math.max(2, groupMin || 1);
+  const porGrupo = !!tarifaGrupo?.length;
+  // Con tarifa de grupo se respeta el mínimo real del recorrido —el Edén sale
+  // con UNA persona—. En los demás el piso sigue siendo dos: es el mínimo con
+  // el que la operadora saca una unidad.
+  const minAdultos = porGrupo ? Math.max(1, groupMin || 1) : Math.max(2, groupMin || 1);
   const [fecha, setFecha]           = useState("");
   const [adultos, setAdultos]       = useState(minAdultos);
   const [ninosMid, setNinosMid]     = useState(0);
   const [ninosSmall, setNinosSmall] = useState(0);
 
   const personas = adultos + ninosMid + ninosSmall;
-  const { total } = calcTourTotal(precio, adultos, ninosMid, ninosSmall, 0);
+  const total = porGrupo
+    ? (precioGrupo({ tarifaGrupo }, personas) ?? 0)
+    : calcTourTotal(precio, adultos, ninosMid, ninosSmall, 0).total;
 
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
 
@@ -127,23 +142,36 @@ export function ReservaFichaTour({
 
       <div className="space-y-2.5 border-t border-white/8 pt-4">
         <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">{tf.cuantosVan}</p>
-        <Contador etiqueta={t.adultos} valor={adultos} set={(n) => { setAdultos(n); trackParticipants(nombre, n, ninosMid + ninosSmall); }} min={minAdultos} />
-        {!soloMayores && (
+        <Contador etiqueta={porGrupo ? tf.personas : t.adultos} valor={adultos} set={(n) => { setAdultos(n); trackParticipants(nombre, n, ninosMid + ninosSmall); }} min={minAdultos} />
+        {!porGrupo && !soloMayores && (
           <>
             <Contador etiqueta={t.de6a10}     valor={ninosMid}   set={setNinosMid}   min={0} />
             <Contador etiqueta={t.menoresDe6} valor={ninosSmall} set={setNinosSmall} min={0} />
           </>
         )}
         {personas >= groupMax && (
-          <p className="font-dm text-[10px] text-dorado/80 leading-snug">{tf.grupoLleno(groupMax)}</p>
+          <p className="font-dm text-[10px] text-dorado/80 leading-snug">
+            {porGrupo ? tf.grupoTope(groupMax) : tf.grupoLleno(groupMax)}
+          </p>
         )}
       </div>
 
       <div className="border-t border-white/8 pt-4">
+        {/* La tarifa es del grupo entero. Sin esta línea, "$3,320" junto a un
+            contador de personas se lee como "cada uno" y el cliente cree que
+            son tres veces más caro de lo que es. */}
+        {porGrupo && (
+          <p className="font-dm text-[10px] text-crema/40 mb-1.5">{tf.tarifaDelGrupo(groupMax)}</p>
+        )}
         <p className="flex items-baseline justify-between">
           <span className="font-dm text-[12px] text-crema/55">{tf.total}</span>
           <span className="font-cormorant text-dorado text-2xl leading-none">{dinero(total)} MXN</span>
         </p>
+        {/* El argumento de venta de una tarifa plana: entre más van, menos les
+            toca. Con una sola persona no hay nada que dividir. */}
+        {porGrupo && personas > 1 && total > 0 && (
+          <p className="font-dm text-[11px] text-verde-vivo/80 mt-1">{tf.porCabeza(dinero(Math.round(total / personas)))}</p>
+        )}
         <Link
           href={href}
           onClick={() => {

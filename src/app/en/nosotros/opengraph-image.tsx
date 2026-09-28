@@ -17,8 +17,8 @@ export default function Image() {
     subtitulo: "NOM-09 certified",
     cifras: [
       // "★" se rasteriza como una caja vacía en `next/og`: se escribe la cifra.
-      ["4.9/5", "Google"],
-      ["492", "Reviews"],
+      ["4.7/5", "Google"],
+      ["161", "Reviews"],
       ["6+", "Years"],
       ["0", "Incidents"],
     ],

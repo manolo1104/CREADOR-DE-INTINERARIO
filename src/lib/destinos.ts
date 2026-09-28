@@ -595,7 +595,7 @@ export const DESTINOS_DB: Destino[] = [
     zona: "Aquismón",
     tipo: "Extrema",
     icon: "MountainSnow",
-    descripcion: "Abismo de 478 m donde miles de loros y vencejos dibujan espirales al amanecer y atardecer.",
+    descripcion: "Abismo de 478 m donde miles de aves —loros y vencejos— dibujan espirales al amanecer y atardecer.",
     duracion_hrs: 3,
     precio_entrada: "$60 MXN",
     dificultad: "media",
@@ -622,11 +622,11 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Sótano de las Huahuas 2026 | Espectáculo de Aves",
-      metaDescription: "Sótano de las Huahuas en Aquismón: 478 m de profundidad y miles de loros en espiral al atardecer. Guía 2026 con horarios, caminata y diferencias con las Golondrinas.",
-      keywords: ["sótano de las huahuas aquismón", "abismo loros huasteca potosina", "senderismo aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
+      metaDescription: "Sótano de las Huahuas en Aquismón: 478 m de profundidad y miles de aves en espiral al atardecer. Guía 2026 con horarios, caminata y diferencias con las Golondrinas.",
+      keywords: ["sótano de las huahuas aquismón", "abismo de aves huasteca potosina", "senderismo aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
       faqPrincipales: [
-        { pregunta: "¿A qué hora salen las aves del Sótano de las Huahuas?", respuesta: "Los loros salen al amanecer (6:00–7:00 AM) y regresan al atardecer (18:00–19:00 PM). El atardecer suele ser más espectacular por la luz." },
-        { pregunta: "¿En qué se diferencia el Sótano de las Huahuas del Sótano de las Golondrinas?", respuesta: "Las Golondrinas (376 m de caída libre) tiene vencejos y el vuelo icónico es al amanecer. Las Huahuas (478 m) alberga loros verdes y el mejor espectáculo es al atardecer. Son experiencias distintas." },
+        { pregunta: "¿A qué hora salen las aves del Sótano de las Huahuas?", respuesta: "Las aves salen al amanecer (6:00–7:00 AM) y regresan al atardecer (18:00–19:00 PM). El atardecer suele ser más espectacular por la luz." },
+        { pregunta: "¿En qué se diferencia el Sótano de las Huahuas del Sótano de las Golondrinas?", respuesta: "Las Golondrinas (376 m de caída libre) tiene vencejos y el vuelo icónico es al amanecer. Las Huahuas (478 m) alberga miles de aves —loros verdes y vencejos— y el mejor espectáculo es al atardecer. Son experiencias distintas." },
         { pregunta: "¿Es difícil la caminata al Sótano de las Huahuas?", respuesta: "La caminata de subida es de 30–40 minutos de intensidad media. Requiere calzado de montaña. No es apta para personas con problemas serios de movilidad." },
       ],
     },
@@ -1318,7 +1318,12 @@ export const DESTINOS_DB: Destino[] = [
   {
     id: "olla-de-la-luz", slug: "olla-de-la-luz",
     nombre: "Olla de la Luz — Cerro de la Luz", zona: "Xilitla", tipo: "Naturaleza & Sótano", icon: "Aperture",
-    descripcion: "Enorme sótano de unos 800 m de diámetro con un tiro vertical de más de 120 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
+    // ⚠️ Las medidas son las que da el operador (28 sep 2026), que es quien
+    // lleva grupos ahí. La página del ayuntamiento de Xilitla publica otras
+    // (~800 m de diámetro y +120 m de caída) y es lo que decía este archivo
+    // hasta hoy. Si alguna vez hay un levantamiento topográfico, se cambia aquí
+    // y en las otras 8 líneas que las repiten (ES, EN y destinoData.ts).
+    descripcion: "Enorme sótano de 233 m de diámetro con un tiro vertical de 193 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
     duracion_hrs: 5, precio_entrada: "Recorrido guiado desde La Trinidad (~$150–$250 MXN por grupo)", dificultad: "media",
     ideal_para: ["naturaleza", "senderismo", "aventura", "fotografia"],
     horario: "Recorridos durante el día (con guía de La Trinidad)", dias_abierto: "Todo el año (reservar por anticipado)",
@@ -1326,16 +1331,16 @@ export const DESTINOS_DB: Destino[] = [
     advertencias: "Es indispensable ir con guía local de La Trinidad — no se puede llegar por cuenta propia. Requiere caminata por el bosque de niebla en altura (1,950–2,300 m). Es un abismo profundo: no te acerques al borde sin guía.",
     como_llegar: "A unos 5 km de La Trinidad (que está a ~14 km de Xilitla), subiendo hacia el Cerro de la Luz; el acceso final es a pie con guía de la comunidad",
     que_llevar: ["calzado de senderismo", "abrigo o impermeable", "agua y snacks", "cámara", "efectivo"],
-    datos_curiosos: ["El Cerro de la Luz que lo corona es el punto más alto del municipio de Xilitla, con elevaciones de hasta ~2,300 m.", "El sótano mide cerca de 800 m de diámetro y su tiro vertical supera los 120 m."],
+    datos_curiosos: ["El Cerro de la Luz que lo corona es el punto más alto del municipio de Xilitla, con elevaciones de hasta ~2,300 m.", "El sótano mide 233 m de diámetro y su tiro vertical cae 193 m."],
     errores_comunes: ["Intentar llegar sin guía local", "No considerar la altitud y el frío del bosque de niebla"],
     lat: 21.42, lng: -99.055,
     imagen_hero: "/imagenes/olla-de-la-luz/hero.jpg", imagen_galeria: ["/imagenes/olla-de-la-luz/gallery-1.jpg", "/imagenes/olla-de-la-luz/gallery-2.jpg", "/imagenes/olla-de-la-luz/gallery-3.jpg", "/imagenes/olla-de-la-luz/gallery-4.jpg"],
     seo: {
       metaTitle: "Olla de la Luz Xilitla | Sótano del Cerro de la Luz",
-      metaDescription: "La Olla de la Luz: un sótano de ~800 m de diámetro y más de 120 m de profundidad coronado por el Cerro de la Luz, el punto más alto de Xilitla. Recorrido desde La Trinidad.",
+      metaDescription: "La Olla de la Luz: un sótano de 233 m de diámetro y 193 m de profundidad coronado por el Cerro de la Luz, el punto más alto de Xilitla. Recorrido desde La Trinidad.",
       keywords: ["olla de la luz xilitla", "hoya de la luz", "cerro de la luz xilitla", "sotano xilitla", "bosque de niebla la trinidad"],
       faqPrincipales: [
-        { pregunta: "¿Qué es la Olla de la Luz?", respuesta: "Es un gran sótano (dolina) de aproximadamente 800 metros de diámetro con un tiro vertical de más de 120 metros de profundidad, ubicado en lo alto del bosque de niebla de Xilitla y coronado por el Cerro de la Luz." },
+        { pregunta: "¿Qué es la Olla de la Luz?", respuesta: "Es un gran sótano (dolina) de 233 metros de diámetro con un tiro vertical de 193 metros de profundidad, ubicado en lo alto del bosque de niebla de Xilitla y coronado por el Cerro de la Luz." },
         { pregunta: "¿Cómo se llega a la Olla de la Luz?", respuesta: "Solo con guía local de La Trinidad: la visita es obligatoriamente guiada, no se puede llegar por cuenta propia. Se accede a pie, a unos 5 km de La Trinidad, subiendo hacia el Cerro de la Luz. La Trinidad está a unos 14 km de Xilitla." },
         { pregunta: "¿Qué tan alto está?", respuesta: "El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar, por lo que el clima es fresco y húmedo; conviene llevar abrigo y calzado de senderismo." },
       ],

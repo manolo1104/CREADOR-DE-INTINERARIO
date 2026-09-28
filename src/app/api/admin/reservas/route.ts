@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cerrarCarritosDe, toursDeReserva } from "@/lib/cerrarCarrito";
 import { origenValido } from "@/lib/origenReserva";
+import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export async function POST(req: NextRequest) {
         packageItems:          body.packageItems ?? undefined,
         extraItems:            body.extraItems   ?? undefined,
         status:                body.status || "paid",
+        guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
+        idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
         // Una reserva capturada a mano casi nunca entró por la web: por eso el
         // formulario la marca y aquí solo se normaliza.
         origen:                origenValido(body.origen),
@@ -60,6 +63,13 @@ export async function POST(req: NextRequest) {
     if (cerrados) {
       console.log(`🛟  admin/reservas: ${cerrados} carrito(s) cerrados para ${booking.customerEmail}`);
     }
+
+    await registrarEnBitacora({
+      accion:     "creó",
+      entidad:    "reserva",
+      referencia: booking.confirmationNumber,
+      resumen:    `Reserva ${booking.confirmationNumber} — ${booking.customerName}, ${booking.tourName || "sin tour"} el ${booking.tourDate || "sin fecha"}, ${pesos(booking.totalAmount)}`,
+    });
 
     return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }

@@ -90,7 +90,7 @@ export function Calculadora() {
   }, [r.dinero]);
 
   const compartir =
-    "https://wa.me/524891251458?text=" +
+    "https://wa.me/524891090388?text=" +
     encodeURIComponent(
       `Hola Manolo, saqué mi número en tu calculadora: se me van ${pesos(r.dinero)} al mes por contestar tarde.`
     );

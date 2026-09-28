@@ -19,7 +19,7 @@ NOTA: Actividad de día en el río (~7 h). Incluye TRASLADO REDONDO desde tu hos
 
   "tour-rappel-tamul": `
 Momentos que vas a vivir:
-- Llegas al embarcadero del río y, tras el briefing de técnica, te asomas al borde de la pared del cañón del Tampaón. A tu lado, 105 metros de agua se desploman: es la Cascada de Tamul, la caída más alta de México, rugiendo mientras te preparas para descender.
+- Llegas al embarcadero del río y, tras el briefing de técnica, te asomas al borde de la pared del cañón del Tampaón. A tu lado, 105 metros de agua se desploman: es la Cascada de Tamul, la más alta de San Luis Potosí, rugiendo mientras te preparas para descender.
 - El primer paso al vacío es puro vértigo controlado. Los guías de alta montaña te aseguran con equipo profesional y vas bajando poco a poco por la pared tapizada de vegetación, con el río turquesa esperándote abajo y el rocío de la cascada mojándote la cara.
 - A media pared te detienes colgado del arnés y miras alrededor: el cañón abierto, los pájaros cruzando frente a la cortina de agua, el verde de la selva en todas direcciones. Es el tipo de imagen que normalmente solo se ve desde un dron — y aquí estás tú, dentro de ella.
 - Mientras desciendes, un dron te sigue y registra todo en foto y video. Terminas tocando el agua con la adrenalina al máximo y la prueba grabada de que sí lo hiciste. Apto incluso para quienes nunca han hecho rappel.
@@ -28,8 +28,8 @@ NOTA: Es una actividad enfocada (3–5 h), no un tour de día completo. El equip
   "tour-tamul": `
 Momentos que vas a vivir:
 - Subes a una canoa de madera con remos y navegas por el Cañón del Tampaón: paredes de roca caliza de 80 metros a cada lado, silencio absoluto roto solo por el agua. Los guías a veces provocan "guerras de agua" entre lanchas — y nadie sale seco.
-- En el trayecto te asomas al borde del Sótano de las Huahuas: un agujero en la tierra de 512 metros de profundidad que corta la respiración solo de mirarlo hacia abajo.
-- Al fondo del cañón aparece la Cascada de Tamul: 105 metros de caída libre sobre el río, la más alta de México. Te puedes meter al agua hasta los pies y sentir la vibración del agua en el pecho.
+- En el trayecto te asomas al borde del Sótano de las Huahuas: un agujero en la tierra de 478 metros de profundidad que corta la respiración solo de mirarlo hacia abajo.
+- Al fondo del cañón aparece la Cascada de Tamul: 105 metros de caída libre sobre el río, la más alta de San Luis Potosí. Te puedes meter al agua hasta los pies y sentir la vibración del agua en el pecho.
 - En la Cueva del Agua, el agua turquesa brilla con luz propia. Los más atrevidos se lanzan desde las piedras al agua — 3 metros de caída libre que se sienten como 10.`,
 
   "tour-edward-james": `
@@ -67,4 +67,12 @@ Momentos que vas a vivir:
 - Cuando el instructor te ve listo, desciendes poco a poco entre 5 y 10 metros por debajo de la superficie, siempre acompañado.
 - Sales del agua con la adrenalina tranquila de haber cumplido algo que parecía imposible, y con las fotografías digitales de tu inmersión como recuerdo.
 NOTA: Es un programa 'Descubre el Buceo' (Discover Scuba Diving) de 4 horas de capacitación para descubrir el buceo desde cero, en la Laguna de la Media Luna (Rioverde, SLP) — NO en la zona de Xilitla/Ciudad Valles. Punto de encuentro en el acceso a la laguna; llegas por tu cuenta (~2 h desde Cd. Valles). Incluye instructor PADI, equipo de buceo y fotos digitales; NO incluye transporte ni la entrada al parque (se paga aparte). Actividad para mayores de 10 años con buena salud; no apta para embarazadas ni personas con problemas respiratorios, cardiovasculares o afecciones de oído. Se cobra POR PERSONA ($1,200 MXN).`,
+
+  "tour-eden-jardin": `
+Momentos que vas a vivir:
+- Pasamos por ti a tu hospedaje en Xilitla cuando todavía no amanece del todo y llegas a Las Pozas con el jardín cerrado al público. Cruzas la entrada y no hay nadie: ni filas, ni voces, ni gente esperando turno para la foto. Solo la neblina subiendo del río y los pájaros.
+- Un guía del propio jardín camina contigo a tu ritmo, sin prisa y sin grupo que alcanzar. Te lleva por la ruta de senderismo y por recintos que no forman parte de la visita general, explicándote las esculturas de Edward James de cerca.
+- Subes a los niveles superiores del Palacio de Bambú, cerrados en la visita normal. Desde arriba el jardín deja de verse por abajo y lo entiendes de golpe: la selva entera con la arquitectura surrealista creciendo dentro.
+- Llegas a la Casa Estudio, la cabaña donde Edward James se quedaba a descansar. En la pared todavía se conserva un poema escrito de su puño y letra. Nadie lo ha retirado ni lo ha puesto detrás de un cristal — y casi ningún visitante llega hasta ahí.
+NOTA: Experiencia PRIVADA de ~3 h dentro del Jardín Escultórico Edward James (Las Pozas, Xilitla). De 1 a 7 personas máximo. El precio es POR EL GRUPO COMPLETO, no por persona: desde $2,990 MXN una persona hasta $4,160 MXN siete. Incluye traslado redondo desde el hospedaje EN XILITLA (solo Xilitla, no Ciudad Valles), entrada al jardín, ruta de senderismo, guía propio en español o inglés y acceso una hora antes de la apertura. Empieza a las 8:00 a. m. (lunes, miércoles, jueves, viernes), 7:00 a. m. (sábado y domingo) o 5:00 p. m. (miércoles a lunes). NO se permiten actividades acuáticas, mascotas, drones ni tripiés, y es obligatorio calzado cerrado. La fecha se aparta pagando el 100 %: NO hay reembolsos, solo cambio de fecha avisando 5 días antes.`,
 };

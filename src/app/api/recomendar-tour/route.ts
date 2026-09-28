@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
     (t) =>
       `ID: ${t.id}
   Nombre: ${t.nombre}
-  Tipo: ${t.tipo} | Dificultad: ${t.dificultad} | Duración: ${t.duracion_hrs}h | Precio: $${t.precio} MXN ${t.precioUnidad === "vehiculo" ? "POR VEHÍCULO (desde; según ruta y unidad)" : "por persona"}
+  Tipo: ${t.tipo} | Dificultad: ${t.dificultad} | Duración: ${t.duracion_hrs}h | Precio: $${t.precio} MXN ${t.precioUnidad === "vehiculo" ? "POR VEHÍCULO (desde; según ruta y unidad)" : t.tarifaGrupo?.length ? `POR EL GRUPO COMPLETO, no por persona (desde ${t.precio} y hasta ${t.tarifaGrupo[t.tarifaGrupo.length - 1]} MXN según cuántos van, máximo ${t.groupMax})` : "por persona"}
   Destinos: ${t.destinos.join(", ")}
   Incluye: ${t.incluye.join("; ")}
   ${TOUR_ACTIVITIES[t.id] ?? ""}`

@@ -8,6 +8,7 @@ import { actividad, mxn } from "@/lib/logger";
 import { getEmails, emailLocale } from "@/lib/i18n/emails";
 import { buildPaqueteConfirmEmailHtml, fechaLarga } from "@/lib/paqueteEmail";
 import { TOURS_DB } from "@/lib/tours";
+import { parseEleccion } from "@/lib/paquetePricing";
 import fs from "fs";
 import path from "path";
 
@@ -106,25 +107,44 @@ export async function POST(req: NextRequest) {
     // Los renglones van SIN `subtotal` a propósito: el precio del paquete es un
     // paquete, no la suma de sus partes, y poner cifras inventadas dispararía el
     // aviso de "las líneas no cuadran con el total" en la ficha del admin.
-    const eleccionNombre = paquete.eleccionTour?.opciones
-      .find((o) => o.slug === tourElegido)?.nombre || "";
-    const lineItems = paquete.itinerario
-      .filter((d) => d.tourSlug)
-      .map((d) => {
-        // El día "a elegir" se graba con el tour que ELIGIÓ el cliente, no con
-        // el que trae el catálogo por defecto.
-        const esDiaElegible = paquete.eleccionTour?.dia === d.dia && !!tourElegido;
-        const slugReal = esDiaElegible ? tourElegido : d.tourSlug!;
-        const tour = TOURS_DB.find((t) => t.slug === slugReal);
-        return {
-          tourSlug:      slugReal,
-          tourName:      tour?.nombre || d.titulo,
-          tourDate:      sumarDias(fechaInicio, d.dia - 1),
-          adults:        adultos,
-          childrenMid:   nMid,
-          childrenSmall: nSmall,
-        };
-      });
+    const elegidos = parseEleccion(tourElegido);
+    const eleccionNombre = elegidos
+      .map((slug) => paquete.eleccionTour?.opciones.find((o) => o.slug === slug)?.nombre || slug)
+      .join(", ");
+
+    /**
+     * El itinerario a la carta no nombra ningún tour: los pone el cliente. Sin
+     * esto, la ficha del admin y el correo de un paquete de cuatro recorridos
+     * salían con el itinerario VACÍO y el guía no sabía a dónde llevar a nadie.
+     * Los recorridos se reparten en los días de tour en el orden en que los
+     * eligió, que es el orden que luego se acomoda con él.
+     */
+    const aLaCarta = !paquete.itinerario.some((d) => d.tourSlug);
+    const diasDeTour = paquete.itinerario.filter((d) => d.tipo === "tour");
+
+    const renglon = (slug: string, dia: number, titulo: string) => {
+      const tour = TOURS_DB.find((t) => t.slug === slug);
+      return {
+        tourSlug:      slug,
+        tourName:      tour?.nombre || titulo,
+        tourDate:      sumarDias(fechaInicio, dia - 1),
+        adults:        adultos,
+        childrenMid:   nMid,
+        childrenSmall: nSmall,
+      };
+    };
+
+    const lineItems = aLaCarta
+      ? elegidos.map((slug, i) =>
+          renglon(slug, diasDeTour[i]?.dia ?? i + 1, diasDeTour[i]?.titulo ?? ""))
+      : paquete.itinerario
+          .filter((d) => d.tourSlug)
+          .map((d) => {
+            // El día "a elegir" se graba con el tour que ELIGIÓ el cliente, no
+            // con el que trae el catálogo por defecto.
+            const esDiaElegible = paquete.eleccionTour?.dia === d.dia && elegidos.length === 1;
+            return renglon(esDiaElegible ? elegidos[0] : d.tourSlug!, d.dia, d.titulo);
+          });
     const packageItems = [{
       hotel:        "Hotel Paraíso Encantado",
       habitacion:   habitacion || (L === "en" ? "Room" : "Habitación"),
@@ -141,7 +161,11 @@ export async function POST(req: NextRequest) {
       repartoHab ? `Reparto por habitación: ${repartoHab}` : null,
       `Noches de hotel: ${nochesHotel}${nocheExtra ? " (incluye noche extra — entra la víspera, check-in 3 PM)" : ""}`,
       checkin ? `Entrada: ${checkin}${checkout ? ` · Salida: ${checkout}` : ""}` : null,
-      eleccionNombre ? `Día ${paquete.eleccionTour?.dia} elegido: ${eleccionNombre}` : null,
+      eleccionNombre
+        ? (aLaCarta || paquete.eleccionTour?.dia === undefined
+            ? `Recorridos elegidos: ${eleccionNombre}`
+            : `Día ${paquete.eleccionTour?.dia} elegido: ${eleccionNombre}`)
+        : null,
       `Pago inicial: ${pctNum}% (${fmx(cobrado)})`,
       pendiente > 0 ? `Saldo pendiente: ${fmx(pendiente)}` : "Pagado 100%",
       L === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : null,

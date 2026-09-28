@@ -171,7 +171,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Qué es el Sótano de las Golondrinas?",
-      a: "Es un abismo vertical natural ubicado en Aquismón, San Luis Potosí, con aproximadamente 376 metros de caída libre y hasta 512 metros de profundidad total. Al amanecer miles de aves (vencejos y pericos) salen en espiral, y al atardecer regresan: un espectáculo natural único. Es uno de los tiros verticales más impresionantes del mundo.",
+      a: "Es un abismo vertical natural ubicado en Aquismón, San Luis Potosí, con aproximadamente 376 metros de caída libre y hasta 512 metros de profundidad total. Al amanecer miles de aves (vencejos y loros) salen en espiral, y al atardecer regresan: un espectáculo natural único. Es uno de los tiros verticales más impresionantes del mundo.",
     },
     {
       q: "¿Qué es Las Pozas de Edward James (Xilitla)?",

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { CarruselPromos } from "@/components/CarruselPromos";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
@@ -18,6 +19,7 @@ import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { CountdownViaje } from "@/components/CountdownViaje";
 import { GuiaMockup } from "@/components/GuiaMockup";
 import { GuiaGratisForm } from "@/components/GuiaGratisForm";
+import { BandaTemporada } from "@/components/BandaTemporada";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
@@ -92,7 +94,7 @@ export default async function HomePage() {
   const recentPosts = en ? [] : await getRandomPosts();
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
   // En el inicio mostramos solo 3 tours destacados; el botón lleva al catálogo completo.
-  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "rzr-xilitla"];
+  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "ruta-surrealista-edward-james"];
   const toursHome = HOME_TOUR_SLUGS.map((s) => tours.find((t) => t.slug === s)).filter(Boolean) as typeof tours;
 
   const CATEGORIAS = [
@@ -187,7 +189,7 @@ export default async function HomePage() {
               ))}
             </div>
             <span className="font-dm text-crema/90 text-sm drop-shadow">
-              {en ? "4.9 · Over 10,000 happy travelers" : "4.9 · Más de 10,000 viajeros satisfechos"}
+              {en ? "4.7 · Over 10,000 happy travelers" : "4.7 · Más de 10,000 viajeros satisfechos"}
             </span>
           </div>
 
@@ -239,7 +241,6 @@ export default async function HomePage() {
           <img src="/badges/tripadvisor.svg" alt="TripAdvisor" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
           <img src="/badges/travellers-choice.svg" alt="Travellers Choice TripAdvisor" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
           <img src="/badges/top-rated-google.svg" alt="Top Rated Google Maps" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/badges/mejor-tour-operador.avif" alt="Best Tour Operator North America" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
         </div>
       </section>
 
@@ -251,7 +252,7 @@ export default async function HomePage() {
             <span className="text-negro/15 hidden sm:block">|</span>
             <a href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6" target="_blank" rel="noopener noreferrer" className="hover:text-negro/80 transition-colors flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5 text-dorado" aria-hidden="true" />
-              <span className="text-negro/70 font-medium">4.9</span> · {en ? "492 Google reviews" : "492 reseñas Google"}
+              <span className="text-negro/70 font-medium">4.7</span> · {en ? "161 Google reviews" : "161 reseñas Google"}
             </a>
             <span className="text-negro/15 hidden sm:block">|</span>
             <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "NOM-09 guides" : "Guías NOM-09"}</span>
@@ -262,6 +263,15 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── TEMPORADA ──────────────────────────────────────────────────────
+          Va aquí y no pegada al hero a propósito: el hero y la banda de premios
+          ya son dos franjas oscuras seguidas, y una tercera encima convertía la
+          primera pantalla en un bloque. Entre la barra blanca de confianza y la
+          tira de arena, la franja verde parte el ritmo en vez de sumarse a él.
+          Sigue estando a un scroll corto, que es lo que pide un aviso con
+          fecha. Se esconde sola fuera de temporada. */}
+      <BandaTemporada en={en} hrefTours={lp("/tours")} />
 
       {/* ── CATEGORÍAS STRIP ── */}
       <section aria-label={en ? "Experience categories" : "Categorías de experiencias"} className="bg-arena/40 border-b border-negro/8 py-8 overflow-hidden">
@@ -292,7 +302,9 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Más aire arriba y entre filas: el logotipo del tour sale por encima
+            del borde de su tarjeta y sin esto se montaba sobre la de arriba. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16 pt-10">
           {toursHome.map((t) => (
             <TourCard key={t.slug} tour={t} variant="compact" />
           ))}
@@ -322,9 +334,15 @@ export default async function HomePage() {
               </p>
             </div>
 
+            {/* El cartel del paquete que se está promoviendo. Va ANTES de la
+                rejilla a propósito: es la oferta concreta, con su precio y lo
+                que incluye, y la rejilla es el catálogo para quien no la quiera. */}
+            <div className="mb-16">
+              <CarruselPromos />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {PAQUETES_DB.map((p) => {
-                const ahorro = p.valor.reduce((a, v) => a + parseInt(v.precio.replace(/[^0-9]/g, ""), 10), 0) - p.precio;
                 return (
                   <Link key={p.id} href={`/paquetes/${p.slug}`} className="group block border border-negro/10 bg-white overflow-hidden rounded-xl shadow-sm hover:border-verde-selva/40 transition-colors">
                     <div className="relative h-44 overflow-hidden">
@@ -344,9 +362,6 @@ export default async function HomePage() {
                         <span className="font-cormorant text-dorado text-3xl leading-none">${p.precio.toLocaleString("es-MX")}</span>
                         <span className="text-negro/40 font-dm text-[10px]">MXN {p.precioLabel}</span>
                       </div>
-                      {ahorro > 0 && (
-                        <p className="text-[10px] font-dm text-verde-selva font-medium mb-4">✓ Ahorras ${ahorro.toLocaleString("es-MX")} MXN vs. por separado</p>
-                      )}
                       <span className="inline-flex items-center gap-1.5 text-[10px] tracking-[2px] uppercase text-verde-selva group-hover:text-verde-vivo font-dm font-medium transition-colors">
                         Ver el paquete día por día →
                       </span>
@@ -373,7 +388,7 @@ export default async function HomePage() {
           <div className="text-center mb-12">
             <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "What travelers say" : "Lo que dicen los viajeros"}</p>
             <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
-              {en ? <>492 Reviews · <em className="shimmer-gold">4.9 stars</em></> : <>492 Reseñas · <em className="shimmer-gold">4.9 estrellas</em></>}
+              {en ? <>161 Reviews · <em className="shimmer-gold">4.7 stars</em></> : <>161 Reseñas · <em className="shimmer-gold">4.7 estrellas</em></>}
             </h2>
             <div className="flex justify-center gap-1 mt-3 star-group">
               {[...Array(5)].map((_, i) => (
@@ -406,7 +421,7 @@ export default async function HomePage() {
           <div className="text-center mt-10">
             <a href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all duration-200">
               <Star className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
-              {en ? "Read all 492 reviews on Google" : "Ver las 492 reseñas en Google"}
+              {en ? "Read all 161 reviews on Google" : "Ver las 161 reseñas en Google"}
             </a>
           </div>
         </div>
@@ -694,7 +709,7 @@ export default async function HomePage() {
             </a>
           </div>
           <p className="reveal-up reveal-d1 mt-7 text-[11px] tracking-[2px] uppercase font-dm text-crema/35">
-            4.9 ★ · 492 {en ? "Google reviews" : "reseñas Google"} · +10,000 {en ? "travelers" : "viajeros"}
+            4.7 ★ · 161 {en ? "Google reviews" : "reseñas Google"} · +10,000 {en ? "travelers" : "viajeros"}
           </p>
         </div>
       </section>
@@ -708,7 +723,6 @@ export default async function HomePage() {
             <img src="/badges/tripadvisor-full.png" alt="Tripadvisor" loading="lazy" className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity" />
             <img src="/badges/viajemos-todos.png" alt="Viajemos Todos por México" loading="lazy" className="h-12 w-auto opacity-75 hover:opacity-100 transition-opacity" />
             <img src="/badges/travellers-choice.svg" alt="Travellers' Choice — TripAdvisor" loading="lazy" className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity" />
-            <img src="/badges/mejor-tour-operador.avif" alt="Best Tour Operator North America — Arival 2023" loading="lazy" className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity" />
           </div>
         </div>
       </section>

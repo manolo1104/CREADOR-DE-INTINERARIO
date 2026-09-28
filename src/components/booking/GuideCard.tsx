@@ -6,8 +6,8 @@ const GUIAS = [
     nombre: "Carlos Rodríguez",
     badge:  "Guía Principal · Certificado NOM-09 SECTUR",
     frase:  "Hola, yo seré tu guía ese día. Llevo 8 años recorriendo la Huasteca y conozco cada mirador secreto del camino. ¡Nos vemos pronto!",
-    estrellas: "4.9",
-    resenas:   "492",
+    estrellas: "4.7",
+    resenas:   "161",
   },
   {
     foto:   "/guides/guia-2.png",
@@ -22,7 +22,7 @@ const GUIAS = [
     nombre: "José Laredo",
     badge:  "Guía de Aventura · Rappel y Montaña",
     frase:  "Me especializo en los recorridos de aventura extrema. Seguridad siempre primero, pero sin perder ni un segundo de adrenalina. ¡Te espero!",
-    estrellas: "4.9",
+    estrellas: "4.7",
     resenas:   "274",
   },
 ];

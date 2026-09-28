@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import type { Destino } from "@/lib/destinos";
 import { Clock, CloudSun, Calendar, Star } from "lucide-react";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
-import { RATING_DESTINO } from "@/lib/destinoData";
 import { toursQueIncluyen } from "@/lib/tourMapping";
 import { TOURS_DB } from "@/lib/tours";
 import { localizeTour } from "@/lib/i18n/localize";
@@ -98,19 +97,15 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
           <p className="text-crema/50 text-[10px] font-dm tracking-[1px] uppercase mt-0.5">
             {d.zona}
           </p>
-          {/* Rating */}
-          {RATING_DESTINO[d.slug] ? (
-            <div className="flex items-center gap-1 mt-1">
-              <Star className="w-3 h-3 fill-dorado text-dorado flex-shrink-0" aria-hidden="true" />
-              <span className="text-[10px] font-dm text-dorado font-medium">{RATING_DESTINO[d.slug].rating}</span>
-              <span className="text-[9px] font-dm text-crema/35">({RATING_DESTINO[d.slug].count} {en ? "reviews" : "opiniones"})</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 mt-1">
-              <Star className="w-3 h-3 fill-dorado/60 text-dorado/60 flex-shrink-0" aria-hidden="true" />
-              <span className="text-[9px] font-dm text-dorado/60">{en ? "Recommended" : "Recomendado"}</span>
-            </div>
-          )}
+          {/* 🔴 28 sep 2026 — fuera la nota por destino. `RATING_DESTINO`
+              repartía 1,188 reseñas entre 20 lugares mientras el negocio tiene
+              161 en Google, y un destino —un lugar público, no algo que
+              vendamos— no tiene reseñas propias que publicar. Queda
+              "Recomendado", que es nuestra opinión y sí es cierta. */}
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-3 h-3 fill-dorado/60 text-dorado/60 flex-shrink-0" aria-hidden="true" />
+            <span className="text-[9px] font-dm text-dorado/60">{en ? "Recommended" : "Recomendado"}</span>
+          </div>
         </div>
       </Link>
 

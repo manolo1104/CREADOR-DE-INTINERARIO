@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador del bot — Tours Huasteca</title>
+<style>
+  :root{
+    --verde:#075e54; --verde2:#128c7e; --burbuja-mia:#d9fdd3; --burbuja-bot:#fff;
+    --fondo:#efe7dd; --texto:#111b21; --gris:#667781; --azul:#53bdeb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+       background:#d1d7db;color:var(--texto);height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;gap:16px}
+  .telefono{width:100%;max-width:440px;height:min(92vh,860px);display:flex;flex-direction:column;
+       border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.28);background:var(--fondo)}
+  header{background:var(--verde);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:11px;flex:0 0 auto}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--verde2);display:grid;place-items:center;font-size:19px}
+  .quien{flex:1;min-width:0}
+  .quien b{display:block;font-size:15px;font-weight:600}
+  .quien small{display:block;font-size:12px;opacity:.85;height:15px}
+  .btn-h{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer}
+  .btn-h:hover{background:rgba(255,255,255,.3)}
+
+  #chat{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:3px;
+        background-image:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px);background-size:22px 22px}
+  .b{max-width:84%;padding:6px 9px 5px;border-radius:8px;font-size:14.5px;line-height:1.42;
+     box-shadow:0 1px .5px rgba(0,0,0,.13);white-space:pre-wrap;word-wrap:break-word;position:relative;animation:pop .18s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .mia{align-self:flex-end;background:var(--burbuja-mia);border-top-right-radius:2px}
+  .bot{align-self:flex-start;background:var(--burbuja-bot);border-top-left-radius:2px}
+  .meta{display:block;text-align:right;font-size:10.5px;color:var(--gris);margin-top:2px}
+  .tick{color:var(--gris)} .tick.leido{color:var(--azul)}
+  .sistema{align-self:center;background:#ffeecd;color:#5c4a1e;font-size:11.5px;padding:5px 11px;
+     border-radius:7px;max-width:92%;text-align:center;margin:5px 0;box-shadow:0 1px .5px rgba(0,0,0,.1)}
+  .herr{align-self:flex-start;background:#e7f3ff;border-left:3px solid #4a90d9;color:#1c3d5a;
+     font-size:11px;font-family:ui-monospace,Menlo,monospace;padding:5px 8px;border-radius:5px;max-width:92%;
+     white-space:pre-wrap;word-break:break-word}
+  .esperando{align-self:center;background:#fff;color:var(--gris);font-size:12px;padding:6px 13px;border-radius:14px;
+     box-shadow:0 1px .5px rgba(0,0,0,.13);display:flex;align-items:center;gap:7px}
+  .barra{width:60px;height:3px;background:#e3e3e3;border-radius:2px;overflow:hidden}
+  .barra i{display:block;height:100%;background:var(--verde2);width:100%}
+  .puntos span{display:inline-block;width:5px;height:5px;background:var(--gris);border-radius:50%;margin:0 1px;
+     animation:sube 1.2s infinite}
+  .puntos span:nth-child(2){animation-delay:.2s} .puntos span:nth-child(3){animation-delay:.4s}
+  @keyframes sube{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+  footer{flex:0 0 auto;background:#f0f2f5;padding:8px;display:flex;gap:8px;align-items:flex-end}
+  textarea{flex:1;border:0;border-radius:20px;padding:9px 14px;font-size:14.5px;resize:none;max-height:100px;
+     font-family:inherit;outline:none;box-shadow:0 1px .5px rgba(0,0,0,.13)}
+  #enviar{width:42px;height:42px;border-radius:50%;border:0;background:var(--verde2);color:#fff;font-size:19px;cursor:pointer;flex:0 0 auto}
+  #enviar:disabled{opacity:.45;cursor:default}
+
+  .panel{width:290px;background:#fff;border-radius:14px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);
+     font-size:13px;max-height:min(92vh,860px);overflow-y:auto}
+  .panel h2{margin:0 0 4px;font-size:15px} .panel p.sub{margin:0 0 14px;color:var(--gris);font-size:12px;line-height:1.45}
+  .fila{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}
+  .fila b{font-weight:600} .fila span{color:var(--gris)}
+  .panel h3{margin:16px 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--gris)}
+  .panel button{width:100%;padding:9px;margin-bottom:7px;border:1px solid #d5d5d5;background:#fafafa;
+     border-radius:8px;cursor:pointer;font-size:13px;text-align:left}
+  .panel button:hover{background:#f0f0f0}
+  .panel button b{display:block} .panel button small{color:var(--gris);font-size:11px}
+  .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
+  .tag.sim{background:#d9fdd3;color:#0b6b2f} .tag.real{background:#ffd5d5;color:#8b1a1a}
+  .nota{background:#fff8e1;border:1px solid #ffe3a3;padding:9px;border-radius:7px;font-size:11.5px;line-height:1.5;color:#5c4a1e}
+  @media(max-width:820px){body{flex-direction:column;padding:8px;height:auto}.panel{width:100%;max-width:440px}.telefono{height:78vh}}
+</style>
+</head>
+<body>
+
+<div class="telefono">
+  <header>
+    <div class="avatar">🌿</div>
+    <div class="quien">
+      <b>Tours Huasteca Potosina</b>
+      <small id="estadoChat">en línea</small>
+    </div>
+    <button class="btn-h" id="btnLimpiar">Reiniciar</button>
+  </header>
+  <div id="chat"></div>
+  <footer>
+    <textarea id="texto" rows="1" placeholder="Escribe un mensaje" autofocus></textarea>
+    <button id="enviar" title="Enviar">➤</button>
+  </footer>
+</div>
+
+<div class="panel">
+  <h2>Simulador del bot</h2>
+  <p class="sub">Eres el cliente. Escribe como escribiría alguien por WhatsApp — y manda varios mensajes seguidos para ver cómo el bot los junta.</p>
+
+  <div class="fila"><b>Modo</b><span id="pModo">…</span></div>
+  <div class="fila"><b>Modelo</b><span id="pModelo">…</span></div>
+  <div class="fila"><b>Espera</b><span id="pEspera">…</span></div>
+  <div class="fila"><b>Turnos</b><span id="pTurnos">0</span></div>
+
+  <h3>Velocidad de la espera</h3>
+  <button data-espera="30000" data-tope="90000"><b>30 segundos — la de producción</b><small>Igual que en el WhatsApp real</small></button>
+  <button data-espera="5000" data-tope="15000"><b>5 segundos — para ir rápido</b><small>Para probar el guion de venta sin esperar</small></button>
+
+  <h3>Pruebas de un botón</h3>
+  <button id="btnRafaga"><b>Mandar una ráfaga</b><small>4 mensajes seguidos, uno cada 4 s</small></button>
+  <button id="btnInterrumpir"><b>Escribir mientras contesta</b><small>Manda uno, y otro cuando ya está pensando</small></button>
+
+  <h3>Frases para probar</h3>
+  <button class="frase"><b>"hola"</b><small>Debe pedir fecha y personas en 2 líneas</small></button>
+  <button class="frase" data-t="somos 2 personas y queremos hacer rafting el próximo mes"><b>Grupo muy chico</b><small>Debe avisar que el rafting pide mínimo 5</small></button>
+  <button class="frase" data-t="uf, está muy caro"><b>"está caro"</b><small>Debe desglosar, no inventar descuentos</small></button>
+  <button class="frase" data-t="déjame lo pienso y te aviso"><b>"lo voy a pensar"</b><small>Debe usar las 48 h y volver a cerrar</small></button>
+  <button class="frase" data-t="puedo pagar todo el mero día del tour?"><b>"pago el día del tour"</b><small>Debe decir que no, se aparta con el 30 %</small></button>
+  <button class="frase" data-t="quiero hablar con una persona"><b>Pide un humano</b><small>Debe escalar y dejar de vender</small></button>
+
+  <h3>Detalle</h3>
+  <label style="display:flex;gap:7px;align-items:center;margin-bottom:12px;cursor:pointer">
+    <input type="checkbox" id="verHerr" checked> Ver qué herramientas usa
+  </label>
+  <div class="nota" id="nota"></div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const chat = $("#chat");
+let cfg = { esperaMs: 30000 };
+let burbujasMias = [];
+let cuenta = null, burbujaEspera = null, burbujaEscribiendo = null;
+
+const hora = () => new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+const abajo = () => { chat.scrollTop = chat.scrollHeight; };
+
+function mia(texto) {
+  const d = document.createElement("div");
+  d.className = "b mia";
+  d.textContent = texto;
+  const m = document.createElement("span");
+  m.className = "meta";
+  m.innerHTML = hora() + ' <span class="tick">✓✓</span>';
+  d.appendChild(m);
+  chat.appendChild(d); abajo();
+  burbujasMias.push(d);
+  return d;
+}
+// Negritas de WhatsApp (*así*) y links, con el texto escapado primero.
+function formatoWhatsApp(t) {
+  const esc = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc
+    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/\*([^*\n]+)\*/g, "<b>$1</b>")
+    .replace(/_([^_\n]+)_/g, "<i>$1</i>");
+}
+function bot(texto, pie) {
+  const d = document.createElement("div");
+  d.className = "b bot";
+  d.innerHTML = formatoWhatsApp(texto) + `<span class="meta">${hora()}${pie ? " · " + pie : ""}</span>`;
+  chat.appendChild(d); abajo();
+}
+function sistema(texto) {
+  const d = document.createElement("div");
+  d.className = "sistema"; d.textContent = texto;
+  chat.appendChild(d); abajo();
+}
+function herramienta(nombre, entrada, salida) {
+  if (!$("#verHerr").checked) return;
+  const d = document.createElement("div");
+  d.className = "herr";
+  d.textContent = `🔧 ${nombre}(${entrada})\n   → ${salida}`;
+  chat.appendChild(d); abajo();
+}
+function marcarLeidas() {
+  burbujasMias.forEach((b) => { const t = b.querySelector(".tick"); if (t) t.classList.add("leido"); });
+}
+
+function quitarEspera() { if (burbujaEspera) { burbujaEspera.remove(); burbujaEspera = null; } clearInterval(cuenta); cuenta = null; }
+function quitarEscribiendo() { if (burbujaEscribiendo) { burbujaEscribiendo.remove(); burbujaEscribiendo = null; } $("#estadoChat").textContent = "en línea"; }
+
+function mostrarEspera(ms) {
+  quitarEspera();
+  const fin = Date.now() + ms;
+  burbujaEspera = document.createElement("div");
+  burbujaEspera.className = "esperando";
+  chat.appendChild(burbujaEspera); abajo();
+  const pinta = () => {
+    const falta = Math.max(0, fin - Date.now());
+    if (!burbujaEspera) return;
+    burbujaEspera.innerHTML =
+      `⏳ esperando a que termines de escribir… <b>${Math.ceil(falta / 1000)}s</b>` +
+      `<span class="barra"><i style="width:${(falta / ms) * 100}%"></i></span>`;
+    if (falta <= 0) quitarEspera();
+  };
+  pinta();
+  cuenta = setInterval(pinta, 200);
+}
+
+function mostrarEscribiendo(mensajes) {
+  quitarEspera(); quitarEscribiendo();
+  marcarLeidas();
+  $("#estadoChat").textContent = "escribiendo…";
+  burbujaEscribiendo = document.createElement("div");
+  burbujaEscribiendo.className = "b bot";
+  burbujaEscribiendo.innerHTML = '<span class="puntos"><span></span><span></span><span></span></span>';
+  chat.appendChild(burbujaEscribiendo); abajo();
+  if (mensajes > 1) sistema(`El bot juntó tus ${mensajes} mensajes y va a contestar UNA sola vez.`);
+}
+
+// ── Conexión con el servidor ──────────────────────────────────
+const es = new EventSource("/eventos");
+es.onmessage = (e) => {
+  const ev = JSON.parse(e.data);
+  if (ev.tipo === "listo") { pintarEstado(ev); return; }
+  if (ev.tipo === "esperando") { mostrarEspera(ev.esperaMs); return; }
+  if (ev.tipo === "escribiendo") { mostrarEscribiendo(ev.mensajes); return; }
+  if (ev.tipo === "herramienta") { herramienta(ev.nombre, ev.entrada, ev.salida); return; }
+  if (ev.tipo === "aviso") { sistema(ev.texto); return; }
+  if (ev.tipo === "error") { sistema("⚠️ " + ev.texto); quitarEspera(); quitarEscribiendo(); return; }
+  if (ev.tipo === "bot") {
+    quitarEspera(); quitarEscribiendo(); marcarLeidas();
+    burbujasMias = [];
+    const seg = ev.esperaMs != null ? Math.round(ev.esperaMs / 1000) : null;
+    const pie = seg != null ? `esperó ${seg}s · pensó ${Math.round((ev.pensoMs || 0) / 1000)}s` : "";
+    bot(ev.texto, pie);
+    if (ev.turnos != null) $("#pTurnos").textContent = ev.turnos;
+  }
+};
+es.onerror = () => { $("#estadoChat").textContent = "desconectado — ¿se cerró la terminal?"; };
+
+function pintarEstado(s) {
+  cfg = s;
+  $("#pModo").innerHTML = s.modo === "real"
+    ? '<span class="tag real">REAL</span>' : '<span class="tag sim">SIMULACRO</span>';
+  $("#pModelo").textContent = s.modelo;
+  $("#pEspera").textContent = `${s.esperaMs / 1000}s (tope ${s.topeMs / 1000}s)`;
+  $("#pTurnos").textContent = s.turnos;
+  $("#nota").innerHTML = s.modo === "real"
+    ? `<b>Modo real.</b> Lo que cierres aquí crea folios de verdad en el panel y manda correos. Habla con ${s.sitio}.`
+    : "<b>Modo simulacro.</b> Los folios son de mentiras y no se escribe nada en el panel ni se manda ningún correo. Para probar de verdad: <code>npm run chat -- --real</code>";
+}
+// ── Enviar ────────────────────────────────────────────────────
+async function enviar(texto) {
+  if (!texto || !texto.trim()) return;
+  mia(texto.trim());
+  await fetch("/mensaje", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) });
+}
+const caja = $("#texto");
+$("#enviar").onclick = () => { enviar(caja.value); caja.value = ""; caja.style.height = "auto"; caja.focus(); };
+caja.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#enviar").click(); }
+});
+caja.addEventListener("input", () => { caja.style.height = "auto"; caja.style.height = Math.min(caja.scrollHeight, 100) + "px"; });
+
+$("#btnLimpiar").onclick = async () => {
+  const s = await (await fetch("/reiniciar", { method: "POST" })).json();
+  chat.innerHTML = ""; burbujasMias = []; quitarEspera(); quitarEscribiendo();
+  pintarEstado(s); $("#pTurnos").textContent = 0;
+  sistema("Conversación nueva. El bot ya no recuerda nada de lo anterior.");
+};
+
+document.querySelectorAll("[data-espera]").forEach((b) => {
+  b.onclick = async () => {
+    const s = await (await fetch("/config", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ esperaMs: +b.dataset.espera, topeMs: +b.dataset.tope }) })).json();
+    pintarEstado(s);
+    sistema(`Ahora el bot espera ${s.esperaMs / 1000} segundos antes de contestar.`);
+  };
+});
+
+document.querySelectorAll(".frase").forEach((b) => {
+  b.onclick = () => enviar(b.dataset.t || b.querySelector("b").textContent.replace(/"/g, ""));
+});
+
+$("#btnRafaga").onclick = async () => {
+  const msgs = ["hola buenas tardes", "somos 4 adultos", "para el próximo sábado", "cuánto nos saldría?"];
+  sistema("Mandando 4 mensajes seguidos, uno cada 4 segundos. El bot debe contestar UNA sola vez, a todo junto.");
+  for (const m of msgs) { await enviar(m); await new Promise((r) => setTimeout(r, 4000)); }
+};
+
+$("#btnInterrumpir").onclick = async () => {
+  sistema("Mando uno, espero a que empiece a pensar, y mando otro. El segundo NO debe encimarse: se contesta después.");
+  await enviar("hola, quiero la expedición tamul");
+  await new Promise((r) => setTimeout(r, cfg.esperaMs + 3000));
+  await enviar("ah y somos 6, se me olvidaba");
+};
+
+sistema("Escribe abajo como si fueras el cliente. Prueba mandar varios mensajes seguidos.");
+</script>
+</body>
+</html>

@@ -76,7 +76,7 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
                   <span className="font-dm text-sm text-lima whitespace-nowrap">
                     ${t.precio.toLocaleString("es-MX")}
                     <span className="text-crema/35 text-xs">
-                      {t.precioUnidad === "vehiculo" ? " /vehículo" : " /persona"}
+                      {t.precioUnidad === "vehiculo" ? " /vehículo" : t.precioUnidad === "grupo" ? " /grupo" : " /persona"}
                     </span>
                   </span>
                 </Link>

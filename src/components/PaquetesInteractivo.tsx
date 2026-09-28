@@ -1,405 +1,271 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Check, Moon, MapPin, Star, CreditCard } from "lucide-react";
+import { Check, Moon, MapPin, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { GaleriaPaquete } from "@/components/GaleriaPaquete";
+import { PatronDestinos } from "@/components/PatronDestinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
-import { trackPackageInquiry } from "@/lib/analytics";
-import type { Paquete } from "@/lib/paquetes";
+import { collagePaquete, type Paquete } from "@/lib/paquetes";
+import { ahorroPaquete } from "@/lib/ahorroPaquete";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
 
 export type { Paquete };
 
-// ── Savings counter ──────────────────────────────────────────────
+const mxn = (n: number) => `$${n.toLocaleString("es-MX")}`;
 
-function SavingsCounter({ ahorro }: { ahorro: number }) {
-  // Arranca en el ahorro real: sin JS (o antes de hidratar) nunca se ve "Ahorras $0".
-  const [count, setCount] = useState(ahorro);
-  const ref = useRef<HTMLSpanElement>(null);
-  const animated = useRef(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !animated.current) {
-          animated.current = true;
-          const start = performance.now();
-          const dur = 900;
-          const tick = (now: number) => {
-            const t = Math.min((now - start) / dur, 1);
-            const eased = 1 - (1 - t) ** 3;
-            setCount(Math.round(eased * ahorro));
-            if (t < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [ahorro]);
-
-  return (
-    <span ref={ref}>
-      <em className="shimmer-gold font-cormorant not-italic" style={{ fontSize: "13px" }}>
-        ${count.toLocaleString("es-MX")}
-      </em>
-    </span>
-  );
+/**
+ * El nombre del recorrido, corto, para la lista de la tarjeta.
+ *
+ * En el catálogo los tours vienen con su nombre completo y su descripción
+ * pegada: "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto
+ * (Día 1)". Puesto así, cada renglón ocupaba dos líneas y medias y comparar
+ * dos paquetes era leerse dos párrafos. Aquí se queda el nombre y el día, que
+ * es lo que se compara; la descripción entera vive en la ficha del paquete.
+ */
+function tituloCorto(tour: string): { nombre: string; dia: string } {
+  const dia    = tour.match(/\((D[íi]a[^)]*|Day[^)]*)\)\s*$/)?.[1] ?? "";
+  const sinDia = dia ? tour.slice(0, tour.lastIndexOf("(")).trim() : tour;
+  // El guion largo separa el nombre de su descripción en el catálogo.
+  const nombre = sinDia.split(/\s+[—–]\s+/)[0].trim();
+  return { nombre, dia };
 }
 
-// ── Package card ─────────────────────────────────────────────────
+/**
+ * Sistema de esquinas de esta pantalla, para no mezclar formas:
+ * tarjeta `rounded-2xl` · bloques y botones dentro `rounded-lg` · etiquetas
+ * que flotan sobre la foto `rounded-full`.
+ */
 
-function PaqueteCard({
-  p,
-  estado,
-}: {
-  p: Paquete;
-  estado: "normal" | "destacado" | "atenuado";
-}) {
+function PaqueteCard({ p }: { p: Paquete }) {
   const { locale, lp } = useLocale();
   const t = getPaquetesInteractivoUI(locale);
-  const totalValor = p.valor.reduce(
-    (acc, v) => acc + parseInt(v.precio.replace(/[^0-9]/g, ""), 10),
-    0
-  );
-  const ahorro = totalValor - p.precio;
+  const fotos = collagePaquete(p);
+  const ahorro = ahorroPaquete(p);
 
   return (
     <article
-      className={`relative flex flex-col border overflow-hidden transition-all duration-500 hover:border-verde-vivo/50 ${
-        p.destacado ? "border-dorado/50 bg-verde-profundo" : "border-white/10 bg-negro/60"
-      } ${
-        estado === "destacado"
-          ? "ring-2 ring-dorado/70 shadow-[0_0_36px_rgba(196,136,42,0.22)]"
-          : estado === "atenuado"
-          ? "opacity-40 scale-[0.98] pointer-events-none"
-          : ""
-      }`}
+      className={`
+        flex h-full flex-col overflow-hidden rounded-2xl border bg-crema/95 backdrop-blur-xl
+        transition-[border-color,box-shadow,transform] duration-300
+        hover:-translate-y-1 hover:border-verde-selva/60
+        ${p.destacado ? "border-dorado/70" : "border-negro/10"}
+      `}
+      style={{
+        boxShadow: p.destacado
+          ? "0 1px 0 rgba(255,255,255,.9) inset, 0 20px 46px rgba(26,46,26,.20)"
+          : "0 1px 0 rgba(255,255,255,.9) inset, 0 14px 34px rgba(26,46,26,.13)",
+      }}
     >
-      {p.badge && (
-        <div className="absolute top-4 right-4 z-10 bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5">
-          {p.badge}
-        </div>
-      )}
-      {estado === "destacado" && (
-        <div className="absolute top-4 left-4 z-10 bg-verde-selva text-crema text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-lima animate-pulse" />
-          {t.tuRecomendado}
-        </div>
-      )}
-
-      <div className="relative h-44 overflow-hidden">
-        <Image
-          src={p.imagen}
-          alt={p.nombre}
-          fill
-          className="object-cover"
-          loading="lazy"
-          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+      {/* Foto: una franja por recorrido, la misma pieza que usa /tours. */}
+      <div className="relative h-40 flex-shrink-0 overflow-hidden">
+        <GaleriaPaquete
+          fotos={fotos}
+          nombre={p.nombre}
+          etiquetaAnterior={t.fotoAnterior}
+          etiquetaSiguiente={t.fotoSiguiente}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
-        <div className="absolute bottom-3 left-4">
-          <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm flex items-center gap-1.5">
-            <Moon className="w-3 h-3" /> {p.duracion}
-          </p>
-        </div>
+        {/* Velo sólo abajo: la etiqueta de las noches va sobre la foto y sin
+            él se pierde contra cualquier cascada clara. Se deja pasar el clic
+            para no tapar los botones de la galería. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-negro/85 to-transparent" />
+        <span className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-negro/70 px-2.5 py-1 font-dm text-[9px] tracking-[1px] text-crema/90 backdrop-blur-sm">
+          <Moon className="h-3 w-3" aria-hidden="true" /> {p.duracion}
+        </span>
+        {p.badge && (
+          <span className="absolute right-3 top-3 z-20 rounded-full bg-dorado px-3 py-1.5 font-dm text-[9px] font-bold uppercase tracking-[1.5px] text-negro">
+            {p.badge}
+          </span>
+        )}
       </div>
 
-      <div className="px-6 pt-5 pb-3">
-        <h2 className="font-cormorant font-light text-crema leading-tight mb-1" style={{ fontSize: "clamp(20px,2.5vw,27px)" }}>
-          {p.nombre}
-        </h2>
-        <p className="text-crema/50 font-dm text-xs mb-3">{p.subtitulo}</p>
+      <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
+        <h2 className="font-cormorant text-[26px] font-light leading-tight text-negro">{p.nombre}</h2>
+        <p className="mt-0.5 font-dm text-xs text-negro/65">{p.subtitulo}</p>
 
-        {/* Perfil chips — idea 1 */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {p.perfiles.map((chip) => (
-            <span key={chip} className="text-[9px] tracking-[0.5px] border border-verde-selva/25 text-verde-vivo/60 px-2 py-0.5 font-dm">
+            <span
+              key={chip}
+              className="rounded-full border border-verde-selva/35 bg-verde-selva/10 px-2.5 py-1 font-dm text-[9px] font-medium tracking-[0.5px] text-verde-selva"
+            >
               {chip}
             </span>
           ))}
         </div>
 
-        {/* Precio + ahorro animado — idea 2 */}
-        <div className="mb-4">
-          <div className="flex items-baseline gap-2 mb-1">
-            <span className="font-cormorant text-dorado" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
-              ${p.precio.toLocaleString("es-MX")}
+        {/* El precio y, sólo cuando es cierto, lo que se ahorra. */}
+        <div className="mt-4 rounded-lg border border-negro/10 bg-white/70 px-4 py-3">
+          <div className="flex items-baseline gap-2">
+            <span className="font-cormorant text-[34px] leading-none text-terracota">
+              {mxn(p.precio)}
             </span>
-            <span className="text-crema/40 font-dm text-[10px] ml-1">MXN {p.precioLabel}</span>
+            <span className="font-dm text-[10px] text-negro/60">MXN {p.precioLabel}</span>
           </div>
-          {ahorro > 0 && (
-            <p className="text-[10px] font-dm text-verde-vivo font-medium">
-              ✓ Ahorras <SavingsCounter ahorro={ahorro} /> MXN vs. separado
-            </p>
+          {ahorro && (
+            <div className="mt-2.5 border-t border-negro/10 pt-2.5">
+              <p className="font-dm text-[11px] font-semibold text-verde-selva">
+                {t.ahorroBadge(mxn(ahorro.ahorro))}
+              </p>
+              <p className="mt-0.5 font-dm text-[10px] text-negro/55">
+                {t.ahorroDetalle(`${mxn(ahorro.suelto)} MXN`)}
+              </p>
+            </div>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 bg-dorado/10 border border-dorado/25 px-3 py-2 mb-5">
-          <span className="w-1.5 h-1.5 bg-dorado rounded-full animate-pulse flex-shrink-0" />
-          <p className="text-[10px] font-dm text-dorado/90 font-medium">{p.urgencia}</p>
-        </div>
-
         {p.tours.length > 0 && (
-          <div className="mb-4">
-            <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2 flex items-center gap-1.5">
-              <MapPin className="w-3 h-3" /> {t.toursIncluidos}
+          <div className="mt-4">
+            <p className="mb-2 flex items-center gap-1.5 font-dm text-[9px] uppercase tracking-[2px] text-negro/55">
+              <MapPin className="h-3 w-3" aria-hidden="true" /> {t.toursIncluidos}
             </p>
             <ul className="space-y-1.5">
-              {p.tours.map((t) => (
-                <li key={t} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
-                  <Star className="w-3 h-3 text-dorado/70 flex-shrink-0 mt-0.5" />
-                  {t}
-                </li>
-              ))}
+              {p.tours.map((tour) => {
+                const { nombre, dia } = tituloCorto(tour);
+                return (
+                  <li key={tour} className="flex items-start gap-2 font-dm text-[11px] leading-snug text-negro/80">
+                    <Check className="mt-0.5 h-3 w-3 flex-shrink-0 text-verde-selva" aria-hidden="true" />
+                    <span>
+                      {nombre}
+                      {dia && <span className="text-negro/45"> · {dia}</span>}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
 
-        <div className="mb-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-2">{t.queIncluye}</p>
-          <ul className="space-y-1.5">
-            {p.incluye.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[11px] text-crema/65 font-dm">
-                <Check className="w-3 h-3 text-verde-vivo flex-shrink-0 mt-0.5" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <details className="mb-5 border border-white/10">
-          <summary className="cursor-pointer px-3 py-2.5 text-[10px] tracking-[1px] uppercase font-dm text-crema/50 hover:text-crema transition-colors list-none flex items-center justify-between">
-            {t.verDesglose}
-            <span className="text-verde-vivo text-base leading-none">+</span>
-          </summary>
-          <div className="border-t border-white/8 px-3 py-3 space-y-2">
-            {p.valor.map((v) => (
-              <div key={v.item} className="flex justify-between text-[11px] font-dm">
-                <span className="text-crema/55">{v.item}</span>
-                <span className="text-crema/80 font-medium">{v.precio} MXN</span>
-              </div>
-            ))}
-            <div className="flex justify-between text-[11px] font-dm border-t border-white/8 pt-2 mt-1">
-              <span className="text-crema/55">{t.valorTotal}</span>
-              <span className="text-crema/80 font-medium line-through">${totalValor.toLocaleString()} MXN</span>
-            </div>
-            <div className="flex justify-between text-[12px] font-dm font-medium">
-              <span className="text-verde-vivo">{t.precioPaquete}</span>
-              <span className="text-dorado">${p.precio.toLocaleString()} MXN</span>
-            </div>
-          </div>
-        </details>
-      </div>
-
-      <div className="mt-auto px-6 pb-6">
-        <Link
-          href={lp(`/paquetes/${p.slug}`)}
-          className="flex items-center justify-center gap-2 w-full mb-3 py-3 text-[10px] tracking-[2px] uppercase font-dm border border-verde-selva/40 text-verde-vivo hover:border-verde-vivo hover:bg-verde-selva/10 transition-colors"
-        >
-          {t.verDiaPorDia}
-        </Link>
-        <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} slug={p.slug} />
-        <p className="text-center text-[9px] text-crema/25 font-dm mt-3">
-          {t.reservaFlexible}
+        <p className="mt-4 flex items-start gap-2 rounded-lg bg-negro/[0.04] px-3 py-2 font-dm text-[10px] leading-snug text-negro/70">
+          <Info className="mt-0.5 h-3 w-3 flex-shrink-0 text-negro/40" aria-hidden="true" />
+          {p.urgencia}
         </p>
+
+        {/* Los dos caminos, en su orden: primero mirar, luego preguntar. */}
+        <div className="mt-auto pt-5">
+          <Link
+            href={lp(`/paquetes/${p.slug}`)}
+            className="mb-2.5 flex w-full items-center justify-center rounded-lg border border-verde-selva/50 py-3 font-dm text-[10px] uppercase tracking-[2px] text-verde-selva transition-[background-color,border-color,transform] duration-200 hover:border-verde-selva hover:bg-verde-selva/10 active:scale-[0.98]"
+          >
+            {t.verDiaPorDia}
+          </Link>
+          <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} compacto />
+          <p className="mt-2.5 text-center font-dm text-[9px] leading-snug text-negro/55">
+            {t.reservaFlexible}
+          </p>
+        </div>
       </div>
     </article>
   );
 }
 
-// ── Quiz — idea 4 ─────────────────────────────────────────────────
+// ── Catálogo ─────────────────────────────────────────────────────────────
 
 /**
- * El quiz guarda el ÍNDICE de la respuesta, no su texto.
+ * Los paquetes en UNA fila que se desliza.
  *
- * Antes comparaba contra la cadena literal ("2 noches"): en inglés el botón dice
- * "2 nights" y ninguna comparación casaba, así que el quiz se quedaba mudo y
- * nunca recomendaba un paquete. El índice es el mismo en los dos idiomas.
+ * Antes era una rejilla de dos columnas donde el quinto paquete se estiraba a
+ * lo ancho para no dejar media fila vacía: tres formas de tarjeta distintas
+ * para cinco productos que se comparan entre sí. En una sola fila todas las
+ * tarjetas miden lo mismo y la comparación es directa; además la fila dice por
+ * sí sola que hay más a la derecha.
  */
-const PAQUETE_POR_NOCHES = ["aventura", "completo", "gran-huasteca"] as const;
-
-function getRecomendado(nochesIdx: number | null): string | null {
-  return nochesIdx === null ? null : PAQUETE_POR_NOCHES[nochesIdx] ?? null;
-}
-
-// ── Main ─────────────────────────────────────────────────────────
-
 export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
-  const { locale, lp } = useLocale();
+  const { locale } = useLocale();
   const t = getPaquetesInteractivoUI(locale);
-  const [noches, setNoches] = useState<number | null>(null);
-  const [vibe,   setVibe]   = useState<number | null>(null);
-  const [showSticky, setShowSticky] = useState(false);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const pistaRef = useRef<HTMLDivElement>(null);
+  const [puedeIzq, setPuedeIzq] = useState(false);
+  const [puedeDer, setPuedeDer] = useState(false);
 
-  const recomendado = getRecomendado(noches);
-  const needsVibe   = false; // la recomendación depende solo de las noches
-
-  useEffect(() => {
-    const el = gridRef.current;
+  const medir = useCallback(() => {
+    const el = pistaRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        setShowSticky(!entry.isIntersecting && entry.boundingClientRect.bottom < 0);
-      },
-      { threshold: 0 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
+    // 4 px de holgura: los navegadores redondean el scroll y sin margen la
+    // flecha derecha se quedaba encendida al final del recorrido.
+    setPuedeIzq(el.scrollLeft > 4);
+    setPuedeDer(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   }, []);
 
-  const getEstado = (id: string): "normal" | "destacado" | "atenuado" => {
-    if (!recomendado) return "normal";
-    return id === recomendado ? "destacado" : "atenuado";
-  };
+  useEffect(() => {
+    medir();
+    const el = pistaRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(medir);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [medir]);
+
+  function mover(dir: -1 | 1) {
+    const el = pistaRef.current;
+    if (!el) return;
+    const tarjeta = el.querySelector<HTMLElement>("[data-tarjeta]");
+    const paso = tarjeta ? tarjeta.offsetWidth + 20 : el.clientWidth * 0.8;
+    const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollBy({ left: dir * paso, behavior: suave ? "smooth" : "auto" });
+  }
+
+  const flechaCls =
+    "hidden md:flex h-10 w-10 items-center justify-center rounded-full border border-negro/15 bg-crema/90 " +
+    "text-negro/70 backdrop-blur transition-[opacity,background-color,transform] duration-200 " +
+    "hover:bg-crema hover:text-negro active:scale-95 disabled:pointer-events-none disabled:opacity-0";
 
   return (
-    <>
-      {/* ── QUIZ ── idea 4 */}
-      <section className="bg-verde-profundo/10 border-y border-white/6 py-10 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-[9px] tracking-[4px] uppercase text-verde-vivo font-dm mb-2">
-            {t.quizEyebrow}
-          </p>
-          <h2 className="font-cormorant font-light text-crema mb-8" style={{ fontSize: "clamp(20px,3vw,30px)" }}>
-            {t.quizH2a}<em className="shimmer-gold">{t.quizH2b}</em>
-          </h2>
+    <section
+      id="catalogo"
+      className="relative scroll-mt-24 overflow-hidden border-y border-negro/10 py-14"
+      style={{ background: "linear-gradient(180deg, #f6f1e2, #e9dfc6)" }}
+    >
+      <PatronDestinos />
 
-          <div className="space-y-6">
-            {/* Q1 */}
-            <div>
-              <p className="text-[10px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
-                {t.quizP1}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {t.nochesOpts.map((opt, i) => (
-                  <button
-                    key={opt}
-                    onClick={() => { setNoches(noches === i ? null : i); setVibe(null); }}
-                    className={`px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm border transition-all duration-200 ${
-                      noches === i
-                        ? "bg-dorado text-negro border-dorado"
-                        : "border-white/20 text-crema/60 hover:border-dorado/50 hover:text-crema"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Q2 */}
-            <div className={`transition-opacity duration-300 ${noches !== null ? "opacity-100" : "opacity-30 pointer-events-none"}`}>
-              <p className="text-[10px] tracking-[2px] uppercase text-crema/50 font-dm mb-3">
-                {t.quizP2}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {t.vibeOpts.map((opt, i) => (
-                  <button
-                    key={opt}
-                    onClick={() => setVibe(vibe === i ? null : i)}
-                    className={`px-5 py-2.5 text-[11px] tracking-[1.5px] uppercase font-dm border transition-all duration-200 ${
-                      vibe === i
-                        ? "bg-verde-selva text-crema border-verde-selva"
-                        : "border-white/20 text-crema/60 hover:border-verde-vivo/50 hover:text-crema"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Resultado */}
-            {noches !== null && (
-              <div className="animate-fade-in">
-                {needsVibe ? (
-                  <p className="text-crema/40 font-dm text-sm">
-                    {t.eligeTipo}
-                  </p>
-                ) : recomendado ? (
-                  <div className="border border-dorado/30 bg-dorado/8 px-6 py-4 max-w-sm mx-auto">
-                    <p className="text-[9px] tracking-[2px] uppercase text-dorado/70 font-dm mb-1">{t.tuPaqueteIdeal}</p>
-                    {/* El nombre sale del propio catálogo ya localizado, no de
-                        una tabla aparte que había que mantener a mano. */}
-                    <p className="font-cormorant text-dorado text-xl font-light">
-                      {paquetes.find((p) => p.id === recomendado)?.nombre}
-                    </p>
-                    <p className="text-[10px] text-crema/40 font-dm mt-1">{t.miraDestacado}</p>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── GRID ── */}
-      <section className="max-w-6xl mx-auto px-6 py-16" ref={gridRef}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {paquetes.map((p) => (
-            <PaqueteCard key={p.id} p={p} estado={getEstado(p.id)} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── STICKY BAR — idea 3 ── */}
-      <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-negro/97 border-t border-white/10 backdrop-blur-md transition-all duration-300 ${
-          showSticky ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
-        }`}
-        aria-hidden={!showSticky}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
-          <span className="flex-shrink-0 text-[9px] tracking-[2px] uppercase text-crema/25 font-dm hidden sm:block mr-1">
-            {t.reservarLabel}
-          </span>
-          {/* Mandaba los tres paquetes a WhatsApp aunque el checkout en línea ya
-              existe: era el único camino de esta página que no cerraba la venta
-              sin que alguien contestara un chat. La ficha individual ya lo hacía
-              bien (`PaqueteFormCta`), esta barra se había quedado atrás. */}
-          {paquetes.map((p) => (
-            <Link
-              key={p.id}
-              href={lp(`/reservar-paquete/${p.slug}`)}
-              onClick={() => trackPackageInquiry(p.nombre, p.precio)}
-              className={`flex-shrink-0 flex items-center gap-3 px-4 py-2 border transition-all duration-200 group ${
-                p.destacado
-                  ? "border-dorado/60 bg-dorado/10 hover:bg-dorado/20"
-                  : "border-white/10 hover:border-white/25"
-              }`}
-            >
-              <div className="min-w-0">
-                <p className={`text-[9px] tracking-[1.5px] uppercase font-dm font-medium leading-none mb-0.5 ${p.destacado ? "text-dorado" : "text-crema/50"}`}>
-                  {p.destacado ? "★ " : ""}{p.nombre.replace(/^Paquete |\s*Package$/g, "")}
-                </p>
-                <p className={`font-cormorant leading-none ${p.destacado ? "text-dorado" : "text-crema/70"}`} style={{ fontSize: "15px" }}>
-                  ${p.precio.toLocaleString("es-MX")}
-                  <span className="font-dm text-[8px] text-crema/25 ml-1">MXN</span>
-                </p>
-              </div>
-              <CreditCard
-                className={`w-3.5 h-3.5 flex-shrink-0 group-hover:text-verde-vivo transition-colors ${p.destacado ? "text-dorado/50" : "text-crema/20"}`}
-                aria-hidden="true"
-              />
-            </Link>
-          ))}
+      <div className="relative mx-auto max-w-6xl px-6">
+        <div className="mb-5 flex items-center justify-end gap-2">
           <button
-            onClick={() => gridRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="flex-shrink-0 ml-auto text-[9px] tracking-[1.5px] uppercase font-dm text-crema/25 hover:text-crema/55 transition-colors whitespace-nowrap px-2 py-2"
+            type="button"
+            onClick={() => mover(-1)}
+            disabled={!puedeIzq}
+            aria-label={t.catalogoAnterior}
+            className={flechaCls}
           >
-            ↑ Ver paquetes
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => mover(1)}
+            disabled={!puedeDer}
+            aria-label={t.catalogoSiguiente}
+            className={flechaCls}
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>
-    </>
+
+      {/* La pista sangra hasta el borde de la pantalla para que la tarjeta
+          siguiente asome: es lo que le dice al ojo que la fila continúa.
+
+          🔴 `scroll-pl-*` TIENE que repetir el mismo valor que `px-*`. Sin él,
+          el imán del scroll alinea la primera tarjeta con el borde del área
+          visible y se come el margen izquierdo: la fila nace desplazada y la
+          primera tarjeta aparece cortada contra el canto de la pantalla. */}
+      <div
+        ref={pistaRef}
+        onScroll={medir}
+        tabIndex={0}
+        className="scrollbar-none flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-2 scroll-pl-6 md:px-[max(1.5rem,calc((100vw_-_72rem)/2))] md:scroll-pl-[max(1.5rem,calc((100vw_-_72rem)/2))]"
+      >
+        {paquetes.map((p) => (
+          <div
+            key={p.id}
+            data-tarjeta
+            className="w-[86vw] max-w-[360px] flex-shrink-0 snap-start sm:w-[340px]"
+          >
+            <PaqueteCard p={p} />
+          </div>
+        ))}
+        {/* Cierra la fila con el mismo aire que la abre. */}
+        <div className="w-px flex-shrink-0" aria-hidden="true" />
+      </div>
+    </section>
   );
 }

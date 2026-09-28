@@ -18,7 +18,7 @@ cargarEnv();
 
 const HOST = process.argv[2] || "http://localhost:3007";
 const LEAD = {
-  id: "x", email: "prueba@ejemplo.mx", nombre: "Manolo", whatsapp: "4891251458",
+  id: "x", email: "prueba@ejemplo.mx", nombre: "Manolo", whatsapp: "4891090388",
   tipoNegocio: "Agencia", ciudad: "Ciudad Valles", origen: "webinar", webinar: true,
   correosEnviados: [], checkoutIniciadoAt: new Date(), compro: false, comproAt: null,
   montoMxn: null, stripeSessionId: null, status: "activo",

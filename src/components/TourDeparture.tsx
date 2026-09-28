@@ -1,11 +1,35 @@
 /* TourDeparture — Punto de salida y transporte (Server Component) */
 import { headers } from "next/headers";
 import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
+import { TOURS_DB, recogidaDeTour, regresoDeTour, ventanaSalida } from "@/lib/tours";
 
-const WA_LLEGADA_ES =
-  "https://wa.me/524891251458?text=Hola%2C%20tengo%20dudas%20sobre%20c%C3%B3mo%20llegar%20al%20punto%20de%20salida%20del%20tour.";
-const WA_LLEGADA_EN =
-  "https://wa.me/524891251458?text=Hi%2C%20I%20have%20questions%20about%20how%20to%20reach%20the%20tour%20departure%20point.";
+/*
+ * La hora de salida y la de regreso ya NO se calculan aquí: viven en
+ * `src/lib/tours.ts` (`ventanaSalida`, `regresoDeTour`), leyendo el campo
+ * `recogida` de cada tour.
+ *
+ * 🔴 La versión que estaba aquí sumaba la duración a las 8:00 de la MAÑANA,
+ * siempre. Con un recorrido nocturno de 3 h eso anunciaba "Regreso aprox.
+ * 11:00 AM". Y su `.replace(/ (AM|PM)–/, "–")` quitaba el meridiano del primero
+ * sin comprobar que coincidiera con el del segundo, así que un rango de 11:00 AM
+ * a 1:00 PM salía como "11:00–1:00 PM", que se lee como las once de la noche.
+ */
+
+/**
+ * El mensaje que se prellena en WhatsApp desde este bloque.
+ *
+ * 🔴 Era UNA sola constante —"dudas sobre cómo llegar al punto de salida del
+ * tour"— y se usaba en las tres variantes, incluida aquella en la que pasamos
+ * por el cliente a su hospedaje y NO HAY punto de salida. El comentario de
+ * abajo ya lo advertía y el texto visible dice "Pasamos por ti": el botón
+ * contradecía al párrafo que tenía encima. Tampoco nombraba el tour, así que
+ * quien contesta no sabía por cuál preguntan.
+ *
+ * Ahora se arma por variante y con el nombre del recorrido.
+ */
+function waLlegada(texto: string): string {
+  return `https://wa.me/524891090388?text=${encodeURIComponent(texto)}`;
+}
 
 // Nota: aquí ya no se muestra el mapa del Hotel Paraíso Encantado. Los tours no
 // salen de un punto fijo: pasamos por el cliente a SU hospedaje, en Xilitla o en
@@ -57,10 +81,39 @@ const MEDIA_LUNA = {
 
 export function TourDeparture({ tourId }: { tourId?: string }) {
   const en = headers().get("x-locale") === "en";
-  const WA_LLEGADA = en ? WA_LLEGADA_EN : WA_LLEGADA_ES;
+  const tour = TOURS_DB.find((t) => t.id === tourId);
+  // 🔴 La variante sale del CATÁLOGO, no de una lista de ids escrita a mano.
+  // Estaba repetida en cuatro archivos y ya se habían desincronizado: el Edén
+  // no figuraba aquí, así que caía en el caso por defecto y le prometía al
+  // cliente recogida en Ciudad Valles mientras su propia pregunta frecuente,
+  // 300 px más abajo en la misma página, decía "solo desde Xilitla".
+  const rec = recogidaDeTour(tour ?? {});
+  // El nombre del recorrido, para que quien contesta sepa de cuál se trata.
+  const nombreTour = tour?.nombreCorto ?? "";
+  const conNombre = nombreTour ? ` de la ${nombreTour}` : "";
+  const WA_LLEGADA = waLlegada(
+    rec.tipo === "hospedaje"
+      ? (en
+          ? `Hi, I'm interested in the${nombreTour ? ` ${nombreTour}` : " tour"}. I'm staying at ___ — do you pick me up there?`
+          : `Hola, me interesa la ${nombreTour || "Expedición"}. Me hospedo en ___, ¿pasan por mí?`)
+      : rec.tipo === "hospedaje-xilitla"
+        ? (en
+            ? `Hi, I'm interested in the${nombreTour ? ` ${nombreTour}` : " tour"}. I'm staying in ___ — do you pick me up, or should I meet you in Xilitla?`
+            : `Hola, me interesa la ${nombreTour || "experiencia"}. Me hospedo en ___, ¿pasan por mí o los veo en Xilitla?`)
+        : (en
+            ? `Hi, I have questions about how to reach the meeting point${nombreTour ? ` for the ${nombreTour}` : ""}.`
+            : `Hola, tengo dudas sobre cómo llegar al punto de encuentro${conNombre}.`),
+  );
+
+  /* Las dos casillas de horario, derivadas del catálogo en vez de escritas a
+     mano en cada variante. */
+  const horario = [
+    { Icon: Clock,        label: en ? "Departure time" : "Hora de salida", value: ventanaSalida(tour ?? {}, en) },
+    { Icon: CheckCircle2, label: en ? "Approx. return" : "Regreso aprox.", value: tour ? regresoDeTour(tour, en) : "—" },
+  ];
 
   // ── Variante Media Luna (Rioverde): el tour de buceo no sale de Xilitla ──
-  if (tourId === "tour-buceo-media-luna") {
+  if (rec.tipo === "en-sitio") {
     return (
       <section>
         <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
@@ -129,7 +182,7 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
   }
 
   // ── Variante RZR: se maneja en Xilitla, no hay recogida en Ciudad Valles ──
-  if (tourId === "tour-rzr-xilitla") {
+  if (rec.tipo === "base-xilitla") {
     return (
       <section>
         <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
@@ -152,12 +205,12 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {(en
               ? [
-                  { Icon: Clock,        label: "Departure time", value: "Between 8:00 and 9:00 AM" },
+                  { Icon: Clock,        label: "Departure time", value: horario[0].value },
                   { Icon: Bus,          label: "Meeting point",  value: "Our base in Xilitla" },
                   { Icon: CheckCircle2, label: "Duration",       value: "2 to 5 h depending on route" },
                 ]
               : [
-                  { Icon: Clock,        label: "Horario de salida", value: "Entre 8:00 y 9:00 AM" },
+                  { Icon: Clock,        label: "Horario de salida", value: horario[0].value },
                   { Icon: Bus,          label: "Punto de encuentro", value: "Nuestra base en Xilitla" },
                   { Icon: CheckCircle2, label: "Duración",          value: "2 a 5 h según la ruta" },
                 ]
@@ -186,6 +239,93 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
           >
             <WhatsAppIcon />
             {en ? "Ask us how to get there →" : "Pregúntanos cómo llegar →"}
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  // ── Variante híbrida: recogemos en Xilitla, desde Valles llegas por tu cuenta ──
+  // El Edén en el Jardín, la Gruta de Xilo, el Amanecer de Nubes y la Olla de
+  // la Luz. La diferencia entre ellos —si el vehículo es el RZR, y qué hace
+  // quien viene de Valles— sale del catálogo, no de otro `if` por id.
+  if (rec.tipo === "hospedaje-xilitla") {
+    return (
+      <section>
+        <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
+          <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" />
+          {en ? "Pickup & meeting point" : "Recogida y punto de encuentro"}
+        </h2>
+
+        <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
+          <p className="text-crema/65 font-dm text-sm leading-relaxed">
+            {en ? (
+              <>We <strong className="text-crema font-medium">pick you up at your lodging in{" "}
+              Xilitla</strong>{rec.vehiculo ? <> — in the {rec.vehiculo.en} itself</> : null} and bring
+              you back at the end. If you&apos;re staying in{" "}
+              <strong className="text-crema font-medium">Ciudad Valles</strong>, we can come and get
+              you there for an extra transfer fee, or you make your own way up to Xilitla.</>
+            ) : (
+              <><strong className="text-crema font-medium">Pasamos por ti a tu hospedaje en{" "}
+              Xilitla</strong>{rec.vehiculo ? <> —en el propio {rec.vehiculo.es}—</> : null} y te
+              regresamos al terminar. Si te hospedas en{" "}
+              <strong className="text-crema font-medium">Ciudad Valles</strong>, podemos ir por ti con
+              un costo extra de traslado, o subes a Xilitla por tu cuenta.</>
+            )}
+          </p>
+
+          {/* Las dos situaciones, una al lado de la otra: es la pregunta que el
+              cliente trae y la que el bloque por defecto contestaba al revés. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(en
+              ? [
+                  { ciudad: "Xilitla",       nota: rec.vehiculo ? `We pick you up at your lodging — in the ${rec.vehiculo.en}` : "We pick you up at your lodging" },
+                  { ciudad: "Ciudad Valles", nota: "Transfer at an extra cost — or make your own way to Xilitla" },
+                ]
+              : [
+                  { ciudad: "Xilitla",       nota: rec.vehiculo ? `Pasamos por ti a tu hospedaje, en el ${rec.vehiculo.es}` : "Pasamos por ti a tu hospedaje" },
+                  { ciudad: "Ciudad Valles", nota: "Traslado con costo extra — o subes por tu cuenta" },
+                ]
+            ).map((c) => (
+              <div key={c.ciudad} className="bg-verde-profundo/30 border border-white/8 p-4 rounded">
+                <p className="flex items-center gap-2 text-crema font-dm text-sm font-medium">
+                  <MapPin className="w-4 h-4 text-verde-vivo/70 flex-shrink-0" aria-hidden="true" />
+                  {c.ciudad}
+                </p>
+                <p className="text-crema/50 font-dm text-xs mt-1 pl-6">{c.nota}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className={`grid grid-cols-1 gap-3 ${rec.vehiculo ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            {[
+              ...horario,
+              ...(rec.vehiculo
+                ? [{ Icon: Bus, label: en ? "Vehicle" : "Vehículo", value: en ? rec.vehiculo.en : rec.vehiculo.es }]
+                : []),
+            ].map((item) => (
+              <div key={item.label} className="bg-verde-profundo/30 border border-white/8 p-3 rounded">
+                <item.Icon className="w-5 h-5 text-verde-vivo/60 mb-1" aria-hidden="true" />
+                <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm mb-0.5">
+                  {item.label}
+                </p>
+                <p className="text-crema/80 font-dm text-sm">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {rec.nota && (
+            <p className="text-[10px] text-crema/40 font-dm">{en ? rec.nota.en : rec.nota.es}</p>
+          )}
+
+          <a
+            href={WA_LLEGADA}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 px-4 py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all duration-200 rounded"
+          >
+            <WhatsAppIcon />
+            {en ? "Ask about your pickup →" : "Pregunta por tu recogida →"}
           </a>
         </div>
       </section>
@@ -245,14 +385,14 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {(en
             ? [
-                { Icon: Clock,        label: "Pickup time",    value: "Between 8:00 and 9:00 AM" },
+                { Icon: Clock,        label: "Pickup time",    value: horario[0].value },
                 { Icon: Bus,          label: "Transport",      value: "Round trip, included" },
-                { Icon: CheckCircle2, label: "Approx. return", value: "6:00–7:00 PM" },
+                { Icon: CheckCircle2, label: "Approx. return", value: horario[1].value },
               ]
             : [
-                { Icon: Clock,        label: "Hora de recogida", value: "Entre 8:00 y 9:00 AM" },
+                { Icon: Clock,        label: "Hora de recogida", value: horario[0].value },
                 { Icon: Bus,          label: "Traslado",          value: "Redondo, incluido" },
-                { Icon: CheckCircle2, label: "Regreso aprox.",    value: "6:00–7:00 PM" },
+                { Icon: CheckCircle2, label: "Regreso aprox.",    value: horario[1].value },
               ]
           ).map((item) => (
             <div key={item.label} className="bg-verde-profundo/30 border border-white/8 p-3 rounded">

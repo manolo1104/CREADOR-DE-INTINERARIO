@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { resenasTexto } from "@/lib/resenas";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, Users, Star, MapPin, X, Check } from "lucide-react";
@@ -110,7 +111,7 @@ export function TarjetaTourReservar({
         <div className="flex flex-col flex-1 p-5">
           <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1.5">{tour.tipo}</p>
           <h3 className="font-cormorant text-crema text-xl leading-tight mb-2">
-            {tour.nombre.split("—")[0].trim()}
+            {tour.nombreCorto}
           </h3>
 
           {tour.urgencia && (
@@ -120,8 +121,7 @@ export function TarjetaTourReservar({
           {tour.reviewCount > 0 && (
             <p className="flex items-center gap-1.5 text-[11px] font-dm text-dorado/90 mb-3">
               <Star className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
-              <strong className="text-crema/85">4.9</strong>
-              <span className="text-crema/45">{t.resenas(tour.reviewCount)}</span>
+              <span className="text-crema/85">{resenasTexto(false)}</span>
             </p>
           )}
 

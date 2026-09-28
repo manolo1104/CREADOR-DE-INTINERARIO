@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { GOOGLE_RATING } from "@/lib/resenas";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getNosotros } from "@/lib/i18n/nosotros.en";
 
@@ -28,7 +29,9 @@ const NUMEROS: NumeroItem[] = [
     anima: true,
   },
   {
-    target: 4.9,
+    // La calificación real de Google. Sale de `src/lib/resenas.ts`, que es el
+    // único sitio donde vive la cifra desde el 28 sep 2026.
+    target: GOOGLE_RATING,
     decimals: 1,
     format: (n) => `${n.toFixed(1)} ★`,
     label: "",

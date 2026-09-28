@@ -61,7 +61,7 @@ export function GuiaHeroMockup() {
           del teléfono, nunca sobre el contenido de la pantalla. */}
       <div className="absolute -top-4 -left-4 bg-negro/95 border border-white/12 rounded-lg px-3 py-2 shadow-xl backdrop-blur-sm">
         <p className="font-cormorant text-dorado text-lg leading-none">4.9★</p>
-        <p className="text-[7px] tracking-[1px] uppercase text-crema/45 font-dm mt-0.5">Google · 492 reseñas</p>
+        <p className="text-[7px] tracking-[1px] uppercase text-crema/45 font-dm mt-0.5">Google · 161 reseñas</p>
       </div>
       <div className="absolute -bottom-4 -right-4 bg-negro/95 border border-white/12 rounded-lg px-3 py-2 shadow-xl backdrop-blur-sm">
         <p className="text-[9px] text-verde-vivo font-dm font-medium leading-none">⬇ Descarga</p>

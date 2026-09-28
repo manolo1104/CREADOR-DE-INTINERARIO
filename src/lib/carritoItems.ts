@@ -13,7 +13,7 @@
  */
 
 import { TOURS_DB, type Tour } from "./tours";
-import { calcTourTotal } from "./tourBooking";
+import { totalRecorrido } from "./tourBooking";
 import type { CarritoItem } from "./carrito";
 
 /**
@@ -67,13 +67,12 @@ export function itemDesdeTour(
   }
 
   const adults = base.adults ?? personasIniciales(t);
-  const { total } = calcTourTotal(
-    t.precio,
-    adults,
-    base.childrenMid ?? 0,
-    base.childrenSmall ?? 0,
-    0,
-  );
+  const ninosMid   = base.childrenMid ?? 0;
+  const ninosSmall = base.childrenSmall ?? 0;
+
+  // `totalRecorrido` bifurca sola entre tarifa de grupo y precio por cabeza:
+  // es la misma cuenta que hace el servidor en `computeTourCharge`.
+  const total = totalRecorrido(t, adults, ninosMid, ninosSmall);
   return { ...comun, adults, total, ...base };
 }
 

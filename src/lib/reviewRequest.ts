@@ -3,7 +3,7 @@ import type { Locale } from "./i18n/config";
 /**
  * Petición de reseña después del tour.
  *
- * Las 492 reseñas de Google están casi todas en español: un visitante
+ * Las 161 reseñas de Google están casi todas en español: un visitante
  * estadounidense que llega al sitio no ve a nadie como él y decide que esto no
  * es para él, por bueno que sea el copy. Este módulo cierra ese hueco pidiendo
  * la reseña al cliente que reservó en inglés, en inglés, cuando el recuerdo

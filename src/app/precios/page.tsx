@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, esPorPersona, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
@@ -42,7 +42,7 @@ const DIF_LABEL: Record<string, string> = { baja: "Fácil", media: "Moderado", a
 // El rango se calcula del catálogo, no se escribe a mano: el texto decía
 // "$1,300 a $1,850" mientras la tabla de esta misma página llegaba a $1,950
 // (rafting) y bajaba a $900 (Travesía del Café).
-const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
+const preciosPorPersona = TOURS_DB.filter(esPorPersona).map((t) => t.precio);
 const RANGO_MIN = `$${Math.min(...preciosPorPersona).toLocaleString("es-MX")}`;
 const RANGO_MAX = `$${Math.max(...preciosPorPersona).toLocaleString("es-MX")}`;
 // Derivado del catálogo: estos importes estaban escritos a mano en la respuesta
@@ -52,10 +52,10 @@ const PAQ_MIN = `$${Math.min(...preciosPaquete).toLocaleString("es-MX")}`;
 const PAQ_MAX = `$${Math.max(...preciosPaquete).toLocaleString("es-MX")}`;
 const RZR_DESDE = `$${(TOURS_DB.find((t) => t.id === "tour-rzr-xilitla")?.precio ?? 0).toLocaleString("es-MX")}`;
 
-// Tours con formato privado: el dato ya vivía en el catálogo sin publicarse.
-const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable && t.privateMinPrice);
-const PRIVADO_MIN = `$${Math.min(...PRIVADOS.map((t) => t.privateMinPrice!)).toLocaleString("es-MX")}`;
-const PRIVADO_MAX = `$${Math.max(...PRIVADOS.map((t) => t.privateMinPrice!)).toLocaleString("es-MX")}`;
+// Tours con formato privado. El privado NO es un precio aparte: es el precio
+// normal del recorrido más un recargo por cabeza (ver `PRIVADO_EXTRA_POR_PERSONA`).
+const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable);
+const PRIVADO_EXTRA = `$${PRIVADO_EXTRA_POR_PERSONA.toLocaleString("es-MX")}`;
 const PRIVADOS_NOMBRES = `${PRIVADOS.length} de nuestros recorridos`;
 
 // FAQ de precios: texto plano reutilizado tal cual en el FAQPage JSON-LD. Datos verificables, sin inventar.
@@ -82,16 +82,21 @@ const FAQS_PRECIOS: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuánto cuesta un tour privado?",
-    // Decía "casi todos" cuando son 5 de 10, y no daba precio pese a que
-    // `privateMinPrice` ya existe en el catálogo para cada uno de esos 5.
-    a: `${PRIVADOS_NOMBRES} se pueden hacer en formato privado para tu grupo, desde ${PRIVADO_MIN} MXN por el grupo completo (el más caro llega a ${PRIVADO_MAX}). El precio final depende del tour y del número de personas — escríbenos por WhatsApp y te cotizamos el mismo día.`,
+    // 🔴 Antes decía "desde $7,000 por el grupo completo", que no es como se
+    // cobra: el privado es el precio del recorrido MÁS un recargo por persona.
+    // Para dos personas en Tamul la cifra anunciada era más del doble de la real.
+    a: `${PRIVADOS_NOMBRES} se pueden hacer en formato privado para tu grupo. Cuesta el precio normal del recorrido más ${PRIVADO_EXTRA} MXN por persona: para la Expedición Tamul, por ejemplo, son $1,800 MXN por persona en lugar de $1,550. Escríbenos por WhatsApp y te lo cotizamos el mismo día.`,
   },
 ];
 
 export default function PreciosPage() {
   // Solo tours por persona en la tabla principal; el RZR (por vehículo) se muestra aparte.
-  const porPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo");
+  const porPersona = TOURS_DB.filter(esPorPersona);
   const porVehiculo = TOURS_DB.filter((t) => t.precioUnidad === "vehiculo");
+  // Tarifa del GRUPO COMPLETO: ni por cabeza ni por unidad. Sin esta lista el
+  // Edén en el Jardín no salía en ninguno de los dos filtros y desaparecía de
+  // la página de precios — existía en el catálogo y no en la comparación.
+  const porGrupoTours = TOURS_DB.filter((t) => t.precioUnidad === "grupo");
   const precioMin = Math.min(...porPersona.map((t) => t.precio));
   const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
 
@@ -192,6 +197,25 @@ export default function PreciosPage() {
                     </td>
                   </tr>
                 ))}
+                {porGrupoTours.map((t) => (
+                  <tr key={t.slug} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                    <td className="px-4 py-4">
+                      <Link href={`/tours/${t.slug}`} className="text-crema hover:text-dorado transition-colors">
+                        {t.nombre}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-crema/60 whitespace-nowrap">{tourDurTexto(t, " h")}</td>
+                    <td className="px-4 py-4 text-crema/60">{DIF_LABEL[t.dificultad]}</td>
+                    <td className="px-4 py-4 text-right whitespace-nowrap">
+                      <Link href={`/reservar/carrito?agregar=${t.slug}`} className="group/precio inline-block">
+                        <span className="text-crema/50 text-xs">desde </span>
+                        <span className="font-cormorant text-dorado text-xl group-hover/precio:text-lima transition-colors">{money(t.precio)}</span>
+                        <span className="text-crema/40 text-xs"> MXN por el grupo (hasta {t.groupMax})</span>
+                        <span className="block text-[9px] tracking-[1.5px] uppercase font-dm text-crema/35 group-hover/precio:text-lima transition-colors">Reservar →</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -199,6 +223,15 @@ export default function PreciosPage() {
             Niños de 6 a 10 años pagan ~70 % del precio de adulto; menores de 6 años, 50 %. Cancelación gratuita con 48 h
             de anticipación. Salidas todos los días del año entre 8:00 y 9:00 AM.
           </p>
+          {/* Los recorridos de tarifa por grupo no siguen ninguna de las tres
+              reglas de la línea de arriba: no hay descuento de menor sobre una
+              tarifa plana, ni reembolso, ni salida a las 8:00. */}
+          {porGrupoTours.length > 0 && (
+            <p className="text-crema/45 font-dm text-xs mt-2">
+              Las experiencias con <strong className="text-crema/70">tarifa por grupo</strong> se cobran completas, sin
+              descuento de menor, y tienen horario y política de cambios propios: los ves en la página de cada una.
+            </p>
+          )}
         </div>
       </section>
 

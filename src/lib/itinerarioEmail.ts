@@ -42,7 +42,7 @@ const DIAS: Dia[] = [
     titulo: "La cascada más alta y el abismo",
     lugares: [
       "Cascada de Tamul en canoa (105 m de caída)",
-      "Sótano de las Huahuas — mirador al abismo de 512 m",
+      "Sótano de las Huahuas — mirador al abismo de 478 m",
       "Cenote Cueva del Agua",
     ],
     tip: "Tamul lleva agua turquesa de noviembre a mayo. En temporada de lluvias baja café y con más caudal.",
@@ -78,7 +78,7 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
           <tr><td style="padding:2px 0 2px 16px;">
             <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.texto};line-height:1.7;">
               ¿Sin coche o sin ganas de manejar? Este día completo es nuestro
-              <a href="${BASE}/tours/${tour.slug}" style="color:${C.verde};font-weight:500;">${tour.nombre.split(" — ")[0]}</a>
+              <a href="${BASE}/tours/${tour.slug}" style="color:${C.verde};font-weight:500;">${tour.nombreCorto}</a>
               — ${mx(tour.precio)} por persona, con entradas, guía y traslado redondo desde tu hospedaje.
             </p>
           </td></tr>
@@ -151,7 +151,7 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
         </td></tr>`),
       boton(`${BASE}/guia`, "Verla — $49 MXN", "dorado"),
     ].join(""),
-    pie: `¿Dudas sobre fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 125 1458</a> — contestamos en menos de 1 hora.`,
+    pie: `¿Dudas sobre fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de 1 hora.`,
     origen: "Recibiste este correo porque pediste el itinerario en nuestro sitio.",
     paraBaja: email,
   });

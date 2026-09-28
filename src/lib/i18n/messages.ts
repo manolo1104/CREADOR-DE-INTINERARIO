@@ -36,6 +36,9 @@ export interface Messages {
   tour: {
     guidedAllInclusive: string;
     aboutThisTour: string;
+    /** Abre y cierra el relato largo del recorrido, que arranca plegado. */
+    keepReading: string;
+    showLess: string;
     destinations: string;
     images: string;
     allIncluded: string;
@@ -174,6 +177,8 @@ const es: Messages = {
   tour: {
     guidedAllInclusive: "Tour guiado con todo incluido",
     aboutThisTour: "Acerca de este tour",
+    keepReading: "Seguir leyendo",
+    showLess: "Ocultar",
     destinations: "Destinos del recorrido",
     images: "Imágenes del recorrido",
     allIncluded: "Todo incluido ✦",
@@ -189,10 +194,10 @@ const es: Messages = {
     bookWithConfidence: "Reserva con total confianza",
     freeCancellation: "Cancelación gratuita",
     freeCancellationSub: "Hasta 48h antes · Reembolso completo",
-    rescheduleRain: "Si llueve, reprogramamos",
-    rescheduleRainSub: "Sin costo adicional · Fecha flexible",
+    rescheduleRain: "Operamos con lluvia",
+    rescheduleRainSub: "Si el río no es seguro, eliges: reembolso o cambio de fecha",
     photosIncluded: "Fotos y video incluidos",
-    photosIncludedSub: "Entregados el mismo día · Sin extra",
+    photosIncludedSub: "Los toma tu guía · Sin costo extra",
     support247: "Soporte en WhatsApp 24/7",
     support247Sub: "Respuesta en menos de 1 hora",
     backToTours: "← Ver todos los tours",
@@ -311,6 +316,8 @@ const en: Messages = {
   tour: {
     guidedAllInclusive: "Guided, all-inclusive tour",
     aboutThisTour: "About this tour",
+    keepReading: "Keep reading",
+    showLess: "Show less",
     destinations: "On this tour",
     images: "Tour photos",
     allIncluded: "All included ✦",
@@ -326,10 +333,10 @@ const en: Messages = {
     bookWithConfidence: "Book with total confidence",
     freeCancellation: "Free cancellation",
     freeCancellationSub: "Up to 48h before · Full refund",
-    rescheduleRain: "If it rains, we reschedule",
-    rescheduleRainSub: "No extra cost · Flexible date",
+    rescheduleRain: "We run in the rain",
+    rescheduleRainSub: "If the river is unsafe you choose: refund or new date",
     photosIncluded: "Photos and video included",
-    photosIncludedSub: "Delivered same day · No extra charge",
+    photosIncludedSub: "Taken by your guide · No extra charge",
     support247: "WhatsApp support 24/7",
     support247Sub: "Reply in under 1 hour",
     backToTours: "← View all tours",

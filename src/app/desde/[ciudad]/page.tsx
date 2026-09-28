@@ -175,7 +175,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
                   <span className="font-dm text-sm text-crema/80 group-hover:text-crema transition-colors">{t.nombre}</span>
                   <span className="font-dm text-sm text-lima whitespace-nowrap">
                     ${t.precio.toLocaleString("es-MX")}
-                    <span className="text-crema/35 text-xs">{t.precioUnidad === "vehiculo" ? " /vehículo" : " /persona"}</span>
+                    <span className="text-crema/35 text-xs">{t.precioUnidad === "vehiculo" ? " /vehículo" : t.precioUnidad === "grupo" ? " /grupo" : " /persona"}</span>
                   </span>
                 </Link>
               </li>

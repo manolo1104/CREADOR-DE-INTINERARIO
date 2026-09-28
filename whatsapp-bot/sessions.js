@@ -4,7 +4,7 @@ const sessions = new Map();
 
 function getSession(phone) {
   if (!sessions.has(phone)) {
-    sessions.set(phone, { history: [], draft: {}, lastFolio: null, createdAt: Date.now() });
+    sessions.set(phone, { phone, history: [], draft: {}, lastFolio: null, createdAt: Date.now() });
   }
   return sessions.get(phone);
 }

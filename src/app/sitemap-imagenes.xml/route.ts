@@ -1,4 +1,5 @@
 import { TOURS_DB } from "@/lib/tours";
+import { localizeTour } from "@/lib/i18n/localize";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { altsGaleriaDestino } from "@/lib/altImagenes";
@@ -74,6 +75,27 @@ export async function GET() {
     return { loc: `${BASE}/tours/${t.slug}`, imagenes };
   });
 
+  // 🔴 Las fichas en inglés faltaban por completo. `/en/tours/<slug>` es otra
+  // URL, con los mismos archivos de imagen pero con el `alt` traducido, así que
+  // le corresponde su propia entrada: si no, Google no asocia ninguna foto a la
+  // mitad inglesa del sitio. Los títulos salen de `localizeTour`, el mismo
+  // camino que usa la página, para que el sitemap y el HTML no se contradigan.
+  const toursEn: Entrada[] = TOURS_DB.map((base) => {
+    const t = localizeTour(base, "en");
+    const vistos = new Set<string>();
+    const imagenes: { url: string; titulo: string }[] = [];
+    if (t.imagen_hero) {
+      vistos.add(t.imagen_hero);
+      imagenes.push({ url: abs(t.imagen_hero), titulo: t.nombre });
+    }
+    for (const g of t.gallery ?? []) {
+      if (!g.src || vistos.has(g.src)) continue;
+      vistos.add(g.src);
+      imagenes.push({ url: abs(g.src), titulo: g.alt || t.nombre });
+    }
+    return { loc: `${BASE}/en/tours/${t.slug}`, imagenes };
+  });
+
   // Los títulos salen del MISMO helper que los `alt` de la página, así que lo
   // que Google lee en el sitemap y lo que lee en el HTML coinciden. Antes aquí
   // decía "— foto 2", "— foto 3"…, que no describe nada.
@@ -91,7 +113,7 @@ export async function GET() {
     imagenes: p.imagen ? [{ url: abs(p.imagen), titulo: p.nombre }] : [],
   }));
 
-  const entradas = [...tours, ...destinos, ...paquetes, ...(await blogEntradas())].filter(
+  const entradas = [...tours, ...toursEn, ...destinos, ...paquetes, ...(await blogEntradas())].filter(
     (e) => e.imagenes.length > 0,
   );
 

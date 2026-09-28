@@ -50,9 +50,13 @@ export function GaleriaHabitacion({
   useEffect(() => { if (abierta) setI(0); }, [abierta, habitacion?.id]);
   useEffect(() => (abierta ? bloquearScroll() : undefined), [abierta]);
 
+  // Todas las fotos del cuarto, no sólo la portada: son las mismas que enseña
+  // el sitio del hotel. Antes se veía una foto del cuarto y siete de las áreas
+  // comunes, así que quien quería ver la habitación veía el jardín.
   const fotos: Foto[] = habitacion
     ? [
-        { src: habitacion.imagen, alt: habitacion.nombre, etiqueta: t.etiquetaHabitacion },
+        ...(habitacion.galeria?.length ? habitacion.galeria : [habitacion.imagen])
+          .map((src) => ({ src, alt: habitacion.nombre, etiqueta: t.etiquetaHabitacion })),
         ...AREAS_HOTEL.map((f) => ({ src: f.src, alt: t[f.alt], etiqueta: t.etiquetaAreas })),
       ]
     : [];

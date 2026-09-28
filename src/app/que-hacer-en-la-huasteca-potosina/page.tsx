@@ -66,7 +66,7 @@ const EXPERIENCIAS: Experiencia[] = [
   {
     titulo: "Asómate al abismo del Sótano de las Golondrinas",
     descripcion:
-      "Un tiro vertical de 376 metros de caída libre (512 m de profundidad total) en Aquismón. Al amanecer, miles de vencejos y pericos salen volando en espiral — uno de los espectáculos naturales más impresionantes de México.",
+      "Un tiro vertical de 376 metros de caída libre (512 m de profundidad total) en Aquismón. Al amanecer, miles de aves —vencejos y loros— salen volando en espiral — uno de los espectáculos naturales más impresionantes de México.",
     href: "/destinos/sotano-de-las-golondrinas",
     cta: "Conocer el Sótano de las Golondrinas",
   },
@@ -87,7 +87,7 @@ const EXPERIENCIAS: Experiencia[] = [
   {
     titulo: "Haz rappel frente a la Cascada de Tamul",
     descripcion:
-      "Desciende en cuerda con la caída de agua más alta de México de frente. Una perspectiva de Tamul que muy poca gente conoce, con equipo certificado y guías especializados en cañonismo.",
+      "Desciende en cuerda con la caída de agua más alta de San Luis Potosí de frente. Una perspectiva de Tamul que muy poca gente conoce, con equipo certificado y guías especializados en cañonismo.",
     href: "/tours/rappel-tamul",
     cta: "Ver el tour de rappel",
   },

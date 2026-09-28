@@ -271,6 +271,14 @@ model TourBooking {
   pagoProveedorFecha    DateTime?
   pagoProveedorNota     String?
   status                String    @default("pending")
+  /// Quién sale a guiar esta reserva. Texto libre a propósito: los guías
+  /// cambian con la temporada y una tabla aparte obligaría a darlos de alta
+  /// antes de poder asignarlos. El panel ofrece los nombres ya usados.
+  guia                  String?
+  /// En qué idioma sale el tour: es | en. No es el idioma en que escribe el
+  /// cliente (eso vive en el `_meta` de lineItems), sino en cuál tiene que
+  /// guiar quien sale: alguien puede escribir en español y pedirlo en inglés.
+  idiomaTour            String    @default("es")
   /// Por dónde entró la reserva: web | whatsapp | telefono | walkin | ota.
   /// GA4 registraba 4 compras mientras el panel mostraba once: sin este campo
   /// no se puede saber si falta medición o si la venta se cerró por chat, y
@@ -433,4 +441,187 @@ model CursoLead {
   updatedAt DateTime @updatedAt
 
   @@index([status, compro])
+}
+
+// ── Bitácora del panel ──────────────────────────────────────────────────────
+// Quién hizo qué, y cuándo. Solo la ve el dueño (rol "dueno" en
+// src/lib/admin/usuarios.ts). Se escribe desde `registrarEnBitacora()`, que
+// NUNCA lanza excepción: si la bitácora falla, la reserva se guarda igual.
+// `detalle` guarda el antes/después de cada campo que cambió, ya traducido a
+// español, para poder leer el renglón sin abrir la base de datos.
+model Bitacora {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  usuario String // "erick" — el usuario con el que entró
+  nombre  String // "Erick" — cómo se muestra
+  rol     String // dueno | socio | operacion | sistema
+
+  accion     String // creó | modificó | eliminó | envió | entró | intento fallido
+  entidad    String // reserva | cotización | precios | comprobante | panel
+  referencia String? // folio visible: HP-XXXX, COT-XXXX
+  resumen    String // renglón legible tal cual se muestra en el panel
+  detalle    Json? // [{campo, antes, despues}] cuando fue una modificación
+
+  @@index([createdAt])
+  @@index([usuario, createdAt])
+}
+
+// ── Movimientos financieros ─────────────────────────────────────────────────
+// El libro donde vive TODO el dinero que no es la venta en sí: lo que costó una
+// salida, los gastos de la empresa, los cobros que se registran a mano, lo que
+// se le reembolsa a un socio y lo que se le reparte.
+//
+// Una sola tabla y no cinco, porque todas responden a la misma pregunta —qué
+// movimiento hubo, de cuánto, cuándo y de quién— y porque así el estado de
+// resultados, el flujo de efectivo y las cuentas por pagar se reconstruyen
+// SIEMPRE desde los mismos renglones, sin que dos tablas puedan discrepar.
+//
+// Conserva el nombre físico `GastoCorte` (@@map) para no perder lo capturado
+// antes de que existiera el módulo de Finanzas.
+//
+// Las categorías viven en `src/lib/admin/categorias.ts`, no aquí: cambian con
+// el negocio y una migración por cada concepto nuevo sería absurda.
+model Movimiento {
+  id     String @id @default(cuid())
+  /// YYYY-MM-DD. Cuándo OCURRIÓ (se devengó), no cuándo se pagó.
+  fecha  String
+  /// costo | gasto | cobro | reembolso | distribucion
+  /// costo → pertenece a una reserva · gasto → es de la empresa
+  tipo   String @default("gasto")
+  /// guia | vehiculo | gasolina | entrada | actividad | alimentos | comision |
+  /// marketing | software | hosting | administracion | contabilidad | telefonia | otro
+  categoria String @default("otro")
+  concepto  String
+  monto     Int
+  nota      String?
+
+  /// La reserva a la que pertenece. Obligatoria en los costos directos y en los
+  /// cobros; vacía en los gastos generales, que NUNCA se descuentan de una
+  /// reserva concreta.
+  reservaId String?
+
+  /// A quién se le paga (o de quién se cobra).
+  proveedor  String?
+  metodoPago String? // efectivo | transferencia | tarjeta | stripe | otro
+
+  /// Cuentas por pagar: un movimiento no pagado es dinero que la empresa debe.
+  pagado    Boolean @default(true)
+  fechaPago String?
+
+  /// Gastos que se repiten solos (hosting, software, renta).
+  recurrente   Boolean @default(false)
+  periodicidad String? // mensual | trimestral | anual
+
+  /// Sólo en reembolsos y distribuciones de utilidad.
+  socioId String?
+
+  /// Un movimiento financiero NO se borra: se anula y queda el rastro.
+  anulado    Boolean   @default(false)
+  anuladoPor String?
+  anuladoAt  DateTime?
+  motivoAnulacion String?
+
+  creadoPor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
+  @@index([reservaId])
+  @@index([tipo, fecha])
+  @@index([pagado, fechaPago])
+  @@map("GastoCorte")
+}
+
+// ── Socios ──────────────────────────────────────────────────────────────────
+// El reparto se calcula SIEMPRE sobre la utilidad ya calculada, nunca sobre la
+// venta. Y nunca se mezcla con lo que un socio cobra por trabajar, por rentar
+// su camioneta o por un gasto que pagó de su bolsa: eso son costos y
+// reembolsos, y viven como movimientos con su propia categoría.
+model Socio {
+  id          String  @id @default(cuid())
+  nombre      String
+  /// Participación en la utilidad distribuible, en % (0-100).
+  porcentaje  Float   @default(0)
+  fechaInicio String
+  estado      String  @default("activo") // activo | inactivo
+  /// Usuario del panel con el que entra, si tiene acceso.
+  usuario     String?
+  nota        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([estado])
+}
+
+// ── Cortes cerrados ─────────────────────────────────────────────────────────
+// Un corte cerrado es una FOTO: se guarda el resumen tal como se calculó ese
+// día. Si mañana se captura un costo viejo, el corte cerrado no cambia — para
+// eso está el corte en vivo. Sin esto, "lo que dijimos que ganamos en agosto"
+// cambiaría cada vez que alguien toca un dato de agosto.
+model CorteCerrado {
+  id      String @id @default(cuid())
+  tipo    String // diario | semanal | mensual
+  desde   String
+  hasta   String
+  /// Las cifras congeladas (ventas, cobros, costos, gastos, utilidad, efectivo,
+  /// por cobrar, por pagar). Ver `ResumenCorte` en src/lib/admin/finanzas.ts.
+  resumen Json
+  nota    String?
+  cerradoPor String
+  createdAt  DateTime @default(now())
+
+  @@unique([tipo, desde, hasta])
+  @@index([desde])
+}
+
+// ── Links de pago ───────────────────────────────────────────────────────────
+// Un cobro suelto que se manda por WhatsApp: título, monto y una liga que el
+// cliente abre para pagar con tarjeta.
+//
+// La liga la emite Stripe (Payment Link) y se guarda aquí para poder ver de un
+// vistazo cuáles se pagaron y cuáles llevan días sin abrirse. Sin esta tabla el
+// panel tendría que preguntarle a Stripe cada vez, y no habría forma de saber
+// quién creó cada cobro ni para qué era.
+//
+// `reservaId` es opcional: cuando el cobro es el saldo de una reserva, al
+// pagarse se le abona a ESA reserva y el saldo pendiente baja solo.
+model LinkPago {
+  id     String @id @default(cuid())
+  titulo String
+  /// Pesos enteros, como el resto del panel. Stripe trabaja en centavos: la
+  /// conversión vive en un solo sitio (`src/lib/admin/linksPago.ts`).
+  monto  Int
+  nota   String?
+
+  /// activo | pagado | cancelado
+  estado String @default("activo")
+
+  /// Lo que devuelve Stripe al crear el cobro.
+  stripeLinkId  String  @unique
+  stripePriceId String?
+  url           String
+
+  /// Para quién es el cobro (solo para reconocerlo en la lista).
+  cliente String?
+
+  /// Si el cobro es de una reserva, al pagarse se le abona a ella.
+  reservaId String?
+  /// Si el anticipo es de una cotización, al pagarse la cotización se marca
+  /// como aceptada: el cliente ya puso dinero, dejó de ser una propuesta.
+  cotizacionId String?
+
+  pagadoAt          DateTime?
+  stripeSessionId   String?
+  /// Lo que Stripe dice que se cobró de verdad, por si difiere del monto.
+  montoPagado       Int?
+  correoDelPagador  String?
+
+  creadoPor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado, createdAt])
+  @@index([reservaId])
+  @@index([cotizacionId])
 }

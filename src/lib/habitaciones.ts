@@ -32,6 +32,15 @@ export interface Habitacion {
   tarifas:     Record<number, number>;
   caracteristicas: string[];
   imagen:      string;
+  /**
+   * Las fotos del cuarto, en el mismo orden que en el sitio del hotel
+   * (paraisoencantado.com). La primera es la portada y es la misma que
+   * `imagen`: el cliente ve el mismo cuarto reserve por donde reserve.
+   *
+   * Se sacaron de `~/Desktop/mi-hotel/data/suites.ts` y se redujeron a 1800 px
+   * porque las originales pesan entre 1.5 y 2.7 MB cada una.
+   */
+  galeria?:    string[];
 }
 
 /**
@@ -113,7 +122,12 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 2,
     tarifas: { 1: 1500, 2: 1500 },
     caracteristicas: ["1 cama King Size", "Baño completo", "WiFi", "Aire acondicionado", "28 m²"],
-    imagen: `${IMG}/orquideas-2.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/orquideas-2/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/orquideas-2/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/orquideas-2/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/orquideas-2/03.jpg",
+    ],
   },
   {
     id: "lirios-1",
@@ -125,7 +139,13 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 4,
     tarifas: { 1: 1500, 2: 1500, 3: 1900, 4: 1900 },
     caracteristicas: ["2 camas matrimoniales", "Baño completo", "WiFi", "Aire acondicionado", "30 m²"],
-    imagen: `${IMG}/lirios-1.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-1/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-1/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-1/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-1/03.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-1/04.jpg",
+    ],
   },
   {
     id: "lirios-2",
@@ -137,7 +157,12 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 4,
     tarifas: { 1: 1500, 2: 1500, 3: 1900, 4: 1900 },
     caracteristicas: ["2 camas matrimoniales", "Balcón privado", "Baño completo", "WiFi", "30 m²"],
-    imagen: `${IMG}/lirios-2.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-2/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-2/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-2/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lirios-2/03.jpg",
+    ],
   },
   {
     id: "bromelias-1",
@@ -149,7 +174,13 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 4,
     tarifas: { 1: 1500, 2: 1500, 3: 1900, 4: 1900 },
     caracteristicas: ["2 camas matrimoniales", "Acceso a piscina spa", "Baño completo", "WiFi"],
-    imagen: `${IMG}/bromelias-1.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/bromelias-1/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/bromelias-1/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/bromelias-1/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/bromelias-1/03.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/bromelias-1/04.jpg",
+    ],
   },
   {
     id: "helechos-1",
@@ -161,7 +192,14 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 6,
     tarifas: { 1: 1900, 2: 1900, 3: 2400, 4: 2400, 5: 2700, 6: 3000 },
     caracteristicas: ["3 camas matrimoniales", "Terraza con vista a piscina", "Baño completo", "Aire acondicionado", "65 m²"],
-    imagen: `${IMG}/helechos-1.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-1/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-1/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-1/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-1/03.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-1/04.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-1/05.jpg",
+    ],
   },
   {
     id: "helechos-2",
@@ -173,7 +211,12 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 6,
     tarifas: { 1: 1900, 2: 1900, 3: 2400, 4: 2400, 5: 2700, 6: 3000 },
     caracteristicas: ["4 camas matrimoniales", "Terraza con vista a piscina", "Baño completo", "Aire acondicionado", "70 m²"],
-    imagen: `${IMG}/helechos-2.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-2/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-2/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-2/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/helechos-2/03.jpg",
+    ],
   },
   {
     id: "jungla",
@@ -185,7 +228,15 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 4,
     tarifas: { 1: 2000, 2: 2000, 3: 2500, 4: 2500 },
     caracteristicas: ["2 camas matrimoniales", "Piscina de spa al exterior", "Vista a la sierra", "Baño completo", "WiFi", "Aire acondicionado"],
-    imagen: `${IMG}/jungla.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/03.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/04.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/05.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/jungla/06.jpg",
+    ],
   },
   {
     id: "flor-de-liz-2",
@@ -197,7 +248,14 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 4,
     tarifas: { 1: 2000, 2: 2000, 3: 2500, 4: 2500 },
     caracteristicas: ["2 camas matrimoniales", "Spa privado al aire libre", "Terraza con vista", "Baño completo", "Aire acondicionado"],
-    imagen: `${IMG}/flor-de-liz-2.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/flor-de-liz-2/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/flor-de-liz-2/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/flor-de-liz-2/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/flor-de-liz-2/03.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/flor-de-liz-2/04.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/flor-de-liz-2/05.jpg",
+    ],
   },
   {
     id: "lindavista",
@@ -209,7 +267,14 @@ export const HABITACIONES_HOTEL: Habitacion[] = [
     maxHuespedes: 4,
     tarifas: { 1: 2000, 2: 2000, 3: 2500, 4: 2500 },
     caracteristicas: ["2 camas matrimoniales", "Tina de hidromasaje", "Terraza panorámica", "Baño completo", "Aire acondicionado"],
-    imagen: `${IMG}/lindavista.jpg`,
+    imagen: "/imagenes/hotel-paraiso-encantado/habitaciones/lindavista/01.jpg",
+    galeria: [
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lindavista/01.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lindavista/02.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lindavista/03.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lindavista/04.jpg",
+      "/imagenes/hotel-paraiso-encantado/habitaciones/lindavista/05.jpg",
+    ],
   },
 ];
 
@@ -224,7 +289,19 @@ export function tarifaNoche(hab: Habitacion, huespedes: number): number | null {
   return hab.tarifas[n] ?? hab.tarifas[hab.maxHuespedes] ?? null;
 }
 
-/** Cada 3.ª noche va gratis (decisión de Manolo, 12 ago 2026). */
+/**
+ * Cada 3.ª noche va gratis.
+ *
+ * ⚠️ Desde el 23 sep 2026 esto es una ventaja **SOLO de los paquetes**, y por
+ * eso ya no lo llama `cotizarHabitaciones` (la reserva suelta). Lo usa
+ * `paquetePricing.ts`.
+ *
+ * El motivo: mientras la promoción también valía suelto, el paquete costaba
+ * MÁS que comprar sus partes. Con el Paquete Familiar: 3 recorridos $9,400 +
+ * 3 noches con la 3.ª gratis $3,000 = $12,400, contra los $12,500 del paquete.
+ * El paquete no podía anunciar ahorro porque no lo había. Ahora suelto son
+ * $13,900 y el ahorro del paquete es real: $1,400.
+ */
 export function nochesGratis(noches: number): number {
   return Math.floor(Math.max(0, noches) / 3);
 }
@@ -255,7 +332,11 @@ export function cotizarHabitaciones(
   if (n <= 0)              return { ok: false, error: t.faltanNoches };
   if (seleccion.length === 0) return { ok: false, error: t.faltaHabitacion };
 
-  const gratis = nochesGratis(n);
+  // La reserva suelta paga TODAS sus noches: la 3.ª gratis es de los paquetes
+  // (ver `nochesGratis`). Se deja el campo en la respuesta, en cero, para que
+  // las pantallas y los correos que ya lo leen sigan compilando y simplemente
+  // no pinten la línea del regalo.
+  const gratis = 0;
   const cobradas = n - gratis;
 
   const desglose: NonNullable<CotizacionHabitaciones["desglose"]> = [];
