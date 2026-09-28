@@ -246,6 +246,15 @@ export interface Tour {
   precio:           number;
   /** Rango de duración a mostrar (ej. [8,10] → "8–10 horas"). Si no, se usa duracion_hrs. */
   duracionRango?:   [number, number];
+  /**
+   * Lleva el sello de la Garantía Huasteca: los destinos más impresionantes y
+   * populares de la región, los imperdibles, con servicio impecable y calidad
+   * garantizada.
+   *
+   * Es un campo y no una lista de slugs sueltos porque el sello sale en la
+   * tarjeta Y en la ficha: con una lista habría que acordarse de los dos sitios.
+   */
+  garantiaHuasteca?: boolean;
   /** Cómo llega el cliente. Sin esto: recogida en su hospedaje, Xilitla o Valles, 8–9 AM. */
   recogida?:        TourRecogida;
   /**
@@ -333,7 +342,10 @@ export interface Tour {
   videoHeroMovil?:  string;
   /**
    * Logotipo propio del tour (letras con el paisaje dentro), sin fondo.
-   * Si está, manda sobre el sello SVG de TourEmblem.
+   * ⚠️ Desde el 28 sep 2026 solo se PINTA en el inicio (`conLogo` en
+   * `TourCard`). En /tours y /experiencias ya no sale. Y el sello que
+   * llevaba la tarjeta ya no es `TourEmblem` —que dibujaba el lugar y quedó
+   * sin usar— sino el de la Garantía Huasteca, que va por `garantiaHuasteca`.
    * Cómo se prepara uno nuevo: `scripts/README-logos.md`.
    */
   logo?:            string;
@@ -851,6 +863,7 @@ const TOURS_RAW: Tour[] = [
     tipo:             "Aventura & Naturaleza",
     dificultad:       "media",
     duracion_hrs:     12,
+    garantiaHuasteca: true,
     reviewCount:      127,
     groupMin:         2,
     groupMax:         14,
@@ -1148,6 +1161,7 @@ const TOURS_RAW: Tour[] = [
     // Regreso al hospedaje a las 8 de la noche (Manolo, 28 sep): saliendo a
     // las 8 de la mañana son 12 h, no las 10 que decía.
     duracion_hrs:     12,
+    garantiaHuasteca: true,
     reviewCount:      96,
     groupMin:         2,
     groupMax:         14,

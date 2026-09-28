@@ -12,7 +12,7 @@ import { headers } from "next/headers";
 // ellos (verificado con grep antes de quitarlos).
 import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado } from "@/lib/tours";
 import { TourCarrusel } from "@/components/TourCarrusel";
-import { TourEmblem } from "@/components/TourEmblem";
+import { SelloGarantia } from "@/components/SelloGarantia";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
 import { Award, Bus, Calendar, Camera, CheckCircle2, Clock, MessageCircle, Star, Users } from "lucide-react";
@@ -374,13 +374,14 @@ export default function ToursPage() {
                 <span className="absolute bottom-3 left-3 z-10 bg-negro/70 backdrop-blur-sm text-crema/85 text-[9px] font-dm tracking-[1px] px-2.5 py-1 rounded-full">
                   {tourDurTexto(tour, en ? " hours" : " horas")}
                 </span>
-                {/* El sello SVG del tour, para los que tienen uno. */}
-                {(
-                  <TourEmblem
-                    slug={tour.slug}
-                    categoria={tour.categoria}
-                    size={86}
-                    idSuffix="-card"
+                {/* El sello de la Garantía Huasteca, solo en los recorridos
+                    que lo llevan. Sustituye al emblema que dibujaba el lugar:
+                    aquél repetía lo que la foto ya decía, éste dice algo que la
+                    foto no puede decir. */}
+                {tour.garantiaHuasteca && (
+                  <SelloGarantia
+                    size={64}
+                    idSuffix={`-card-${tour.slug}`}
                     className="absolute bottom-3 right-3 z-20 transition-transform duration-300 ease-out group-hover:scale-105"
                   />
                 )}

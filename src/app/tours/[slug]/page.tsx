@@ -11,6 +11,7 @@ import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
 import { TourGallery } from "@/components/TourGallery";
 import { HeroTourMedia } from "@/components/HeroTourMedia";
 import { TourDeparture } from "@/components/TourDeparture";
+import { SelloGarantia } from "@/components/SelloGarantia";
 import { ItinerarioLinea } from "@/components/ItinerarioLinea";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { TourPageTracker } from "@/components/TourPageTracker";
@@ -825,6 +826,30 @@ export default function TourDetailPage({ params }: Props) {
               </details>
             )}
           </section>
+
+          {/* ── GARANTÍA HUASTECA ──────────────────────────────────────────
+              El sello sale en la tarjeta de /tours sin explicación: aquí dice
+              qué significa. Va justo debajo de la descripción, que es donde
+              alguien acaba de decidir si el recorrido le interesa y lo que
+              sigue es «¿y por qué con ustedes?». */}
+          {tour.garantiaHuasteca && (
+            <section
+              aria-label={locale === "en" ? "Huasteca Guarantee" : "Garantía Huasteca"}
+              className="flex items-start gap-5 border border-dorado/25 bg-dorado/[0.06] p-5"
+            >
+              <SelloGarantia size={72} idSuffix="-ficha" className="flex-shrink-0" />
+              <div className="min-w-0">
+                <h2 className="font-cormorant text-crema text-xl leading-tight mb-2">
+                  {locale === "en" ? "Huasteca Guarantee" : "Garantía Huasteca"}
+                </h2>
+                <p className="text-crema/65 font-dm text-sm leading-relaxed">
+                  {locale === "en"
+                    ? "This tour carries our seal: it goes to the most striking and best-loved places in the Huasteca, the ones you should not leave without seeing. And it comes with our service: impeccable, genuinely fun, and quality guaranteed."
+                    : "Este recorrido lleva nuestro sello: va a los destinos más impresionantes y populares de la Huasteca, los que no te puedes ir sin ver. Y va con nuestro servicio: impecable, divertido de verdad y con la calidad garantizada."}
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* ── TU DÍA, HORA POR HORA ──────────────────────────────────────
               Lo que más pesa al decidir y lo que la ficha no tenía: decía
