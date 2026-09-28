@@ -65,7 +65,17 @@ export function PopupXantolo() {
   }, []);
 
   useEffect(() => {
-    if (fuera || yaCaduco()) return;
+    if (fuera) return;
+
+    /* Puerta trasera para revisarlo: `?xantolo=1` lo abre YA, sin los 20
+       segundos y sin hacer caso de que ya se haya cerrado antes.
+       Existe porque el comportamiento correcto de cara al visitante —una vez
+       cerrado no vuelve— deja al dueño sin manera de volver a verlo, y
+       vaciarle el almacenamiento del navegador para revisar un aviso no es
+       una instrucción que se le pueda dar a nadie. */
+    const forzado = new URLSearchParams(window.location.search).get("xantolo") === "1";
+
+    if (!forzado && yaCaduco()) return;
     let visto = false;
     let cookiesPendientes = false;
     try {
@@ -73,9 +83,9 @@ export function PopupXantolo() {
       cookiesPendientes = localStorage.getItem("hp_cookie_consent") === null;
     } catch {
       /* Sin almacenamiento no se insiste: mejor no salir que salir siempre. */
-      return;
+      if (!forzado) return;
     }
-    if (visto || cookiesPendientes) return;
+    if (!forzado && (visto || cookiesPendientes)) return;
 
     const t = window.setTimeout(() => {
       enfocadoAntes.current = document.activeElement as HTMLElement | null;
@@ -84,7 +94,7 @@ export function PopupXantolo() {
       // esto el navegador ve el estado final desde el principio y no hay
       // transición, sólo aparición de golpe.
       requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
-    }, SEGUNDOS * 1000);
+    }, forzado ? 0 : SEGUNDOS * 1000);
     return () => window.clearTimeout(t);
   }, [fuera]);
 
