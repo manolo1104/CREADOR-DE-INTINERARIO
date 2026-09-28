@@ -28,11 +28,14 @@ export default function Image() {
 
       <div style={{ width: "60px", height: "1px", background: "#c4882a", margin: "0 0 36px" }} />
 
-      <div style={{ display: "flex", gap: "32px", justifyContent: "center" }}>
-        {[["✈", "Cómo llegar"], ["📅", "Cuándo ir"], ["🏨", "Hospedaje"], ["💰", "Presupuesto"]].map(([icon, label]) => (
-          <div key={label} style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
-            <span style={{ fontSize: "28px" }}>{icon}</span>
-            <span style={{ color: "rgba(244,237,216,0.6)", fontSize: "13px", fontFamily: "sans-serif", letterSpacing: "1px" }}>{label}</span>
+      {/* Sin emojis a propósito: `next/og` los BAJA de un CDN al compilar y
+          cuando esa descarga falla el build entero se cae con "fetch failed".
+          Aquí las cuatro secciones se nombran con texto, que no depende de la red. */}
+      <div style={{ display: "flex", gap: "28px", justifyContent: "center", alignItems: "center" }}>
+        {["Cómo llegar", "Cuándo ir", "Hospedaje", "Presupuesto"].map((label, i) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+            {i > 0 && <span style={{ width: "4px", height: "4px", borderRadius: "999px", background: "rgba(196,136,42,0.7)" }} />}
+            <span style={{ color: "rgba(244,237,216,0.82)", fontSize: "20px", fontFamily: "sans-serif", letterSpacing: "1px" }}>{label}</span>
           </div>
         ))}
       </div>

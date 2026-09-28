@@ -30,6 +30,15 @@ const nextConfig = {
         ],
       },
       {
+        // Video del hero: pesa 2–4 MB, que no se vuelva a bajar en cada
+        // visita. Inmutable porque el nombre lleva versión (-v2, -v3…): un video
+        // nuevo se sube con otro nombre, nunca encima (ver HeroVideo.tsx).
+        source: "/video/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
         // Vídeos de portada: pesan 1-3 MB y hoy se servían con `max-age=0`, así
         // que cada visita del mismo teléfono se los volvía a bajar.
         //
@@ -63,33 +72,41 @@ const nextConfig = {
       { source: "/taller", destination: "/curso/webinar", permanent: false },
       { source: "/calculadora", destination: "/curso/calculadora", permanent: false },
 
+      // El cuaderno de la noche 1 estuvo unas horas colgado en su ruta
+      // estática, que Next sirve sin pasar por ningún código: por ahí no había
+      // nada que contar. Ahora vive en /curso/workbook/1, que sí anota la
+      // descarga. Este redirect existe por si esa primera liga alcanzó a
+      // salir a algún lado.
+      { source: "/curso/workbook-noche-1.pdf", destination: "/curso/workbook/1", permanent: false },
+
       // ── Paquetes viejos → paquetes por tipo de viajero ───────────────────
       // El 10 sep 2026 los tres paquetes dejaron de ordenarse por duración
       // (aventura / completo / gran-huasteca) y pasaron a ordenarse por quién
       // viaja. Sus direcciones llevaban meses indexadas y salían en enlaces de
       // WhatsApp y correos, así que se redirigen al equivalente más cercano en
       // vez de dejarlas en 404. Permanentes (301) porque no van a volver.
-      // 23 sep 2026: "Aventura Extrema" se reemplaza por el "Paquete Aventura"
-      // (rafting + RZR + salto en Micos) y se queda con la dirección corta, así
-      // que la redirección vieja SE QUITA: si se dejara, el paquete sería
-      // inalcanzable, porque las redirecciones se evalúan antes que las páginas.
-      { source: "/paquetes/aventura-extrema",    destination: "/paquetes/aventura",    permanent: true },
-      { source: "/en/paquetes/aventura-extrema", destination: "/en/paquetes/aventura", permanent: true },
-      { source: "/paquetes/completo",      destination: "/paquetes/gran-huasteca",    permanent: true },
-      { source: "/en/paquetes/completo",      destination: "/en/paquetes/gran-huasteca",    permanent: true },
-
-      // ── 23 sep 2026: el Familiar pasa a llamarse Gran Huasteca ───────────
-      // `gran-huasteca` era el nombre de un paquete retirado y redirigía al
-      // Odisea. Esa redirección SE QUITA porque ahora la dirección tiene dueño:
-      // si se dejara, el paquete renombrado sería inalcanzable —las
-      // redirecciones se evalúan antes que las páginas— y nadie vería por qué.
-      { source: "/paquetes/familiar",    destination: "/paquetes/gran-huasteca",   permanent: true },
-      { source: "/en/paquetes/familiar", destination: "/en/paquetes/gran-huasteca", permanent: true },
-
-      // "Tu Huasteca" se retiró el 23 sep 2026. El que más se le parece es el
-      // Odisea: varios días de tours saliendo del mismo hotel.
-      { source: "/paquetes/tu-huasteca",    destination: "/paquetes/odisea-huasteca",    permanent: true },
-      { source: "/en/paquetes/tu-huasteca", destination: "/en/paquetes/odisea-huasteca", permanent: true },
+      // El emparejamiento lo fijó Manolo el 11 sep: Gran Huasteca es hoy la
+      // Odisea, y el Completo es Tu Huasteca. No se deduce del código.
+      // ── 24 sep 2026: catálogo nuevo ──────────────────────────────────────
+      // El Familiar pasa a llamarse Gran Huasteca, "Aventura Extrema" se
+      // convierte en "Paquete Aventura" y "Tu Huasteca" se retira. Las
+      // redirecciones viejas de `gran-huasteca` y `aventura` SE QUITAN porque
+      // esas direcciones ya tienen dueño: si se dejaran, los paquetes serían
+      // inalcanzables, porque las redirecciones se evalúan antes que las
+      // páginas y nada avisa de ello.
+      { source: "/paquetes/completo",            destination: "/paquetes/gran-huasteca",      permanent: true },
+      { source: "/en/paquetes/completo",         destination: "/en/paquetes/gran-huasteca",   permanent: true },
+      { source: "/paquetes/familiar",            destination: "/paquetes/gran-huasteca",      permanent: true },
+      { source: "/en/paquetes/familiar",         destination: "/en/paquetes/gran-huasteca",   permanent: true },
+      { source: "/paquetes/aventura-extrema",    destination: "/paquetes/aventura",           permanent: true },
+      { source: "/en/paquetes/aventura-extrema", destination: "/en/paquetes/aventura",        permanent: true },
+      // La Luna de Miel se retiró el 24 sep 2026. Para quien la buscaba, el
+      // paquete de pareja del catálogo es la Inmersión Huasteca (3 días).
+      { source: "/paquetes/luna-de-miel",        destination: "/paquetes/inmersion-huasteca",    permanent: true },
+      { source: "/en/paquetes/luna-de-miel",     destination: "/en/paquetes/inmersion-huasteca", permanent: true },
+      // "Tu Huasteca" se retiró: el que más se le parece es el Odisea.
+      { source: "/paquetes/tu-huasteca",         destination: "/paquetes/odisea-huasteca",    permanent: true },
+      { source: "/en/paquetes/tu-huasteca",      destination: "/en/paquetes/odisea-huasteca", permanent: true },
 
       // ── Apex sin www → www ───────────────────────────────────────────────
       // Todo el sitio se declara canónico en `www` (canonical, hreflang y

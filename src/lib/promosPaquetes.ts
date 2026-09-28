@@ -11,6 +11,11 @@
  *    cambiar de imagen.
  * 3. Añade su renglón aquí abajo. El orden de la lista es el orden en que se
  *    muestran.
+ * 4. 🔴 Si REEMPLAZAS un cartel, cámbiale el NOMBRE al archivo (por ejemplo
+ *    `gran-huasteca-12290.webp`). Sobrescribirlo con el mismo nombre no
+ *    sirve: `next/image` guarda la versión optimizada bajo esa ruta y sigue
+ *    sirviendo la vieja, con el precio viejo, sin dar ningún error. El
+ *    servidor entrega el archivo nuevo y el navegador enseña el anterior.
  *
  * ⚠️ El `slug` tiene que existir en `PAQUETES_DB`: es a dónde lleva el clic. Y
  * el precio y la duración del cartel tienen que coincidir con los del paquete,
@@ -36,23 +41,24 @@ export const PROMOS_PAQUETES: PromoPaquete[] = [
     slug: "inmersion-huasteca",
   },
   {
-    imagen: "/imagenes/paquetes/promos/gran-huasteca.webp",
+    imagen: "/imagenes/paquetes/promos/gran-huasteca-12290.webp",
     alt:
       "Gran Huasteca: Tamul, Cascada del Meco y el Jardín de Edward James. " +
-      "4 días y 3 noches desde $12,490 MXN por pareja, con habitación King, traslados, " +
+      "4 días y 3 noches desde $12,290 MXN por pareja, con habitación King, traslados, " +
       "desayunos, entradas y guía certificado.",
     slug: "gran-huasteca",
   },
-  // ⏸️ El cartel del Paquete Aventura está FUERA a propósito (24 sep 2026): el
-  // archivo que hay dice "3 DÍAS | 2 NOCHES" y el paquete ya es de 4 días y 3
-  // noches. Dejarlo puesto haría que el inicio y la ficha se contradijeran, que
-  // es lo primero que rompe la confianza. Vuelve en cuanto llegue el cartel
-  // nuevo: se sustituye el .webp y se descomenta este bloque.
-  // {
-  //   imagen: "/imagenes/paquetes/promos/paquete-aventura.webp",
-  //   alt: "Paquete Aventura: rafting en el Río Tampaón, paseo en RZR y el salto de cascadas en Micos. 4 días y 3 noches desde $13,590 MXN por pareja.",
-  //   slug: "aventura",
-  // },
+  {
+    // 24 sep 2026: cartel corregido por Manolo. El anterior decía "2 NOCHES" y
+    // el paquete es de 3. El nombre lleva el precio Y las noches porque
+    // sobrescribir la imagen sin cambiar la ruta deja a next/image sirviendo la vieja.
+    imagen: "/imagenes/paquetes/promos/paquete-aventura-13390-3noches.webp",
+    alt:
+      "Paquete Aventura: rafting en el Río Tampaón, aventura en RZR y el Salto de las " +
+      "7 Cascadas en Micos. 4 días y 3 noches desde $13,390 MXN por pareja, con habitación " +
+      "King, traslados, desayunos, entradas, equipo de seguridad y guía certificado.",
+    slug: "aventura",
+  },
   {
     imagen: "/imagenes/paquetes/promos/odisea-huasteca.webp",
     alt:

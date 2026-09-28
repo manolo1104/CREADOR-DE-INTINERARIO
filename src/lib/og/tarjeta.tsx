@@ -121,12 +121,16 @@ export function tarjetaOG(p: TarjetaProps) {
           </div>
         )}
 
+        {/* El emoji de cada par se IGNORA a propósito, igual que las estrellas de
+            aquí abajo: `next/og` no lo tiene en su fuente y sale a buscarlo a un
+            CDN al compilar. Cuando esa descarga falla, no sale una tarjeta fea:
+            se cae el build entero con "fetch failed" y no se despliega nada. */}
         {p.iconos && (
-          <div style={{ display: "flex", gap: "32px", justifyContent: "center" }}>
-            {p.iconos.map(([icon, label]) => (
-              <div key={label} style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
-                <span style={{ fontSize: "28px" }}>{icon}</span>
-                <span style={{ color: "rgba(244,237,216,0.6)", fontSize: "13px", fontFamily: "sans-serif", letterSpacing: "1px" }}>{label}</span>
+          <div style={{ display: "flex", gap: "28px", justifyContent: "center", alignItems: "center" }}>
+            {p.iconos.map(([, label], i) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+                {i > 0 && <span style={{ width: "4px", height: "4px", borderRadius: "999px", background: "rgba(196,136,42,0.7)" }} />}
+                <span style={{ color: "rgba(244,237,216,0.82)", fontSize: "20px", fontFamily: "sans-serif", letterSpacing: "1px" }}>{label}</span>
               </div>
             ))}
           </div>

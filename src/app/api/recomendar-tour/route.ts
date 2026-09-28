@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { TOUR_ACTIVITIES } from "@/lib/tourActivities";
 import { rateLimit } from "@/lib/rateLimit";
 // alias: en este archivo `actividad` ya es el nivel de actividad del formulario
@@ -51,10 +51,32 @@ async function mandarPropuesta(
 
 /**
  * Selección DETERMINÍSTICA del paquete por días disponibles (la IA solo redacta el porqué):
- * 1-2 días → sin paquete (tours sueltos) · 3 → Aventura · 4 → Completo · 5+ → Gran Huasteca.
- * `dias` llega como texto del wizard ("3 días", "5 o más días").
+ * con menos de 3 días no se ofrece paquete —van tours sueltos— y a partir de ahí gana
+ * el paquete MÁS LARGO que quepa en sus días, sin pasarse.
+ *
+ * Aquí no se escribe a mano ningún nombre ni ningún slug, y es a propósito: el catálogo
+ * se lee de `PAQUETES_DB` y se ordena por `dias`. Por eso el cambio de línea de
+ * septiembre —tres paquetes ordenados por duración pasaron a cinco ordenados por quién
+ * viaja— no tocó este archivo, y mañana se puede añadir o quitar un paquete sin volver
+ * a pasar por aquí. Si algún día hace falta afinar la recomendación, el arreglo va en
+ * el catálogo o en una regla nueva, nunca en una lista de nombres pegada a este
+ * comentario: eso es justo lo que se quedó mintiendo aquí durante meses.
+ *
+ * La contracara de leerlo del catálogo: desde septiembre hay DOS paquetes de 4 días
+ * (Familiar y Aventura Extrema), así que "el más largo que quepa" ya no señala uno solo.
+ * Mientras el desempate lo decidió el orden de `PAQUETES_DB`, una "Familia con niños"
+ * que pedía 4 días recibía Aventura Extrema —rafting Clase III y saltos en Micos—, justo
+ * lo que la regla de seguridad del prompt prohíbe recomendarle a una familia. Esa regla
+ * protege los TOURS, pero el paquete lo elegía el servidor antes y sin mirar el grupo.
+ * Por eso ahora, y SÓLO cuando hay empate en días, el grupo desempata: se prefiere el
+ * paquete cuyos `perfiles` hablan de familias. Sigue sin escribirse aquí ningún nombre
+ * ni ningún slug —el criterio vive en el catálogo—, así que añadir o quitar paquetes no
+ * obliga a volver a este archivo.
+ *
+ * `dias` llega como texto del wizard ("3 días", "5 o más días"); `grupo`, tal cual lo
+ * manda el wizard ("Familia con niños", "En pareja", "Con amigos", "Solo/Sola").
  */
-function paqueteForDias(dias: string | undefined): Paquete | null {
+function paqueteForDias(dias: string | undefined, grupo?: unknown): Paquete | null {
   if (!dias) return null;
   const n = parseInt(dias, 10);
   if (!Number.isFinite(n) || n < 3) return null;
@@ -62,6 +84,15 @@ function paqueteForDias(dias: string | undefined): Paquete | null {
   const sorted = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias);
   let mejor = sorted[0];
   for (const p of sorted) if (p.dias <= n) mejor = p;
+
+  // Empate en días: que decida quién viaja, no el orden del catálogo.
+  const empatados = sorted.filter((p) => p.dias === mejor.dias && p.dias <= n);
+  if (empatados.length > 1 && grupo === "Familia con niños") {
+    const familiar = empatados.find((p) =>
+      p.perfiles.some((perfil) => perfil.toLowerCase().includes("famili")),
+    );
+    if (familiar) return familiar;
+  }
   return mejor;
 }
 
@@ -194,7 +225,7 @@ export async function POST(req: NextRequest) {
   // para que el correo quede anotado aunque lo de abajo se tuerza.
   if (esEmailValido(email)) void guardarLead(email, FUENTE_RECOMENDADOR);
 
-  const paquete = paqueteForDias(dias);
+  const paquete = paqueteForDias(dias, grupo);
   // Texto de respaldo del paquete (se usa si no hay IA o si la IA no redacta el suyo).
   const paqueteFallback = paquete
     ? {
@@ -246,7 +277,7 @@ ${paquete ? `
 PAQUETE RECOMENDADO PARA SUS DÍAS (ya seleccionado, NO lo cambies):
 - Nombre: ${paquete.nombre} (${paquete.duracion})
 - Slug: ${paquete.slug}
-- Precio: $${paquete.precio.toLocaleString("es-MX")} MXN ${paquete.precioLabel} (2 personas)
+- Precio: $${precioVisible(paquete).toLocaleString("es-MX")} MXN ${paquete.precioLabel} (cifra ANUNCIADA; cítala tal cual, con su etiqueta, y no la multipliques ni la dividas)
 - Incluye: ${paquete.incluye.slice(0, 6).join("; ")}
 - Itinerario: ${paquete.itinerario.map((d, i) => `Día ${i + 1}: ${d.titulo}`).join(" · ")}
 - Hospedaje: Hotel Paraíso Encantado, Xilitla` : ""}
@@ -268,7 +299,7 @@ REGLAS DE REDACCIÓN:
 2. El "highlight" es una frase de máximo 10 palabras que capture POR QUÉ es perfecto PARA ELLOS.
 3. Para el tour secundario: 2-3 oraciones explicando qué lo diferencia y por qué también encaja.
 4. Tono: cálido, experto, como un amigo local — no un folleto turístico. Nada genérico.${paquete ? `
-5. Como el viajero tiene ${dias}, TAMBIÉN redacta "paqueteReason": 3-4 oraciones vendiendo el paquete indicado arriba como EL plan completo para sus días — conecta su perfil (grupo, intereses, origen) con el itinerario día por día y el hospedaje en Xilitla, y menciona que todo va coordinado (tours + hotel + transporte local). Sé honesto: el precio es por pareja. Los tours primary/secondary deben ser los que más encajen con su perfil DE ENTRE los incluidos en el itinerario del paquete cuando sea posible.` : ""}
+5. Como el viajero tiene ${dias}, TAMBIÉN redacta "paqueteReason": 3-4 oraciones vendiendo el paquete indicado arriba como EL plan completo para sus días — conecta su perfil (grupo, intereses, origen) con el itinerario día por día y el hospedaje en Xilitla, y menciona que todo va coordinado (tours + hotel + transporte local). Sé honesto con el precio: la cifra de arriba es ${paquete.precioLabel} y así hay que decirla. Los tours primary/secondary deben ser los que más encajen con su perfil DE ENTRE los incluidos en el itinerario del paquete cuando sea posible.` : ""}
 
 Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después):
 {

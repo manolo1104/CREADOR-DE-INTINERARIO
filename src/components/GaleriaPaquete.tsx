@@ -20,7 +20,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export function GaleriaPaquete({
   fotos, nombre, etiquetaAnterior, etiquetaSiguiente,
 }: {
-  fotos: string[];
+  /** Una por parada del viaje, con el nombre del lugar cuando se conoce. */
+  fotos: { src: string; alt?: string }[];
   nombre: string;
   etiquetaAnterior: string;
   etiquetaSiguiente: string;
@@ -33,11 +34,13 @@ export function GaleriaPaquete({
 
   return (
     <div className="group relative h-full w-full overflow-hidden bg-negro/20">
-      {fotos.map((src, idx) => (
+      {fotos.map((foto, idx) => (
         <Image
-          key={src}
-          src={src}
-          alt={`${nombre}, foto ${idx + 1} de ${total}`}
+          key={foto.src}
+          src={foto.src}
+          // El alt dice el LUGAR, no "foto 3 de 11": es lo que busca quien no
+          // puede ver la imagen y lo que lee Google.
+          alt={foto.alt ?? `${nombre}, parada ${idx + 1} de ${total}`}
           fill
           sizes="(max-width: 640px) 86vw, 340px"
           className="object-cover transition-opacity duration-500"
@@ -73,12 +76,12 @@ export function GaleriaPaquete({
           </button>
 
           <div className="absolute bottom-3 right-3 z-20 flex gap-1.5">
-            {fotos.map((src, idx) => (
+            {fotos.map((foto, idx) => (
               <button
-                key={src}
+                key={foto.src}
                 type="button"
                 onClick={() => setI(idx)}
-                aria-label={`${nombre}, foto ${idx + 1}`}
+                aria-label={foto.alt ?? `${nombre}, parada ${idx + 1}`}
                 aria-current={idx === i}
                 className={`h-1.5 rounded-full transition-all duration-200 ${
                   idx === i ? "w-4 bg-crema" : "w-1.5 bg-crema/50 hover:bg-crema/80"

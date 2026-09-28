@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T21:03:07.674Z",
+  "generatedAt": "2026-09-28T21:43:27.352Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -755,7 +755,7 @@
       "privateAvailable": false,
       "privateExtraPorPersona": null,
       "tagline": "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
-      "pitch": "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,200 MXN por persona.",
+      "pitch": "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,300 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/buceo-media-luna",
       "destinos": [
         "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
@@ -819,7 +819,7 @@
       "privateAvailable": false,
       "privateExtraPorPersona": null,
       "tagline": "El sabor de Xilitla, desde la mata hasta la taza",
-      "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 por persona.",
+      "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/travesia-del-cafe",
       "destinos": [
         "Cafetal bajo sombra de la sierra de Xilitla",
@@ -1058,108 +1058,16 @@
   ],
   "paquetes": [
     {
-      "id": "luna-de-miel",
-      "slug": "luna-de-miel",
-      "nombre": "Luna de Miel",
-      "subtitulo": "La Huasteca de a dos, sin prisa",
-      "duracion": "3 días / 2 noches",
-      "dias": 3,
-      "noches": 2,
-      "precio": 9800,
-      "precioLabel": "por pareja",
-      "url": "https://www.huasteca-potosina.com/reservar-paquete/luna-de-miel",
-      "badge": "Lunamieleros",
-      "perfiles": [
-        "Recién casados",
-        "Parejas",
-        "Aniversarios",
-        "Ritmo tranquilo"
-      ],
-      "habitaciones": [
-        "Jungla",
-        "Suite Flor de Liz 2"
-      ],
-      "habitacionAsignada": true,
-      "tours": [
-        "Las Pozas, el jardín surrealista de Edward James (Día 1)",
-        "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 2)"
-      ],
-      "eleccion": null,
-      "itinerario": [
-        {
-          "dia": 1,
-          "tipo": "llegada",
-          "titulo": "Llegada, check-in y el jardín de Edward James",
-          "tourSlug": null,
-          "descripcion": "Llegan, hacen check-in y el único plan del día es Las Pozas, el jardín escultórico que Edward James levantó en la selva. Nada más: ni madrugar ni carretera. El jardín recibe de 9 de la mañana a 4 de la tarde y el último recorrido guiado sale justo a las 4 y dura dos horas, así que llegar a media tarde tampoco les quita el día."
-        },
-        {
-          "dia": 2,
-          "tipo": "tour",
-          "titulo": "Expedición Tamul y cena romántica",
-          "tourSlug": "expedicion-tamul",
-          "descripcion": "El día grande: canoa por el Cañón del Tampaón hasta los 105 metros de la Cascada de Tamul, clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer, cuando salen las aves. Al volver, la habitación los espera con velas y pétalos, su botella lista y la cena emplatándose: un platillo formal en la terraza privada."
-        },
-        {
-          "dia": 3,
-          "tipo": "salida",
-          "titulo": "Salida",
-          "tourSlug": null,
-          "descripcion": "Desayuno y camino a casa. El desayuno buffet va incluido solo los días de tour."
-        }
-      ],
-      "incluye": [
-        "2 noches en la suite Jungla del Hotel Paraíso Encantado, con terraza privada, vista a la montaña y piscina de spa al exterior",
-        "Desayuno buffet los días de tour",
-        "Cena romántica la segunda noche: platillo formal y botella de vino",
-        "La habitación preparada con velas y pétalos para esa noche",
-        "Entrada y recorrido guiado en Las Pozas, el jardín de Edward James",
-        "Tour Expedición Tamul completo, de día entero",
-        "Transporte del hotel a Las Pozas y al inicio del tour del día 2, ida y vuelta",
-        "Guías certificados NOM-09 SECTUR",
-        "Entradas a todas las atracciones",
-        "Equipo de seguridad",
-        "Seguro de viaje",
-        "Fotografía y video del recorrido"
-      ],
-      "noIncluye": [
-        "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
-        "Comidas y cenas, salvo los desayunos y la cena romántica del día 2",
-        "Propinas y gastos personales"
-      ],
-      "valor": [
-        {
-          "item": "2 noches suite Jungla (2 pax)",
-          "precio": "$3,800"
-        },
-        {
-          "item": "Expedición Tamul (2 pax)",
-          "precio": "$3,100"
-        },
-        {
-          "item": "Transporte 2 días",
-          "precio": "$800"
-        },
-        {
-          "item": "Entradas + guías",
-          "precio": "$800"
-        },
-        {
-          "item": "Fotografía y video del recorrido",
-          "precio": "$1,600"
-        }
-      ]
-    },
-    {
       "id": "inmersion-huasteca",
       "slug": "inmersion-huasteca",
-      "nombre": "Inmersión Huasteca: Tamul & Surrealismo",
+      "nombre": "Inmersión Huasteca",
       "subtitulo": "La cascada más alta y el jardín más enigmático, en tres días",
       "duracion": "3 días / 2 noches",
       "dias": 3,
       "noches": 2,
       "precio": 8699,
       "precioLabel": "por pareja",
+      "precioTotalPareja": 8699,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/inmersion-huasteca",
       "badge": "Nuevo",
       "perfiles": [
@@ -1205,7 +1113,7 @@
       "incluye": [
         "2 noches en Hotel Paraíso Encantado Xilitla, habitación King con vista a la selva",
         "Desayuno los días de tour",
-        "Tour Expedición Tamul completo (12 horas)",
+        "Tour Expedición Tamul completo (9 horas)",
         "Tour Ruta Surrealista completo (8 horas)",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
@@ -1243,8 +1151,9 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 12490,
+      "precio": 12290,
       "precioLabel": "por pareja",
+      "precioTotalPareja": 12290,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/gran-huasteca",
       "badge": "Los 3 imperdibles",
       "perfiles": [
@@ -1278,7 +1187,7 @@
           "tipo": "tour",
           "titulo": "Expedición Tamul",
           "tourSlug": "expedicion-tamul",
-          "descripcion": "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando las aves vuelven a meterse. Doce horas que terminan con el mejor rato del día."
+          "descripcion": "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse. Nueve horas que terminan con el mejor rato del día."
         },
         {
           "dia": 3,
@@ -1341,8 +1250,9 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 13590,
+      "precio": 13390,
       "precioLabel": "por pareja",
+      "precioTotalPareja": 13390,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura",
       "badge": "Adrenalina",
       "perfiles": [
@@ -1442,6 +1352,7 @@
       "noches": 4,
       "precio": 16500,
       "precioLabel": "por pareja",
+      "precioTotalPareja": 16500,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/odisea-huasteca",
       "badge": "Lo ves todo",
       "perfiles": [
@@ -1476,7 +1387,7 @@
           "tipo": "tour",
           "titulo": "Expedición Tamul",
           "tourSlug": "expedicion-tamul",
-          "descripcion": "Canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando las aves vuelven a meterse."
+          "descripcion": "Canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse."
         },
         {
           "dia": 3,
@@ -1681,7 +1592,7 @@
   "faqsPaquetes": [
     {
       "q": "¿El precio es por persona o por pareja?",
-      "a": "Los precios de los paquetes son por pareja (2 personas). Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
+      "a": "Casi todos se anuncian por persona: la cifra que ves en la tarjeta es lo que paga un viajero, con dos personas compartiendo habitación. La excepción es el paquete de Luna de Miel, que es un viaje de dos y por eso se vende por pareja. Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
     },
     {
       "q": "¿Cómo llego a Xilitla?",
@@ -3528,6 +3439,6 @@
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "pagoTours": "Los tours cobrados por persona se pagan con tarjeta en línea (confirmación instantánea) o por transferencia (cotización con folio). El RZR (por vehículo) y los paquetes se confirman por WhatsApp con el equipo.",
     "pagoEntradas": "Si visitas los destinos por tu cuenta, la entrada suele ser SOLO EFECTIVO y muchos sitios no tienen cajero cerca.",
-    "paquetes": "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio es por pareja (2 personas)."
+    "paquetes": "Los paquetes combinan tours + hospedaje en el Hotel Paraíso Encantado (Xilitla) y se confirman por WhatsApp según disponibilidad del hotel (sin pago automático). El precio de cada paquete viene con su etiqueta en `precioLabel`: casi todos se anuncian POR PERSONA (dos personas comparten habitación) y solo el de Luna de Miel se vende por pareja. Cita la cifra con su etiqueta, tal cual, sin multiplicarla ni dividirla."
   }
 }

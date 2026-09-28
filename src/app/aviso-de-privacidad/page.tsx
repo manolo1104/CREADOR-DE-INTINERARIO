@@ -41,9 +41,34 @@ function Li({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Era una de las dos páginas indexables del sitio sin un solo dato
+// estructurado. Mismo patrón que /creditos y /terminos.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: "Aviso de Privacidad",
+      description:
+        "Aviso de Privacidad conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).",
+      url: `${SITE}/aviso-de-privacidad`,
+      inLanguage: "es-MX",
+      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+        { "@type": "ListItem", position: 2, name: "Aviso de Privacidad", item: `${SITE}/aviso-de-privacidad` },
+      ],
+    },
+  ],
+};
+
 export default function AvisoPrivacidadPage() {
   return (
     <main id="main-content" className="min-h-screen bg-crema">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Hero */}
       <section className="bg-verde-profundo px-6 pt-36 pb-16 text-center">

@@ -21,6 +21,30 @@ export const metadata: Metadata = {
 /** Última revisión del documento. Actualízala si cambian las condiciones. */
 const ULTIMA_ACTUALIZACION = "10 de agosto de 2026";
 
+// Esta página era una de las dos indexables del sitio sin un solo dato
+// estructurado. Mismo patrón que /creditos: la ficha de la página y las migas.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: "Términos y condiciones",
+      description:
+        "Condiciones de contratación de los tours: reservas, anticipo, pagos, cancelaciones, responsabilidades del viajero, seguridad y uso de imágenes.",
+      url: `${SITE}/terminos`,
+      inLanguage: "es-MX",
+      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+        { "@type": "ListItem", position: 2, name: "Términos y condiciones", item: `${SITE}/terminos` },
+      ],
+    },
+  ],
+};
+
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="font-cormorant font-light text-verde-profundo text-2xl mt-12 mb-4">{children}</h2>;
 }
@@ -41,6 +65,7 @@ function Li({ children }: { children: React.ReactNode }) {
 export default function TerminosPage() {
   return (
     <main className="min-h-screen bg-crema pt-28 pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-3xl mx-auto px-6">
         <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-3">Legal</p>
         <h1 className="font-cormorant font-light text-verde-profundo mb-4" style={{ fontSize: "clamp(32px,6vw,54px)" }}>

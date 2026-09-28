@@ -1,9 +1,10 @@
 import type { Locale } from "./config";
 import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { TRASLADOS } from "@/lib/traslados";
 import { formatMXN } from "@/lib/tourBooking";
 import { fmtMoney } from "./format";
+import { localizePaquete } from "./paquetes.en";
 
 import { GRUPO_MAX } from "@/lib/tours";
 /**
@@ -93,11 +94,48 @@ const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").
 const PRECIO_MIN_N = Math.min(...preciosPorPersona);
 const PRECIO_MAX_N = Math.max(...preciosPorPersona);
 
-const preciosPaquete = PAQUETES_DB.map((p) => p.precio);
-const PAQ_MIN_N = Math.min(...preciosPaquete);
-const PAQ_MAX_N = Math.max(...preciosPaquete);
-const PAQ_DIAS_MIN = Math.min(...PAQUETES_DB.map((p) => p.dias));
-const PAQ_DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
+/**
+ * El rango de paquetes sale de lo que se ENSEÑA (`precioVisible`), nunca de
+ * `p.precio`, que es siempre el total de la pareja porque es el contrato del
+ * motor de cobro. Con `p.precio` esta FAQ diría «de $9,800 a $20,500» mientras
+ * las tarjetas del mismo sitio dicen «$6,250 por persona»: dos cifras que no
+ * cuadran, y el visitante encuentra la contradicción en un minuto.
+ *
+ * Los días se toman del paquete que de verdad marca cada extremo, no del
+ * mínimo y el máximo sueltos: al ordenar por precio visible el más barato deja
+ * de ser el más corto, y emparejar las dos cifras a ciegas inventa un paquete
+ * que no existe.
+ */
+const paqBarato = PAQUETES_DB.reduce((a, b) => (precioVisible(b) < precioVisible(a) ? b : a));
+const paqCaro = PAQUETES_DB.reduce((a, b) => (precioVisible(b) > precioVisible(a) ? b : a));
+const PAQ_MIN_N = precioVisible(paqBarato);
+const PAQ_MAX_N = precioVisible(paqCaro);
+const PAQ_DIAS_MIN = paqBarato.dias;
+const PAQ_DIAS_MAX = paqCaro.dias;
+
+/** La unidad de los dos extremos del rango; si no coinciden, no se afirma una. */
+const PAQ_UNIDAD_ES =
+  paqBarato.precioLabel === paqCaro.precioLabel ? paqBarato.precioLabel : "según el paquete";
+const PAQ_UNIDAD_EN =
+  paqBarato.precioPorPersona === paqCaro.precioPorPersona
+    ? paqBarato.precioPorPersona
+      ? "per person"
+      : "per couple"
+    : "depending on the package";
+
+/** Los que NO se venden por persona, para no afirmar que todos lo son. */
+const PAQ_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
+const PAQ_NOTA_ES = PAQ_PAREJA.length
+  ? ` La excepción es ${PAQ_PAREJA.map(
+      (p) => `${p.nombre}, que se vende por pareja en ${formatMXN(p.precio)} MXN los dos`,
+    ).join("; ")}.`
+  : "";
+const PAQ_NOTA_EN = PAQ_PAREJA.length
+  ? ` The exception is ${PAQ_PAREJA.map(
+      (p) =>
+        `${localizePaquete(p, "en").nombre}, sold per couple at ${fmtMoney(p.precio, "en")} for the two of you`,
+    ).join("; ")}.`
+  : "";
 
 /** Tarifa de grupo chico (1–4 pax) de una ruta de traslado, para la FAQ inglesa. */
 const trasladoBase = (slug: string) =>
@@ -139,7 +177,7 @@ const ES: FaqContent = {
   faqs: [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina?",
-      a: `Nuestros tours guiados de un día cuestan entre ${formatMXN(PRECIO_MIN_N)} y ${formatMXN(PRECIO_MAX_N)} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${formatMXN(precioTour("tour-edward-james"))}, Expedición Tamul ${formatMXN(precioTour("tour-tamul"))}, Cascadas del Meco ${formatMXN(precioTour("tour-meco"))}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${formatMXN(precioTour("tour-rzr-xilitla"))} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de ${formatMXN(PAQ_MIN_N)} (${PAQ_DIAS_MIN} días) a ${formatMXN(PAQ_MAX_N)} MXN (${PAQ_DIAS_MAX} días) por pareja.`,
+      a: `Nuestros tours guiados de un día cuestan entre ${formatMXN(PRECIO_MIN_N)} y ${formatMXN(PRECIO_MAX_N)} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${formatMXN(precioTour("tour-edward-james"))}, Expedición Tamul ${formatMXN(precioTour("tour-tamul"))}, Cascadas del Meco ${formatMXN(precioTour("tour-meco"))}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${formatMXN(precioTour("tour-rzr-xilitla"))} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de ${formatMXN(PAQ_MIN_N)} (${PAQ_DIAS_MIN} días) a ${formatMXN(PAQ_MAX_N)} MXN (${PAQ_DIAS_MAX} días) ${PAQ_UNIDAD_ES}.${PAQ_NOTA_ES}`,
     },
     {
       q: "¿Qué incluyen los tours?",
@@ -167,7 +205,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Se puede conocer la Huasteca Potosina en 3 días?",
-      a: "Sí. Con 3 días bien organizados se cubre lo esencial: la Cascada de Tamul, Las Pozas de Edward James en Xilitla y un día de cascadas turquesa (Micos, Minas Viejas o el Puente de Dios en Tamasopo). Nuestro Paquete Aventura de 3 días / 2 noches está diseñado justo para eso. Con 4 o 5 días se recorre con más calma y se incluyen más destinos.",
+      a: "Sí. En 3 días cabe lo esencial de la Huasteca: la Cascada de Tamul y Las Pozas de Edward James en Xilitla. Nuestro paquete Luna de Miel (3 días / 2 noches) hace exactamente ese recorrido, pensado para parejas. Para añadir un día completo de cascadas turquesa —Minas Viejas, Micos o las Cascadas del Meco— hacen falta 4 días: es lo que recorre el Paquete Familiar. Con 5 o 6 días se va con más calma y sin repetir un solo lugar.",
     },
     {
       q: "¿Qué es el Sótano de las Golondrinas?",
@@ -179,7 +217,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Cómo reservo y cuánto tengo que pagar por adelantado?",
-      a: "Reservas en línea desde la página del tour: eliges fecha y número de personas, y apartas con un anticipo del 30 %. El saldo lo liquidas el día del tour, en efectivo o con tarjeta. También puedes pagar el 100 % al reservar si prefieres llegar sin pendientes.",
+      a: "Reservas en línea desde la página del tour: eliges fecha y número de personas. Un recorrido de un solo día se paga completo al reservar; desde dos días apartas con el 30 % y liquidas el saldo el día del tour, en efectivo o con tarjeta. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes.",
     },
     {
       q: "¿Puedo pagar con tarjeta? ¿Es seguro?",
@@ -253,7 +291,7 @@ const EN: FaqContent = {
   faqs: [
     {
       q: "How much does a tour in the Huasteca Potosina cost?",
-      a: `Our guided day tours run between ${fmtMoney(PRECIO_MIN_N, "en")} and ${fmtMoney(PRECIO_MAX_N, "en")} per person depending on the route, and they are all-inclusive. The most popular ones: the Surrealist Route (Edward James) at ${fmtMoney(precioTour("tour-edward-james"), "en")}, the Tamul Expedition at ${fmtMoney(precioTour("tour-tamul"), "en")}, and Cascadas del Meco at ${fmtMoney(precioTour("tour-meco"), "en")}. The RZR ride around Xilitla is priced per vehicle, starting at ${fmtMoney(precioTour("tour-rzr-xilitla"), "en")} per unit. If you'd rather stay several days with lodging included, our packages go from ${fmtMoney(PAQ_MIN_N, "en")} (${PAQ_DIAS_MIN} days) to ${fmtMoney(PAQ_MAX_N, "en")} (${PAQ_DIAS_MAX} days) — and that price is for two people, not per person.`,
+      a: `Our guided day tours run between ${fmtMoney(PRECIO_MIN_N, "en")} and ${fmtMoney(PRECIO_MAX_N, "en")} per person depending on the route, and they are all-inclusive. The most popular ones: the Surrealist Route (Edward James) at ${fmtMoney(precioTour("tour-edward-james"), "en")}, the Tamul Expedition at ${fmtMoney(precioTour("tour-tamul"), "en")}, and Cascadas del Meco at ${fmtMoney(precioTour("tour-meco"), "en")}. The RZR ride around Xilitla is priced per vehicle, starting at ${fmtMoney(precioTour("tour-rzr-xilitla"), "en")} per unit. If you'd rather stay several days with lodging included, our packages go from ${fmtMoney(PAQ_MIN_N, "en")} (${PAQ_DIAS_MIN} days) to ${fmtMoney(PAQ_MAX_N, "en")} (${PAQ_DIAS_MAX} days) ${PAQ_UNIDAD_EN}.${PAQ_NOTA_EN}`,
     },
     {
       q: "What's included in the tours?",
@@ -285,7 +323,7 @@ const EN: FaqContent = {
     },
     {
       q: "Can I see the Huasteca Potosina in 3 days?",
-      a: "Yes. Three well-organized days cover the essentials: the Tamul waterfall, Edward James' Las Pozas in Xilitla, and a day of turquoise waterfalls (Micos, Minas Viejas or Puente de Dios in Tamasopo). Our 3-day / 2-night Adventure Package is built for exactly that. With 4 or 5 days you go at a calmer pace and cover more ground.",
+      a: "Yes. Three days fit the essentials: the Tamul waterfall and Edward James' Las Pozas in Xilitla. Our Honeymoon package (3 days / 2 nights) does exactly that route, designed for couples. To add a full day of turquoise waterfalls — Minas Viejas, Micos or Cascadas del Meco — you need 4 days: that is what the Family Package covers. With 5 or 6 days you go at a calmer pace and never repeat a place.",
     },
     {
       q: "What is the Sótano de las Golondrinas?",
@@ -297,7 +335,7 @@ const EN: FaqContent = {
     },
     {
       q: "How do I book, and how much do I pay up front?",
-      a: "You book online from the tour page: pick a date and the number of travelers, and hold your spot with a 30% deposit. The balance is due on the day of the tour, in cash or by card. You can also pay 100% at booking if you'd rather arrive with nothing pending.",
+      a: "You book online from the tour page: pick a date and the number of travelers. A single-day tour is paid in full when you book; from two days on you hold your spot with a 30% deposit and the balance is due on the day of the tour, in cash or by card. You can also pay 100% up front if you'd rather arrive with nothing pending.",
     },
     {
       q: "Can I pay by card? Is it secure?",

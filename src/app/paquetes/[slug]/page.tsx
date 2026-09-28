@@ -8,7 +8,7 @@ import {
   Car, Plane, Bus, Sparkles, Clock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { PAQUETES_DB, getPaquete, collagePaquete, habitacionesDePaquete, habitacionAsignada, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
+import { PAQUETES_DB, getPaquete, collagePaquete, habitacionesDePaquete, habitacionAsignada, precioVisible, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, buildHotelNode, ORG_REF } from "@/lib/jsonld";
 import {
@@ -175,7 +175,12 @@ export default function PaqueteDetallePage({ params }: Props) {
   const LOGISTICA    = getLocalizedLogistica(locale);
   const faqs         = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
 
-  const waMsg = t.waMsg(p.nombre, p.duracion, `$${num(p.precio)}`);
+  // El mensaje que se abre en WhatsApp cita el importe que el visitante acaba
+  // de ver, no el total de la pareja: si la ficha dice $7,250 y el mensaje
+  // llega con $14,500, el cliente cree que le cambiaron el precio al escribir.
+  // Va con su unidad pegada: quien recibe el mensaje del otro lado no ve la
+  // ficha, y «$7,250 MXN» a secas no dice si es de uno o de los dos.
+  const waMsg = t.waMsg(p.nombre, p.duracion, `$${num(precioVisible(p))} MXN ${p.precioLabel}`);
   const resenas = RESENAS_POR_PAQUETE[p.slug] ?? RESENAS_PAQUETES;
 
   const url = localeUrl(`/paquetes/${p.slug}`, locale);
@@ -210,11 +215,31 @@ export default function PaqueteDetallePage({ params }: Props) {
         },
         offers: {
           "@type": "Offer",
-          price: p.precio,
+          // 🔴 El `price` es el importe que se ENSEÑA arriba (`precioVisible`),
+          // no el total de la pareja que cobra el motor: si el marcado dijera
+          // $14,500 y la ficha $7,250, el desajuste lo canta cualquier
+          // validador. Lo que cobra el checkout no se pierde: el
+          // `priceSpecification` dice a cuánta gente corresponde el importe
+          // —«por persona» en cuatro, «por pareja (2 personas)» en la Luna de
+          // Miel— y `eligibleQuantity` que la reserva arranca en dos personas.
+          // Mismo patrón que /tours con el RZR, que se cobra por vehículo.
+          price: precioVisible(p),
           priceCurrency: "MXN",
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: precioVisible(p),
+            priceCurrency: "MXN",
+            unitText: p.precioPorPersona
+              ? (locale === "en" ? "per person" : "por persona")
+              : (locale === "en" ? "per couple (2 people)" : "por pareja (2 personas)"),
+          },
+          eligibleQuantity: {
+            "@type": "QuantitativeValue",
+            minValue: 2,
+            unitText: locale === "en" ? "people" : "personas",
+          },
           availability: "https://schema.org/InStock",
           url,
-          // El precio publicado es POR PAREJA (2 personas), no por persona.
           description: t.offerDescripcion(p.precioLabel, p.duracion),
           seller: ORG_REF,
         },
@@ -286,7 +311,10 @@ export default function PaqueteDetallePage({ params }: Props) {
               <Moon className="w-3.5 h-3.5 text-verde-vivo" /> {p.duracion}
             </span>
             <span className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(26px,3.5vw,36px)" }}>
-              ${num(p.precio)} <span className="font-dm text-[11px] text-crema/65">MXN {p.precioLabel}</span>
+              {/* 🔴 `precioVisible(p)`, nunca `p.precio`: justo al lado va
+                  `p.precioLabel`, y un total de pareja debajo de «por persona»
+                  anunciaría el doble de lo que cuesta. */}
+              ${num(precioVisible(p))} <span className="font-dm text-[11px] text-crema/65">MXN {p.precioLabel}</span>
             </span>
           </div>
 

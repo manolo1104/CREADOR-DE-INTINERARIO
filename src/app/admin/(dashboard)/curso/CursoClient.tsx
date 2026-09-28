@@ -97,6 +97,77 @@ export default function CursoClient({ r }: { r: ResumenCurso }) {
         <Tarjeta n={r.bajas} etiqueta="Bajas" nota={r.bajas > 0 ? "revisa qué correo las causó" : "ninguna"} />
       </div>
 
+      {/* Los cuadernos: quién se llevó el material, que es la señal más honesta
+          de que el taller sirvió. La liga se pega en el grupo de WhatsApp y es
+          la misma para todos, así que lo que se puede contar son APARATOS
+          distintos, no nombres. Se dice así en la pantalla en vez de fingir
+          que son personas identificadas. */}
+      <div className="mt-4 bg-white border border-[#1B4332]/10 rounded-sm p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-dm text-[10px] uppercase tracking-[1.5px] text-[#1B4332]/50">
+            Descargas de los cuadernos
+          </p>
+          <p className="font-dm text-xs text-[#1B4332]/45">
+            {r.descargasAparatos} de {r.registrados} registrados
+            {r.registrados > 0 && (
+              <> · {Math.round((r.descargasAparatos / r.registrados) * 100)}%</>
+            )}
+          </p>
+        </div>
+
+        <div className="mt-3 space-y-2">
+          {r.workbooks.map((w) => (
+            <div key={w.noche} className="flex items-center gap-3">
+              <span className="font-dm text-xs text-[#1B4332]/45 w-14 shrink-0">
+                Noche {w.noche}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-cormorant text-2xl font-light leading-none text-[#1B4332]">
+                    {w.publicado ? w.aparatos : "—"}
+                  </span>
+                  <span className="font-dm text-xs text-[#1B4332]/55 truncate">
+                    {w.titulo}
+                  </span>
+                </div>
+                {w.publicado ? (
+                  <div className="mt-1 h-1 bg-[#1B4332]/8 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#1B4332]/50"
+                      style={{
+                        width: `${
+                          r.registrados > 0
+                            ? Math.min(100, (w.aparatos / r.registrados) * 100)
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-1 font-dm text-xs text-[#1B4332]/35">
+                    todavía sin publicar
+                  </p>
+                )}
+              </div>
+              <span className="font-dm text-xs text-[#1B4332]/40 shrink-0 text-right">
+                {w.publicado ? (
+                  <>
+                    {w.veces} {w.veces === 1 ? "descarga" : "descargas"}
+                    {w.ultimaIso && <> · última {fecha(w.ultimaIso)}</>}
+                  </>
+                ) : null}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-3 font-dm text-xs text-[#1B4332]/40">
+          Se cuentan aparatos distintos, no nombres: la liga es una sola para
+          todo el grupo de WhatsApp y no sabe quién la abre. Las vistas previas
+          de WhatsApp y Facebook no cuentan.
+        </p>
+      </div>
+
       {r.porNegocio.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {r.porNegocio.map(({ tipo, n }) => (

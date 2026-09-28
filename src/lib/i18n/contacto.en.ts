@@ -104,7 +104,7 @@ const ES: ContactoContent = {
     {
       icono: "reservar",
       titulo: "Reservar un tour",
-      texto: "Aparta tu lugar con el 30 % y liquida el día del tour.",
+      texto: "Desde 2 días apartas con el 30 % y liquidas el día del tour; un solo recorrido se paga completo.",
       href: "/reservar",
     },
     {
@@ -170,7 +170,7 @@ const EN: ContactoContent = {
     {
       icono: "reservar",
       titulo: "Book a tour",
-      texto: "Hold your spot with a 30% deposit and pay the balance on the day.",
+      texto: "From 2 days on, a 30% deposit holds your spot; a single tour is paid in full.",
       href: "/en/reservar",
     },
     {

@@ -15,6 +15,9 @@ salía al 1 %.
 
 ## El script
 
+> Hace falta `scipy` además de pillow y numpy: es lo que repone el contorno
+> (paso 3). Sin él el script revienta a media faena y deja el logo sin borde.
+
 `scripts/logo-preparar.py` lo hace todo y se verifica solo:
 
 1. Borra la mancha blanca **conectada con el borde**. El blanco de DENTRO (la
@@ -28,7 +31,7 @@ salía al 1 %.
 
 ```bash
 # Una vez:
-python3 -m venv /tmp/venv-logos && /tmp/venv-logos/bin/pip install pillow numpy
+python3 -m venv /tmp/venv-logos && /tmp/venv-logos/bin/pip install pillow numpy scipy
 
 # Por cada logo:
 /tmp/venv-logos/bin/python scripts/logo-preparar.py \

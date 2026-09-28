@@ -76,7 +76,7 @@ export const TALLER_NOCHES = [
       "Abro mi panel real de Huasteca Potosina Tours y te enseño los números en pantalla.",
       "Construyo una página de tours desde cero, en 20 minutos, mientras miras.",
     ],
-    workbook: "El mapa de tu sistema",
+    workbook: "El brief de tu página",
   },
   {
     n: 2,
@@ -101,6 +101,32 @@ export const TALLER_NOCHES = [
     workbook: "Tus 3 automatizaciones",
   },
 ] as const;
+
+/**
+ * Los cuadernos de cada noche, y dónde vive el archivo.
+ *
+ * El PDF NO se anuncia por su ruta estática: se pide por `/curso/workbook/N`,
+ * que lo sirve y de paso cuenta la descarga. Por eso el nombre del archivo
+ * lleva un sufijo que nadie va a adivinar — si la ruta bonita fuera un archivo
+ * de `public/`, Next lo serviría sin pasar por ningún código y no habría nada
+ * que contar.
+ *
+ * `archivo: null` = esa noche todavía no tiene cuaderno y la ruta contesta 404.
+ */
+export const WORKBOOKS: Record<number, { titulo: string; archivo: string | null }> = {
+  1: { titulo: "El brief de tu página", archivo: "noche-1-8f3a2d.pdf" },
+  2: { titulo: "El guion de tu agente", archivo: null },
+  3: { titulo: "Tus 3 automatizaciones", archivo: null },
+};
+
+/**
+ * La liga que se pega en el grupo de WhatsApp. Cuenta la descarga.
+ *
+ * El dominio va escrito aquí y no importado de `cursoEmailLayout`: ese módulo
+ * ya importa de éste, y traérselo de vuelta cerraría el círculo.
+ */
+export const ligaWorkbook = (noche: number) =>
+  `https://www.huasteca-potosina.com/curso/workbook/${noche}`;
 
 /** Las 8 sesiones en vivo (mar y jue, 19:00–20:30 CDMX). */
 export const SESIONES = [

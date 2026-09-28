@@ -50,14 +50,36 @@ const FAQS = [
   },
 ];
 
+// Llevaba las preguntas pero no las migas, que sí tienen sus dos hermanas
+// legales: sin ellas esta página no declara dónde cuelga del sitio.
 const faqSchema = {
   "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQS.map((f) => ({
-    "@type": "Question",
-    name: f.q,
-    acceptedAnswer: { "@type": "Answer", text: f.a },
-  })),
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: "Política de cancelación y clima",
+      description:
+        "Qué pasa si cancelas o si llueve: plazos de reembolso, reprogramación y el criterio de cancelación por clima.",
+      url: `${SITE}/politica-de-cancelacion`,
+      inLanguage: "es-MX",
+      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
+        { "@type": "ListItem", position: 2, name: "Política de cancelación", item: `${SITE}/politica-de-cancelacion` },
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: FAQS.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    },
+  ],
 };
 
 const ESCALA = [

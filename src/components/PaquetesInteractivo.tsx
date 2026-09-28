@@ -6,7 +6,7 @@ import { Check, Moon, MapPin, ChevronLeft, ChevronRight, Info } from "lucide-rea
 import { GaleriaPaquete } from "@/components/GaleriaPaquete";
 import { PatronDestinos } from "@/components/PatronDestinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
-import { collagePaquete, type Paquete } from "@/lib/paquetes";
+import { galeriaPaquete, precioVisible, type Paquete } from "@/lib/paquetes";
 import { ahorroPaquete } from "@/lib/ahorroPaquete";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
@@ -41,7 +41,7 @@ function tituloCorto(tour: string): { nombre: string; dia: string } {
 function PaqueteCard({ p }: { p: Paquete }) {
   const { locale, lp } = useLocale();
   const t = getPaquetesInteractivoUI(locale);
-  const fotos = collagePaquete(p);
+  const fotos = galeriaPaquete(p);
   const ahorro = ahorroPaquete(p);
 
   return (
@@ -99,7 +99,7 @@ function PaqueteCard({ p }: { p: Paquete }) {
         <div className="mt-4 rounded-lg border border-negro/10 bg-white/70 px-4 py-3">
           <div className="flex items-baseline gap-2">
             <span className="font-cormorant text-[34px] leading-none text-terracota">
-              {mxn(p.precio)}
+              {mxn(precioVisible(p))}
             </span>
             <span className="font-dm text-[10px] text-negro/60">MXN {p.precioLabel}</span>
           </div>

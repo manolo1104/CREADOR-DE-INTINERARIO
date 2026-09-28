@@ -374,12 +374,12 @@ const tools = [
   },
   {
     name: "disponibilidad_habitaciones",
-    description: "Consulta SOLO LECTURA qué habitaciones del Hotel Paraíso Encantado están disponibles para unas fechas (se asoma al calendario del hotel, sin apartar ni reservar nada). Úsala al cerrar un paquete. Pasa la llegada (checkin) y las noches del paquete (Aventura 2, Completo 3, Gran Huasteca 4); la salida se calcula sola. Si no se puede verificar, avisa que el equipo confirma.",
+    description: `Consulta SOLO LECTURA qué habitaciones del Hotel Paraíso Encantado están disponibles para unas fechas (se asoma al calendario del hotel, sin apartar ni reservar nada). Úsala al cerrar un paquete. Pasa la llegada (checkin) y las noches del paquete (${paquetesNochesTexto()}); la salida se calcula sola. Si no se puede verificar, avisa que el equipo confirma.`,
     input_schema: {
       type: "object",
       properties: {
         checkin: { type: "string", description: "Fecha de llegada (AAAA-MM-DD)" },
-        noches: { type: "number", description: "Noches del paquete (Aventura 2, Completo 3, Gran Huasteca 4). La salida = llegada + noches." },
+        noches: { type: "number", description: `Noches del paquete (${paquetesNochesTexto()}). La salida = llegada + noches.` },
         checkout: { type: "string", description: "Fecha de salida (AAAA-MM-DD). Solo si NO das 'noches'." },
       },
       required: ["checkin"],
@@ -747,6 +747,14 @@ function paquetesTexto() {
   ).join("\n");
 }
 
+// Las noches de cada paquete, para que el prompt no las lleve escritas a mano:
+// la lista anterior decía «Aventura 2, Completo 3, Gran Huasteca 4», tres
+// paquetes que ya no existen, y con ella el bot calculaba mal la fecha de
+// salida de los cinco que sí existen.
+function paquetesNochesTexto() {
+  return PAQUETES.map((p) => `${p.nombre} ${p.noches}`).join(", ");
+}
+
 function destinosTexto() {
   const porZona = {};
   for (const d of DESTINOS) (porZona[d.zona] = porZona[d.zona] || []).push(d.nombre);
@@ -826,7 +834,7 @@ Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas y vu
 *"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos de máximo 12 personas y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
 *"¿Y si llueve o se cancela?":* ${EMPRESA.cancelacion} El rafting depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma.
 *"¿Puedo pagar todo el día del tour?":* no. Se aparta con el 30 % y el resto se liquida ese día — el anticipo es lo que garantiza el lugar.
-*"¿Son de fiar?":* 4.7★ con 161 reseñas en Google, más de 10,000 viajeros guiados, familia de guías locales de la Huasteca —guiando desde 2010, empresa formal desde 2019—. Esas cifras son REALES; no inventes ninguna otra, y NO menciones premios.
+*"¿Son de fiar?":* 4.9★ con 492 reseñas en Google, más de 10,000 viajeros y el premio Arival al Mejor Tour Operador de Norteamérica 2023. Empresa formal desde 2019, familia de guías locales. Esas cifras son REALES; no inventes ninguna otra.
 *"Prefiero ir por mi cuenta":* respeta la decisión y dile lo concreto que damos: te recogemos en tu hospedaje, entradas y accesos resueltos, seguro incluido, y llegamos a rincones que el turismo de a pie no alcanza. Ofrécele armarle la opción para que él compare.
 *Se quedó callado:* UN solo mensaje corto retomando su último dato ("¿Seguimos con el sábado para 4?"). Uno, no tres.
 
@@ -886,7 +894,7 @@ ${INFO.hotelServicios.servicios.map((x) => "   • " + x).join("\n")}
    ⚠️ NO des horarios de check-in ni de check-out: los confirma el hotel. Si preguntan, dile que se los confirmamos hoy mismo.
    ⚠️ *Las NOCHES no las cuentas tú.* Del 23 al 26 son 3 noches, no 4. Usa el campo "noches" que devuelve *disponibilidad_habitaciones*; si no lo tienes, pregúntale cuántas noches se quedan en vez de deducirlo.
    Si le interesa: consulta *disponibilidad_habitaciones* (checkin + noches), enséñale las libres y, cuando elija, mete el hospedaje en la MISMA cotización — pasa el objeto *hospedaje* a *cotizar_paquete_personalizado*. Va en el mismo folio y el mismo correo. Nunca le digas que se cotiza aparte.
-   🎁 *La 3.ª noche de regalo va SOLO en los paquetes del catálogo* (Familiar, Aventura Extrema, Odisea…). En un viaje a la medida se pagan todas las noches. Si quiere quedarse 3 noches o más, ése es el momento de enseñarle el paquete: ahí la noche va de regalo y sale más barato que armarlo suelto. NUNCA prometas la noche gratis fuera de un paquete.
+   🎁 *La 3.ª noche de regalo va SOLO en los paquetes del catálogo* (Gran Huasteca, Aventura, Odisea…). En un viaje a la medida se pagan todas las noches. Si quiere quedarse 3 noches o más, ése es el momento de enseñarle el paquete. NUNCA prometas la noche gratis fuera de un paquete.
    Tarifas por habitación y noche: sin vista a montaña $1,500 (1–2 personas) o $1,900 (3–4); la Jungla, con vista a la montaña, $1,900 (1–2) o $2,400 (3–4). (Son NUESTRAS tarifas de paquete: si el cliente ve otro precio en la página del hotel, la que vale para lo que tú le cotizas es esta.) Hasta 4 personas por habitación. El monto exacto lo calcula *cotizar_paquete_personalizado*. Si te devuelve el hospedaje SIN monto, dile que la tarifa se la confirmamos hoy mismo y que el total que le diste es el de los tours. NO inventes el precio de la habitación.
 3. Cuando diga que le gusta, pide *nombre y correo* y llama a *cotizar_paquete_personalizado* con todos los recorridos (y el hospedaje si aplica). Eso genera UN folio y UN correo con el itinerario completo. No generes una cotización por tour.
 4. Los paquetes preestablecidos (*listar_paquetes*) siguen existiendo: ofrécelos solo si preguntan por ellos o si quieren algo ya armado con hotel incluido.
@@ -897,8 +905,8 @@ ${INFO.hotelServicios.servicios.map((x) => "   • " + x).join("\n")}
 🎒 PAQUETES FIJOS (tours + hotel)
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ${paquetesTexto()}
-Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla) y son *por pareja* (2 personas). Detalle: *obtener_paquete*. Lista: *listar_paquetes*.
-Para cerrar uno: (1) pide solo la *fecha de llegada* y valídala — *NO calcules tú la salida*: la calculan las herramientas con checkin + noches (Aventura 2, Completo 3, Gran Huasteca 4). (2) Consulta *disponibilidad_habitaciones* y dile qué habitaciones hay (si "verificado" es false, avisa que el equipo confirma). (3) Comparte los *links* de las habitaciones disponibles. (4) Toma personas, nombre y correo y usa *registrar_cotizacion* (tipo "paquete", con checkin). La habitación *Jungla* tiene +$400/noche. La fecha de salida que muestres es la que devuelven las herramientas (campo "checkout"). NO apartas ni cobras: la reserva final la confirma el equipo.
+Incluyen hospedaje en el *Hotel Paraíso Encantado* (Xilitla). Cada precio viene con su unidad en *precioLabel*: cítalos siempre juntos, tal cual, sin multiplicar ni dividir la cifra. Detalle: *obtener_paquete*. Lista: *listar_paquetes*.
+Para cerrar uno: (1) pide solo la *fecha de llegada* y valídala — *NO calcules tú la salida*: la calculan las herramientas con checkin + noches (${paquetesNochesTexto()}). (2) Consulta *disponibilidad_habitaciones* y dile qué habitaciones hay (si "verificado" es false, avisa que el equipo confirma). (3) Comparte los *links* de las habitaciones disponibles. (4) Toma personas, nombre y correo y usa *registrar_cotizacion* (tipo "paquete", con checkin). La habitación *Jungla* tiene +$400/noche. La fecha de salida que muestres es la que devuelven las herramientas (campo "checkout"). NO apartas ni cobras: la reserva final la confirma el equipo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 📍 DESTINOS (${DESTINOS.length})

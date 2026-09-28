@@ -196,7 +196,7 @@ export default function PaquetesPage() {
           </div>
           <div className="flex items-center gap-2.5">
             <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
-            {/* Era "+320" mientras el resto del sitio dice 161: la misma
+            {/* Era "+320" mientras el resto del sitio dice 492: la misma
                 cifra no puede cambiar según la página que abra el cliente. */}
             <p className="text-[10px] font-dm text-crema/55">{t.resenasN}</p>
           </div>

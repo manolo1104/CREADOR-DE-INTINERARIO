@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { actividad } from "@/lib/logger";
-import { puedeVer, rolDesdeToken, seccionRestringida, type RolAdmin } from "@/lib/admin/usuarios";
-
 // Bots, crawlers y escáneres: no son visitantes reales, no ensucian el feed.
-function esBot(ua: string | null): boolean {
-  if (!ua) return true;
-  return /bot|crawl|spider|slurp|gptbot|chatgpt|headless|python-|curl|wget|scrapy|facebookexternalhit|whatsapp|preview|wp-admin|scan/i.test(ua);
-}
+// Vive en su propio archivo porque la descarga de workbooks usa el mismo filtro.
+import { esBot } from "@/lib/bots";
+import { puedeVer, rolDesdeToken, seccionRestringida, type RolAdmin } from "@/lib/admin/usuarios";
 
 // Origen legible de la visita (de dónde llegó).
 function fuenteReferrer(ref: string | null): string {

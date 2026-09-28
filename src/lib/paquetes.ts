@@ -47,8 +47,22 @@ export interface Paquete {
   duracion: string;
   dias: number;
   noches: number;
+  /**
+   * 🔴 SIEMPRE el total DE LA PAREJA, pase lo que pase con la etiqueta. Es el
+   * contrato del motor de cobro: `paquetePricing.ts` hace
+   * `total = precio + extraHotel + extraTours` y calcula el hotel como «lo que
+   * cuestan las habitaciones que hacen falta» MENOS «la de dos que ya venía
+   * aquí». Si este número pasara a ser por persona, Stripe cobraría la mitad.
+   * Para enseñarlo al visitante se usa `precioVisible()`, no este campo.
+   */
   precio: number;
   precioLabel: string;
+  /**
+   * El precio se ENSEÑA dividido entre dos y con etiqueta «por persona».
+   * Decisión de Manolo del 12 sep 2026: todos menos Luna de Miel, que se
+   * sigue vendiendo por pareja porque es un viaje de dos.
+   */
+  precioPorPersona?: boolean;
   /** marca un precio provisional pendiente de confirmar antes de publicar */
   precioProvisional?: boolean;
   /**
@@ -269,55 +283,58 @@ export interface Resena {
 // Reseñas ESPECÍFICAS por paquete — cada página de detalle muestra testimonios
 // de gente que sí hizo ESE paquete (prueba social relevante al producto).
 export const RESENAS_POR_PAQUETE: Record<string, Resena[]> = {
-  aventura: [
-    {
-      nombre: "Claudia M.", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-30.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "El Paquete Aventura superó todas mis expectativas. La Expedición Tamul al amanecer es algo que nunca voy a olvidar — ver los pericos salir del sótano con mis propios ojos fue mágico. El hotel es perfecto, y los guías saben exactamente cuándo llegar a cada lugar para la mejor luz.",
-    },
-    {
-      nombre: "La familia Herrera", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-32.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "Viajamos con dos niños de 8 y 11 años con el Paquete Aventura. Todo perfectamente coordinado — los guías pacientes y el ritmo ideal para los niños. Las Cascadas del Meco los dejó boquiabiertos. El hotel los trató como reyes.",
-    },
-    {
-      nombre: "Diego R.", ciudad: "Querétaro", foto: "/imagenes/reviews/reviewer-5.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "El Paquete Aventura es el balance perfecto: dos días, los dos tours más impresionantes y sin sentir prisa. Ver la Cascada de Tamul de cerca te deja sin palabras. Volvería sin pensarlo.",
-    },
-  ],
-  completo: [
-    {
-      nombre: "Roberto & Ana", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-31.jpg", estrellas: 5, tour: "Paquete Completo",
-      texto: "Fuimos con el Paquete Completo y fue el mejor viaje que hemos hecho en pareja. El Puente de Dios con la luz entrando por el arco... no se puede describir. El desayuno del hotel, increíble. Ya queremos volver para hacer el Gran Huasteca.",
-    },
-    {
-      nombre: "Mariana L.", ciudad: "Puebla", foto: "/imagenes/reviews/reviewer-12.jpg", estrellas: 5, tour: "Paquete Completo",
-      texto: "Hicimos el Paquete Completo en familia: tres días de tours distintos, Las Pozas el primer día y el sótano al amanecer. Cada día algo nuevo sin tener que cambiar de hotel. La logística, impecable.",
-    },
-    {
-      nombre: "Jorge y Paty", ciudad: "León", foto: "/imagenes/reviews/reviewer-8.jpg", estrellas: 5, tour: "Paquete Completo",
-      texto: "El Paquete Completo nos dejó conocer lo mejor de la Huasteca sin agotarnos. Los guías ajustaron el ritmo a nuestros tiempos y nos dejaron elegir el tercer día. Repetiríamos sin dudar.",
-    },
-  ],
   "gran-huasteca": [
     {
-      nombre: "Andrea & Sofía", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-turquoise-group.png", estrellas: 5, tour: "Paquete Gran Huasteca",
-      texto: "El Paquete Gran Huasteca es otro nivel. Cuatro días seguidos de tours sin repetir un solo lugar: Las Pozas, los sótanos, Tamul, las Cascadas del Meco y el Puente de Dios. Terminamos agotadas y felices. Si vas a ir, ve por este.",
+      nombre: "La familia Herrera", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-32.jpg", estrellas: 5, tour: "Gran Huasteca",
+      texto: "Viajamos con dos niños de 8 y 11 años con el Paquete Familiar. Todo perfectamente coordinado — los guías pacientes y el ritmo ideal para los niños. Las Cascadas del Meco los dejaron boquiabiertos y en Micos se metieron al agua con chaleco sin un solo susto. El hotel los trató como reyes.",
     },
     {
-      nombre: "Familia Vázquez", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-familia-tamul.png", estrellas: 5, tour: "Paquete Gran Huasteca",
-      texto: "Veníamos con la duda de si 5 días eran demasiado y nos quedamos cortos. El Gran Huasteca te deja vivir la Huasteca completa, con calma y durmiendo siempre en el mismo hotel. La organización, impecable.",
+      nombre: "Mariana L.", ciudad: "Puebla", foto: "/imagenes/reviews/reviewer-12.jpg", estrellas: 5, tour: "Gran Huasteca",
+      texto: "Hicimos el Paquete Familiar: tres días de tours distintos, el Meco el primero y el jardín de Edward James el segundo, que fue el que más les gustó a los niños. Ninguna caminata larga y cada día algo nuevo sin cambiar de hotel. La logística, impecable.",
+    },
+  ],
+  aventura: [
+    {
+      nombre: "Diego R.", ciudad: "Querétaro", foto: "/imagenes/reviews/reviewer-5.jpg", estrellas: 5, tour: "Paquete Aventura",
+      texto: "Aventura Extrema son tres días de tour y cada uno más fuerte que el anterior. El de llegada ya vas manejando el todoterreno por la sierra, y el último te avientas los saltos de Micos. Te deja sin palabras. Volvería sin pensarlo.",
     },
     {
-      nombre: "Luis M.", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-tamul-grupo.jpg", estrellas: 5, tour: "Paquete Gran Huasteca",
-      texto: "Hice el Gran Huasteca con amigos. Cada día un escenario distinto y los guías sabían exactamente a qué hora llegar a cada sitio. El último día, el arco de luz del Puente de Dios, fue el cierre perfecto.",
+      nombre: "Luis M.", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-tamul-grupo.jpg", estrellas: 5, tour: "Paquete Aventura",
+      texto: "Hice Aventura Extrema con amigos. Los rápidos Clase III del Tampaón nos dejaron muertos de risa y al día siguiente ya estábamos saltando las cascadas de Micos con chaleco y guía. Pide condición física, pero se puede sin experiencia previa.",
+    },
+  ],
+  "tu-huasteca": [
+    {
+      nombre: "Andrea & Sofía", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-turquoise-group.png", estrellas: 5, tour: "Tu Huasteca",
+      texto: "Tu Huasteca es otro nivel. Cuatro días seguidos de tour y los elegimos nosotras: el jardín de Edward James, Tamul, el Puente de Dios y las Cascadas del Meco. Terminamos agotadas y felices. Si vas a ir, ve por este.",
+    },
+    {
+      nombre: "Jorge y Paty", ciudad: "León", foto: "/imagenes/reviews/reviewer-8.jpg", estrellas: 5, tour: "Tu Huasteca",
+      texto: "Con Tu Huasteca armamos el viaje a nuestra medida: elegimos los cuatro recorridos al reservar y cambiamos uno una semana antes sin ningún problema. Salimos del mismo hotel los cuatro días, sin rehacer maletas. Repetiríamos sin dudar.",
+    },
+  ],
+  "odisea-huasteca": [
+    {
+      nombre: "Familia Vázquez", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-familia-tamul.png", estrellas: 5, tour: "Odisea Huasteca",
+      texto: "Veníamos con la duda de si cinco días de tour eran demasiados y nos quedamos cortos. La Odisea Huasteca te deja vivir la Huasteca completa, con calma y durmiendo siempre en el mismo hotel. El día a elegir lo usamos en el Puente de Dios. La organización, impecable.",
+    },
+    {
+      nombre: "Gerardo P.", ciudad: "Aguascalientes", foto: "/imagenes/reviews/reviewer-23.jpg", estrellas: 5, tour: "Odisea Huasteca",
+      texto: "Era nuestra primera vez en la Huasteca y no queríamos volver con la lista a medias. Cinco días de tour y ninguno se parece al anterior: Edward James, Tamul con los pericos, Minas Viejas y Micos. Cerrar en la finca de café fue el descanso que no sabíamos que necesitábamos.",
     },
   ],
 };
 
-// Mezcla para la página de listado: una reseña de cada paquete.
+/**
+ * Mezcla para la página de listado. La rejilla es de TRES columnas, así que no
+ * caben los cinco paquetes: se escoge un testimonio por PERFIL DE VIAJERO, que
+ * es el criterio con el que está ordenado el catálogo — pareja, familia y el
+ * que viene a verlo todo.
+ */
 export const RESENAS_PAQUETES: Resena[] = [
-  RESENAS_POR_PAQUETE.aventura[0],
   RESENAS_POR_PAQUETE["gran-huasteca"][0],
-  RESENAS_POR_PAQUETE.completo[0],
+  RESENAS_POR_PAQUETE.aventura[0],
+  RESENAS_POR_PAQUETE["odisea-huasteca"][1],
 ];
 
 // ── FAQ compartido para las páginas de detalle ──────────────────────────────
@@ -384,97 +401,9 @@ export const FAQS_PAQUETES = [
  */
 export const PAQUETES_DB: Paquete[] = [
   {
-    id: "luna-de-miel",
-    slug: "luna-de-miel",
-    nombre: "Luna de Miel",
-    subtitulo: "La Huasteca de a dos, sin prisa",
-    duracion: "3 días / 2 noches",
-    dias: 3,
-    noches: 2,
-    precio: 9800,
-    precioProvisional: true,
-    precioLabel: "por pareja",
-    badge: "Lunamieleros",
-    // El precio publicado YA cubre la suite Jungla: no se vuelve a cobrar.
-    habitacionIncluida: "montana",
-    // La Jungla va asignada; la Flor de Liz 2 es el reemplazo si no hay fechas.
-    habitaciones: ["jungla", "flor-de-liz-2"],
-    /**
-     * A mano porque el día 1 dejó de ser un tour del catálogo: derivándolo
-     * saldría sólo la foto de Tamul y el jardín —que es medio paquete— no
-     * aparecería en el hero.
-     */
-    collage: [
-      "/imagenes/las-pozas-jardin-surrealista/hero.jpg",
-      "/imagenes/tours/tamul/hero.jpg",
-      // La cena cierra el collage porque cierra el viaje: es lo que distingue
-      // a este paquete de cualquier otro que haga los mismos dos días.
-      "/imagenes/hotel-paraiso-encantado/cena-romantica/vino-terraza.jpg",
-    ],
-    imagen: "/imagenes/cascadas-minas-viejas/hero-new.jpg",
-    urgencia: "Incluye la suite Jungla con piscina de spa y la cena romántica de la segunda noche",
-    perfiles: ["Recién casados", "Parejas", "Aniversarios", "Ritmo tranquilo"],
-    tours: [
-      "Las Pozas, el jardín surrealista de Edward James (Día 1)",
-      "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 2)",
-    ],
-    galeriaExtra: {
-      dia: 2,
-      titulo: "La segunda noche",
-      texto: "Mientras están en Tamul, el equipo del hotel prepara la habitación: pétalos, velas y las luces encendidas. Al volver, la mesa ya está puesta en la terraza privada, con el pueblo de Xilitla alumbrado abajo, su botella lista y la cena emplatándose.",
-      fotos: [
-        { src: "/imagenes/hotel-paraiso-encantado/cena-romantica/habitacion.jpg", alt: "Cama de la suite Jungla preparada con pétalos de rosa, luces de corazones y toallas dobladas en forma de cisnes" },
-        { src: "/imagenes/hotel-paraiso-encantado/cena-romantica/mesa-terraza.jpg", alt: "Mesa de la terraza privada al anochecer con velas, rosas y dos copas de vino, con las luces de Xilitla al fondo" },
-        { src: "/imagenes/hotel-paraiso-encantado/cena-romantica/vino-terraza.jpg", alt: "Botella de vino en hielera junto a la mesa de la terraza, con velas encendidas y la sierra de noche" },
-      ],
-    },
-    itinerario: [
-      {
-        dia: 1, tipo: "llegada", titulo: "Llegada, check-in y el jardín de Edward James",
-        destinoSlug: "las-pozas-jardin-surrealista",
-        fotos: [
-          "/imagenes/las-pozas-jardin-surrealista/hero.jpg",
-          "/imagenes/las-pozas-jardin-surrealista/arcos.jpg",
-          "/imagenes/las-pozas-jardin-surrealista/puerta-luna.jpg",
-        ],
-        descripcion: "Llegan, hacen check-in y el único plan del día es Las Pozas, el jardín escultórico que Edward James levantó en la selva. Nada más: ni madrugar ni carretera. El jardín recibe de 9 de la mañana a 4 de la tarde y el último recorrido guiado sale justo a las 4 y dura dos horas, así que llegar a media tarde tampoco les quita el día.",
-      },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul y cena romántica", descripcion: "El día grande: canoa por el Cañón del Tampaón hasta los 105 metros de la Cascada de Tamul, clavados en la Cueva del Agua y el Sótano de las Huahuas al atardecer, cuando salen las aves. Al volver, la habitación los espera con velas y pétalos, su botella lista y la cena emplatándose: un platillo formal en la terraza privada." },
-      { dia: 3, tipo: "salida", titulo: "Salida", descripcion: "Desayuno y camino a casa. El desayuno buffet va incluido solo los días de tour." },
-    ],
-    incluye: [
-      "2 noches en la suite Jungla del Hotel Paraíso Encantado, con terraza privada, vista a la montaña y piscina de spa al exterior",
-      "Desayuno buffet los días de tour",
-      "Cena romántica la segunda noche: platillo formal y botella de vino",
-      "La habitación preparada con velas y pétalos para esa noche",
-      "Entrada y recorrido guiado en Las Pozas, el jardín de Edward James",
-      "Tour Expedición Tamul completo, de día entero",
-      "Transporte del hotel a Las Pozas y al inicio del tour del día 2, ida y vuelta",
-      "Guías certificados NOM-09 SECTUR",
-      "Entradas a todas las atracciones",
-      "Equipo de seguridad",
-      "Seguro de viaje",
-      "Fotografía y video del recorrido",
-    ],
-    noIncluye: [
-      "Traslado hasta Xilitla (llegas por tu cuenta — consulta la sección 'Cómo llegar')",
-      "Comidas y cenas, salvo los desayunos y la cena romántica del día 2",
-      "Propinas y gastos personales",
-    ],
-    // Falta el costo de la cena romántica con vino y el arreglo de la
-    // habitación: Manolo todavía no lo da, y no se inventa una cifra.
-    valor: [
-      { item: "2 noches suite Jungla (2 pax)", precio: "$3,800" },
-      { item: "Expedición Tamul (2 pax)", precio: "$3,100" },
-      { item: "Transporte 2 días", precio: "$800" },
-      { item: "Entradas + guías", precio: "$800" },
-      { item: "Fotografía y video del recorrido", precio: "$1,600" },
-    ],
-  },
-  {
     id: "inmersion-huasteca",
     slug: "inmersion-huasteca",
-    nombre: "Inmersión Huasteca: Tamul & Surrealismo",
+    nombre: "Inmersión Huasteca",
     subtitulo: "La cascada más alta y el jardín más enigmático, en tres días",
     duracion: "3 días / 2 noches",
     dias: 3,
@@ -488,7 +417,7 @@ export const PAQUETES_DB: Paquete[] = [
     // puso: el paquete se estrena hoy y nadie lo ha reservado todavía. El día
     // que sea verdad, se cambia aquí.
     badge: "Nuevo",
-    imagen: "/imagenes/cascada-de-tamul/gallery-1.jpg",
+    imagen: "/imagenes/tours/tamul/hero.jpg",
     // Las tres fotos que cuentan el paquete: la panga frente a Tamul, el
     // castillo de Edward James y el cuarto donde se duerme.
     collage: [
@@ -511,7 +440,7 @@ export const PAQUETES_DB: Paquete[] = [
     incluye: [
       "2 noches en Hotel Paraíso Encantado Xilitla, habitación King con vista a la selva",
       "Desayuno los días de tour",
-      "Tour Expedición Tamul completo (12 horas)",
+      "Tour Expedición Tamul completo (9 horas)",
       "Tour Ruta Surrealista completo (8 horas)",
       "Transporte del hotel al inicio de cada tour y de regreso",
       "Guías certificados NOM-09 SECTUR",
@@ -540,13 +469,13 @@ export const PAQUETES_DB: Paquete[] = [
     duracion: "4 días / 3 noches",
     dias: 4,
     noches: 3,
-    precio: 12490,
+    precio: 12290,
     precioLabel: "por pareja",
     // 🔴 Antes decía "Más popular" con CERO paquetes vendidos en 57 reservas.
     // La etiqueta describe lo que el paquete ES, no una popularidad inventada.
     badge: "Los 3 imperdibles",
     destacado: true,
-    imagen: "/imagenes/cascada-de-tamul/gallery-1.jpg",
+    imagen: "/imagenes/cascada-el-meco/hero.jpg",
     collage: [
       "/imagenes/cascada-de-tamul/gallery-1.jpg",
       "/imagenes/cascada-el-meco/hero.jpg",
@@ -562,7 +491,7 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     itinerario: [
       { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista", descripcion: "Si llegas en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. Este recorrido es el que queda del lado de Xilitla —el jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud—, así que el día de llegada no se va en carretera." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando las aves vuelven a meterse. Doce horas que terminan con el mejor rato del día." },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse. Nueve horas que terminan con el mejor rato del día." },
       { dia: 3, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Cascadas del Meco", descripcion: "Se sale temprano a propósito: el agua del Meco es turquesa a media mañana y pierde el color con el sol alto. Mirador panorámico, las pozas y el cierre en la Cascada del Salto." },
       { dia: 4, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y camino a casa." },
     ],
@@ -600,10 +529,10 @@ export const PAQUETES_DB: Paquete[] = [
     duracion: "4 días / 3 noches",
     dias: 4,
     noches: 3,
-    precio: 13590,
+    precio: 13390,
     precioLabel: "por pareja",
     badge: "Adrenalina",
-    imagen: "/imagenes/rio-tampaon-rafting/gallery-1.jpg",
+    imagen: "/imagenes/cascadas-minas-viejas/gallery-new-5.jpg",
     collage: [
       "/imagenes/rio-tampaon-rafting/gallery-1.jpg",
       "/imagenes/cascadas-de-micos/gallery-1.jpg",
@@ -661,7 +590,7 @@ export const PAQUETES_DB: Paquete[] = [
     precio: 16500,
     precioLabel: "por pareja",
     badge: "Lo ves todo",
-    imagen: "/imagenes/cascadas-de-micos/gallery-1.jpg",
+    imagen: "/imagenes/cascadas-minas-viejas/hero-new.jpg",
     collage: [
       "/imagenes/cascada-de-tamul/gallery-1.jpg",
       "/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg",
@@ -678,7 +607,7 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     itinerario: [
       { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista", descripcion: "El recorrido que queda del lado de Xilitla, para que el día de llegada no se vaya en carretera: el jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "Canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando las aves vuelven a meterse." },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "Canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse." },
       { dia: 3, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Cascadas del Meco", descripcion: "Se sale temprano a propósito: el agua del Meco es turquesa a media mañana y pierde el color con el sol alto. Mirador panorámico, las pozas y el cierre en la Cascada del Salto." },
       { dia: 4, tipo: "tour", tourSlug: "paraiso-escalonado-minas-micos", titulo: "Minas Viejas y Cascadas de Micos", descripcion: "El día de agua tranquila para cerrar: las terrazas de Minas Viejas, que son escalones naturales con poza en cada nivel, y las siete caídas de Micos." },
       { dia: 5, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y camino a casa." },
@@ -727,6 +656,59 @@ export const PAQUETES_DB: Paquete[] = [
  * Odisea deja fuera la finca de café, que es el cierre tranquilo del viaje y no
  * lo que lo vende.
  */
+/**
+ * TODAS las paradas del viaje, una foto por cada una.
+ *
+ * `collagePaquete` toma UNA foto por recorrido, que es lo que necesita un
+ * collage de cuatro franjas. La tarjeta del catálogo enseña una galería que se
+ * pasa foto a foto, y ahí lo que el cliente quiere ver es a dónde va: las tres
+ * paradas de la Ruta Surrealista, las tres de Tamul, las tres del Meco. Con
+ * una sola por recorrido se quedaba sin enseñar dos de cada tres lugares que
+ * está comprando.
+ *
+ * El `collage` de cada tour está curado a mano, una entrada por parada, así
+ * que aquí se concatenan en el orden del itinerario. Sin repetir: dos
+ * recorridos que comparten destino no pintan la misma foto dos veces.
+ */
+export function galeriaPaquete(p: Paquete): { src: string; alt?: string }[] {
+  const slugs = p.itinerario.some((d) => d.tourSlug)
+    ? p.itinerario.map((d) => d.tourSlug).filter((x): x is string => !!x)
+    : (p.eleccionTour?.opciones ?? []).map((o) => o.slug);
+
+  const vistas = new Set<string>();
+  const fotos: { src: string; alt?: string }[] = [];
+  for (const slug of slugs) {
+    const tour = TOURS_DB.find((t) => t.slug === slug);
+    if (!tour) continue;
+    for (const f of tourCollage(tour)) {
+      if (vistas.has(f.src)) continue;
+      vistas.add(f.src);
+      fotos.push({ src: f.src, alt: f.alt });
+    }
+  }
+  // Sin recorridos con foto (un paquete a la carta recién creado) se cae a lo
+  // que ya se usaba, para que la tarjeta nunca salga en blanco.
+  if (!fotos.length) return collagePaquete(p).map((src) => ({ src }));
+
+  // La portada del paquete abre la galería.
+  //
+  // 🔴 Sin esto, la primera foto es la de la primera parada del día 1, y tres
+  // paquetes que empiezan con la Ruta Surrealista abrían los tres con la MISMA
+  // foto de Las Pozas: en el catálogo se veían tres tarjetas iguales. `imagen`
+  // está elegida distinta para cada paquete justo para eso.
+  const i = fotos.findIndex((f) => f.src === p.imagen);
+  if (i > 0) {
+    fotos.unshift(fotos.splice(i, 1)[0]);
+  } else if (i < 0) {
+    // La portada no estaba entre las paradas: se le busca su descripción en las
+    // galerías de los tours antes de rendirse, porque un alt genérico
+    // ("parada 1 de 11") no le sirve a nadie ni lo lee bien Google.
+    const alt = TOURS_DB.flatMap((t) => t.gallery ?? []).find((g) => g.src === p.imagen)?.alt;
+    fotos.unshift({ src: p.imagen, alt });
+  }
+  return fotos;
+}
+
 export function collagePaquete(p: Paquete): string[] {
   if (p.collage?.length) return p.collage.slice(0, 4);
 
@@ -746,6 +728,16 @@ export function collagePaquete(p: Paquete): string[] {
     if (fotos.length === 4) break;
   }
   return fotos.length ? fotos : [p.imagen];
+}
+
+/**
+ * El importe que se ENSEÑA. `p.precio` es siempre el total de la pareja porque
+ * es lo que cobra el motor; esto es lo único que debe pintarse en pantalla,
+ * junto a `p.precioLabel`. Enseñar `p.precio` al lado de una etiqueta «por
+ * persona» anunciaría el doble de lo que cuesta.
+ */
+export function precioVisible(p: Paquete): number {
+  return p.precioPorPersona ? Math.round(p.precio / 2) : p.precio;
 }
 
 export function getPaquete(slug: string): Paquete | undefined {

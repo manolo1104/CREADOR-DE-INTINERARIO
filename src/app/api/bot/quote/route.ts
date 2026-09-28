@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAgentAuth } from "@/lib/agentAuth";
-import { TOURS_DB, incluyeDeTour, precioGrupo } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { calcTourTotal, validatePromoCode, minBookingDate } from "@/lib/tourBooking";
 import { DATOS_BANCO } from "@/lib/bot/bankData";
 import { sendBrevoEmail } from "@/lib/brevo";
@@ -129,13 +129,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Tarifa del GRUPO COMPLETO (ej. el Edén en el Jardín): una sola cifra que
-  // depende de cuántos van, no `precio × personas`. Sin esta rama el bot
-  // cotizaba por WhatsApp el triple de lo que cuesta para tres.
-  const delGrupo = precioGrupo(tour, totalPersonas);
-  const { total, subtotal } = delGrupo !== null
-    ? { subtotal: delGrupo, total: delGrupo - Math.round(delGrupo * promoDiscount / 100) }
-    : calcTourTotal(tour.precio, nAdults, nMid, nSmall, promoDiscount);
+  const { total, subtotal } = calcTourTotal(tour.precio, nAdults, nMid, nSmall, promoDiscount);
 
   // ── Folio + persistencia ───────────────────────────────────────
   const folio = "HP" + Date.now().toString(36).toUpperCase();

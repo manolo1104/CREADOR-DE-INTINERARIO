@@ -3,7 +3,14 @@ import { resenasTexto } from "@/lib/resenas";
 import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
-import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, etiquetaUnidad, precioTachado } from "@/lib/tours";
+// Una sola lista de @/lib/tours con lo que usan LOS DOS lados: el catalogo y el
+// texto de duracion de siempre, `tourDurRange` (la frase citable "duran entre X
+// y Y horas" del bloque de datos), y el orden por ranking + categorias +
+// collage que trajo la linea nueva de producto. `TOURS_DESTACADOS` y
+// `GuideProfile` ya no se importan: el cuerpo resultante ordena por
+// `rankTour` y agrupa por `TOUR_CATEGORIAS`, y no queda ninguna referencia a
+// ellos (verificado con grep antes de quitarlos).
+import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado } from "@/lib/tours";
 import { TourCollage } from "@/components/TourCollage";
 import { TourEmblem } from "@/components/TourEmblem";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -13,8 +20,10 @@ import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
+import { getToursFaqs } from "@/lib/faqTours";
+import { ANTICIPO_PCT } from "@/lib/carrito";
 
-import { GRUPO_MAX, GRUPO_MIN } from "@/lib/tours";
+import { GRUPO_MAX, GRUPO_MIN, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const en = locale === "en";
@@ -30,9 +39,12 @@ export function generateMetadata(): Metadata {
   const title = en
     ? `Adventure Tours in the Huasteca Potosina, Mexico · From ${desdeTxt}`
     : `Tours Huasteca Potosina 2026 · Todo Incluido desde ${desdeTxt}`;
+  // La regla real vive en `pctACobrar` (src/lib/carrito.ts): un viaje de un
+  // solo día sin hotel se cobra al 100 %. Esta página vende justo eso, así que
+  // "Aparta con el 30 %" a secas era falso para casi todo lo que lista.
   const description = en
-    ? `Waterfalls, caves, rafting and a surrealist jungle garden. ${nTours} guided day tours with transport, breakfast, entry fees, insurance and a certified guide. 30% deposit, free cancellation.`
-    : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Aparta con el 30 %.`;
+    ? `Waterfalls, caves, rafting and a surrealist jungle garden. ${nTours} guided day tours with transport, breakfast, entry fees, insurance and a certified guide. Free cancellation. One-day tours are paid in full; two days or more hold with 30%.`
+    : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Un tour de un día se paga completo; de dos días en adelante apartas con el 30 %.`;
   return {
     title,
     description,
@@ -117,6 +129,26 @@ export default function ToursPage() {
   const COMO_FUNCIONA = en ? COMO_FUNCIONA_EN : COMO_FUNCIONA_ES;
   const TESTIMONIOS = en ? TESTIMONIOS_EN : TESTIMONIOS_ES;
   const waGeneral = en ? "Hi, I'd like information about your Huasteca Potosina tours." : WA_MESSAGES.tourGeneral;
+  // 🔴 28 sep 2026 — el privado NO es una tarifa del grupo completo. Se cobra
+  // el precio normal del recorrido más $250 por persona; el `privateMinPrice`
+  // de $7,000 a $8,500 que se publicaba aquí anunciaba más del doble de lo que
+  // se cobra (Tamul para dos: $3,600, no $8,500). Se calcula con la regla real
+  // para que no vuelva a desfasarse.
+  const privadoDesde = Math.min(
+    ...TOURS_DB.filter((t) => t.privateAvailable).map((t) => t.precio)
+  ) + PRIVADO_EXTRA_POR_PERSONA;
+
+  const faqs = getToursFaqs(locale);
+  // Los datos que una IA tiene que poder citar de esta página, leídos del
+  // catálogo: cuántos recorridos hay, desde cuánto, cuánto duran y de dónde
+  // salen. En insignias sueltas ("$1,550" en un <span>) no se pueden citar.
+  const precioMinPersona = Math.min(
+    ...TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio),
+  );
+  const rzrTour   = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
+  const rangos    = TOURS_DB.map((t) => tourDurRange(t));
+  const durMin    = Math.min(...rangos.map(([a]) => a));
+  const durMax    = Math.max(...rangos.map(([, b]) => b));
 
   const toursItemListSchema = {
     "@context": "https://schema.org",
@@ -134,8 +166,40 @@ export default function ToursPage() {
         description: t.descripcion,
         url: `${SITE}${lp(`/tours/${t.slug}`)}`,
         image: t.imagen_hero?.startsWith("http") ? t.imagen_hero : `${SITE}${t.imagen_hero}`,
-        offers: { "@type": "Offer", price: t.precio, priceCurrency: "MXN" },
+        // La oferta lleva la URL y la disponibilidad, y —lo importante— dice a
+        // qué se refiere el precio: el RZR se cobra POR VEHÍCULO, no por
+        // persona. Un `price: 1600` a secas se lee como "por persona" y
+        // desinforma a quien cite el marcado. `unitText` lo hace explícito.
+        offers: {
+          "@type": "Offer",
+          price: t.precio,
+          priceCurrency: "MXN",
+          availability: "https://schema.org/InStock",
+          url: `${SITE}${lp(`/tours/${t.slug}`)}`,
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: t.precio,
+            priceCurrency: "MXN",
+            unitText:
+              t.precioUnidad === "vehiculo"
+                ? (en ? "per vehicle" : "por vehículo")
+                : (en ? "per person" : "por persona"),
+          },
+        },
       },
+    })),
+  };
+
+  // Preguntas frecuentes en datos estructurados, igual que ya lo hace
+  // /paquetes. `/tours` era la única página comercial sin ellas.
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    inLanguage: en ? "en" : "es-MX",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
     })),
   };
 
@@ -150,6 +214,7 @@ export default function ToursPage() {
           { "@type": "ListItem", position: 2, name: "Tours",  item: `${SITE}${lp("/tours")}` },
         ],
       }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden bg-verde-profundo px-6 pt-32 pb-16 text-center">
@@ -159,13 +224,25 @@ export default function ToursPage() {
         <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           {en ? "All-inclusive tours" : "Tours con todo incluido"}
         </p>
+        {/* El H1 decía sólo "Huasteca": las consultas que venden llevan las dos
+            palabras ("huasteca potosina tours", 3.114 impresiones en pos. 6). */}
         <h1 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(42px,7vw,80px)" }}>
-          {en ? <>Guided <em className="shimmer-gold">Tours</em> in the Huasteca</> : <>Tours <em className="shimmer-gold">Guiados</em> por la Huasteca</>}
+          {en ? <>Guided <em className="shimmer-gold">Tours</em> in the Huasteca Potosina</> : <>Tours <em className="shimmer-gold">Guiados</em> por la Huasteca Potosina</>}
         </h1>
-        <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-4">
+        <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-3">
           {en
-            ? `${tours.length} tours designed to experience the Huasteca worry-free. Transport, breakfast, entrance fees and a certified guide included in every trip.`
-            : `${tours.length} tours diseñados para vivir la Huasteca sin preocupaciones. Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.`}
+            ? `${tours.length} tours designed to experience the Huasteca Potosina worry-free. Transport, breakfast, entrance fees and a certified guide included in every trip.`
+            : `${tours.length} tours diseñados para vivir la Huasteca Potosina sin preocupaciones. Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.`}
+        </p>
+        {/* El precio, la duración y el punto de salida vivían SOLO dentro de
+            insignias de Tailwind: un "$1,550" suelto en un <span> no se puede
+            citar. Esta frase deja los mismos datos —leídos del catálogo— en
+            prosa, para que una persona o una IA puedan citar una sola línea y
+            quedarse con lo esencial. */}
+        <p className="text-crema/65 font-dm text-[13px] max-w-2xl mx-auto leading-relaxed mb-6">
+          {en
+            ? `The ${tours.length} tours cost from ${money(precioMinPersona)} MXN per person${rzrTour ? ` (the RZR off-road ride is priced per vehicle, from ${money(rzrTour.precio)} MXN)` : ""}, last between ${durMin} and ${durMax} hours, and — except for the RZR off-road ride and the Media Luna scuba dive, which you reach on your own, and the Coffee Trail, which picks you up in Xilitla only — we pick you up at your accommodation in Ciudad Valles or Xilitla between 8:00 and 9:00 AM. Free cancellation up to 48 hours before with a 100% refund; a single-day tour is paid in full when you book, and from two days on you hold your spot with ${ANTICIPO_PCT}%.`
+            : `Los ${tours.length} recorridos cuestan desde ${money(precioMinPersona)} MXN por persona${rzrTour ? ` (el Recorrido en RZR se cobra por vehículo, desde ${money(rzrTour.precio)} MXN)` : ""}, duran entre ${durMin} y ${durMax} horas y, salvo el Recorrido en RZR y el buceo en Media Luna —a los que llegas por tu cuenta— y la Travesía del Café, que recoge únicamente en hospedajes de Xilitla, pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla entre las 8:00 y las 9:00 AM. Cancelas gratis hasta 48 horas antes con reembolso del 100 %; un recorrido suelto de un día se paga completo al reservar y desde 2 días apartas con el ${ANTICIPO_PCT} %.`}
         </p>
         <div className="inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
           <Calendar className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
@@ -522,8 +599,8 @@ export default function ToursPage() {
             </p>
             <ul className="space-y-2 mb-7">
               {(en
-                ? ["A private transport unit just for your group", "Move at your own pace — no fixed schedules or waiting", "Your guide entirely at your disposal all day", "A custom itinerary tailored to you", "From $3,200 MXN for 2 people", "Discounts for large groups"]
-                : ["Unidad de transporte privada solo para tu grupo", "Se mueven a sus tiempos — sin horarios fijos ni esperas", "Tu guía a tu entera disposición todo el día", "Itinerario personalizado a tu medida", "Desde $3,200 MXN para 2 personas", "Descuentos para grupos grandes"]
+                ? ["A private transport unit just for your group", "Move at your own pace — no fixed schedules or waiting", "Your guide entirely at your disposal all day", "A custom itinerary tailored to you", `From ${money(privadoDesde)} MXN per person — the tour price plus ${money(PRIVADO_EXTRA_POR_PERSONA)}`, "Discounts for large groups"]
+                : ["Unidad de transporte privada solo para tu grupo", "Se mueven a sus tiempos — sin horarios fijos ni esperas", "Tu guía a tu entera disposición todo el día", "Itinerario personalizado a tu medida", `Desde ${money(privadoDesde)} MXN por persona — el precio del recorrido más ${money(PRIVADO_EXTRA_POR_PERSONA)}`, "Descuentos para grupos grandes"]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-dorado mt-0.5 flex-shrink-0">✦</span>{item}</li>
               ))}
@@ -534,6 +611,37 @@ export default function ToursPage() {
             </a>
           </div>
         </div>
+      </section>
+
+      {/* ── PREGUNTAS FRECUENTES ──
+          Mismo componente y mismo estilo que /paquetes: <details> nativo, sin
+          JavaScript de cliente. Las respuestas salen del catálogo (ver
+          `faqTours.ts`) y van también en el FAQPage de arriba. */}
+      <section className="max-w-3xl mx-auto px-6 py-20">
+        <p className="reveal-fade text-center text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+          {en ? "Before you book" : "Antes de reservar"}
+        </p>
+        <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
+          {en ? <>Frequently asked <em className="shimmer-gold">questions</em></> : <>Preguntas <em className="shimmer-gold">frecuentes</em></>}
+        </h2>
+        <div className="space-y-4">
+          {faqs.map((faq) => (
+            <details key={faq.q} className="border border-white/10 bg-negro/40">
+              <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
+                {faq.q}
+                <span className="text-verde-vivo flex-shrink-0 text-lg leading-none" aria-hidden="true">+</span>
+              </summary>
+              <div className="px-5 pb-5 border-t border-white/8 pt-4">
+                <p className="text-crema/55 font-dm text-sm leading-relaxed">{faq.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+        <p className="text-center text-crema/45 font-dm text-xs mt-8">
+          <Link href={lp("/preguntas-frecuentes")} className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-4">
+            {en ? "More questions: the full Huasteca Potosina FAQ →" : "¿Más dudas? Todas las preguntas sobre la Huasteca Potosina →"}
+          </Link>
+        </p>
       </section>
 
       {/* ── CTA FINAL ── */}

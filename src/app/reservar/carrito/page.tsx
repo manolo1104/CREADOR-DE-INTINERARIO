@@ -16,8 +16,8 @@ import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
 import { leerExtras, guardarExtras, limpiarExtras } from "@/lib/carritoExtras";
 import { TRASLADOS, getTraslado, tarifaTraslado, precioBase } from "@/lib/traslados";
 import { HABITACIONES_HOTEL, serviciosHotel, vistaHabitacion, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
-import { formatMXN, formatTourDate, minBookingDate, totalRecorrido } from "@/lib/tourBooking";
-import { TOURS_DB, incluyeDeTour, nombreCortoDe } from "@/lib/tours";
+import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
+import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { localizeTour } from "@/lib/i18n/localize";
@@ -54,17 +54,9 @@ const precioHotelDesde = Math.min(
  * `TOURS_DB`— así que en `/en` hay que volver a resolverlo por slug. Sin esto,
  * un carrito en inglés listaba los recorridos con su nombre en español.
  */
-/**
- * ¿Este renglón se cobra con tarifa del GRUPO COMPLETO? Cambia lo que se pinta:
- * un solo contador de "personas" en vez de adultos + dos tramos de menor.
- */
-function porGrupo(slug: string): boolean {
-  return !!TOURS_DB.find((x) => x.slug === slug)?.tarifaGrupo?.length;
-}
-
 function nombreCorto(slug: string, guardado: string, locale: Locale): string {
   const t = TOURS_DB.find((x) => x.slug === slug);
-  return t ? localizeTour(t, locale).nombreCorto : nombreCortoDe(guardado);
+  return (t ? localizeTour(t, locale).nombre : guardado).split("—")[0].trim();
 }
 
 const stripePromise = loadStripe(
@@ -371,7 +363,7 @@ function PagoCarrito({ cobro, datos, onListo }: {
           target="_blank"
           rel="noopener noreferrer"
           data-wa-manual="1"
-            onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_pago_alterno", amount: cobro.amount, recorridos: cobro.lineItems.length })}
+          onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_pago_alterno", amount: cobro.amount, recorridos: cobro.lineItems.length })}
           className="flex items-center justify-center gap-2.5 w-full border border-[#25D366]/60 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
         >
           <MessageCircle className="w-4 h-4" aria-hidden="true" />
@@ -743,7 +735,7 @@ export default function CarritoPage() {
     if (!tour || !cat) return;
     const otros   = (i.addOns ?? []).filter((a) => a.id !== id);
     const nuevos  = cantidad > 0 ? [...otros, { id, cantidad }] : otros;
-    const base = totalRecorrido(tour, i.adults, i.childrenMid, i.childrenSmall);
+    const { total: base } = calcTourTotal(tour.precio, i.adults, i.childrenMid, i.childrenSmall, 0);
     const extras = nuevos.reduce((s, a) => {
       const c = tour.addOns?.find((x) => x.id === a.id);
       return s + (c ? c.precio * a.cantidad : 0);
@@ -780,9 +772,9 @@ export default function CarritoPage() {
   /**
    * Suma o resta gente de un tramo concreto y recalcula el subtotal.
    *
-   * `totalRecorrido` es la MISMA función que usa el servidor, así que los
-   * tramos de menor (70 % de 6 a 10 años, 50 % por debajo de 6) —y la tarifa
-   * de grupo, cuando el recorrido la tiene— salen igual aquí que al cobrar.
+   * `calcTourTotal` es la MISMA función que usa el servidor, así que los
+   * tramos de menor (70 % de 6 a 10 años, 50 % por debajo de 6) salen igual
+   * aquí que al cobrar.
    */
   function cambiarPersonas(
     i: CarritoItem,
@@ -811,7 +803,7 @@ export default function CarritoPage() {
     // que van, no solo a los adultos.
     if (adultos + childrenMid + childrenSmall < tour.groupMin) return;
 
-    const total = totalRecorrido(tour, adultos, childrenMid, childrenSmall);
+    const { total } = calcTourTotal(tour.precio, adultos, childrenMid, childrenSmall, 0);
     // Los add-ons se topan a la gente que va: si el grupo baja, la actividad
     // opcional no puede quedar contratada para más personas de las que quedan.
     const addOns = (i.addOns ?? [])
@@ -831,13 +823,6 @@ export default function CarritoPage() {
     .filter((i) => i.tourDate)
     .sort((a, b) => a.tourDate.localeCompare(b.tourDate));
   const sinFecha = sinFechaItems.length;
-
-  // Recorridos del carrito con horario, recogida o cancelación propios: el
-  // bloque de logística de abajo habla por todos y a estos no les aplica.
-  const conReglasPropias = items
-    .map((i) => TOURS_DB.find((t) => t.slug === i.tourSlug))
-    .filter((t): t is NonNullable<typeof t> => !!t?.cancelacion)
-    .filter((t, idx, arr) => arr.findIndex((x) => x.slug === t.slug) === idx);
 
   /**
    * Guarda el carrito y manda la cotización por correo.
@@ -1093,11 +1078,7 @@ export default function CarritoPage() {
                           {([
                             // `singular` porque con un solo acompañante se leía
                             // "1 adultos" y "1 niños 6–10".
-                            // Con tarifa de grupo el contador es uno solo y se
-                            // llama "personas": no hay descuento de menor que
-                            // aplicar sobre una tarifa plana, y decir "(70 %)"
-                            // ahí prometería una rebaja que no existe.
-                            { campo: "adults"        as const, etiqueta: porGrupo(i.tourSlug) ? t.personaPl : t.adultos, singular: porGrupo(i.tourSlug) ? t.personaSing : t.adulto, nota: "" },
+                            { campo: "adults"        as const, etiqueta: t.adultos,    singular: t.adulto,     nota: "" },
                             { campo: "childrenMid"   as const, etiqueta: t.de6a10,     singular: t.de6a10,     nota: "70 %" },
                             { campo: "childrenSmall" as const, etiqueta: t.menoresDe6, singular: t.menorDe6,   nota: "50 %" },
                           ])
@@ -1106,8 +1087,7 @@ export default function CarritoPage() {
                             // los contadores ahí sería dejar que el cliente
                             // arme su grupo, vea un precio y el pago le falle
                             // con un error genérico.
-                            .filter(({ campo }) => campo === "adults"
-                              || !(TOURS_DB.find((t) => t.slug === i.tourSlug)?.soloAdultos || porGrupo(i.tourSlug)))
+                            .filter(({ campo }) => campo === "adults" || !TOURS_DB.find((t) => t.slug === i.tourSlug)?.soloAdultos)
                             .map(({ campo, etiqueta, singular, nota }) => (
                             <span key={campo} className="flex items-center gap-1.5">
                               <button type="button" aria-label={t.menos(etiqueta, nombreCorto(i.tourSlug, i.tourName, locale))}
@@ -1202,7 +1182,7 @@ export default function CarritoPage() {
                               )}`}
                               target="_blank" rel="noopener noreferrer"
                               data-wa-manual="1"
-            onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_grupo_minimo", tour: i.tourSlug })}
+                              onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_grupo_minimo", tour: i.tourSlug })}
                               className="text-verde-selva underline underline-offset-2"
                             >
                               {t.escribenosYLosSumamos}
@@ -1412,7 +1392,7 @@ export default function CarritoPage() {
                 {[...Array(5)].map((_, k) => <Star key={k} className="w-3 h-3 fill-dorado text-dorado" />)}
               </span>
               <span className="font-dm text-[12px] text-negro/70">
-                <strong className="text-negro">4.7</strong> · {t.resenasGoogle}
+                <strong className="text-negro">4.9</strong> · {t.resenasGoogle}
               </span>
             </a>
             <span className="inline-flex items-center gap-1.5 font-dm text-[12px] text-negro/55">
@@ -1489,16 +1469,6 @@ export default function CarritoPage() {
               <ShieldCheck className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>{t.cancelacionGratuita}</span>
             </p>
-            {/* Los tres renglones de arriba hablan por TODO el carrito. Un
-                recorrido con reglas propias —el Edén sale a las 7 a. m. desde
-                Xilitla y no tiene reembolso— los desmiente, así que se dice
-                aquí y no en la pantalla de pago. */}
-            {conReglasPropias.map((tr) => (
-              <p key={tr.slug} className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70 border-t border-verde-selva/20 pt-3">
-                <AlertCircle className="w-4 h-4 text-dorado flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <span>{t.reglasPropias(nombreCorto(tr.slug, tr.nombre, locale))}</span>
-              </p>
-            ))}
           </div>
 
           {/* Agregar otro recorrido sin salir del carrito: antes había que
@@ -1533,7 +1503,7 @@ export default function CarritoPage() {
                     <span className="min-w-0 flex-1">
                       <span className="block font-dm text-[13px] text-negro/85 truncate">{x.nombre.split("—")[0].trim()}</span>
                       <span className="block font-dm text-[11px] text-negro/45">
-                        {formatMXN(x.precio)} {x.precioUnidad === "vehiculo" ? t.porVehiculo : x.precioUnidad === "grupo" ? t.porGrupo : t.porPersona}
+                        {formatMXN(x.precio)} {x.precioUnidad === "vehiculo" ? t.porVehiculo : t.porPersona}
                       </span>
                     </span>
                     <span className="flex-shrink-0 text-verde-selva font-dm text-lg" aria-hidden="true">+</span>
@@ -1856,7 +1826,7 @@ export default function CarritoPage() {
                           )}`}
                           target="_blank" rel="noopener noreferrer"
                           data-wa-manual="1"
-            onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_traslado_grupo_grande", ciudad: rutaTraslado.slug, personas: paxTraslado })}
+                          onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_traslado_grupo_grande", ciudad: rutaTraslado.slug, personas: paxTraslado })}
                           className="underline underline-offset-2"
                         >
                           {t.escribenosPorWhatsapp}
@@ -2080,7 +2050,7 @@ export default function CarritoPage() {
                     {[...Array(5)].map((_, k) => <Star key={k} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
                   </span>
                   <span className="font-dm text-[13px] text-negro/75">
-                    <strong className="text-negro">4.7</strong> · {t.resenasGoogle}
+                    <strong className="text-negro">4.9</strong> · {t.resenasGoogle}
                   </span>
                   <span className="font-dm text-[11px] text-negro/40 group-hover:text-verde-selva transition-colors">{t.verlas}</span>
                 </a>

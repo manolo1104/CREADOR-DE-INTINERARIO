@@ -20,7 +20,7 @@
  */
 
 import { TOURS_DB, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, type Tour } from "@/lib/tours";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
@@ -88,7 +88,7 @@ const RESERVA: Record<Locale, string> = {
   es: `## Información de reserva
 - WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Sitio web: ${SITE}
-- Reserva: en línea con pago seguro (Stripe) o por WhatsApp con anticipo del 30 %.
+- Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Se aparta con el 30 %; un tour de un solo día sin hospedaje se paga completo al reservar.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo).
 - Salidas: todos los días del año, entre 8:00 y 9:00 AM.
 - Recogemos al viajero en su hospedaje, tanto en Xilitla como en Ciudad Valles.
@@ -96,7 +96,7 @@ const RESERVA: Record<Locale, string> = {
   en: `## Booking information
 - WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Website: ${SITE}/en
-- Booking: online with secure payment (Stripe) or over WhatsApp with a 30% deposit.
+- Booking: online with secure payment (Stripe) or over WhatsApp. A 30% deposit holds the booking; a single-day tour with no lodging is paid in full at booking.
 - Cancellation: free up to 48 hours before the tour (full refund).
 - Departures: every day of the year, between 8:00 and 9:00 AM.
 - We pick travelers up at their lodging, in either Xilitla or Ciudad Valles.
@@ -200,28 +200,52 @@ function seccionTours(locale: Locale): string {
   return `${titulo}\n${lineas.join("\n")}`;
 }
 
+/**
+ * La unidad en la que se ANUNCIA un paquete.
+ *
+ * Sale de `precioPorPersona` y no de `precioLabel` porque la etiqueta es texto
+ * suelto y duplicado (catálogo español y `paquetes.en.ts`): si una de las dos
+ * copias se queda en "per couple" pegada a un importe ya dividido entre dos,
+ * este archivo publica la mitad del precio real —el mismo desfase que arrastró
+ * durante meses—. Derivarla del campo que usa `precioVisible()` para dividir
+ * mantiene importe y unidad atados.
+ */
+function unidadPaquete(p: Paquete, locale: Locale): string {
+  if (p.precioPorPersona) return locale === "en" ? "per person" : "por persona";
+  return locale === "en" ? "per couple" : "por pareja";
+}
+
 function seccionPaquetes(locale: Locale): string {
   const paquetes = getLocalizedPaquetes(locale);
+  // `precioVisible` y NO `p.precio`: el campo del catálogo es siempre el total
+  // de la pareja —lo que cobra el motor— y publicarlo junto a «por persona»
+  // citaría al viajero el doble de lo que cuesta.
   const lineas = paquetes.map((p) =>
     locale === "en"
-      ? `- ${p.nombre} — ${p.dias} days / ${p.noches} nights: ${mxn(p.precio)} ${p.precioLabel}\n  ${url(`/paquetes/${p.slug}`, locale)}`
-      : `- ${p.nombre} — ${p.dias} días / ${p.noches} noches: ${mxn(p.precio)} ${p.precioLabel}\n  ${url(`/paquetes/${p.slug}`, locale)}`,
+      ? `- ${p.nombre} — ${p.dias} days / ${p.noches} nights: ${mxn(precioVisible(p))} ${unidadPaquete(p, locale)}\n  ${url(`/paquetes/${p.slug}`, locale)}`
+      : `- ${p.nombre} — ${p.dias} días / ${p.noches} noches: ${mxn(precioVisible(p))} ${unidadPaquete(p, locale)}\n  ${url(`/paquetes/${p.slug}`, locale)}`,
   );
 
   if (locale === "en") {
     return `## Multi-day packages (tours + hotel in Xilitla)
 ${lineas.join("\n")}
+Each amount above is the advertised price, with its unit. The ones marked "per person" are
+quoted on a base of two adults: a package is not sold to fewer than 2 people, and from the
+third traveler on you add their bed and one ticket per tour.
 They include lodging at the Hotel Paraíso Encantado (in Xilitla — it is ours), breakfasts,
 local transport to each activity, entrance fees and certified guides. They do NOT include
 getting to Xilitla itself.
-Side-by-side comparison: ${url("/paquetes", locale)}`;
+Side-by-side comparison of all ${paquetes.length}: ${url("/paquetes", locale)}`;
   }
 
   return `## Paquetes de varios días (tours + hotel en Xilitla)
 ${lineas.join("\n")}
+Cada importe de arriba es el precio anunciado, con su unidad. Los que dicen «por persona» se
+cotizan sobre una base de dos adultos: el paquete no se vende a menos de 2 personas, y desde
+la tercera se suma su lugar para dormir y un boleto de cada tour.
 Incluyen hospedaje en el Hotel Paraíso Encantado (Xilitla, nuestro), desayunos, transporte
 local a cada recorrido, entradas y guías certificados. NO incluyen el traslado hasta Xilitla.
-Comparativa de los tres: ${url("/paquetes", locale)}`;
+Comparativa de los ${paquetes.length}: ${url("/paquetes", locale)}`;
 }
 
 function seccionDestinos(locale: Locale): string {
@@ -284,7 +308,7 @@ function seccionPaginasClave(locale: Locale): string {
 - Qué hacer en la Huasteca Potosina (guía local): ${SITE}/que-hacer-en-la-huasteca-potosina
 - Tours con salida desde Ciudad Valles: ${SITE}/tours-en-ciudad-valles
 - Paquetes con hospedaje: ${SITE}/paquetes
-- Guía de viaje descargable ($49): ${SITE}/guia
+- Guía de viaje descargable ($49 MXN): ${SITE}/guia
 - Preguntas frecuentes: ${SITE}/preguntas-frecuentes
 - Sobre la región (geografía, cultura Teenek, clima): ${SITE}/sobre-la-huasteca-potosina
 - Información práctica del viaje: ${SITE}/info-practica

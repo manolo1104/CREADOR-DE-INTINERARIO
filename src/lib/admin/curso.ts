@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import {
-  FECHAS, PRECIOS, TALLER_NOCHES, precioVigente, inscripcionesAbiertas, ofertaAbierta,
+  FECHAS, PRECIOS, TALLER_NOCHES, WORKBOOKS, precioVigente, inscripcionesAbiertas, ofertaAbierta,
 } from "@/lib/curso";
 
 /**
@@ -51,6 +51,23 @@ export type ResumenCurso = {
   cierreIso: string;
   /** Cuántos negocios de cada tipo, para saber a quién le estás hablando. */
   porNegocio: Array<{ tipo: string; n: number }>;
+  /** Descargas de los cuadernos, una fila por noche. */
+  workbooks: DescargaWorkbook[];
+  /** Aparatos distintos que se llevaron algún cuaderno. */
+  descargasAparatos: number;
+};
+
+export type DescargaWorkbook = {
+  noche: number;
+  titulo: string;
+  /** ¿Ya existe el archivo de esa noche? */
+  publicado: boolean;
+  /** Aparatos distintos. Es lo más cerca de "personas" que se puede medir. */
+  aparatos: number;
+  /** Veces que se pidió, incluidas las repetidas. */
+  veces: number;
+  /** La última, para saber si sigue entrando gente. */
+  ultimaIso: string | null;
 };
 
 export async function getResumenCurso(): Promise<ResumenCurso> {
@@ -80,6 +97,26 @@ export async function getResumenCurso(): Promise<ResumenCurso> {
   const activos = leads.filter((l) => l.status === "activo");
   const pagados = leads.filter((l) => l.compro).length;
   const pv = precioVigente(ahora, pagados);
+
+  // Las descargas viven aparte de los leads: la liga se reparte por WhatsApp y
+  // no lleva a nadie identificado, así que no se pueden cruzar.
+  // En try/catch a propósito: la tabla la crea el `prisma db push` del arranque,
+  // y si ese paso fallara, el panel entero se caería por una cifra secundaria.
+  // Los registrados y los pagados importan mucho más que las descargas.
+  const descargas = await prisma.cursoDescarga
+    .findMany({ orderBy: { createdAt: "desc" }, take: 5000 })
+    .catch(() => [] as Array<{ noche: number; huella: string; createdAt: Date }>);
+  const workbooks: DescargaWorkbook[] = [1, 2, 3].map((noche) => {
+    const suyas = descargas.filter((d) => d.noche === noche);
+    return {
+      noche,
+      titulo: WORKBOOKS[noche]?.titulo ?? `Noche ${noche}`,
+      publicado: !!WORKBOOKS[noche]?.archivo,
+      aparatos: new Set(suyas.map((d) => d.huella)).size,
+      veces: suyas.length,
+      ultimaIso: suyas[0]?.createdAt.toISOString() ?? null,
+    };
+  });
 
   const desde = (h: number) => Date.now() - h * 3600_000;
   const cuenta = new Map<string, number>();
@@ -111,5 +148,7 @@ export async function getResumenCurso(): Promise<ResumenCurso> {
     porNegocio: Array.from(cuenta, ([tipo, n]) => ({ tipo, n })).sort(
       (a, b) => b.n - a.n
     ),
+    workbooks,
+    descargasAparatos: new Set(descargas.map((d) => d.huella)).size,
   };
 }

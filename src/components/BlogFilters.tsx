@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
+import { urlBlog } from "@/lib/blogDestinoMap";
 
 type Post = {
   slug: string;
@@ -121,7 +122,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
 
       {/* Featured post (only when no filters active) */}
       {showFeatured && (
-        <Link href={`/blog/${featuredPost!.slug}`} className="group block mb-12">
+        <Link href={urlBlog(featuredPost!.slug)} className="group block mb-12">
           <article className="grid md:grid-cols-2 gap-0 bg-verde-profundo/30 border border-white/8 overflow-hidden hover:border-lima/30 transition-colors">
             {featuredPost!.coverImageUrl && (
               <div className="aspect-[4/3] md:aspect-auto overflow-hidden">
@@ -156,7 +157,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
             const isDuplicate = imageCounts[post.coverImageUrl ?? ""] > 1;
             const isPromo     = isPromocional(post.tags, post.title);
             return (
-              <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
+              <Link key={post.slug} href={urlBlog(post.slug)} className="group">
                 <article className="bg-verde-profundo/30 border border-white/8 overflow-hidden hover:border-lima/30 transition-colors h-full flex flex-col relative">
                   {isPromo && (
                     <div className="absolute top-2 right-2 z-10 text-[8px] tracking-[1px] uppercase font-dm text-dorado/80 border border-dorado/30 bg-negro/60 backdrop-blur-sm px-2 py-0.5">
