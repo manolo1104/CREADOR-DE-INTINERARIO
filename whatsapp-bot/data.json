@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T21:43:27.352Z",
+  "generatedAt": "2026-09-28T22:06:47.779Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -555,8 +555,8 @@
       "nombre": "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto",
       "tipo": "Cascadas & Fotografía",
       "dificultad": "baja",
-      "duracionHrs": 10,
-      "duracionTexto": "10 h",
+      "duracionHrs": 12,
+      "duracionTexto": "12 h",
       "precio": 1700,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
@@ -587,7 +587,7 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 6:00 PM (~10 h). Los horarios exactos se confirman al reservar.",
+      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 8:00 PM (~12 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -618,8 +618,8 @@
       "nombre": "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
       "tipo": "Cascadas & Bienestar",
       "dificultad": "baja",
-      "duracionHrs": 10,
-      "duracionTexto": "10 h",
+      "duracionHrs": 12,
+      "duracionTexto": "11–12 h",
       "precio": 1600,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
@@ -649,7 +649,7 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 6:00 PM (~10 h). Los horarios exactos se confirman al reservar.",
+      "horario": "Sale entre 8:00 y 9:00 AM y dura entre 11 y 12 horas; regresa aprox. 7:00–8:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -680,8 +680,8 @@
       "nombre": "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
       "tipo": "Aventura Acuática",
       "dificultad": "media",
-      "duracionHrs": 10,
-      "duracionTexto": "10 h",
+      "duracionHrs": 12,
+      "duracionTexto": "11–12 h",
       "precio": 1600,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
@@ -712,7 +712,7 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 6:00 PM (~10 h). Los horarios exactos se confirman al reservar.",
+      "horario": "Sale entre 8:00 y 9:00 AM y dura entre 11 y 12 horas; regresa aprox. 7:00–8:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -807,8 +807,8 @@
       "nombre": "Travesía del Café — Finca Cafetalera de Xilitla en RZR",
       "tipo": "Cultura & Sabor",
       "dificultad": "baja",
-      "duracionHrs": 5,
-      "duracionTexto": "5 h",
+      "duracionHrs": 3,
+      "duracionTexto": "2.5–3 h",
       "precio": 900,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
@@ -835,7 +835,7 @@
       ],
       "noIncluye": [],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 1:00 PM (~5 h). Los horarios exactos se confirman al reservar.",
+      "horario": "Sale entre 8:00 y 9:00 AM y dura entre 2 horas y media y 3 horas; regresa aprox. 10:30–11:00 AM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta."

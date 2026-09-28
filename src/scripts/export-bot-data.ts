@@ -155,8 +155,14 @@ function horarioTour(t: (typeof TOURS_DB)[number]): string {
   const salida = v.charAt(0).toLowerCase() + v.slice(1);
   const regreso = regresoDeTour(t, false);
   if (t.duracionRango) {
+    // "2.5 horas" leído en voz alta suena a error. Camila dice "2 horas y media".
+    const enHoras = (h: number) =>
+      Number.isInteger(h) ? `${h}` : `${Math.floor(h)} horas y media`;
     const [a, b] = t.duracionRango;
-    return `Sale ${salida} y dura entre ${a} y ${b} horas; regresa aprox. ${regreso}. Los horarios exactos se confirman al reservar.`;
+    const rango = Number.isInteger(a)
+      ? `entre ${a} y ${b} horas`
+      : `entre ${enHoras(a)} y ${b} horas`;
+    return `Sale ${salida} y dura ${rango}; regresa aprox. ${regreso}. Los horarios exactos se confirman al reservar.`;
   }
   return `Sale ${salida} y termina aprox. ${regreso} (~${t.duracion_hrs} h). Los horarios exactos se confirman al reservar.`;
 }
