@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Flower2, Flame, Skull, Music, Moon } from "lucide-react";
 import { useLocale } from "@/lib/i18n/useLocale";
 
 /**
@@ -31,6 +31,57 @@ const SEGUNDOS = 20;
 const CADUCA = "2026-11-03";
 const SLUG_GUIA = "/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia";
 const FOTO = "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg";
+
+/**
+ * El patrón del fondo verde. Cada icono es una de las cosas que el propio
+ * texto del aviso nombra, no adorno suelto: el cempasúchil de los arcos, las
+ * veladoras del altar, las máscaras de las cuadrillas de danzantes, la música
+ * con la que salen, y la luna de los pueblos que no duermen en tres noches.
+ *
+ * Son los componentes de lucide que ya usa el sitio, no trazos redibujados.
+ */
+const ICONOS_XANTOLO = [Flower2, Flame, Skull, Music, Moon];
+
+/**
+ * Ocupa sólo el verde —de donde acaba la foto hacia abajo—, nunca la foto.
+ *
+ * El tamaño, el giro y el desplazamiento de cada icono salen del índice: en
+ * rejilla perfecta esto se lee como papel milimetrado en vez de textura. Al
+ * venir del índice y no de `Math.random()`, el servidor y el navegador pintan
+ * lo mismo y no hay desajuste de hidratación.
+ */
+function PatronXantolo() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 bottom-0 top-40 overflow-hidden sm:top-48"
+    >
+      <div className="grid grid-cols-6 place-items-center gap-y-6 pt-4">
+        {Array.from({ length: 30 }).map((_, i) => {
+          const Icono = ICONOS_XANTOLO[i % ICONOS_XANTOLO.length];
+          const giro = ((i * 41) % 29) - 14;      // −14° a +14°
+          const lado = 16 + ((i * 11) % 3) * 5;   // 16 a 26 px
+          const corre = ((i * 19) % 5) - 2;       // −2 a +2 px
+          return (
+            <Icono
+              key={i}
+              strokeWidth={1.25}
+              /* Dorado, que es el acento del aviso y el color del cempasúchil.
+                 Muy bajo a propósito: el titular y el párrafo van encima. */
+              className="text-dorado"
+              style={{
+                width: lado,
+                height: lado,
+                opacity: 0.09 + ((i * 13) % 3) * 0.02,
+                transform: `translateX(${corre}px) rotate(${giro}deg)`,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function yaCaduco(): boolean {
   const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
@@ -200,6 +251,10 @@ export function PopupXantolo() {
           />
         </div>
 
+        <PatronXantolo />
+
+        {/* `relative` sin más: el contenido queda por encima del patrón porque
+            va después en el DOM y ambos crean contexto propio. */}
         <div className="relative px-6 pb-6 -mt-6">
           <p className="text-[10px] tracking-[3px] uppercase text-dorado font-dm mb-2">{fechas}</p>
           <h2
