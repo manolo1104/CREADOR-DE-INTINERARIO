@@ -34,6 +34,7 @@ const T = {
   xilo:       { nombre: "Gruta de Xilo",     slug: "gruta-de-xilo" },
   amanecer:   { nombre: "Amanecer de Nubes", slug: "amanecer-de-nubes" },
   olla:       { nombre: "Olla de la Luz",    slug: "olla-de-la-luz" },
+  cafe:       { nombre: "Travesía del Café", slug: "travesia-del-cafe" },
 } as const;
 
 /** Marca una referencia como "cerca" (el tour no visita el destino). */
@@ -51,12 +52,14 @@ export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
 
   // ── Xilitla ───────────────────────────────────────────────────────────────
   "las-pozas-jardin-surrealista":   [T.surrealista, T.eden, cerca(T.rzr)],
-  "xilitla-pueblo-magico":          [T.surrealista, T.rzr, cerca(T.eden), cerca(T.xilo)],
+  // Todo lo que sale de Xilitla y no pasa por el pueblo mismo va como "cerca":
+  // la ficha del pueblo es la puerta de entrada de quien ya decidió quedarse ahí.
+  "xilitla-pueblo-magico":          [T.surrealista, T.rzr, cerca(T.eden), cerca(T.xilo), cerca(T.amanecer), cerca(T.olla), cerca(T.cafe)],
   "nacimiento-huichihuayan":        [T.surrealista, T.rzr],
   "la-trinidad-xilitla":            [T.amanecer, T.olla, T.rzr],
   "cascada-los-comales":            [cerca(T.surrealista), cerca(T.rzr)],
   "olla-de-la-luz":                 [T.olla, cerca(T.amanecer), cerca(T.rzr)],
-  "cueva-del-salitre":              [cerca(T.rzr), cerca(T.surrealista)],
+  "cueva-del-salitre":              [cerca(T.rzr), cerca(T.surrealista), cerca(T.xilo)],
   "museo-leonora-carrington-xilitla": [cerca(T.surrealista), cerca(T.rzr), cerca(T.eden)],
 
   // ── Tamasopo ──────────────────────────────────────────────────────────────
@@ -110,4 +113,23 @@ export function toursQueIncluyen(slug: string): TourRef[] {
 /** Tours de la misma zona que no visitan el destino pero se pueden combinar. */
 export function toursCercaDe(slug: string): TourRef[] {
   return (DESTINO_EN_TOURS[slug] ?? []).filter((t) => t.relacion === "cerca");
+}
+
+/**
+ * Al revés: los destinos (slugs de /destinos) de un tour. `incluye` = los que
+ * visita; `cerca` = los de su zona donde aparece como "cerca".
+ *
+ * Existe para que la ficha del tour enlace a las fichas de sus lugares. Antes
+ * la lista "Destinos del recorrido" era texto plano: la única ruta de un tour
+ * a un destino eran los cuatro destinos fijos del pie de página.
+ */
+export function destinosDeTour(tourSlug: string): { incluye: string[]; cerca: string[] } {
+  const incluye: string[] = [];
+  const cercaDe: string[] = [];
+  for (const [destino, refs] of Object.entries(DESTINO_EN_TOURS)) {
+    const ref = refs.find((r) => r.slug === tourSlug);
+    if (!ref) continue;
+    (ref.relacion === "cerca" ? cercaDe : incluye).push(destino);
+  }
+  return { incluye, cerca: cercaDe };
 }

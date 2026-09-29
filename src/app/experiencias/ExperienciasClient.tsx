@@ -42,11 +42,41 @@ const DIFICULTAD_CLS: Record<string, string> = {
   extrema: "bg-red-900/50     text-red-400",
 };
 
-// USD approximation — fixed rate ~17 MXN/USD
-function toUSD(precioStr: string): string {
-  const num = parseInt(precioStr.match(/\d+/)?.[0] || "0", 10);
-  if (!num) return "";
-  return `≈ US$${Math.round(num / 17)}`;
+/**
+ * Aproximación en dólares (tipo fijo ~17 MXN/USD) del precio de ENTRADA.
+ *
+ * 🔴 Leía el primer número del texto libre con `/\d+/`: se paraba en la coma
+ * de los miles y tomaba cifras de notas. Salían "$1,950 MXN · ≈ US$0" (el
+ * rafting), "Acceso libre · ≈ US$3" (sacado de la "videocámara $45") o
+ * "Recorrido guiado · ≈ US$9" en la Olla de la Luz, que se cobra por grupo.
+ * Ahora sale SOLO del número del catálogo (`precio_entrada_mxn`): sin número,
+ * o con entrada libre (0), no se inventa un equivalente.
+ */
+function toUSD(mxn: number | undefined): string {
+  if (!mxn || mxn <= 0) return "";
+  return `≈ US$${Math.round(mxn / 17)}`;
+}
+
+/**
+ * Lo que cabe en el pie de la tarjeta.
+ *
+ * Antes eran las dos primeras palabras del texto libre: "General $50" (el
+ * museo, sin "MXN", que en inglés se lee en dólares) o "Free on" (Tamtoc en
+ * inglés, cortado a media frase). Con tarifa por persona se enseña el número
+ * del catálogo con su moneda.
+ *
+ * 🔴 Sin número NO se recorta. Cortar en la primera aclaración tiraba justo lo
+ * que importaba: Tamtoc quedaba en «Domingos gratis» (se leía gratis para
+ * todos; los extranjeros, el público de /en, pagan ~$95 MXN), La Trinidad
+ * perdía «~$150–$250 MXN por grupo» y el paseo con guía y equipo perdía
+ * «consultar tarifa». Solo se acorta el acceso libre (`mxn === 0`), cuya
+ * aclaración es secundaria («Acceso libre (posible cuota de
+ * estacionamiento)») y está completa en la ficha.
+ */
+function precioCorto(texto: string, mxn: number | undefined): string {
+  if (mxn && mxn > 0) return `$${mxn.toLocaleString("es-MX")} MXN`;
+  if (mxn === 0) return texto.split(/\s[(·—;]|,\s/)[0].trim();
+  return texto.trim();
 }
 
 function waLink(mensaje: string): string {
@@ -63,8 +93,9 @@ export default function ExperienciasClient() {
     : DESTINOS_DB.filter((d) => (SLUGS_POR_FILTRO[filtro] || []).includes(d.slug));
 
   // El nombre y la descripción se traducen aquí: son los 41 destinos que ya
-  // viven traducidos en `destinos.en.ts`.
-  const filtrados = base.map((d) => localizeDestino(d, locale));
+  // viven traducidos en `destinos.en.ts`. El precio numérico se toma del
+  // ORIGINAL de `DESTINOS_DB`: lo que se traduce es el texto, nunca el número.
+  const filtrados = base.map((orig) => ({ ...localizeDestino(orig, locale), mxn: orig.precio_entrada_mxn }));
 
   return (
     <section className="max-w-7xl mx-auto px-6 py-12">
@@ -95,7 +126,12 @@ export default function ExperienciasClient() {
         {filtrados.map((d) => {
           const difCls = DIFICULTAD_CLS[d.dificultad] ?? DIFICULTAD_CLS.media;
           const difLabel = t.dificultad[d.dificultad] ?? t.dificultad.media;
-          const usd = toUSD(d.precio_entrada);
+          const usd = toUSD(d.mxn);
+          // "/ persona · entrada" solo cuando hay una tarifa por persona de
+          // verdad. Bajo "Acceso libre" o "Recorrido guiado… por grupo" la
+          // etiqueta afirmaba un cobro por persona que no existe; y cuando la
+          // "entrada" es nuestro tour (el rafting), lo que se paga es el tour.
+          const nota = d.mxn && d.mxn > 0 ? (d.entradaEsTour ? t.precioNotaTour : t.precioNota) : "";
           return (
             <div
               key={d.slug}
@@ -163,16 +199,25 @@ export default function ExperienciasClient() {
                 </div>
 
                 {/* Footer — precio con "/ persona · entrada" + USD */}
-                <div className="flex items-end justify-between border-t border-white/8 pt-3">
-                  <div>
-                    <span className="text-dorado text-sm font-dm">
-                      {d.precio_entrada.split(" ").slice(0, 2).join(" ")}
+                {/* El texto sin cifra (Tamtoc, La Trinidad…) va entero y más
+                    chico, en hasta 3 líneas: `min-w-0` deja que se parta y
+                    «Ver más» ya no lo aplasta. */}
+                <div className="flex items-end justify-between gap-3 border-t border-white/8 pt-3">
+                  <div className="min-w-0">
+                    <span
+                      className={`text-dorado font-dm ${
+                        d.mxn === undefined ? "text-xs leading-snug line-clamp-3" : "text-sm"
+                      }`}
+                    >
+                      {precioCorto(d.precio_entrada, d.mxn)}
                     </span>
-                    <span className="text-crema/30 text-[9px] font-dm block leading-none mt-0.5">
-                      {t.precioNota}{usd && ` · ${usd}`}
-                    </span>
+                    {nota && (
+                      <span className="text-crema/30 text-[9px] font-dm block leading-none mt-0.5">
+                        {nota}{usd && ` · ${usd}`}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[9px] tracking-[2px] uppercase text-verde-vivo group-hover:text-lima transition-colors font-dm">
+                  <span className="flex-shrink-0 text-[9px] tracking-[2px] uppercase text-verde-vivo group-hover:text-lima transition-colors font-dm">
                     {t.verMas}
                   </span>
                 </div>

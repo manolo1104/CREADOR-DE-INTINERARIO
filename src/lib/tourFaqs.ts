@@ -185,4 +185,82 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
       a: "Se puede, avisando con 5 días o más de anticipación: el monto completo se respeta y lo usas en cualquier fecha disponible dentro de los 6 meses siguientes. Con menos de 5 días, o si no te presentas, no hay cambio ni reembolso. Si el clima obliga a suspender, se reprograma sin costo.",
     },
   ],
+
+  // ── Los tres recorridos nuevos (28 sep 2026) ────────────────────────────
+  // Cada respuesta sale de su ficha en `tours.ts`, de `tourRequisitos.ts` o de
+  // `destinos.ts` (olla-de-la-luz, la-trinidad-xilitla). 🔴 Aquí NO van horas,
+  // precios, cupos ni edad mínima: las horas de estos tres se inventaron una
+  // vez y se publicaron, y cupo y edad siguen sin confirmar. La hora de salida
+  // y el precio ya los contesta la plantilla con datos del catálogo; esta lista
+  // tampoco repite "¿Qué incluye…?", "¿Cuánto dura…?" ni el punto de salida
+  // (que ya dice lo del costo extra desde Ciudad Valles).
+  "tour-gruta-xilo": [
+    {
+      q: "¿Por qué la Gruta de Xilo se recorre de noche?",
+      a: "Porque es la mitad de la experiencia. Sin el ruido ni el calor del día, la caminata de 15 a 20 minutos por la selva ya se hace con la lámpara encendida, y dentro de la gruta lo único que existe es el círculo de luz de tu lámpara. Al final, en los jacuzzis naturales, se apagan las lámparas unos minutos para escuchar la cueva en silencio.",
+    },
+    {
+      q: "¿Qué tan difícil es la Gruta de Xilo?",
+      a: "Es de dificultad media. Primero caminas de 15 a 20 minutos por la selva hasta la boca de la gruta; adentro se recorren unos 900 metros sobre roca húmeda, con tramos amplios donde se camina de pie y tramos donde hay que agacharse. Se avanza despacio y en grupo chico, y antes de entrar el guía explica por dónde se pisa.",
+    },
+    {
+      q: "¿Es para personas con claustrofobia?",
+      a: "No te lo recomendamos. Hay tramos amplios donde se camina de pie, pero también tramos donde hay que agacharse, y todo se hace con la luz de tu lámpara frontal. Si sufres de claustrofobia, este no es tu recorrido.",
+    },
+    {
+      q: "¿Me voy a mojar?",
+      a: "Ve preparado para eso. Hay pasajes con agua, dentro de la gruta se camina sobre roca húmeda y el recorrido termina en unos jacuzzis naturales: pozas de agua cristalina formadas dentro de la propia cueva. Lleva calzado cerrado con agarre que se pueda mojar y una muda completa de ropa seca para el regreso.",
+    },
+    {
+      q: "¿Cuándo me dan el casco y la lámpara?",
+      a: "Al inicio, cuando pasamos por ti a tu hospedaje, no en la entrada de la cueva: así haces la caminata por la selva ya con la lámpara encendida. El casco y la lámpara frontal van incluidos para cada persona y son de uso obligatorio.",
+    },
+  ],
+  "tour-amanecer-nubes": [
+    {
+      q: "¿Dónde está el Cerro del Pilón?",
+      a: "En la sierra de Xilitla. Primero se sube por camino de sierra a La Trinidad, una comunidad náhuatl a unos 14 km de Xilitla, en un bosque de niebla a casi 2,000 metros, y de ahí se camina entre pinos y encinos hasta la cima del Cerro del Pilón. Cuando hay mar de nubes, lo que se ve al amanecer es una capa de nubes que tapa los valles de un lado al otro del horizonte.",
+    },
+    {
+      q: "¿Y si ese día no hay mar de nubes?",
+      a: "Puede pasar: el mar de nubes depende del clima. Es frecuente, pero nadie lo puede garantizar, y nosotros tampoco lo prometemos. La subida se calcula igual para llegar a la cima antes de que amanezca, y la bajada se hace ya con luz, que es cuando ves el bosque de niebla por el que subiste a oscuras.",
+    },
+    {
+      q: "¿Qué tan difícil es la subida?",
+      a: "Es de dificultad media. Son varias horas de caminata en subida constante, buena parte de ellas a oscuras y con lámpara frontal, por un sendero entre pinos y encinos; los últimos metros antes de la cima son de roca. No hace falta experiencia de montaña, pero sí condición para caminar en pendiente.",
+    },
+    {
+      q: "¿Hace frío arriba?",
+      a: "Sí, de verdad, aunque en Xilitla haga calor. Se camina de madrugada por un bosque de niebla a casi 2,000 metros: lleva chamarra que corte el viento, calzado de montaña con buen agarre y lámpara frontal.",
+    },
+    {
+      q: "¿Se desayuna en la cima?",
+      a: "Sí, pero el desayuno no va incluido. Como se sale de madrugada, lleva agua y algo de comer: en la cima, después del amanecer, se para todo para tomar fotos y desayunar algo.",
+    },
+  ],
+  // 🔴 Las medidas del sótano (193 m de caída, 233 de diámetro) repiten las de
+  // `destinos.ts`, que avisa que son las del operador y no un levantamiento:
+  // si cambian allá, cambian aquí y en `i18n/tourFaqs.en.ts`.
+  "tour-olla-de-la-luz": [
+    {
+      q: "¿Qué es la Olla de la Luz?",
+      a: "Es un sótano vertical de 193 metros de profundidad y 233 de diámetro en lo alto de la sierra de Xilitla, rodeado de bosque de niebla y coronado por el Cerro de la Luz, el punto más alto del municipio. Es tan grande que en su fondo creció otro bosque. También lo verás escrito Hoya de la Luz: es el mismo lugar.",
+    },
+    {
+      q: "¿Se puede ir a la Olla de la Luz sin guía?",
+      a: "No. Solo se entra con guía de la comunidad de La Trinidad; no se puede llegar por cuenta propia. Por eso la caminata de este recorrido se hace con un guía de la propia comunidad.",
+    },
+    {
+      q: "¿Qué tan difícil es la caminata?",
+      a: "Es de dificultad media: unas 2 horas de caminata guiada para llegar, entre bosque cerrado, llanos abiertos y miradores, y el regreso por el mismo sendero, todo en altura. El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar, así que conviene ir con calzado de senderismo.",
+    },
+    {
+      q: "¿Qué tan cerca del borde se puede llegar?",
+      a: "Hasta donde te indique el guía. Es un abismo de 193 metros con bordes expuestos: no te acerques al borde sin tu guía, que es quien te enseña dónde pararte y dónde no.",
+    },
+    {
+      q: "¿Hace frío en La Trinidad?",
+      a: "Sí, aunque en Xilitla estés sudando. La Trinidad está en uno de los bosques de niebla mejor conservados de la Huasteca, fresco y húmedo todo el año, con la niebla enredada entre los pinos. Lleva chamarra o impermeable.",
+    },
+  ],
 };

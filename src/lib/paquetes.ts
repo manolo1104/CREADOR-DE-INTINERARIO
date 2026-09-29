@@ -4,7 +4,7 @@
  * leen de aquí. Los tours del itinerario se cruzan por `tourSlug` contra TOURS_DB.
  */
 import { TRASLADOS, precioBase } from "./traslados";
-import { TOURS_DB, tourCollage } from "./tours";
+import { TOURS_DB, tourCollage, tourDurRange } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
 
 export interface ItinerarioDia {
@@ -61,6 +61,10 @@ export interface Paquete {
    * El precio se ENSEÑA dividido entre dos y con etiqueta «por persona».
    * Decisión de Manolo del 12 sep 2026: todos menos Luna de Miel, que se
    * sigue vendiendo por pareja porque es un viaje de dos.
+   *
+   * ⚠️ Desde el catálogo de cuatro del 24 sep NINGUNO lo lleva: los cuatro se
+   * anuncian por pareja. Las FAQ, las metas y el JSON-LD leen este campo para
+   * decir la unidad, así que activarlo en uno basta para que el texto cambie.
    */
   precioPorPersona?: boolean;
   /** marca un precio provisional pendiente de confirmar antes de publicar */
@@ -345,10 +349,14 @@ export const RESENAS_PAQUETES: Resena[] = [
  * Vive aquí y no dentro del texto de la FAQ porque la MISMA frase se arma en
  * español y en inglés: si cada versión la construyera por su cuenta, un cambio
  * de precio en `TRASLADOS` acabaría reflejado en un idioma y en el otro no.
+ *
+ * 🔴 Con «MXN» pegado en los dos idiomas: en /en/paquetes salía «from $6,000
+ * round trip», y un lector de Estados Unidos lo lee en dólares. Va también en
+ * el FAQPage del JSON-LD, que es lo que citan los buscadores.
  */
 export function TRASLADOS_TEXTO(locale: "es" | "en" = "es"): string {
   return TRASLADOS.map((r) => {
-    const precio = `$${precioBase(r).toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+    const precio = `$${precioBase(r).toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN`;
     return locale === "en"
       ? `${r.ciudad} (from ${precio} round trip per vehicle)`
       : `${r.ciudad} (desde ${precio} redondo por vehículo)`;
@@ -369,8 +377,11 @@ export const FAQS_PAQUETES = [
     a: "La forma más práctica es el autobús nocturno desde la Terminal Central del Norte (~10:15 PM, líneas Servicios Coordinados / ETN), que llega a Xilitla cerca de las 6:30 AM por unos $650 por persona. Un taxi de ~$60 te deja en el hotel en 7 minutos. Como llegas al amanecer, te entregamos la habitación temprano para descansar y ese mismo día arranca tu primer tour: no pierdes el Día 1.",
   },
   {
+    // La respuesta cerraba con "En el paquete Luna de Miel la Jungla ya va
+    // incluida": el paquete se retiró el 24 sep 2026 y la frase siguió
+    // publicada, también dentro del JSON-LD de FAQPage.
     q: "¿Puedo elegir mi habitación?",
-    a: "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la suite Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche. En el paquete Luna de Miel la Jungla ya va incluida, sin suplemento.",
+    a: "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la suite Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche.",
   },
   {
     q: "¿El precio incluye el traslado hasta Xilitla?",
@@ -383,6 +394,21 @@ export const FAQS_PAQUETES = [
 ];
 
 // ── Paquetes ────────────────────────────────────────────────────────────────
+
+/**
+ * Cuántas horas dura un tour del catálogo, para las frases del itinerario:
+ * "12 a 13" · "8 a 10" · "3" (en inglés, "12 to 13").
+ *
+ * 🔴 Los paquetes decían, escrito a mano, «Tamul: 9 horas», y la ficha del tour
+ * dice 12–13 h: se corrigió en tours.ts y aquí no. Leída del catálogo, la cifra
+ * del paquete ya no puede quedarse atrás de la del tour.
+ */
+export function horasDeTour(slug: string, locale: "es" | "en" = "es"): string {
+  const t = TOURS_DB.find((x) => x.slug === slug);
+  if (!t) return "";
+  const [a, b] = tourDurRange(t);
+  return a === b ? `${a}` : `${a} ${locale === "en" ? "to" : "a"} ${b}`;
+}
 
 /**
  * Los paquetes ya no se ordenan por cuántos días duran, sino por QUIÉN viaja:
@@ -433,15 +459,15 @@ export const PAQUETES_DB: Paquete[] = [
       "Expedición Tamul — Tamul, Cueva del Agua y Sótano (Día 2)",
     ],
     itinerario: [
-      { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista", descripcion: "Si llegas en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. El jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud: ocho horas de caminar poco y mirar mucho, y todo del lado de Xilitla." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua y, al atardecer, el Sótano de las Huahuas. Son 9 horas y se sale temprano." },
+      { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista", descripcion: `Si llegas en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. El jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud: de ${horasDeTour("ruta-surrealista-edward-james")} horas de caminar poco y mirar mucho, y todo del lado de Xilitla.` },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: `El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua y, al atardecer, el Sótano de las Huahuas. Son de ${horasDeTour("expedicion-tamul")} horas y se sale temprano.` },
       { dia: 3, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y camino a casa." },
     ],
     incluye: [
       "2 noches en Hotel Paraíso Encantado Xilitla, habitación King con vista a la selva",
       "Desayuno los días de tour",
-      "Tour Expedición Tamul completo (9 horas)",
-      "Tour Ruta Surrealista completo (8 horas)",
+      `Tour Expedición Tamul completo (${horasDeTour("expedicion-tamul")} horas)`,
+      `Tour Ruta Surrealista completo (${horasDeTour("ruta-surrealista-edward-james")} horas)`,
       "Transporte del hotel al inicio de cada tour y de regreso",
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
@@ -491,7 +517,7 @@ export const PAQUETES_DB: Paquete[] = [
     ],
     itinerario: [
       { dia: 1, tipo: "tour", tourSlug: "ruta-surrealista-edward-james", titulo: "Llegada + Ruta Surrealista", descripcion: "Si llegas en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. Este recorrido es el que queda del lado de Xilitla —el jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud—, así que el día de llegada no se va en carretera." },
-      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse. Nueve horas que terminan con el mejor rato del día." },
+      { dia: 2, tipo: "tour", tourSlug: "expedicion-tamul", titulo: "Expedición Tamul", descripcion: `El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse. Son de ${horasDeTour("expedicion-tamul")} horas y terminan con el mejor rato del día.` },
       { dia: 3, tipo: "tour", tourSlug: "cascadas-del-meco", titulo: "Cascadas del Meco", descripcion: "Se sale temprano a propósito: el agua del Meco es turquesa a media mañana y pierde el color con el sol alto. Mirador panorámico, las pozas y el cierre en la Cascada del Salto." },
       { dia: 4, tipo: "salida", titulo: "Salida", descripcion: "Desayuno, check-out y camino a casa." },
     ],

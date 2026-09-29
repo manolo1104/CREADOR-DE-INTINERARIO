@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye } from "lucide-react";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
@@ -298,6 +298,18 @@ export default function ReservasClient(
 
     const DIFIC: Record<string, string> = { baja: "Fácil", media: "Moderada", alta: "Difícil" };
 
+    // 🔴 El Edén no se reembolsa (`cancelacion` en tours.ts). El recuadro de
+    // Cancelación decía "Gratis hasta 48 h antes" en todos los vouchers, y el
+    // voucher es justo el papel que el cliente enseña al pedir su dinero.
+    const toursVoucher   = lines.map(l => TOURS_DB.find(t => t.slug === l.tourSlug));
+    const cancelPropias  = toursVoucher
+      .filter((t, n) => !!t?.cancelacion && toursVoucher.findIndex(x => x?.slug === t?.slug) === n);
+    const todasPropias   = cancelPropias.length > 0 && toursVoucher.every(t => t?.cancelacion);
+    const cancelEstandar = `<strong>Gratis</strong> hasta 48 h antes del primer tour. Después aplica cargo del 50%. Fuerza mayor: reagendamos sin costo.`;
+    const cancelTexto    = todasPropias
+      ? cancelPropias.map(t => t!.cancelacion!.es).join(" ")
+      : [cancelEstandar, ...cancelPropias.map(t => `<strong>${t!.nombreCorto}:</strong> ${t!.cancelacion!.es}`)].join(" ");
+
     const dayRows = lines.map((l, i) => {
       const t    = TOURS_DB.find(t => t.slug === l.tourSlug);
       const dur  = t ? `${t.duracion_hrs} h` : "—";
@@ -309,6 +321,19 @@ export default function ReservasClient(
         .filter(x => x.n > 0)
         .map(({ a, n }) => `<span><span class="k">Incluye</span> ${a.nombre} · ${n} ${n === 1 ? "persona" : "personas"}</span>`)
         .join("");
+      // 🔴 La hora y el lugar salen del recorrido. Aquí decía "09:00" para
+      // todos: el voucher de la Gruta de Xilo (7 PM) citaba al cliente de
+      // mañana. El horario fijo del Edén cambia según el día y no cabe en la
+      // casilla: "Por confirmar", como dice el pie ("tu guía coordinará por
+      // WhatsApp la hora exacta"); "Según el día" junto a la fecha se leía como
+      // que no sabíamos la hora. El buceo no tiene hora pública.
+      const rec    = t ? recogidaDeTour(t) : null;
+      const hora   = !t ? "Por acordar" : rec?.horaTexto ? "Por confirmar" : (salidaCorta(t) ?? "Por acordar");
+      // Sin recogida (RZR en nuestra base, buceo en la laguna) el "dónde" es el
+      // punto de encuentro del catálogo, no el hotel del cliente.
+      const encuentro = !!t && (rec?.tipo === "base-xilitla" || rec?.tipo === "en-sitio");
+      const lugarEnc  = encuentro && t ? partesRecogida(t, false).lugar : "";
+      const donde     = encuentro ? lugarEnc.charAt(0).toUpperCase() + lugarEnc.slice(1) : pickupLugar;
       return `<div class="day">
         <div class="num">${num}</div>
         <div>
@@ -321,9 +346,9 @@ export default function ReservasClient(
           </div>
         </div>
         <div class="pickup">
-          <div class="k">Recogida</div>
-          <div class="v">09:00</div>
-          <div class="where">${pickupLugar}</div>
+          <div class="k">${encuentro ? "Encuentro" : "Recogida"}</div>
+          <div class="v">${hora}</div>
+          <div class="where">${donde}</div>
         </div>
       </div>`;
     }).join("");
@@ -557,9 +582,9 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
   <div class="terms-strip">
     <div class="row">
-      <div><h3>Cancelación</h3><p><strong>Gratis</strong> hasta 48 h antes del primer tour. Después aplica cargo del 50%. Fuerza mayor: reagendamos sin costo.</p></div>
+      <div><h3>Cancelación</h3><p>${cancelTexto}</p></div>
       <div><h3>Saldo</h3><p>El <strong>saldo de $${pendiente.toLocaleString("es-MX")} MXN</strong> se paga el primer día del tour. Efectivo, transferencia o tarjeta (3% comisión).</p></div>
-      <div><h3>El día del tour</h3><p>Tu guía coordinará por <strong>WhatsApp</strong> la hora exacta de recogida en tu hotel. Lleva esta confirmación impresa o en pantalla.</p></div>
+      <div><h3>El día del tour</h3><p>Tu guía coordinará por <strong>WhatsApp</strong> la hora exacta y el punto de recogida. Lleva esta confirmación impresa o en pantalla.</p></div>
     </div>
   </div>
 

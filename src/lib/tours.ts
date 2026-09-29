@@ -209,6 +209,37 @@ export interface TourRecogida {
   vehiculo?: { es: string; en: string };
   /** Qué hace quien se hospeda fuera de la zona de recogida. */
   nota?: { es: string; en: string };
+  /**
+   * Dónde nos vemos, para `en-sitio`. Sin esto, cada pantalla escribía a mano
+   * "la Laguna de la Media Luna" y el primer recorrido en sitio distinto habría
+   * heredado ese lugar.
+   */
+  lugar?: { es: string; en: string };
+  /**
+   * La hora cuando NO es una ventana: horarios fijos que pone un tercero (el
+   * jardín de Las Pozas para el Edén). Gana a `horaInicio` en todo lo que se
+   * pinta, porque "entre 7 y 8" contradice a su propia pregunta frecuente.
+   */
+  horaTexto?: { es: string; en: string };
+}
+
+/**
+ * Lo que la ficha le dice a Google y a los buscadores de IA cuando lo generado
+ * no alcanza: el título que la gente sí escribe ("Hoya de la Luz", "Cerro del
+ * Pilón") y los otros nombres con que se conoce el lugar.
+ *
+ * 🔴 El texto escrito aquí NO lleva horas ni precios a mano: usa `{precio}` y
+ * `{salida}`, que `conDatos()` resuelve desde el catálogo. Las horas de los
+ * tres recorridos nuevos se inventaron una vez y se publicaron; que no vuelva a
+ * pasar por un texto de SEO que nadie relee.
+ */
+export interface TourSeo {
+  /** Cabeza del <title>. El sufijo con el precio lo sigue poniendo la plantilla. */
+  titulo?: { es: string; en: string };
+  /** Meta description completa (≤155). */
+  descripcion?: { es: string; en: string };
+  /** Otros nombres del lugar o del recorrido → `alternateName` en el JSON-LD. */
+  alias?: string[];
 }
 export interface Tour {
   id:               string;
@@ -257,6 +288,8 @@ export interface Tour {
   garantiaHuasteca?: boolean;
   /** Cómo llega el cliente. Sin esto: recogida en su hospedaje, Xilitla o Valles, 8–9 AM. */
   recogida?:        TourRecogida;
+  /** Título, descripción y alias para buscadores. Ver `TourSeo`. */
+  seo?:             TourSeo;
   /**
    * Precio anterior, para tacharlo junto al actual.
    *
@@ -479,6 +512,8 @@ export function recogidaDeTour(t: Pick<Tour, "recogida">) {
     ventanaHrs: r?.ventanaHrs ?? RECOGIDA_DEFAULT.ventanaHrs,
     vehiculo:   r?.vehiculo,
     nota:       r?.nota,
+    lugar:      r?.lugar,
+    horaTexto:  r?.horaTexto,
   };
 }
 
@@ -512,7 +547,8 @@ function rango12(a: string, b: string, sep: string): string {
 
 /** "Entre 8:00 y 9:00 AM" · "A las 7:00 PM" cuando la ventana es de cero. */
 export function ventanaSalida(t: Pick<Tour, "recogida">, en: boolean): string {
-  const { horaInicio, ventanaHrs } = recogidaDeTour(t);
+  const { horaInicio, ventanaHrs, horaTexto } = recogidaDeTour(t);
+  if (horaTexto) return en ? horaTexto.en : horaTexto.es;
   if (ventanaHrs <= 0) {
     return en ? `At ${fmtHora12(horaInicio)}` : `A las ${fmtHora12(horaInicio)}`;
   }
@@ -532,13 +568,129 @@ export function regresoDeTour(
   t: Pick<Tour, "recogida" | "duracionRango" | "rutas" | "duracion_hrs">,
   en: boolean,
 ): string {
-  const { horaInicio } = recogidaDeTour(t);
+  const { horaInicio, horaTexto } = recogidaDeTour(t);
   const [durMin, durMax] = tourDurRange(t);
+  // Con horarios fijos que cambian según el día no hay UNA hora de regreso:
+  // se dice cuánto dura desde que empieza.
+  if (horaTexto) {
+    const dur = durMin === durMax ? `${durMax}` : `${durMin}–${durMax}`;
+    // Va debajo de "Regreso aprox.": el "aprox." ya lo pone la etiqueta.
+    return en ? `${dur} h after the start` : `${dur} h después de empezar`;
+  }
   const finMax = horaInicio + durMax;
   const siguiente = finMax >= 24 ? (en ? " (next day)" : " (del día siguiente)") : "";
   const a = fmtHora12(horaInicio + durMin);
   if (durMin === durMax) return a + siguiente;
   return rango12(a, fmtHora12(finMax), "–") + siguiente;
+}
+
+/**
+ * La hora de salida en corto y sin verbo, para etiquetas y listas: "7:00 PM",
+ * "3:00–4:00 AM", "8:00–9:00 AM". `null` cuando no hay hora pública (el buceo:
+ * se llega por cuenta propia a la laguna).
+ */
+export function salidaCorta(t: Pick<Tour, "recogida">, en = false): string | null {
+  const { tipo, horaInicio, ventanaHrs, horaTexto } = recogidaDeTour(t);
+  if (horaTexto) return en ? horaTexto.en : horaTexto.es;
+  if (tipo === "en-sitio") return null;
+  if (ventanaHrs <= 0) return fmtHora12(horaInicio);
+  return rango12(fmtHora12(horaInicio), fmtHora12(horaInicio + ventanaHrs), "–");
+}
+
+/** Las piezas con que se arma cualquier frase de recogida. */
+export interface PartesRecogida {
+  tipo: RecogidaTipo;
+  /** Para media frase: "a las 7:00 PM" · "entre 3:00 y 4:00 AM" · null si no hay hora pública. */
+  hora: string | null;
+  /** "tu hospedaje en Xilitla" · "tu hospedaje en Xilitla o Ciudad Valles" · "nuestra base en Xilitla" · el lugar en sitio. */
+  lugar: string;
+  /** "RZR" cuando no es la camioneta de siempre. */
+  vehiculo: string | null;
+  /** Qué pasa con Ciudad Valles cuando solo recogemos en Xilitla. Sin montos: se cotiza. */
+  valles: string | null;
+  /** ¿El precio incluye que pasemos por él? */
+  incluyeTraslado: boolean;
+}
+
+/**
+ * Cómo llega el cliente a ESTE recorrido, en piezas.
+ *
+ * 🔴 Existe porque el resto del sitio decía "pasamos por ti entre las 8:00 y
+ * las 9:00 AM en Xilitla o Ciudad Valles" para TODOS los recorridos: la frase
+ * de la ficha, el pago, el correo de confirmación y el bot. Con la Gruta de
+ * Xilo —que sale a las 7 de la NOCHE y solo recoge en Xilitla— eso mandaba al
+ * cliente a esperar de mañana y le prometía gratis un traslado desde Valles
+ * que se cobra aparte. `TourDeparture` ya leía `recogida`; lo demás, no.
+ */
+export function partesRecogida(t: Pick<Tour, "recogida">, en: boolean): PartesRecogida {
+  const rec = recogidaDeTour(t);
+  const v = ventanaSalida(t, en);
+  const hora = rec.tipo === "en-sitio"
+    ? null
+    : rec.horaTexto
+      // Horario fijo que pone un tercero: pasamos por él a tiempo para esa hora.
+      ? (en ? `in time for its fixed start (${rec.horaTexto.en})` : `a tiempo para su horario fijo (${rec.horaTexto.es})`)
+      : v.charAt(0).toLowerCase() + v.slice(1);
+  const lugar =
+    rec.tipo === "hospedaje"
+      ? (en ? "your lodging in Xilitla or Ciudad Valles" : "tu hospedaje en Xilitla o Ciudad Valles")
+    : rec.tipo === "hospedaje-xilitla"
+      ? (en ? "your lodging in Xilitla" : "tu hospedaje en Xilitla")
+    : rec.tipo === "base-xilitla"
+      ? (en ? "our base in Xilitla" : "nuestra base en Xilitla")
+      : (rec.lugar ? (en ? rec.lugar.en : rec.lugar.es) : (en ? "the meeting point of the tour" : "el punto de encuentro del recorrido"));
+  return {
+    tipo: rec.tipo,
+    hora,
+    lugar,
+    vehiculo: rec.vehiculo ? (en ? rec.vehiculo.en : rec.vehiculo.es) : null,
+    valles: rec.tipo === "hospedaje-xilitla"
+      ? (en
+          ? "From Ciudad Valles the transfer costs extra — we'll quote it on WhatsApp."
+          : "Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.")
+      : null,
+    incluyeTraslado: rec.tipo === "hospedaje" || rec.tipo === "hospedaje-xilitla",
+  };
+}
+
+/**
+ * La recogida de un recorrido en una o dos frases completas, en segunda
+ * persona. Es lo que se le dice al cliente en el pago, en el correo y en el
+ * bot:
+ *
+ *   Gruta:  "Pasamos por ti a tu hospedaje en Xilitla, en RZR, a las 7:00 PM.
+ *            Desde Ciudad Valles el traslado tiene costo adicional: te lo
+ *            cotizamos por WhatsApp."
+ *   Tamul:  "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre
+ *            8:00 y 9:00 AM."
+ *   RZR:    "Nos vemos en nuestra base en Xilitla entre 8:00 y 9:00 AM. El
+ *            transporte hasta Xilitla no está incluido."
+ *   Buceo:  "Nos vemos en la entrada de la Laguna de la Media Luna, en
+ *            Rioverde; llegas por tu cuenta."
+ */
+export function fraseRecogida(t: Pick<Tour, "recogida">, en: boolean): string {
+  const p = partesRecogida(t, en);
+  const hora = p.hora ? ` ${p.hora}` : "";
+  const veh = p.vehiculo ? (en ? `, in an ${p.vehiculo},` : `, en ${p.vehiculo},`) : "";
+  if (p.tipo === "en-sitio") {
+    return en ? `We meet at ${p.lugar}; you make your own way there.` : `Nos vemos en ${p.lugar}; llegas por tu cuenta.`;
+  }
+  if (p.tipo === "base-xilitla") {
+    return en
+      ? `We meet at ${p.lugar}${hora}. Transport to Xilitla isn't included.`
+      : `Nos vemos en ${p.lugar}${hora}. El transporte hasta Xilitla no está incluido.`;
+  }
+  const base = en ? `We pick you up at ${p.lugar}${veh}${hora}.` : `Pasamos por ti a ${p.lugar}${veh}${hora}.`;
+  return p.valles ? `${base} ${p.valles}` : base;
+}
+
+/**
+ * Resuelve `{precio}` y `{salida}` en un texto escrito a mano (SEO, preguntas
+ * frecuentes) con los datos del catálogo. Así el texto no puede quedarse con
+ * una hora o un precio viejos cuando cambie el recorrido.
+ */
+export function conDatos(texto: string, t: Pick<Tour, "precio" | "recogida">, locale: "es" | "en" = "es"): string {
+  return conPrecio(texto, t.precio, locale).replace(/\{salida\}/g, salidaCorta(t, locale === "en") ?? "");
 }
 
 /**
@@ -642,8 +794,11 @@ const TOURS_RAW: Tour[] = [
     precio:           1600,
     precioUnidad:     "vehiculo",
     urgencia:         "Flota limitada — los fines de semana se aparta con anticipación",
-    descripcion:      "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600), no por persona.",
-    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, llega a la Aldea Nanacatli, un pueblo de casitas de hongos gigantes conocido como 'la aldea de los pitufos'), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (5 h, un nacimiento de agua cristalina en lo profundo de la selva donde te prestamos kayak y chaleco salvavidas) y la de Trinidad (5 h, sube al bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ($1,600 la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
+    // El "desde" va como `{precio}` y no escrito a mano (lo resuelve
+    // `conPrecio`): `precio` ES la tarifa más baja de la flota, el RZR 500 en
+    // la Ruta Nanacatli. Si cambia, las dos descripciones cambian con él.
+    descripcion:      "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde {precio}), no por persona.",
+    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, llega a la Aldea Nanacatli, un pueblo de casitas de hongos gigantes conocido como 'la aldea de los pitufos'), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (5 h, un nacimiento de agua cristalina en lo profundo de la selva donde te prestamos kayak y chaleco salvavidas) y la de Trinidad (5 h, sube al bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ({precio} la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
     rutas: [
       { nombre: "Ruta Nanacatli",  duracion_hrs: 2, desde: 1600, descripcion: "La más popular de Xilitla y perfecta para primerizos. Te adentras en la selva húmeda, cruzas ríos de agua cristalina y llegas a la Aldea Nanacatli, un pintoresco pueblo de casitas de hongos gigantes —la famosa 'aldea de los pitufos'—, ideal para fotos. Barro, naturaleza y adrenalina en dos horas.",
         destinos: ["Aldea Nanacatli (aldea de los pitufos)", "Mirador Xilitla", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
@@ -710,7 +865,11 @@ const TOURS_RAW: Tour[] = [
     tagline:          "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
     precio:           1700,
     precioOriginal:   1890,
-    urgencia:         "Cupo muy limitado — máximo 8 personas por día",
+    // 🔴 Decía "máximo 8 personas por día" justo debajo del "máximo 10 personas
+    // por salida" que la ficha lee de `groupMax`: dos cupos distintos en la
+    // misma pantalla. La urgencia ya no lleva cifra; el cupo sale solo de
+    // `groupMax`. (Pendiente de Manolo: si el tope real es 8, se baja ahí.)
+    urgencia:         "Cupo muy limitado por salida — se aparta con anticipación",
     descripcion:
       "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
     descripcionLarga:
@@ -1047,17 +1206,27 @@ const TOURS_RAW: Tour[] = [
     duracion_hrs:     3,
     // 🔴 ARREGLO (28 sep): este recorrido NO se recoge en Ciudad Valles. Su
     // propio `incluye` dice "Traslado redondo desde tu hospedaje EN XILITLA" y
-    // su pregunta frecuente dice "solo desde Xilitla… desde Ciudad Valles habría
-    // que salir de madrugada". Pero `TourDeparture` lo mandaba al caso por
-    // defecto y, 300 px más arriba en la MISMA página, le prometía al cliente
-    // recogida en Valles. Las dos afirmaciones convivían desde el 25 de sep.
+    // su pregunta frecuente decía "solo desde Xilitla". Pero `TourDeparture` lo
+    // mandaba al caso por defecto y, 300 px más arriba en la MISMA página, le
+    // prometía al cliente recogida en Valles. Las dos afirmaciones convivían
+    // desde el 25 de sep.
     recogida: {
       tipo:       "hospedaje-xilitla",
-      horaInicio: 7,   // "entre las 7 y las 8 de la mañana", según su propia FAQ
+      horaInicio: 7,   // solo respaldo: `horaTexto` le gana en todo lo que se pinta
       ventanaHrs: 1,
+      // Los horarios los pone el jardín, no nosotros: son los mismos de su
+      // pregunta frecuente ("¿A qué hora empieza?") y del bot. Sin esto el pago
+      // y el correo decían "entre 7:00 y 8:00 AM" a quien apartó las 5 PM.
+      horaTexto: {
+        es: "8:00 AM lun, mié, jue y vie · 7:00 AM sáb y dom · 5:00 PM de mié a lun",
+        en: "8:00 AM Mon, Wed, Thu & Fri · 7:00 AM Sat & Sun · 5:00 PM Wed–Mon",
+      },
+      // 🔴 Sin hora: esta nota se pega a "¿Dónde es el punto de salida?" y justo
+      // debajo va "¿A qué hora empieza?" con los tres horarios. Decía "entre las
+      // 7 y las 8" y la misma página daba dos horarios distintos.
       nota: {
-        es: "Solo desde Xilitla: la experiencia empieza entre las 7 y las 8 de la mañana y desde Ciudad Valles habría que salir de madrugada. Si te hospedas allá, escríbenos y lo cotizamos aparte.",
-        en: "Xilitla only: the experience starts between 7 and 8 AM, and coming from Ciudad Valles would mean leaving in the middle of the night. If you're staying there, message us and we'll quote it separately.",
+        es: "El traslado incluido es solo dentro de Xilitla y el horario lo fija el jardín. Si te hospedas en Ciudad Valles, escríbenos y lo cotizamos aparte.",
+        en: "The included transfer only covers Xilitla, and the garden sets the schedule. If you're staying in Ciudad Valles, message us and we'll quote it separately.",
       },
     },
     // Sin reseñas: es nuevo. `reviewCount: 0` apaga el aggregateRating del
@@ -1070,25 +1239,43 @@ const TOURS_RAW: Tour[] = [
     nombre:           "El Edén en el Jardín — Experiencia Privada en Las Pozas",
     nombreCorto:      "El Edén en el Jardín",
     articulo:         "",
+    // Lo que se teclea es "Las Pozas" + "en privado": "El Edén en el Jardín" es
+    // el nombre de la experiencia y nadie lo busca todavía. La meta dice "por
+    // grupo" porque `precio` es el primer escalón del GRUPO.
+    // 🔴 Nada de "antes de que abra" aquí: también hay salida a las 5 PM, y a
+    // esa hora no se entra antes de la apertura. Google lo enseñaría a todos.
+    // 🔴 La cabeza española no pasa de 40: el precio es un RANGO (`tarifaGrupo`)
+    // y el sufijo lleva "desde"; con 42 la plantilla tiraba el precio entero.
+    seo: {
+      titulo: {
+        es: "Las Pozas en privado, Xilitla",
+        en: "Las Pozas Private Experience, Xilitla",
+      },
+      descripcion: {
+        es: "Las Pozas en privado: el jardín de Edward James solo para tu grupo, con guía propio y recintos cerrados al público. Desde {precio} por grupo.",
+        en: "Las Pozas private experience: Edward James's garden just for your group, with your own guide and areas closed to the public. From {precio} per group.",
+      },
+      alias: ["Las Pozas en privado"],
+    },
     tagline:          "El jardín de Edward James para ustedes solos, antes de que abra al público",
     precio:           2990,
     precioUnidad:     "grupo",
     // Escalones de la Fundación Las Pozas + nuestro margen. El grupo completo:
     // 1 persona $2,990 … 7 personas $4,160. Cupo máximo 7 por reglamento.
     tarifaGrupo:      [2990, 3150, 3320, 3480, 3770, 3970, 4160],
-    urgencia:         "Una sola experiencia al día — la fecha se aparta pagando completo",
+    urgencia:         "Una sola experiencia al día — resérvala con anticipación",
     exclusivo: {
       es: "Exclusiva de Tours Huasteca Potosina",
       en: "Only with Tours Huasteca Potosina",
     },
     cancelacion: {
-      es: "Esta experiencia no tiene reembolso: para apartar la fecha se paga el 100 % y ese día queda cerrado para todos los demás. Lo que sí puedes hacer es cambiarla avisando con 5 días o más de anticipación, conservando el monto completo durante los 6 meses siguientes. Si el clima obliga a suspender, se reprograma sin costo.",
-      en: "This experience is non-refundable: holding the date requires payment in full, and that day is then closed to everyone else. You can move it instead by telling us 5 or more days ahead, keeping the full amount valid for 6 months. If the weather forces a cancellation, we reschedule at no cost.",
+      es: "Esta experiencia no tiene reembolso: una vez apartada, ese día queda cerrado para todos los demás. Lo que sí puedes hacer es cambiarla avisando con 5 días o más de anticipación, conservando el monto completo durante los 6 meses siguientes. Si el clima obliga a suspender, se reprograma sin costo.",
+      en: "This experience is non-refundable: once it's booked, that day is closed to everyone else. You can move it instead by telling us 5 or more days ahead, keeping the full amount valid for 6 months. If the weather forces a cancellation, we reschedule at no cost.",
     },
     descripcion:
       "Las Pozas sin nadie más: entras una hora antes de que abra, con guía propio y acceso a rincones cerrados al público. Tres horas en el jardín de Edward James a tu ritmo, incluidos los niveles altos del Palacio de Bambú y la Casa Estudio donde todavía se conserva un poema escrito de su puño y letra. Grupo de hasta 7 personas, tarifa del grupo completo.",
     descripcionLarga:
-      "Hay una hora en Las Pozas que casi nadie ha visto. Entre las siete y las ocho de la mañana el jardín todavía está cerrado al público: la neblina no ha terminado de subir del río, los pájaros son lo único que se oye y las escaleras que no llevan a ninguna parte se quedan quietas, sin una sola fila esperando para la foto. El Edén en el Jardín es esa hora, y las dos que le siguen.\n\nNo es el recorrido de siempre, más temprano. Es una experiencia privada dentro del Jardín Escultórico Edward James —Monumento Artístico declarado Patrimonio Nacional por el INBAL— para tu grupo y nadie más, con un guía del propio jardín que camina a tu ritmo. Se abren recintos que no forman parte de la visita general y se sube a los niveles superiores del Palacio de Bambú, desde donde el jardín deja de verse por abajo y se entiende de golpe: la selva entera con la arquitectura surrealista creciendo dentro.\n\nEl momento que la gente recuerda es otro. En la Casa Estudio, la cabaña donde Edward James se quedaba a descansar, todavía se conserva un poema escrito de su puño y letra. Nadie lo ha retirado ni lo ha puesto detrás de un cristal. Es el tipo de detalle que no sale en ninguna guía, porque casi nadie llega hasta ahí.\n\nLas tres horas incluyen la ruta de senderismo, la entrada al jardín y el traslado redondo desde tu hospedaje en Xilitla —se sale de madrugada, así que llegar por tu cuenta no es buena idea—. Se opera una sola experiencia al día y el cupo máximo es de siete personas. La tarifa es del grupo completo, no por cabeza: entre más van, menos le toca a cada uno.",
+      "Hay una hora en Las Pozas que casi nadie ha visto. Entre las siete y las ocho de la mañana el jardín todavía está cerrado al público: la neblina no ha terminado de subir del río, los pájaros son lo único que se oye y las escaleras que no llevan a ninguna parte se quedan quietas, sin una sola fila esperando para la foto. El Edén en el Jardín es esa hora, y las dos que le siguen.\n\nNo es el recorrido de siempre, más temprano. Es una experiencia privada dentro del Jardín Escultórico Edward James —Monumento Artístico declarado Patrimonio Nacional por el INBAL— para tu grupo y nadie más, con un guía del propio jardín que camina a tu ritmo. Se abren recintos que no forman parte de la visita general y se sube a los niveles superiores del Palacio de Bambú, desde donde el jardín deja de verse por abajo y se entiende de golpe: la selva entera con la arquitectura surrealista creciendo dentro.\n\nEl momento que la gente recuerda es otro. En la Casa Estudio, la cabaña donde Edward James se quedaba a descansar, todavía se conserva un poema escrito de su puño y letra. Nadie lo ha retirado ni lo ha puesto detrás de un cristal. Es el tipo de detalle que no sale en ninguna guía, porque casi nadie llega hasta ahí.\n\nLas tres horas incluyen la ruta de senderismo, la entrada al jardín y el traslado redondo desde tu hospedaje en Xilitla. Se opera una sola experiencia al día y el cupo máximo es de siete personas. La tarifa es del grupo completo, no por cabeza: entre más van, menos le toca a cada uno.",
     destinos: [
       "Jardín Escultórico Edward James (Las Pozas)",
       "Palacio de Bambú — niveles superiores",
@@ -1349,7 +1536,9 @@ const TOURS_RAW: Tour[] = [
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
     precioOriginal:   1780,
-    urgencia:         "El más completo — últimos lugares disponibles",
+    // 🔴 Decía "últimos lugares disponibles" siempre, sin importar el cupo real:
+    // escasez inventada. Como en el Rappel, la urgencia no dice cuántos quedan.
+    urgencia:         "El más completo — se aparta con anticipación",
     descripcion:
       "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo. En un día da para uno de los dos, no para ambos.",
     descripcionLarga:
@@ -1435,7 +1624,13 @@ const TOURS_RAW: Tour[] = [
     dificultad:       "baja",
     duracion_hrs:     4,
     /* Nos vemos en la laguna misma, en Rioverde. */
-    recogida:         { tipo: "en-sitio" },
+    recogida:         {
+      tipo:  "en-sitio",
+      lugar: {
+        es: "la entrada de la Laguna de la Media Luna, en Rioverde",
+        en: "the entrance of the Media Luna Lagoon, in Rioverde",
+      },
+    },
     reviewCount:      31,
     groupMin:         2,
     groupMax:         10,
@@ -1595,18 +1790,19 @@ const TOURS_RAW: Tour[] = [
     dificultad:       "media",
     duracion_hrs:     3,
     recogida: {
-      // Híbrido: pasamos por él SOLO si se hospeda en Xilitla; desde Ciudad
-      // Valles sube por su cuenta al punto de encuentro del pueblo.
+      // Pasamos por él a su hospedaje en Xilitla. Desde Ciudad Valles también
+      // vamos, pero con costo adicional que se cotiza por WhatsApp (decisión de
+      // Manolo, 28 sep: sin monto publicado).
       tipo:       "hospedaje-xilitla",
-      // ⚠️ POR CONFIRMAR CON MANOLO. Es un recorrido NOCTURNO y el flyer no da
-      // la hora. Sin este número la ficha sumaba las 3 h a las 8:00 AM y
+      // Confirmado por Manolo el 28 sep: es de NOCHE y la recogida es a las
+      // 7 PM. Sin este número la ficha sumaba las 3 h a las 8:00 AM y
       // prometía "Regreso aprox. 11:00 AM".
       horaInicio: 19,
       ventanaHrs: 0,
       vehiculo:   { es: "RZR", en: "RZR (side-by-side)" },
       nota: {
-        es: "¿Te hospedas en Ciudad Valles? El traslado incluido es solo dentro de Xilitla, pero sí podemos ir por ti hasta allá con un costo extra de traslado: escríbenos y te lo cotizamos.",
-        en: "Staying in Ciudad Valles? The included transfer only covers Xilitla, but we can come and get you there for an extra transfer fee — message us and we'll quote it.",
+        es: "¿Te hospedas en Ciudad Valles? El traslado incluido es dentro de Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional: escríbenos por WhatsApp y te lo cotizamos.",
+        en: "Staying in Ciudad Valles? The included transfer covers Xilitla; we can also pick you up in Ciudad Valles at an additional cost — message us on WhatsApp and we'll quote it.",
       },
     },
     // Recorrido nuevo: sin reseñas propias. `reviewCount: 0` apaga el
@@ -1619,21 +1815,39 @@ const TOURS_RAW: Tour[] = [
     nombre:           "Gruta de Xilo — Recorrido Nocturno por la Cueva de Xilitla",
     nombreCorto:      "Gruta de Xilo",
     articulo:         "la",
+    // También se busca en plural ("Grutas de Xilo") y como "tour nocturno".
+    // 🔴 La cabeza del título NO pasa de 46: con el sufijo más corto de la
+    // plantilla (" | $900 MXN") queda en 57, y si el precio sube a cuatro
+    // cifras sigue cabiendo en 59 sin que la plantilla la recorte.
+    seo: {
+      titulo: {
+        es: "Gruta de Xilo: Tour Nocturno en Cueva, Xilitla",
+        en: "Xilo Cave Night Tour, Xilitla",
+      },
+      descripcion: {
+        es: "Gruta de Xilo, tour nocturno en Xilitla: unos 900 m entre estalactitas hasta pozas de agua cristalina, con casco, lámpara y guía. {precio} por persona.",
+        en: "Xilo Cave night tour in Xilitla: about 900 m among stalactites to pools of crystal-clear water, with helmet, headlamp and guide. {precio} per person.",
+      },
+      alias: ["Grutas de Xilo"],
+    },
     tagline:          "Novecientos metros bajo la sierra, de noche",
     precio:           900,
     precioUnidad:     "persona",
     urgencia:         "Salida nocturna — se reserva con anticipación",
     descripcion:
-      "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. $900 por persona.",
+      "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. {precio} por persona.",
     descripcionLarga:
-      "Casi todos los recorridos de la Huasteca se hacen de día. Este no. La Gruta de Xilo se camina de noche, y esa es la mitad de la experiencia: sin el ruido ni el calor del día, lo único que existe es el círculo de luz de tu lámpara y lo que alcanza a iluminar.\n\nEmpieza con una caminata de 15 a 20 minutos por la selva hasta la entrada de la gruta. Ahí se reparten cascos y lámparas frontales, el guía explica por dónde se pisa y se entra.\n\nAdentro son unos 900 metros de recorrido. Las paredes son un catálogo de formaciones: estalactitas que cuelgan de la bóveda, estalagmitas que suben desde el piso, columnas donde las dos se encontraron después de millones de años de gota a gota. Hay tramos amplios donde se camina de pie y tramos donde hay que agacharse; se avanza despacio, en grupo chico.\n\nAl final del recorrido están los jacuzzis: pozas de agua cristalina formadas dentro de la propia gruta. Ahí se hace una dinámica de introspección — apagar las lámparas, quedarse en silencio unos minutos y escuchar la cueva. Es el momento que la gente recuerda.\n\nDura unas 3 horas en total. Pasamos por ti a tu hospedaje en Xilitla en RZR; si te quedas en Ciudad Valles podemos ir por ti con un costo extra de traslado, o subes a Xilitla por tu cuenta. Lleva calzado cerrado que se pueda mojar y ropa de cambio.",
+      "Casi todos los recorridos de la Huasteca se hacen de día. Este no. La Gruta de Xilo —también la encontrarás como Grutas de Xilo— se camina de noche, y esa es la mitad de la experiencia: sin el ruido ni el calor del día, lo único que existe es el círculo de luz de tu lámpara y lo que alcanza a iluminar.\n\nEl casco y la lámpara frontal te los entregamos al inicio, cuando pasamos por ti. Luego viene una caminata de 15 a 20 minutos por la selva hasta la entrada de la gruta; ahí el guía explica por dónde se pisa y se entra.\n\nAdentro son unos 900 metros de recorrido. Las paredes son un catálogo de formaciones: estalactitas que cuelgan de la bóveda, estalagmitas que suben desde el piso, columnas donde las dos se encontraron después de millones de años de gota a gota. Hay tramos amplios donde se camina de pie y tramos donde hay que agacharse; se avanza despacio, en grupo chico.\n\nAl final del recorrido están los jacuzzis: pozas de agua cristalina formadas dentro de la propia gruta. Ahí se hace una dinámica de introspección — apagar las lámparas, quedarse en silencio unos minutos y escuchar la cueva. Es el momento que la gente recuerda.\n\nDura unas 3 horas en total y es de noche. Pasamos por ti a tu hospedaje en Xilitla en RZR; si te quedas en Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp. Lleva calzado cerrado que se pueda mojar y ropa de cambio.",
     destinos: [
       "Selva de Xilitla (caminata de acceso)",
       "Gruta de Xilo",
       "Jacuzzis naturales de la gruta",
     ],
     incluye: [
-      "Recogida en RZR desde tu hospedaje en Xilitla",
+      // "Traslado redondo" y no "Recogida": la meta descripción, la frase del
+      // precio y el bot buscaban la palabra "traslado" y, al no hallarla,
+      // decían que este recorrido no llevaba transporte.
+      "Traslado redondo en RZR desde tu hospedaje en Xilitla",
       "Taquillas y acceso a la gruta",
       "Casco y lámpara frontal para cada persona",
       "Guía acreditado NOM-09 SECTUR",
@@ -1645,9 +1859,9 @@ const TOURS_RAW: Tour[] = [
     imagen_hero: "/imagenes/tours/gruta-de-xilo/hero.jpg",
     itinerario: [
       { hora: "7:00 PM", momento: "Recogida",
-        texto: "Pasamos por ti a tu hospedaje en Xilitla, en el propio RZR. Ya está oscureciendo." },
+        texto: "Pasamos por ti a tu hospedaje en Xilitla, en el propio RZR, y ahí mismo te entregamos tu casco y tu lámpara frontal. Ya está oscureciendo." },
       { hora: "7:30 PM", momento: "Caminata por la selva",
-        texto: "De 15 a 20 minutos a pie hasta la boca de la gruta. Aquí se reparten cascos y lámparas frontales." },
+        texto: "De 15 a 20 minutos a pie, ya con la lámpara encendida, hasta la boca de la gruta." },
       { hora: "8:00 PM", momento: "Entras a la cueva",
         texto: "El guía explica por dónde se pisa y se entra. A partir de aquí lo único que existe es el círculo de luz de tu lámpara." },
       { hora: "8:45 PM", momento: "Las formaciones",
@@ -1689,8 +1903,8 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [7, 8],
     recogida: {
       tipo: "hospedaje-xilitla",
-      // ⚠️ POR CONFIRMAR CON MANOLO. Se sale DE MADRUGADA para llegar a la cima
-      // antes del amanecer; con 7-8 h eso devuelve al cliente a media mañana.
+      // Confirmado por Manolo el 28 sep: recogida entre 3 y 4 AM, para llegar a
+      // la cima antes del amanecer; con 7-8 h vuelve a media mañana.
       horaInicio: 3,
       ventanaHrs: 1,
       nota: {
@@ -1705,12 +1919,31 @@ const TOURS_RAW: Tour[] = [
     nombre:           "Amanecer de Nubes — Senderismo al Cerro del Pilón",
     nombreCorto:      "Amanecer de Nubes",
     articulo:         "el",
+    // "Amanecer de Nubes" es nombre de casa: lo que se teclea es el lugar
+    // ("Cerro del Pilón", "mar de nubes", "La Trinidad"). Ese lugar ya va en el
+    // título y en la meta.
+    // 🔴 Los alias salen como `alternateName` del TouristTrip y como "También
+    // se le conoce como" en llms.txt: son otros nombres del RECORRIDO, no del
+    // cerro. "Cerro del Pilón" a secas confundía el viaje con el lugar.
+    // 🔴 La meta dice "suele haber" mar de nubes, no lo promete: depende del
+    // clima (ver `tourRequisitos.ts`).
+    seo: {
+      titulo: {
+        es: "Amanecer en el Cerro del Pilón, Xilitla",
+        en: "Sea of Clouds Sunrise Hike, Xilitla",
+      },
+      descripcion: {
+        es: "Amanecer en el Cerro del Pilón, Xilitla: senderismo de madrugada desde La Trinidad a la cima, donde suele haber mar de nubes. {precio} por persona.",
+        en: "Sea of clouds sunrise hike to Cerro del Pilón, Xilitla: a pre-dawn climb from La Trinidad to a summit often above the clouds. {precio} per person.",
+      },
+      alias: ["Senderismo al Cerro del Pilón", "Amanecer en el Cerro del Pilón"],
+    },
     tagline:          "Llegar a la cima antes que el sol",
     precio:           1700,
     precioUnidad:     "persona",
     urgencia:         "Salida de madrugada — se reserva con un día de anticipación",
     descripcion:
-      "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando el sol sale por encima de un mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. $1,700 por persona.",
+      "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando sale el sol, muchas veces por encima del mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. {precio} por persona.",
     descripcionLarga:
       "Hay un momento, arriba del Cerro del Pilón, en el que el cielo se pone naranja y abajo no se ve la tierra: solo una capa de nubes que tapa los valles de un lado al otro del horizonte. Dura unos minutos. Para verlo hay que estar arriba antes de que amanezca, y por eso este recorrido empieza de madrugada.\n\nSalimos de noche desde tu hospedaje en Xilitla y subimos al bosque de la Trinidad, el bosque de niebla que corona la sierra a casi 2,000 metros. De ahí arranca la caminata: sendero entre pinos y encinos, con lámpara frontal, en subida constante y a oscuras. No hace falta experiencia de montaña, pero sí condición para caminar varias horas en pendiente.\n\nLa llegada a la cima se calcula para coincidir con el amanecer. Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Ahí se para todo: se toman fotos, se desayuna algo y se deja que pase.\n\nLa bajada se hace ya con luz, que es cuando se ve el bosque por el que subiste a ciegas: los madroños, los helechos, la niebla colgada entre los árboles.\n\nEn total son entre 7 y 8 horas contando el traslado. Arriba hace frío de verdad aunque en Xilitla haga calor: lleva chamarra, calzado de montaña con agarre y lámpara. Nosotros ponemos el equipo de seguridad y el guía acreditado.",
     destinos: [
@@ -1777,8 +2010,8 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [8, 9],
     recogida: {
       tipo: "hospedaje-xilitla",
-      // ⚠️ POR CONFIRMAR CON MANOLO. Con 8-9 h, salir a las 7 devuelve al
-      // cliente entre las 3 y las 4 de la tarde, con luz para bajar la sierra.
+      // Confirmado por Manolo el 28 sep: recogida entre 7 y 8 AM. Con 8-9 h
+      // vuelve entre las 3 y las 4 de la tarde, con luz para bajar la sierra.
       horaInicio: 7,
       ventanaHrs: 1,
       nota: {
@@ -1793,14 +2026,29 @@ const TOURS_RAW: Tour[] = [
     nombre:           "Olla de la Luz — El Sótano del Bosque de Niebla de Xilitla",
     nombreCorto:      "Olla de la Luz",
     articulo:         "la",
+    // Medios y guías de viaje lo escriben muy a menudo "Hoya de la Luz" (el
+    // ayuntamiento usa "Olla"): los dos títulos llevan los dos nombres, y
+    // "Olla" primero porque es el del H1 y el del carrito. `destinos.ts` ya lo
+    // tenía entre sus keywords.
+    seo: {
+      titulo: {
+        es: "Olla de la Luz (Hoya de la Luz), Xilitla",
+        en: "Olla de la Luz (Hoya de la Luz) Hike, Xilitla",
+      },
+      descripcion: {
+        es: "Olla de la Luz (Hoya de la Luz), Xilitla: caminata guiada por el bosque de niebla de La Trinidad hasta un sótano de 193 m. {precio} por persona.",
+        en: "Olla de la Luz (Hoya de la Luz), Xilitla: a guided hike through the La Trinidad cloud forest to the rim of a 193 m sinkhole. {precio} per person.",
+      },
+      alias: ["Hoya de la Luz"],
+    },
     tagline:          "Un abismo donde la luz entra como cascada",
     precio:           1800,
     precioUnidad:     "persona",
     urgencia:         "Solo se entra con guía de la comunidad — se reserva con anticipación",
     descripcion:
-      "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. $1,800 por persona.",
+      "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. {precio} por persona.",
     descripcionLarga:
-      "La Olla de la Luz es de esos lugares que no se entienden en una foto. Es un sótano vertical de 193 metros de profundidad y 233 de diámetro abierto en lo alto de la sierra de Xilitla: un hueco en el bosque tan grande que en su fondo creció otro bosque, y tan hondo que la luz del sol solo entra por completo unas horas al día.\n\nPara llegar hay que subir primero a La Trinidad, la comunidad náhuatl que vive a unos 14 km de Xilitla, en uno de los bosques de niebla mejor conservados de la Huasteca. La carretera sube casi 2,000 metros por camino de sierra, y cuando llegas el clima ya es otro: fresco, húmedo, con la niebla enredada entre los pinos.\n\nDe ahí arranca la caminata, de unas 2 horas, con guía de la propia comunidad — es la única manera de entrar. Se atraviesan tramos de bosque cerrado, llanos abiertos y varios miradores. El camino pasa entre pinos, cedros y orquídeas, y si hay suerte se cruzan coatíes o se oyen las pavas.\n\nY entonces el bosque se abre. Asomarse al borde de la Olla de la Luz es la clase de vista que recalibra la escala de las cosas: la pared de roca cayendo a plomo, las copas de los árboles allá abajo como brócoli, y el silencio. El guía te enseña dónde pararse y dónde no.\n\nSon entre 8 y 9 horas contando traslados. Lleva calzado de senderismo, chamarra o impermeable, agua y algo de comer. Arriba hace frío aunque en Xilitla estés sudando.",
+      "La Olla de la Luz —también la verás escrita Hoya de la Luz— es de esos lugares que no se entienden en una foto. Es un sótano vertical de 193 metros de profundidad y 233 de diámetro abierto en lo alto de la sierra de Xilitla: un hueco en el bosque tan grande que en su fondo creció otro bosque, y tan hondo que la luz del sol solo entra por completo unas horas al día.\n\nPara llegar hay que subir primero a La Trinidad, la comunidad náhuatl que vive a unos 14 km de Xilitla, en uno de los bosques de niebla mejor conservados de la Huasteca. La carretera sube casi 2,000 metros por camino de sierra, y cuando llegas el clima ya es otro: fresco, húmedo, con la niebla enredada entre los pinos.\n\nDe ahí arranca la caminata, de unas 2 horas, con guía de la propia comunidad — es la única manera de entrar. Se atraviesan tramos de bosque cerrado, llanos abiertos y varios miradores. El camino pasa entre pinos, cedros y orquídeas, y si hay suerte se cruzan coatíes o se oyen las pavas.\n\nY entonces el bosque se abre. Asomarse al borde de la Olla de la Luz es la clase de vista que recalibra la escala de las cosas: la pared de roca cayendo a plomo, las copas de los árboles allá abajo como brócoli, y el silencio. El guía te enseña dónde pararse y dónde no.\n\nSon entre 8 y 9 horas contando traslados. Lleva calzado de senderismo, chamarra o impermeable, agua y algo de comer. Arriba hace frío aunque en Xilitla estés sudando.",
     destinos: [
       "La Trinidad — Bosque de Niebla de Xilitla",
       "Miradores del Cerro de la Luz",

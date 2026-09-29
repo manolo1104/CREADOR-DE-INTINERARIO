@@ -408,6 +408,35 @@
           "fecha_publicacion": "2026-09-26T17:43:52.940Z"
         },
         {
+          "id": 46,
+          "titulo": "Olla de la Luz (Hoya de la Luz) y Cueva del Salitre: dos secretos de Xilitla",
+          "palabras_clave": [
+            "olla de la luz",
+            "hoya de la luz",
+            "cueva del salitre xilitla",
+            "cerro de la luz",
+            "xilitla lugares secretos"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
+          "id": 39,
+          "titulo": "La Trinidad: el bosque de niebla de Xilitla, guía 2026",
+          "palabras_clave": [
+            "la trinidad xilitla",
+            "bosque de niebla xilitla",
+            "mar de nubes xilitla",
+            "la trinidad como llegar"
+          ],
+          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
+          "estado": "pendiente",
+          "slug_publicado": null,
+          "fecha_publicacion": null
+        },
+        {
           "id": 30,
           "titulo": "Laguna de la Media Luna: manantiales y buceo, guía 2026",
           "palabras_clave": [
@@ -445,9 +474,10 @@
             "altares huastecos"
           ],
           "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
-          "estado": "pendiente",
+          "estado": "descartado",
           "slug_publicado": null,
-          "fecha_publicacion": null
+          "fecha_publicacion": null,
+          "motivo": "canibaliza al artículo publicado de Xantolo"
         },
         {
           "id": 33,
@@ -539,20 +569,6 @@
           "fecha_publicacion": null
         },
         {
-          "id": 39,
-          "titulo": "La Trinidad: el bosque de niebla de Xilitla, guía 2026",
-          "palabras_clave": [
-            "la trinidad xilitla",
-            "bosque de niebla xilitla",
-            "mar de nubes xilitla",
-            "la trinidad como llegar"
-          ],
-          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
-        },
-        {
           "id": 40,
           "titulo": "Balneario Taninul: aguas termales, guía 2026",
           "palabras_clave": [
@@ -630,20 +646,6 @@
             "hacienda los gomez tamasopo",
             "los gomez precio",
             "tamasopo hacienda"
-          ],
-          "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
-          "estado": "pendiente",
-          "slug_publicado": null,
-          "fecha_publicacion": null
-        },
-        {
-          "id": 46,
-          "titulo": "Olla de la Luz y Cueva del Salitre: dos secretos de Xilitla",
-          "palabras_clave": [
-            "olla de la luz",
-            "cueva del salitre xilitla",
-            "cerro de la luz",
-            "xilitla lugares secretos"
           ],
           "enfoque_agente": "Guía práctica del lugar: cómo llegar, precio, horario, qué llevar y con qué recorrido nuestro se combina.",
           "estado": "pendiente",

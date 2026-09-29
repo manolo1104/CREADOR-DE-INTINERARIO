@@ -1,13 +1,15 @@
 {
-  "generatedAt": "2026-09-28T22:06:47.779Z",
+  "generatedAt": "2026-09-29T06:10:36.980Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
     "sitio": "https://www.huasteca-potosina.com",
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
-    "salida": "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (8:00–9:00 AM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Buceo en la Media Luna: nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde; llegas por tu cuenta. Rappel en la Cascada de Tamul: NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour. La hora de encuentro se confirma al reservar.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
-    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)"
+    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
+    "rating": 4.7,
+    "resenas": 161
   },
   "tours": [
     {
@@ -28,7 +30,7 @@
       "privateAvailable": false,
       "privateExtraPorPersona": null,
       "tagline": "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
-      "pitch": "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600), no por persona.",
+      "pitch": "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600 MXN), no por persona.",
       "url": "https://www.huasteca-potosina.com/tours/rzr-xilitla",
       "destinos": [
         "Base en Xilitla (punto de encuentro)",
@@ -49,7 +51,9 @@
         "Alimentos"
       ],
       "puntoEncuentro": "Base en Xilitla",
-      "horario": "Inicia por la mañana (aprox. 8:30–9:00 AM); la hora de término depende de la ruta: Nanacatli ~2 h, Miradores ~3 h, Nacimiento y Trinidad ~5 h.",
+      "salida": "Nos vemos en nuestra base en Xilitla entre 8:00 y 9:00 AM. El transporte hasta Xilitla no está incluido.",
+      "recogidaTipo": "base-xilitla",
+      "horario": "Inicia entre 8:00 y 9:00 AM; la hora de término depende de la ruta: Nanacatli ~2 h, Miradores ~3 h, Nacimiento ~5 h, Trinidad ~5 h.",
       "transporte": {
         "incluido": false,
         "detalle": "NO incluye transporte. El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá."
@@ -255,8 +259,10 @@
         "Transporte hasta el embarcadero del Río Tampaón (se coordina aparte, con costo adicional)",
         "Alimentos"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 1:00 PM (~5 h). Los horarios exactos se confirman al reservar.",
+      "puntoEncuentro": "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour.",
+      "salida": "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour. La hora de encuentro se confirma al reservar.",
+      "recogidaTipo": "hospedaje",
+      "horario": "Dura ~5 h. La hora de encuentro se confirma al reservar.",
       "transporte": {
         "incluido": false,
         "detalle": "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour."
@@ -276,7 +282,7 @@
         "adrenalina",
         "amigos"
       ],
-      "urgencia": "Cupo muy limitado — máximo 8 personas por día",
+      "urgencia": "Cupo muy limitado por salida — se aparta con anticipación",
       "rutas": null,
       "flota": null
     },
@@ -325,7 +331,9 @@
         "Bebidas alcohólicas",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 3:00 PM (~7 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -389,7 +397,9 @@
         "Comida de mediodía",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 12 y 13 horas; regresa aprox. 8:00–9:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -453,7 +463,9 @@
         "Comida de mediodía",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 8 y 10 horas; regresa aprox. 4:00–6:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -498,7 +510,7 @@
         3970,
         4160
       ],
-      "cancelacion": "Esta experiencia no tiene reembolso: para apartar la fecha se paga el 100 % y ese día queda cerrado para todos los demás. Lo que sí puedes hacer es cambiarla avisando con 5 días o más de anticipación, conservando el monto completo durante los 6 meses siguientes. Si el clima obliga a suspender, se reprograma sin costo.",
+      "cancelacion": "Esta experiencia no tiene reembolso: una vez apartada, ese día queda cerrado para todos los demás. Lo que sí puedes hacer es cambiarla avisando con 5 días o más de anticipación, conservando el monto completo durante los 6 meses siguientes. Si el clima obliga a suspender, se reprograma sin costo.",
       "groupMin": 1,
       "groupMax": 7,
       "soloAdultos": false,
@@ -529,10 +541,12 @@
         "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla a tiempo para su horario fijo (8:00 AM lun, mié, jue y vie · 7:00 AM sáb y dom · 5:00 PM de mié a lun). Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
+      "recogidaTipo": "hospedaje-xilitla",
       "horario": "Horarios FIJOS que pone el jardín: 8:00 AM lunes, miércoles, jueves y viernes; 7:00 AM sábado y domingo; y 5:00 PM de miércoles a lunes. Dura ~3 h. La hora exacta se confirma al apartar la fecha.",
       "transporte": {
         "incluido": true,
-        "detalle": "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Empieza entre 7 y 8 AM: desde Ciudad Valles no se ofrece y se cotiza aparte. Nunca prometas recogida en Ciudad Valles para esta experiencia."
+        "detalle": "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Desde Ciudad Valles NO va incluido: se cotiza aparte. Nunca prometas recogida incluida en Ciudad Valles para esta experiencia."
       },
       "alimentos": {
         "desayuno": false,
@@ -545,7 +559,7 @@
         "Fotografías y video del recorrido que toma tu guía"
       ],
       "idealPara": [],
-      "urgencia": "Una sola experiencia al día — la fecha se aparta pagando completo",
+      "urgencia": "Una sola experiencia al día — resérvala con anticipación",
       "rutas": null,
       "flota": null
     },
@@ -586,7 +600,9 @@
         "Comida de mediodía",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 8:00 PM (~12 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -648,7 +664,9 @@
         "Comida de mediodía",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 11 y 12 horas; regresa aprox. 7:00–8:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -711,7 +729,9 @@
         "Comida de mediodía",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 11 y 12 horas; regresa aprox. 7:00–8:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -733,7 +753,7 @@
         "nadar",
         "cascadas"
       ],
-      "urgencia": "El más completo — últimos lugares disponibles",
+      "urgencia": "El más completo — se aparta con anticipación",
       "rutas": null,
       "flota": null
     },
@@ -777,7 +797,9 @@
         "Traje de baño y toalla"
       ],
       "puntoEncuentro": "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 12:00 PM (~4 h). Los horarios exactos se confirman al reservar.",
+      "salida": "Nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde; llegas por tu cuenta.",
+      "recogidaTipo": "en-sitio",
+      "horario": "Dura ~4 h. La hora de encuentro se confirma al reservar.",
       "transporte": {
         "incluido": false,
         "detalle": "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta."
@@ -835,6 +857,8 @@
       ],
       "noIncluye": [],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
+      "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 2 horas y media y 3 horas; regresa aprox. 10:30–11:00 AM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -879,7 +903,7 @@
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
       "tagline": "Novecientos metros bajo la sierra, de noche",
-      "pitch": "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. $900 por persona.",
+      "pitch": "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/gruta-de-xilo",
       "destinos": [
         "Selva de Xilitla (caminata de acceso)",
@@ -887,7 +911,7 @@
         "Jacuzzis naturales de la gruta"
       ],
       "incluye": [
-        "Recogida en RZR desde tu hospedaje en Xilitla",
+        "Traslado redondo en RZR desde tu hospedaje en Xilitla",
         "Taquillas y acceso a la gruta",
         "Casco y lámpara frontal para cada persona",
         "Guía acreditado NOM-09 SECTUR",
@@ -899,7 +923,9 @@
         "Ropa de cambio y calzado que se pueda mojar",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta. Al recogerlo le entregamos el casco y la lámpara frontal: desde el inicio, no al llegar.",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, a las 7:00 PM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
+      "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale a las 7:00 PM y termina aprox. 10:00 PM (~3 h). Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -944,7 +970,7 @@
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
       "tagline": "Llegar a la cima antes que el sol",
-      "pitch": "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando el sol sale por encima de un mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. $1,700 por persona.",
+      "pitch": "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando sale el sol, muchas veces por encima del mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. $1,700 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/amanecer-de-nubes",
       "destinos": [
         "Bosque de niebla de La Trinidad",
@@ -965,6 +991,8 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 3:00 y 4:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
+      "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale entre 3:00 y 4:00 AM y dura entre 7 y 8 horas; regresa aprox. 10:00–11:00 AM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -1009,7 +1037,7 @@
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
       "tagline": "Un abismo donde la luz entra como cascada",
-      "pitch": "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. $1,800 por persona.",
+      "pitch": "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. $1,800 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/olla-de-la-luz",
       "destinos": [
         "La Trinidad — Bosque de Niebla de Xilitla",
@@ -1029,6 +1057,8 @@
         "Propinas y gastos personales"
       ],
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 7:00 y 8:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
+      "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale entre 7:00 y 8:00 AM y dura entre 8 y 9 horas; regresa aprox. 3:00–4:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
@@ -1093,14 +1123,14 @@
           "tipo": "tour",
           "titulo": "Llegada + Ruta Surrealista",
           "tourSlug": "ruta-surrealista-edward-james",
-          "descripcion": "Si llegas en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. El jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud: ocho horas de caminar poco y mirar mucho, y todo del lado de Xilitla."
+          "descripcion": "Si llegas en el autobús de la mañana, entregamos la habitación temprano y salimos el mismo día. El jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud: de 8 a 10 horas de caminar poco y mirar mucho, y todo del lado de Xilitla."
         },
         {
           "dia": 2,
           "tipo": "tour",
           "titulo": "Expedición Tamul",
           "tourSlug": "expedicion-tamul",
-          "descripcion": "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua y, al atardecer, el Sótano de las Huahuas. Son 9 horas y se sale temprano."
+          "descripcion": "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua y, al atardecer, el Sótano de las Huahuas. Son de 12 a 13 horas y se sale temprano."
         },
         {
           "dia": 3,
@@ -1113,8 +1143,8 @@
       "incluye": [
         "2 noches en Hotel Paraíso Encantado Xilitla, habitación King con vista a la selva",
         "Desayuno los días de tour",
-        "Tour Expedición Tamul completo (9 horas)",
-        "Tour Ruta Surrealista completo (8 horas)",
+        "Tour Expedición Tamul completo (12 a 13 horas)",
+        "Tour Ruta Surrealista completo (8 a 10 horas)",
         "Transporte del hotel al inicio de cada tour y de regreso",
         "Guías certificados NOM-09 SECTUR",
         "Entradas a todas las atracciones",
@@ -1187,7 +1217,7 @@
           "tipo": "tour",
           "titulo": "Expedición Tamul",
           "tourSlug": "expedicion-tamul",
-          "descripcion": "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse. Nueve horas que terminan con el mejor rato del día."
+          "descripcion": "El día grande: canoa remontando el cañón hasta quedar frente a la caída de 105 metros, la Cueva del Agua al regreso y el Sótano de las Huahuas al atardecer, cuando los pericos vuelven a meterse. Son de 12 a 13 horas y terminan con el mejor rato del día."
         },
         {
           "dia": 3,
@@ -1592,7 +1622,7 @@
   "faqsPaquetes": [
     {
       "q": "¿El precio es por persona o por pareja?",
-      "a": "Casi todos se anuncian por persona: la cifra que ves en la tarjeta es lo que paga un viajero, con dos personas compartiendo habitación. La excepción es el paquete de Luna de Miel, que es un viaje de dos y por eso se vende por pareja. Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
+      "a": "Por pareja: la cifra de cada paquete es el total para dos personas que comparten habitación. Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
     },
     {
       "q": "¿Cómo llego a Xilitla?",
@@ -1604,11 +1634,11 @@
     },
     {
       "q": "¿Puedo elegir mi habitación?",
-      "a": "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la suite Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche. En el paquete Luna de Miel la Jungla ya va incluida, sin suplemento."
+      "a": "Sí. El hotel Paraíso Encantado tiene varias habitaciones (Orquídeas, Bromelias, Lirios y Jungla). Las de vista a la selva están incluidas en el precio; la suite Jungla, con vista a la montaña, tiene un suplemento de $400 MXN por noche."
     },
     {
       "q": "¿El precio incluye el traslado hasta Xilitla?",
-      "a": "No viene incluido, pero sí lo hacemos aparte: tenemos traslado privado desde San Luis Potosí (desde $6,000 redondo por vehículo), Tampico (desde $5,000 redondo por vehículo), CDMX (desde $14,000 redondo por vehículo). El precio del paquete sí cubre el traslado del hotel al punto de inicio de cada tour y de regreso. Si prefieres llegar por tu cuenta, en la sección 'Cómo llegar' están las opciones de auto, avión y autobús."
+      "a": "No viene incluido, pero sí lo hacemos aparte: tenemos traslado privado desde San Luis Potosí (desde $6,000 MXN redondo por vehículo), Tampico (desde $5,000 MXN redondo por vehículo), CDMX (desde $14,000 MXN redondo por vehículo). El precio del paquete sí cubre el traslado del hotel al punto de inicio de cada tour y de regreso. Si prefieres llegar por tu cuenta, en la sección 'Cómo llegar' están las opciones de auto, avión y autobús."
     },
     {
       "q": "¿Cómo confirman la disponibilidad?",
@@ -1656,7 +1686,7 @@
       "zona": "Aquismón",
       "tipo": "Aventura",
       "descripcion": "La cascada más alta de SLP (105m), accesible remando por el río Tampaón. Espectacular caída turquesa.",
-      "precioEntrada": "$220 MXN + $300 panga p/p",
+      "precioEntrada": "$220 MXN + $300 MXN panga p/p",
       "dificultad": "alta",
       "duracionHrs": 5,
       "horario": "08:00–17:00",
@@ -1783,7 +1813,7 @@
       "zona": "Tamuín",
       "tipo": "Arqueología",
       "descripcion": "El asentamiento prehispánico más importante de la cultura Huasteca.",
-      "precioEntrada": "Domingos gratis (mexicanos) · extranjeros ~$95",
+      "precioEntrada": "Domingos gratis (mexicanos) · extranjeros ~$95 MXN",
       "dificultad": "baja",
       "duracionHrs": 3,
       "horario": "09:00–18:00",
@@ -2457,7 +2487,7 @@
       "zona": "Axtla de Terrazas",
       "tipo": "Bienestar",
       "descripcion": "Recinto surrealista de medicina tradicional construido en 1974 por el herbolario náhuatl Don Beto Ramón, con un jardín de cientos de plantas medicinales y espacios para limpias y consultas.",
-      "precioEntrada": "$20 general / $10 niños y adultos mayores (guiada $30/$20)",
+      "precioEntrada": "$20 MXN general / $10 MXN niños y adultos mayores (guiada $30/$20 MXN)",
       "dificultad": "baja",
       "duracionHrs": 2,
       "horario": "08:00–18:00 (limpias y masajes hasta las 16:00)",
@@ -2562,7 +2592,7 @@
       "zona": "Tamuín",
       "tipo": "Arqueología",
       "descripcion": "Centro huasteco prehispánico de ~210 hectáreas a orillas del río Tampaón, con plataformas y basamentos. Aquí se halló en 1917 'El Adolescente Huasteco'.",
-      "precioEntrada": "Acceso libre (uso de videocámara $45)",
+      "precioEntrada": "Acceso libre (uso de videocámara $45 MXN)",
       "dificultad": "baja",
       "duracionHrs": 2,
       "horario": "09:00–18:00 (último acceso 17:00)",
@@ -2905,8 +2935,8 @@
       "nombre": "La Trinidad — Bosque de Niebla de Xilitla",
       "zona": "Xilitla",
       "tipo": "Naturaleza & Bosque",
-      "descripcion": "Comunidad náhuatl a unos 14 km de Xilitla, enclavada en uno de los bosques de niebla mejor conservados de la Huasteca (pino-encino, ~1,950 m). Tiene cabañas de madera para parejas y grupos, zona para acampar, fogatas y asadores, además de senderos para caminar a miradores, pozas, cuevas y sótanos.",
-      "precioEntrada": "$100 MXN por persona (entrada); cabañas para parejas y grupos desde $700 hasta $2,500 aparte",
+      "descripcion": "Comunidad náhuatl a unos 14 km de Xilitla, enclavada en uno de los bosques de niebla mejor conservados de la Huasteca (pino-encino, ~1,950 m). Tiene cabañas de madera para parejas y grupos, zona para acampar, fogatas y asadores, además de senderos para caminar a miradores, pozas, cuevas y sótanos. Por este bosque sube también el sendero a la cima del Cerro del Pilón, donde al amanecer suele haber mar de nubes.",
+      "precioEntrada": "$100 MXN por persona (entrada); cabañas para parejas y grupos desde $700 hasta $2,500 MXN aparte",
       "dificultad": "media",
       "duracionHrs": 6,
       "horario": "Visita y recorridos durante el día (reservar con la comunidad)",
@@ -2944,7 +2974,7 @@
       "nombre": "Olla de la Luz — Cerro de la Luz",
       "zona": "Xilitla",
       "tipo": "Naturaleza & Sótano",
-      "descripcion": "Enorme sótano de 233 m de diámetro con un tiro vertical de 193 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
+      "descripcion": "La Olla de la Luz, también conocida como Hoya de la Luz, es un enorme sótano de 233 m de diámetro con un tiro vertical de 193 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
       "precioEntrada": "Recorrido guiado desde La Trinidad (~$150–$250 MXN por grupo)",
       "dificultad": "media",
       "duracionHrs": 5,
@@ -3019,7 +3049,7 @@
       "zona": "Xilitla",
       "tipo": "Arte & Cultura",
       "descripcion": "Museo dedicado a la artista surrealista Leonora Carrington, amiga de Edward James, en pleno centro de Xilitla. Exhibe escultura, litografía y dibujo de la autora, además de un espacio de difusión del surrealismo.",
-      "precioEntrada": "General $50 MXN · estudiantes, maestros y adultos mayores con credencial $25 · menores de 12 años gratis",
+      "precioEntrada": "General $50 MXN · estudiantes, maestros y adultos mayores con credencial $25 MXN · menores de 12 años gratis",
       "dificultad": "baja",
       "duracionHrs": 1,
       "horario": "Martes a domingo, 11:00–17:00 (último acceso 16:30)",
@@ -3234,6 +3264,18 @@
       {
         "nombre": "Gruta de Xilo",
         "slug": "gruta-de-xilo"
+      },
+      {
+        "nombre": "Amanecer de Nubes",
+        "slug": "amanecer-de-nubes"
+      },
+      {
+        "nombre": "Olla de la Luz",
+        "slug": "olla-de-la-luz"
+      },
+      {
+        "nombre": "Travesía del Café",
+        "slug": "travesia-del-cafe"
       }
     ],
     "cascada-los-comales": [
@@ -3264,6 +3306,10 @@
       {
         "nombre": "Ruta Surrealista",
         "slug": "ruta-surrealista-edward-james"
+      },
+      {
+        "nombre": "Gruta de Xilo",
+        "slug": "gruta-de-xilo"
       }
     ],
     "museo-leonora-carrington-xilitla": [
@@ -3415,7 +3461,7 @@
     ],
     "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
     "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet; la comida de mediodía NUNCA está incluida en ningún tour. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen SOLO los desayunos del hotel: comidas y cenas van por cuenta del cliente.",
-    "transporte": "El traslado redondo desde el hospedaje (Xilitla o Ciudad Valles) SÍ está incluido en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática. NO está incluido en: RZR (sale de la base en Xilitla), rappel en Tamul (punto de encuentro en el embarcadero; se coordina aparte con costo adicional) ni buceo en Media Luna (el cliente llega a Rioverde). Nunca digas 'todos los tours incluyen transporte'.",
+    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.); Rappel en la Cascada de Tamul (El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour.); Buceo en la Media Luna (La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta.). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "hotelServicios": {
       "nombre": "Hotel Paraíso Encantado",
@@ -3434,7 +3480,7 @@
       "fumar": "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera."
     },
     "mejorTemporada": "La temporada seca (noviembre a abril) suele tener el agua más turquesa y los caminos en mejores condiciones. En lluvias (jul–sep) algunos ríos crecen y ciertas salidas (rafting) dependen del nivel del agua.",
-    "salida": "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (8:00–9:00 AM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Buceo en la Media Luna: nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde; llegas por tu cuenta. Rappel en la Cascada de Tamul: NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour. La hora de encuentro se confirma al reservar.",
     "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "pagoTours": "Los tours cobrados por persona se pagan con tarjeta en línea (confirmación instantánea) o por transferencia (cotización con folio). El RZR (por vehículo) y los paquetes se confirman por WhatsApp con el equipo.",

@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto } from "@/lib/tours";
+import {
+  TOURS_DB, tourDurTexto, etiquetaUnidad, esPorPersona, recogidaDeTour, partesRecogida,
+  salidaCorta, rankTour,
+} from "@/lib/tours";
+import { excepcionesSalida, horaEnLista } from "@/lib/recogidaTexto";
+import { destinosDeTour } from "@/lib/tourMapping";
 import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { waLink } from "@/lib/whatsapp";
@@ -35,8 +40,10 @@ const URL = `${SITE}/tours-en-xilitla`;
 
 export const metadata: Metadata = {
   title: "Tours y Paquetes en Xilitla, San Luis Potosí 2026",
+  // Decía «Todo incluido, salidas diarias» de todo lo que sale de aquí, y el
+  // RZR no incluye el transporte. Ahora nombra lo que de verdad sale del pueblo.
   description:
-    "Somos de Xilitla: tours guiados y paquetes con hotel en el Pueblo Mágico. Las Pozas, La Trinidad y la Huasteca a la puerta. Todo incluido, salidas diarias.",
+    "Somos de Xilitla: tours a Las Pozas, la Gruta de Xilo de noche, el Cerro del Pilón y la Olla de la Luz, y paquetes con hotel propio en el Pueblo Mágico.",
   keywords: [
     "paquetes a xilitla",
     "xilitla paquetes",
@@ -83,11 +90,10 @@ const DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
  * Cómo se ANUNCIAN los precios, leído de `precioPorPersona` —el mismo campo
  * que decide `precioVisible()`— en vez de afirmarlo a mano.
  *
- * 🔴 Esta página decía «el precio está calculado para dos personas»: desde el
- * 12 sep 2026 cuatro de los cinco paquetes se anuncian por persona y solo la
- * Luna de Miel sigue siendo por pareja, así que ni «todos por pareja» ni
- * «todos por persona» son ciertos. Armada desde el catálogo, la frase se
- * corrige sola el día que cambie un paquete.
+ * 🔴 Esta página lo afirmaba a mano («el precio está calculado para dos
+ * personas») y el régimen ya cambió dos veces: del 12 al 24 sep 2026 casi
+ * todos los paquetes se anunciaban por persona; hoy los cuatro van por pareja.
+ * Armada desde el catálogo, la frase se corrige sola cuando cambie un paquete.
  */
 const PAQ_POR_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
 const listaEs = (xs: string[]) =>
@@ -101,6 +107,25 @@ const NOTA_PRECIOS =
           PAQ_POR_PAREJA.map((p) => p.nombre),
         )}, que se vende${PAQ_POR_PAREJA.length > 1 ? "n" : ""} por pareja.`;
 
+/**
+ * Los recorridos que salen del propio Xilitla, sacados del catálogo: los que
+ * recogen solo aquí o parten de nuestra base, más los de recogida general que
+ * visitan Las Pozas (la Ruta Surrealista). En el orden de venta de /tours.
+ *
+ * 🔴 La página solo enlazaba el RZR y su FAQ decía que todos pasan «entre las
+ * 8:00 y las 9:00 de la mañana»: la Gruta de Xilo sale a las 7 de la NOCHE y
+ * el Amanecer de Nubes de madrugada.
+ */
+const TOURS_XI = TOURS_DB
+  .filter((t) => {
+    const tipo = recogidaDeTour(t).tipo;
+    if (tipo === "hospedaje-xilitla" || tipo === "base-xilitla") return true;
+    return tipo === "hospedaje" && destinosDeTour(t.slug).incluye.includes("las-pozas-jardin-surrealista");
+  })
+  .sort((a, b) => rankTour(a.slug) - rankTour(b.slug));
+/** Los que solo recogen en Xilitla, para decir qué pasa si vienes de Valles. */
+const SOLO_XI = TOURS_XI.filter((t) => partesRecogida(t, false).valles);
+
 const FAQS_XI: { q: string; a: string }[] = [
   {
     q: "¿Qué incluye un paquete a Xilitla?",
@@ -112,7 +137,9 @@ const FAQS_XI: { q: string; a: string }[] = [
   },
   {
     q: "¿Los tours salen desde Xilitla?",
-    a: "Sí. Pasamos por ti a tu hospedaje en Xilitla entre las 8:00 y las 9:00 de la mañana, y también damos servicio en Ciudad Valles. El Recorrido en RZR tiene su base aquí en Xilitla.",
+    // La frase la arma `excepcionesSalida` desde la `recogida` de cada
+    // recorrido; sin el buceo, que es en Rioverde y no toca Xilitla.
+    a: `Sí. ${excepcionesSalida("es", TOURS_DB.filter((t) => recogidaDeTour(t).tipo !== "en-sitio"))}`,
   },
   {
     q: "¿Tienen hotel propio en Xilitla?",
@@ -133,7 +160,6 @@ export default function ToursEnXilitlaPage() {
   const destinosXi = DESTINOS_DB.filter((d) => d.zona === "Xilitla");
   // Los paquetes salen todos de aquí: el hotel está en Xilitla.
   const paquetes = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias);
-  const rzr = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
 
   const schema = {
     "@context": "https://schema.org",
@@ -148,6 +174,17 @@ export default function ToursEnXilitlaPage() {
           position: i + 1,
           name: p.nombre,
           url: `${SITE}/paquetes/${p.slug}`,
+        })),
+      },
+      {
+        "@type": "ItemList",
+        name: "Recorridos que salen de Xilitla",
+        numberOfItems: TOURS_XI.length,
+        itemListElement: TOURS_XI.map((t, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: t.nombreCorto,
+          url: `${SITE}/tours/${t.slug}`,
         })),
       },
       {
@@ -219,8 +256,8 @@ export default function ToursEnXilitlaPage() {
                 <p className="font-dm text-sm">
                   {/* 🔴 `precioVisible()`, nunca `p.precio`: ese campo es el total de la
                       pareja que cobra el motor, y pintarlo junto a «por persona» anunciaría
-                      el doble. La etiqueta sale del mismo paquete, así que la Luna de Miel
-                      sigue diciendo «por pareja» sin trato especial. */}
+                      el doble. La etiqueta sale del mismo paquete, así que cada tarjeta dice
+                      «por persona» o «por pareja» según su propio régimen. */}
                   <span className="font-cormorant text-dorado text-2xl">{money(precioVisible(p))}</span>
                   <span className="text-crema/40 text-xs"> MXN {p.precioLabel} · todo incluido</span>
                 </p>
@@ -237,6 +274,65 @@ export default function ToursEnXilitlaPage() {
             </Link>
             .
           </p>
+        </div>
+      </section>
+
+      {/* ── RECORRIDOS QUE SALEN DE XILITLA ──
+          Antes la página solo nombraba el RZR, en una línea al pie de los
+          destinos. Todo sale del catálogo: nombre, precio con su unidad (el
+          RZR es por vehículo y el Edén por grupo) y hora de salida. */}
+      <section className="px-6 pb-20">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-cormorant font-light text-crema text-3xl mb-3">
+            Recorridos que salen de Xilitla
+          </h2>
+          <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-8">
+            {TOURS_XI.length} recorridos salen del propio pueblo: {listaEs(TOURS_XI.map((t) => t.nombreCorto))}.
+            Cada tarjeta dice a qué hora sale y dónde empieza.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TOURS_XI.map((t) => {
+              // 🔴 El `horaTexto` del Edén son las horas en que ABRE el jardín para
+              // el grupo, no la de recogida (pasamos antes), y ya viene separado
+              // con «·»: pegado al lugar se leía «pasan por mí a las 7:00 AM».
+              // Mismo criterio que la FAQ y /info-practica: «horario según el día».
+              const salida = recogidaDeTour(t).horaTexto ? horaEnLista(t, false) : salidaCorta(t);
+              // «Desde» cuando el precio sube con la ruta (RZR) o con el grupo (Edén).
+              const desde = !esPorPersona(t) || (t.rutas?.length ?? 0) > 1;
+              return (
+                <Link
+                  key={t.slug}
+                  href={`/tours/${t.slug}`}
+                  className="border border-white/10 p-5 hover:border-dorado/50 transition-colors group flex flex-col"
+                >
+                  <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
+                    {t.tipo} · {tourDurTexto(t, " h")}
+                  </p>
+                  <h3 className="font-cormorant text-crema text-xl leading-snug mb-1 group-hover:text-dorado transition-colors">
+                    {t.nombreCorto}
+                  </h3>
+                  <p className="font-dm text-xs text-crema/50 leading-relaxed mb-3 flex-1">{t.tagline}</p>
+                  {salida && (
+                    <p className="font-dm text-[11px] text-crema/60 leading-snug mb-2">
+                      Salida: {salida}, desde {partesRecogida(t, false).lugar}
+                    </p>
+                  )}
+                  <p className="font-dm text-sm">
+                    {desde && <span className="text-crema/40 text-xs">Desde </span>}
+                    <span className="font-cormorant text-dorado text-2xl">{money(t.precio)}</span>
+                    <span className="text-crema/40 text-xs"> MXN {etiquetaUnidad(t)}</span>
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+          {SOLO_XI.length > 0 && (
+            <p className="text-crema/45 font-dm text-xs mt-4">
+              En {listaEs(SOLO_XI.map((t) => t.nombreCorto))}, el traslado incluido es desde hospedajes de
+              Xilitla.{" "}
+              {partesRecogida(SOLO_XI[0], false).valles}
+            </p>
+          )}
         </div>
       </section>
 
@@ -264,19 +360,6 @@ export default function ToursEnXilitlaPage() {
               </Link>
             ))}
           </div>
-          {rzr && (
-            <p className="text-crema/45 font-dm text-xs mt-4">
-              El{" "}
-              <Link
-                href={`/tours/${rzr.slug}`}
-                className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2"
-              >
-                Recorrido en RZR
-              </Link>{" "}
-              tiene su base aquí en Xilitla: {tourDurTexto(rzr, " h")} manejando tu propio todoterreno por la selva,
-              y se cobra por vehículo, no por persona.
-            </p>
-          )}
         </div>
       </section>
 

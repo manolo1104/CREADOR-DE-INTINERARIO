@@ -11,6 +11,7 @@
  */
 
 import { TOURS_DB } from "./tours";
+import { lineasCancelacion, lineasRecogida } from "./recogidaCorreo";
 import {
   C, bajoBoton, boton, filaDato, filaMoney, fotoTour, garantias, nota, parrafo,
   shellCorreo, tabla,
@@ -58,8 +59,21 @@ const TEXTOS = {
         subject: (t: string) => `Aparta tu ${t} con el 30 %`,
         h1a: "No hace falta que",
         h1b: "pagues todo hoy",
-        cuerpo:  "Puedes apartar tu lugar con el 30 % y liquidar el resto el día del recorrido, en efectivo o con tarjeta. Cancelación gratuita hasta 48 horas antes, con reembolso completo. Operamos con lluvia ligera; si el río no está en condiciones seguras, eliges entre reembolso del 100 % o cambiar la fecha.",
+        // Sin la cancelación en el cuerpo: la de cada recorrido va abajo
+        // (`lineasCancelacion`), y el Edén no tiene reembolso.
+        cuerpo:  "Como tu viaje es de dos días o más, puedes apartar tu lugar con el 30 % y liquidar el resto el día del recorrido, en efectivo o con tarjeta.",
         cta:     "Apartar con el 30 %",
+        pie:     "Los fines de semana y los puentes se llenan primero. Si tienes una fecha en mente, mejor asegurarla.",
+      },
+      // El paso 3 cuando la cotización es de UN solo recorrido: un día se paga
+      // completo (regla de Manolo, `pctACobrar`), así que no se puede vender
+      // con "el 30 %". Se ofrece el 30 % sumando otro recorrido.
+      "3u": {
+        subject: (t: string) => `¿Apartamos tu ${t}?`,
+        h1a: "Tu fecha,",
+        h1b: "sin apartar todavía",
+        cuerpo:  "Un recorrido de un día se paga completo al reservar, y la fecha no queda apartada hasta entonces. Si le sumas otro recorrido, apartas todo con el 30 % y liquidas el resto el día del tour.",
+        cta:     "Apartar mi fecha",
         pie:     "Los fines de semana y los puentes se llenan primero. Si tienes una fecha en mente, mejor asegurarla.",
       },
       4: {
@@ -73,11 +87,13 @@ const TEXTOS = {
     },
     apartas:  "Apartas hoy con el 30 %",
     verCarrito: "Se abre con todo lo que cotizaste, listo para pagar.",
-    garantias: [
-      "✓ Cancelación gratuita hasta 48 h antes",
-      "✓ Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles",
-      "✓ Guías certificados NOM-09 SECTUR · grupos pequeños",
-    ],
+    garantiaCancelacion: "✓ Cancelación gratuita hasta 48 h antes",
+    // Solo cuando TODOS los cotizados recogen en las dos ciudades; si no, va la
+    // frase de cada recorrido (ver `lineasRecogida`).
+    garantiaRecogida: "✓ Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles",
+    garantiaRecogidaSinTours: "✓ La hora y el punto de salida de cada recorrido, por escrito al reservar",
+    dondeYHora: "Dónde y a qué hora",
+    garantiaGuias: "✓ Guías certificados NOM-09 SECTUR · grupos pequeños",
     firma: "Tours Huasteca Potosina · Xilitla, S.L.P.",
     origen: "Recibes esto porque pediste una cotización.",
     waTexto: (t: string) => `Hola, tengo una cotización de "${t}" y una pregunta antes de reservar.`,
@@ -103,8 +119,16 @@ const TEXTOS = {
         subject: (t: string) => `Hold your ${t} with 30 %`,
         h1a: "You don't have to",
         h1b: "pay it all today",
-        cuerpo:  "You can hold your spot with 30 % and settle the rest on the day of the tour, in cash or by card. Free cancellation up to 48 hours before, fully refunded. We run in light rain; if the river isn't safe, you choose between a full refund or a new date.",
+        cuerpo:  "Since your trip runs two days or more, you can hold your spot with 30 % and settle the rest on the day of the tour, in cash or by card.",
         cta:     "Hold my spot with 30 %",
+        pie:     "Weekends and long weekends fill up first. If you have a date in mind, it's worth locking it in.",
+      },
+      "3u": {
+        subject: (t: string) => `Shall we hold your ${t}?`,
+        h1a: "Your date,",
+        h1b: "not held yet",
+        cuerpo:  "A single one-day tour is paid in full at booking, and the date isn't held until then. Add another tour and you hold everything with 30 %, settling the rest on the day.",
+        cta:     "Hold my date",
         pie:     "Weekends and long weekends fill up first. If you have a date in mind, it's worth locking it in.",
       },
       4: {
@@ -118,11 +142,11 @@ const TEXTOS = {
     },
     apartas:  "You pay 30 % today",
     verCarrito: "It opens with everything you quoted, ready to pay.",
-    garantias: [
-      "✓ Free cancellation up to 48 h before",
-      "✓ We pick you up at your lodging in Xilitla or Ciudad Valles",
-      "✓ NOM-09 SECTUR certified guides · small groups",
-    ],
+    garantiaCancelacion: "✓ Free cancellation up to 48 h before",
+    garantiaRecogida: "✓ We pick you up at your lodging in Xilitla or Ciudad Valles",
+    garantiaRecogidaSinTours: "✓ Each tour's pickup time and place, in writing when you book",
+    dondeYHora: "Where and when",
+    garantiaGuias: "✓ NOM-09 SECTUR certified guides · small groups",
     firma: "Tours Huasteca Potosina · Xilitla, S.L.P.",
     origen: "You are getting this because you asked us for a quote.",
     waTexto: (t: string) => `Hi, I have a quote for "${t}" and a question before booking.`,
@@ -166,9 +190,16 @@ function fechaLarga(ymd: string, locale: Locale): string {
 
 export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; html: string } {
   const T = TEXTOS[d.locale === "en" ? "en" : "es"];
-  const P = T.pasos[d.paso];
+  const slugs = slugsDe(d.lineItems);
+  // Un solo recorrido se paga completo; desde dos (dos días: el carrito no deja
+  // dos el mismo día), el 30 %. Es la regla del carrito (`pctACobrar`): ni el
+  // paso 3 del "30 %" ni la fila del anticipo aplican a uno solo.
+  const variosDias = slugs.length >= 2;
+  const P = d.paso === 3 && !variosDias ? T.pasos["3u"] : T.pasos[d.paso];
   const nombreCorto = d.tourName.split("—")[0].trim();
   const anticipo = Math.round(d.totalAmount * 0.3);
+  const recogida = lineasRecogida(slugs, d.locale, { generica: T.garantiaRecogida, sinTours: T.garantiaRecogidaSinTours });
+  const cancelacion = lineasCancelacion(slugs, d.locale, T.garantiaCancelacion);
 
   // El paso 4 manda a una persona; los otros dos, a cerrar.
   const { href, esWa } = d.paso === 4
@@ -177,7 +208,6 @@ export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; 
 
   const colorBoton = esWa ? "#25D366" : "#3a6b1a";
 
-  const slugs = slugsDe(d.lineItems);
   const primero = slugs.length ? TOURS_DB.find((t) => t.slug === slugs[0]) : undefined;
 
   const html = shellCorreo({
@@ -199,12 +229,18 @@ export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; 
         filaDato(T.para, nombreCorto, true),
         filaDato(T.cuando, fechaLarga(d.tourDate, d.locale) || T.porDefinir),
         filaMoney(T.total, T.moneda(d.totalAmount), undefined, true),
-        filaMoney(T.apartas, T.moneda(anticipo), "verde"),
+        variosDias ? filaMoney(T.apartas, T.moneda(anticipo), "verde") : "",
       ].join("")),
       boton(href, P.cta, esWa ? "whatsapp" : "verde"),
       esWa ? "" : bajoBoton(T.verCarrito),
       nota(P.pie, C.texto, "28px 0 0 0"),
-      garantias([...T.garantias]),
+      // Lo que no es garantía genérica (la recogida de cada recorrido, una
+      // política de cancelación propia) va en su bloque, sin palomita.
+      recogida.detalle.length
+        ? nota(`<strong style="color:${C.oscuro};">${T.dondeYHora}</strong><br>${recogida.detalle.join("<br>")}`, C.texto, "20px 0 0 0")
+        : "",
+      cancelacion.detalle.length ? nota(cancelacion.detalle.join("<br>"), C.texto, "14px 0 0 0") : "",
+      garantias([...cancelacion.garantia, ...recogida.garantia, T.garantiaGuias]),
     ].join(""),
     origen: T.origen,
     paraBaja: d.email ?? undefined,

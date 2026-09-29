@@ -1,7 +1,7 @@
 "use client";
-import { GRUPO_MAX } from "@/lib/tours";
+import { GRUPO_MAX, TOURS_DB, partesRecogida, recogidaDeTour } from "@/lib/tours";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
@@ -31,6 +31,50 @@ const PRUEBAS_EN: { texto: string; fuente: string }[] = [
   { texto: `Small groups of max. ${GRUPO_MAX} people`, fuente: "Personalized attention" },
 ];
 
+/** Las pruebas de arriba que dependen del recorrido: se buscan por su texto. */
+const TODO_INCLUIDO = new Set([PRUEBAS_ES[5].texto, PRUEBAS_EN[5].texto]);
+const CANCELACION_48 = new Set([PRUEBAS_ES[4].texto, PRUEBAS_EN[4].texto]);
+const TODOS_LOS_DIAS = new Set([PRUEBAS_ES[6].texto, PRUEBAS_EN[6].texto]);
+
+/**
+ * El mazo para ESTE recorrido.
+ *
+ * 🔴 "Transporte, desayuno, entradas y guía: todo incluido" salía en las catorce
+ * fichas, y solo cinco llevan desayuno: en la Gruta, el RZR o el buceo era una
+ * promesa falsa justo encima del botón de pagar. Ahora la línea se arma con lo
+ * que el recorrido trae de verdad (el traslado, de `partesRecogida`; lo demás,
+ * de su `incluye`), y si queda en menos de dos cosas no se enseña.
+ * Por lo mismo se retiran la cancelación de 48 h donde el tour tiene política
+ * propia (el Edén no reembolsa) y "salidas todos los días" donde el horario
+ * cambia según el día.
+ */
+function pruebasDe(tourId: string, en: boolean): { texto: string; fuente: string }[] {
+  const base = en ? PRUEBAS_EN : PRUEBAS_ES;
+  const tour = TOURS_DB.find((t) => t.id === tourId);
+  if (!tour) return base;
+  const inc = tour.incluye.join(" | ").toLowerCase();
+  const piezas = [
+    partesRecogida(tour, en).incluyeTraslado ? (en ? "Transport" : "Transporte") : null,
+    /desayuno/.test(inc) ? (en ? "breakfast" : "desayuno") : /comida/.test(inc) ? (en ? "a meal" : "comida") : null,
+    /entrada|taquilla/.test(inc) ? (en ? "entrance fees" : "entradas") : null,
+    /gu[ií]a|instructor/.test(inc) ? (en ? "guide" : "guía") : null,
+  ].filter((p): p is string => Boolean(p));
+  const lista = piezas.length > 1
+    ? `${piezas.slice(0, -1).join(", ")} ${en ? "and" : "y"} ${piezas[piezas.length - 1]}`
+    : "";
+  const todoIncluido = piezas.length === 4
+    ? (en ? `${lista} all included` : `${lista}: todo incluido`)
+    : (en ? `${lista} included in the price` : `${lista} incluidos en el precio`);
+  // La primera letra en mayúscula aunque falte el transporte ("Guía y…").
+  const textoIncluido = todoIncluido.charAt(0).toUpperCase() + todoIncluido.slice(1);
+  return base.flatMap((p) => {
+    if (TODO_INCLUIDO.has(p.texto)) return piezas.length > 1 ? [{ ...p, texto: textoIncluido }] : [];
+    if (CANCELACION_48.has(p.texto) && tour.cancelacion) return [];
+    if (TODOS_LOS_DIAS.has(p.texto) && recogidaDeTour(tour).horaTexto) return [];
+    return [p];
+  });
+}
+
 /**
  * Cuántas veces aparece el aviso en una visita, como mucho. Es el largo del
  * mazo: se ven las ocho pruebas una vez y se calla.
@@ -56,7 +100,7 @@ interface Props {
 export function SocialProofToast({ tourId, tourName }: Props) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
-  const PRUEBAS = en ? PRUEBAS_EN : PRUEBAS_ES;
+  const PRUEBAS = useMemo(() => pruebasDe(tourId, en), [tourId, en]);
   const [visible,   setVisible]   = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [msgIndex,  setMsgIndex]  = useState(0);
@@ -73,7 +117,9 @@ export function SocialProofToast({ tourId, tourName }: Props) {
     // días— y a esa persona le apareció el mismo cartel doscientas veces.
     // Ocho pruebas es el mazo completo: después de verlo entero, insistir no
     // convence a nadie.
-    if (mostrados.current >= MAX_TOASTS) return;
+    // Con el mazo recortado a lo que este tour sí cumple, el tope es su largo:
+    // con ocho fijo, las que quedan se repetirían.
+    if (mostrados.current >= Math.min(MAX_TOASTS, PRUEBAS.length)) return;
     mostrados.current += 1;
     // Toma el siguiente índice del mazo barajado; re-baraja al agotarse
     if (deck.current.length === 0) deck.current = makeShuffledDeck(PRUEBAS.length);

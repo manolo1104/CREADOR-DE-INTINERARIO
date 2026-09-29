@@ -8,27 +8,27 @@ import {
   Users, User, UserRound, Baby,
   Camera, Waves, Zap, Leaf, Sunset,
   Star, Clock, MapPin, Shield, ChevronRight,
-  MessageCircle, ArrowRight, Flame, TrendingUp,
+  MessageCircle, ArrowRight,
   CalendarDays, Moon,
 } from "lucide-react";
 import { TOURS_DB, tourDurTexto, type Tour, precioTachado } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 
-// ── Social proof & urgency data per tour ──────────────────────────────────────
+// ── Para quién es y testimonios, por tour ─────────────────────────────────────
+//
+// 🔴 28 sep 2026 — Aquí vivían «127 reservas este mes», «23 reservas esta
+// semana», «⚠️ Solo 4 lugares disponibles este fin de semana» y un «🔥 Trending»,
+// todos escritos a mano: no leían ni la base (57 reservas en TOTAL) ni la
+// ocupación. Los de «este mes» eran los reviewCount inventados, reciclados. Se
+// quitaron los conteos, la escasez y el sello; quedan los testimonios y la
+// calificación del NEGOCIO (resenas.ts). Si algún día hay escasez de verdad,
+// sale de la disponibilidad real, nunca de una constante.
 
 const TOUR_PROOF: Record<string, {
-  bookingsMonth: number;
-  bookingsWeek:  number;
-  spotsLeft:     number;
-  trending:      boolean;
   bestFor:       string;
   reviews:       { name: string; city: string; text: string }[];
 }> = {
   "tour-rzr-xilitla": {
-    bookingsMonth: 94,
-    bookingsWeek:  21,
-    spotsLeft:     4,
-    trending:      true,
     bestFor:       "Amigos, familias y primerizos",
     reviews: [
       { name: "Andrés P.", city: "Querétaro", text: "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. ¡Repetiría mil veces!" },
@@ -36,10 +36,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-rappel-tamul": {
-    bookingsMonth: 58,
-    bookingsWeek:  12,
-    spotsLeft:     3,
-    trending:      true,
     bestFor:       "Aventureros y grupos de amigos",
     reviews: [
       { name: "Diego S.",   city: "Querétaro", text: "Nunca había hecho rappel y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo." },
@@ -47,10 +43,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-rafting-tampaon": {
-    bookingsMonth: 47,
-    bookingsWeek:  9,
-    spotsLeft:     6,
-    trending:      true,
     bestFor:       "Grupos de amigos y amantes de la adrenalina",
     reviews: [
       { name: "Fernando R.", city: "Monterrey", text: "Los rápidos del Tampaón son otra cosa: agua turquesa de verdad y adrenalina sin parar. El guía dentro de la balsa te da toda la confianza." },
@@ -58,10 +50,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-tamul": {
-    bookingsMonth: 127,
-    bookingsWeek:  23,
-    spotsLeft:     4,
-    trending:      true,
     bestFor:       "Amigos y aventureros",
     reviews: [
       { name: "Carlos M.", city: "CDMX",         text: "La Cascada de Tamul me dejó sin palabras. El mejor día de mi vida." },
@@ -69,10 +57,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-edward-james": {
-    bookingsMonth: 84,
-    bookingsWeek:  11,
-    spotsLeft:     7,
-    trending:      false,
     bestFor:       "Parejas y amantes del arte",
     reviews: [
       { name: "Ana L.",    city: "Guadalajara",   text: "Las Pozas de Edward James son otro mundo. Imposible de describir con palabras." },
@@ -80,10 +64,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-meco": {
-    bookingsMonth: 96,
-    bookingsWeek:  18,
-    spotsLeft:     5,
-    trending:      true,
     bestFor:       "Fotógrafos y parejas",
     reviews: [
       { name: "Laura G.",  city: "Querétaro",     text: "Las fotos que saqué son las mejores de mi vida. El agua realmente es turquesa." },
@@ -91,10 +71,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-minas-micos": {
-    bookingsMonth: 112,
-    bookingsWeek:  15,
-    spotsLeft:     6,
-    trending:      false,
     bestFor:       "Familias con niños",
     reviews: [
       { name: "Patricia H.", city: "Monterrey",   text: "Mis hijos no querían salirse del agua. Perfectamente organizado para familias." },
@@ -102,10 +78,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-puente-dios": {
-    bookingsMonth: 73,
-    bookingsWeek:  9,
-    spotsLeft:     8,
-    trending:      false,
     bestFor:       "Grupos de amigos",
     reviews: [
       { name: "Diego F.",  city: "Guadalajara",   text: "El Puente de Dios con la luz entrando por el arco es algo de otro mundo." },
@@ -113,10 +85,6 @@ const TOUR_PROOF: Record<string, {
     ],
   },
   "tour-buceo-media-luna": {
-    bookingsMonth: 31,
-    bookingsWeek:  6,
-    spotsLeft:     4,
-    trending:      false,
     bestFor:       "Primerizos, parejas y curiosos del buceo",
     reviews: [
       { name: "Mariana E.", city: "San Luis Potosí", text: "Nunca había buceado y el instructor me dio toda la confianza. El agua de la Media Luna es tan clara que parece una alberca gigante. ¡Repetiría sin pensarlo!" },
@@ -164,39 +132,14 @@ const DIAS_OPCIONES = [
 
 // ── Result components ────────────────────────────────────────────────────────
 
-function SocialProofBar({ tourId, reviewCount }: { tourId: string; reviewCount: number }) {
-  const proof = TOUR_PROOF[tourId];
-  if (!proof) return null;
+/** Solo la calificación del negocio en Google; sin conteos de reservas. */
+function SocialProofBar() {
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-3 border-y border-negro/8 text-xs font-dm text-negro/55">
-      <span className="flex items-center gap-1.5 text-amber-600 font-medium">
-        <Flame className="w-3.5 h-3.5" />
-        {proof.bookingsMonth} reservas este mes
-      </span>
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-3 mb-4 border-y border-negro/8 text-xs font-dm text-negro/55">
       <span className="flex items-center gap-1.5">
         <Star className="w-3.5 h-3.5 fill-dorado text-dorado" />
         {resenasTexto(false)}
       </span>
-      <span className="flex items-center gap-1.5 text-verde-selva font-medium">
-        <TrendingUp className="w-3.5 h-3.5" />
-        {proof.bookingsWeek} reservas esta semana
-      </span>
-    </div>
-  );
-}
-
-function UrgencyBadge({ spotsLeft }: { spotsLeft: number }) {
-  const isHot = spotsLeft <= 5;
-  return (
-    <div className={`flex items-center gap-2 px-4 py-3 text-xs font-dm font-medium ${
-      isHot
-        ? "bg-red-50 border border-red-200 text-red-700"
-        : "bg-amber-50 border border-amber-200 text-amber-700"
-    }`}>
-      <span className={`w-2 h-2 rounded-full animate-pulse ${isHot ? "bg-red-500" : "bg-amber-400"}`} />
-      {isHot
-        ? `⚠️ Solo ${spotsLeft} lugares disponibles este fin de semana — se llena rápido`
-        : `${spotsLeft} lugares disponibles · Reserva con anticipación para asegurar tu fecha`}
     </div>
   );
 }
@@ -249,11 +192,6 @@ function TourResultCard({
             ✦ Tu match perfecto
           </div>
         )}
-        {proof?.trending && (
-          <div className="absolute top-3 right-3 bg-amber-400 text-negro text-[9px] tracking-[1px] uppercase font-dm px-2.5 py-1.5 font-bold">
-            🔥 Trending
-          </div>
-        )}
         {savings > 0 && (
           <div className="absolute bottom-3 right-3 bg-red-500 text-white text-[10px] font-dm font-bold px-2.5 py-1">
             Ahorras ${savings.toLocaleString()} MXN
@@ -299,13 +237,7 @@ function TourResultCard({
           <p className="font-dm text-sm text-negro/75 leading-relaxed">{reason}</p>
         </div>
 
-        {isPrimary && proof && <SocialProofBar tourId={tour.id} reviewCount={tour.reviewCount} />}
-
-        {isPrimary && proof && (
-          <div className="mt-3 mb-4">
-            <UrgencyBadge spotsLeft={proof.spotsLeft} />
-          </div>
-        )}
+        {isPrimary && proof && <SocialProofBar />}
 
         {/* Price + CTA */}
         <div className="flex items-end justify-between gap-4 mt-4">
@@ -668,10 +600,14 @@ export function RecommenderShell() {
             </div>
           )}
 
-          {/* Guarantees */}
+          {/* Guarantees — van justo debajo del tour recomendado, y el
+              recomendador puede elegir el Edén, que NO reembolsa: si el tour
+              trae `cancelacion` propia, no se le promete la de 48 h. */}
           <div className="grid grid-cols-3 gap-3 mb-8">
             {[
-              { label: "Cancela gratis",   sub: "Hasta 48h antes" },
+              primaryTour?.cancelacion
+                ? { label: "Cancelación", sub: "Con política propia" }
+                : { label: "Cancela gratis",   sub: "Hasta 48h antes" },
               { label: "Pago seguro",       sub: "Stripe + cifrado" },
               { label: "Guía certificado", sub: "NOM-09 oficial" },
             ].map((g) => (

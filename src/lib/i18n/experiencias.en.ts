@@ -1,6 +1,54 @@
 import type { Locale } from "./config";
 
-import { GRUPO_MAX } from "@/lib/tours";
+import { GRUPO_MAX, TOURS_DB } from "@/lib/tours";
+import { incluyeDesayuno } from "@/lib/catalogoResumen";
+import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
+import { DESTINOS_DB } from "@/lib/destinos";
+import { localizeDestino, localizeTour } from "./localize";
+
+/**
+ * 🔴 28 sep 2026 — Lo que dicen los recorridos, CONTADO del catálogo.
+ *
+ * Esta página decía «Recorridos con todo incluido», «Tours con todo incluido»
+ * y «Transporte, desayuno, entradas y guía NOM-09 incluidos». El desayuno lo
+ * llevan 5 de 14, el RZR y el buceo no llevan traslado y la guía NOM-09 va en
+ * la mayoría, no en todos. Ahora se dice «precio final» y lo demás «según el
+ * recorrido», con el número de desayunos sacado de `incluyeDesayuno` (la misma
+ * cuenta que /precios y el inicio).
+ *
+ * La cancelación gratis de 48 h tampoco es de todos: los que traen su propia
+ * `cancelacion` (hoy el Edén en el Jardín, que no reembolsa) se nombran.
+ */
+const N_TOURS = TOURS_DB.length;
+const N_DESAYUNO = TOURS_DB.filter(incluyeDesayuno).length;
+const SIN_REEMBOLSO = TOURS_DB.filter((t) => t.cancelacion);
+const lista = (xs: string[], en: boolean) =>
+  new Intl.ListFormat(en ? "en" : "es-MX", { type: "conjunction" }).format(xs);
+const salvoES = SIN_REEMBOLSO.length ? ` (salvo ${lista(SIN_REEMBOLSO.map((t) => t.nombreCorto), false)}, sin reembolso)` : "";
+const salvoEN = SIN_REEMBOLSO.length
+  ? ` (except ${lista(SIN_REEMBOLSO.map((t) => localizeTour(t, "en").nombreCorto), true)}, non-refundable)`
+  : "";
+
+/**
+ * 🔴 La FAQ «¿Qué incluye el precio…?» (que también va en el FAQPage) decía
+ * que TODAS las tarjetas enseñan la entrada al lugar. No es así: la del
+ * destino cuya "entrada" es nuestro tour (`entradaEsTour`; hoy solo el rafting
+ * del Tampaón) enseña el precio del TOUR, «/ persona · tour completo». Se nombra
+ * con el mismo título que lleva su tarjeta, sacado del catálogo, para que la
+ * respuesta no se quede vieja si mañana hay otro.
+ */
+const ENTRADA_ES_TOUR = DESTINOS_DB.filter((d) => d.entradaEsTour);
+const tarjetas = (en: boolean) =>
+  lista(ENTRADA_ES_TOUR.map((d) => (en ? `"${localizeDestino(d, "en").nombre}"` : `«${d.nombre}»`)), en);
+const excepcionTourES = !ENTRADA_ES_TOUR.length
+  ? ""
+  : ENTRADA_ES_TOUR.length === 1
+    ? ` La tarjeta de ${tarjetas(false)} muestra, en cambio, el precio de nuestro tour completo, porque ese recorrido se hace con operador.`
+    : ` Las tarjetas de ${tarjetas(false)} muestran, en cambio, el precio de nuestro tour completo, porque esos recorridos se hacen con operador.`;
+const excepcionTourEN = !ENTRADA_ES_TOUR.length
+  ? ""
+  : ` The ${ENTRADA_ES_TOUR.length === 1 ? "card" : "cards"} for ${tarjetas(true)} ${ENTRADA_ES_TOUR.length === 1 ? "shows" : "show"} the price of our full tour instead, because that trip is done with an operator.`;
+
 /**
  * Traducción de /experiencias (la página y su grid con filtros).
  *
@@ -76,7 +124,7 @@ export interface ExperienciasContent {
   guiaTexto: string;
   guiaBoton: string;
   guiaGarantia: string;
-  /** La guía PDF se vende y se entrega en español: no se ofrece en inglés. */
+  /** La guía PDF se regala y se entrega en español: no se ofrece en inglés. */
   guiaVisible: boolean;
 
   // ── Grid con filtros (componente cliente) ──
@@ -88,6 +136,8 @@ export interface ExperienciasContent {
   reservarAria: (nombre: string) => string;
   verAria: (nombre: string) => string;
   precioNota: string;
+  /** Cuando la "entrada" del destino ES uno de nuestros tours (el rafting). */
+  precioNotaTour: string;
   verMas: string;
   vacioTexto: string;
   vacioBoton: string;
@@ -96,8 +146,11 @@ export interface ExperienciasContent {
 
 const ES: ExperienciasContent = {
   metaTitle: "Experiencias en la Huasteca Potosina — {N} Destinos por Tipo de Aventura",
+  // ⚠️ ≤ 153 caracteres ya con el número puesto (152 con N = 41; deja uno
+  // para un N de tres cifras). Con 170, Google la cortaba justo en «a precio
+  // final», que es la parte que distingue a esta página.
   metaDescription:
-    "Explora las {N} experiencias de la Huasteca Potosina agrupadas por tipo: cascadas turquesas, aventura extrema, cultura huasteca y naturaleza. Tours guiados con transporte incluido.",
+    "Las {N} experiencias de la Huasteca Potosina por tipo: cascadas turquesas, aventura extrema, cultura huasteca y naturaleza. Tours guiados a precio final.",
   ogTitle: "Experiencias en la Huasteca Potosina — Cascadas, Aventura y Cultura",
   ogDescription:
     "{N} experiencias únicas en la Huasteca Potosina. Cascadas turquesas, sótanos kársticos, jardines surrealistas y aguas termales en San Luis Potosí.",
@@ -117,8 +170,8 @@ const ES: ExperienciasContent = {
   heroIntro:
     "{N} destinos únicos — cascadas turquesas, aventura extrema, arte surrealista y aguas termales. Una experiencia para cada tipo de viajero.",
 
-  bannerEyebrow: "✦ 4.7★ · 161 reseñas de Google",
-  bannerTexto: "Recorridos con todo incluido. Desde 2 días apartas con el 30 % y cancelas gratis hasta 48 h antes.",
+  bannerEyebrow: `✦ ${GOOGLE_RATING}★ · ${GOOGLE_RESENAS} reseñas de Google`,
+  bannerTexto: `Recorridos a precio final. Un recorrido suelto se paga completo; desde 2 días apartas con el 30 %. Cancelas gratis hasta 48 h antes${salvoES}.`,
   bannerCta: "Ver recorridos y reservar →",
   bannerVisible: true,
 
@@ -126,11 +179,11 @@ const ES: ExperienciasContent = {
   toursTitulo: "Tours que puedes reservar hoy",
   toursVerTodos: "Ver los {N} tours →",
 
-  ctaBadge: "✦ Tours con todo incluido",
+  ctaBadge: "✦ Tours a precio final",
   ctaH2a: "¿Listo para",
   ctaH2Enfasis: "reservar?",
   ctaTexto:
-    `Transporte, desayuno, entradas y guía NOM-09 incluidos. Grupos máx. ${GRUPO_MAX} personas — si son más, habla con el equipo. Cancelación gratis con 48h de antelación.`,
+    `Precio final: según el recorrido incluye traslado desde tu hospedaje, entradas, guía y, en ${N_DESAYUNO} de los ${N_TOURS}, desayuno. Grupos máx. ${GRUPO_MAX} personas — si son más, habla con el equipo. Cancelación gratis con 48 h de antelación${salvoES}.`,
   ctaBoton: "Ver todos los tours →",
 
   faqTituloA: "Preguntas",
@@ -142,7 +195,7 @@ const ES: ExperienciasContent = {
     },
     {
       q: "¿Qué incluye el precio de cada experiencia?",
-      a: "El precio indicado es el acceso o entrada por persona al destino natural. Los tours guiados con traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, desayuno típico, entradas y guía certificado NOM-09 tienen un costo adicional disponible en la sección de Tours.",
+      a: `El precio de cada tarjeta es lo que cuesta entrar al lugar si vas por tu cuenta: la entrada por persona cuando el sitio cobra y «acceso libre» cuando no; donde no hay una entrada fija publicada, la tarjeta lo dice o da la tarifa del guía local.${excepcionTourES} Los tours guiados se pagan aparte y a precio final: según el recorrido incluyen traslado desde tu hospedaje, entradas, guía y, en ${N_DESAYUNO} de los ${N_TOURS}, desayuno. Están en la sección de Tours.`,
     },
     {
       q: "¿Se puede visitar la Huasteca Potosina con niños?",
@@ -157,10 +210,14 @@ const ES: ExperienciasContent = {
   guiaBadge: "✦ Guía PDF Gratuita",
   guiaH2a: "Los 5 mejores días para visitar",
   guiaH2Enfasis: "la Huasteca en 2026",
+  // 🔴 Decía «Descargar la guía → $49» y «Pago seguro · Garantía 7 días», con
+  // «precios actualizados»: la guía es GRATIS a cambio del correo (decisión de
+  // Manolo) y las entradas del PDF son de mayo. El texto describe el MISMO PDF
+  // que /guia (itinerario de 5 días).
   guiaTexto:
-    "Itinerarios reales, precios actualizados y consejos de guías locales — todo en un PDF descargable.",
-  guiaBoton: "Descargar la guía → $49",
-  guiaGarantia: "Pago seguro · Descarga inmediata · 🛡️ Garantía 7 días",
+    "Itinerario de 5 días con horarios de luz, gasto aproximado por día, cómo llegar, dónde dormir y checklist — en un PDF, gratis a cambio de tu correo.",
+  guiaBoton: "Ver qué trae la guía →",
+  guiaGarantia: "Descarga inmediata ·",
   guiaVisible: true,
 
   filtros: [
@@ -178,6 +235,7 @@ const ES: ExperienciasContent = {
   reservarAria: (nombre) => `Reservar ${nombre} por WhatsApp`,
   verAria: (nombre) => `Ver ${nombre}`,
   precioNota: "/ persona · entrada",
+  precioNotaTour: "/ persona · tour completo",
   verMas: "Ver más →",
   vacioTexto: "No hay destinos en esta categoría.",
   vacioBoton: "Ver todos →",
@@ -187,8 +245,10 @@ const ES: ExperienciasContent = {
 
 const EN: ExperienciasContent = {
   metaTitle: "Things to Do in the Huasteca Potosina — {N} Places, Sorted by Adventure",
+  // ⚠️ ≤ 153 caracteres con el número (151 con N = 41). La de 201 se cortaba
+  // antes de «in MXN», que es lo que le dice al extranjero en qué moneda va.
   metaDescription:
-    "All {N} places worth your time in Mexico's waterfall country, sorted by what you're after: turquoise waterfalls, extreme adventure, Huastec culture and hot springs. Guided tours with transportation included.",
+    "All {N} places in the Huasteca Potosina: turquoise waterfalls, extreme adventure, Huastec culture and hot springs. Guided tours at a final price in MXN.",
   ogTitle: "Things to Do in the Huasteca Potosina — Waterfalls, Adventure, Culture",
   ogDescription:
     "{N} places in the Huasteca Potosina: turquoise waterfalls, karst sinkholes, a surrealist jungle garden and hot springs in San Luis Potosí, Mexico.",
@@ -210,8 +270,8 @@ const EN: ExperienciasContent = {
 
   // El banner anunciaba el planificador (`/recomendar`, solo-ES) y por eso
   // estaba apagado en inglés. Ahora lleva al motor, que sí está traducido.
-  bannerEyebrow: "✦ 4.7★ · 161 Google reviews",
-  bannerTexto: "All-inclusive tours. From 2 days on, a 30 % deposit books it; cancel free up to 48 h before.",
+  bannerEyebrow: `✦ ${GOOGLE_RATING}★ · ${GOOGLE_RESENAS} Google reviews`,
+  bannerTexto: `Tours at a final price. A single tour is paid in full; from 2 days on, a 30% deposit books it. Free cancellation up to 48 h before${salvoEN}.`,
   bannerCta: "See tours and book →",
   bannerVisible: true,
 
@@ -219,11 +279,13 @@ const EN: ExperienciasContent = {
   toursTitulo: "Tours you can book today",
   toursVerTodos: "See all {N} tours →",
 
-  ctaBadge: "✦ All-inclusive tours",
+  ctaBadge: "✦ Tours at a final price",
   ctaH2a: "Ready to",
   ctaH2Enfasis: "book?",
+  // Decía «Groups of 12 maximum» escrito a mano mientras el español ya leía
+  // GRUPO_MAX (14): ahora los dos salen de la misma constante.
   ctaTexto:
-    "Transportation, breakfast, every entrance fee and a NOM-09 certified guide included. Groups of 12 maximum. Free cancellation up to 48 hours before.",
+    `Final price: depending on the tour it includes transport from your lodging, entrance fees, a guide and, on ${N_DESAYUNO} of the ${N_TOURS}, breakfast. Groups of ${GRUPO_MAX} maximum. Free cancellation up to 48 hours before${salvoEN}.`,
   ctaBoton: "See all tours →",
 
   faqTituloA: "Frequently asked",
@@ -235,7 +297,7 @@ const EN: ExperienciasContent = {
     },
     {
       q: "What does the price on each place include?",
-      a: "The price shown is the entrance fee per person to that natural site. Guided tours — with round-trip transportation from your lodging in Xilitla or Ciudad Valles, regional breakfast, all entrance fees and a NOM-09 certified guide — are priced separately and listed under Tours.",
+      a: `The price on each card is what it costs to get in if you go on your own: the per-person entrance fee where the site charges, and free access where it doesn't; where there is no fixed published fee, the card says so or gives the local guide's rate.${excepcionTourEN} Guided tours are priced separately, at a final price in MXN: depending on the tour they include transport from your lodging, entrance fees, a guide and, on ${N_DESAYUNO} of the ${N_TOURS}, breakfast. They are listed under Tours.`,
     },
     {
       q: "Can I visit the Huasteca Potosina with kids?",
@@ -247,8 +309,8 @@ const EN: ExperienciasContent = {
     },
   ],
 
-  // La guía PDF se vende y se entrega en español: ofrecerla en inglés sería
-  // cobrar $49 por un documento que el comprador no puede leer.
+  // La guía PDF se entrega en español: ofrecerla en inglés sería pedirle el
+  // correo al lector a cambio de un documento que no puede leer.
   guiaBadge: "",
   guiaH2a: "",
   guiaH2Enfasis: "",
@@ -272,6 +334,7 @@ const EN: ExperienciasContent = {
   reservarAria: (nombre) => `Book ${nombre} on WhatsApp`,
   verAria: (nombre) => `See ${nombre}`,
   precioNota: "/ person · entrance",
+  precioNotaTour: "/ person · full tour",
   verMas: "See more →",
   vacioTexto: "No places in this category.",
   vacioBoton: "See all →",

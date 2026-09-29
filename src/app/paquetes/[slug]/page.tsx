@@ -15,9 +15,11 @@ import {
   localizePaquete, getLocalizedHabitaciones, getLocalizedLogistica,
   getLocalizedFaqs, getPaqueteDetalleUI,
 } from "@/lib/i18n/paquetes.en";
-import { localizeTour } from "@/lib/i18n/localize";
+import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
 import { TOURS_DB, type Tour } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
+import type { Locale } from "@/lib/i18n/config";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import { TourCollage } from "@/components/TourCollage";
 import { HabitacionesDelPaquete } from "@/components/HabitacionesDelPaquete";
@@ -116,6 +118,32 @@ function fotosDelDia(tour: Tour, minimo = 3, maximo = 4): FotoDia[] {
   return fotos;
 }
 
+/**
+ * Qué se ve en una foto del collage del hero, buscado donde ya está escrito: la
+ * galería de los tours (con su alt curado), las habitaciones del hotel y las
+ * fotos de los destinos. Si no aparece en ningún lado, el nombre del paquete.
+ *
+ * 🔴 El collage recibía sólo las rutas, así que tres de sus cuatro fotos salían
+ * con alt vacío en cada ficha. Los alt se pasan todos; que `TourCollage` los
+ * pinte en las franjas 2 a 4 depende de ese componente.
+ */
+function altDeFoto(src: string, locale: Locale, fallback: string, habitacionAlt: (n: string) => string): string {
+  for (const t of TOURS_DB) {
+    const g = localizeTour(t, locale).gallery.find((x) => x.src === src);
+    if (g?.alt) return g.alt;
+  }
+  const hab = HABITACIONES_HOTEL.find((h) => h.imagen === src || h.galeria?.includes(src));
+  if (hab) return habitacionAlt(hab.nombre);
+  // Por la carpeta también: `/imagenes/cascada-de-tamul/gallery-1.jpg` no está
+  // listada en ningún destino, pero la carpeta es el slug del destino.
+  const carpeta = src.split("/")[2];
+  const dest =
+    DESTINOS_DB.find((d) => d.imagen_hero === src || d.imagen_galeria?.includes(src)) ??
+    DESTINOS_DB.find((d) => d.slug === carpeta);
+  if (dest) return `${localizeDestino(dest, locale).nombre} — ${fallback}`;
+  return fallback;
+}
+
 const LOGISTICA_ICONS: Record<string, LucideIcon> = { Car, Plane, Bus, Sparkles };
 
 interface Props { params: { slug: string } }
@@ -132,7 +160,10 @@ export function generateMetadata({ params }: Props): Metadata {
   const p = localizePaquete(base, locale);
   return {
     title: t.metaTitle(p.nombre, p.duracion),
-    description: t.metaDescription(p.nombre, p.subtitulo, p.duracion),
+    description: t.metaDescription(
+      p.nombre, p.subtitulo, p.duracion,
+      `$${precioVisible(p).toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN ${p.precioLabel}`,
+    ),
     keywords: t.keywords(p.nombre, p.dias),
     alternates: buildAlternates(`/paquetes/${p.slug}`, locale),
     openGraph: {
@@ -185,6 +216,19 @@ export default function PaqueteDetallePage({ params }: Props) {
 
   const url = localeUrl(`/paquetes/${p.slug}`, locale);
 
+  // El itinerario del marcado: SOLO los días que son un recorrido del catálogo,
+  // cada uno como el TouristTrip que es, con la URL de su ficha.
+  //
+  // 🔴 Antes iba cada día como TouristAttraction, incluidos «Salida» («Desayuno,
+  // check-out y camino a casa») y «Llegada + Ruta Surrealista»: un check-out no
+  // es un atractivo, y el título del día no es el nombre de ningún lugar. El
+  // nombre sale del tour ya traducido; la descripción es la del día, la misma
+  // que se lee en la página.
+  const diasDeTour = p.itinerario.flatMap((d) => {
+    const tourBase = d.tourSlug ? TOURS_DB.find((x) => x.slug === d.tourSlug) : undefined;
+    return tourBase ? [{ d, tour: localizeTour(tourBase, locale) }] : [];
+  });
+
   // Schema.org del paquete. A propósito SIN aggregateRating/Review: las reseñas
   // de paquetes no son verificables una por una (ver regla de honestidad de cifras).
   const paqueteSchema = {
@@ -201,15 +245,16 @@ export default function PaqueteDetallePage({ params }: Props) {
         provider: ORG_REF,
         itinerary: {
           "@type": "ItemList",
-          numberOfItems: p.itinerario.length,
-          itemListElement: p.itinerario.map((d) => ({
+          numberOfItems: diasDeTour.length,
+          itemListElement: diasDeTour.map(({ d, tour }, i) => ({
             "@type": "ListItem",
-            position: d.dia,
+            position: i + 1,
             item: {
-              "@type": "TouristAttraction",
-              name: d.titulo,
+              "@type": "TouristTrip",
+              name: tour.nombre,
               description: d.descripcion,
-              address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+              url: localeUrl(`/tours/${tour.slug}`, locale),
+              provider: ORG_REF,
             },
           })),
         },
@@ -220,8 +265,8 @@ export default function PaqueteDetallePage({ params }: Props) {
           // $14,500 y la ficha $7,250, el desajuste lo canta cualquier
           // validador. Lo que cobra el checkout no se pierde: el
           // `priceSpecification` dice a cuánta gente corresponde el importe
-          // —«por persona» en cuatro, «por pareja (2 personas)» en la Luna de
-          // Miel— y `eligibleQuantity` que la reserva arranca en dos personas.
+          // —«por persona» o «por pareja (2 personas)», según `precioPorPersona`—
+          // y `eligibleQuantity` que la reserva arranca en dos personas.
           // Mismo patrón que /tours con el RZR, que se cobra por vehículo.
           price: precioVisible(p),
           priceCurrency: "MXN",
@@ -282,7 +327,7 @@ export default function PaqueteDetallePage({ params }: Props) {
           que es el caso de un paquete sin collage curado. */}
       <section className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
         <TourCollage
-          panels={collagePaquete(p).map((src) => ({ src }))}
+          panels={collagePaquete(p).map((src) => ({ src, alt: altDeFoto(src, locale, p.nombre, t.habitacionAlt) }))}
           nombre={p.nombre}
           priority
           movil={2}
@@ -443,8 +488,9 @@ export default function PaqueteDetallePage({ params }: Props) {
                   )}
 
                   {/* Lo que sólo trae este paquete, dentro del día en que pasa.
-                      Hoy es la cena romántica de la Luna de Miel: como ocurre
-                      al volver del tour del día 2, se cuenta ahí y no en una
+                      Nació para la cena romántica de la Luna de Miel (retirada
+                      el 24 sep 2026; hoy ningún paquete la trae): como ocurría
+                      al volver del tour del día 2, se contaba ahí y no en una
                       sección aparte a la que hay que llegar tres pantallas
                       después. */}
                   {p.galeriaExtra?.dia === d.dia && (

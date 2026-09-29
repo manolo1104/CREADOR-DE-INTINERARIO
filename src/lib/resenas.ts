@@ -29,6 +29,16 @@ export const GOOGLE_RATING = 4.7;
 /** Número de reseñas en Google. Se actualiza mirando el perfil real. */
 export const GOOGLE_RESENAS = 161;
 
+/**
+ * El perfil de Google donde se leen ESAS reseñas (el de la operadora).
+ *
+ * 🔴 No confundir con `CONTACTO.mapsUrl` (maps.app.goo.gl/SWGyih…): comprobado
+ * el 28 sep 2026, ese enlace abre la ficha de Maps de **Hotel Paraíso
+ * Encantado**, otra marca con otras reseñas. El inicio mandaba «Ver las 161
+ * reseñas» ahí. Este (share.google) abre el panel de «Huasteca Potosina Tours».
+ */
+export const GOOGLE_PERFIL_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
+
 /** "4.7 · 161 reseñas de Google" / "4.7 · 161 Google reviews". */
 export function resenasTexto(en = false): string {
   return en

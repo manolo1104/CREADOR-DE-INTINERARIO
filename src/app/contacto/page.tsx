@@ -7,6 +7,7 @@ import { CONTACTO } from "@/lib/contacto";
 import { waLink } from "@/lib/whatsapp";
 import { asLocale, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { getContacto } from "@/lib/i18n/contacto.en";
+import { ORG_REF, buildOrganizationNode, buildBreadcrumbNode } from "@/lib/jsonld";
 
 // El copy vive en `contacto.en.ts`; los datos (correo, teléfono, Maps) siguen
 // saliendo de `lib/contacto.ts`, que es la fuente única.
@@ -25,6 +26,12 @@ export function generateMetadata(): Metadata {
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
+      // 🔴 Sin esta imagen la página se compartía SIN foto (ni og:image ni
+      // twitter:image): el layout ya no le pasa la suya a `twitter` (28 sep)
+      // y esta página no tiene `opengraph-image` propio. Next rellena la de
+      // twitter a partir de esta. Mide 1200×800 de verdad (comprobado en el
+      // archivo): declarar 630 sería mentirle al que recorta la tarjeta.
+      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: t.ogTitle }],
     },
   };
 }
@@ -40,22 +47,27 @@ export default function ContactoPage() {
   const t = getContacto(locale);
   const url = localeUrl("/contacto", locale);
 
+  // La empresa es UNA entidad (`#organization`, de `jsonld.ts`), no una
+  // TravelAgency suelta y sin @id como la que declaraba esta página: para
+  // Google eran dos negocios distintos con el mismo teléfono. Se añaden las
+  // migas, que esta página no tenía.
+  // ⚠️ La de aquí llevaba `hasMap` y `sameAs` a `CONTACTO.mapsUrl`, que abre la
+  // ficha de Maps de Hotel Paraíso Encantado (otra marca, comprobado el 28 sep).
+  // El nodo de `jsonld.ts` todavía la tiene en su `sameAs`: se corrige ALLÍ,
+  // una sola vez, no volviendo a declarar la empresa aquí.
   const contactSchema = {
     "@context": "https://schema.org",
-    "@type": "ContactPage",
-    name: t.schemaName,
-    url,
-    inLanguage: locale === "en" ? "en-US" : "es-MX",
-    mainEntity: {
-      "@type": "TravelAgency",
-      name: CONTACTO.nombreComercial,
-      url: SITE,
-      email: CONTACTO.email,
-      telephone: CONTACTO.telefonoE164,
-      areaServed: t.schemaAreaServed,
-      hasMap: CONTACTO.mapsUrl,
-      sameAs: [CONTACTO.facebook, CONTACTO.mapsUrl],
-    },
+    "@graph": [
+      {
+        "@type": "ContactPage",
+        name: t.schemaName,
+        url,
+        inLanguage: locale === "en" ? "en-US" : "es-MX",
+        mainEntity: ORG_REF,
+      },
+      buildOrganizationNode(locale),
+      buildBreadcrumbNode([{ name: locale === "en" ? "Contact" : "Contacto", path: "/contacto" }], locale),
+    ],
   };
 
   const canales = [

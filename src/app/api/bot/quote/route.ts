@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAgentAuth } from "@/lib/agentAuth";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
-import { calcTourTotal, validatePromoCode, minBookingDate } from "@/lib/tourBooking";
+import { ANTICIPO_PCT, pctACobrar } from "@/lib/carrito";
+import { totalRecorrido, validatePromoCode, minBookingDate } from "@/lib/tourBooking";
+import { fraseRecogidaCorreo, pasamosPorEl } from "@/lib/recogidaCorreo";
 import { DATOS_BANCO } from "@/lib/bot/bankData";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { metaAlEnviar, conMeta } from "@/lib/quoteFollowUp";
@@ -105,6 +107,14 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  // Mismo tope que el cobro del sitio (`computeTourCharge`). Con la tarifa por
+  // grupo del Edén, sin esto un grupo de 10 salía al precio del escalón de 7.
+  if (totalPersonas > tour.groupMax) {
+    return NextResponse.json(
+      { error: `Este tour admite máximo ${tour.groupMax} personas por salida.` },
+      { status: 400 }
+    );
+  }
   if (!customerName || String(customerName).trim().length < 2) {
     return NextResponse.json({ error: "Falta el nombre del cliente." }, { status: 400 });
   }
@@ -129,7 +139,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { total, subtotal } = calcTourTotal(tour.precio, nAdults, nMid, nSmall, promoDiscount);
+  // `totalRecorrido`, la misma cuenta que el carrito y el cobro del sitio.
+  // 🔴 Era `calcTourTotal` a pelo: el Edén —tarifa del GRUPO completo— se
+  // cotizaba por cabeza, $11,960 (2,990 × 4) por lo que cuesta $3,480.
+  const subtotal = totalRecorrido(tour, nAdults, nMid, nSmall, 0);
+  const total    = totalRecorrido(tour, nAdults, nMid, nSmall, promoDiscount);
 
   // ── Folio + persistencia ───────────────────────────────────────
   const folio = "HP" + Date.now().toString(36).toUpperCase();
@@ -224,13 +238,27 @@ export async function POST(req: NextRequest) {
     nSmall > 0 ? `${nSmall} menor${nSmall !== 1 ? "es" : ""} de 6` : "",
   ].filter(Boolean).join(" + ");
 
-  // ⚠️ El transporte NO es igual en todos los tours (el RZR sale de la base en
-  // Xilitla, el buceo se encuentra en Rioverde, el rappel en el embarcadero).
-  // Se lee del "incluye" de ESTE tour en vez de prometer recogida siempre.
   const incluyeTour = incluyeDeTour(tour);
-  const traeTraslado = /(transporte|traslado)[^.]*desde tu (hotel|hospedaje)/i.test(incluyeTour.join(" · "));
 
-  const anticipo = Math.round(total * 0.3);
+  // Dónde y a qué hora, desde el campo `recogida` de ESTE tour.
+  // 🔴 Antes se adivinaba con una expresión regular sobre el "incluye", y
+  // fallaba en los dos sentidos: la Gruta de Xilo salía como "no incluye
+  // traslado" y el Amanecer de Nubes, la Olla de la Luz, el Edén y la Travesía
+  // del Café prometían recogida en Ciudad Valles, que en ellos se cobra aparte.
+  // Además no decía la hora, y la Gruta sale a las 7 de la noche.
+  // Con la recogida en duda (el rappel, ver `recogidaIncierta`) va la frase
+  // neutra, la MISMA que dicen después los correos de esta cotización.
+  const lineaRecogida = pasamosPorEl(tour)
+    ? `${fraseRecogidaCorreo(tour, false)} No necesitas hospedarte con nosotros.`
+    : fraseRecogidaCorreo(tour, false);
+
+  // Esta cotización es de UN recorrido en UN día: se paga completo. Desde 2
+  // días (o con hotel) se aparta con el 30 %. Es la regla de Manolo (20 ago y
+  // 28 sep 2026) y la MISMA función con la que cobra el carrito: antes el bot
+  // ofrecía el 30 % y el carrito, al abrir el link, cobraba el total.
+  // El Edén paga igual que los demás; lo suyo es que no tiene reembolso.
+  const pctAnticipo = pctACobrar(1, false);
+  const anticipo = Math.round((total * pctAnticipo) / 100);
   const resumenWhatsApp = [
     `📋 *Tu cotización* — folio ${folio}`,
     "",
@@ -243,12 +271,12 @@ export async function POST(req: NextRequest) {
     ...incluyeTour.map((i) => `• ${i}`),
     "",
     `*Total: ${fmx(total)} MXN*`,
-    `*Apartas hoy con ${fmx(anticipo)}* (30 %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del recorrido.`,
+    pctAnticipo === 100
+      ? `*Un recorrido de un día se paga completo al reservar: ${fmx(total)}.* Si le sumas otro recorrido, apartas todo con el ${ANTICIPO_PCT} %.`
+      : `*Apartas hoy con ${fmx(anticipo)}* (30 %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del recorrido.`,
     "",
-    traeTraslado
-      ? "Pasamos por ti a tu hospedaje, en Xilitla o en Ciudad Valles — no necesitas hospedarte con nosotros."
-      : "Este recorrido no incluye traslado desde tu hospedaje: el punto de encuentro te lo confirmamos al reservar.",
-    "Cancelas gratis hasta 48 h antes, con reembolso completo.",
+    lineaRecogida,
+    tour.cancelacion?.es ?? "Cancelas gratis hasta 48 h antes, con reembolso completo.",
     "",
     `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares se llenan rápido.`,
     "",
@@ -259,7 +287,7 @@ export async function POST(req: NextRequest) {
     folio,
     total,
     anticipo,
-    pctAnticipo: 30,
+    pctAnticipo,
     saldo: total - anticipo,
     moneda: "MXN",
     personas: totalPersonas,

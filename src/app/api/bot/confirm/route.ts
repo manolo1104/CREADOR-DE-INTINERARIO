@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { checkAgentAuth } from "@/lib/agentAuth";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { formatTourDate } from "@/lib/tourBooking";
+import { TOURS_DB, type Tour } from "@/lib/tours";
+import { pctACobrar } from "@/lib/carrito";
+import { fraseRecogidaCorreo, horaCorreo, pasamosPorEl, salidasCorreo } from "@/lib/recogidaCorreo";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,7 +24,62 @@ export const runtime = "nodejs";
  * Sin `montoPagado` se asume el ANTICIPO estándar, no el total: si nadie dijo
  * cuánto entró, lo prudente es dar por cobrado lo mínimo, no lo máximo.
  */
-const PCT_ANTICIPO = 30;
+
+
+/** Un recorrido de la reserva con SU fecha: cada renglón del carrito lleva la suya. */
+interface TourDeReserva { tour: Tour; fecha: string }
+
+/**
+ * Los recorridos de la reserva, cada uno con su fecha. Las que entran por el
+ * carrito guardan `tourSlug` VACÍO y la verdad en `lineItems`.
+ */
+function toursDeReserva(b: { tourSlug: string | null; tourDate: string; lineItems: unknown }): TourDeReserva[] {
+  const lineas = Array.isArray(b.lineItems)
+    ? (b.lineItems as { tourSlug?: string; tourDate?: string; _meta?: unknown }[]).filter((l) => l && !l._meta)
+    : [];
+  const out: TourDeReserva[] = [];
+  for (const l of lineas) {
+    const tour = l.tourSlug ? TOURS_DB.find((t) => t.slug === l.tourSlug) : undefined;
+    const fecha = String(l.tourDate || b.tourDate || "");
+    if (tour && !out.some((x) => x.tour.id === tour.id && x.fecha === fecha)) out.push({ tour, fecha });
+  }
+  if (out.length) return out;
+  const unico = b.tourSlug ? TOURS_DB.find((t) => t.slug === b.tourSlug) : undefined;
+  return unico ? [{ tour: unico, fecha: b.tourDate }] : [];
+}
+
+/** "sábado 4 de octubre", para anteponer a la hora de cada recorrido. */
+function fechaCorta(ymd: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd;
+  return new Date(`${ymd}T12:00:00`).toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** Cuando no hay hora pública (el buceo, el rappel): no se inventa una. */
+const SIN_HORA = "te la confirmamos un día antes";
+
+/**
+ * La hora de salida en corto, para el "⏰ Salida:" del WhatsApp.
+ *
+ * 🔴 Estaba clavada en "8:30–9:00 AM" aquí y en el bot. Con la Gruta de Xilo
+ * (7 PM) el cliente recibía la confirmación con la hora de la mañana. Con
+ * varios recorridos cada hora lleva SU fecha: bajo una sola "📅 Fecha", la
+ * Expedición Tamul (vuelve de noche) y la Gruta a las 7 PM se leían como el
+ * mismo sábado. `null` si no se reconoce ningún recorrido (un paquete).
+ */
+function salidaDe(tours: TourDeReserva[]): string | null {
+  if (!tours.length) return null;
+  const hora = (t: Tour) => horaCorreo(t, false) || SIN_HORA;
+  if (tours.length === 1) return hora(tours[0].tour);
+  return tours.map((x) => `${x.tour.nombreCorto} (${fechaCorta(x.fecha)}): ${hora(x.tour)}`).join(" · ");
+}
+
+/** La frase completa de recogida; con varios recorridos, cada una con su fecha. */
+function recogidaDe(tours: TourDeReserva[]): string | null {
+  if (!tours.length) return null;
+  if (tours.length === 1) return salidasCorreo([tours[0].tour], "es").join(" ");
+  return tours.map((x) => `${x.tour.nombreCorto} (${fechaCorta(x.fecha)}): ${fraseRecogidaCorreo(x.tour, false)}`).join(" ");
+}
+
 export async function POST(req: NextRequest) {
   const denied = checkAgentAuth(req);
   if (denied) return denied;
@@ -47,15 +105,29 @@ export async function POST(req: NextRequest) {
   }
 
   const yaConfirmada = booking.status === "paid";
+  const toursReserva = toursDeReserva(booking);
 
   // Lo que entró: lo que dijo el dueño, o el anticipo estándar si no lo dijo.
-  const anticipoEstandar = Math.round((booking.totalAmount * PCT_ANTICIPO) / 100);
+  // El estándar es la regla del carrito (`pctACobrar`): un solo día sin hotel
+  // se paga completo; desde 2 días o con hotel, el 30 %. El Edén no es
+  // excepción: paga como los demás (decisión de Manolo, 28 sep 2026).
+  const diasReserva  = new Set(toursReserva.map((x) => x.fecha)).size || 1;
+  const conHospedaje = Array.isArray(booking.packageItems) && booking.packageItems.length > 0;
+  const anticipoEstandar = Math.round((booking.totalAmount * pctACobrar(diasReserva, conHospedaje)) / 100);
   const bruto  = Number(body?.montoPagado);
   const pagado = Number.isFinite(bruto) && bruto > 0
     ? Math.min(Math.round(bruto), booking.totalAmount)
     : (booking.depositoPagado && booking.depositoPagado > 0 ? booking.depositoPagado : anticipoEstandar);
   const saldo     = Math.max(0, booking.totalAmount - pagado);
   const liquidado = saldo === 0;
+
+  const salida   = salidaDe(toursReserva);
+  // La frase completa (dónde, en qué, a qué hora y qué pasa con Valles).
+  const recogida = recogidaDe(toursReserva);
+  // Todos tienen hora pública: entonces solo falta la dirección exacta.
+  const conHora  = toursReserva.length > 0 && toursReserva.every((x) => horaCorreo(x.tour, false));
+  // "Al pasar por ti" solo si de verdad pasamos por él en todos.
+  const recogemos = toursReserva.length > 0 && toursReserva.every((x) => pasamosPorEl(x.tour));
 
   if (!yaConfirmada) {
     try {
@@ -75,7 +147,7 @@ export async function POST(req: NextRequest) {
           to: [{ email: booking.customerEmail, name: booking.customerName }],
           bcc: process.env.ADMIN_EMAIL_TOURS ? [{ email: process.env.ADMIN_EMAIL_TOURS }] : undefined,
           subject: `Tu tour está confirmado — ${folio}`,
-          htmlContent: buildConfirmEmail({ ...booking, pagado, saldo, liquidado }),
+          htmlContent: buildConfirmEmail({ ...booking, pagado, saldo, liquidado, recogida, conHora, recogemos }),
         });
       } catch (e: any) {
         console.error("⚠️ bot/confirm Brevo:", e?.message);
@@ -99,6 +171,10 @@ export async function POST(req: NextRequest) {
     saldo,
     liquidado,
     pctPagado: Math.round((pagado / Math.max(1, booking.totalAmount)) * 100),
+    // Campos nuevos (28 sep). Un bot sin actualizar los ignora; el nuevo, sin
+    // `salida` (paquete sin recorridos reconocibles), no pone hora.
+    salida,
+    recogida,
     customerName: booking.customerName,
     customerPhone: booking.customerPhone,
   });
@@ -115,6 +191,12 @@ function buildConfirmEmail(b: {
   pagado: number;
   saldo: number;
   liquidado: boolean;
+  /** Frase de recogida del catálogo; null si no se reconoce el recorrido. */
+  recogida: string | null;
+  /** ¿Todos los recorridos tienen hora pública? Si no, la hora también se manda después. */
+  conHora: boolean;
+  /** ¿Pasamos por él en todos? Sin eso no se dice "al pasar por ti". */
+  recogemos: boolean;
 }): string {
   const fecha = formatTourDate(b.tourDate) || b.tourDate;
   const mx = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
@@ -127,8 +209,12 @@ function buildConfirmEmail(b: {
          ✓ <strong>Liquidado.</strong> No queda nada por pagar.
        </p>`
     : `<p style="margin:14px 0;padding:12px 14px;background:#fdf6e6;border:1px solid #e2c98a;font-size:13px;color:#5c4a1f;">
-         Queda un <strong>saldo de ${mx(b.saldo)}</strong>, que se liquida el día del tour —en efectivo o con tarjeta— al pasar por ti.
+         Queda un <strong>saldo de ${mx(b.saldo)}</strong>, que se liquida el día del tour —en efectivo o con tarjeta—${b.recogemos ? " al pasar por ti" : ""}.
        </p>`;
+  // Sin hora pública (el buceo, el rappel) se dice que la hora también llega después.
+  const avisoPrevio = b.recogida && b.conHora
+    ? "Te enviaremos el punto de encuentro exacto un día antes."
+    : "Te enviaremos la hora y el punto de encuentro exactos un día antes.";
 
   return `
   <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a2e1a;">
@@ -144,7 +230,7 @@ function buildConfirmEmail(b: {
       ${b.saldo > 0 ? `<tr><td style="padding:6px 0;color:#777;">Saldo pendiente</td><td style="padding:6px 0;text-align:right;color:#a8631f;"><strong>${mx(b.saldo)}</strong></td></tr>` : ""}
     </table>
     ${bloqueSaldo}
-    <p style="font-size:13px;color:#555;">La salida es entre las <strong>8:30 y 9:00 AM</strong>. Te enviaremos el punto de encuentro exacto un día antes. Lleva ropa cómoda, calzado cerrado y protector solar.</p>
+    <p style="font-size:13px;color:#555;">${b.recogida ? `${b.recogida} ` : ""}${avisoPrevio} Lleva ropa cómoda, calzado cerrado y protector solar.</p>
     <p style="font-size:13px;color:#555;">¡Nos vemos pronto en la Huasteca Potosina! 🌿</p>
   </div>`;
 }

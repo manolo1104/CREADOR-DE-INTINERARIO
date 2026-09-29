@@ -19,6 +19,17 @@ const { PAGO } = require("./payment");
 const HOTEL = INFO.hotelServicios;
 const { getSession, pushHistory } = require("./sessions");
 
+// La calificación del negocio en Google. Sale de `src/lib/resenas.ts` vía el
+// exportador (data.json → empresa.rating / empresa.resenas); `catalog.js` no la
+// copia a EMPRESA, por eso se lee aquí. 🔴 El prompt decía «4.9★ con 492
+// reseñas» escrito a mano (Google marca otra cosa). Con un data.json anterior,
+// que no trae los campos, NO se pone cifra: mejor ninguna que una inventada.
+const { empresa: EMPRESA_DATA = {} } = require("./data.json");
+const CALIFICACION_GOOGLE =
+  typeof EMPRESA_DATA.rating === "number" && typeof EMPRESA_DATA.resenas === "number"
+    ? `${EMPRESA_DATA.rating}★ con ${EMPRESA_DATA.resenas} reseñas en Google`
+    : null;
+
 const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5-20251001";
 const MAX_TOKENS = Number(process.env.BOT_MAX_TOKENS || 2048);
 
@@ -233,7 +244,7 @@ const tools = [
   },
   {
     name: "crear_cotizacion",
-    description: "Crea una reserva PENDIENTE de pago con folio para pagar por transferencia. Solo para tours cobrados POR PERSONA. Úsala SOLO cuando el cliente ya confirmó tour, fecha (YYYY-MM-DD), personas y dio su nombre. Devuelve folio, total y datos bancarios.",
+    description: "Crea una reserva PENDIENTE de pago con folio para pagar por transferencia. Para tours por persona o por grupo (el Edén: el servidor cobra la tarifa del grupo); NO para el RZR. Úsala SOLO cuando el cliente ya confirmó tour, fecha (YYYY-MM-DD), personas y dio su nombre. Devuelve folio, total y datos bancarios.",
     input_schema: {
       type: "object",
       properties: {
@@ -331,7 +342,7 @@ const tools = [
     name: "consultar_reserva",
     description:
       "Consulta una reserva por su folio (ej: HPXXXX). Devuelve el tour, la fecha, las personas Y EL ESTADO DEL PAGO: `pagado`, `saldo`, `liquidado` y un `resumenPago` ya redactado. " +
-      "⚠️ `status: \"paid\"` significa RESERVA CONFIRMADA, no que ya pagó todo: quien reserva en el sitio paga solo el anticipo del 30 %. " +
+      "⚠️ `status: \"paid\"` significa RESERVA CONFIRMADA, no que ya pagó todo: quien reserva 2 recorridos o más (o con hotel) paga solo el anticipo del 30 %; un solo recorrido de un día se paga completo. " +
       "SIEMPRE dile al cliente cuánto pagó y cuánto le falta — usa `resumenPago` tal cual. Nunca le digas que su reserva está \"pagada\" a secas si `saldo` es mayor que cero.",
     input_schema: {
       type: "object",
@@ -424,8 +435,17 @@ async function executeTool(name, input, phone) {
         soloAdultos: t.soloAdultos,
         privadoDisponible: t.privateAvailable, privadoDesde: t.privateMinPrice,
         incluye: t.incluye, incluyeSiempre: t.incluyeSiempre, noIncluye: t.noIncluye,
-        puntoEncuentro: t.puntoEncuentro, salida: SALIDA, horario: t.horario, destinos: t.destinos,
-        idealPara: t.idealPara, cancelacion: EMPRESA.cancelacion,
+        // La salida de ESTE tour. 🔴 Antes iba la GLOBAL ("8:00–9:00 AM, Xilitla
+        // o Valles") junto a la ficha de la Gruta de Xilo, que sale a las 7 PM y
+        // solo recoge en Xilitla, y el modelo se quedaba con la de la mañana.
+        // 🔴 SIN respaldo a la global: con un data.json anterior (sin `salida`
+        // por tour) la global volvía a llegar aquí, y el prompt le dice al
+        // modelo que este campo manda. Sin él, se guía por `horario`,
+        // `puntoEncuentro` y `transporte`, que sí son de este tour.
+        puntoEncuentro: t.puntoEncuentro, salida: t.salida || undefined, horario: t.horario, destinos: t.destinos,
+        // La política del tour cuando tiene una propia (el Edén no tiene
+        // reembolso); si no, la de 48 h.
+        idealPara: t.idealPara, cancelacion: t.cancelacion || EMPRESA.cancelacion,
         // Hechos cerrados: se responden con estos campos, nunca deduciéndolos.
         transporte: t.transporte, alimentos: t.alimentos, fotos: t.fotos,
       };
@@ -448,6 +468,16 @@ async function executeTool(name, input, phone) {
           })),
         };
       }
+      if (esPorGrupo(t)) {
+        // 🔴 Iba como "por persona" con el precio del primer escalón: el bot
+        // cotizaba el Edén a $2,990 × cabeza cuando es la tarifa del grupo.
+        return {
+          ...base,
+          cobro: "por grupo (una sola tarifa para TODO el grupo, no por persona; sin precio de niño)",
+          desde: t.precio,
+          tarifaGrupo: t.tarifaGrupo.map((total, i) => ({ personas: i + 1, total })),
+        };
+      }
       return { ...base, cobro: "por persona", precioPorPersona: t.precio };
     }
 
@@ -464,6 +494,17 @@ async function executeTool(name, input, phone) {
       if (totalPersonas < t.groupMin) return { error: `Este tour requiere mínimo ${t.groupMin} personas.` };
       if (t.soloAdultos && (mid > 0 || small > 0)) {
         return { error: "Esta actividad es solo para mayores de 10 años; no aplica precio de niños." };
+      }
+      if (esPorGrupo(t)) {
+        // La misma cuenta que el sitio (`precioGrupo`): el escalón de ese
+        // número de personas, sin tramos de niño.
+        if (totalPersonas > t.groupMax) return { error: `Esta experiencia admite máximo ${t.groupMax} personas.` };
+        const total = t.tarifaGrupo[Math.min(Math.max(1, totalPersonas), t.tarifaGrupo.length) - 1];
+        return {
+          tour: t.nombre, cobro: "por grupo (tarifa del grupo completo, no por persona)",
+          totalPersonas, total, moneda: "MXN",
+          ...(t.cancelacion ? { seApartaPagandoCompleto: true, cancelacion: t.cancelacion } : {}),
+        };
       }
       const { total, precioMid, precioSmall } = calcPrecio(t.precio, adultos, mid, small);
       return {
@@ -715,7 +756,7 @@ async function executeTool(name, input, phone) {
       const d = findDestino(input.slug);
       if (!d) return { error: "No encontré ese destino. Usa listar_destinos para ver las opciones." };
       const toursQueLoVisitan = (DESTINO_TOUR[d.slug] || [])
-        .map((ref) => { const t = findTour(ref.slug); return t ? { slug: t.slug, nombre: t.nombre, precio: t.precio, precioUnidad: t.precioUnidad } : null; })
+        .map((ref) => { const t = findTour(ref.slug); return t ? { slug: t.slug, nombre: t.nombre, precio: t.precio, precioUnidad: t.precioUnidad, salida: t.salida || undefined } : null; })
         .filter(Boolean);
       return { ...d, toursQueLoVisitan, info: { salida: INFO.salida, pagoEntradas: INFO.pagoEntradas } };
     }
@@ -728,11 +769,19 @@ async function executeTool(name, input, phone) {
 // ══════════════════════════════════════════════════════════════
 // PROMPT DEL SISTEMA
 // ══════════════════════════════════════════════════════════════
+/** Tarifa del GRUPO completo por escalones (el Edén). La trae data.json en `tarifaGrupo`. */
+function esPorGrupo(t) {
+  return Boolean(t && Array.isArray(t.tarifaGrupo) && t.tarifaGrupo.length);
+}
+
 function catalogoTexto() {
   return TOURS.map((t) => {
+    const mx = (n) => `$${n.toLocaleString("es-MX")}`;
     const precio = esPorVehiculo(t)
-      ? `desde $${t.precio.toLocaleString("es-MX")} MXN/*vehículo* (según ruta y unidad)`
-      : `$${t.precio.toLocaleString("es-MX")} MXN/persona`;
+      ? `desde ${mx(t.precio)} MXN/*vehículo* (según ruta y unidad)`
+      : esPorGrupo(t)
+        ? `desde ${mx(t.precio)} MXN por *grupo completo* (${t.tarifaGrupo.length} pers.: ${mx(t.tarifaGrupo[t.tarifaGrupo.length - 1])})`
+        : `${mx(t.precio)} MXN/persona`;
     return (
       `• *${t.nombre}* (slug: ${t.slug})\n` +
       `  ${t.tipo} · dificultad ${t.dificultad} · ${t.duracionTexto} · ${precio} · ${t.groupMin}–${t.groupMax} pers.${t.soloAdultos ? " · SOLO +10 años" : ""}\n` +
@@ -754,6 +803,37 @@ function paquetesTexto() {
 function paquetesNochesTexto() {
   return PAQUETES.map((p) => `${p.nombre} ${p.noches}`).join(", ");
 }
+
+// Los tours que solo recogen en Xilitla, del catálogo (`recogidaTipo`). Eran
+// "uno" en el prompt y hoy son cinco. Con un data.json anterior, que no trae
+// el campo, queda vacío y la regla se lee igual sin la lista.
+function soloXilitlaTexto() {
+  const xs = TOURS.filter((t) => t.recogidaTipo === "hospedaje-xilitla")
+    .map((t) => String(t.nombre).split("—")[0].trim());
+  return xs.length ? ` (${xs.join(", ")})` : "";
+}
+
+// Los tours por grupo y con política propia, del data.json (hoy, el Edén).
+// 🔴 El prompt decía "casi todos son por persona" y "el 30 % aparta TODO", y
+// el Edén —tarifa del grupo completo y sin reembolso— se
+// vendía con las dos cosas al revés.
+function porGrupoTexto() {
+  return TOURS.filter(esPorGrupo).map((t) =>
+    `\n• *${String(t.nombre).split("—")[0].trim()}* se cobra *POR GRUPO*: una sola tarifa para todo el grupo según cuántos van, no por persona y sin precio de niño. *calcular_precio* ya te devuelve el total del grupo.` +
+    (t.cancelacion ? ` Tiene política propia (campo "cancelacion" de *obtener_tour*): NO tiene reembolso, así que NO le ofrezcas la cancelación de 48 h. Se paga como los demás: solo, completo; con otros recorridos, el 30 %.` : "")
+  ).join("");
+}
+const HAY_POLITICA_PROPIA = TOURS.some((t) => t.cancelacion);
+// Solo cuando data.json ya trae la salida de cada tour: con uno anterior, la
+// regla mandaría al modelo a un campo que no existe.
+const HAY_SALIDA_POR_TOUR = TOURS.some((t) => t.salida);
+// El grupo más grande con el que sale un tour (el `GRUPO_MAX` de tours.ts).
+// 🔴 El prompt decía «grupos de máximo 12 personas» y cinco tours admiten 14.
+// Si data.json no trae `groupMax`, la frase queda sin cifra.
+const GRUPO_MAX_TOURS = (() => {
+  const ns = TOURS.map((t) => t.groupMax).filter((n) => typeof n === "number");
+  return ns.length ? Math.max(...ns) : null;
+})();
 
 function destinosTexto() {
   const porZona = {};
@@ -810,7 +890,7 @@ Si ya te dijeron qué tour quieren, sáltate este paso.
 Máximo *UNO o DOS* tours (usa *recomendar_tour* si no tienes claro cuál). De cada uno, en dos líneas:
   · a qué *LUGARES* va — los nombres exactos del campo "destinos" de *obtener_tour*, todos y sin adornos tuyos;
   · el *TOTAL DEL GRUPO* ya calculado con *calcular_precio* (o *cotizar_rzr*), no solo el precio por persona;
-  · con *cuánto se aparta* (el 30 %).
+  · con *cuánto paga hoy*: completo si es un solo recorrido; el 30 % si son 2 o más.
 Y cierras con: "¿Te lo aparto para esa fecha?"
 ⭐ La *Expedición Tamul* es el tour más pedido y el que más gusta. Si piden cascadas, "conocer lo más posible" o no tienen preferencia marcada, ese va en la propuesta.
 
@@ -828,13 +908,13 @@ En cuanto haya un sí o un "me interesa": valida la fecha, y pide *nombre comple
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas y vuelve a preguntar por el cierre. Nunca discutas, nunca presiones, nunca inventes un descuento.
 
-*"Está caro" / "lo vi más barato":* desglosa lo que sí va incluido (guía local certificado, entradas y accesos, ${INFO.incluyeSiempre.join(", ").toLowerCase()}) y recuérdale que hoy solo pone el 30 %. Si de verdad no le alcanza, ofrécele un tour real más económico del catálogo.
-*"Lo voy a pensar":* "Claro, sin prisa 🙌 Solo te comento que la cotización vale 48 horas y en fin de semana los lugares se llenan rápido. ¿Te la aparto con el 30 % y así te la guardo?"
+*"Está caro" / "lo vi más barato":* desglosa lo que sí va incluido (guía local certificado, entradas y accesos, ${INFO.incluyeSiempre.join(", ").toLowerCase()}) y, si arma 2 recorridos o más, recuérdale que hoy solo pone el 30 %. Si de verdad no le alcanza, ofrécele un tour real más económico del catálogo.
+*"Lo voy a pensar":* "Claro, sin prisa 🙌 Solo te comento que la cotización vale 48 horas y en fin de semana los lugares se llenan rápido. ¿Te la aparto y así te la guardo?"
 *"Déjame confirmar con mi grupo/pareja":* perfecto — mándale el resumen listo para reenviar y pregúntale para cuándo tendrá respuesta. No dejes la conversación abierta sin fecha.
-*"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos de máximo 12 personas y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
+*"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos pequeños${GRUPO_MAX_TOURS ? ` (de ${GRUPO_MAX_TOURS} personas como máximo; el cupo de cada tour viene en *obtener_tour*)` : " (el cupo de cada tour viene en *obtener_tour*)"} y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
 *"¿Y si llueve o se cancela?":* ${EMPRESA.cancelacion} El rafting depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma.
-*"¿Puedo pagar todo el día del tour?":* no. Se aparta con el 30 % y el resto se liquida ese día — el anticipo es lo que garantiza el lugar.
-*"¿Son de fiar?":* 4.9★ con 492 reseñas en Google, más de 10,000 viajeros y el premio Arival al Mejor Tour Operador de Norteamérica 2023. Empresa formal desde 2019, familia de guías locales. Esas cifras son REALES; no inventes ninguna otra.
+*"¿Puedo pagar todo el día del tour?":* no. Un solo recorrido se paga completo al reservar; desde 2 recorridos se aparta con el 30 % y el resto se liquida ese día — el pago es lo que garantiza el lugar.
+*"¿Son de fiar?":* ${CALIFICACION_GOOGLE ? `${CALIFICACION_GOOGLE}, más de 10,000 viajeros` : "más de 10,000 viajeros (no des calificación ni número de reseñas)"}. Empresa formal desde 2019, familia de guías locales. Esas cifras son REALES; no inventes ninguna otra, ni premios.
 *"Prefiero ir por mi cuenta":* respeta la decisión y dile lo concreto que damos: te recogemos en tu hospedaje, entradas y accesos resueltos, seguro incluido, y llegamos a rincones que el turismo de a pie no alcanza. Ofrécele armarle la opción para que él compare.
 *Se quedó callado:* UN solo mensaje corto retomando su último dato ("¿Seguimos con el sábado para 4?"). Uno, no tres.
 
@@ -843,7 +923,7 @@ Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas y vu
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Un cliente al que le prometes algo que no damos llega el día del tour, se le cae el plan y nos deja una reseña de una estrella. Vale mil veces más decir "eso no viene incluido".
 
-*1. TRANSPORTE — nunca lo supongas.* Cada tour trae el campo "transporte" en *obtener_tour* con la respuesta ya escrita: cópiala, no la deduzcas de la lista de "incluye". JAMÁS digas "todos los tours incluyen traslado": hay tours donde el cliente llega por su cuenta (RZR, rappel en Tamul, buceo en Media Luna) y uno donde el traslado es solo desde un hospedaje dentro de Xilitla.
+*1. TRANSPORTE — nunca lo supongas.* Cada tour trae el campo "transporte" en *obtener_tour* con la respuesta ya escrita: cópiala, no la deduzcas de la lista de "incluye". JAMÁS digas "todos los tours incluyen traslado": hay tours donde el cliente llega por su cuenta (RZR, rappel en Tamul, buceo en Media Luna) y otros donde el traslado incluido es solo desde un hospedaje dentro de Xilitla${soloXilitlaTexto()}: desde Ciudad Valles esos llevan costo adicional que se cotiza por WhatsApp.
 *2. COMIDAS — ningún tour es "todo incluido".* No uses nunca esa frase. Usa el campo "alimentos" tal cual. Los tours de día completo incluyen *SOLO el desayuno buffet*, y NO es en el hotel: es una parada camino a los destinos, en *El Taco Loco*. La comida de mediodía NO va incluida en NINGUNO, ni la cena. Los paquetes incluyen solo los desayunos.
 *3. FOTOS — nunca digas "profesional".* Lo que damos es: fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. Nada de fotógrafo dedicado, sesión, edición ni plazo de entrega. (Única excepción: en el rappel de Tamul sí hay tomas aéreas con dron.)
 *4. NUNCA repitas por dentro lo que dice una herramienta SOBRE SÍ MISMA.* El cliente no debe leer jamás palabras como "el sistema", "la herramienta", "la API", "simulacro", "mock" ni "folio de prueba". Si algo te llega raro, incompleto o marcado como prueba, no lo narres: sigue con lo que sí tienes y, si de plano falta un dato, di que el equipo se lo confirma hoy mismo.
@@ -870,11 +950,13 @@ Si pide más fotos o la página del tour, mándale el *link* (campo "url" de *ob
 ━━━━━━━━━━━━━━━━━━━━━━━━
 • Casi todos los tours son *POR PERSONA* en MXN. ${EMPRESA.ninos}
 • El *RZR* es la excepción: se cobra *POR VEHÍCULO* según la ruta (Nanacatli 2h, Miradores 3h, Nacimiento 5h con kayak, Trinidad 5h) y la unidad. No incluye transporte hasta Xilitla ni alimentos, y se confirma por WhatsApp (sin pago en línea). Para cotizarlo pide *la ruta* y *cuántas personas van*, y llama a *cotizar_rzr* con ambos: te devuelve SOLO las unidades donde el grupo cabe, con su precio. Nunca ofrezcas una unidad donde no quepan ni le pidas elegir vehículo sin darle antes los precios.
-• El *Buceo en Media Luna* es solo para *mayores de 10 años* con buena salud (no apto con problemas respiratorios, cardíacos o de oído, ni embarazadas). No aplica precio de niños.
-• Salida estándar de los tours con recogida: *${SALIDA}* ${EMPRESA.cancelacion}
+• El *Buceo en Media Luna* es solo para *mayores de 10 años* con buena salud (no apto con problemas respiratorios, cardíacos o de oído, ni embarazadas). No aplica precio de niños.${porGrupoTexto()}
+• *Salida y recogida — NO es igual en todos.* Regla y excepciones: ${SALIDA}${HAY_SALIDA_POR_TOUR ? `
+  Para UN tour, di SIEMPRE la hora y el lugar del campo "salida" de *obtener_tour*: es la de ese recorrido y manda sobre la regla general.` : ""}
+• ${EMPRESA.cancelacion}${HAY_POLITICA_PROPIA ? " Salvo los tours con política propia: para esos usa su campo \"cancelacion\"." : ""}
 • *Horarios:* cada tour trae hora de inicio y de término (campo "horario"). Menciónalos al presentarlo.
 • *SIEMPRE incluido en todos los tours:* ${INFO.incluyeSiempre.join(" · ")}.
-• *ANTICIPO DEL 30 %* — así se aparta TODO. El cliente paga hoy el 30 % y el resto lo liquida el día del recorrido. Cuando des un total, di SIEMPRE con cuánto se aparta: "son $X en total, apartas con $Y". Nunca le pidas el 100 % por adelantado como si fuera la única opción.
+• *CÓMO SE PAGA* (regla de Manolo, la misma que cobra el sitio): *un solo recorrido de un día se paga COMPLETO al reservar*; *desde 2 recorridos (2 días) o con hotel, se aparta con el 30 %* y el resto se liquida el día del primer recorrido. Aplica a TODOS los tours, el Edén incluido. Cuando des un total, di SIEMPRE cuánto paga hoy: "son $X en total, apartas con $Y" (2 o más) o "son $X y se paga al reservar" (uno solo). Si es uno solo, ofrécele sumar otro recorrido: así aparta todo con el 30 %.
 • NUNCA inventes montos ni horarios: usa las herramientas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -883,7 +965,7 @@ Si pide más fotos o la página del tour, mándale el *link* (campo "url" de *ob
 Si vienen por *varios días* o quieren *dos o más recorridos*, NO recites los tres paquetes preestablecidos: ármale uno.
 1. Ya tienes días, personas y qué les late (pasos 1 y 2). Propón *un tour de día completo por día* — no metas dos pesados el mismo día — con el precio de cada uno y el total.
    📍 Al nombrar un recorrido, di SIEMPRE a qué destinos va. "Ruta Acuática" no le dice nada a nadie; "Ruta Acuática — Puente de Dios, Hacienda Los Gómez y Siete Cascadas" sí. El cliente elige por los LUGARES.
-2. *El hospedaje es OPCIONAL.* Ofrécelo como opción, nunca como requisito: "si quieres te paso opciones en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que pasamos por él a su hospedaje en Xilitla o Ciudad Valles, sea nuestro hotel o no.
+2. *El hospedaje es OPCIONAL.* Ofrécelo como opción, nunca como requisito: "si quieres te paso opciones en nuestro hotel en Xilitla; y si prefieres quedarte en otro lado, no hay problema". Aclara SIEMPRE que pasamos por él a su hospedaje, sea nuestro hotel o no: en Xilitla o Ciudad Valles en la mayoría de los tours; en los que solo recogen en Xilitla${soloXilitlaTexto()}, desde Ciudad Valles va con costo adicional que se cotiza por WhatsApp. Si armas varios días, revisa el "salida" de cada tour.
    🏨 *Cada vez que salga el hospedaje, di QUÉ TIENE EL HOTEL.* Un cuarto con vista no vende: lo que vende es que hay alberca, restaurante y que Las Pozas queda a cinco minutos a pie. Menciona 2 o 3 servicios, los que le encajen a ESE cliente (a una pareja la terraza y la alberca; a quien llega en coche, el estacionamiento), no la lista entera de corrido.
 ${INFO.hotelServicios.servicios.map((x) => "   • " + x).join("\n")}
    • ${INFO.hotelServicios.ubicacion}
@@ -933,7 +1015,7 @@ Tours *por persona* — ofrece las dos opciones:
 
 *Vigencia:* la cotización vale *48 horas*. Dilo así y agrega que en temporada alta y fines de semana conviene reservar cuanto antes porque los lugares se llenan. Es urgencia real: no le pongas contadores ni digas "quedan X lugares" si no lo sabes.
 
-⚠️ *NUNCA digas que una reserva está "pagada" sin mirar el saldo.* Quien reserva paga SOLO el 30 %. Al consultar un folio con *consultar_reserva*, di SIEMPRE las dos cifras: lo pagado y lo que falta. La herramienta te lo devuelve redactado en el campo resumenPago — úsalo tal cual.
+⚠️ *NUNCA digas que una reserva está "pagada" sin mirar el saldo.* Quien reserva 2 recorridos o más paga SOLO el 30 % (uno solo, completo). Al consultar un folio con *consultar_reserva*, di SIEMPRE las dos cifras: lo pagado y lo que falta. La herramienta te lo devuelve redactado en el campo resumenPago — úsalo tal cual.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧭 CASOS SUELTOS

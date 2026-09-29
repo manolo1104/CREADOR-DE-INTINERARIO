@@ -1,10 +1,15 @@
 import { Destino } from "./destinos";
 import { GOOGLE_RATING, GOOGLE_RESENAS } from "./resenas";
-import { RATING_DESTINO } from "./destinoData";
 import { CONTACTO } from "./contacto";
+import { TOURS_DB, etiquetaUnidad, type Tour } from "./tours";
+import { rangoGrupo } from "./catalogoResumen";
+import { localizeTour } from "./i18n/localize";
 import { localePath, localeUrl, type Locale } from "./i18n/config";
 
 const BASE_URL = "https://www.huasteca-potosina.com";
+
+/** "$1,950": el mismo agrupado en los dos idiomas; el "MXN" lo pone quien escribe la frase. */
+const pesos = (n: number) => `$${n.toLocaleString("es-MX")}`;
 
 /**
  * Identificador único de la empresa dentro del grafo de schema.org.
@@ -177,10 +182,227 @@ export function buildBreadcrumbJsonLd(crumbs: Crumb[], locale: Locale = "es") {
   return { "@context": "https://schema.org", ...buildBreadcrumbNode(crumbs, locale) };
 }
 
+/**
+ * Lo más barato y lo más caro que se cobra por un recorrido, EN SU UNIDAD, y
+ * cuántas tarifas distintas hay detrás.
+ *
+ *   · por persona → el precio suelto (una sola tarifa).
+ *   · por grupo   → los escalones de `tarifaGrupo` (el Edén: $2,990 con una
+ *     persona … $4,160 con siete, por el grupo entero).
+ *   · por vehículo → toda la matriz `flota[].precios` (el RZR: de la unidad más
+ *     chica en la ruta corta a la más grande en la larga).
+ */
+function tarifaDeTour(t: Pick<Tour, "precio" | "precioUnidad" | "tarifaGrupo" | "flota">) {
+  if (t.precioUnidad === "grupo") {
+    const r = rangoGrupo(t);
+    return { ...r, n: t.tarifaGrupo?.length || 1 };
+  }
+  if (t.precioUnidad === "vehiculo") {
+    const precios = (t.flota ?? []).flatMap((v) => v.precios);
+    if (precios.length) return { min: Math.min(...precios), max: Math.max(...precios), n: precios.length };
+  }
+  return { min: t.precio, max: t.precio, n: 1 };
+}
+
+/**
+ * La oferta de schema.org de UN recorrido, siempre con su unidad.
+ *
+ * 🔴 Existe porque cada página armaba su `Offer` a mano y en varias se perdía
+ * la unidad: /reservar publicaba el Edén como `{"price": 2990}` y el RZR como
+ * `{"price": 1600}` sin `priceSpecification`, que un buscador lee "por
+ * persona" —siete veces lo que cuesta el Edén por cabeza, y el RZR como si se
+ * cobrara por ocupante—. Además apuntaba a /reservar-tour/<slug>, que redirige
+ * (307) al carrito con noindex: una oferta cuya URL no se puede indexar.
+ *
+ * Reglas:
+ *   · Precio siempre en MXN y SIEMPRE con `UnitPriceSpecification.unitText`
+ *     sacado de `etiquetaUnidad()` —la misma que pinta la tarjeta—.
+ *   · Si la tarifa es un rango (grupo o vehículo) va como `AggregateOffer` con
+ *     lowPrice/highPrice: declarar "$2,990" a secas diría que ése es EL precio,
+ *     y solo es el escalón de una persona.
+ *   · `url` por defecto es la ficha del tour (/tours/<slug>), que es la página
+ *     indexable del producto.
+ *
+ * No lleva `seller`: la página que la use decide si referencia a la
+ * organización (y en ese caso debe tener el nodo en su grafo).
+ */
+export function buildTourOffer(
+  t: Pick<Tour, "slug" | "precio" | "precioUnidad" | "tarifaGrupo" | "flota">,
+  locale: Locale = "es",
+  url: string = localeUrl(`/tours/${t.slug}`, locale),
+) {
+  const { min, max, n } = tarifaDeTour(t);
+  const unitText = etiquetaUnidad(t, locale === "en");
+  const comun = {
+    priceCurrency: "MXN",
+    availability: "https://schema.org/InStock",
+    url,
+  };
+  if (min !== max) {
+    return {
+      "@type": "AggregateOffer",
+      ...comun,
+      lowPrice: min,
+      highPrice: max,
+      offerCount: n,
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        minPrice: min,
+        maxPrice: max,
+        priceCurrency: "MXN",
+        unitText,
+      },
+    };
+  }
+  return {
+    "@type": "Offer",
+    ...comun,
+    price: min,
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: min,
+      priceCurrency: "MXN",
+      unitText,
+    },
+  };
+}
+
+/**
+ * La entrada de un destino tal como se le declara a Google: `offers` solo si se
+ * COBRA algo por persona, e `isAccessibleForFree` cuando la entrada es libre.
+ *
+ * 🔴 Una sola regla para la ficha del destino y para /experiencias. Antes
+ * /experiencias sacaba el precio parseando el texto libre y publicaba otros
+ * números que la ficha (rafting 1,850 contra 1,950; Tamul sin oferta aquí y
+ * con oferta allá).
+ *
+ * 🔴 Sin `Offer` de precio 0 en los sitios de acceso libre: no agrega nada
+ * (`isAccessibleForFree` ya lo dice) y en algunos contradecía el texto de la
+ * propia ficha —Tamohí cobra la videocámara, en Axtla el chalán tiene cuota,
+ * en el Trampolín puede haber estacionamiento—.
+ *
+ * El número sale de `precio_entrada_mxn`, NUNCA de parsear `precio_entrada`
+ * (ver el comentario de ese campo en `destinos.ts`). Sin número, sin oferta.
+ * Ese campo solo se llena con una tarifa POR PERSONA clara, así que la unidad
+ * se declara como tal, igual que en los tours.
+ */
+export function entradaDestinoSchema(d: Pick<Destino, "precio_entrada_mxn">, locale: Locale = "es") {
+  const mxn = d.precio_entrada_mxn;
+  return {
+    ...(mxn !== undefined && mxn > 0
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: String(mxn),
+            priceCurrency: "MXN",
+            availability: "https://schema.org/InStock",
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: mxn,
+              priceCurrency: "MXN",
+              unitText: etiquetaUnidad({ precioUnidad: "persona" }, locale === "en"),
+            },
+          },
+        }
+      : {}),
+    isAccessibleForFree: mxn === 0,
+  };
+}
+
 export interface DestinoFaq {
   pregunta: string;
   respuesta: string;
 }
+
+/**
+ * La pregunta del PRECIO de un destino, redactada según lo que de verdad dice
+ * su tarifa.
+ *
+ * 🔴 La plantilla vieja escribía SIEMPRE «La entrada a X cuesta
+ * {precio_entrada}», aunque el texto no fuera una cifra. Salía, visible y en el
+ * FAQPage: «La entrada a Aquismón cuesta Acceso libre. Se recomienda llevar
+ * efectivo por si acaso», «cuesta Consultar acceso localmente», «costs Free
+ * access». Y en el rafting, cuya "entrada" es nuestro tour y se paga en línea
+ * con tarjeta, remataba con «Solo se acepta efectivo, no hay cajero».
+ *
+ * Cuatro casos:
+ *   1. La "entrada" ES un tour nuestro (`entradaEsTour`): se contesta con el
+ *      precio del catálogo, su unidad y la regla de pago del motor.
+ *   2. Se cobra y el texto empieza por la cifra ("$150 MXN"): «La entrada a X
+ *      cuesta $150 MXN».
+ *   3. Se cobra (o no hay cifra clara) pero el texto es prosa ("General $50 ·
+ *      estudiantes $25…", "Consultar acceso localmente"): «Entrada a X: …».
+ *   4. Acceso libre (`precio_entrada_mxn === 0`): se pregunta si hay que pagar
+ *      y se contesta con el texto tal cual, SIN la frase del efectivo.
+ */
+function faqPrecioDestino(d: Destino, locale: Locale): DestinoFaq {
+  const en = locale === "en";
+  const txt = d.precio_entrada.trim().replace(/\.$/, "");
+  // Después de dos puntos va minúscula ("Entrada a X: consultar…"). Solo se
+  // baja la primera letra si la segunda ya es minúscula: una sigla ("MXN") se
+  // queda como está.
+  const txtMinus = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(txt) ? txt[0].toLowerCase() + txt.slice(1) : txt;
+  const efectivo = en
+    ? d.advertencias?.toLowerCase().includes("cash")
+      ? "Cash only — there is no ATM on site."
+      : "Bringing cash is recommended just in case."
+    : d.advertencias?.toLowerCase().includes("efectivo")
+      ? "Solo se acepta efectivo, no hay cajero en el lugar."
+      : "Se recomienda llevar efectivo por si acaso.";
+
+  // 1. La "entrada" es uno de nuestros recorridos.
+  const base = d.entradaEsTour ? TOURS_DB.find((t) => t.slug === d.entradaEsTour) : undefined;
+  if (base) {
+    const tour = localizeTour(base, locale);
+    const { min, max } = tarifaDeTour(tour);
+    const desde = min !== max ? (en ? "from " : "desde ") : "";
+    const importe = `${desde}${pesos(min)} MXN ${etiquetaUnidad(tour, en)}`;
+    const ficha = localeUrl(`/tours/${tour.slug}`, locale).replace(/^https?:\/\//, "");
+    return en
+      ? {
+          pregunta: `How much does it cost to visit ${d.nombre}?`,
+          respuesta: `${d.nombre} is done on our ${tour.nombreCorto} tour: ${importe}, the final price of the tour. You book and pay online by card: a single day tour is paid in full when you book, and from 2 days on a 30% deposit holds your spot. Details at ${ficha}.`,
+        }
+      : {
+          pregunta: `¿Cuánto cuesta visitar ${d.nombre}?`,
+          respuesta: `${d.nombre} se recorre con nuestro tour ${tour.nombreCorto}: ${importe}, precio final del recorrido. Se reserva y se paga en línea con tarjeta: un recorrido suelto de un día se paga completo al reservar, y desde 2 días apartas con el 30 %. Detalles en ${ficha}.`,
+        };
+  }
+
+  // 4. Acceso libre: no hay "cuánto cuesta".
+  if (d.precio_entrada_mxn === 0) {
+    return en
+      ? { pregunta: `Is there an entrance fee at ${d.nombre}?`, respuesta: `${txt} at ${d.nombre}.` }
+      : { pregunta: `¿Hay que pagar para entrar a ${d.nombre}?`, respuesta: `${txt} en ${d.nombre}.` };
+  }
+
+  // 2. y 3. Se cobra algo (o no hay tarifa clara publicada).
+  const esCifra = txt.startsWith("$");
+  return en
+    ? {
+        pregunta: `How much is admission to ${d.nombre}?`,
+        respuesta: `${esCifra ? `Admission to ${d.nombre} costs ${txt}.` : `Admission to ${d.nombre}: ${txtMinus}.`} ${efectivo}`,
+      }
+    : {
+        pregunta: `¿Cuánto cuesta la entrada a ${d.nombre}?`,
+        respuesta: `${esCifra ? `La entrada a ${d.nombre} cuesta ${txt}.` : `Entrada a ${d.nombre}: ${txtMinus}.`} ${efectivo}`,
+      };
+}
+
+/**
+ * ¿Alguna pregunta curada ya habla del precio? Entonces la automática sobra.
+ *
+ * El filtro de abajo solo quita repetidas LITERALES, y las curadas preguntan
+ * el precio con otras palabras («¿Cuánto cuesta ir a la Cascada de Tamul?»,
+ * «¿Qué días abre Las Pozas y cuánto cuesta?»): la ficha acababa con dos
+ * respuestas de precio, y en Tamohí la automática decía una cosa y la curada
+ * otra.
+ */
+// ⚠️ "how much" a secas no basta: también es «How much TIME do you need…?».
+const PREGUNTA_PRECIO = {
+  es: /cu[aá]nto (cuesta|se paga|vale)|precio|tarifa|hay que pagar/i,
+  en: /how much (does|is|do|are)\b|\bprice|admission|entrance fee|\bcosts?\b/i,
+};
 
 /**
  * FAQs de un destino: primero las curadas a mano (`seo.faqPrincipales`) y luego
@@ -194,17 +416,12 @@ export interface DestinoFaq {
  */
 export function getDestinoFaqs(d: Destino, locale: Locale = "es"): DestinoFaq[] {
   const curadas: DestinoFaq[] = d.seo?.faqPrincipales?.length ? [...d.seo.faqPrincipales] : [];
+  const precioCurado = curadas.some((f) => PREGUNTA_PRECIO[locale].test(f.pregunta));
+  const precio = precioCurado ? [] : [faqPrecioDestino(d, locale)];
 
   const automaticas: DestinoFaq[] = locale === "en"
     ? [
-        {
-          pregunta: `How much is admission to ${d.nombre}?`,
-          respuesta: `Admission to ${d.nombre} costs ${d.precio_entrada}. ${
-            d.advertencias?.toLowerCase().includes("cash")
-              ? "Cash only — there is no ATM on site."
-              : "Bringing cash is recommended just in case."
-          }`,
-        },
+        ...precio,
         {
           pregunta: `How do I get to ${d.nombre} from Ciudad Valles?`,
           respuesta: `${d.como_llegar}. The destination is in ${d.zona}, San Luis Potosí, Mexico.`,
@@ -223,14 +440,7 @@ export function getDestinoFaqs(d: Destino, locale: Locale = "es"): DestinoFaq[] 
         },
       ]
     : [
-        {
-          pregunta: `¿Cuánto cuesta la entrada a ${d.nombre}?`,
-          respuesta: `La entrada a ${d.nombre} cuesta ${d.precio_entrada}. ${
-            d.advertencias?.toLowerCase().includes("efectivo")
-              ? "Solo se acepta efectivo, no hay cajero en el lugar."
-              : "Se recomienda llevar efectivo por si acaso."
-          }`,
-        },
+        ...precio,
         {
           pregunta: `¿Cómo llegar a ${d.nombre} desde Ciudad Valles?`,
           respuesta: `${d.como_llegar}. El destino se encuentra en ${d.zona}, San Luis Potosí, México.`,
@@ -295,9 +505,9 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
   // publicaba una entrada de 1 peso cobrando $1,950 —un error de 1,950 veces—,
   // y el `/gratis/` declaraba gratuito al museo Leonora Carrington porque su
   // tarifa termina en "menores de 12 años gratis". Sin campo numérico no se
-  // publica oferta: mejor callar un precio que inventarlo.
-  const precioMxn = d.precio_entrada_mxn;
-  const esGratis = precioMxn === 0;
+  // publica oferta: mejor callar un precio que inventarlo. La regla completa
+  // (y la de acceso libre) vive en `entradaDestinoSchema`, que también usa
+  // /experiencias.
   const imagen = d.imagen_hero || d.imagen_galeria[0];
   const inLanguage = locale === "en" ? "en" : "es-MX";
 
@@ -324,32 +534,23 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
         },
         openingHoursSpecification: buildOpeningHours(d),
         // Sin Offer cuando no hay tarifa por persona clara ("Consultar", cuotas
-        // por grupo, rangos): esos destinos no traen `precio_entrada_mxn`.
-        ...(precioMxn !== undefined
-          ? {
-              offers: {
-                "@type": "Offer",
-                price: String(precioMxn),
-                priceCurrency: "MXN",
-                availability: "https://schema.org/InStock",
-              },
-            }
-          : {}),
+        // por grupo, rangos) ni cuando la entrada es libre: ver
+        // `entradaDestinoSchema`. `isAccessibleForFree` sale de ahí también.
+        ...entradaDestinoSchema(d, locale),
         amenityFeature: d.que_llevar.map((item) => ({
           "@type": "LocationFeatureSpecification",
           name: item,
           value: true,
         })),
-        isAccessibleForFree: esGratis,
         image: imagen ? `${BASE_URL}${imagen}` : undefined,
-        // aggregateRating movido a Product — TouristAttraction no soportado por Google para rich snippets de reseñas
       },
       // 🔴 28 sep 2026 — retirado el aggregateRating de destinos.
       // `RATING_DESTINO` repartía 1,188 reseñas entre 20 destinos, con notas de
       // 4.5 a 4.7, todas inventadas: el negocio tiene 161 reseñas en Google y
       // un destino (un lugar público, no un producto que vendamos) no tiene
       // reseñas propias que declarar. El rating real va una sola vez, en la
-      // organización. Ver `src/lib/resenas.ts`.
+      // organización. Ver `src/lib/resenas.ts`. La constante se BORRÓ de
+      // `destinoData.ts` (quedaba importada aquí sin usarse, lista para volver).
       {
         "@type": "FAQPage",
         inLanguage,

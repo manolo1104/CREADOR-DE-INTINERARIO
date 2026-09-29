@@ -9,31 +9,16 @@ import { TourCard } from "@/components/TourCard";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { getExperiencias, conNumero } from "@/lib/i18n/experiencias.en";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
-import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { buildBreadcrumbNode, entradaDestinoSchema } from "@/lib/jsonld";
+import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 
-/**
- * Oferta de schema.org a partir del texto libre de `precio_entrada`.
- *
- * Antes el JSON-LD hacía `precio_entrada.match(/\d+/)?.[0] || "0"`, y esos
- * textos son prosa, no cifras: "$1,950 MXN (tour completo…)" devolvía **1**
- * —la coma de millares corta el match— y "Consultar acceso localmente" o
- * "Sin tarifa oficial publicada" devolvían **0**, es decir, Google leía
- * "gratis". Publicar un precio falso en datos estructurados es peor que no
- * publicar ninguno, así que ahora sólo se declara `offers` cuando el texto es
- * un importe limpio o una entrada libre declarada; en cualquier otro caso
- * (rangos, varias tarifas, extras, "consultar") el destino se queda sin oferta.
- */
-function ofertaEntrada(precio: string) {
-  const txt = precio.trim();
-  if (/^(acceso libre|entrada libre|free (access|admission))\b/i.test(txt)) {
-    return { "@type": "Offer", price: "0", priceCurrency: "MXN", availability: "https://schema.org/InStock" };
-  }
-  // Un solo importe, seguido como mucho de "MXN", "por persona" y un paréntesis
-  // aclaratorio que no contenga otro precio.
-  const m = txt.match(/^\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\s*MXN)?(?:\s*(?:por persona|per person))?(?:\s*\([^$)]*\))?$/i);
-  if (!m) return undefined;
-  return { "@type": "Offer", price: m[1].replace(/,/g, ""), priceCurrency: "MXN", availability: "https://schema.org/InStock" };
-}
+// 🔴 La oferta de cada destino ya no se saca aquí del texto libre de
+// `precio_entrada`. Esta página tenía su propio parser, distinto del de la
+// ficha del destino, y los dos publicaban precios distintos para el mismo
+// lugar (rafting 1,850 en /en/experiencias contra 1,950 en la ficha; Tamul y
+// el Castillo sin oferta aquí y con oferta allá), además de `price: "0"` en
+// los sitios de acceso libre. Ahora las dos usan `entradaDestinoSchema`
+// (lib/jsonld), que lee el campo numérico `precio_entrada_mxn`.
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -54,11 +39,20 @@ export function generateMetadata(): Metadata {
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
+      // /experiencias trae su propia `opengraph-image.tsx`, que manda sobre
+      // esto; /en/experiencias reexporta la página desde otra carpeta y se
+      // quedaba SIN og:image ni twitter:image (la vista previa salía vacía).
+      // Solo en inglés, para no pisar la imagen generada de la versión en
+      // español.
+      ...(locale === "en"
+        ? { images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: t.ogTitle }] }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",
       title: t.twitterTitle,
       description: conNumero(t.twitterDescription, n, locale),
+      ...(locale === "en" ? { images: [`${SITE}/og-image.jpg`] } : {}),
     },
   };
 }
@@ -99,7 +93,9 @@ export default function ExperienciasPage() {
               addressRegion: "San Luis Potosí",
               addressCountry: "MX",
             },
-            offers: ofertaEntrada(d.precio_entrada),
+            // `localizeDestino` conserva `precio_entrada_mxn` del original
+            // (solo traduce textos), así que el número es el mismo en /en.
+            ...entradaDestinoSchema(d, locale),
           },
         })),
       },
@@ -255,8 +251,8 @@ export default function ExperienciasPage() {
 
       {/* ── LEAD MAGNET ──
           Solo español: la guía PDF está escrita y se entrega en español, así
-          que cobrarla en la página inglesa sería venderle al lector un
-          documento que no puede leer. */}
+          que ofrecerla en la página inglesa sería pedirle el correo al lector
+          a cambio de un documento que no puede leer. */}
       {t.guiaVisible && (
         <section className="relative py-20 px-6 bg-verde-profundo border-t border-white/8 overflow-hidden">
           <FloatingLeaves count={18} />
@@ -274,16 +270,20 @@ export default function ExperienciasPage() {
             <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto leading-relaxed">
               {t.guiaTexto}
             </p>
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-baseline gap-3">
-                <span className="font-cormorant font-light text-crema/40 line-through text-xl">$199</span>
-                <span className="font-cormorant font-light text-dorado text-3xl">$49 <span className="text-[11px] font-dm text-crema/40">MXN</span></span>
-              </div>
-              <Link href="/guia" className="inline-block bg-dorado text-negro px-12 py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
+            {/* 🔴 Aquí seguía la guía a la venta: «$199» tachado, «$49 MXN» y
+                «Pago seguro · Garantía 7 días», con enlace a /guia, que ya la
+                regala. Decisión de Manolo: la guía es GRATIS a cambio del
+                correo en todo el sitio. Es el mismo formulario del inicio y de
+                /guia (mismo PDF); `origen` separa de dónde llegó cada correo. */}
+            <div className="max-w-md mx-auto text-left">
+              <GuiaGratisForm origen="experiencias" />
+            </div>
+            <p className="mt-4 text-[11px] text-crema/40 tracking-wide font-dm">
+              {t.guiaGarantia}{" "}
+              <Link href="/guia" className="text-verde-vivo hover:text-lima underline underline-offset-2">
                 {t.guiaBoton}
               </Link>
-              <p className="text-[11px] text-crema/30 tracking-wide font-dm">{t.guiaGarantia}</p>
-            </div>
+            </p>
           </div>
         </section>
       )}

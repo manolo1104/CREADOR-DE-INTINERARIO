@@ -1,28 +1,33 @@
 import { notFound } from "next/navigation";
-import { resenasTexto } from "@/lib/resenas";
+import { resenasTexto, GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
-import { TOURS_DB, tourDurRange, esPorPersona, PRIVADO_EXTRA_POR_PERSONA, precioTachado, recogidaDeTour, type Tour } from "@/lib/tours";
+import {
+  TOURS_DB, tourDurRange, esPorPersona, PRIVADO_EXTRA_POR_PERSONA, precioTachado, recogidaDeTour,
+  partesRecogida, fraseRecogida, salidaCorta, conDatos, etiquetaUnidad, rankTour, incluyeDeTour,
+  type Tour, type PartesRecogida,
+} from "@/lib/tours";
+import { destinosDeTour } from "@/lib/tourMapping";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TOUR_REQUISITOS, noIncluyeDe, queLlevarDe } from "@/lib/tourRequisitos";
 import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
 import { TourGallery } from "@/components/TourGallery";
 import { HeroTourMedia } from "@/components/HeroTourMedia";
-import { TourDeparture } from "@/components/TourDeparture";
+import { TourDeparture, ciudadUnicaDeRecogida } from "@/components/TourDeparture";
 import { SelloGarantia } from "@/components/SelloGarantia";
 import { ItinerarioLinea } from "@/components/ItinerarioLinea";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { TourPageTracker } from "@/components/TourPageTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones, ChevronDown, Award, MapPin, Gauge, Baby, CreditCard } from "lucide-react";
+import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones, ChevronDown, Award, MapPin, Gauge, Baby, CreditCard, AlarmClock } from "lucide-react";
 import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour, ID_MODULO_RESERVA } from "@/components/booking/ReservaFichaTour";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
-import { localizeTour } from "@/lib/i18n/localize";
+import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
 
@@ -38,6 +43,17 @@ function metaDesc(txt: string, max = 155): string {
   const cut = txt.slice(0, max);
   const lastSpace = cut.lastIndexOf(" ");
   return `${cut.slice(0, lastSpace > 100 ? lastSpace : max).replace(/[\s,;:.—–-]+$/, "")}…`;
+}
+
+/**
+ * Como `metaDesc`, pero cortando en el último punto que quepa: una meta escrita
+ * a mano (`tour.seo.descripcion`) que se pase de largo pierde su última frase
+ * entera, no media. Solo si no hay ningún punto se recorta por palabra.
+ */
+function recortarAFrase(txt: string, max = 155): string {
+  if (txt.length <= max) return txt;
+  const fin = txt.slice(0, max + 1).lastIndexOf(". ");
+  return fin > 60 ? txt.slice(0, fin + 1) : metaDesc(txt, max);
 }
 
 /** Google corta el título del SERP cerca de los 60 caracteres: nos quedamos por debajo. */
@@ -72,21 +88,28 @@ function nombreCortoTour(nombre: string, max = Number.MAX_SAFE_INTEGER): string 
  * `tour.precio` es un número suelto, y en el RZR ese número es solo el punto de
  * partida: cada combinación de ruta y vehículo tiene su propia tarifa, de
  * $1,600 a $7,000. Declarar 1.600 como precio cerrado era un dato falso.
+ *
+ * Lo mismo con la tarifa por grupo del Edén: $2,990 es lo que paga UNA persona
+ * sola, y siete pagan $4,160 entre todos. El escalón de arriba también cuenta.
  */
-function rangoPrecio(t: Pick<Tour, "precio" | "flota" | "rutas">): [number, number] {
+function rangoPrecio(t: Pick<Tour, "precio" | "flota" | "rutas" | "tarifaGrupo">): [number, number] {
   const precios = [
     ...(t.flota ?? []).flatMap((v) => v.precios),
     ...(t.rutas ?? []).map((r) => r.desde),
+    ...(t.tarifaGrupo ?? []),
   ];
   if (!precios.length) return [t.precio, t.precio];
   return [Math.min(...precios), Math.max(...precios)];
 }
 
-/** "$1,550 MXN por persona" o "de $1,600 a $7,000 MXN por vehículo". */
-function frasePrecio(min: number, max: number, esVehiculo: boolean, locale: Locale): string {
-  const unidad = esVehiculo
-    ? locale === "en" ? "MXN per vehicle" : "MXN por vehículo"
-    : locale === "en" ? "MXN per person" : "MXN por persona";
+/**
+ * "$1,550 MXN por persona", "de $1,600 a $7,000 MXN por vehículo" o "de $2,990
+ * a $4,160 MXN por grupo". La unidad sale de `etiquetaUnidad`: con un booleano
+ * de vehículo, el Edén salía como "$2,990 MXN por persona" en la meta y en la
+ * frase citable, siete veces lo que cuesta.
+ */
+function frasePrecio(min: number, max: number, t: Pick<Tour, "precioUnidad">, locale: Locale): string {
+  const unidad = `MXN ${etiquetaUnidad(t, locale === "en")}`;
   const n = (v: number) => `$${fmtNumber(v, locale)}`;
   if (max <= min) return `${n(min)} ${unidad}`;
   return locale === "en" ? `${n(min)} to ${n(max)} ${unidad}` : `de ${n(min)} a ${n(max)} ${unidad}`;
@@ -115,7 +138,7 @@ function fraseDuracion(t: Parameters<typeof tourDurRange>[0], locale: Locale): s
  * "Puente de Dios" solo son 11.242 impresiones, y están además Edward James,
  * Las Pozas, Minas Viejas, Micos y Media Luna.
  */
-function lugarDelTour(destinos: string[] | undefined, head: string): string {
+function extraerLugar(destinos: string[] | undefined): string {
   const crudo = (destinos ?? [])[0];
   if (!crudo) return "";
   // "Puente de Dios", no "A elegir: Hacienda… (mismo lugar)".
@@ -134,10 +157,53 @@ function lugarDelTour(destinos: string[] | undefined, head: string): string {
       if (cola.length <= 22 && /^[A-ZÁÉÍÓÚÑ]/.test(cola)) { d = cola; break; }
     }
   }
+  return d;
+}
+
+function lugarDelTour(destinos: string[] | undefined, head: string): string {
+  const d = extraerLugar(destinos);
   if (!d) return "";
   // Si la cabeza ya lo nombra, repetirlo solo gasta caracteres.
   const nucleo = d.split(/\s+/).pop()!.toLowerCase();
   return head.toLowerCase().includes(nucleo) ? "" : d;
+}
+
+/**
+ * El lugar del title en inglés.
+ *
+ * 🔴 Se sacaba de `base.destinos`, en español, y el title inglés salía como
+ * "Xilo Cave: Selva de Xilitla". Pero pasarle sin más los destinos traducidos
+ * a `lugarDelTour` tampoco sirve: en inglés el nombre propio va DELANTE
+ * ("Minas Viejas Waterfalls", "Edward James Sculpture Garden") y su recorte
+ * por la izquierda se quedaba con "Viejas Waterfalls" o "James Sculpture
+ * Garden". Así que si el lugar español es un nombre propio que el destino
+ * inglés conserva tal cual ("Edward James", "Puente de Dios", "La Trinidad"),
+ * va ese; si no, se saca del destino inglés.
+ */
+function lugarDelTourEn(destinosEs: string[] | undefined, destinosEn: string[] | undefined, head: string): string {
+  const es = extraerLugar(destinosEs);
+  if (!es) return "";
+  const conservado = ((destinosEn ?? [])[0] ?? "").toLowerCase().includes(es.toLowerCase());
+  const d = conservado
+    ? es
+    : extraerLugar(destinosEn)
+        .split(" ")
+        .map((w) => (/^(of|the|in|and|at|on)$/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+        .join(" ");
+  if (!d) return "";
+  // En inglés el núcleo no es la última palabra ("Tamul Waterfall" en "Tamul
+  // Expedition"): basta con que la cabeza ya contenga una palabra con contenido.
+  const cabeza = head.toLowerCase();
+  const yaNombrado = d.toLowerCase().split(/\s+/).some((w) => w.length >= 4 && cabeza.includes(w));
+  return yaNombrado ? "" : d;
+}
+
+/** Recorta en frontera de palabra sin partir por guiones (una `{salida}` lleva "3:00–4:00"). */
+function cortarEnPalabra(txt: string, max: number): string {
+  if (txt.length <= max) return txt;
+  const cortado = txt.slice(0, max);
+  const espacio = cortado.lastIndexOf(" ");
+  return (espacio > 0 ? cortado.slice(0, espacio) : cortado).replace(COLA_VACIA, "").replace(/[\s,;:·|-]+$/, "");
 }
 
 function construirTitulo(
@@ -145,18 +211,31 @@ function construirTitulo(
   precioTxt: string,
   hayRango: boolean,
   locale: Locale,
-  destinos?: string[],
+  destinos: { es?: string[]; en?: string[] },
+  cabezaSeo?: string,
 ): string {
   const desde = hayRango ? (locale === "en" ? "from " : "desde ") : "";
   const sufijos = locale === "en"
     ? [` | Huasteca Tour ${desde}${precioTxt} MXN`, ` | Tour ${desde}${precioTxt} MXN`, ` | ${desde}${precioTxt} MXN`]
     : [` | Tour Huasteca ${desde}${precioTxt} MXN`, ` | Tour ${desde}${precioTxt} MXN`, ` | ${desde}${precioTxt} MXN`];
 
+  // La cabeza escrita a mano (`tour.seo.titulo`) manda: es el nombre que la
+  // gente SÍ teclea ("Hoya de la Luz"), y no se le pega un lugar detrás. El
+  // precio se le añade solo si cabe; si no, se prefiere la cabeza entera.
+  if (cabezaSeo) {
+    for (const sufijo of sufijos) {
+      if (cabezaSeo.length + sufijo.length <= MAX_TITLE) return cabezaSeo + sufijo;
+    }
+    return cortarEnPalabra(cabezaSeo, MAX_TITLE);
+  }
+
   const head = nombre.split(/\s*[—–]\s*/)[0].trim();
   // Sin el verbo de arranque cabe el lugar: "Descubre el Buceo en la Laguna de
   // la Media Luna" perdía "de la Media Luna" al recortarse por la cola.
   const headCorto = head.replace(/^(Descubre el|Descubre|Conoce el|Conoce|Vive el|Vive|Discover the|Discover|Experience the|Experience)\s+/i, "");
-  const lugar = lugarDelTour(destinos, head);
+  const lugar = locale === "en"
+    ? lugarDelTourEn(destinos.es, destinos.en, head)
+    : lugarDelTour(destinos.es, head);
 
   const bases = [
     lugar ? `${head}: ${lugar}` : "",
@@ -183,40 +262,73 @@ function construirTitulo(
  * vivía por el carácter 320: el fragmento de Google nunca lo enseñaba. Ahora el
  * precio va en la primera frase y la segunda («Traslado, guía…») solo se añade
  * si cabe entera —preferimos una descripción corta a una cortada a medias.
+ *
+ * 🔴 Los recorridos que solo recogen en Xilitla y con hora propia (la Gruta a
+ * las 7 de la NOCHE, el Amanecer de madrugada) decían lo mismo que Tamul:
+ * "Traslado, guía y seguro incluidos". Quien llega desde Google tiene que
+ * saber a qué hora y dónde lo recogen antes de hacer clic, así que en esos la
+ * segunda frase es la recogida. Se prueban de la más completa a la más corta y
+ * se queda la primera que cabe entera.
  */
 function construirDescripcion(
   corto: string,
   region: string,
   durTxt: string,
   precioTxt: string,
-  conTraslado: boolean,
-  conGuiaCertificado: boolean,
+  recogida: PartesRecogida,
+  salida: string | null,
+  horaFija: boolean,
+  aval: AvalGuia,
   locale: Locale,
 ): string {
-  const s1 = locale === "en"
+  const en = locale === "en";
+  const s1 = en
     ? `${corto} ${region}: guided tour of ${durTxt}, ${precioTxt}.`
     : `${corto} ${region}: tour guiado de ${durTxt}, ${precioTxt}.`;
   // «Guía certificado» solo donde la fuente lo dice: la Travesía del Café
   // declara un «recorrido guiado», no un guía certificado, y prometerlo en el
   // fragmento de Google era decir algo que TOURS_DB no respalda.
-  const guia = conGuiaCertificado
-    ? locale === "en" ? "certified guide" : "guía certificado"
-    : locale === "en" ? "guide" : "guía";
-  const s2 = conTraslado
-    ? locale === "en" ? `Transport, ${guia} and insurance included.` : `Traslado, ${guia} y seguro incluidos.`
-    : locale === "en" ? `Gear, ${guia} and insurance included.` : `Equipo, ${guia} y seguro incluidos.`;
-  const completa = `${s1} ${s2}`;
-  return completa.length <= 155 ? completa : metaDesc(s1);
+  const guiaDe = (a: AvalGuia) => (a ? (en ? "certified guide" : `guía ${a}`) : en ? "guide" : "guía");
+  const guia = guiaDe(aval);
+  const cola = (g: string) => (en ? `${g} and insurance included.` : `${g} y seguro incluidos.`);
+  const s2 = recogida.incluyeTraslado
+    ? en ? `Transport, ${cola(guia)}` : `Traslado, ${cola(guia)}`
+    : en ? `Gear, ${cola(guia)}` : `Equipo, ${cola(guia)}`;
+
+  const candidatas: string[] = [];
+  if (recogida.valles) {
+    const rec = en ? "Pickup in Xilitla" : "Recogida en Xilitla";
+    // Un horario que cambia según el día (el Edén) no cabe en una meta.
+    if (!horaFija && recogida.hora) {
+      for (const g of aval ? [guia, guiaDe(null)] : [guia]) {
+        candidatas.push(`${rec} ${recogida.hora}; ${cola(g)}`);
+        if (salida) candidatas.push(`${rec}, ${salida}; ${cola(g)}`);
+      }
+      candidatas.push(`${rec} ${recogida.hora}.`);
+    }
+    candidatas.push(`${rec}; ${cola(guia)}`);
+  }
+  candidatas.push(s2);
+  for (const s2c of candidatas) {
+    const completa = `${s1} ${s2c}`;
+    if (completa.length <= 155) return completa;
+  }
+  return metaDesc(s1);
 }
 
-/** ¿El precio incluye el traslado? Se lee del `incluye` en español, que es la fuente. */
-function tieneTraslado(base: Pick<Tour, "incluye">): boolean {
-  return /traslado/i.test(base.incluye.join(" "));
-}
-
-/** ¿La fuente declara un guía (o instructor) CERTIFICADO? Mismo criterio que la prosa de la ficha. */
-function tieneGuiaCertificado(base: Pick<Tour, "incluye">): boolean {
-  return /(?:gu[ií]a|instructor)[^|]*certificad/i.test(base.incluye.join(" | "));
+/**
+ * Qué respalda la fuente del guía (o instructor): "certificado", "acreditado"
+ * o nada. Mismo criterio que la prosa de la ficha.
+ *
+ * Los tres recorridos nuevos dicen «Guía acreditado NOM-09 SECTUR»: con solo
+ * `certificad` en la expresión, su meta los rebajaba a "guía" a secas.
+ */
+type AvalGuia = "certificado" | "acreditado" | null;
+function avalDelGuia(base: Pick<Tour, "incluye">): AvalGuia {
+  const txt = base.incluye.join(" | ");
+  if (/(?:gu[ií]a|instructor)[^|]*certificad/i.test(txt)) return "certificado";
+  if (/(?:gu[ií]a|instructor)[^|]*acreditad/i.test(txt)) return "acreditado";
+  return null;
 }
 
 /**
@@ -235,48 +347,44 @@ function regionTour(id: string, locale: Locale): string {
   return locale === "en" ? "in the Huasteca Potosina" : "en la Huasteca Potosina";
 }
 
-/**
- * Dónde se recoge al cliente, según la línea de traslado de TOURS_DB.
- *
- * La política general es recoger en el hospedaje, en Xilitla o en Ciudad
- * Valles, pero dos recorridos declaran una sola ciudad en su `incluye` —el
- * Rappel de Tamul, «Traslado desde Ciudad Valles», y la Travesía del Café,
- * «desde tu hospedaje en Xilitla»—. Esa lista se pinta en la propia ficha, así
- * que prometer las dos ciudades arriba contradecía lo que el cliente lee unas
- * líneas más abajo. Se dice solo lo que la fuente respalda.
- */
-function ciudadesRecogida(base: Pick<Tour, "incluye">, locale: Locale): string {
-  const linea = base.incluye.find((i) => /traslado/i.test(i)) ?? "";
-  const xilitla = /xilitla/i.test(linea);
-  const valles = /ciudad valles/i.test(linea);
-  if (xilitla && !valles) return "Xilitla";
-  if (valles && !xilitla) return "Ciudad Valles";
-  return locale === "en" ? "Xilitla or Ciudad Valles" : "Xilitla o en Ciudad Valles";
-}
-
 export function generateMetadata({ params }: Props): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const base = TOURS_DB.find((t) => t.slug === params.slug);
   if (!base) return {};
   const tour = localizeTour(base, locale);
+  const en = locale === "en";
   const url = `${SITE}${localePath(`/tours/${tour.slug}`, locale)}`;
   const image = tour.imagen_hero?.startsWith("http") ? tour.imagen_hero : `${SITE}${tour.imagen_hero}`;
   const [precioMin, precioMax] = rangoPrecio(base);
-  const esVehiculo = base.precioUnidad === "vehiculo";
+  // Lo escrito a mano en `tour.seo` pasa por `conDatos`: si lleva `{precio}` o
+  // `{salida}`, se resuelven con el catálogo y no pueden quedarse viejos.
+  const seoTitulo = base.seo?.titulo?.[locale];
+  const seoDescripcion = base.seo?.descripcion?.[locale];
   // 🔴 Se le pasa `nombreCorto` del catálogo, no el nombre completo: el
   // constructor sabía recortar por el guion largo, pero el repo derivaba ese
   // nombre a mano en más de treinta sitios con dos variantes del separador.
   // Ahora hay un solo campo y esto lo usa.
-  const title = construirTitulo(tour.nombreCorto, `$${fmtNumber(precioMin, locale)}`, precioMax > precioMin, locale, base.destinos);
-  const description = construirDescripcion(
+  const title = construirTitulo(
     tour.nombreCorto,
-    regionTour(base.id, locale),
-    fraseDuracion(tour, locale),
-    frasePrecio(precioMin, precioMax, esVehiculo, locale),
-    tieneTraslado(base),
-    tieneGuiaCertificado(base),
+    `$${fmtNumber(precioMin, locale)}`,
+    precioMax > precioMin,
     locale,
+    { es: base.destinos, en: tour.destinos },
+    seoTitulo ? conDatos(seoTitulo, base, locale) : undefined,
   );
+  const description = seoDescripcion
+    ? recortarAFrase(conDatos(seoDescripcion, base, locale))
+    : construirDescripcion(
+        tour.nombreCorto,
+        regionTour(base.id, locale),
+        fraseDuracion(tour, locale),
+        frasePrecio(precioMin, precioMax, base, locale),
+        partesRecogida(base, en),
+        salidaCorta(base, en),
+        Boolean(recogidaDeTour(base).horaTexto),
+        avalDelGuia(base),
+        locale,
+      );
   return {
     title,
     description,
@@ -312,6 +420,15 @@ export default function TourDetailPage({ params }: Props) {
   const base = TOURS_DB.find((tr) => tr.slug === params.slug);
   if (!base) notFound();
   const tour = localizeTour(base, locale);
+  // 🔴 Lo que se le ENSEÑA al cliente como "qué incluye" (la lista visible y
+  // la pregunta frecuente, que viaja al JSON-LD) pasa por `incluyeDeTour`, que
+  // suma el seguro de viaje y las fotos de `INCLUYE_SIEMPRE`. Con
+  // `tour.incluye` a pelo, la lista callaba el seguro que el párrafo citable
+  // de esta misma ficha promete. En inglés recibe el tour ya localizado.
+  // Las expresiones de más abajo que DETECTAN piezas (desayuno, entradas,
+  // guía) siguen leyendo `base.incluye`: "…que toma tu guía" de
+  // INCLUYE_SIEMPRE haría creer que todos los recorridos llevan guía.
+  const incluyeLista = incluyeDeTour(tour, locale);
 
   const dif = DIFICULTAD_CONFIG[tour.dificultad];
   const reviews = TOUR_REVIEWS[tour.id as keyof typeof TOUR_REVIEWS] ?? [];
@@ -340,11 +457,45 @@ export default function TourDetailPage({ params }: Props) {
     : esGrupo
       ? (locale === "en" ? `MXN for the group (up to ${maxGrupo})` : `MXN por el grupo (hasta ${maxGrupo})`)
       : t.perPerson;
+  // 🔴 "Todo incluido" salía en el hero de las catorce fichas, y solo seis
+  // llevan traslado, comida, entradas y guía: el Amanecer lo decía encima de su
+  // propia pregunta "el desayuno no va incluido". Mismo criterio que el aviso
+  // de `SocialProofToast` (leído del `incluye` en español): si falta algo, se
+  // dice lo que sí va.
+  const incluyeFuente = base.incluye.join(" | ").toLowerCase();
+  const piezasHero = [
+    partesRecogida(base, false).incluyeTraslado ? (locale === "en" ? "transport" : "traslado") : null,
+    /desayuno|comida/.test(incluyeFuente) ? (locale === "en" ? "food" : "comida") : null,
+    /entrada|taquilla/.test(incluyeFuente) ? (locale === "en" ? "admission" : "entradas") : null,
+    /gu[ií]a|instructor/.test(incluyeFuente) ? (locale === "en" ? "guide" : "guía") : null,
+  ].filter((p): p is string => Boolean(p));
+  const todoIncluido = piezasHero.length === 4;
+  const loQueIncluye = piezasHero.length > 1
+    ? (() => {
+        const lista = `${piezasHero.slice(0, -1).join(", ")} ${locale === "en" ? "and" : "y"} ${piezasHero[piezasHero.length - 1]}`;
+        return `${lista.charAt(0).toUpperCase()}${lista.slice(1)} ${locale === "en" ? "included" : "incluidos"}`;
+      })()
+    : null;
   const priceUnitHero = esVehiculo
     ? (locale === "en" ? "MXN / vehicle · Fuel & guide included" : "MXN / vehículo · Gasolina y guía incluidos")
     : esGrupo
       ? (locale === "en" ? `MXN / group of up to ${maxGrupo} · Not per person` : `MXN / grupo de hasta ${maxGrupo} · No es por persona`)
-      : t.perPersonIncluded;
+      : todoIncluido
+        ? t.perPersonIncluded
+        : `${locale === "en" ? "MXN / person" : "MXN / persona"}${loQueIncluye ? ` · ${loQueIncluye}` : ""}`;
+
+  // 🔴 La insignia de lluvia promete "eliges: reembolso o cambio de fecha", y
+  // en el Edén —que no reembolsa— salía justo debajo de "no hay reembolsos".
+  // Donde el tour trae su propia `cancelacion`, la insignia dice lo que ESA
+  // política dice del clima; si no dice nada, no se pinta.
+  const climaPropio = tour.cancelacion
+    ? tour.cancelacion[locale].split(/(?<=\.)\s+/).find((f) => /clima|weather/i.test(f)) ?? null
+    : null;
+  const insigniaLluvia = !tour.cancelacion
+    ? { titulo: t.rescheduleRain, sub: t.rescheduleRainSub }
+    : climaPropio
+      ? { titulo: locale === "en" ? "Weather rescheduling" : "Reprogramación por clima", sub: climaPropio }
+      : null;
 
   // ── Datos de la banda de "Datos rápidos" ──────────────────────────────────
   // Salen del catálogo y de `TOUR_REQUISITOS`; ninguno se escribe a mano.
@@ -362,6 +513,11 @@ export default function TourDetailPage({ params }: Props) {
   // abajo, le prometía al cliente recogida en Ciudad Valles. Ahora las cuatro
   // leen el mismo campo del catálogo.
   const recogida = recogidaDeTour(tour);
+  // 🔴 El Rappel no declara `recogida` y el caso por defecto le prometía
+  // Xilitla, que su fuente no respalda ("Traslado desde Ciudad Valles"). Se
+  // quitó una vez con `ciudadesRecogida` y volvió al pasar todo a
+  // `partesRecogida`: la ciudad única se aplica ENCIMA de lo que da el catálogo.
+  const ciudadUnica = ciudadUnicaDeRecogida(base);
   const puntoDeSalida =
     recogida.tipo === "base-xilitla"
       ? (locale === "en" ? "Meet at our Xilitla base" : "Punto de encuentro en Xilitla")
@@ -369,7 +525,9 @@ export default function TourDetailPage({ params }: Props) {
         ? (locale === "en" ? "Meet at Media Luna, Rioverde" : "Punto de encuentro en Media Luna")
         : recogida.tipo === "hospedaje-xilitla"
           ? (locale === "en" ? "Pickup in Xilitla" : "Recogida en Xilitla")
-          : (locale === "en" ? "Pickup in Xilitla or Ciudad Valles" : "Recogida en Xilitla o Ciudad Valles");
+          : ciudadUnica
+            ? (locale === "en" ? `Pickup in ${ciudadUnica}` : `Recogida en ${ciudadUnica}`)
+            : (locale === "en" ? "Pickup in Xilitla or Ciudad Valles" : "Recogida en Xilitla o Ciudad Valles");
 
   // ── LA FRASE CITABLE ──────────────────────────────────────────────────────
   // El precio, la duración y el punto de salida vivían solo dentro de insignias
@@ -379,36 +537,62 @@ export default function TourDetailPage({ params }: Props) {
   // una oración que se sostiene sola. No se inventa nada: el punto de salida es
   // el mismo que ya dice el bloque de recogida de la página, y la hora solo se
   // menciona donde existe (el buceo se llega por cuenta propia y no la tiene).
+  //
+  // 🔴 La salida estaba escrita a mano: "pasa por ti … entre las 8:00 y las
+  // 9:00 AM" para todo lo que no fuera el RZR o el buceo. A la Gruta de Xilo,
+  // que sale a las 7 de la NOCHE y solo recoge en Xilitla, la mandaba a esperar
+  // de mañana y le prometía incluida la recogida en Ciudad Valles. Ahora sale
+  // de `partesRecogida`, lo mismo que leen el pago, el correo y el bot.
+  const en = locale === "en";
+  const pRec = partesRecogida(tour, en);
+  // Dónde pasamos por el cliente, ya con la ciudad única del Rappel aplicada.
+  const lugarRecogida = ciudadUnica
+    ? (en ? `your lodging in ${ciudadUnica}` : `tu hospedaje en ${ciudadUnica}`)
+    : pRec.lugar;
   const nombreCitable = nombreCortoTour(tour.nombre);
-  const precioCitable = frasePrecio(precioMin, precioMax, esVehiculo, locale);
+  const precioCitable = frasePrecio(precioMin, precioMax, tour, locale);
   const duracionCitable = durMin === durMax
-    ? (locale === "en" ? `lasts about ${tour.duracion_hrs} hours` : `dura unas ${tour.duracion_hrs} horas`)
-    : (locale === "en" ? `lasts between ${durMin} and ${durMax} hours` : `dura entre ${durMin} y ${durMax} horas`);
-  const salidaCitable = esVehiculo
-    ? (locale === "en"
-        ? "sets off from our base in Xilitla between 8:00 and 9:00 AM"
-        : "sale de nuestra base en Xilitla entre las 8:00 y las 9:00 AM")
-    : tour.id === "tour-buceo-media-luna"
-      ? (locale === "en"
-          ? "meets at the entrance of the Media Luna Lagoon, in Rioverde, San Luis Potosí"
-          : "tiene su punto de encuentro en la entrada de la Laguna de la Media Luna, en Rioverde, San Luis Potosí")
-      : (locale === "en"
-          ? `picks you up at your own lodging in ${ciudadesRecogida(base, locale)} between 8:00 and 9:00 AM`
-          : `pasa por ti a tu hospedaje en ${ciudadesRecogida(base, locale)} entre las 8:00 y las 9:00 AM`);
-  const fraseCitable = locale === "en"
+    ? (en ? `lasts about ${tour.duracion_hrs} hours` : `dura unas ${tour.duracion_hrs} horas`)
+    : (en ? `lasts between ${durMin} and ${durMax} hours` : `dura entre ${durMin} y ${durMax} horas`);
+  const horaCitable = pRec.hora ? ` ${pRec.hora}` : "";
+  // En inglés el catálogo dice "RZR (side-by-side)": dentro de esta oración, que
+  // ya lleva la hora detrás, el paréntesis se lee como una aclaración de más.
+  const vehiculoCitable = pRec.vehiculo?.replace(/\s*\([^)]*\)/, "") ?? null;
+  const salidaCitable =
+    pRec.tipo === "en-sitio"
+      ? (en ? `meets at ${pRec.lugar}` : `tiene su punto de encuentro en ${pRec.lugar}`)
+      : pRec.tipo === "base-xilitla"
+        ? (en ? `sets off from ${pRec.lugar}${horaCitable}` : `sale de ${pRec.lugar}${horaCitable}`)
+        : en
+          ? `picks you up${vehiculoCitable ? ` in an ${vehiculoCitable}` : ""} at ${lugarRecogida}${horaCitable}`
+          : `pasa por ti${vehiculoCitable ? ` en ${vehiculoCitable}` : ""} a ${lugarRecogida}${horaCitable}`;
+  // Lo de Ciudad Valles, siempre en oración aparte: entre paréntesis y pegado a
+  // la hora ("…entre 3:00 y 4:00 AM (desde Ciudad Valles…)") se leía como si
+  // desde Valles también pasáramos a esa hora.
+  const fraseCitable = (en
     ? `The ${nombreCitable} tour costs ${precioCitable}, ${duracionCitable} and ${salidaCitable}.`
-    : `El tour ${nombreCitable} cuesta ${precioCitable}, ${duracionCitable} y ${salidaCitable}.`;
+    : `El tour ${nombreCitable} cuesta ${precioCitable}, ${duracionCitable} y ${salidaCitable}.`)
+    + (pRec.valles ? ` ${pRec.valles}` : "");
 
   // Lo que va dentro de ese precio, leído del `incluye` en español —la fuente—
   // y no de una plantilla: dos de los diez recorridos NO llevan traslado y
   // prometérselo al cliente en prosa sería mentirle.
   const incluyeBase = base.incluye.join(" | ").toLowerCase();
   const piezasIncluidas: string[] = [];
-  // "Traslado redondo desde tu hospedaje" y "Traslado desde Ciudad Valles" no
-  // prometen lo mismo: solo se dice "redondo" donde la fuente lo dice.
-  if (/traslado redondo/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "round-trip transport from your lodging" : "el traslado redondo desde tu hospedaje");
-  else if (/traslado/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the transport" : "el traslado");
-  else {
+  // Si hay traslado lo dice `partesRecogida`, no una expresión sobre el texto.
+  // Pero "Traslado redondo desde tu hospedaje" y "Traslado desde Ciudad Valles"
+  // no prometen lo mismo: "redondo" solo donde la fuente lo dice. Y donde la
+  // recogida incluida es solo en Xilitla, se nombra: no llega a Valles.
+  if (pRec.incluyeTraslado) {
+    const redondo = /traslado redondo/.test(incluyeBase);
+    const desde = pRec.valles ? pRec.lugar : en ? "your lodging" : "tu hospedaje";
+    const veh = pRec.vehiculo ? (en ? ` by ${pRec.vehiculo}` : ` en ${pRec.vehiculo}`) : "";
+    piezasIncluidas.push(
+      redondo
+        ? (en ? `round-trip transport${veh} from ${desde}` : `el traslado redondo${veh} desde ${desde}`)
+        : (en ? "the transport" : "el traslado"),
+    );
+  } else {
     // Los dos recorridos sin traslado (el RZR y el buceo) se quedaban con una
     // frase pobrísima: lo que sí llevan dentro del precio es el vehículo o el
     // equipo.
@@ -417,10 +601,14 @@ export default function TourDetailPage({ params }: Props) {
   }
   if (/desayuno/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "breakfast" : "el desayuno");
   else if (/comida/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a meal" : "la comida");
-  if (/entrada/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the admissions" : "las entradas");
+  // "Taquillas y acceso a la gruta" también es la entrada: la Gruta no dice
+  // "entrada" en ningún renglón y se quedaba sin ella.
+  if (/entrada|taquilla/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the admissions" : "las entradas");
   // El buceo lo guía un instructor PADI, no un guía de ruta; y no todos los
-  // guías se declaran "certificados" en la fuente.
+  // guías se declaran "certificados" en la fuente (los tres nuevos dicen
+  // "acreditado", y así se repite).
   if (/gu[ií]a[^|]*certificad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified guide" : "el guía certificado");
+  else if (/gu[ií]a[^|]*acreditad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified guide" : "el guía acreditado");
   else if (/instructor certificad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified PADI instructor" : "el instructor certificado PADI");
   else if (/gu[ií]a/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the guide" : "el guía");
   piezasIncluidas.push(locale === "en" ? "travel insurance for everyone in the group" : "el seguro de viaje para todo el grupo");
@@ -455,17 +643,41 @@ export default function TourDetailPage({ params }: Props) {
    * Cuando cada ruta y cada vehículo tienen tarifa propia (el RZR: de $1,600 a
    * $7,000 por vehículo), un `price` cerrado declara un precio que no existe.
    * `AggregateOffer` es la forma honesta de decir "hay un rango".
+   *
+   * La tarifa por grupo del Edén es el otro rango: un `Offer` de $2,990 sin
+   * más le decía al buscador que era el precio de cada persona.
    */
+  const unidadOferta = esVehiculo
+    ? { description: en ? "Price per vehicle, not per person." : "Precio por vehículo, no por persona." }
+    : esGrupo
+      ? {
+          description: en
+            ? `Rate for the whole group (${tour.groupMin} to ${tour.groupMax} people), not per person.`
+            : `Tarifa por el grupo completo (${tour.groupMin} a ${tour.groupMax} personas), no por persona.`,
+        }
+      : {};
+  // La unidad también como dato, no solo como frase: es lo que ya declaran
+  // /reservar y /precios (`buildTourOffer`), y sin ella una oferta de $1,550 no
+  // dice a un buscador si es por persona, por grupo o por vehículo.
+  const especificacionUnidad = {
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      ...(hayRangoPrecio ? { minPrice: precioMin, maxPrice: precioMax } : { price: tour.precio }),
+      priceCurrency: "MXN",
+      unitText: etiquetaUnidad(tour, en),
+    },
+  };
   const ofertaSchema = hayRangoPrecio
     ? {
         "@type": "AggregateOffer",
         lowPrice: precioMin,
         highPrice: precioMax,
         priceCurrency: "MXN",
-        offerCount: (tour.flota?.length ?? 0) * (tour.rutas?.length ?? 0) || undefined,
+        offerCount: (tour.flota?.length ?? 0) * (tour.rutas?.length ?? 0) || tour.tarifaGrupo?.length || undefined,
         availability: "https://schema.org/InStock",
         url: tourUrl,
-        ...(esVehiculo ? { description: locale === "en" ? "Price per vehicle, not per person." : "Precio por vehículo, no por persona." } : {}),
+        ...unidadOferta,
+        ...especificacionUnidad,
       }
     : {
         "@type": "Offer",
@@ -473,14 +685,27 @@ export default function TourDetailPage({ params }: Props) {
         priceCurrency: "MXN",
         availability: "https://schema.org/InStock",
         url: tourUrl,
-        ...(esVehiculo ? { description: locale === "en" ? "Price per vehicle, not per person." : "Precio por vehículo, no por persona." } : {}),
+        ...unidadOferta,
+        ...especificacionUnidad,
       };
+
+  // En inglés el recorrido se llama "Xilo Cave", pero el letrero, Google Maps
+  // y quien pregunta desde México dicen "Gruta de Xilo". El nombre corto en
+  // español va primero en `alternateName` para que un buscador de IA una los
+  // dos; en español basta con los alias. Sin duplicados.
+  const alternateNames = Array.from(new Set([
+    ...(locale === "en" && base.nombreCorto !== tour.nombreCorto ? [base.nombreCorto] : []),
+    ...(base.seo?.alias ?? []),
+  ]));
 
   const tourSchema = {
     "@context": "https://schema.org",
     "@type": "TouristTrip",
     "@id": TOUR_ID,
     name: tour.nombre,
+    // Los otros nombres con que se busca el lugar ("Hoya de la Luz", "Grutas
+    // de Xilo"): un buscador de IA que lee uno de ellos sabe que es este.
+    ...(alternateNames.length ? { alternateName: alternateNames } : {}),
     // 🔴 28 sep 2026 — se retiraron `duration` e `inLanguage`. Ninguna de las
     // dos pertenece a `Trip`/`TouristTrip` en schema.org (`duration` es de
     // `Event`, `Movie`, `HowTo`…; `inLanguage` de `CreativeWork`), así que se
@@ -527,7 +752,7 @@ export default function TourDetailPage({ params }: Props) {
 
   const faqEntries = locale === "en"
     ? [
-        { q: `What's included in the ${tour.nombreCorto}?`, a: tour.incluye.join(", ") + ". Everything is included in the price." },
+        { q: `What's included in the ${tour.nombreCorto}?`, a: incluyeLista.join(", ") + (todoIncluido ? ". Everything is included in the price." : ". All of this is included in the price.") },
         { q: `How long is the ${tour.nombreCorto}?`, a: durMin === durMax
             ? `The tour lasts approximately ${tour.duracion_hrs} hours.`
             : tour.rutas
@@ -553,10 +778,12 @@ export default function TourDetailPage({ params }: Props) {
             ? { q: "Where does the tour depart from?", a: "We meet at the entrance of the Media Luna Lagoon, in Rioverde — about 2 hours from Ciudad Valles. You make your own way there; transportation and the park admission are not included." }
           : recogida.tipo === "hospedaje-xilitla"
             ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging in Xilitla and bring you back at the end.${recogida.nota ? " " + recogida.nota.en : ""}` }
+          : ciudadUnica
+            ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging — hotel, hostel, cabin or Airbnb — in ${ciudadUnica} and bring you back at the end. Transport is included and you don't need to stay with us. We confirm the exact time and address by WhatsApp after you book.` }
             : { q: "Where does the tour depart from?", a: "There is no single departure point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. Round-trip transport is included and you don't need to stay with us. We confirm the exact time and address by WhatsApp after you book." },
       ]
     : [
-        { q: `¿Qué ${esPlural ? "incluyen" : "incluye"} ${conArticulo}?`, a: tour.incluye.join(", ") + ". Todo incluido en el precio." },
+        { q: `¿Qué ${esPlural ? "incluyen" : "incluye"} ${conArticulo}?`, a: incluyeLista.join(", ") + (todoIncluido ? ". Todo incluido en el precio." : ". Todo esto va incluido en el precio.") },
         { q: `¿Cuánto ${esPlural ? "duran" : "dura"} ${conArticulo}?`, a: durMin === durMax
             ? `El tour tiene una duración aproximada de ${tour.duracion_hrs} horas.`
             : tour.rutas
@@ -576,6 +803,8 @@ export default function TourDetailPage({ params }: Props) {
             ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es la entrada de la Laguna de la Media Luna, en Rioverde — a unas 2 horas de Ciudad Valles. Llegas por tu cuenta; el transporte y la entrada al parque no están incluidos." }
           : recogida.tipo === "hospedaje-xilitla"
             ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje en Xilitla${recogida.vehiculo ? ` —en el propio ${recogida.vehiculo.es}—` : ""} y te regresamos al terminar.${recogida.nota ? " " + recogida.nota.es : ""}` }
+          : ciudadUnica
+            ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en ${ciudadUnica} y te regresamos al terminar. El traslado va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar.` }
             : { q: "¿Dónde es el punto de salida?", a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. El traslado redondo va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar." },
       ];
 
@@ -590,12 +819,29 @@ export default function TourDetailPage({ params }: Props) {
   // se resuelven por idioma, así que el JSON-LD inglés ya emite sus preguntas.
   const faqsEspecificas = getTourFaqs(tour.id, locale);
   const faqPreguntasBase = new Set(faqEntries.map((f) => f.q.toLowerCase()));
-  const faqTodas = [
-    ...faqEntries,
-    ...faqsEspecificas.filter(
-      (f) => !faqPreguntasBase.has(f.q.toLowerCase()) && !FAQ_YA_CUBIERTO.test(f.q),
-    ),
-  ];
+  const faqsPropias = faqsEspecificas.filter(
+    (f) => !faqPreguntasBase.has(f.q.toLowerCase()) && !FAQ_YA_CUBIERTO.test(f.q),
+  );
+  // "¿A qué hora sale?" es la duda que más pesa en un recorrido de noche o de
+  // madrugada, y solo Tamul y el Edén la tenían (con su propia respuesta, que
+  // manda). La de plantilla sale de `fraseRecogida`, la misma que el pago.
+  // ⚠️ Se busca entre las que SOBREVIVEN a `FAQ_YA_CUBIERTO`: una propia que
+  // preguntara "punto de salida y a qué hora" se descarta arriba, y mirarla
+  // aquí dejaría la ficha sin ninguna pregunta de horario.
+  const salidaFaq = salidaCorta(tour, en);
+  const conVentana = recogida.ventanaHrs > 0 && !recogida.horaTexto;
+  const faqHora = salidaFaq && !faqsPropias.some((f) => /a qu[eé] hora|what time/i.test(f.q))
+    ? [{
+        q: en ? "What time does it start?" : "¿A qué hora sale?",
+        // `fraseRecogida` pinta `pRec.lugar` tal cual: se cambia por la ciudad
+        // única donde la haya, o al Rappel le prometía Xilitla también aquí,
+        // y esta respuesta viaja al JSON-LD.
+        a: fraseRecogida(tour, en).replace(pRec.lugar, lugarRecogida) + (conVentana
+          ? (en ? " We confirm the exact time by WhatsApp after you book." : " La hora exacta te la confirmamos por WhatsApp al reservar.")
+          : ""),
+      }]
+    : [];
+  const faqTodas = [...faqEntries, ...faqHora, ...faqsPropias];
 
   const faqSchema = {
     "@context": "https://schema.org",
@@ -718,7 +964,7 @@ export default function TourDetailPage({ params }: Props) {
 
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 max-w-4xl">
           <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3">
-            {t.guidedAllInclusive}
+            {todoIncluido ? t.guidedAllInclusive : (locale === "en" ? "Guided tour" : "Tour guiado")}
           </p>
           {/* El nombre corto: el detalle que iba tras el guion ya está en el
               tagline de la línea siguiente, así que repetirlo solo alargaba el
@@ -779,6 +1025,12 @@ export default function TourDetailPage({ params }: Props) {
           {[
             { Icon: Clock, txt: durLabel },
             { Icon: MapPin, txt: puntoDeSalida },
+            // La hora, a la vista: la Gruta sale de NOCHE y el Amanecer de
+            // madrugada, y eso solo se leía en el bloque de recogida, muy abajo.
+            // Un horario que depende del día (el Edén) no es una "salida".
+            ...(salidaFaq
+              ? [{ Icon: AlarmClock, txt: `${recogida.horaTexto ? (en ? "Schedule" : "Horario") : (en ? "Departure" : "Salida")}: ${salidaFaq}` }]
+              : []),
             { Icon: Users,  txt: tour.groupMin > 1
                 ? (locale === "en" ? `${tour.groupMin}–${tour.groupMax} people` : `De ${tour.groupMin} a ${tour.groupMax} personas`)
                 : t.groupMax(tour.groupMax) },
@@ -942,6 +1194,56 @@ export default function TourDetailPage({ params }: Props) {
                 </li>
               ))}
             </ul>
+            {/* La lista de arriba es texto: la única ruta de un tour a la ficha
+                de sus lugares eran los cuatro destinos fijos del pie. Aquí van
+                los que el recorrido VISITA (`tourMapping`); si no visita ninguno
+                con ficha propia (la Gruta, el Café), los de su zona, y se dice. */}
+            {(() => {
+              const dt = destinosDeTour(tour.slug);
+              // 🔴 "Conoce los lugares" dice que el recorrido los VISITA, y
+              // `tourMapping` tiene al menos un error: pone el Sótano de las
+              // Golondrinas en Tamul, que según su propio catálogo "no
+              // operamos". Un lugar solo se enlaza como visitado si su nombre
+              // propio (la última palabra: "Golondrinas", "Huahuas") sale en
+              // algún texto del recorrido. Si falla, esconde un enlace; nunca
+              // promete una parada.
+              const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+              const textoTour = norm([
+                base.nombre, base.descripcion, base.descripcionLarga, ...base.destinos,
+                ...(base.itinerario ?? []).map((m) => `${m.momento} ${m.texto}`),
+                ...(base.rutas ?? []).flatMap((r) => [r.nombre, r.descripcion, ...(r.destinos ?? [])]),
+              ].join(" "));
+              const loNombra = (slug: string) => {
+                const nombreEs = getLocalizedDestino(slug, "es")?.nombre ?? "";
+                const nucleo = nombreEs.split(/\s+—\s+|\s*\(|\s+['‘"“]/)[0].trim().split(/\s+/).pop() ?? "";
+                return nucleo.length > 2 && textoTour.includes(norm(nucleo));
+              };
+              const visitados = dt.incluye.filter(loNombra);
+              const visita = visitados.length > 0;
+              const lugares = (visita ? visitados : dt.cerca)
+                .map((s) => getLocalizedDestino(s, locale))
+                .filter((d): d is NonNullable<typeof d> => Boolean(d));
+              if (!lugares.length) return null;
+              return (
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] tracking-[1.5px] uppercase text-crema/40 font-dm mr-1">
+                    {visita ? (en ? "Explore the places:" : "Conoce los lugares:") : (en ? "In the area:" : "En la zona:")}
+                  </span>
+                  {lugares.map((d) => (
+                    <Link
+                      key={d.slug}
+                      href={localePath(`/destinos/${d.slug}`, locale)}
+                      className="text-[11px] font-dm text-crema/75 hover:text-lima bg-white/5 hover:bg-white/10 border border-white/10 hover:border-verde-vivo/40 rounded-full px-2.5 py-1 transition-colors"
+                    >
+                      {/* Solo el lugar: el nombre completo de la ficha trae su
+                          reclamo tras el guion, y "Río Tampaón — Rafting Clase
+                          III" en el Rappel se leía como rafting incluido. */}
+                      {d.nombre.split(/\s+—\s+/)[0]}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })()}
           </section>
 
           {/* ── RUTAS Y PRECIOS POR VEHÍCULO (solo tours cobrados por vehículo, ej. RZR) ── */}
@@ -996,7 +1298,7 @@ export default function TourDetailPage({ params }: Props) {
               </div>
 
               <h3 className="font-cormorant text-crema text-xl mb-2">
-                {locale === "en" ? "Our fleet — price per vehicle" : "Nuestra flota — precio por vehículo"}
+                {locale === "en" ? "Our fleet — price per vehicle (MXN)" : "Nuestra flota — precio por vehículo (MXN)"}
               </h3>
               <div className="overflow-x-auto border border-white/10">
                 <table className="w-full text-left font-dm text-xs min-w-[560px]">
@@ -1113,9 +1415,11 @@ export default function TourDetailPage({ params }: Props) {
           )}
 
           <section>
-            <h2 className="font-cormorant text-crema text-2xl mb-5">{t.allIncluded}</h2>
+            <h2 className="font-cormorant text-crema text-2xl mb-5">
+              {todoIncluido ? t.allIncluded : (locale === "en" ? "What's included" : "Qué incluye")}
+            </h2>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {tour.incluye.map((item) => (
+              {incluyeLista.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm text-crema/65 font-dm">
                   <span className="text-dorado mt-0.5 flex-shrink-0">✦</span>
                   {item}
@@ -1235,10 +1539,12 @@ export default function TourDetailPage({ params }: Props) {
                     </p>
                   </div>
                 </li>
-                <li className="flex items-start gap-3">
-                  <RefreshCw className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.rescheduleRain}</p><p className="text-[10px] font-dm text-crema/40">{t.rescheduleRainSub}</p></div>
-                </li>
+                {insigniaLluvia && (
+                  <li className="flex items-start gap-3">
+                    <RefreshCw className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <div><p className="text-[11px] font-dm font-medium text-crema/85">{insigniaLluvia.titulo}</p><p className="text-[10px] font-dm text-crema/40">{insigniaLluvia.sub}</p></div>
+                  </li>
+                )}
                 <li className="flex items-start gap-3">
                   <Camera className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.photosIncluded}</p><p className="text-[10px] font-dm text-crema/40">{t.photosIncludedSub}</p></div>
@@ -1304,9 +1610,15 @@ export default function TourDetailPage({ params }: Props) {
               )}
               <p className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(32px,4vw,48px)" }}>{money(tour.precio)}</p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">{priceUnitShort}</p>
+              {/* Justo debajo del precio, "4.7 · 161 reseñas" a secas se leía
+                  como la nota de ESTE recorrido. Es la de la operadora (regla
+                  de `resenas.ts`), y así se dice. */}
               {tour.reviewCount > 0 && (
                 <p className="text-[10px] text-dorado/80 font-dm mt-2 flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-dorado/80" aria-hidden="true" /> {resenasTexto(locale === "en")}
+                  <Star className="w-3 h-3 fill-dorado/80" aria-hidden="true" />
+                  {locale === "en"
+                    ? `Operator rated ${GOOGLE_RATING} on Google (${GOOGLE_RESENAS} reviews)`
+                    : `Operadora con ${GOOGLE_RATING} en Google (${GOOGLE_RESENAS} reseñas)`}
                 </p>
               )}
               {/* La duración y el aforo salieron de aquí: ya están, con su
@@ -1404,8 +1716,8 @@ export default function TourDetailPage({ params }: Props) {
                         </span>
                         <span className="block text-[10px] font-dm text-crema/45 leading-tight">
                           {locale === "en"
-                            ? `Only your group · +${money(PRIVADO_EXTRA_POR_PERSONA)} per person`
-                            : `Solo tu grupo · +${money(PRIVADO_EXTRA_POR_PERSONA)} por persona`}
+                            ? `Only your group · +${money(PRIVADO_EXTRA_POR_PERSONA)} MXN per person`
+                            : `Solo tu grupo · +${money(PRIVADO_EXTRA_POR_PERSONA)} MXN por persona`}
                         </span>
                       </>
                     )}
@@ -1447,10 +1759,12 @@ export default function TourDetailPage({ params }: Props) {
                     </p>
                   </div>
                 </li>
-                <li className="flex items-start gap-3">
-                  <RefreshCw className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.rescheduleRain}</p><p className="text-[10px] font-dm text-crema/40">{t.rescheduleRainSub}</p></div>
-                </li>
+                {insigniaLluvia && (
+                  <li className="flex items-start gap-3">
+                    <RefreshCw className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <div><p className="text-[11px] font-dm font-medium text-crema/85">{insigniaLluvia.titulo}</p><p className="text-[10px] font-dm text-crema/40">{insigniaLluvia.sub}</p></div>
+                  </li>
+                )}
                 <li className="flex items-start gap-3">
                   <Camera className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.photosIncluded}</p><p className="text-[10px] font-dm text-crema/40">{t.photosIncludedSub}</p></div>
@@ -1549,7 +1863,10 @@ export default function TourDetailPage({ params }: Props) {
       {/* ── TOURS SIMILARES / CROSS-SELL ── */}
       {(() => {
         // OJO: `slug` debe ser el slug REAL del tour (no el id) — se busca con tr.slug === combo.slug
-        const COMBOS: Record<string, { slug: string; msg: string }> = {
+        // 🔴 Ningún texto puede decir "el mismo día": el carrito no deja meter
+        // dos recorridos en la misma fecha, y el cliente lo descubriría al pagar.
+        // `msgEn` es opcional: sin él, el inglés usa el genérico.
+        const COMBOS: Record<string, { slug: string; msg: string; msgEn?: string }> = {
           "tour-tamul":       { slug: "ruta-surrealista-edward-james",   msg: "Si tienes un día más: Las Pozas de Edward James es el complemento perfecto — arte surrealista después de la naturaleza bruta." },
           "tour-edward-james":{ slug: "expedicion-tamul",                msg: "Combínalo con la Expedición Tamul — cascada + selva al día siguiente. El clásico de 2 días de la Huasteca." },
           "tour-meco":        { slug: "paraiso-escalonado-minas-micos",  msg: "Combínalo con el Tour Minas + Micos para un segundo día de aguas turquesas con más cascadas y tirolesas." },
@@ -1557,12 +1874,59 @@ export default function TourDetailPage({ params }: Props) {
           "tour-puente-dios": { slug: "paraiso-escalonado-minas-micos",  msg: "Combínalo con Minas + Micos al día siguiente — más cascadas, más pozas, la ruta de aguas completa." },
           "tour-rafting-tampaon": { slug: "rappel-tamul",  msg: "Combínalo con el Rappel en Tamul — dos días de adrenalina en el mismo cañón: un día remando los rápidos y otro descendiendo frente a la cascada más alta de San Luis Potosí." },
           "tour-rappel-tamul": { slug: "rafting-rio-tampaon", msg: "Combínalo con el Rafting en el Tampaón — después de descender la pared, domina los rápidos del mismo río. El fin de semana de adrenalina completo." },
+          // Los cuatro de Xilitla: todos recogen en el mismo pueblo, así que se
+          // combinan con lo que queda cerca, en otro día del viaje.
+          "tour-gruta-xilo": {
+            slug: "ruta-surrealista-edward-james",
+            msg: "Combínalo con la Ruta Surrealista en otro día de tu viaje: la gruta es de noche, y el jardín de Edward James en Las Pozas, en el mismo Xilitla, se recorre de día.",
+            msgEn: "Pair it with the Surrealist Route on another day of your trip: the cave is at night, and Edward James's garden at Las Pozas, also in Xilitla, is a daytime visit.",
+          },
+          "tour-eden-jardin": {
+            slug: "gruta-de-xilo",
+            msg: "Si ya vas a estar en Xilitla, súmale la Gruta de Xilo en otra fecha: es de noche, pasamos por ti a tu hospedaje y se entra con casco y lámpara frontal.",
+            msgEn: "Already staying in Xilitla? Add the Xilo Cave on another date: it runs at night, we pick you up at your lodging and you go in with a helmet and headlamp.",
+          },
+          "tour-amanecer-nubes": {
+            slug: "olla-de-la-luz",
+            msg: "Combínalo con la Olla de la Luz en otro día: vuelves al bosque de niebla de La Trinidad, esta vez de mañana y caminando entre llanos y miradores.",
+            msgEn: "Pair it with Olla de la Luz on another day: you go back to La Trinidad's cloud forest, this time in the morning, walking through meadows and lookouts.",
+          },
+          "tour-olla-de-la-luz": {
+            slug: "amanecer-de-nubes",
+            msg: "Combínalo con el Amanecer de Nubes en otro día: el mismo bosque de niebla de La Trinidad, pero de madrugada, con el Cerro del Pilón y el mirador del mar de nubes.",
+            msgEn: "Pair it with the Sea of Clouds Sunrise on another day: the same La Trinidad cloud forest, but before dawn, with Cerro del Pilón and the sea-of-clouds lookout.",
+          },
         };
         const combo = COMBOS[tour.id];
         const comboBase = combo ? TOURS_DB.find((tr) => tr.slug === combo.slug) : null;
         const comboTour = comboBase ? localizeTour(comboBase, locale) : null;
-        const otherTours = TOURS_DB.filter((tr) => tr.slug !== tour.slug && tr.slug !== combo?.slug).slice(0, 2).map((tr) => localizeTour(tr, locale));
-        const comboMsg = combo ? (locale === "en" ? t.comboGeneric : combo.msg) : "";
+        // 🔴 Eran siempre los dos primeros del catálogo (el RZR y el Rappel), en
+        // cualquier ficha: al buceo de Rioverde le sugería manejar un RZR en
+        // Xilitla. Ahora van primero los que recogen igual —o también salen de
+        // Xilitla— y los de la misma familia; a igualdad, los que más se venden.
+        // ⚠️ El buceo es el único `en-sitio`: "recoger igual" no le deja a nadie,
+        // y con solo la categoría volvían a ganar el RZR y la Gruta. Su base
+        // natural es Ciudad Valles (a unas 2 h de la laguna), así que para él
+        // cuentan como misma salida los que recogen en Valles.
+        const recActual = recogidaDeTour(base).tipo;
+        const deXilitla = (tipo: string) => tipo === "hospedaje-xilitla" || tipo === "base-xilitla";
+        const afinidad = (tr: Tour) => {
+          const tipo = recogidaDeTour(tr).tipo;
+          const mismaSalida = recActual === "en-sitio"
+            ? tipo === "hospedaje"
+            : tipo === recActual || (deXilitla(tipo) && deXilitla(recActual));
+          return (mismaSalida ? 2 : 0) + (tr.categoria === base.categoria ? 1 : 0);
+        };
+        const otherTours = TOURS_DB
+          .map((tr, i) => ({ tr, i }))
+          .filter(({ tr }) => tr.slug !== tour.slug && tr.slug !== combo?.slug)
+          .sort((a, b) => afinidad(b.tr) - afinidad(a.tr) || rankTour(a.tr.slug) - rankTour(b.tr.slug) || a.i - b.i)
+          .slice(0, 2)
+          .map(({ tr }) => localizeTour(tr, locale));
+        const comboMsg = combo ? (en ? combo.msgEn ?? t.comboGeneric : combo.msg) : "";
+        // "$2,990 MXN/persona" junto al Edén anunciaba siete veces su precio.
+        const precioConUnidad = (tr: Tour, conDesde: boolean) =>
+          `${conDesde || !esPorPersona(tr) ? `${tcommon.desde} ` : ""}${money(tr.precio)} MXN ${etiquetaUnidad(tr, en)}`;
 
         return (
           <section className="border-t border-white/6 py-16 px-6">
@@ -1584,7 +1948,7 @@ export default function TourDetailPage({ params }: Props) {
                     <h3 className="font-cormorant text-crema text-lg leading-snug mb-1">{comboTour.nombre}</h3>
                     <p className="text-crema/55 font-dm text-xs leading-relaxed mb-3">{comboMsg}</p>
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="font-cormorant text-dorado text-base">{money(comboTour.precio)} MXN/{tcommon.porPersona.split(" ")[1] ?? "persona"}</span>
+                      <span className="font-cormorant text-dorado text-base">{precioConUnidad(comboTour, false)}</span>
                       <Link href={localePath(`/tours/${comboTour.slug}`, locale)}
                         className="text-[9px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-3 py-1.5 transition-all">
                         {t.viewTour}
@@ -1608,7 +1972,7 @@ export default function TourDetailPage({ params }: Props) {
                     <div className="min-w-0">
                       <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{tr.tipo}</p>
                       <h3 className="font-cormorant text-crema text-base leading-tight group-hover:text-dorado transition-colors mb-1">{tr.nombre}</h3>
-                      <p className="text-[10px] text-crema/40 font-dm">{tcommon.desde} {money(tr.precio)} MXN</p>
+                      <p className="text-[10px] text-crema/40 font-dm">{precioConUnidad(tr, true)}</p>
                     </div>
                   </Link>
                 ))}

@@ -10,10 +10,12 @@
 // del 30 % y la cancelación gratuita, que en travel convierten mejor que un
 // porcentaje.
 
-import { TOURS_DB, type Tour } from "./tours";
+import { TOURS_DB, esPorPersona, etiquetaUnidad, partesRecogida, regresoDeTour, type Tour } from "./tours";
+import { fraseRecogidaCorreo, pasamosPorEl } from "./recogidaCorreo";
 import { CIUDADES_ORIGEN } from "./ciudadesOrigen";
 import { temporadaDe, nombreMes } from "./temporada";
 import { GRUPO_MAX } from "@/lib/tours";
+import { resenasTexto } from "@/lib/resenas";
 import {
   BASE, C, WA, bajoBoton, barra, boton, fotoTour, nota, parrafo, shellCorreo, tabla, titulo,
 } from "./emailLayout";
@@ -148,7 +150,10 @@ function planDelViaje(d: LeadEmailInput, principal: Tour, secundario?: Tour): To
       if (plan.some((p) => p.tipo === t.tipo)) punt -= 2;
       return { t, punt };
     })
-    .sort((a, b) => b.punt - a.punt || b.t.reviewCount - a.t.reviewCount);
+    // A igualdad de puntos manda el orden del catálogo (`sort` es estable).
+    // 🔴 Desempataba por `reviewCount`, que es una cifra inventada por tour:
+    // las reseñas son del negocio, no de cada recorrido (ver `resenas.ts`).
+    .sort((a, b) => b.punt - a.punt);
 
   for (const { t } of candidatos) {
     if (plan.length >= total) break;
@@ -232,15 +237,33 @@ function notaDeCamino(origen?: string | null): string {
   </div>`;
 }
 
+/**
+ * El precio para pintar: "$2,990 MXN" y "por persona" · "por vehículo" ·
+ * "por grupo". 🔴 Era un ternario vehículo/persona y el Edén —tarifa del grupo
+ * completo, por escalones— salía "por persona": siete veces su precio.
+ */
+const precioDe = (t: Tour) => `${t.tarifaGrupo ? "desde " : ""}${mx(t.precio)}`;
+
+/**
+ * Cómo se paga y qué pasa si cancela, para debajo de un botón. La regla del
+ * pago es la del carrito (`pctACobrar`): un solo día completo, desde dos días
+ * el 30 %. Un recorrido con política propia (el Edén: sin reembolso) dice la
+ * suya, la del catálogo; los demás, la de 48 h.
+ */
+const comoSeAparta = (t: Tour) =>
+  `Un recorrido solo se paga completo al reservar; con dos días o más, apartas con el 30 %. ${t.cancelacion ? t.cancelacion.es : "Cancelación gratuita hasta 48 h antes."}`;
+
 /** Tarjeta del tour recomendado, con lo que de verdad incluye. */
 function tarjetaTour(t: Tour, etiqueta: string): string {
   const incluye = t.incluye.slice(0, 5)
     .map((i) => `<li style="margin:0 0 5px;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;line-height:1.65;color:#3a3a2e">${i}</li>`)
     .join("");
+  // Sin línea de pago para el RZR (se confirma por WhatsApp). Para los demás,
+  // la regla del carrito: solo, completo; con otro día de recorrido, el 30 %.
   const anticipo = t.precioUnidad === "vehiculo" ? "" : `
     <p style="margin:10px 0 0;font-size:13px;color:#3a6b1a">
-      Puedes apartar tu lugar con el 30 % — <strong>${mx(Math.round(t.precio * 0.3))}</strong> hoy
-      y el resto el día del tour.
+      Solo, se paga completo al reservar. Si lo combinas con otro recorrido,
+      apartas todo con el 30 % y liquidas el resto el día del tour.
     </p>`;
 
   return `
@@ -251,8 +274,8 @@ function tarjetaTour(t: Tour, etiqueta: string): string {
     <h2 style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;color:#1a2e1a;font-weight:400">${t.nombre}</h2>
     <p style="margin:0 0 12px;font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.8;color:#3a3a2e">${t.descripcion}</p>
     <p style="margin:0 0 12px;font-size:15px;color:#1a2e1a">
-      <strong>${mx(t.precio)}</strong>
-      <span style="font-size:13px;color:#8a7a5a">${t.precioUnidad === "vehiculo" ? "por vehículo" : "por persona"} · ${t.duracion_hrs} h aprox.</span>
+      <strong>${precioDe(t)}</strong>
+      <span style="font-size:13px;color:#8a7a5a">${etiquetaUnidad(t)} · ${t.duracion_hrs} h aprox.</span>
     </p>
     <p style="margin:0 0 6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a">Incluye</p>
     <ul style="margin:0;padding-left:18px">${incluye}</ul>
@@ -261,9 +284,31 @@ function tarjetaTour(t: Tour, etiqueta: string): string {
   </div>`;
 }
 
+/**
+ * Cómo llega al recorrido y cuándo vuelve, leído del catálogo.
+ *
+ * 🔴 Estaba escrito a mano para todos: "pasamos por ti … en Xilitla o Ciudad
+ * Valles entre las 8:00 y 9:00 AM, y te regresamos entre 6:00 y 7:00 PM". Al
+ * que le recomendábamos la Gruta de Xilo (7 PM, solo Xilitla) le dábamos la
+ * hora de la mañana y un traslado desde Valles que se cobra aparte; al del
+ * buceo, una recogida que no existe.
+ */
+function recogidaDelDia(t: Tour): string {
+  const p = partesRecogida(t, false);
+  // Sin recogida (la base del RZR, la laguna del buceo) no hay "te regresamos":
+  // la frase del catálogo ya dice dónde nos vemos. Con la recogida en duda (el
+  // rappel), la frase neutra: no se promete ni lugar ni hora.
+  if (!pasamosPorEl(t)) return fraseRecogidaCorreo(t, false);
+  const veh  = p.vehiculo ? `, en ${p.vehiculo},` : "";
+  const hora = p.hora ? ` ${p.hora}` : "";
+  return `<strong style="color:#1a2e1a">Pasamos por ti</strong> a ${p.lugar}${veh}${hora}, `
+    + `y te regresamos aprox. ${regresoDeTour(t, false)}.${p.valles ? ` ${p.valles}` : ""} `
+    + `No necesitas hospedarte con nosotros ni tener coche.`;
+}
+
 /** Un día del plan: foto, qué es, cuánto dura y por qué se lo ponemos a él. */
 function tarjetaDia(t: Tour, dia: number, d: LeadEmailInput, usados: Set<string>): string {
-  const unidad = t.precioUnidad === "vehiculo" ? "por vehículo" : "por persona";
+  const unidad = etiquetaUnidad(t);
   return `
   <div style="border:1px solid #d4ccbc;background:#faf7ee;margin:0 0 14px">
     ${foto(t, 190)}
@@ -274,7 +319,7 @@ function tarjetaDia(t: Tour, dia: number, d: LeadEmailInput, usados: Set<string>
       <h2 style="margin:0 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:21px;color:#1a2e1a;font-weight:400">${t.nombre}</h2>
       <p style="margin:0 0 10px;font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.75;color:#3a3a2e">${t.descripcion}</p>
       <p style="margin:0 0 10px;font-size:14px;color:#1a2e1a">
-        <strong>${mx(t.precio)}</strong>
+        <strong>${precioDe(t)}</strong>
         <span style="font-size:13px;color:#8a7a5a">${unidad} · ${t.duracion_hrs} h · dificultad ${t.dificultad}</span>
       </p>
       <p style="margin:0;font-size:13px;line-height:1.6;color:#3a6b1a;border-top:1px solid #d4ccbc;padding-top:11px">
@@ -319,14 +364,18 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
             ${secundario ? tarjetaTour(secundario, "Y si prefieres otra cosa") : ""}
             ${boton(linkCarrito(principal.slug), "Apartar este día →")}
             <p style="text-align:center;font-size:13px;color:#8a7a5a;margin:0">
-              Cancelación gratuita hasta 48 h antes. Sin preguntas.
+              ${principal.cancelacion ? principal.cancelacion.es : "Cancelación gratuita hasta 48 h antes. Sin preguntas."}
             </p>
           `, true, d.email),
         };
       }
 
       const plan  = planDelViaje(d, principal, secundario);
-      const total = plan.reduce((s, t) => s + t.precio, 0);
+      // La suma "por persona" es solo de lo que se cobra por persona. Un RZR
+      // (por vehículo) o el Edén (por grupo) metidos ahí anunciaban por cabeza
+      // lo que cuesta la unidad o el grupo entero: van aparte, con su unidad.
+      const total = plan.filter(esPorPersona).reduce((s, t) => s + t.precio, 0);
+      const aparte = plan.filter((t) => !esPorPersona(t));
       // Un solo `usados` para todo el correo: así ningún interés se usa dos
       // veces como razón y cada día argumenta algo distinto.
       const usados = new Set<string>();
@@ -365,6 +414,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
             <p style="margin:0 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;color:#1a2e1a;font-weight:500">${mx(total)}</p>
             <p style="margin:0;font-size:13px;color:#8a7a5a">
               por persona · apartas hoy con ${mx(Math.round(total * 0.3))} y liquidas el resto allá
+              ${aparte.length ? `<br>Aparte: ${aparte.map((t) => `${t.nombreCorto}, ${precioDe(t)} ${etiquetaUnidad(t)}`).join(" · ")}` : ""}
             </p>
           </div>
 
@@ -397,16 +447,14 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
             <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">El recorrido</p>
             <ul style="margin:0 0 14px;padding-left:18px">${paradas}</ul>
             <p style="margin:0;font-size:13px;line-height:1.6;color:#8a7a5a;border-top:1px solid #d4ccbc;padding-top:12px">
-              <strong style="color:#1a2e1a">Pasamos por ti</strong> a tu hospedaje en Xilitla o
-              Ciudad Valles entre las 8:00 y 9:00 AM, y te regresamos entre 6:00 y 7:00 PM.
-              No necesitas hospedarte con nosotros ni tener coche.
+              ${recogidaDelDia(principal)}
             </p>
             </div>
           </div>
 
           <p style="font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.8;color:#3a3a2e;margin:0 0 4px">
-            Grupos de máximo ${principal.groupMax} personas, guía certificado NOM-09 SECTUR y
-            ${principal.reviewCount} reseñas de gente que ya lo hizo.
+            Grupos de máximo ${principal.groupMax} personas, guía certificado NOM-09 SECTUR y,
+            como empresa, ${resenasTexto()}.
           </p>
           ${boton(urlPrincipal, "Ver fechas disponibles →")}
         `, true, d.email),
@@ -429,37 +477,28 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
           `, true, d.email),
         };
       }
-      const anticipo = Math.round(principal.precio * 0.3);
+      // 🔴 Este correo decía "aparta tu lugar con el 30 %, hoy pagas $X por
+      // persona" para UN recorrido, y el carrito cobra completo un solo día
+      // (`pctACobrar`, regla de Manolo del 20 ago, repetida el 28 sep: "1 solo
+      // tour de un día se paga completo, a partir de 2 tours el 30 %"). Quien
+      // abría el botón se encontraba otro monto. Ahora dice la regla tal cual y
+      // la usa a favor: el 30 % llega sumando un segundo día.
+      // El Edén entra aquí como todos: paga igual; lo suyo es que no tiene
+      // reembolso, y eso lo dice `comoSeAparta`.
+      const nombre = `${principal.articulo ? `${principal.articulo} ` : ""}${nombreCorto}`;
       return {
-        // El asunto nombra el recorrido. "No hace falta que pagues todo hoy" no
-        // decía de QUÉ hablaba: a los tres días de haber pedido una
-        // recomendación, la persona ya no se acuerda de que fuimos nosotros.
-        subject: `Aparta tu ${nombreCorto} con ${mx(anticipo)}`,
+        subject: `${nombreCorto}: súmale un día y aparta con el 30 %`,
         html: wrap({
           eyebrow: "Sin pagar todo hoy",
-          h1a: "Aparta tu lugar",
-          h1b: "con el 30 %",
-          entradilla: `Hablamos de ${nombreCorto}, el recorrido que te recomendamos. Sabemos que soltar el monto completo por adelantado para un viaje que todavía no haces cuesta. Por eso no hace falta.`,
+          h1a: "Súmale un día",
+          h1b: "y aparta con el 30 %",
+          entradilla: `Hablamos de ${nombre}, el recorrido que te recomendamos. Un recorrido solo se paga completo al reservar; si armas un viaje de dos días o más, apartas todo con el 30 % y liquidas el resto el día del tour.`,
         }, `
-          ${foto(principal, 200)}
-          <div style="height:18px"></div>
-
-          <div style="border:1px solid #d4ccbc;background:#faf7ee;padding:20px;margin:0 0 18px;text-align:center">
-            <p style="margin:0 0 4px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Hoy pagas</p>
-            <p style="margin:0 0 10px;font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;color:#3a6b1a;font-weight:500">${mx(anticipo)}</p>
-            <p style="margin:0;font-size:14px;color:#8a7a5a">
-              por persona · el resto (${mx(principal.precio - anticipo)}) lo liquidas
-              el día del tour, en efectivo o con tarjeta
-            </p>
-          </div>
-
-          <p style="font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.8;color:#3a3a2e;margin:0 0 6px">
-            Y si al final no puedes ir: <strong>cancelación gratuita hasta 48 horas antes</strong>,
-            con reembolso completo y sin preguntas. Operamos con lluvia ligera; si el río no es seguro, eliges entre reembolso o cambiar la fecha.
-          </p>
-          ${boton(linkCarrito(principal.slug), `Apartar mi ${nombreCorto} →`)}
+          ${tarjetaTour(principal, "Tu recomendación")}
+          ${nota(comoSeAparta(principal), C.texto, "0 0 18px 0")}
+          ${boton(linkCarrito(principal.slug), "Armar mi viaje →")}
           <p style="text-align:center;font-size:13px;color:#8a7a5a;margin:0">
-            El botón abre el carrito con ${nombreCorto} ya dentro — solo eliges fecha y cuántos van.
+            El botón abre el carrito con ${nombreCorto} ya dentro — ahí eliges fecha, cuántos van y, si quieres, otro recorrido.
           </p>
         `, true, d.email),
       };
@@ -532,7 +571,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
           ${otro ? tarjetaTour(otro, "Y el que suelen sumarle") : ""}
           ${boton(`${BASE}/reservar`, "Armar mi viaje →")}
           <p style="text-align:center;font-size:13px;color:#8a7a5a;margin:0">
-            Apartas con el 30 %. Cancelación gratuita hasta 48 h antes.
+            ${comoSeAparta(principal)}
           </p>
         `, true, d.email),
       };
@@ -560,7 +599,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
           ${barra("Sigue en pie tu recomendación")}
           ${tarjetaTour(principal, "El que te tocó")}
           ${boton(linkCarrito(principal.slug), "Ver fechas y apartar")}
-          ${bajoBoton("Apartas con el 30 %. Cancelación gratuita hasta 48 h antes.")}
+          ${bajoBoton(comoSeAparta(principal))}
         `, true, d.email),
       };
     }

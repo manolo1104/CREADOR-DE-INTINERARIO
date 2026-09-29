@@ -8,13 +8,13 @@ import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
 import { formatMXN } from "@/lib/tourBooking";
 import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats";
 import { waLink } from "@/lib/whatsapp";
-import { GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
+import { GOOGLE_PERFIL_URL, GOOGLE_RATING } from "@/lib/resenas";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { precioVisible } from "@/lib/paquetes";
 import { PCTS_PAQUETE } from "@/lib/paquetePricing";
 import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
-import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
+import { buildOrganizationNode, buildTourOffer, ORG_REF } from "@/lib/jsonld";
 import { getBooking } from "@/lib/i18n/booking";
 import { localizeTour } from "@/lib/i18n/localize";
 
@@ -92,14 +92,12 @@ export default async function ReservarPage() {
             image: x.imagen_hero?.startsWith("http") ? x.imagen_hero : `${SITE}${x.imagen_hero}`,
             duration: `PT${x.duracion_hrs}H`,
             provider: ORG_REF,
-            offers: {
-              "@type": "Offer",
-              price: x.precio,
-              priceCurrency: "MXN",
-              availability: "https://schema.org/InStock",
-              url: `${SITE}${lp(`/reservar-tour/${x.slug}`)}`,
-              seller: ORG_REF,
-            },
+            // 🔴 La oferta la arma `buildTourOffer`: antes era un `Offer` suelto
+            // con `price: x.precio` y sin unidad, así que el Edén (tarifa del
+            // GRUPO, $2,990–$4,160) y el RZR (por VEHÍCULO) se leían "por
+            // persona", y su url era /reservar-tour/<slug>, que redirige al
+            // carrito con noindex. Ahora lleva unitText y apunta a la ficha.
+            offers: { ...buildTourOffer(x, locale), seller: ORG_REF },
           },
         })),
       },
@@ -145,7 +143,7 @@ export default async function ReservarPage() {
             a las reseñas reales.
           */}
           <a
-            href={GOOGLE_MAPS_REVIEWS_URL}
+            href={GOOGLE_PERFIL_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-6 group inline-flex items-center gap-2.5 border border-dorado/30 bg-dorado/10 px-4 py-2.5 hover:border-dorado/60 transition-colors"
@@ -156,7 +154,10 @@ export default async function ReservarPage() {
               ))}
             </span>
             <span className="font-dm text-[13px] text-crema/90">
-              <strong className="text-crema">4.7</strong> · {t.resenasGoogle}
+              {/* La cifra sale de `resenas.ts`: escrita aquí a mano se habría
+                  quedado atrás el día que cambie el perfil. Es el ÚNICO sitio de
+                  la página donde va; las tarjetas ya no la repiten. */}
+              <strong className="text-crema">{GOOGLE_RATING}</strong> · {t.resenasGoogle}
             </span>
             <span className="font-dm text-[11px] text-crema/45 group-hover:text-crema/70 transition-colors hidden sm:inline">
               {t.verlas}
@@ -290,7 +291,8 @@ export default async function ReservarPage() {
                       por persona debajo del titular «por persona». */}
                   <p className="text-[11px] font-dm text-crema/55 mb-4">
                     {en ? `Reserve from (${PCTS_PAQUETE[0]}%) ` : `Apartas desde (${PCTS_PAQUETE[0]} %) `}
-                    <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * PCTS_PAQUETE[0] / 100))}</strong>
+                    {/* En inglés todo importe lleva "MXN": un "$2,610" a secas se lee en dólares. */}
+                    <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * PCTS_PAQUETE[0] / 100))}{en ? " MXN" : ""}</strong>
                   </p>
 
                   <div className="flex gap-2">

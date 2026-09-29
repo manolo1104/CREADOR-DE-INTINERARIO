@@ -4,7 +4,11 @@ import type { Metadata } from "next";
 import { BlogFilters } from "@/components/BlogFilters";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
+import { aplicaBlogSeo } from "@/lib/blogSeo";
 import { urlBlog } from "@/lib/blogDestinoMap";
+import { TOURS_DB } from "@/lib/tours";
+import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
+import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -39,7 +43,13 @@ async function getPosts() {
         coverImageAlt: true, tags: true, readingTime: true, publishedAt: true, focusKeyword: true,
       },
     });
-    return posts.map(applyBlogImageEditsPreview);
+    // 🔴 Las correcciones de `blogSeo.ts` (precios del catálogo en vez de los
+    // inventados del artículo, resúmenes reescritos) solo se aplicaban en la
+    // página de cada artículo. El listado leía `excerpt` crudo de la base, así
+    // que las tarjetas y el ItemList de /blog seguían anunciando «tours
+    // completos por $1,459 MXN», un tour que no existe. Mismo orden que en
+    // blog/[slug]: primero las fotos, luego el SEO.
+    return posts.map((p) => aplicaBlogSeo(applyBlogImageEditsPreview(p)));
   } catch {
     return [];
   }
@@ -48,6 +58,8 @@ async function getPosts() {
 export default async function BlogPage({ searchParams }: { searchParams?: { q?: string } }) {
   const posts = await getPosts();
   const initialQuery = searchParams?.q || "";
+  // Recorridos sin la cancelación gratis de 48 h (hoy el Edén): se nombran en el CTA.
+  const sinReembolso = TOURS_DB.filter((t) => t.cancelacion).map((t) => t.nombreCorto);
 
   const itemListSchema = JSON.stringify({
     "@context": "https://schema.org",
@@ -57,8 +69,13 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
         name: "Blog de Viajes — Guías & Rutas Huasteca Potosina",
         url: `${SITE}/blog`,
         description: "Guías completas, rutas y consejos para explorar la Huasteca Potosina.",
-        publisher: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+        // La empresa por su @id, no un `Organization` suelto sin identificador
+        // (se leía como otra entidad con el mismo nombre). El nodo completo va
+        // en este mismo grafo para que la referencia resuelva aquí; su
+        // calificación es la que se ve en el CTA de abajo.
+        publisher: ORG_REF,
       },
+      buildOrganizationNode("es"),
       {
         "@type": "ItemList",
         name: "Artículos del Blog",
@@ -118,9 +135,13 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
 
         {/* CTA final */}
         <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-white/8">
-          <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ 4.7★ · 161 reseñas de Google</p>
+          <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ {GOOGLE_RATING}★ · {GOOGLE_RESENAS} reseñas de Google</p>
           <h2 className="reveal-up font-cormorant font-light text-crema text-3xl mb-4">¿Listo para reservar tu viaje?</h2>
-          <p className="text-crema/50 font-dm font-light mb-8">Diez recorridos con todo incluido. Apartas con el 30 %; los tours de un día se pagan completos. Cancelas gratis hasta 48 h antes.</p>
+          {/* Decía «Diez recorridos con todo incluido»: son los que marque
+              TOURS_DB (hoy 14) y no todos llevan traslado ni desayuno. La
+              cancelación gratis tampoco aplica a los que traen su propia
+              `cancelacion` (el Edén no reembolsa). */}
+          <p className="text-crema/50 font-dm font-light mb-8">{TOURS_DB.length} recorridos a precio final. Desde 2 días apartas con el 30 %; un recorrido suelto de un día se paga completo. Cancelas gratis hasta 48 h antes{sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : ""}.</p>
           <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
             Ver recorridos y reservar →
           </Link>

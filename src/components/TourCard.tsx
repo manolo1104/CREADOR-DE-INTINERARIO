@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { resenasTexto } from "@/lib/resenas";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { tourCollage, tourDurTexto, etiquetaUnidad, type Tour } from "@/lib/tours";
+import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, type Tour } from "@/lib/tours";
 import { TourCarrusel } from "@/components/TourCarrusel";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { Star, Clock, Users } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import { trackWhatsapp } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 
@@ -42,6 +41,14 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
   const dif = dificultadConfig[t.dificultad];
   const imageHeight = variant === "compact" ? "h-52 md:h-56" : "h-56 md:h-64";
   const panels = tourCollage(t);
+  // Lo que pagan dos adultos, en la unidad del recorrido. 🔴 Era `precio * 2`
+  // para todos: el mensaje de WhatsApp del Edén decía «Total estimado: $5,980»
+  // (la tarifa del GRUPO multiplicada por dos; un grupo de dos paga $3,150) y
+  // el del RZR $3,200 por un solo vehículo de $1,600.
+  const totalDos =
+    t.precioUnidad === "grupo" ? (precioGrupo(t, 2) ?? t.precio)
+    : t.precioUnidad === "vehiculo" ? t.precio
+    : t.precio * 2;
 
   // Tilt 3D sin framer-motion: variables CSS (--rx/--ry) + transición para el "settle".
   const cardRef = useRef<HTMLElement>(null);
@@ -81,13 +88,10 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
       <p className="text-crema/50 text-[10px] font-dm tracking-[1px] mt-0.5">
         {t.tagline}
       </p>
-      {/* Sin reseñas no se enseña calificación: un tour nuevo mostraría
-          "4.7 · (0 reseñas reales)", que se contradice a sí mismo. */}
-      {t.reviewCount > 0 && (
-        <p className="text-[10px] font-dm text-dorado/90 mt-1 flex items-center gap-1">
-          <Star className="w-3 h-3 fill-dorado/90" aria-hidden="true" /> {resenasTexto(en)}
-        </p>
-      )}
+      {/* 🔴 Aquí iba "★ 4.7 · 161 reseñas de Google" bajo el nombre de cada
+          tour: en el inicio y en /experiencias salía una vez por tarjeta y se
+          leía como la nota de ese recorrido. Es la del negocio (regla de
+          `resenas.ts`) y las dos páginas ya la dan fuera de las tarjetas. */}
     </div>
   );
 
@@ -261,23 +265,29 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
             data-wa-manual="1"
             href={waLink(en
               ? `Hi, I'm interested in the "${t.nombre}" tour. Could you share availability and prices?`
-              : WA_MESSAGES.tour(t.nombre, 2, 0, t.precio * 2))}
+              : WA_MESSAGES.tour(t.nombre, 2, 0, totalDos))}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => {
-              trackWhatsapp("tour_card", t.precio * 2);
+              trackWhatsapp("tour_card", totalDos);
               // trackWhatsapp solo alimenta Google Analytics; el embudo lee de
               // TrackEvent, así que este clic era invisible ahí.
               trackTourEvent("WHATSAPP_CLICK", {
-                tour: t.slug, tour_name: t.nombre, amount: t.precio * 2, context: "tarjeta_tour",
+                tour: t.slug, tour_name: t.nombre, amount: totalDos, context: "tarjeta_tour",
               });
             }}
             className="relative z-10 w-full block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all duration-200 rounded"
           >
             {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
           </a>
+          {/* 🔴 Salía "Cancelación gratuita con 48h" en TODAS las tarjetas,
+              también en la del Edén en el Jardín, que no reembolsa nunca. Un
+              recorrido con `cancelacion` propia lleva el mismo renglón que su
+              ficha (tours/[slug]), no la promesa general del sitio. */}
           <p className="text-center text-[9px] text-crema/25 font-dm pt-1">
-            {en ? "✓ Free cancellation up to 48h before" : "✓ Cancelación gratuita con 48h de anticipación"}
+            {t.cancelacion
+              ? (en ? "Non-refundable · date changes allowed up to 5 days before" : "Sin reembolso · cambio de fecha hasta 5 días antes")
+              : (en ? "✓ Free cancellation up to 48h before" : "✓ Cancelación gratuita con 48h de anticipación")}
           </p>
         </div>
       </div>

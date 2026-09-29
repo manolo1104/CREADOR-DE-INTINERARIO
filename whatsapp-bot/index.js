@@ -272,9 +272,9 @@ async function handleOwnerCommand(msg, body) {
     case "/status":
       return reply(`✅ Bot activo.\n⏸️ Chats en pausa: ${pausedChats.size}\n⏳ Ráfagas esperando: ${rafagas.enEspera()}\n🧠 Modelo: ${process.env.BOT_MODEL || "claude-haiku-4-5"}\n⌛ Espera: ${DEBOUNCE_MS / 1000}s (tope ${DEBOUNCE_MAX_MS / 1000}s)`);
     case "/help":
-      return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume el anticipo del 30 %)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
+      return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume lo estándar: completo si es un solo recorrido, 30 % si son varios)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
     case "/confirma": {
-      if (!arg) return reply("Uso: /confirma HPXXXX [monto]\nEj: /confirma HPABC123 3750  (lo que entró)\nSin monto se asume el anticipo del 30 %.");
+      if (!arg) return reply("Uso: /confirma HPXXXX [monto]\nEj: /confirma HPABC123 3750  (lo que entró)\nSin monto se asume lo estándar: completo si es un solo recorrido, 30 % si son varios.");
       {
         const [folioArg, montoArg] = arg.trim().split(/\s+/);
         const monto = montoArg ? Number(String(montoArg).replace(/[^\d.]/g, "")) : undefined;
@@ -315,15 +315,23 @@ async function handleConfirma(reply, folio, montoPagado) {
       `✅ *Anticipo recibido:* ${mx(b.pagado)} (${b.pctPagado} %)\n` +
       `🕒 *Saldo pendiente:* ${mx(b.saldo)} — se liquida el día del tour, en efectivo o con tarjeta\n\n`;
 
+  // La hora y la recogida vienen del catálogo, por recorrido (/api/bot/confirm).
+  // 🔴 Estaba clavada en "8:30–9:00 AM": la Gruta de Xilo sale a las 7 PM y
+  // solo recoge en Xilitla (y 8:30 ni siquiera era la ventana del catálogo,
+  // 8:00–9:00). Sin `salida` —un servidor viejo o un paquete sin recorridos
+  // reconocibles— NO se pone hora: se promete mandarla, igual que el correo.
+  // (Sin hora pública —buceo, rappel— la ruta ya manda "te la confirmamos un día antes".)
+  const horaPendiente = !b.salida;
   const msgCliente =
     `🎉 *¡Tu reserva está CONFIRMADA!*\n\n` +
     `📋 *Folio:* ${b.folio}\n` +
     `🗺️ *Tour:* ${b.tourName}\n` +
     `📅 *Fecha:* ${b.tourDate}\n` +
-    `⏰ *Salida:* 8:30–9:00 AM\n` +
+    (b.salida ? `⏰ *Salida:* ${b.salida}\n` : "") +
     `👥 *Personas:* ${b.adults} adulto(s)${b.children ? ` + ${b.children} niño(s)` : ""}\n` +
     dinero +
-    `Te enviaremos el punto de encuentro exacto un día antes. Lleva ropa cómoda, calzado cerrado y protector solar. ¡Nos vemos pronto! 🌿`;
+    (b.recogida ? `📍 ${b.recogida}\n\n` : "") +
+    `Te enviaremos ${horaPendiente ? "la hora y el punto de encuentro exactos" : "el punto de encuentro exacto"} un día antes. Lleva ropa cómoda, calzado cerrado y protector solar. ¡Nos vemos pronto! 🌿`;
 
   if (b.customerPhone) {
     await client.sendMessage(`${digitsOnly(b.customerPhone)}@c.us`, msgCliente).catch(() => {});

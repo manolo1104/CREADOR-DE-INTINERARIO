@@ -10,7 +10,9 @@ import { headers } from "next/headers";
 // `GuideProfile` ya no se importan: el cuerpo resultante ordena por
 // `rankTour` y agrupa por `TOUR_CATEGORIAS`, y no queda ninguna referencia a
 // ellos (verificado con grep antes de quitarlos).
-import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado } from "@/lib/tours";
+import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado, esPorPersona, partesRecogida, recogidaDeTour } from "@/lib/tours";
+import { excepcionesSalida } from "@/lib/recogidaTexto";
+import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { TourCarrusel } from "@/components/TourCarrusel";
 import { SelloGarantia } from "@/components/SelloGarantia";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
@@ -20,7 +22,7 @@ import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
-import { getToursFaqs } from "@/lib/faqTours";
+import { getToursFaqs, salidaDiaria } from "@/lib/faqTours";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 
 import { GRUPO_MAX, GRUPO_MIN, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
@@ -31,20 +33,34 @@ export function generateMetadata(): Metadata {
   // habían quedado en "8 tours desde $1,300" cuando ya son 10 desde $900, y el
   // gancho de precio más fuerte del catálogo no se estaba usando.
   const nTours = TOURS_DB.length;
-  const desde = Math.min(...TOURS_DB.map((t) => t.precio));
-  const desdeTxt = `$${desde.toLocaleString("es-MX")}`;
+  const desde = rangoPorPersona().min;
+  const desdeTxt = `$${desde.toLocaleString(en ? "en-US" : "es-MX")}`;
   // El inglés NO calca el título español. "Huasteca Potosina Tours 2026" no lo
   // busca nadie en EE. UU.; "adventure tours Mexico" sí, y es la consulta a la
   // que apunta esta página. La marca ya la lleva el título del home.
+  //
+  // 🔴 El español decía "Todo Incluido desde $900": el de $900 (Gruta y
+  // Travesía) no lleva desayuno, el RZR no lleva traslado y en el buceo llegas
+  // por tu cuenta. Es lo primero que se lee en Google.
+  //
+  // 🔴 En inglés el precio lleva "MXN": "From $900" a secas, en un resultado de
+  // Google que lee alguien en EE. UU., son dólares. Con el "MXN" la frase
+  // "in the Huasteca…" ya no cabía en 60; así mide 58, y 60 si el mínimo
+  // llega a cuatro cifras ("$1,000 MXN").
   const title = en
-    ? `Adventure Tours in the Huasteca Potosina, Mexico · From ${desdeTxt}`
-    : `Tours Huasteca Potosina 2026 · Todo Incluido desde ${desdeTxt}`;
+    ? `Adventure Tours, Huasteca Potosina, Mexico · From ${desdeTxt} MXN`
+    : `Tours Huasteca Potosina 2026 · Guiados desde ${desdeTxt}`;
   // La regla real vive en `pctACobrar` (src/lib/carrito.ts): un viaje de un
   // solo día sin hotel se cobra al 100 %. Esta página vende justo eso, así que
   // "Aparta con el 30 %" a secas era falso para casi todo lo que lista.
+  //
+  // 🔴 Decía "con transporte, desayuno, entradas y guía incluidos" de los 14:
+  // el desayuno lo llevan 5 y los de $900 no. Los conteos salen del catálogo.
+  const nTraslado = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
+  const nDesayuno = TOURS_DB.filter(incluyeDesayuno).length;
   const description = en
-    ? `Waterfalls, caves, rafting and a surrealist jungle garden. ${nTours} guided day tours with transport, breakfast, entry fees, insurance and a certified guide. Free cancellation. One-day tours are paid in full; two days or more hold with 30%.`
-    : `${nTours} tours guiados con transporte, desayuno, entradas y guía NOM-09 incluidos. Cancela gratis con 48h. Un tour de un día se paga completo; de dos días en adelante apartas con el 30 %.`;
+    ? `${nTours} guided day tours from ${desdeTxt} MXN: waterfalls, caves, rafting, Las Pozas. ${nTraslado} include hotel pickup, ${nDesayuno} breakfast. One-day tours are paid in full.`
+    : `${nTours} tours guiados desde ${desdeTxt}: ${nTraslado} pasan por tu hospedaje y ${nDesayuno} incluyen desayuno. Un tour de un día se paga completo; desde dos días apartas con el 30 %.`;
   return {
     title,
     description,
@@ -75,19 +91,23 @@ const WA_SVG = (
   </svg>
 );
 
+// 🔴 "Transporte Incluido — Desde tu hotel" y "Todo Incluido" iban para los
+// catorce: el RZR sale de nuestra base y al buceo llegas por tu cuenta. El
+// conteo de recogidas sale del catálogo.
+const N_CON_TRASLADO = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
 const BADGES_ES: { Icon: LucideIcon; title: string; sub: string }[] = [
   { Icon: Award,         title: "Guías Certificados",    sub: "NOM-09 SECTUR" },
-  { Icon: Bus,           title: "Transporte Incluido",   sub: "Desde tu hotel" },
+  { Icon: Bus,           title: "Te recogemos",          sub: `En ${N_CON_TRASLADO} de ${TOURS_DB.length} recorridos` },
   { Icon: Camera,        title: "Fotos & Video",         sub: "Del recorrido completo" },
-  { Icon: CheckCircle2,  title: "Todo Incluido",         sub: "Sin costos ocultos" },
+  { Icon: CheckCircle2,  title: "Precio final",          sub: "Sin costos ocultos" },
   { Icon: MessageCircle, title: "Respuesta en < 1 hora", sub: "Lun–Dom, todo el día" },
   { Icon: CheckCircle2,  title: "Confirmación inmediata",sub: "Por WhatsApp al reservar" },
 ];
 const BADGES_EN: { Icon: LucideIcon; title: string; sub: string }[] = [
   { Icon: Award,         title: "Certified Guides",     sub: "NOM-09 SECTUR" },
-  { Icon: Bus,           title: "Transport Included",   sub: "From your hotel" },
+  { Icon: Bus,           title: "Hotel pickup",         sub: `On ${N_CON_TRASLADO} of ${TOURS_DB.length} tours` },
   { Icon: Camera,        title: "Photos & Video",       sub: "Of the whole trip" },
-  { Icon: CheckCircle2,  title: "All Inclusive",        sub: "No hidden costs" },
+  { Icon: CheckCircle2,  title: "Final price",          sub: "No hidden costs" },
   { Icon: MessageCircle, title: "Reply in < 1 hour",    sub: "Mon–Sun, all day" },
   { Icon: CheckCircle2,  title: "Instant confirmation", sub: "On WhatsApp when you book" },
 ];
@@ -97,12 +117,16 @@ const BADGES_EN: { Icon: LucideIcon; title: string; sub: string }[] = [
 const COMO_FUNCIONA_ES = [
   { num: "01", titulo: "Reserva en línea o por WhatsApp", detalle: "Aparta tu lugar tú mismo en el motor de reservas, o escríbenos por WhatsApp con cuántos son, sus fechas y qué tours les interesan. Las dos formas valen igual; por WhatsApp respondemos en menos de una hora." },
   { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: dónde y a qué hora pasamos por ti, la lista de qué llevar y cómo pagar — link de pago, transferencia bancaria o depósito en OXXO." },
-  { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate por estar listo en el lobby de tu hotel en Xilitla o Ciudad Valles. Todo lo demás —transporte, entradas, desayuno, guía— ya está incluido." },
+  // 🔴 Decía "estar listo en el lobby de tu hotel en Xilitla o Ciudad Valles…
+  // transporte, entradas, desayuno, guía": ni todos recogen en Valles (cinco
+  // solo en Xilitla, el RZR en nuestra base, el buceo en la laguna) ni todos
+  // llevan desayuno. El detalle de cada uno va en el bloque `#salidas`.
+  { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate por estar listo a la hora que te confirmamos: en casi todos los recorridos pasamos por ti a tu hospedaje. Lo que incluye cada uno —transporte, entradas, guía y, según el recorrido, desayuno— ya va en el precio." },
 ];
 const COMO_FUNCIONA_EN = [
   { num: "01", titulo: "Book online or on WhatsApp", detalle: "Reserve your spot yourself in our booking engine, or message us on WhatsApp with your group size, your dates and the tours you're interested in. Either way works; on WhatsApp we reply in under an hour." },
   { num: "02", titulo: "We confirm and reserve your spot", detalle: "We send you the tour details: meeting point, departure time, a what-to-bring list and how to pay — payment link, bank transfer or cash deposit at OXXO." },
-  { num: "03", titulo: "Enjoy, worry-free", detalle: "On tour day, all you have to do is be ready in your hotel lobby in Xilitla or Ciudad Valles. Everything else — transport, entrance fees, breakfast, guide — is already included." },
+  { num: "03", titulo: "Enjoy, worry-free", detalle: "On tour day, just be ready at the time we confirm: on almost every tour we pick you up at your lodging. Whatever each tour includes — transport, entrance fees, a guide and, depending on the tour, breakfast — is already in the price." },
 ];
 
 const TESTIMONIOS_ES = [
@@ -142,13 +166,35 @@ export default function ToursPage() {
   // Los datos que una IA tiene que poder citar de esta página, leídos del
   // catálogo: cuántos recorridos hay, desde cuánto, cuánto duran y de dónde
   // salen. En insignias sueltas ("$1,550" en un <span>) no se pueden citar.
-  const precioMinPersona = Math.min(
-    ...TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio),
-  );
-  const rzrTour   = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
+  const precioMinPersona = rangoPorPersona().min;
   const rangos    = TOURS_DB.map((t) => tourDurRange(t));
   const durMin    = Math.min(...rangos.map(([a]) => a));
   const durMax    = Math.max(...rangos.map(([, b]) => b));
+  // Los que NO se cobran por cabeza, con su unidad: "Recorrido en RZR por
+  // Xilitla: por vehículo, desde $1,600 MXN". Antes solo se nombraba el RZR, y
+  // el Edén —tarifa del grupo entero— quedaba metido en el "desde X por persona".
+  const otraUnidad = tours
+    .filter((t) => !esPorPersona(t))
+    .map((t) => `${t.nombreCorto}: ${etiquetaUnidad(t, en)}, ${en ? "from" : "desde"} ${money(t.precio)} MXN`)
+    .join("; ");
+  // Cuántos recogen dónde. La lista completa, con horas, la arma
+  // `excepcionesSalida()` en el bloque #salidas.
+  // 🔴 Decía "En 7 pasamos por ti…; los otros 7 salen solo de Xilitla o del
+  // mismo destino": cinco de esos siete SÍ pasan por ti (en Xilitla) y desde
+  // Valles se pueden hacer con costo adicional. Se desglosa por tipo.
+  const nValles = recogenEnValles(TOURS_DB).length;
+  const nSoloXilitla = TOURS_DB.filter((t) => partesRecogida(t, false).valles).length;
+  const tiposResto = TOURS_DB.map((t) => recogidaDeTour(t).tipo).filter((x) => x === "base-xilitla" || x === "en-sitio");
+  const nResto = tiposResto.length;
+  const dondeResto = [
+    tiposResto.includes("base-xilitla") ? (en ? "at our base in Xilitla" : "en nuestra base de Xilitla") : null,
+    tiposResto.includes("en-sitio") ? (en ? "at the site itself" : "en el mismo destino") : null,
+  ].filter(Boolean).join(en ? " or " : " o ");
+  const desglose = en
+    ? `On ${nValles} of them we pick you up at your accommodation in Ciudad Valles or Xilitla${nSoloXilitla ? `; on another ${nSoloXilitla}, only at your lodging in Xilitla (from Ciudad Valles, for an additional charge)` : ""}${nResto ? `; and on the remaining ${nResto} we meet ${dondeResto}` : ""}`
+    : `En ${nValles} de ellos pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla${nSoloXilitla ? `; en otros ${nSoloXilitla}, solo en tu hospedaje de Xilitla (desde Ciudad Valles, con costo adicional)` : ""}${nResto ? `, y en ${nResto === 1 ? "el restante" : `los ${nResto} restantes`} nos vemos ${dondeResto}` : ""}`;
+  // Tours con política de cancelación propia (el Edén no reembolsa).
+  const cancelPropia = tours.filter((t) => t.cancelacion).map((t) => t.nombreCorto);
 
   const toursItemListSchema = {
     "@context": "https://schema.org",
@@ -180,10 +226,9 @@ export default function ToursPage() {
             "@type": "UnitPriceSpecification",
             price: t.precio,
             priceCurrency: "MXN",
-            unitText:
-              t.precioUnidad === "vehiculo"
-                ? (en ? "per vehicle" : "por vehículo")
-                : (en ? "per person" : "por persona"),
+            // `etiquetaUnidad` y no un ternario RZR/persona: la tarifa del
+            // Edén es del grupo entero y salía declarada "por persona".
+            unitText: etiquetaUnidad(t, en),
           },
         },
       },
@@ -222,7 +267,8 @@ export default function ToursPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/70 to-negro/65" />
         <div className="relative z-10 max-w-3xl mx-auto">
         <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-          {en ? "All-inclusive tours" : "Tours con todo incluido"}
+          {/* Decía "Tours con todo incluido"; "guiados" ya lo dice el H1. */}
+          {en ? "Day tours" : "Tours de un día"}
         </p>
         {/* El H1 decía sólo "Huasteca": las consultas que venden llevan las dos
             palabras ("huasteca potosina tours", 3.114 impresiones en pos. 6). */}
@@ -231,22 +277,28 @@ export default function ToursPage() {
         </h1>
         <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-3">
           {en
-            ? `${tours.length} tours designed to experience the Huasteca Potosina worry-free. Transport, breakfast, entrance fees and a certified guide included in every trip.`
-            : `${tours.length} tours diseñados para vivir la Huasteca Potosina sin preocupaciones. Transporte, desayuno, entradas y guía certificado incluidos en cada recorrido.`}
+            ? `${tours.length} tours designed to experience the Huasteca Potosina worry-free, with a guide on every trip: ${TOURS_DB.filter((t) => partesRecogida(t, true).incluyeTraslado).length} include pickup at your lodging and ${TOURS_DB.filter(incluyeDesayuno).length} include breakfast.`
+            : `${tours.length} tours diseñados para vivir la Huasteca Potosina sin preocupaciones, con guía en cada recorrido: ${TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length} pasan por ti a tu hospedaje y ${TOURS_DB.filter(incluyeDesayuno).length} incluyen desayuno.`}
         </p>
         {/* El precio, la duración y el punto de salida vivían SOLO dentro de
             insignias de Tailwind: un "$1,550" suelto en un <span> no se puede
             citar. Esta frase deja los mismos datos —leídos del catálogo— en
             prosa, para que una persona o una IA puedan citar una sola línea y
-            quedarse con lo esencial. */}
+            quedarse con lo esencial.
+            🔴 La salida decía "salvo el RZR, el buceo y la Travesía, pasamos
+            por ti en Ciudad Valles o Xilitla entre 8:00 y 9:00 AM", escrito a
+            mano: la Gruta sale a las 7 PM y solo de Xilitla. Aquí queda la
+            cuenta; la lista con horas sale de `excepcionesSalida()` en #salidas,
+            para no meter un párrafo entero en el hero. */}
         <p className="text-crema/65 font-dm text-[13px] max-w-2xl mx-auto leading-relaxed mb-6">
           {en
-            ? `The ${tours.length} tours cost from ${money(precioMinPersona)} MXN per person${rzrTour ? ` (the RZR off-road ride is priced per vehicle, from ${money(rzrTour.precio)} MXN)` : ""}, last between ${durMin} and ${durMax} hours, and — except for the RZR off-road ride and the Media Luna scuba dive, which you reach on your own, and the Coffee Trail, which picks you up in Xilitla only — we pick you up at your accommodation in Ciudad Valles or Xilitla between 8:00 and 9:00 AM. Free cancellation up to 48 hours before with a 100% refund; a single-day tour is paid in full when you book, and from two days on you hold your spot with ${ANTICIPO_PCT}%.`
-            : `Los ${tours.length} recorridos cuestan desde ${money(precioMinPersona)} MXN por persona${rzrTour ? ` (el Recorrido en RZR se cobra por vehículo, desde ${money(rzrTour.precio)} MXN)` : ""}, duran entre ${durMin} y ${durMax} horas y, salvo el Recorrido en RZR y el buceo en Media Luna —a los que llegas por tu cuenta— y la Travesía del Café, que recoge únicamente en hospedajes de Xilitla, pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla entre las 8:00 y las 9:00 AM. Cancelas gratis hasta 48 horas antes con reembolso del 100 %; un recorrido suelto de un día se paga completo al reservar y desde 2 días apartas con el ${ANTICIPO_PCT} %.`}
+            ? <>The {tours.length} tours cost from {money(precioMinPersona)} MXN per person{otraUnidad ? ` (${otraUnidad})` : ""} and last between {durMin} and {durMax} hours. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">pickup times and meeting points</a>. Free cancellation up to 48 hours before with a 100% refund{cancelPropia.length ? ` (except ${cancelPropia.join(", ")}, which has its own policy)` : ""}; a single-day tour is paid in full when you book, and from two days on you hold your spot with {ANTICIPO_PCT}%.</>
+            : <>Los {tours.length} recorridos cuestan desde {money(precioMinPersona)} MXN por persona{otraUnidad ? ` (${otraUnidad})` : ""} y duran entre {durMin} y {durMax} horas. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">horarios y puntos de salida</a>. Cancelas gratis hasta 48 horas antes con reembolso del 100 %{cancelPropia.length ? ` (salvo ${cancelPropia.join(", ")}, con su propia política)` : ""}; un recorrido suelto de un día se paga completo al reservar y desde 2 días apartas con el {ANTICIPO_PCT} %.</>}
         </p>
         <div className="inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
           <Calendar className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-          {en ? "Departures every day of the year — book 24h in advance" : "Salidas todos los días del año — reserva con 24h de anticipación"}
+          {/* Con la salvedad del Edén, que va con el horario del jardín. */}
+          {salidaDiaria(locale, true)} — {en ? "book 24h in advance" : "reserva con 24 h de anticipación"}
         </div>
 
         <div className="flex items-center justify-center gap-3 mb-8">
@@ -254,7 +306,9 @@ export default function ToursPage() {
             <span className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (<Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />))}
             </span>
-            <span className="font-dm text-sm text-crema/85 group-hover:text-crema transition-colors">{en ? "4.7 · 161 Google reviews" : "4.7 · 161 reseñas Google"}</span>
+            {/* La ÚNICA vez que la cifra sale en /tours: es la del negocio y va
+                en la cabecera, de `resenas.ts`. Las tarjetas ya no la repiten. */}
+            <span className="font-dm text-sm text-crema/85 group-hover:text-crema transition-colors">{resenasTexto(en)}</span>
           </a>
           <span className="text-crema/40 font-dm text-xs hidden sm:block">·</span>
           <span className="font-dm text-xs text-crema/70 hidden sm:block">{en ? "+10,000 happy travelers" : "+10,000 viajeros satisfechos"}</span>
@@ -368,9 +422,13 @@ export default function ToursPage() {
                 <span className={`absolute top-3 left-3 z-10 text-[9px] tracking-[1px] uppercase border px-2.5 py-1 rounded-full font-dm bg-negro/60 backdrop-blur-sm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
                   {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
                 </span>
-                <span className="absolute top-3 right-3 z-10 bg-verde-selva/90 backdrop-blur-sm text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-full">
-                  {en ? "Daily departures" : "Salidas todos los días"}
-                </span>
+                {/* El Edén va con el horario del jardín (`horaTexto`), que no
+                    abre todos los días: a ése no se le promete salida diaria. */}
+                {!recogidaDeTour(tour).horaTexto && (
+                  <span className="absolute top-3 right-3 z-10 bg-verde-selva/90 backdrop-blur-sm text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-full">
+                    {en ? "Daily departures" : "Salidas todos los días"}
+                  </span>
+                )}
                 <span className="absolute bottom-3 left-3 z-10 bg-negro/70 backdrop-blur-sm text-crema/85 text-[9px] font-dm tracking-[1px] px-2.5 py-1 rounded-full">
                   {tourDurTexto(tour, en ? " hours" : " horas")}
                 </span>
@@ -403,18 +461,12 @@ export default function ToursPage() {
                 {/* Breve descripción de lo que se hace en el recorrido */}
                 <p className="text-[12.5px] text-crema/60 font-dm leading-relaxed mb-4 line-clamp-3">{tour.descripcion}</p>
 
-                {/* Cinco estrellas y "4.7" junto a "0 reseñas" es una
-                    calificación inventada: un recorrido recién publicado no ha
-                    recibido ninguna. La ficha ya lo trataba así; la tarjeta no.
-                    En su lugar se dice la verdad: es nuevo. */}
-                {tour.reviewCount > 0 ? (
-                  <p className="flex items-center gap-1.5 text-[11px] text-crema/55 font-dm mb-4">
-                    <span className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (<Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />))}
-                    </span>
-                    {resenasTexto(en)}
-                  </p>
-                ) : (
+                {/* 🔴 Cada tarjeta repetía "★★★★★ 4.7 · 161 reseñas de Google":
+                    diez veces en la misma página, pegado al nombre del tour, se
+                    leía como la nota de ESE recorrido. Es la del negocio y ya
+                    sale una vez en la cabecera (ver la regla de `resenas.ts`).
+                    Aquí solo queda lo que sí es del recorrido: que es nuevo. */}
+                {tour.reviewCount === 0 && (
                   <p className="text-[11px] text-verde-vivo/85 font-dm mb-4">
                     {en ? "New tour" : "Recorrido nuevo"}
                   </p>
@@ -437,7 +489,9 @@ export default function ToursPage() {
                     {tourDurTexto(tour)}
                   </span>
                   <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "max." : "máx."} {tour.groupMax}</span>
-                  <span className="text-verde-vivo/70 font-medium">{en ? "Daily departures" : "Salidas diarias"}</span>
+                  {!recogidaDeTour(tour).horaTexto && (
+                    <span className="text-verde-vivo/70 font-medium">{en ? "Daily departures" : "Salidas diarias"}</span>
+                  )}
                 </div>
 
                 <div className="mb-5">
@@ -462,7 +516,7 @@ export default function ToursPage() {
                       <li key={extra.id} className="flex items-center justify-between gap-3 text-[10.5px] font-dm border border-white/10 bg-white/[0.03] rounded px-2.5 py-1.5">
                         <span className="text-crema/70">{extra.nombre}</span>
                         <span className="text-dorado whitespace-nowrap">
-                          +{money(extra.precio)} {en ? "per person" : "por persona"}
+                          +{money(extra.precio)} MXN {en ? "per person" : "por persona"}
                         </span>
                       </li>
                     ))}
@@ -516,6 +570,15 @@ export default function ToursPage() {
               </div>
             ))}
           </div>
+          {/* La regla de salida y sus excepciones, armadas del catálogo
+              (`excepcionesSalida`). El hero enlaza aquí en vez de cargar el
+              párrafo entero: es lo que el paso 03 promete sin detallar. */}
+          <div id="salidas" className="reveal-up scroll-mt-32 mt-14 max-w-3xl mx-auto border border-white/10 bg-negro/30 px-6 py-5">
+            <h3 className="text-[10px] tracking-[3px] uppercase text-verde-vivo font-dm mb-2">
+              {en ? "Where and when we pick you up" : "Dónde y a qué hora pasamos por ti"}
+            </h3>
+            <p className="text-crema/60 font-dm text-sm leading-relaxed">{excepcionesSalida(locale)}</p>
+          </div>
           <div className="reveal-up text-center mt-14">
             {/* El cierre de la página también arranca con reservar en línea:
                 antes solo ofrecía WhatsApp, así que quien bajaba hasta el final
@@ -568,8 +631,8 @@ export default function ToursPage() {
             </p>
             <ul className="space-y-2 mb-7">
               {(en
-                ? [`Max. ${GRUPO_MAX} people per group — more? talk to the team`, "Dedicated guide the whole trip", "Transport from your accommodation", `From $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN per person`]
-                : [`Máximo ${GRUPO_MAX} personas por grupo — si son más, habla con el equipo`, "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles", `Precio desde $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN por persona`]
+                ? [`Max. ${GRUPO_MAX} people per group — more? talk to the team`, "Dedicated guide the whole trip", "Round-trip transport from your accommodation on most tours", `From ${money(precioMinPersona)} MXN per person`]
+                : [`Máximo ${GRUPO_MAX} personas por grupo — si son más, habla con el equipo`, "Guía dedicado todo el recorrido", "Traslado redondo desde tu hospedaje en casi todos los recorridos", `Precio desde ${money(precioMinPersona)} MXN por persona`]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-verde-vivo mt-0.5 flex-shrink-0">✓</span>{item}</li>
               ))}

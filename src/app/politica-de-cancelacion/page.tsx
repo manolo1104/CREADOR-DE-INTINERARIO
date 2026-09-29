@@ -3,26 +3,67 @@ import Link from "next/link";
 import { CheckCircle2, AlertTriangle, XCircle, CloudRain, RefreshCw, MessageCircle } from "lucide-react";
 import { CONTACTO } from "@/lib/contacto";
 import { waLink } from "@/lib/whatsapp";
+import { TOURS_DB } from "@/lib/tours";
 
 const SITE = "https://www.huasteca-potosina.com";
 
+/**
+ * 🔴 Los recorridos que NO siguen esta política, sacados del catálogo
+ * (`cancelacion` en `tours.ts`), nunca escritos a mano aquí.
+ *
+ * Hoy es uno: El Edén en el Jardín. La Fundación Las Pozas no reembolsa nunca,
+ * y esta página —con su FAQPage, que es lo que citan Google y los asistentes de
+ * IA— prometía "cancelación gratuita 48 h, reembolso del 100 %" a todos. Un
+ * reembolso que el proveedor no devuelve lo paga la operadora de su bolsa. El
+ * texto de la excepción es el MISMO `cancelacion.es` que enseñan la ficha y el
+ * pago, así que no hay dos versiones que puedan separarse.
+ */
+const EXCEPCIONES = TOURS_DB.filter((t) => t.cancelacion);
+const NOMBRES_EXCEPCION = EXCEPCIONES.map((t) => t.nombreCorto);
+
+/** "A", "A y B", "A, B y C". */
+const enLista = (nombres: string[]) =>
+  nombres.length <= 1 ? nombres.join("") : `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
+
+/** " (salvo El Edén en el Jardín)" o nada, si algún día no queda ninguna excepción. */
+const SALVO = NOMBRES_EXCEPCION.length ? ` (salvo ${enLista(NOMBRES_EXCEPCION)})` : "";
+
+/**
+ * La frase que remite a las condiciones propias, para las respuestas que
+ * prometen reembolso.
+ * 🔴 Tiene que entenderse SOLA: va al FAQPage, y un buscador o una IA cita la
+ * respuesta sin la página alrededor. Decía "(abajo)", que ahí no apunta a nada
+ * (y en la página el recuadro de la excepción está ARRIBA de las preguntas).
+ */
+const REMITE_EXCEPCION = NOMBRES_EXCEPCION.length
+  ? ` Esto no aplica a ${enLista(NOMBRES_EXCEPCION)}, que ${NOMBRES_EXCEPCION.length > 1 ? "tienen" : "tiene"} sus propias condiciones de cancelación, descritas en esta misma página y en ${NOMBRES_EXCEPCION.length > 1 ? "sus fichas" : "su ficha"}.`
+  : "";
+
 export const metadata: Metadata = {
   title: "Política de cancelación y clima — Tours Huasteca Potosina",
-  description:
-    "Cancelación gratuita hasta 48 h antes con reembolso completo. Qué pasa si cancelas tarde, si no te presentas, si llueve o si el paraje cierra. Reglas claras, por escrito.",
+  // Con la salvedad del Edén no cabía en 155: se acortó la segunda frase
+  // ("no te presentas" → "no llegas", 154), no la salvedad (es justo lo que el
+  // buscador tiene que enseñar). Una segunda excepción la pasaría del tope.
+  description: `Cancelación gratis hasta 48 h antes con reembolso completo${SALVO}. Qué pasa si cancelas tarde, no llegas, llueve o cierra el paraje.`,
   alternates: { canonical: `${SITE}/politica-de-cancelacion` },
   openGraph: {
     title: "Política de cancelación y clima — Tours Huasteca Potosina",
-    description: "Cancelación gratuita hasta 48 h antes. Operamos con lluvia ligera; si el río no es seguro, eliges entre reembolso del 100 % o cambiar la fecha.",
+    description: `Cancelación gratuita hasta 48 h antes${SALVO}. Operamos con lluvia ligera; si el río no es seguro, eliges entre reembolso del 100 % o cambiar la fecha.`,
     url: `${SITE}/politica-de-cancelacion`,
     type: "website",
+    // Se compartía sin foto: el layout ya no le presta la suya a `twitter`
+    // y esta página no tiene `opengraph-image`. Next rellena twitter:image con
+    // esta. 1200×800 es la medida REAL del archivo (no 630).
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: "Tours Huasteca Potosina" }],
   },
 };
 
 const FAQS = [
   {
     q: "¿Puedo cancelar mi tour y recuperar mi dinero?",
-    a: "Sí. Si cancelas con 48 horas o más de anticipación, te devolvemos el 100 % de lo que hayas pagado, incluido el anticipo del 30 %. Sin preguntas y sin trámites.",
+    // "incluido el anticipo del 30 %" daba a entender que todos apartan con
+    // el 30 %: un recorrido suelto de un día se paga completo (`pctACobrar`).
+    a: `Sí. Si cancelas con 48 horas o más de anticipación, te devolvemos el 100 % de lo que hayas pagado, sea el anticipo o el pago completo. Sin preguntas y sin trámites.${REMITE_EXCEPCION}`,
   },
   {
     q: "¿Qué pasa si cancelo con menos de 48 horas?",
@@ -34,11 +75,11 @@ const FAQS = [
   },
   {
     q: "¿Qué pasa si llueve?",
-    a: "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, nosotros cancelamos y eliges entre reembolso del 100 % o reagendar sin costo. Nunca sacamos un grupo con el río crecido.",
+    a: `Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, nosotros cancelamos y eliges entre reembolso del 100 % o reagendar sin costo. Nunca sacamos un grupo con el río crecido.${REMITE_EXCEPCION}`,
   },
   {
     q: "¿Qué pasa si el paraje está cerrado?",
-    a: "Algunos destinos los administran ejidos o cooperativas locales y pueden cerrar por su cuenta, o Protección Civil puede restringir el acceso. Si eso ocurre te avisamos en cuanto lo sabemos y aplica lo mismo que en una cancelación nuestra: reembolso del 100 % o reagendamiento sin costo, a tu elección. También podemos proponerte un destino alternativo del mismo nivel; si lo aceptas, no hay ningún cargo extra.",
+    a: `Algunos destinos los administran ejidos o cooperativas locales y pueden cerrar por su cuenta, o Protección Civil puede restringir el acceso. Si eso ocurre te avisamos en cuanto lo sabemos y aplica lo mismo que en una cancelación nuestra: reembolso del 100 % o reagendamiento sin costo, a tu elección. También podemos proponerte un destino alternativo del mismo nivel; si lo aceptas, no hay ningún cargo extra.${REMITE_EXCEPCION}`,
   },
   {
     q: "¿Cómo cancelo?",
@@ -48,6 +89,12 @@ const FAQS = [
     q: "¿Cuánto tarda el reembolso?",
     a: "Si pagaste con tarjeta, el reembolso sale por la misma vía y suele reflejarse en tu estado de cuenta entre 5 y 10 días hábiles, según tu banco. Si pagaste por transferencia, te lo depositamos a la cuenta que nos indiques.",
   },
+  // Una pregunta por excepción, con su texto del catálogo: va también al
+  // FAQPage, que es donde un asistente de IA lee "¿tiene reembolso?".
+  ...EXCEPCIONES.map((t) => ({
+    q: `¿Aplica esta política a ${t.nombreCorto}?`,
+    a: `No. ${t.cancelacion!.es}`,
+  })),
 ];
 
 // Llevaba las preguntas pero no las migas, que sí tienen sus dos hermanas
@@ -88,7 +135,8 @@ const ESCALA = [
     color: "text-lima border-lima/40 bg-lima/8",
     titulo: "48 h o más antes",
     sub: "Reembolso del 100 %",
-    detalle: "Se te devuelve todo lo pagado, incluido el anticipo. Sin preguntas.",
+    // Igual que la FAQ: un recorrido suelto de un día se paga completo, no hay anticipo.
+    detalle: "Se te devuelve todo lo pagado, sea el anticipo o el pago completo. Sin preguntas.",
   },
   {
     Icon: AlertTriangle,
@@ -128,7 +176,7 @@ export default function PoliticaCancelacionPage() {
           por escrito, para que sepas exactamente qué pasa en cada caso antes de pagar.
         </p>
         <p className="font-dm text-negro/40 text-xs mb-12">
-          Aplica a todos los tours de un día reservados en este sitio. Los paquetes con hospedaje
+          Aplica a todos los tours de un día reservados en este sitio{SALVO}. Los paquetes con hospedaje
           tienen condiciones propias de hotel que te confirmamos al reservar.
         </p>
 
@@ -170,6 +218,21 @@ export default function PoliticaCancelacionPage() {
             sacamos un grupo con el río crecido.
           </p>
         </div>
+
+        {/* La excepción, a la vista y no solo dentro de una respuesta: quien
+            reserva el Edén tiene que leer ANTES de pagar que no hay reembolso. */}
+        {EXCEPCIONES.map((t) => (
+          <div key={t.slug} className="border border-terracota/40 bg-terracota/8 p-6 mb-14">
+            <XCircle className="w-5 h-5 text-terracota mb-3" aria-hidden="true" />
+            <h2 className="font-cormorant font-light text-verde-profundo text-2xl mb-3">
+              Excepción: {t.nombreCorto}
+            </h2>
+            <p className="font-dm text-sm text-negro/70 leading-relaxed mb-3">{t.cancelacion!.es}</p>
+            <Link href={`/tours/${t.slug}`} className="font-dm text-xs text-verde-selva underline underline-offset-2 hover:text-verde-vivo">
+              Ver la experiencia
+            </Link>
+          </div>
+        ))}
 
         <h2 className="font-cormorant font-light text-verde-profundo text-3xl mb-6">Preguntas sobre la política</h2>
         <div className="space-y-5 mb-14">

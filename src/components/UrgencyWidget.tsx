@@ -2,25 +2,40 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { GOOGLE_RATING } from "@/lib/resenas";
 
 // Datos REALES y verificables que rotan (sin contadores de "personas viendo" inventados).
-const FACTS_ES = [
-  "Salidas todos los días del año",
-  "Cancelación gratuita hasta 48h antes",
-  "+10,000 viajeros · 4.7★ en Google",
-  "Transporte, desayuno y guía incluidos",
-];
-const FACTS_EN = [
-  "Departures every day of the year",
-  "Free cancellation up to 48h before",
-  "+10,000 travelers · 4.7★ on Google",
-  "Transport, breakfast & guide included",
-];
+// La calificación sale de resenas.ts (constante pura: no mete el catálogo al
+// bundle del cliente).
+// 🔴 28 sep 2026: el cuarto decía «Transporte, desayuno y guía incluidos», y
+// solo 5 de los 14 recorridos llevan desayuno (el RZR y el buceo, ni traslado).
+// Queda lo que sí trae TODO recorrido: guía NOM-09 y seguro de viaje.
+// 🔴 La cancelación gratis NO es de todo recorrido: el Edén no reembolsa. Los
+// nombres llegan por prop (`sinReembolso`, calculado del catálogo en el
+// servidor) para no meter TOURS_DB al bundle del cliente.
+function facts(en: boolean, sinReembolso: string[]): string[] {
+  const salvo = sinReembolso.length
+    ? (en ? ` (except ${sinReembolso.join(", ")})` : ` (salvo ${sinReembolso.join(", ")})`)
+    : "";
+  return en
+    ? [
+        "Departures every day of the year",
+        `Free cancellation up to 48h before${salvo}`,
+        `+10,000 travelers · ${GOOGLE_RATING}★ on Google`,
+        "NOM-09 guide & travel insurance included",
+      ]
+    : [
+        "Salidas todos los días del año",
+        `Cancelación gratuita hasta 48h antes${salvo}`,
+        `+10,000 viajeros · ${GOOGLE_RATING}★ en Google`,
+        "Guía NOM-09 y seguro de viaje incluidos",
+      ];
+}
 
-export function UrgencyWidget() {
+export function UrgencyWidget({ sinReembolso = [] }: { sinReembolso?: string[] }) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
-  const FACTS = en ? FACTS_EN : FACTS_ES;
+  const FACTS = facts(en, sinReembolso);
   const [i, setI] = useState(0);
 
   useEffect(() => {

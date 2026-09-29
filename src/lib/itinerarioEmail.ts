@@ -1,11 +1,18 @@
 // Correo del lead magnet: "Itinerario de 3 días en la Huasteca".
 //
 // Es contenido real y útil por sí solo (por eso la gente deja su correo), pero
-// cada día apunta al tour que cubre justo esa zona, y al final ofrece la Guía
-// Definitiva de $49. Así se capturan leads sin canibalizar el producto pagado:
-// el itinerario resuelve "qué hago", la guía resuelve "cómo lo hago yo solo".
+// cada día apunta al tour que cubre justo esa zona, y al final ofrece la guía
+// en PDF para quien va por su cuenta: el itinerario resuelve "qué hago", la
+// guía resuelve "cómo lo hago yo solo".
+//
+// 🔴 La guía es GRATIS a cambio del correo desde el 28 sep 2026 (decisión de
+// Manolo), en la portada y en /guia. Este correo seguía vendiéndola: botón
+// "Verla — $49 MXN" hacia una /guia que ya dice «Gratis», y describía la guía
+// de pago (itinerarios de 5 y 7 días, "precios de entrada actualizados") en
+// vez del PDF que se entrega: 13 páginas, UN itinerario de 5 días.
 
-import { TOURS_DB } from "./tours";
+import { TOURS_DB, etiquetaUnidad } from "./tours";
+import { ANTICIPO_PCT } from "./carrito";
 import {
   BASE, C, WA, bajoBoton, barra, boton, fotoTour, parrafo, shellCorreo, tabla, titulo,
 } from "./emailLayout";
@@ -79,7 +86,7 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
             <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.texto};line-height:1.7;">
               ¿Sin coche o sin ganas de manejar? Este día completo es nuestro
               <a href="${BASE}/tours/${tour.slug}" style="color:${C.verde};font-weight:500;">${tour.nombreCorto}</a>
-              — ${mx(tour.precio)} por persona, con entradas, guía y traslado redondo desde tu hospedaje.
+              — ${mx(tour.precio)} ${etiquetaUnidad(tour)}, con entradas, guía y traslado redondo desde tu hospedaje.
             </p>
           </td></tr>
         </table>`
@@ -125,6 +132,12 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
     cuerpo: [
       diasHtml,
       barra("Antes de salir"),
+      // 🔴 "¿Dónde quedarte?" prometía recogida en CUALQUIER tour y en
+      // cualquier hotel de Xilitla o Valles. Del catálogo (`recogida` en
+      // tours.ts) solo la mitad recoge en las dos: los `hospedaje-xilitla`
+      // (Edén, Café, Gruta de Xilo, Amanecer, Olla de la Luz) recogen solo en
+      // Xilitla y cobran el traslado desde Valles, el RZR sale de la base y el
+      // buceo es en la laguna. Por eso "muchos" y no "la mayoría".
       tabla(`
         <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:20px 22px;">
           ${antesDeSalir.map((x) => `
@@ -135,21 +148,24 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
             <tr><td style="border-top:1px solid ${C.borde};padding:13px 0 0 0;">
               <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;color:${C.tenue};line-height:1.7;">
                 <strong style="color:${C.oscuro};">¿Dónde quedarte?</strong> Xilitla y Ciudad Valles son las dos bases más
-                prácticas. Si tomas alguno de nuestros tours, pasamos por ti a tu hospedaje en cualquiera de las dos —
-                no importa en qué hotel te quedes.
+                prácticas. En muchos de nuestros tours pasamos por ti a tu hospedaje en cualquiera de las dos, sin
+                importar el hotel. Los que salen de Xilitla con horario propio recogen solo allí; desde Ciudad Valles
+                el traslado va aparte. La ficha de cada tour dice dónde y a qué hora te recogemos.
               </p>
             </td></tr>
           </table>
         </td></tr>`),
       boton(`${BASE}/tours`, "Ver los tours con guía"),
-      bajoBoton("Puedes apartar tu lugar con el 30 % y pagar el resto el día del tour."),
+      // 🔴 Decía que cualquier tour se aparta con el 30 %: el pago cobra
+      // COMPLETO un recorrido suelto de un día (`pctACobrar`, lib/carrito.ts).
+      bajoBoton(`Un recorrido suelto de un día se paga completo al reservar. Si juntas dos días o más, o llevas hospedaje, apartas con el ${ANTICIPO_PCT} % y pagas el resto el día del tour.`),
       barra("¿Vas por tu cuenta?"),
       tabla(`
         <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:22px;">
-          ${titulo("La Guía Definitiva de la Huasteca", "0 0 10px 0")}
-          ${parrafo("Presupuesto real día por día, cómo llegar a cada sitio desde CDMX, Monterrey y San Luis, horarios y precios de entrada actualizados, dónde dormir y comer, e itinerarios de 5 y 7 días. Todo lo que este correo no alcanza a cubrir.", "0")}
+          ${titulo("La guía de la Huasteca, gratis", "0 0 10px 0")}
+          ${parrafo("Un itinerario de 5 días con la hora de mejor luz de cada lugar, cómo llegar sin tour, cuánto gastas al día si vas por tu cuenta, dónde dormir y el checklist de empaque. Es un PDF de 13 páginas y no cuesta nada: lo descargas en nuestro sitio con tu correo.", "0")}
         </td></tr>`),
-      boton(`${BASE}/guia`, "Verla — $49 MXN", "dorado"),
+      boton(`${BASE}/guia`, "Descargar la guía gratis", "dorado"),
     ].join(""),
     pie: `¿Dudas sobre fechas, clima o cómo combinar los días? Escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a> — contestamos en menos de 1 hora.`,
     origen: "Recibiste este correo porque pediste el itinerario en nuestro sitio.",

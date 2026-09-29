@@ -77,6 +77,79 @@ function loadImagesBank() {
   }
 }
 
+// ── Catálogo de recorridos para enlazar ─────────────────────
+//
+// 🔴 Hasta el 28 sep 2026 el prompt solo conocía `/tours`: el agente escribía
+// "reserva el tour a nacimiento tambaque" hacia el catálogo genérico y, sin
+// saber qué visita cada recorrido, afirmaba que "nuestros tours incluyen
+// Tambaque" (ninguno entra ahí) o inventaba el precio del de Tamul ($1,099,
+// cuando cuesta otra cosa). Ahora el prompt lleva la lista real.
+//
+// Se lee del cerebro del bot (`whatsapp-bot/data.json`), que se regenera desde
+// `TOURS_DB` con `npx tsx src/scripts/export-bot-data.ts`. Este archivo es JS
+// plano y no puede importar `src/lib/tours.ts`. Si el JSON falta, queda la
+// lista mínima de abajo: slugs y nombres, sin precios que puedan envejecer.
+
+const TOURS_FALLBACK = [
+  { slug: "expedicion-tamul",               nombre: "Expedición Tamul" },
+  { slug: "rappel-tamul",                   nombre: "Rappel en la Cascada de Tamul" },
+  { slug: "rafting-rio-tampaon",            nombre: "Rafting en el Río Tampaón" },
+  { slug: "ruta-surrealista-edward-james",  nombre: "Ruta Surrealista" },
+  { slug: "eden-en-el-jardin",              nombre: "El Edén en el Jardín" },
+  { slug: "rzr-xilitla",                    nombre: "Recorrido en RZR por Xilitla" },
+  { slug: "cascadas-del-meco",              nombre: "Cascadas del Meco" },
+  { slug: "paraiso-escalonado-minas-micos", nombre: "Paraíso Escalonado" },
+  { slug: "ruta-acuatica-puente-de-dios",   nombre: "Ruta Acuática" },
+  { slug: "buceo-media-luna",               nombre: "Buceo en la Media Luna" },
+  { slug: "travesia-del-cafe",              nombre: "Travesía del Café" },
+  { slug: "gruta-de-xilo",                  nombre: "Gruta de Xilo" },
+  { slug: "amanecer-de-nubes",              nombre: "Amanecer de Nubes" },
+  { slug: "olla-de-la-luz",                 nombre: "Olla de la Luz" },
+];
+
+const UNIDAD = { vehiculo: "por vehículo", grupo: "por grupo", persona: "por persona" };
+
+function loadToursCatalog() {
+  const fp = path.join(__dirname, "..", "whatsapp-bot", "data.json");
+  try {
+    const data = JSON.parse(fs.readFileSync(fp, "utf-8"));
+    const tours = (data.tours || [])
+      .filter((t) => t.slug && t.nombre)
+      .map((t) => ({
+        slug:     t.slug,
+        nombre:   t.nombre.split("—")[0].trim(),
+        destinos: Array.isArray(t.destinos) ? t.destinos : [],
+        // "desde" cuando el precio depende de la ruta (RZR) o del tamaño del
+        // grupo (Edén): el primer escalón no es lo que paga todo el mundo.
+        precio:   typeof t.precio === "number"
+          ? `${t.tarifaGrupo?.length || t.rutas?.length ? "desde " : ""}$${t.precio.toLocaleString("es-MX")} MXN ${UNIDAD[t.precioUnidad] || UNIDAD.persona}`
+          : null,
+      }));
+    if (tours.length) {
+      console.log(`   ✅ Catálogo de recorridos cargado (${tours.length})`);
+      return tours;
+    }
+  } catch {
+    // Sin el JSON se sigue con la lista mínima: mejor que no enlazar ninguno.
+  }
+  console.warn("   ⚠️  whatsapp-bot/data.json no disponible — lista mínima de recorridos");
+  return TOURS_FALLBACK.map((t) => ({ ...t, destinos: [], precio: null }));
+}
+
+/** Las líneas del prompt: "- Expedición Tamul → https://…/tours/expedicion-tamul · visita: … · $1,550 MXN por persona". */
+function toursParaPrompt(tours) {
+  return tours
+    .map((t) => {
+      const visita = t.destinos.length ? ` · visita: ${t.destinos.join("; ")}` : "";
+      const precio = t.precio ? ` · ${t.precio}` : "";
+      return `- ${t.nombre} → ${SITE_URL}/tours/${t.slug}${visita}${precio}`;
+    })
+    .join("\n");
+}
+
+/** Quita el sufijo de año, igual que `normalizaSlugBlog` en el sitio y los redirects de next.config.mjs. */
+const slugSinAnio = (slug) => slug.replace(/-20\d{2}$/, "");
+
 // ── Cargar bancos de datos locales ──────────────────────────
 
 function loadDataBanks() {
@@ -255,7 +328,10 @@ function validateInternalLinks(content, postsExistentes, siteUrl) {
   const blogLinkRegex = new RegExp(
     `href=["']${escapedUrl}/blog/([a-z0-9-]+)["']`, "gi"
   );
-  const existingSlugs = new Set(postsExistentes.map(p => p.slug));
+  // Se aceptan las dos formas —con y sin "-2026"— porque el prompt ya da las
+  // URLs sin año, y el enlace se escribe SIEMPRE sin él: la versión con año
+  // responde 308 y cada artículo del agente sumaba saltos de redirección.
+  const existingSlugs = new Set(postsExistentes.flatMap(p => [p.slug, slugSinAnio(p.slug)]));
   let validCount = 0;
   let totalCount = 0;
 
@@ -263,7 +339,7 @@ function validateInternalLinks(content, postsExistentes, siteUrl) {
     totalCount++;
     if (existingSlugs.has(slug)) {
       validCount++;
-      return match;
+      return `href="${siteUrl}/blog/${slugSinAnio(slug)}"`;
     }
     console.warn(`   ⚠️  Slug no verificado: /blog/${slug}`);
     if (/tour|guia|precio|reserva|actividad|cascada|rafting|aventura/.test(slug)) {
@@ -487,8 +563,10 @@ async function writeArticle(topic, researchContext, images, postsExistentes) {
   validateSlug(slug, topic.focusKeyword);
   console.log(`   🔗 Slug generado: ${slug}`);
 
-  // Slugs verificados para links internos
-  const verifiedSlugs = postsExistentes.map(p => `/blog/${p.slug}`).join(", ") || "(ninguno aún)";
+  // Slugs verificados para links internos. SIN sufijo de año: la URL con
+  // "-2026" redirige (308) y es la que el agente copiaba tal cual.
+  const verifiedSlugs = Array.from(new Set(postsExistentes.map(p => `${SITE_URL}/blog/${slugSinAnio(p.slug)}`))).join(", ") || "(ninguno aún)";
+  const toursLista = toursParaPrompt(loadToursCatalog());
 
   // Corrección 1: Calcular keyword target count
   const kwWordCount = topic.focusKeyword.split(/\s+/).length;
@@ -516,8 +594,15 @@ IMAGEN CUERPO: ${bodyImgTag}
 CONTEXTO:
 ${researchContext || "(Usa tu conocimiento)"}
 
-LINKS INTERNOS VERIFICADOS (SOLO enlazar a estos): ${verifiedSlugs}
+LINKS INTERNOS VERIFICADOS (SOLO enlazar a estos, copiando la URL EXACTA): ${verifiedSlugs}
 Si necesitas enlazar a un blog pero no existe slug verificado, usa ${SITE_URL}/tours (actividades) o ${SITE_URL}/paquetes (viaje completo con hotel) o ${SITE_URL}/blog (general). NUNCA inventes un slug.
+Los enlaces a /blog/ van SIEMPRE sin sufijo de año: nunca escribas "-2026" (ni otro año) al final de un slug.
+
+RECORRIDOS QUE VENDEMOS (los únicos; sus URLs son exactas):
+${toursLista}
+- En los enlaces "reserva…" y "tours de…" del cuerpo, enlaza el recorrido MÁS relevante al tema con su URL /tours/… y un ancla con su nombre (ej. <a href="${SITE_URL}/tours/expedicion-tamul">reserva la Expedición Tamul</a>). Solo si ninguno encaja, usa ${SITE_URL}/tours con el ancla "tours guiados por la Huasteca Potosina".
+- Un recorrido SOLO visita lo que dice su "visita". Si ninguno visita el lugar del artículo, NO escribas que "nuestros tours incluyen" ese lugar ni hables de "los grupos que llevamos" ahí: ofrece el de la misma zona como plan para otro día.
+- Si das el precio de un recorrido nuestro, usa EXACTAMENTE el de esta lista. No inventes tours "de agencias" ni sus precios.
 
 KEYWORD DENSITY — INSTRUCCIÓN DURANTE REDACCIÓN:
 
@@ -554,7 +639,7 @@ ESTRUCTURA EXACTA — sigue este orden sin saltarte ningún bloque:
 
 <h3>[Subtema específico — extractable como featured snippet, máx 12 palabras. Ej: "Cascada de Tamul: el recorrido en lancha que no olvidarás"]</h3>
 <p>[2-3 oraciones. Dato concreto obligatorio: precio, distancia o tiempo con año. Ej: "El acceso cuesta $100 pesos por persona en 2026."]</p>
-<p>[2-3 oraciones. Dato de experiencia real: "Los viajeros que coordinamos..." o "En cada visita que organizamos..."] <a href="${SITE_URL}/tours" title="tours ${topic.focusKeyword} Huasteca Potosina">reserva el tour a ${topic.focusKeyword}</a></p>
+<p>[2-3 oraciones. Dato de experiencia real: "Los viajeros que coordinamos..." o "En cada visita que organizamos..."] <a href="[URL /tours/… del recorrido más relevante de la lista]">reserva [nombre de ese recorrido]</a></p>
 
 <h3>[Segundo subtema específico — extractable como featured snippet, máx 8 palabras]</h3>
 <p>[2-3 oraciones. Consejo práctico accionable con horario o condición concreta.]</p>
@@ -592,7 +677,7 @@ ${images ? `<figure>
 <p>[Párrafo introductorio de 3-4 oraciones con un dato concreto y experiencia real de los grupos que atendemos.]</p>
 
 <h3>[Subtema del ángulo elegido — extractable como featured snippet]</h3>
-<p>[3-4 oraciones autocontenidas. Datos concretos con <strong>cifras/tiempos/meses</strong> y año. Enlaza a <a href="${SITE_URL}/tours">tours de ${topic.focusKeyword}</a> o a ${SITE_URL}/paquetes donde sea natural.]</p>
+<p>[3-4 oraciones autocontenidas. Datos concretos con <strong>cifras/tiempos/meses</strong> y año. Enlaza al recorrido más relevante de la lista (<a href="[su URL /tours/…]">[su nombre]</a>) o a ${SITE_URL}/paquetes donde sea natural.]</p>
 
 <h3>[Segundo subtema del ángulo]</h3>
 <p>[3-4 oraciones. Detalle práctico accionable + advertencia honesta. Link interno Tipo A a post verificado si existe, si no a ${SITE_URL}/tours.]</p>
@@ -637,6 +722,11 @@ va EXACTAMENTE así:
   Sótano de las HUAHUAS = 478 m, aves al ATARDECER, es el que operamos.
   Sótano de las GOLONDRINAS = 512 m, vencejos al AMANECER, NO lo operamos.
   Nunca cruces las cifras ni prometas Golondrinas dentro de un tour.
+- NO promociones el Sótano de las Golondrinas: no lo metas en itinerarios
+  sugeridos, tablas de precios, "qué visitar" ni recomendaciones para familias.
+  Si el tema obliga a nombrarlo, dilo en una frase y aclara que el que va en
+  nuestra Expedición Tamul es el Sótano de las Huahuas.
+- No nombres ni recomiendes a otras operadoras, agencias o tours ajenos.
 - Las aves de las Huahuas se nombran como "aves" (loros y vencejos), no como
   "pericos" a secas.
 

@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { TOURS_DB, tourDurRange, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
+import { TOURS_DB, tourDurRange, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, esPorPersona, partesRecogida } from "@/lib/tours";
+import { excepcionesSalida } from "@/lib/recogidaTexto";
+import { incluyeDesayuno, rangoGrupo, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
+import { buildTourOffer } from "@/lib/jsonld";
 
 // Formato de importe. El agrupado de miles es el mismo en es-MX y en-US para
 // estas cifras, así que se usa uno solo: lo que cambia en inglés no es el
@@ -19,9 +22,11 @@ const DIF_LABEL_EN: Record<string, string> = { baja: "Easy", media: "Moderate", 
 // El rango se calcula del catálogo, no se escribe a mano: el texto decía
 // "$1,300 a $1,850" mientras la tabla de esta misma página llegaba a $1,950
 // (rafting) y bajaba a $900 (Travesía del Café).
-const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
-const RANGO_MIN = `$${Math.min(...preciosPorPersona).toLocaleString("es-MX")}`;
-const RANGO_MAX = `$${Math.max(...preciosPorPersona).toLocaleString("es-MX")}`;
+// 🔴 Y filtraba con `!== "vehiculo"`: la tarifa del Edén —del grupo entero—
+// subía el techo a "$2,990 por persona". `rangoPorPersona` usa `esPorPersona`.
+const RANGO = rangoPorPersona();
+const RANGO_MIN = `$${RANGO.min.toLocaleString("es-MX")}`;
+const RANGO_MAX = `$${RANGO.max.toLocaleString("es-MX")}`;
 // Derivado del catálogo: estos importes estaban escritos a mano en la respuesta
 // de abajo y se quedaron viejos en cuanto cambió un paquete.
 //
@@ -70,13 +75,23 @@ const RZR_DESDE = `$${(RZR?.precio ?? 0).toLocaleString("es-MX")}`;
 // Techo real del RZR: el vehículo más caro en la ruta más larga. Sale de
 // `flota[].precios`, que es donde vive de verdad la tarifa por unidad.
 const RZR_PRECIOS = (RZR?.flota ?? []).flatMap((v) => v.precios);
-const RZR_MIN = RZR_PRECIOS.length ? Math.min(...RZR_PRECIOS) : (RZR?.precio ?? 0);
 const RZR_MAX = RZR_PRECIOS.length ? Math.max(...RZR_PRECIOS) : (RZR?.precio ?? 0);
 
 // Duración y conteo de los recorridos de un día: para poder decir el dato en
 // prosa (una insignia de Tailwind con "9h" dentro no se puede citar).
 const N_TOURS_DIA = TOURS_DB.length;
-const N_TOURS_PERSONA = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").length;
+const N_TOURS_PERSONA = TOURS_DB.filter(esPorPersona).length;
+
+// Lo que incluye el precio, CONTADO. La página decía "el precio siempre
+// incluye traslado desde Xilitla o Ciudad Valles y desayuno" de los catorce:
+// el desayuno lo llevan cinco, cinco recogen solo en Xilitla y el RZR y el
+// buceo no llevan traslado.
+const GRUPO_TOURS = TOURS_DB.filter((t) => t.precioUnidad === "grupo");
+const CON_DESAYUNO = TOURS_DB.filter(incluyeDesayuno);
+const N_TRASLADO = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
+const N_VALLES = recogenEnValles(TOURS_DB).length;
+const N_SOLO_XILITLA = TOURS_DB.filter((t) => partesRecogida(t, false).valles).length;
+const CON_CANCELACION_PROPIA = TOURS_DB.filter((t) => t.cancelacion);
 const HORAS = TOURS_DB.flatMap((t) => tourDurRange(t));
 const HRS_MIN = Math.min(...HORAS);
 const HRS_MAX = Math.max(...HORAS);
@@ -140,9 +155,6 @@ function preciosUI(locale: Locale) {
   const otros = porDias.slice(1);
   // La unidad de los dos extremos del rango de paquetes (PAQ_MIN–PAQ_MAX).
   const unidadRango = unidadComun([PAQ_BARATO.p, PAQ_CARO.p], locale);
-  // Los paquetes que NO se anuncian por persona, para nombrar la excepción sin
-  // escribirla a mano.
-  const excepcionPareja = paquetes.filter((p) => !p.precioPorPersona).map((p) => p.nombre).join(", ");
   // Para quién está hecho: sale de `perfiles`, no de una etiqueta escrita aquí.
   const paqCortoPerfiles = (paqCorto?.perfiles ?? [])
     .slice(0, 2)
@@ -159,12 +171,56 @@ function preciosUI(locale: Locale) {
   // Nombre corto del recorrido por vehículo, del catálogo (ya localizado): el
   // nombre completo lleva un subtítulo tras el guion largo que no cabe en prosa.
   const rzrNombre = RZR ? localizeTour(RZR, locale).nombre.split(" — ")[0] : "";
+  const nombre = (x: (typeof TOURS_DB)[number]) => localizeTour(x, locale).nombreCorto;
+  const lista = (xs: string[]) => new Intl.ListFormat(en ? "en" : "es-MX", { type: "conjunction" }).format(xs);
+  // 🔴 Cómo se venden los paquetes, dicho desde `precioPorPersona` y no con una
+  // frase fija. Decía «también se anuncian por persona… salvo Inmersión
+  // Huasteca, Gran Huasteca, Paquete Aventura, Odisea Huasteca, que se vende
+  // por pareja»: desde el catálogo del 24 sep NINGUNO va por persona, así que
+  // la "excepción" eran los cuatro y la regla, ninguno. La frase cambia sola si
+  // un paquete vuelve a anunciarse por persona.
+  const paqPersona = paquetes.filter((p) => p.precioPorPersona).map((p) => p.nombre);
+  const paqPareja = paquetes.filter((p) => !p.precioPorPersona).map((p) => p.nombre);
+  const paquetesUnidad = !paqPersona.length
+    ? en
+      ? "Packages with hotel are sold per couple (a base of two adults)"
+      : "Los paquetes con hotel se venden por pareja (base de dos adultos)"
+    : !paqPareja.length
+      ? en
+        ? "Packages with hotel are advertised per person, on a base of two adults: the per-person amount is paid for each of the two"
+        : "Los paquetes con hotel se anuncian por persona, sobre una base de dos adultos: el importe por persona se paga por cada uno de los dos"
+      : en
+        ? `Packages with hotel are quoted on a base of two adults: ${lista(paqPersona)} ${paqPersona.length > 1 ? "are" : "is"} advertised per person (paid for each of the two) and ${lista(paqPareja)} per couple`
+        : `Los paquetes con hotel se cotizan sobre una base de dos adultos: ${lista(paqPersona)} se ${paqPersona.length > 1 ? "anuncian" : "anuncia"} por persona (se paga por cada uno de los dos) y ${lista(paqPareja)} por pareja`;
+  const desayunos = lista(CON_DESAYUNO.map(nombre));
+  // Los de tarifa por grupo (el Edén), con sus escalones: "de $2,990 a $4,160".
+  const grupoTxt = GRUPO_TOURS.map((x) => {
+    const r = rangoGrupo(x);
+    return en
+      ? `${nombre(x)}, priced per group: ${money(r.min)} to ${money(r.max)} MXN for the whole group depending on its size (${x.groupMin} to ${x.groupMax} people)`
+      : `${nombre(x)}, que se cobra por grupo: de ${money(r.min)} a ${money(r.max)} MXN por el grupo completo según cuántos vayan (de ${x.groupMin} a ${x.groupMax} personas)`;
+  });
+  // 🔴 La respuesta de niños y la nota de la tabla aplicaban el descuento a
+  // todos, y el Edén se cobra por grupo: ahí cada niño cuenta como una
+  // persona más (`calcTourTotal` → `precioGrupo(adultos + niños)`), y el RZR va
+  // por vehículo.
+  const ninosOtraUnidad = [
+    ...GRUPO_TOURS.map((x) =>
+      en
+        ? ` On ${nombre(x)} the rate is for the whole group, and each child counts as one more person in it.`
+        : ` En ${nombre(x)} la tarifa es del grupo completo y cada niño cuenta como una persona más del grupo.`,
+    ),
+    RZR ? (en ? ` The ${rzrNombre} is priced per vehicle.` : ` El ${rzrNombre} se cobra por vehículo.`) : "",
+  ].join("");
+  const cancelPropia = CON_CANCELACION_PROPIA.map((x) =>
+    en ? ` The exception is ${nombre(x)}. ${x.cancelacion!.en}` : ` La excepción es ${nombre(x)}. ${x.cancelacion!.es}`,
+  ).join("");
 
   const faqs: { q: string; a: string }[] = en
     ? [
         {
           q: "How much does it cost to visit the Huasteca Potosina?",
-          a: `It depends on how many days you stay. A guided all-inclusive day tour in the Huasteca Potosina costs between ${RANGO_MIN} and ${RANGO_MAX} MXN per person (Mexican pesos), with transport, breakfast, entrance fees and a certified guide included. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} to ${PAQ_MAX} MXN ${unidadRango} with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800–$1,100 MXN each way) plus your lunches and dinners, which are not included.`,
+          a: `It depends on how many days you stay. A guided day tour in the Huasteca Potosina costs between ${RANGO_MIN} and ${RANGO_MAX} MXN per person (Mexican pesos), and that is the final price: depending on the tour it includes transport from your lodging, entrance fees, a guide and, on ${CON_DESAYUNO.length} of them, breakfast. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} to ${PAQ_MAX} MXN ${unidadRango} with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800–$1,100 MXN each way) plus your lunches and dinners, which are not included.`,
         },
         ...(paqCorto
           ? [
@@ -176,19 +232,19 @@ function preciosUI(locale: Locale) {
           : []),
         {
           q: "Are tour prices per person?",
-          a: `Yes. Every day tour in the Huasteca Potosina is priced per person in Mexican pesos, except the RZR Off-Road Ride in Xilitla, which is priced per vehicle (from ${RZR_DESDE} MXN per unit, seating 2 to 6 people depending on the model, up to ${money(RZR_MAX)} MXN for the largest vehicle on the longest route). Packages with hotel are advertised per person too, quoted on a base of two adults${excepcionPareja ? `, except ${excepcionPareja}, which is sold per couple` : ""}: the per-person amount is paid for each of the two adults in that base, and from the third traveler on you add their bed and one ticket per tour.`,
+          a: `Yes. Every day tour in the Huasteca Potosina is priced per person in Mexican pesos, except the RZR Off-Road Ride in Xilitla, which is priced per vehicle (from ${RZR_DESDE} MXN per unit, seating 2 to 6 people depending on the model, up to ${money(RZR_MAX)} MXN for the largest vehicle on the longest route)${grupoTxt.length ? `, and ${lista(grupoTxt)}` : ""}. ${paquetesUnidad}; from the third traveler on you add their bed and one ticket per tour.`,
         },
         {
           q: "What is included in the price, and what is not?",
-          a: "The price you see is the final price. It includes round-trip transport from your hotel in Xilitla or Ciudad Valles, a regional breakfast, every entrance fee to parks and attractions, a NOM-09 SECTUR certified local guide, safety gear, photos and video of the trip, and a first-aid kit. It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), lunches and dinners beyond breakfast, tips, or souvenirs and personal spending. There are no surprise charges on arrival.",
+          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes travel insurance and the photos and video of the trip. It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
         },
         {
           q: "How much do you pay when you book?",
-          a: "From 2 days on, a 30% deposit holds your booking and you settle the rest on the day of the tour, in cash or by card; a single one-day tour is paid in full when you book. You can also pay 100% up front if you prefer. Cancellation is free up to 48 hours before the tour.",
+          a: "From 2 days on, a 30% deposit holds your booking and you settle the rest on the day of the tour, in cash or by card; a single one-day tour is paid in full when you book. You can also pay 100% up front if you prefer. Cancellation is free up to 48 hours before the tour." + cancelPropia,
         },
         {
           q: "Is there a discount for children?",
-          a: "Yes. Children aged 6 to 10 pay around 70% of the adult price, and children under 6 pay 50%. The discount is applied automatically when you book online.",
+          a: `Yes. On tours priced per person, children aged 6 to 10 pay around 70% of the adult price, and children under 6 pay 50%. The discount is applied automatically when you book online.${ninosOtraUnidad}`,
         },
         {
           q: "Can I pay by card, or do I have to pay cash?",
@@ -202,7 +258,7 @@ function preciosUI(locale: Locale) {
     : [
         {
           q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
-          a: `Depende de los días y del plan. Un tour guiado de un día todo incluido en la Huasteca Potosina cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona (transporte, desayuno, entradas y guía certificado incluidos). Un viaje completo de ${DIAS_MIN} a ${DIAS_MAX} días con hotel y tours va de ${PAQ_MIN} a ${PAQ_MAX} MXN ${unidadRango} con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas, que no van incluidas.`,
+          a: `Depende de los días y del plan. Un tour guiado de un día en la Huasteca Potosina cuesta entre ${RANGO_MIN} y ${RANGO_MAX} MXN por persona, y ése es el precio final: según el recorrido incluye transporte desde tu hospedaje, entradas, guía y, en ${CON_DESAYUNO.length} de ellos, desayuno. Un viaje completo de ${DIAS_MIN} a ${DIAS_MAX} días con hotel y tours va de ${PAQ_MIN} a ${PAQ_MAX} MXN ${unidadRango} con nuestros paquetes. A eso súmale cómo llegues a la región (autobús desde CDMX ~$800–$1,100 por trayecto) y tus comidas y cenas, que no van incluidas.`,
         },
         ...(paqCorto
           ? [
@@ -214,19 +270,19 @@ function preciosUI(locale: Locale) {
           : []),
         {
           q: "¿Los precios de los tours son por persona?",
-          a: `Sí, todos los tours de un día se cobran por persona, excepto el Recorrido en RZR por Xilitla, que se cobra por vehículo (desde ${RZR_DESDE} MXN por unidad, para 2 a 6 ocupantes según el modelo, y hasta ${money(RZR_MAX)} MXN en el vehículo más grande de la ruta más larga). Los paquetes con hotel también se anuncian por persona, sobre una base de dos adultos${excepcionPareja ? `, salvo ${excepcionPareja}, que se vende por pareja` : ""}: el importe por persona se paga por cada uno de los dos adultos de esa base, y desde la tercera persona se suma su lugar para dormir y un boleto de cada tour.`,
+          a: `Sí, todos los tours de un día se cobran por persona, excepto el Recorrido en RZR por Xilitla, que se cobra por vehículo (desde ${RZR_DESDE} MXN por unidad, para 2 a 6 ocupantes según el modelo, y hasta ${money(RZR_MAX)} MXN en el vehículo más grande de la ruta más larga)${grupoTxt.length ? `, y ${lista(grupoTxt)}` : ""}. ${paquetesUnidad}; desde la tercera persona se suma su lugar para dormir y un boleto de cada tour.`,
         },
         {
           q: "¿Qué incluye el precio del tour y qué no?",
-          a: "El precio que ves es el precio final: incluye traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, desayuno regional, todas las entradas a parques y atracciones, guía local certificado NOM-09 SECTUR, equipo de seguridad, fotos y video del recorrido y botiquín. No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas y cenas fuera del desayuno, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.",
+          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen seguro de viaje y las fotos y el video del recorrido. No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
         },
         {
           q: "¿Cuánto se paga al reservar?",
-          a: "Desde 2 días apartas con el 30 % del total y liquidas el resto el día del tour, en efectivo o con tarjeta; un recorrido suelto de un día se paga completo al reservar. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes. La cancelación es gratuita hasta 48 horas antes.",
+          a: "Desde 2 días apartas con el 30 % del total y liquidas el resto el día del tour, en efectivo o con tarjeta; un recorrido suelto de un día se paga completo al reservar. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes. La cancelación es gratuita hasta 48 horas antes." + cancelPropia,
         },
         {
           q: "¿Hay descuento para niños?",
-          a: "Sí. Los niños de 6 a 10 años pagan alrededor del 70 % del precio de adulto y los menores de 6 años el 50 %. El descuento se aplica automáticamente al reservar en línea.",
+          a: `Sí. En los recorridos que se cobran por persona, los niños de 6 a 10 años pagan alrededor del 70 % del precio de adulto y los menores de 6 años el 50 %. El descuento se aplica automáticamente al reservar en línea.${ninosOtraUnidad}`,
         },
         {
           q: "¿Puedo pagar con tarjeta o tengo que pagar en efectivo?",
@@ -246,11 +302,14 @@ function preciosUI(locale: Locale) {
     dif: en ? DIF_LABEL_EN : DIF_LABEL_ES,
 
     metaTitle: en
-      ? `Huasteca Potosina Tour Prices 2026 · From ${RANGO_MIN} MXN per Person`
+      // ≤60: con "per Person" completo salía de 61 y Google lo corta.
+      ? `Huasteca Potosina Tour Prices 2026 · From ${RANGO_MIN} MXN/person`
       : "Precios de Tours en la Huasteca Potosina 2026",
+    // ≤155: las dos pasaban de 180 y Google cortaba justo la frase de cierre.
+    // Sin "todo incluido": no todos llevan traslado ni desayuno.
     metaDescription: en
-      ? `The full 2026 price list, in Mexican pesos: all-inclusive day tours from ${RANGO_MIN} MXN per person and ${DIAS_MIN}–${DIAS_MAX} day packages with hotel from ${PAQ_MIN} MXN ${unidadRango}. No hidden costs, discounts for children.`
-      : `Lista completa de precios 2026: tours de un día todo incluido desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN ${unidadRango}. Sin costos ocultos y con descuento para niños.`,
+      ? `2026 price list in Mexican pesos: day tours from ${RANGO_MIN} MXN per person and ${DIAS_MIN}–${DIAS_MAX} day packages with hotel from ${PAQ_MIN} MXN ${unidadRango}.`
+      : `Precios 2026: tours de un día desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN ${unidadRango}. Sin costos ocultos y con descuento para niños.`,
     keywords: en
       ? [
           "huasteca potosina tour prices",
@@ -269,13 +328,14 @@ function preciosUI(locale: Locale) {
     ogTitle: en
       ? "Huasteca Potosina Tour Prices 2026 — All Prices in Mexican Pesos"
       : "Precios de Tours en la Huasteca Potosina 2026",
+    // Lo que se ve al compartir por WhatsApp: también sin "todo incluido".
     ogDescription: en
-      ? "How much a trip to the Huasteca Potosina costs: every tour and package price, all inclusive and with no surprises. Prices in MXN."
-      : "Cuánto cuesta visitar la Huasteca Potosina: precios de todos los tours y paquetes, todo incluido y sin sorpresas.",
+      ? "How much a trip to the Huasteca Potosina costs: every tour and package price, each with its unit and no hidden costs. Prices in MXN."
+      : "Cuánto cuesta visitar la Huasteca Potosina: precios de todos los tours y paquetes, con su unidad y sin costos ocultos.",
     ogAlt: en ? "Tour prices in the Huasteca Potosina" : "Precios de tours en la Huasteca Potosina",
     twitterDescription: en
-      ? "Every tour and package price, all inclusive and with no surprises. Prices in Mexican pesos."
-      : "Precios de todos los tours y paquetes, todo incluido y sin sorpresas.",
+      ? "Every tour and package price, each with its unit and no hidden costs. Prices in Mexican pesos."
+      : "Precios de todos los tours y paquetes, con su unidad y sin costos ocultos.",
 
     breadcrumbInicio: en ? "Home" : "Inicio",
     breadcrumbPrecios: en ? "Prices" : "Precios",
@@ -288,35 +348,44 @@ function preciosUI(locale: Locale) {
     unidadPersona: en ? "per person" : "por persona",
     unidadVehiculo: en ? "per vehicle" : "por vehículo",
 
-    eyebrow: en ? "✦ Clear prices · All inclusive · No surprises" : "✦ Precios claros · Todo incluido · Sin sorpresas",
+    // Decía "Todo incluido": no todos llevan traslado ni desayuno.
+    eyebrow: en ? "✦ Clear prices · In Mexican pesos · No surprises" : "✦ Precios claros · En pesos mexicanos · Sin sorpresas",
     h1Antes: en ? "Tour Prices in the " : "Precios de Tours en la ",
     h1Em: "Huasteca Potosina",
     heroP: en
-      ? `Guided day tours from ${RANGO_MIN} MXN per person and packages with hotel from ${PAQ_MIN} MXN ${unidadRango}. The price you see includes transport, breakfast, entrance fees and a NOM-09 certified guide — no hidden costs on arrival.`
-      : `Tours guiados de un día desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN ${unidadRango}. El precio que ves incluye transporte, desayuno, entradas y guía certificado NOM-09 — sin costos ocultos al llegar.`,
+      ? `Guided day tours from ${RANGO_MIN} MXN per person and packages with hotel from ${PAQ_MIN} MXN ${unidadRango}. The price you see is the final one, with no hidden costs on arrival: ${N_TRASLADO} tours pick you up at your lodging and ${CON_DESAYUNO.length} include breakfast.`
+      : `Tours guiados de un día desde ${RANGO_MIN} MXN por persona y paquetes con hotel desde ${PAQ_MIN} MXN ${unidadRango}. El precio que ves es el final, sin costos ocultos al llegar: ${N_TRASLADO} recorridos pasan por ti a tu hospedaje y ${CON_DESAYUNO.length} incluyen desayuno.`,
     // Cuidado con esta frase: el conteo TOTAL de recorridos y el rango de
     // precio POR PERSONA no son el mismo conjunto. El RZR se cobra por
     // vehículo y no entra en el rango — decir "los 10 cuestan entre $900 y
     // $1,950 por persona" sería falso.
     heroProsa: en
-      ? `In short: the ${N_TOURS_DIA} day tours last ${HRS_MIN} to ${HRS_MAX} hours. ${N_TOURS_PERSONA} of them are priced per person, between ${RANGO_MIN} and ${RANGO_MAX} MXN, and the ${rzrNombre} is priced per vehicle, from ${RZR_DESDE} MXN. The packages with hotel run ${DIAS_MIN} to ${DIAS_MAX} days and cost between ${PAQ_MIN} and ${PAQ_MAX} MXN ${unidadRango}.`
-      : `En corto: los ${N_TOURS_DIA} tours de un día duran de ${HRS_MIN} a ${HRS_MAX} horas. ${N_TOURS_PERSONA} se cobran por persona, entre ${RANGO_MIN} y ${RANGO_MAX} MXN, y el ${rzrNombre} se cobra por vehículo, desde ${RZR_DESDE} MXN. Los paquetes con hotel van de ${DIAS_MIN} a ${DIAS_MAX} días y cuestan entre ${PAQ_MIN} y ${PAQ_MAX} MXN ${unidadRango}.`,
+      ? `In short: the ${N_TOURS_DIA} day tours last ${HRS_MIN} to ${HRS_MAX} hours. ${N_TOURS_PERSONA} of them are priced per person, between ${RANGO_MIN} and ${RANGO_MAX} MXN; the ${rzrNombre} is priced per vehicle, from ${RZR_DESDE} MXN${GRUPO_TOURS.map((x) => `, and ${nombre(x)} per group, from ${money(rangoGrupo(x).min)} MXN`).join("")}. The packages with hotel run ${DIAS_MIN} to ${DIAS_MAX} days and cost between ${PAQ_MIN} and ${PAQ_MAX} MXN ${unidadRango}.`
+      : `En corto: los ${N_TOURS_DIA} tours de un día duran de ${HRS_MIN} a ${HRS_MAX} horas. ${N_TOURS_PERSONA} se cobran por persona, entre ${RANGO_MIN} y ${RANGO_MAX} MXN; el ${rzrNombre} se cobra por vehículo, desde ${RZR_DESDE} MXN${GRUPO_TOURS.map((x) => `, y ${nombre(x)} por grupo, desde ${money(rangoGrupo(x).min)} MXN`).join("")}. Los paquetes con hotel van de ${DIAS_MIN} a ${DIAS_MAX} días y cuestan entre ${PAQ_MIN} y ${PAQ_MAX} MXN ${unidadRango}.`,
     monedaNota: en
       ? "Every amount on this page is in Mexican pesos (MXN), not US dollars."
       : "Todos los importes de esta página están en pesos mexicanos (MXN).",
 
-    tablaTitulo: en ? "Day tours (per person)" : "Tours de un día (por persona)",
+    // La tabla trae también el RZR (por vehículo) y el Edén (por grupo): la
+    // unidad va en cada celda, no en el encabezado.
+    tablaTitulo: en ? "Day tours" : "Tours de un día",
     thTour: en ? "Tour" : "Tour",
     thDuracion: en ? "Duration" : "Duración",
     thDificultad: en ? "Difficulty" : "Dificultad",
-    thPrecio: en ? "Price per person" : "Precio por persona",
+    thPrecio: en ? "Price" : "Precio",
     aprox: en ? "approx." : "aprox.",
     desde: en ? "from " : "desde ",
     porVehiculo: en ? " MXN per vehicle" : " MXN por vehículo",
+    porGrupo: en ? " MXN per group" : " MXN por grupo",
+    personasGrupo: (min: number, max: number) => (en ? `${min}–${max} people` : `${min}–${max} personas`),
     reservar: en ? "Book →" : "Reservar →",
+    // 🔴 Terminaba en "Salidas todos los días del año entre 8:00 y 9:00 AM":
+    // la Gruta sale a las 7 PM y el Amanecer a las 3 AM. La hora va aparte, en
+    // `salidas`, armada del catálogo.
     notaTabla: en
-      ? "Children aged 6 to 10 pay ~70% of the adult price; under 6, 50%. Free cancellation up to 48 h before. Departures every day of the year between 8:00 and 9:00 AM."
-      : "Niños de 6 a 10 años pagan ~70 % del precio de adulto; menores de 6 años, 50 %. Cancelación gratuita con 48 h de anticipación. Salidas todos los días del año entre 8:00 y 9:00 AM.",
+      ? `On per-person tours, children aged 6 to 10 pay ~70% of the adult price; under 6, 50%.${GRUPO_TOURS.length ? ` ${lista(GRUPO_TOURS.map(nombre))}: the rate is for the whole group and each child counts as one person.` : ""} Free cancellation up to 48 h before${CON_CANCELACION_PROPIA.length ? ` (except ${lista(CON_CANCELACION_PROPIA.map(nombre))}, non-refundable)` : ""}.`
+      : `En los recorridos por persona, niños de 6 a 10 años pagan ~70 % del precio de adulto; menores de 6 años, 50 %.${GRUPO_TOURS.length ? ` ${lista(GRUPO_TOURS.map(nombre))}: la tarifa es del grupo completo y cada niño cuenta como una persona.` : ""} Cancelación gratuita con 48 h de anticipación${CON_CANCELACION_PROPIA.length ? ` (salvo ${lista(CON_CANCELACION_PROPIA.map(nombre))}, sin reembolso)` : ""}.`,
+    salidas: (en ? "Departure times and pickup: " : "Horarios y recogida: ") + excepcionesSalida(locale),
 
     paqTitulo: en ? "How much does a full trip cost?" : "¿Cuánto cuesta un viaje completo?",
     paqIntro: en
@@ -336,37 +405,38 @@ function preciosUI(locale: Locale) {
       : "¿Grupo, familia o más noches? Armamos cotizaciones a la medida desde 2 personas. ",
     paqCta: en ? "See the full packages →" : "Ver paquetes completos →",
 
-    incluyeTitulo: en ? "The price always includes" : "El precio siempre incluye",
+    // Era "El precio SIEMPRE incluye" con el traslado desde las dos ciudades y
+    // el desayuno en la lista. Lo que va en todos (seguro, fotos) se dice sin
+    // matiz; lo demás, contado o "según el recorrido".
+    incluyeTitulo: en ? "What the price includes" : "Qué incluye el precio",
     incluyeItems: en
       ? [
-          "Round-trip transport from your hotel in Xilitla or Ciudad Valles",
-          "Breakfast with traditional dishes from the region",
-          "Every entrance fee to parks and attractions",
-          "NOM-09 SECTUR certified local guide",
-          "Safety gear (life vest, helmet, depending on the tour)",
-          "Photos and video of the trip",
-          "First-aid kit",
+          `Round-trip transport from your lodging on ${N_TRASLADO} of the ${N_TOURS_DIA} tours (Xilitla or Ciudad Valles, or Xilitla only)`,
+          `Breakfast with traditional regional dishes on ${CON_DESAYUNO.length} tours`,
+          "Entrance fees to parks and attractions, depending on the tour",
+          "A guide on every tour (NOM-09 SECTUR certified on most)",
+          "Safety gear and first-aid kit, depending on the activity",
+          "Travel insurance and photos and video of the trip, on every tour",
         ]
       : [
-          "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-          "Desayuno con platillos típicos de la región",
-          "Todas las entradas a parques y atracciones",
-          "Guía local certificado NOM-09 SECTUR",
-          "Equipo de seguridad (chaleco, casco según el tour)",
-          "Fotografías y video del recorrido",
-          "Botiquín de primeros auxilios",
+          `Traslado redondo desde tu hospedaje en ${N_TRASLADO} de los ${N_TOURS_DIA} recorridos (Xilitla o Ciudad Valles, o solo Xilitla)`,
+          `Desayuno con platillos típicos de la región en ${CON_DESAYUNO.length} recorridos`,
+          "Entradas a parques y atracciones, según el recorrido",
+          "Guía en todos los recorridos (certificado NOM-09 SECTUR en la mayoría)",
+          "Equipo de seguridad y botiquín, según la actividad",
+          "Seguro de viaje y fotos y video del recorrido, en todos",
         ],
     noIncluyeTitulo: en ? "Not included" : "No incluye",
     noIncluyeItems: en
       ? [
           "Getting to the Huasteca (bus or flight to Ciudad Valles / Xilitla)",
-          "Lunches and dinners beyond breakfast",
+          "Meals the tour does not list",
           "Tips (optional, always appreciated)",
           "Souvenirs and personal spending",
         ]
       : [
           "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles / Xilitla)",
-          "Comidas y cenas fuera del desayuno",
+          "Comidas que el recorrido no menciona",
           "Propinas (opcionales, siempre agradecidas)",
           "Souvenirs y gastos personales",
         ],
@@ -422,8 +492,11 @@ export default function PreciosPage() {
   const lp = (path: string) => localePath(path, locale);
   const tours = TOURS_DB.map((tour) => localizeTour(tour, locale));
   // Solo tours por persona en la tabla principal; el RZR (por vehículo) se muestra aparte.
-  const porPersona = tours.filter((x) => x.precioUnidad !== "vehiculo");
+  // `esPorPersona` y no `!== "vehiculo"`: el Edén (tarifa de grupo) salía en
+  // esta tabla bajo "Precio por persona".
+  const porPersona = tours.filter(esPorPersona);
   const porVehiculo = tours.filter((x) => x.precioUnidad === "vehiculo");
+  const porGrupo = tours.filter((x) => x.precioUnidad === "grupo");
   const paquetes = t.paquetes;
 
   /**
@@ -438,34 +511,12 @@ export default function PreciosPage() {
    * rango real (`flota[].precios`), así que va como `AggregateOffer` con
    * lowPrice/highPrice. Declararle "$1,600" a secas diría que ese es el precio,
    * y es solo el de la unidad más barata en la ruta más corta.
+   *
+   * 🔴 La arma `buildTourOffer` (lib/jsonld), la misma que usa /reservar. La
+   * versión que vivía aquí dejaba al RZR sin `unitText`: un rango de $1,600 a
+   * $7,000 sin decir que es por vehículo se lee por persona.
    */
-  const ofertaTour = (x: (typeof tours)[number]) => {
-    const url = localeUrl(`/tours/${x.slug}`, locale);
-    if (x.precioUnidad === "vehiculo") {
-      return {
-        "@type": "AggregateOffer",
-        priceCurrency: "MXN",
-        lowPrice: RZR_MIN,
-        highPrice: RZR_MAX,
-        offerCount: RZR_PRECIOS.length,
-        availability: "https://schema.org/InStock",
-        url,
-      };
-    }
-    return {
-      "@type": "Offer",
-      price: x.precio,
-      priceCurrency: "MXN",
-      availability: "https://schema.org/InStock",
-      url,
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: x.precio,
-        priceCurrency: "MXN",
-        unitText: t.unidadPersona,
-      },
-    };
-  };
+  const ofertaTour = (x: (typeof tours)[number]) => buildTourOffer(x, locale);
 
   const schema = {
     "@context": "https://schema.org",
@@ -588,7 +639,7 @@ export default function PreciosPage() {
                           poder reservar. */}
                       <Link href={lp(`/reservar/carrito?agregar=${x.slug}`)} className="group/precio inline-block">
                         <span className="font-cormorant text-dorado text-xl group-hover/precio:text-lima transition-colors">{money(x.precio)}</span>
-                        <span className="text-crema/40 text-xs"> MXN</span>
+                        <span className="text-crema/40 text-xs"> MXN {t.unidadPersona}</span>
                         <span className="block text-[9px] tracking-[1.5px] uppercase font-dm text-crema/35 group-hover/precio:text-lima transition-colors">{t.reservar}</span>
                       </Link>
                     </td>
@@ -615,10 +666,31 @@ export default function PreciosPage() {
                     </td>
                   </tr>
                 ))}
+                {porGrupo.map((x) => (
+                  <tr key={x.slug} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                    <td className="px-4 py-4">
+                      <Link href={lp(`/tours/${x.slug}`)} className="text-crema hover:text-dorado transition-colors">
+                        {x.nombre}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-crema/60 whitespace-nowrap">{tourDurTexto(x, " h")}</td>
+                    <td className="px-4 py-4 text-crema/60">{t.dif[x.dificultad]}</td>
+                    <td className="px-4 py-4 text-right whitespace-nowrap">
+                      <Link href={lp(`/reservar/carrito?agregar=${x.slug}`)} className="group/precio inline-block">
+                        <span className="text-crema/50 text-xs">{t.desde}</span>
+                        <span className="font-cormorant text-dorado text-xl group-hover/precio:text-lima transition-colors">{money(x.precio)}</span>
+                        <span className="text-crema/40 text-xs">{t.porGrupo}</span>
+                        <span className="block text-[10px] font-dm text-crema/40">{t.personasGrupo(x.groupMin, x.groupMax)}</span>
+                        <span className="block text-[9px] tracking-[1.5px] uppercase font-dm text-crema/35 group-hover/precio:text-lima transition-colors">{t.reservar}</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
           <p className="text-crema/45 font-dm text-xs mt-3">{t.notaTabla}</p>
+          <p className="text-crema/45 font-dm text-xs mt-2 leading-relaxed">{t.salidas}</p>
         </div>
       </section>
 

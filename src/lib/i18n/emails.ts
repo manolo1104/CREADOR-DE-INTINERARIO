@@ -24,6 +24,12 @@ export interface EmailMessages {
       subject: (t: string) => string;
       titulo: string;
       intro: string;
+      /**
+       * La misma entrada sin la promesa de "cancelación gratuita 48 h", para
+       * un carrito con un recorrido de política propia (el Edén no tiene
+       * reembolso). Solo la llevan las que la prometen.
+       */
+      introSinCancelacion?: string;
       cta: string;
     }>;
     vehiculos: (n: number) => string;
@@ -44,7 +50,18 @@ export interface EmailMessages {
     idaYVuelta: (pax: number) => string;
     nochesHuespedes: (noches: number, huespedes: number) => string;
     ctaSub: string;
-    garantias: string[];
+    garantiaCancelacion: string;
+    /**
+     * La recogida genérica. Solo vale cuando TODOS los recorridos del correo
+     * pasan por el cliente en las dos ciudades: si no, `lineasRecogida()` la
+     * quita y la frase de cada uno va en su bloque (`dondeYHora`).
+     */
+    garantiaRecogida: string;
+    /** Sin recorridos reconocibles no se promete ni ciudad ni hora. */
+    garantiaRecogidaSinTours: string;
+    /** Encabezado del bloque con la recogida de cada recorrido, cuando no es la genérica. */
+    dondeYHora: string;
+    garantiaGuias: string;
     prefieresChat: string;
     yaNoInteresa: string;
   };
@@ -64,7 +81,14 @@ export interface EmailMessages {
     tourReservado: string;
     fechaRecorrido: string;
     porConfirmar: string;
-    pasamosPorTi: string;
+    /**
+     * Bajo la fecha. `hora` es media frase del catálogo ("a las 7:00 PM",
+     * "entre 8:00 y 9:00 AM"): estaba clavado en "entre 8:00 y 9:00 AM" y le
+     * decía eso a quien reservó la Gruta de Xilo, que sale de noche.
+     */
+    pasamosPorTi: (hora: string) => string;
+    /** Bajo la fecha, cuando no pasamos por él: la base del RZR, la laguna del buceo. */
+    nosVemosEn: (lugar: string, hora: string | null) => string;
     participantes: string;
     reservaGrupo: string;
     hospedajeIncluido: string;
@@ -103,7 +127,10 @@ export interface EmailMessages {
     de6a10: (n: number) => string;
     menoresDe6: (n: number) => string;
     vehiculos: (n: number) => string;
+    /** Solo cuando no se sabe qué recorrido es: sin ciudad ni hora que prometer. */
     pickupDefault: string;
+    /** Va detrás de la frase de recogida cuando pasamos por él. */
+    confirmaDireccion: string;
     /** Actividad opcional contratada: se cobró, así que se dice. */
     addOnLinea: (nombre: string, cantidad: number) => string;
     /** Elección obligatoria del recorrido (ej. Siete Cascadas o Tamasopo). */
@@ -218,12 +245,14 @@ const ES: EmailMessages = {
         subject: (t) => `Últimos detalles para tu ${t}`,
         titulo: "Tu lugar sigue disponible",
         intro: "Antes de que se llene la fecha, aquí tienes tu cotización lista. Recuerda: cancelación gratuita hasta 48 h antes, sin riesgo.",
+        introSinCancelacion: "Antes de que se llene la fecha, aquí tienes tu cotización lista.",
         cta: "Reservar ahora",
       },
       recordatorio3: {
         subject: (t) => `¿Apartamos tu lugar para ${t}?`,
         titulo: "Aparta tu lugar",
         intro: "Si tu viaje es de dos días o más, no hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour (un recorrido de un solo día se paga completo). Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
+        introSinCancelacion: "Si tu viaje es de dos días o más, no hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour (un recorrido de un solo día se paga completo). Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
         cta: "Apartar mi lugar",
       },
     },
@@ -245,11 +274,11 @@ const ES: EmailMessages = {
     nochesHuespedes: (noches, huespedes) =>
       `${noches} noche${noches !== 1 ? "s" : ""} · ${huespedes} huésped${huespedes !== 1 ? "es" : ""}`,
     ctaSub: "Se abre con todo lo que elegiste, listo para pagar.",
-    garantias: [
-      "✓ Cancelación gratuita hasta 48 h antes",
-      "✓ Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles",
-      "✓ Guías certificados NOM-09 SECTUR · grupos pequeños",
-    ],
+    garantiaCancelacion: "✓ Cancelación gratuita hasta 48 h antes",
+    garantiaRecogida: "✓ Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles",
+    garantiaRecogidaSinTours: "✓ La hora y el punto de salida de cada recorrido, por escrito al reservar",
+    dondeYHora: "Dónde y a qué hora",
+    garantiaGuias: "✓ Guías certificados NOM-09 SECTUR · grupos pequeños",
     prefieresChat: "¿Prefieres organizarlo por chat? Escríbenos al",
     yaNoInteresa: "Si ya no te interesa, ignora este correo y no te volveremos a escribir por esta reserva.",
   },
@@ -269,7 +298,8 @@ const ES: EmailMessages = {
     tourReservado: "Tour Reservado",
     fechaRecorrido: "Fecha del Recorrido",
     porConfirmar: "Por confirmar",
-    pasamosPorTi: "Pasamos por ti entre 8:00 y 9:00 AM",
+    pasamosPorTi: (hora) => `Pasamos por ti ${hora}`,
+    nosVemosEn: (lugar, hora) => `Nos vemos en ${lugar}${hora ? ` ${hora}` : ""}`,
     participantes: "Participantes",
     reservaGrupo: "Reserva confirmada para tu grupo",
     hospedajeIncluido: "🏨 Hospedaje incluido",
@@ -307,7 +337,8 @@ const ES: EmailMessages = {
     de6a10: (n) => `${n} de 6 a 10 años`,
     menoresDe6: (n) => `${n} menor${n !== 1 ? "es" : ""} de 6`,
     vehiculos: (n) => `${n} vehículo${n !== 1 ? "s" : ""}`,
-    pickupDefault: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. Confirma tu dirección exacta por WhatsApp.",
+    pickupDefault: "Te confirmamos por WhatsApp la hora y el punto de salida.",
+    confirmaDireccion: "Confirma tu dirección exacta por WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "persona" : "personas"}`,
     elegiste: (opcion) => `Elegiste: ${opcion}`,
     extrasTitulo: "Incluye además",
@@ -420,12 +451,14 @@ const EN: EmailMessages = {
         subject: (t) => `Last details for your ${t}`,
         titulo: "Your place is still available",
         intro: "Before the date fills up, here's your quote ready to go. Remember: free cancellation up to 48 h before, no risk.",
+        introSinCancelacion: "Before the date fills up, here's your quote ready to go.",
         cta: "Book now",
       },
       recordatorio3: {
         subject: (t) => `Shall we hold your place for ${t}?`,
         titulo: "Hold your place",
         intro: "If your trip runs two days or more you don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour (a single-day tour is paid in full). Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
+        introSinCancelacion: "If your trip runs two days or more you don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour (a single-day tour is paid in full). If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
         cta: "Hold my place",
       },
     },
@@ -447,11 +480,11 @@ const EN: EmailMessages = {
     nochesHuespedes: (noches, huespedes) =>
       `${noches} night${noches !== 1 ? "s" : ""} · ${huespedes} guest${huespedes !== 1 ? "s" : ""}`,
     ctaSub: "It opens with everything you chose, ready to pay.",
-    garantias: [
-      "✓ Free cancellation up to 48 h before",
-      "✓ We pick you up at your lodging in Xilitla or Ciudad Valles",
-      "✓ NOM-09 SECTUR certified guides · small groups",
-    ],
+    garantiaCancelacion: "✓ Free cancellation up to 48 h before",
+    garantiaRecogida: "✓ We pick you up at your lodging in Xilitla or Ciudad Valles",
+    garantiaRecogidaSinTours: "✓ Each tour's pickup time and place, in writing when you book",
+    dondeYHora: "Where and when",
+    garantiaGuias: "✓ NOM-09 SECTUR certified guides · small groups",
     prefieresChat: "Prefer to sort it out by chat? Message us at",
     yaNoInteresa: "If you're no longer interested, ignore this email and we won't write to you again about this booking.",
   },
@@ -471,7 +504,8 @@ const EN: EmailMessages = {
     tourReservado: "Tour Booked",
     fechaRecorrido: "Tour Date",
     porConfirmar: "To be confirmed",
-    pasamosPorTi: "We pick you up between 8:00 and 9:00 AM",
+    pasamosPorTi: (hora) => `We pick you up ${hora}`,
+    nosVemosEn: (lugar, hora) => `We meet at ${lugar}${hora ? ` ${hora}` : ""}`,
     participantes: "Participants",
     reservaGrupo: "Booking confirmed for your group",
     hospedajeIncluido: "🏨 Lodging included",
@@ -487,7 +521,9 @@ const EN: EmailMessages = {
     todosIncluyen: "All your tours include",
     proximosPasos: "What happens next",
     antesDeTuRecorrido: "Before your tour",
-    puntoSalida: "🌅 Pickup Point",
+    // "Departure Point", como el "Punto de Salida" en español: el recuadro
+    // también dice "we meet at our base" (RZR) o "you make your own way" (buceo).
+    puntoSalida: "🌅 Departure Point",
     queLlevar: "👟 What to Bring",
     queLlevarTexto: "Comfortable clothes, closed shoes, swimwear, biodegradable sunscreen.",
     confirmaWhatsapp: "📱 Confirm on WhatsApp",
@@ -509,7 +545,8 @@ const EN: EmailMessages = {
     de6a10: (n) => `${n} aged 6 to 10`,
     menoresDe6: (n) => `${n} under 6`,
     vehiculos: (n) => `${n} vehicle${n !== 1 ? "s" : ""}`,
-    pickupDefault: "We pick you up at your lodging in Xilitla or Ciudad Valles. Confirm your exact address on WhatsApp.",
+    pickupDefault: "We'll confirm the pickup time and place on WhatsApp.",
+    confirmaDireccion: "Confirm your exact address on WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "person" : "people"}`,
     elegiste: (opcion) => `You chose: ${opcion}`,
     extrasTitulo: "Also included",

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
-import { calcTourTotal, minBookingDate } from "@/lib/tourBooking";
+import { lineasCancelacion, salidasCorreo, todosRecogenEnAmbas, toursDeSlugs } from "@/lib/recogidaCorreo";
+import { totalRecorrido, minBookingDate } from "@/lib/tourBooking";
 import { computeVehiculoCharge } from "@/lib/tourPricing";
 import { buildPaquetePersonalizadoEmailHtml } from "@/lib/tourEmail";
 import { sendBrevoEmail } from "@/lib/brevo";
@@ -42,7 +43,8 @@ interface ItemEntrada {
  * recorridos le generaba tres folios y tres correos sueltos.
  *
  * El hospedaje es OPCIONAL y así se comunica: los tours pasan por el cliente a
- * su hospedaje en Xilitla o en Ciudad Valles, sea nuestro o no.
+ * su hospedaje, sea nuestro o no — en Xilitla o en Ciudad Valles, o solo en
+ * Xilitla, según el recorrido (ver `recogidaWa`).
  *
  * El PRECIO lo calcula el servidor desde TOURS_DB. El bot solo manda qué tours,
  * qué fechas y cuánta gente — nunca decide el monto.
@@ -154,7 +156,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `${tour.nombre} es solo para mayores; no aplica precio de niños.` }, { status: 400 });
     }
 
-    const { subtotal } = calcTourTotal(tour.precio, adultos, mid, small, 0);
+    // `totalRecorrido`: tarifa del GRUPO completo si el tour la tiene (el
+    // Edén). Con `calcTourTotal` a pelo se cotizaba por cabeza.
+    const subtotal = totalRecorrido(tour, adultos, mid, small, 0);
     total += subtotal;
 
     lineItems.push({
@@ -224,6 +228,10 @@ export async function POST(req: NextRequest) {
   }
 
   const hosp     = packageItems[0];
+  // Un paquete son 2 días o más: se aparta TODO con el 30 %, el Edén incluido
+  // (regla de Manolo, 28 sep 2026: un solo tour se paga completo; desde 2, el
+  // 30 %). Lo que el Edén no tiene es reembolso: eso lo dice su política.
+  const toursPaq  = toursDeSlugs(lineItems.map((l) => l.tourSlug));
   const anticipo = Math.round((total * PCT_ANTICIPO) / 100);
   const folio    = "HP-P" + Date.now().toString(36).toUpperCase();
   const appUrl   = (process.env.APP_URL || "https://www.huasteca-potosina.com").replace(/\/$/, "");
@@ -426,6 +434,21 @@ export async function POST(req: NextRequest) {
     ? ["", "*Y además:*", ...diferencias.map((d) => `• _${d.nombre}_ suma ${d.suma.map((c) => c.etiqueta.toLowerCase().split(",")[0]).join(" y ")}.`)]
     : [];
 
+  // Dónde y a qué hora pasamos por ellos, desde el catálogo de cada recorrido.
+  // 🔴 Decía "en Xilitla o en Ciudad Valles" para todo el paquete, pero aquí
+  // entra cualquier tour: el RZR (en la base), el buceo (en la laguna), el
+  // rappel (recogida en duda) y los que solo recogen en Xilitla con costo
+  // desde Valles (Gruta de Xilo, Amanecer de Nubes, Olla de la Luz, Edén,
+  // Travesía del Café). La frase de siempre se queda solo si TODOS recogen en
+  // las dos ciudades.
+  const todosEnAmbas = todosRecogenEnAmbas(toursPaq);
+  const salidasPaq = todosEnAmbas ? [] : salidasCorreo(toursPaq, "es");
+  const recogidaWa = todosEnAmbas
+    ? (hosp
+        ? `Los tours te recogen en el hotel. Si prefieres quedarte en otro lado, también pasamos por ti — en Xilitla o en Ciudad Valles.`
+        : `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`)
+    : ["*Dónde y a qué hora:*", ...salidasPaq.map((l) => `• ${l}`)].join("\n");
+
   const resumenWhatsApp = [
     `📋 *Tu paquete a la medida* — folio ${folio}`,
     "",
@@ -439,10 +462,12 @@ export async function POST(req: NextRequest) {
     `*Total${hospedajeSinTarifa ? " de los tours" : " del viaje"}: ${fmx(total)} MXN*`,
     `*Apartas hoy con ${fmx(anticipo)}* (${PCT_ANTICIPO} %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del primer recorrido.`,
     "",
-    hosp
-      ? `Los tours te recogen en el hotel. Si prefieres quedarte en otro lado, también pasamos por ti — en Xilitla o en Ciudad Valles.`
-      : `Pasamos por ustedes a su hospedaje, en Xilitla o en Ciudad Valles — no necesitan hospedarse con nosotros.`,
-    `Cancelas gratis hasta 48 h antes, con reembolso completo.`,
+    recogidaWa,
+    ...(() => {
+      // 🔴 "Reembolso completo" también para el Edén, que no tiene reembolso.
+      const c = lineasCancelacion(toursPaq.map((t) => t.slug), "es", "Cancelas gratis hasta 48 h antes, con reembolso completo");
+      return [...c.garantia.map((g) => `${g}.`), ...c.detalle];
+    })(),
     "",
     `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares y las habitaciones se llenan rápido.`,
     "",
@@ -458,7 +483,9 @@ export async function POST(req: NextRequest) {
     moneda: "MXN",
     recorridos: lineItems.map((l) => ({ tour: l.tourName, fecha: l.tourDate, personas: l.adults + l.childrenMid + l.childrenSmall, subtotal: l.subtotal })),
     hospedajeOpcional: true,
-    recogida: "Pasamos por el cliente a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no.",
+    recogida: todosEnAmbas
+      ? "Pasamos por el cliente a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro hotel o no."
+      : salidasPaq.join(" "),
     datosBanco: DATOS_BANCO,
     // Un paquete a la medida no tiene página propia, así que el link lleva al
     // CARRITO con sus recorridos dentro, listo para pagar con tarjeta. Antes

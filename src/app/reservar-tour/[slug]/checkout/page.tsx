@@ -10,8 +10,9 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadTourBookingState, clearTourBookingState, formatMXN, formatTourDate } from "@/lib/tourBooking";
 import type { TourBookingState } from "@/lib/tourBooking";
-import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour, fraseRecogida, recogidaDeTour, type RecogidaTipo } from "@/lib/tours";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
+import { useLocale } from "@/lib/i18n/useLocale";
 import { trackPurchase } from "@/lib/analytics";
 import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
@@ -22,6 +23,40 @@ const stripePromise = loadStripe(
 );
 
 const WA_NUMBER = "524891090388";
+
+/**
+ * El campo "Dónde te hospedas" según cómo llega el cliente a ESTE recorrido.
+ *
+ * 🔴 Decía "(Xilitla o Ciudad Valles)", ponía de ejemplo un hotel de Valles y
+ * prometía "pasamos por ti… no importa dónde te quedes" a todos. A quien pagaba
+ * la Gruta de Xilo —solo Xilitla; desde Valles, con costo aparte— le prometía
+ * gratis un traslado que se cobra, y al del RZR, una recogida que no existe.
+ * La frase de ayuda es la del catálogo (`fraseRecogida`); aquí solo se decide
+ * qué pedir.
+ */
+const CAMPO_HOSPEDAJE: Record<RecogidaTipo, { donde: string; ejemplo: string; siVacio: string }> = {
+  "hospedaje": {
+    donde:   "Xilitla o Ciudad Valles · opcional",
+    ejemplo: "Ej. Hotel Taninul, Ciudad Valles",
+    siVacio: "Si lo dejas en blanco, coordinamos la recogida por WhatsApp.",
+  },
+  "hospedaje-xilitla": {
+    donde:   "en Xilitla · opcional",
+    ejemplo: "Ej. Hotel Paraíso Encantado, Xilitla",
+    siVacio: "Si lo dejas en blanco, coordinamos la recogida por WhatsApp.",
+  },
+  // Sin recogida: el dato solo sirve para ubicarte. No se habla de "recogida".
+  "base-xilitla": {
+    donde:   "opcional",
+    ejemplo: "Hotel y ciudad",
+    siVacio: "La hora exacta te la confirmamos por WhatsApp.",
+  },
+  "en-sitio": {
+    donde:   "opcional",
+    ejemplo: "Hotel y ciudad",
+    siVacio: "La hora exacta te la confirmamos por WhatsApp.",
+  },
+};
 
 // ── Formulario ────────────────────────────────────────────────────────────────
 
@@ -46,9 +81,11 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
   const [error,          setError]          = useState("");
   const [procesando,     setProcesando]     = useState(false);
 
-  // Hospedaje donde pasamos por el cliente (Xilitla o Ciudad Valles). Opcional:
+  // Hospedaje donde pasamos por el cliente (dónde, según el recorrido). Opcional:
   // si se deja vacío, la dirección se coordina por WhatsApp.
   const pickupLocation = pickup.trim() || "Por definir — te contactaremos por WhatsApp";
+  const tourCat = TOURS_DB.find((t) => t.id === booking.tourId || t.slug === booking.tourSlug);
+  const campoHosp = CAMPO_HOSPEDAJE[recogidaDeTour(tourCat ?? {}).tipo];
 
   const chargeAmt   = cobro.charge;
 
@@ -271,15 +308,14 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
           {/* Hotel de recogida — un solo campo opcional */}
           <div>
             <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">
-              Dónde te hospedas <span className="text-negro/35 normal-case tracking-normal">(Xilitla o Ciudad Valles · opcional)</span>
+              Dónde te hospedas <span className="text-negro/35 normal-case tracking-normal">({campoHosp.donde})</span>
             </label>
             <input type="text" value={pickup} onChange={(e) => setPickup(e.target.value)}
-              placeholder="Ej. Hotel Taninul, Ciudad Valles"
+              placeholder={campoHosp.ejemplo}
               className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
             <p className="mt-1.5 text-[10px] text-negro/40 font-dm">
-              Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles — no importa dónde te quedes.
-              Si lo dejas en blanco, coordinamos la recogida por WhatsApp.
+              {fraseRecogida(tourCat ?? {}, false)} {campoHosp.siVacio}
             </p>
           </div>
 
@@ -378,6 +414,9 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
 
 export default function CheckoutTourPage() {
   const router  = useRouter();
+  // Solo para el resumen: `ResumenReserva` se pinta en el idioma de la ruta y
+  // su frase de recogida tiene que ir en el mismo. El formulario es en español.
+  const { en } = useLocale();
   const params  = useParams<{ slug: string }>();
   const [booking, setBooking]           = useState<TourBookingState | null>(null);
   const [clientSecret, setClientSecret] = useState("");
@@ -562,6 +601,8 @@ export default function CheckoutTourPage() {
                 nombre: a.nombre, cantidad: a.cantidad, subtotal: a.precio * a.cantidad,
               })),
               eleccion: booking.eleccion?.nombre,
+              recogida: tourData ? fraseRecogida(tourData, en) : undefined,
+              cancelacion: (en ? tourData?.cancelacion?.en : tourData?.cancelacion?.es) || undefined,
             }]}
             total={cobro.total}
             pagaHoy={cobro.charge}
@@ -575,7 +616,9 @@ export default function CheckoutTourPage() {
             <ul className="space-y-2">
               {[
                 { Icon: CreditCard,    text: "Pago 100% seguro · Stripe" },
-                { Icon: CalendarCheck, text: "Cancelación gratuita con 48h" },
+                // 🔴 El Edén no se reembolsa: su política va completa en el
+                // resumen de arriba y aquí no se le promete lo contrario.
+                ...(tourData?.cancelacion ? [] : [{ Icon: CalendarCheck, text: "Cancelación gratuita con 48h" }]),
                 { Icon: Award,         text: "Guías NOM-09 SECTUR" },
                 { Icon: Mail,          text: "Confirmación por correo inmediata" },
               ].map(({ Icon, text }) => (

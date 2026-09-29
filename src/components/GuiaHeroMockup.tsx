@@ -1,12 +1,17 @@
 import Image from "next/image";
 import { MapPin, Wallet, ListChecks, CalendarDays } from "lucide-react";
+import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 
 // Mockup profesional para el hero de /guia: la guía vista en un teléfono
 // (refuerza "la llevas en tu celular"), con chips flotantes de prueba social.
+// Las secciones y el «Día 1» son los del PDF que se entrega gratis
+// (`public/guia-huasteca-potosina.pdf`): antes anunciaba «3 itinerarios» y un
+// Día 1 en Xilitla que ese PDF no trae. Sin «lo que cuesta cada parada»: las
+// entradas del PDF no cuadran con `DESTINOS_DB` (ver guia/page.tsx).
 const SECCIONES = [
   { Icon: MapPin, t: "Cómo llegar y moverte" },
-  { Icon: Wallet, t: "Presupuesto por viajero" },
-  { Icon: CalendarDays, t: "3 itinerarios listos" },
+  { Icon: Wallet, t: "Gasto aproximado por día" },
+  { Icon: CalendarDays, t: "Itinerario de 5 días" },
   { Icon: ListChecks, t: "Checklist de empaque" },
 ];
 
@@ -31,7 +36,7 @@ export function GuiaHeroMockup() {
             <Image src="/imagenes/sotano-de-las-golondrinas/hero.jpg" alt="" fill className="object-cover opacity-85" sizes="290px" />
             <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/40 to-transparent" />
             <div className="absolute bottom-3 left-4 right-4">
-              <p className="text-[7px] tracking-[2.5px] uppercase text-verde-vivo mb-1 font-dm">Guía Definitiva · 2026</p>
+              <p className="text-[7px] tracking-[2.5px] uppercase text-verde-vivo mb-1 font-dm">Guía gratis · 2026</p>
               <p className="font-cormorant text-crema text-xl leading-none">Huasteca Potosina</p>
             </div>
           </div>
@@ -50,7 +55,7 @@ export function GuiaHeroMockup() {
             <div className="mt-3 rounded border border-dorado/25 bg-dorado/5 p-3">
               <p className="text-[7px] tracking-[2px] uppercase text-dorado/80 font-dm mb-1">Itinerario · Día 1</p>
               <p className="text-[9px] text-crema/75 font-dm leading-snug">
-                Llegada a Xilitla · Las Pozas al atardecer · cena en el mercado local.
+                Sótano de las Huahuas al amanecer · Cascada de Tamul · Cueva del Agua.
               </p>
             </div>
           </div>
@@ -58,10 +63,12 @@ export function GuiaHeroMockup() {
       </div>
 
       {/* Chips flotantes (prueba social real) — anclados a las ESQUINAS, sobre el borde
-          del teléfono, nunca sobre el contenido de la pantalla. */}
+          del teléfono, nunca sobre el contenido de la pantalla.
+          🔴 La cifra sale de resenas.ts: aquí quedó un «4.9★» escrito a mano
+          sobre «161 reseñas», y /guia enseñaba dos calificaciones distintas. */}
       <div className="absolute -top-4 -left-4 bg-negro/95 border border-white/12 rounded-lg px-3 py-2 shadow-xl backdrop-blur-sm">
-        <p className="font-cormorant text-dorado text-lg leading-none">4.9★</p>
-        <p className="text-[7px] tracking-[1px] uppercase text-crema/45 font-dm mt-0.5">Google · 161 reseñas</p>
+        <p className="font-cormorant text-dorado text-lg leading-none">{GOOGLE_RATING}★</p>
+        <p className="text-[7px] tracking-[1px] uppercase text-crema/45 font-dm mt-0.5">Google · {GOOGLE_RESENAS} reseñas</p>
       </div>
       <div className="absolute -bottom-4 -right-4 bg-negro/95 border border-white/12 rounded-lg px-3 py-2 shadow-xl backdrop-blur-sm">
         <p className="text-[9px] text-verde-vivo font-dm font-medium leading-none">⬇ Descarga</p>

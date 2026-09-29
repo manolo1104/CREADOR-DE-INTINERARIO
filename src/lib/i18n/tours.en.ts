@@ -1,6 +1,18 @@
 // Traducciones al inglés de los tours, indexadas por slug.
 // Solo los campos de cara al usuario; lo no traducido cae al español (ver localize.ts).
 // gallery = textos alt en el MISMO orden que el array gallery de tours.ts.
+//
+// 🔴 Precios: NUNCA escritos a mano en una descripción. Se pone `{precio}` y
+// `localizeTour` lo resuelve con `conPrecio(…, "en")` → "$900 MXN". Con la
+// cifra a mano, el día que cambie el precio el inglés se queda con el viejo.
+//
+// 🔴 Una traducción que se queda vieja miente en inglés aunque el español esté
+// bien. El 28 sep 2026 seis recorridos (rappel, Tamul, Surrealista, Meco,
+// Escalonado, Acuática) y el rafting seguían con la versión de hace meses: el
+// rappel decía "no incluye transporte" encima de su propio "Transport is
+// included", y la Ruta Acuática prometía todas las paradas cuando el día da
+// para una de dos. Al cambiar `descripcion`, `destinos` o `incluye` en
+// tours.ts, se retraduce aquí en el mismo cambio.
 
 export interface TourTranslation {
   nombre?: string;
@@ -41,9 +53,9 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Off-Road Adventure",
     urgencia: "Limited fleet — weekends book up in advance",
     descripcion:
-      "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Village (a hamlet of giant mushroom houses), the mountain lookouts, a hidden jungle spring (with kayak) or the cloud forest of La Trinidad. Pricing is per vehicle (from $1,600 MXN), not per person.",
+      "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Village (a hamlet of giant mushroom houses), the mountain lookouts, a hidden jungle spring (with kayak) or the cloud forest of La Trinidad. Pricing is per vehicle (from {precio}), not per person.",
     descripcionLarga:
-      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, reaching the Nanacatli Village, a hamlet of giant mushroom houses known as 'the smurf village'), Miradores (3 h, panoramic mountain lookouts), Nacimiento (5 h, a crystal-clear spring deep in the jungle where we lend you a kayak and life vest) and Trinidad (5 h, climbing to the cloud forest of La Trinidad, a mountain village preserved in time).\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ($1,600 MXN for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
+      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, reaching the Nanacatli Village, a hamlet of giant mushroom houses known as 'the smurf village'), Miradores (3 h, panoramic mountain lookouts), Nacimiento (5 h, a crystal-clear spring deep in the jungle where we lend you a kayak and life vest) and Trinidad (5 h, climbing to the cloud forest of La Trinidad, a mountain village preserved in time).\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ({precio} for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
     destinos: [
       "Base in Xilitla (meeting point)",
       "Nanacatli Village — mushroom houses (Nanacatli Route · 2 h)",
@@ -103,9 +115,9 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Rafting & Adrenaline",
     urgencia: "Subject to river level — departure is confirmed when you book",
     descripcion:
-      "Paddle 14 kilometers of Class III rapids on the turquoise water of the Tampaón River, flanked by towering canyon walls. We pick you up at your lodging in Ciudad Valles or Xilitla (round-trip transport), with full gear, certified guide and a meal included. No experience or swimming skills needed — there are routes for beginners and advanced paddlers.",
+      "Paddle 14 kilometers of Class III rapids on the turquoise water of the Tampaón River, flanked by towering canyon walls. We pick you up at your lodging in Ciudad Valles or Xilitla (round-trip transport), with full gear, a certified guide and a meal included that you take before or after the activity. No experience or swimming skills needed — there are routes for beginners and advanced paddlers.",
     descripcionLarga:
-      "The Tampaón River is considered one of the 10 most scenic rivers in North America, and the first rapid is all it takes to understand why: turquoise water — colored by the same karstic minerals that paint Tamul Waterfall —, canyon walls closing in over the river and jungle peeking over the top of the rock.\n\nThe day starts at your door: we pick you up at your lodging in Ciudad Valles or Xilitla, round-trip transport included. At the river dock we hand you the full gear — professional raft, paddle, helmet and life jacket — and your guide runs the safety and paddling briefing. You don't need experience or even to know how to swim: there are routes for different levels, Class III rapids are the sweet spot between real excitement and beginner-friendly safety, and the guide rides in the raft with you for the whole descent.\n\nIt's a 14-kilometer run alternating rapids with calm stretches where you can swim and take in the canyon. The most anticipated moment is 'La Tumba' rapid, where the walls close in so tightly that the echo disappears — absolute silence right before the river's most technical stretch. You'll come out soaked, with tired arms and wanting to get right back on. And since paddling works up an appetite, your booking includes a meal — before or after the activity, your call.\n\nThe best season is November through March, when the water reaches its most intense color. During the rainy season (July–September) departure depends on the river level: if it's not safe to navigate, we let you know in advance and reschedule or offer an alternative activity. Your safety always comes first.",
+      "The Tampaón River is considered one of the 10 most scenic rivers in North America, and the first rapid is all it takes to understand why: turquoise water — colored by the same karstic minerals that paint Tamul Waterfall —, canyon walls closing in over the river and jungle peeking over the top of the rock.\n\nThe day starts at your door: we pick you up at your lodging in Ciudad Valles or Xilitla, round-trip transport included. At the river dock we hand you the full gear — professional raft, paddle, helmet and life jacket — and your guide runs the safety and paddling briefing. You don't need experience or even to know how to swim: there are routes for different levels, Class III rapids are the sweet spot between real excitement and beginner-friendly safety, and the guide rides in the raft with you for the whole descent.\n\nIt's a 14-kilometer run alternating rapids with calm stretches where you can swim and take in the canyon. The most anticipated moment is 'La Tumba' rapid, where the walls close in so tightly that the echo disappears — absolute silence right before the river's most technical stretch. You'll come out soaked, with tired arms and wanting to get right back on. Your booking includes the meal, and you decide when: you can have it before setting out, to start with energy, or save it for after the descent.\n\nThe best season is November through March, when the water reaches its most intense color. During the rainy season (July–September) departure depends on the river level: if it's not safe to navigate, we let you know in advance and reschedule or offer an alternative activity. Your safety always comes first.",
     destinos: [
       "Round-trip transport from your lodging (Ciudad Valles or Xilitla)",
       "Tampaón River dock",
@@ -114,12 +126,17 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "'La Tumba' rapid — the most technical of the descent",
       "Calm stretches for swimming in the river",
     ],
+    // Mismo orden y mismos renglones que tours.ts. Se había quedado en 7 de 10:
+    // sin entradas, botiquín ni seguro de actividad (ver cabecera del archivo).
     incluye: [
       "Round-trip transport from your lodging in Ciudad Valles or Xilitla",
+      "Meal included — you choose to have it before or after the activity",
+      "Admission to all attractions",
       "Professional raft, paddle, helmet and life jacket",
       "Whitewater-certified guide riding in your raft",
       "Safety and paddling briefing — routes for beginners and advanced paddlers",
-      "Meal included — before or after the activity",
+      "First-aid kit",
+      "Activity insurance",
       "14 km descent down the Tampaón rapids",
       "Swimming stops in the calm stretches of the canyon",
     ],
@@ -149,22 +166,23 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Rappelling at Tamul Waterfall",
     tagline: "Pure adrenaline hanging off the wall, facing a 344-foot curtain of falling water",
     tipo: "Extreme Adventure",
-    urgencia: "Very limited spots — maximum 8 people per day",
+    urgencia: "Very limited spots per departure — book ahead",
     descripcion:
-      "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides and aerial drone photography to prove you did it. The most extreme experience in the Huasteca Potosina — beginner-friendly too.",
+      "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides and the aerial drone photography that proves you really did it. The most extreme experience in the Huasteca Potosina, and suitable too for people who have never rappelled before.",
     descripcionLarga:
-      "There are few places in the world where you can hang from a rope facing a 344-foot (105 m) waterfall. Tamul Waterfall — 344 feet (105 m) of water plunging into the Tampaón River — is the backdrop of this experience, and the moment you peer over the canyon edge you understand why everyone who does it can't stop talking about it.\n\nWe start at the river dock, our meeting point, where we hand you the full gear and our high-mountain guides give you a technique briefing. No prior experience needed: the first descent is guided step by step and most of our visitors had never touched a rope before. All you need is the will to do it.\n\nOnce secured to the harness, you begin to descend the limestone wall draped in vegetation, with the waterfall beside you spraying cool mist over you and the river's turquoise water waiting below. The sound is deafening, the scenery unreal, and for those minutes nothing else in the world exists. Our photographer follows you from the air with a drone and from the ground, so every second is captured in photo and video — included in your booking at no extra cost.\n\nThe activity lasts 3 to 5 hours depending on the group and the weather. The price includes all safety gear and professional documentation, but does not include transportation or meals: transport to the dock can be arranged separately for an additional cost, or you can make your own way there. If you're after the story you'll tell for the rest of your life, it starts here.",
+      "There are few places in the world where you can hang from a rope facing a 344-foot (105 m) waterfall. Tamul Waterfall — 344 feet (105 m) of water plunging into the Tampaón River — is the backdrop of this experience, and the moment you peer over the canyon edge you understand why everyone who does it can't stop talking about it.\n\nWe pick you up in Ciudad Valles and start at the river dock, where we hand you the full gear and our high-mountain guides give you a technique briefing. No prior experience needed: the first descent is guided step by step and most of our visitors had never touched a rope before. All you need is the will to do it.\n\nOnce secured to the harness, you begin to descend the limestone wall draped in vegetation, with the waterfall beside you spraying cool mist over you and the river's turquoise water waiting below. The sound is deafening, the scenery unreal, and for those minutes nothing else in the world exists. Our photographer follows you from the air with a drone and from the ground, so every second is captured in photo and video — included in your booking at no extra cost.\n\nThe activity lasts 3 to 5 hours depending on the group and the weather. The price includes the transfer from Ciudad Valles, all the safety gear, the drone video and the action-camera photos; meals are not included. If you're after the story you'll tell for the rest of your life, it starts here.",
     destinos: [
-      "Tampaón River dock (meeting point)",
+      "Tampaón River dock (start of the descent)",
       "Rappel wall facing Tamul Waterfall",
       "Tampaón River canyon",
     ],
     incluye: [
+      "Transfer from Ciudad Valles",
       "Full rappel and safety gear (harness, helmet, gloves and professional ropes)",
       "Certified high-mountain guides",
       "Briefing and descent technique — beginner-friendly",
-      "Drone photos and video of the descent",
-      "Meeting point at the river dock",
+      "Drone video of the descent",
+      "Action-camera photos",
     ],
     gallery: [
       "Rappeller with a helmet camera smiling mid-wall in the canyon, with Tamul Waterfall plunging in the background — Huasteca Potosina",
@@ -184,23 +202,24 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Adventure & Nature",
     urgencia: "Our most booked tour — fills up on weekends",
     descripcion:
-      "Paddle by canoe through the Tampaón Canyon to Tamul Waterfall — the tallest in San Luis Potosí — peer into the immense abyss of the Sótano de las Huahuas, and finish by diving into the underground magic of the Water Cave. A day that redefines what nature can offer you.",
+      "Paddle by canoe through the Tampaón Canyon to Tamul Waterfall — the tallest in San Luis Potosí —, swim and dive in at the Water Cave cenote on the way back, and end the day peering into the abyss of the Sótano de las Huahuas at sunset, when thousands of birds return and plunge headlong to the bottom.",
     descripcionLarga:
-      "The Tamul Expedition is the most complete tour of the Huasteca in a single day: we set out in the morning — no extreme early starts — to link three otherworldly natural settings one after another, with the best light on the turquoise water.\n\nThe canoe carries you through the Tampaón Canyon, a corridor of limestone rock 80 meters high where the silence is broken only by the sound of the paddle on the water. At the far end of the canyon, Tamul Waterfall — the tallest in San Luis Potosí at 344 feet (105 m) — crashes into the river with a force you feel in your chest before you even see it. Along the way you also peer over the edge of the Sótano de las Huahuas, a 478-meter abyss that takes your breath away. Our guides know the exact angle and the precise time for the perfect photo.\n\nWe close at the Water Cave: you get out of the canoe and climb up to a cenote where the light enters in perfect beams and the water turns an impossible shade of turquoise. Here you do get in — you can swim and jump from the rocks — and up top there are stalls with snacks and cold drinks. Lunch itself comes later, on the way out of Tamul, and is not included. People who take this tour always come back. And they always bring someone with them.",
+      "The Tamul Expedition is the most complete tour of the Huasteca in a single day: we set out in the morning — no extreme early starts — and the day is planned to end right at the hour of the best show.\n\nThe canoe carries you through the Tampaón Canyon, a corridor of limestone rock 80 meters high where the silence is broken only by the sound of the paddle on the water. At the far end of the canyon, Tamul Waterfall — the tallest in San Luis Potosí at 344 feet (105 m) — crashes into the river with a force you feel in your chest before you even see it.\n\nOn the way back you get out of the canoe and climb up to the Water Cave: a cenote where the light enters in perfect beams and the water turns an impossible shade of turquoise. Here you do get in — you can swim and dive from the rocks — and it's the favorite moment of almost everyone who takes this tour. Up top there are stalls with snacks and cold drinks if you want a bite; lunch comes later, on the way out of Tamul, and is not included.\n\nWe close at the Sótano de las Huahuas, a 478-meter abyss, and we arrive at sunset on purpose: it's the hour when thousands of birds — parrots and swifts — come home and drop into the abyss in a spiral until they disappear. It's one of those things a photo can't explain. People who take this tour always come back, and they always bring someone with them.",
     destinos: [
       "Tamul Waterfall (canoe ride)",
-      "Sótano de las Huahuas (lookout over the 478 m abyss)",
-      "Water Cave cenote (on the way back — swimming and cliff jumping)",
+      "Water Cave cenote (on the way back — swimming and diving)",
+      "Sótano de las Huahuas at sunset (the birds' return)",
     ],
     incluye: [
-      "Breakfast with typical regional dishes",
-      "Entrance to all parks",
-      "Canoe ride through the Tampaón Canyon",
-      "NOM-09 certified guide",
-      "Transportation from your accommodation",
-      "Full safety equipment",
+      "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
+      "Buffet breakfast on the way to the sites, at El Taco Loco: typical regional dishes and stews",
+      "Admission to all attractions",
+      "NOM-09 SECTUR certified guide",
+      "Safety gear (life vests, helmets and whatever each activity requires)",
       "Photos and video of the tour",
       "First-aid kit",
+      "Travel insurance for everyone in the group",
+      "Canoe ride through the Tampaón Canyon",
     ],
     gallery: [
       "View of Tamul Waterfall from the canyon — tourists wearing life vests",
@@ -248,11 +267,11 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Eden in the Garden",
     tagline: "Edward James's garden all to yourselves, before it opens to the public",
     tipo: "Private Experience",
-    urgencia: "One experience a day — the date is held with payment in full",
+    urgencia: "One experience a day — book it ahead",
     descripcion:
       "Las Pozas with nobody else in it: you walk in an hour before it opens, with your own guide and access to areas closed to the public. Three hours in Edward James's garden at your own pace, including the upper levels of the Bamboo Palace and the Studio House, where a poem in his own handwriting still hangs on the wall. Groups of up to 7, one flat rate for everyone.",
     descripcionLarga:
-      "There is an hour at Las Pozas that almost nobody has seen. Between seven and eight in the morning the garden is still closed to the public: the mist hasn't finished rising off the river, birds are the only sound, and the staircases that lead nowhere stand perfectly still, with not a single line of people waiting for a photo. Eden in the Garden is that hour, and the two that follow.\n\nThis is not the usual tour, earlier. It is a private experience inside the Edward James Sculpture Garden — an Artistic Monument declared National Heritage by Mexico's INBAL — for your group and nobody else, with a guide from the garden itself who walks at your pace. Areas that aren't part of the general visit are opened for you, and you climb to the upper levels of the Bamboo Palace, where the garden stops being something you look up at and suddenly makes sense: an entire jungle with surrealist architecture growing inside it.\n\nThe moment people remember is a different one. In the Studio House, the cabin where Edward James stayed to rest, a poem written in his own hand is still on the wall. Nobody has taken it down or put it behind glass. It's the kind of detail that appears in no guidebook, because almost nobody gets that far.\n\nThe three hours include the hiking trail, admission to the garden and round-trip transport from your lodging in Xilitla — you leave before dawn, so getting there on your own is a bad idea. Only one experience runs per day and the maximum is seven people. The rate covers the whole group, not each head: the more of you there are, the less each one pays.",
+      "There is an hour at Las Pozas that almost nobody has seen. Between seven and eight in the morning the garden is still closed to the public: the mist hasn't finished rising off the river, birds are the only sound, and the staircases that lead nowhere stand perfectly still, with not a single line of people waiting for a photo. Eden in the Garden is that hour, and the two that follow.\n\nThis is not the usual tour, earlier. It is a private experience inside the Edward James Sculpture Garden — an Artistic Monument declared National Heritage by Mexico's INBAL — for your group and nobody else, with a guide from the garden itself who walks at your pace. Areas that aren't part of the general visit are opened for you, and you climb to the upper levels of the Bamboo Palace, where the garden stops being something you look up at and suddenly makes sense: an entire jungle with surrealist architecture growing inside it.\n\nThe moment people remember is a different one. In the Studio House, the cabin where Edward James stayed to rest, a poem written in his own hand is still on the wall. Nobody has taken it down or put it behind glass. It's the kind of detail that appears in no guidebook, because almost nobody gets that far.\n\nThe three hours include the hiking trail, admission to the garden and round-trip transport from your lodging in Xilitla. Only one experience runs per day and the maximum is seven people. The rate covers the whole group, not each head: the more of you there are, the less each one pays.",
     destinos: [
       "Edward James Sculpture Garden (Las Pozas)",
       "Bamboo Palace — upper levels",
@@ -297,9 +316,9 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Culture & Nature",
     urgencia: "High demand in the Nov–Mar season",
     descripcion:
-      "The world's most enigmatic sculpture garden, the crystal-clear waters of the Huichihuayán Spring, the living shadows of the Quilas Cave and the colonial architecture of the Castillo de la Salud. Culture and nature fused into one extraordinary day.",
+      "The world's most enigmatic sculpture garden, the crystal-clear waters of the Huichihuayán Spring, the living shadows of the Quilas Cave and Don Beto Ramón's Castillo de la Salud, the Huasteca's other surrealism. Culture and nature fused into one extraordinary day.",
     descripcionLarga:
-      "Imagine walking through a garden designed by an eccentric English poet in the middle of the Mexican tropical jungle. Edward James's concrete sculptures — endless colonnades, staircases that climb to the sky and lead nowhere, four-meter stone flowers — emerge from the vegetation like a dream someone forgot to erase. Las Pozas of Xilitla has no equal anywhere on the planet.\n\nThe Huichihuayán Spring then welcomes you with waters that rise straight from the earth at the perfect temperature — neither cold nor warm, exactly 22°C — framed by palms and ferns in a silence that contrasts completely with the visual chaos of Las Pozas.\n\nThe Quilas Cave closes the route with an underground experience few people know: stalactites, bats and an echo that amplifies every sound into something mystical. This tour isn't just sightseeing. It's a different way of seeing the world.",
+      "Imagine walking through a garden designed by an eccentric English poet in the middle of the Mexican tropical jungle. Edward James's concrete sculptures — endless colonnades, staircases that climb to the sky and lead nowhere, four-meter stone flowers — emerge from the vegetation like a dream someone forgot to erase. Las Pozas of Xilitla has no equal anywhere on the planet.\n\nThe Huichihuayán Spring then welcomes you with waters that rise straight from the earth at the perfect temperature — neither cold nor warm, exactly 22°C — framed by palms and ferns in a silence that contrasts completely with the visual chaos of Las Pozas.\n\nThe Quilas Cave adds an underground experience few people know: stalactites, bats and an echo that amplifies every sound into something mystical.\n\nAnd we close at the Castillo de la Salud, in Axtla: a compound the Nahua herbalist Don Beto Ramón built in 1974, with architecture that mixes Nahua symbolism and biblical passages, and a garden of hundreds of medicinal plants. It's the Huasteca's other surrealism — the one that didn't come from Europe but from right here — and seeing it on the same day as Las Pozas is what gives the whole route its meaning. This tour isn't just sightseeing. It's a different way of seeing the world.",
     destinos: [
       "Edward James Surrealist Garden (Las Pozas)",
       "Huichihuayán Spring",
@@ -307,12 +326,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Castillo de la Salud",
     ],
     incluye: [
-      "Transportation from your hotel",
-      "Entrance to all attractions",
-      "Buffet breakfast",
-      "Guides specialized in history and culture",
-      "Safety equipment",
-      "Tour photos",
+      "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
+      "Buffet breakfast on the way to the sites, at El Taco Loco: typical regional dishes and stews",
+      "Admission to all attractions",
+      "NOM-09 SECTUR certified guide, specialized in history and culture",
+      "Safety gear (life vests, helmets and whatever each activity requires)",
+      "First-aid kit",
+      "Travel insurance for everyone in the group",
     ],
     gallery: [
       "Edward James surrealist sculpture — color and moss at Las Pozas in Xilitla",
@@ -353,12 +373,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "El Salto Waterfall",
     ],
     incluye: [
-      "Transportation from your hotel",
-      "Entrance to all attractions",
-      "Buffet breakfast",
-      "Specialized guides",
-      "Safety equipment",
-      "Tour photos",
+      "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
+      "Buffet breakfast on the way to the sites, at El Taco Loco: typical regional dishes and stews",
+      "Admission to all attractions",
+      "NOM-09 SECTUR certified guide",
+      "Safety gear (life vests, helmets and whatever each activity requires)",
+      "First-aid kit",
+      "Travel insurance for everyone in the group",
     ],
     gallery: [
       "Two tourists paddleboarding in front of El Meco Waterfall — turquoise waters of the Huasteca Potosina",
@@ -407,12 +428,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Micos Waterfalls",
     ],
     incluye: [
-      "Transportation from your hotel",
-      "Entrance to all attractions",
-      "Buffet breakfast",
-      "Specialized guides",
-      "Safety equipment",
-      "Tour photos",
+      "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
+      "Buffet breakfast on the way to the sites, at El Taco Loco: typical regional dishes and stews",
+      "Admission to all attractions",
+      "NOM-09 SECTUR certified guide",
+      "Safety gear (life vests, helmets and whatever each activity requires)",
+      "First-aid kit",
+      "Travel insurance for everyone in the group",
     ],
     gallery: [
       "Aerial view of Minas Viejas Waterfalls — a triple drop over turquoise pools in the Huasteca Potosina",
@@ -450,24 +472,24 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Water Route",
     tagline: "The most refreshing and complete journey in the region",
     tipo: "Water Adventure",
-    urgencia: "Our most complete tour — last spots available",
+    urgencia: "Our most complete tour — book ahead",
     descripcion:
-      "Pass through the natural cave of Puente de Dios with the river flowing at your feet, explore the Los Gómez Hacienda and descend the Seven Waterfalls in sequence. The crystal-clear pools of Tamasopo await anyone who wants to extend the adventure.",
+      "Pass through the natural cave of Puente de Dios with the river flowing at your feet. Then you choose: Los Gómez Hacienda with the Seven Waterfalls — they're in the same spot, so you see both — or the crystal-clear pools of the Tamasopo Waterfalls. One day is enough for one of the two, not for both.",
     descripcionLarga:
-      "Puente de Dios (\"God's Bridge\") is a natural rock arch 15 meters high through which the river flows, and there's a moment each day — between 11 AM and 1 PM — when the sunlight enters perpendicular and turns the water into liquid crystal. We arrive at that hour. Always.\n\nEntering Puente de Dios is a full sensory experience: the sound of the water amplified by the cave, the chill of the interior, the light pouring through the arch like a natural beacon, the texture of the stone underfoot. It's not just a photo. It's a moment that etches itself into memory.\n\nThe Los Gómez Hacienda, the Seven Waterfalls in sequence and the optional stop in Tamasopo complete the most immersive tour in the region. For anyone who wants to see it all, move a lot and take home as many memories as possible — with the assurance that every step was led by someone who knows these rivers by heart — this is the tour.",
+      "Puente de Dios (\"God's Bridge\") is a natural rock arch 15 meters high through which the river flows, and there's a moment each day — between 11 AM and 1 PM — when the sunlight enters perpendicular and turns the water into liquid crystal. We arrive at that hour. Always.\n\nEntering Puente de Dios is a full sensory experience: the sound of the water amplified by the cave, the chill of the interior, the light pouring through the arch like a natural beacon, the texture of the stone underfoot. It's not just a photo. It's a moment that etches itself into memory.\n\nYou choose the second half of the day, and we tell you plainly because there isn't time for both: either Los Gómez Hacienda with the Seven Waterfalls — they're on the same grounds, so you see both there — or the Tamasopo Waterfalls. If it's your first time in the Huasteca, most people go for the Seven Waterfalls; Tamasopo is the choice for those looking for more open pools to swim in at a relaxed pace.\n\nWhichever it is, you decide when you book and we plan the day around that choice, with the assurance that every step is led by someone who knows these rivers by heart.",
     destinos: [
       "Puente de Dios",
-      "Los Gómez Hacienda",
-      "Seven Waterfalls",
-      "Tamasopo Waterfalls (optional)",
+      "Your choice: Los Gómez Hacienda + Seven Waterfalls (same spot)",
+      "Your choice: Tamasopo Waterfalls",
     ],
     incluye: [
-      "Transportation from your hotel",
-      "Entrance to all attractions",
-      "Buffet breakfast",
-      "Specialized guides",
-      "Safety equipment",
-      "Tour photos",
+      "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
+      "Buffet breakfast on the way to the sites, at El Taco Loco: typical regional dishes and stews",
+      "Admission to all attractions",
+      "NOM-09 SECTUR certified guide",
+      "Safety gear (life vests, helmets and whatever each activity requires)",
+      "First-aid kit",
+      "Travel insurance for everyone in the group",
     ],
     gallery: [
       "Girl with open arms in front of the Puente de Dios waterfall — Water Route, Huasteca Potosina",
@@ -573,8 +595,8 @@ export const TOURS_EN: Record<string, TourTranslation> = {
 
   "gruta-de-xilo": {
     itinerario: [
-      { momento: "Pickup", texto: "We pick you up at your lodging in Xilitla, in the RZR itself. It's already getting dark." },
-      { momento: "Walk through the jungle", texto: "Fifteen to twenty minutes on foot to the mouth of the cave. Helmets and headlamps are handed out here." },
+      { momento: "Pickup", texto: "We pick you up at your lodging in Xilitla, in the RZR itself, and hand you your helmet and headlamp right there. It's already getting dark." },
+      { momento: "Walk through the jungle", texto: "Fifteen to twenty minutes on foot, headlamp already on, to the mouth of the cave." },
       { momento: "Into the cave", texto: "The guide explains where to step, and in you go. From here on, all that exists is the circle of light from your headlamp." },
       { momento: "The formations", texto: "Some 900 metres among stalactites, stalagmites and columns where the two finally met after millions of years of drip by drip." },
       { momento: "The jacuzzis and the silence", texto: "The route ends at pools of crystal-clear water formed inside the cave. Lamps go off for a few minutes so you can listen to it. That's the part people remember." },
@@ -586,16 +608,16 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Cave & Night",
     urgencia: "Night departure — book ahead",
     descripcion:
-      "A 15 to 20 minute walk through the jungle drops you at the mouth of the cave, already after dark. Inside you cover some 900 metres among stalactites and stalagmites that took millions of years to form, and the walk ends at natural jacuzzis of crystal-clear water inside the cave. You go with a helmet, a headlamp and a certified guide. $900 MXN per person.",
+      "A 15 to 20 minute walk through the jungle drops you at the mouth of the cave, already after dark. Inside you cover some 900 metres among stalactites and stalagmites that took millions of years to form, and the walk ends at natural jacuzzis of crystal-clear water inside the cave. You go with a helmet, a headlamp and a certified guide. {precio} per person.",
     descripcionLarga:
-      "Almost every tour in the Huasteca happens in daylight. This one doesn't. Xilo Cave is walked at night, and that is half the experience: without the noise or the heat of the day, all that exists is the circle of light from your headlamp and whatever it reaches.\n\nIt starts with a 15 to 20 minute walk through the jungle to the mouth of the cave. Helmets and headlamps are handed out there, the guide explains where to step, and you go in.\n\nInside it's about 900 metres of walking. The walls are a catalogue of formations: stalactites hanging from the vault, stalagmites rising from the floor, columns where the two finally met after millions of years of drip by drip. There are wide stretches where you walk upright and stretches where you have to crouch; you move slowly, in a small group.\n\nAt the end of the route are the jacuzzis: pools of crystal-clear water formed inside the cave itself. That's where the introspection exercise happens — lamps off, a few minutes of silence, listening to the cave. It's the part people remember.\n\nIt runs about 3 hours in total. We pick you up at your lodging in Xilitla in an RZR; if you're staying in Ciudad Valles we can come and get you for an extra transfer fee, or you make your own way up to Xilitla. Bring closed shoes that can get wet and a change of clothes.",
+      "Almost every tour in the Huasteca happens in daylight. This one doesn't. Xilo Cave — Gruta de Xilo in Spanish, sometimes written Grutas de Xilo — is walked at night, and that is half the experience: without the noise or the heat of the day, all that exists is the circle of light from your headlamp and whatever it reaches.\n\nYour helmet and headlamp are handed to you at the start, when we pick you up. Then comes a 15 to 20 minute walk through the jungle to the mouth of the cave, where the guide explains where to step, and you go in.\n\nInside it's about 900 metres of walking. The walls are a catalogue of formations: stalactites hanging from the vault, stalagmites rising from the floor, columns where the two finally met after millions of years of drip by drip. There are wide stretches where you walk upright and stretches where you have to crouch; you move slowly, in a small group.\n\nAt the end of the route are the jacuzzis: pools of crystal-clear water formed inside the cave itself. That's where the introspection exercise happens — lamps off, a few minutes of silence, listening to the cave. It's the part people remember.\n\nIt runs about 3 hours in total, at night. We pick you up at your lodging in Xilitla in an RZR; if you're staying in Ciudad Valles we can also come and get you at an additional cost we'll quote on WhatsApp. Bring closed shoes that can get wet and a change of clothes.",
     destinos: [
       "Xilitla jungle (approach walk)",
       "Xilo Cave",
       "The cave's natural jacuzzis",
     ],
     incluye: [
-      "RZR pickup from your lodging in Xilitla",
+      "Round-trip RZR transfer from your lodging in Xilitla",
       "Tickets and cave access",
       "Helmet and headlamp for each person",
       "NOM-09 SECTUR certified guide",
@@ -627,7 +649,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Hiking & Sunrise",
     urgencia: "Pre-dawn departure — book a day ahead",
     descripcion:
-      "While the rest of the Huasteca sleeps, you're already climbing. A pre-dawn hike through the Trinidad cloud forest up to the summit of Cerro del Pilón, timed to arrive just as the sun breaks over a sea of clouds covering the mountains. Seven to eight hours, with a certified guide and transfer from your lodging. $1,700 MXN per person.",
+      "While the rest of the Huasteca sleeps, you're already climbing. A pre-dawn hike through the Trinidad cloud forest up to the summit of Cerro del Pilón, timed to arrive just as the sun comes up, often over a sea of clouds covering the mountains. Seven to eight hours, with a certified guide and transfer from your lodging. {precio} per person.",
     descripcionLarga:
       "There is a moment, up on Cerro del Pilón, when the sky turns orange and you can't see the ground at all: just a layer of cloud covering the valleys from one end of the horizon to the other. It lasts a few minutes. To see it you have to already be up there before dawn, which is why this hike starts in the dark.\n\nWe leave at night from your lodging in Xilitla and drive up to the Trinidad cloud forest, the forest that crowns the range at nearly 2,000 metres. The walk begins there: a trail through pines and oaks, headlamp on, climbing steadily in the dark. You don't need mountaineering experience, but you do need to be able to walk uphill for several hours.\n\nThe arrival at the summit is timed to the sunrise. First it goes blue, then orange, and when the sun breaks the horizon the sea of clouds lights up from below. Everything stops there: photos, something to eat, and time to let it happen.\n\nThe way down is in daylight, which is when you finally see the forest you climbed through blind: the madroños, the ferns, the mist hanging between the trees.\n\nIt runs 7 to 8 hours including transfers. It gets genuinely cold up there even when Xilitla is hot: bring a jacket, hiking shoes with grip and a headlamp. We provide the safety gear and the certified guide.",
     destinos: [
@@ -670,9 +692,9 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Sinkhole & Cloud Forest",
     urgencia: "Entry only with a community guide — book ahead",
     descripcion:
-      "Fourteen kilometres from Xilitla, at the top of the community of La Trinidad, a vertical sinkhole opens up 193 metres deep and 233 across, ringed by cloud forest, pines, cedars and orchids. You reach it after a guided walk of about 2 hours through forest, clearings and lookouts. Eight to nine hours. $1,800 MXN per person.",
+      "Fourteen kilometres from Xilitla, at the top of the community of La Trinidad, a vertical sinkhole opens up 193 metres deep and 233 across, ringed by cloud forest, pines, cedars and orchids. You reach it after a guided walk of about 2 hours through forest, clearings and lookouts. Eight to nine hours. {precio} per person.",
     descripcionLarga:
-      "Olla de la Luz is one of those places a photograph can't explain. It is a vertical sinkhole 193 metres deep and 233 across, opened high in the mountains of Xilitla: a hole in the forest so wide that another forest grew at the bottom of it, and so deep that sunlight only reaches all the way in for a few hours a day.\n\nGetting there means first climbing up to La Trinidad, the Nahua community that lives some 14 km from Xilitla, in one of the best-preserved cloud forests in the Huasteca. The road climbs to nearly 2,000 metres along a mountain track, and by the time you arrive the weather is a different one: cool, damp, with mist tangled in the pines.\n\nThe walk starts there — about 2 hours, with a guide from the community itself, which is the only way in. You cross stretches of dense forest, open clearings and several lookouts. The path runs among pines, cedars and orchids, and with luck you'll cross coatis or hear the guans.\n\nAnd then the forest opens. Leaning over the edge of Olla de la Luz is the kind of view that recalibrates the scale of things: the rock wall dropping straight down, the tree canopy far below like broccoli, and the silence. Your guide shows you where to stand and where not to.\n\nIt runs 8 to 9 hours including transfers. Bring hiking shoes, a jacket or rain shell, water and something to eat. It's cold up there even when you're sweating down in Xilitla.",
+      "Olla de la Luz — you'll also see it spelled Hoya de la Luz — is one of those places a photograph can't explain. It is a vertical sinkhole 193 metres deep and 233 across, opened high in the mountains of Xilitla: a hole in the forest so wide that another forest grew at the bottom of it, and so deep that sunlight only reaches all the way in for a few hours a day.\n\nGetting there means first climbing up to La Trinidad, the Nahua community that lives some 14 km from Xilitla, in one of the best-preserved cloud forests in the Huasteca. The road climbs to nearly 2,000 metres along a mountain track, and by the time you arrive the weather is a different one: cool, damp, with mist tangled in the pines.\n\nThe walk starts there — about 2 hours, with a guide from the community itself, which is the only way in. You cross stretches of dense forest, open clearings and several lookouts. The path runs among pines, cedars and orchids, and with luck you'll cross coatis or hear the guans.\n\nAnd then the forest opens. Leaning over the edge of Olla de la Luz is the kind of view that recalibrates the scale of things: the rock wall dropping straight down, the tree canopy far below like broccoli, and the silence. Your guide shows you where to stand and where not to.\n\nIt runs 8 to 9 hours including transfers. Bring hiking shoes, a jacket or rain shell, water and something to eat. It's cold up there even when you're sweating down in Xilitla.",
     destinos: [
       "La Trinidad — Xilitla's Cloud Forest",
       "Cerro de la Luz lookouts",

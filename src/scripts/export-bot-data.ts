@@ -11,7 +11,8 @@
 
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { TOURS_DB, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, recogidaDeTour, ventanaSalida, regresoDeTour } from "../lib/tours";
+import { TOURS_DB, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, recogidaDeTour, ventanaSalida, regresoDeTour, fraseRecogida } from "../lib/tours";
+import { excepcionesSalida } from "../lib/recogidaTexto";
 import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
 import { PAQUETES_DB, HABITACIONES, habitacionesDePaquete, LOGISTICA, precioVisible } from "../lib/paquetes";
 // 🔴 `FAQS_PAQUETES_ES`, no el `FAQS_PAQUETES` pelado del catálogo: la respuesta
@@ -24,6 +25,7 @@ import { FAQS_PAQUETES_ES } from "../lib/i18n/paquetes.en";
 import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
+import { GOOGLE_RATING, GOOGLE_RESENAS } from "../lib/resenas";
 
 // ── Capa curada (lo que la fuente del sitio no expresa en datos) ─────────────
 // Se mantiene aquí, cerca de la generación, y es lo único que se edita a mano.
@@ -54,7 +56,9 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "rzr-xilitla": { incluido: false, detalle: "NO incluye transporte. El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá." },
   "rappel-tamul": { incluido: false, detalle: "NO incluye transporte. El punto de encuentro es el embarcadero del Río Tampaón: el cliente llega por su cuenta, o lo coordinamos aparte CON COSTO ADICIONAL. Nunca prometas recogida en el hospedaje para este tour." },
   "buceo-media-luna": { incluido: false, detalle: "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta." },
-  "eden-en-el-jardin": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Empieza entre 7 y 8 AM: desde Ciudad Valles no se ofrece y se cotiza aparte. Nunca prometas recogida en Ciudad Valles para esta experiencia." },
+  // Sin hora aquí: tiene horarios FIJOS que pone el jardín (campo `horario`),
+  // y "empieza entre 7 y 8 AM" contradecía al de las 5 PM.
+  "eden-en-el-jardin": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Desde Ciudad Valles NO va incluido: se cotiza aparte. Nunca prometas recogida incluida en Ciudad Valles para esta experiencia." },
   "rafting-rio-tampaon": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o Xilitla." },
   "expedicion-tamul": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   "ruta-surrealista-edward-james": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
@@ -146,13 +150,24 @@ function horarioTour(t: (typeof TOURS_DB)[number]): string {
   if (t.id === "tour-eden-jardin") {
     return "Horarios FIJOS que pone el jardín: 8:00 AM lunes, miércoles, jueves y viernes; 7:00 AM sábado y domingo; y 5:00 PM de miércoles a lunes. Dura ~3 h. La hora exacta se confirma al apartar la fecha.";
   }
-  if (t.precioUnidad === "vehiculo") {
-    return "Inicia por la mañana (aprox. 8:30–9:00 AM); la hora de término depende de la ruta: Nanacatli ~2 h, Miradores ~3 h, Nacimiento y Trinidad ~5 h.";
-  }
   // "Entre 8:00 y 9:00 AM" → "entre 8:00 y 9:00 AM", para que encaje detrás de
   // "Sale". Quitar el "Entre" entero dejaba "Sale 8:00 y 9:00 AM".
   const v = ventanaSalida(t, false);
   const salida = v.charAt(0).toLowerCase() + v.slice(1);
+  if (t.precioUnidad === "vehiculo") {
+    // La hora, del catálogo como la de los demás: aquí decía "8:30–9:00 AM" y
+    // el campo `salida` del mismo tour, "entre 8:00 y 9:00 AM".
+    const rutas = (t.rutas ?? []).map((r) => `${r.nombre.replace(/^Ruta /, "")} ~${r.duracion_hrs} h`).join(", ");
+    return `Inicia ${salida}; la hora de término depende de la ruta: ${rutas}.`;
+  }
+  // En sitio (el buceo) no hay hora pública de salida: el catálogo no la trae,
+  // y "sale entre 8 y 9" salía del valor por defecto, no de un dato. Lo mismo
+  // con un tour que el bot da como SIN traslado sin que el catálogo lo marque
+  // (el rappel): esa ventana es la de RECOGIDA, y el itinerario pone la
+  // llegada al embarcadero a las 10 AM.
+  if (recogidaDeTour(t).tipo === "en-sitio" || sinTrasladoNoMarcado(t)) {
+    return `Dura ~${t.duracion_hrs} h. La hora de encuentro se confirma al reservar.`;
+  }
   const regreso = regresoDeTour(t, false);
   if (t.duracionRango) {
     // "2.5 horas" leído en voz alta suena a error. Camila dice "2 horas y media".
@@ -181,12 +196,15 @@ function puntoEncuentro(t: (typeof TOURS_DB)[number]): string {
   const marcado = t.destinos.find((d) => /\(punto de encuentro\)/i.test(d));
   if (marcado) return marcado.replace(/\s*\(punto de encuentro\)/i, "").trim();
   const rec = recogidaDeTour(t);
+  // El rappel cae al "hospedaje" por defecto del catálogo, pero la respuesta
+  // cerrada del bot es que NO hay traslado: el mismo objeto decía las dos.
+  if (sinTrasladoNoMarcado(t)) return TRANSPORTE[t.slug].detalle;
   if (rec.tipo === "hospedaje") {
-    return "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros)";
+    return `Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).${entregaAlRecoger(t)}`;
   }
   if (rec.tipo === "hospedaje-xilitla") {
     const veh = rec.vehiculo ? `, en el propio ${rec.vehiculo.es}` : "";
-    return `Pasamos por ti a tu hospedaje EN XILITLA${veh} (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.`;
+    return `Pasamos por ti a tu hospedaje EN XILITLA${veh} (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.${entregaAlRecoger(t)}`;
   }
   if (rec.tipo === "base-xilitla") {
     return "Nuestra base en Xilitla: el cliente llega por su cuenta hasta allá. NO incluye transporte hasta Xilitla.";
@@ -194,14 +212,98 @@ function puntoEncuentro(t: (typeof TOURS_DB)[number]): string {
   return t.destinos[0] || "Se coordina por WhatsApp";
 }
 
+/**
+ * Lo que se le entrega al cliente en cuanto pasamos por él, si el itinerario
+ * lo dice en su momento de "Recogida".
+ *
+ * La Gruta de Xilo: casco y lámpara frontal se dan en el propio RZR, al
+ * recogerlo (decisión de Manolo, 28 sep) — no en la boca de la cueva. Se lee
+ * del itinerario y no se escribe aquí para que no pueda contradecir la ficha.
+ */
+function entregaAlRecoger(t: (typeof TOURS_DB)[number]): string {
+  const m = (t.itinerario ?? []).find((x) => /recogida/i.test(x.momento));
+  if (!m) return "";
+  const cosas = [
+    /casco/i.test(m.texto) ? "el casco" : "",
+    /l[áa]mpara/i.test(m.texto) ? "la lámpara frontal" : "",
+  ].filter(Boolean);
+  return cosas.length
+    ? ` Al recogerlo le entregamos ${cosas.join(" y ")}: desde el inicio, no al llegar.`
+    : "";
+}
+
+/**
+ * ¿El bot lo da como SIN traslado (`TRANSPORTE`) aunque el catálogo no declare
+ * `recogida` y caiga al "pasamos por ti en Xilitla o Valles" por defecto?
+ *
+ * ⚠️ Hoy es el rappel. Mientras Manolo no decida cuál es la buena, en el bot
+ * manda la respuesta cerrada, y en TODOS los campos del tour (salida, horario,
+ * punto de encuentro): el bot no puede recibir las dos en la misma ficha.
+ */
+function sinTrasladoNoMarcado(t: (typeof TOURS_DB)[number]): boolean {
+  return TRANSPORTE[t.slug]?.incluido === false && recogidaDeTour(t).tipo === "hospedaje";
+}
+
+/**
+ * La recogida de UN tour, en la frase que ve el cliente en la ficha y en el
+ * correo (`fraseRecogida`).
+ *
+ * 🔴 Para el rappel anteponía "Entre 8:00 y 9:00 AM" —la ventana por defecto
+ * de RECOGIDA— al punto de encuentro en el embarcadero, al que el itinerario
+ * llega a las 10: quien fuera por su cuenta llegaría dos horas antes.
+ */
+function salidaDeTour(t: (typeof TOURS_DB)[number]): string {
+  if (sinTrasladoNoMarcado(t)) {
+    return `${TRANSPORTE[t.slug].detalle} La hora de encuentro se confirma al reservar.`;
+  }
+  return fraseRecogida(t, false);
+}
+
+/**
+ * Quién incluye traslado y desde dónde, armado del catálogo. La lista anterior
+ * estaba escrita a mano y no tenía los cinco recorridos que solo recogen en
+ * Xilitla.
+ */
+function transporteResumen(): string {
+  const nombre = (t: (typeof TOURS_DB)[number]) => t.nombreCorto;
+  const sin = TOURS_DB.filter((t) => TRANSPORTE[t.slug]?.incluido === false);
+  const conTraslado = TOURS_DB.filter((t) => !sin.includes(t));
+  const soloXilitla = conTraslado.filter((t) => recogidaDeTour(t).tipo === "hospedaje-xilitla");
+  const ambas = conTraslado.filter((t) => recogidaDeTour(t).tipo === "hospedaje");
+  return [
+    `Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: ${ambas.map(nombre).join(", ")}.`,
+    soloXilitla.length
+      ? `Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): ${soloXilitla.map(nombre).join(", ")}.`
+      : "",
+    `NO incluyen traslado: ${sin.map((t) => `${nombre(t)} (${TRANSPORTE[t.slug].detalle.replace(/^NO incluye transporte\.\s*/i, "")})`).join("; ")}.`,
+    "Nunca digas 'todos los tours incluyen transporte'.",
+  ].filter(Boolean).join(" ");
+}
+
 // ── Tours ────────────────────────────────────────────────────────────────────
 const empresa = {
   nombre: "Tours Huasteca Potosina",
   sitio: "https://www.huasteca-potosina.com",
   zona: "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
-  salida: "8:00–9:00 AM. No hay un punto de salida único: pasamos por el cliente a SU hospedaje (hotel, hostal, cabaña o Airbnb) en Xilitla o en Ciudad Valles, con traslado redondo incluido. NO hace falta que se hospede en nuestro hotel. Excepciones: el RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no se incluye) y el buceo en Media Luna se encuentra en la laguna, en Rioverde.",
+  // La regla y TODAS sus excepciones, armadas del catálogo. 🔴 Estaba escrita a
+  // mano con dos excepciones (RZR y buceo) y le decía al bot "8:00–9:00 AM, en
+  // Xilitla o Ciudad Valles" también para la Gruta de Xilo (7 PM, solo
+  // Xilitla), el Amanecer de Nubes (3 AM), la Olla de la Luz, el Edén y la
+  // Travesía del Café. Para UN tour, el bot usa el `salida` de ese tour.
+  // `excepcionesSalida` lee el catálogo, que no marca al rappel; aquí se suma
+  // la excepción que sí conoce el bot (ver `sinTrasladoNoMarcado`).
+  salida: [
+    "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual).",
+    excepcionesSalida("es"),
+    ...TOURS_DB.filter(sinTrasladoNoMarcado).map((t) => `${t.nombreCorto}: ${TRANSPORTE[t.slug].detalle} La hora de encuentro se confirma al reservar.`),
+  ].join(" "),
   cancelacion: "Cancela gratis hasta 48 h antes.",
   ninos: "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
+  // 🔴 La calificación del NEGOCIO en Google, de `resenas.ts`. El prompt de
+  // Camila decía «4.9★ con 492 reseñas» escrito a mano y juraba que eran
+  // cifras reales; así no se vuelve a desfasar del sitio.
+  rating: GOOGLE_RATING,
+  resenas: GOOGLE_RESENAS,
 };
 
 const tours = TOURS_DB.map((t) => ({
@@ -235,6 +337,11 @@ const tours = TOURS_DB.map((t) => ({
   incluye: incluyePropioDeTour(t),
   noIncluye: NO_INCLUYE[t.slug] || [],
   puntoEncuentro: puntoEncuentro(t),
+  // La recogida de ESTE tour (dónde, en qué, a qué hora y qué pasa con Valles).
+  // Sin esto la herramienta del bot devolvía la salida GLOBAL junto a la ficha
+  // de la Gruta, y el modelo elegía la de las 8 de la mañana.
+  salida: salidaDeTour(t),
+  recogidaTipo: recogidaDeTour(t).tipo,
   horario: horarioTour(t),
   // Hechos cerrados: el bot los repite tal cual, no los deduce.
   transporte: TRANSPORTE[t.slug] || { incluido: false, detalle: "Confírmalo con el equipo." },
@@ -369,8 +476,7 @@ const info = {
   fotos: FOTOS_DEFAULT,
   alimentos:
     "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet; la comida de mediodía NUNCA está incluida en ningún tour. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen SOLO los desayunos del hotel: comidas y cenas van por cuenta del cliente.",
-  transporte:
-    "El traslado redondo desde el hospedaje (Xilitla o Ciudad Valles) SÍ está incluido en: rafting, expedición Tamul, ruta surrealista, cascadas del Meco, paraíso escalonado y ruta acuática. NO está incluido en: RZR (sale de la base en Xilitla), rappel en Tamul (punto de encuentro en el embarcadero; se coordina aparte con costo adicional) ni buceo en Media Luna (el cliente llega a Rioverde). Nunca digas 'todos los tours incluyen transporte'.",
+  transporte: transporteResumen(),
   hotelHabitacionesUrl: HOTEL_HABITACIONES_URL,
   // ── Servicios del Hotel Paraíso Encantado ────────────────────────────────
   // Solo lo que está CONFIRMADO en el sitio del hotel y en el cerebro de su

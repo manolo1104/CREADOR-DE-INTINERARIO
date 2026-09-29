@@ -31,6 +31,19 @@ export interface RenglonResumen {
   addOns?:   { nombre: string; cantidad?: number; subtotal: number }[];
   /** Elección del cliente cuando el tour la exige (ej. Ruta Acuática). */
   eleccion?: string;
+  /**
+   * Cómo llega el cliente a ESTE recorrido, en una frase: `fraseRecogida()`.
+   * Solo la mandan los renglones de recorrido. El hotel no la lleva, y un
+   * renglón sin ella no cuenta para decidir qué se dice.
+   */
+  recogida?: string;
+  /**
+   * La política de cancelación del recorrido cuando NO es la del sitio: la
+   * `cancelacion` del catálogo, completa. Sin ella se promete la de siempre
+   * (48 h, reembolso completo), que al cliente del Edén le prometía un
+   * reembolso que la Fundación Las Pozas no devuelve.
+   */
+  cancelacion?: string;
 }
 
 /**
@@ -64,6 +77,21 @@ export function ResumenReserva({
   const conTraslado = items.some((i) =>
     i.incluye.some((x) => /traslado|pasamos por|recogida|transport|pick[- ]?up|round[- ]?trip/i.test(x)),
   );
+  // 🔴 La hora y el lugar salen de cada recorrido. Este bloque decía "Salida
+  // entre 8:00 y 9:00 AM" y "Pasamos por ti en Xilitla o Ciudad Valles" a todos,
+  // también a quien pagaba la Gruta de Xilo: 7 de la noche y solo Xilitla.
+  // Si todos se recogen igual, una frase; si no, una por recorrido. Los
+  // paquetes no mandan `recogida`: duermen en nuestro hotel y se les dice
+  // `trasladoPaquete`, sin hora fija.
+  const conRecogida = items.filter((i) => i.recogida);
+  const recogidas = conRecogida.filter(
+    (i, n) => conRecogida.findIndex((x) => x.nombre === i.nombre && x.recogida === i.recogida) === n,
+  );
+  const unaRecogida = new Set(recogidas.map((i) => i.recogida)).size === 1;
+  // Los renglones con cancelación propia la dicen con su nombre delante; el
+  // resto (si queda algo) conserva la promesa de las 48 h.
+  const cancelPropias = items.filter((i) => i.cancelacion);
+  const cancelResto   = items.some((i) => !i.cancelacion);
 
   return (
     <div className="border border-negro/10 bg-white p-5">
@@ -144,20 +172,57 @@ export function ResumenReserva({
 
       {/* ── Logística ── */}
       <div className="py-4 border-b border-negro/8 space-y-2">
-        <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
-          <Clock className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{t.salidaEntre}<strong className="text-negro/80">{t.salidaEntreFuerte}</strong>{t.confirmamosHora}</span>
-        </p>
-        {conTraslado && (
-          <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
-            <MapPin className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{t.pasamosPorTi}<strong className="text-negro/80">{t.pasamosPorTiFuerte}</strong>.</span>
-          </p>
+        {recogidas.length > 0 ? (
+          <>
+            <div className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+              <MapPin className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+              {unaRecogida ? (
+                <p>{recogidas[0].recogida}</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {recogidas.map((i, n) => (
+                    <li key={i.nombre + n}>
+                      <strong className="font-medium text-negro/80">{i.nombre.split("—")[0].trim()}:</strong> {i.recogida}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+              <Clock className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <span>{t.horaExacta}</span>
+            </p>
+          </>
+        ) : (
+          <>
+            {conTraslado && (
+              <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+                <MapPin className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <span>{t.trasladoPaquete}</span>
+              </p>
+            )}
+            <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+              <Clock className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <span>{t.horaExacta}</span>
+            </p>
+          </>
         )}
-        <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+        <div className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
           <ShieldCheck className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{t.cancelasGratis}</span>
-        </p>
+          {cancelPropias.length === 0 ? (
+            <p>{t.cancelasGratis}</p>
+          ) : (
+            <div className="space-y-1.5">
+              {cancelPropias.map((i, n) => (
+                <p key={i.nombre + n}>
+                  {!uno && <strong className="font-medium text-negro/80">{i.nombre.split("—")[0].trim()}: </strong>}
+                  {i.cancelacion}
+                </p>
+              ))}
+              {cancelResto && <p>{t.cancelasGratisResto}</p>}
+            </div>
+          )}
+        </div>
         <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
           <Camera className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span>{t.fotosYVideo}</span>

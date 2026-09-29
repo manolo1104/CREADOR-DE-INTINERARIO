@@ -1,4 +1,7 @@
-import { TOURS_DB, INCLUYE_SIEMPRE, INCLUYE_SIEMPRE_EN, incluyeDeTour } from "./tours";
+import { TOURS_DB, INCLUYE_SIEMPRE, INCLUYE_SIEMPRE_EN, incluyeDeTour, partesRecogida } from "./tours";
+import {
+  horaCorreo, lineasCancelacion, pasamosPorEl, recogidaIncierta, salidasCorreo, todosRecogenEnAmbas, toursDeSlugs,
+} from "./recogidaCorreo";
 import { PAQUETES_DB } from "./paquetes";
 import { getEmails, emailLocale } from "./i18n/emails";
 import { localizeTour } from "./i18n/localize";
@@ -122,10 +125,41 @@ export function buildTourEmailHtml(data: {
   const deposito  = data.depositoPagado ?? 0;
   const pendiente = Math.max(0, data.totalAmount - deposito);
   const fmxEmail  = (n: number) => `$${Number(n).toLocaleString(locale === "en" ? "en-US" : "es-MX")} MXN`;
-  const pickupText = data.pickupLugar || T.pickupDefault;
+  const en = locale === "en";
 
   // Tours de la reserva (excluye el objeto _meta). Si hay varios, se listan todos con su fecha.
   const tours = Array.isArray(data.lineItems) ? data.lineItems.filter((l: any) => l && !l._meta) : [];
+
+  /**
+   * Dónde y a qué hora, desde el catálogo de CADA recorrido de la reserva.
+   *
+   * 🔴 Eran dos textos fijos: "Pasamos por ti entre 8:00 y 9:00 AM" bajo la
+   * fecha y "a tu hospedaje en Xilitla o Ciudad Valles" en el punto de salida.
+   * Quien reservaba la Gruta de Xilo (7 de la NOCHE, solo Xilitla) recibía por
+   * escrito que lo recogían de mañana y que el traslado desde Valles iba
+   * incluido. El correo se guarda y se reclama.
+   */
+  const deLineas = toursDeSlugs(tours.map((l: any) => l.tourSlug));
+  const toursCatalogo = deLineas.length ? deLineas : toursDeSlugs([slugReal]);
+  const pickupCatalogo = toursCatalogo.length
+    ? [
+        ...salidasCorreo(toursCatalogo, locale),
+        toursCatalogo.some(pasamosPorEl) ? T.confirmaDireccion : "",
+      ].filter(Boolean).join("<br>")
+    : T.pickupDefault;
+  // Lo que capturó el equipo (el hotel del cliente) manda sobre lo genérico.
+  const pickupText = data.pickupLugar || pickupCatalogo;
+
+  /** La línea bajo la fecha, para el bloque de un solo recorrido. Vacía si no se sabe cuál es. */
+  const tourUnico = toursCatalogo.length === 1 ? toursCatalogo[0] : undefined;
+  const salidaBajoFecha = (() => {
+    // Con la recogida en duda (el rappel) no se promete hora: ya lo dice el
+    // recuadro del punto de salida.
+    if (!tourUnico || recogidaIncierta(tourUnico)) return "";
+    const p = partesRecogida(tourUnico, en);
+    if (p.incluyeTraslado) return p.hora ? T.pasamosPorTi(p.hora) : "";
+    return T.nosVemosEn(p.lugar, p.hora);
+  })();
   // Lo que incluyen los recorridos de ESTA reserva (intersección si son varios).
   const incluidosReserva = incluidosDeReserva(
     tours.length ? tours.map((l: any) => l.tourSlug).filter(Boolean) : [slugReal],
@@ -134,11 +168,18 @@ export function buildTourEmailHtml(data: {
   const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p: any) => p && !p._meta) : [];
   const isMultiTour = tours.length > 1;
   const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
+  // La hora de salida de ESE renglón (" · 7:00 PM"). Con varios recorridos no
+  // hay línea bajo la fecha, y cada uno puede salir a una hora distinta.
+  const horaDeLinea = (t: any): string => {
+    const cat = t?.tourSlug ? TOURS_DB.find((x) => x.slug === t.tourSlug) : undefined;
+    const h = cat ? horaCorreo(cat, en) : "";
+    return h ? ` · ${h}` : "";
+  };
   // Líneas por vehículo (ej. RZR): se muestra "N vehículo(s)" en vez de contar personas (adults=0).
   const lineDetail = (t: any) => {
     if (t.vehiculo) {
       const un = Math.max(1, Number(t.unidades) || 1);
-      return `${formatDate(t.tourDate)} · ${T.vehiculos(un)}`;
+      return `${formatDate(t.tourDate)} · ${T.vehiculos(un)}${horaDeLinea(t)}`;
     }
     // Desglose del grupo. Decir solo "4 personas" le escondía al equipo que
     // van menores: cambia el equipo de seguridad que hay que preparar, y hay
@@ -156,7 +197,7 @@ export function buildTourEmailHtml(data: {
     const gente = partes.length
       ? partes.join(" · ")
       : (tourParts(t) === 1 ? T.unaPersona : T.personas(tourParts(t)));
-    return `${formatDate(t.tourDate)} · ${gente}`;
+    return `${formatDate(t.tourDate)} · ${gente}${horaDeLinea(t)}`;
   };
 
   /** El nombre de la actividad opcional en el idioma del correo. */
@@ -236,7 +277,7 @@ export function buildTourEmailHtml(data: {
                 <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;">
                   ${formatDate(data.tourDate)}
                 </p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${T.pasamosPorTi}</p>
+                ${salidaBajoFecha ? `<p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8a7a5a;">${salidaBajoFecha}</p>` : ""}
               </td>
               <td class="split-left" style="width:50%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:20px 22px;vertical-align:top;">
                 <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:#8a7a5a;">
@@ -968,12 +1009,13 @@ export function buildTourQuoteEmailHtml(data: {
  *     Cotizado", así que le pedía al cliente el 100 % de golpe mientras el
  *     sitio le pide el 30 %. Era la petición de dinero con más fricción.
  *  2. El hospedaje es OPCIONAL y se dice explícitamente: los tours pasan por
- *     el cliente a su hospedaje en Xilitla o en Ciudad Valles, sea nuestro o no.
+ *     el cliente a su hospedaje, sea nuestro o no — en Xilitla o en Ciudad
+ *     Valles, o solo en Xilitla, según el recorrido (ver `bloqueRecogida`).
  */
 export function buildPaquetePersonalizadoEmailHtml(data: {
   customerName: string;
   folio:        string;
-  lineItems:    { tourName: string; tourDate: string; adults: number; childrenMid?: number; childrenSmall?: number; subtotal: number; incluye?: string[] }[];
+  lineItems:    { tourName: string; tourSlug?: string; tourDate: string; adults: number; childrenMid?: number; childrenSmall?: number; subtotal: number; incluye?: string[] }[];
   total:        number;
   anticipo:     number;
   pctAnticipo:  number;
@@ -1030,6 +1072,38 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
          </table>
        </td></tr>`
     : "";
+
+  /**
+   * Dónde y a qué hora, desde el catálogo de los recorridos del paquete.
+   *
+   * 🔴 Decía "Pasamos por ti a tu hospedaje, en Xilitla o en Ciudad Valles"
+   * para cualquier paquete, pero el bot puede meter en él la Gruta de Xilo, el
+   * Amanecer de Nubes o la Olla de la Luz (solo Xilitla; desde Valles, con
+   * costo), el RZR (en la base) o el buceo (en la laguna). La frase genérica se
+   * queda SOLO si todos recogen en las dos ciudades, y sin hora: cada recorrido
+   * sale a la suya.
+   */
+  const toursPaq = toursDeSlugs(data.lineItems.map((l) => l.tourSlug));
+  const recogenEnAmbas = todosRecogenEnAmbas(toursPaq);
+  const algunoRecoge = !toursPaq.length || toursPaq.some(pasamosPorEl);
+  const pRecogida = (html: string) =>
+    `<p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 10px 0">${html}</p>`;
+  const bloqueRecogida = recogenEnAmbas
+    ? pRecogida(`Pasamos por ti a tu hospedaje, <strong>en Xilitla o en Ciudad Valles</strong>. No necesitas hospedarte
+            con nosotros: donde te quedes, ahí te recogemos.`)
+    : salidasCorreo(toursPaq, "es").map(pRecogida).join("")
+      + (algunoRecoge ? pRecogida("No necesitas hospedarte con nosotros.") : "");
+  // "Dónde te recogemos" solo si pasamos por ellos en TODOS; con el RZR o el
+  // buceo dentro, el bloque dice también "nos vemos en…".
+  const tituloRecogida = recogenEnAmbas || (toursPaq.length && toursPaq.every(pasamosPorEl))
+    ? "Dónde te recogemos"
+    : algunoRecoge ? "Dónde y a qué hora" : "Dónde nos vemos";
+
+  // 🔴 "Reembolso completo del anticipo" también cuando el paquete lleva el
+  // Edén, que no tiene reembolso. Su política va dicha, con su nombre. (El
+  // anticipo sí es el mismo 30 % para todo: regla de Manolo, 28 sep 2026.)
+  const cancelPaq = lineasCancelacion(data.lineItems.map((l) => l.tourSlug), "es", "Cancelas gratis hasta 48 h antes, con reembolso completo del anticipo");
+  const textoCancelacion = [...cancelPaq.garantia.map((g) => `${g}.`), ...cancelPaq.detalle].join("<br>");
 
   const h = data.hospedaje;
   const filaHospedaje = h
@@ -1109,16 +1183,13 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
             </tr>
           </table>
           <p style="font-family:Arial;font-size:12px;color:#6a6a55;margin:10px 0 0 0">
-            Cancelas gratis hasta 48 h antes, con reembolso completo del anticipo.
+            ${textoCancelacion}
           </p>
         </td></tr>
 
         <tr><td style="padding:24px 32px 0 32px">
-          <p style="margin:0 0 8px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Dónde te recogemos</p>
-          <p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0 0 10px 0">
-            Pasamos por ti a tu hospedaje, <strong>en Xilitla o en Ciudad Valles</strong>. No necesitas hospedarte
-            con nosotros: donde te quedes, ahí te recogemos.
-          </p>
+          <p style="margin:0 0 8px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">${tituloRecogida}</p>
+          ${bloqueRecogida}
           ${bloqueHospedaje}
         </td></tr>
 

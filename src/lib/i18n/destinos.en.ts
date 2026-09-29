@@ -2,6 +2,9 @@
 // Solo los campos de cara al usuario; lo no traducido cae al español (ver localize.ts).
 // La `zona` (municipio) NO se traduce: es un nombre de lugar.
 
+import { conPrecio } from "../tours";
+import { PRECIO_TOUR_RAFTING } from "../destinos";
+
 export interface FaqTranslation { pregunta: string; respuesta: string }
 
 export interface DestinoTranslation {
@@ -98,7 +101,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     nombre: "Tamul Waterfall",
     descripcion: "The tallest waterfall in San Luis Potosí (105m), reached by paddling up the Tampaón River. A spectacular turquoise drop.",
     tipo: "Adventure",
-    precio_entrada: "$220 MXN + $300 boat p/p",
+    precio_entrada: "$220 MXN + $300 MXN boat p/p",
     dias_abierto: "Mon–Sun",
     mejor_hora: "08:00",
     temporada_ideal: "Jan–Apr",
@@ -123,7 +126,8 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
         ],
       metaTitle: "Tamul Waterfall 2026 | Price, Hours and the Boat Trip",
-      metaDescription: "The tallest waterfall in San Luis Potosi at 344 feet, reached by paddling up the Tampaon river. $220 MXN entry plus $300 MXN per person for the boat, cash only. Last departures at 2 PM.",
+      // ≤155: con 185 el corte de Google se comía "Last departures at 2 PM".
+      metaDescription: "Tallest waterfall in San Luis Potosi (344 ft), by boat up the Tampaon. Entry $220 MXN + boat $300 MXN per person, cash only. Last departures at 2 PM.",
       keywords: ["tamul waterfall", "cascada de tamul", "tamul boat trip", "how to get to tamul", "huasteca potosina waterfalls"],
     },
   },
@@ -207,8 +211,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["A light effect in the cave that is unique in Mexico"],
     errores_comunes: ["Not wearing water shoes (the rocks are VERY slippery)"],
     seo: {
-      metaTitle: "Puente de Dios Tamasopo 2026 | Guide: Hours, $150 MXN Entry & How to Get There",
-      metaDescription: "Visit the cobalt-blue pool of Puente de Dios in Tamasopo, SLP. The sun enters through the natural arch between 11 AM–1 PM. Entry $150 MXN, 1h from Ciudad Valles. 2026 guide.",
+      // ≤60: con 78 el "$150 MXN" caía justo donde Google corta el título.
+      metaTitle: "Puente de Dios Tamasopo 2026 | $150 MXN Entry & Hours",
+      metaDescription: "Visit the cobalt-blue pool of Puente de Dios in Tamasopo, SLP. Sunlight enters the natural arch 11 AM–1 PM. Entry $150 MXN, 1h from Ciudad Valles.",
       keywords: ["puente de dios tamasopo", "tamasopo blue pool", "tamasopo san luis potosi", "natural bridge huasteca potosina", "how to get to puente de dios from ciudad valles"],
       faqPrincipales: [
         { pregunta: "What time does sunlight enter Puente de Dios?", respuesta: "The cobalt-blue light effect happens between 11:00 AM and 1:00 PM, when the sun enters perpendicular to the natural arch. Outside that window the pool is still beautiful, just without the light effect." },
@@ -221,7 +226,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     nombre: "Tamtoc Archaeological Site",
     descripcion: "The most important pre-Hispanic settlement of the Huastec culture.",
     tipo: "Archaeology",
-    precio_entrada: "Free on Sundays (Mexican nationals)",
+    // 🔴 Decía solo "Free on Sundays (Mexican nationals)": la versión inglesa
+    // quitaba la cuota de extranjeros, que es justo lo que necesita quien la lee.
+    precio_entrada: "Free on Sundays for Mexican nationals · foreigners ~$95 MXN",
     dias_abierto: "Sundays only (09:00–18:00)",
     mejor_hora: "09:00 AM",
     temporada_ideal: "Dec–Feb",
@@ -231,8 +238,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     datos_curiosos: ["Monument 32 weighs 30 tons"],
     errores_comunes: ["Not bringing water", "Going without a guide"],
     seo: {
-      metaTitle: "Tamtoc Archaeological Site 2026 | Sundays Only, How to Get There & Guide",
-      metaDescription: "Discover Tamtoc, the most important archaeological site of the Huastec culture in San Luis Potosí. The 30-ton Monument 32 awaits. After the 2024 floods it now opens only on Sundays; 45 min from Ciudad Valles.",
+      metaTitle: "Tamtoc Archaeological Site 2026 | Open Sundays Only",
+      // "Solo domingos" va primero: con 208 caracteres el corte de Google lo dejaba fuera.
+      metaDescription: "Tamtoc opens only on Sundays since the 2024 floods. The Huastec culture's most important site, home of the 30-ton Monument 32, 45 min from Ciudad Valles.",
       keywords: ["tamtoc archaeological site", "tamtoc tamuín san luis potosi", "huastec culture archaeology", "what to visit in tamuín", "huastec monuments mexico"],
       faqPrincipales: [
         { pregunta: "What is Monument 32 of Tamtoc?", respuesta: "Monument 32 is a 30-ton female figure carved in stone, considered the most important representation of the Huastec culture. It stands over 4 meters tall and has remained in the same spot for centuries." },
@@ -632,7 +640,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     nombre: "Tampaón River — Class III Rafting",
     descripcion: "14 km of Class III rapids in turquoise water through a 500m canyon — one of the 10 most scenic rivers in North America.",
     tipo: "Adventure",
-    precio_entrada: "$1,850 MXN (full tour, transport & meal included)",
+    // El precio sale del tour, como en español: aquí decía $1,850 (y así lo
+    // repetían la FAQPage y /en/llms.txt) mientras el checkout cobraba $1,950.
+    precio_entrada: conPrecio("{precio} (full tour, transport & meal included)", PRECIO_TOUR_RAFTING, "en"),
     dias_abierto: "Monday to Sunday (reservation required)",
     mejor_hora: "11:00–13:00",
     temporada_ideal: "Nov–Mar",
@@ -646,7 +656,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Going without a reservation in high season", "Bringing conventional sunscreen (prohibited and fined)"],
     seo: {
       metaTitle: "Tampaón River Rafting 2026 | Expert Huasteca Potosina Guide",
-      metaDescription: "Experience the best rafting in Mexico on the Tampaón River. 2026 prices ($1,450–$1,890 MXN), logistics from Ciudad Valles and safety tips. Book your turquoise adventure today!",
+      metaDescription: conPrecio("Experience the best rafting in Mexico on the Tampaón River. Full tour {precio} with transport and a meal, logistics from Ciudad Valles and safety tips.", PRECIO_TOUR_RAFTING, "en"),
       keywords: ["rafting huasteca potosina 2026", "tampaón river class III rapids", "ciudad valles rafting tours", "tampaón river rafting price", "best time rafting san luis potosi"],
       faqPrincipales: [
         { pregunta: "Is it safe to raft the Tampaón River if I can't swim?", respuesta: "Yes, as long as you use the high-quality flotation gear from certified operators. Tell your guide before boarding so they can position you strategically in the raft." },
@@ -673,7 +683,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Arriving on Tuesday (Las Pozas CLOSED — a very common mistake)", "Not booking ahead in high season"],
     seo: {
       metaTitle: "Xilitla Huasteca Potosina 2026 | Complete Travel Guide",
-      metaDescription: "Plan your visit to Xilitla, the surrealist town of the Huasteca Potosina. 2026 hours, Las Pozas prices ($180 MXN), museums and safety tips. Experience the magic!",
+      metaDescription: "Guide to Xilitla, the surrealist town of the Huasteca Potosina: 2026 hours and Las Pozas admission ($180 MXN), museums, tours and safety tips.",
       keywords: ["xilitla san luis potosi 2026", "edward james sculpture garden tickets", "leonora carrington museum xilitla prices", "how to get to xilitla from ciudad valles", "magic towns huasteca potosina"],
       faqPrincipales: [
         { pregunta: "How much time do you need to tour Xilitla?", respuesta: "At least 2 days: the first for all of Las Pozas and the Los Comales Waterfall, the second for the downtown museums and the Sunday Huapango in the plaza." },
@@ -713,7 +723,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     nombre: "Castillo de la Salud 'Beto Ramón'",
     descripcion: "A surrealist temple of traditional medicine built in 1974 by Náhuatl herbalist Don Beto Ramón, with a garden of hundreds of medicinal plants and spaces for cleansings and consultations.",
     tipo: "Wellness",
-    precio_entrada: "$20 MXN general / $10 kids & seniors (guided $30/$20)",
+    precio_entrada: "$20 MXN general / $10 MXN kids & seniors (guided $30/$20 MXN)",
     dias_abierto: "Monday to Sunday",
     mejor_hora: "Morning",
     temporada_ideal: "Year-round",
@@ -727,7 +737,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       metaDescription: "Don Beto Ramón's Castillo de la Salud in Axtla de Terrazas: surrealist architecture, a medicinal garden and Tének herbalism. Prices, hours and how to get there in 2026.",
       keywords: ["castillo de la salud beto ramón", "axtla de terrazas tourism", "huasteca potosina herbalism", "beto ramón healer", "what to do in axtla"],
       faqPrincipales: [
-        { pregunta: "How much is admission to the Castillo de la Salud?", respuesta: "General admission is ~$20 MXN ($10 for kids and seniors). A guided tour is ~$30 ($20 reduced). Open daily 8:00 AM–6:00 PM." },
+        { pregunta: "How much is admission to the Castillo de la Salud?", respuesta: "General admission is ~$20 MXN ($10 MXN for kids and seniors). A guided tour is ~$30 MXN ($20 MXN reduced). Open daily 8:00 AM–6:00 PM." },
         { pregunta: "Does the Castillo de la Salud offer consultations?", respuesta: "Yes, it keeps Don Beto Ramón's herbalism tradition with cleansings, massages and consultations. It is traditional medicine and does not replace professional medical care." },
       ],
     },
@@ -1147,7 +1157,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       "Turning up without booking the cabin or campsite",
     ],
     nombre: "La Trinidad — Xilitla Cloud Forest",
-    descripcion: "A Nahua community about 14 km from Xilitla, set in one of the best-preserved cloud forests in the Huasteca (pine-oak, ~1,950 m). It has wooden cabins for couples and groups, a camping area, campfires and grills, plus trails to lookouts, pools, caves and sinkholes.",
+    descripcion: "A Nahua community about 14 km from Xilitla, set in one of the best-preserved cloud forests in the Huasteca (pine-oak, ~1,950 m). It has wooden cabins for couples and groups, a camping area, campfires and grills, plus trails to lookouts, pools, caves and sinkholes. The trail to the summit of Cerro del Pilón, where there is often a sea of clouds at sunrise, also climbs through this forest.",
     tipo: "Nature & Forest",
     precio_entrada: "$100 MXN per person (entrance); wooden cabins for couples and groups from $700 to $2,500 MXN separate",
     dias_abierto: "Year-round (book in advance)",
@@ -1162,7 +1172,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
         {
           pregunta: "What can you do in La Trinidad and how much does it cost?",
-          respuesta: "Admission is $100 MXN per person. You can walk trails to lookouts, pools, caves and sinkholes (such as the Olla de la Luz), stay in wooden cabins for couples or groups (roughly $700 to $2,500 MXN depending on size), camp, build fires and grill your own food. It's cold up there, so bring a jacket.",
+          respuesta: "Admission is $100 MXN per person. You can walk trails to lookouts, pools, caves and sinkholes (such as the Olla de la Luz), stay in wooden cabins for couples or groups (roughly $700 to $2,500 MXN depending on size), camp, build fires and grill your own food. The guided pre-dawn hike to the summit of Cerro del Pilón isn't covered by that fee: it's our Sea of Clouds Sunrise tour, booked separately with admission already included, and it reaches the summit at sunrise, when there is often a sea of clouds (it depends on the weather). It's cold up there, so bring a jacket.",
         },
         {
           pregunta: "When is the best time to visit the La Trinidad cloud forest?",
@@ -1170,8 +1180,8 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
       ],
       metaTitle: "La Trinidad Xilitla 2026 | Cloud Forest in the Sierra",
-      metaDescription: "La Trinidad, the cloud forest hidden 14 km from Xilitla: trails, lookouts, pools and cabins in a Nahua community at 1,950 m. How to get there, costs and what to do.",
-      keywords: ["la trinidad xilitla", "cloud forest huasteca potosina", "what to do in xilitla", "ecotourism xilitla", "xilitla cabins sierra gorda"],
+      metaDescription: "La Trinidad, a cloud forest 14 km from Xilitla at 1,950 m: trails, pools, cabins and the hike up Cerro del Pilón. How to get there, costs and what to do.",
+      keywords: ["la trinidad xilitla", "cloud forest huasteca potosina", "cerro del pilon xilitla", "sea of clouds xilitla", "what to do in xilitla", "ecotourism xilitla", "xilitla cabins sierra gorda"],
     },
   },
   "olla-de-la-luz": {
@@ -1192,7 +1202,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       "Not allowing for the altitude and the cold of the cloud forest",
     ],
     nombre: "Olla de la Luz — Cerro de la Luz",
-    descripcion: "A huge sinkhole 233 m across with a vertical shaft 193 m deep, crowned by Cerro de la Luz, the highest point in the Xilitla municipality. Reached after a hike through the cloud forest from La Trinidad.",
+    descripcion: "The Olla de la Luz, also known as Hoya de la Luz, is a huge sinkhole 233 m across with a vertical shaft 193 m deep, crowned by Cerro de la Luz, the highest point in the Xilitla municipality. Reached after a hike through the cloud forest from La Trinidad.",
     tipo: "Nature & Sinkhole",
     precio_entrada: "Guided route from La Trinidad (~$150–$250 MXN per group)",
     dias_abierto: "Year-round (book in advance)",
@@ -1206,6 +1216,10 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           respuesta: "It's a large sinkhole (doline) 233 meters across with a vertical drop of 193 meters, set high in the Xilitla cloud forest and crowned by the Cerro de la Luz.",
         },
         {
+          pregunta: "Is the Olla de la Luz the same as the Hoya de la Luz?",
+          respuesta: "Yes. \"Olla de la Luz\" and \"Hoya de la Luz\" are two spellings of the same sinkhole: the one 233 meters across and 193 meters deep that opens in the La Trinidad cloud forest, in Xilitla, crowned by the Cerro de la Luz. It can only be reached with a community guide.",
+        },
+        {
           pregunta: "How do you get to the Olla de la Luz?",
           respuesta: "Only with a local guide from La Trinidad: the visit must be guided, you can't get there on your own. Access is on foot, about 5 km from La Trinidad, climbing towards the Cerro de la Luz. La Trinidad is about 14 km from Xilitla.",
         },
@@ -1214,9 +1228,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           respuesta: "The route runs between 1,950 and 2,300 meters above sea level, so the weather is cool and damp; bring a jacket and hiking shoes.",
         },
       ],
-      metaTitle: "Olla de la Luz Xilitla | Cerro de la Luz Sinkhole",
-      metaDescription: "The Olla de la Luz: a sinkhole 233 m across and 193 m deep crowned by Cerro de la Luz, the highest point in Xilitla. Reached from La Trinidad.",
-      keywords: ["olla de la luz xilitla", "hoya de la luz", "cerro de la luz xilitla", "sinkhole xilitla", "la trinidad cloud forest"],
+      metaTitle: "Olla de la Luz (Hoya de la Luz): Getting There from Xilitla",
+      metaDescription: "Olla de la Luz (Hoya de la Luz): a sinkhole 233 m across and 193 m deep in the Xilitla cloud forest. Reached with a guide from La Trinidad.",
+      keywords: ["olla de la luz xilitla", "hoya de la luz", "hoya de la luz xilitla", "cerro de la luz xilitla", "sinkhole xilitla", "la trinidad cloud forest"],
     },
   },
   "cueva-del-salitre": {
@@ -1248,7 +1262,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       faqPrincipales: [
         {
           pregunta: "How much does it cost to enter the Cueva del Salitre?",
-          respuesta: "Admission is $50 pesos per person. The site now has its own entrance (special access) on federal highway 120 towards Huichihuayán, a few minutes from downtown Xilitla, with a short trail to the cave.",
+          respuesta: "Admission is $50 MXN per person. The site now has its own entrance (special access) on federal highway 120 towards Huichihuayán, a few minutes from downtown Xilitla, with a short trail to the cave.",
         },
         {
           pregunta: "What can you do at the Cueva del Salitre?",
@@ -1283,7 +1297,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     nombre: "Leonora Carrington Museum — Xilitla",
     descripcion: "A museum dedicated to the surrealist artist Leonora Carrington, a friend of Edward James, in the heart of Xilitla. It shows her sculpture, lithography and drawing, plus a space devoted to surrealism.",
     tipo: "Art & Culture",
-    precio_entrada: "General $50 MXN · students, teachers and seniors (with valid ID) $25 · under 12 free",
+    precio_entrada: "General $50 MXN · students, teachers and seniors (with valid ID) $25 MXN · under 12 free",
     dias_abierto: "Tuesday to Sunday (closed Mondays)",
     temporada_ideal: "Year-round",
     como_llegar: "In downtown Xilitla, Corregidora #103, steps from the main square; walkable from anywhere in the Magic Town",
@@ -1295,7 +1309,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
         {
           pregunta: "How much is admission to the museum?",
-          respuesta: "General admission is $50 pesos; students, teachers and seniors with ID pay $25, and children under 12 go free.",
+          respuesta: "General admission is $50 MXN; students, teachers and seniors with ID pay $25 MXN, and children under 12 go free.",
         },
         {
           pregunta: "Is it connected to Edward James's Las Pozas?",

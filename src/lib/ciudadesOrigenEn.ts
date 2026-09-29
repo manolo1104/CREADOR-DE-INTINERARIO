@@ -90,7 +90,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       },
       {
         q: "Do I need to rent a car?",
-        a: "No. Every tour includes round-trip transportation from where you're staying in Xilitla or Ciudad Valles, and we run private airport transfers priced per vehicle. Plenty of our guests never touch a steering wheel. If you do rent, drive the mountain sections in daylight.",
+        a: "No. Most tours include round-trip transportation from where you're staying in Xilitla or Ciudad Valles (a few pick up only in Xilitla, with an extra charge from Valles), and we run private airport transfers priced per vehicle. Plenty of our guests never touch a steering wheel. If you do rent, drive the mountain sections in daylight.",
       },
       {
         q: "How many days should I plan coming from Houston?",

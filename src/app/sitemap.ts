@@ -4,8 +4,10 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
+import { fechaActualizado, seoDeBlog } from "@/lib/blogSeo";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
+import { CATALOGO_ACTUALIZADO } from "@/lib/catalogoFecha";
 
 // El sitemap consulta los artículos del blog (BD) en cada request. Si fuera
 // estático, el build lo "congela" sin posts (justo lo que pasaba: 0 artículos
@@ -23,7 +25,9 @@ function absImg(path: string): string {
   return path.startsWith("http") ? path : `${BASE}${path}`;
 }
 
-async function getBlogPosts(): Promise<{ slug: string; updatedAt: Date; coverImageUrl: string | null; title: string }[]> {
+type BlogFila = { slug: string; updatedAt: Date; coverImageUrl: string | null; title: string };
+
+async function getBlogPosts(): Promise<BlogFila[]> {
   try {
     return await prisma.blogPost.findMany({
       where: { published: true },
@@ -34,21 +38,40 @@ async function getBlogPosts(): Promise<{ slug: string; updatedAt: Date; coverIma
   }
 }
 
-// SOBRE `lastModified`: solo lo llevan las URLs con una fecha REAL en la base
-// (los artículos del blog, con su `updatedAt`). Las rutas estáticas lo tenían
-// puesto a `new Date()`, y como el sitemap es `force-dynamic` eso significaba
-// que 150 de las 190 URLs decían "modificada hace un segundo" en CADA petición.
-// Un sitemap que afirma que todo cambió siempre no informa de nada: Google
-// deja de creerle y acaba ignorando el campo en todo el archivo, incluidos los
-// artículos donde la fecha sí era buena. La alternativa —una constante escrita
-// a mano por sección— envejece mal en cuanto nadie la actualiza, así que se
-// omite: `lastmod` es opcional y "sin dato" es mejor que "dato falso".
+// `lastmod` de un artículo = la fecha más reciente entre la fila y la
+// corrección hecha por código en `blogSeo.ts` (que no toca la base, así que no
+// mueve `updatedAt`). Es la misma que declara el `dateModified` del artículo.
+function fechaDeBlog(p: BlogFila): Date {
+  const corregido = fechaActualizado(seoDeBlog(p.slug));
+  return corregido && corregido > p.updatedAt ? corregido : p.updatedAt;
+}
+
+// SOBRE `lastModified`: solo lo llevan las URLs con una fecha REAL. Las rutas
+// estáticas lo tenían puesto a `new Date()`, y como el sitemap es
+// `force-dynamic` eso significaba que 150 de las 190 URLs decían "modificada
+// hace un segundo" en CADA petición. Un sitemap que afirma que todo cambió
+// siempre no informa de nada: Google deja de creerle y acaba ignorando el
+// campo en todo el archivo, incluidos los artículos donde la fecha sí era buena.
+//
+// Hay dos fechas reales:
+//  - Blog: `updatedAt` de la base (o la corrección de `blogSeo.ts`, abajo).
+//  - Catálogo: `CATALOGO_ACTUALIZADO` (src/lib/catalogoFecha.ts), una sola
+//    fecha para todas las páginas que pintan TOURS_DB, PAQUETES_DB o
+//    DESTINOS_DB. Antes se descartó "una constante escrita a mano por sección"
+//    porque envejece en cuanto nadie la sube; se cambió de idea el 28 sep 2026
+//    porque sin ella 149 páginas que cambian con cada precio o recogida nuevos
+//    no avisaban de nada, e IndexNow necesita saber qué cambió. Para que no
+//    envejezca en silencio es UNA sola constante (no una por sección) y el
+//    script de IndexNow se niega a enviar si ve commits del catálogo más
+//    nuevos que ella.
+// Las demás (legales, /nosotros, /contacto, /press, /creditos…) siguen sin
+// `lastmod`: es opcional y "sin dato" es mejor que "dato falso".
 //
 // Rutas bilingües (es en raíz, en bajo /en): genera 2 entradas (es + en) con
 // hreflang recíprocos (es-MX, en, x-default) en cada una.
 function bilingual(
   path: string,
-  opts: { changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number; lastModified?: Date; images?: string[] },
+  opts: { changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number; lastModified?: Date | string; images?: string[] },
 ): MetadataRoute.Sitemap {
   const esUrl = path === "/" ? `${BASE}/` : `${BASE}${path}`;
   const enUrl = path === "/" ? `${BASE}/en` : `${BASE}/en${path}`;
@@ -69,22 +92,32 @@ function bilingual(
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blogPosts = await getBlogPosts();
 
-  // Páginas bilingües (tienen versión /en)
+  // Fecha del catálogo para las páginas que lo pintan (ver la nota de arriba).
+  // Se escribe tal cual ("AAAA-MM-DD"): es formato W3C válido para <lastmod>.
+  const CAT = { lastModified: CATALOGO_ACTUALIZADO };
+
+  // Páginas bilingües (tienen versión /en).
+  // 🔴 Si se añade una aquí, añadirla también a `ES_CON_EN` en
+  // src/components/nav/Navbar.tsx, o el botón "English" de esa página
+  // mandará al inicio en inglés en vez de a su pareja.
   const bilingualStatic: MetadataRoute.Sitemap = [
-    ...bilingual("/",                 { changeFrequency: "weekly",  priority: 1.0 }),
-    ...bilingual("/tours",            { changeFrequency: "weekly",  priority: 0.9 }),
+    ...bilingual("/",                 { changeFrequency: "weekly",  priority: 1.0, ...CAT }),
+    ...bilingual("/tours",            { changeFrequency: "weekly",  priority: 0.9, ...CAT }),
     ...bilingual("/viaje-septiembre", { changeFrequency: "weekly",  priority: 0.9 }),
-    ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8 }),
+    ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8, ...CAT }),
     // El catálogo del motor. Es de conversión, no un paso del checkout: tiene
     // canonical y metadata propios en los dos idiomas. El carrito y la
     // confirmación NO entran — son transaccionales.
-    ...bilingual("/reservar",         { changeFrequency: "weekly",  priority: 0.9 }),
-    ...bilingual("/paquetes",         { changeFrequency: "monthly", priority: 0.6 }),
+    ...bilingual("/reservar",         { changeFrequency: "weekly",  priority: 0.9, ...CAT }),
+    ...bilingual("/paquetes",         { changeFrequency: "monthly", priority: 0.6, ...CAT }),
+    // Estaba en `esOnlyStatic` como dos URLs sueltas, así que el sitemap no
+    // declaraba el par hreflang que el HTML sí declara.
+    ...bilingual("/precios",          { changeFrequency: "monthly", priority: 0.8, ...CAT }),
     ...bilingual("/nosotros",         { changeFrequency: "monthly", priority: 0.6 }),
-    ...bilingual("/info-practica",    { changeFrequency: "monthly", priority: 0.7 }),
+    ...bilingual("/info-practica",    { changeFrequency: "monthly", priority: 0.7, ...CAT }),
     // Traducidas el 14 ago 2026: hasta entonces vivían en `esOnlyStatic`.
     ...bilingual("/preguntas-frecuentes", { changeFrequency: "monthly", priority: 0.7 }),
-    ...bilingual("/experiencias",         { changeFrequency: "monthly", priority: 0.6 }),
+    ...bilingual("/experiencias",         { changeFrequency: "monthly", priority: 0.6, ...CAT }),
     ...bilingual("/contacto",             { changeFrequency: "yearly",  priority: 0.6 }),
   ];
 
@@ -99,6 +132,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${BASE}/en/from/${c.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.8,
+      ...CAT,
     })),
   ];
 
@@ -107,30 +141,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // las transaccionales (/reservar-*, /guia/descarga, /confirmacion-tour), el panel
   // /admin y /planear (ya no bloqueada en robots.ts, pero marcada `noindex` en
   // su propia página mientras el generador de itinerarios siga devolviendo 503).
+  // El índice del blog cambia cuando cambia su artículo más reciente: se usa
+  // esa fecha (la misma que declara el artículo), no una inventada.
+  const blogMasReciente = blogPosts.reduce<Date | undefined>((max, p) => {
+    const f = fechaDeBlog(p);
+    return !max || f > max ? f : max;
+  }, undefined);
+
   const esOnlyStatic: MetadataRoute.Sitemap = [
-    { url: `${BASE}/blog`,                  changeFrequency: "daily",   priority: 0.8 },
+    {
+      url: `${BASE}/blog`,
+      changeFrequency: "daily",
+      priority: 0.8,
+      ...(blogMasReciente ? { lastModified: blogMasReciente } : {}),
+    },
     { url: `${BASE}/creditos`,              changeFrequency: "yearly",  priority: 0.2 },
     { url: `${BASE}/recomendar`,    changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/precios`,       changeFrequency: "monthly", priority: 0.8 },
-    // 🔴 Se creó en la fase 2 y se quedó fuera del sitemap y sin un solo
-    // enlace entrante: 0 impresiones en 117 días. Una página que nadie
+    // /precios y /en/precios pasaron a `bilingualStatic` (28 sep 2026).
+    // 🔴 /en/precios se creó en la fase 2 y se quedó fuera del sitemap y sin
+    // un solo enlace entrante: 0 impresiones en 117 días. Una página que nadie
     // declara y nadie enlaza no existe para Google.
-    { url: `${BASE}/en/precios`,    changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/guia`,          changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sobre-la-huasteca-potosina`,        changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/sustentabilidad-y-conservacion`,    changeFrequency: "yearly",  priority: 0.4 },
-    { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/tours-en-ciudad-valles`,            changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/grupos`,                            changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/tours-en-xilitla`,                  changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, changeFrequency: "monthly", priority: 0.8, ...CAT },
+    { url: `${BASE}/tours-en-ciudad-valles`,            changeFrequency: "monthly", priority: 0.8, ...CAT },
+    { url: `${BASE}/grupos`,                            changeFrequency: "monthly", priority: 0.8, ...CAT },
+    { url: `${BASE}/tours-en-xilitla`,                  changeFrequency: "monthly", priority: 0.8, ...CAT },
     { url: `${BASE}/politica-de-cancelacion`, changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                changeFrequency: "yearly",  priority: 0.3 },
     { url: `${BASE}/aviso-de-privacidad`,     changeFrequency: "yearly",  priority: 0.3 },
-    { url: `${BASE}/xilitla-o-ciudad-valles`,           changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/xilitla-o-ciudad-valles`,           changeFrequency: "monthly", priority: 0.8, ...CAT },
     ...CIUDADES_ORIGEN.map((c) => ({
       url: `${BASE}/desde/${c.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.8,
+      ...CAT,
     })),
   ];
 
@@ -138,6 +184,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     bilingual(`/tours/${t.slug}`, {
       changeFrequency: "monthly",
       priority: 0.9,
+      ...CAT,
       images: t.imagen_hero ? [absImg(t.imagen_hero)] : undefined,
     }),
   );
@@ -146,6 +193,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     bilingual(`/destinos/${d.slug}`, {
       changeFrequency: "monthly",
       priority: 0.7,
+      ...CAT,
       images: d.imagen_hero ? [absImg(d.imagen_hero)] : undefined,
     }),
   );
@@ -153,10 +201,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 17 slugs de la base todavía arrastran el sufijo de año y `next.config.mjs`
   // los redirige (308) a la versión sin año. Publicarlos tal cual mandaba a
   // Google a rastrear URLs que redirigen; se listan ya normalizados.
+  // `lastmod`: ver `fechaDeBlog`. Blog NO usa `CATALOGO_ACTUALIZADO`.
   const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
     url: `${BASE}/blog/${normalizaSlugBlog(p.slug)}`,
-    lastModified: p.updatedAt,
-    changeFrequency: "monthly",
+    lastModified: fechaDeBlog(p),
+    changeFrequency: "monthly" as const,
     priority: 0.8,
     images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
   }));
@@ -165,6 +214,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     bilingual(`/paquetes/${p.slug}`, {
       changeFrequency: "monthly",
       priority: 0.7,
+      ...CAT,
       images: p.imagen ? [absImg(p.imagen)] : undefined,
     }),
   );

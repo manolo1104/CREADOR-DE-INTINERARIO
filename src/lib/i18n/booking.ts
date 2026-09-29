@@ -1,4 +1,7 @@
 import type { Locale } from "./config";
+// El número de reseñas sale de resenas.ts (constante pura): escrito a mano en
+// cuatro sitios de este diccionario, se quedaba atrás del JSON-LD.
+import { GOOGLE_RESENAS } from "@/lib/resenas";
 
 /**
  * Diccionario del MOTOR DE RESERVAS (catálogo, carrito, pago y confirmación).
@@ -166,29 +169,47 @@ export interface BookingMessages {
     yaTienesTodos: string;
 
     // Logística
-    pasamosPorTi: string;
-    pasamosPorTiFuerte1: string;
-    pasamosPorTiFuerte2: string;
-    pasamosPorTiCola: string;
+    // 🔴 La hora y el lugar de recogida ya NO viven aquí: el carrito los arma
+    // con `resumenSalidas()` desde el catálogo. Aquí había "Pasamos por ti … en
+    // Xilitla o en Ciudad Valles" y "Salimos entre 8:00 y 9:00 AM" para todo el
+    // carrito, y la Gruta de Xilo sale a las 7 de la NOCHE y solo recoge en
+    // Xilitla. Quedan solo las frases que valen para cualquier recorrido.
+    /**
+     * Encabezado de la lista cuando los recorridos del carrito se recogen
+     * distinto. Dice "cómo llegas" y no "recogida": en la lista caben el RZR
+     * (nos vemos en la base) y el buceo (llegas por tu cuenta), que no recogen.
+     */
+    recogidaCadaRecorrido: string;
+    noHaceFaltaHospedarte: string;
+    /** Sin hora: la hora sale de cada recorrido. */
+    horaExacta: string;
     porPersona: string;
     porVehiculo: string;
     /** Tarifa del grupo completo (ver `precioUnidad: "grupo"` en tours.ts). */
     porGrupo: string;
+    /**
+     * Antes del precio de un recorrido por grupo en "agregar otro": `precio` es
+     * solo el primer escalón de `tarifaGrupo` (el Edén va de $2,990 a $4,160).
+     */
+    desde: string;
     personas: (n: number) => string;
     noches: (n: number) => string;
     porNoche: (precio: string) => string;
     nochesGratisLinea: (n: number, ahorro: string) => string;
     antesDePagarCola: string;
-    salimosEntre: string;
-    salimosEntreFuerte: string;
     /**
-     * Aviso cuando el carrito lleva un recorrido con reglas propias (horario,
-     * recogida o cancelación distintos). El bloque de logística de abajo habla
-     * por TODO el carrito: sin esto le promete al cliente del Edén salida a las
-     * 8:30, recogida en Ciudad Valles y reembolso a 48 h — tres cosas falsas.
+     * 🔴 Solo cuando NINGÚN recorrido del carrito trae `cancelacion` propia
+     * (tours.ts). El Edén no se reembolsa nunca —la Fundación Las Pozas no
+     * devuelve— y el carrito le prometía "reembolso completo" en tres sitios
+     * de la misma pantalla de pago. Con él dentro, se pinta su texto del
+     * catálogo y, para los demás, `cancelacionResto`.
      */
-    reglasPropias: (tour: string) => string;
     cancelacionGratuita: string;
+    cancelacionResto: string;
+    /** Franja de arriba cuando algún recorrido del carrito no entra en las 48 h. */
+    confianzaCancelasSalvo: (tours: string) => string;
+    /** Cola de "¿Puedo cancelar?" por cada recorrido con política propia. */
+    cancelarExcepcion: (tour: string, texto: string) => string;
 
     // Hospedaje
     hospedajeTitulo: string;
@@ -305,7 +326,17 @@ export interface BookingMessages {
     antesDePagar: string;
     otraDuda: string;
     escribenosWhatsapp: string;
-    faq: { q: string; a: string }[];
+    /**
+     * `clave: "salidas"` marca la respuesta que el carrito REEMPLAZA por la de
+     * sus propios recorridos (`resumenSalidas`, o `excepcionesSalida` si está
+     * vacío). El `a` escrito aquí es solo el respaldo y no lleva horas: una hora
+     * a mano en esta respuesta ya mandó a esperar de mañana a quien iba de noche.
+     *
+     * `clave: "cancelar"`: el carrito le PEGA la `cancelacion` de los
+     * recorridos que no entran en las 48 h (el Edén), o la pone en su lugar si
+     * el carrito solo lleva esos.
+     */
+    faq: { q: string; a: string; clave?: "salidas" | "cancelar" }[];
 
     // Notas que van al equipo (correo + panel). Se mandan SIEMPRE en español:
     // las lee el equipo en Xilitla, no el cliente.
@@ -330,12 +361,26 @@ export interface BookingMessages {
     faltaLaFecha: string;
     elegiste: (opcion: string) => string;
     loQueVaIncluido: string;
-    salidaEntre: string;
-    salidaEntreFuerte: string;
-    confirmamosHora: string;
-    pasamosPorTi: string;
-    pasamosPorTiFuerte: string;
+    /**
+     * SOLO para los renglones que no traen `recogida`: los paquetes, que duermen
+     * en nuestro hotel de Xilitla y cuyo transporte "te lleva del hotel al
+     * inicio de cada tour y de regreso" (paquetes.ts). Un recorrido suelto pinta
+     * su propia frase (`fraseRecogida`) y no pasa por aquí.
+     *
+     * 🔴 Sin hora y sin Ciudad Valles. Decía "Salida entre 8:00 y 9:00 AM" y
+     * "tu hospedaje en Xilitla o Ciudad Valles", y el paquete duerme en nuestro
+     * hotel de Xilitla: nadie lo recoge en Valles. La hora de cada día se
+     * confirma por WhatsApp, como en los recorridos sueltos.
+     */
+    trasladoPaquete: string;
+    /** Frase suelta, sin hora, que acompaña a la recogida de cada recorrido. */
+    horaExacta: string;
+    /**
+     * 🔴 Solo si ningún renglón trae `cancelacion` propia (el Edén no se
+     * reembolsa). Si alguno la trae, se pinta la suya y `cancelasGratisResto`.
+     */
     cancelasGratis: string;
+    cancelasGratisResto: string;
     fotosYVideo: string;
     totalDelViaje: string;
     sumaDeRecorridos: string;
@@ -384,7 +429,13 @@ export interface BookingMessages {
     placeholder: string;
     titulo: string;
     fechaSeleccionada: string;
-    salidaEntre: string;
+    /** Recibe la hora del recorrido (`salidaCorta`): "7:00 PM", "3:00–4:00 AM". */
+    salida: (hora: string) => string;
+    /**
+     * Horario fijo que pone el LUGAR (`recogida.horaTexto`, el Edén): no es la
+     * hora a la que pasamos por ti, así que no se le dice "Salida".
+     */
+    horario: (texto: string) => string;
     hoy: string;
     manana: string;
   };
@@ -519,8 +570,10 @@ export interface BookingMessages {
 const es: BookingMessages = {
   catalogo: {
     metaTitle: "Reservar tour en la Huasteca Potosina — Aparta con el 30 % desde 2 días",
+    // Sin "transporte desde tu hospedaje": no es de todos (el RZR y el buceo
+    // no recogen) y con él la meta pasaba de 155 y Google la cortaba.
     metaDescription:
-      "Aparta con el 30 % desde 2 días; un solo día se paga completo. Cancela gratis hasta 48 h antes. Transporte desde tu hospedaje, guía NOM-09, entradas y seguro incluidos.",
+      "Aparta con el 30 % desde 2 días; un solo día se paga completo. Cancela gratis hasta 48 h antes. Guía NOM-09, entradas y seguro incluidos.",
     ogTitle: "Reservar tour en la Huasteca Potosina",
     ogDescription: "Aparta con el 30 % desde 2 días (uno solo se paga completo). Cancelación gratuita hasta 48 h antes.",
     eyebrow: "Motor de reservas",
@@ -529,13 +582,15 @@ const es: BookingMessages = {
     introY: "apartas con el 30 % si son varios días",
     introMedio: " y liquidas el día del tour. Si algo cambia, ",
     introCancelas: "cancelas gratis hasta 48 h antes",
-    resenasGoogle: "161 reseñas en Google",
+    resenasGoogle: `${GOOGLE_RESENAS} reseñas en Google`,
     verlas: "Verlas →",
     confianza: [
       { t: "Apartas con el 30 %", s: "En viajes de varios días. Uno solo se paga completo." },
       { t: "Cancelación gratuita", s: "Hasta 48 h antes, sin preguntas" },
       { t: "Grupos pequeños", s: "Guías certificados NOM-09" },
-      { t: "Pasamos por ti", s: "En tu hospedaje de Xilitla o Cd. Valles" },
+      // 🔴 "casi todos" a propósito: el RZR es en nuestra base, al buceo se
+      // llega por cuenta propia y cinco recorridos cobran aparte desde Valles.
+      { t: "Pasamos por ti", s: "En tu hospedaje, en casi todos los recorridos" },
     ],
     pasos: [
       { n: "1", t: "Elige tus recorridos", s: "Puedes juntar varios días en un solo carrito y pagarlos de una vez." },
@@ -671,31 +726,34 @@ const es: BookingMessages = {
     ahorroMultiple: (pesos: string) => `Ahorras ${pesos} por llevar varios recorridos`,
     yaTienesTodos: "Ya tienes todos los recorridos en el carrito.",
 
-    pasamosPorTi: " —hotel, hostal, cabaña o Airbnb— en ",
-    pasamosPorTiFuerte1: "Pasamos por ti a tu hospedaje",
-    pasamosPorTiFuerte2: "Xilitla o en Ciudad Valles",
-    pasamosPorTiCola: ", y te regresamos al terminar. No necesitas hospedarte con nosotros.",
+    recogidaCadaRecorrido: "Cómo llegas a cada recorrido:",
+    noHaceFaltaHospedarte: "No necesitas hospedarte con nosotros.",
+    horaExacta: "La hora exacta te la confirmamos por WhatsApp al reservar.",
     porPersona: "por persona",
     porVehiculo: "por vehículo",
     porGrupo: "por el grupo",
+    desde: "desde",
     personas: (n) => `${n} ${n === 1 ? "persona" : "personas"}`,
     noches: (n) => `${n} noche${n > 1 ? "s" : ""}`,
     porNoche: (precio) => `${precio}/noche`,
     nochesGratisLinea: (n, ahorro) => `${n} noche${n > 1 ? "s" : ""} gratis — te ahorras ${ahorro}`,
     antesDePagarCola: " antes de pagar.",
-    salimosEntre: ". La hora exacta de tu recogida te la confirmamos por WhatsApp al reservar.",
-    salimosEntreFuerte: "Salimos entre 8:00 y 9:00 AM",
-    reglasPropias: (tour) => `${tour} tiene sus propias reglas: horario, punto de recogida y política de cambios distintos a los de arriba. Los ves completos en su página.`,
     cancelacionGratuita: "Cancelación gratuita hasta 48 h antes, con reembolso completo.",
+    cancelacionResto: "El resto de tus recorridos: cancelación gratuita hasta 48 h antes, con reembolso completo.",
+    confianzaCancelasSalvo: (tours) => `Cancelas gratis hasta 48 h antes, salvo ${tours}`,
+    cancelarExcepcion: (tour, texto) => `La excepción es ${tour}. ${texto}`,
 
     hospedajeTitulo: "¿Quieres que también te hospedemos?",
+    // 🔴 Nada de "pasamos por ti aunque te quedes en otro lado": el RZR y el
+    // buceo no recogen, y desde Valles cinco recorridos cobran el traslado.
+    // Cómo llega cada quien ya lo dice el bloque de logística de arriba.
     hospedajeSub:
-      "En nuestro Hotel Paraíso Encantado, en Xilitla. Es opcional: pasamos por ti aunque te quedes en otro lado.",
+      "En nuestro Hotel Paraíso Encantado, en Xilitla. Es opcional: no necesitas hospedarte con nosotros para reservar tus recorridos.",
     hospedajeResumen: (n, precio) =>
       `${n} habitaciones desde ${precio} por noche · alberca, restaurante y a 7 min del centro de Xilitla`,
     hospedajeVerHabitaciones: "Ver habitaciones y precios",
     hospedajeYaTengo: "Ya tengo dónde dormir",
-    hospedajeSaltar: "¿Ya reservaste en otro lado? Sigue sin hospedaje: te recogemos ahí igual.",
+    hospedajeSaltar: "¿Ya reservaste en otro lado? Sigue sin hospedaje: arriba ves cómo llegas a cada recorrido.",
     elegida: "Elegida",
     vistaMontana: "Vista a la montaña",
     hastaPersonasDesde: (max, precio) => `hasta ${max} personas · desde ${precio}/noche`,
@@ -734,7 +792,10 @@ const es: BookingMessages = {
     nombreCompleto: "Nombre completo *",
     correoElectronico: "Correo electrónico *",
     whatsappOpcional: "WhatsApp (opcional)",
-    dondeTeHospedas: "¿Dónde te hospedas? (Xilitla o Cd. Valles)",
+    // Sin "(Xilitla o Cd. Valles)": la Gruta, el Edén y otros solo recogen en
+    // Xilitla, y el RZR y el buceo no recogen. Dónde pasamos lo dice el bloque
+    // de logística, recorrido por recorrido.
+    dondeTeHospedas: "¿Dónde te hospedas? (hotel y ciudad)",
     faltanDatos: (n, primero) => `Faltan ${n} datos: ${primero.toLowerCase()}…`,
     llevameAhi: "Llévame ahí →",
     unMomento: "Un momento…",
@@ -790,7 +851,7 @@ const es: BookingMessages = {
     },
     waDudaAntesDePagar: "Hola, estoy por pagar mi carrito y tengo una pregunta.",
 
-    resenasGoogle: "161 reseñas en Google",
+    resenasGoogle: `${GOOGLE_RESENAS} reseñas en Google`,
     verlas: "Verlas →",
     credenciales: "+10,000 viajeros guiados · Guías certificados NOM-09 SECTUR · Seguro de viaje incluido",
     confianzaCancelas: "Cancelas gratis hasta 48 h antes",
@@ -808,15 +869,17 @@ const es: BookingMessages = {
       },
       {
         q: "¿Puedo cancelar?",
+        clave: "cancelar",
         a: "Sí. Cancelación gratuita hasta 48 horas antes, con reembolso completo y sin preguntas.",
       },
       {
         q: "¿De dónde salimos y a qué hora?",
-        a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar. Salimos entre las 8:00 y las 9:00 AM, y la hora exacta de tu recogida la confirmamos por WhatsApp al reservar.",
+        clave: "salidas",
+        a: "Depende del recorrido: la mayoría pasa por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y algunos tienen horario y punto de encuentro propios. La hora exacta te la confirmamos por WhatsApp al reservar.",
       },
       {
         q: "¿Necesito hospedarme con ustedes?",
-        a: "No. Pasamos por ti donde te estés quedando, sea nuestro hotel o cualquier otro.",
+        a: "No. Hospedarte con nosotros es opcional; dónde pasamos por ti depende de cada recorrido y lo ves en «¿De dónde salimos y a qué hora?».",
       },
       {
         q: "¿Qué pasa si llueve?",
@@ -849,12 +912,10 @@ const es: BookingMessages = {
     faltaLaFecha: "Falta la fecha",
     elegiste: (opcion) => `Elegiste: ${opcion}`,
     loQueVaIncluido: "Lo que va incluido",
-    salidaEntre: "Salida entre ",
-    salidaEntreFuerte: "8:00 y 9:00 AM",
-    confirmamosHora: ". Confirmamos tu hora exacta por WhatsApp.",
-    pasamosPorTi: "Pasamos por ti a tu hospedaje en ",
-    pasamosPorTiFuerte: "Xilitla o Ciudad Valles",
+    trasladoPaquete: "Te llevamos de tu hotel en Xilitla al inicio de cada recorrido y de regreso.",
+    horaExacta: "Confirmamos tu hora exacta por WhatsApp.",
     cancelasGratis: "Cancelas gratis hasta 48 h antes, con reembolso completo.",
+    cancelasGratisResto: "Lo demás: cancelas gratis hasta 48 h antes, con reembolso completo.",
     fotosYVideo: "Fotos y video del recorrido que toma tu guía, sin costo extra.",
     totalDelViaje: "Total del viaje",
     sumaDeRecorridos: "Suma de los recorridos",
@@ -888,7 +949,8 @@ const es: BookingMessages = {
     placeholder: "Toca para seleccionar fecha",
     titulo: "Selecciona la fecha",
     fechaSeleccionada: "Fecha seleccionada:",
-    salidaEntre: " · Salida entre 8:00 y 9:00 AM",
+    salida: (hora) => `Salida: ${hora}`,
+    horario: (texto) => `Horario: ${texto}`,
     hoy: "Hoy",
     manana: "Mañana",
   },
@@ -1055,7 +1117,7 @@ const en: BookingMessages = {
   catalogo: {
     metaTitle: "Book a Huasteca Potosina tour — 30 % deposit from 2 days",
     metaDescription:
-      "Pay 30 % today from 2 days on; a single day is paid in full. Free cancellation up to 48 h before. Pickup at your lodging, NOM-09 guide, entrance fees and insurance included.",
+      "Pay 30 % today from 2 days on; a single day is paid in full. Free cancellation up to 48 h before. NOM-09 guide, entrance fees and insurance included.",
     ogTitle: "Book a Huasteca Potosina tour",
     ogDescription: "30 % deposit from 2 days (a single day is paid in full). Free cancellation up to 48 h before.",
     eyebrow: "Booking engine",
@@ -1064,13 +1126,13 @@ const en: BookingMessages = {
     introY: "hold your spot with 30 % on multi-day trips",
     introMedio: " and settle the rest on tour day. If anything changes, ",
     introCancelas: "cancel free up to 48 h before",
-    resenasGoogle: "161 Google reviews",
+    resenasGoogle: `${GOOGLE_RESENAS} Google reviews`,
     verlas: "Read them →",
     confianza: [
       { t: "Hold with 30 %", s: "On multi-day trips. A single day is paid in full." },
       { t: "Free cancellation", s: "Up to 48 h before, no questions" },
       { t: "Small groups", s: "NOM-09 certified guides" },
-      { t: "We pick you up", s: "At your lodging in Xilitla or Ciudad Valles" },
+      { t: "We pick you up", s: "At your lodging, on most tours" },
     ],
     pasos: [
       { n: "1", t: "Pick your tours", s: "You can put several days in one cart and pay for them all at once." },
@@ -1206,31 +1268,31 @@ const en: BookingMessages = {
     ahorroMultiple: (pesos: string) => `You save ${pesos} by booking several tours`,
     yaTienesTodos: "You already have every tour in your cart.",
 
-    pasamosPorTi: " —hotel, hostel, cabin or Airbnb— in ",
-    pasamosPorTiFuerte1: "We pick you up at your lodging",
-    pasamosPorTiFuerte2: "Xilitla or Ciudad Valles",
-    pasamosPorTiCola: ", and bring you back at the end. You don't need to stay with us.",
+    recogidaCadaRecorrido: "How you get to each tour:",
+    noHaceFaltaHospedarte: "You don't need to stay with us.",
+    horaExacta: "We confirm the exact time on WhatsApp when you book.",
     porPersona: "per person",
     porVehiculo: "per vehicle",
     porGrupo: "for the group",
+    desde: "from",
     personas: (n) => `${n} ${n === 1 ? "person" : "people"}`,
     noches: (n) => `${n} night${n > 1 ? "s" : ""}`,
     porNoche: (precio) => `${precio}/night`,
     nochesGratisLinea: (n, ahorro) => `${n} free night${n > 1 ? "s" : ""} — you save ${ahorro}`,
     antesDePagarCola: " before you pay.",
-    salimosEntre: ". We confirm your exact pickup time on WhatsApp when you book.",
-    salimosEntreFuerte: "We leave between 8:00 and 9:00 AM",
-    reglasPropias: (tour) => `${tour} runs by its own rules: different schedule, pickup point and change policy from the ones above. You can see them in full on its page.`,
     cancelacionGratuita: "Free cancellation up to 48 h before, with a full refund.",
+    cancelacionResto: "The rest of your tours: free cancellation up to 48 h before, with a full refund.",
+    confianzaCancelasSalvo: (tours) => `Free cancellation up to 48 h before, except ${tours}`,
+    cancelarExcepcion: (tour, texto) => `The exception is ${tour}. ${texto}`,
 
     hospedajeTitulo: "Would you like us to host you too?",
     hospedajeSub:
-      "At our Hotel Paraíso Encantado, in Xilitla. It's optional: we pick you up even if you stay somewhere else.",
+      "At our Hotel Paraíso Encantado, in Xilitla. It's optional: you don't need to stay with us to book your tours.",
     hospedajeResumen: (n, precio) =>
       `${n} rooms from ${precio} per night · pool, restaurant, 7 min from downtown Xilitla`,
     hospedajeVerHabitaciones: "See rooms and prices",
     hospedajeYaTengo: "I already have a place",
-    hospedajeSaltar: "Already booked elsewhere? Skip this: we pick you up there just the same.",
+    hospedajeSaltar: "Already booked elsewhere? Skip this: you can see above how you get to each tour.",
     elegida: "Selected",
     vistaMontana: "Mountain view",
     hastaPersonasDesde: (max, precio) => `up to ${max} people · from ${precio}/night`,
@@ -1269,7 +1331,7 @@ const en: BookingMessages = {
     nombreCompleto: "Full name *",
     correoElectronico: "Email address *",
     whatsappOpcional: "WhatsApp (optional)",
-    dondeTeHospedas: "Where are you staying? (Xilitla or Cd. Valles)",
+    dondeTeHospedas: "Where are you staying? (hotel and town)",
     faltanDatos: (n, primero) => `${n} things missing: ${primero.toLowerCase()}…`,
     llevameAhi: "Take me there →",
     unMomento: "One moment…",
@@ -1325,7 +1387,7 @@ const en: BookingMessages = {
     },
     waDudaAntesDePagar: "Hi, I'm about to pay for my cart and I have a question.",
 
-    resenasGoogle: "161 Google reviews",
+    resenasGoogle: `${GOOGLE_RESENAS} Google reviews`,
     verlas: "Read them →",
     credenciales: "10,000+ travellers guided · NOM-09 SECTUR certified guides · Travel insurance included",
     confianzaCancelas: "Free cancellation up to 48 h before",
@@ -1346,15 +1408,17 @@ const en: BookingMessages = {
       },
       {
         q: "Can I cancel?",
+        clave: "cancelar",
         a: "Yes. Free cancellation up to 48 hours before, with a full refund and no questions asked.",
       },
       {
         q: "Where do we leave from and at what time?",
-        a: "There is no single meeting point: we pick you up at your lodging —hotel, hostel, cabin or Airbnb— in Xilitla or Ciudad Valles, and bring you back at the end. We leave between 8:00 and 9:00 AM, and we confirm your exact pickup time on WhatsApp when you book.",
+        clave: "salidas",
+        a: "It depends on the tour: most pick you up at your lodging —hotel, hostel, cabin or Airbnb— in Xilitla or Ciudad Valles, and a few have their own schedule and meeting point. We confirm the exact time on WhatsApp when you book.",
       },
       {
         q: "Do I have to stay at your hotel?",
-        a: "No. We pick you up wherever you're staying, whether it's our hotel or any other.",
+        a: "No. Staying with us is optional; where we pick you up depends on each tour — see «Where do we leave from and at what time?».",
       },
       {
         q: "What happens if it rains?",
@@ -1390,12 +1454,10 @@ const en: BookingMessages = {
     faltaLaFecha: "Date missing",
     elegiste: (opcion) => `You chose: ${opcion}`,
     loQueVaIncluido: "What's included",
-    salidaEntre: "Departure between ",
-    salidaEntreFuerte: "8:00 and 9:00 AM",
-    confirmamosHora: ". We confirm your exact time on WhatsApp.",
-    pasamosPorTi: "We pick you up at your lodging in ",
-    pasamosPorTiFuerte: "Xilitla or Ciudad Valles",
+    trasladoPaquete: "We take you from your hotel in Xilitla to the start of each tour and back.",
+    horaExacta: "We confirm your exact time on WhatsApp.",
     cancelasGratis: "Cancel free up to 48 h before, with a full refund.",
+    cancelasGratisResto: "Everything else: cancel free up to 48 h before, with a full refund.",
     fotosYVideo: "Photos and video of the tour, taken by your guide, at no extra charge.",
     totalDelViaje: "Trip total",
     sumaDeRecorridos: "Tours subtotal",
@@ -1429,7 +1491,8 @@ const en: BookingMessages = {
     placeholder: "Tap to pick a date",
     titulo: "Pick your date",
     fechaSeleccionada: "Date selected:",
-    salidaEntre: " · Departure between 8:00 and 9:00 AM",
+    salida: (hora) => `Departure: ${hora}`,
+    horario: (texto) => `Schedule: ${texto}`,
     hoy: "Today",
     manana: "Tomorrow",
   },

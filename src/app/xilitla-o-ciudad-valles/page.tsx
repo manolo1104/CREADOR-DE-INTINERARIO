@@ -1,17 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, partesRecogida, recogidaDeTour } from "@/lib/tours";
+import { rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
 
 const URL = `${SITE}/xilitla-o-ciudad-valles`;
 
+/**
+ * Quién recoge dónde, leído del catálogo.
+ *
+ * 🔴 La página decía "pasamos por ti a tu hospedaje en las dos ciudades, sin
+ * costo extra" de todos los recorridos. Es cierto para los de tipo
+ * `hospedaje`; los que recogen solo en Xilitla (Gruta, Amanecer, Olla, Edén,
+ * Travesía) cobran aparte el traslado desde Valles, el RZR sale de nuestra base
+ * y el buceo es en la laguna. En una comparativa Xilitla/Valles es justo lo que
+ * decide dónde dormir.
+ */
+const EN_LAS_DOS = recogenEnValles(TOURS_DB);
+const SOLO_XILITLA = TOURS_DB.filter((t) => partesRecogida(t, false).valles);
+const OTROS = TOURS_DB.filter((t) => !EN_LAS_DOS.includes(t) && !SOLO_XILITLA.includes(t));
+const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
+
 export const metadata: Metadata = {
-  title: "¿Xilitla o Ciudad Valles? Dónde Hospedarte en la Huasteca 2026",
+  // ≤60: con el "2026" salía de 62 y Google lo cortaba.
+  title: "¿Xilitla o Ciudad Valles? Dónde Hospedarte en la Huasteca",
   description:
-    "Tiempos reales desde cada base. Ciudad Valles conviene para cubrir toda la región; Xilitla, si vienes por Las Pozas. Pasamos por ti en las dos.",
+    `Tiempos reales desde cada base. Ciudad Valles conviene para cubrir toda la región; Xilitla, si vienes por Las Pozas. ${EN_LAS_DOS.length} tours recogen en las dos.`,
   keywords: [
     "xilitla o ciudad valles",
     "donde hospedarse huasteca potosina",
@@ -62,7 +79,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿La carretera entre Xilitla y Ciudad Valles es difícil?",
-    a: "Son unos 100 km de carretera de sierra por la 120, con curvas continuas. Se recomienda manejar de día. En nuestros tours no tienes que manejarla: el traslado va incluido.",
+    a: "Son unos 100 km de carretera de sierra por la 120, con curvas continuas. Se recomienda manejar de día. En los tours que pasan por ti en las dos ciudades no tienes que manejarla: el traslado va incluido.",
   },
 ];
 
@@ -72,7 +89,7 @@ export default function XilitlaOCiudadVallesPage() {
     destino: DESTINOS_DB.find((d) => d.slug === c.slug),
   })).filter((c) => c.destino);
 
-  const desde = Math.min(...TOURS_DB.map((t) => t.precio));
+  const desde = rangoPorPersona().min;
   const paqueteBase = PAQUETES_DB[0];
 
   const schema = {
@@ -177,11 +194,28 @@ export default function XilitlaOCiudadVallesPage() {
         <div className="max-w-4xl mx-auto border border-white/10 bg-negro/40 p-7">
           <h2 className="font-cormorant font-light text-crema text-2xl mb-4">Con nosotros no tienes que elegir</h2>
           <p className="text-crema/70 font-dm text-sm leading-relaxed mb-5">
-            Somos de Xilitla y aquí tenemos nuestro hotel y nuestro restaurante, pero{" "}
+            Somos de Xilitla y aquí tenemos nuestro hotel y nuestro restaurante, pero en {EN_LAS_DOS.length} de
+            nuestros {TOURS_DB.length} recorridos{" "}
             <strong className="text-crema">pasamos por ti a tu hospedaje en las dos ciudades</strong>, sin costo
             extra. Si te quedas en Ciudad Valles, te recogemos ahí. Si te quedas con nosotros en Xilitla, sales
             al tour desde la puerta.
           </p>
+          {SOLO_XILITLA.length > 0 && (
+            <p className="text-crema/60 font-dm text-sm leading-relaxed mb-5">
+              {lista(SOLO_XILITLA.map((t) => t.nombreCorto))} recogen solo en hospedajes de Xilitla: si
+              duermes en Ciudad Valles se pueden hacer, pero el traslado desde Valles tiene costo adicional que te
+              cotizamos por WhatsApp.
+              {OTROS.map((t) => {
+                const tipo = recogidaDeTour(t).tipo;
+                const p = partesRecogida(t, false);
+                // Con su artículo ("El Recorrido en RZR…"): sin él se lee cojo.
+                const art = t.articulo ? `${t.articulo.charAt(0).toUpperCase()}${t.articulo.slice(1)} ` : "";
+                return tipo === "base-xilitla"
+                  ? ` ${art}${t.nombreCorto} sale de ${p.lugar}; el transporte hasta Xilitla no va incluido.`
+                  : ` ${art}${t.nombreCorto} es en ${p.lugar}: llegas por tu cuenta.`;
+              })}
+            </p>
+          )}
           <div className="flex flex-wrap gap-3">
             <Link
               href="/tours"

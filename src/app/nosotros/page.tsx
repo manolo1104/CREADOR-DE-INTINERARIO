@@ -15,8 +15,7 @@ import { NosotrosTimeline } from "@/components/NosotrosTimeline";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { getNosotros, type NosotrosContent } from "@/lib/i18n/nosotros.en";
-
-const GOOGLE_REVIEWS_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
+import { GOOGLE_PERFIL_URL as GOOGLE_REVIEWS_URL } from "@/lib/resenas";
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -441,21 +440,21 @@ export default function NosotrosPage() {
             )}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIOS_GUIAS.map((t) => (
-              <div key={t.nombre} className="bg-white border border-negro/8 p-6">
+            {TESTIMONIOS_GUIAS.map((tg) => (
+              <div key={tg.nombre} className="bg-white border border-negro/8 p-6">
                 <div className="flex gap-0.5 mb-3">
                   {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
                 </div>
-                <p className="text-negro/65 font-dm text-sm leading-relaxed italic mb-4">&ldquo;{t.texto}&rdquo;</p>
+                <p className="text-negro/65 font-dm text-sm leading-relaxed italic mb-4">&ldquo;{tg.texto}&rdquo;</p>
                 <div className="flex items-center gap-3 border-t border-negro/8 pt-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.foto} alt={t.nombre} width={36} height={36} loading="lazy" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                  <img src={tg.foto} alt={tg.nombre} width={36} height={36} loading="lazy" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
                   <div>
-                    <p className="font-dm text-sm text-negro/80 font-medium leading-none">{t.nombre}</p>
-                    <p className="text-[10px] text-negro/40 font-dm mt-0.5">{t.ciudad}</p>
+                    <p className="font-dm text-sm text-negro/80 font-medium leading-none">{tg.nombre}</p>
+                    <p className="text-[10px] text-negro/40 font-dm mt-0.5">{tg.ciudad}</p>
                   </div>
                   <div className="ml-auto text-[9px] tracking-[1px] uppercase font-dm text-verde-selva/60 text-right leading-tight">
-                    Menciona a<br /><span className="text-verde-selva">{t.guia}</span>
+                    {t.mencionaA}<br /><span className="text-verde-selva">{tg.guia}</span>
                   </div>
                 </div>
               </div>
@@ -493,15 +492,17 @@ export default function NosotrosPage() {
       {/* BADGES CLICKABLES */}
       <section className="bg-arena/40 border-y border-negro/8 py-12 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm text-center mb-2">Reconocimientos verificables</p>
+          {/* F7 (28 sep 2026): este bloque salía en español en /en/nosotros; ahora
+              todo el texto pasa por el diccionario. Las insignias se quedan. */}
+          <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm text-center mb-2">{t.reconocimientosTitulo}</p>
           <p className="text-[9px] tracking-[1px] uppercase text-negro/25 font-dm text-center mb-8">{t.hazClicBadges}</p>
           <div className="flex flex-wrap items-center justify-center gap-8">
-            <a href="https://www.tripadvisor.com.mx/Search?q=Tours+Huasteca+Potosina+Xilitla" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Ver en TripAdvisor">
+            <a href="https://www.tripadvisor.com.mx/Search?q=Tours+Huasteca+Potosina+Xilitla" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label={t.verEnTripadvisorAria}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/tripadvisor.svg" alt="TripAdvisor Travellers Choice" loading="lazy" className="h-12 w-auto" />
               <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">Travellers Choice ↗</span>
             </a>
-            <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Ver 161 reseñas en Google Maps">
+            <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label={t.verResenasGoogleAria}>
               <div className="flex items-center gap-2 bg-white border border-negro/10 rounded-lg px-4 py-2 shadow-sm group-hover:border-verde-selva/30 transition-colors">
                 <svg viewBox="0 0 24 24" className="w-6 h-6" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                 <div>
@@ -511,17 +512,17 @@ export default function NosotrosPage() {
               </div>
               <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">{t.googleLink}</span>
             </a>
-            <a href="https://www.gob.mx/sectur" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Secretaría de Turismo de México">
+            <a href="https://www.gob.mx/sectur" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label={t.secturAria}>
               <div className="border-2 border-negro/20 group-hover:border-verde-selva/40 rounded-lg px-5 py-3 text-center transition-colors">
                 <p className="text-[11px] font-dm text-negro/70 font-semibold tracking-wider uppercase">SECTUR</p>
                 <p className="text-[9px] font-dm text-negro/40 mt-0.5">{t.nom09Titulo}</p>
               </div>
               <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">{t.guiasOficiales}</span>
             </a>
-            <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label="Negocio verificado en Google">
+            <a href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 opacity-75 hover:opacity-100 transition-opacity group" aria-label={t.negocioVerificadoAria}>
               <div className="bg-[#25D366]/10 border border-[#25D366]/30 group-hover:border-[#25D366]/60 rounded-lg px-4 py-2.5 flex items-center gap-2 transition-colors">
                 <MapPin className="w-4 h-4 text-[#25D366]" />
-                <span className="text-[11px] font-dm text-negro/70 font-medium">Negocio Verificado</span>
+                <span className="text-[11px] font-dm text-negro/70 font-medium">{t.negocioVerificado}</span>
               </div>
               <span className="text-[9px] tracking-[1px] uppercase font-dm text-negro/65 group-hover:text-verde-selva transition-colors">Google Maps ↗</span>
             </a>

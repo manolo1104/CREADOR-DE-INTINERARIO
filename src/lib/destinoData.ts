@@ -271,38 +271,10 @@ export const REVIEWS_POR_DESTINO: Record<string, DestinoReview[]> = {
   ],
 };
 
-// ── Rating promedio por destino (para tarjetas del índice) ───────────────────
-
-/**
- * ⚠️ RETIRADO DEL SITIO el 28 sep 2026 — ya no se publica en ninguna parte.
- *
- * Repartía 1,188 reseñas entre 20 destinos, con notas de 4.5 a 4.9, todas
- * inventadas, y se emitían como `aggregateRating` en los datos estructurados.
- * El negocio tiene 161 reseñas reales en Google (ver `src/lib/resenas.ts`) y un
- * destino —un lugar público, no algo que vendamos— no tiene reseñas propias.
- *
- * Se conservan los datos por si un día se mide de verdad. NO volver a pintarlos
- * sin una fuente real detrás.
- */
-export const RATING_DESTINO: Record<string, { rating: string; count: number }> = {
-  "cascada-de-tamul":             { rating: "4.7", count: 127 },
-  "sotano-de-las-golondrinas":    { rating: "4.7", count: 98  },
-  "sotano-de-las-huahuas":        { rating: "4.7", count: 86  },
-  "las-pozas-jardin-surrealista": { rating: "4.8", count: 84  },
-  "cascadas-de-micos":            { rating: "4.7", count: 112 },
-  "puente-de-dios-tamasopo":      { rating: "4.8", count: 73  },
-  "cascadas-de-tamasopo":         { rating: "4.7", count: 65  },
-  "cascadas-minas-viejas":        { rating: "4.8", count: 96  },
-  "cascada-el-meco":              { rating: "4.7", count: 61  },
-  "cascada-el-salto":             { rating: "4.6", count: 42  },
-  "laguna-media-luna":            { rating: "4.8", count: 58  },
-  "nacimiento-huichihuayan":      { rating: "4.7", count: 39  },
-  "xilitla-pueblo-magico":        { rating: "4.8", count: 51  },
-  "zona-arqueologica-tamtoc":     { rating: "4.6", count: 34  },
-  "balneario-taninul":            { rating: "4.5", count: 47  },
-  "rio-tampaon-rafting":          { rating: "4.7", count: 29  },
-  "cuevas-de-mantetzulel":        { rating: "4.6", count: 22  },
-  "voladores-tamaleton":          { rating: "4.8", count: 18  },
-  "cascada-el-aguacate":          { rating: "4.7", count: 31  },
-  "nacimiento-tambaque":          { rating: "4.6", count: 15  },
-};
+// 🔴 28 sep 2026 — aquí vivía `RATING_DESTINO`: 1,188 reseñas repartidas entre
+// 20 destinos, con notas de 4.5 a 4.9, todas inventadas, que se emitían como
+// `aggregateRating`. Ya no se pintaba en ninguna parte, pero seguía exportado
+// (y importado sin usar en `jsonld.ts`), listo para que alguien lo volviera a
+// encender. Se borró. La única calificación es la del negocio en Google:
+// `src/lib/resenas.ts`. Un destino es un lugar público, no algo que vendamos, y
+// no tiene reseñas propias que declarar.

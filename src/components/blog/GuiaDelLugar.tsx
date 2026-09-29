@@ -3,7 +3,19 @@ import { MapPin, ArrowRight } from "lucide-react";
 import { destinoDeBlog } from "@/lib/blogDestinoMap";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, esPorPersona, type Tour } from "@/lib/tours";
+import { ANTICIPO_PCT } from "@/lib/carrito";
+
+/**
+ * "$1,550 MXN" · "desde $2,990 MXN": con MXN siempre, y con "desde" cuando la
+ * cifra es solo el primer escalón —por vehículo (cada ruta del RZR tiene su
+ * precio) o por grupo (el Edén sube con cada persona)—. Mismo criterio que
+ * `llevaDesde` en /destinos/[slug].
+ */
+function precioTour(t: Tour): string {
+  const desde = !esPorPersona(t) || !!t.rutas?.length ? "desde " : "";
+  return `${desde}$${t.precio.toLocaleString("es-MX")} MXN`;
+}
 
 /**
  * Puente del artículo hacia la ficha del lugar y hacia los tours que SÍ lo
@@ -74,7 +86,7 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
                     {t.nombre}
                   </span>
                   <span className="font-dm text-sm text-lima whitespace-nowrap">
-                    ${t.precio.toLocaleString("es-MX")}
+                    {precioTour(t)}
                     <span className="text-crema/35 text-xs">
                       {t.precioUnidad === "vehiculo" ? " /vehículo" : t.precioUnidad === "grupo" ? " /grupo" : " /persona"}
                     </span>
@@ -83,8 +95,15 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
               </li>
             ))}
           </ul>
+          {/* 🔴 Decía "Apartas con el 30 % y cancelas gratis hasta 48 h
+              antes" para todos, y ninguna de las dos cosas es general: un
+              recorrido suelto de un día se cobra completo (`pctACobrar` en
+              carrito.ts) y el Edén no tiene reembolso (`cancelacion`). */}
           <p className="mt-4 text-crema/45 font-dm text-xs">
-            Apartas con el 30 % y cancelas gratis hasta 48 h antes.
+            Un recorrido suelto de un día se paga completo al reservar; desde 2 días o con hospedaje apartas con el {ANTICIPO_PCT} %.
+            {tours.some((t) => t.cancelacion)
+              ? " Cada recorrido tiene su política de cancelación en su ficha."
+              : " Cancelas gratis hasta 48 h antes."}
           </p>
         </>
       )}

@@ -49,9 +49,11 @@ const mono = JetBrains_Mono({
 const FALLBACK = {
   es: {
     title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
-    description: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA. San Luis Potosí, México.",
-    ogDescription: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
-    twitterDescription: "Cascadas turquesas, jardines surrealistas, cañones imposibles. Planea tu viaje con IA.",
+    // Sin "Planea tu viaje con IA": /planear está en noindex mientras el
+    // generador devuelva 503, y el respaldo lo prometía en cada página que lo
+    // heredaba. Ahora dice lo mismo que el inglés.
+    description: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas y cañones imposibles. Tours guiados desde Xilitla, San Luis Potosí, México.",
+    ogDescription: "Cascadas turquesas, jardines surrealistas y cañones imposibles. Tours guiados en San Luis Potosí, México.",
     imageAlt: "Cascadas turquesas de la Huasteca Potosina, México",
     keywords: ["Huasteca Potosina", "turismo San Luis Potosí", "cascadas México", "Xilitla", "Ciudad Valles", "Las Pozas", "Cascada de Tamul", "itinerario"],
   },
@@ -59,7 +61,6 @@ const FALLBACK = {
     title: "Huasteca Potosina Tours — Waterfalls, Caves & Adventure | Mexico",
     description: "Discover the Huasteca Potosina: turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours from Xilitla, San Luis Potosí, Mexico.",
     ogDescription: "Turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours in San Luis Potosí, Mexico.",
-    twitterDescription: "Turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours in Mexico.",
     imageAlt: "Turquoise waterfalls of the Huasteca Potosina, Mexico",
     keywords: ["Huasteca Potosina", "Mexico waterfalls", "Xilitla", "Las Pozas Edward James", "Tamul waterfall", "San Luis Potosi tours", "Mexico adventure travel"],
   },
@@ -82,12 +83,17 @@ export function generateMetadata(): Metadata {
       type: "website",
       images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: f.imageAlt }],
     },
-    twitter: {
-      card: "summary_large_image",
-      title: f.title,
-      description: f.twitterDescription,
-      images: ["/og-image.jpg"],
-    },
+    // Solo el tipo de tarjeta. Con título, descripción e imagen fijos aquí,
+    // toda página que no declarara su propio `twitter` (los 82 destinos,
+    // /paquetes, /reservar, /desde/*…) salía en X con los genéricos del sitio
+    // en vez de los suyos. Sin ellos, Next rellena cada página con SU og:title,
+    // og:description y og:image (resolve-metadata.js, postProcessMetadata).
+    // 🔴 No devolver `images` aquí: Next ve un twitter con imágenes heredado y
+    // deja de rellenar desde el og en TODO el sitio. La otra cara: una página
+    // que declara su propio `openGraph` SIN `images` reemplaza el de aquí
+    // entero y sale sin og:image ni twitter:image; se arregla poniendo
+    // `images` en el openGraph de esa página (/contacto, /terminos…).
+    twitter: { card: "summary_large_image" },
   };
 }
 

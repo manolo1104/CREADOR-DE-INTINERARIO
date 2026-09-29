@@ -238,11 +238,18 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
   // ríos y pozas: aqua shoes, traje de baño, bloqueador biodegradable— no
   // aplica. Los tres traen la suya.
 
+  // 🔴 `reemplazaBase: true` en los tres: la base dice "Comidas y cenas fuera
+  // del desayuno", o sea que da a entender un desayuno que ninguno de los tres
+  // lleva. En la Gruta, además, junto a un recorrido de noche.
   "tour-gruta-xilo": {
-    reemplazaBase: false,
+    reemplazaBase: true,
     noIncluye: [
+      "Alimentos y bebidas: es un recorrido de noche y no lleva cena",
+      "Traslado desde Ciudad Valles: tiene costo adicional (te lo cotizamos por WhatsApp)",
       "Ropa de cambio y calzado que se pueda mojar",
-      "Cómo llegar a Xilitla (el traslado dentro de Xilitla sí va incluido)",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
     ],
     queLlevar: [
       "Calzado cerrado con agarre que se pueda mojar: dentro de la gruta se camina sobre roca húmeda",
@@ -255,18 +262,22 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     requisitos: [
       "Es un recorrido NOCTURNO: la caminata de acceso son 15 a 20 minutos por la selva, ya oscureciendo",
       "Dentro se recorren unos 900 metros; hay tramos donde se camina de pie y tramos donde hay que agacharse",
-      "Casco y lámpara frontal van incluidos y son de uso obligatorio",
+      "Casco y lámpara frontal van incluidos y son de uso obligatorio: te los entregamos al inicio, cuando pasamos por ti",
       "Si sufres de claustrofobia, este no es tu recorrido",
-      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles vamos por ti con un costo extra de traslado, o llegas por tu cuenta",
+      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp, o llegas por tu cuenta",
     ],
     edadNota: "Cuéntanos las edades al reservar. Es una cueva de noche, con piso irregular y agua: para los más chicos conviene que lo valoremos juntos antes de apartar.",
   },
 
   "tour-amanecer-nubes": {
-    reemplazaBase: false,
+    reemplazaBase: true,
     noIncluye: [
       "Desayuno: se sale de madrugada, conviene que lleves algo para la cima",
       "Chamarra y calzado de montaña",
+      "Traslado desde Ciudad Valles: tiene costo adicional (te lo cotizamos por WhatsApp)",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
     ],
     queLlevar: [
       "Calzado de montaña con buen agarre: se sube de noche y por sendero",
@@ -281,16 +292,20 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Son varias horas de caminata en subida constante, buena parte de ellas a oscuras",
       "No hace falta experiencia de montaña, pero sí condición para caminar en pendiente",
       "El mar de nubes depende del clima: es frecuente, pero nadie lo puede garantizar",
-      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles vamos por ti con un costo extra de traslado",
+      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp",
     ],
     edadNota: "Sin edad mínima marcada, pero es una caminata larga en pendiente y de madrugada. Cuéntanos las edades al reservar y te decimos si conviene.",
   },
 
   "tour-olla-de-la-luz": {
-    reemplazaBase: false,
+    reemplazaBase: true,
     noIncluye: [
       "Alimentos: conviene llevar agua y algo de comer para la caminata",
       "Calzado de senderismo y chamarra o impermeable",
+      "Traslado desde Ciudad Valles: tiene costo adicional (te lo cotizamos por WhatsApp)",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
     ],
     queLlevar: [
       "Calzado de senderismo: son unas 2 horas de camino entre bosque, llanos y miradores",
@@ -304,7 +319,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Solo se entra con guía de la comunidad de La Trinidad: no se puede llegar por cuenta propia",
       "El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar",
       "Es un abismo de 193 metros: no te acerques al borde sin tu guía",
-      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles vamos por ti con un costo extra de traslado",
+      "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp",
     ],
     edadNota: "Sin edad mínima marcada, pero son unas 2 horas de caminata en altura y el sótano tiene bordes expuestos. Cuéntanos las edades al reservar.",
   },

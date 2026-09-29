@@ -3,7 +3,8 @@
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye } from "lucide-react";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, partesRecogida, type Tour } from "@/lib/tours";
+import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
   type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
   sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn, EMPTY_PACKAGE, HUESPEDES_POR_DEFECTO,
@@ -526,6 +527,39 @@ export default function CotizacionesClient(
       ? Number(meta.numPersonas)
       : (perTourMax > 0 ? perTourMax : q.adults + (q.children ?? 0));
     const hospNombre   = pkgs.length ? pkgs[0].hotel : "No incluye";
+    // 🔴 La recogida sale de los recorridos cotizados. Decía "Pasamos por ti a
+    // tu hospedaje en Xilitla o Ciudad Valles" en todas las cotizaciones, y la
+    // Gruta, el Edén y otros solo recogen en Xilitla (desde Valles, con costo
+    // aparte); el RZR y el buceo no recogen. Con renglones libres o solo
+    // hospedaje no hay recorrido del que leerla: frase neutra, sin hora.
+    const toursCotizados = items
+      .map(l => TOURS_DB.find(t => t.slug === l.tourSlug))
+      .filter((t): t is Tour => !!t);
+    const recogidaTexto = toursCotizados.length
+      ? resumenSalidas(toursCotizados, "es").map(esc).join("<br/>")
+      : "La hora y el punto de recogida te los confirmamos por WhatsApp.";
+    // 🔴 "Sí incluye: Transporte desde y hacia tu hotel" iba fijo, y dos
+    // recuadros más arriba la Recogida dice, para el RZR, que el transporte no
+    // va incluido y, para el buceo, que llegas por tu cuenta. Solo se afirma
+    // si TODOS los recorridos cotizados llevan traslado; si no, remite a la
+    // Recogida. Los que solo recogen en Xilitla cobran aparte desde Valles.
+    const trasladoTodos = toursCotizados.every(t => partesRecogida(t, false).incluyeTraslado);
+    const conCostoValles = toursCotizados.filter(t => partesRecogida(t, false).valles).length;
+    const notaValles    = conCostoValles === 0 ? ""
+      : conCostoValles === toursCotizados.length ? " (desde Ciudad Valles, con costo adicional)"
+      : " (desde Ciudad Valles, en algunos con costo adicional)";
+    const trasladoLi    = trasladoTodos
+      ? `Transporte desde y hacia tu hotel${notaValles}`
+      : "Traslado según se indica en «Recogida»";
+    // 🔴 El Edén no se reembolsa (`cancelacion` en tours.ts): el pie prometía
+    // "cancelación gratuita hasta 48 h" también en su cotización.
+    const cancelPropias = toursCotizados
+      .filter((t, n) => !!t.cancelacion && toursCotizados.findIndex(x => x.slug === t.slug) === n);
+    const todasPropias  = cancelPropias.length > 0 && toursCotizados.every(t => t.cancelacion);
+    const cancelEstandar = "Cancelación gratuita hasta 48 h antes del primer tour; posteriores aplican cargo del 50%.";
+    const cancelTexto   = todasPropias
+      ? cancelPropias.map(t => esc(t.cancelacion!.es)).join(" ")
+      : [cancelEstandar, ...cancelPropias.map(t => `${esc(t.nombreCorto)}: ${esc(t.cancelacion!.es)}`)].join(" ");
 
     const tourRows = items.map(l => {
       const esVeh = !!l.vehiculo; // línea por vehículo (RZR): sin conteo de personas
@@ -726,7 +760,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         <div><div class="k">Fecha fin</div><div class="v">${fDate(fechaFin)}</div></div>
         <div><div class="k">Duración</div><div class="v">${duracion} día${duracion !== 1 ? "s" : ""}</div></div>
         <div><div class="k">Hospedaje</div><div class="v" style="font-size:8pt">${hospNombre}</div></div>
-        <div style="grid-column:1/-1"><div class="k">Recogida</div><div class="v">Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles</div></div>
+        <div style="grid-column:1/-1"><div class="k">Recogida</div><div class="v"${toursCotizados.length > 1 ? ` style="font-size:7.5pt"` : ""}>${recogidaTexto}</div></div>
       </div>
     </div>
   </div>
@@ -753,7 +787,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   <div class="checks">
     <div><h4>Sí incluye</h4>
       <ul class="yes">
-        <li>Transporte desde y hacia tu hotel</li><li>Desayuno típico</li>
+        <li>${trasladoLi}</li><li>Desayuno típico</li>
         <li>Entradas a todos los parques</li><li>Guía certificado NOM-09 SECTUR</li>
         <li>Equipo de seguridad</li><li>Seguro de viajero</li><li>Fotografías del recorrido</li>
         ${extrasIncluidosQ.map(ex => `<li>${esc(ex.concepto)}${ex.detalle ? ` — ${esc(ex.detalle)}` : ""}</li>`).join("")}
@@ -769,7 +803,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   </div>
 
   <div class="foot">
-    <div class="terms">Para apartar tu lugar realiza el pago del anticipo a la cuenta indicada o por transferencia. Recibirás confirmación por WhatsApp. Cancelación gratuita hasta 48 h antes del primer tour; posteriores aplican cargo del 50%. El saldo se paga el día del tour en efectivo, transferencia o tarjeta (3% comisión).</div>
+    <div class="terms">Para apartar tu lugar realiza el pago del anticipo a la cuenta indicada o por transferencia. Recibirás confirmación por WhatsApp. ${cancelTexto} El saldo se paga el día del tour en efectivo, transferencia o tarjeta (3% comisión).</div>
     <a class="cta" href="https://wa.me/524891090388"><div class="lbl">Confirmar por WhatsApp</div><div class="num">+52 489 109 0388</div></a>
   </div>
 

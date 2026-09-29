@@ -4,7 +4,8 @@ import Image from "next/image";
 import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO } from "@/lib/paquetes";
+import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible } from "@/lib/paquetes";
+import { GOOGLE_RATING } from "@/lib/resenas";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
 import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI } from "@/lib/i18n/paquetes.en";
@@ -58,10 +59,23 @@ export default function PaquetesPage() {
         image: `${SITE}${p.imagen}`,
         url: localeUrl(`/paquetes/${p.slug}`, locale),
         brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
+        // 🔴 `precioVisible` y con su unidad, igual que en la ficha
+        // (/paquetes/[slug]): `p.precio` es SIEMPRE el total de la pareja, y el
+        // día que un paquete vuelva a anunciarse por persona el marcado diría el
+        // doble de lo que enseña la tarjeta. Un Offer sin unidad se lee «por
+        // persona».
         offers: {
           "@type": "Offer",
-          price: p.precio,
+          price: precioVisible(p),
           priceCurrency: "MXN",
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: precioVisible(p),
+            priceCurrency: "MXN",
+            unitText: p.precioPorPersona
+              ? (locale === "en" ? "per person" : "por persona")
+              : (locale === "en" ? "per couple (2 people)" : "por pareja (2 personas)"),
+          },
           availability: "https://schema.org/InStock",
           url: localeUrl(`/paquetes/${p.slug}`, locale),
         },
@@ -74,24 +88,9 @@ export default function PaquetesPage() {
           acceptedAnswer: { "@type": "Answer", text: f.a },
         })),
       },
-      {
-        // HowTo — refleja la sección visible "Si vienes de CDMX". Alta intención
-        // para "cómo llegar a Xilitla desde CDMX" en buscadores de IA.
-        "@type": "HowTo",
-        name: t.howToNombre,
-        description: t.howToDescripcion,
-        totalTime: "PT8H",
-        estimatedCost: { "@type": "MonetaryAmount", currency: "MXN", value: 650 },
-        step: [
-          ...t.cdmxPasos.map((paso, i) => ({
-            "@type": "HowToStep",
-            position: i + 1,
-            name: paso.t,
-            text: paso.d,
-            url: `${localeUrl("/paquetes", locale)}#si-vienes-de-cdmx`,
-          })),
-        ],
-      },
+      // Aquí iba un HowTo de «cómo llegar desde CDMX». Google retiró ese
+      // resultado enriquecido y el marcado repetía un precio de autobús escrito
+      // a mano; la sección visible «Si vienes de CDMX» sigue igual.
     ],
   };
 
@@ -195,14 +194,11 @@ export default function PaquetesPage() {
             <p className="text-[10px] font-dm text-crema/55">{t.googleReviews}</p>
           </div>
           <div className="flex items-center gap-2.5">
-            <p className="font-cormorant text-dorado text-2xl leading-none">4.9</p>
-            {/* Era "+320" mientras el resto del sitio dice 492: la misma
-                cifra no puede cambiar según la página que abra el cliente. */}
+            {/* 🔴 De `resenas.ts`, nunca a mano: aquí decía 4.9 · 492 mientras
+                el JSON-LD de esta misma página declaraba 4.7 · 161. La franja
+                de «4.8 Booking · 180 op.» se quitó: no tenía fuente. */}
+            <p className="font-cormorant text-dorado text-2xl leading-none">{GOOGLE_RATING}</p>
             <p className="text-[10px] font-dm text-crema/55">{t.resenasN}</p>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <p className="font-cormorant text-dorado text-2xl leading-none">4.8</p>
-            <p className="text-[10px] font-dm text-crema/55">{t.bookingOp}</p>
           </div>
         </div>
       </div>
@@ -238,7 +234,11 @@ export default function PaquetesPage() {
                   &ldquo;{r.texto}&rdquo;
                 </blockquote>
                 <figcaption className="mt-auto pt-6 flex items-center gap-3">
-                  <img src={r.foto} alt="" aria-hidden="true" className="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-dorado/40" loading="lazy" />
+                  {/* Con nombre y ciudad, como en la ficha de cada paquete: con
+                      alt vacío las tres fotos contaban como imágenes sin
+                      descripción en la auditoría. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={r.foto} alt={`${r.nombre}, ${r.ciudad}`} className="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-dorado/40" loading="lazy" />
                   <div>
                     <p className="font-dm text-sm text-crema font-medium leading-none">{r.nombre}</p>
                     <p className="text-[10px] font-dm text-crema/45 mt-1">{r.ciudad} · {r.tour}</p>
@@ -255,7 +255,8 @@ export default function PaquetesPage() {
                 >
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <img src={r.foto} alt="" aria-hidden="true" className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.foto} alt={`${r.nombre}, ${r.ciudad}`} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
                       <div className="min-w-0">
                         <p className="font-dm text-xs text-crema/85 font-medium leading-none truncate">{r.nombre}</p>
                         <p className="text-[9px] font-dm text-crema/35 mt-1 truncate">{r.ciudad} · {r.tour}</p>

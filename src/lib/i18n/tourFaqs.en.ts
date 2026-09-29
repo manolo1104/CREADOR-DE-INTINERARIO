@@ -195,6 +195,74 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
       a: "No, it's included in the tour price.",
     },
   ],
+  // Los tres recorridos nuevos: mismas preguntas y mismo orden que en
+  // `tourFaqs.ts`, y la misma regla — sin horas, precios, cupos ni edad mínima.
+  "tour-gruta-xilo": [
+    {
+      q: "Why is Xilo Cave done at night?",
+      a: "Because that's half the experience. Without the noise or the heat of the day, the 15 to 20 minute walk through the jungle is already done by headlamp, and inside the cave all that exists is the circle of light from your lamp. At the end, at the natural jacuzzis, lamps go off for a few minutes so you can listen to the cave in silence.",
+    },
+    {
+      q: "How hard is the Xilo Cave tour?",
+      a: "Moderate. First you walk 15 to 20 minutes through the jungle to the mouth of the cave; inside you cover about 900 metres over wet rock, with wide stretches where you walk upright and stretches where you have to crouch. You move slowly, in a small group, and before going in the guide explains where to step.",
+    },
+    {
+      q: "Is it OK if I'm claustrophobic?",
+      a: "We wouldn't recommend it. There are wide stretches where you walk upright, but also stretches where you have to crouch, and all of it is by the light of your headlamp. If you suffer from claustrophobia, this isn't the tour for you.",
+    },
+    {
+      q: "Will I get wet?",
+      a: "Plan on it. Some passages have water, you walk on wet rock inside the cave, and the route ends at natural jacuzzis: pools of crystal-clear water formed inside the cave itself. Wear closed shoes with grip that can get wet, and bring a full change of dry clothes for the ride back.",
+    },
+    {
+      q: "When do I get my helmet and headlamp?",
+      a: "At the start, when we pick you up at your lodging — not at the cave entrance — so you do the jungle walk with your lamp already on. A helmet and headlamp are included for each person, and wearing them is mandatory.",
+    },
+  ],
+  "tour-amanecer-nubes": [
+    {
+      q: "Where is Cerro del Pilón?",
+      a: "In the mountains of Xilitla. First you go up a mountain road to La Trinidad, a Nahua community about 14 km from Xilitla, in a cloud forest at nearly 2,000 metres, and from there you hike through pines and oaks to the summit of Cerro del Pilón. On a sea-of-clouds morning, what you see at sunrise is a layer of cloud covering the valleys from one end of the horizon to the other.",
+    },
+    {
+      q: "What if there's no sea of clouds that day?",
+      a: "It can happen: the sea of clouds depends on the weather. It's frequent, but nobody can guarantee it, and we don't promise it either. The climb is still timed to reach the summit before dawn, and the way down is in daylight, which is when you see the cloud forest you climbed through in the dark.",
+    },
+    {
+      q: "How hard is the climb?",
+      a: "Moderate. It's several hours of steady uphill walking, much of it in the dark by headlamp, on a trail through pines and oaks; the last stretch before the summit is rock. You don't need mountaineering experience, but you do need to be fit enough to walk uphill.",
+    },
+    {
+      q: "Is it cold at the top?",
+      a: "Yes, genuinely, even when Xilitla is hot. You're walking through a cloud forest at nearly 2,000 metres before dawn: bring a windproof jacket, hiking shoes with good grip and a headlamp.",
+    },
+    {
+      q: "Do we have breakfast at the summit?",
+      a: "Yes, but breakfast isn't included. Since you leave in the middle of the night, bring water and something to eat: at the summit, after the sunrise, everything stops for photos and a bite.",
+    },
+  ],
+  "tour-olla-de-la-luz": [
+    {
+      q: "What is Olla de la Luz?",
+      a: "A vertical sinkhole 193 metres deep and 233 across, high in the mountains of Xilitla, ringed by cloud forest and crowned by Cerro de la Luz, the highest point in the municipality. It's so wide that another forest grew at the bottom. You'll also see it spelled Hoya de la Luz: same place.",
+    },
+    {
+      q: "Can I visit Olla de la Luz without a guide?",
+      a: "No. The only way in is with a guide from the La Trinidad community; you can't get there on your own. That's why the walk on this tour is led by a guide from the community itself.",
+    },
+    {
+      q: "How hard is the hike?",
+      a: "Moderate: about 2 hours of guided walking to get there, through dense forest, open clearings and lookouts, and the same trail back, all at altitude. The route runs between 1,950 and 2,300 metres above sea level, so wear hiking shoes.",
+    },
+    {
+      q: "How close to the edge can I get?",
+      a: "As close as your guide says. It's a 193-metre drop with exposed edges: don't go near the rim without your guide, who shows you where to stand and where not to.",
+    },
+    {
+      q: "Is it cold in La Trinidad?",
+      a: "Yes, even when you're sweating down in Xilitla. La Trinidad sits in one of the best-preserved cloud forests in the Huasteca, cool and damp all year, with mist tangled in the pines. Bring a jacket or rain shell.",
+    },
+  ],
 };
 
 /**

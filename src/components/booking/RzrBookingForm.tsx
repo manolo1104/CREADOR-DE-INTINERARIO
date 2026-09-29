@@ -6,9 +6,10 @@ import { saveTourBookingState, formatMXN } from "@/lib/tourBooking";
 import { agregarAlCarrito, pctACobrar } from "@/lib/carrito";
 import { itemDesdeTour } from "@/lib/carritoItems";
 import { computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
-import type { Tour } from "@/lib/tours";
+import { salidaCorta, type Tour } from "@/lib/tours";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { ViewersCounter } from "@/components/booking/ViewersCounter";
+import { GOOGLE_RATING } from "@/lib/resenas";
 import { Clock, Shield, Star, Lock } from "lucide-react";
 import { trackDateSelected } from "@/lib/analytics";
 
@@ -106,6 +107,7 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
           <TourCalendar
             value={tourDate}
             onChange={(ymd) => { setTourDate(ymd); if (ymd) trackDateSelected(tour.nombre, ymd); }}
+            salida={salidaCorta(tour)}
           />
         </section>
 
@@ -201,7 +203,9 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
             <div className="mb-3"><ViewersCounter /></div>
             <div className="flex flex-wrap gap-3 text-xs font-dm text-negro/50">
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{ruta?.duracion_hrs ?? tour.duracion_hrs}h</span>
-              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-dorado" />4.7</span>
+              {/* Calificación del NEGOCIO en Google (resenas.ts), no de esta ruta:
+                  por eso lleva «en Google» y no va sola junto al nombre del tour. */}
+              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-dorado" />{GOOGLE_RATING} en Google</span>
             </div>
           </div>
         </div>

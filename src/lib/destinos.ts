@@ -1,3 +1,27 @@
+import { TOURS_DB, conPrecio } from "./tours";
+
+/**
+ * Lo que cobra HOY un recorrido del catálogo, para los destinos cuya "entrada"
+ * es el tour mismo (al río Tampaón no se entra suelto: se baja con operadora).
+ *
+ * 🔴 28 sep 2026 — el rafting tenía tres precios escritos a mano y ninguno era
+ * el del checkout: $1,950 en la ficha, $1,850 en inglés (también en su FAQPage
+ * y en /en/llms.txt) y un rango inventado de "$1,450–$1,890" en las dos
+ * metadescripciones. Ahora sale de `TOURS_DB`, igual que las descripciones de
+ * los tours (`conPrecio`).
+ *
+ * Un slug mal escrito revienta al cargar el módulo, a propósito (mismo criterio
+ * que `blogSeo.ts`): mejor un error en `next build` que "undefined MXN".
+ */
+function precioDeTour(slug: string): number {
+  const t = TOURS_DB.find((x) => x.slug === slug);
+  if (!t) throw new Error(`destinos: el recorrido "${slug}" no existe en TOURS_DB`);
+  return t.precio;
+}
+
+/** El tour completo de rafting en el Tampaón (MXN). Lo usa también `i18n/destinos.en.ts`. */
+export const PRECIO_TOUR_RAFTING = precioDeTour("rafting-rio-tampaon");
+
 export interface Destino {
   id: string;
   slug: string;
@@ -24,6 +48,13 @@ export interface Destino {
    * publica oferta, que es mejor que publicar un precio inventado.
    */
   precio_entrada_mxn?: number;
+  /**
+   * Slug del tour de `TOURS_DB` cuando la "entrada" de la ficha ES ese tour y
+   * no una taquilla (el rafting). La ficha deja entonces de decir "este es el
+   * costo si vienes por tu cuenta; en nuestros tours las entradas ya van
+   * incluidas", que bajo "$1,950 MXN (tour completo…)" se contradecía solo.
+   */
+  entradaEsTour?: string;
   dificultad: string;
   ideal_para: string[];
   horario: string;
@@ -88,7 +119,7 @@ export const DESTINOS_DB: Destino[] = [
     id: "cascada_tamul", slug: "cascada-de-tamul",
     nombre: "Cascada de Tamul", zona: "Aquismón", tipo: "Aventura", icon: "Waves",
     descripcion: "La cascada más alta de SLP (105m), accesible remando por el río Tampaón. Espectacular caída turquesa.",
-    duracion_hrs: 5, precio_entrada: "$220 MXN + $300 panga p/p", precio_entrada_mxn: 220, dificultad: "alta",
+    duracion_hrs: 5, precio_entrada: "$220 MXN + $300 MXN panga p/p", precio_entrada_mxn: 220, dificultad: "alta",
     ideal_para: ["aventura", "fotografia", "amigos"],
     horario: "08:00–17:00", dias_abierto: "Lun-Dom",
     mejor_hora: "08:00", temporada_ideal: "Ene–Abr",
@@ -108,8 +139,10 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascada-de-tamul/cascada-lateral.jpg",
     ],
     seo: {
-      metaTitle: "Cascada de Tamul 2026 | Precio, Horarios y Cómo Llegar en Panga",
-      metaDescription: "La cascada más alta de San Luis Potosí (105 m), a la que se llega remando por el río Tampaón. Entrada $220 MXN + $300 por persona la panga, solo efectivo. Salidas hasta las 2 PM.",
+      metaTitle: "Cascada de Tamul 2026 | Precio, Horarios y Cómo Llegar",
+      // ≤155: con 178 el corte de Google se comía "Salidas hasta las 2 PM", el dato
+      // que deja sin paseo a quien llega tarde.
+      metaDescription: "Cascada más alta de San Luis Potosí (105 m), en panga por el río Tampaón. Entrada $220 MXN + $300 panga por persona, solo efectivo. Salidas hasta las 2 PM.",
       keywords: ["cascada de tamul", "tamul precio", "cómo llegar a tamul", "tamul huasteca potosina", "paseo en panga tamul"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta ir a la Cascada de Tamul?", respuesta: "La entrada cuesta $220 MXN más $300 MXN por persona por la panga (lancha). Solo se acepta EFECTIVO: no hay cajero en el embarcadero." },
@@ -212,8 +245,9 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/puente-de-dios-tamasopo/gallery-15.jpg",
     ],
     seo: {
-      metaTitle: "Puente de Dios Tamasopo 2026 | Guía: Horarios, Precio $150 y Cómo Llegar",
-      metaDescription: "Visita la poza azul cobalto del Puente de Dios en Tamasopo, SLP. El sol entra por el arco natural entre 11–13h. Entrada $150 MXN, 1h desde Ciudad Valles. Guía 2026.",
+      // ≤60: con 72 el "$150" caía justo donde Google corta el título.
+      metaTitle: "Puente de Dios Tamasopo 2026 | Precio $150 MXN y Horarios",
+      metaDescription: "Visita la poza azul cobalto del Puente de Dios en Tamasopo, SLP. El sol entra por el arco natural entre 11–13h. Entrada $150 MXN, 1h desde Ciudad Valles.",
       keywords: ["puente de dios tamasopo", "poza azul tamasopo", "tamasopo san luis potosi", "puente natural huasteca potosina", "como llegar puente de dios desde ciudad valles"],
       faqPrincipales: [
         { pregunta: "¿A qué hora entra la luz solar al Puente de Dios?", respuesta: "El efecto de luz azul cobalto ocurre entre las 11:00 y las 13:00 horas, cuando el sol entra perpendicular al arco natural. Fuera de ese horario la poza sigue siendo hermosa pero sin el efecto de luz." },
@@ -226,7 +260,7 @@ export const DESTINOS_DB: Destino[] = [
     id: "tamtoc", slug: "zona-arqueologica-tamtoc",
     nombre: "Zona Arqueológica Tamtoc", zona: "Tamuín", tipo: "Arqueología", icon: "BookOpen",
     descripcion: "El asentamiento prehispánico más importante de la cultura Huasteca.",
-    duracion_hrs: 3, precio_entrada: "Domingos gratis (mexicanos) · extranjeros ~$95", dificultad: "baja",
+    duracion_hrs: 3, precio_entrada: "Domingos gratis (mexicanos) · extranjeros ~$95 MXN", dificultad: "baja",
     ideal_para: ["historia", "cultura", "familia"],
     horario: "09:00–18:00", dias_abierto: "Solo domingos",
     mejor_hora: "09:00 AM", temporada_ideal: "Dic–Feb",
@@ -242,8 +276,8 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/zona-arqueologica-tamtoc/gallery-2.jpg",
     ],
     seo: {
-      metaTitle: "Zona Arqueológica Tamtoc 2026 | Solo Domingos, Cómo Llegar y Guía",
-      metaDescription: "Tamtoc abre SOLO los domingos desde las lluvias de 2024. La zona arqueológica más importante de la cultura Huasteca, con el Monumento 32 de 30 toneladas, a 45 min de Ciudad Valles.",
+      metaTitle: "Zona Arqueológica Tamtoc 2026 | Solo Domingos y Cómo Llegar",
+      metaDescription: "Tamtoc abre SOLO los domingos desde las lluvias de 2024. El sitio más importante de la cultura Huasteca, con el Monumento 32, a 45 min de Ciudad Valles.",
       keywords: ["zona arqueologica tamtoc", "tamtoc tamuín san luis potosi", "cultura huasteca arqueologia", "que visitar en tamuín", "monumentos huastecos mexico"],
       faqPrincipales: [
         { pregunta: "¿Qué es el Monumento 32 de Tamtoc?", respuesta: "El Monumento 32 es una figura femenina de 30 toneladas tallada en piedra, considerada la representación más importante de la cultura Huasteca. Mide más de 4 metros de altura y ha permanecido en el mismo punto desde hace siglos." },
@@ -843,8 +877,9 @@ export const DESTINOS_DB: Destino[] = [
     icon: "Anchor",
     descripcion: "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
     duracion_hrs: 7,
-    precio_entrada: "$1,950 MXN (tour completo, con traslado y comida)",
-    precio_entrada_mxn: 1950,
+    precio_entrada: conPrecio("{precio} (tour completo, con traslado y comida)", PRECIO_TOUR_RAFTING),
+    precio_entrada_mxn: PRECIO_TOUR_RAFTING,
+    entradaEsTour: "rafting-rio-tampaon",
     dificultad: "media",
     ideal_para: ["aventura", "amigos", "fotografia"],
     horario: "09:00–18:00",
@@ -873,7 +908,9 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Rafting Río Tampaón 2026 | Guía Experta Huasteca Potosina",
-      metaDescription: "Vive el mejor rafting de México en el Río Tampaón. Precios 2026 ($1,450–$1,890 MXN), logística desde Ciudad Valles y consejos de seguridad. ¡Reserva tu aventura turquesa hoy!",
+      // El precio sale del tour (`PRECIO_TOUR_RAFTING`): el "$1,450–$1,890" que
+      // había aquí no era ninguna tarifa nuestra.
+      metaDescription: conPrecio("Vive el mejor rafting de México en el Río Tampaón. Tour completo {precio} con traslado y comida, logística desde Ciudad Valles y consejos de seguridad.", PRECIO_TOUR_RAFTING),
       keywords: ["rafting huasteca potosina 2026", "río tampaón rápidos clase III", "tours ciudad valles rafting", "precio rafting río tampaón", "mejor época rafting san luis potosí"],
       faqPrincipales: [
         { pregunta: "¿Es seguro hacer rafting en el Río Tampaón si no sé nadar?", respuesta: "Sí, siempre que uses el equipo de flotación de alta calidad de las operadoras certificadas. Debes informar al guía antes de subir para ubicarte estratégicamente en la balsa." },
@@ -924,7 +961,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Xilitla Huasteca Potosina 2026 | Guía de Viaje Completa",
-      metaDescription: "Planifica tu visita a Xilitla, el pueblo surrealista de la Huasteca Potosina. Horarios 2026, costos de Las Pozas ($180 MXN), museos y consejos de seguridad. ¡Vive la magia!",
+      metaDescription: "Guía de Xilitla, el pueblo surrealista de la Huasteca Potosina: horarios 2026 y costo de Las Pozas ($180 MXN), museos, tours y consejos de seguridad.",
       keywords: ["xilitla san luis potosí 2026", "jardín escultórico edward james boletos", "museo leonora carrington xilitla precios", "cómo llegar a xilitla desde ciudad valles", "pueblos mágicos huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿Cuánto tiempo se necesita para recorrer Xilitla?", respuesta: "Mínimo 2 días: el primero para Las Pozas completo y la Cascada Los Comales, el segundo para los museos del centro y el Huapango dominical en la plaza." },
@@ -989,7 +1026,7 @@ export const DESTINOS_DB: Destino[] = [
     id: "castillo-de-la-salud", slug: "castillo-de-la-salud",
     nombre: "Castillo de la Salud 'Beto Ramón'", zona: "Axtla de Terrazas", tipo: "Bienestar", icon: "Castle",
     descripcion: "Recinto surrealista de medicina tradicional construido en 1974 por el herbolario náhuatl Don Beto Ramón, con un jardín de cientos de plantas medicinales y espacios para limpias y consultas.",
-    duracion_hrs: 2, precio_entrada: "$20 general / $10 niños y adultos mayores (guiada $30/$20)", precio_entrada_mxn: 20, dificultad: "baja",
+    duracion_hrs: 2, precio_entrada: "$20 MXN general / $10 MXN niños y adultos mayores (guiada $30/$20 MXN)", precio_entrada_mxn: 20, dificultad: "baja",
     ideal_para: ["bienestar", "cultura", "fotografia"],
     horario: "08:00–18:00 (limpias y masajes hasta las 16:00)", dias_abierto: "Lunes a Domingo",
     mejor_hora: "Mañana", temporada_ideal: "Todo el año",
@@ -1073,7 +1110,7 @@ export const DESTINOS_DB: Destino[] = [
     id: "zona-arqueologica-tamohi-el-consuelo", slug: "zona-arqueologica-tamohi-el-consuelo",
     nombre: "Zona Arqueológica Tamohí (El Consuelo)", zona: "Tamuín", tipo: "Arqueología", icon: "BookOpen",
     descripcion: "Centro huasteco prehispánico de ~210 hectáreas a orillas del río Tampaón, con plataformas y basamentos. Aquí se halló en 1917 'El Adolescente Huasteco'.",
-    duracion_hrs: 2, precio_entrada: "Acceso libre (uso de videocámara $45)", precio_entrada_mxn: 0, dificultad: "baja",
+    duracion_hrs: 2, precio_entrada: "Acceso libre (uso de videocámara $45 MXN)", precio_entrada_mxn: 0, dificultad: "baja",
     ideal_para: ["historia", "cultura", "familia"],
     horario: "09:00–18:00 (último acceso 17:00)", dias_abierto: "Lunes a Domingo",
     mejor_hora: "09:00 AM", temporada_ideal: "Nov–Mar",
@@ -1309,8 +1346,16 @@ export const DESTINOS_DB: Destino[] = [
   {
     id: "la-trinidad-xilitla", slug: "la-trinidad-xilitla",
     nombre: "La Trinidad — Bosque de Niebla de Xilitla", zona: "Xilitla", tipo: "Naturaleza & Bosque", icon: "TreePine",
-    descripcion: "Comunidad náhuatl a unos 14 km de Xilitla, enclavada en uno de los bosques de niebla mejor conservados de la Huasteca (pino-encino, ~1,950 m). Tiene cabañas de madera para parejas y grupos, zona para acampar, fogatas y asadores, además de senderos para caminar a miradores, pozas, cuevas y sótanos.",
-    duracion_hrs: 6, precio_entrada: "$100 MXN por persona (entrada); cabañas para parejas y grupos desde $700 hasta $2,500 aparte", precio_entrada_mxn: 100, dificultad: "media",
+    // El Cerro del Pilón no salía en esta ficha aunque el Amanecer de Nubes
+    // sube hasta su cima cruzando este bosque (ver `tour-amanecer-nubes` en
+    // tours.ts): quien busca "cerro del pilón" o "mar de nubes xilitla" no
+    // encontraba el lugar desde el que se camina.
+    // 🔴 "Suele haber" mar de nubes, nunca "se ve": depende del clima y no se
+    // promete (tourRequisitos.ts). Y la subida guiada es NUESTRO recorrido, que
+    // se paga aparte: la FAQ de costos no puede meterla en la lista de lo que
+    // cubre la entrada de la comunidad.
+    descripcion: "Comunidad náhuatl a unos 14 km de Xilitla, enclavada en uno de los bosques de niebla mejor conservados de la Huasteca (pino-encino, ~1,950 m). Tiene cabañas de madera para parejas y grupos, zona para acampar, fogatas y asadores, además de senderos para caminar a miradores, pozas, cuevas y sótanos. Por este bosque sube también el sendero a la cima del Cerro del Pilón, donde al amanecer suele haber mar de nubes.",
+    duracion_hrs: 6, precio_entrada: "$100 MXN por persona (entrada); cabañas para parejas y grupos desde $700 hasta $2,500 MXN aparte", precio_entrada_mxn: 100, dificultad: "media",
     ideal_para: ["naturaleza", "senderismo", "familia", "camping"],
     horario: "Visita y recorridos durante el día (reservar con la comunidad)", dias_abierto: "Todo el año (reservar por anticipado)",
     mejor_hora: "Amanecer (para la niebla)", temporada_ideal: "Todo el año; la niebla es más densa en lluvias (jun–oct)",
@@ -1333,11 +1378,11 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "La Trinidad Xilitla 2026 | Bosque de Niebla en la Sierra",
-      metaDescription: "La Trinidad, el bosque de niebla oculto a 14 km de Xilitla: senderos, miradores, pozas y cabañas en una comunidad náhuatl a 1,950 m. Cómo llegar, costos y qué hacer.",
-      keywords: ["la trinidad xilitla", "bosque de niebla huasteca potosina", "que hacer en xilitla", "ecoturismo xilitla", "cabañas xilitla sierra gorda"],
+      metaDescription: "La Trinidad, bosque de niebla a 14 km de Xilitla y a 1,950 m: senderos, pozas, cabañas y la subida al Cerro del Pilón. Cómo llegar, costos y qué hacer.",
+      keywords: ["la trinidad xilitla", "bosque de niebla huasteca potosina", "cerro del pilón xilitla", "mar de nubes xilitla", "que hacer en xilitla", "ecoturismo xilitla", "cabañas xilitla sierra gorda"],
       faqPrincipales: [
         { pregunta: "¿Cómo llegar a La Trinidad desde Xilitla?", respuesta: "La Trinidad está a unos 14 km al oeste de Xilitla por un camino de sierra que asciende hasta cerca de los 1,950 m de altitud. El trayecto toma entre 45 minutos y 1 hora. El tramo final es una subida muy empinada y de terracería quebrada, por lo que conviene manejar de día y en un auto que no sea muy bajo, para que no pegue." },
-        { pregunta: "¿Qué se puede hacer en La Trinidad y cuánto cuesta?", respuesta: "La entrada cuesta $100 por persona. Puedes caminar por senderos a miradores, pozas, cuevas y sótanos (como la Olla de la Luz), hospedarte en cabañas de madera para parejas o grupos (aprox. $700 a $2,500 según el tamaño), acampar, hacer fogatas y asar tu comida. Arriba hace frío, así que lleva abrigo." },
+        { pregunta: "¿Qué se puede hacer en La Trinidad y cuánto cuesta?", respuesta: "La entrada cuesta $100 por persona. Puedes caminar por senderos a miradores, pozas, cuevas y sótanos (como la Olla de la Luz), hospedarte en cabañas de madera para parejas o grupos (aprox. $700 a $2,500 según el tamaño), acampar, hacer fogatas y asar tu comida. Subir de madrugada con guía a la cima del Cerro del Pilón no entra en esa cuota: es nuestro recorrido Amanecer de Nubes, que se reserva aparte, ya incluye las entradas y llega a la cima al amanecer, cuando suele haber mar de nubes (depende del clima). Arriba hace frío, así que lleva abrigo." },
         { pregunta: "¿Cuándo es mejor visitar el bosque de niebla de La Trinidad?", respuesta: "Se puede visitar todo el año. La niebla característica es más densa en la temporada de lluvias (junio a octubre). Por la altitud el clima es fresco y húmedo, así que conviene llevar abrigo aunque en Xilitla haga calor." },
       ],
     },
@@ -1350,8 +1395,18 @@ export const DESTINOS_DB: Destino[] = [
     // lleva grupos ahí. La página del ayuntamiento de Xilitla publica otras
     // (~800 m de diámetro y +120 m de caída) y es lo que decía este archivo
     // hasta hoy. Si alguna vez hay un levantamiento topográfico, se cambia aquí
-    // y en las otras 8 líneas que las repiten (ES, EN y destinoData.ts).
-    descripcion: "Enorme sótano de 233 m de diámetro con un tiro vertical de 193 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
+    // y en todas las líneas que las repiten (ES, EN, destinoData.ts y el tour
+    // en tours.ts): `grep -rn "233" src/lib` las encuentra.
+    //
+    // "Hoya de la Luz" es la otra forma en que se escribe (prensa y guías de
+    // viaje la usan muy a menudo). Se dice en la descripción visible y en
+    // una FAQ, no solo en `keywords`: Google ignora esa etiqueta y quien busca
+    // "hoya" tiene que leer que es el mismo lugar.
+    //
+    // El title es de CONSULTA ("cómo llegar"), no de venta: el de
+    // /tours/olla-de-la-luz empieza con las mismas palabras y es el que debe
+    // quedarse con quien busca contratar. Dos títulos casi iguales competían.
+    descripcion: "La Olla de la Luz, también conocida como Hoya de la Luz, es un enorme sótano de 233 m de diámetro con un tiro vertical de 193 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
     duracion_hrs: 5, precio_entrada: "Recorrido guiado desde La Trinidad (~$150–$250 MXN por grupo)", dificultad: "media",
     ideal_para: ["naturaleza", "senderismo", "aventura", "fotografia"],
     horario: "Recorridos durante el día (con guía de La Trinidad)", dias_abierto: "Todo el año (reservar por anticipado)",
@@ -1364,11 +1419,12 @@ export const DESTINOS_DB: Destino[] = [
     lat: 21.42, lng: -99.055,
     imagen_hero: "/imagenes/olla-de-la-luz/hero.jpg", imagen_galeria: ["/imagenes/olla-de-la-luz/gallery-1.jpg", "/imagenes/olla-de-la-luz/gallery-2.jpg", "/imagenes/olla-de-la-luz/gallery-3.jpg", "/imagenes/olla-de-la-luz/gallery-4.jpg"],
     seo: {
-      metaTitle: "Olla de la Luz Xilitla | Sótano del Cerro de la Luz",
-      metaDescription: "La Olla de la Luz: un sótano de 233 m de diámetro y 193 m de profundidad coronado por el Cerro de la Luz, el punto más alto de Xilitla. Recorrido desde La Trinidad.",
-      keywords: ["olla de la luz xilitla", "hoya de la luz", "cerro de la luz xilitla", "sotano xilitla", "bosque de niebla la trinidad"],
+      metaTitle: "Olla de la Luz (Hoya de la Luz): cómo llegar desde Xilitla",
+      metaDescription: "Olla de la Luz (Hoya de la Luz): sótano de 233 m de diámetro y 193 m de profundidad en el bosque de niebla de Xilitla. Se llega con guía desde La Trinidad.",
+      keywords: ["olla de la luz xilitla", "hoya de la luz", "hoya de la luz xilitla", "cerro de la luz xilitla", "sotano xilitla", "bosque de niebla la trinidad"],
       faqPrincipales: [
         { pregunta: "¿Qué es la Olla de la Luz?", respuesta: "Es un gran sótano (dolina) de 233 metros de diámetro con un tiro vertical de 193 metros de profundidad, ubicado en lo alto del bosque de niebla de Xilitla y coronado por el Cerro de la Luz." },
+        { pregunta: "¿Es lo mismo la Olla de la Luz que la Hoya de la Luz?", respuesta: "Sí. «Olla de la Luz» y «Hoya de la Luz» son dos formas de escribir el mismo sótano: el de 233 metros de diámetro y 193 de profundidad que se abre en el bosque de niebla de La Trinidad, en Xilitla, coronado por el Cerro de la Luz. Solo se llega con guía de la comunidad." },
         { pregunta: "¿Cómo se llega a la Olla de la Luz?", respuesta: "Solo con guía local de La Trinidad: la visita es obligatoriamente guiada, no se puede llegar por cuenta propia. Se accede a pie, a unos 5 km de La Trinidad, subiendo hacia el Cerro de la Luz. La Trinidad está a unos 14 km de Xilitla." },
         { pregunta: "¿Qué tan alto está?", respuesta: "El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar, por lo que el clima es fresco y húmedo; conviene llevar abrigo y calzado de senderismo." },
       ],
@@ -1406,7 +1462,7 @@ export const DESTINOS_DB: Destino[] = [
     id: "museo-leonora-carrington-xilitla", slug: "museo-leonora-carrington-xilitla",
     nombre: "Museo Leonora Carrington — Xilitla", zona: "Xilitla", tipo: "Arte & Cultura", icon: "Palette",
     descripcion: "Museo dedicado a la artista surrealista Leonora Carrington, amiga de Edward James, en pleno centro de Xilitla. Exhibe escultura, litografía y dibujo de la autora, además de un espacio de difusión del surrealismo.",
-    duracion_hrs: 1, precio_entrada: "General $50 MXN · estudiantes, maestros y adultos mayores con credencial $25 · menores de 12 años gratis", precio_entrada_mxn: 50, dificultad: "baja",
+    duracion_hrs: 1, precio_entrada: "General $50 MXN · estudiantes, maestros y adultos mayores con credencial $25 MXN · menores de 12 años gratis", precio_entrada_mxn: 50, dificultad: "baja",
     ideal_para: ["cultura", "arte", "familia", "pareja"],
     horario: "Martes a domingo, 11:00–17:00 (último acceso 16:30)", dias_abierto: "Martes a domingo (cerrado lunes)",
     mejor_hora: "Mañana", temporada_ideal: "Todo el año",

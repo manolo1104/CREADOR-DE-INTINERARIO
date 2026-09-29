@@ -1,3 +1,5 @@
+import { TOURS_DB } from "@/lib/tours";
+
 /**
  * Relación artículo del blog → ficha de destino.
  *
@@ -47,6 +49,15 @@ const MAPA: Record<string, BlogDestino> = {
   "museo-leonora-carrington-leonora-carrington-en-xilitla-guia-para-visit": { destino: "museo-leonora-carrington-xilitla" },
   "las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece": { destino: "las-pozas-jardin-surrealista" },
   "boletos-las-pozas-preguntas-frecuentes-sobre-el-jardin-de-edward-james": { destino: "las-pozas-jardin-surrealista" },
+  // Guías de septiembre 2026. En la base llevan "-2026"; aquí van sin año
+  // (`destinoDeBlog` prueba las dos formas) para que `blogDeDestino` devuelva
+  // la URL canónica y la ficha no enlace a una redirección.
+  // 🔴 Estar aquí pinta la ficha del lugar a media página: el texto del
+  // artículo tiene que decir lo mismo que ella (precio, horario, camino). Lo
+  // que el agente escribió distinto se corrige en `blogSeo.ts`.
+  "nacimiento-de-tambaque-guia-completa": { destino: "nacimiento-tambaque" },
+  "cascadas-de-minas-viejas-guia-completa": { destino: "cascadas-minas-viejas" },
+  "siete-cascadas-de-tamasopo-guia-completa": { destino: "siete-cascadas-tamasopo" },
 
   // Comparativa legítima: responde "¿cuál de los dos visito?", que ninguna de
   // las dos fichas puede responder. Se queda autónoma y enlaza a ambas.
@@ -105,20 +116,24 @@ export function blogDeDestino(destinoSlug: string): string | undefined {
  *
  * Los `href` están verificados contra `TOURS_DB` (`src/lib/tours.ts`) y
  * `PAQUETES_DB` (`src/lib/paquetes.ts`): `expedicion-tamul`,
- * `ruta-acuatica-puente-de-dios`, `paraiso-escalonado-minas-micos`, `familiar`.
+ * `ruta-acuatica-puente-de-dios`, `paraiso-escalonado-minas-micos`, `gran-huasteca`.
  * Ojo: los slugs de URL de los tours NO son sus `id` (`expedicion-tamul` vs
  * `tour-tamul`).
  *
  * Cada `href` apunta al slug VIVO, nunca a uno redirigido. La línea de paquetes
- * se rehízo entera: los tres de antes (`aventura`, `completo`, `gran-huasteca`)
- * ya no existen y `next.config.mjs` los redirige (301) a los cinco nuevos. Un
- * 301 no rompe nada para el visitante, pero un enlace interno que pasa por una
- * redirección es exactamente lo que esta fase vino a quitar del blog: aquí se
- * escribe el destino final.
+ * se ha rehecho dos veces (10 y 24 sep 2026) y `next.config.mjs` redirige los
+ * slugs retirados al paquete que los sustituye. Una redirección no rompe nada
+ * para el visitante, pero un enlace interno que pasa por ella es exactamente
+ * lo que esta fase vino a quitar del blog: aquí se escribe el destino final.
  *
- * Ahora sí existe un paquete hecho para familias —`familiar`, cuyos `perfiles`
- * dicen "Familias con niños" y cuyos tres recorridos son de dificultad baja—,
- * así que ahí van los dos artículos de niños.
+ * 🔴 Los dos artículos de niños apuntaban a `/paquetes/familiar`, que desde el
+ * 24 sep 2026 redirige (308) a `gran-huasteca`: el Familiar pasó a llamarse
+ * así. Ya no es un paquete "para familias": sus `perfiles` son parejas y
+ * primera vez, y la Expedición Tamul es de dificultad media, así que la nota
+ * de antes ("los tres recorridos son de dificultad baja") dejó de ser cierta.
+ * Se enlaza el slug vivo y la nota dice solo lo que el paquete incluye
+ * (`PAQUETES_DB`). No se importa `paquetes.ts` para armarla porque este
+ * archivo también lo carga un componente de cliente (`BlogFilters`).
  */
 export interface OfertaBlog {
   /** Ruta interna ya verificada. */
@@ -144,20 +159,25 @@ const TOUR_MICOS: OfertaBlog = {
   ancla: "Ver el tour a Cascadas de Micos y Minas Viejas",
   nota: "Las dos cascadas escalonadas en el mismo recorrido.",
 };
+// 🔴 Decía "Diez recorridos" escrito a mano y ya son más: el número sale del
+// catálogo. Importar `TOURS_DB` aquí no engorda el bundle de `BlogFilters`
+// (cliente) porque ya viaja en el de todas las páginas vía
+// `WhatsAppClickTracker`, montado en el layout raíz.
 const CATALOGO_TOURS: OfertaBlog = {
   href: "/tours",
   ancla: "Ver los tours guiados de la Huasteca Potosina",
-  nota: "Diez recorridos con guía certificado, entradas y transporte.",
+  nota: `${TOURS_DB.length} recorridos con guía certificado; casi todos pasan por ti a tu hospedaje.`,
 };
 const CATALOGO_PAQUETES: OfertaBlog = {
   href: "/paquetes",
   ancla: "Paquetes todo incluido con hotel en Xilitla",
-  nota: "De 3 a 6 días: hotel, tours y transporte a cada tour en un solo precio.",
+  // Decía "De 3 a 6 días" y el catálogo va de 3 a 5: sin cifra, no envejece.
+  nota: "Hotel en Xilitla, tours y transporte a cada tour en un solo precio.",
 };
 const PAQUETE_FAMILIAS: OfertaBlog = {
-  href: "/paquetes/familiar",
-  ancla: "Paquete Familiar Huasteca — 4 días con hotel y 3 de tour",
-  nota: "Los tres recorridos son de dificultad baja: sin caminatas largas ni descensos.",
+  href: "/paquetes/gran-huasteca",
+  ancla: "Paquete Gran Huasteca — 4 días con hotel y 3 de tour",
+  nota: "Ruta Surrealista, Expedición Tamul y Cascadas del Meco, con hotel en Xilitla y traslado a cada tour.",
 };
 const PRECIOS: OfertaBlog = {
   href: "/precios",

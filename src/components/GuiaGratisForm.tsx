@@ -12,8 +12,12 @@ import { trackTourEvent } from "@/lib/tourTracker";
  * escribirle: casi nadie paga, y los que no pagan se van sin dejar rastro. El
  * PDF ya existe en `public/`, así que regalarlo no cuesta nada y a cambio entra
  * un correo a la secuencia.
+ *
+ * Desde el 28 sep 2026 también la usa /guia, que antes la cobraba. `origen`
+ * separa en la hoja de leads y en el tracker de dónde vino cada correo; el
+ * inicio sigue mandando "inicio", igual que antes.
  */
-export function GuiaGratisForm() {
+export function GuiaGratisForm({ origen = "inicio" }: { origen?: string } = {}) {
   const [email, setEmail]   = useState("");
   const [estado, setEstado] = useState<"idle" | "enviando" | "listo" | "error">("idle");
 
@@ -28,14 +32,14 @@ export function GuiaGratisForm() {
       await fetch("/api/guardar-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), fuente: "Guía gratis (inicio)" }),
+        body: JSON.stringify({ email: email.trim(), fuente: `Guía gratis (${origen})` }),
       });
     } catch {
       // El lead es nuestro problema, no del visitante: si falla el guardado, la
       // descarga se le entrega igual. Prometimos la guía a cambio del correo y
       // el correo ya lo dio.
     }
-    trackTourEvent("LEAD_GUIA", { fuente: "inicio" });
+    trackTourEvent("LEAD_GUIA", { fuente: origen });
     setEstado("listo");
     // La descarga arranca sola: un segundo clic más es un lugar donde perder
     // gente que ya cumplió su parte.

@@ -54,7 +54,11 @@ const ESTILOS: Record<Rec, {
     bordColor: "border-verde-vivo/40",
     bgColor:   "bg-verde-selva/10",
     labelColor:"text-verde-vivo",
-    slugs: ["expedicion-tamul", "ruta-surrealista-edward-james", "cascadas-del-meco"],
+    // La Olla de la Luz y el Edén entran SOLO aquí porque es lo único que el
+    // catálogo afirma de su temporada (`temporada_ideal` en destinos.ts: "época
+    // seca, nov–may" y "Nov–Mar"). La Gruta de Xilo y el Amanecer de Nubes no
+    // tienen temporada escrita en ningún sitio, y no se inventa una.
+    slugs: ["expedicion-tamul", "ruta-surrealista-edward-james", "cascadas-del-meco", "olla-de-la-luz", "eden-en-el-jardin"],
   },
   buena: {
     emoji: "☀️",
@@ -145,7 +149,10 @@ export function ClimaWidget() {
               {c.recomendados(nombreMes(mes, locale, false))}
             </p>
             <div className="space-y-2">
-              {rec.tours.map((label, i) => (
+              {/* Etiqueta y slug se casan por posición (el texto vive en
+                  infoPractica.en.ts): una etiqueta sin su slug no se pinta,
+                  en vez de enlazar a /tours/undefined. */}
+              {rec.tours.map((label, i) => rec.slugs[i] && (
                 <Link
                   key={label}
                   href={lp(`/tours/${rec.slugs[i]}`)}

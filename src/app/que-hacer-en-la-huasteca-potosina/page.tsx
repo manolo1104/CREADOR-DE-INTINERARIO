@@ -4,32 +4,53 @@ import Image from "next/image";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
 import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { TOURS_DB, esPorPersona, etiquetaUnidad } from "@/lib/tours";
+import { incluyeDesayuno, rangoPorPersona } from "@/lib/catalogoResumen";
 
 const URL = `${SITE}/que-hacer-en-la-huasteca-potosina`;
 
-export const metadata: Metadata = {
-  title: "Qué Hacer en la Huasteca Potosina — 15 Imperdibles 2026",
-  description:
-    "Guía local de qué hacer en la Huasteca Potosina: Cascada de Tamul, Las Pozas de Xilitla, rafting, sótanos y cascadas turquesas. Con precios y cómo visitarlos.",
-  keywords: [
-    "qué hacer en la huasteca potosina",
-    "lugares para visitar huasteca potosina",
-    "atracciones huasteca potosina",
-    "cascadas huasteca potosina",
-    "huasteca potosina itinerario",
-  ],
-  alternates: { canonical: URL },
-  openGraph: {
-    title: "Qué Hacer en la Huasteca Potosina — 15 Imperdibles",
+const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
+const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
+
+/**
+ * Las cifras de esta guía salen del catálogo. 🔴 La FAQ decía "de $1,300 a
+ * $1,850 por persona, con transporte y desayuno": el rafting ya costaba $1,950,
+ * la Gruta de Xilo y la Travesía del Café cuestan $900 y ni esos dos ni los
+ * recorridos de montaña llevan desayuno.
+ */
+const RANGO = rangoPorPersona();
+const NO_POR_PERSONA = TOURS_DB.filter((t) => !esPorPersona(t));
+const CON_DESAYUNO = TOURS_DB.filter(incluyeDesayuno);
+const EDEN = TOURS_DB.find((t) => t.slug === "eden-en-el-jardin");
+
+// Función y no `const metadata`: el número sale de `EXPERIENCIAS`, que se
+// declara más abajo, y una constante de módulo lo leería antes de que exista.
+export function generateMetadata(): Metadata {
+  return {
+    // Decía "15" fijo; la lista ya no son quince.
+    title: `Qué Hacer en la Huasteca Potosina — ${EXPERIENCIAS.length} Imperdibles 2026`,
     description:
-      "La guía de gente local: cascadas turquesas, jardín surrealista, rafting, sótanos gigantes y cultura huasteca.",
-    url: URL,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Qué hacer en la Huasteca Potosina" }],
-  },
-};
+      "Guía local de qué hacer en la Huasteca Potosina: Cascada de Tamul, Las Pozas de Xilitla, rafting, sótanos, una gruta de noche y cascadas turquesas.",
+    keywords: [
+      "qué hacer en la huasteca potosina",
+      "lugares para visitar huasteca potosina",
+      "atracciones huasteca potosina",
+      "cascadas huasteca potosina",
+      "huasteca potosina itinerario",
+    ],
+    alternates: { canonical: URL },
+    openGraph: {
+      title: `Qué Hacer en la Huasteca Potosina — ${EXPERIENCIAS.length} Imperdibles`,
+      description:
+        "La guía de gente local: cascadas turquesas, jardín surrealista, rafting, sótanos gigantes y cultura huasteca.",
+      url: URL,
+      siteName: "Tours Huasteca Potosina",
+      locale: "es_MX",
+      type: "website",
+      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 630, alt: "Qué hacer en la Huasteca Potosina" }],
+    },
+  };
+}
 
 // Guía pilar: cada experiencia enlaza al tour o destino que ya existe en el sitio.
 // Datos verificados con el contenido ya publicado (alturas, clases de rápidos, municipios).
@@ -57,6 +78,19 @@ const EXPERIENCIAS: Experiencia[] = [
     href: "/tours/ruta-surrealista-edward-james",
     cta: "Ver la Ruta Surrealista",
   },
+  // ── Los cuatro recorridos nuevos (28 sep 2026). Cada dato sale de su ficha en
+  // tours.ts, de tourFaqs.ts o de destinos.ts; sin horas ni precios escritos
+  // a mano (la hora y el precio viven en la ficha a la que enlazan).
+  // 🔴 El título va al ItemList del JSON-LD: nada de "antes de que abra" ahí.
+  // También hay salida a las 5 PM, y a esa hora no se entra antes de la
+  // apertura (el mismo aviso está en el `seo` del Edén en tours.ts).
+  {
+    titulo: "Entra a Las Pozas en privado, solo con tu grupo",
+    descripcion:
+      `El Edén en el Jardín es la visita privada al jardín de Edward James: en las salidas de la mañana entras una hora antes de que abra al público, vas con guía propio y subes a los niveles altos del Palacio de Bambú y a la Casa Estudio, que en la visita general están cerrados. Se cobra por grupo${EDEN ? `, de hasta ${EDEN.groupMax} personas` : ""}.`,
+    href: "/tours/eden-en-el-jardin",
+    cta: "Ver El Edén en el Jardín",
+  },
   {
     titulo: "Haz rafting en los rápidos del Río Tampaón",
     descripcion:
@@ -70,6 +104,13 @@ const EXPERIENCIAS: Experiencia[] = [
       "Un tiro vertical de 376 metros de caída libre (512 m de profundidad total) en Aquismón. Al amanecer, miles de aves —vencejos y loros— salen volando en espiral — uno de los espectáculos naturales más impresionantes de México.",
     href: "/destinos/sotano-de-las-golondrinas",
     cta: "Conocer el Sótano de las Golondrinas",
+  },
+  {
+    titulo: "Asómate a la Olla de la Luz, el sótano del bosque de niebla",
+    descripcion:
+      "A unos 14 km de Xilitla, en lo alto de la comunidad de La Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, tan grande que en su fondo creció otro bosque. Se llega tras unas 2 horas de caminata con guía de la propia comunidad. También lo verás escrito Hoya de la Luz.",
+    href: "/tours/olla-de-la-luz",
+    cta: "Ver la Olla de la Luz",
   },
   {
     titulo: "Salta las cascadas de Micos",
@@ -98,6 +139,20 @@ const EXPERIENCIAS: Experiencia[] = [
       "Al volante de tu propio vehículo off-road cruzas ríos, barro y selva húmeda hasta cascadas escondidas, miradores de la sierra o el pueblo indígena de La Trinidad. 4 rutas distintas, desde 2 horas.",
     href: "/tours/rzr-xilitla",
     cta: "Ver rutas y precios del RZR",
+  },
+  {
+    titulo: "Recorre de noche la Gruta de Xilo",
+    descripcion:
+      "Una caminata de 15 a 20 minutos por la selva de Xilitla te deja en la boca de la gruta, ya de noche. Adentro son unos 900 metros entre estalactitas y estalagmitas, y al final unos jacuzzis naturales de agua cristalina dentro de la propia cueva. Vas con casco, lámpara frontal y guía. También la encontrarás como Grutas de Xilo.",
+    href: "/tours/gruta-de-xilo",
+    cta: "Ver la Gruta de Xilo",
+  },
+  {
+    titulo: "Ve amanecer sobre el mar de nubes en el Cerro del Pilón",
+    descripcion:
+      "Senderismo de madrugada por el bosque de niebla de La Trinidad hasta la cima del Cerro del Pilón, para estar arriba cuando el sol sale sobre las nubes que cubren la sierra. El mar de nubes depende del clima: es frecuente, pero nadie lo puede garantizar.",
+    href: "/tours/amanecer-de-nubes",
+    cta: "Ver el Amanecer de Nubes",
   },
   {
     titulo: "Fotografía las cascadas gemelas de Minas Viejas",
@@ -144,7 +199,7 @@ const EXPERIENCIAS: Experiencia[] = [
   {
     titulo: "Prueba la gastronomía huasteca: zacahuil, enchiladas y café de olla",
     descripcion:
-      "El zacahuil es un tamal gigante horneado en hoja de plátano que se comparte entre toda la mesa; se acompaña de enchiladas huastecas, cecina y café de la sierra. En nuestros tours el desayuno regional va incluido.",
+      `El zacahuil es un tamal gigante horneado en hoja de plátano que se comparte entre toda la mesa; se acompaña de enchiladas huastecas, cecina y café de la sierra. El desayuno buffet de platillos típicos va incluido en ${lista(CON_DESAYUNO.map((t) => t.nombreCorto))}.`,
     href: "/info-practica",
     cta: "Ver dónde comer en la guía práctica",
   },
@@ -165,7 +220,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Cuánto cuesta hacer estas actividades?",
-    a: "Los tours guiados de un día todo incluido van de $1,300 a $1,850 MXN por persona, con transporte, desayuno, entradas y guía certificado incluidos. En nuestra página de precios está la lista completa.",
+    a: `Los recorridos guiados de un día van de ${money(RANGO.min)} a ${money(RANGO.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${lista(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen seguro de viaje y las fotos y el video que toma tu guía; la ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
   },
   {
     q: "¿Puedo visitar la Huasteca por mi cuenta, sin tour?",
@@ -230,9 +285,9 @@ export default function QueHacerPage() {
             Qué hacer en la <em className="shimmer-gold italic">Huasteca Potosina</em>
           </h1>
           <p className="text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto">
-            15 experiencias imperdibles según quienes nacimos aquí: cascadas turquesas, un jardín surrealista en medio
-            de la selva, rafting, abismos de cientos de metros y la cultura huasteca viva. Todas con enlace directo para
-            visitarlas.
+            {EXPERIENCIAS.length} experiencias imperdibles según quienes nacimos aquí: cascadas turquesas, un jardín
+            surrealista en medio de la selva, rafting, abismos de cientos de metros, una gruta que se recorre de noche
+            y la cultura huasteca viva. Todas con enlace directo para visitarlas.
           </p>
         </div>
       </section>

@@ -1,4 +1,7 @@
-import { TOURS_DB, tourDurRange, GRUPO_MAX } from "@/lib/tours";
+import { TOURS_DB, tourDurRange, GRUPO_MAX, esPorPersona, fmtHora12, partesRecogida, recogidaDeTour, salidaCorta } from "@/lib/tours";
+import { excepcionesSalida } from "@/lib/recogidaTexto";
+import { TOUR_REQUISITOS } from "@/lib/tourRequisitos";
+import { incluyeDesayuno, rangoGrupo, rangoPorPersona } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { fmtMoney, fmtNumber } from "@/lib/i18n/format";
@@ -30,12 +33,15 @@ export interface FaqTour {
   a: string;
 }
 
-const porPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo");
-const PRECIO_MIN = Math.min(...porPersona.map((t) => t.precio));
-const PRECIO_MAX = Math.max(...porPersona.map((t) => t.precio));
+// 🔴 Filtraba con `!== "vehiculo"` y el Edén —tarifa del GRUPO entero— subía
+// el techo a $2,990 "por persona". `rangoPorPersona` filtra con `esPorPersona`.
+const { min: PRECIO_MIN, max: PRECIO_MAX } = rangoPorPersona();
 
-/** El RZR es el único recorrido que se cobra por vehículo, no por persona. */
-const rzr = TOURS_DB.find((t) => t.precioUnidad === "vehiculo");
+/** Los que no se cobran por cabeza: el RZR por vehículo y el Edén por grupo. */
+const OTRA_UNIDAD = TOURS_DB.filter((t) => !esPorPersona(t));
+
+/** Los que llevan desayuno: se cuentan del catálogo, no se escriben. */
+const CON_DESAYUNO = TOURS_DB.filter(incluyeDesayuno);
 
 const rangos = TOURS_DB.map((t) => tourDurRange(t));
 const DUR_MIN = Math.min(...rangos.map(([a]) => a));
@@ -59,9 +65,108 @@ function nombreCorto(t: (typeof TOURS_DB)[number], locale: Locale): string {
   return localizeTour(t, locale).nombre.split("—")[0].trim();
 }
 
-/** Los tours de día completo: los que llegan al tope de duración del catálogo. */
-const DIA_COMPLETO = TOURS_DB.filter((t) => tourDurRange(t)[1] === DUR_MAX);
+/** Con su artículo para ir a media frase ("la Olla de la Luz"); el Edén ya lo trae en el nombre. */
+function conArticulo(t: (typeof TOURS_DB)[number], locale: Locale): string {
+  const art = t.articulo ? (locale === "en" ? "the " : `${t.articulo} `) : "";
+  return `${art}${nombreCorto(t, locale)}`;
+}
+
+const yLista = (items: string[], locale: Locale) =>
+  new Intl.ListFormat(locale === "en" ? "en" : "es-MX", { type: "conjunction" }).format(items);
+
+/**
+ * Los que NO salen a diario: van con un horario que pone otro (`horaTexto`).
+ * Hoy es solo el Edén, que sigue al jardín de Las Pozas y no abre los martes.
+ */
+const SIN_SALIDA_DIARIA = TOURS_DB.filter((t) => recogidaDeTour(t).horaTexto);
+
+/**
+ * "Salimos todos los días del año", con la salvedad sacada del catálogo.
+ *
+ * 🔴 Se prometía a secas de los catorce, en esta FAQ, en el hero de /tours y
+ * en llms.txt, mientras la tarjeta del Edén en la MISMA página ya escondía
+ * "Salidas todos los días". `corta` deja solo el nombre (para la píldora del
+ * hero); la larga pega el horario del catálogo. Devuelve la cláusula SIN
+ * punto final.
+ */
+export function salidaDiaria(locale: Locale, corta = false): string {
+  const en = locale === "en";
+  const base = en ? "We run tours every day of the year" : "Salimos todos los días del año";
+  if (!SIN_SALIDA_DIARIA.length) return base;
+  const items = SIN_SALIDA_DIARIA.map((t) => {
+    const h = recogidaDeTour(t).horaTexto!;
+    return corta ? nombreCorto(t, locale) : `${nombreCorto(t, locale)} (${en ? h.en : h.es})`;
+  });
+  const varios = items.length > 1;
+  return en
+    ? `${base}; ${yLista(items, locale)} ${varios ? "run" : "runs"} on ${varios ? "their" : "its"} own schedule`
+    : `${base}; ${yLista(items, locale)} ${varios ? "van" : "va"} con horario propio`;
+}
+
+/**
+ * Los recorridos cuya ficha pide que le cuentes las edades antes de apartar
+ * (rappel, rafting, Gruta, Amanecer, Olla, Edén), leídos de `edadNota`.
+ *
+ * 🔴 La FAQ de niños decía que "la única actividad que no es para niños
+ * pequeños" era el buceo, y `tourRequisitos.ts` pide valorar la edad en seis
+ * recorridos más. La edad mínima de los tres nuevos NO está confirmada: aquí
+ * no se da ninguna, solo se pide avisar. Ojo: se detecta por la redacción de
+ * `edadNota`; si alguien la reescribe sin "cuéntanos las edades" ni
+ * "escríbenos antes de reservar", ese recorrido sale de la lista.
+ */
+const CONSULTAR_EDADES = TOURS_DB.filter((t) => {
+  const r = TOUR_REQUISITOS[t.id];
+  return !r?.edadMinima && /cuéntanos las edades|escríbenos antes de reservar/i.test(r?.edadNota ?? "");
+});
+
+/** Los que sí tienen edad mínima publicada (hoy, el buceo: 10 años). */
+const CON_EDAD_MINIMA = TOURS_DB.filter((t) => TOUR_REQUISITOS[t.id]?.edadMinima);
+
+/** Tarifa del grupo entero (el Edén): ahí el descuento de niños no aplica. */
+const POR_GRUPO = TOURS_DB.filter((t) => t.precioUnidad === "grupo");
+
+/**
+ * Los tours de día completo: los que ocupan 8 horas o más.
+ *
+ * 🔴 Antes eran "los que llegan al tope de duración del catálogo". Valía cuando
+ * todos los de día completo duraban 12 h; al pasar Tamul a 12–13 h el tope
+ * quedó en 13 y la respuesta decía "1 de ellos son de día completo". Y la
+ * lista de "los más cortos" era de cinco slugs escritos a mano: la Gruta y el
+ * Edén (3 h) no aparecían. Ahora las dos listas salen del mismo corte.
+ */
+const HORAS_DIA_COMPLETO = 8;
+const DIA_COMPLETO = TOURS_DB.filter((t) => tourDurRange(t)[0] >= HORAS_DIA_COMPLETO);
 const DIA_COMPLETO_MIN = Math.min(...DIA_COMPLETO.map((t) => tourDurRange(t)[0]));
+const DIA_COMPLETO_MAX = Math.max(...DIA_COMPLETO.map((t) => tourDurRange(t)[1]));
+const CORTOS = TOURS_DB.filter((t) => !DIA_COMPLETO.includes(t)).sort(
+  (a, b) => tourDurRange(a)[0] - tourDurRange(b)[0] || tourDurRange(a)[1] - tourDurRange(b)[1],
+);
+
+/**
+ * La salida y el regreso de los de día completo que comparten ventana (hoy,
+ * 8–9 AM), con el regreso calculado igual que `regresoDeTour`: hora de salida
+ * más duración. Estaba escrito "entre las 6:00 y las 7:00 PM" y Tamul, de
+ * 12–13 h, vuelve pasadas las ocho.
+ */
+const DIA_COMPLETO_COMUN = (() => {
+  const grupos = new Map<string, typeof DIA_COMPLETO>();
+  for (const t of DIA_COMPLETO.filter((x) => !recogidaDeTour(x).horaTexto)) {
+    const k = salidaCorta(t) ?? "";
+    grupos.set(k, [...(grupos.get(k) ?? []), t]);
+  }
+  const lista = Array.from(grupos.values()).sort((a, b) => b.length - a.length)[0] ?? [];
+  if (!lista.length) return null;
+  const vuelta = lista.map((t) => {
+    const ini = recogidaDeTour(t).horaInicio;
+    const [a, b] = tourDurRange(t);
+    return [ini + a, ini + b];
+  });
+  return {
+    tours: lista,
+    desde: fmtHora12(Math.min(...vuelta.map(([a]) => a))),
+    hasta: fmtHora12(Math.max(...vuelta.map(([, b]) => b))),
+  };
+})();
 
 /**
  * El más barato DE LO QUE SE ENSEÑA. Ordenar por `p.precio` mezclaba peras con
@@ -79,11 +184,88 @@ const PAQ_POR_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
 export function getToursFaqs(locale: Locale): FaqTour[] {
   const en = locale === "en";
   const m = (n: number) => fmtMoney(n, locale);
-  const diaCompleto = DIA_COMPLETO.map((t) => nombreCorto(t, locale)).join(", ");
-  const nom = (slug: string) => {
-    const t = TOURS_DB.find((x) => x.slug === slug);
-    return t ? nombreCorto(t, locale) : "";
-  };
+  const y = (items: string[]) =>
+    new Intl.ListFormat(en ? "en" : "es-MX", { type: "conjunction" }).format(items);
+  const diaCompleto = y(DIA_COMPLETO.map((t) => nombreCorto(t, locale)));
+
+  // Los que se cobran de otra forma, cada uno con su unidad. Antes solo se
+  // nombraba el RZR y el Edén quedaba dentro de "por persona".
+  const otraUnidad = OTRA_UNIDAD.map((t) => {
+    const n = conArticulo(t, locale);
+    if (t.precioUnidad === "grupo") {
+      const r = rangoGrupo(t);
+      return en
+        ? `${n}, priced per group: ${m(r.min)} to ${m(r.max)} for the whole group depending on its size (${t.groupMin} to ${t.groupMax} people)`
+        : `${n}, que se cobra por grupo: de ${m(r.min)} a ${m(r.max)} por el grupo completo según cuántos vayan (de ${t.groupMin} a ${t.groupMax} personas)`;
+    }
+    return en
+      ? `${n}, priced per vehicle from ${m(t.precio)} per unit — fuel, helmets and an instructor guide included — which does not cover transport to Xilitla or meals`
+      : `${n}, que se cobra por vehículo desde ${m(t.precio)} por unidad —con gasolina, cascos y guía instructor— y no incluye el transporte hasta Xilitla ni los alimentos`;
+  });
+  // Con punto y coma: cada excepción ya lleva comas y rayas dentro, y con la
+  // lista normal "…ni los alimentos y El Edén…" se leía como una sola.
+  const listaLarga = (xs: string[]) =>
+    xs.length > 1 ? `${xs.slice(0, -1).join("; ")}; ${en ? "and" : "y"} ${xs[xs.length - 1]}` : (xs[0] ?? "");
+  const excepcionUnidad = otraUnidad.length
+    ? en
+      ? ` The ${otraUnidad.length > 1 ? "exceptions are" : "exception is"} ${listaLarga(otraUnidad)}.`
+      : ` ${otraUnidad.length > 1 ? "Las excepciones son" : "La excepción es"} ${listaLarga(otraUnidad)}.`
+    : "";
+  const desayunos = y(CON_DESAYUNO.map((t) => nombreCorto(t, locale)));
+
+  // "Los demás" (no "los más cortos": ahí caen el rafting de 7 h y el
+  // Amanecer de 7–8 h), del catálogo: nombre y horas, con la nota de la ruta
+  // cuando el recorrido tiene varias (el RZR).
+  const cortos = y(
+    CORTOS.map((t) => {
+      const h = dur(t.slug, locale);
+      const ruta = t.rutas?.length ? (en ? " depending on the route" : " según la ruta") : "";
+      return `${nombreCorto(t, locale)} (${h} ${en ? "hours" : "horas"}${ruta})`;
+    }),
+  );
+  const comun = DIA_COMPLETO_COMUN;
+  // 🔴 "En 5 de ellos pasamos por ti entre 8:00 y 9:00 AM" dejaba al sexto de
+  // día completo (la Olla de la Luz, 7–8 AM) sin hora. Los que no comparten la
+  // ventana común se nombran con la suya.
+  const otraHora = comun
+    ? DIA_COMPLETO.filter((t) => !comun.tours.includes(t))
+        .map((t) => ({ t, hora: partesRecogida(t, en).hora }))
+        .filter((x) => x.hora)
+        .map(({ t, hora }) => (en ? `on ${conArticulo(t, locale)} we pick you up ${hora}` : `en ${conArticulo(t, locale)} pasamos por ti ${hora}`))
+    : [];
+  const otraHoraTxt = otraHora.length ? `; ${otraHora.join("; ")}` : "";
+  const regreso = comun
+    ? en
+      ? ` ${comun.tours.length === DIA_COMPLETO.length ? "On all of them" : `On ${comun.tours.length} of them`} we pick you up ${partesRecogida(comun.tours[0], true).hora} and bring you back between ${comun.desde} and ${comun.hasta}, depending on the route${otraHoraTxt}. Each tour page gives its exact times.`
+      : ` En ${comun.tours.length === DIA_COMPLETO.length ? "todos ellos" : `${comun.tours.length} de ellos`} pasamos por ti ${partesRecogida(comun.tours[0], false).hora} y te regresamos entre las ${comun.desde} y las ${comun.hasta}, según el recorrido${otraHoraTxt}. La ficha de cada uno da la hora exacta.`
+    : "";
+
+  // Niños. El descuento solo existe donde se cobra por cabeza: en la tarifa
+  // de grupo (el Edén) cada niño cuenta como una persona más del grupo
+  // —`calcTourTotal` le pasa a `precioGrupo` adultos + niños—, y el RZR va por
+  // vehículo. Edad mínima y "cuéntanos las edades", de `tourRequisitos.ts`.
+  const ninosGrupo = POR_GRUPO.length
+    ? en
+      ? ` On ${yLista(POR_GRUPO.map((t) => conArticulo(t, locale)), locale)} the rate is for the whole group, and each child counts as one more person in it.`
+      : ` En ${yLista(POR_GRUPO.map((t) => conArticulo(t, locale)), locale)} la tarifa es del grupo completo y cada niño cuenta como una persona más del grupo.`
+    : "";
+  const ninosEdadMin = CON_EDAD_MINIMA.map((t) => {
+    const edad = TOUR_REQUISITOS[t.id]!.edadMinima;
+    return en
+      ? ` ${nombreCorto(t, locale)} is for ages ${edad} and up in good health.`
+      : ` ${nombreCorto(t, locale)} es para mayores de ${edad} años con buena salud.`;
+  }).join("");
+  const ninosConsultar = CONSULTAR_EDADES.length
+    ? en
+      ? ` For ${yLista(CONSULTAR_EDADES.map((t) => conArticulo(t, locale)), locale)}, tell us the children's ages before you book and we'll tell you whether it's a good fit.`
+      : ` En ${yLista(CONSULTAR_EDADES.map((t) => conArticulo(t, locale)), locale)}, cuéntanos las edades antes de reservar y te decimos si conviene.`
+    : "";
+
+  // Política de cancelación propia (el Edén no reembolsa): se nombra con el
+  // texto del catálogo en vez de prometer a todos el reembolso del 100 %.
+  const cancelPropia = TOURS_DB.filter((t) => t.cancelacion)
+    .map((t) => (en ? ` The exception is ${nombreCorto(t, locale)}. ${t.cancelacion!.en}` : ` La excepción es ${nombreCorto(t, locale)}. ${t.cancelacion!.es}`))
+    .join("");
 
   /** «por persona» / «por pareja» de UN paquete, en el idioma pedido. */
   const etiqueta = (p: Paquete) =>
@@ -114,19 +296,22 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     return [
       {
         q: "How much does a tour in the Huasteca Potosina cost, and what does the price include?",
-        a: `Our guided day tours run from $${fmtNumber(PRECIO_MIN, locale)} to ${m(PRECIO_MAX)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging in Ciudad Valles or Xilitla, breakfast with regional dishes, entrance fees to every park and attraction on the route, a NOM-09 SECTUR certified guide, safety gear, travel insurance for everyone in the group, and the photos and video your guide takes. The one exception is ${nom("rzr-xilitla")}, which is priced per vehicle from ${rzr ? m(rzr.precio) : ""} per unit — fuel, helmets and an instructor guide included — and does not cover transport to Xilitla or meals.`,
+        a: `Our guided day tours run from $${fmtNumber(PRECIO_MIN, locale)} to ${m(PRECIO_MAX)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
       },
       {
         q: "Where do the tours depart from? Do you pick me up at my hotel?",
-        a: "There is no single meeting point: we pick you up at your accommodation — hotel, hostel, cabin or Airbnb — in Ciudad Valles or Xilitla between 8:00 and 9:00 AM, with round-trip transport included, and we confirm your exact pickup time when you book. You do not need to be staying at our hotel. Three routes work differently: the RZR off-road ride starts at our base in Xilitla (getting to Xilitla is not included), the Coffee Trail picks you up at your accommodation in Xilitla only, and Discover Scuba Diving takes place at the Media Luna Lagoon in Rioverde.",
+        // 🔴 Decía "8:00–9:00 AM en Ciudad Valles o Xilitla… tres recorridos
+        // funcionan distinto" escrito a mano; la Gruta sale a las 7 PM y ya
+        // eran siete. La lista sale de `excepcionesSalida()`.
+        a: `There is no single meeting point, and you do not need to be staying at our hotel: any accommodation works — hotel, hostel, cabin or Airbnb. ${excepcionesSalida(locale)} We confirm your exact pickup time when you book.`,
       },
       {
         q: "How long does a tour last?",
-        a: `Between ${DUR_MIN} and ${DUR_MAX} hours, depending on the route. ${DIA_COMPLETO.length} of them are full-day trips of ${DIA_COMPLETO_MIN} to ${DUR_MAX} hours: ${diaCompleto}. The shorter ones: ${nom("buceo-media-luna")}, ${dur("buceo-media-luna", locale)} hours; ${nom("travesia-del-cafe")}, ${dur("travesia-del-cafe", locale)} hours; ${nom("rappel-tamul")}, ${dur("rappel-tamul", locale)} hours; ${nom("rafting-rio-tampaon")}, ${dur("rafting-rio-tampaon", locale)} hours; and ${nom("rzr-xilitla")}, ${dur("rzr-xilitla", locale)} hours depending on the route you choose. On a full-day tour we pick you up between 8:00 and 9:00 AM and drop you back at your accommodation between 6:00 and 7:00 PM.`,
+        a: `Between ${DUR_MIN} and ${DUR_MAX} hours, depending on the route. ${DIA_COMPLETO.length} of them are full-day trips of ${DIA_COMPLETO_MIN} to ${DIA_COMPLETO_MAX} hours: ${diaCompleto}. The rest: ${cortos}.${regreso}`,
       },
       {
         q: "When is the best time to visit, and can I come year-round?",
-        a: "We run tours every day of the year. For water at its most intense turquoise, come in the dry season: roughly November through June, at its clearest between March and May. During the rainy season (July to October) the waterfalls carry far more volume and are dramatic to photograph, but the water can turn brown and some river activities are suspended for safety — rafting on the Tampaón, for instance, is confirmed according to the river level on the day.",
+        a: `${salidaDiaria(locale)}. For water at its most intense turquoise, come in the dry season: roughly November through June, at its clearest between March and May. During the rainy season (July to October) the waterfalls carry far more volume and are dramatic to photograph, but the water can turn brown and some river activities are suspended for safety — rafting on the Tampaón, for instance, is confirmed according to the river level on the day.`,
       },
       {
         q: "How do I book, and how much do I pay today?",
@@ -134,15 +319,15 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
       },
       {
         q: "Can I bring children?",
-        a: "Yes. Pricing is per person with a children's discount: about 70% of the adult price for ages 6 to 10, and 50% for children under 6. Several low-difficulty routes work very well for families — El Meco Waterfalls, the Stepped Paradise (Minas Viejas and Micos) and the Edward James Surrealist Route. The one activity that is not for small children is Discover Scuba Diving at the Media Luna Lagoon: it is for ages 10 and up in good health. On the RZR ride, children travel according to the vehicle (the RZR 500 seats 2 adults + 1 child; the Family Defender, 6 adults + 2 kids), so tell us their ages when you book.",
+        a: `Yes. On tours priced per person there's a children's discount: about 70% of the adult price for ages 6 to 10, and 50% for children under 6.${ninosGrupo} Several low-difficulty routes work very well for families — El Meco Waterfalls, the Stepped Paradise (Minas Viejas and Micos) and the Edward James Surrealist Route.${ninosEdadMin}${ninosConsultar} On the RZR ride, children travel according to the vehicle (the RZR 500 seats 2 adults + 1 child; the Family Defender, 6 adults + 2 kids), so tell us their ages when you book.`,
       },
       {
         q: "What happens if it rains or the tour is called off?",
-        a: "We run in light rain: the Huasteca is jungle, and the waterfalls are at their most spectacular with water coming down. If there's an electrical storm, a weather alert, or the river isn't in safe condition, we are the ones who cancel and you choose between a 100% refund or rescheduling at no cost — we never take a group out on a swollen river. The same applies if a site closes: some are run by local ejidos or cooperatives and can close on their own. If you are the one cancelling, it's free 48 hours or more before the tour with a 100% refund including the deposit; between 48 and 24 hours 50% is retained; under 24 hours there is no refund, but you can reschedule once at no cost.",
+        a: "We run in light rain: the Huasteca is jungle, and the waterfalls are at their most spectacular with water coming down. If there's an electrical storm, a weather alert, or the river isn't in safe condition, we are the ones who cancel and you choose between a 100% refund or rescheduling at no cost — we never take a group out on a swollen river. The same applies if a site closes: some are run by local ejidos or cooperatives and can close on their own. If you are the one cancelling, it's free 48 hours or more before the tour with a 100% refund including the deposit; between 48 and 24 hours 50% is retained; under 24 hours there is no refund, but you can reschedule once at no cost." + cancelPropia,
       },
       {
         q: "What's the difference between a single tour and a package with lodging?",
-        a: `A tour is a one-day departure priced per person, from ${m(PRECIO_MIN)}, with transport from your accommodation, entrance fees and guide included, but no hotel. A package is several days with lodging included at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, the tours themselves, transport from the hotel to the start of each tour, entrance fees and certified guides; it is ${comoSeCobra}, from ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} for the ${paqueteMasBarato.dias}-day / ${paqueteMasBarato.noches}-night package. Payment differs too: a single-day tour is paid in full, while from two days on you hold with ${ANTICIPO_PCT}%. Regular tours run in small groups of up to ${GRUPO_MAX} people either way.`,
+        a: `A tour is a one-day departure, usually priced per person, from ${m(PRECIO_MIN)}, with transport from your accommodation, entrance fees and a guide depending on the route, but no hotel. A package is several days with lodging included at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, the tours themselves, transport from the hotel to the start of each tour, entrance fees and certified guides; it is ${comoSeCobra}, from ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} for the ${paqueteMasBarato.dias}-day / ${paqueteMasBarato.noches}-night package. Payment differs too: a single-day tour is paid in full, while from two days on you hold with ${ANTICIPO_PCT}%. Regular tours run in small groups of up to ${GRUPO_MAX} people either way.`,
       },
     ];
   }
@@ -150,19 +335,19 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
   return [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina y qué incluye el precio?",
-      a: `Los tours guiados de un día cuestan de $${fmtNumber(PRECIO_MIN, locale)} a ${m(PRECIO_MAX)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla, desayuno con platillos típicos de la región, entradas a todos los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR, equipo de seguridad, seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía. La excepción es ${nom("rzr-xilitla")}, que se cobra por vehículo desde ${rzr ? m(rzr.precio) : ""} por unidad —con gasolina, cascos y guía instructor— y no incluye el transporte hasta Xilitla ni los alimentos.`,
+      a: `Los tours guiados de un día cuestan de $${fmtNumber(PRECIO_MIN, locale)} a ${m(PRECIO_MAX)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía.${excepcionUnidad}`,
     },
     {
       q: "¿De dónde salen los tours? ¿Pasan por mi hotel?",
-      a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Ciudad Valles o en Xilitla entre las 8:00 y las 9:00 AM, con traslado redondo incluido, y confirmamos tu hora exacta de recogida al reservar. No hace falta que te hospedes en nuestro hotel. Tres recorridos funcionan distinto: el Recorrido en RZR sale de nuestra base en Xilitla (el transporte hasta Xilitla no va incluido), la Travesía del Café recoge únicamente en hospedajes de Xilitla y el buceo Descubre el Buceo se realiza en la Laguna de la Media Luna, en Rioverde.",
+      a: `No hay un punto de salida único y no hace falta que te hospedes en nuestro hotel: sirve cualquier hospedaje —hotel, hostal, cabaña o Airbnb—. ${excepcionesSalida(locale)} Confirmamos tu hora exacta de recogida al reservar.`,
     },
     {
       q: "¿Cuánto dura cada tour?",
-      a: `De ${DUR_MIN} a ${DUR_MAX} horas, según el recorrido. ${DIA_COMPLETO.length} de ellos son de día completo, de ${DIA_COMPLETO_MIN} a ${DUR_MAX} horas: ${diaCompleto}. Los más cortos: ${nom("buceo-media-luna")} dura ${dur("buceo-media-luna", locale)} horas, ${nom("travesia-del-cafe")} ${dur("travesia-del-cafe", locale)}, ${nom("rappel-tamul")} ${dur("rappel-tamul", locale)}, ${nom("rafting-rio-tampaon")} ${dur("rafting-rio-tampaon", locale)} y ${nom("rzr-xilitla")} va de ${dur("rzr-xilitla", locale)} horas según la ruta que elijas. En un tour de día completo pasamos por ti entre las 8:00 y las 9:00 AM y te regresamos a tu hospedaje entre las 6:00 y las 7:00 PM.`,
+      a: `De ${DUR_MIN} a ${DUR_MAX} horas, según el recorrido. ${DIA_COMPLETO.length} de ellos son de día completo, de ${DIA_COMPLETO_MIN} a ${DIA_COMPLETO_MAX} horas: ${diaCompleto}. Los demás: ${cortos}.${regreso}`,
     },
     {
       q: "¿Cuál es la mejor época para ir y se puede todo el año?",
-      a: "Salimos todos los días del año. Para ver el agua en su tono turquesa más intenso, la mejor temporada es la seca: aproximadamente de noviembre a junio, con su punto más claro entre marzo y mayo. Durante la temporada de lluvias (julio a octubre) el caudal de las cascadas aumenta y es muy fotogénico, pero el agua puede tornarse marrón y algunas actividades acuáticas se suspenden por seguridad — el rafting en el Tampaón, por ejemplo, se confirma según el nivel del río ese día.",
+      a: `${salidaDiaria(locale)}. Para ver el agua en su tono turquesa más intenso, la mejor temporada es la seca: aproximadamente de noviembre a junio, con su punto más claro entre marzo y mayo. Durante la temporada de lluvias (julio a octubre) el caudal de las cascadas aumenta y es muy fotogénico, pero el agua puede tornarse marrón y algunas actividades acuáticas se suspenden por seguridad — el rafting en el Tampaón, por ejemplo, se confirma según el nivel del río ese día.`,
     },
     {
       q: "¿Cómo reservo y cuánto tengo que pagar hoy?",
@@ -170,15 +355,15 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     },
     {
       q: "¿Se puede ir con niños?",
-      a: "Sí. El precio es por persona con descuento para menores: alrededor del 70 % del precio adulto para edades de 6 a 10 años y 50 % para menores de 6. Los recorridos de dificultad baja más aptos para ir en familia son las Cascadas del Meco, el Paraíso Escalonado (Minas Viejas y Micos) y la Ruta Surrealista de Edward James. La única actividad que no es para niños pequeños es Descubre el Buceo en la Laguna de la Media Luna: es para mayores de 10 años con buena salud. En el Recorrido en RZR los niños viajan según el vehículo (el RZR 500 lleva 2 adultos y 1 niño; el Defender Familiar, 6 adultos y 2 niños), así que avísanos las edades al reservar.",
+      a: `Sí. En los recorridos que se cobran por persona hay descuento para menores: alrededor del 70 % del precio adulto para edades de 6 a 10 años y 50 % para menores de 6.${ninosGrupo} Los recorridos de dificultad baja más aptos para ir en familia son las Cascadas del Meco, el Paraíso Escalonado (Minas Viejas y Micos) y la Ruta Surrealista de Edward James.${ninosEdadMin}${ninosConsultar} En el Recorrido en RZR los niños viajan según el vehículo (el RZR 500 lleva 2 adultos y 1 niño; el Defender Familiar, 6 adultos y 2 niños), así que avísanos las edades al reservar.`,
     },
     {
       q: "¿Qué pasa si llueve o se suspende el tour?",
-      a: "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, cancelamos nosotros y eliges entre reembolso del 100 % o reagendar sin costo — nunca sacamos un grupo con el río crecido. Lo mismo aplica si el paraje cierra: algunos los administran ejidos o cooperativas locales y pueden cerrar por su cuenta. Si quien cancela eres tú, es gratis con 48 horas o más de anticipación y se te devuelve el 100 % incluido el anticipo; entre 48 y 24 horas antes se retiene el 50 %; con menos de 24 horas no hay reembolso, pero puedes reagendar una vez sin costo.",
+      a: "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, cancelamos nosotros y eliges entre reembolso del 100 % o reagendar sin costo — nunca sacamos un grupo con el río crecido. Lo mismo aplica si el paraje cierra: algunos los administran ejidos o cooperativas locales y pueden cerrar por su cuenta. Si quien cancela eres tú, es gratis con 48 horas o más de anticipación y se te devuelve el 100 % incluido el anticipo; entre 48 y 24 horas antes se retiene el 50 %; con menos de 24 horas no hay reembolso, pero puedes reagendar una vez sin costo." + cancelPropia,
     },
     {
       q: "¿Cuál es la diferencia entre un tour suelto y un paquete con hospedaje?",
-      a: `Un tour es una salida de un día que se cobra por persona, desde ${m(PRECIO_MIN)}, e incluye traslado desde tu hospedaje, entradas y guía, pero no el hotel. Un paquete son varios días con hospedaje incluido en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, los tours, el transporte del hotel al inicio de cada recorrido, las entradas y los guías certificados; ${comoSeCobra} y va desde ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} el de ${paqueteMasBarato.dias} días / ${paqueteMasBarato.noches} noches. El pago también cambia: un recorrido suelto de un día se paga completo, mientras que desde 2 días apartas con el ${ANTICIPO_PCT} %. En los dos casos los tours regulares salen en grupos pequeños de máximo ${GRUPO_MAX} personas.`,
+      a: `Un tour es una salida de un día que casi siempre se cobra por persona, desde ${m(PRECIO_MIN)}, e incluye —según el recorrido— traslado desde tu hospedaje, entradas y guía, pero no el hotel. Un paquete son varios días con hospedaje incluido en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, los tours, el transporte del hotel al inicio de cada recorrido, las entradas y los guías certificados; ${comoSeCobra} y va desde ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} el de ${paqueteMasBarato.dias} días / ${paqueteMasBarato.noches} noches. El pago también cambia: un recorrido suelto de un día se paga completo, mientras que desde 2 días apartas con el ${ANTICIPO_PCT} %. En los dos casos los tours regulares salen en grupos pequeños de máximo ${GRUPO_MAX} personas.`,
     },
   ];
 }

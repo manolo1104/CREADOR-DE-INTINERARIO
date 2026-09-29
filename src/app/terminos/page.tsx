@@ -1,13 +1,17 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { CONTACTO } from "@/lib/contacto";
+import { TOURS_DB, GRUPO_MAX, esPorPersona } from "@/lib/tours";
+import { ANTICIPO_PCT } from "@/lib/carrito";
 
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones — Tours Huasteca Potosina",
+  // Decía "anticipo del 30 %" como si fuera la regla de todos: un recorrido
+  // suelto de un día se paga completo (`pctACobrar`, regla de Manolo).
   description:
-    "Condiciones de contratación de nuestros tours: reservas, anticipo del 30 %, pagos, cancelaciones, responsabilidades del viajero, seguridad y uso de imágenes.",
+    "Condiciones de contratación de nuestros tours: reservas, pagos y anticipo, cancelaciones, responsabilidades del viajero, seguridad y uso de imágenes.",
   alternates: { canonical: `${SITE}/terminos` },
   robots: { index: true, follow: true },
   openGraph: {
@@ -15,11 +19,43 @@ export const metadata: Metadata = {
     description: "Condiciones de contratación de nuestros tours en la Huasteca Potosina.",
     url: `${SITE}/terminos`,
     type: "website",
+    // Se compartía sin foto: el layout ya no le presta la suya a `twitter`
+    // y esta página no tiene `opengraph-image`. Next rellena twitter:image con
+    // esta. 1200×800 es la medida REAL del archivo (no 630).
+    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: "Tours Huasteca Potosina" }],
   },
 };
 
-/** Última revisión del documento. Actualízala si cambian las condiciones. */
-const ULTIMA_ACTUALIZACION = "10 de agosto de 2026";
+/**
+ * Última revisión del documento. Actualízala si cambian las condiciones.
+ * 28 sep 2026: pago completo del recorrido suelto de un día, cupo máximo real
+ * (salía "12" y el catálogo llega a 14) y las excepciones de cancelación y de
+ * precio de niños de los recorridos que no se cobran por persona (el Edén,
+ * por grupo, y el RZR, por vehículo).
+ */
+const ULTIMA_ACTUALIZACION = "28 de septiembre de 2026";
+
+/**
+ * 🔴 Los recorridos con condiciones de cancelación propias, del catálogo
+ * (`cancelacion` en `tours.ts`). El Edén en el Jardín NO tiene reembolso
+ * porque la Fundación Las Pozas no lo devuelve; el resumen de abajo prometía
+ * "cancelación gratuita" a todos. Uno nuevo con la misma excepción entra solo.
+ */
+const CON_CANCELACION_PROPIA = TOURS_DB.filter((t) => t.cancelacion);
+
+/**
+ * Los que NO se cobran por persona: por grupo completo (`tarifaGrupo`, el Edén)
+ * o por vehículo (el RZR, `precio × unidades` en RzrBookingForm). En ninguno
+ * hay precio de niño.
+ * 🔴 Filtraba solo por `tarifaGrupo` y el RZR se quedaba con el 70 %/50 % en
+ * los términos aunque el pago nunca lo aplica. `esPorPersona` es el mismo
+ * criterio que usan /precios y /tours.
+ */
+const SIN_PRECIO_NINO = TOURS_DB.filter((t) => !esPorPersona(t));
+
+/** "A", "A y B", "A, B y C". */
+const enLista = (nombres: string[]) =>
+  nombres.length <= 1 ? nombres.join("") : `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
 
 // Esta página era una de las dos indexables del sitio sin un solo dato
 // estructurado. Mismo patrón que /creditos: la ficha de la página y las migas.
@@ -98,8 +134,10 @@ export default function TerminosPage() {
 
         <H2>2. Reservas</H2>
         <ul className="mb-4">
-          <Li>Una reserva queda confirmada cuando recibimos el anticipo y te enviamos la confirmación por correo o WhatsApp. Hasta ese momento no hay lugar apartado.</Li>
-          <Li>Los tours operan con un cupo máximo por salida (12 participantes en la mayoría de los recorridos). El cupo se asigna por orden de confirmación.</Li>
+          <Li>Una reserva queda confirmada cuando recibimos el pago —completo o el anticipo, según el caso (ver «Precios y pagos»)— y te enviamos la confirmación por correo o WhatsApp. Hasta ese momento no hay lugar apartado.</Li>
+          {/* Decía "12 participantes en la mayoría": el catálogo va de 6 a 14 y
+              la mayoría sale con 14. Sale de `GRUPO_MAX`, como en la FAQ. */}
+          <Li>Los tours operan con un cupo máximo por salida (hasta {GRUPO_MAX} participantes; la página de cada recorrido indica el suyo). El cupo se asigna por orden de confirmación.</Li>
           <Li>Es tu responsabilidad revisar que los datos de la reserva —fecha, número de personas, edades y punto de encuentro— sean correctos. Avísanos de inmediato si algo no coincide.</Li>
           <Li>Podemos requerir un mínimo de participantes para operar ciertas salidas. Si no se alcanza, te ofrecemos otra fecha o el reembolso completo.</Li>
         </ul>
@@ -107,11 +145,21 @@ export default function TerminosPage() {
         <H2>3. Precios y pagos</H2>
         <ul className="mb-4">
           <Li>Todos los precios están en pesos mexicanos (MXN) e incluyen lo que cada tour detalla en su página.</Li>
-          <Li>Puedes apartar con un anticipo del 30 % y liquidar el saldo el día del tour, o pagar el 100 % al reservar.</Li>
+          {/* 🔴 Decía que CUALQUIER reserva se aparta con el 30 %, y el pago
+              cobra otra cosa: `pctACobrar` (lib/carrito.ts) cobra completo un
+              recorrido suelto de un día sin hospedaje. Un término que no
+              coincide con lo que cobra Stripe es un reclamo esperando. */}
+          <Li>Un recorrido suelto de un día, sin hospedaje, se paga completo al reservar. Si tu reserva es de dos días o más, o incluye hospedaje, puedes apartar con un anticipo del {ANTICIPO_PCT} % y liquidar el saldo el día del tour, o pagar el 100 % al reservar.</Li>
           <Li>Los pagos con tarjeta se procesan a través de Stripe. No almacenamos los datos de tu tarjeta en ningún momento.</Li>
           <Li>El saldo del día del tour se puede cubrir en efectivo o con tarjeta. Los pagos con tarjeta en sitio pueden llevar una comisión del 3 %.</Li>
           <Li>Algunos destinos cobran cuotas locales en efectivo (accesos ejidales, pangas). Cuando así sea, viene indicado en la página del tour o del destino.</Li>
-          <Li>Los precios de niños se aplican por edad: de 6 a 10 años pagan el 70 % del precio de adulto y los menores de 6 años el 50 %. Podemos pedir identificación el día del tour.</Li>
+          <Li>
+            Los precios de niños se aplican por edad: de 6 a 10 años pagan el 70 % del precio de adulto y los menores de 6 años el 50 %. Podemos pedir identificación el día del tour.
+            {/* `totalRecorrido` cobra la tarifa del grupo completo y el RZR, por
+                vehículo: ninguno tiene tramos de menor. */}
+            {SIN_PRECIO_NINO.length > 0 &&
+              ` No aplica a ${enLista(SIN_PRECIO_NINO.map((t) => t.nombreCorto))}, que se ${SIN_PRECIO_NINO.length > 1 ? "cobran" : "cobra"} por vehículo o por grupo completo.`}
+          </Li>
         </ul>
 
         <H2>4. Cancelaciones, cambios y clima</H2>
@@ -125,6 +173,14 @@ export default function TerminosPage() {
           reembolso pero puedes reagendar una vez sin costo. Si cancelamos nosotros —por clima,
           seguridad o cierre del paraje— eliges entre reembolso completo o reagendar sin costo.
         </P>
+        {/* El texto sale tal cual de `cancelacion.es` del catálogo: el mismo que
+            enseñan la ficha y el pago, para que no haya tres versiones. */}
+        {CON_CANCELACION_PROPIA.map((t) => (
+          <P key={t.slug}>
+            <strong className="text-verde-profundo">Excepción — {t.nombreCorto}:</strong>{" "}
+            {t.cancelacion!.es}
+          </P>
+        ))}
 
         <H2>5. Tu responsabilidad como participante</H2>
         <ul className="mb-4">

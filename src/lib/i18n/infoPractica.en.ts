@@ -1,7 +1,8 @@
 import type { Locale } from "./config";
 import type { FAQCategory } from "@/components/FAQAccordion";
 
-import { GRUPO_MAX } from "@/lib/tours";
+import { GRUPO_MAX, TOURS_DB, partesRecogida, salidaCorta } from "@/lib/tours";
+
 /**
  * Traducción de /info-practica, la guía práctica de viaje.
  *
@@ -21,6 +22,24 @@ import { GRUPO_MAX } from "@/lib/tours";
  *   · decía "menores de 4 gratis, de 4 a 12 al 60 %" → `calcTourTotal`
  *     (`lib/tourBooking.ts`) cobra 70 % de 6 a 10 años y 50 % a los menores de 6.
  */
+
+/**
+ * La hora de recogida de casi todos los recorridos, sacada del catálogo: un
+ * recorrido sin `recogida` propia hereda la de por defecto de `tours.ts`.
+ * 🔴 Estaba escrita a mano ("entre 8:00 y 9:00 AM") en la tarjeta del hotel y
+ * en la FAQ, que además va al FAQPage del JSON-LD: el día que cambie la hora
+ * por defecto, la guía se habría quedado con la vieja sin que nadie lo viera.
+ * Se lee de `tours.ts` y no de `recogidaTexto.ts` porque este archivo lo
+ * importa `ClimaWidget` (cliente) y aquel arrastra `localize.ts`.
+ */
+const HORA_COMUN_ES = partesRecogida({}, false).hora ?? "";
+const HORA_COMUN_EN = partesRecogida({}, true).hora ?? "";
+const TAMUL = TOURS_DB.find((t) => t.slug === "expedicion-tamul");
+const SALIDA_TAMUL = TAMUL ? salidaCorta(TAMUL) : null;
+
+/** Ver `faqPreguntaCancelacion`: una sola cadena para la FAQ y para la página. */
+const Q_CANCELACION_ES = "¿Cuál es la política de cancelación?";
+const Q_CANCELACION_EN = "What's the cancellation policy?";
 
 export interface Bloque {
   titulo: string;
@@ -152,6 +171,14 @@ export interface InfoPracticaContent {
   }[];
   itinerariosPie: string;
   itinerariosPieLink: string;
+  /**
+   * El bloque de los recorridos que salen SOLO de Xilitla. Aquí va solo el
+   * texto fijo: la lista, sus horas y lo de Ciudad Valles los arma la página
+   * desde el catálogo (este archivo lo importa un componente de cliente y no
+   * carga `localize.ts`).
+   */
+  xilitlaExtraTitulo: string;
+  xilitlaExtraIntro: string;
 
   // ── Qué llevar ──
   llevarFotoAlt: string;
@@ -169,14 +196,28 @@ export interface InfoPracticaContent {
   faqIntro: string;
   cancelacion: { titulo: string; sub: string }[];
   faq: FAQCategory[];
+  /**
+   * La pregunta de la política de cancelación TAL CUAL está en `faq` (se usa
+   * la misma constante en los dos sitios). La página mete detrás de ella una
+   * pregunta por cada recorrido del catálogo con `cancelacion` propia.
+   */
+  faqPreguntaCancelacion: string;
+  /**
+   * La pregunta de esa excepción. El nombre lo pone la página con
+   * `localizeTour`: este archivo lo importa `ClimaWidget` (cliente) y no debe
+   * arrastrar el catálogo en inglés.
+   */
+  faqExcepcionPregunta: (nombre: string) => string;
 
-  // ── Guía PDF ──
+  // ── Guía PDF ── (GRATIS a cambio del correo, como en / y /guia)
   guiaEyebrow: string;
   guiaH2a: string;
   guiaH2b: string;
   guiaTexto: string;
   guiaItems: string[];
-  guiaGarantia: string;
+  /** Lo que cuesta: nada, a cambio del correo. Antes era "Pago seguro · Garantía 7 días". */
+  guiaPrecio: string;
+  guiaCondicion: string;
   guiaCta: string;
 
   // ── CTA final ──
@@ -214,8 +255,10 @@ const ES: InfoPracticaContent = {
   // gente teclea: "huasteca potosina como llegar" (2.666 impresiones) y
   // "clima en la huasteca potosina" (1.763).
   metaTitle: "Huasteca Potosina — Cómo Llegar, Clima y Dónde Quedarse",
+  // Medía 162. Abre con lo que se teclea («cómo llegar», «clima») igual que el
+  // título, y cierra en frase completa.
   metaDescription:
-    "Todo lo que necesitas antes de viajar a la Huasteca Potosina: vuelos desde CDMX, temporadas, hospedaje en Ciudad Valles y Xilitla, presupuesto y consejos locales.",
+    "Antes de viajar a la Huasteca Potosina: cómo llegar desde CDMX, clima por temporada, hospedaje en Ciudad Valles y Xilitla, presupuesto y consejos locales.",
   ogTitle: "Info Práctica — Guía Completa para viajar a la Huasteca Potosina",
   ogDescription: "Cómo llegar, cuándo ir, dónde quedarse y presupuesto. Todo actualizado 2026.",
   twitterTitle: "Info Práctica — Huasteca Potosina",
@@ -370,10 +413,17 @@ const ES: InfoPracticaContent = {
     ". Opciones boutique en casas coloniales con vistas al cañón. Perfecto para 1-2 noches de inmersión cultural.",
   recomendacionEquipo: "Recomendación de nuestro equipo",
   hotelNombre: "Hotel Paraíso Encantado Xilitla",
+  // 🔴 Decía que se recoge "sin costo extra" en cualquier hospedaje de Ciudad
+  // Valles. Los que recogen solo en Xilitla (`hospedaje-xilitla`) cobran aparte
+  // desde allá, y la FAQ de esta misma página ya lo decía. "Muchos" y no "la
+  // mayoría": sin costo desde Valles recoge 7 de 14 (`recogida` en tours.ts).
   hotelTexto:
-    "Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín Surrealista, con piscina y restaurante de cocina huasteca. Pasamos por ti aquí —igual que a cualquier hospedaje de Xilitla o Ciudad Valles— sin costo extra.",
+    "Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín Surrealista, con piscina y restaurante de cocina huasteca. Pasamos por ti aquí sin costo extra, igual que a cualquier hospedaje de Xilitla y, en muchos de los recorridos, de Ciudad Valles.",
   hotelItems: [
-    "Recogida en la puerta entre 8:00 y 9:00 AM",
+    // 🔴 Decía "entre 8:00 y 9:00 AM" como regla de todos. La Gruta de Xilo
+    // sale de noche y el Amanecer de Nubes de madrugada: la hora de cada uno
+    // vive en su ficha (`recogida` en tours.ts), no aquí.
+    `Recogida en la puerta: ${HORA_COMUN_ES} en la mayoría de los recorridos; algunos, como la Gruta de Xilo, son de noche`,
     "Piscina con vista al cañón · Restaurante propio · AC y WiFi",
     "Tarifa especial para viajeros que reservan tours con nosotros",
     "Desde $1,200 MXN/noche (habitación doble)",
@@ -397,7 +447,7 @@ const ES: InfoPracticaContent = {
 
   paraisoIntroA: "El ",
   paraisoIntroB:
-    " es nuestra casa, a pasos del Jardín Surrealista de Edward James. No hace falta hospedarte aquí para tomar un tour —pasamos por ti a donde te quedes, en Xilitla o en Ciudad Valles—, pero si te quedas con nosotros la logística es más simple y sales por la puerta.",
+    " es nuestra casa, a pasos del Jardín Surrealista de Edward James. No hace falta hospedarte aquí para tomar un tour —en la mayoría de los recorridos pasamos por ti a donde te quedes, en Xilitla o en Ciudad Valles—, pero si te quedas con nosotros la logística es más simple y sales por la puerta.",
   paraisoFotoHeroAlt: "Hotel Paraíso Encantado Xilitla — fachada y jardines",
   paraisoFotoHabAlt: "Habitación del Hotel Paraíso Encantado Xilitla",
   paraisoFotoTerrazaAlt: "Terraza con vista al cañón en el Hotel Paraíso Encantado",
@@ -506,7 +556,7 @@ const ES: InfoPracticaContent = {
       sub: "Lo esencial para fines de semana largos",
       pasos: [
         { dia: "Día 1", lugar: "Llegada a Ciudad Valles · Noche en Valles o Xilitla" },
-        { dia: "Día 2", lugar: "Tour Tamul + Sótano de las Huahuas · Salida 8:00-9:00 am · Noche Xilitla" },
+        { dia: "Día 2", lugar: `Tour Tamul + Sótano de las Huahuas${SALIDA_TAMUL ? ` · Salida ${SALIDA_TAMUL}` : ""} · Noche Xilitla` },
         { dia: "Día 3", lugar: "Las Pozas (Edward James) · Regreso tarde" },
       ],
       cta: "Ver tour Tamul →",
@@ -542,6 +592,9 @@ const ES: InfoPracticaContent = {
   ],
   itinerariosPie: "¿No sabes por dónde empezar? ",
   itinerariosPieLink: "Usa el recomendador IA →",
+  xilitlaExtraTitulo: "Si pasas una noche en Xilitla",
+  xilitlaExtraIntro:
+    "Estos recorridos salen de Xilitla, cada uno con su horario; algunos, como la Gruta de Xilo, son de noche.",
 
   llevarFotoAlt: "Viajeros disfrutando en las aguas del río Tampaón — equipo básico para la Huasteca",
   llevarFotoPieA: "Aqua shoes y ropa de secado rápido son indispensables en la ",
@@ -656,7 +709,11 @@ const ES: InfoPracticaContent = {
   faqTitulo: "Preguntas Frecuentes",
   faqIntro: "Todo lo que necesitas saber antes de reservar.",
   cancelacion: [
+    // Cuatro tramos, en el orden de /politica-de-cancelacion. La página pinta
+    // cada tarjeta según su posición: si se añade o se quita una, revisar
+    // `ESTILO_CANCELACION` en info-practica/page.tsx.
     { titulo: "+48h de anticipación", sub: "Reembolso completo" },
+    { titulo: "Entre 48 y 24h antes", sub: "Se retiene el 50 %" },
     { titulo: "-24h de anticipación", sub: "Sin reembolso · Reagendamiento gratuito (1 vez)" },
     { titulo: "No-show", sub: "Sin reembolso" },
   ],
@@ -676,7 +733,9 @@ const ES: InfoPracticaContent = {
           // CORREGIDO (13 ago 2026): antes decía "menores de 4 no pagan" y
           // "de 4 a 12 al 60 %", que no es lo que cobra `calcTourTotal`.
           q: "¿Pueden participar niños?",
-          a: "Sí. Los menores de 6 años pagan el 50 % del precio de adulto y los de 6 a 10 años el 70 %. A partir de 11 años pagan tarifa completa. Algunos recorridos son solo para mayores: la ficha de cada tour lo indica.",
+          // "En los que se cobran por persona": el Edén se cobra por grupo
+          // completo y el RZR por vehículo; ahí no hay tramos de menor.
+          a: "Sí. En los recorridos que se cobran por persona, los menores de 6 años pagan el 50 % del precio de adulto y los de 6 a 10 años el 70 %. A partir de 11 años pagan tarifa completa. Algunos recorridos son solo para mayores: la ficha de cada tour lo indica.",
         },
         {
           q: "¿Pueden participar personas mayores?",
@@ -700,8 +759,14 @@ const ES: InfoPracticaContent = {
           a: "Por WhatsApp o con tarjeta de crédito/débito a través de Stripe (pago seguro en línea). Al reservar se confirma tu lugar de inmediato.",
         },
         {
-          q: "¿Cuál es la política de cancelación?",
-          a: "— Cancelación con 48h o más de anticipación: reembolso completo.\n— Cancelación con menos de 24h: sin reembolso, pero puedes reagendar una vez sin costo adicional.\n— No-show (no presentarse): sin reembolso.\n— Cancelación por parte nuestra (clima extremo u operativo): reembolso completo o reagendamiento sin costo, a tu elección.",
+          q: Q_CANCELACION_ES,
+          // 🔴 El Edén en el Jardín NO tiene reembolso (`cancelacion` en
+          // tours.ts). Su pregunta la añade la página justo detrás de esta,
+          // con el texto del catálogo; aquí solo se avisa de que existe.
+          // 🔴 Se saltaba el tramo de 48 a 24 h (se retiene el 50 %), que sí
+          // dicen /politica-de-cancelacion y /terminos: esta respuesta va al
+          // FAQPage y es la que citan Google y los asistentes de IA.
+          a: "— Cancelación con 48h o más de anticipación: reembolso completo.\n— Cancelación entre 48 y 24h antes: se retiene el 50 % de lo pagado.\n— Cancelación con menos de 24h: sin reembolso, pero puedes reagendar una vez sin costo adicional.\n— No-show (no presentarse): sin reembolso.\n— Cancelación por parte nuestra (clima extremo u operativo): reembolso completo o reagendamiento sin costo, a tu elección.\n— Si una experiencia tiene condiciones propias, se indican en su ficha antes de pagar.",
         },
         {
           // CORREGIDO (13 ago 2026): antes decía que se paga el total al
@@ -718,11 +783,15 @@ const ES: InfoPracticaContent = {
       items: [
         {
           q: "¿Desde dónde salen los tours?",
-          a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. No necesitas hospedarte con nosotros. Las excepciones son el recorrido en RZR (nos vemos en nuestra base de Xilitla) y el buceo en Media Luna (el punto de encuentro es la laguna, en Rioverde).",
+          // Faltaban los que recogen SOLO en Xilitla (decisión de Manolo, 28
+          // sep: desde Ciudad Valles sí se va, con costo adicional y sin monto).
+          a: "No hay un punto de salida único: en la mayoría de los recorridos pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar. No necesitas hospedarte con nosotros. Los que salen de Xilitla con horario propio, como la Gruta de Xilo, el Amanecer de Nubes o la Olla de la Luz, recogen en tu hospedaje de Xilitla; desde Ciudad Valles también vamos por ti, con un costo adicional que te cotizamos por WhatsApp. El recorrido en RZR empieza en nuestra base de Xilitla y el buceo en Media Luna, en la laguna, en Rioverde.",
         },
         {
           q: "¿A qué hora es la salida?",
-          a: "Los tours salen entre las 8:00 y las 9:00 AM; confirmamos tu hora exacta al reservar. Regreso aproximado entre 6:00 y 7:00 PM.",
+          // El "regreso entre 6:00 y 7:00 PM" era falso incluso de día: Tamul
+          // dura 12 h. Cada ficha calcula su regreso con su propia duración.
+          a: `En la mayoría de los recorridos pasamos por ti ${HORA_COMUN_ES}. Algunos tienen horario propio: la Gruta de Xilo es de noche y el Amanecer de Nubes sale de madrugada. La ficha de cada recorrido indica su hora de salida y su regreso aproximado, y te confirmamos la hora exacta al reservar.`,
         },
         {
           q: "¿Qué debo llevar?",
@@ -732,19 +801,31 @@ const ES: InfoPracticaContent = {
     },
   ],
 
-  guiaEyebrow: "✦ Guía Definitiva · PDF descargable",
-  guiaH2a: "Llévate la guía completa en ",
+  // 🔴 GRATIS a cambio del correo (decisión de Manolo, 28 sep 2026), como en
+  // la portada y en /guia. Aquí seguía a "$49" con "$199" tachado, "Pago
+  // seguro" y "Garantía 7 días", y enlazaba a una /guia que ya dice «Gratis».
+  // Describe el PDF que SE ENTREGA (public/guia-huasteca-potosina.pdf, 13
+  // páginas, UN itinerario de 5 días), no la guía de pago: prometía "3
+  // itinerarios de 3, 5 y 7 días" y un "mapa con todos los destinos" que el
+  // PDF no trae. Tampoco "precios actualizados": sus entradas son de mayo y no
+  // cuadran con DESTINOS_DB (ver guia/page.tsx). Si cambia el PDF, cambia esto.
+  faqPreguntaCancelacion: Q_CANCELACION_ES,
+  faqExcepcionPregunta: (nombre) => `¿${nombre} tiene reembolso?`,
+
+  guiaEyebrow: "✦ Guía gratis · PDF descargable",
+  guiaH2a: "Llévate la guía en ",
   guiaH2b: "PDF",
   guiaTexto:
-    "Mapa de la región, checklist de equipaje, presupuesto detallado y los 3 itinerarios modelo — todo en un PDF que funciona sin internet, listo para el día del viaje.",
+    "Un itinerario de 5 días con la hora de mejor luz de cada lugar, cómo llegar sin tour y cuánto gastas al día si vas por tu cuenta — en un PDF de 13 páginas que funciona sin internet. Gratis: solo te pedimos tu correo.",
   guiaItems: [
-    "Mapa descargable con todos los destinos",
+    "Itinerario de 5 días: Tamul y el Sótano, Xilitla y Las Pozas, el Meco, Minas Viejas y Micos, Puente de Dios y Tamasopo",
+    "Por cada día: hora de mejor luz, duración y dificultad",
+    "Cuánto gastas al día si vas por tu cuenta (aproximado)",
     "Checklist de empaque (no olvides nada)",
-    "Presupuesto detallado por tipo de viajero",
-    "Itinerarios 3, 5 y 7 días listos para imprimir",
   ],
-  guiaGarantia: "Pago seguro · Descarga inmediata · Garantía 7 días",
-  guiaCta: "Descargar la guía → $49",
+  guiaPrecio: "Gratis",
+  guiaCondicion: "A cambio de tu correo · descarga inmediata",
+  guiaCta: "Descargar la guía gratis →",
 
   ctaH2a: "¿Listo para ",
   ctaH2b: "planear tu viaje?",
@@ -768,7 +849,10 @@ const ES: InfoPracticaContent = {
       ideal: {
         titulo: "Temporada ideal, la mejor época",
         texto: "Las cascadas están en su caudal óptimo con el agua turquesa característico de la Huasteca. Clima fresco (16-30°C) y agradable. Es temporada alta — reserva hospedaje y tours con anticipación.",
-        tours: ["Expedición Tamul + Sótano de las Huahuas", "Ruta Surrealista (Las Pozas)", "Cascadas del Meco"],
+        // Los dos últimos, por la `temporada_ideal` de su destino en destinos.ts:
+        // Olla de la Luz "época seca (nov–may)" y Las Pozas "Nov–Mar". Van en
+        // el mismo orden que los `slugs` de ClimaWidget.
+        tours: ["Expedición Tamul + Sótano de las Huahuas", "Ruta Surrealista (Las Pozas)", "Cascadas del Meco", "Olla de la Luz (Hoya de la Luz)", "El Edén en el Jardín (Las Pozas en privado)"],
       },
       buena: {
         titulo: "Buena temporada para visitar",
@@ -793,7 +877,9 @@ const EN: InfoPracticaContent = {
   // "Practical Info" es calco de "Info Práctica": nadie en EE. UU. busca eso.
   // Un americano busca "travel guide" y "how to get to". El inglés también usa
   // "traveling" con una L, no la grafía británica que traía este bloque.
-  metaTitle: "Huasteca Potosina Travel Guide — How to Get There and When to Go",
+  // Medía 64. Mismas palabras (hace 4,69 % de CTR, no se reescribe), solo
+  // cambian la raya y el "and" para entrar en 60.
+  metaTitle: "Huasteca Potosina Travel Guide: How to Get There, When to Go",
   metaDescription:
     "Which airport to fly into, how long the drive really is, when the water runs bluest, what to pack and what things cost. Written by guides who live here.",
   ogTitle: "The Huasteca Potosina Travel Guide, Written by Local Guides",
@@ -948,9 +1034,9 @@ const EN: InfoPracticaContent = {
   recomendacionEquipo: "Our team's recommendation",
   hotelNombre: "Hotel Paraíso Encantado Xilitla",
   hotelTexto:
-    "Our base of operations and the best option in Xilitla. 50 meters from the Surrealist Garden, with a pool and a restaurant serving Huastec cooking. We pick you up here — just as we do at any lodging in Xilitla or Ciudad Valles — at no extra cost.",
+    "Our base of operations and the best option in Xilitla. 50 meters from the Surrealist Garden, with a pool and a restaurant serving Huastec cooking. We pick you up here at no extra cost, just as we do at any lodging in Xilitla and, on many tours, in Ciudad Valles.",
   hotelItems: [
-    "Door-to-door pickup between 8:00 and 9:00 AM",
+    `Door-to-door pickup: ${HORA_COMUN_EN} on most tours; some, like the Xilo Cave, run at night`,
     "Pool overlooking the canyon · Its own restaurant · AC and WiFi",
     "Special rate for travellers who book tours with us",
     "From $1,200 MXN/night (double room)",
@@ -974,7 +1060,7 @@ const EN: InfoPracticaContent = {
 
   paraisoIntroA: "",
   paraisoIntroB:
-    " is our home, steps from Edward James's Surrealist Garden. You don't have to stay here to take a tour — we pick you up wherever you're staying, in Xilitla or Ciudad Valles — but if you stay with us the logistics are simpler and you set off straight from the door.",
+    " is our home, steps from Edward James's Surrealist Garden. You don't have to stay here to take a tour — on most tours we pick you up wherever you're staying, in Xilitla or Ciudad Valles — but if you stay with us the logistics are simpler and you set off straight from the door.",
   paraisoFotoHeroAlt: "Hotel Paraíso Encantado Xilitla — façade and gardens",
   paraisoFotoHabAlt: "A room at Hotel Paraíso Encantado Xilitla",
   paraisoFotoTerrazaAlt: "Terrace overlooking the canyon at Hotel Paraíso Encantado",
@@ -1035,19 +1121,21 @@ const EN: InfoPracticaContent = {
     {
       nivel: "Budget",
       rango: "$400-600 MXN",
+      // 🔴 Cada cifra con su "MXN", no solo la del encabezado: un "$150" suelto
+      // en inglés lo lee como dólares el visitante y el asistente de IA que lo cita.
       incluye: [
-        "Lodging: hostel or camping ($150-200)",
-        "Food: markets and local stalls ($100-150)",
+        "Lodging: hostel or camping ($150-200 MXN)",
+        "Food: markets and local stalls ($100-150 MXN)",
         "1 destination per day: $60-220 MXN entry",
-        "Transport: combis and shared taxis ($50-100)",
+        "Transport: combis and shared taxis ($50-100 MXN)",
       ],
     },
     {
       nivel: "Mid-range",
       rango: "$800-1,500 MXN",
       incluye: [
-        "3-star hotel or guesthouse ($400-600)",
-        "Restaurants and cafés ($200-300)",
+        "3-star hotel or guesthouse ($400-600 MXN)",
+        "Restaurants and cafés ($200-300 MXN)",
         "2 destinations per day, activities included",
         "Taxi or a shared car rental",
         "Souvenirs and odds and ends",
@@ -1083,7 +1171,7 @@ const EN: InfoPracticaContent = {
       sub: "The essentials for a long weekend",
       pasos: [
         { dia: "Day 1", lugar: "Arrive in Ciudad Valles · Night in Valles or Xilitla" },
-        { dia: "Day 2", lugar: "Tamul + Sótano de las Huahuas tour · Departure 8:00-9:00 am · Night in Xilitla" },
+        { dia: "Day 2", lugar: `Tamul + Sótano de las Huahuas tour${SALIDA_TAMUL ? ` · Departure ${SALIDA_TAMUL}` : ""} · Night in Xilitla` },
         { dia: "Day 3", lugar: "Las Pozas (Edward James) · Head back in the afternoon" },
       ],
       cta: "See the Tamul tour →",
@@ -1119,6 +1207,9 @@ const EN: InfoPracticaContent = {
   ],
   itinerariosPie: "Not sure where to start? ",
   itinerariosPieLink: "Try the AI recommender →",
+  xilitlaExtraTitulo: "If you spend a night in Xilitla",
+  xilitlaExtraIntro:
+    "These tours leave from Xilitla, each on its own schedule; some, like the Xilo Cave, run at night.",
 
   llevarFotoAlt: "Travellers in the waters of the Tampaón river — the basic kit for the Huasteca",
   llevarFotoPieA: "Water shoes and quick-dry clothing are essential at ",
@@ -1234,6 +1325,7 @@ const EN: InfoPracticaContent = {
   faqIntro: "Everything you need to know before booking.",
   cancelacion: [
     { titulo: "48h or more ahead", sub: "Full refund" },
+    { titulo: "Between 48h and 24h ahead", sub: "50 % is kept" },
     { titulo: "Less than 24h ahead", sub: "No refund · Free rescheduling (once)" },
     { titulo: "No-show", sub: "No refund" },
   ],
@@ -1251,7 +1343,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "Can children take part?",
-          a: "Yes. Children under 6 pay 50 % of the adult price and those aged 6 to 10 pay 70 %. From 11 upwards it's the full rate. Some tours are adults only: each tour page says so.",
+          a: "Yes. On tours priced per person, children under 6 pay 50 % of the adult price and those aged 6 to 10 pay 70 %. From 11 upwards it's the full rate. Some tours are adults only: each tour page says so.",
         },
         {
           q: "Can older people take part?",
@@ -1275,8 +1367,8 @@ const EN: InfoPracticaContent = {
           a: "On WhatsApp or by credit/debit card through Stripe (secure online payment). Your place is confirmed straight away.",
         },
         {
-          q: "What's the cancellation policy?",
-          a: "— Cancelling 48h or more in advance: full refund.\n— Cancelling less than 24h in advance: no refund, but you can reschedule once at no extra cost.\n— No-show: no refund.\n— If we cancel (extreme weather or operational reasons): full refund or free rescheduling, your choice.",
+          q: Q_CANCELACION_EN,
+          a: "— Cancelling 48h or more in advance: full refund.\n— Cancelling between 48h and 24h ahead: 50 % of what you paid is kept.\n— Cancelling less than 24h in advance: no refund, but you can reschedule once at no extra cost.\n— No-show: no refund.\n— If we cancel (extreme weather or operational reasons): full refund or free rescheduling, your choice.\n— If an experience has its own terms, its tour page states them before you pay.",
         },
         {
           q: "Do I have to pay in full when I book?",
@@ -1289,11 +1381,11 @@ const EN: InfoPracticaContent = {
       items: [
         {
           q: "Where do the tours leave from?",
-          a: "There's no single meeting point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. You don't need to stay with us. The exceptions are the RZR ride (we meet at our base in Xilitla) and the Media Luna dive (the meeting point is the lagoon, in Rioverde).",
+          a: "There's no single meeting point: on most tours we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end. You don't need to stay with us. The ones that leave from Xilitla on their own schedule, like the Xilo Cave, the Sea of Clouds Sunrise or Olla de la Luz, pick you up at your lodging in Xilitla; we can also come for you in Ciudad Valles, at an additional cost we'll quote on WhatsApp. The RZR ride starts at our base in Xilitla and the Media Luna dive at the lagoon, in Rioverde.",
         },
         {
           q: "What time do they leave?",
-          a: "Tours leave between 8:00 and 9:00 AM; we confirm your exact time when you book. You're back around 6:00 to 7:00 PM.",
+          a: `On most tours we pick you up ${HORA_COMUN_EN}. Some run on their own schedule: the Xilo Cave is at night and the Sea of Clouds Sunrise leaves in the small hours. Each tour page shows its departure time and approximate return, and we confirm the exact time when you book.`,
         },
         {
           q: "What should I bring?",
@@ -1303,19 +1395,25 @@ const EN: InfoPracticaContent = {
     },
   ],
 
-  guiaEyebrow: "✦ The Definitive Guide · downloadable PDF",
-  guiaH2a: "Take the whole guide with you as a ",
+  // La página NO pinta esta sección en inglés (el PDF está en español), pero
+  // el diccionario dice lo mismo que el español: gratis, a cambio del correo.
+  faqPreguntaCancelacion: Q_CANCELACION_EN,
+  faqExcepcionPregunta: (nombre) => `Is ${nombre} refundable?`,
+
+  guiaEyebrow: "✦ Free guide · downloadable PDF (in Spanish)",
+  guiaH2a: "Take the guide with you as a ",
   guiaH2b: "PDF",
   guiaTexto:
-    "A map of the region, a packing checklist, a detailed budget and the 3 model itineraries — all in a PDF that works without internet, ready for the day you travel.",
+    "A 5-day itinerary with the best light at each spot, how to get there without a tour and how much you spend per day on your own — in a 13-page PDF that works offline. Free: we only ask for your email.",
   guiaItems: [
-    "Downloadable map with every destination",
+    "5-day itinerary: Tamul and the Sótano, Xilitla and Las Pozas, El Meco, Minas Viejas and Micos, Puente de Dios and Tamasopo",
+    "For each day: best light, duration and difficulty",
+    "How much you spend per day on your own (approximate)",
     "Packing checklist (so you don't forget anything)",
-    "Detailed budget by type of traveller",
-    "3, 5 and 7-day itineraries ready to print",
   ],
-  guiaGarantia: "Secure payment · Instant download · 7-day guarantee",
-  guiaCta: "Download the guide → $49 MXN",
+  guiaPrecio: "Free",
+  guiaCondicion: "In exchange for your email · instant download",
+  guiaCta: "Get the free guide →",
 
   ctaH2a: "Ready to ",
   ctaH2b: "plan your trip?",
@@ -1339,7 +1437,7 @@ const EN: InfoPracticaContent = {
       ideal: {
         titulo: "The best season, the ideal time",
         texto: "The waterfalls are at their best flow, with the turquoise water the Huasteca is known for. Cool, pleasant weather (16-30°C). It's high season — book accommodation and tours well ahead.",
-        tours: ["Tamul Expedition + Sótano de las Huahuas", "Surrealist Route (Las Pozas)", "El Meco Waterfalls"],
+        tours: ["Tamul Expedition + Sótano de las Huahuas", "Surrealist Route (Las Pozas)", "El Meco Waterfalls", "Olla de la Luz (Hoya de la Luz)", "Eden in the Garden (Las Pozas, private)"],
       },
       buena: {
         titulo: "Good season for a visit",

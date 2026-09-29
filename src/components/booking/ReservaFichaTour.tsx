@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { calcTourTotal } from "@/lib/tourBooking";
-import { precioGrupo } from "@/lib/tours";
+import { TOURS_DB, precioGrupo, salidaCorta, recogidaDeTour } from "@/lib/tours";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackBeginCheckout, trackDateSelected, trackParticipants } from "@/lib/analytics";
@@ -81,6 +81,15 @@ export function ReservaFichaTour({
 
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
 
+  // La hora sale del catálogo por el slug, no de una prop más: así la ficha no
+  // tiene que acordarse de pasarla y no hay dos fuentes que puedan discrepar.
+  // (`precioGrupo` ya trae `tours.ts` a este bundle; el catálogo no pesa de más.)
+  const tourCat = TOURS_DB.find((x) => x.slug === slug);
+  const hora = tourCat ? salidaCorta(tourCat, locale === "en") : null;
+  // El Edén trae el horario del JARDÍN (`horaTexto`), no una hora de salida:
+  // va como "Horario:", no como "Salida:".
+  const esHorario = !!tourCat && !!recogidaDeTour(tourCat).horaTexto;
+
   /** Un contador. Los tres se comportan igual salvo por su mínimo. */
   function Contador({
     etiqueta, valor, set, min,
@@ -137,6 +146,8 @@ export function ReservaFichaTour({
           tema="oscuro"
           titulo={nombre}
           permitirLimpiar
+          salida={esHorario ? null : hora}
+          horario={esHorario ? hora : null}
         />
       </div>
 

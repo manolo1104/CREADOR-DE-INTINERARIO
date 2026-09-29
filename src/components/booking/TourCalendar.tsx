@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 import { minBookingDate } from "@/lib/tourBooking";
 import { bloquearScroll } from "@/lib/scrollLock";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -312,6 +312,23 @@ interface Props {
    * invisible en una de las dos. La hoja siempre es clara: es un modal.
    */
   tema?: "claro" | "oscuro";
+  /**
+   * La hora de salida de ESTE recorrido, en corto: lo que da `salidaCorta()`
+   * ("7:00 PM", "3:00–4:00 AM"). Se pinta junto a la fecha elegida, también en
+   * modo compacto.
+   *
+   * 🔴 Sin ella no se dice ninguna hora. El calendario escribía "Salida entre
+   * 8:00 y 9:00 AM" para todos, y la Gruta de Xilo sale a las 7 de la NOCHE:
+   * justo al confirmar la fecha, mandaba al cliente a esperar de mañana.
+   */
+  salida?: string | null;
+  /**
+   * En lugar de `salida`, cuando el horario lo pone el lugar y no es la hora a
+   * la que pasamos por ti (`recogida.horaTexto`, el Edén). Se pinta "Horario:";
+   * con "Salida:" el calendario contradecía al resumen, que dice "pasamos por
+   * ti a tiempo para su horario fijo".
+   */
+  horario?: string | null;
 }
 
 export function TourCalendar({
@@ -323,9 +340,12 @@ export function TourCalendar({
   titulo,
   permitirLimpiar = false,
   tema = "claro",
+  salida,
+  horario,
 }: Props) {
   const { locale } = useLocale();
   const t = getBooking(locale).calendario;
+  const lineaHora = salida ? t.salida(salida) : horario ? t.horario(horario) : null;
   const textoPlaceholder = placeholder ?? t.placeholder;
   const textoTitulo      = titulo ?? t.titulo;
   const today = new Date();
@@ -460,8 +480,24 @@ export function TourCalendar({
     : null;
 
   // ── Compacto: botón + hoja en todos los tamaños ──
+  // La hora va debajo del botón y solo con fecha: el botón ya dice el día, y en
+  // un carrito que junta la Gruta (de noche) con un recorrido de mañana es lo
+  // que distingue un renglón del otro.
   if (modo === "compact") {
-    return <>{disparador}{hoja}</>;
+    return (
+      <>
+        {disparador}
+        {value && lineaHora && (
+          <p className={`mt-1.5 flex items-start gap-1.5 font-dm text-[11px] leading-snug ${
+            tema === "oscuro" ? "text-crema/55" : "text-negro/50"
+          }`}>
+            <Clock className="w-3 h-3 flex-shrink-0 mt-px" aria-hidden="true" />
+            <span>{lineaHora}</span>
+          </p>
+        )}
+        {hoja}
+      </>
+    );
   }
 
   // ── Inline: abierto en escritorio, hoja en móvil ──
@@ -479,11 +515,12 @@ export function TourCalendar({
           <span>
             {/*
               Antes decía "Salida: por acordar". La ficha del tour ya responde
-              esto ("salimos entre 8:00 y 9:00 AM"), así que el motor metía una
-              incógnita logística justo en el instante de decidir. La hora
-              exacta de recogida sí se confirma después, y eso se dice aparte.
+              esto, así que el motor metía una incógnita logística justo en el
+              instante de decidir. La hora es la del recorrido (`salida`); la
+              exacta de recogida se confirma después, y eso se dice aparte.
             */}
-            {t.fechaSeleccionada} <strong>{formatDisplay(value, locale)}</strong>{t.salidaEntre}
+            {t.fechaSeleccionada} <strong>{formatDisplay(value, locale)}</strong>
+            {lineaHora ? ` · ${lineaHora}` : ""}
           </span>
         </div>
       )}

@@ -1,7 +1,29 @@
 /* TourDeparture — Punto de salida y transporte (Server Component) */
 import { headers } from "next/headers";
 import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
-import { TOURS_DB, recogidaDeTour, regresoDeTour, ventanaSalida } from "@/lib/tours";
+import { TOURS_DB, recogidaDeTour, regresoDeTour, ventanaSalida, type Tour } from "@/lib/tours";
+import { localizeTour } from "@/lib/i18n/localize";
+
+/**
+ * La ciudad de recogida cuando la línea de traslado del `incluye` nombra UNA
+ * sola. `null` si nombra las dos, ninguna, o el tour declara otra recogida.
+ *
+ * 🔴 El Rappel de Tamul no declara `recogida`, así que cae en el caso por
+ * defecto ("tu hospedaje en Xilitla o Ciudad Valles"). Pero su fuente dice
+ * "Traslado desde Ciudad Valles", y su relato, su pregunta propia y el "No
+ * incluye" de la misma ficha también: prometerle Xilitla es decir algo que la
+ * fuente no respalda. Se lee del `incluye` EN ESPAÑOL (pásale el tour de
+ * `TOURS_DB`, no el localizado). Sobra el día que el catálogo le dé al Rappel
+ * una `recogida` propia; hasta entonces la usan este bloque y la ficha.
+ */
+export function ciudadUnicaDeRecogida(t: Pick<Tour, "incluye" | "recogida">): "Xilitla" | "Ciudad Valles" | null {
+  if (recogidaDeTour(t).tipo !== "hospedaje") return null;
+  const linea = t.incluye.find((i) => /traslado/i.test(i)) ?? "";
+  const xilitla = /xilitla/i.test(linea);
+  const valles = /ciudad valles/i.test(linea);
+  if (xilitla === valles) return null;
+  return xilitla ? "Xilitla" : "Ciudad Valles";
+}
 
 /*
  * La hora de salida y la de regreso ya NO se calculan aquí: viven en
@@ -88,21 +110,40 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
   // cliente recogida en Ciudad Valles mientras su propia pregunta frecuente,
   // 300 px más abajo en la misma página, decía "solo desde Xilitla".
   const rec = recogidaDeTour(tour ?? {});
+  const ciudadUnica = tour ? ciudadUnicaDeRecogida(tour) : null;
   // El nombre del recorrido, para que quien contesta sepa de cuál se trata.
   const nombreTour = tour?.nombreCorto ?? "";
-  const conNombre = nombreTour ? ` de la ${nombreTour}` : "";
+  // 🔴 Con "la" fijo delante, el mensaje que el cliente manda salía "me interesa
+  // la Amanecer de Nubes", "la El Edén en el Jardín", "la Recorrido en RZR".
+  // El artículo es del catálogo; vacío cuando el nombre ya lo trae. Y el verbo
+  // concuerda: "me interesan las Cascadas del Meco".
+  const conArticulo = tour
+    ? (tour.articulo ? `${tour.articulo} ${nombreTour}` : nombreTour)
+    : "";
+  const meInteresa = tour?.articulo === "los" || tour?.articulo === "las" ? "me interesan" : "me interesa";
+  const deNombre = !tour
+    ? ""
+    : tour.articulo === "el"
+      ? ` del ${nombreTour}`
+      : ` de ${conArticulo}`;
+  // En inglés, el nombre del catálogo inglés y entre comillas, como el otro
+  // botón de WhatsApp de la ficha: con el corto español detrás de "the" salía
+  // "interested in the El Edén en el Jardín", y aun en inglés "the El Meco
+  // Waterfalls" o "the Rappelling at…" no se leen sin las comillas.
+  const nombreEn = tour ? localizeTour(tour, "en").nombreCorto : "";
+  const elTourEn = nombreEn ? `the "${nombreEn}" tour` : "the tour";
   const WA_LLEGADA = waLlegada(
     rec.tipo === "hospedaje"
       ? (en
-          ? `Hi, I'm interested in the${nombreTour ? ` ${nombreTour}` : " tour"}. I'm staying at ___ — do you pick me up there?`
-          : `Hola, me interesa la ${nombreTour || "Expedición"}. Me hospedo en ___, ¿pasan por mí?`)
+          ? `Hi, I'm interested in ${elTourEn}. I'm staying at ___ — do you pick me up there?`
+          : `Hola, ${conArticulo ? `${meInteresa} ${conArticulo}` : "me interesa la Expedición"}. Me hospedo en ___, ¿pasan por mí?`)
       : rec.tipo === "hospedaje-xilitla"
         ? (en
-            ? `Hi, I'm interested in the${nombreTour ? ` ${nombreTour}` : " tour"}. I'm staying in ___ — do you pick me up, or should I meet you in Xilitla?`
-            : `Hola, me interesa la ${nombreTour || "experiencia"}. Me hospedo en ___, ¿pasan por mí o los veo en Xilitla?`)
+            ? `Hi, I'm interested in ${elTourEn}. I'm staying in ___ — do you pick me up, or should I meet you in Xilitla?`
+            : `Hola, ${conArticulo ? `${meInteresa} ${conArticulo}` : "me interesa la experiencia"}. Me hospedo en ___, ¿pasan por mí o los veo en Xilitla?`)
         : (en
-            ? `Hi, I have questions about how to reach the meeting point${nombreTour ? ` for the ${nombreTour}` : ""}.`
-            : `Hola, tengo dudas sobre cómo llegar al punto de encuentro${conNombre}.`),
+            ? `Hi, I have questions about how to reach the meeting point${nombreEn ? ` for ${elTourEn}` : ""}.`
+            : `Hola, tengo dudas sobre cómo llegar al punto de encuentro${deNombre}.`),
   );
 
   /* Las dos casillas de horario, derivadas del catálogo en vez de escritas a
@@ -245,10 +286,12 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
     );
   }
 
-  // ── Variante híbrida: recogemos en Xilitla, desde Valles llegas por tu cuenta ──
+  // ── Variante híbrida: recogemos en Xilitla; desde Valles, con costo adicional ──
   // El Edén en el Jardín, la Gruta de Xilo, el Amanecer de Nubes y la Olla de
   // la Luz. La diferencia entre ellos —si el vehículo es el RZR, y qué hace
   // quien viene de Valles— sale del catálogo, no de otro `if` por id.
+  // ⚠️ Lo de Valles no lleva monto: se cotiza por WhatsApp (decisión de
+  // Manolo, 28 sep). Decir "costo extra" sin más dejaba al cliente adivinando.
   if (rec.tipo === "hospedaje-xilitla") {
     return (
       <section>
@@ -264,13 +307,15 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
               Xilitla</strong>{rec.vehiculo ? <> — in the {rec.vehiculo.en} itself</> : null} and bring
               you back at the end. If you&apos;re staying in{" "}
               <strong className="text-crema font-medium">Ciudad Valles</strong>, we can come and get
-              you there for an extra transfer fee, or you make your own way up to Xilitla.</>
+              you there at an additional cost we&apos;ll quote on WhatsApp, or you make your own way
+              up to Xilitla.</>
             ) : (
               <><strong className="text-crema font-medium">Pasamos por ti a tu hospedaje en{" "}
               Xilitla</strong>{rec.vehiculo ? <> —en el propio {rec.vehiculo.es}—</> : null} y te
               regresamos al terminar. Si te hospedas en{" "}
-              <strong className="text-crema font-medium">Ciudad Valles</strong>, podemos ir por ti con
-              un costo extra de traslado, o subes a Xilitla por tu cuenta.</>
+              <strong className="text-crema font-medium">Ciudad Valles</strong>, también podemos ir
+              por ti, con un costo adicional que te cotizamos por WhatsApp, o subes a Xilitla por tu
+              cuenta.</>
             )}
           </p>
 
@@ -280,11 +325,11 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
             {(en
               ? [
                   { ciudad: "Xilitla",       nota: rec.vehiculo ? `We pick you up at your lodging — in the ${rec.vehiculo.en}` : "We pick you up at your lodging" },
-                  { ciudad: "Ciudad Valles", nota: "Transfer at an extra cost — or make your own way to Xilitla" },
+                  { ciudad: "Ciudad Valles", nota: "Transfer at an additional cost, quoted on WhatsApp — or make your own way to Xilitla" },
                 ]
               : [
                   { ciudad: "Xilitla",       nota: rec.vehiculo ? `Pasamos por ti a tu hospedaje, en el ${rec.vehiculo.es}` : "Pasamos por ti a tu hospedaje" },
-                  { ciudad: "Ciudad Valles", nota: "Traslado con costo extra — o subes por tu cuenta" },
+                  { ciudad: "Ciudad Valles", nota: "Traslado con costo adicional, cotizado por WhatsApp — o subes por tu cuenta" },
                 ]
             ).map((c) => (
               <div key={c.ciudad} className="bg-verde-profundo/30 border border-white/8 p-4 rounded">
@@ -334,7 +379,9 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
 
   // ── Variante por defecto: pasamos por ti a tu hospedaje ──
   // No hay un punto de salida único: recogemos en Xilitla y en Ciudad Valles,
-  // en el hospedaje del cliente (no hace falta que sea nuestro hotel).
+  // en el hospedaje del cliente (no hace falta que sea nuestro hotel). Salvo
+  // donde la fuente nombra una sola ciudad (ver `ciudadUnicaDeRecogida`): ahí
+  // se nombra esa y no se dice "redondo", que su `incluye` no dice.
   return (
     <section>
       <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
@@ -344,7 +391,19 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
       <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
         {/* Texto intro */}
         <p className="text-crema/65 font-dm text-sm leading-relaxed">
-          {en ? (
+          {ciudadUnica ? (
+            en ? (
+              <>We <strong className="text-crema font-medium">pick you up at your lodging</strong> —
+              hotel, hostel, cabin or Airbnb— in{" "}
+              <strong className="text-crema font-medium">{ciudadUnica}</strong> and bring you back at
+              the end. Transport is included; you don&apos;t need to stay with us.</>
+            ) : (
+              <><strong className="text-crema font-medium">Pasamos por ti a tu hospedaje</strong>
+              —hotel, hostal, cabaña o Airbnb— en{" "}
+              <strong className="text-crema font-medium">{ciudadUnica}</strong> y te regresamos al
+              terminar. El traslado va incluido y no necesitas hospedarte con nosotros.</>
+            )
+          ) : en ? (
             <>We <strong className="text-crema font-medium">pick you up at your lodging</strong> —
             hotel, hostel, cabin or Airbnb— in{" "}
             <strong className="text-crema font-medium">Xilitla</strong> or{" "}
@@ -359,7 +418,7 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
           )}
         </p>
 
-        {/* Las dos ciudades de recogida */}
+        {/* Las ciudades de recogida: las dos, o la única que respalda la fuente */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {(en
             ? [
@@ -370,7 +429,7 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
                 { ciudad: "Xilitla",       nota: "Sierra, Jardín Surrealista y alrededores" },
                 { ciudad: "Ciudad Valles", nota: "Cascadas, Tamul y el río Tampaón" },
               ]
-          ).map((c) => (
+          ).filter((c) => !ciudadUnica || c.ciudad === ciudadUnica).map((c) => (
             <div key={c.ciudad} className="bg-verde-profundo/30 border border-white/8 p-4 rounded">
               <p className="flex items-center gap-2 text-crema font-dm text-sm font-medium">
                 <MapPin className="w-4 h-4 text-verde-vivo/70 flex-shrink-0" aria-hidden="true" />
@@ -386,12 +445,12 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
           {(en
             ? [
                 { Icon: Clock,        label: "Pickup time",    value: horario[0].value },
-                { Icon: Bus,          label: "Transport",      value: "Round trip, included" },
+                { Icon: Bus,          label: "Transport",      value: ciudadUnica ? `From ${ciudadUnica}, included` : "Round trip, included" },
                 { Icon: CheckCircle2, label: "Approx. return", value: horario[1].value },
               ]
             : [
                 { Icon: Clock,        label: "Hora de recogida", value: horario[0].value },
-                { Icon: Bus,          label: "Traslado",          value: "Redondo, incluido" },
+                { Icon: Bus,          label: "Traslado",          value: ciudadUnica ? `Desde ${ciudadUnica}, incluido` : "Redondo, incluido" },
                 { Icon: CheckCircle2, label: "Regreso aprox.",    value: horario[1].value },
               ]
           ).map((item) => (

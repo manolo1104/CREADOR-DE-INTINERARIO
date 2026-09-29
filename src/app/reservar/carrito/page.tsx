@@ -17,12 +17,16 @@ import { leerExtras, guardarExtras, limpiarExtras } from "@/lib/carritoExtras";
 import { TRASLADOS, getTraslado, tarifaTraslado, precioBase } from "@/lib/traslados";
 import { HABITACIONES_HOTEL, serviciosHotel, vistaHabitacion, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
 import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
-import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour, etiquetaUnidad, fraseRecogida, salidaCorta, recogidaDeTour, type Tour } from "@/lib/tours";
+import { resumenSalidas, excepcionesSalida } from "@/lib/recogidaTexto";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { localizeTour } from "@/lib/i18n/localize";
 import type { Locale } from "@/lib/i18n/config";
-import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
+import { TOUR_REVIEWS } from "@/lib/tourReviews";
+// La calificación y el perfil salen de resenas.ts: en las dos franjas de
+// confianza de esta página quedaba un «4.9» escrito a mano, justo donde se paga.
+import { GOOGLE_RATING, GOOGLE_PERFIL_URL as GOOGLE_MAPS_REVIEWS_URL } from "@/lib/resenas";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
@@ -679,6 +683,42 @@ export default function CarritoPage() {
   const anticipo = Math.round((total * pctHoy) / 100);
   const saldo    = total - anticipo;
 
+  // 🔴 Cómo llega el cliente a SUS recorridos, desde el catálogo. El bloque de
+  // logística y la pregunta "¿De dónde salimos?" decían "entre 8:00 y 9:00 AM,
+  // en Xilitla o Ciudad Valles" para todo el carrito; con la Gruta de Xilo
+  // dentro (7 PM, solo Xilitla) eran dos datos falsos justo antes de pagar.
+  const toursCarrito = items
+    .map((i) => TOURS_DB.find((x) => x.slug === i.tourSlug))
+    .filter((x): x is Tour => !!x);
+  const lineasSalida = resumenSalidas(toursCarrito, locale);
+  const respuestaSalidas = lineasSalida.length
+    ? `${lineasSalida.join(" ")} ${t.horaExacta}`
+    : `${excepcionesSalida(locale)} ${t.horaExacta}`;
+  /**
+   * La hora de un renglón para su calendario; null si no hay hora pública. El
+   * Edén trae el horario del JARDÍN (`horaTexto`), no una salida: va aparte.
+   */
+  const horaDe = (slug: string) => {
+    const x = TOURS_DB.find((y) => y.slug === slug);
+    const hora = x ? salidaCorta(x, en) : null;
+    const esHorario = !!x && !!recogidaDeTour(x).horaTexto;
+    return { salida: esHorario ? null : hora, horario: esHorario ? hora : null };
+  };
+
+  // 🔴 Cancelación: el Edén NO se reembolsa (`cancelacion` en tours.ts) y este
+  // carrito le prometía "reembolso completo" en la franja de arriba, en el
+  // bloque de logística, en la pregunta "¿Puedo cancelar?" y en el resumen.
+  // Con el carrito vacío la pregunta habla de todo el catálogo.
+  const conCancelPropia = (toursCarrito.length ? toursCarrito : TOURS_DB)
+    .filter((x, n, arr) => x.cancelacion && arr.findIndex((y) => y.slug === x.slug) === n);
+  const todosCancelPropia = toursCarrito.length > 0 && toursCarrito.every((x) => x.cancelacion);
+  const nombreCat = (x: Tour) => nombreCorto(x.slug, x.nombre, locale);
+  const cancelacionDe = (x: Tour) => (en ? x.cancelacion?.en : x.cancelacion?.es) ?? "";
+  const respuestaCancelar = (base: string) => todosCancelPropia
+    ? conCancelPropia.map(cancelacionDe).join(" ")
+    : [base, ...conCancelPropia.map((x) => t.cancelarExcepcion(nombreCat(x), cancelacionDe(x)))].join(" ");
+  const cancelPropiaEnCarrito = toursCarrito.length > 0 ? conCancelPropia : [];
+
   // Mensaje del rescate: lleva lo que el cliente ya eligió para que no tenga
   // que repetirlo. Sin esto el chat arranca con "hola" y se pierde el contexto.
   const waRescate = `https://wa.me/524891090388?text=${encodeURIComponent(
@@ -703,9 +743,10 @@ export default function CarritoPage() {
 
   function cambiar(uid: string, cambios: Partial<CarritoItem>) {
     // Dos recorridos no pueden caer el mismo día: cada uno ocupa la jornada
-    // completa (salen a las 8 y vuelven por la tarde). Si se dejara pasar, el
-    // cliente pagaría dos tours que es físicamente imposible hacer, y la
-    // reclamación llega el mismo día de la salida.
+    // completa. Vale también para los de horario propio (la Gruta de noche, el
+    // Amanecer de madrugada): la regla es un recorrido por día, sin excepciones.
+    // Si se dejara pasar, el cliente pagaría dos tours que no se pueden hacer
+    // juntos, y la reclamación llega el mismo día de la salida.
     if (cambios.tourDate) {
       const chocaCon = items.find(
         (x) => x.uid !== uid && x.tourDate === cambios.tourDate,
@@ -1028,6 +1069,8 @@ export default function CarritoPage() {
                         titulo={t.fechaDe(nombreCorto(i.tourSlug, i.tourName, locale))}
                         placeholder={t.eligeLaFecha}
                         permitirLimpiar
+                        salida={horaDe(i.tourSlug).salida}
+                        horario={horaDe(i.tourSlug).horario}
                       />
                     </div>
 
@@ -1392,13 +1435,19 @@ export default function CarritoPage() {
                 {[...Array(5)].map((_, k) => <Star key={k} className="w-3 h-3 fill-dorado text-dorado" />)}
               </span>
               <span className="font-dm text-[12px] text-negro/70">
-                <strong className="text-negro">4.9</strong> · {t.resenasGoogle}
+                <strong className="text-negro">{GOOGLE_RATING}</strong> · {t.resenasGoogle}
               </span>
             </a>
-            <span className="inline-flex items-center gap-1.5 font-dm text-[12px] text-negro/55">
-              <ShieldCheck className="w-3.5 h-3.5 text-verde-selva flex-shrink-0" aria-hidden="true" />
-              {t.confianzaCancelas}
-            </span>
+            {/* Si todo el carrito es sin reembolso (solo el Edén), no hay sello
+                de cancelación que dar: su política va completa más abajo. */}
+            {!todosCancelPropia && (
+              <span className="inline-flex items-center gap-1.5 font-dm text-[12px] text-negro/55">
+                <ShieldCheck className="w-3.5 h-3.5 text-verde-selva flex-shrink-0" aria-hidden="true" />
+                {cancelPropiaEnCarrito.length
+                  ? t.confianzaCancelasSalvo(cancelPropiaEnCarrito.map(nombreCat).join(", "))
+                  : t.confianzaCancelas}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5 font-dm text-[12px] text-negro/55">
               <Lock className="w-3.5 h-3.5 text-verde-selva flex-shrink-0" aria-hidden="true" />
               {t.confianzaPago(pctHoy)}
@@ -1450,25 +1499,46 @@ export default function CarritoPage() {
           )}
           </div>
 
-          {/* Logística: la duda que más frena en el momento de pagar */}
+          {/* Logística: la duda que más frena en el momento de pagar. Sale de
+              los recorridos de ESTE carrito (`lineasSalida`): una frase si
+              todos se recogen igual, una por recorrido si no. */}
           <div className="mt-6 border border-verde-selva/25 bg-verde-selva/5 p-5 space-y-3">
-            <p className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70">
+            <div className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70">
               <MapPin className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <span>
-                <strong className="text-negro/85">{t.pasamosPorTiFuerte1}</strong>{t.pasamosPorTi}
-                <strong className="text-negro/85">{t.pasamosPorTiFuerte2}</strong>{t.pasamosPorTiCola}
-              </span>
-            </p>
+              {lineasSalida.length > 1 ? (
+                <div>
+                  <p className="text-negro/85 font-medium">{t.recogidaCadaRecorrido}</p>
+                  <ul className="mt-1.5 space-y-1.5">
+                    {lineasSalida.map((l) => <li key={l}>{l}</li>)}
+                  </ul>
+                  <p className="mt-1.5">{t.noHaceFaltaHospedarte}</p>
+                </div>
+              ) : (
+                <p>
+                  {lineasSalida[0] && <strong className="font-medium text-negro/85">{lineasSalida[0]}</strong>}{" "}
+                  {t.noHaceFaltaHospedarte}
+                </p>
+              )}
+            </div>
             <p className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70">
               <Clock className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <span>
-                <strong className="text-negro/85">{t.salimosEntreFuerte}</strong>{t.salimosEntre}
-              </span>
+              <span>{t.horaExacta}</span>
             </p>
-            <p className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70">
+            <div className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70">
               <ShieldCheck className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <span>{t.cancelacionGratuita}</span>
-            </p>
+              {cancelPropiaEnCarrito.length === 0 ? (
+                <span>{t.cancelacionGratuita}</span>
+              ) : (
+                <div className="space-y-1.5">
+                  {cancelPropiaEnCarrito.map((x) => (
+                    <p key={x.slug}>
+                      <strong className="font-medium text-negro/85">{nombreCat(x)}:</strong> {cancelacionDe(x)}
+                    </p>
+                  ))}
+                  {!todosCancelPropia && <p>{t.cancelacionResto}</p>}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Agregar otro recorrido sin salir del carrito: antes había que
@@ -1502,8 +1572,11 @@ export default function CarritoPage() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block font-dm text-[13px] text-negro/85 truncate">{x.nombre.split("—")[0].trim()}</span>
+                      {/* `etiquetaUnidad` y no un ternario de dos casos: el Edén
+                          se cobra por GRUPO y aquí salía "por persona". Y con
+                          "desde": su `precio` es solo el primer escalón. */}
                       <span className="block font-dm text-[11px] text-negro/45">
-                        {formatMXN(x.precio)} {x.precioUnidad === "vehiculo" ? t.porVehiculo : t.porPersona}
+                        {x.precioUnidad === "grupo" ? `${t.desde} ` : ""}{formatMXN(x.precio)} {etiquetaUnidad(x, en)}
                       </span>
                     </span>
                     <span className="flex-shrink-0 text-verde-selva font-dm text-lg" aria-hidden="true">+</span>
@@ -1519,9 +1592,10 @@ export default function CarritoPage() {
           </div>
 
           {/* ── HOSPEDAJE OPCIONAL ─────────────────────────────────────────
-              Apagado por defecto y dicho con todas sus letras: la promesa del
-              sitio es que pasamos por ti a CUALQUIER hospedaje, y muchos ya
-              vienen con hotel. Ofrecerlo sin presionar es la diferencia entre
+              Apagado por defecto y dicho con todas sus letras: hospedarse con
+              nosotros no es condición para reservar, y muchos ya vienen con
+              hotel. (Ojo: NO es "pasamos por ti a cualquier hospedaje"; cómo
+              llega cada quien depende del recorrido y lo dice la logística.) Ofrecerlo sin presionar es la diferencia entre
               un extra y una molestia.
 
               Pero estaba DEMASIADO apagado: era una casilla sin marcar, y las
@@ -1866,6 +1940,8 @@ export default function CarritoPage() {
                 subtotal: i.total,
                 incluye:  incluyeDeTour({ incluye: tour?.incluye ?? [] }, locale),
                 eleccion: i.eleccion,
+                recogida: base ? fraseRecogida(base, en) : undefined,
+                cancelacion: base ? (cancelacionDe(base) || undefined) : undefined,
                 // Las actividades opcionales se cobran, así que tienen que
                 // verse en el resumen. Se contratan en el renglón de arriba y
                 // no aparecían por ningún lado antes de pagar.
@@ -2050,7 +2126,7 @@ export default function CarritoPage() {
                     {[...Array(5)].map((_, k) => <Star key={k} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
                   </span>
                   <span className="font-dm text-[13px] text-negro/75">
-                    <strong className="text-negro">4.9</strong> · {t.resenasGoogle}
+                    <strong className="text-negro">{GOOGLE_RATING}</strong> · {t.resenasGoogle}
                   </span>
                   <span className="font-dm text-[11px] text-negro/40 group-hover:text-verde-selva transition-colors">{t.verlas}</span>
                 </a>
@@ -2090,7 +2166,9 @@ export default function CarritoPage() {
                   <span>{f.q}</span>
                   <span className="text-verde-selva text-lg leading-none flex-shrink-0 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
                 </summary>
-                <p className="font-dm text-[12px] text-negro/55 leading-relaxed mt-2 pr-6">{f.a}</p>
+                <p className="font-dm text-[12px] text-negro/55 leading-relaxed mt-2 pr-6">
+                  {f.clave === "salidas" ? respuestaSalidas : f.clave === "cancelar" ? respuestaCancelar(f.a) : f.a}
+                </p>
               </details>
             ))}
           </div>

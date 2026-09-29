@@ -7,14 +7,34 @@ import { Globe } from "lucide-react";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
 
-// Contraparte de idioma para el selector (evita 404: solo rutas core tienen /en).
+// Páginas españolas que SÍ tienen pareja en /en (la misma que declara su
+// hreflang). Antes solo estaban el inicio, /tours y /destinos: en /precios,
+// /paquetes o /reservar el botón "English" mandaba al inicio en inglés y el
+// visitante perdía la página que estaba leyendo.
+// 🔴 Tiene que coincidir con `bilingualStatic` y las fichas de
+// src/app/sitemap.ts. No se importa de ahí porque ese archivo carga Prisma y
+// este es un componente de cliente. El carrito entra aunque no esté en el
+// sitemap: los dos idiomas leen el mismo carrito guardado en el navegador.
+const ES_CON_EN = new Set([
+  "/", "/tours", "/destinos", "/paquetes", "/precios", "/reservar", "/reservar/carrito",
+  "/info-practica", "/nosotros", "/contacto", "/preguntas-frecuentes", "/experiencias",
+  "/viaje-septiembre",
+]);
+// Fichas: toda ficha de tour, destino o paquete existe en los dos idiomas.
+const FICHAS_CON_EN = /^\/(?:tours|destinos|paquetes)\/[^/]+$/;
+// Solo existen en inglés (sala de prensa y landings de ciudades de EE. UU.):
+// quitarles el /en daba 404, así que el botón "Español" lleva al inicio.
+const SOLO_EN = /^\/en\/(?:press|from)(?:\/|$)/;
+
+// Contraparte de idioma para el selector (sin pareja → inicio del otro idioma,
+// nunca un 404).
 function counterpartHref(pathname: string, locale: Locale): string {
   if (locale === "en") {
+    if (SOLO_EN.test(pathname)) return "/";
     return pathname.replace(/^\/en/, "") || "/";
   }
   if (pathname === "/") return "/en";
-  if (pathname === "/tours" || pathname.startsWith("/tours/")) return "/en" + pathname;
-  if (pathname === "/destinos" || pathname.startsWith("/destinos/")) return "/en" + pathname;
+  if (ES_CON_EN.has(pathname) || FICHAS_CON_EN.test(pathname)) return "/en" + pathname;
   return "/en";
 }
 

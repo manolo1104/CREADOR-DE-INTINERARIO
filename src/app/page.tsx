@@ -3,8 +3,10 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
+import { TOURS_DB, partesRecogida, GRUPO_MAX } from "@/lib/tours";
+import { incluyeDesayuno, rangoPorPersona } from "@/lib/catalogoResumen";
+import { PAQUETES_DB, precioVisible, getPaquete } from "@/lib/paquetes";
+import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_PERFIL_URL } from "@/lib/resenas";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
@@ -23,7 +25,7 @@ import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 import { BandaTemporada } from "@/components/BandaTemporada";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
-import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
+import { buildOrganizationJsonLd, buildTourOffer, ORG_REF } from "@/lib/jsonld";
 import { localizeTour } from "@/lib/i18n/localize";
 import { urlBlog } from "@/lib/blogDestinoMap";
 import { TRASLADOS, tarifaTraslado } from "@/lib/traslados";
@@ -105,6 +107,15 @@ export default async function HomePage() {
   // En el inicio mostramos solo 3 tours destacados; el botón lleva al catálogo completo.
   const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "ruta-surrealista-edward-james"];
   const toursHome = HOME_TOUR_SLUGS.map((s) => tours.find((t) => t.slug === s)).filter(Boolean) as typeof tours;
+  const desdePersona = rangoPorPersona().min;
+  const nConTraslado = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
+  const nConDesayuno = TOURS_DB.filter(incluyeDesayuno).length;
+  // Recorridos con política de cancelación propia (hoy el Edén: la Fundación
+  // Las Pozas no reembolsa). Toda frase que diga «cancelas gratis» para el
+  // catálogo entero los nombra; si no, promete un reembolso que no existe.
+  const sinReembolso = tours.filter((t) => t.cancelacion).map((t) => t.nombreCorto);
+  const salvoEs = sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : "";
+  const salvoEn = sinReembolso.length ? ` (except ${sinReembolso.join(", ")})` : "";
 
   const CATEGORIAS = [
     { Icon: Droplet,     label: en ? "Waterfalls & Pools" : "Cascadas & Pozas",  href: lp("/experiencias?tipo=cascadas") },
@@ -156,18 +167,10 @@ export default async function HomePage() {
         url: `${SITE_URL}${lp(`/tours/${t.slug}`)}`,
         image: t.imagen_hero?.startsWith("http") ? t.imagen_hero : `${SITE_URL}${t.imagen_hero}`,
         provider: ORG_REF,
-        offers: {
-          "@type": "Offer",
-          price: t.precio,
-          priceCurrency: "MXN",
-          availability: "https://schema.org/InStock",
-          url: `${SITE_URL}${lp(`/tours/${t.slug}`)}`,
-          // El RZR se cobra por vehículo, no por persona: si la máquina no lo
-          // lee, el precio miente. Sale de `precioUnidad`, no de la cabeza.
-          description: t.precioUnidad === "vehiculo"
-            ? (en ? "Price per vehicle" : "Precio por vehículo")
-            : (en ? "Price per person"  : "Precio por persona"),
-        },
+        // La MISMA oferta que /reservar, /precios y la ficha: unidad como dato
+        // (`unitText`) y rango cuando lo hay. El ternario vehículo/persona que
+        // estaba aquí habría declarado "por persona" al Edén, que es por grupo.
+        offers: buildTourOffer(t, locale, `${SITE_URL}${lp(`/tours/${t.slug}`)}`),
       },
     })),
   };
@@ -225,11 +228,14 @@ export default async function HomePage() {
 
   // 🔴 La cifra citable del bloque en inglés («contra Costa Rica se gana con el
   // precio real») estaba escrita A MANO: decía «$16,500 MXN for two people» y
-  // ningún paquete costaba eso — Tu Huasteca, que es el de 5 días / 4 noches
-  // que describe la frase, son $18,000 la pareja. Ahora sale de PAQUETES_DB.
+  // ningún paquete costaba eso. Ahora sale de PAQUETES_DB.
   // Va con `p.precio` a propósito: la frase dice «for two people», o sea el
   // total de la pareja, no `precioVisible`.
-  const paqueteIngles = PAQUETES_DB.find((p) => p.slug === "tu-huasteca") ?? PAQUETES_DB[0];
+  // 28 sep 2026: buscaba "tu-huasteca", que ya no existe, y salía bien de
+  // casualidad por el `?? PAQUETES_DB[0]`. Ahora se nombra el paquete: Inmersión
+  // Huasteca (3 días / 2 noches, el de entrada). Días, noches y precio salen de
+  // su ficha, así que la frase no se desfasa si cambian.
+  const paqueteIngles = getPaquete("inmersion-huasteca") ?? PAQUETES_DB[0];
 
   const TESTIMONIOS = en
     ? [
@@ -309,7 +315,9 @@ export default async function HomePage() {
               ))}
             </div>
             <span className="font-dm text-crema/90 text-sm drop-shadow">
-              {en ? "4.7 · Over 10,000 happy travelers" : "4.7 · Más de 10,000 viajeros satisfechos"}
+              {/* La calificación sale de resenas.ts en TODO el inicio: escrita a
+                  mano, así nacieron los 4.9 que se quedaban en otras páginas. */}
+              {en ? `${GOOGLE_RATING} · Over 10,000 happy travelers` : `${GOOGLE_RATING} · Más de 10,000 viajeros satisfechos`}
             </span>
           </div>
 
@@ -329,7 +337,8 @@ export default async function HomePage() {
                     ésos se cobran completos (`pctACobrar`)—. La promesa del
                     30 % se movió a donde sí aplica (el cierre, que habla de
                     sumar noches); aquí queda la única garantía que es cierta
-                    en los dos casos. */}
+                    en los dos casos. Es un sello de 9 px: la excepción del
+                    Edén (sin reembolso) la dicen su ficha y el pago. */}
                 <span className="text-[9px] tracking-[1.5px] uppercase text-negro/55 font-normal">
                   {en ? "Free cancellation up to 48 h" : "Cancelas gratis 48 h antes"}
                 </span>
@@ -343,7 +352,9 @@ export default async function HomePage() {
               <Link href={lp("/tours")} className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5">
                 <span>{en ? "✦ See the tours →" : "✦ Ver los recorridos →"}</span>
                 <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">
-                  {en ? "All-inclusive · Small groups" : "Todo incluido · Grupos pequeños"}
+                  {/* Decía "Todo incluido": el RZR no lleva traslado y al buceo
+                      llegas por tu cuenta. Igual en la franja de confianza. */}
+                  {en ? "Final price · Small groups" : "Precio final · Grupos pequeños"}
                 </span>
               </Link>
             </MagneticButton>
@@ -358,7 +369,7 @@ export default async function HomePage() {
           <ClimaHero en={en} />
 
           <div className="mb-10 bg-white/10 backdrop-blur-sm border border-white/20 px-5 py-2.5 rounded-full">
-            <UrgencyWidget />
+            <UrgencyWidget sinReembolso={sinReembolso} />
           </div>
 
           <HeroStats destinosCount={DESTINOS_DB.length} />
@@ -413,14 +424,16 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center gap-6 text-[10px] tracking-[1.5px] uppercase font-dm text-negro/50">
             <span className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "+10,000 travelers" : "+10,000 viajeros"}</span>
             <span className="text-negro/15 hidden sm:block">|</span>
-            <a href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6" target="_blank" rel="noopener noreferrer" className="hover:text-negro/80 transition-colors flex items-center gap-1.5">
+            {/* 🔴 Iba a maps.app.goo.gl/SWGyih…, que abre la ficha de Hotel
+                Paraíso Encantado (otra marca, otras reseñas). */}
+            <a href={GOOGLE_PERFIL_URL} target="_blank" rel="noopener noreferrer" className="hover:text-negro/80 transition-colors flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5 text-dorado" aria-hidden="true" />
-              <span className="text-negro/70 font-medium">4.7</span> · {en ? "161 Google reviews" : "161 reseñas Google"}
+              <span className="text-negro/70 font-medium">{GOOGLE_RATING}</span> · {en ? `${GOOGLE_RESENAS} Google reviews` : `${GOOGLE_RESENAS} reseñas Google`}
             </a>
             <span className="text-negro/15 hidden sm:block">|</span>
             <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "NOM-09 guides" : "Guías NOM-09"}</span>
             <span className="text-negro/15 hidden sm:block">|</span>
-            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "All inclusive" : "Todo incluido"}</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "Final price" : "Precio final"}</span>
             <span className="text-negro/15 hidden sm:block">|</span>
             <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "Daily departures" : "Salidas todos los días"}</span>
           </div>
@@ -462,10 +475,13 @@ export default async function HomePage() {
             {/* El precio vivía solo dentro de la insignia de cada tarjeta: un
                 "$1,550" suelto en un <span> no se puede citar. El número sale
                 de TOURS_DB (el mismo Math.min que usa la meta description), no
-                escrito a mano. */}
+                escrito a mano.
+                🔴 Decía "con transporte, desayuno y guía incluidos, desde
+                $900": los de $900 no llevan desayuno y solo 5 de 14 lo llevan.
+                Los dos conteos salen del catálogo (`catalogoResumen.ts`). */}
             {en
-              ? `${TOURS_DB.length} guided tours with transport, breakfast and a certified guide included, from $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN per person.`
-              : `${TOURS_DB.length} recorridos guiados con transporte, desayuno y guía certificado incluidos, desde $${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")} MXN por persona.`}
+              ? `${TOURS_DB.length} guided tours from $${desdePersona.toLocaleString("es-MX")} MXN per person: ${nConTraslado} pick you up at your lodging and ${nConDesayuno} include breakfast.`
+              : `${TOURS_DB.length} recorridos guiados desde $${desdePersona.toLocaleString("es-MX")} MXN por persona: ${nConTraslado} pasan por ti a tu hospedaje y ${nConDesayuno} incluyen desayuno.`}
           </p>
         </div>
 
@@ -553,7 +569,7 @@ export default async function HomePage() {
           <div className="text-center mb-12">
             <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "What travelers say" : "Lo que dicen los viajeros"}</p>
             <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
-              {en ? <>161 Reviews · <em className="shimmer-gold">4.7 stars</em></> : <>161 Reseñas · <em className="shimmer-gold">4.7 estrellas</em></>}
+              {en ? <>{GOOGLE_RESENAS} Reviews · <em className="shimmer-gold">{GOOGLE_RATING} stars</em></> : <>{GOOGLE_RESENAS} Reseñas · <em className="shimmer-gold">{GOOGLE_RATING} estrellas</em></>}
             </h2>
             <div className="flex justify-center gap-1 mt-3 star-group">
               {[...Array(5)].map((_, i) => (
@@ -584,9 +600,9 @@ export default async function HomePage() {
           </div>
 
           <div className="text-center mt-10">
-            <a href="https://maps.app.goo.gl/SWGyihBFTiykTFFM6" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
+            <a href={GOOGLE_PERFIL_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
               <Star className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
-              {en ? "Read all 161 reviews on Google" : "Ver las 161 reseñas en Google"}
+              {en ? `Read all ${GOOGLE_RESENAS} reviews on Google` : `Ver las ${GOOGLE_RESENAS} reseñas en Google`}
             </a>
           </div>
         </div>
@@ -649,6 +665,8 @@ export default async function HomePage() {
             <div className="reveal-up reveal-d1 space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
               {en ? (
                 <>
+                  {/* 🔴 El tope del grupo sale de GRUPO_MAX (tours.ts): decía
+                      «twelve» y el catálogo y /en/tours dicen 14. */}
                   {/* Copy escrito para el mercado americano: contra Costa Rica
                       no se gana con adjetivos, se gana con el precio real. Los
                       paquetes son POR PAREJA — ese es el dato que convierte. */}
@@ -657,7 +675,7 @@ export default async function HomePage() {
                       nombre en su vida. Fuente: llmsTxt.ts (GEOGRAFIA). */}
                   <p>The Huasteca Potosina is a natural region in the northeast of the state of San Luis Potosí, Mexico: Ciudad Valles is its hub city and Xilitla — the Pueblo Mágico where we are based — sits about 2.5 hours from Tampico airport (TAM).</p>
                   <p>Tampico is a short hop from Texas, and from the airport it&apos;s two and a half hours to Xilitla — in a private vehicle, driven by us. You sleep in a Pueblo Mágico, in our own hotel, not on a resort strip.</p>
-                  <p>Every guide holds NOM-09, Mexico&apos;s federal guiding certification, and travel insurance is in the price for every traveler on every tour. Groups stop at twelve. Fully bilingual guides are available — just ask when you book.</p>
+                  <p>Every guide holds NOM-09, Mexico&apos;s federal guiding certification, and travel insurance is in the price for every traveler on every tour. Groups stop at {GRUPO_MAX}. Fully bilingual guides are available — just ask when you book.</p>
                   <p>{paqueteIngles.dias} days, {paqueteIngles.noches} nights, the tours, the hotel and the insurance: <strong className="text-verde-profundo">${paqueteIngles.precio.toLocaleString("en-US")} MXN for two people</strong>. The price you see on our booking page is the price you pay.</p>
                 </>
               ) : (
@@ -726,11 +744,14 @@ export default async function HomePage() {
                   </li>
                   <li className="flex gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <span><strong className="text-negro/85">Safety equipment and transport</strong> from your hotel to each trailhead and back.</span>
+                    {/* Decía «transport from your hotel to each trailhead» en TODOS: al
+                        RZR se llega a la base y al buceo por tu cuenta. El
+                        conteo es el mismo de la franja de arriba. */}
+                    <span><strong className="text-negro/85">Safety equipment</strong> wherever the activity calls for it, and a ride from your lodging on {nConTraslado} of the {TOURS_DB.length} tours.</span>
                   </li>
                   <li className="flex gap-2.5">
                     <CheckCircle2 className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <span><strong className="text-negro/85">Groups capped at 12.</strong> We intend to keep it that way.</span>
+                    <span><strong className="text-negro/85">Groups capped at {GRUPO_MAX}.</strong> We intend to keep it that way.</span>
                   </li>
                 </ul>
               </div>
@@ -756,7 +777,7 @@ export default async function HomePage() {
                   })}
                 </ul>
                 <p className="text-sm font-dm text-negro/65 leading-relaxed">
-                  <strong className="text-negro/85">Flights</strong>, and any meals not listed on your itinerary. That&apos;s the whole list.
+                  <strong className="text-negro/85">Flights</strong>, any meals not listed on your itinerary{TOURS_DB.length > nConTraslado ? <>, and getting to the meeting point on the {TOURS_DB.length - nConTraslado} tours that don&apos;t pick you up</> : null}. That&apos;s the whole list.
                 </p>
               </div>
             </div>
@@ -767,7 +788,7 @@ export default async function HomePage() {
                   justo en el producto más vendido. */}
               <span>A single tour is paid in full · 30% deposit from 2 days</span>
               <span className="text-negro/15">|</span>
-              <span>Free cancellation up to 48 h</span>
+              <span>Free cancellation up to 48 h{salvoEn}</span>
               <span className="text-negro/15">|</span>
               <span>Apple&nbsp;Pay · Google&nbsp;Pay · Card</span>
               <span className="text-negro/15">|</span>
@@ -812,12 +833,17 @@ export default async function HomePage() {
                   Todo lo que necesitas para{" "}<em className="shimmer-gold">viajar solo por la Huasteca</em>
                 </h2>
                 <p className="reveal-up reveal-d1 text-crema/55 font-dm text-sm leading-relaxed mb-6 max-w-md mx-auto md:mx-0">
-                  Cómo llegar, dónde quedarte, presupuesto real, 3 itinerarios probados (3, 5 y 7 días), checklist y los tips locales que no encontrarás en ningún blog. Edición 2026.
+                  {/* Describe el PDF que SE ENTREGA (public/guia-huasteca-potosina.pdf:
+                      13 páginas, UN itinerario de 5 días). Prometía «3 itinerarios
+                      (3, 5 y 7 días)» y «8 destinos», que son de la guía de pago. Tampoco
+                      «lo que cuesta cada parada»: las entradas del PDF no cuadran
+                      con DESTINOS_DB (ver guia/page.tsx). */}
+                  Cómo llegar, dónde quedarte, cuánto gastas al día si vas por tu cuenta, un itinerario de 5 días con la hora de mejor luz, checklist y los tips locales que no encontrarás en ningún blog. Edición 2026.
                 </p>
                 <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8 text-[10px] tracking-[2px] uppercase font-dm text-crema/40">
-                  <span>✓ 8 destinos esenciales</span>
-                  <span>✓ Precios 2026</span>
-                  <span>✓ 3 itinerarios</span>
+                  <span>✓ Itinerario de 5 días</span>
+                  <span>✓ Horarios de luz</span>
+                  <span>✓ Checklist</span>
                 </div>
                 {/* Gratis a cambio del correo. Cobrar $49 por el imán de
                     leads era cobrar por lo único que convierte a un visitante
@@ -876,8 +902,8 @@ export default async function HomePage() {
               escasez honesta es la temporada seca, no un colapso inventado. */}
           <p className="reveal-up reveal-d1 text-crema/60 font-dm text-sm leading-relaxed max-w-xl mx-auto mb-9">
             {en
-              ? "We'd like to keep the rivers the way they are — that's why our groups stop at twelve and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. From two days a 30% deposit holds it; a single-day tour is paid in full. Free cancellation up to 48 h before."
-              : "Elige tus recorridos y súmale las noches que necesites: desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo. Cancelas gratis hasta 48 h antes."}
+              ? `We'd like to keep the rivers the way they are — that's why our groups stop at ${GRUPO_MAX} and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. From two days a 30% deposit holds it; a single-day tour is paid in full. Free cancellation up to 48 h before${salvoEn}.`
+              : `Elige tus recorridos y súmale las noches que necesites: desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo. Cancelas gratis hasta 48 h antes${salvoEs}.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <MagneticButton className="inline-block">
@@ -894,7 +920,7 @@ export default async function HomePage() {
             </a>
           </div>
           <p className="reveal-up reveal-d1 mt-7 text-[11px] tracking-[2px] uppercase font-dm text-crema/35">
-            4.7 ★ · 161 {en ? "Google reviews" : "reseñas Google"} · +10,000 {en ? "travelers" : "viajeros"}
+            {GOOGLE_RATING} ★ · {GOOGLE_RESENAS} {en ? "Google reviews" : "reseñas Google"} · +10,000 {en ? "travelers" : "viajeros"}
           </p>
         </div>
       </section>

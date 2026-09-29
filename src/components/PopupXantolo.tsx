@@ -8,7 +8,8 @@ import { X, ArrowRight, Check } from "lucide-react";
 import { useLocale } from "@/lib/i18n/useLocale";
 
 /**
- * El aviso de Xantolo: aparece a los 20 segundos y regala la guía por correo.
+ * El aviso de Xantolo: aparece a los 20 segundos de cada página y regala la
+ * guía por correo.
  *
  * Diseño «la fecha manda» (variante 1b del boceto): horizontal, la foto del
  * sahumerio a la izquierda y, a la derecha, lo primero y más grande son las
@@ -18,10 +19,13 @@ import { useLocale } from "@/lib/i18n/useLocale";
  * Es una interrupción, así que se porta como tal:
  *
  *  · Se cierra con Esc, con el fondo, con la X y con «ahora no».
- *  · Cerrado, no vuelve EN ESTA VISITA. En la siguiente puede volver a salir:
- *    para eso es `sessionStorage` y no `localStorage`.
+ *  · Cerrarlo NO lo apaga: vuelve a salir a los 20 s en cada recarga y en
+ *    cada página nueva (decisión de Manolo, 28 sep 2026). Antes se callaba el
+ *    resto de la visita con `sessionStorage`.
  *  · Si dejó su correo, no vuelve NUNCA —eso sí en `localStorage`—: ya tiene la
  *    guía y volver a pedírsela es la manera más rápida de perder a alguien.
+ *  · No sale en el carrito, en la reserva ni en el pago: a quien está metiendo
+ *    su tarjeta no se le interrumpe.
  *  · Caduca solo el 3 de noviembre. Nadie tiene que acordarse de quitarlo.
  *  · No sale si el aviso de cookies sigue en pantalla: dos capas encima del
  *    contenido a la vez es lo que hace que la gente cierre la pestaña.
@@ -32,8 +36,6 @@ import { useLocale } from "@/lib/i18n/useLocale";
  * `destinos.ts`: del 31 de octubre al 2 de noviembre. No se inventó ninguna.
  */
 
-/** Cerrado: se calla el resto de la visita. */
-const CLAVE_VISITA = "hp_xantolo_visita";
 /** Dio su correo: se calla para siempre. */
 const CLAVE_ENVIADO = "hp_xantolo_2026_guia";
 const SEGUNDOS = 20;
@@ -102,26 +104,32 @@ export function PopupXantolo() {
   const panel = useRef<HTMLDivElement>(null);
   const enfocadoAntes = useRef<HTMLElement | null>(null);
 
+  /** ¿Está en pantalla? Una página nueva no debe reiniciarlo si ya está abierto. */
+  const abierto = useRef(false);
+
+  // La ruta sin el prefijo de idioma: "/en/reservar-tour/x" → "/reservar-tour/x".
+  const ruta = pathname.replace(/^\/en(?=\/|$)/, "") || "/";
   const fuera =
-    pathname.startsWith("/curso") ||
-    pathname.startsWith("/admin") ||
+    ruta.startsWith("/curso") ||
+    ruta.startsWith("/admin") ||
+    ruta.startsWith("/reservar-tour") ||
+    ruta.startsWith("/reservar-paquete") ||
+    ruta.startsWith("/reservar/carrito") ||
+    ruta.startsWith("/confirmacion") ||
     pathname.includes("xantolo");
 
   const cerrar = useCallback(() => {
     setVisible(false);
-    try {
-      sessionStorage.setItem(CLAVE_VISITA, "cerrado");
-    } catch {
-      /* Navegación privada o almacenamiento bloqueado: se cierra igual, sólo
-         que podría volver a salir. No es motivo de error. */
-    }
     // Se desmonta después de la salida, que es más corta que la entrada.
-    window.setTimeout(() => setMontado(false), 170);
+    window.setTimeout(() => {
+      setMontado(false);
+      abierto.current = false;
+    }, 170);
     enfocadoAntes.current?.focus();
   }, []);
 
   useEffect(() => {
-    if (fuera) return;
+    if (fuera || abierto.current) return;
 
     /* Puerta trasera para revisarlo: `?xantolo=1` lo abre YA, sin los 20
        segundos y sin hacer caso de que ya se haya cerrado antes.
@@ -131,20 +139,32 @@ export function PopupXantolo() {
     const forzado = new URLSearchParams(window.location.search).get("xantolo") === "1";
 
     if (!forzado && yaCaduco()) return;
-    let calla = false;
-    let cookiesPendientes = false;
-    try {
-      calla =
-        sessionStorage.getItem(CLAVE_VISITA) !== null ||
-        localStorage.getItem(CLAVE_ENVIADO) !== null;
-      cookiesPendientes = localStorage.getItem("hp_cookie_consent") === null;
-    } catch {
-      /* Sin almacenamiento no se insiste: mejor no salir que salir siempre. */
-      if (!forzado) return;
-    }
-    if (!forzado && (calla || cookiesPendientes)) return;
+
+    /* Sin almacenamiento no se sabe si ya dio su correo: mejor no salir que
+       pedírselo cada 20 segundos a quien ya lo dio. */
+    const dioCorreo = (): boolean => {
+      try {
+        return localStorage.getItem(CLAVE_ENVIADO) !== null;
+      } catch {
+        return true;
+      }
+    };
+    /* El aviso de cookies se mira al DISPARAR, no al armar: en 20 s da tiempo
+       de contestarlo, y dos capas encima del contenido a la vez es lo que hace
+       cerrar la pestaña. */
+    const cookiesPendientes = (): boolean => {
+      try {
+        return localStorage.getItem("hp_cookie_consent") === null;
+      } catch {
+        return true;
+      }
+    };
+    if (!forzado && dioCorreo()) return;
 
     const t = window.setTimeout(() => {
+      // Pudo dejar su correo en otra pestaña durante la espera.
+      if (!forzado && (dioCorreo() || cookiesPendientes())) return;
+      abierto.current = true;
       enfocadoAntes.current = document.activeElement as HTMLElement | null;
       setMontado(true);
       // Un cuadro de margen para que el estado inicial llegue a pintarse: sin
@@ -153,7 +173,10 @@ export function PopupXantolo() {
       requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
     }, forzado ? 0 : SEGUNDOS * 1000);
     return () => window.clearTimeout(t);
-  }, [fuera]);
+    /* `pathname` también arma el reloj: el aviso vive en el marco del sitio y
+       no se vuelve a montar al pasar de una página a otra. Sin esto sólo
+       saldría al recargar. */
+  }, [fuera, pathname]);
 
   // Esc para cerrar y Tab que no se escapa del cuadro.
   useEffect(() => {

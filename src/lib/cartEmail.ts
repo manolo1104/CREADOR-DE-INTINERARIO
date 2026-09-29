@@ -84,8 +84,9 @@ export interface CartEmailInput {
 
 import { pctACobrar } from "@/lib/carrito";
 import {
-  C, WA, bajoBoton, boton, filaMoney, fotoTour, garantias, shellCorreo,
+  C, WA, bajoBoton, boton, filaMoney, fotoTour, garantias, nota, shellCorreo,
 } from "./emailLayout";
+import { lineasCancelacion, lineasRecogida } from "./recogidaCorreo";
 
 /** "2 adultos · 1 de 6 a 10 años · 1 menor de 6" — el desglose que importa. */
 function gente(l: CartEmailLinea, locale: Locale): string {
@@ -161,6 +162,13 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
   const pctCorreo  = pctACobrar(diasCorreo, Boolean((d as any).hospedaje));
   const anticipo   = d.anticipo ?? Math.round((d.total * pctCorreo) / 100);
 
+  // Recogida y cancelación salen de los recorridos del carrito: con uno que
+  // solo recoge en Xilitla, que no recoge o que no tiene reembolso (el Edén),
+  // la palomita genérica prometía de más. Lo que no es genérico va aparte.
+  const slugsCarrito = lineas ? lineas.map((l) => l.tourSlug) : [d.tourSlug];
+  const recogida = lineasRecogida(slugsCarrito, locale, { generica: T.garantiaRecogida, sinTours: T.garantiaRecogidaSinTours });
+  const cancelacion = lineasCancelacion(slugsCarrito, locale, T.garantiaCancelacion);
+
   // La foto del primer recorrido del carrito: es lo que estaba a punto de
   // comprar, y verlo pesa más que cualquier recordatorio escrito.
   const slugFoto = (lineas?.[0]?.tourSlug) || d.tourSlug || "";
@@ -173,7 +181,9 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
       : "Huasteca Potosina · San Luis Potosí · México",
     eyebrow: `${T.tuViaje}${lineas && lineas.length > 1 ? T.recorridos(lineas.length) : ""}`,
     h1a: c.titulo,
-    entradilla: c.intro,
+    // Con el Edén dentro, la entrada no puede prometer la cancelación de 48 h
+    // que el bloque de abajo le niega.
+    entradilla: cancelacion.detalle.length ? (c.introSinCancelacion ?? c.intro) : c.intro,
     cuerpo: [
       tourFoto ? fotoTour(tourFoto.slug, tituloTour, 190) : "",
       `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:${tourFoto ? "0" : "0"} 0 0 0;">
@@ -186,7 +196,11 @@ export function buildCartEmailHtml(d: CartEmailInput): { subject: string; html: 
       </table>`,
       boton(d.restoreUrl, c.cta, "dorado"),
       bajoBoton(T.ctaSub),
-      garantias([...T.garantias]),
+      recogida.detalle.length
+        ? nota(`<strong style="color:${C.oscuro};">${T.dondeYHora}</strong><br>${recogida.detalle.join("<br>")}`, C.texto, "26px 0 0 0")
+        : "",
+      cancelacion.detalle.length ? nota(cancelacion.detalle.join("<br>"), C.texto, "14px 0 0 0") : "",
+      garantias([...cancelacion.garantia, ...recogida.garantia, T.garantiaGuias]),
     ].join(""),
     pie: `${T.prefieresChat} <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a>.`,
     origen: T.yaNoInteresa,

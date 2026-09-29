@@ -1,19 +1,36 @@
-"use client";
-import { useState } from "react";
 import Link from "next/link";
 import { GuiaHeroMockup } from "@/components/GuiaHeroMockup";
+import { GuiaGratisForm } from "@/components/GuiaGratisForm";
+import { resenasTexto } from "@/lib/resenas";
 import type { LucideIcon } from "lucide-react";
-import { MapPin, Calendar, DollarSign, Car, ClipboardList, Utensils, Zap, Phone } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Car, ClipboardList, Utensils, Zap, BedDouble } from "lucide-react";
 
+/**
+ * /guia — la guía en PDF, GRATIS a cambio del correo (decisión de Manolo,
+ * 28 sep 2026). Antes se cobraba $49 con Stripe mientras la portada la
+ * regalaba; ahora las dos usan `GuiaGratisForm` y entregan el mismo archivo.
+ *
+ * 🔴 Lo que se entrega es `public/guia-huasteca-potosina.pdf` (13 páginas, UN
+ * itinerario de 5 días). La lista de abajo describe ESE archivo, no la guía de
+ * pago (`/api/pdf/guia`: 8 destinos, 3 itinerarios de 3/5/7 días, contactos por
+ * municipio), que era lo que prometía esta página. Si cambia el PDF, cambia
+ * esta lista.
+ *
+ * 🔴 NO anunciar «lo que cuesta cada parada» ni «precios actualizados»: las
+ * entradas del PDF son de mayo y no cuadran con `DESTINOS_DB` en 7 de 8 paradas
+ * (Las Pozas $100 vs $180, Puente de Dios $100 vs $150…). Mientras el PDF no se
+ * regenere con el catálogo, se promete solo el gasto aproximado por día, que el
+ * propio PDF marca con «~».
+ */
 const INCLUIDO: { Icon: LucideIcon; text: string }[] = [
-  { Icon: MapPin,        text: "Los 8 destinos esenciales con fichas completas — precios 2026, horarios reales, GPS" },
-  { Icon: Calendar,      text: "3 itinerarios probados: 3, 5 y 7 días con horarios y tiempos de traslado" },
-  { Icon: DollarSign,    text: "Presupuesto real por tipo de viajero — mochilero, viajero medio, con comodidad" },
-  { Icon: Car,           text: "Rutas desde CDMX, Monterrey, Guadalajara y Tampico con precios actualizados" },
-  { Icon: ClipboardList, text: "Checklist de empaque completo con lo que SÍ y lo que NO llevar" },
-  { Icon: Utensils,      text: "Gastronomía huasteca, frases útiles y cultura local" },
-  { Icon: Zap,           text: "Tips insider que no encuentras en blogs de viaje — ángulos de foto, horarios secretos" },
-  { Icon: Phone,         text: "Contactos de emergencia y guías certificados por municipio" },
+  { Icon: Calendar,      text: "Itinerario de 5 días: Tamul y el Sótano, Xilitla y Las Pozas, el Meco, Minas Viejas y Micos, Puente de Dios y Tamasopo" },
+  { Icon: MapPin,        text: "Por cada día: la hora de mejor luz, la duración de puerta a puerta y la dificultad" },
+  { Icon: DollarSign,    text: "Cuánto gastas al día si vas por tu cuenta (aproximado)" },
+  { Icon: Car,           text: "Cómo llegar a cada lugar sin tour, y a Ciudad Valles desde CDMX en avión, autobús o auto" },
+  { Icon: BedDouble,     text: "Mejor temporada del año y dónde dormir en tres niveles de precio" },
+  { Icon: ClipboardList, text: "Checklist de empaque: ropa, equipo y botiquín" },
+  { Icon: Utensils,      text: "Vocabulario huasteco y los platillos que hay que probar" },
+  { Icon: Zap,           text: "Notas del guía y lo que NO hacer en cada lugar" },
 ];
 
 const TESTIMONIOS = [
@@ -22,36 +39,15 @@ const TESTIMONIOS = [
   { nombre: "Familia Soto", ciudad: "Guadalajara", texto: "Viajamos con tres niños. El itinerario de 5 días fue perfecto — ritmo ideal, sin agotarnos.", estrellas: 5 },
 ];
 
+// Las MISMAS que el FAQPage de layout.tsx (Google exige que el schema se vea).
+const FAQS = [
+  { q: "¿Cuánto cuesta?", a: "Nada. Es gratis: solo te pedimos tu correo. Sin pago y sin tarjeta." },
+  { q: "¿Cómo me llega?", a: "Al instante: escribes tu correo y la descarga empieza sola en tu celular o computadora." },
+  { q: "¿En qué formato la recibo?", a: "En PDF, de 13 páginas. Lo abres en cualquier celular o computadora y lo guardas para consultarlo durante el viaje." },
+  { q: "Nunca he ido a la Huasteca, ¿me sirve?", a: "Está hecha justo para eso. Te lleva de la mano desde cómo llegar y cuánto gastar hasta qué hacer cada día, con horarios y errores que debes evitar." },
+];
+
 export default function GuiaPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleComprar() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/cobrar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          monto: "49",
-          descripcion: "Guía Definitiva Huasteca Potosina 2026 — PDF completo",
-          producto: "guia_pdf",
-        }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("No se pudo iniciar el pago. Intenta de nuevo.");
-      }
-    } catch {
-      setError("Error de conexión. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <main className="min-h-screen">
       {/* Hero */}
@@ -62,48 +58,30 @@ export default function GuiaPage() {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Columna texto */}
           <div className="text-center md:text-left">
-            <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-5">✦ PDF · 15–20 páginas · Actualizada 2026</p>
+            <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-5">✦ PDF gratis · 13 páginas · Edición 2026</p>
             <h1 className="font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(38px,5.5vw,68px)" }}>
               Guía Huasteca Potosina<br />
               <em className="text-dorado">La guía que sí funciona</em>
             </h1>
             <p className="font-cormorant italic text-crema/55 max-w-xl mx-auto md:mx-0 mb-7 text-lg leading-relaxed">
-              No es un folleto turístico. Es la guía que un amigo local te daría: con los horarios reales,
-              los precios actualizados y los errores que cometen casi todos los turistas.
+              No es un folleto turístico. Es la guía que un amigo local te daría: con la hora de mejor luz de cada lugar,
+              cómo llegar sin tour y los errores que cometen casi todos los turistas.
             </p>
 
-            {/* Urgencia (precio de lanzamiento) */}
-            <div className="inline-flex items-center gap-2.5 bg-dorado/10 border border-dorado/30 px-4 py-2 mb-6">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-dorado/70" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-dorado" />
-              </span>
-              <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm">Precio de lanzamiento · sube pronto</p>
-            </div>
-
-            {/* Price + CTA */}
-            <div className="flex flex-col items-center md:items-start gap-4 mb-6">
-              <div className="flex items-baseline gap-3">
-                <span className="font-cormorant font-light text-crema/40 line-through text-2xl">$199 MXN</span>
-                <span className="font-cormorant font-light text-dorado" style={{ fontSize: "clamp(44px,6vw,68px)" }}>$49 MXN</span>
-              </div>
-              <button
-                onClick={handleComprar}
-                disabled={loading}
-                className="w-full sm:w-auto bg-dorado text-negro px-14 py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? "Redirigiendo..." : "Descargar Guía — $49 MXN"}
-              </button>
-              {error && <p className="text-terracota text-sm">{error}</p>}
-              <div className="space-y-1">
-                <p className="text-[10px] text-crema/30 tracking-wide">Pago seguro con Stripe · PDF en tu correo al instante</p>
-                <p className="text-[11px] text-verde-vivo/90 tracking-wide">🛡️ Garantía de 7 días — si no te sirve, te devolvemos tu dinero</p>
+            {/* Oferta: gratis a cambio del correo. Aquí había un «$199» tachado
+                y «Precio de lanzamiento · sube pronto» sin fecha: un precio
+                anterior que nunca existió y una urgencia inventada. */}
+            <div className="flex flex-col items-center md:items-start gap-3 mb-6 w-full max-w-md mx-auto md:mx-0 text-left">
+              <p className="font-cormorant font-light text-dorado leading-none" style={{ fontSize: "clamp(40px,5.5vw,60px)" }}>Gratis</p>
+              <p className="text-[11px] tracking-[2px] uppercase text-crema/50 font-dm">A cambio de tu correo · descarga inmediata</p>
+              <div className="w-full">
+                <GuiaGratisForm origen="/guia" />
               </div>
             </div>
 
             {/* Preview badges */}
             <div className="flex flex-wrap gap-2.5 justify-center md:justify-start">
-              {["8 destinos", "3 itinerarios", "Precios 2026", "Tips insider", "Checklist empaque"].map((tag) => (
+              {["Itinerario de 5 días", "Cómo llegar sin tour", "Horarios de luz", "Checklist empaque", "Comida y cultura"].map((tag) => (
                 <span key={tag} className="text-[10px] tracking-[2px] uppercase border border-verde-vivo/30 text-verde-vivo px-3 py-1">
                   {tag}
                 </span>
@@ -123,19 +101,19 @@ export default function GuiaPage() {
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-center">
           <span className="flex items-center gap-2">
             <span className="text-dorado text-sm tracking-tight">★★★★★</span>
-            <span className="text-[11px] text-crema/65 font-dm">4.7 · 161 reseñas Google</span>
+            <span className="text-[11px] text-crema/65 font-dm">{resenasTexto(false)}</span>
           </span>
           <span className="text-crema/15 hidden sm:inline">·</span>
           <span className="text-[11px] text-crema/55 font-dm">+10,000 viajeros guiados</span>
           <span className="text-crema/15 hidden sm:inline">·</span>
           <span className="text-[11px] text-crema/55 font-dm">Guías NOM-09 SECTUR</span>
           <span className="text-crema/15 hidden sm:inline">·</span>
-          <span className="text-[11px] text-crema/55 font-dm">Guías NOM-09 SECTUR</span>
-          <span className="text-crema/15 hidden sm:inline">·</span>
           <span className="text-[11px] text-crema/55 font-dm">Operando desde 2019</span>
         </div>
         <p className="text-center text-[11px] text-crema/35 font-dm mt-3">
-          Escrita por el equipo detrás de los tours #1 de la Huasteca Potosina.
+          {/* Sin «los tours #1»: es un superlativo que nada respalda (mismo caso
+              que «la operadora mejor calificada» de /nosotros). */}
+          Escrita por los guías de Tours Huasteca Potosina.
         </p>
       </section>
 
@@ -207,13 +185,7 @@ export default function GuiaPage() {
           Preguntas <em className="text-dorado">frecuentes</em>
         </h2>
         <div className="space-y-4">
-          {[
-            { q: "¿En qué formato la recibo?", a: "Es un documento digital que abres en cualquier celular o computadora. Para guardarlo como PDF usa Ctrl/Cmd + P → Guardar como PDF." },
-            { q: "¿Cómo me llega después de pagar?", a: "Al instante: la descargas en la pantalla de confirmación y además te enviamos el enlace de descarga a tu correo para que la tengas siempre." },
-            { q: "Nunca he ido a la Huasteca, ¿me sirve?", a: "Está hecha justo para eso. Te lleva de la mano desde cómo llegar y cuánto gastar hasta qué hacer cada día, con horarios y errores que debes evitar." },
-            { q: "¿Tiene garantía?", a: "Sí, 7 días. Si no te sirve, escríbenos y te devolvemos tu dinero, sin preguntas." },
-            { q: "¿Está actualizada?", a: "Es la edición 2026, con precios, horarios y contactos vigentes." },
-          ].map((faq) => (
+          {FAQS.map((faq) => (
             <details key={faq.q} className="border border-white/10 bg-negro/40">
               <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
                 {faq.q}
@@ -235,19 +207,9 @@ export default function GuiaPage() {
         <p className="text-crema/50 text-sm max-w-md mx-auto mb-10 leading-relaxed">
           Con la guía en tu celular, llegas a cada destino en el momento correcto, con lo que necesitas y sin sorpresas desagradables.
         </p>
-        <button
-          onClick={handleComprar}
-          disabled={loading}
-          className="inline-block bg-dorado text-negro px-16 py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {loading ? "Redirigiendo..." : "✦ Descargar Guía — $49 MXN"}
-        </button>
-        <p className="mt-4 text-[11px] text-crema/25 tracking-wide">
-          Pago seguro · Descarga inmediata · PDF en tu correo
-        </p>
-        <p className="mt-2 text-[11px] text-verde-vivo/90 tracking-wide">
-          🛡️ Garantía de 7 días — si no te sirve, te devolvemos tu dinero
-        </p>
+        <div className="max-w-md mx-auto text-left">
+          <GuiaGratisForm origen="/guia" />
+        </div>
         <p className="mt-6 text-[11px] text-crema/20">
           ¿Prefieres un itinerario personalizado?{" "}
           <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2">

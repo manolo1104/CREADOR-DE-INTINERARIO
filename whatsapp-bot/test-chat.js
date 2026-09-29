@@ -58,10 +58,11 @@ async function run() {
   ok(needsHuman("hola quiero info de un tour") === false, "mensaje normal → false");
 
   console.log("conocimiento (paquetes/destinos):");
-  ok(PAQUETES.length === 3, "hay 3 paquetes");
+  ok(PAQUETES.length === 4, "hay 4 paquetes");
   ok(DESTINOS.length === 41, "hay 41 destinos");
-  ok(findPaquete("aventura").precio === 9000, "Paquete Aventura = $9,000");
-  ok(findPaquete("gran-huasteca").precio === 16500, "Paquete Gran Huasteca = $16,500");
+  ok(findPaquete("aventura").precio === 13390, "Paquete Aventura = $13,390");
+  ok(findPaquete("gran-huasteca").precio === 12290, "Paquete Gran Huasteca = $12,290");
+  ok(findPaquete("odisea-huasteca").precio === 16500, "Paquete Odisea Huasteca = $16,500");
   ok(!findPaquete("esencial"), "el paquete 'Esencial' ya NO existe");
   ok(findDestino("las pozas").precioEntrada === "$180 MXN", "Las Pozas entrada $180");
   ok((DESTINO_TOUR["cascada-de-tamul"] || []).some((r) => r.slug === "rappel-tamul"), "Tamul → cross-sell tour vendible");
@@ -188,7 +189,7 @@ async function run() {
   ], (last) => {
     const n = norm(last);
     soft(n.includes("aventura") || n.includes("completo") || n.includes("gran huasteca"), "menciona algún paquete por nombre");
-    soft(/9[.,]?000|12[.,]?200|15[.,]?500/.test(last), "incluye algún precio de paquete");
+    soft(/8[.,]?699|12[.,]?290|13[.,]?390|16[.,]?500/.test(last), "incluye algún precio de paquete");
     soft(!n.includes("esencial"), "NO menciona el paquete 'Esencial' (ya no existe)");
   });
 

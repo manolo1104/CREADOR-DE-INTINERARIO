@@ -1,10 +1,12 @@
 import type { Locale } from "./config";
 import { TOURS_DB } from "@/lib/tours";
-import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
+import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { TRASLADOS } from "@/lib/traslados";
 import { formatMXN } from "@/lib/tourBooking";
 import { fmtMoney } from "./format";
 import { localizePaquete } from "./paquetes.en";
+import { localizeTour } from "./localize";
+import { rangoPorPersona, rangoGrupo } from "@/lib/catalogoResumen";
 
 import { GRUPO_MAX } from "@/lib/tours";
 /**
@@ -90,9 +92,102 @@ export interface FaqContent {
 
 const precioTour = (id: string) => TOURS_DB.find((t) => t.id === id)?.precio ?? 0;
 
-const preciosPorPersona = TOURS_DB.filter((t) => t.precioUnidad !== "vehiculo").map((t) => t.precio);
-const PRECIO_MIN_N = Math.min(...preciosPorPersona);
-const PRECIO_MAX_N = Math.max(...preciosPorPersona);
+// 🔴 Filtraba con `!== "vehiculo"` y el Edén —tarifa del GRUPO entero— subía
+// el techo a $2,990 «por persona», visible y dentro del FAQPage. Es el mismo
+// error que ya se corrigió en `faqTours.ts` y en /precios: `rangoPorPersona`
+// filtra con `esPorPersona`.
+const { min: PRECIO_MIN_N, max: PRECIO_MAX_N } = rangoPorPersona();
+
+/**
+ * Los que se cobran por GRUPO (hoy, el Edén), con sus escalones: «de $2,990 a
+ * $4,160 por el grupo completo». Sacados del rango de arriba tienen que decirse
+ * aparte, o la respuesta callaría el recorrido más caro del catálogo.
+ */
+const TOURS_GRUPO = TOURS_DB.filter((t) => t.precioUnidad === "grupo");
+const nombreTour = (t: (typeof TOURS_DB)[number], locale: Locale) =>
+  localizeTour(t, locale).nombre.split("—")[0].trim();
+const GRUPO_NOTA_ES = TOURS_GRUPO.map((t) => {
+  const r = rangoGrupo(t);
+  return ` ${nombreTour(t, "es")} se cobra por grupo: de ${formatMXN(r.min)} a ${formatMXN(r.max)} MXN por el grupo completo según cuántos vayan (de ${t.groupMin} a ${t.groupMax} personas).`;
+}).join("");
+const GRUPO_NOTA_EN = TOURS_GRUPO.map((t) => {
+  const r = rangoGrupo(t);
+  return ` ${nombreTour(t, "en")} is priced per group: ${fmtMoney(r.min, "en")} to ${fmtMoney(r.max, "en")} for the whole group depending on its size (${t.groupMin} to ${t.groupMax} people).`;
+}).join("");
+
+/**
+ * Los tours con política de cancelación PROPIA (hoy, el Edén, que no
+ * reembolsa), con el texto del campo `cancelacion` del catálogo.
+ *
+ * 🔴 La respuesta de cancelación prometía «reembolso del 100 %» a TODOS los
+ * tours y la de lluvia «eliges entre reembolso o reagendar», las dos dentro del
+ * FAQPage y en la misma página cuya primera respuesta ya nombra al Edén. Es la
+ * promesa por la que existe ese campo. Se arma igual que en `faqTours.ts`, así
+ * la FAQ no puede decir otra cosa que la ficha del tour.
+ */
+const TOURS_CANCEL_PROPIA = TOURS_DB.filter((t) => t.cancelacion);
+const cancelPropia = (locale: Locale) =>
+  TOURS_CANCEL_PROPIA.map((t) =>
+    locale === "en"
+      ? ` The exception is ${nombreTour(t, "en")}. ${t.cancelacion!.en}`
+      : ` La excepción es ${nombreTour(t, "es")}. ${t.cancelacion!.es}`,
+  ).join("");
+
+/**
+ * Para la respuesta de lluvia basta la frase del CLIMA de esa política (la
+ * misma que pinta la insignia de la ficha del tour); repetir la política entera
+ * dos respuestas seguidas sobra. Si un día esa política no habla del clima, se
+ * remite a la respuesta de cancelación en vez de inventarle una.
+ */
+const climaPropio = (locale: Locale) =>
+  TOURS_CANCEL_PROPIA.map((t) => {
+    const nombre = nombreTour(t, locale);
+    const frase = t.cancelacion![locale].split(/(?<=\.)\s+/).find((f) => /clima|weather/i.test(f));
+    if (!frase) {
+      return locale === "en"
+        ? ` ${nombre} follows its own cancellation policy, explained on this page.`
+        : ` ${nombre} se rige por su propia política de cancelación, explicada en esta misma página.`;
+    }
+    const f = frase.charAt(0).toLowerCase() + frase.slice(1);
+    return locale === "en" ? ` The exception is ${nombre}: ${f}` : ` La excepción es ${nombre}: ${f}`;
+  }).join("");
+
+/**
+ * Los paquetes que nombra la respuesta de «¿3 días?», elegidos por lo que
+ * RECORREN (el más corto que lleva esos tours) y con el nombre de
+ * `localizePaquete`, nunca escritos a mano.
+ *
+ * 🔴 Decía «Luna de Miel» y «Paquete Familiar» después de retirarlos; y al
+ * corregirlo, la versión inglesa quedó con «Inmersión Huasteca» en español
+ * mientras /en/paquetes dice «Huasteca Immersion».
+ */
+const paqueteConTours = (...slugs: string[]): Paquete | undefined =>
+  PAQUETES_DB.filter((p) => slugs.every((s) => p.itinerario.some((d) => d.tourSlug === s))).sort(
+    (a, b) => a.dias - b.dias,
+  )[0];
+const PAQ_ESENCIAL = paqueteConTours("expedicion-tamul", "ruta-surrealista-edward-james");
+const PAQ_CON_MECO = paqueteConTours("expedicion-tamul", "ruta-surrealista-edward-james", "cascadas-del-meco");
+
+/** «paquete Inmersión Huasteca» / «Huasteca Immersion package», sin duplicar la palabra si el nombre ya la trae («Gran Huasteca Package»). */
+const conPalabraPaquete = (p: Paquete, locale: Locale) => {
+  const n = localizePaquete(p, locale).nombre;
+  if (/paquete|package/i.test(n)) return n;
+  return locale === "en" ? `${n} package` : `paquete ${n}`;
+};
+const TRES_DIAS_ES =
+  (PAQ_ESENCIAL
+    ? ` Nuestro ${conPalabraPaquete(PAQ_ESENCIAL, "es")} (${PAQ_ESENCIAL.dias} días / ${PAQ_ESENCIAL.noches} noches) hace exactamente ese recorrido.`
+    : "") +
+  (PAQ_CON_MECO
+    ? ` Para añadir un día completo de cascadas —las Cascadas del Meco— hacen falta ${PAQ_CON_MECO.dias} días: es lo que recorre el ${conPalabraPaquete(PAQ_CON_MECO, "es")}.`
+    : "");
+const TRES_DIAS_EN =
+  (PAQ_ESENCIAL
+    ? ` Our ${conPalabraPaquete(PAQ_ESENCIAL, "en")} (${PAQ_ESENCIAL.dias} days / ${PAQ_ESENCIAL.noches} nights) does exactly that route.`
+    : "") +
+  (PAQ_CON_MECO
+    ? ` To add a full day of waterfalls — the Cascadas del Meco — you need ${PAQ_CON_MECO.dias} days: that is what the ${conPalabraPaquete(PAQ_CON_MECO, "en")} covers.`
+    : "");
 
 /**
  * El rango de paquetes sale de lo que se ENSEÑA (`precioVisible`), nunca de
@@ -113,29 +208,38 @@ const PAQ_MAX_N = precioVisible(paqCaro);
 const PAQ_DIAS_MIN = paqBarato.dias;
 const PAQ_DIAS_MAX = paqCaro.dias;
 
-/** La unidad de los dos extremos del rango; si no coinciden, no se afirma una. */
-const PAQ_UNIDAD_ES =
-  paqBarato.precioLabel === paqCaro.precioLabel ? paqBarato.precioLabel : "según el paquete";
-const PAQ_UNIDAD_EN =
-  paqBarato.precioPorPersona === paqCaro.precioPorPersona
-    ? paqBarato.precioPorPersona
-      ? "per person"
-      : "per couple"
-    : "depending on the package";
-
-/** Los que NO se venden por persona, para no afirmar que todos lo son. */
+/**
+ * La unidad y su aclaración, leídas de `precioPorPersona` paquete por paquete.
+ *
+ * 🔴 La nota decía «La excepción es Inmersión Huasteca, que se vende por
+ * pareja…; Gran Huasteca…; Paquete Aventura…; Odisea Huasteca…» justo después
+ * de «van de $8,699 a $16,500 MXN por pareja»: los cuatro eran «la excepción»
+ * de una regla que ya decía «por pareja». Se armaba siempre que hubiera UN
+ * paquete por pareja. Ahora hay tres casos, y solo el mixto nombra paquetes.
+ */
 const PAQ_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
-const PAQ_NOTA_ES = PAQ_PAREJA.length
-  ? ` La excepción es ${PAQ_PAREJA.map(
-      (p) => `${p.nombre}, que se vende por pareja en ${formatMXN(p.precio)} MXN los dos`,
-    ).join("; ")}.`
-  : "";
-const PAQ_NOTA_EN = PAQ_PAREJA.length
-  ? ` The exception is ${PAQ_PAREJA.map(
-      (p) =>
-        `${localizePaquete(p, "en").nombre}, sold per couple at ${fmtMoney(p.precio, "en")} for the two of you`,
-    ).join("; ")}.`
-  : "";
+const TODOS_PAREJA = PAQ_PAREJA.length === PAQUETES_DB.length;
+const TODOS_PERSONA = PAQ_PAREJA.length === 0;
+const MIXTO = !TODOS_PAREJA && !TODOS_PERSONA;
+
+/** Con unidades mezcladas, el rango no tiene una sola: no se afirma ninguna. */
+const PAQ_UNIDAD_ES = MIXTO ? "según el paquete" : paqBarato.precioLabel;
+const PAQ_UNIDAD_EN = MIXTO ? "depending on the package" : TODOS_PAREJA ? "per couple" : "per person";
+
+const nombresY = (ps: typeof PAQUETES_DB, locale: Locale) =>
+  new Intl.ListFormat(locale === "en" ? "en-US" : "es-MX", { type: "conjunction" }).format(
+    ps.map((p) => localizePaquete(p, locale).nombre),
+  );
+const PAQ_NOTA_ES = TODOS_PAREJA
+  ? " Cada cifra es el total de las dos personas, que comparten habitación."
+  : MIXTO
+    ? ` Se venden por pareja, con la cifra de los dos, ${nombresY(PAQ_PAREJA, "es")}; los demás se anuncian por persona.`
+    : "";
+const PAQ_NOTA_EN = TODOS_PAREJA
+  ? " Each figure is the total for two people sharing a room."
+  : MIXTO
+    ? ` ${nombresY(PAQ_PAREJA, "en")} ${PAQ_PAREJA.length > 1 ? "are" : "is"} sold per couple, with the figure covering both of you; the rest are priced per person.`
+    : "";
 
 /** Tarifa de grupo chico (1–4 pax) de una ruta de traslado, para la FAQ inglesa. */
 const trasladoBase = (slug: string) =>
@@ -146,8 +250,9 @@ const trasladoBase = (slug: string) =>
 
 const ES: FaqContent = {
   metaTitle: "Preguntas Frecuentes — Tours Huasteca Potosina 2026",
+  // ≤ 155 caracteres: la de antes (196) la cortaba Google a media frase.
   metaDescription:
-    "Todo lo que necesitas saber antes de visitar la Huasteca Potosina: cuánto cuesta, qué incluyen los tours, mejor época, cómo llegar desde CDMX, Monterrey o Guadalajara, seguridad, qué llevar y más.",
+    "Cuánto cuesta, qué incluyen los tours, la mejor época, cómo llegar desde CDMX, Monterrey o Guadalajara, seguridad y qué llevar a la Huasteca Potosina.",
   keywords: [
     "preguntas frecuentes huasteca potosina",
     "cuánto cuesta huasteca potosina",
@@ -177,11 +282,14 @@ const ES: FaqContent = {
   faqs: [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina?",
-      a: `Nuestros tours guiados de un día cuestan entre ${formatMXN(PRECIO_MIN_N)} y ${formatMXN(PRECIO_MAX_N)} MXN por persona, según el recorrido, y son todo incluido. Los más populares: Ruta Surrealista (Edward James) ${formatMXN(precioTour("tour-edward-james"))}, Expedición Tamul ${formatMXN(precioTour("tour-tamul"))}, Cascadas del Meco ${formatMXN(precioTour("tour-meco"))}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${formatMXN(precioTour("tour-rzr-xilitla"))} MXN por unidad. Si prefieres varios días con hospedaje, los paquetes van de ${formatMXN(PAQ_MIN_N)} (${PAQ_DIAS_MIN} días) a ${formatMXN(PAQ_MAX_N)} MXN (${PAQ_DIAS_MAX} días) ${PAQ_UNIDAD_ES}.${PAQ_NOTA_ES}`,
+      // «Precio final» y no «todo incluido»: 5 de 14 tours llevan desayuno, el
+      // RZR no lleva traslado y al buceo se llega por cuenta propia.
+      a: `Nuestros tours guiados de un día cuestan entre ${formatMXN(PRECIO_MIN_N)} y ${formatMXN(PRECIO_MAX_N)} MXN por persona, según el recorrido, y ese es el precio final. Los más populares: Ruta Surrealista (Edward James) ${formatMXN(precioTour("tour-edward-james"))}, Expedición Tamul ${formatMXN(precioTour("tour-tamul"))}, Cascadas del Meco ${formatMXN(precioTour("tour-meco"))}. El Recorrido en RZR por Xilitla se cobra por vehículo, desde ${formatMXN(precioTour("tour-rzr-xilitla"))} MXN por unidad.${GRUPO_NOTA_ES} Si prefieres varios días con hospedaje, los paquetes van de ${formatMXN(PAQ_MIN_N)} (${PAQ_DIAS_MIN} días) a ${formatMXN(PAQ_MAX_N)} MXN (${PAQ_DIAS_MAX} días) ${PAQ_UNIDAD_ES}.${PAQ_NOTA_ES}`,
     },
     {
       q: "¿Qué incluyen los tours?",
-      a: "Según el tour: traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, desayuno con platillos típicos de la región, entradas a todos los parques y atracciones, guía certificado NOM-09 SECTUR, equipo de seguridad, fotografías y video del recorrido, y botiquín de primeros auxilios. El precio que ves es el precio final por persona, sin sorpresas.",
+      // Sin «por persona»: el RZR se cobra por vehículo y el Edén por grupo.
+      a: "Según el tour: traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, desayuno con platillos típicos de la región, entradas a todos los parques y atracciones, guía certificado NOM-09 SECTUR, equipo de seguridad, fotografías y video del recorrido, y botiquín de primeros auxilios. El precio que ves es el precio final, sin sorpresas.",
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde CDMX, Monterrey o Guadalajara?",
@@ -205,7 +313,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Se puede conocer la Huasteca Potosina en 3 días?",
-      a: "Sí. En 3 días cabe lo esencial de la Huasteca: la Cascada de Tamul y Las Pozas de Edward James en Xilitla. Nuestro paquete Luna de Miel (3 días / 2 noches) hace exactamente ese recorrido, pensado para parejas. Para añadir un día completo de cascadas turquesa —Minas Viejas, Micos o las Cascadas del Meco— hacen falta 4 días: es lo que recorre el Paquete Familiar. Con 5 o 6 días se va con más calma y sin repetir un solo lugar.",
+      a: `Sí. En 3 días cabe lo esencial de la Huasteca: la Cascada de Tamul y Las Pozas de Edward James en Xilitla.${TRES_DIAS_ES} Con 5 o 6 días se va con más calma y sin repetir un solo lugar.`,
     },
     {
       q: "¿Qué es el Sótano de las Golondrinas?",
@@ -225,11 +333,11 @@ const ES: FaqContent = {
     },
     {
       q: "¿Cuál es la política de cancelación?",
-      a: "Cancelación gratuita con 48 horas o más de anticipación, con reembolso del 100 % incluido el anticipo. Entre 48 y 24 horas antes se retiene el 50 %. Con menos de 24 horas no hay reembolso, pero puedes reagendar una vez sin costo. Si cancelamos nosotros por clima, seguridad o cierre del paraje, eliges entre reembolso completo o reagendar sin costo.",
+      a: "Cancelación gratuita con 48 horas o más de anticipación, con reembolso del 100 % incluido el anticipo. Entre 48 y 24 horas antes se retiene el 50 %. Con menos de 24 horas no hay reembolso, pero puedes reagendar una vez sin costo. Si cancelamos nosotros por clima, seguridad o cierre del paraje, eliges entre reembolso completo o reagendar sin costo." + cancelPropia("es"),
     },
     {
       q: "¿Qué pasa si llueve el día de mi tour?",
-      a: "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, cancelamos nosotros y eliges entre reembolso del 100 % o reagendar sin costo. Nunca sacamos un grupo con el río crecido.",
+      a: `Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, cancelamos nosotros y eliges entre reembolso del 100 % o reagendar sin costo.${climaPropio("es")} Nunca sacamos un grupo con el río crecido.`,
     },
     {
       q: "¿Hacen tours privados o para grupos grandes?",
@@ -243,7 +351,7 @@ const ES: FaqContent = {
 
   ctaTitulo: "¿List@ para vivirlo?",
   ctaTexto:
-    "Explora nuestros recorridos con todo incluido o deja que la IA te recomiende el ideal según los días que tengas y tu grupo.",
+    "Explora nuestros recorridos, a precio final y sin sorpresas, o deja que la IA te recomiende el ideal según los días que tengas y tu grupo.",
   ctaLinks: [
     { href: "/tours", label: "Ver todos los tours", variante: "primaria" },
     { href: "/paquetes", label: "Paquetes con hospedaje", variante: "secundaria" },
@@ -259,9 +367,11 @@ const ES: FaqContent = {
 // ── Inglés ─────────────────────────────────────────────────────────────────
 
 const EN: FaqContent = {
-  metaTitle: "Huasteca Potosina FAQ — Prices, Best Time to Go, Getting There",
+  // ≤ 60 y ≤ 155 caracteres: el título (62) y la descripción (226) salían
+  // cortados en Google.
+  metaTitle: "Huasteca Potosina FAQ — Prices, Best Time, Getting There",
   metaDescription:
-    "Straight answers before you book a trip to Mexico's waterfall country: what a guided day tour costs, what's included, the best months for turquoise water, how to get there from Tampico or Mexico City, safety, and what to pack.",
+    "What a guided day tour costs, what's included, the best months for turquoise water, how to get there, safety and what to pack for the Huasteca Potosina.",
   keywords: [
     "huasteca potosina faq",
     "huasteca potosina tour cost",
@@ -291,11 +401,11 @@ const EN: FaqContent = {
   faqs: [
     {
       q: "How much does a tour in the Huasteca Potosina cost?",
-      a: `Our guided day tours run between ${fmtMoney(PRECIO_MIN_N, "en")} and ${fmtMoney(PRECIO_MAX_N, "en")} per person depending on the route, and they are all-inclusive. The most popular ones: the Surrealist Route (Edward James) at ${fmtMoney(precioTour("tour-edward-james"), "en")}, the Tamul Expedition at ${fmtMoney(precioTour("tour-tamul"), "en")}, and Cascadas del Meco at ${fmtMoney(precioTour("tour-meco"), "en")}. The RZR ride around Xilitla is priced per vehicle, starting at ${fmtMoney(precioTour("tour-rzr-xilitla"), "en")} per unit. If you'd rather stay several days with lodging included, our packages go from ${fmtMoney(PAQ_MIN_N, "en")} (${PAQ_DIAS_MIN} days) to ${fmtMoney(PAQ_MAX_N, "en")} (${PAQ_DIAS_MAX} days) ${PAQ_UNIDAD_EN}.${PAQ_NOTA_EN}`,
+      a: `Our guided day tours run between ${fmtMoney(PRECIO_MIN_N, "en")} and ${fmtMoney(PRECIO_MAX_N, "en")} per person depending on the route, and that is the final price. The most popular ones: the Surrealist Route (Edward James) at ${fmtMoney(precioTour("tour-edward-james"), "en")}, the Tamul Expedition at ${fmtMoney(precioTour("tour-tamul"), "en")}, and Cascadas del Meco at ${fmtMoney(precioTour("tour-meco"), "en")}. The RZR ride around Xilitla is priced per vehicle, starting at ${fmtMoney(precioTour("tour-rzr-xilitla"), "en")} per unit.${GRUPO_NOTA_EN} If you'd rather stay several days with lodging included, our packages go from ${fmtMoney(PAQ_MIN_N, "en")} (${PAQ_DIAS_MIN} days) to ${fmtMoney(PAQ_MAX_N, "en")} (${PAQ_DIAS_MAX} days) ${PAQ_UNIDAD_EN}.${PAQ_NOTA_EN}`,
     },
     {
       q: "What's included in the tours?",
-      a: "Depending on the tour: round-trip transportation from your lodging in Xilitla or Ciudad Valles, breakfast with regional dishes, entrance fees to every park and attraction on the route, a NOM-09 SECTUR certified guide, safety gear, photos and video of the day, and a first-aid kit. The price you see is the final price per person — no add-ons at the trailhead.",
+      a: "Depending on the tour: round-trip transportation from your lodging in Xilitla or Ciudad Valles, breakfast with regional dishes, entrance fees to every park and attraction on the route, a NOM-09 SECTUR certified guide, safety gear, photos and video of the day, and a first-aid kit. The price you see is the final price — no add-ons at the trailhead.",
     },
     {
       q: "How do I get to the Huasteca Potosina from the United States?",
@@ -323,7 +433,7 @@ const EN: FaqContent = {
     },
     {
       q: "Can I see the Huasteca Potosina in 3 days?",
-      a: "Yes. Three days fit the essentials: the Tamul waterfall and Edward James' Las Pozas in Xilitla. Our Honeymoon package (3 days / 2 nights) does exactly that route, designed for couples. To add a full day of turquoise waterfalls — Minas Viejas, Micos or Cascadas del Meco — you need 4 days: that is what the Family Package covers. With 5 or 6 days you go at a calmer pace and never repeat a place.",
+      a: `Yes. Three days fit the essentials: the Tamul waterfall and Edward James' Las Pozas in Xilitla.${TRES_DIAS_EN} With 5 or 6 days you go at a calmer pace and never repeat a place.`,
     },
     {
       q: "What is the Sótano de las Golondrinas?",
@@ -343,11 +453,11 @@ const EN: FaqContent = {
     },
     {
       q: "What is the cancellation policy?",
-      a: "Free cancellation 48 hours or more before the tour, with a 100% refund including the deposit. Between 48 and 24 hours before, 50% is retained. Under 24 hours there is no refund, but you can reschedule once at no cost. If we are the ones who cancel — weather, safety, or a site closure — you choose between a full refund or rescheduling at no cost.",
+      a: "Free cancellation 48 hours or more before the tour, with a 100% refund including the deposit. Between 48 and 24 hours before, 50% is retained. Under 24 hours there is no refund, but you can reschedule once at no cost. If we are the ones who cancel — weather, safety, or a site closure — you choose between a full refund or rescheduling at no cost." + cancelPropia("en"),
     },
     {
       q: "What happens if it rains on the day of my tour?",
-      a: "We run in light rain: the Huasteca is jungle, and the waterfalls are at their most spectacular with water coming down. If there's an electrical storm, a weather alert, or the river isn't in safe condition, we cancel and you choose between a 100% refund or rescheduling at no cost. We never take a group out on a swollen river.",
+      a: `We run in light rain: the Huasteca is jungle, and the waterfalls are at their most spectacular with water coming down. If there's an electrical storm, a weather alert, or the river isn't in safe condition, we cancel and you choose between a 100% refund or rescheduling at no cost.${climaPropio("en")} We never take a group out on a swollen river.`,
     },
     {
       q: "Do you run private tours or tours for large groups?",
@@ -361,7 +471,7 @@ const EN: FaqContent = {
 
   ctaTitulo: "Ready to see it for yourself?",
   ctaTexto:
-    "Browse the all-inclusive day tours, or take the multi-day packages that already include lodging, breakfasts and every entrance fee.",
+    "Browse the day tours — the price you see is the final price — or take the multi-day packages that already include lodging, breakfasts and every entrance fee.",
   ctaLinks: [
     { href: "/en/tours", label: "See all tours", variante: "primaria" },
     { href: "/en/paquetes", label: "Packages with lodging", variante: "secundaria" },

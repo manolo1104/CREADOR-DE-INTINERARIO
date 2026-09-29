@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { resenasTexto } from "@/lib/resenas";
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, Users, Star, MapPin, X, Check } from "lucide-react";
+import { Clock, Users, MapPin, X, Check } from "lucide-react";
 import type { Tour } from "@/lib/tours";
 import { incluyeDeTour, tourDurTexto } from "@/lib/tours";
+import { rangoGrupo } from "@/lib/catalogoResumen";
 import { formatMXN } from "@/lib/tourBooking";
 import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
 import { Tilt } from "@/components/ui/Tilt";
@@ -34,6 +34,16 @@ export function TarjetaTourReservar({
   const [abierto, setAbierto] = useState(false);
   const disparador = useRef<HTMLElement | null>(null);
   const porVehiculo = tour.precioUnidad === "vehiculo";
+  // 🔴 El Edén se cobra por GRUPO: con el binario vehículo/persona salía
+  // "$2,990 MXN por persona".
+  const unidad = porVehiculo ? null : tour.precioUnidad === "grupo" ? "grupo" : "persona";
+  // 🔴 En el grupo y en el vehículo `tour.precio` es solo la tarifa MÁS BAJA
+  // (el Edén con una persona; el RZR 500 en la ruta corta), no un precio fijo.
+  // Sin "desde" la tarjeta decía "$2,990 MXN por el grupo" como si un grupo
+  // de siete pagara eso, cuando paga $4,160; y "$1,600 por vehículo" de un
+  // recorrido que llega a $7,000. /precios ya lo decía bien.
+  const esDesde = unidad !== "persona";
+  const grupo = unidad === "grupo" ? rangoGrupo(tour) : null;
 
   useEffect(() => {
     if (!abierto) return;
@@ -63,7 +73,15 @@ export function TarjetaTourReservar({
   const noPropagar = (e: React.MouseEvent) => e.stopPropagation();
 
   const { locale, lp } = useLocale();
+  const en = locale === "en";
   const t = getBooking(locale).tarjeta;
+  const desde = en ? "from" : "desde";
+  // "De 1 a 7 personas: $2,990–$4,160 MXN", la misma escalera que la ficha.
+  const lineaGrupo = grupo
+    ? en
+      ? `${tour.groupMin} to ${tour.groupMax} people: ${formatMXN(grupo.min)}–${formatMXN(grupo.max)} MXN`
+      : `De ${tour.groupMin} a ${tour.groupMax} personas: ${formatMXN(grupo.min)}–${formatMXN(grupo.max)} MXN`
+    : null;
   // El tour ya llega localizado desde la página; `incluyeDeTour` solo tiene que
   // traducir las dos líneas de `INCLUYE_SIEMPRE`, que viven en `tours.ts`.
   const incluyeTodo = incluyeDeTour(tour, locale);
@@ -118,22 +136,25 @@ export function TarjetaTourReservar({
             <p className="text-[11px] font-dm text-dorado/85 leading-snug mb-3">▸ {tour.urgencia}</p>
           )}
 
-          {tour.reviewCount > 0 && (
-            <p className="flex items-center gap-1.5 text-[11px] font-dm text-dorado/90 mb-3">
-              <Star className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
-              <span className="text-crema/85">{resenasTexto(false)}</span>
-            </p>
-          )}
+          {/* 🔴 Aquí iba "★ 4.7 · 161 reseñas de Google" en CADA tarjeta: once
+              veces en /reservar, leído como la nota de cada recorrido, y en
+              /en/reservar en español (`resenasTexto(false)` fijo). Es la cifra
+              del negocio (regla de `resenas.ts`) y la cabecera de la página ya
+              la da una vez, con enlace al perfil. */}
 
           <div className="mt-auto pt-4 border-t border-white/8">
             <p className="flex items-baseline gap-2 mb-0.5">
+              {esDesde && <span className="text-[10px] text-crema/45 font-dm">{desde}</span>}
               <span className="font-cormorant text-dorado text-3xl font-light leading-none">
                 {formatMXN(tour.precio)}
               </span>
               <span className="text-[10px] text-crema/40 font-dm">
-                MXN {porVehiculo ? t.porVehiculo : t.porPersona}
+                MXN {unidad === null ? t.porVehiculo : unidad === "grupo" ? t.porGrupo : t.porPersona}
               </span>
             </p>
+            {lineaGrupo && (
+              <p className="text-[11px] font-dm text-crema/55 mb-0.5">{lineaGrupo}</p>
+            )}
             <p className="text-[11px] font-dm text-crema/55 mb-4">
               {t.notaPago}
             </p>
@@ -229,11 +250,15 @@ export function TarjetaTourReservar({
                 </div>
               </div>
 
-              <div className="flex items-baseline gap-2 border-t border-white/10 pt-4">
-                <span className="font-cormorant text-dorado text-3xl font-light leading-none">{formatMXN(tour.precio)}</span>
-                <span className="text-[11px] text-crema/45 font-dm">
-                  {t.precioUnidadYPago(porVehiculo ? t.porVehiculo : t.porPersona)}
-                </span>
+              <div className="border-t border-white/10 pt-4">
+                <div className="flex items-baseline gap-2">
+                  {esDesde && <span className="text-[11px] text-crema/45 font-dm">{desde}</span>}
+                  <span className="font-cormorant text-dorado text-3xl font-light leading-none">{formatMXN(tour.precio)}</span>
+                  <span className="text-[11px] text-crema/45 font-dm">
+                    {t.precioUnidadYPago(unidad === null ? t.porVehiculo : unidad === "grupo" ? t.porGrupo : t.porPersona)}
+                  </span>
+                </div>
+                {lineaGrupo && <p className="text-[12px] font-dm text-crema/55 mt-1.5">{lineaGrupo}</p>}
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2">

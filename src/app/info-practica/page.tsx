@@ -12,7 +12,7 @@ import {
   Calendar, BedDouble, DollarSign, CreditCard,
   Backpack, Shield, AlertTriangle, Waves, Hospital,
   HelpCircle, Lightbulb, MapPin, Map, Download, Route,
-  CheckCircle2, XCircle,
+  CheckCircle2, XCircle, RefreshCw,
   Footprints, Shirt, FlaskConical, ClipboardList, Smartphone, Phone,
   Hotel, UtensilsCrossed, Star, ExternalLink,
 } from "lucide-react";
@@ -22,6 +22,9 @@ import { getInfoPractica, type InfoPracticaContent } from "@/lib/i18n/infoPracti
 import { getDict } from "@/lib/i18n/messages";
 import { buildBreadcrumbJsonLd } from "@/lib/jsonld";
 import { IndiceInfoPractica } from "@/components/IndiceInfoPractica";
+import { TOURS_DB, recogidaDeTour, partesRecogida } from "@/lib/tours";
+import { localizeTour } from "@/lib/i18n/localize";
+import { horaEnLista } from "@/lib/recogidaTexto";
 
 /**
  * Title y H1 españoles, reescritos por CTR (sep 2026).
@@ -137,12 +140,16 @@ function BulletList({ items }: { items: string[] }) {
 }
 
 
-/** El FAQ vive en `i18n/infoPractica.en.ts`, en los dos idiomas. */
-const faqSchema = (t: InfoPracticaContent, locale: "es" | "en") => ({
+/**
+ * El FAQ vive en `i18n/infoPractica.en.ts`, en los dos idiomas. Lo que se pinta
+ * y lo que va al JSON-LD es la MISMA lista (`faqConExcepciones`): Google pide
+ * que el marcado se vea en la página.
+ */
+const faqSchema = (faq: FAQCategory[], locale: "es" | "en") => ({
   "@context": "https://schema.org",
   "@type": "FAQPage",
   inLanguage: locale === "en" ? "en" : "es-MX",
-  mainEntity: t.faq.flatMap((cat) =>
+  mainEntity: faq.flatMap((cat) =>
     cat.items.map((item) => ({
       "@type": "Question",
       name:           item.q,
@@ -150,6 +157,32 @@ const faqSchema = (t: InfoPracticaContent, locale: "es" | "en") => ({
     }))
   ),
 });
+
+/**
+ * La FAQ del diccionario más una pregunta por cada recorrido con cancelación
+ * propia, justo detrás de la de la política.
+ *
+ * 🔴 La política decía "48 h o más: reembolso completo" sin excepción, y va al
+ * FAQPage: es lo que un buscador o un asistente de IA repite. El Edén en el
+ * Jardín NO tiene reembolso (la Fundación Las Pozas no lo devuelve). La
+ * respuesta es el `cancelacion` del catálogo tal cual —el mismo texto que la
+ * ficha y el pago—, y el nombre sale de `localizeTour`, así que un recorrido
+ * nuevo con la misma condición entra solo en los dos idiomas.
+ */
+function faqConExcepciones(t: InfoPracticaContent, locale: "es" | "en"): FAQCategory[] {
+  const en = locale === "en";
+  const excepciones = TOURS_DB.filter((tour) => tour.cancelacion).map((tour) => ({
+    q: t.faqExcepcionPregunta(localizeTour(tour, locale).nombreCorto),
+    a: en ? tour.cancelacion!.en : tour.cancelacion!.es,
+  }));
+  if (!excepciones.length) return t.faq;
+  return t.faq.map((cat) => ({
+    ...cat,
+    items: cat.items.flatMap((item) =>
+      item.q === t.faqPreguntaCancelacion ? [item, ...excepciones] : [item],
+    ),
+  }));
+}
 
 /**
  * Las secciones del índice. Viven aquí y no dentro del hero para que el orden
@@ -162,11 +195,25 @@ const IDS_SECCIONES = [
   "papan-huasteco", "presupuesto", "itinerarios", "que-llevar", "seguridad",
 ] as const;
 
+/**
+ * Cómo se pinta cada tramo de `t.cancelacion`, en el MISMO orden: de más a
+ * menos favorable. Antes eran tres casillas fijas (`cancelacion[0..2]`) y faltaba
+ * el tramo de 48 a 24 h, que /politica-de-cancelacion sí trae. Ahora se recorre
+ * la lista: un tramo sin estilo aquí toma el último en vez de desaparecer.
+ */
+const ESTILO_CANCELACION: { color: string; Icon: LucideIcon }[] = [
+  { color: "text-lima border-lima/30 bg-lima/8",                Icon: CheckCircle2 },
+  { color: "text-dorado border-dorado/30 bg-dorado/8",          Icon: AlertTriangle },
+  { color: "text-dorado border-dorado/30 bg-dorado/8",          Icon: RefreshCw },
+  { color: "text-terracota border-terracota/30 bg-terracota/8", Icon: XCircle },
+];
+
 export default function InfoPracticaPage() {
   const locale = asLocale(headers().get("x-locale"));
   const t  = getInfoPractica(locale);
   const lp = (path: string) => localePath(path, locale);
   const en = locale === "en";
+  const faq = faqConExcepciones(t, locale);
 
   // Esta página publicaba su FAQPage sin una sola miga de pan, y es la SEGUNDA
   // del sitio por impresiones (16.910): Google sabía qué responde, no dónde
@@ -178,9 +225,21 @@ export default function InfoPracticaPage() {
     locale,
   );
 
+  // Los recorridos que recogen SOLO en Xilitla (Gruta de Xilo, Amanecer de
+  // Nubes, Olla de la Luz, el Edén, la Travesía del Café). Los tres planes de
+  // abajo no los nombran; en vez de reescribirlos a mano, la lista sale del
+  // catálogo con su hora y su frase de Ciudad Valles, y un recorrido nuevo
+  // entra solo.
+  // Los de hora concreta primero y el de horario por día (el Edén) al final,
+  // en el mismo orden que `excepcionesSalida`.
+  const toursXilitla = TOURS_DB
+    .filter((tour) => recogidaDeTour(tour).tipo === "hospedaje-xilitla")
+    .sort((a, b) => Number(!!recogidaDeTour(a).horaTexto) - Number(!!recogidaDeTour(b).horaTexto));
+  const vallesXilitla = toursXilitla[0] ? partesRecogida(toursXilitla[0], en).valles : null;
+
   return (
     <main className="min-h-screen bg-negro">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(t, locale)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faq, locale)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
       {/* Hero
@@ -537,8 +596,11 @@ export default function InfoPracticaPage() {
 
           {/* Info */}
           <div className="space-y-4">
+            {/* Cuatro estrellas, como dice el texto de al lado ("Boutique 4
+                estrellas"): pintaba cinco, que se lee como una calificación de
+                5/5 que nadie ha dado. */}
             <div className="flex items-center gap-1 mb-2">
-              {[1,2,3,4,5].map((i) => (
+              {[1,2,3,4].map((i) => (
                 <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
               ))}
               <span className="text-crema/75 font-dm text-xs ml-2">{t.boutique4}</span>
@@ -765,6 +827,29 @@ export default function InfoPracticaPage() {
           })}
         </div>
 
+        {toursXilitla.length > 0 && (
+          <div className="mt-8 rounded-xl border border-white/10 bg-negro/30 p-5">
+            <h3 className="font-dm text-[15px] font-medium text-crema mb-1.5">{t.xilitlaExtraTitulo}</h3>
+            <p className="text-crema/75 font-dm text-xs leading-relaxed mb-4">{t.xilitlaExtraIntro}</p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {toursXilitla.map((tour) => (
+                <li key={tour.slug} className="flex items-baseline justify-between gap-3 border-b border-white/6 pb-2">
+                  <Link
+                    href={lp(`/tours/${tour.slug}`)}
+                    className="text-sm font-dm text-lima hover:text-crema underline underline-offset-2 transition-colors"
+                  >
+                    {localizeTour(tour, locale).nombreCorto}
+                  </Link>
+                  <span className="text-[11px] font-dm text-crema/70 text-right">{horaEnLista(tour, en)}</span>
+                </li>
+              ))}
+            </ul>
+            {vallesXilitla && (
+              <p className="mt-3 text-[11px] font-dm text-crema/70">{vallesXilitla}</p>
+            )}
+          </div>
+        )}
+
         {/* El recomendador IA es solo-ES: el pie se omite en inglés. */}
         {!en && (
           <p className="mt-6 text-center text-crema/75 font-dm text-xs">
@@ -846,12 +931,11 @@ export default function InfoPracticaPage() {
           </p>
 
           {/* Política de cancelación destacada */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
-            {([
-              { color: "text-lima border-lima/30 bg-lima/8",                 Icon: CheckCircle2,  ...t.cancelacion[0] },
-              { color: "text-dorado border-dorado/30 bg-dorado/8",           Icon: AlertTriangle, ...t.cancelacion[1] },
-              { color: "text-terracota border-terracota/30 bg-terracota/8",  Icon: XCircle,       ...t.cancelacion[2] },
-            ] as { color: string; Icon: LucideIcon; titulo: string; sub: string }[]).map((p) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
+            {t.cancelacion.map((tramo, i) => ({
+              ...ESTILO_CANCELACION[Math.min(i, ESTILO_CANCELACION.length - 1)],
+              ...tramo,
+            })).map((p) => (
               <div key={p.titulo} className={`border ${p.color} p-4 rounded`}>
                 {/* El color va en el icono, el borde y el fondo; el TEXTO va en
                     crema. Pintar "No-show / sin reembolso" en terracota daba 2.94
@@ -863,13 +947,17 @@ export default function InfoPracticaPage() {
             ))}
           </div>
 
-          <FAQAccordion categorias={t.faq} />
+          <FAQAccordion categorias={faq} />
         </div>
       </section>
 
       {/* ── LEAD MAGNET PDF ── */}
-      {/* La Guía Definitiva es un PDF en español: la sección se oculta en inglés
-          en vez de vender un producto que el visitante no va a poder leer. */}
+      {/* La guía es un PDF en español: la sección se oculta en inglés en vez de
+          ofrecer algo que el visitante no va a poder leer.
+          🔴 GRATIS a cambio del correo (28 sep 2026), como en la portada y en
+          /guia, que es donde se deja el correo y arranca la descarga. Aquí
+          seguía "$199" tachado → "$49 MXN" con "Pago seguro · Garantía 7 días",
+          y el botón llevaba a una /guia que ya dice «Gratis». */}
       {!en && (
       <section className="py-16 border-b border-white/6">
         <div className="max-w-4xl mx-auto px-6">
@@ -898,12 +986,9 @@ export default function InfoPracticaPage() {
               </ul>
             </div>
             <div className="rounded-xl bg-negro/40 border border-white/10 p-6 text-center">
-              <div className="flex items-baseline justify-center gap-3 mb-1">
-                <span className="font-cormorant font-light text-crema/75 line-through text-lg">$199</span>
-                <span className="font-cormorant font-light text-dorado text-3xl">$49 <span className="text-[11px] font-dm text-crema/75">MXN</span></span>
-              </div>
+              <p className="font-cormorant font-light text-dorado text-3xl mb-1">{t.guiaPrecio}</p>
               <p className="font-dm text-[11px] text-crema/75 mb-5">
-                {t.guiaGarantia}
+                {t.guiaCondicion}
               </p>
               <Link href="/guia" className="block w-full rounded-lg text-center bg-dorado text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
                 {t.guiaCta}

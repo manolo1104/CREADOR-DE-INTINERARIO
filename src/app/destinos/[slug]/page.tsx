@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { resenasTexto } from "@/lib/resenas";
+import { resenasTexto, GOOGLE_PERFIL_URL } from "@/lib/resenas";
 import { headers } from "next/headers";
 import { Metadata } from "next";
 import Image from "next/image";
@@ -14,7 +14,8 @@ import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
 import { altsGaleriaDestino } from "@/lib/altImagenes";
 import { toursQueIncluyen, toursCercaDe } from "@/lib/tourMapping";
 import { blogDeDestino } from "@/lib/blogDestinoMap";
-import { TOURS_DB, etiquetaUnidad } from "@/lib/tours";
+import { TOURS_DB, etiquetaUnidad, esPorPersona, partesRecogida, type Tour } from "@/lib/tours";
+import { resumenSalidas } from "@/lib/recogidaTexto";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { DestinoIcon } from "@/components/icons/DestinoIcon";
 import { DestinoGallery } from "@/components/DestinoGallery";
@@ -28,9 +29,9 @@ import {
   COMBINACION_DESTINO,
   REVIEWS_POR_DESTINO,
 } from "@/lib/destinoData";
-import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
+import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
-import { getDict } from "@/lib/i18n/messages";
+import { getDict, type Messages } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
 
 interface Props {
@@ -46,19 +47,112 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const base = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!base) return { title: locale === "en" ? "Destination not found" : "Destino no encontrado" };
   const destino = localizeDestino(base, locale);
-  const ogImagen = destino.imagen_hero || destino.imagen_galeria[0];
+  const title = destino.seo?.metaTitle ?? `${destino.nombre} — Huasteca Potosina`;
+  const description = destino.seo?.metaDescription ?? destino.descripcion;
+  // Sin foto propia, la genérica del sitio (la misma del layout).
+  const ogImagen = `${SITE}${destino.imagen_hero || destino.imagen_galeria[0] || "/og-image.jpg"}`;
   return {
-    title: destino.seo?.metaTitle ?? `${destino.nombre} — Huasteca Potosina`,
-    description: destino.seo?.metaDescription ?? destino.descripcion,
+    title,
+    description,
     keywords: destino.seo?.keywords ?? ["Huasteca Potosina", destino.zona, destino.nombre, "tourism Mexico"],
-    openGraph: ogImagen ? { images: [{ url: `${SITE}${ogImagen}` }] } : undefined,
+    // 🔴 El openGraph de una página REEMPLAZA entero al del layout, no se
+    // mezcla: con solo `{ images }` las 82 fichas (ES + EN) salían sin og:url,
+    // og:type, og:locale ni og:site_name. Y como no declaraban `twitter`,
+    // heredaban el del layout: título genérico del sitio y /og-image.jpg.
+    openGraph: {
+      title,
+      description,
+      url: localeUrl(`/destinos/${destino.slug}`, locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      images: [{ url: ogImagen, alt: destino.nombre }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImagen],
+    },
     alternates: buildAlternates(`/destinos/${destino.slug}`, locale),
   };
+}
+
+/**
+ * ¿El precio mostrado es solo el primer escalón? Por grupo (el Edén sube con
+ * cada persona) o por ruta (cada ruta del RZR tiene el suyo).
+ *
+ * 🔴 Sin el "Desde", "$X MXN por grupo" o "por vehículo" se leía como tarifa
+ * fija. Mismo criterio que `precioConUnidad` en /tours/[slug].
+ */
+function llevaDesde(t: Tour): boolean {
+  return !esPorPersona(t) || !!t.rutas?.length;
+}
+
+function precioConUnidad(t: Tour, locale: Locale): string {
+  const desde = llevaDesde(t) ? `${getDict(locale).common.desde} ` : "";
+  return `${desde}$${fmtNumber(t.precio, locale)} MXN ${etiquetaUnidad(t, locale === "en")}`;
+}
+
+/**
+ * Rejilla de los recorridos "cerca" (`toursCercaDe`): operan en la zona pero NO
+ * visitan el destino. Se pinta en las dos ramas del cierre: sola cuando el
+ * destino no tiene tour propio, y debajo de los que sí lo visitan como "También
+ * en la zona". 🔴 Antes solo existía la primera: la ficha de Xilitla —la puerta
+ * de quien ya decidió quedarse ahí— escondía los cinco recorridos que salen del
+ * pueblo (Edén, Gruta, Amanecer, Olla, Café) porque ya tenía dos incluidos.
+ *
+ * Cada tarjeta lleva su propio botón al MOTOR —no solo a la ficha—. Estas
+ * páginas son el 19 % del tráfico y en 14 días mandaron CERO sesiones al
+ * carrito: la tarjeta entera era un enlace a `/tours/[slug]`, un paso más antes
+ * de poder reservar, y el único botón de verdad era el verde de WhatsApp.
+ */
+function RejillaCercanos({ tours, locale, dd }: { tours: Tour[]; locale: Locale; dd: Messages["destino"] }) {
+  const en = locale === "en";
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 text-left">
+      {tours.map((t) => (
+        <div
+          key={t.slug}
+          className="border border-verde-vivo/25 bg-negro/25 hover:border-verde-vivo/50 transition-colors p-4 flex flex-col gap-3"
+        >
+          <Link
+            href={localePath(`/tours/${t.slug}`, locale)}
+            className="group flex items-center gap-4"
+          >
+            {t.imagen_hero && (
+              <span className="relative block w-16 h-16 flex-shrink-0 overflow-hidden">
+                <Image src={t.imagen_hero} alt={t.nombre} fill className="object-cover" sizes="64px" />
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block font-dm text-sm text-crema leading-snug">{t.nombre}</span>
+              {/* Con la unidad siempre: el RZR se cobra por vehículo y salía
+                  como "$X MXN" a secas, que se lee como precio por persona. */}
+              <span className="block font-dm text-xs text-dorado mt-1">
+                {precioConUnidad(t, locale)}
+              </span>
+            </span>
+            <span className="ml-auto text-verde-vivo group-hover:translate-x-0.5 transition-transform">→</span>
+          </Link>
+          <Link
+            href={localePath(`/reservar/carrito?agregar=${t.slug}`, locale)}
+            className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+          >
+            {/* 🔴 El Edén no se reembolsa (ver `cancelacion` en tours.ts): a
+                él no se le puede prometer "cancela gratis 48 h antes". */}
+            <Lock className="w-3 h-3" />{dd.reservarCercano}{t.cancelacion ? "" : ` · ${dd.deposit30}`}
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function DestinoPage({ params }: Props) {
   const locale = asLocale(headers().get("x-locale"));
   const dd = getDict(locale).destino;
+  const verTour = getDict(locale).tour.viewTour;
   const base = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!base) notFound();
   const destino = localizeDestino(base, locale);
@@ -81,7 +175,23 @@ export default function DestinoPage({ params }: Props) {
     .filter(Boolean)
     .map((tour) => localizeTour(tour!, locale));
   const tourPrincipal     = toursCompletos[0];
-  const narrativa        = locale === "en" ? undefined : NARRATIVA_DESTINO[destino.slug];
+  // La fila "Recogida" de los datos prácticos, armada desde `recogida` de los
+  // tours que SÍ visitan el destino (sin localizar: `resumenSalidas` traduce
+  // los nombres él mismo). 🔴 Antes era el texto fijo "Tu hospedaje en Xilitla
+  // o Ciudad Valles" en TODAS las fichas: falso en la Olla, La Trinidad y Las
+  // Pozas (solo Xilitla), en el RZR (base en Xilitla), en la Media Luna (se
+  // llega por cuenta propia) y en los destinos sin tour, donde nadie recoge.
+  // Sin tour propio la lista queda vacía y la fila no se pinta.
+  const toursBaseIncluyen = toursQueIncluyen(destino.slug)
+    .map((t) => TOURS_DB.find((tour) => tour.slug === t.slug))
+    .filter((t): t is Tour => !!t);
+  const salidas           = resumenSalidas(toursBaseIncluyen, locale);
+  // "Recogida" solo si todos pasan por ti; si alguno es en la base o en el
+  // sitio, la fila es un punto de encuentro.
+  const etiquetaSalida    = toursBaseIncluyen.every((t) => partesRecogida(t, locale === "en").incluyeTraslado)
+    ? dd.meetingPoint
+    : locale === "en" ? "Meeting point" : "Punto de encuentro";
+  const narrativa       = locale === "en" ? undefined : NARRATIVA_DESTINO[destino.slug];
   // El blog solo existe en español; en /en no se ofrece la guía a fondo.
   const guiaSlug         = locale === "en" ? undefined : blogDeDestino(destino.slug);
   const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
@@ -142,17 +252,13 @@ export default function DestinoPage({ params }: Props) {
             <h1 className="font-cormorant font-light text-crema mb-3 break-words max-w-full" style={{ fontSize: "clamp(34px,6vw,64px)" }}>
               {destino.nombre}
             </h1>
-            <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-2">{destino.zona} · {destino.tipo}</p>
-
-            {/* 🔴 28 sep 2026 — la nota por destino se retiró (ver
-                `src/lib/resenas.ts`). Aquí va la del NEGOCIO, que es la única
-                que existe de verdad en Google. */}
-            <div className="flex items-center gap-1.5 mb-4">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_,i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
-              </div>
-              <span className="font-dm text-sm text-dorado font-medium">{resenasTexto(locale === "en")}</span>
-            </div>
+            {/* 🔴 28 sep 2026 — aquí iban cinco estrellas con "4.7 · 161 reseñas
+                de Google" justo bajo el nombre del lugar: se leían como la nota
+                de Tamtoc o de Tamul en Maps (que es otra), en los 82 destinos,
+                incluso en los que ningún tour visita. Es la nota del NEGOCIO
+                (`src/lib/resenas.ts`) y ya no va en el héroe: solo abajo, en la
+                sección de opiniones, rotulada con el nombre de la operadora. */}
+            <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4">{destino.zona} · {destino.tipo}</p>
 
             <p className="text-crema/75 max-w-2xl leading-relaxed text-base mb-5">{destino.descripcion}</p>
 
@@ -187,8 +293,8 @@ export default function DestinoPage({ params }: Props) {
                   {dd.partOfTour(destino.nombre, tourPrincipal.nombre)}
                 </p>
                 <p className="font-dm text-crema/60 text-sm mt-1">
-                  {money(tourPrincipal.precio)} MXN {tourPrincipal.precioUnidad ? etiquetaUnidad(tourPrincipal, locale === "en") : dd.perPerson}
-                  {tourPrincipal.precioUnidad === "vehiculo" ? "" : ` · ${dd.deposit30}`}
+                  {precioConUnidad(tourPrincipal, locale)}
+                  {tourPrincipal.precioUnidad === "vehiculo" || tourPrincipal.cancelacion ? "" : ` · ${dd.deposit30}`}
                 </p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
@@ -242,19 +348,30 @@ export default function DestinoPage({ params }: Props) {
                 { Icon: Calendar,  label: dd.daysOpen,     val: destino.dias_abierto },
                 { Icon: Sun,       label: dd.bestTime,     val: destino.mejor_hora },
                 { Icon: CloudSun,  label: dd.bestSeason,   val: destino.temporada_ideal },
-                { Icon: MapPin,    label: dd.meetingPoint, val: dd.meetingPointVal },
-              ] as { Icon: LucideIcon; label: string; val: string | undefined }[]
-            ).filter(i => i.val).map((item) => (
-              <div key={item.label} className="flex gap-3 py-3 border-b border-white/6">
+                { Icon: MapPin,    label: etiquetaSalida,  val: salidas },
+              ] as { Icon: LucideIcon; label: string; val: string | string[] | undefined }[]
+            ).filter(i => i.val?.length).map((item) => (
+              // 🔴 Opacidades solo de la escala de Tailwind (5, 10, 15…): con
+              // /6 u /8 la clase no se genera, el borde cae al gris #e5e7eb
+              // del reset (una raya clara sobre el verde) y el fondo no sale.
+              <div key={item.label} className="flex gap-3 py-3 border-b border-white/5">
                 <item.Icon className="w-4 h-4 flex-shrink-0 text-verde-selva mt-0.5" />
                 <div>
                   <div className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-0.5">{item.label}</div>
-                  <div className="text-sm text-crema">{item.val}</div>
+                  {/* Varias líneas cuando los tours del destino recogen distinto
+                      ("Expedición Tamul: …" / "Gruta de Xilo: …"). */}
+                  {(Array.isArray(item.val) ? item.val : [item.val]).map((linea) => (
+                    <div key={linea} className="text-sm text-crema">{linea}</div>
+                  ))}
                   {/* La entrada y la panga se leían como una contradicción con el
                       "todo incluido" del tour. No lo son: este costo es para
                       quien va por su cuenta. Decirlo aquí evita la duda y de
-                      paso enseña lo que el tour ya te ahorra. */}
-                  {item.label === dd.entrance && (
+                      paso enseña lo que el tour ya te ahorra. Sin la nota
+                      cuando la "entrada" ES nuestro tour (`entradaEsTour`).
+                      🔴 Ni cuando ningún tour visita el lugar: prometía "en
+                      nuestros tours ya va incluida" en la misma página que
+                      más abajo dice "no lo visitamos en un tour" (Tamtoc). */}
+                  {item.label === dd.entrance && !base.entradaEsTour && toursCompletos.length > 0 && (
                     <div className="text-[11px] text-crema/45 font-dm mt-1 leading-relaxed">
                       {locale === "en"
                         ? "This is the cost if you come on your own. On our tours, admission is already included."
@@ -268,13 +385,13 @@ export default function DestinoPage({ params }: Props) {
 
           <div className="space-y-6">
             {destino.advertencias && (
-              <div className="border-l-2 border-terracota bg-terracota/8 p-4">
+              <div className="border-l-2 border-terracota bg-terracota/10 p-4">
                 <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" /> {dd.advertencias}</p>
                 <p className="text-sm text-crema/75">{destino.advertencias}</p>
               </div>
             )}
             {destino.como_llegar && (
-              <div className="border-l-2 border-agua bg-agua/8 p-4">
+              <div className="border-l-2 border-agua bg-agua/10 p-4">
                 <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2 flex items-center gap-1.5"><Car className="w-3 h-3" /> {dd.comoLlegar}</p>
                 <p className="text-sm text-crema/75">{destino.como_llegar}</p>
               </div>
@@ -331,7 +448,7 @@ export default function DestinoPage({ params }: Props) {
                     {faq.pregunta}
                     <span className="text-verde-vivo flex-shrink-0 text-lg leading-none group-open:rotate-45 transition-transform">+</span>
                   </summary>
-                  <div className="px-5 pb-5 border-t border-white/8 pt-4">
+                  <div className="px-5 pb-5 border-t border-white/10 pt-4">
                     <p className="text-crema/55 font-dm text-sm leading-relaxed">{faq.respuesta}</p>
                   </div>
                 </details>
@@ -369,7 +486,7 @@ export default function DestinoPage({ params }: Props) {
         {/* ── RESEÑAS ── */}
         {reviewsDestino.length > 0 && (
           <div className="max-w-4xl mx-auto px-6 pb-12">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-5">
               <h2 className="font-cormorant text-crema text-xl">
                 {dd.travelersSay}
                 {/* En inglés se avisa de que el testimonio va en español: son
@@ -379,14 +496,28 @@ export default function DestinoPage({ params }: Props) {
                   <span className="block font-dm text-[11px] text-crema/40 italic mt-1">{dd.resenasEnEspanol}</span>
                 )}
               </h2>
-              <div className="flex items-center gap-1.5">
-                <div className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
-                <span className="text-dorado font-dm text-sm font-medium">{resenasTexto(locale === "en")}</span>
-              </div>
+              {/* La cifra es de la OPERADORA, no del lugar, y se dice con su
+                  nombre: junto al nombre del destino se leía como la nota de
+                  Maps de Tamtoc o de Tamul (`src/lib/resenas.ts` prohíbe
+                  atribuirla por destino). Enlaza al perfil donde se comprueba. */}
+              <a
+                href={GOOGLE_PERFIL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col items-start sm:items-end gap-1"
+              >
+                <span className="text-[9px] tracking-[2px] uppercase font-dm text-crema/45">
+                  {locale === "en" ? "Tours Huasteca Potosina rating" : "Calificación de Tours Huasteca Potosina"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</span>
+                  <span className="text-dorado font-dm text-sm font-medium group-hover:underline underline-offset-2">{resenasTexto(locale === "en")}</span>
+                </span>
+              </a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {reviewsDestino.map((r) => (
-                <div key={r.nombre} className="border border-white/8 bg-negro/30 p-4">
+                <div key={r.nombre} className="border border-white/10 bg-negro/30 p-4">
                   <div className="flex gap-0.5 mb-2">{[...Array(r.rating)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
                   <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-3">&ldquo;{r.texto}&rdquo;</p>
                   <div className="flex items-center gap-2">
@@ -412,21 +543,54 @@ export default function DestinoPage({ params }: Props) {
               </h2>
               <p className="text-crema/50 text-sm mb-10 font-dm max-w-md mx-auto">{dd.bookOrAsk}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
-                {toursCompletos.map((tour) => (
+                {toursCompletos.map((tour) => {
+                  const clic = { destino: base.slug, tourSlug: tour.slug, tour_name: tour.nombre, amount: tour.precio, source: "tarjeta_destino" };
+                  return (
                   <div key={tour.slug} className="border border-white/10 bg-negro/60 overflow-hidden text-left">
-                    {tour.imagen_hero && (
-                      <div className="relative aspect-video overflow-hidden">
-                        <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
+                    {/* La tarjeta solo llevaba al carrito y a WhatsApp: quien
+                        quería ver el itinerario antes de pagar no tenía por
+                        dónde. Foto, tipo y nombre son UN solo enlace a la ficha
+                        (medido): con la foto como enlace aparte, sin medir, se
+                        perdían los clics en la zona más grande de la tarjeta.
+                        La foto va con alt vacío porque el nombre ya nombra el
+                        enlace. El botón de reservar se queda tal cual. */}
+                    <TrackedLink
+                      href={localePath(`/tours/${tour.slug}`, locale)}
+                      event="DESTINO_TOUR_CLICK"
+                      data={clic}
+                      className="group block"
+                    >
+                      {tour.imagen_hero && (
+                        <div className="relative aspect-video overflow-hidden">
+                          <Image src={tour.imagen_hero} alt="" fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
+                        </div>
+                      )}
+                      <div className="px-5 pt-5">
+                        <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{tour.tipo}</p>
+                        <h3 className="font-cormorant text-crema text-base leading-snug group-hover:text-lima transition-colors">
+                          {tour.nombre}
+                        </h3>
                       </div>
-                    )}
-                    <div className="p-5">
-                      <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-1">{tour.tipo}</p>
-                      <h3 className="font-cormorant text-crema text-base leading-snug mb-3">{tour.nombre}</h3>
-                      <p className="font-cormorant text-dorado text-xl leading-none mb-4">
-                        {money(tour.precio)}
-                        <span className="font-dm text-[10px] text-crema/40 ml-1">MXN {etiquetaUnidad(tour, locale === "en")}</span>
-                      </p>
+                    </TrackedLink>
+                    <div className="px-5 pb-5 pt-3">
+                      <div className="flex items-end justify-between gap-3 mb-4">
+                        <p className="font-cormorant text-dorado text-xl leading-none">
+                          {llevaDesde(tour) && (
+                            <span className="font-dm text-[10px] text-crema/40 mr-1">{getDict(locale).common.desde}</span>
+                          )}
+                          {money(tour.precio)}
+                          <span className="font-dm text-[10px] text-crema/40 ml-1">MXN {etiquetaUnidad(tour, locale === "en")}</span>
+                        </p>
+                        <TrackedLink
+                          href={localePath(`/tours/${tour.slug}`, locale)}
+                          event="DESTINO_TOUR_CLICK"
+                          data={clic}
+                          className="flex-shrink-0 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors"
+                        >
+                          {verTour}
+                        </TrackedLink>
+                      </div>
                       <div className="space-y-2">
                         <Link href={localePath(`/reservar/carrito?agregar=${tour.slug}`, locale)}
                           className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors">
@@ -440,11 +604,29 @@ export default function DestinoPage({ params }: Props) {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="mt-8 text-[10px] text-crema/35 font-dm flex items-center justify-center gap-1.5">
                 <Zap className="w-3 h-3" /> {dd.replyUnder1h}
               </p>
+
+              {toursCercanos.length > 0 && (
+                <div className="max-w-2xl mx-auto mt-14 pt-10 border-t border-white/10">
+                  <h3 className="font-cormorant text-crema text-2xl mb-2">
+                    {locale === "en" ? "Also in the area" : "También en la zona"}
+                  </h3>
+                  {/* No es `dd.nearbyIntro`: esa frase dice "no visitamos X
+                      dentro de un tour", y aquí justo arriba hay uno que sí. */}
+                  <p className="text-crema/50 text-sm mb-6 font-dm">
+                    {locale === "en"
+                      ? "Other tours that run in the same area and combine well on the same trip:"
+                      : "Otros recorridos que operamos en la misma zona y que se combinan en el mismo viaje:"}
+                  </p>
+                  <RejillaCercanos tours={toursCercanos} locale={locale} dd={dd} />
+                  <p className="text-[10px] text-crema/35 font-dm mt-5">{dd.combineWhatsapp}</p>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -459,44 +641,7 @@ export default function DestinoPage({ params }: Props) {
             {toursCercanos.length > 0 && (
               <div className="max-w-3xl mx-auto mb-10">
                 <p className="text-crema/50 text-sm mb-6 font-dm">{dd.nearbyIntro(destino.nombre)}</p>
-                {/* Cada recorrido de la zona sale con su propio botón al MOTOR
-                    —no a la ficha—. Estas páginas son el 19 % del tráfico y en
-                    14 días mandaron CERO sesiones al carrito: la tarjeta entera
-                    era un enlace a `/tours/[slug]`, un paso más antes de poder
-                    reservar, y el único botón de verdad era el verde de
-                    WhatsApp. */}
-                <div className="grid gap-3 sm:grid-cols-2 text-left">
-                  {toursCercanos.map((t) => (
-                    <div
-                      key={t.slug}
-                      className="border border-verde-vivo/25 bg-negro/25 hover:border-verde-vivo/50 transition-colors p-4 flex flex-col gap-3"
-                    >
-                      <Link
-                        href={localePath(`/tours/${t.slug}`, locale)}
-                        className="group flex items-center gap-4"
-                      >
-                        {t.imagen_hero && (
-                          <span className="relative block w-16 h-16 flex-shrink-0 overflow-hidden">
-                            <Image src={t.imagen_hero} alt={t.nombre} fill className="object-cover" sizes="64px" />
-                          </span>
-                        )}
-                        <span className="min-w-0">
-                          <span className="block font-dm text-sm text-crema leading-snug">{t.nombre}</span>
-                          <span className="block font-dm text-xs text-dorado mt-1">
-                            {money(t.precio)} MXN {t.precioUnidad === "vehiculo" ? "" : t.precioUnidad === "grupo" ? etiquetaUnidad(t, locale === "en") : dd.perPerson}
-                          </span>
-                        </span>
-                        <span className="ml-auto text-verde-vivo group-hover:translate-x-0.5 transition-transform">→</span>
-                      </Link>
-                      <Link
-                        href={localePath(`/reservar/carrito?agregar=${t.slug}`, locale)}
-                        className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
-                      >
-                        <Lock className="w-3 h-3" />{dd.reservarCercano} · {dd.deposit30}
-                      </Link>
-                    </div>
-                  ))}
-                </div>
+                <RejillaCercanos tours={toursCercanos} locale={locale} dd={dd} />
                 <p className="text-[10px] text-crema/35 font-dm mt-5">{dd.combineWhatsapp}</p>
               </div>
             )}
@@ -542,19 +687,19 @@ export default function DestinoPage({ params }: Props) {
 
         {/* ── CROSS-SELL ── */}
         {combinaciones.length > 0 && (
-          <div className="max-w-4xl mx-auto px-6 py-12 border-t border-white/6">
+          <div className="max-w-4xl mx-auto px-6 py-12 border-t border-white/5">
             <p className="text-[9px] tracking-[3px] uppercase text-crema/35 font-dm mb-3">{dd.alsoInclude(destino.nombre)}</p>
             <div className="flex flex-wrap gap-3">
               {combinaciones.map((c) => (
                 <Link key={c.slug} href={localePath(`/destinos/${c.slug}`, locale)}
-                  className="border border-verde-selva/30 bg-verde-selva/8 hover:bg-verde-selva/15 text-crema/75 hover:text-crema font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
+                  className="border border-verde-selva/30 bg-verde-selva/10 hover:bg-verde-selva/15 text-crema/75 hover:text-crema font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
                   <span className="text-verde-vivo text-sm">→</span>
                   {comboName(c.slug, c.nombre)}
                 </Link>
               ))}
               {locale !== "en" && (
                 <Link href="/recomendar"
-                  className="border border-dorado/30 bg-dorado/8 hover:bg-dorado/15 text-dorado/75 hover:text-dorado font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
+                  className="border border-dorado/30 bg-dorado/10 hover:bg-dorado/15 text-dorado/75 hover:text-dorado font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
                   {dd.createItinerary}
                 </Link>
               )}
