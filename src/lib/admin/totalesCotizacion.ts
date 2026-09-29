@@ -73,7 +73,11 @@ export function desgloseCotizacion(
   // Con una cotización normal da 0 y no se imprime ninguna línea de más.
   const ajuste = total - sumaLineas + descuento;
 
-  const anticipo = Math.max(0, Math.min(entero(meta.anticipo ?? Math.round(total * 0.5)), total));
+  // Sin anticipo capturado, el 30 %: la misma regla con la que cobra el
+  // carrito (`ANTICIPO_PCT`). Antes era el 50 % y el correo de la cotización
+  // del bot decía "anticipo (50 %)" mientras el WhatsApp del mismo folio
+  // prometía otra cosa.
+  const anticipo = Math.max(0, Math.min(entero(meta.anticipo ?? Math.round(total * 0.3)), total));
   return {
     ajuste,
     descuento,

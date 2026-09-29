@@ -677,8 +677,8 @@ export default function CarritoPage() {
   const resumen  = resumirCarrito(items);
   const dias     = resumen.dias;
   const total    = resumen.total + totalHotel + totalTraslado;
-  // Un solo día de recorrido se cobra completo; con hospedaje vuelve al 30 %.
-  // El servidor aplica exactamente la misma regla en `carrito-payment-intent`.
+  // El anticipo es el 30 % (`pctACobrar`, regla del 29 sep 2026). El servidor
+  // aplica exactamente la misma regla en `carrito-payment-intent`.
   const pctHoy   = pctACobrar(dias, totalHotel > 0);
   const anticipo = Math.round((total * pctHoy) / 100);
   const saldo    = total - anticipo;

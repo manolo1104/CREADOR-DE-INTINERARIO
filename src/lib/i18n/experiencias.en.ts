@@ -171,7 +171,7 @@ const ES: ExperienciasContent = {
     "{N} destinos únicos — cascadas turquesas, aventura extrema, arte surrealista y aguas termales. Una experiencia para cada tipo de viajero.",
 
   bannerEyebrow: `✦ ${GOOGLE_RATING}★ · ${GOOGLE_RESENAS} reseñas de Google`,
-  bannerTexto: `Recorridos a precio final. Un recorrido suelto se paga completo; desde 2 días apartas con el 30 %. Cancelas gratis hasta 48 h antes${salvoES}.`,
+  bannerTexto: `Recorridos a precio final. Apartas con el 30 % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes${salvoES}.`,
   bannerCta: "Ver recorridos y reservar →",
   bannerVisible: true,
 
@@ -271,7 +271,7 @@ const EN: ExperienciasContent = {
   // El banner anunciaba el planificador (`/recomendar`, solo-ES) y por eso
   // estaba apagado en inglés. Ahora lleva al motor, que sí está traducido.
   bannerEyebrow: `✦ ${GOOGLE_RATING}★ · ${GOOGLE_RESENAS} Google reviews`,
-  bannerTexto: `Tours at a final price. A single tour is paid in full; from 2 days on, a 30% deposit books it. Free cancellation up to 48 h before${salvoEN}.`,
+  bannerTexto: `Tours at a final price. A 30% deposit books it; settle the rest on tour day. Free cancellation up to 48 h before${salvoEN}.`,
   bannerCta: "See tours and book →",
   bannerVisible: true,
 

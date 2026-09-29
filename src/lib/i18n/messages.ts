@@ -254,7 +254,7 @@ const es: Messages = {
     bookViaWhatsapp: "Reservar tour por WhatsApp",
     includedIn: "Incluido en:",
     alsoInclude: (name) => `Los viajeros que visitan ${name} también suelen incluir:`,
-    createItinerary: "✦ Crear itinerario personalizado",
+    createItinerary: "✦ Descubrir mi tour ideal",
     // Banda de producto bajo la galería + tours de la misma zona
     partOfTour: (destino: string, tour: string) => `${destino} es parte de ${tour}`,
     perPerson: "por persona",
@@ -395,7 +395,7 @@ const en: Messages = {
     bookViaWhatsapp: "Book a tour on WhatsApp",
     includedIn: "Included in:",
     alsoInclude: (name) => `Travelers who visit ${name} also tend to include:`,
-    createItinerary: "✦ Create a custom itinerary",
+    createItinerary: "✦ Find my ideal tour",
     partOfTour: (destino: string, tour: string) => `${destino} is part of ${tour}`,
     perPerson: "per person",
     seeDepartures: "See departures",

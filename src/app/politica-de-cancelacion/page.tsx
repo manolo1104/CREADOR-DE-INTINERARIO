@@ -61,8 +61,8 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: "¿Puedo cancelar mi tour y recuperar mi dinero?",
-    // "incluido el anticipo del 30 %" daba a entender que todos apartan con
-    // el 30 %: un recorrido suelto de un día se paga completo (`pctACobrar`).
+    // "sea el anticipo o el pago completo" cubre los dos casos reales: el
+    // anticipo del 30 % y quien decidió pagar el 100 % al reservar.
     a: `Sí. Si cancelas con 48 horas o más de anticipación, te devolvemos el 100 % de lo que hayas pagado, sea el anticipo o el pago completo. Sin preguntas y sin trámites.${REMITE_EXCEPCION}`,
   },
   {
@@ -76,6 +76,13 @@ const FAQS = [
   {
     q: "¿Qué pasa si llueve?",
     a: `Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, nosotros cancelamos y eliges entre reembolso del 100 % o reagendar sin costo. Nunca sacamos un grupo con el río crecido.${REMITE_EXCEPCION}`,
+  },
+  {
+    // La garantía de caudal (29 sep 2026): el banner del río (BandaRio) la
+    // promete en todo el sitio y enlaza aquí, así que esta respuesta es la
+    // letra de esa promesa. "Antes de la salida" evita el reclamo posterior.
+    q: "¿Y si el agua no está turquesa?",
+    a: "En temporada de lluvias el río puede venir crecido y con sedimento aunque el tour opere con normalidad. Si el día de tu recorrido el agua no está en su tono turquesa, puedes reagendar una vez sin costo, para cualquier fecha dentro de los siguientes 12 meses; solo avísanos por WhatsApp antes de la hora de salida. Es nuestra garantía de caudal: preferimos que veas la Huasteca en su mejor momento.",
   },
   {
     q: "¿Qué pasa si el paraje está cerrado?",
@@ -135,7 +142,7 @@ const ESCALA = [
     color: "text-lima border-lima/40 bg-lima/8",
     titulo: "48 h o más antes",
     sub: "Reembolso del 100 %",
-    // Igual que la FAQ: un recorrido suelto de un día se paga completo, no hay anticipo.
+    // Igual que la FAQ: cubre el anticipo del 30 % y a quien pagó el 100 %.
     detalle: "Se te devuelve todo lo pagado, sea el anticipo o el pago completo. Sin preguntas.",
   },
   {
@@ -216,6 +223,17 @@ export default function PoliticaCancelacionPage() {
             La decisión de salir o no la toma el guía responsable la mañana del tour, con la
             información del río y del clima en mano. Tu seguridad va antes que la venta: nunca
             sacamos un grupo con el río crecido.
+          </p>
+        </div>
+
+        {/* La garantía de caudal, a la vista: es la promesa del banner del río. */}
+        <div className="border border-agua/40 bg-agua/5 p-6 mb-14">
+          <h3 className="font-cormorant font-light text-verde-profundo text-2xl mb-3">Garantía de caudal</h3>
+          <p className="font-dm text-sm text-negro/70 leading-relaxed">
+            Si el día de tu tour el agua no está en su tono turquesa —aunque el recorrido opere
+            con normalidad—, <strong className="text-verde-profundo">reagendas gratis</strong> una
+            vez, para cualquier fecha dentro de los siguientes 12 meses. Solo avísanos por WhatsApp
+            antes de la hora de salida.
           </p>
         </div>
 

@@ -240,7 +240,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "How much do you pay when you book?",
-          a: "From 2 days on, a 30% deposit holds your booking and you settle the rest on the day of the tour, in cash or by card; a single one-day tour is paid in full when you book. You can also pay 100% up front if you prefer. Cancellation is free up to 48 hours before the tour." + cancelPropia,
+          a: "A 30% deposit holds your booking and you settle the rest on the day of the tour, in cash or by card. You can also pay 100% up front if you prefer. Cancellation is free up to 48 hours before the tour." + cancelPropia,
         },
         {
           q: "Is there a discount for children?",
@@ -278,7 +278,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "¿Cuánto se paga al reservar?",
-          a: "Desde 2 días apartas con el 30 % del total y liquidas el resto el día del tour, en efectivo o con tarjeta; un recorrido suelto de un día se paga completo al reservar. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes. La cancelación es gratuita hasta 48 horas antes." + cancelPropia,
+          a: "Apartas con el 30 % del total y liquidas el resto el día del tour, en efectivo o con tarjeta. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes. La cancelación es gratuita hasta 48 horas antes." + cancelPropia,
         },
         {
           q: "¿Hay descuento para niños?",

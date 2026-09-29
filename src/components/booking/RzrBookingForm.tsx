@@ -25,12 +25,9 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
   const [rutaNombre,     setRutaNombre]     = useState(rutas[0]?.nombre ?? "");
   const [vehiculoNombre, setVehiculoNombre] = useState(flota[0]?.nombre ?? "");
   const [unidades,       setUnidades]       = useState(1);
-  // 🔴 28 sep 2026 — el RZR es una actividad de 2 a 5 HORAS, o sea de un solo
-  // día, y la regla del negocio es que un día se paga completo (el 30 % es para
-  // viajes de dos días o más, o con hotel). Este formulario arrancaba en 30 % y
-  // dejaba elegir, así que era la única puerta del sitio por la que un tour de
-  // un día se apartaba con anticipo. La regla vive en `pctACobrar` y se aplica
-  // igual en el carrito y en el servidor.
+  // La regla de pago vive en `pctACobrar` (30 % de anticipo desde el 29 sep
+  // 2026) y se aplica igual en el carrito y en el servidor: este formulario no
+  // decide el porcentaje por su cuenta.
   const pct = pctACobrar(1, false);
 
   const rutaIdx  = rutas.findIndex((r) => r.nombre === rutaNombre);
@@ -225,8 +222,8 @@ export function RzrBookingForm({ tour }: { tour: Tour }) {
             </div>
           </div>
 
-          {/* El selector de anticipo se retiró: con un solo día se paga
-              completo (ver `pctACobrar`). Se conserva el resumen de abajo. */}
+          {/* El selector de anticipo se retiró: el porcentaje lo decide
+              `pctACobrar`, no el formulario. Se conserva el resumen de abajo. */}
           <div className="mt-5 border-t border-negro/6 pt-4">
             <div className="mt-3 flex justify-between items-baseline">
               <span className="font-dm text-sm text-negro/70">Pagas ahora</span>

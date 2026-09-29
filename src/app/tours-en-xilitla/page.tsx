@@ -151,7 +151,7 @@ const FAQS_XI: { q: string; a: string }[] = [
   },
   {
     q: "¿Se puede reservar solo el tour, sin hotel?",
-    a: "Sí. Los recorridos de un día se compran sueltos y se pagan completos al reservar. Los viajes de dos días o más se apartan con el 30 %.",
+    a: "Sí. Los recorridos de un día se compran sueltos y se apartan con el 30 % al reservar; el resto se liquida el día del tour.",
   },
 ];
 

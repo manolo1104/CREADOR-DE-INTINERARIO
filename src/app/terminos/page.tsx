@@ -8,8 +8,8 @@ const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones — Tours Huasteca Potosina",
-  // Decía "anticipo del 30 %" como si fuera la regla de todos: un recorrido
-  // suelto de un día se paga completo (`pctACobrar`, regla de Manolo).
+  // La descripción no fija el porcentaje a propósito: la regla vive en
+  // `pctACobrar` y ha cambiado dos veces en 2026.
   description:
     "Condiciones de contratación de nuestros tours: reservas, pagos y anticipo, cancelaciones, responsabilidades del viajero, seguridad y uso de imágenes.",
   alternates: { canonical: `${SITE}/terminos` },
@@ -145,11 +145,10 @@ export default function TerminosPage() {
         <H2>3. Precios y pagos</H2>
         <ul className="mb-4">
           <Li>Todos los precios están en pesos mexicanos (MXN) e incluyen lo que cada tour detalla en su página.</Li>
-          {/* 🔴 Decía que CUALQUIER reserva se aparta con el 30 %, y el pago
-              cobra otra cosa: `pctACobrar` (lib/carrito.ts) cobra completo un
-              recorrido suelto de un día sin hospedaje. Un término que no
-              coincide con lo que cobra Stripe es un reclamo esperando. */}
-          <Li>Un recorrido suelto de un día, sin hospedaje, se paga completo al reservar. Si tu reserva es de dos días o más, o incluye hospedaje, puedes apartar con un anticipo del {ANTICIPO_PCT} % y liquidar el saldo el día del tour, o pagar el 100 % al reservar.</Li>
+          {/* El término repite exactamente lo que cobra Stripe (`pctACobrar`,
+              30 % desde el 29 sep 2026): un término que no coincide con el
+              cobro real es un reclamo esperando. */}
+          <Li>Toda reserva se aparta con un anticipo del {ANTICIPO_PCT} % del total; el saldo se liquida el día del tour, en efectivo o con tarjeta. Si lo prefieres, puedes pagar el 100 % al reservar.</Li>
           <Li>Los pagos con tarjeta se procesan a través de Stripe. No almacenamos los datos de tu tarjeta en ningún momento.</Li>
           <Li>El saldo del día del tour se puede cubrir en efectivo o con tarjeta. Los pagos con tarjeta en sitio pueden llevar una comisión del 3 %.</Li>
           <Li>Algunos destinos cobran cuotas locales en efectivo (accesos ejidales, pangas). Cuando así sea, viene indicado en la página del tour o del destino.</Li>

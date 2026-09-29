@@ -44,7 +44,7 @@ export interface EmailMessages {
     grupoDe: (n: number) => string;
     total: string;
     apartasHoy: (pct: number) => string;
-    /** Cuando el viaje es de un solo día y se cobra completo. */
+    /** Cuando se pagó el 100 % (a elección del cliente, o reservas viejas). */
     pagoCompleto: string;
     traslado: (ciudad: string) => string;
     idaYVuelta: (pax: number) => string;
@@ -251,8 +251,8 @@ const ES: EmailMessages = {
       recordatorio3: {
         subject: (t) => `¿Apartamos tu lugar para ${t}?`,
         titulo: "Aparta tu lugar",
-        intro: "Si tu viaje es de dos días o más, no hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour (un recorrido de un solo día se paga completo). Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
-        introSinCancelacion: "Si tu viaje es de dos días o más, no hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour (un recorrido de un solo día se paga completo). Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
+        intro: "No hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour. Cancelación gratuita hasta 48 h antes. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
+        introSinCancelacion: "No hace falta que pagues todo hoy: apartas con el 30 % y liquidas el resto el día del tour. Si prefieres organizarlo por WhatsApp, escríbenos al +52 489 109 0388.",
         cta: "Apartar mi lugar",
       },
     },
@@ -457,8 +457,8 @@ const EN: EmailMessages = {
       recordatorio3: {
         subject: (t) => `Shall we hold your place for ${t}?`,
         titulo: "Hold your place",
-        intro: "If your trip runs two days or more you don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour (a single-day tour is paid in full). Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
-        introSinCancelacion: "If your trip runs two days or more you don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour (a single-day tour is paid in full). If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
+        intro: "You don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour. Free cancellation up to 48 h before. If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
+        introSinCancelacion: "You don't have to pay it all today: you hold it with 30 % and settle the rest on the day of the tour. If you'd rather sort it out on WhatsApp, message us at +52 489 109 0388.",
         cta: "Hold my place",
       },
     },

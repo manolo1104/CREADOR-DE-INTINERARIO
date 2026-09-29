@@ -272,9 +272,9 @@ async function handleOwnerCommand(msg, body) {
     case "/status":
       return reply(`✅ Bot activo.\n⏸️ Chats en pausa: ${pausedChats.size}\n⏳ Ráfagas esperando: ${rafagas.enEspera()}\n🧠 Modelo: ${process.env.BOT_MODEL || "claude-haiku-4-5"}\n⌛ Espera: ${DEBOUNCE_MS / 1000}s (tope ${DEBOUNCE_MAX_MS / 1000}s)`);
     case "/help":
-      return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume lo estándar: completo si es un solo recorrido, 30 % si son varios)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
+      return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume lo estándar: el 30 % del total)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
     case "/confirma": {
-      if (!arg) return reply("Uso: /confirma HPXXXX [monto]\nEj: /confirma HPABC123 3750  (lo que entró)\nSin monto se asume lo estándar: completo si es un solo recorrido, 30 % si son varios.");
+      if (!arg) return reply("Uso: /confirma HPXXXX [monto]\nEj: /confirma HPABC123 3750  (lo que entró)\nSin monto se asume lo estándar: el 30 % del total.");
       {
         const [folioArg, montoArg] = arg.trim().split(/\s+/);
         const monto = montoArg ? Number(String(montoArg).replace(/[^\d.]/g, "")) : undefined;

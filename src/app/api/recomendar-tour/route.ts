@@ -36,6 +36,8 @@ async function mandarPropuesta(
   ctx: {
     origen?: unknown; grupo?: unknown; intereses?: unknown; dias?: unknown;
     primaryId: string; secondaryId: string; paquete: Paquete | null;
+    /** La redacción de la IA para el tour principal, si la hubo: el correo la usa de entrada. */
+    razonIA: string | null;
   },
 ) {
   await arrancarSecuenciaRecomendador(email, {
@@ -46,37 +48,30 @@ async function mandarPropuesta(
     tourPrincipal:  slugDe(ctx.primaryId),
     tourSecundario: slugDe(ctx.secondaryId),
     paquete:        ctx.paquete?.slug ?? null,
+    razonIA:        ctx.razonIA,
   });
 }
 
 /**
- * Selección DETERMINÍSTICA del paquete por días disponibles (la IA solo redacta el porqué):
- * con menos de 3 días no se ofrece paquete —van tours sueltos— y a partir de ahí gana
- * el paquete MÁS LARGO que quepa en sus días, sin pasarse.
+ * Selección DETERMINÍSTICA del paquete (la IA solo redacta el porqué): con
+ * menos de 3 días no se ofrece —van tours sueltos— y a partir de ahí gana el
+ * paquete MÁS LARGO que quepa en sus días, sin pasarse. Nada de slugs a mano:
+ * todo sale de `PAQUETES_DB` y de sus `perfiles`.
  *
- * Aquí no se escribe a mano ningún nombre ni ningún slug, y es a propósito: el catálogo
- * se lee de `PAQUETES_DB` y se ordena por `dias`. Por eso el cambio de línea de
- * septiembre —tres paquetes ordenados por duración pasaron a cinco ordenados por quién
- * viaja— no tocó este archivo, y mañana se puede añadir o quitar un paquete sin volver
- * a pasar por aquí. Si algún día hace falta afinar la recomendación, el arreglo va en
- * el catálogo o en una regla nueva, nunca en una lista de nombres pegada a este
- * comentario: eso es justo lo que se quedó mintiendo aquí durante meses.
- *
- * La contracara de leerlo del catálogo: desde septiembre hay DOS paquetes de 4 días
- * (Familiar y Aventura Extrema), así que "el más largo que quepa" ya no señala uno solo.
- * Mientras el desempate lo decidió el orden de `PAQUETES_DB`, una "Familia con niños"
- * que pedía 4 días recibía Aventura Extrema —rafting Clase III y saltos en Micos—, justo
- * lo que la regla de seguridad del prompt prohíbe recomendarle a una familia. Esa regla
- * protege los TOURS, pero el paquete lo elegía el servidor antes y sin mirar el grupo.
- * Por eso ahora, y SÓLO cuando hay empate en días, el grupo desempata: se prefiere el
- * paquete cuyos `perfiles` hablan de familias. Sigue sin escribirse aquí ningún nombre
- * ni ningún slug —el criterio vive en el catálogo—, así que añadir o quitar paquetes no
- * obliga a volver a este archivo.
- *
- * `dias` llega como texto del wizard ("3 días", "5 o más días"); `grupo`, tal cual lo
- * manda el wizard ("Familia con niños", "En pareja", "Con amigos", "Solo/Sola").
+ * 🔴 El desempate viejo buscaba un paquete «familiar» que ya no existe (se
+ * retiró en septiembre), así que TODO el que pedía 4 días —incluidas familias
+ * con niños— recibía el de adrenalina (rafting Clase III, RZR, saltos), y el
+ * otro de 4 días no se podía recomendar nunca. Ahora, en empate de días, el
+ * de adrenalina solo gana si el perfil lo pide (actividad "Intenso" o interés
+ * en "Aventura extrema") y NUNCA para una "Familia con niños"; el criterio se
+ * lee de los `perfiles` del catálogo, no de una lista pegada aquí.
  */
-function paqueteForDias(dias: string | undefined, grupo?: unknown): Paquete | null {
+function paqueteForDias(
+  dias: string | undefined,
+  grupo?: unknown,
+  actividad?: unknown,
+  intereses?: unknown,
+): Paquete | null {
   if (!dias) return null;
   const n = parseInt(dias, 10);
   if (!Number.isFinite(n) || n < 3) return null;
@@ -85,13 +80,16 @@ function paqueteForDias(dias: string | undefined, grupo?: unknown): Paquete | nu
   let mejor = sorted[0];
   for (const p of sorted) if (p.dias <= n) mejor = p;
 
-  // Empate en días: que decida quién viaja, no el orden del catálogo.
   const empatados = sorted.filter((p) => p.dias === mejor.dias && p.dias <= n);
-  if (empatados.length > 1 && grupo === "Familia con niños") {
-    const familiar = empatados.find((p) =>
-      p.perfiles.some((perfil) => perfil.toLowerCase().includes("famili")),
-    );
-    if (familiar) return familiar;
+  if (empatados.length > 1) {
+    const esExtremo = (p: Paquete) => p.perfiles.some((x) => /adrenalina|extrem/i.test(x));
+    const extremo  = empatados.find(esExtremo);
+    const general  = empatados.find((p) => !esExtremo(p));
+    const loQuiere =
+      actividad === "Intenso" ||
+      (Array.isArray(intereses) && intereses.includes("Aventura extrema"));
+    const esFamilia = grupo === "Familia con niños";
+    return (loQuiere && !esFamilia ? extremo : general) ?? general ?? mejor;
   }
   return mejor;
 }
@@ -120,6 +118,11 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     "tour-minas-micos":  0,
     "tour-puente-dios":  0,
     "tour-buceo-media-luna": 0,
+    "tour-eden-jardin":  0,
+    "tour-travesia-cafe": 0,
+    "tour-gruta-xilo":   0,
+    "tour-amanecer-nubes": 0,
+    "tour-olla-de-la-luz": 0,
   };
 
   if (intereses.some((i) => ["Fotografía perfecta", "Cascadas turquesas"].includes(i))) {
@@ -128,6 +131,8 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-rappel-tamul"] += 1;
     scores["tour-rafting-tampaon"] += 1;
     scores["tour-buceo-media-luna"] += 1;
+    scores["tour-amanecer-nubes"] += 3;   // amanecer sobre el mar de nubes
+    scores["tour-olla-de-la-luz"] += 2;   // el haz de luz en la gruta
   }
   if (intereses.includes("Aventura extrema")) {
     scores["tour-rappel-tamul"] += 4;
@@ -135,14 +140,19 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-tamul"]        += 3;
     scores["tour-rzr-xilitla"]  += 3;
     scores["tour-puente-dios"]  += 2;
+    scores["tour-gruta-xilo"]   += 2;   // caminata nocturna en gruta
   }
   if (intereses.some((i) => ["Arte y cultura"].includes(i))) {
     scores["tour-edward-james"] += 3;
+    scores["tour-eden-jardin"]  += 2;   // Las Pozas en privado
+    scores["tour-travesia-cafe"] += 2;  // finca cafetalera y tradición
   }
   if (intereses.includes("Relax total")) {
     scores["tour-minas-micos"]  += 2;
     scores["tour-meco"]         += 1;
     scores["tour-buceo-media-luna"] += 2;
+    scores["tour-travesia-cafe"] += 2;
+    scores["tour-eden-jardin"]  += 1;
     scores["tour-rappel-tamul"] -= 2;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
@@ -151,10 +161,12 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-minas-micos"]  += 2;
     scores["tour-rzr-xilitla"]  += 2;
     scores["tour-meco"]         += 1;
+    scores["tour-travesia-cafe"] += 1;
     scores["tour-tamul"]        -= 1;
     scores["tour-rappel-tamul"] -= 3;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-buceo-media-luna"] -= 2;  // edad mínima 10 años
+    scores["tour-gruta-xilo"]   -= 1;      // caminata nocturna
   }
   if (grupo === "Con amigos") {
     scores["tour-rzr-xilitla"]  += 3;
@@ -169,6 +181,8 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-rappel-tamul"] += 1;
     scores["tour-rzr-xilitla"]  += 1;
     scores["tour-buceo-media-luna"] += 2;
+    scores["tour-eden-jardin"]  += 2;      // experiencia privada por grupo
+    scores["tour-amanecer-nubes"] += 1;
   }
   if (grupo === "Solo/Sola") {
     scores["tour-rappel-tamul"] += 1;
@@ -189,6 +203,9 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-minas-micos"]  += 2;
     scores["tour-edward-james"] += 1;
     scores["tour-buceo-media-luna"] += 2;
+    scores["tour-travesia-cafe"] += 2;
+    scores["tour-eden-jardin"]  += 1;
+    scores["tour-amanecer-nubes"] += 1;
     scores["tour-rappel-tamul"] -= 2;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
@@ -203,6 +220,11 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   if (destino.includes("Minas") || destino.includes("Micos"))      scores["tour-minas-micos"] += 4;
   if (destino.includes("Puente") || destino.includes("Tamasopo"))  scores["tour-puente-dios"] += 4;
   if (destino.includes("Media Luna") || destino.toLowerCase().includes("buceo") || destino.includes("Rioverde")) scores["tour-buceo-media-luna"] += 4;
+  if (destino.includes("Edén"))                                    scores["tour-eden-jardin"]   += 4;
+  if (destino.toLowerCase().includes("café") || destino.toLowerCase().includes("cafe")) scores["tour-travesia-cafe"] += 4;
+  if (destino.includes("Xilo") || destino.toLowerCase().includes("gruta")) scores["tour-gruta-xilo"] += 4;
+  if (destino.toLowerCase().includes("amanecer") || destino.toLowerCase().includes("nubes")) scores["tour-amanecer-nubes"] += 4;
+  if (destino.includes("Olla") || destino.includes("Hoya"))        scores["tour-olla-de-la-luz"] += 4;
 
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   return { primaryId: sorted[0][0], secondaryId: sorted[1][0] };
@@ -212,7 +234,32 @@ export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { key: "recomendar-tour", limit: 15, windowMs: 60_000 });
   if (limited) return limited;
 
-  const { origen, grupo, intereses, actividad, destino, dias, email } = await req.json();
+  // 🔴 Antes se desestructuraba `req.json()` sin validar y medio handler vivía
+  // fuera de todo `try`: un cuerpo raro (origen sin `.includes`, intereses sin
+  // `.join`) era un 500 y en pantalla, una página en blanco. Ahora la entrada
+  // se valida y recorta aquí y lo inválido es un 400 limpio.
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
+  }
+  const texto = (v: unknown, max: number): string =>
+    typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) : "";
+  const origen    = texto(body.origen, 60);
+  const grupo     = texto(body.grupo, 30);
+  const actividad = texto(body.actividad, 20);
+  const destino   = texto(body.destino, 80);
+  const dias      = texto(body.dias, 20);
+  /** Lo que el viajero escribió con sus palabras (paso nuevo, opcional). */
+  const notas     = texto(body.notas, 300);
+  const intereses = Array.isArray(body.intereses)
+    ? body.intereses.filter((x): x is string => typeof x === "string").map((x) => x.slice(0, 40)).slice(0, 6)
+    : [];
+  const email = body.email;
+  if (!origen || !grupo || !actividad || intereses.length === 0) {
+    return NextResponse.json({ error: "Faltan datos del formulario" }, { status: 400 });
+  }
 
   // La libreta de Manolo. Antes la escribía el propio formulario llamando a
   // `/api/guardar-email`, y esa llamada era justo la que rompía el envío al
@@ -225,7 +272,7 @@ export async function POST(req: NextRequest) {
   // para que el correo quede anotado aunque lo de abajo se tuerza.
   if (esEmailValido(email)) void guardarLead(email, FUENTE_RECOMENDADOR);
 
-  const paquete = paqueteForDias(dias, grupo);
+  const paquete = paqueteForDias(dias, grupo, actividad, intereses);
   // Texto de respaldo del paquete (se usa si no hay IA o si la IA no redacta el suyo).
   const paqueteFallback = paquete
     ? {
@@ -267,7 +314,14 @@ PERFIL COMPLETO DEL VIAJERO:
 - Le emociona: ${intereses.join(", ")}
 - Nivel de actividad: ${actividad}
 ${destinoLine}
-
+${notas ? `
+LO QUE EL VIAJERO ESCRIBIÓ CON SUS PALABRAS (pésalo tanto como el destino: si
+contradice a los botones —marcó "Intenso" pero escribe que le teme al agua—,
+manda lo escrito. Tenlo en cuenta al ELEGIR y al REDACTAR: miedos, condición
+física, ocasión especial, movilidad, niños o adultos mayores. Haz que la
+"reason" demuestre que lo leíste, sin repetirlo textual ni entre comillas):
+«${notas}»
+` : ""}
 CONTEXTO DE VENTA:
 ${origenNudge}
 
@@ -295,7 +349,7 @@ REGLAS DE REDACCIÓN:
    - Oración 2-3: Describe 2-3 momentos específicos del tour usando los detalles de actividades (sótano, canoa, clavados, agua turquesa, etc.) con lenguaje sensorial — colores, sonidos, sensaciones físicas.
    - Oración 4: Justifica por qué encaja con sus INTERESES específicos (si le gustan las fotos, menciona el ángulo perfecto; si le gusta aventura, el clavado; si relax, las pozas tranquilas).
    - Oración 5: Si mencionó un destino, confirma que el tour lo cubre o explica por qué esta alternativa es igual o mejor.
-   - Oración 6-7: Cierre emocional + urgencia sutil ("Este es uno de los tours que más se llenan los fines de semana — reservar con anticipación garantiza tu lugar").
+   - Oración 6-7: Cierre emocional + invitación honesta a reservar ("reservar con anticipación te asegura la fecha que quieres"). Nunca inventes escasez ni digas que se llena.
 2. El "highlight" es una frase de máximo 10 palabras que capture POR QUÉ es perfecto PARA ELLOS.
 3. Para el tour secundario: 2-3 oraciones explicando qué lo diferencia y por qué también encaja.
 4. Tono: cálido, experto, como un amigo local — no un folleto turístico. Nada genérico.${paquete ? `
@@ -305,7 +359,7 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
 {
   "primary": {
     "tourId": "<id exacto del tour>",
-    "reason": "<5-7 oraciones siguiendo la estructura — personal, vivid, con urgencia>",
+    "reason": "<5-7 oraciones siguiendo la estructura — personal y vívido, sin urgencia inventada>",
     "highlight": "<frase de impacto ≤10 palabras>"
   },
   "secondary": {
@@ -321,7 +375,7 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
     const { primaryId, secondaryId } = fallbackMatch(intereses, grupo, actividad, destino ?? "");
     const primary   = TOURS_DB.find((t) => t.id === primaryId)!;
     const secondary = TOURS_DB.find((t) => t.id === secondaryId)!;
-    await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete });
+    await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete, razonIA: null });
     return NextResponse.json({
       primary: {
         tourId:    primaryId,
@@ -337,8 +391,12 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
   }
 
   try {
+    // Sin timeout, una IA colgada dejaba al visitante mirando la pantalla de
+    // carga para siempre; con 25 s se cae al respaldo y la persona ve algo.
+    const corte = AbortSignal.timeout(25_000);
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal: corte,
       headers: {
         "Content-Type":      "application/json",
         "x-api-key":         apiKey,
@@ -379,6 +437,24 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
     let secondaryId = resolveTourId(result?.secondary?.tourId, fb.secondaryId);
     if (secondaryId === primaryId) secondaryId = fb.secondaryId !== primaryId ? fb.secondaryId : fb.primaryId;
 
+    // 🔴 Cuando `resolveTourId` corrige el ID, la redacción de la IA puede
+    // estar describiendo OTRO tour (canoa en la ficha del RZR). La regla:
+    // el texto de la IA solo se usa si su ID coincidió con el resuelto y
+    // vino no vacío; si no, ese campo cae al respaldo del catálogo.
+    const lleno = (v: unknown): string | null =>
+      typeof v === "string" && v.trim() ? v.trim() : null;
+    const primaryTour   = TOURS_DB.find((t) => t.id === primaryId)!;
+    const secondaryTour = TOURS_DB.find((t) => t.id === secondaryId)!;
+    const iaPrimaria    = result?.primary?.tourId === primaryId;
+    const iaSecundaria  = result?.secondary?.tourId === secondaryId;
+    const primaryReason =
+      (iaPrimaria && lleno(result?.primary?.reason)) ||
+      primaryTour.descripcionLarga?.split("\n\n")[0] || primaryTour.descripcion;
+    const primaryHighlight =
+      (iaPrimaria && lleno(result?.primary?.highlight)) || primaryTour.tagline;
+    const secondaryReason =
+      (iaSecundaria && lleno(result?.secondary?.reason)) || secondaryTour.descripcion;
+
     // El slug del paquete lo decide el servidor (determinístico por días);
     // la IA solo aporta la redacción personalizada.
     logActividad(
@@ -386,23 +462,24 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
       grupo,
       origen ? `desde ${origen}` : undefined,
       dias,
-      Array.isArray(intereses) ? `quiere: ${intereses.join(", ")}` : undefined,
+      `quiere: ${intereses.join(", ")}`,
       actividad,
+      notas ? "escribió sus detalles" : undefined,
       `→ ${nombreDe(primaryId)}`,
       `(2º ${nombreDe(secondaryId)})`,
       paquete ? `+ ${paquete.nombre}` : undefined,
-      typeof email === "string" && email ? email : undefined,
+      // El correo NO va al log en claro; basta saber si lo dejó.
+      esEmailValido(email) ? "con correo" : "sin correo",
     );
 
     // Guarda al lead CON su recomendación y le manda la propuesta al momento.
-    await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete });
+    await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete, razonIA: iaPrimaria ? lleno(result?.primary?.reason) : null });
 
     return NextResponse.json({
-      ...result,
-      primary:   { ...result.primary,   tourId: primaryId },
-      secondary: { ...result.secondary, tourId: secondaryId },
+      primary:   { tourId: primaryId,   reason: primaryReason, highlight: primaryHighlight },
+      secondary: { tourId: secondaryId, reason: secondaryReason },
       paquete: paquete
-        ? { slug: paquete.slug, reason: result.paqueteReason || paqueteFallback!.reason }
+        ? { slug: paquete.slug, reason: lleno(result?.paqueteReason) || paqueteFallback!.reason }
         : null,
     });
   } catch (err) {
@@ -412,18 +489,18 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
     const secondary = TOURS_DB.find((t) => t.id === secondaryId)!;
     // También aquí. Que la IA se caiga es un problema nuestro; la persona dio
     // su correo y ve una recomendación en pantalla, así que le toca recibirla.
-    await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete });
+    await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete, razonIA: null });
     logActividad(
-      "✨  RECOMENDACIÓN LISTA",
+      "✨  RECOMENDACIÓN LISTA (respaldo)",
       grupo,
       origen ? `desde ${origen}` : undefined,
       dias,
-      Array.isArray(intereses) ? `quiere: ${intereses.join(", ")}` : undefined,
+      `quiere: ${intereses.join(", ")}`,
       actividad,
       `→ ${nombreDe(primaryId)}`,
       `(2º ${nombreDe(secondaryId)})`,
       paquete ? `+ ${paquete.nombre}` : undefined,
-      typeof email === "string" && email ? email : undefined,
+      esEmailValido(email) ? "con correo" : "sin correo",
     );
     return NextResponse.json({
       primary: {

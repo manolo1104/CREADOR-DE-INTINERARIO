@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Globe } from "lucide-react";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
+import { BandaRio } from "@/components/BandaRio";
 
 // Páginas españolas que SÍ tienen pareja en /en (la misma que declara su
 // hreflang). Antes solo estaban el inicio, /tours y /destinos: en /precios,
@@ -135,6 +136,8 @@ export default function Navbar() {
       </a>
 
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
+        {/* Estado del río: dentro del contenedor fijo para esconderse con él. */}
+        <BandaRio />
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={lp("/")} className="flex-shrink-0 group" aria-label="Tours Huasteca Potosina">
             {/* eslint-disable-next-line @next/next/no-img-element */}

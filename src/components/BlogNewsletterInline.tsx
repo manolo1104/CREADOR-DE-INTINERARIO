@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Map, CheckCircle, Loader2 } from "lucide-react";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 /**
  * Captura de correo a cambio del itinerario de 3 días.
@@ -39,6 +40,8 @@ export function BlogNewsletterInline({
         body:    JSON.stringify({ email, fuente, tourSlug }),
       });
       if (res.ok) {
+        // El puente de trackTourEvent lo reenvía a GA4 como `generate_lead`.
+        trackTourEvent("LEAD_BLOG", { fuente, tour: tourSlug });
         setStatus("success");
       } else {
         const d = await res.json().catch(() => ({}));

@@ -4,11 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, type Tour } from "@/lib/tours";
+import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, precioTachado, type Tour } from "@/lib/tours";
 import { TourCarrusel } from "@/components/TourCarrusel";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Clock, Users } from "lucide-react";
-import { trackWhatsapp } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 
 const dificultadConfig = {
@@ -81,7 +80,7 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
 
   /** El nombre del tour. Va sobre la foto, o dentro de la tarjeta si hay logotipo. */
   const Titulo = ({ enCuerpo = false }: { enCuerpo?: boolean }) => (
-    <div className={enCuerpo ? "" : "absolute bottom-0 left-0 right-0 px-4 pb-3 z-10"}>
+    <div className={enCuerpo ? "" : "pointer-events-none absolute bottom-0 left-0 right-0 px-4 pb-3 z-10"}>
       <h3 className="font-cormorant text-crema text-lg font-normal leading-tight uppercase tracking-wide">
         {t.nombre}
       </h3>
@@ -134,7 +133,10 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
           <div className="absolute inset-0 bg-gradient-to-br from-verde-selva/40 via-verde-profundo to-negro" />
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/30 to-transparent" />
+        {/* pointer-events-none: sin él, este degradado se tragaba el dedo y
+            en móvil las fotos de la tarjeta no se podían deslizar (Manolo,
+            29 sep 2026). El carrusel de abajo es scroll-snap puro. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/30 to-transparent" />
 
         {/* Badge tipo — top left */}
         <span className="absolute top-3 left-3 z-10 bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full">
@@ -222,6 +224,9 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
             {en ? "from" : "desde"}
           </p>
           <p className="font-cormorant text-dorado text-2xl font-normal leading-none">
+            {precioTachado(t) && (
+              <span className="mr-1.5 align-middle font-dm text-[11px] text-crema/35 line-through">{money(precioTachado(t)!)}</span>
+            )}
             {money(t.precio)}
             {/* La unidad sale de `precioUnidad`, no escrita a mano: el RZR se
                 cobra por vehículo (2 a 6 plazas) y la tarjeta lo anunciaba por
@@ -232,29 +237,11 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
           </p>
         </div>
 
-        {/* Guía asignado */}
-        {(() => {
-          // Sin nota por guía: nadie tiene un perfil de Google propio que la
-          // respalde (ver `src/lib/resenas.ts`). Queda la certificación, que sí.
-          const guiaMap: Record<string, { foto: string; nombre: string }> = {
-            "tour-tamul":      { foto: "/guides/guia-2.png", nombre: "Miguel Ángel" },
-            "tour-puente-dios":{ foto: "/guides/guia-2.png", nombre: "Miguel Ángel" },
-            "tour-meco":       { foto: "/guides/guia-3.png", nombre: "José Laredo" },
-            "tour-minas-micos":{ foto: "/guides/guia-3.png", nombre: "José Laredo" },
-          };
-          const g = guiaMap[t.id] ?? { foto: "/guides/guia-1.png", nombre: "Carlos Rodríguez" };
-          return (
-            <div className="flex items-center gap-2.5 border-t border-white/8 pt-3 mb-3">
-              <div className="relative z-10 w-8 h-8 rounded-full overflow-hidden border border-dorado/50 flex-shrink-0">
-                <Image src={g.foto} alt={g.nombre} width={32} height={32} className="w-full h-full object-cover object-top" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-dm text-crema/60">{en ? "Your guide:" : "Tu guía:"} <span className="text-crema/85 font-medium">{g.nombre}</span></p>
-                <p className="text-[9px] text-dorado/70 font-dm">{en ? "NOM-09 SECTUR certified" : "Certificado NOM-09 SECTUR"}</p>
-              </div>
-            </div>
-          );
-        })()}
+        {/* 🔴 Aquí iba "Tu guía: Miguel Ángel / José Laredo / Carlos Rodríguez"
+            con fotos: guías INVENTADOS (viven también en /nosotros, que Manolo
+            decidió no tocar). Los quitó él mismo el 29 sep 2026. Los guías
+            reales (Alex y Ángel, src/lib/guias.ts) salen en el inicio y en las
+            fichas de los tours acuáticos, no en estas tarjetas. */}
 
         {/* CTA */}
         <div className="mt-auto flex flex-col gap-2">
@@ -269,9 +256,9 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => {
-              trackWhatsapp("tour_card", totalDos);
-              // trackWhatsapp solo alimenta Google Analytics; el embudo lee de
-              // TrackEvent, así que este clic era invisible ahí.
+              // Un solo evento: `trackTourEvent` alimenta el embudo propio y
+              // su puente lo reenvía a GA4 (antes se mandaba dos veces, con
+              // `trackWhatsapp` aparte, y GA4 contaba doble esta tarjeta).
               trackTourEvent("WHATSAPP_CLICK", {
                 tour: t.slug, tour_name: t.nombre, amount: totalDos, context: "tarjeta_tour",
               });

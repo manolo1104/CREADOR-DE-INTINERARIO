@@ -265,17 +265,15 @@ const CABECERA: Record<Locale, string> = {
  */
 function reserva(locale: Locale): Bloque {
   const otras = otrasUnidades(locale);
-  // 🔴 La regla de cobro es la de `pctACobrar()` (carrito.ts): un solo día sin
-  // hospedaje se paga completo; desde dos días o con hotel se aparta con
-  // `ANTICIPO_PCT`. El orden importa: "Se aparta con el 30 %" en primer lugar
-  // se leía como la regla general para un tour suelto, que es el caso más común.
+  // La regla de cobro es la de `pctACobrar()` (carrito.ts): `ANTICIPO_PCT`
+  // de anticipo para todo, desde el 29 sep 2026.
   if (locale === "en") {
     return {
       titulo: "Booking information",
       cuerpo: `- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Website: ${SITE}/en
-- Booking: online with secure payment (Stripe) or over WhatsApp. A single one-day tour with no lodging is paid in full at booking; from two days of tours on, or with lodging (packages included), a ${ANTICIPO_PCT}% deposit holds the booking.
-- Cancellation: free up to 48 hours before the tour (full refund).${cancelacionPropia(locale)}
+- Booking: online with secure payment (Stripe) or over WhatsApp. A ${ANTICIPO_PCT}% deposit holds any booking (packages included); the balance is settled on the day of the tour.
+- Cancellation: free up to 48 hours before the tour (full refund). Turquoise-water guarantee: if the water isn't turquoise on the day of your tour, you can reschedule once for free (notify on WhatsApp before departure).${cancelacionPropia(locale)}
 - Departures and pickup: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)}
 - Prices are in Mexican pesos (MXN) and per person${otras ? ` (except — ${otras})` : ""}.
   On per-person tours, children aged 6–10 pay ~70% and under 6 ~50% of the adult price.`,
@@ -285,8 +283,8 @@ function reserva(locale: Locale): Bloque {
     titulo: "Información de reserva",
     cuerpo: `- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Sitio web: ${SITE}
-- Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Un solo tour de un día sin hospedaje se paga completo al reservar; desde dos días de recorridos, o con hospedaje (paquetes incluidos), se aparta con el ${ANTICIPO_PCT} %.
-- Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo).${cancelacionPropia(locale)}
+- Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Cualquier reserva (paquetes incluidos) se aparta con el ${ANTICIPO_PCT} %; el saldo se liquida el día del tour.
+- Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo). Garantía de caudal: si el día del tour el agua no está turquesa, se puede reagendar una vez sin costo (avisando por WhatsApp antes de la salida).${cancelacionPropia(locale)}
 - Salidas y recogida: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)}
 - Precios en pesos mexicanos (MXN) y por persona${otras ? ` (salvo — ${otras})` : ""}. En los recorridos por persona, niños de 6 a 10 años pagan ~70 % y menores de 6 ~50 % del precio adulto.`,
   };

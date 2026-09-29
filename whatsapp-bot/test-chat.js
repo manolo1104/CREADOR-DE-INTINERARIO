@@ -60,9 +60,11 @@ async function run() {
   console.log("conocimiento (paquetes/destinos):");
   ok(PAQUETES.length === 4, "hay 4 paquetes");
   ok(DESTINOS.length === 41, "hay 41 destinos");
-  ok(findPaquete("aventura").precio === 13390, "Paquete Aventura = $13,390");
-  ok(findPaquete("gran-huasteca").precio === 12290, "Paquete Gran Huasteca = $12,290");
-  ok(findPaquete("odisea-huasteca").precio === 16500, "Paquete Odisea Huasteca = $16,500");
+  // Precios de la promo de temporada baja (hasta el 29 oct 2026). Al regenerar
+  // data.json después de esa fecha vuelven a lista: 13,390 / 12,290 / 16,500.
+  ok(findPaquete("aventura").precio === 12990, "Paquete Aventura = $12,990 (temporada baja)");
+  ok(findPaquete("gran-huasteca").precio === 11690, "Paquete Gran Huasteca = $11,690 (temporada baja)");
+  ok(findPaquete("odisea-huasteca").precio === 15700, "Paquete Odisea Huasteca = $15,700 (temporada baja)");
   ok(!findPaquete("esencial"), "el paquete 'Esencial' ya NO existe");
   ok(findDestino("las pozas").precioEntrada === "$180 MXN", "Las Pozas entrada $180");
   ok((DESTINO_TOUR["cascada-de-tamul"] || []).some((r) => r.slug === "rappel-tamul"), "Tamul → cross-sell tour vendible");

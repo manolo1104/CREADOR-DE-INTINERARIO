@@ -361,11 +361,11 @@ function faqPrecioDestino(d: Destino, locale: Locale): DestinoFaq {
     return en
       ? {
           pregunta: `How much does it cost to visit ${d.nombre}?`,
-          respuesta: `${d.nombre} is done on our ${tour.nombreCorto} tour: ${importe}, the final price of the tour. You book and pay online by card: a single day tour is paid in full when you book, and from 2 days on a 30% deposit holds your spot. Details at ${ficha}.`,
+          respuesta: `${d.nombre} is done on our ${tour.nombreCorto} tour: ${importe}, the final price of the tour. You book and pay online by card: a 30% deposit holds your spot and the balance is settled on the day of the tour. Details at ${ficha}.`,
         }
       : {
           pregunta: `¿Cuánto cuesta visitar ${d.nombre}?`,
-          respuesta: `${d.nombre} se recorre con nuestro tour ${tour.nombreCorto}: ${importe}, precio final del recorrido. Se reserva y se paga en línea con tarjeta: un recorrido suelto de un día se paga completo al reservar, y desde 2 días apartas con el 30 %. Detalles en ${ficha}.`,
+          respuesta: `${d.nombre} se recorre con nuestro tour ${tour.nombreCorto}: ${importe}, precio final del recorrido. Se reserva y se paga en línea con tarjeta: apartas con el 30 % y liquidas el resto el día del tour. Detalles en ${ficha}.`,
         };
   }
 

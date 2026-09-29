@@ -61,19 +61,8 @@ const TEXTOS = {
         h1b: "pagues todo hoy",
         // Sin la cancelación en el cuerpo: la de cada recorrido va abajo
         // (`lineasCancelacion`), y el Edén no tiene reembolso.
-        cuerpo:  "Como tu viaje es de dos días o más, puedes apartar tu lugar con el 30 % y liquidar el resto el día del recorrido, en efectivo o con tarjeta.",
+        cuerpo:  "Puedes apartar tu lugar con el 30 % y liquidar el resto el día del recorrido, en efectivo o con tarjeta.",
         cta:     "Apartar con el 30 %",
-        pie:     "Los fines de semana y los puentes se llenan primero. Si tienes una fecha en mente, mejor asegurarla.",
-      },
-      // El paso 3 cuando la cotización es de UN solo recorrido: un día se paga
-      // completo (regla de Manolo, `pctACobrar`), así que no se puede vender
-      // con "el 30 %". Se ofrece el 30 % sumando otro recorrido.
-      "3u": {
-        subject: (t: string) => `¿Apartamos tu ${t}?`,
-        h1a: "Tu fecha,",
-        h1b: "sin apartar todavía",
-        cuerpo:  "Un recorrido de un día se paga completo al reservar, y la fecha no queda apartada hasta entonces. Si le sumas otro recorrido, apartas todo con el 30 % y liquidas el resto el día del tour.",
-        cta:     "Apartar mi fecha",
         pie:     "Los fines de semana y los puentes se llenan primero. Si tienes una fecha en mente, mejor asegurarla.",
       },
       4: {
@@ -119,16 +108,8 @@ const TEXTOS = {
         subject: (t: string) => `Hold your ${t} with 30 %`,
         h1a: "You don't have to",
         h1b: "pay it all today",
-        cuerpo:  "Since your trip runs two days or more, you can hold your spot with 30 % and settle the rest on the day of the tour, in cash or by card.",
+        cuerpo:  "You can hold your spot with 30 % and settle the rest on the day of the tour, in cash or by card.",
         cta:     "Hold my spot with 30 %",
-        pie:     "Weekends and long weekends fill up first. If you have a date in mind, it's worth locking it in.",
-      },
-      "3u": {
-        subject: (t: string) => `Shall we hold your ${t}?`,
-        h1a: "Your date,",
-        h1b: "not held yet",
-        cuerpo:  "A single one-day tour is paid in full at booking, and the date isn't held until then. Add another tour and you hold everything with 30 %, settling the rest on the day.",
-        cta:     "Hold my date",
         pie:     "Weekends and long weekends fill up first. If you have a date in mind, it's worth locking it in.",
       },
       4: {
@@ -191,11 +172,9 @@ function fechaLarga(ymd: string, locale: Locale): string {
 export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; html: string } {
   const T = TEXTOS[d.locale === "en" ? "en" : "es"];
   const slugs = slugsDe(d.lineItems);
-  // Un solo recorrido se paga completo; desde dos (dos días: el carrito no deja
-  // dos el mismo día), el 30 %. Es la regla del carrito (`pctACobrar`): ni el
-  // paso 3 del "30 %" ni la fila del anticipo aplican a uno solo.
-  const variosDias = slugs.length >= 2;
-  const P = d.paso === 3 && !variosDias ? T.pasos["3u"] : T.pasos[d.paso];
+  // Desde el 29 sep 2026 todo se aparta con el 30 % (`pctACobrar`), así que el
+  // paso 3 y la fila del anticipo aplican igual con uno o varios recorridos.
+  const P = T.pasos[d.paso];
   const nombreCorto = d.tourName.split("—")[0].trim();
   const anticipo = Math.round(d.totalAmount * 0.3);
   const recogida = lineasRecogida(slugs, d.locale, { generica: T.garantiaRecogida, sinTours: T.garantiaRecogidaSinTours });
@@ -229,7 +208,7 @@ export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; 
         filaDato(T.para, nombreCorto, true),
         filaDato(T.cuando, fechaLarga(d.tourDate, d.locale) || T.porDefinir),
         filaMoney(T.total, T.moneda(d.totalAmount), undefined, true),
-        variosDias ? filaMoney(T.apartas, T.moneda(anticipo), "verde") : "",
+        filaMoney(T.apartas, T.moneda(anticipo), "verde"),
       ].join("")),
       boton(href, P.cta, esWa ? "whatsapp" : "verde"),
       esWa ? "" : bajoBoton(T.verCarrito),

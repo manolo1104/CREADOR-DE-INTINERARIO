@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import {
-  TOURS_DB, tourDurRange, esPorPersona, PRIVADO_EXTRA_POR_PERSONA, precioTachado, recogidaDeTour,
+  TOURS_DB, tourDurRange, esPorPersona, PRIVADO_EXTRA_POR_PERSONA, precioTachado, promoDe, PROMO_TEMPORADA, recogidaDeTour,
   partesRecogida, fraseRecogida, salidaCorta, conDatos, etiquetaUnidad, rankTour, incluyeDeTour,
   type Tour, type PartesRecogida,
 } from "@/lib/tours";
@@ -26,6 +26,7 @@ import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour, ID_MODULO_RESERVA } from "@/components/booking/ReservaFichaTour";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
+import { guiasDeTour } from "@/lib/guias";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
@@ -445,7 +446,9 @@ export default function TourDetailPage({ params }: Props) {
   const maxGrupo = tour.tarifaGrupo?.length ?? tour.groupMax;
   // `precioTachado` apaga la promoción sola el día que vence (`PROMO_VENCE`).
   const antesDe = precioTachado(tour);
-  const pctOff = antesDe ? Math.round((1 - tour.precio / antesDe) * 100) : 0;
+  // En pesos, no en porcentaje: −$100 sobre $1,550 es un 6% que se lee flaco;
+  // "$100 menos" se lee completo (decisión con Manolo, 29 sep 2026).
+  const promo = promoDe(tour);
   const [durMin, durMax] = tourDurRange(tour);
   const durLabel = durMin === durMax
     ? t.durationApprox(tour.duracion_hrs)
@@ -974,8 +977,10 @@ export default function TourDetailPage({ params }: Props) {
           </h1>
           <p className="text-dorado/80 font-dm text-sm italic mb-4">{tour.tagline}</p>
           <div className="flex flex-wrap items-center gap-3">
-            {pctOff > 0 && (
-              <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-sm">{pctOff}% OFF</span>
+            {promo && (
+              <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-sm">
+                {locale === "en" ? `LOW SEASON · SAVE $${promo.monto}` : `TEMPORADA BAJA · −$${promo.monto}`}
+              </span>
             )}
             <div className="flex items-baseline gap-2">
               {(esVehiculo || esGrupo) && (
@@ -1414,6 +1419,68 @@ export default function TourDetailPage({ params }: Props) {
             </section>
           )}
 
+          {/* ── QUIÉN TE GUÍA ──
+              Guías reales con nombre, cara y certificación (datos de Manolo,
+              29 sep 2026; solo en las fichas, /nosotros no se toca). Va después
+              de las reseñas: primero lo que dicen otros, luego quién te lleva.
+              Solo en los tours donde estos guías de verdad trabajan
+              (src/lib/guias.ts): una cara prometida que no va es una reseña
+              mala esperando. */}
+          {guiasDeTour(tour.slug).length > 0 && (
+            <section aria-labelledby="guias-tour">
+              <h2 id="guias-tour" className="font-cormorant text-crema text-2xl mb-2">
+                {locale === "en" ? "Who guides you" : "Quién te guía"}
+              </h2>
+              <p className="text-sm text-crema/55 font-dm mb-5">
+                {locale === "en"
+                  ? "Local certified guides, on these rivers all year round."
+                  : "Guías locales certificados, en estos ríos todo el año."}
+              </p>
+              {/* Retrato editorial: la foto 3:4 entera (por eso el contenedor
+                  es 3:4, sin recorte), el nombre sobre un degradado al pie y
+                  las credenciales debajo como sellos. Hover solo en el zoom de
+                  la foto, con el mismo patrón del resto del sitio. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {guiasDeTour(tour.slug).map((g) => (
+                  <figure key={g.nombre} className="group">
+                    <div className="relative aspect-[3/4] overflow-hidden">
+                      <Image
+                        src={g.foto}
+                        alt={locale === "en" ? g.fotoAlt.en : g.fotoAlt.es}
+                        fill
+                        className="object-cover transition-transform duration-700 ease-out [@media(hover:hover)]:group-hover:scale-[1.04]"
+                        style={{ objectPosition: g.fotoPos }}
+                        sizes="(min-width: 640px) 340px, 100vw"
+                      />
+                      <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-negro via-negro/55 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 p-5">
+                        <p className="font-cormorant text-crema text-3xl leading-none">
+                          {g.apodo ?? g.nombre}
+                        </p>
+                        <p className="mt-1.5 text-xs text-crema/75 font-dm">
+                          {g.apodo ? <>{g.nombre}<br /></> : null}
+                          {locale === "en" ? `Guiding since ${g.desde}` : `Guía desde ${g.desde}`} · {g.origen}
+                        </p>
+                      </div>
+                    </div>
+                    <figcaption className="pt-3.5">
+                      <ul className="flex flex-wrap gap-1.5">
+                        {[...(locale === "en" ? g.certificaciones.en : g.certificaciones.es), locale === "en" ? g.idiomas.en : g.idiomas.es].map((c) => (
+                          <li key={c} className="border border-dorado/40 text-dorado/90 text-[10px] font-dm tracking-wide px-2 py-0.5">
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                      <blockquote className="mt-3.5 font-cormorant italic text-crema/80 text-base leading-snug">
+                        «{locale === "en" ? g.frase.en : g.frase.es}»
+                      </blockquote>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section>
             <h2 className="font-cormorant text-crema text-2xl mb-5">
               {todoIncluido ? t.allIncluded : (locale === "en" ? "What's included" : "Qué incluye")}
@@ -1598,15 +1665,22 @@ export default function TourDetailPage({ params }: Props) {
           <div className="lg:flex-1 lg:min-h-0">
             <div className="sticky top-24 space-y-4">
             <div className="border border-white/10 bg-negro/60 p-5">
-              {pctOff > 0 && (
+              {promo && (
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">{pctOff}% OFF</span>
+                  <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">
+                    {locale === "en" ? `SAVE $${promo.monto}` : `−$${promo.monto}`}
+                  </span>
                   <span className="text-[9px] text-crema/35 font-dm">{t.specialPrice}</span>
                 </div>
               )}
               <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">{tcommon.desde.toLowerCase()}</p>
               {antesDe && (
-                <p className="text-[12px] text-crema/35 font-dm line-through leading-none">{money(antesDe)}</p>
+                <p className="text-[12px] text-crema/35 font-dm leading-none">
+                  <span className="line-through">{money(antesDe)}</span>
+                  <span className="ml-1.5 text-dorado/80 no-underline">
+                    {locale === "en" ? `until ${PROMO_TEMPORADA.hastaTexto.en}` : `hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
+                  </span>
+                </p>
               )}
               <p className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(32px,4vw,48px)" }}>{money(tour.precio)}</p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">{priceUnitShort}</p>

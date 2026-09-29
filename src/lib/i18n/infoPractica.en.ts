@@ -774,7 +774,7 @@ const ES: InfoPracticaContent = {
           // `pctACobrar`: un recorrido de un solo día sin hospedaje se cobra
           // COMPLETO y solo lo demás aparta con el 30 %.
           q: "¿Necesito pagar el total al reservar?",
-          a: "Depende del viaje: un recorrido de un solo día, sin hospedaje, se paga completo al reservar. Si son dos días o más, o llevas hospedaje, apartas con el 30 % del total en línea de forma segura con tarjeta y liquidas el resto el día del tour, en efectivo o con tarjeta. Si prefieres otro medio de pago, escríbenos por WhatsApp y lo coordinamos.",
+          a: "No. Apartas con el 30 % del total en línea de forma segura con tarjeta y liquidas el resto el día del tour, en efectivo o con tarjeta. Si prefieres otro medio de pago, escríbenos por WhatsApp y lo coordinamos.",
         },
       ],
     },
@@ -1372,7 +1372,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "Do I have to pay in full when I book?",
-          a: "It depends on the trip: a single-day tour with no lodging is paid in full when you book. From two days on, or with lodging, you hold your place with 30 % of the total paid securely online by card and settle the rest on the day of the tour, in cash or by card. If you'd rather pay another way, message us on WhatsApp and we'll sort it out.",
+          a: "No. You hold your place with 30 % of the total paid securely online by card and settle the rest on the day of the tour, in cash or by card. If you'd rather pay another way, message us on WhatsApp and we'll sort it out.",
         },
       ],
     },

@@ -1,5 +1,6 @@
 "use client";
 import { GRUPO_MAX, TOURS_DB, partesRecogida, recogidaDeTour } from "@/lib/tours";
+import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { usePathname } from "next/navigation";
@@ -10,7 +11,7 @@ import { trackTourEvent } from "@/lib/tourTracker";
 // Cada toast muestra un dato cierto de la operación: reseñas reales, premios,
 // certificaciones y políticas. El orden se baraja por sesión (Fisher-Yates).
 const PRUEBAS_ES: { texto: string; fuente: string }[] = [
-  { texto: "4.7★ de promedio en reseñas verificadas de Google", fuente: "161 reseñas reales" },
+  { texto: `${GOOGLE_RATING}★ de promedio en reseñas de Google`, fuente: `${GOOGLE_RESENAS} reseñas` },
   { texto: "Más de 10,000 viajeros han recorrido la Huasteca con nosotros", fuente: "Operando desde 2019" },
   { texto: "Guías locales certificados NOM-09 SECTUR", fuente: "Certificación oficial" },
   { texto: "Seguro de viaje para todos los integrantes, en todos los tours", fuente: "Incluido en el precio" },
@@ -21,7 +22,7 @@ const PRUEBAS_ES: { texto: string; fuente: string }[] = [
 ];
 
 const PRUEBAS_EN: { texto: string; fuente: string }[] = [
-  { texto: "4.7★ average across verified Google reviews", fuente: "161 real reviews" },
+  { texto: `${GOOGLE_RATING}★ average across Google reviews`, fuente: `${GOOGLE_RESENAS} reviews` },
   { texto: "Over 10,000 travelers have explored the Huasteca with us", fuente: "Operating since 2019" },
   { texto: "Local guides certified NOM-09 SECTUR", fuente: "Official certification" },
   { texto: "Travel insurance for everyone, on every tour", fuente: "Included in the price" },

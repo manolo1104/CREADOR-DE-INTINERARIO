@@ -95,12 +95,11 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
               </li>
             ))}
           </ul>
-          {/* 🔴 Decía "Apartas con el 30 % y cancelas gratis hasta 48 h
-              antes" para todos, y ninguna de las dos cosas es general: un
-              recorrido suelto de un día se cobra completo (`pctACobrar` en
-              carrito.ts) y el Edén no tiene reembolso (`cancelacion`). */}
+          {/* El 30 % es la regla real (`pctACobrar`, 29 sep 2026). La
+              cancelación sí tiene excepción: el Edén no tiene reembolso
+              (`cancelacion`), y la salvedad se dice abajo. */}
           <p className="mt-4 text-crema/45 font-dm text-xs">
-            Un recorrido suelto de un día se paga completo al reservar; desde 2 días o con hospedaje apartas con el {ANTICIPO_PCT} %.
+            Apartas con el {ANTICIPO_PCT} % al reservar y liquidas el resto el día del tour.
             {tours.some((t) => t.cancelacion)
               ? " Cada recorrido tiene su política de cancelación en su ficha."
               : " Cancelas gratis hasta 48 h antes."}

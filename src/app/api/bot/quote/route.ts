@@ -252,11 +252,10 @@ export async function POST(req: NextRequest) {
     ? `${fraseRecogidaCorreo(tour, false)} No necesitas hospedarte con nosotros.`
     : fraseRecogidaCorreo(tour, false);
 
-  // Esta cotización es de UN recorrido en UN día: se paga completo. Desde 2
-  // días (o con hotel) se aparta con el 30 %. Es la regla de Manolo (20 ago y
-  // 28 sep 2026) y la MISMA función con la que cobra el carrito: antes el bot
-  // ofrecía el 30 % y el carrito, al abrir el link, cobraba el total.
-  // El Edén paga igual que los demás; lo suyo es que no tiene reembolso.
+  // La regla de pago es la MISMA función con la que cobra el carrito
+  // (`pctACobrar`, 30 % de anticipo desde el 29 sep 2026): si divergieran, el
+  // bot prometería una cosa y el link cobraría otra. El Edén paga igual que
+  // los demás; lo suyo es que no tiene reembolso.
   const pctAnticipo = pctACobrar(1, false);
   const anticipo = Math.round((total * pctAnticipo) / 100);
   const resumenWhatsApp = [
@@ -271,14 +270,12 @@ export async function POST(req: NextRequest) {
     ...incluyeTour.map((i) => `• ${i}`),
     "",
     `*Total: ${fmx(total)} MXN*`,
-    pctAnticipo === 100
-      ? `*Un recorrido de un día se paga completo al reservar: ${fmx(total)}.* Si le sumas otro recorrido, apartas todo con el ${ANTICIPO_PCT} %.`
-      : `*Apartas hoy con ${fmx(anticipo)}* (30 %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del recorrido.`,
+    `*Apartas hoy con ${fmx(anticipo)}* (${pctAnticipo} %) y el resto (${fmx(total - anticipo)}) lo liquidas el día del recorrido.`,
     "",
     lineaRecogida,
     tour.cancelacion?.es ?? "Cancelas gratis hasta 48 h antes, con reembolso completo.",
     "",
-    `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares se llenan rápido.`,
+    `⏳ Esta cotización tiene vigencia de *48 horas* — durante ese tiempo el precio queda congelado.`,
     "",
     `⚠️ Al hacer la transferencia, pon *${folio}* como concepto — con eso identificamos tu pago.`,
   ].join("\n");

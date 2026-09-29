@@ -3,10 +3,11 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { TOURS_DB, partesRecogida, GRUPO_MAX } from "@/lib/tours";
+import { TOURS_DB, partesRecogida, GRUPO_MAX, PROMO_TEMPORADA, promoVigente } from "@/lib/tours";
 import { incluyeDesayuno, rangoPorPersona } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, getPaquete } from "@/lib/paquetes";
 import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_PERFIL_URL } from "@/lib/resenas";
+import { GUIAS } from "@/lib/guias";
 import { TourCard } from "@/components/TourCard";
 import { UrgencyWidget } from "@/components/UrgencyWidget";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
@@ -56,8 +57,8 @@ export function generateMetadata(): Metadata {
   const nTours = TOURS_DB.length;
   const desde = `$${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")}`;
   const description = locale === "en"
-    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. From 2 days, 30% deposit. Free cancellation.`
-    : `Tours guiados desde Xilitla, con hotel y restaurante propios. ${nTours} recorridos con guía NOM-09 y seguro, desde ${desde}. Desde 2 días apartas con el 30 % y cancelas gratis.`;
+    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. 30% deposit holds your spot. Free cancellation.`
+    : `Tours guiados desde Xilitla, con hotel y restaurante propios. ${nTours} recorridos con guía NOM-09 y seguro, desde ${desde}. Apartas con el 30 % y cancelas gratis.`;
   return {
     title,
     description,
@@ -409,6 +410,37 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── TEMPORADA BAJA ─────────────────────────────────────────────────
+          La promo del 29 sep al 29 oct (Manolo): $100 menos por persona en 6
+          recorridos. Mismo patrón que la franja del viaje: pegada al hero y se
+          apaga sola al vencer (`promoVigente`, evaluada por petición porque el
+          inicio es force-dynamic). El descuento real vive en TOURS_DB. */}
+      {promoVigente() && (
+        <section
+          aria-label={en ? "Low season discount" : "Descuento de temporada baja"}
+          className="bg-negro border-b border-dorado/25 px-6 py-4"
+        >
+          <Link href={lp("/tours")} className="group max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-center">
+            <span className="bg-dorado text-negro text-[9px] font-dm font-bold tracking-[2px] uppercase px-2.5 py-1">
+              {en ? "Low season" : "Temporada baja"}
+            </span>
+            <span className="font-dm text-crema text-sm group-hover:text-dorado transition-colors">
+              {en
+                ? `$${PROMO_TEMPORADA.monto} MXN off per person on ${PROMO_TEMPORADA.tours.size} tours`
+                : `$${PROMO_TEMPORADA.monto} menos por persona en ${PROMO_TEMPORADA.tours.size} recorridos`}
+            </span>
+            <span className="font-dm text-crema/45 text-xs">
+              {en
+                ? `Valid through ${PROMO_TEMPORADA.hastaTexto.en} · packages included`
+                : `Válido hasta el ${PROMO_TEMPORADA.hastaTexto.es} · paquetes incluidos`}
+            </span>
+            <span className="font-dm text-dorado text-[10px] tracking-[2px] uppercase">
+              {en ? "See tours →" : "Ver los tours →"}
+            </span>
+          </Link>
+        </section>
+      )}
+
       {/* ── BADGES BANNER ── */}
       <section aria-label={en ? "Awards and recognition" : "Premios y reconocimientos"} className="bg-negro py-5 border-b border-white/8">
         <div className="max-w-5xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 md:gap-14">
@@ -483,6 +515,29 @@ export default async function HomePage() {
               ? `${TOURS_DB.length} guided tours from $${desdePersona.toLocaleString("es-MX")} MXN per person: ${nConTraslado} pick you up at your lodging and ${nConDesayuno} include breakfast.`
               : `${TOURS_DB.length} recorridos guiados desde $${desdePersona.toLocaleString("es-MX")} MXN por persona: ${nConTraslado} pasan por ti a tu hospedaje y ${nConDesayuno} incluyen desayuno.`}
           </p>
+
+          {/* Los guías reales, al frente de la sección (Manolo, 29 sep 2026):
+              caras y nombres antes que las tarjetas. Los retratos completos
+              viven en las fichas de los tours acuáticos (src/lib/guias.ts). */}
+          <div className="reveal-up reveal-d2 mt-7 flex items-center justify-center gap-3.5">
+            <div className="flex -space-x-3 flex-shrink-0">
+              {GUIAS.map((g) => (
+                <Image
+                  key={g.nombre}
+                  src={g.fotoCara}
+                  alt=""
+                  width={96}
+                  height={96}
+                  className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-sm"
+                />
+              ))}
+            </div>
+            <p className="font-dm text-sm text-negro/60 text-left max-w-[300px] sm:max-w-none">
+              {en
+                ? <>Guided by <span className="text-verde-profundo font-medium">Alex</span> and <span className="text-verde-profundo font-medium">Ángel</span>, NOM-09 certified guides from Xilitla</>
+                : <>Te guían <span className="text-verde-profundo font-medium">Alex</span> y <span className="text-verde-profundo font-medium">Ángel</span>, guías certificados NOM-09, de Xilitla</>}
+            </p>
+          </div>
         </div>
 
         {/* Más aire arriba y entre filas: el logotipo del tour sale por encima
@@ -527,7 +582,7 @@ export default async function HomePage() {
                 Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
                 {" "}Los {PAQUETES_DB.length} paquetes van de {Math.min(...PAQUETES_DB.map((p) => p.dias))} a {Math.max(...PAQUETES_DB.map((p) => p.dias))} días
                 {" "}y cuestan de ${Math.min(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} a ${Math.max(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} MXN {new Set(PAQUETES_DB.map((p) => p.precioLabel)).size === 1 ? PAQUETES_DB[0].precioLabel : "según el paquete"}.
-                {" "}Desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo.
+                {" "}Apartas con el 30 % y liquidas el resto el día del tour.
               </p>
             </div>
 
@@ -786,7 +841,7 @@ export default async function HomePage() {
               {/* Este renglón habla de "every tour", y un tour de un día sin
                   hotel se cobra entero (`pctACobrar`): el 30 % a secas mentía
                   justo en el producto más vendido. */}
-              <span>A single tour is paid in full · 30% deposit from 2 days</span>
+              <span>30% deposit holds any tour · settle the rest on tour day</span>
               <span className="text-negro/15">|</span>
               <span>Free cancellation up to 48 h{salvoEn}</span>
               <span className="text-negro/15">|</span>
@@ -808,7 +863,7 @@ export default async function HomePage() {
                 Tu viaje perfecto,{" "}<em className="shimmer-gold">diseñado en 2 minutos</em>
               </h2>
               <p className="reveal-up reveal-d1 text-negro/55 font-dm text-sm leading-relaxed mb-8 max-w-xl mx-auto">
-                Dinos cuántos días tienes, tu presupuesto y qué te emociona. La IA genera un itinerario personalizado con rutas reales, tiempos de traslado y precios 2026.
+                Dinos de dónde vienes, cuántos días tienes y qué te emociona — y cuéntanos tu viaje con tus palabras. Te recomendamos tu tour ideal y, con 3 días o más, un plan completo con hospedaje.
               </p>
               <div className="flex flex-wrap gap-3 justify-center mb-10">
                 {["Itinerario día a día", "Rutas reales", "Precios actualizados 2026"].map((pill) => (
@@ -820,7 +875,7 @@ export default async function HomePage() {
                   Descubrir mi Tour Ideal →
                 </Link>
               </MagneticButton>
-              <p className="text-xs text-negro/30 tracking-wide font-dm">Sin registro · Gratis · PDF descargable</p>
+              <p className="text-xs text-negro/30 tracking-wide font-dm">Gratis · 2 minutos · Te lo enviamos por correo</p>
             </div>
           </section>
 
@@ -828,7 +883,7 @@ export default async function HomePage() {
             <FloatingLeaves />
             <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
-                <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Gratis · PDF descargable</span>
+                <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Gratis · 2 minutos</span>
                 <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
                   Todo lo que necesitas para{" "}<em className="shimmer-gold">viajar solo por la Huasteca</em>
                 </h2>
@@ -902,8 +957,8 @@ export default async function HomePage() {
               escasez honesta es la temporada seca, no un colapso inventado. */}
           <p className="reveal-up reveal-d1 text-crema/60 font-dm text-sm leading-relaxed max-w-xl mx-auto mb-9">
             {en
-              ? `We'd like to keep the rivers the way they are — that's why our groups stop at ${GRUPO_MAX} and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. From two days a 30% deposit holds it; a single-day tour is paid in full. Free cancellation up to 48 h before${salvoEn}.`
-              : `Elige tus recorridos y súmale las noches que necesites: desde 2 días apartas con el 30 %, y un recorrido suelto de un día se paga completo. Cancelas gratis hasta 48 h antes${salvoEs}.`}
+              ? `We'd like to keep the rivers the way they are — that's why our groups stop at ${GRUPO_MAX} and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. A 30% deposit holds any trip, with the balance due on tour day. Free cancellation up to 48 h before${salvoEn}.`
+              : `Elige tus recorridos y súmale las noches que necesites: apartas con el 30 % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes${salvoEs}.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <MagneticButton className="inline-block">

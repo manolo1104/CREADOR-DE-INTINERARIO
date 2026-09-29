@@ -141,12 +141,12 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
               TOURS_DB (hoy 14) y no todos llevan traslado ni desayuno. La
               cancelación gratis tampoco aplica a los que traen su propia
               `cancelacion` (el Edén no reembolsa). */}
-          <p className="text-crema/50 font-dm font-light mb-8">{TOURS_DB.length} recorridos a precio final. Desde 2 días apartas con el 30 %; un recorrido suelto de un día se paga completo. Cancelas gratis hasta 48 h antes{sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : ""}.</p>
+          <p className="text-crema/50 font-dm font-light mb-8">{TOURS_DB.length} recorridos a precio final. Apartas con el 30 % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes{sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : ""}.</p>
           <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
             Ver recorridos y reservar →
           </Link>
           <p className="mt-5 text-[11px] text-crema/30 font-dm">
-            ¿Prefieres que la IA te arme el itinerario?{" "}
+            ¿No sabes qué tour elegir?{" "}
             <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2">Recomendador →</Link>
           </p>
         </section>

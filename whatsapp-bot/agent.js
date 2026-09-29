@@ -342,7 +342,7 @@ const tools = [
     name: "consultar_reserva",
     description:
       "Consulta una reserva por su folio (ej: HPXXXX). Devuelve el tour, la fecha, las personas Y EL ESTADO DEL PAGO: `pagado`, `saldo`, `liquidado` y un `resumenPago` ya redactado. " +
-      "⚠️ `status: \"paid\"` significa RESERVA CONFIRMADA, no que ya pagó todo: quien reserva 2 recorridos o más (o con hotel) paga solo el anticipo del 30 %; un solo recorrido de un día se paga completo. " +
+      "⚠️ `status: \"paid\"` significa RESERVA CONFIRMADA, no que ya pagó todo: toda reserva se aparta con el anticipo del 30 % y el resto se liquida el día del tour. " +
       "SIEMPRE dile al cliente cuánto pagó y cuánto le falta — usa `resumenPago` tal cual. Nunca le digas que su reserva está \"pagada\" a secas si `saldo` es mayor que cero.",
     input_schema: {
       type: "object",
@@ -820,7 +820,7 @@ function soloXilitlaTexto() {
 function porGrupoTexto() {
   return TOURS.filter(esPorGrupo).map((t) =>
     `\n• *${String(t.nombre).split("—")[0].trim()}* se cobra *POR GRUPO*: una sola tarifa para todo el grupo según cuántos van, no por persona y sin precio de niño. *calcular_precio* ya te devuelve el total del grupo.` +
-    (t.cancelacion ? ` Tiene política propia (campo "cancelacion" de *obtener_tour*): NO tiene reembolso, así que NO le ofrezcas la cancelación de 48 h. Se paga como los demás: solo, completo; con otros recorridos, el 30 %.` : "")
+    (t.cancelacion ? ` Tiene política propia (campo "cancelacion" de *obtener_tour*): NO tiene reembolso, así que NO le ofrezcas la cancelación de 48 h. Se paga como los demás: se aparta con el 30 %.` : "")
   ).join("");
 }
 const HAY_POLITICA_PROPIA = TOURS.some((t) => t.cancelacion);
@@ -890,7 +890,7 @@ Si ya te dijeron qué tour quieren, sáltate este paso.
 Máximo *UNO o DOS* tours (usa *recomendar_tour* si no tienes claro cuál). De cada uno, en dos líneas:
   · a qué *LUGARES* va — los nombres exactos del campo "destinos" de *obtener_tour*, todos y sin adornos tuyos;
   · el *TOTAL DEL GRUPO* ya calculado con *calcular_precio* (o *cotizar_rzr*), no solo el precio por persona;
-  · con *cuánto paga hoy*: completo si es un solo recorrido; el 30 % si son 2 o más.
+  · con *cuánto paga hoy*: el 30 % del total; el resto se liquida el día del tour.
 Y cierras con: "¿Te lo aparto para esa fecha?"
 ⭐ La *Expedición Tamul* es el tour más pedido y el que más gusta. Si piden cascadas, "conocer lo más posible" o no tienen preferencia marcada, ese va en la propuesta.
 
@@ -908,12 +908,12 @@ En cuanto haya un sí o un "me interesa": valida la fecha, y pide *nombre comple
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas y vuelve a preguntar por el cierre. Nunca discutas, nunca presiones, nunca inventes un descuento.
 
-*"Está caro" / "lo vi más barato":* desglosa lo que sí va incluido (guía local certificado, entradas y accesos, ${INFO.incluyeSiempre.join(", ").toLowerCase()}) y, si arma 2 recorridos o más, recuérdale que hoy solo pone el 30 %. Si de verdad no le alcanza, ofrécele un tour real más económico del catálogo.
+*"Está caro" / "lo vi más barato":* desglosa lo que sí va incluido (guía local certificado, entradas y accesos, ${INFO.incluyeSiempre.join(", ").toLowerCase()}) y recuérdale que hoy solo pone el 30 %. Si de verdad no le alcanza, ofrécele un tour real más económico del catálogo.
 *"Lo voy a pensar":* "Claro, sin prisa 🙌 Solo te comento que la cotización vale 48 horas y en fin de semana los lugares se llenan rápido. ¿Te la aparto y así te la guardo?"
 *"Déjame confirmar con mi grupo/pareja":* perfecto — mándale el resumen listo para reenviar y pregúntale para cuándo tendrá respuesta. No dejes la conversación abierta sin fecha.
 *"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos pequeños${GRUPO_MAX_TOURS ? ` (de ${GRUPO_MAX_TOURS} personas como máximo; el cupo de cada tour viene en *obtener_tour*)` : " (el cupo de cada tour viene en *obtener_tour*)"} y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
 *"¿Y si llueve o se cancela?":* ${EMPRESA.cancelacion} El rafting depende del nivel del río en temporada de lluvias (jul–sep): si no es seguro, se reprograma.
-*"¿Puedo pagar todo el día del tour?":* no. Un solo recorrido se paga completo al reservar; desde 2 recorridos se aparta con el 30 % y el resto se liquida ese día — el pago es lo que garantiza el lugar.
+*"¿Puedo pagar todo el día del tour?":* no. Se aparta con el 30 % al reservar y el resto se liquida ese día — el anticipo es lo que garantiza el lugar.
 *"¿Son de fiar?":* ${CALIFICACION_GOOGLE ? `${CALIFICACION_GOOGLE}, más de 10,000 viajeros` : "más de 10,000 viajeros (no des calificación ni número de reseñas)"}. Empresa formal desde 2019, familia de guías locales. Esas cifras son REALES; no inventes ninguna otra, ni premios.
 *"Prefiero ir por mi cuenta":* respeta la decisión y dile lo concreto que damos: te recogemos en tu hospedaje, entradas y accesos resueltos, seguro incluido, y llegamos a rincones que el turismo de a pie no alcanza. Ofrécele armarle la opción para que él compare.
 *Se quedó callado:* UN solo mensaje corto retomando su último dato ("¿Seguimos con el sábado para 4?"). Uno, no tres.
@@ -956,7 +956,7 @@ Si pide más fotos o la página del tour, mándale el *link* (campo "url" de *ob
 • ${EMPRESA.cancelacion}${HAY_POLITICA_PROPIA ? " Salvo los tours con política propia: para esos usa su campo \"cancelacion\"." : ""}
 • *Horarios:* cada tour trae hora de inicio y de término (campo "horario"). Menciónalos al presentarlo.
 • *SIEMPRE incluido en todos los tours:* ${INFO.incluyeSiempre.join(" · ")}.
-• *CÓMO SE PAGA* (regla de Manolo, la misma que cobra el sitio): *un solo recorrido de un día se paga COMPLETO al reservar*; *desde 2 recorridos (2 días) o con hotel, se aparta con el 30 %* y el resto se liquida el día del primer recorrido. Aplica a TODOS los tours, el Edén incluido. Cuando des un total, di SIEMPRE cuánto paga hoy: "son $X en total, apartas con $Y" (2 o más) o "son $X y se paga al reservar" (uno solo). Si es uno solo, ofrécele sumar otro recorrido: así aparta todo con el 30 %.
+• *CÓMO SE PAGA* (regla de Manolo, la misma que cobra el sitio): *toda reserva se aparta con el 30 % del total* y el resto se liquida el día del primer recorrido, en efectivo o con tarjeta. Aplica a TODOS los tours, el Edén incluido. Cuando des un total, di SIEMPRE cuánto paga hoy: "son $X en total, apartas con $Y". Quien prefiera pagar el 100 % al reservar, puede.
 • NUNCA inventes montos ni horarios: usa las herramientas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1015,7 +1015,7 @@ Tours *por persona* — ofrece las dos opciones:
 
 *Vigencia:* la cotización vale *48 horas*. Dilo así y agrega que en temporada alta y fines de semana conviene reservar cuanto antes porque los lugares se llenan. Es urgencia real: no le pongas contadores ni digas "quedan X lugares" si no lo sabes.
 
-⚠️ *NUNCA digas que una reserva está "pagada" sin mirar el saldo.* Quien reserva 2 recorridos o más paga SOLO el 30 % (uno solo, completo). Al consultar un folio con *consultar_reserva*, di SIEMPRE las dos cifras: lo pagado y lo que falta. La herramienta te lo devuelve redactado en el campo resumenPago — úsalo tal cual.
+⚠️ *NUNCA digas que una reserva está "pagada" sin mirar el saldo.* Toda reserva se aparta con el 30 %, así que casi siempre queda saldo. Al consultar un folio con *consultar_reserva*, di SIEMPRE las dos cifras: lo pagado y lo que falta. La herramienta te lo devuelve redactado en el campo resumenPago — úsalo tal cual.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧭 CASOS SUELTOS

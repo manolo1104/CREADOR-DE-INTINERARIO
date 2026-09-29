@@ -228,9 +228,8 @@ export async function POST(req: NextRequest) {
   }
 
   const hosp     = packageItems[0];
-  // Un paquete son 2 días o más: se aparta TODO con el 30 %, el Edén incluido
-  // (regla de Manolo, 28 sep 2026: un solo tour se paga completo; desde 2, el
-  // 30 %). Lo que el Edén no tiene es reembolso: eso lo dice su política.
+  // Todo se aparta con el 30 %, el Edén incluido (regla del 29 sep 2026, la
+  // misma del carrito). Lo que el Edén no tiene es reembolso: su política.
   const toursPaq  = toursDeSlugs(lineItems.map((l) => l.tourSlug));
   const anticipo = Math.round((total * PCT_ANTICIPO) / 100);
   const folio    = "HP-P" + Date.now().toString(36).toUpperCase();
@@ -469,7 +468,7 @@ export async function POST(req: NextRequest) {
       return [...c.garantia.map((g) => `${g}.`), ...c.detalle];
     })(),
     "",
-    `⏳ Esta cotización tiene vigencia de *48 horas*. En temporada alta y fines de semana conviene apartar cuanto antes: los lugares y las habitaciones se llenan rápido.`,
+    `⏳ Esta cotización tiene vigencia de *48 horas* — durante ese tiempo el precio queda congelado.`,
     "",
     `⚠️ Al hacer la transferencia, pon *${folio}* como concepto — con eso identificamos tu pago.`,
   ].join("\n");

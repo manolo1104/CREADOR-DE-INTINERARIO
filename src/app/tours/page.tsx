@@ -10,7 +10,7 @@ import { headers } from "next/headers";
 // `GuideProfile` ya no se importan: el cuerpo resultante ordena por
 // `rankTour` y agrupa por `TOUR_CATEGORIAS`, y no queda ninguna referencia a
 // ellos (verificado con grep antes de quitarlos).
-import { TOURS_DB, TOUR_CATEGORIAS, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado, esPorPersona, partesRecogida, recogidaDeTour } from "@/lib/tours";
+import { TOURS_DB, TOUR_CATEGORIAS, TOURS_RANKING, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado, promoDe, esPorPersona, partesRecogida, recogidaDeTour } from "@/lib/tours";
 import { excepcionesSalida } from "@/lib/recogidaTexto";
 import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { TourCarrusel } from "@/components/TourCarrusel";
@@ -59,8 +59,8 @@ export function generateMetadata(): Metadata {
   const nTraslado = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
   const nDesayuno = TOURS_DB.filter(incluyeDesayuno).length;
   const description = en
-    ? `${nTours} guided day tours from ${desdeTxt} MXN: waterfalls, caves, rafting, Las Pozas. ${nTraslado} include hotel pickup, ${nDesayuno} breakfast. One-day tours are paid in full.`
-    : `${nTours} tours guiados desde ${desdeTxt}: ${nTraslado} pasan por tu hospedaje y ${nDesayuno} incluyen desayuno. Un tour de un día se paga completo; desde dos días apartas con el 30 %.`;
+    ? `${nTours} guided day tours from ${desdeTxt} MXN: waterfalls, caves, rafting, Las Pozas. ${nTraslado} include hotel pickup, ${nDesayuno} breakfast. A 30% deposit holds your spot.`
+    : `${nTours} tours guiados desde ${desdeTxt}: ${nTraslado} pasan por tu hospedaje y ${nDesayuno} incluyen desayuno. Apartas con el 30 % y liquidas el resto el día del tour.`;
   return {
     title,
     description,
@@ -292,8 +292,8 @@ export default function ToursPage() {
             para no meter un párrafo entero en el hero. */}
         <p className="text-crema/65 font-dm text-[13px] max-w-2xl mx-auto leading-relaxed mb-6">
           {en
-            ? <>The {tours.length} tours cost from {money(precioMinPersona)} MXN per person{otraUnidad ? ` (${otraUnidad})` : ""} and last between {durMin} and {durMax} hours. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">pickup times and meeting points</a>. Free cancellation up to 48 hours before with a 100% refund{cancelPropia.length ? ` (except ${cancelPropia.join(", ")}, which has its own policy)` : ""}; a single-day tour is paid in full when you book, and from two days on you hold your spot with {ANTICIPO_PCT}%.</>
-            : <>Los {tours.length} recorridos cuestan desde {money(precioMinPersona)} MXN por persona{otraUnidad ? ` (${otraUnidad})` : ""} y duran entre {durMin} y {durMax} horas. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">horarios y puntos de salida</a>. Cancelas gratis hasta 48 horas antes con reembolso del 100 %{cancelPropia.length ? ` (salvo ${cancelPropia.join(", ")}, con su propia política)` : ""}; un recorrido suelto de un día se paga completo al reservar y desde 2 días apartas con el {ANTICIPO_PCT} %.</>}
+            ? <>The {tours.length} tours cost from {money(precioMinPersona)} MXN per person{otraUnidad ? ` (${otraUnidad})` : ""} and last between {durMin} and {durMax} hours. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">pickup times and meeting points</a>. Free cancellation up to 48 hours before with a 100% refund{cancelPropia.length ? ` (except ${cancelPropia.join(", ")}, which has its own policy)` : ""}; you hold your spot with a {ANTICIPO_PCT}% deposit and settle the rest on the day of the tour.</>
+            : <>Los {tours.length} recorridos cuestan desde {money(precioMinPersona)} MXN por persona{otraUnidad ? ` (${otraUnidad})` : ""} y duran entre {durMin} y {durMax} horas. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">horarios y puntos de salida</a>. Cancelas gratis hasta 48 horas antes con reembolso del 100 %{cancelPropia.length ? ` (salvo ${cancelPropia.join(", ")}, con su propia política)` : ""}; apartas con el {ANTICIPO_PCT} % y liquidas el resto el día del tour.</>}
         </p>
         <div className="inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
           <Calendar className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
@@ -331,6 +331,70 @@ export default function ToursPage() {
           </a>
         </div>
         </div>
+      </section>
+
+      {/* ── LOS MÁS RESERVADOS + RECOMENDADOR ──
+          Contra la parálisis de elegir entre 14 (hallazgo de la revisión de
+          conversión, sep 2026): tres héroes con datos REALES de venta
+          (TOURS_RANKING, del panel) y el recomendador en el primer scroll, no
+          enterrado en el pie. Solo el 1º presume «el más reservado»: es el
+          único con respaldo que un cliente puede verificar. */}
+      <section aria-labelledby="mas-reservados" className="px-6 pt-14 pb-4 max-w-7xl mx-auto">
+        <h2 id="mas-reservados" className="font-cormorant font-light text-crema text-3xl md:text-4xl mb-8 text-center">
+          {en ? <>Start with the <em className="shimmer-gold">favorites</em></> : <>Empieza por los <em className="shimmer-gold">favoritos</em></>}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {TOURS_RANKING.slice(0, 3).map((slug, i) => {
+            const t = tours.find((x) => x.slug === slug);
+            if (!t) return null;
+            return (
+              <Link key={slug} href={lp(`/tours/${slug}`)} className="group block">
+                <div className="relative aspect-[4/5] overflow-hidden">
+                  {t.imagen_hero && (
+                    <Image
+                      src={t.imagen_hero}
+                      alt={t.nombre}
+                      fill
+                      className="object-cover transition-transform duration-700 ease-out [@media(hover:hover)]:group-hover:scale-[1.04]"
+                      sizes="(min-width: 640px) 400px, 100vw"
+                    />
+                  )}
+                  {i === 0 && (
+                    <p className="absolute top-3 left-3 bg-dorado text-negro font-dm text-[10px] tracking-[1.5px] uppercase px-2.5 py-1">
+                      {en ? "Most booked" : "El más reservado"}
+                    </p>
+                  )}
+                  {/* Panel de vidrio: sobre agua turquesa o follaje claro, el
+                      precio en texto suelto no se leía (queja de Manolo, 29
+                      sep). Blur + borde 1px + brillo interior, con respaldo
+                      sólido para quien apaga la transparencia. */}
+                  <div className="absolute inset-x-3 bottom-3 border border-white/15 bg-negro/45 backdrop-blur-md p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] supports-[not(backdrop-filter:blur(0))]:bg-negro/80">
+                    <p className="font-cormorant text-crema text-2xl leading-tight">{t.nombreCorto}</p>
+                    <p className="mt-1.5 font-dm text-xs text-crema/85">
+                      {precioTachado(t) && (
+                        <span className="mr-1.5 text-crema/50 line-through">{money(precioTachado(t)!)}</span>
+                      )}
+                      <span className="text-dorado font-medium text-sm">{money(t.precio)}</span> MXN {etiquetaUnidad(t, en)} · {tourDurTexto(t, en ? " hours" : " horas")}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        {!en && (
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 border border-white/10 bg-white/[0.03] px-6 py-5">
+            <p className="font-dm text-sm text-crema/75 text-center sm:text-left">
+              ¿No sabes cuál elegir? Contesta 7 preguntas y te decimos cuál va contigo.
+            </p>
+            <Link
+              href="/recomendar"
+              className="inline-flex items-center justify-center border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 flex-shrink-0"
+            >
+              Descubrir mi tour →
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* ── CATEGORÍAS ──
@@ -499,7 +563,12 @@ export default function ToursPage() {
                   <p className="flex items-baseline gap-2">
                     <span className="font-cormorant text-dorado text-3xl font-light leading-none">{money(tour.precio)}</span>
                     {precioTachado(tour) && (
-                      <span className="text-[11px] text-crema/30 font-dm line-through">{money(precioTachado(tour)!)}</span>
+                      <>
+                        <span className="text-[11px] text-crema/30 font-dm line-through">{money(precioTachado(tour)!)}</span>
+                        <span className="border border-dorado/40 bg-dorado/10 text-dorado text-[9px] font-dm tracking-wide px-1.5 py-0.5">
+                          {en ? `save $${promoDe(tour)!.monto}` : `−$${promoDe(tour)!.monto}`}
+                        </span>
+                      </>
                     )}
                   </p>
                   <p className="text-[9px] text-crema/35 font-dm mt-1">

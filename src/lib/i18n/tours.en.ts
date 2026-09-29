@@ -51,7 +51,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "RZR Off-Road Ride in Xilitla",
     tagline: "Drive your own off-road buggy through jungle, rivers and mud — 4 routes, 2 to 5 hours",
     tipo: "Off-Road Adventure",
-    urgencia: "Limited fleet — weekends book up in advance",
+    urgencia: "Priced per vehicle, not per person — 4 routes to choose from",
     descripcion:
       "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Village (a hamlet of giant mushroom houses), the mountain lookouts, a hidden jungle spring (with kayak) or the cloud forest of La Trinidad. Pricing is per vehicle (from {precio}), not per person.",
     descripcionLarga:
@@ -166,7 +166,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Rappelling at Tamul Waterfall",
     tagline: "Pure adrenaline hanging off the wall, facing a 344-foot curtain of falling water",
     tipo: "Extreme Adventure",
-    urgencia: "Very limited spots per departure — book ahead",
+    urgencia: "Small group for safety — book ahead",
     descripcion:
       "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides and the aerial drone photography that proves you really did it. The most extreme experience in the Huasteca Potosina, and suitable too for people who have never rappelled before.",
     descripcionLarga:
@@ -198,7 +198,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   "expedicion-tamul": {
     nombre: "Tamul Expedition — Tamul, Water Cave and Sinkhole",
     nombreCorto: "Tamul Expedition",
-    tagline: "The most complete tour of the Huasteca in a single day",
+    tagline: "Three wonders in one day: Tamul by canoe, the Water Cave cenote and the Huahuas abyss at sunset",
     tipo: "Adventure & Nature",
     urgencia: "Our most booked tour — fills up on weekends",
     descripcion:
@@ -314,7 +314,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Surrealist Route",
     tagline: "Art, water and mystery in a journey of unique contrasts",
     tipo: "Culture & Nature",
-    urgencia: "High demand in the Nov–Mar season",
+    urgencia: "Four stops with entrance fees included — book ahead",
     descripcion:
       "The world's most enigmatic sculpture garden, the crystal-clear waters of the Huichihuayán Spring, the living shadows of the Quilas Cave and Don Beto Ramón's Castillo de la Salud, the Huasteca's other surrealism. Culture and nature fused into one extraordinary day.",
     descripcionLarga:
@@ -362,7 +362,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "El Meco Waterfalls",
     tagline: "Three waterfalls, three different thrills",
     tipo: "Waterfalls & Photography",
-    urgencia: "A photographers' favorite — limited spots",
+    urgencia: "A photographers' favorite — three stops in a single day",
     descripcion:
       "Explore the turquoise pools of El Meco Waterfall, climb to the panoramic lookout for a breathtaking perspective, and close the day before the imposing El Salto Waterfall. The most photogenic and accessible tour in the whole region.",
     descripcionLarga:
@@ -524,7 +524,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Scuba Diving at Media Luna",
     tagline: "Breathe underwater for the first time in the fresh, crystal-clear water of Media Luna — no experience needed",
     tipo: "Scuba Diving & Nature",
-    urgencia: "Limited spots per instructor — book ahead, especially on weekends",
+    urgencia: "Your first dive with a PADI instructor — book ahead",
     descripcion:
       "Take your first SCUBA dive at the Media Luna Lagoon in Rioverde, with its fresh, crystal-clear water. Breathing underwater has never been this easy: no previous experience needed, just the desire to try. A PADI-certified instructor guides you every step of the way — first you practice in shallow water and, when you're ready, you descend between 5 and 10 meters. It's 4 hours of training and includes the diving gear and digital photos of your dive. {precio} per person.",
     descripcionLarga:

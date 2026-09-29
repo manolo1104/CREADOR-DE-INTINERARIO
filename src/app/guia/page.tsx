@@ -211,7 +211,7 @@ export default function GuiaPage() {
           <GuiaGratisForm origen="/guia" />
         </div>
         <p className="mt-6 text-[11px] text-crema/20">
-          ¿Prefieres un itinerario personalizado?{" "}
+          ¿Quieres una recomendación a tu medida?{" "}
           <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2">
             Encuentra tu tour ideal →
           </Link>

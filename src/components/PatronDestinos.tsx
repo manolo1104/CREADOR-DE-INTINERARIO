@@ -41,19 +41,23 @@ function sembrado(semilla: number) {
 
 function sembrar(total: number, cols: number) {
   const r = sembrado(20260910);
-  // Rejilla suelta: se reparte por celdas y se desordena dentro de cada una,
-  // así no se apelotonan ni dejan un cuadrante vacío.
+  // Rejilla con medio paso de corrimiento por fila (como ladrillos) y un
+  // temblor CHICO alrededor del centro de cada celda. Antes el temblor era del
+  // 80 % de la celda: dos vecinos podían caer pegados y la celda de al lado
+  // quedar vacía, y el "patrón" se leía como manchas (la queja de Manolo,
+  // 29 sep 2026). Con ±20 % nadie se toca y el ritmo se ve a propósito.
   const filas = Math.ceil(total / cols);
   return Array.from({ length: total }, (_, i) => {
     const cx = i % cols;
     const cy = Math.floor(i / cols);
+    const corrimiento = cy % 2 === 0 ? 0 : 0.5;
     return {
-      Icon: ICONOS[Math.floor(r() * ICONOS.length)],
-      left: ((cx + 0.1 + r() * 0.8) / cols) * 100,
-      top: ((cy + 0.1 + r() * 0.8) / filas) * 100,
-      size: 22 + Math.round(r() * 32),
-      rot: Math.round((r() - 0.5) * 50),
-      op: 0.17 + r() * 0.15,
+      Icon: ICONOS[(cy * cols + cx * 7) % ICONOS.length],
+      left: ((cx + corrimiento + 0.5 + (r() - 0.5) * 0.4) / cols) * 100,
+      top: ((cy + 0.5 + (r() - 0.5) * 0.4) / filas) * 100,
+      size: 24 + Math.round(r() * 14),
+      rot: Math.round((r() - 0.5) * 30),
+      op: 0.14 + r() * 0.08,
     };
   });
 }

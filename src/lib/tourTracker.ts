@@ -125,6 +125,35 @@ function etiquetarClarity(event: string, sid: string, data: Record<string, unkno
   }
 }
 
+/**
+ * El mismo evento, contado también en GA4 cuando es de los que el negocio mira
+ * ahí: clics a WhatsApp y leads. Antes cada botón decidía por su cuenta si le
+ * hablaba a GA4 y la mayoría no lo hacía, así que la cifra de WhatsApp en GA4
+ * estaba corta sin que nada avisara. Con el puente aquí, cualquier
+ * `WHATSAPP_CLICK` o `LEAD_*` nuevo queda medido el día que se escribe.
+ */
+function mandarAGa4(event: string, data: Record<string, unknown>): void {
+  const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag;
+  if (typeof gtag !== "function") return;
+  try {
+    if (event === "WHATSAPP_CLICK") {
+      gtag("event", "whatsapp_contact", {
+        context: data.context ?? data.origen ?? "enlace",
+        boton:   data.boton,
+        tour:    data.tour ?? data.tourSlug,
+        ...(typeof data.amount === "number" ? { currency: "MXN", value: data.amount } : {}),
+      });
+    } else if (event.startsWith("LEAD_")) {
+      gtag("event", "generate_lead", {
+        fuente: (data.fuente as string) ?? event.slice(5).toLowerCase(),
+        tour:   data.tour ?? data.tourSlug,
+      });
+    }
+  } catch {
+    // GA4 nunca debe romper el sitio.
+  }
+}
+
 export function trackTourEvent(
   event: string,
   data?: Record<string, unknown>
@@ -132,6 +161,7 @@ export function trackTourEvent(
   if (typeof window === "undefined") return;
   try {
     etiquetarClarity(event, getSessionId(), data ?? {});
+    mandarAGa4(event, data ?? {});
     fetch("/api/track", {
       method:    "POST",
       headers:   { "Content-Type": "application/json" },

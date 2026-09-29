@@ -120,7 +120,7 @@ export interface ResumenCarrito {
   saldo:    number;
   /** Fechas distintas: sirve para decir "3 días de recorridos". */
   dias:     number;
-  /** Porcentaje que se cobra hoy: 100 si es un solo día, 30 si son varios. */
+  /** Porcentaje que se cobra hoy (`pctACobrar`: el 30 % desde el 29 sep 2026). */
   pct:      number;
   /** Lo que costaría el viaje sin el descuento por varios recorridos. */
   totalSinDescuento: number;
@@ -134,22 +134,23 @@ export interface ResumenCarrito {
 export const ANTICIPO_PCT = 30;
 
 /**
- * Qué porcentaje del total se cobra HOY.
+ * Qué porcentaje del total se cobra HOY: el 30 %, siempre.
  *
- * Un viaje de **un solo día de recorrido se cobra completo** (decisión de
- * Manolo, 20 ago 2026): son montos chicos y no vale la pena quedarse con un
- * saldo que hay que perseguir el día del tour.
+ * Hasta el 29 sep 2026 un viaje de un solo día se cobraba completo (decisión
+ * del 20 ago). Manolo la revirtió en la revisión de conversión de temporada
+ * baja: pagar $3,100 de golpe a un desconocido espanta al viajero mexicano, y
+ * el anticipo del 30 % es lo que ya cobra todo el sector. El saldo se liquida
+ * el día del tour.
  *
- * El hospedaje cuenta como "varios días": una noche de hotel ya estira el viaje
- * más allá de la jornada, y cobrar $12,000 de golpe espanta al cliente. Esos
- * siguen apartándose con el 30 %.
+ * Se conservan la firma y los parámetros: si la regla vuelve a distinguir
+ * casos, los que llaman ya pasan los datos necesarios.
  *
  * ⚠️ Vive aquí porque lo usan los DOS lados: el carrito para pintar y
  * `carrito-payment-intent` para cobrar de verdad. Si divergieran, la pantalla
  * diría un importe y Stripe cobraría otro.
  */
-export function pctACobrar(dias: number, conHospedaje = false): number {
-  return dias <= 1 && !conHospedaje ? 100 : ANTICIPO_PCT;
+export function pctACobrar(_dias?: number, _conHospedaje = false): number {
+  return ANTICIPO_PCT;
 }
 
 /**

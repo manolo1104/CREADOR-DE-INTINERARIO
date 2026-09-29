@@ -824,12 +824,11 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   {/* Decía "Todo incluido … y comida": la Expedición Tamul, que es
                       la tarjeta que más sale en el blog, NO incluye la comida
                       del día, y no todos los recorridos pasan por ti. */}
-                  {/* 🔴 Decía "Apartas con el 30 %; los tours de un día se pagan
-                      completos": dos tours de un día parecían pagarse completos, y
-                      el recuadro de GuiaDelLugar de esta misma página lo dice bien.
-                      Es la regla de `pctACobrar` (carrito.ts), con su mismo número. */}
+                  {/* La regla de pago es la de `pctACobrar` (carrito.ts), con su
+                      mismo número: el recuadro de GuiaDelLugar de esta misma
+                      página dice exactamente lo mismo. */}
                   Guía certificado, entradas y, en casi todos los recorridos, traslado desde tu hospedaje.
-                  Un recorrido suelto de un día se paga completo al reservar; desde 2 días o con hospedaje apartas con el {ANTICIPO_PCT} %. Cancelas gratis hasta 48 h antes{SALVO_POLITICA_PROPIA}.
+                  Apartas con el {ANTICIPO_PCT} % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes{SALVO_POLITICA_PROPIA}.
                 </p>
                 {ofertas.length > 0 ? (
                   <div className="flex flex-col gap-3 max-w-md mx-auto">

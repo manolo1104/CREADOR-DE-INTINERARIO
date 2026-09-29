@@ -90,9 +90,9 @@ export async function POST(req: NextRequest) {
     //
     // Antes de aquí solo se sacaba el idioma, y el correo salía con el viaje
     // aplastado en un renglón —el primer tour cargando con el importe del
-    // total— y exigiendo el pago completo, porque sin días a la vista
-    // `pctACobrar(0, false)` devuelve 100. El cliente leía "paga $12,500" y el
-    // carrito le iba a pedir $3,750.
+    // total— y exigiendo el pago completo, porque con la regla de entonces
+    // `pctACobrar(0, false)` devolvía 100. El cliente leía "paga $12,500" y el
+    // carrito le iba a pedir $3,750. (Desde el 29 sep 2026 siempre es 30 %.)
     let locale = "es";
     let lineas: CartEmailLinea[] | undefined;
     let hospedaje: Parameters<typeof buildCartEmailHtml>[0]["hospedaje"];
@@ -107,8 +107,8 @@ export async function POST(req: NextRequest) {
         // Carritos creados antes de que se guardaran los renglones tarifados.
         // El importe por recorrido no se puede reconstruir aquí sin recalcular,
         // y el correo deja la celda vacía cuando falta; lo que sí se recupera
-        // —y es lo que importaba— son los días, que son los que deciden si se
-        // aparta con el 30 % o se paga completo.
+        // son los días, que arman el itinerario del correo (el porcentaje ya
+        // no depende de ellos: siempre es el 30 %).
         lineas = guardado.items.map((i: Record<string, unknown>) => ({
           tourName: String(i.tourName ?? ""), tourSlug: String(i.tourSlug ?? ""),
           tourDate: String(i.tourDate ?? ""),

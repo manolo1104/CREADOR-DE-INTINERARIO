@@ -73,6 +73,10 @@ export async function arrancarSecuenciaRecomendador(
       intereses:      ctx.intereses      ?? [],
       tourPrincipal:  ctx.tourPrincipal  ?? null,
       tourSecundario: ctx.tourSecundario ?? null,
+      // 🔴 Sin esto, la pantalla enseñaba un Paquete con hotel «por pareja» y
+      // el correo armaba OTRO plan de N días sin hotel y con otro total.
+      paquete:        ctx.paquete        ?? null,
+      razonIA:        ctx.razonIA        ?? null,
     });
     // Sin tour recomendado no hay nada personalizado que decir. Mejor silencio
     // que un correo genérico: el cron cerrará la secuencia por la misma razón.

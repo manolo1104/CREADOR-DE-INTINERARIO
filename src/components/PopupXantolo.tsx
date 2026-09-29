@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, ArrowRight, Check } from "lucide-react";
 import { useLocale } from "@/lib/i18n/useLocale";
+import { trackTourEvent } from "@/lib/tourTracker";
 
 /**
  * El aviso de Xantolo: aparece a los 20 segundos de cada página y regala la
@@ -38,6 +39,13 @@ import { useLocale } from "@/lib/i18n/useLocale";
 
 /** Dio su correo: se calla para siempre. */
 const CLAVE_ENVIADO = "hp_xantolo_2026_guia";
+/**
+ * Cerró el aviso («ahora no», la X, Esc o el fondo): no se le vuelve a salir
+ * EN ESTA SESIÓN, pero sí en la siguiente visita (por eso sessionStorage y no
+ * localStorage). Pedido de Manolo, 29 sep 2026: antes salía otra vez en cada
+ * página y a los 20 segundos, aunque acabaras de cerrarlo.
+ */
+const CLAVE_CERRADO = "hp_xantolo_cerrado";
 const SEGUNDOS = 20;
 /** El día que deja de tener sentido. Se compara contra la fecha en México. */
 const CADUCA = "2026-11-03";
@@ -116,9 +124,17 @@ export function PopupXantolo() {
     ruta.startsWith("/reservar-paquete") ||
     ruta.startsWith("/reservar/carrito") ||
     ruta.startsWith("/confirmacion") ||
+    // El recomendador YA está pidiendo un correo: dos capturas encimadas
+    // a media conversación es la forma de perder las dos.
+    ruta.startsWith("/recomendar") ||
     pathname.includes("xantolo");
 
   const cerrar = useCallback(() => {
+    try {
+      sessionStorage.setItem(CLAVE_CERRADO, "1");
+    } catch {
+      /* Sin almacenamiento, que al menos se cierre esta vez. */
+    }
     setVisible(false);
     // Se desmonta después de la salida, que es más corta que la entrada.
     window.setTimeout(() => {
@@ -159,11 +175,19 @@ export function PopupXantolo() {
         return true;
       }
     };
-    if (!forzado && dioCorreo()) return;
+    /* Ya lo cerró en esta sesión: se respeta hasta la próxima visita. */
+    const yaCerro = (): boolean => {
+      try {
+        return sessionStorage.getItem(CLAVE_CERRADO) !== null;
+      } catch {
+        return false;
+      }
+    };
+    if (!forzado && (dioCorreo() || yaCerro())) return;
 
     const t = window.setTimeout(() => {
-      // Pudo dejar su correo en otra pestaña durante la espera.
-      if (!forzado && (dioCorreo() || cookiesPendientes())) return;
+      // Pudo dejar su correo o cerrarlo en otra pestaña durante la espera.
+      if (!forzado && (dioCorreo() || yaCerro() || cookiesPendientes())) return;
       abierto.current = true;
       enfocadoAntes.current = document.activeElement as HTMLElement | null;
       setMontado(true);
@@ -226,6 +250,8 @@ export function PopupXantolo() {
         });
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data?.error || "");
+        // El puente de trackTourEvent lo reenvía a GA4 como `generate_lead`.
+        trackTourEvent("LEAD_XANTOLO", { fuente: "Popup Xantolo" });
         /* Ya la tiene: este aviso no vuelve a salirle nunca. */
         try {
           localStorage.setItem(CLAVE_ENVIADO, "enviado");

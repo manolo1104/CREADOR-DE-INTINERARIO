@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T06:10:36.980Z",
+  "generatedAt": "2026-09-29T17:03:02.618Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -74,7 +74,7 @@
         "primerizos",
         "aventura off-road"
       ],
-      "urgencia": "Flota limitada — los fines de semana se aparta con anticipación",
+      "urgencia": "Precio por vehículo, no por persona — 4 rutas para elegir",
       "rutas": [
         {
           "nombre": "Ruta Nanacatli",
@@ -282,7 +282,7 @@
         "adrenalina",
         "amigos"
       ],
-      "urgencia": "Cupo muy limitado por salida — se aparta con anticipación",
+      "urgencia": "Grupo chico por seguridad — se reserva con anticipación",
       "rutas": null,
       "flota": null
     },
@@ -294,7 +294,7 @@
       "dificultad": "media",
       "duracionHrs": 7,
       "duracionTexto": "7 h",
-      "precio": 1950,
+      "precio": 1850,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "cancelacion": null,
@@ -367,7 +367,7 @@
       "dificultad": "media",
       "duracionHrs": 12,
       "duracionTexto": "12–13 h",
-      "precio": 1550,
+      "precio": 1450,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "cancelacion": null,
@@ -376,7 +376,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
-      "tagline": "El tour más completo de la Huasteca en un solo día",
+      "tagline": "Tres maravillas en un día: Tamul en canoa, el cenote de la Cueva del Agua y las Huahuas al atardecer",
       "pitch": "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
       "url": "https://www.huasteca-potosina.com/tours/expedicion-tamul",
       "destinos": [
@@ -433,7 +433,7 @@
       "dificultad": "baja",
       "duracionHrs": 8,
       "duracionTexto": "8–10 h",
-      "precio": 1400,
+      "precio": 1300,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "cancelacion": null,
@@ -487,7 +487,7 @@
         "fotografía",
         "ritmo tranquilo"
       ],
-      "urgencia": "Alta demanda en temporada nov–mar",
+      "urgencia": "Cuatro paradas con entradas incluidas — reserva con anticipación",
       "rutas": null,
       "flota": null
     },
@@ -571,7 +571,7 @@
       "dificultad": "baja",
       "duracionHrs": 12,
       "duracionTexto": "12 h",
-      "precio": 1700,
+      "precio": 1600,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "cancelacion": null,
@@ -624,7 +624,7 @@
         "parejas",
         "familias"
       ],
-      "urgencia": "Favorito de fotógrafos — cupos limitados",
+      "urgencia": "Favorito de fotógrafos — tres paradas en un solo día",
       "rutas": null,
       "flota": null
     },
@@ -636,7 +636,7 @@
       "dificultad": "baja",
       "duracionHrs": 12,
       "duracionTexto": "11–12 h",
-      "precio": 1600,
+      "precio": 1500,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "cancelacion": null,
@@ -700,7 +700,7 @@
       "dificultad": "media",
       "duracionHrs": 12,
       "duracionTexto": "11–12 h",
-      "precio": 1600,
+      "precio": 1500,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "cancelacion": null,
@@ -819,7 +819,7 @@
         "mayores de 10 años",
         "aventura acuática"
       ],
-      "urgencia": "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
+      "urgencia": "Primera inmersión con instructor PADI — se reserva con anticipación",
       "rutas": null,
       "flota": null
     },
@@ -1095,9 +1095,9 @@
       "duracion": "3 días / 2 noches",
       "dias": 3,
       "noches": 2,
-      "precio": 8699,
+      "precio": 8299,
       "precioLabel": "por pareja",
-      "precioTotalPareja": 8699,
+      "precioTotalPareja": 8299,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/inmersion-huasteca",
       "badge": "Nuevo",
       "perfiles": [
@@ -1165,11 +1165,11 @@
         },
         {
           "item": "Expedición Tamul (2 pax)",
-          "precio": "$3,100"
+          "precio": "$2,900"
         },
         {
           "item": "Ruta Surrealista (2 pax)",
-          "precio": "$2,800"
+          "precio": "$2,600"
         }
       ]
     },
@@ -1181,9 +1181,9 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 12290,
+      "precio": 11690,
       "precioLabel": "por pareja",
-      "precioTotalPareja": 12290,
+      "precioTotalPareja": 11690,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/gran-huasteca",
       "badge": "Los 3 imperdibles",
       "perfiles": [
@@ -1260,15 +1260,15 @@
         },
         {
           "item": "Expedición Tamul (2 pax)",
-          "precio": "$3,100"
+          "precio": "$2,900"
         },
         {
           "item": "Cascadas del Meco (2 pax)",
-          "precio": "$3,400"
+          "precio": "$3,200"
         },
         {
           "item": "Ruta Surrealista (2 pax)",
-          "precio": "$2,800"
+          "precio": "$2,600"
         }
       ]
     },
@@ -1280,9 +1280,9 @@
       "duracion": "4 días / 3 noches",
       "dias": 4,
       "noches": 3,
-      "precio": 13390,
+      "precio": 12990,
       "precioLabel": "por pareja",
-      "precioTotalPareja": 13390,
+      "precioTotalPareja": 12990,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura",
       "badge": "Adrenalina",
       "perfiles": [
@@ -1364,7 +1364,7 @@
         },
         {
           "item": "Paraíso Escalonado + Salto (2 pax)",
-          "precio": "$3,900"
+          "precio": "$3,700"
         },
         {
           "item": "RZR Ruta Miradores (1 vehículo)",
@@ -1380,9 +1380,9 @@
       "duracion": "5 días / 4 noches",
       "dias": 5,
       "noches": 4,
-      "precio": 16500,
+      "precio": 15700,
       "precioLabel": "por pareja",
-      "precioTotalPareja": 16500,
+      "precioTotalPareja": 15700,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/odisea-huasteca",
       "badge": "Lo ves todo",
       "perfiles": [
@@ -1468,19 +1468,19 @@
         },
         {
           "item": "Expedición Tamul (2 pax)",
-          "precio": "$3,100"
+          "precio": "$2,900"
         },
         {
           "item": "Cascadas del Meco (2 pax)",
-          "precio": "$3,400"
-        },
-        {
-          "item": "Paraíso Escalonado (2 pax)",
           "precio": "$3,200"
         },
         {
+          "item": "Paraíso Escalonado (2 pax)",
+          "precio": "$3,000"
+        },
+        {
           "item": "Ruta Surrealista (2 pax)",
-          "precio": "$2,800"
+          "precio": "$2,600"
         }
       ]
     }
@@ -2345,7 +2345,7 @@
       "zona": "Aquismón",
       "tipo": "Aventura",
       "descripcion": "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
-      "precioEntrada": "$1,950 MXN (tour completo, con traslado y comida)",
+      "precioEntrada": "$1,850 MXN (tour completo, con traslado y comida)",
       "dificultad": "media",
       "duracionHrs": 7,
       "horario": "09:00–18:00",

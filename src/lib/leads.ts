@@ -80,6 +80,8 @@ export interface ContextoLead {
   tourPrincipal?:  string | null;  // slug
   tourSecundario?: string | null;  // slug
   paquete?:        string | null;  // slug
+  /** La redacción de la IA para el principal: el paso 1 del correo la usa de entrada. */
+  razonIA?:        string | null;
 }
 
 /**

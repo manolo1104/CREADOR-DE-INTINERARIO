@@ -645,3 +645,12 @@ model LinkPago {
   @@index([reservaId])
   @@index([cotizacionId])
 }
+
+/// Ajustes sueltos del sitio que edita el panel (p. ej. el estado del río).
+/// Clave-valor para no migrar el esquema por cada ajuste nuevo; el valor es
+/// JSON serializado y cada consumidor valida el suyo.
+model Config {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

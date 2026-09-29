@@ -74,5 +74,33 @@ Momentos que vas a vivir:
 - Un guía del propio jardín camina contigo a tu ritmo, sin prisa y sin grupo que alcanzar. Te lleva por la ruta de senderismo y por recintos que no forman parte de la visita general, explicándote las esculturas de Edward James de cerca.
 - Subes a los niveles superiores del Palacio de Bambú, cerrados en la visita normal. Desde arriba el jardín deja de verse por abajo y lo entiendes de golpe: la selva entera con la arquitectura surrealista creciendo dentro.
 - Llegas a la Casa Estudio, la cabaña donde Edward James se quedaba a descansar. En la pared todavía se conserva un poema escrito de su puño y letra. Nadie lo ha retirado ni lo ha puesto detrás de un cristal — y casi ningún visitante llega hasta ahí.
-NOTA: Experiencia PRIVADA de ~3 h dentro del Jardín Escultórico Edward James (Las Pozas, Xilitla). De 1 a 7 personas máximo. El precio es POR EL GRUPO COMPLETO, no por persona: desde $2,990 MXN una persona hasta $4,160 MXN siete. Incluye traslado redondo desde el hospedaje EN XILITLA (solo Xilitla, no Ciudad Valles), entrada al jardín, ruta de senderismo, guía propio en español o inglés y acceso una hora antes de la apertura. Empieza a las 8:00 a. m. (lunes, miércoles, jueves, viernes), 7:00 a. m. (sábado y domingo) o 5:00 p. m. (miércoles a lunes). NO se permiten actividades acuáticas, mascotas, drones ni tripiés, y es obligatorio calzado cerrado. La fecha se aparta pagando el 100 %: NO hay reembolsos, solo cambio de fecha avisando 5 días antes.`,
+NOTA: Experiencia PRIVADA de ~3 h dentro del Jardín Escultórico Edward James (Las Pozas, Xilitla). De 1 a 7 personas máximo. El precio es POR EL GRUPO COMPLETO, no por persona: desde $2,990 MXN una persona hasta $4,160 MXN siete. Incluye traslado redondo desde el hospedaje EN XILITLA (solo Xilitla, no Ciudad Valles), entrada al jardín, ruta de senderismo, guía propio en español o inglés y acceso una hora antes de la apertura. Empieza a las 8:00 a. m. (lunes, miércoles, jueves, viernes), 7:00 a. m. (sábado y domingo) o 5:00 p. m. (miércoles a lunes). NO se permiten actividades acuáticas, mascotas, drones ni tripiés, y es obligatorio calzado cerrado. La fecha se aparta con el 30 % como todos los tours; lo distinto es que NO hay reembolsos, solo cambio de fecha avisando 5 días antes.`,
+
+  "tour-travesia-cafe": `
+Momentos que vas a vivir:
+- El camino a la finca se hace en RZR desde tu hospedaje en Xilitla: subes entre la sierra hasta un cafetal que crece bajo la sombra de los árboles.
+- Caminas entre las matas con quien las cosecha y ves el proceso completo: cómo se despulpa el grano, el patio de secado y la tostaduría artesanal.
+- El cierre es una cata de café recién tostado en la barra de la finca: el sabor de Xilitla desde la mata hasta la taza.
+NOTA: Experiencia de ~3 h, dificultad baja, apta para toda la familia. $900 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA (el trayecto a la finca es en RZR), acceso a la finca, recorrido guiado y la cata. Es el plan tranquilo y de cultura local del catálogo: ideal para "Arte y cultura", "Relax total" y familias.`,
+
+  "tour-gruta-xilo": `
+Momentos que vas a vivir:
+- Sales ya de noche: una caminata de 15 a 20 minutos por la selva de Xilitla te deja en la boca de la gruta, con casco y lámpara frontal puestos.
+- Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, con el haz de tu lámpara descubriendo la cueva.
+- El recorrido cierra en unos jacuzzis naturales de agua cristalina DENTRO de la cueva: un chapuzón nocturno que casi nadie puede contar.
+NOTA: Recorrido NOCTURNO de ~3 h, dificultad media. $900 MXN por persona. Incluye traslado redondo en RZR desde el hospedaje EN XILITLA, acceso, casco y lámpara por persona y guía acreditado NOM-09. Caminata de acceso corta pero de noche: no lo pongas como principal para familias con niños pequeños sin decirlo.`,
+
+  "tour-amanecer-nubes": `
+Momentos que vas a vivir:
+- Sales de madrugada, mientras el resto de la Huasteca duerme, y subes en senderismo por el bosque de niebla de La Trinidad.
+- Llegas a la cima del Cerro del Pilón justo cuando sale el sol: muchas veces por ENCIMA del mar de nubes que cubre la sierra, con la luz pintando las cimas.
+- Es el tour de fotografía por excelencia del catálogo: el amanecer sobre las nubes es la foto que nadie más trae de la Huasteca.
+NOTA: Senderismo de madrugada de 7-8 h, dificultad media (pide condición para caminar en subida). $1,700 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA, entradas, equipo de seguridad y guía acreditado NOM-09. Ideal para "Fotografía perfecta" y quien busca algo que casi nadie hace; NO es para quien quiere dormir hasta tarde.`,
+
+  "tour-olla-de-la-luz": `
+Momentos que vas a vivir:
+- A 14 km de Xilitla, en lo alto de la comunidad de La Trinidad, caminas unas 2 horas guiadas entre bosque de niebla, llanos y miradores, entre pinos, cedros y orquídeas.
+- Llegas al borde de la Olla de la Luz: un sótano vertical de 193 metros de profundidad y 233 de diámetro que se abre de golpe en medio del bosque.
+- Los miradores del Cerro de la Luz regalan la vista de la sierra completa antes de bajar.
+NOTA: Caminata de montaña de 8-9 h en total, dificultad media. $1,800 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA, la caminata guiada, equipo de seguridad y guía acreditado NOM-09. Es montaña y bosque de niebla, NO actividad acuática: perfecto para senderistas y fotografía de paisaje.`,
 };

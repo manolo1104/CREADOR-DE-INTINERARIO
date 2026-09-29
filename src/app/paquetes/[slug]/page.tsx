@@ -8,7 +8,8 @@ import {
   Car, Plane, Bus, Sparkles, Clock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { PAQUETES_DB, getPaquete, collagePaquete, habitacionesDePaquete, habitacionAsignada, precioVisible, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
+import { PAQUETES_DB, getPaquete, collagePaquete, habitacionesDePaquete, habitacionAsignada, precioVisible, precioVisibleTachado, RESENAS_PAQUETES, RESENAS_POR_PAQUETE, TRASLADOS_TEXTO } from "@/lib/paquetes";
+import { PROMO_TEMPORADA } from "@/lib/tours";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, buildHotelNode, ORG_REF } from "@/lib/jsonld";
 import {
@@ -359,9 +360,19 @@ export default function PaqueteDetallePage({ params }: Props) {
               {/* 🔴 `precioVisible(p)`, nunca `p.precio`: justo al lado va
                   `p.precioLabel`, y un total de pareja debajo de «por persona»
                   anunciaría el doble de lo que cuesta. */}
+              {precioVisibleTachado(p) && (
+                <span className="mr-2 align-middle font-dm text-[14px] text-crema/40 line-through">${num(precioVisibleTachado(p)!)}</span>
+              )}
               ${num(precioVisible(p))} <span className="font-dm text-[11px] text-crema/65">MXN {p.precioLabel}</span>
             </span>
           </div>
+          {precioVisibleTachado(p) && (
+            <p className="mt-2 font-dm text-[11px] text-dorado/90">
+              {locale === "en"
+                ? `Low season price · valid through ${PROMO_TEMPORADA.hastaTexto.en}`
+                : `Precio de temporada baja · válido hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
+            </p>
+          )}
 
           <div>
             <a href={waLink(waMsg)} target="_blank" rel="noopener noreferrer"

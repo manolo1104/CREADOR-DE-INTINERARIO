@@ -4,7 +4,7 @@
  * leen de aquí. Los tours del itinerario se cruzan por `tourSlug` contra TOURS_DB.
  */
 import { TRASLADOS, precioBase } from "./traslados";
-import { TOURS_DB, tourCollage, tourDurRange } from "./tours";
+import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
 
 export interface ItinerarioDia {
@@ -56,6 +56,12 @@ export interface Paquete {
    * Para enseñarlo al visitante se usa `precioVisible()`, no este campo.
    */
   precio: number;
+  /**
+   * El total de lista cuando la promo de temporada baja está viva: se pinta
+   * tachado junto al precio. Lo pone la transformación de PAQUETES_DB, no se
+   * escribe a mano.
+   */
+  precioOriginal?: number;
   precioLabel: string;
   /**
    * El precio se ENSEÑA dividido entre dos y con etiqueta «por persona».
@@ -425,7 +431,7 @@ export function horasDeTour(slug: string, locale: "es" | "en" = "es"): string {
  * al 40 %. Si prefieres que el ahorro vuelva a leerse ~35 %, hay que subir cada
  * paquete un 12-14 %.
  */
-export const PAQUETES_DB: Paquete[] = [
+const PAQUETES_RAW: Paquete[] = [
   {
     id: "inmersion-huasteca",
     slug: "inmersion-huasteca",
@@ -669,6 +675,48 @@ export const PAQUETES_DB: Paquete[] = [
 ];
 
 /**
+ * Promo de temporada baja aplicada a los paquetes (Manolo, 29 sep 2026): cada
+ * recorrido en promo que trae el itinerario resta $100 × 2 personas al total
+ * de la pareja. Se calcula desde el itinerario y desde PROMO_TEMPORADA — la
+ * misma fuente que descuenta los tours sueltos — para que el ahorro del
+ * paquete frente a comprar suelto siga siendo EXACTAMENTE el mismo y no se
+ * vuelva a anunciar un ahorro inflado. Las filas de `valor` que citan un tour
+ * en promo bajan también sus $200, por la misma razón.
+ *
+ * ⚠️ Igual que TOURS_DB: se evalúa al arrancar; el 30 de octubre un deploy
+ * regresa los precios de lista.
+ */
+const PROMO_TOURS = PROMO_TEMPORADA.tours as ReadonlySet<string>;
+const DESCUENTO_PAREJA = PROMO_TEMPORADA.monto * 2;
+
+function conPromoTemporada(p: Paquete): Paquete {
+  if (!promoVigente()) return p;
+  const enPromo = p.itinerario
+    .map((d) => d.tourSlug)
+    .filter((s): s is string => !!s && PROMO_TOURS.has(s));
+  if (!enPromo.length) return p;
+
+  const nombresPromo = enPromo
+    .map((s) => TOURS_DB.find((t) => t.slug === s)?.nombreCorto)
+    .filter((n): n is string => !!n);
+  const valor = p.valor?.map((fila) => {
+    if (!nombresPromo.some((n) => fila.item.includes(n))) return fila;
+    const monto = Number(fila.precio.replace(/[$,\s]/g, ""));
+    if (!Number.isFinite(monto)) return fila;
+    return { ...fila, precio: `$${(monto - DESCUENTO_PAREJA).toLocaleString("es-MX")}` };
+  });
+
+  return {
+    ...p,
+    precio: p.precio - DESCUENTO_PAREJA * enPromo.length,
+    precioOriginal: p.precio,
+    valor,
+  };
+}
+
+export const PAQUETES_DB: Paquete[] = PAQUETES_RAW.map(conPromoTemporada);
+
+/**
  * Las fotos del collage de un paquete: una por recorrido, la del destino
  * principal de cada uno, en el orden en que se visitan.
  *
@@ -764,6 +812,16 @@ export function collagePaquete(p: Paquete): string[] {
  */
 export function precioVisible(p: Paquete): number {
   return p.precioPorPersona ? Math.round(p.precio / 2) : p.precio;
+}
+
+/**
+ * El precio de lista que se tacha junto a `precioVisible` mientras dura la
+ * promo de temporada baja, en la MISMA unidad (por persona o por pareja).
+ * `null` fuera de promo o en paquetes sin recorridos con descuento.
+ */
+export function precioVisibleTachado(p: Paquete): number | null {
+  if (!p.precioOriginal || p.precioOriginal <= p.precio) return null;
+  return p.precioPorPersona ? Math.round(p.precioOriginal / 2) : p.precioOriginal;
 }
 
 export function getPaquete(slug: string): Paquete | undefined {

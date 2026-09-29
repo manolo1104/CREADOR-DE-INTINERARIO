@@ -446,12 +446,46 @@ export function esPorPersona(t: Pick<Tour, "precioUnidad">): boolean {
  * publicidad engañosa. Para prorrogarlo basta con mover esta fecha; para
  * retirarlo, ponerle una pasada.
  */
-export const PROMO_VENCE = "2026-11-01";
+export const PROMO_VENCE = "2026-10-29";
+
+/**
+ * Promo de temporada baja (decisión de Manolo, 29 sep 2026): $100 menos POR
+ * PERSONA en estos seis recorridos, del 29 sep al 29 oct. El descuento se
+ * aplica al armar TOURS_DB, así que el precio que cobra el checkout, el que
+ * tacha la tarjeta, el de las descripciones ({precio}), el JSON-LD y el bot
+ * salen todos del mismo número.
+ *
+ * ⚠️ TOURS_DB se evalúa al ARRANCAR el proceso / compilar las páginas
+ * estáticas: el 30 de octubre hay que hacer un deploy para que los precios
+ * vuelvan solos a lista (los avisos visibles ya dicen "hasta el 29 de
+ * octubre", así que un día de gracia corre a favor del cliente).
+ */
+export const PROMO_TEMPORADA = {
+  monto: 100,
+  hastaTexto: { es: "29 de octubre", en: "October 29" },
+  tours: new Set([
+    "expedicion-tamul",
+    "cascadas-del-meco",
+    "paraiso-escalonado-minas-micos",
+    "ruta-acuatica-puente-de-dios",
+    "ruta-surrealista-edward-james",
+    "rafting-rio-tampaon",
+  ]),
+} as const;
 
 /** ¿Sigue viva la promoción hoy, en horario de México? */
 export function promoVigente(): boolean {
   const hoyMX = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
   return hoyMX <= PROMO_VENCE;
+}
+
+/**
+ * Lo que ahorra HOY este recorrido, para pintar la insignia de temporada baja.
+ * Sale de la diferencia real precio/precioOriginal, no de una cifra aparte.
+ */
+export function promoDe(t: Pick<Tour, "precio" | "precioOriginal">): { monto: number; hastaTexto: { es: string; en: string } } | null {
+  const tachado = precioTachado(t);
+  return tachado ? { monto: tachado - t.precio, hastaTexto: PROMO_TEMPORADA.hastaTexto } : null;
 }
 
 /**
@@ -793,7 +827,7 @@ const TOURS_RAW: Tour[] = [
     tagline:          "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
     precio:           1600,
     precioUnidad:     "vehiculo",
-    urgencia:         "Flota limitada — los fines de semana se aparta con anticipación",
+    urgencia:         "Precio por vehículo, no por persona — 4 rutas para elegir",
     // El "desde" va como `{precio}` y no escrito a mano (lo resuelve
     // `conPrecio`): `precio` ES la tarifa más baja de la flota, el RZR 500 en
     // la Ruta Nanacatli. Si cambia, las dos descripciones cambian con él.
@@ -864,12 +898,11 @@ const TOURS_RAW: Tour[] = [
     articulo:         "el",
     tagline:          "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
     precio:           1700,
-    precioOriginal:   1890,
     // 🔴 Decía "máximo 8 personas por día" justo debajo del "máximo 10 personas
     // por salida" que la ficha lee de `groupMax`: dos cupos distintos en la
     // misma pantalla. La urgencia ya no lleva cifra; el cupo sale solo de
     // `groupMax`. (Pendiente de Manolo: si el tope real es 8, se baja ahí.)
-    urgencia:         "Cupo muy limitado por salida — se aparta con anticipación",
+    urgencia:         "Grupo chico por seguridad — se reserva con anticipación",
     descripcion:
       "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
     descripcionLarga:
@@ -1030,9 +1063,10 @@ const TOURS_RAW: Tour[] = [
     nombre:           "Expedición Tamul — Tamul, Cueva del Agua y Sótano",
     nombreCorto:      "Expedición Tamul",
     articulo:         "la",
-    tagline:          "El tour más completo de la Huasteca en un solo día",
+    // La revisión de conversión (sep 2026): los tours de 8 h desde Valles solo
+    // llevan a la cascada; la tarjeta tiene que decir POR QUÉ este vale más.
+    tagline:          "Tres maravillas en un día: Tamul en canoa, el cenote de la Cueva del Agua y las Huahuas al atardecer",
     precio:           1550,
-    precioOriginal:   1720,
     urgencia:         "El más reservado — se llena los fines de semana",
     descripcion:
       "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
@@ -1128,8 +1162,7 @@ const TOURS_RAW: Tour[] = [
     articulo:         "la",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
     precio:           1400,
-    precioOriginal:   1560,
-    urgencia:         "Alta demanda en temporada nov–mar",
+    urgencia:         "Cuatro paradas con entradas incluidas — reserva con anticipación",
     descripcion:
       "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
     descripcionLarga:
@@ -1358,8 +1391,7 @@ const TOURS_RAW: Tour[] = [
     articulo:         "las",
     tagline:          "Tres caídas de agua, tres emociones distintas",
     precio:           1700,
-    precioOriginal:   1890,
-    urgencia:         "Favorito de fotógrafos — cupos limitados",
+    urgencia:         "Favorito de fotógrafos — tres paradas en un solo día",
     descripcion:
       "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
     descripcionLarga:
@@ -1444,7 +1476,6 @@ const TOURS_RAW: Tour[] = [
     articulo:         "el",
     tagline:          "Dos joyas naturales, un día perfecto para desconectar",
     precio:           1600,
-    precioOriginal:   1780,
     urgencia:         "Ideal para familias — reserva con anticipación",
     descripcion:
       "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
@@ -1535,7 +1566,6 @@ const TOURS_RAW: Tour[] = [
     articulo:         "la",
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
-    precioOriginal:   1780,
     // 🔴 Decía "últimos lugares disponibles" siempre, sin importar el cupo real:
     // escasez inventada. Como en el Rappel, la urgencia no dice cuántos quedan.
     urgencia:         "El más completo — se aparta con anticipación",
@@ -1641,7 +1671,7 @@ const TOURS_RAW: Tour[] = [
     articulo:         "el",
     tagline:          "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
     precio:           1300,
-    urgencia:         "Cupo limitado por instructor — se aparta con anticipación, sobre todo fines de semana",
+    urgencia:         "Primera inmersión con instructor PADI — se reserva con anticipación",
     descripcion:
       "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. {precio} por persona.",
     descripcionLarga:
@@ -2122,12 +2152,22 @@ export function conPrecio(texto: string, precio: number, locale: "es" | "en" = "
   return texto.replace(/\{precio\}/g, fmt);
 }
 
-/** El catálogo que ve todo el sitio: el de arriba, ya con sus precios resueltos. */
-export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => ({
-  ...t,
-  descripcion: conPrecio(t.descripcion, t.precio),
-  descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, t.precio) : t.descripcionLarga,
-}));
+/**
+ * El catálogo que ve todo el sitio: el de arriba, con sus precios resueltos y
+ * la promo de temporada baja aplicada. `precio` es SIEMPRE lo que se cobra;
+ * `precioOriginal` guarda el de lista para el tachado (`precioTachado`).
+ */
+export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => {
+  const enPromo = promoVigente() && (PROMO_TEMPORADA.tours as ReadonlySet<string>).has(t.slug);
+  const precio = enPromo ? t.precio - PROMO_TEMPORADA.monto : t.precio;
+  return {
+    ...t,
+    precio,
+    precioOriginal: enPromo ? t.precio : t.precioOriginal,
+    descripcion: conPrecio(t.descripcion, precio),
+    descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, precio) : t.descripcionLarga,
+  };
+});
 
 /**
  * El grupo más grande que sacamos, leído del catálogo.

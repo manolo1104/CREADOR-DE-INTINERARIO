@@ -108,9 +108,8 @@ export async function POST(req: NextRequest) {
   const toursReserva = toursDeReserva(booking);
 
   // Lo que entró: lo que dijo el dueño, o el anticipo estándar si no lo dijo.
-  // El estándar es la regla del carrito (`pctACobrar`): un solo día sin hotel
-  // se paga completo; desde 2 días o con hotel, el 30 %. El Edén no es
-  // excepción: paga como los demás (decisión de Manolo, 28 sep 2026).
+  // El estándar es la regla del carrito (`pctACobrar`): el 30 % del total
+  // (regla del 29 sep 2026). El Edén no es excepción: paga como los demás.
   const diasReserva  = new Set(toursReserva.map((x) => x.fecha)).size || 1;
   const conHospedaje = Array.isArray(booking.packageItems) && booking.packageItems.length > 0;
   const anticipoEstandar = Math.round((booking.totalAmount * pctACobrar(diasReserva, conHospedaje)) / 100);

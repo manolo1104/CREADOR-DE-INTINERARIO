@@ -6,7 +6,8 @@ import { Check, Moon, MapPin, ChevronLeft, ChevronRight, Info } from "lucide-rea
 import { GaleriaPaquete } from "@/components/GaleriaPaquete";
 import { PatronDestinos } from "@/components/PatronDestinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
-import { galeriaPaquete, precioVisible, type Paquete } from "@/lib/paquetes";
+import { galeriaPaquete, precioVisible, precioVisibleTachado, type Paquete } from "@/lib/paquetes";
+import { PROMO_TEMPORADA } from "@/lib/tours";
 import { ahorroPaquete } from "@/lib/ahorroPaquete";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
@@ -97,12 +98,22 @@ function PaqueteCard({ p }: { p: Paquete }) {
 
         {/* El precio y, sólo cuando es cierto, lo que se ahorra. */}
         <div className="mt-4 rounded-lg border border-negro/10 bg-white/70 px-4 py-3">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            {precioVisibleTachado(p) && (
+              <span className="font-dm text-[13px] text-negro/40 line-through">{mxn(precioVisibleTachado(p)!)}</span>
+            )}
             <span className="font-cormorant text-[34px] leading-none text-terracota">
               {mxn(precioVisible(p))}
             </span>
             <span className="font-dm text-[10px] text-negro/60">MXN {p.precioLabel}</span>
           </div>
+          {precioVisibleTachado(p) && (
+            <p className="mt-1 font-dm text-[10px] font-medium text-dorado">
+              {locale === "en"
+                ? `Low season price · valid through ${PROMO_TEMPORADA.hastaTexto.en}`
+                : `Precio de temporada baja · válido hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
+            </p>
+          )}
           {ahorro && (
             <div className="mt-2.5 border-t border-negro/10 pt-2.5">
               <p className="font-dm text-[11px] font-semibold text-verde-selva">

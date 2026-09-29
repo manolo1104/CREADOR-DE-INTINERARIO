@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Clock, Users, MapPin, X, Check } from "lucide-react";
 import type { Tour } from "@/lib/tours";
-import { incluyeDeTour, tourDurTexto } from "@/lib/tours";
+import { incluyeDeTour, tourDurTexto, precioTachado, promoDe } from "@/lib/tours";
 import { rangoGrupo } from "@/lib/catalogoResumen";
 import { formatMXN } from "@/lib/tourBooking";
 import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
@@ -251,9 +251,17 @@ export function TarjetaTourReservar({
               </div>
 
               <div className="border-t border-white/10 pt-4">
-                <div className="flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-2">
                   {esDesde && <span className="text-[11px] text-crema/45 font-dm">{desde}</span>}
+                  {precioTachado(tour) && (
+                    <span className="text-[12px] text-crema/35 font-dm line-through">{formatMXN(precioTachado(tour)!)}</span>
+                  )}
                   <span className="font-cormorant text-dorado text-3xl font-light leading-none">{formatMXN(tour.precio)}</span>
+                  {promoDe(tour) && (
+                    <span className="border border-dorado/40 bg-dorado/10 text-dorado text-[9px] font-dm tracking-wide px-1.5 py-0.5">
+                      −${promoDe(tour)!.monto}
+                    </span>
+                  )}
                   <span className="text-[11px] text-crema/45 font-dm">
                     {t.precioUnidadYPago(unidad === null ? t.porVehiculo : unidad === "grupo" ? t.porGrupo : t.porPersona)}
                   </span>

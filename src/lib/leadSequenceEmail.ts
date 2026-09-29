@@ -11,6 +11,7 @@
 // porcentaje.
 
 import { TOURS_DB, esPorPersona, etiquetaUnidad, partesRecogida, regresoDeTour, type Tour } from "./tours";
+import { PAQUETES_DB, precioVisible } from "./paquetes";
 import { fraseRecogidaCorreo, pasamosPorEl } from "./recogidaCorreo";
 import { CIUDADES_ORIGEN } from "./ciudadesOrigen";
 import { temporadaDe, nombreMes } from "./temporada";
@@ -35,6 +36,10 @@ export interface LeadEmailInput {
   intereses?:      string[] | null;
   tourPrincipal?:  string | null;  // slug
   tourSecundario?: string | null;  // slug
+  /** Slug del paquete que se le mostró en pantalla, si hubo. */
+  paquete?:        string | null;
+  /** La redacción de la IA para el principal (paso 1): entrada personalizada. */
+  razonIA?:        string | null;
 }
 
 /**
@@ -246,12 +251,12 @@ const precioDe = (t: Tour) => `${t.tarifaGrupo ? "desde " : ""}${mx(t.precio)}`;
 
 /**
  * Cómo se paga y qué pasa si cancela, para debajo de un botón. La regla del
- * pago es la del carrito (`pctACobrar`): un solo día completo, desde dos días
- * el 30 %. Un recorrido con política propia (el Edén: sin reembolso) dice la
- * suya, la del catálogo; los demás, la de 48 h.
+ * pago es la del carrito (`pctACobrar`): el 30 % de anticipo, siempre (regla
+ * del 29 sep 2026). Un recorrido con política propia (el Edén: sin reembolso)
+ * dice la suya, la del catálogo; los demás, la de 48 h.
  */
 const comoSeAparta = (t: Tour) =>
-  `Un recorrido solo se paga completo al reservar; con dos días o más, apartas con el 30 %. ${t.cancelacion ? t.cancelacion.es : "Cancelación gratuita hasta 48 h antes."}`;
+  `Apartas con el 30 % al reservar y liquidas el resto el día del tour. ${t.cancelacion ? t.cancelacion.es : "Cancelación gratuita hasta 48 h antes."}`;
 
 /** Tarjeta del tour recomendado, con lo que de verdad incluye. */
 function tarjetaTour(t: Tour, etiqueta: string): string {
@@ -259,11 +264,10 @@ function tarjetaTour(t: Tour, etiqueta: string): string {
     .map((i) => `<li style="margin:0 0 5px;font-family:'DM Sans',Arial,sans-serif;font-size:13px;font-weight:300;line-height:1.65;color:#3a3a2e">${i}</li>`)
     .join("");
   // Sin línea de pago para el RZR (se confirma por WhatsApp). Para los demás,
-  // la regla del carrito: solo, completo; con otro día de recorrido, el 30 %.
+  // la regla del carrito: 30 % de anticipo, siempre.
   const anticipo = t.precioUnidad === "vehiculo" ? "" : `
     <p style="margin:10px 0 0;font-size:13px;color:#3a6b1a">
-      Solo, se paga completo al reservar. Si lo combinas con otro recorrido,
-      apartas todo con el 30 % y liquidas el resto el día del tour.
+      Apartas con el 30 % al reservar y liquidas el resto el día del tour.
     </p>`;
 
   return `
@@ -358,11 +362,47 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
             eyebrow: "Tu recomendación",
             h1a: "Esto es lo que",
             h1b: "te recomendamos",
-            entradilla: `Con lo que nos contaste${conQuien}, este es el recorrido que mejor te queda. Te lo dejamos por escrito para que lo revises con calma — sin prisa y sin compromiso.`,
+            entradilla: d.razonIA?.trim()
+              || `Con lo que nos contaste${conQuien}, este es el recorrido que mejor te queda. Te lo dejamos por escrito para que lo revises con calma — sin prisa y sin compromiso.`,
           }, `
             ${tarjetaTour(principal, "Tu mejor opción")}
             ${secundario ? tarjetaTour(secundario, "Y si prefieres otra cosa") : ""}
             ${boton(linkCarrito(principal.slug), "Apartar este día →")}
+            <p style="text-align:center;font-size:13px;color:#8a7a5a;margin:0">
+              ${principal.cancelacion ? principal.cancelacion.es : "Cancelación gratuita hasta 48 h antes. Sin preguntas."}
+            </p>
+          `, true, d.email),
+        };
+      }
+
+      // ── Con paquete: el correo repite LO MISMO que vio en pantalla ────────
+      // 🔴 Antes este paso ignoraba el paquete y armaba su propio plan de N
+      // días SIN hotel y con otro total: la persona veía en pantalla «Gran
+      // Huasteca $11,690 por pareja con hotel» y el correo le cotizaba otra
+      // cosa. Si el recomendador mostró un paquete, el correo abre con él.
+      const paq = d.paquete ? PAQUETES_DB.find((p) => p.slug === d.paquete) : undefined;
+      if (paq) {
+        const itinerarioHtml = paq.itinerario
+          .map((dia, i) => `<li style="margin:0 0 6px;font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.6;color:#3a3a2e"><strong style="color:#1a2e1a">Día ${i + 1}:</strong> ${dia.titulo}</li>`)
+          .join("");
+        return {
+          subject: `Tu plan: ${paq.nombre} (${paq.duracion})`,
+          html: wrap({
+            eyebrow: "Tu plan completo",
+            h1a: "Tu viaje, armado",
+            h1b: "de principio a fin",
+            entradilla: d.razonIA?.trim()
+              || `Con lo que nos contaste${conQuien}, este es el plan que mejor te queda: ${paq.subtitulo}.`,
+          }, `
+            <div style="border:1px solid #d4ccbc;background:#faf7ee;padding:20px 22px;margin:0 0 20px;text-align:center">
+              <p style="margin:0 0 4px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">${paq.duracion} · tours + hotel + transporte local</p>
+              <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#1a2e1a;font-weight:500">${paq.nombre}</p>
+              <p style="margin:0 0 2px;font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;color:#9a4a1e;font-weight:500">${mx(precioVisible(paq))}</p>
+              <p style="margin:0;font-size:13px;color:#8a7a5a">${paq.precioLabel} · hospedaje en Hotel Paraíso Encantado, Xilitla · apartas con el 30 %</p>
+            </div>
+            <ul style="margin:0 0 20px;padding:0 0 0 2px;list-style:none">${itinerarioHtml}</ul>
+            ${tarjetaTour(principal, "El día grande de tu plan")}
+            ${boton(`${BASE}/paquetes/${paq.slug}`, "Ver el plan día por día →")}
             <p style="text-align:center;font-size:13px;color:#8a7a5a;margin:0">
               ${principal.cancelacion ? principal.cancelacion.es : "Cancelación gratuita hasta 48 h antes. Sin preguntas."}
             </p>
@@ -467,32 +507,28 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
         return {
           subject: `¿Apartamos tu ${nombreCorto}?`,
           html: wrap({
-            eyebrow: "Disponibilidad",
-            h1a: "Los fines de semana",
-            h1b: "se llenan",
-            entradilla: "La flota es limitada y los sábados y domingos se apartan con días de anticipación. Si ya tienes una fecha en mente, avísanos y te la guardamos.",
+            eyebrow: "Tu fecha",
+            h1a: "Elige tu ruta",
+            h1b: "y tu fecha",
+            entradilla: "El RZR se cobra por vehículo, no por persona, y hay 4 rutas para elegir. Si ya tienes una fecha en mente, avísanos y la dejamos lista.",
           }, `
             ${tarjetaTour(principal, "Tu recomendación")}
             ${boton(linkCarrito(principal.slug), "Elegir mi ruta y fecha →")}
           `, true, d.email),
         };
       }
-      // 🔴 Este correo decía "aparta tu lugar con el 30 %, hoy pagas $X por
-      // persona" para UN recorrido, y el carrito cobra completo un solo día
-      // (`pctACobrar`, regla de Manolo del 20 ago, repetida el 28 sep: "1 solo
-      // tour de un día se paga completo, a partir de 2 tours el 30 %"). Quien
-      // abría el botón se encontraba otro monto. Ahora dice la regla tal cual y
-      // la usa a favor: el 30 % llega sumando un segundo día.
-      // El Edén entra aquí como todos: paga igual; lo suyo es que no tiene
-      // reembolso, y eso lo dice `comoSeAparta`.
+      // Desde el 29 sep 2026 el carrito cobra el 30 % de anticipo SIEMPRE
+      // (`pctACobrar`), así que el correo promete exactamente lo que cobra el
+      // botón. El Edén entra aquí como todos: paga igual; lo suyo es que no
+      // tiene reembolso, y eso lo dice `comoSeAparta`.
       const nombre = `${principal.articulo ? `${principal.articulo} ` : ""}${nombreCorto}`;
       return {
-        subject: `${nombreCorto}: súmale un día y aparta con el 30 %`,
+        subject: `${nombreCorto}: aparta tu fecha con el 30 %`,
         html: wrap({
           eyebrow: "Sin pagar todo hoy",
-          h1a: "Súmale un día",
-          h1b: "y aparta con el 30 %",
-          entradilla: `Hablamos de ${nombre}, el recorrido que te recomendamos. Un recorrido solo se paga completo al reservar; si armas un viaje de dos días o más, apartas todo con el 30 % y liquidas el resto el día del tour.`,
+          h1a: "Aparta tu fecha",
+          h1b: "con solo el 30 %",
+          entradilla: `Hablamos de ${nombre}, el recorrido que te recomendamos. Apartas tu lugar con el 30 % al reservar y liquidas el resto el día del tour, en efectivo o con tarjeta.`,
         }, `
           ${tarjetaTour(principal, "Tu recomendación")}
           ${nota(comoSeAparta(principal), C.texto, "0 0 18px 0")}
@@ -509,10 +545,13 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
       return {
         subject: `¿Te ayudamos a decidir?`,
         html: wrap({
-          eyebrow: "Sin más correos",
+          eyebrow: "Antes de dejarte pensar",
           h1a: "Última de",
           h1b: "nuestra parte",
-          entradilla: "No te vamos a seguir escribiendo. Solo queríamos decirte que si algo no te terminó de convencer —las fechas, el precio, si es apto para tu grupo, cómo llegar— hay una persona de este lado que te contesta en menos de una hora.",
+          // 🔴 Decía «No te vamos a seguir escribiendo» y después salían los
+          // pasos 5, 6 y 7. Una promesa de silencio incumplida es la vía
+          // rápida al botón de spam.
+          entradilla: "Te dejamos pensar con calma; de aquí en adelante solo te escribiremos de vez en cuando con ideas para tu viaje, y te puedes dar de baja abajo cuando quieras. Si algo no te terminó de convencer —las fechas, el precio, si es apto para tu grupo, cómo llegar— hay una persona de este lado que te contesta en menos de una hora.",
         }, `
 
           <p style="font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;line-height:1.8;color:#3a3a2e;margin:0 0 20px">

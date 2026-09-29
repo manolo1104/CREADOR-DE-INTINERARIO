@@ -158,7 +158,7 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
       boton(`${BASE}/tours`, "Ver los tours con guía"),
       // 🔴 Decía que cualquier tour se aparta con el 30 %: el pago cobra
       // COMPLETO un recorrido suelto de un día (`pctACobrar`, lib/carrito.ts).
-      bajoBoton(`Un recorrido suelto de un día se paga completo al reservar. Si juntas dos días o más, o llevas hospedaje, apartas con el ${ANTICIPO_PCT} % y pagas el resto el día del tour.`),
+      bajoBoton(`Apartas con el ${ANTICIPO_PCT} % al reservar y pagas el resto el día del tour.`),
       barra("¿Vas por tu cuenta?"),
       tabla(`
         <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:22px;">
