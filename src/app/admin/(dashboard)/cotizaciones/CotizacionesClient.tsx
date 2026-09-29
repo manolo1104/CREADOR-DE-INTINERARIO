@@ -405,8 +405,15 @@ export default function CotizacionesClient(
     const lineItems    = [
       {
         _meta: true,
-        metodoPago: "Transferencia",
+        // Se deja vacío a propósito: el método de verdad lo pone el cobro que
+        // se registre. Antes se escribía "Transferencia" fijo aunque el cliente
+        // hubiera pagado con liga, y esa mentira viajaba al correo.
+        metodoPago: "",
         folioPago: "",
+        // Lo que se ACORDÓ cobrar de entrada. No es dinero recibido (por eso la
+        // reserva nace pendiente), pero es la cantidad que el modal de cobro
+        // propone: casi siempre lo primero que entra es justo el anticipo.
+        anticipoAcordado: anticipo,
         pickupLugar: "Lobby de tu hotel en Xilitla",
         numPersonas: personas,
         // Rastro de la cotización de origen y del descuento que se le aplicó:
@@ -430,7 +437,13 @@ export default function CotizacionesClient(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         confirmationNumber,
-        status:         "paid",
+        // 🔴 Nace PENDIENTE, no pagada. El anticipo de la cotización es lo que
+        // se ACORDÓ cobrar, no dinero que alguien haya visto. Darlo por cobrado
+        // aquí hacía dos cosas malas: el corte contaba dinero que no existía, y
+        // como la reserva ya no debía nada, el panel contestaba "esta reserva
+        // solo debe $0" al intentar registrar el cobro de verdad.
+        // En cuanto se registra el cobro, `sincronizarDeposito` la pasa a pagada.
+        status:         "pending",
         tourId:         q.tourSlug,
         tourName:       q.tourName,
         tourSlug:       q.tourSlug,
@@ -440,7 +453,7 @@ export default function CotizacionesClient(
         adults:         grupo.adultos || 1,
         children:       grupo.ninos,
         totalAmount:    q.totalAmount,
-        depositoPagado: anticipo, // anticipo acordado en la cotización
+        depositoPagado: 0, // se llena al registrar el cobro, con su método y comprobante
         lineItems,
         packageItems,
         extraItems,
@@ -458,7 +471,7 @@ export default function CotizacionesClient(
         body: JSON.stringify({ status: "aceptada" }),
       });
       setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "aceptada" } : x));
-      flash(`✅ Reserva creada · ${confirmationNumber}`);
+      flash(`✅ Reserva creada · ${confirmationNumber} — falta registrar el cobro en Reservas 💵`);
     } else {
       const d = await r.json().catch(() => ({}));
       flash(`❌ Error: ${d.error || "No se pudo crear la reserva"}`);

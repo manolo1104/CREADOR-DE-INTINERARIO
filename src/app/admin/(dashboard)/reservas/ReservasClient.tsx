@@ -2,13 +2,14 @@
 
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye } from "lucide-react";
+import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
 import { TOURS_DB, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
+import CobroModal from "@/components/admin/CobroModal";
 import { origenValido } from "@/lib/origenReserva";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -62,11 +63,12 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, presetsExtras = EXTRAS_PRESET }:
-  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[] },
+  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin" }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string },
 ) {
   const [bookings,      setBookings]      = useState(initialBookings);
   const [detalle,       setDetalle]       = useState<TourBooking | null>(null);
+  const [cobrando,      setCobrando]      = useState<TourBooking | null>(null);
   const [search,        setSearch]        = useState("");
   const [statusFilter,  setStatusFilter]  = useState<"all" | "paid" | "pending" | "cancelled">("all");
   const [loading,       setLoading]       = useState(false);
@@ -241,9 +243,13 @@ export default function ReservasClient(
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
+    const datos = buildPayload(form);
+    // Pagada sólo si el dinero ya está: antes toda reserva manual nacía "paid"
+    // aunque no se hubiera cobrado un peso, y el corte lo daba por bueno.
+    const status = datos.depositoPagado >= datos.totalAmount && datos.totalAmount > 0 ? "paid" : "pending";
     const r = await fetch("/api/admin/reservas", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmationNumber, status: "paid", ...buildPayload(form) }),
+      body: JSON.stringify({ confirmationNumber, status, ...datos }),
     });
     if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM); flash("✅ Reserva creada"); }
     setSaving(false);
@@ -252,9 +258,13 @@ export default function ReservasClient(
   async function saveEdit() {
     if (!editTarget) return;
     setSaving(true);
+    // 🔴 Al editar NO se manda `depositoPagado`: ese número es el espejo de los
+    // cobros registrados. Mandarlo desde un formulario abierto hace un rato
+    // pisaría un cobro que se capturó mientras tanto.
+    const { depositoPagado: _ignorado, ...payload } = buildPayload(form);
     const r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildPayload(form)),
+      body: JSON.stringify(payload),
     });
     if (r.ok) {
       await refresh();
@@ -783,6 +793,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
+                  className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
@@ -873,6 +885,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); openEdit(b); }} title="Editar"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
+                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); hardDelete(b.id); }} title="Eliminar"
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -889,12 +903,26 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} />
       )}
 
+      {cobrando && (
+        <CobroModal
+          reserva={cobrando}
+          quien={quien}
+          onClose={() => setCobrando(null)}
+          onGuardado={cobrado => {
+            // Sin recargar la lista entera: se actualiza la fila que cambió.
+            setBookings(bs => bs.map(b => (b.id === cobrando.id ? { ...b, depositoPagado: cobrado } : b)));
+            setCobrando(c => (c ? { ...c, depositoPagado: cobrado } : c));
+            flash("✅ Cobro registrado");
+          }}
+        />
+      )}
+
       {modal === "new" && (
         <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
           onSave={saveNew} onClose={() => setModal(null)} saving={saving} />
       )}
       {modal === "edit" && (
-        <ReservaModal title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
+        <ReservaModal soloLecturaCobro title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}
     </div>

@@ -332,9 +332,19 @@ model BlogPost {
 /// cada carga del listado se traería los archivos completos.
 /// Se guarda en Postgres porque Railway no tiene disco persistente: lo que se
 /// escriba en el contenedor se borra en el siguiente despliegue.
-model PagoProveedorEvidencia {
+/// Se llamaba `PagoProveedorEvidencia` cuando sólo guardaba comprobantes de pago
+/// al proveedor; hoy también guarda los del dinero que ENTRA (ver `cobros.ts`).
+/// Conserva el nombre físico con @@map: renombrar la tabla de verdad habría
+/// borrado lo ya subido.
+model Evidencia {
   id            String   @id @default(cuid())
+  /// Siempre presente: toda evidencia cuelga de una reserva, aunque además
+  /// pertenezca a un cobro concreto. Así el borrado de la reserva las arrastra
+  /// todas con una sola consulta.
   bookingId     String
+  /// El cobro (`Movimiento`) al que pertenece, si es un comprobante de cobro.
+  /// Vacío en los comprobantes de pago a proveedor.
+  movimientoId  String?
   nombreArchivo String
   tipoMime      String
   tamanoBytes   Int
@@ -342,6 +352,8 @@ model PagoProveedorEvidencia {
   createdAt     DateTime @default(now())
 
   @@index([bookingId])
+  @@index([movimientoId])
+  @@map("PagoProveedorEvidencia")
 }
 
 /// Lo que a NOSOTROS nos cuesta operar cada recorrido. Sin esto el panel sabe
@@ -523,7 +535,16 @@ model Movimiento {
 
   /// A quién se le paga (o de quién se cobra).
   proveedor  String?
-  metodoPago String? // efectivo | transferencia | tarjeta | stripe | otro
+  metodoPago String? // efectivo | transferencia | deposito | stripe | tarjeta | otro
+
+  /// Sólo en cobros: en manos de QUIÉN quedó el dinero. `creadoPor` es quien lo
+  /// capturó en el panel, que no siempre es quien lo recibió (Erick registra un
+  /// efectivo que le entregaron a Manolo en la oficina).
+  recibidoPor String?
+  /// Sólo en cobros en efectivo: mientras estén vacíos, ese dinero sigue en la
+  /// bolsa de `recibidoPor` y así sale en el corte.
+  entregadoA  String?
+  entregadoAt DateTime?
 
   /// Cuentas por pagar: un movimiento no pagado es dinero que la empresa debe.
   pagado    Boolean @default(true)

@@ -15,6 +15,7 @@ export default async function FinanzasPage() {
         anular:       puedeHacer(rol, "anularMovimiento"),
         cerrarCorte:  puedeHacer(rol, "cerrarCorte"),
         socios:       puedeHacer(rol, "configurarSocios"),
+        entregaEfectivo: puedeHacer(rol, "marcarEntregaEfectivo"),
       }}
     />
   );

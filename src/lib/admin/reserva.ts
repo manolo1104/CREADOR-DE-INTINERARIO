@@ -58,6 +58,19 @@ export function metaDe(b: ConLineas): Record<string, any> {
   return (raw as any[]).find(l => l && l._meta) || {};
 }
 
+/**
+ * Devuelve unos `lineItems` con esos campos escritos en el `_meta`, sin perder
+ * nada de lo que ya llevaban ni tocar las líneas de tour. Si no había `_meta`,
+ * lo crea al principio (es donde lo pone el panel al guardar una reserva).
+ */
+export function conMeta(lineItems: unknown, campos: Record<string, unknown>): unknown[] {
+  const base = Array.isArray(lineItems) ? [...lineItems] : [];
+  const i = base.findIndex((l: any) => l && typeof l === "object" && l._meta);
+  if (i === -1) return [{ _meta: true, ...campos }, ...base];
+  base[i] = { ...(base[i] as object), ...campos };
+  return base;
+}
+
 const ninosDe = (l: LineaTour) => (l.childrenMid ?? l.children ?? 0) + (l.childrenSmall ?? 0);
 
 /**

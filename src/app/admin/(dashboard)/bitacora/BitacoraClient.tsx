@@ -39,6 +39,7 @@ const estiloDe = (accion: string) => ESTILO_ACCION[accion] ?? SIN_ESTILO;
 const EMOJI_ENTIDAD: Record<string, string> = {
   reserva:      "🏞️",
   "cotización": "📄",
+  cobro:        "💵",
   costo:        "🧾",
   gasto:        "💸",
   movimiento:   "💰",
@@ -57,6 +58,7 @@ const TIPOS = [
   { id: "todo",        label: "Todo" },
   { id: "reserva",     label: "🏞️ Reservas" },
   { id: "cotización",  label: "📄 Cotizaciones" },
+  { id: "cobro",       label: "💵 Cobros a clientes" },
   { id: "costo",       label: "🧾 Costos de salidas" },
   { id: "gasto",       label: "💸 Gastos de la empresa" },
   { id: "movimiento",  label: "💰 Movimientos anulados o pagados" },

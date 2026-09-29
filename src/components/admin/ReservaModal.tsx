@@ -472,9 +472,17 @@ interface Props {
   onSave:  () => void;
   onClose: () => void;
   saving:  boolean;
+  /**
+   * 🔴 En una reserva que YA existe, el dinero cobrado no se edita aquí: se
+   * registra con "Registrar cobro", que guarda método, comprobante y quién lo
+   * recibió, y deja `depositoPagado` como espejo de esos renglones. Si además
+   * se pudiera escribir a mano, las dos puertas acabarían contradiciéndose.
+   * Al CREAR una reserva sí se captura aquí: todavía no hay a qué colgar el cobro.
+   */
+  soloLecturaCobro?: boolean;
 }
 
-export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [] }: Props) {
+export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [], soloLecturaCobro = false }: Props) {
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
 
@@ -955,13 +963,21 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
               {/* Anticipo */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Anticipo recibido</label>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[#1B4332]/40 font-dm text-sm">$</span>
-                    <input type="number" min={0} value={form.depositoPagado}
-                      onChange={e => setForm(f => ({ ...f, depositoPagado: e.target.value }))}
-                      placeholder="0" className={inputCls} />
-                  </div>
+                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
+                    {soloLecturaCobro ? "Cobrado" : "Anticipo recibido"}
+                  </label>
+                  {soloLecturaCobro ? (
+                    <p className="font-cormorant text-xl pt-2.5 text-green-700">
+                      {fmx(Number(form.depositoPagado) || 0)}
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#1B4332]/40 font-dm text-sm">$</span>
+                      <input type="number" min={0} value={form.depositoPagado}
+                        onChange={e => setForm(f => ({ ...f, depositoPagado: e.target.value }))}
+                        placeholder="0" className={inputCls} />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Saldo pendiente</label>
@@ -971,8 +987,16 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                 </div>
               </div>
 
+              {soloLecturaCobro && (
+                <p className="text-[11px] font-dm text-[#1B4332]/50 bg-[#FAFAF8] border border-[#1B4332]/10 rounded-sm px-3 py-2">
+                  El dinero cobrado se registra con <span className="text-[#1B4332] font-medium">Registrar cobro</span> (el
+                  billete 💵 en la lista de reservas): ahí se elige cómo entró, se
+                  sube el comprobante y queda quién lo recibió.
+                </p>
+              )}
+
               {/* Método y folio */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid grid-cols-2 gap-3 ${soloLecturaCobro ? "hidden" : ""}`}>
                 <div>
                   <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Método de pago</label>
                   <select value={form.metodoPago}

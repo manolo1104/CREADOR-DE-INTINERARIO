@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // GET → devuelve el archivo para verlo/descargarlo desde el panel.
 export async function GET(req: NextRequest, { params }: { params: { evidenciaId: string } }) {
   try {
-    const ev = await prisma.pagoProveedorEvidencia.findUnique({
+    const ev = await prisma.evidencia.findUnique({
       where: { id: params.evidenciaId },
     });
     if (!ev) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -43,11 +43,11 @@ export async function GET(req: NextRequest, { params }: { params: { evidenciaId:
 export async function DELETE(_req: NextRequest, { params }: { params: { evidenciaId: string } }) {
   try {
     // Se lee antes de borrar para poder decir en la bitácora QUÉ se borró.
-    const ev = await prisma.pagoProveedorEvidencia.findUnique({
+    const ev = await prisma.evidencia.findUnique({
       where:  { id: params.evidenciaId },
       select: { nombreArchivo: true, bookingId: true },
     });
-    await prisma.pagoProveedorEvidencia.delete({ where: { id: params.evidenciaId } });
+    await prisma.evidencia.delete({ where: { id: params.evidenciaId } });
 
     const reserva = ev
       ? await prisma.tourBooking.findUnique({

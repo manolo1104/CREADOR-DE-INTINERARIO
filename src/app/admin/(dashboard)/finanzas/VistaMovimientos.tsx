@@ -7,6 +7,8 @@ import { CATEGORIAS_GENERALES, METODOS_PAGO, PERIODICIDADES } from "@/lib/admin/
 import { fmx, fDiaCorto, Etiqueta, descargarCSV, BotonExportar } from "./ui";
 import type { Permisos } from "./FinanzasClient";
 import { hoyMX } from "./useFinanzas";
+import BorradorCostos from "./BorradorCostos";
+import GastoPorTour from "./GastoPorTour";
 
 /**
  * Los gastos de la empresa. Nunca se cuelgan de una reserva: el hosting no lo
@@ -137,17 +139,36 @@ export default function VistaMovimientos({ datos, recargar, permisos }: {
           ])} />
         </div>
         <p className="text-[10px] font-dm text-[#1B4332]/35 mb-3">
-          Se capturan desde cada reserva, en la pestaña Reservas
+          Gasolina, guía, entradas, lanchero: lo que cuesta sacar cada tour
         </p>
-        <Tabla
-          filas={costosDeSalidas.map(m => ({
-            id: m.id, fecha: m.fecha, concepto: m.concepto,
-            extra: [m.folio, m.proveedor].filter(Boolean).join(" · "),
-            monto: m.monto, pagado: m.pagado, recurrente: false,
-          }))}
-          vacio="Todavía no se captura ningún costo de salida en este periodo"
-          onAnular={permisos.anular ? anular : undefined}
-        />
+
+        {/* En qué se va el dinero de cada recorrido. Va antes que el borrador
+            porque es lo que se mira; el borrador es la herramienta de captura. */}
+        <div className="mb-4">
+          <p className="panel-eyebrow mb-2">Lo que gasta cada tour</p>
+          <GastoPorTour datos={datos} />
+        </div>
+
+        <p className="panel-eyebrow mb-2 pt-3 border-t border-[#1B4332]/8">Capturar los costos de cada salida</p>
+        <BorradorCostos datos={datos} recargar={recargar} />
+
+        <details className="mt-3 border-t border-[#1B4332]/8 pt-3">
+          <summary className="panel-foco cursor-pointer font-dm text-[11px] text-[#1B4332]/45 hover:text-[#1B4332] min-h-[44px] flex items-center">
+            Ver los renglones sueltos (para anular alguno)
+          </summary>
+          <div className="mt-2">
+            <Tabla
+              filas={costosDeSalidas.map(m => ({
+                id: m.id, fecha: m.fecha, concepto: m.concepto,
+                extra: [m.folio, m.proveedor].filter(Boolean).join(" · "),
+                monto: m.monto, pagado: m.pagado, recurrente: false,
+              }))}
+              vacio="Todavía no se captura ningún costo de salida en este periodo"
+              onAnular={permisos.anular ? anular : undefined}
+            />
+          </div>
+        </details>
+
         <div className="mt-2 text-right font-dm text-xs text-[#1B4332]/60">
           Total: <strong className="text-[#C9484A]">{fmx(datos.er.costosDirectosTotal)}</strong>
           {datos.captura.estimadas > 0 && (
