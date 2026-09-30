@@ -14,7 +14,7 @@ import { TOURS_DB, incluyeDeTour, fraseRecogida, recogidaDeTour, type RecogidaTi
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { trackPurchase } from "@/lib/analytics";
-import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
+import { trackTourEvent, marcarPasoClarity, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
 
 const stripePromise = loadStripe(
@@ -476,6 +476,9 @@ export default function CheckoutTourPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.error) { setPiError(d.error); return; }
+        // Con el cobro creado el formulario de pago sale en pantalla: se
+        // marca la grabación de Clarity (el servidor ya cuenta el paso).
+        marcarPasoClarity("PAYMENT_INITIATED", { amount: d.amount ?? state.total, tour: params.slug });
         setClientSecret(d.clientSecret);
         setPIId(d.paymentIntentId);
         setCobro({

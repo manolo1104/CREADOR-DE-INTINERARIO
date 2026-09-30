@@ -154,6 +154,21 @@ function mandarAGa4(event: string, data: Record<string, unknown>): void {
   }
 }
 
+/**
+ * Marca un paso SOLO en Clarity, sin registrarlo en nuestra base.
+ *
+ * 🔴 PAYMENT_INITIATED se registra en el SERVIDOR (al crear el cobro en
+ * Stripe), así que Clarity nunca se enteraba: la etiqueta «6·pantalla_de_pago»
+ * y su `upgrade` (grabar siempre) no se ponían nunca, y la consulta clave —
+ * «llegó al pago y no compró»— no encontraba a nadie. Mandarlo por
+ * `trackTourEvent` lo contaría DOS veces en el embudo propio; esto solo
+ * etiqueta la grabación.
+ */
+export function marcarPasoClarity(event: string, data?: Record<string, unknown>): void {
+  if (typeof window === "undefined") return;
+  etiquetarClarity(event, getSessionId(), data ?? {});
+}
+
 export function trackTourEvent(
   event: string,
   data?: Record<string, unknown>

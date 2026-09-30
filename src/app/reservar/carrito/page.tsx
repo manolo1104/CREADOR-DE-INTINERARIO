@@ -32,7 +32,7 @@ import { TourCalendar } from "@/components/booking/TourCalendar";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
 import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
 import { BotonCompartir } from "@/components/booking/BotonCompartir";
-import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
+import { trackTourEvent, marcarPasoClarity, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
 /**
@@ -94,6 +94,12 @@ function PagoCarrito({ cobro, datos, onListo }: {
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+
+  // El formulario de pago está en pantalla: la grabación de Clarity se marca
+  // como «6·pantalla_de_pago» (el servidor ya cuenta el paso por su lado).
+  useEffect(() => {
+    marcarPasoClarity("PAYMENT_INITIATED", { amount: cobro.amount });
+  }, [cobro.amount]);
 
   const wa = t.waPagoAlterno;
   const waPagoAlterno = `https://wa.me/524891090388?text=${encodeURIComponent(
