@@ -1426,7 +1426,10 @@ const TOURS_RAW: Tour[] = [
         texto: "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar." },
       { hora: "4:00 PM", momento: "Cascada El Salto",
         texto: "El cierre: una caída doble sobre pozas escalonadas. A esta hora suele salir el arcoíris en la niebla de la caída.",
-        foto: "/imagenes/cascada-el-meco/gallery-6.jpg" },
+        // Era `cascada-el-meco/gallery-6` (las pangas frente al Meco, no El
+        // Salto; lo cachó Manolo, 29 sep 2026). Las gallery-3/4 de El Salto
+        // traen marca de agua de otro sitio: no usar.
+        foto: "/imagenes/cascada-el-salto/hero.jpg" },
       { hora: "8:00 PM", momento: "Regreso",
         texto: "Te dejamos en tu hospedaje." },
     ],
@@ -1441,12 +1444,12 @@ const TOURS_RAW: Tour[] = [
     imagenes: ["/imagenes/cascada-el-meco/hero.jpg"],
     gallery: [
       { src: "/imagenes/cascada-el-meco/hero.jpg",        alt: "Dos turistas en paddleboard frente a la Cascada del Meco — aguas turquesas de la Huasteca Potosina", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-1.jpg",   alt: "Cascada del Salto 4K — caída doble con pozas turquesas escalonadas en la Huasteca" },
+      { src: "/imagenes/cascada-el-meco/gallery-1.jpg",   alt: "Viajero frente a la Cascada del Meco — caída escalonada sobre agua turquesa", hasRealPeople: true },
       { src: "/imagenes/cascada-el-meco/gallery-2.jpg",   alt: "Joven clavándose desde las rocas de la Cascada del Meco — agua turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-3.jpg",   alt: "Cascada del Salto vista cinematográfica — caída principal con niebla y selva" },
+      { src: "/imagenes/cascada-el-meco/gallery-3.jpg",   alt: "Panga con viajeros llegando a la Cascada del Meco por el río turquesa", hasRealPeople: true },
       { src: "/imagenes/cascada-el-meco/gallery-4.jpg",   alt: "Dos personas saludando al pie de la Cascada del Meco — agua turquesa", hasRealPeople: true },
       { src: "/imagenes/cascada-el-meco/gallery-5.jpg",   alt: "Turista en el mirador panorámico del Meco — vista de las cascadas escalonadas", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-6.jpg",   alt: "Cascada del Salto con arcoíris completo — el espectáculo más fotogénico de la Huasteca" },
+      { src: "/imagenes/cascada-el-meco/gallery-6.jpg",   alt: "Pangas de colores frente a la Cascada del Meco — agua turquesa de la Huasteca", hasRealPeople: true },
       { src: "/imagenes/cascada-el-meco/gallery-7.jpg",   alt: "Familia disfrutando las pozas sobre la Cascada del Meco — ideal para todas las edades", hasRealPeople: true },
       { src: "/imagenes/cascada-el-meco/gallery-8.jpg",   alt: "Panga en canoa acercándose a la Cascada del Meco por aguas turquesas", hasRealPeople: true },
       { src: "/imagenes/cascada-el-meco/gallery-9.jpg",   alt: "Cascada del Salto — toma cinematográfica con largos tiempos de exposición" },
