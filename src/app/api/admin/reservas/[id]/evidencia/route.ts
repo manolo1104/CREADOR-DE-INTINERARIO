@@ -5,6 +5,12 @@ import { MAX_BYTES_EVIDENCIA, TIPOS_OK, tipoDeArchivo } from "@/lib/admin/eviden
 
 export const dynamic = "force-dynamic";
 
+type ArchivoSubido = { name: string; type: string; size: number; arrayBuffer(): Promise<ArrayBuffer> };
+
+function esArchivo(v: FormDataEntryValue | null): v is ArchivoSubido & FormDataEntryValue {
+  return !!v && typeof v !== "string" && typeof (v as any).arrayBuffer === "function";
+}
+
 // GET → metadatos de las evidencias de una reserva (NUNCA los bytes).
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -34,7 +40,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Opcional: el cobro al que pertenece el comprobante. Sin esto, el archivo
     // queda colgando de la reserva (comprobante de pago al proveedor).
     const movimientoId = (form.get("movimientoId") as string | null)?.trim() || null;
-    if (!(archivo instanceof File) || archivo.size === 0) {
+    // 🔴 NO usar `instanceof File`: Railway corre Node 18, donde `File` no es
+    // global, y la comparación lanzaba "File is not defined" → TODA subida de
+    // comprobante daba 500 en producción (en la Mac, con Node 20+, pasaba).
+    // Se revisa por su forma: lo que no es texto y trae bytes es el archivo.
+    if (!esArchivo(archivo) || archivo.size === 0) {
       return NextResponse.json({ error: "No llegó ningún archivo" }, { status: 400 });
     }
     if (archivo.size > MAX_BYTES_EVIDENCIA) {
