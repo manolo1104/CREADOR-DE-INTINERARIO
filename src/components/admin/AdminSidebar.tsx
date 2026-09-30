@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Wallet, Link2, Camera } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Wallet, Link2, Camera, Star } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
 import { puedeVer, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
 
@@ -25,6 +25,7 @@ const GRUPOS: { titulo: string; items: ItemNav[] }[] = [
       { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones", seccion: "cotizaciones"  },
       { href: "/admin/cobros",       icon: Link2,           label: "Cobros",       seccion: "cobros"        },
       { href: "/admin/fotos",        icon: Camera,          label: "Fotos",        seccion: "fotos"         },
+      { href: "/admin/resenas",      icon: Star,            label: "Reseñas",      seccion: "resenas"       },
       { href: "/admin/clientes",     icon: Users,           label: "Clientes",     seccion: "clientes"      },
     ],
   },

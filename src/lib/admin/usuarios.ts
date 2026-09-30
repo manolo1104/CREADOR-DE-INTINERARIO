@@ -9,7 +9,7 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
   | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
-  | "finanzas" | "socios" | "cobros" | "fotos";
+  | "finanzas" | "socios" | "cobros" | "fotos" | "resenas";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -28,6 +28,8 @@ const OPERACION: SeccionAdmin[] = [
   "cobros",
   // Quien regresa del tour con la cámara es quien sube las fotos.
   "fotos",
+  // Pedir la reseña por WhatsApp es trabajo de quien atiende a los clientes.
+  "resenas",
   // El Cotizador NO: enseña lo que nos cuesta cada tour y el margen que deja.
   // Estaba dentro y contradecía la propia definición del rol —"sin ver los
   // números del negocio"—. Fuera por decisión de Manolo, 23 sep 2026.

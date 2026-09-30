@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tarjeta de reseñas — Tours Huasteca Potosina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* 4 tarjetas por hoja carta: se imprime y se recorta por las guías grises. */
+  @page { size: letter; margin: 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "DM Sans", sans-serif; background: #ffffff; color: #16362a; }
+  .aviso { max-width: 720px; margin: 16px auto; font-size: 13px; color: #555; text-align: center; }
+  .hoja { display: grid; grid-template-columns: 1fr 1fr; gap: 0; width: 100%; max-width: 196mm; margin: 0 auto; }
+  .tarjeta {
+    border: 1px dashed #c9c9c9; padding: 9mm 7mm; min-height: 125mm;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  }
+  .marca { font-size: 9pt; letter-spacing: 0.25em; text-transform: uppercase; color: #c4882a; }
+  h1 { font-family: "Cormorant Garamond", serif; font-weight: 400; font-size: 24pt; line-height: 1.1; margin: 4mm 0 1mm; }
+  h1 em { color: #c4882a; }
+  .en { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 13pt; color: #52735f; }
+  img { width: 46mm; height: 46mm; margin: 5mm 0 4mm; }
+  .paso { font-size: 10pt; line-height: 1.45; }
+  .paso span { display: block; font-size: 9pt; color: #6b7d72; }
+  .estrellas { margin-top: 3mm; color: #c4882a; font-size: 14pt; letter-spacing: 2px; }
+  @media print { .aviso { display: none; } }
+</style>
+</head>
+<body>
+  <p class="aviso">Imprime esta página (Cmd/Ctrl + P) en hoja carta y recorta por la línea punteada. Salen 4 tarjetas.</p>
+  <div class="hoja">
+    <!-- Se repite 4 veces a propósito: una hoja = cuatro tarjetas. -->
+    <section class="tarjeta">
+      <p class="marca">Tours Huasteca Potosina</p>
+      <h1>¿Te gustó <em>el tour?</em></h1>
+      <p class="en">Did you enjoy the tour?</p>
+      <img src="qr-google.svg" alt="QR de reseña en Google">
+      <p class="paso">Escanea y déjanos tu reseña en Google<span>Scan to leave us a Google review</span></p>
+      <p class="estrellas">★★★★★</p>
+    </section>
+    <section class="tarjeta">
+      <p class="marca">Tours Huasteca Potosina</p>
+      <h1>¿Te gustó <em>el tour?</em></h1>
+      <p class="en">Did you enjoy the tour?</p>
+      <img src="qr-google.svg" alt="QR de reseña en Google">
+      <p class="paso">Escanea y déjanos tu reseña en Google<span>Scan to leave us a Google review</span></p>
+      <p class="estrellas">★★★★★</p>
+    </section>
+    <section class="tarjeta">
+      <p class="marca">Tours Huasteca Potosina</p>
+      <h1>¿Te gustó <em>el tour?</em></h1>
+      <p class="en">Did you enjoy the tour?</p>
+      <img src="qr-google.svg" alt="QR de reseña en Google">
+      <p class="paso">Escanea y déjanos tu reseña en Google<span>Scan to leave us a Google review</span></p>
+      <p class="estrellas">★★★★★</p>
+    </section>
+    <section class="tarjeta">
+      <p class="marca">Tours Huasteca Potosina</p>
+      <h1>¿Te gustó <em>el tour?</em></h1>
+      <p class="en">Did you enjoy the tour?</p>
+      <img src="qr-google.svg" alt="QR de reseña en Google">
+      <p class="paso">Escanea y déjanos tu reseña en Google<span>Scan to leave us a Google review</span></p>
+      <p class="estrellas">★★★★★</p>
+    </section>
+  </div>
+</body>
+</html>
