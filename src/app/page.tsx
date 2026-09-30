@@ -48,17 +48,18 @@ const VIAJE_SEP_FIN_MS = new Date("2026-09-19T23:59:00-06:00").getTime();
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
+  // 🔴 El inicio compite por la REGIÓN («huasteca potosina», ~29 mil
+  // impresiones al mes) y /tours por la consulta comercial («tours huasteca
+  // potosina»). Si los dos títulos vuelven a empezar igual, Google alterna
+  // entre ellos y ninguno sube: el de aquí arranca con la región, no con «Tours».
   const title = locale === "en"
     ? "Huasteca Potosina Tours — Mexico's Waterfall Country"
-    : "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México";
-  // La descripción anterior hablaba solo de la región y no daba ningún motivo
-  // para hacer clic en nosotros y no en Viator. Ahora lleva quiénes somos, el
-  // precio de arranque y la palanca que sí convierte (anticipo + cancelación).
+    : "Huasteca Potosina: Cascadas, Guía y Tours desde Xilitla";
   const nTours = TOURS_DB.length;
   const desde = `$${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")}`;
   const description = locale === "en"
     ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. 30% deposit holds your spot. Free cancellation.`
-    : `Tours guiados desde Xilitla, con hotel y restaurante propios. ${nTours} recorridos con guía NOM-09 y seguro, desde ${desde}. Apartas con el 30 % y cancelas gratis.`;
+    : `La Huasteca Potosina desde Xilitla: Tamul, Las Pozas, cascadas, cuándo ir y cómo llegar. ${nTours} tours con guía local desde ${desde}; apartas con el 30 %.`;
   return {
     title,
     description,
@@ -280,11 +281,13 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-negro/60 via-negro/50 to-negro/85" />
 
         <div className="relative z-10 flex flex-col items-center">
+          {/* La etiqueta va FUERA del h1: el h1 tiene que leerse «La Huasteca
+              Potosina» (la región, ver generateMetadata). «Tours Huasteca
+              Potosina» es la consulta de /tours. */}
+          <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm font-normal drop-shadow-lg">
+            ✦ {en ? "Huasteca Potosina Tours" : "Tours Huasteca Potosina"} · San Luis Potosí ✦
+          </p>
           <h1 className="font-cormorant font-light leading-[0.9] tracking-tight mb-8 drop-shadow-2xl">
-            {/* Eyebrow dentro del h1: misma estética, pero el heading lleva la keyword principal */}
-            <span className="block text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm font-normal drop-shadow-lg">
-              ✦ {en ? "Huasteca Potosina Tours" : "Tours Huasteca Potosina"} · San Luis Potosí ✦
-            </span>
             <span className="block text-white" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
               {en ? "The Huasteca" : "La Huasteca"}
             </span>

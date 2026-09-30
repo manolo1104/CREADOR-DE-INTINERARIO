@@ -14,11 +14,14 @@ const PAUSE_BEFORE = 180; // ms to wait before typing next word
 export function HeroTypewriter() {
   const pathname = usePathname();
   const WORDS = pathname === "/en" || pathname.startsWith("/en/") ? WORDS_EN : WORDS_ES;
-  const [displayed, setDisplayed] = useState("");
+  // 🔴 Nace con la primera palabra COMPLETA: el HTML del servidor es lo que lee
+  // Google, y el H1 del inicio tiene que decir «La Huasteca Potosina». Si
+  // arrancara vacío, el H1 indexado quedaría en «La Huasteca» a secas.
+  const [displayed, setDisplayed] = useState(WORDS[0]);
   const [showCursor, setShowCursor] = useState(true);
   const wordIndex = useRef(0);
-  const charIndex = useRef(0);
-  const phase = useRef<"typing" | "pausing" | "deleting" | "waiting">("typing");
+  const charIndex = useRef(WORDS[0].length);
+  const phase = useRef<"typing" | "pausing" | "deleting" | "waiting">("pausing");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -63,7 +66,7 @@ export function HeroTypewriter() {
       }
     };
 
-    timer.current = setTimeout(tick, 600);
+    timer.current = setTimeout(tick, PAUSE_AFTER);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };

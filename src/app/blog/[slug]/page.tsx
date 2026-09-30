@@ -156,6 +156,59 @@ const PROMESAS_FALSAS: [RegExp, string][] = [
   ],
 ];
 
+/**
+ * 🔴 Enlaces internos hacia las páginas que compiten en Google. Los artículos
+ * se llevan casi todo el tráfico del sitio y casi ninguno enlazaba al inicio,
+ * que es la página que pelea «huasteca potosina». Se enlaza la PRIMERA mención
+ * en un párrafo, fuera de otro enlace, y solo si el artículo no enlaza ya ahí.
+ * El orden importa: cada regla ve los enlaces que pusieron las anteriores.
+ */
+const GUIA_TAMUL = "cascada-de-tamul-la-guia-definitiva-para-visitarla";
+const AUTOENLACES: { patron: RegExp; href: string }[] = [
+  // «Tours Huasteca Potosina» es la marca, no la región: esa no se enlaza.
+  { patron: /(?<!Tours )\bHuasteca Potosina\b/i, href: "/" },
+  { patron: /\bCascada de Tamul\b/i, href: urlBlog(GUIA_TAMUL) },
+  { patron: /\btours? guiados?\b/i, href: "/tours" },
+];
+
+const escapaRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function yaEnlazaA(html: string, href: string): boolean {
+  const ruta = href === "/" ? "/?" : escapaRegex(href);
+  return new RegExp(`href="(?:${escapaRegex(SITE)})?${ruta}(?:[?#][^"]*)?"`, "i").test(html);
+}
+
+function enlazaPrimeraMencion(html: string, patron: RegExp, href: string): string {
+  const trozos = html.split(/(<[^>]+>)/);
+  let enParrafo = 0;
+  let enEnlace = 0;
+  for (let i = 0; i < trozos.length; i++) {
+    const t = trozos[i];
+    if (t.startsWith("<")) {
+      if (/^<p[\s>]/i.test(t)) enParrafo++;
+      else if (/^<\/p>/i.test(t)) enParrafo = Math.max(0, enParrafo - 1);
+      else if (/^<a[\s>]/i.test(t)) enEnlace++;
+      else if (/^<\/a>/i.test(t)) enEnlace = Math.max(0, enEnlace - 1);
+      continue;
+    }
+    if (!enParrafo || enEnlace) continue;
+    const m = patron.exec(t);
+    if (!m) continue;
+    trozos[i] = `${t.slice(0, m.index)}<a href="${href}">${m[0]}</a>${t.slice(m.index + m[0].length)}`;
+    return trozos.join("");
+  }
+  return html;
+}
+
+function autoenlaza(html: string, slugPropio: string): string {
+  const propio = urlBlog(slugPropio);
+  return AUTOENLACES.reduce(
+    (h, { patron, href }) =>
+      href === propio || yaEnlazaA(h, href) ? h : enlazaPrimeraMencion(h, patron, href),
+    html,
+  );
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatSeoTitle(raw: string): string {
@@ -592,8 +645,11 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     .replace(/<h1[^>]*>/gi, "<h2>")
     .replace(/<\/h1>/gi, "</h2>");
 
-  const contenidoCorregido = reescribeEnlacesItinerarios(
-    PROMESAS_FALSAS.reduce((html, [busca, pon]) => html.replace(busca, pon), contenidoBase),
+  const contenidoCorregido = autoenlaza(
+    reescribeEnlacesItinerarios(
+      PROMESAS_FALSAS.reduce((html, [busca, pon]) => html.replace(busca, pon), contenidoBase),
+    ),
+    post.slug,
   );
 
   // Las anclas del índice se ponen DESPUÉS de degradar los `<h1>` (si no, el

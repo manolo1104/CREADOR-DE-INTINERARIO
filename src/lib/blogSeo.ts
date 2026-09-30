@@ -219,6 +219,7 @@ const TAMUL_PRECIO_FRASE = primeraFrase(respuestaFicha(D_TAMUL, 0));
 // "Lancheros dejan de salir a las 2 PM."
 const TAMUL_ULTIMA_PANGA = `${D_TAMUL.advertencias.split(".")[0]}.`;
 const TAMUL_HORARIO = horarioDe(D_TAMUL);
+const TAMUL_MIN_VALLES = minutosDesdeValles(D_TAMUL);
 
 // El extra de Micos es un SALTO que se suma al Paraíso Escalonado, no un
 // "rappel incluido en algunos paquetes" como decía el artículo.
@@ -330,6 +331,8 @@ exige(SURREALISTA, "incluye", /entradas/i);
 exige(SURREALISTA, "incluye", /guía certificado/i);
 exige(TAMUL, "destinos", /Huahuas al atardecer/);
 exige(TAMUL, "destinos", /Cueva del Agua/);
+exige(TAMUL, "incluye", /desayuno/i);
+exige(TAMUL, "incluye", /canoa/i);
 exige(CAFE, "incluye", /RZR/);
 exige(CAFE, "incluye", /recorrido guiado/i);
 exige(CAFE, "incluye", /cata/i);
@@ -544,13 +547,50 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           `En lluvias (${MESES_LLUVIAS}) la cascada lleva más caudal, pero el agua puede bajar marrón.`,
       },
     ],
+    // Plan top 3 (29 sep): el artículo está en la posición ~9 de «cascada de
+    // tamul» y solo respondía altura, precio, temporada y niños. Estas son las
+    // otras dudas de quien la busca, contestadas con la ficha del lugar y la del
+    // recorrido (si cambian, la respuesta cambia con ellas).
+    faqs: [
+      ...(TAMUL_MIN_VALLES === null
+        ? []
+        : [{
+            q: "¿Dónde está la Cascada de Tamul y cómo se llega?",
+            a:
+              `Está en ${D_TAMUL.zona}, San Luis Potosí, al fondo del Cañón del Tampaón. Desde Ciudad Valles son unos ${duracionMin(TAMUL_MIN_VALLES)} por carretera hasta Tanchachín, ` +
+              `y de ahí se sube en panga por el río hasta la caída. ${TAMUL_ULTIMA_PANGA}`,
+          }]),
+      {
+        q: "¿Cuánto dura la visita a la Cascada de Tamul?",
+        a:
+          `Por tu cuenta, calcula unas ${D_TAMUL.duracion_hrs} horas entre el embarcadero, el paseo por el río y el regreso. ` +
+          `La ${TAMUL.nombreCorto} dura de ${horas(TAMUL)} horas porque suma el cenote de la Cueva del Agua y el Sótano de las Huahuas al atardecer.`,
+      },
+      {
+        q: "¿Dónde se nada en el paseo a Tamul?",
+        a:
+          `En la ${TAMUL.nombreCorto}, en el cenote de la Cueva del Agua: es parada del mismo paseo en canoa, al regreso de la cascada, y ahí se nada y se echan clavados.`,
+      },
+      {
+        q: "¿Qué llevar a la Cascada de Tamul?",
+        a:
+          "Efectivo para la entrada y la panga (en el embarcadero no hay cajero), zapatos para agua y unos 2 litros de agua por persona. " +
+          `En la ${TAMUL.nombreCorto} el equipo de seguridad, las entradas y el desayuno van incluidos.`,
+      },
+      {
+        q: "¿Hay tour a la Cascada de Tamul desde Xilitla?",
+        a:
+          `Sí. La ${TAMUL.nombreCorto} incluye ${trasladoDe(TAMUL)}, desayuno, entradas, guía certificado y el paseo en canoa, y cuesta ${precioDe(TAMUL)}. ` +
+          "La comida del día no va incluida.",
+      },
+    ],
     tours: [TAMUL.slug, RAPPEL.slug],
     relacionados: [
       "rafting-rio-tampaon-rafting-en-el-rio-tampaon-la-experiencia-definitiv",
       "nacimiento-de-tambaque-guia-completa",
       "la-huasteca-potosina-en-octubre-clima-rios-y-que-esperar",
     ],
-    actualizado: HOY,
+    actualizado: "2026-09-29",
   },
 
   // ── ¿Cuánto cuesta la Huasteca Potosina? ────────────────────────────────────
