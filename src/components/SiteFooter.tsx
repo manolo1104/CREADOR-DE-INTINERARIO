@@ -10,6 +10,8 @@ import { CONTACTO } from "@/lib/contacto";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
+import { getDict } from "@/lib/i18n/messages";
+import { EVENTO_ABRIR_COOKIES } from "@/lib/cookiesPrefs";
 
 /**
  * Pie de página del sitio público. Vive en el shell (no en la home) para que
@@ -174,6 +176,18 @@ export function SiteFooter() {
                   </Link>
                 </li>
               ))}
+              {/* Sin esto, quien ya eligió no tenía forma de cambiar de opinión:
+                  el aviso sólo sale la primera vez. */}
+              <li>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event(EVENTO_ABRIR_COOKIES))}
+                  className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2 text-left"
+                >
+                  <span className="text-lima text-xs" aria-hidden="true">→</span>
+                  {getDict(locale).cookies.enlacePie}
+                </button>
+              </li>
             </ul>
             <div className="flex gap-4 mb-3">
               <a

@@ -133,8 +133,19 @@ export interface Messages {
     texto: string;
     avisoPrivacidad: string;
     textoCola: string;
-    rechazar: string;
+    administrar: string;
     aceptar: string;
+    panelTitulo: string;
+    volver: string;
+    guardar: string;
+    siempreActivas: string;
+    necesariasNombre: string;
+    necesariasTexto: string;
+    analiticaNombre: string;
+    analiticaTexto: string;
+    grabacionNombre: string;
+    grabacionTexto: string;
+    enlacePie: string;
   };
   footer: {
     derechos: string;
@@ -269,11 +280,22 @@ const es: Messages = {
   },
   cookies: {
     titulo: "Usamos cookies",
-    texto: "Este sitio utiliza cookies propias para mejorar tu experiencia de navegación y analizar el tráfico. Consulta nuestro ",
+    texto: "Nos ayudan a medir las visitas y a encontrar lo que falla en el sitio. Tú decides cuáles se quedan. Más detalles en el ",
     avisoPrivacidad: "Aviso de Privacidad",
-    textoCola: " para más información.",
-    rechazar: "Rechazar",
+    textoCola: ".",
+    administrar: "Administrar",
     aceptar: "Aceptar",
+    panelTitulo: "Tus cookies",
+    volver: "Volver",
+    guardar: "Guardar selección",
+    siempreActivas: "Siempre activas",
+    necesariasNombre: "Necesarias",
+    necesariasTexto: "Recuerdan esta elección y tu reserva mientras navegas. Sin ellas el sitio no funciona.",
+    analiticaNombre: "Google Analytics",
+    analiticaTexto: "Cuenta las visitas y qué tours se miran, sin tu nombre ni tus datos de contacto.",
+    grabacionNombre: "Microsoft Clarity",
+    grabacionTexto: "Graba de forma anónima cómo se recorre la página, para ver dónde se atora la gente.",
+    enlacePie: "Preferencias de cookies",
   },
   footer: {
     derechos: "Todos los derechos reservados",
@@ -409,11 +431,22 @@ const en: Messages = {
   },
   cookies: {
     titulo: "We use cookies",
-    texto: "This site uses first-party cookies to improve your browsing experience and analyse traffic. See our ",
+    texto: "They help us count visits and find what breaks on the site. You choose which ones stay. More in our ",
     avisoPrivacidad: "Privacy Policy",
-    textoCola: " for more information.",
-    rechazar: "Reject",
+    textoCola: ".",
+    administrar: "Manage",
     aceptar: "Accept",
+    panelTitulo: "Your cookies",
+    volver: "Back",
+    guardar: "Save choices",
+    siempreActivas: "Always on",
+    necesariasNombre: "Essential",
+    necesariasTexto: "They remember this choice and your booking while you browse. The site can't work without them.",
+    analiticaNombre: "Google Analytics",
+    analiticaTexto: "Counts visits and which tours people look at, without your name or contact details.",
+    grabacionNombre: "Microsoft Clarity",
+    grabacionTexto: "Anonymously records how the page is used, so we can see where people get stuck.",
+    enlacePie: "Cookie preferences",
   },
   footer: {
     derechos: "All rights reserved",

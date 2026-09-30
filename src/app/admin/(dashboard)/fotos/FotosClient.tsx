@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Download, Share2, X, Loader2, Check, ShieldCheck, AlertTriangle, Trash2, RotateCw } from "lucide-react";
+import { ImagePlus, Download, Share2, X, Loader2, Check, ShieldCheck, AlertTriangle, Trash2, RotateCw, FolderDown } from "lucide-react";
 import {
   OPCIONES_INICIALES, ponerMarca, fotoParaVista, pintarVista,
   aNombreDeArchivo, hoyEnMexico, esFotoLegible,
@@ -25,7 +25,34 @@ interface Foto {
   miniatura?: string;
   /** Ya se guardó o se mandó tal como está ahora. */
   guardada?: boolean;
+  /** Con qué nombre quedó en la carpeta: si se rehace (giro, acomodo), se sobrescribe ese. */
+  nombreGuardado?: string;
 }
+
+/**
+ * Cómo se entregan las fotos en este dispositivo.
+ *
+ * - telefono: menú de compartir, de 25 en 25 (Galería o WhatsApp).
+ * - carpeta:  computadora con Chrome/Edge. Cada foto se escribe en la carpeta
+ *             elegida en cuanto tiene el logo y se suelta de la memoria: así no
+ *             hay límite de fotos.
+ * - zip:      computadora sin acceso a carpetas (Safari, Firefox). Todas se
+ *             quedan en memoria hasta bajar el ZIP.
+ */
+type Modo = "telefono" | "carpeta" | "zip";
+
+/** Lo mínimo del acceso a carpetas de Chrome que se usa aquí. */
+interface Carpeta {
+  name: string;
+  getDirectoryHandle(nombre: string, o?: { create?: boolean }): Promise<Carpeta>;
+  getFileHandle(nombre: string, o?: { create?: boolean }): Promise<{
+    createWritable(): Promise<{ write(datos: Blob): Promise<void>; close(): Promise<void> }>;
+  }>;
+  removeEntry(nombre: string): Promise<void>;
+}
+type ElegirCarpeta = (o?: { id?: string; mode?: "readwrite"; startIn?: string }) => Promise<Carpeta>;
+const elegirCarpetaNativo = (): ElegirCarpeta | undefined =>
+  (window as unknown as { showDirectoryPicker?: ElegirCarpeta }).showDirectoryPicker;
 
 const huellaDe = (o: OpcionesMarca, giro: Giro = 0) => `${o.posicion}|${o.tamano}|${o.conWeb ? 1 : 0}|${giro}`;
 /** ¿La foto ya tiene el logo con el acomodo y el giro de ahora? */
@@ -33,6 +60,11 @@ const alDiaCon = (f: Foto, o: OpcionesMarca) => f.estado === "lista" && f.huella
 
 /** Cuántas fotos se mandan de una vez al menú de compartir del teléfono. */
 const POR_ENVIO = 25;
+/**
+ * Cuántas fotos listas se adelantan en computadora antes de que se elija la
+ * carpeta. Después ya no importa: cada una se escribe y se suelta.
+ */
+const ADELANTO_SIN_CARPETA = 30;
 /**
  * Cuánto pesa como máximo cada ZIP.
  *
@@ -62,12 +94,21 @@ const motor = {
   /**
    * Cuántas fotos listas, sin guardar, puede haber en memoria a la vez.
    *
-   * En computadora, todas. En el teléfono, una tanda: a tamaño completo, cien
-   * fotos de cámara son un giga, y Safari cierra la página sin avisar mucho
-   * antes de eso. Ahí se prepara una tanda, se guarda, se suelta y sigue la
-   * siguiente.
+   * A tamaño completo, cien fotos de cámara son un giga. En el teléfono va una
+   * tanda: se prepara, se guarda, se suelta y sigue la siguiente. En
+   * computadora con carpeta, unas cuantas mientras se elige (luego cada una se
+   * escribe al momento). Sólo en modo ZIP se quedan todas.
    */
   limite: Infinity,
+  /** La carpeta donde se van escribiendo (modo carpeta). */
+  carpeta: null as Carpeta | null,
+  carpetaNombre: null as string | null,
+  prefijoCarpeta: "",
+  /** Número de la última foto escrita en la carpeta. */
+  contador: 0,
+  volcando: false,
+  /** Para avisar a la pantalla cuando falla la carpeta. */
+  alFallarCarpeta: null as ((texto: string) => void) | null,
 };
 
 function actualizar(cambio: (prev: Foto[]) => Foto[]) {
@@ -125,6 +166,8 @@ async function procesarCola() {
       } catch {
         actualizar(prev => prev.map(f => (f.id === sig.id ? { ...f, estado: "error", huella } : f)));
       }
+      // Con carpeta, se escribe ya y se suelta: la memoria no crece con las fotos.
+      if (motor.carpeta) await volcarACarpeta();
       // Un respiro entre foto y foto para que la pantalla no se congele.
       await new Promise(r => setTimeout(r, 0));
     }
@@ -132,6 +175,80 @@ async function procesarCola() {
     motor.corriendo = false;
     // Soltar la memoria del lienzo grande: en iPhone es poca.
     if (motor.lienzo) { motor.lienzo.width = 1; motor.lienzo.height = 1; }
+  }
+}
+
+/**
+ * Escribe en la carpeta elegida las fotos listas que aún no se guardaron, en
+ * el orden de la lista, y suelta cada una de la memoria.
+ *
+ * Una sola a la vez (`volcando`): el motor la llama tras cada foto y la
+ * pantalla al elegir carpeta, y dos escrituras del mismo archivo a la vez se
+ * pisarían. Si una llamada llega mientras otra corre, la que corre la recoge:
+ * vuelve a buscar después de cada escritura.
+ */
+async function volcarACarpeta() {
+  if (!motor.carpeta || motor.volcando) return;
+  motor.volcando = true;
+  try {
+    for (;;) {
+      const op = motor.opciones ?? OPCIONES_INICIALES;
+      const f = motor.fotos.find(x => alDiaCon(x, op) && x.resultado && !x.guardada);
+      const carpeta = motor.carpeta;
+      if (!f || !carpeta) break;
+      // El nombre se fija la primera vez: si la foto se rehace, se sobrescribe
+      // la misma en vez de dejar dos versiones en la carpeta.
+      const nueva = !f.nombreGuardado;
+      const nombre = f.nombreGuardado
+        ?? `${motor.prefijoCarpeta}-${String(++motor.contador).padStart(3, "0")}.jpg`;
+      try {
+        const archivo = await carpeta.getFileHandle(nombre, { create: true });
+        const escritura = await archivo.createWritable();
+        await escritura.write(f.resultado!);
+        await escritura.close();
+      } catch {
+        // Disco lleno, carpeta borrada o permiso retirado: se pide otra y las
+        // fotos se quedan esperando en memoria (el motor se pausa solo). El
+        // archivo a medias se borra y su número se reusa en la carpeta nueva,
+        // para que juntas sigan 001, 002, 003… sin huecos.
+        if (nueva) {
+          motor.contador--;
+          try { await carpeta.removeEntry(nombre); } catch { /* no alcanzó a crearse */ }
+        }
+        const yaGuardadas = motor.fotos.filter(x => x.guardada).length;
+        motor.alFallarCarpeta?.(
+          `No se pudo seguir guardando en «${motor.carpetaNombre}» (¿se llenó el disco?). `
+          + `Las ${yaGuardadas} que ya estaban ahí se quedan. Elige otra carpeta para las demás: no se perdió ninguna.`,
+        );
+        motor.carpeta = null;
+        motor.carpetaNombre = null;
+        break;
+      }
+      const huella = f.huella;
+      actualizar(prev => prev.map(x => {
+        if (x.id !== f.id) return x;
+        // Si la giraron mientras se escribía, se guarda el nombre pero queda
+        // pendiente: la versión nueva sobrescribirá este mismo archivo.
+        return x.huella === huella
+          ? { ...x, guardada: true, resultado: undefined, nombreGuardado: nombre }
+          : { ...x, nombreGuardado: nombre };
+      }));
+    }
+  } finally {
+    motor.volcando = false;
+  }
+  procesarCola();   // por si estaba en pausa esperando carpeta
+}
+
+/** Dentro de la carpeta elegida, una carpeta nueva para esta salida: nunca se mezcla con otra. */
+async function carpetaLibre(base: Carpeta, nombre: string): Promise<Carpeta> {
+  for (let i = 1; ; i++) {
+    const candidato = i === 1 ? nombre : `${nombre}-${i}`;
+    try {
+      await base.getDirectoryHandle(candidato);   // ya existe: probar la siguiente
+    } catch {
+      return base.getDirectoryHandle(candidato, { create: true });
+    }
   }
 }
 
@@ -151,11 +268,14 @@ export default function FotosClient() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
   const [confirmarBorrar, setConfirmarBorrar] = useState(false);
+  const [modo, setModo] = useState<Modo>("zip");
   /** Teléfono con menú de compartir: ahí se guarda en Fotos o se manda por WhatsApp. */
-  const [esTelefono, setEsTelefono] = useState(false);
+  const esTelefono = modo === "telefono";
+  const [carpetaNombre, setCarpetaNombre] = useState<string | null>(motor.carpetaNombre);
 
   useEffect(() => {
     motor.oyente = setFotos;
+    motor.alFallarCarpeta = texto => { setAviso(texto); setCarpetaNombre(null); };
     setFotos(motor.fotos);
     // El acomodo se recuerda de un día para otro: casi siempre es el mismo.
     if (!motor.opciones) {
@@ -173,10 +293,11 @@ export default function FotosClient() {
       const tactil = window.matchMedia("(pointer: coarse)").matches;
       telefono = tactil && !!navigator.canShare?.({ files: [archivoPrueba] });
     } catch { /* sin menú de compartir: se trabaja como en computadora */ }
-    setEsTelefono(telefono);
-    motor.limite = telefono ? POR_ENVIO : Infinity;
+    const m: Modo = telefono ? "telefono" : elegirCarpetaNativo() ? "carpeta" : "zip";
+    setModo(m);
+    motor.limite = m === "telefono" ? POR_ENVIO : m === "carpeta" ? ADELANTO_SIN_CARPETA : Infinity;
     procesarCola();
-    return () => { motor.oyente = null; };
+    return () => { motor.oyente = null; motor.alFallarCarpeta = null; };
   }, []);
 
   function cambiarOpciones(parcial: Partial<OpcionesMarca>) {
@@ -251,6 +372,11 @@ export default function FotosClient() {
       prev.forEach(f => f.miniatura && URL.revokeObjectURL(f.miniatura));
       return [];
     });
+    // La siguiente salida va en su propia carpeta y empieza en 001.
+    motor.carpeta = null;
+    motor.carpetaNombre = null;
+    motor.contador = 0;
+    setCarpetaNombre(null);
     setSeleccion(null);
     setAviso(null);
     setConfirmarBorrar(false);
@@ -272,8 +398,32 @@ export default function FotosClient() {
   // completa, o cuando ya no queda nada por preparar.
   const tandaObjetivo = Math.min(POR_ENVIO, enEspera.length + porProcesar);
   const tandaLista = enEspera.length > 0 && enEspera.length >= tandaObjetivo;
+  /** Computadora con carpeta: se adelantaron unas cuantas y esperan a que se elija dónde. */
+  const esperandoCarpeta = modo === "carpeta" && !carpetaNombre && trabajando && enEspera.length >= ADELANTO_SIN_CARPETA;
 
   const prefijo = `${aNombreDeArchivo(lote) || "huasteca-tours"}-${hoyEnMexico()}`;
+
+  /**
+   * Elige dónde se guardan. Adentro se crea una carpeta con el nombre de la
+   * salida y ahí van cayendo las fotos, una por una, en cuanto tienen el logo.
+   */
+  async function elegirCarpeta() {
+    const elegir = elegirCarpetaNativo();
+    if (!elegir) return;
+    try {
+      const base = await elegir({ id: "fotos-tours", mode: "readwrite", startIn: "pictures" });
+      const sub = await carpetaLibre(base, prefijo);
+      motor.carpeta = sub;
+      motor.prefijoCarpeta = prefijo;
+      motor.carpetaNombre = `${base.name} › ${sub.name}`;
+      setCarpetaNombre(motor.carpetaNombre);
+      setAviso(null);
+      volcarACarpeta();
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;   // cerró la ventana sin elegir
+      setAviso("No se pudo usar esa carpeta. Elige otra, por ejemplo Imágenes o Escritorio.");
+    }
+  }
   const nombreDe = (i: number) => `${prefijo}-${String(i + 1).padStart(3, "0")}.jpg`;
   /** El número de cada foto es su lugar en la lista: igual en el ZIP y en el teléfono. */
   const numeroDe = (f: Foto) => validas.indexOf(f);
@@ -529,7 +679,11 @@ export default function FotosClient() {
             </h2>
             <p className="text-[12px] font-dm text-[rgba(22,54,42,0.60)]" aria-live="polite">
               {porGuardar === 0
-                ? <span className="text-[#2b845c]">Todas guardadas</span>
+                ? <span className="text-[#2b845c]">Todas guardadas{carpetaNombre && modo === "carpeta" ? <> en «{carpetaNombre}»</> : null}</span>
+                : modo === "carpeta" && carpetaNombre
+                  ? <>Poniendo el logo y guardando… <span className="panel-cifra">{guardadas}</span> de <span className="panel-cifra">{validas.length}</span></>
+                : esperandoCarpeta
+                  ? <>Ya hay <span className="panel-cifra">{enEspera.length}</span> listas. Elige la carpeta para seguir con las demás.</>
                 : esTelefono
                   ? trabajando && !tandaLista
                     ? <>Preparando <span className="panel-cifra">{enEspera.length}</span> de <span className="panel-cifra">{tandaObjetivo}</span>…</>
@@ -541,7 +695,7 @@ export default function FotosClient() {
           </div>
           <div className="h-1.5 rounded-full bg-[rgba(27,67,50,0.08)] overflow-hidden mb-4">
             <div className="h-full bg-[#2b845c] transition-[width] duration-300"
-              style={{ width: `${validas.length ? Math.round(((esTelefono ? guardadas : alDia.length) / validas.length) * 100) : 0}%` }} />
+              style={{ width: `${validas.length ? Math.round(((modo === "zip" ? alDia.length : guardadas) / validas.length) * 100) : 0}%` }} />
           </div>
 
           {hayReducidas && (
@@ -653,6 +807,25 @@ export default function FotosClient() {
                       ? `Preparando ${enEspera.length} de ${tandaObjetivo}…`
                       : "Mandarlas otra vez"}
                 </button>
+              ) : modo === "carpeta" ? (
+                carpetaNombre ? (
+                  <p className="inline-flex items-center gap-2 min-h-[44px] text-[13px] font-dm text-[#16362a] min-w-0">
+                    {porGuardar > 0
+                      ? <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin text-[#1B4332]" strokeWidth={2} />
+                      : <Check className="w-4 h-4 flex-shrink-0 text-[#2b845c]" strokeWidth={2.25} />}
+                    <span className="truncate">
+                      {porGuardar > 0 ? "Guardando en " : "Guardadas en "}
+                      <strong className="font-medium" title={carpetaNombre}>{carpetaNombre}</strong>
+                      {" · "}<span className="panel-cifra">{guardadas}</span> de <span className="panel-cifra">{validas.length}</span>
+                    </span>
+                  </p>
+                ) : (
+                  <button onClick={elegirCarpeta}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-[7px] bg-[#1B4332] text-white text-sm font-dm font-medium panel-pulsable panel-foco">
+                    <FolderDown className="w-4 h-4" strokeWidth={2} />
+                    Guardar en una carpeta
+                  </button>
+                )
               ) : partesZip.length <= 1 ? (
                 <button onClick={() => descargarZip(0, alDia.length, null)} disabled={trabajando || alDia.length === 0}
                   className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-[7px] bg-[#1B4332] text-white text-sm font-dm font-medium panel-pulsable panel-foco disabled:opacity-50">
@@ -681,6 +854,11 @@ export default function FotosClient() {
                 Terminar y borrar de aquí
               </button>
             </div>
+          )}
+          {modo === "carpeta" && !carpetaNombre && !confirmarBorrar && (
+            <p className="text-[11px] font-dm text-[rgba(22,54,42,0.51)] mt-2">
+              Cada foto se guarda en cuanto tiene el logo, sin límite de fotos. Adentro de la carpeta que elijas se crea «{prefijo}».
+            </p>
           )}
           {esTelefono && !confirmarBorrar && (
             <p className="text-[11px] font-dm text-[rgba(22,54,42,0.51)] mt-2">
