@@ -42,11 +42,14 @@ export function HeroTourMedia({
   foto,
   video,
   alt,
+  posicion,
 }: {
   foto: string;
   /** El corte VERTICAL (720×1280). No pongas aquí un archivo apaisado. */
   video?: string;
   alt: string;
+  /** `object-position` de la foto (ver `posicionHero` en tours.ts). */
+  posicion?: string;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [tocaVideo, setTocaVideo] = useState(false);
@@ -103,6 +106,7 @@ export function HeroTourMedia({
         alt={alt}
         fill
         className="object-cover"
+        style={posicion ? { objectPosition: posicion } : undefined}
         priority
         /* Usaba `fill` SIN `sizes`: Next asume 100vw y en un móvil de 400 px
            se descargaba la variante de escritorio. */

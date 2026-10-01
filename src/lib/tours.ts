@@ -359,6 +359,15 @@ export interface Tour {
   dificultad:       "baja" | "media" | "alta";
   imagen_hero:      string;
   /**
+   * `object-position` de la foto en el hero de la ficha. El hero de escritorio
+   * mide ≈2.7:1, así que de una foto VERTICAL solo se ve una franja; sin esto
+   * es la del centro. Ej.: "50% 28%" sube la franja hacia la cascada.
+   */
+  posicionHero?:    string;
+  /** Foto de la tarjeta grande de «favoritos» en /tours. Sin esto, `imagen_hero`.
+   *  (Las tarjetas del inicio y de la rejilla de /tours salen de `collage[0]`.) */
+  imagenTarjeta?:   string;
+  /**
    * Corte VERTICAL (720×1280) para el fondo del hero, y SOLO en teléfonos.
    * Sin esto, el hero usa `imagen_hero` y se comporta igual que siempre.
    *
@@ -1103,13 +1112,13 @@ const TOURS_RAW: Tour[] = [
         texto: "Buffet de platillos huastecos en El Taco Loco, camino al río. Va incluido." },
       { hora: "11:00 AM", momento: "Canoa a Tamul",
         texto: "Entras al Cañón del Tampaón en canoa: silencio, el remo sobre el agua y, al fondo, una cascada de 105 metros que se siente en el pecho antes de verla.",
-        foto: "/imagenes/tours/tamul/gallery-3.jpg" },
+        foto: "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg" },
       { hora: "12:30 PM", momento: "Fotos frente a la cascada",
         texto: "Bajas a las piedras del cañón, justo enfrente de la caída, y ahí se toma la foto que todos acaban enseñando al volver. Sin prisa: es el momento del día que más se repite en las cámaras.",
-        foto: "/imagenes/cascada-de-tamul/grupo-piedra.jpg" },
+        foto: "/imagenes/tours/tamul/grupo-frente-a-tamul.jpg" },
       { hora: "1:30 PM", momento: "Cueva del Agua",
         texto: "De regreso bajas de la canoa y subes al cenote de la Cueva del Agua: haces de luz, agua turquesa, y aquí sí te metes —se nada y se echan clavados—. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio. El momento favorito de casi todos.",
-        foto: "/imagenes/tours/tamul/gallery-1.jpg" },
+        foto: "/imagenes/tours/tamul/cueva-del-agua-clavados.jpg" },
       { hora: "3:00 PM", momento: "Comida y camino",
         texto: "La comida del día, ya saliendo de Tamul. No va incluida, así que eliges tú dónde y cuánto gastar. Después, el traslado al Sótano de las Huahuas." },
       { hora: "5:30 PM", momento: "Sótano de las Huahuas",
@@ -1121,23 +1130,40 @@ const TOURS_RAW: Tour[] = [
       { hora: "8:00–9:00 PM", momento: "Regreso",
         texto: "Te dejamos en tu hospedaje, cansado y feliz." },
     ],
-    imagen_hero: "/imagenes/tours/tamul/hero.jpg",
+    // Fotos de un grupo real del tour (30 sep 2026). Las de antes llevaban la
+    // marca ✦ de Gemini —eran generadas con IA— y salían con la etiqueta
+    // «Foto real» de la galería.
+    // Elegida por Manolo (30 sep). Es vertical: en escritorio se sube la franja
+    // para que se vea la cascada y no solo el agua.
+    imagen_hero: "/imagenes/tours/tamul/grupo-frente-a-tamul.jpg",
+    posicionHero: "50% 28%",
+    // 15 s con videos de ese mismo grupo: Tamul → cortina de agua → canoa →
+    // clavado → Cueva del Agua → grupo frente a Tamul (proyecto Remotion en
+    // ~/Desktop/HUASTECA-VIDEO-HERO, composición `TamulMovil`).
+    videoHeroMovil: "/videos/tours/expedicion-tamul-v1.mp4",
     logo: "/imagenes/tours/logos/expedicion-tamul-v3.webp",
+    // La pareja frente a Tamul: la elige Manolo para las tarjetas del inicio y
+    // de /tours (30 sep). La ficha conserva el grupo de portada.
+    imagenTarjeta: "/imagenes/cascada-de-tamul/gallery-6.jpg",
     collage: [
-      "/imagenes/tours/tamul/hero.jpg",
-      "/imagenes/tours/tamul/gallery-1.jpg",
+      { src: "/imagenes/cascada-de-tamul/gallery-6.jpg", pos: "50% 45%" },
+      "/imagenes/tours/tamul/canoa-entre-cascadas.jpg",
+      "/imagenes/tours/tamul/cueva-del-agua-clavados.jpg",
       "/imagenes/tours/tamul/gallery-6.jpg",
     ],
     imagenes: [
-      "/imagenes/tours/tamul/hero.jpg",
-      "/imagenes/tours/tamul/gallery-3.jpg",
+      "/imagenes/tours/tamul/canoa-entre-cascadas.jpg",
+      "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg",
     ],
     gallery: [
-      { src: "/imagenes/tours/tamul/hero.jpg",      alt: "Vista de la Cascada de Tamul desde el cañón — turistas con chalecos", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-1.jpg", alt: "Cueva del Agua — haces de luz sobre el cenote turquesa subterráneo", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-2.jpg", alt: "Clavado desde las piedras en el Cañón del Tampaón", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-3.jpg", alt: "Canoa feliz en el Cañón del Tampaón — la Cascada de Tamul al fondo", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-4.jpg", alt: "Guerra de agua entre canoas en el río Tampaón", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/canoa-entre-cascadas.jpg",    alt: "Grupo remando en canoa por el Río Tampaón, entre cascadas y agua turquesa", hasRealPeople: true },
+      { src: "/imagenes/cascada-de-tamul/gallery-6.jpg",         alt: "Pareja de la mano sobre una roca del Río Tampaón, mirando la Cascada de Tamul", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg",    alt: "Canoa en el Cañón del Tampaón con la Cascada de Tamul al fondo", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/grupo-frente-a-tamul.jpg",    alt: "Grupo sobre las piedras del cañón, justo enfrente de la Cascada de Tamul", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/pareja-frente-a-tamul.jpg",   alt: "Pareja sobre una roca en el Río Tampaón con la Cascada de Tamul detrás", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/cueva-del-agua-clavados.jpg", alt: "Clavados desde la pared de roca en la Cueva del Agua", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/cueva-del-agua-nado.jpg",     alt: "Nadando en el agua turquesa de la Cueva del Agua", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/cascada-del-tampaon.jpg",     alt: "Viajero sobre una de las cascadas que caen al Río Tampaón", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-6.jpg", alt: "Asomándose al borde del Sótano de las Huahuas — 478 metros de profundidad", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-extra-1.jpg", alt: "Viajera sentada en las rocas del Cañón del Tampaón señalando la Cascada de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/tamul/gallery-extra-2.jpg", alt: "Aguas turquesas del Río Tampaón con vegetación colgante — Expedición Tamul" },

@@ -942,7 +942,7 @@ export default function TourDetailPage({ params }: Props) {
         }`}
       >
         {tour.imagen_hero && (
-          <HeroTourMedia foto={tour.imagen_hero} video={tour.videoHeroMovil} alt={tour.nombre} />
+          <HeroTourMedia foto={tour.imagen_hero} video={tour.videoHeroMovil} alt={tour.nombre} posicion={tour.posicionHero} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/50 to-negro/20" />
 

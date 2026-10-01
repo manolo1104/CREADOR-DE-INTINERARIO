@@ -449,7 +449,7 @@ const PAQUETES_RAW: Paquete[] = [
     // puso: el paquete se estrena hoy y nadie lo ha reservado todavía. El día
     // que sea verdad, se cambia aquí.
     badge: "Nuevo",
-    imagen: "/imagenes/tours/tamul/hero.jpg",
+    imagen: "/imagenes/tours/tamul/pareja-frente-a-tamul.jpg",
     // Las tres fotos que cuentan el paquete: la panga frente a Tamul, el
     // castillo de Edward James y el cuarto donde se duerme.
     collage: [

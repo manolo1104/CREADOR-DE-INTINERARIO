@@ -62,26 +62,35 @@ function lista(v: unknown): string {
   return Array.isArray(v) ? v.join(", ") : typeof v === "string" ? v : "";
 }
 
+/**
+ * Navegación del visitante: se GUARDA en `TrackEvent` (el embudo se calcula de
+ * ahí) pero ya no se imprime. Era ~80 % del log de Railway y tapaba los errores
+ * de verdad (30 sep 2026: dos reservas sin llegar a la hoja pasaron sin que
+ * nadie las viera entre miles de «VIO TOUR»). Los logs no cuestan en Railway;
+ * esto es solo para que se pueda leer.
+ */
+const SOLO_SE_GUARDA = new Set([
+  "TOUR_PAGE_VIEW",
+  "TOURS_LIST_VIEW",
+  "DESTINO_PAGE_VIEW",
+  "GALLERY_OPENED",
+  "REVIEWS_SCROLLED",
+  "STICKY_SIDEBAR_SHOWN",
+  "BOOKING_PAGE_VIEW",
+  "DATE_SELECTED",
+  "PARTICIPANTS_CHANGED",
+  "INVENTORY_BADGE_SHOWN",
+  "TOAST_SHOWN",
+  "TOAST_DISMISSED",
+]);
+
 // Cada evento → [etiqueta, ...campos]. Los campos vacíos se omiten en el log.
+// Solo los que dicen algo del negocio: intención de compra, pago, WhatsApp.
 const EVENTOS: Record<
   string,
   (d: Datos, path: string) => Array<string | number | undefined | false>
 > = {
-  TOUR_PAGE_VIEW:        (d)    => ["👁️  VIO TOUR", nombreTour(d), mxn(Number(d.precio)), d.tipo as string],
-  TOURS_LIST_VIEW:       (_d, p) => ["🛍️  VIO EL CATÁLOGO DE TOURS", p],
-  // El puente contenido → producto: cuánta gente entra por un destino y cuánta
-  // de esa pasa al tour. Es la métrica de la que dependía todo el rediseño.
-  DESTINO_PAGE_VIEW:     (d)    => ["🏞️  VIO UN DESTINO", d.nombre as string, d.zona as string, d.conTour === "ninguno" ? "sin tour" : `tour: ${d.conTour}`],
   DESTINO_TOUR_CLICK:    (d)    => ["🌉  DEL DESTINO AL TOUR", d.destino as string, "→", nombreTour(d), mxn(Number(d.amount)), desde(d.source)],
-  GALLERY_OPENED:        (d)    => ["🖼️  ABRIÓ LA GALERÍA", nombreTour(d)],
-  REVIEWS_SCROLLED:      (d)    => ["⭐  LEYÓ LAS RESEÑAS", nombreTour(d)],
-  STICKY_SIDEBAR_SHOWN:  (d)    => ["📌  VIO LA CALCULADORA DE PRECIO", nombreTour(d)],
-  // Sin este paso, el embudo saltaba de "vio un tour" a "eligió fecha", que son
-  // páginas distintas: no se podía distinguir "no llega a reservar" de "llega y
-  // no elige fecha", y cada caso pide un arreglo opuesto.
-  BOOKING_PAGE_VIEW:     (d)    => ["📝  ABRIÓ LA RESERVA", nombreTour(d), mxn(Number(d.amount))],
-  DATE_SELECTED:         (d)    => ["📅  ELIGIÓ FECHA", (d.fecha ?? d.date) as string, nombreTour(d)],
-  PARTICIPANTS_CHANGED:  (d)    => ["👥  AJUSTÓ PERSONAS", nombreTour(d), personas(d), mxn(Number(d.amount))],
   PROMO_APPLIED:         (d)    => ["🎟️  APLICÓ CUPÓN", (d.code ?? d.promoCode) as string, d.discountPct != null ? `-${d.discountPct}%` : undefined],
   PROMO_FAILED:          (d)    => ["🚫  CUPÓN INVÁLIDO", (d.code ?? d.promoCode) as string],
   CHECKOUT_STARTED:      (d)    => ["🛒  INICIÓ RESERVA", nombreTour(d), personas(d), mxn(Number(d.amount)), desde(d.source)],
@@ -98,9 +107,6 @@ const EVENTOS: Record<
     d.message as string,
   ],
   PAGO_EN_PROCESO:       (d)    => ["⏳  PAGO EN PROCESO", nombreTour(d), mxn(Number(d.amount))],
-  INVENTORY_BADGE_SHOWN: (d)    => ["🔢  VIO EL CUPO", nombreTour(d), d.group_max ? `máx ${d.group_max} por salida` : undefined],
-  TOAST_SHOWN:           (d)    => ["🔔  PRUEBA SOCIAL", nombreTour(d), d.message ? `«${d.message}»` : undefined],
-  TOAST_DISMISSED:       (d)    => ["✕  CERRÓ LA PRUEBA SOCIAL", nombreTour(d)],
   WHATSAPP_CLICK:        (d)    => ["💬  CLIC A WHATSAPP", nombreTour(d), mxn(Number(d.amount)), desde(d.context ?? d.source)],
   RECOMMENDER_STARTED:   (d)    => ["🎯  USÓ EL RECOMENDADOR", d.grupo as string, d.origen ? `desde ${d.origen}` : undefined, d.dias as string, lista(d.intereses), d.actividad as string],
   RECOMMENDER_COMPLETED: (d)    => ["🏆  EL RECOMENDADOR SUGIRIÓ", resolver(d.primary_tour), d.secondary_tour ? `(2º ${resolver(d.secondary_tour)})` : undefined, d.grupo as string, d.origen ? `desde ${d.origen}` : undefined],
@@ -167,7 +173,7 @@ export async function POST(req: NextRequest) {
     if (build) {
       const [etiqueta, ...campos] = build(data ?? {}, path ?? "/");
       actividad(etiqueta as string, ...campos, visitante);
-    } else {
+    } else if (!SOLO_SE_GUARDA.has(event)) {
       // evento no mapeado: no lo perdemos, sale con su código crudo
       actividad(`📊  ${event}`, path ?? "/", visitante);
     }

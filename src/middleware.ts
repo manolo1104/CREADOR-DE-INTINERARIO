@@ -1,33 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { actividad } from "@/lib/logger";
-// Bots, crawlers y escáneres: no son visitantes reales, no ensucian el feed.
-// Vive en su propio archivo porque la descarga de workbooks usa el mismo filtro.
-import { esBot } from "@/lib/bots";
 import { puedeVer, rolDesdeToken, seccionRestringida, type RolAdmin } from "@/lib/admin/usuarios";
-
-// Origen legible de la visita (de dónde llegó).
-function fuenteReferrer(ref: string | null): string {
-  if (!ref) return "directo";
-  try {
-    const host = new URL(ref).hostname.replace(/^www\./, "");
-    if (host.endsWith("huasteca-potosina.com")) return ""; // navegación interna
-    if (host.includes("google"))    return "desde Google";
-    if (host.includes("facebook") || host.includes("fb.")) return "desde Facebook";
-    if (host.includes("instagram")) return "desde Instagram";
-    if (host.includes("bing"))      return "desde Bing";
-    if (host.includes("chatgpt") || host.includes("openai")) return "desde ChatGPT";
-    return `desde ${host}`;
-  } catch {
-    return "";
-  }
-}
 
 // El secreto NO tiene fallback: si falta la env var, fallamos cerrado (denegar acceso)
 const rawSecret = process.env.ADMIN_JWT_SECRET;
 const secret = rawSecret ? new TextEncoder().encode(rawSecret) : null;
-
-const TRACKED_PATHS = ["/", "/planear", "/destinos", "/experiencias", "/info-practica"];
 
 // Rutas /api/admin que deben permanecer públicas (no requieren sesión)
 const PUBLIC_ADMIN_API = ["/api/admin/login", "/api/admin/logout"];
@@ -76,14 +53,9 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ── Analytics públicas ────────────────────────────────────────────────────
-  const isTracked =
-    TRACKED_PATHS.includes(pathname) ||
-    pathname.startsWith("/destinos/") ||
-    pathname.startsWith("/en/destinos/");
-  if (isTracked && !esBot(req.headers.get("user-agent"))) {
-    actividad("🌐  VISITÓ", pathname, fuenteReferrer(req.headers.get("referer")));
-  }
+  // (Aquí se imprimía «🌐 VISITÓ» por cada página: era 2/3 del log de Railway,
+  // contaba también las precargas de enlaces y GA4/Clarity ya miden visitas.
+  // Quitado el 30 sep 2026.)
 
   // ── Locale para el render (lo lee el root layout con headers()) ────────────
   // Español en la raíz; inglés bajo /en. Se inyecta como header de request.

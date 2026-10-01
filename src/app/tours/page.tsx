@@ -350,9 +350,9 @@ export default function ToursPage() {
             return (
               <Link key={slug} href={lp(`/tours/${slug}`)} className="group block">
                 <div className="relative aspect-[4/5] overflow-hidden">
-                  {t.imagen_hero && (
+                  {(t.imagenTarjeta ?? t.imagen_hero) && (
                     <Image
-                      src={t.imagen_hero}
+                      src={t.imagenTarjeta ?? t.imagen_hero}
                       alt={t.nombre}
                       fill
                       className="object-cover transition-transform duration-700 ease-out [@media(hover:hover)]:group-hover:scale-[1.04]"

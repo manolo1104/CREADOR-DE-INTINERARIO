@@ -24,6 +24,40 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── Lote 30-sep-2026 ──────────────────────────────────────────────────────
+  // Mejor época — el artículo más leído del blog. Su portada y su segunda foto
+  // eran las MISMAS del tour Expedición Tamul, y las dos (más la de las pozas)
+  // traían la marca ✦ de Gemini: eran de IA. Ahora son fotos reales de un grupo
+  // del tour, distintas de las que usa la ficha del tour. De paso se corrige el
+  // alt de la cascada del final, que decía «habitación del hotel».
+  "mejor-epoca-para-visitar-la-huasteca-potosina-2026": {
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/blog/mejor-epoca/canoa-rio-turquesa.jpg",
+    coverImageAlt:
+      "Grupo remando en canoa por el Río Tampaón, de agua turquesa y cielo despejado, en la Huasteca Potosina",
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/blog/mejor-epoca/gallery-2.jpg",
+        to: "https://www.huasteca-potosina.com/imagenes/blog/mejor-epoca/amigos-frente-a-tamul.jpg",
+      },
+      {
+        from: 'alt="Hombre saltando frente a la Cascada de Tamul — temporada ideal nov-mar con agua turquesa"',
+        to: 'alt="Tres amigos sobre una roca del Río Tampaón con la Cascada de Tamul detrás y el agua turquesa"',
+      },
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/tours/edward-james/gallery-10.jpg",
+        to: "https://www.huasteca-potosina.com/imagenes/blog/mejor-epoca/nado-rio-tampaon.jpg",
+      },
+      {
+        from: 'alt="Río turquesa en las pozas de la Huasteca Potosina — mejor época para nadar y disfrutar las cascadas"',
+        to: 'alt="Viajeros nadando en el agua turquesa del Río Tampaón, en la Huasteca Potosina"',
+      },
+      {
+        from: 'alt="Hotel Paraíso Encantado Xilitla habitación con vista a la selva"',
+        to: 'alt="Cascada de la Huasteca Potosina con bañistas en su poza turquesa"',
+      },
+    ],
+  },
+
   // ── Lote 21-sep-2026 (b) ──────────────────────────────────────────────────
   // Minas Viejas — la imagen del cuerpo era la cascada EL AGUACATE, que es OTRO
   // lugar. Ahora lleva una foto de la propia Minas Viejas. De paso se reescribe
