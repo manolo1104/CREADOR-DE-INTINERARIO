@@ -1527,7 +1527,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   adultos: (n) => `${n} adulto${n > 1 ? "s" : ""}`,
   ninos610Resumen: (n) => `${n} niño${n > 1 ? "s" : ""} 6–10`,
   menores6Resumen: (n) => `${n} menor${n > 1 ? "es" : ""} de 6`,
-  diasNoches: (dias, noches) => `${dias} días / ${noches} noches`,
+  diasNoches: (dias, noches) => `${dias} días / ${noches} ${noches === 1 ? "noche" : "noches"}`,
   habJungla: "Habitación Jungla",
   habSelva: "Habitación vista a la selva",
   resumenHotelExtra: (noches, habs, habitacion) =>
@@ -1664,7 +1664,7 @@ const CHK_EN: PaqueteCheckoutUI = {
   adultos: (n) => `${n} adult${n > 1 ? "s" : ""}`,
   ninos610Resumen: (n) => `${n} child${n > 1 ? "ren" : ""} 6–10`,
   menores6Resumen: (n) => `${n} under 6`,
-  diasNoches: (dias, noches) => `${dias} days / ${noches} nights`,
+  diasNoches: (dias, noches) => `${dias} days / ${noches} ${noches === 1 ? "night" : "nights"}`,
   habJungla: "Jungla room",
   habSelva: "Jungle-view room",
   resumenHotelExtra: (noches, habs, habitacion) =>

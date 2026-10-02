@@ -39,6 +39,32 @@ export interface ItinerarioDia {
   descripcion: string;
 }
 
+/**
+ * Un paquete de FECHA FIJA (un evento), no un viaje que se arma cualquier día.
+ *
+ * Nació con el Xantolo 2026 (decisión de Manolo, 2 oct): el hotel solo tenía
+ * habitaciones para la noche del 1 al 2 de noviembre, así que la fecha no se
+ * elige, se vende por pareja y hay un cupo que se acaba. El checkout, el motor
+ * de cobro y la ruta de pago leen esto para poner los candados; nada de eso lo
+ * decide el navegador.
+ */
+export interface EventoPaquete {
+  /** Día 1 del paquete (YYYY-MM-DD). Es también el check-in. No se elige. */
+  fecha: string;
+  /** La fecha como se lee en pantalla. */
+  fechaTexto: string;
+  /** Lugares (PERSONAS) a la venta en total: en línea + por WhatsApp. */
+  cupo: number;
+  /** Máximo de la salida, para explicarlo (los lugares a la venta son `cupo`). */
+  salidaMaxima: number;
+  /** Se vende por pareja: 2 adultos, sin menores, una habitación. */
+  soloPareja: true;
+  /** Cómo se dice la habitación: la asigna el hotel, no se elige. */
+  habitacionTexto: string;
+  /** Su página de venta propia. */
+  pagina: string;
+}
+
 export interface Paquete {
   id: string;
   slug: string;
@@ -147,6 +173,8 @@ export interface Paquete {
   noIncluye: string[];
   valor: { item: string; precio: string }[];
   perfiles: string[];
+  /** Paquete de fecha fija con cupo (ver `EventoPaquete`). */
+  evento?: EventoPaquete;
 }
 
 // ── Habitaciones del Hotel Paraíso Encantado ────────────────────────────────
@@ -825,5 +853,102 @@ export function precioVisibleTachado(p: Paquete): number | null {
 }
 
 export function getPaquete(slug: string): Paquete | undefined {
-  return PAQUETES_DB.find((p) => p.slug === slug);
+  return PAQUETES_DB.find((p) => p.slug === slug) ?? PAQUETES_EVENTO.find((p) => p.slug === slug);
+}
+
+// ── Paquetes de evento (fecha fija y cupo) ───────────────────────────────────
+//
+// 🔴 Viven FUERA de `PAQUETES_DB` a propósito. Media docena de lugares recorren
+// el catálogo para decir «paquetes desde $X», para recomendar un viaje según
+// los días que tienes o para armar las preguntas frecuentes. Un paquete que
+// solo existe la noche del 1 de noviembre no puede salirle a quien viaja en
+// diciembre ni bajar el «desde» de todo el catálogo. Quien lo necesita lo pide
+// por su slug (`getPaquete`), y las páginas que lo anuncian lo nombran a mano.
+
+const XANTOLO_2026: Paquete = {
+  id: "xantolo-2026",
+  slug: "xantolo-2026",
+  nombre: "Xantolo en Xilitla",
+  subtitulo: "Las Pozas de día, sabores de temporada y la noche de Xantolo con guía",
+  duracion: "2 días / 1 noche",
+  dias: 2,
+  noches: 1,
+  // 🟡 PRECIO SUGERIDO, pendiente de que Manolo lo confirme (2 oct 2026). Por
+  // pareja, como el resto. Referencia: hotel de una noche ($1,500 en la tabla
+  // del motor) + Ruta Surrealista para dos a precio de lista ($2,800) + la
+  // degustación y la noche guiada, que no se venden sueltas. Es la noche más
+  // pedida del año en un pueblo que se llena: no se anuncia ahorro.
+  precio: 6490,
+  precioLabel: "por pareja",
+  badge: "Solo el 1 de noviembre",
+  imagen: "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg",
+  collage: [
+    "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg",
+    "/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg",
+    "/imagenes/paquetes/xantolo-2026/comparsa-noche.jpg",
+    "/imagenes/paquetes/xantolo-2026/habitacion.jpg",
+  ],
+  urgencia: "Una sola noche, la del domingo 1 de noviembre, para 4 parejas",
+  perfiles: ["Parejas", "Xantolo", "Una noche"],
+  tours: [
+    "Ruta Surrealista: Edward James, manantiales, cuevas y castillo (domingo 1)",
+    "Degustación de temporada y noche de Xantolo con guía (domingo 1)",
+  ],
+  itinerario: [
+    {
+      dia: 1,
+      tipo: "tour",
+      tourSlug: "ruta-surrealista-edward-james",
+      titulo: "Ruta Surrealista y noche de Xantolo",
+      descripcion:
+        "De día, la Ruta Surrealista: el jardín de Edward James, los manantiales de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud. " +
+        "Al regresar al hotel, degustación de temporada: tamales, atole, bocoles y pan de muerto. " +
+        "En la noche, transporte con guía al centro de Xilitla para ver las comparsas y los shows más representativos de esta celebración.",
+    },
+    { dia: 2, tipo: "salida", titulo: "Salida", descripcion: "Check-out y camino a casa." },
+  ],
+  incluye: [
+    "1 noche en el Hotel Paraíso Encantado de Xilitla, del domingo 1 al lunes 2 de noviembre",
+    "Ruta Surrealista completa: transporte desde el hotel, desayuno, entradas, guía certificado NOM-09 y seguro de viaje",
+    "Degustación de temporada: tamales, atole, bocoles y pan de muerto",
+    "Transporte con guía al centro de Xilitla para ver las comparsas y los shows más representativos del Xantolo",
+  ],
+  noIncluye: [
+    "Traslado hasta Xilitla (si lo necesitas, lo cotizamos aparte)",
+    "Noches antes o después del 1 de noviembre: no hay habitaciones",
+    "Comidas y cenas fuera de la degustación",
+    "Propinas y gastos personales",
+  ],
+  // Sin desglose de «ahorro»: la degustación y la noche guiada no se venden
+  // sueltas, así que cualquier comparación saldría inventada.
+  valor: [],
+  evento: {
+    fecha: "2026-11-01",
+    fechaTexto: "Domingo 1 de noviembre de 2026",
+    cupo: 8,
+    salidaMaxima: 12,
+    soloPareja: true,
+    habitacionTexto: "Habitación doble en el Hotel Paraíso Encantado (la asigna el hotel)",
+    pagina: "/paquetes/xantolo-2026",
+  },
+};
+
+export const PAQUETES_EVENTO: Paquete[] = [XANTOLO_2026];
+
+/** Hoy en Ciudad de México (YYYY-MM-DD). El servidor corre en UTC. */
+function hoyMexico(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+}
+
+/**
+ * ¿Todavía se puede vender? Hasta el día ANTERIOR al evento: el día 1 el
+ * recorrido sale a las 8 de la mañana y ya no hay a quién avisarle.
+ */
+export function eventoALaVenta(p: Pick<Paquete, "evento">): boolean {
+  return !!p.evento && hoyMexico() < p.evento.fecha;
+}
+
+/** Los paquetes de evento que todavía se venden, para anunciarlos. */
+export function paquetesEventoALaVenta(): Paquete[] {
+  return PAQUETES_EVENTO.filter(eventoALaVenta);
 }

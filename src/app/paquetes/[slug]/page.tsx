@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
@@ -193,6 +193,10 @@ export default function PaqueteDetallePage({ params }: Props) {
 
   const base = getPaquete(params.slug);
   if (!base) notFound();
+  // Los paquetes de evento (Xantolo) tienen su propia página, solo en español.
+  // Esta ficha genérica no sabe de fecha fija ni de cupo: quien llegue aquí
+  // (sobre todo por /en/paquetes/<slug>) se va a la buena.
+  if (base.evento) redirect(base.evento.pagina);
   const p = localizePaquete(base, locale);
 
   // Las que ofrece ESTE paquete y en su orden: la primera es la asignada.

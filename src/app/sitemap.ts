@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { prisma } from "@/lib/prisma";
-import { PAQUETES_DB } from "@/lib/paquetes";
+import { PAQUETES_DB, paquetesEventoALaVenta } from "@/lib/paquetes";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
 import { fechaActualizado, seoDeBlog } from "@/lib/blogSeo";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
@@ -219,5 +219,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  return [...bilingualStatic, ...enOnlyStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages, ...paquetePages];
+  // Paquetes de evento (Xantolo): solo en español y solo mientras se venden.
+  // Pasada la fecha la página se queda con `noindex` y sale de aquí sola.
+  const eventoPages: MetadataRoute.Sitemap = paquetesEventoALaVenta().map((p) => ({
+    url: `${BASE}${p.evento!.pagina}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.8,
+    images: [absImg(p.imagen)],
+  }));
+
+  return [...bilingualStatic, ...enOnlyStatic, ...esOnlyStatic, ...tourPages, ...destinoPages, ...blogPages, ...paquetePages, ...eventoPages];
 }

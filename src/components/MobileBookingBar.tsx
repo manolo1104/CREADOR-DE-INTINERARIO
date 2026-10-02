@@ -7,7 +7,7 @@ import { trackTourEvent } from "@/lib/tourTracker";
 import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
-import { ID_MODULO_RESERVA } from "@/components/booking/ReservaFichaTour";
+import { ID_MODULO_RESERVA } from "@/lib/anclas";
 
 interface Props {
   tourSlug: string;

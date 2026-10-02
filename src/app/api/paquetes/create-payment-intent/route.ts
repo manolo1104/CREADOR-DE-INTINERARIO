@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { getPaquete } from "@/lib/paquetes";
+import { getPaquete, eventoALaVenta } from "@/lib/paquetes";
+import { lugaresDePaquete } from "@/lib/cupoPaquete";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { habitacionesDePaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
@@ -24,6 +25,26 @@ export async function POST(req: NextRequest) {
     const paquete = getPaquete(paqueteDetails?.slug);
     if (!paquete) {
       return NextResponse.json({ error: "Paquete inválido." }, { status: 400 });
+    }
+
+    // Paquete de evento (Xantolo): la fecha la pone el servidor, se vende solo
+    // hasta la víspera y solo si quedan lugares. Contar es obligatorio: si la
+    // base no contesta, no se cobra (vender un cuarto que no existe es peor
+    // que perder una venta).
+    const evento = paquete.evento;
+    if (evento) {
+      if (!eventoALaVenta(paquete)) {
+        return NextResponse.json({ error: "Este paquete ya no está a la venta." }, { status: 410 });
+      }
+      let libres = 0;
+      try {
+        libres = (await lugaresDePaquete(paquete))?.libres ?? 0;
+      } catch {
+        return NextResponse.json({ error: "No pudimos confirmar los lugares. Intenta de nuevo en un momento." }, { status: 503 });
+      }
+      if (libres < 2) {
+        return NextResponse.json({ error: "Se acabaron los lugares de este paquete. Escríbenos por WhatsApp por si se libera uno." }, { status: 409 });
+      }
     }
 
     // El monto es AUTORITATIVO desde el servidor. Antes era
@@ -59,7 +80,8 @@ export async function POST(req: NextRequest) {
     // de Miel sólo da la Jungla y su reemplazo, y aceptar cualquier otra
     // cobraría el precio de un paquete por una habitación que no vende.
     const habsDelPaquete = habitacionesDePaquete(paquete);
-    const habitacionElegida = HABITACIONES_HOTEL.find(
+    // En un paquete de evento la habitación la asigna el hotel: no se elige.
+    const habitacionElegida = evento ? undefined : HABITACIONES_HOTEL.find(
       (h) => h.id === paqueteDetails?.habitacionId && habsDelPaquete.some((x) => x.id === h.id),
     );
 
@@ -70,7 +92,7 @@ export async function POST(req: NextRequest) {
       childrenSmall: paqueteDetails?.childrenSmall,
       // La vista sale de la habitación que eligió, no de una casilla suelta:
       // el cliente elige "Jungla" y el precio TIENE que ser el de Jungla.
-      vistaMontana:  habitacionElegida ? habitacionElegida.vistaMontana : paqueteDetails?.vistaMontana,
+      vistaMontana:  evento ? false : (habitacionElegida ? habitacionElegida.vistaMontana : paqueteDetails?.vistaMontana),
       // Cómo eligió dormir el cliente. El servidor lo valida dentro
       // (`costoHotelPorNoche`): si el reparto no cuadra con la gente, se ignora
       // y se usa el automático. El importe nunca sale del navegador.
@@ -93,7 +115,8 @@ export async function POST(req: NextRequest) {
     }
 
     const personas = String(cobro.personas);
-    const fecha    = String(paqueteDetails?.fecha || "");
+    // La fecha de un evento NO viene del navegador.
+    const fecha    = evento ? evento.fecha : String(paqueteDetails?.fecha || "");
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount:        Math.round(charge * 100), // MXN → centavos
@@ -115,7 +138,7 @@ export async function POST(req: NextRequest) {
         // seguridad a ciegas.
         childrenMid:   String(cobro.childrenMid),
         childrenSmall: String(cobro.childrenSmall),
-        habitacion:    habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
+        habitacion:    evento ? evento.habitacionTexto : habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
         // Sin esto el equipo recibe un paquete con un día "a elegir" sin saber
         // qué eligió el cliente, y el reparto de habitaciones se perdía.
         tourElegido:   elegidos.join(","),

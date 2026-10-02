@@ -111,8 +111,13 @@ export default function ReservarPaquetePage() {
   // trae la suite Jungla puesta y detrás sólo su reemplazo.
   const habsDelPaquete  = base ? habitacionesDePaquete(base) : [];
   const habAsignada     = base ? habitacionAsignada(base) : false;
+  // Paquete de evento (Xantolo): fecha fija, una pareja, sin noche extra y la
+  // habitación la asigna el hotel. Los candados de verdad están en el servidor
+  // (`create-payment-intent`); aquí solo se dejan de enseñar las opciones que
+  // no aplican. Sus textos van en español: el paquete solo se vende en español.
+  const evento          = base?.evento;
 
-  const [fecha, setFecha]       = useState("");
+  const [fecha, setFecha]       = useState(base?.evento?.fecha ?? "");
   const [personas, setPersonas] = useState(2);            // adultos
   const [childrenMid,   setChildrenMid]   = useState(0);  // 6–10 años → 70 %
   const [childrenSmall, setChildrenSmall] = useState(0);  // menores de 6 → 50 %
@@ -164,14 +169,28 @@ export default function ReservarPaquetePage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((c) => {
         if (!c || c.error) return;
-        if (c.tourDate) setFecha(c.tourDate);
-        if (typeof c.adults === "number" && c.adults >= 2) setPersonas(c.adults);
-        if (typeof c.childrenMid === "number") setChildrenMid(c.childrenMid);
-        if (typeof c.childrenSmall === "number") setChildrenSmall(c.childrenSmall);
+        // En un paquete de evento la fecha y la pareja no se restauran: ya
+        // vienen puestas y el servidor no acepta otras.
+        if (c.tourDate && !evento) setFecha(c.tourDate);
+        if (typeof c.adults === "number" && c.adults >= 2 && !evento) setPersonas(c.adults);
+        if (typeof c.childrenMid === "number" && !evento) setChildrenMid(c.childrenMid);
+        if (typeof c.childrenSmall === "number" && !evento) setChildrenSmall(c.childrenSmall);
         if (c.email) setEmail(c.email);
       })
       .catch(() => {});
   }, []);
+
+  /** Lugares que quedan de un paquete de evento; `null` mientras no se sabe. */
+  const [libres, setLibres] = useState<number | null>(null);
+  useEffect(() => {
+    if (!evento || !base) return;
+    fetch(`/api/paquetes/cupo?slug=${encodeURIComponent(base.slug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d && typeof d.libres === "number") setLibres(d.libres); })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const agotado = !!evento && libres === 0;
 
   // El paquete que trae la habitación puesta la deja ya seleccionada: pedirle
   // al cliente que "elija" la única que se le da es un paso vacío, y sin
@@ -274,7 +293,7 @@ export default function ReservarPaquetePage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(t.errCorreoInvalido); return; }
     // Un paquete con día "a elegir" y sin elegir no se puede operar: el equipo
     // no sabría a dónde llevarlo el día 3.
-    if (!habitacionId) {
+    if (!habitacionId && !evento) {
       setError(t.errHabitacion);
       return;
     }
@@ -397,7 +416,38 @@ export default function ReservarPaquetePage() {
           </Elements>
         ) : (
           <div className="space-y-6">
+            {/* Paquete de evento: la fecha, la pareja y la habitación ya están
+                decididas. En vez de los selectores, lo que se compra y cuántos
+                lugares quedan (escasez real: sale de `/api/paquetes/cupo`). */}
+            {evento && (
+              <section className="bg-white border border-negro/8 p-6">
+                {/* Cifras «lining»: Cormorant trae cifras antiguas y el «1» se lee como «ı». */}
+                <h2 className="font-cormorant text-verde-profundo text-xl mb-1" style={{ fontVariantNumeric: "lining-nums", fontFeatureSettings: '"lnum" 1' }}>{evento.fechaTexto}</h2>
+                <p className="font-dm text-sm text-negro/65 leading-relaxed">
+                  Llegas el domingo 1 y sales el lunes 2 de noviembre. El paquete es para una pareja (2 adultos) y la habitación la asigna el hotel.
+                </p>
+                <p className="mt-3 font-dm text-[12px] text-negro/55 leading-relaxed">
+                  La Ruta Surrealista sale del hotel entre 8:00 y 9:00 AM: llega a Xilitla antes de esa hora.
+                </p>
+                {libres !== null && (
+                  <p className={`mt-4 font-dm text-sm font-medium ${libres > 0 ? "text-verde-selva" : "text-terracota"}`}>
+                    {libres > 0 ? `Quedan ${libres} de ${evento.cupo} lugares` : "Se acabaron los lugares."}
+                  </p>
+                )}
+                {agotado && (
+                  <p className="mt-1 font-dm text-[12px] text-negro/60">
+                    Escríbenos por{" "}
+                    <a href={waLink(`Hola, me interesa el paquete ${paquete.nombre} (${evento.fechaTexto}). ¿Se libera algún lugar?`)}
+                       target="_blank" rel="noopener noreferrer"
+                       className="text-verde-selva underline underline-offset-2">WhatsApp</a>{" "}
+                    por si se libera uno.
+                  </p>
+                )}
+              </section>
+            )}
+
             {/* Fecha + personas */}
+            {!evento && (
             <section className="bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-5">{t.fechaYPersonas}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -495,6 +545,7 @@ export default function ReservarPaquetePage() {
                 </div>
               </div>
             </section>
+            )}
 
             {/* Qué incluye este viaje — antes el checkout de paquetes no decía
                 NADA: ni itinerario, ni horario, ni qué va incluido. El cliente
@@ -553,7 +604,8 @@ export default function ReservarPaquetePage() {
                 </div>
               )}
 
-              {toursIncluidos.length > 0 && (
+              {/* En un paquete de pareja no hay «persona adicional». */}
+              {toursIncluidos.length > 0 && !evento && (
                 <p className="mt-5 pt-4 border-t border-negro/8 font-dm text-[11px] text-negro/45">
                   {t.cadaPersonaSuma(
                     fmx(toursIncluidos.reduce((a, x) => a + x.precio, 0)),
@@ -639,6 +691,8 @@ export default function ReservarPaquetePage() {
               </section>
             )}
 
+            {/* Sin víspera en un paquete de evento: no hay habitaciones. */}
+            {!evento && (<>
             {/* El día 1 es día de TOUR.
               Se sale del hotel entre 8:30 y 9:00, así que quien llega esa
               misma mañana tiene que estar en Xilitla antes de las 9 — con seis
@@ -694,6 +748,7 @@ export default function ReservarPaquetePage() {
                 </p>
               )}
             </section>
+            </>)}
 
             <GaleriaHabitacion
               habitacion={HABITACIONES_HOTEL.find((h) => h.id === galeria) ?? null}
@@ -701,7 +756,8 @@ export default function ReservarPaquetePage() {
               onCerrar={() => setGaleria(null)}
             />
 
-            {/* Habitación */}
+            {/* Habitación (en un paquete de evento la asigna el hotel) */}
+            {!evento && (
             <section className="bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.tuHabitacion}</h2>
               <p className="font-dm text-xs text-negro/45 mb-5">
@@ -882,6 +938,7 @@ export default function ReservarPaquetePage() {
                 </div>
               )}
             </section>
+            )}
 
             {/* El hotel: las dudas de siempre —dónde está, si hay alberca, si hay
               estacionamiento— resueltas antes de pedirle la tarjeta, no después
@@ -924,7 +981,7 @@ export default function ReservarPaquetePage() {
                     // cambia de opinión y vuelve a "selva" con una Jungla ya
                     // elegida, el precio es el de Jungla y el resumen decía
                     // "vista a la selva".
-                    habElegida?.nombre ?? (vistaReal ? t.habJungla : t.habSelva),
+                    evento ? "Habitación doble (la asigna el hotel)" : (habElegida?.nombre ?? (vistaReal ? t.habJungla : t.habSelva)),
                     nocheExtra ? t.resumenNocheExtra : "",
                   ].filter(Boolean).join(" · "),
                   // El renglón principal es el precio PUBLICADO; lo que se suma
@@ -1022,7 +1079,7 @@ export default function ReservarPaquetePage() {
 
             {error && <div className="bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
 
-            <button onClick={goToPay} disabled={loading}
+            <button onClick={goToPay} disabled={loading || agotado}
               className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? t.preparandoPago : <><Lock className="w-3.5 h-3.5" />{t.continuarPagar(fmx(chargeAmt))}</>}
             </button>

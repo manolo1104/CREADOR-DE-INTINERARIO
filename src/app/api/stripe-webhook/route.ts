@@ -247,6 +247,7 @@ export async function POST(req: NextRequest) {
             "Reserva registrada automáticamente por webhook — el cliente no completó la pantalla de confirmación.",
             locale === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : "",
             meta.addOns    ? `ACTIVIDAD EXTRA CONTRATADA: ${meta.addOns}` : "",
+            meta.viajeroSolo ? `VIAJA SOLO (${meta.viajeroSolo}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.` : "",
             meta.hospedaje ? `Hospedaje: ${meta.hospedaje}` : "",
             meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
           ].filter(Boolean).join(" | ");

@@ -135,6 +135,8 @@ export interface EmailMessages {
     addOnLinea: (nombre: string, cantidad: number) => string;
     /** Elección obligatoria del recorrido (ej. Siete Cascadas o Tamasopo). */
     elegiste: (opcion: string) => string;
+    /** Va UNA persona con la tarifa de viajero solo (2 personas − $2). */
+    viajeroSolo: string;
     /** Items sueltos: comida, transporte, guía privado. */
     extrasTitulo: string;
     extraIncluido: string;
@@ -341,6 +343,7 @@ const ES: EmailMessages = {
     confirmaDireccion: "Confirma tu dirección exacta por WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "persona" : "personas"}`,
     elegiste: (opcion) => `Elegiste: ${opcion}`,
+    viajeroSolo: "Viajas solo: precio de 2 personas menos $2; te incluimos en un grupo armado para tu fecha.",
     extrasTitulo: "Incluye además",
     extraIncluido: "Incluido",
     extraCantidad: (n) => `Cantidad: ${n}`,
@@ -549,6 +552,7 @@ const EN: EmailMessages = {
     confirmaDireccion: "Confirm your exact address on WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "person" : "people"}`,
     elegiste: (opcion) => `You chose: ${opcion}`,
+    viajeroSolo: "Traveling solo: 2-person price minus $2 MXN; we place you in a group put together for your date.",
     extrasTitulo: "Also included",
     extraIncluido: "Included",
     extraCantidad: (n) => `Quantity: ${n}`,

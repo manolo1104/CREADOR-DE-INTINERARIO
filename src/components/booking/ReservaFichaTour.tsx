@@ -4,18 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
-import { calcTourTotal } from "@/lib/tourBooking";
+import { totalRecorrido, aceptaViajeroSolo, esViajeroSolo } from "@/lib/tourBooking";
 import { TOURS_DB, precioGrupo, salidaCorta, recogidaDeTour } from "@/lib/tours";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackBeginCheckout, trackDateSelected, trackParticipants } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
-
-/**
- * Ancla del módulo. Vive aquí, exportada, para que `MobileBookingBar` no tenga
- * que adivinar la cadena: si un día cambia, cambia en un solo sitio.
- */
-export const ID_MODULO_RESERVA = "reservar-este-tour";
+// El ancla del módulo vive en `lib/anclas.ts`, no aquí: la ficha del tour es un
+// Server Component y una constante importada de este archivo "use client" le
+// llegaba como objeto (`#[object Object]`). Ver la nota en ese archivo.
+import { ID_MODULO_RESERVA } from "@/lib/anclas";
 
 /**
  * Elegir fecha y personas SIN salir de la ficha del tour.
@@ -65,19 +63,30 @@ export function ReservaFichaTour({
   const tf = getBooking(locale).ficha;
 
   const porGrupo = !!tarifaGrupo?.length;
+  // Lo que la regla de viajero solo necesita saber de este recorrido. El módulo
+  // solo vive en recorridos por persona o por grupo, nunca por vehículo.
+  const reglaTour = { precio, groupMin, tarifaGrupo, precioUnidad: porGrupo ? "grupo" as const : "persona" as const };
   // Con tarifa de grupo se respeta el mínimo real del recorrido —el Edén sale
-  // con UNA persona—. En los demás el piso sigue siendo dos: es el mínimo con
-  // el que la operadora saca una unidad.
-  const minAdultos = porGrupo ? Math.max(1, groupMin || 1) : Math.max(2, groupMin || 1);
+  // con UNA persona—. Los que salen desde 2 bajan a UN adulto con la tarifa de
+  // viajero solo (1 oct 2026); los de mínimo mayor (rappel, rafting) lo
+  // conservan.
+  const minAdultos = porGrupo
+    ? Math.max(1, groupMin || 1)
+    : aceptaViajeroSolo(reglaTour) ? 1 : Math.max(2, groupMin || 1);
   const [fecha, setFecha]           = useState("");
-  const [adultos, setAdultos]       = useState(minAdultos);
+  // Arranca en DOS aunque se pueda bajar a uno: así viaja casi todo el mundo y
+  // así se leen los precios del resto del sitio.
+  const [adultos, setAdultos]       = useState(porGrupo ? minAdultos : Math.max(2, groupMin || 1));
   const [ninosMid, setNinosMid]     = useState(0);
   const [ninosSmall, setNinosSmall] = useState(0);
 
   const personas = adultos + ninosMid + ninosSmall;
   const total = porGrupo
     ? (precioGrupo({ tarifaGrupo }, personas) ?? 0)
-    : calcTourTotal(precio, adultos, ninosMid, ninosSmall, 0).total;
+    // `totalRecorrido`: la misma cuenta que el carrito y el cobro, con la
+    // tarifa de viajero solo cuando va una persona.
+    : totalRecorrido(reglaTour, adultos, ninosMid, ninosSmall);
+  const viajaSolo = !porGrupo && esViajeroSolo(reglaTour, adultos, ninosMid, ninosSmall);
 
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
 
@@ -163,6 +172,13 @@ export function ReservaFichaTour({
         {personas >= groupMax && (
           <p className="font-dm text-[10px] text-dorado/80 leading-snug">
             {porGrupo ? tf.grupoTope(groupMax) : tf.grupoLleno(groupMax)}
+          </p>
+        )}
+        {/* Junto a los contadores y antes del total: quien baja a una persona
+            ve en el acto por qué el total no es la mitad. */}
+        {viajaSolo && (
+          <p role="status" className="font-dm text-[11px] text-crema/75 leading-snug border-l-2 border-verde-vivo/60 pl-2.5">
+            <strong className="text-crema">{tf.viajeroSoloTitulo}</strong> {tf.viajeroSolo}
           </p>
         )}
       </div>

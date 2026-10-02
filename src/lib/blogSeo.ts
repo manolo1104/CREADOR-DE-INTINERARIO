@@ -1071,13 +1071,16 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       {
         from:
           'Revisa la oferta en <a href="https://www.huasteca-potosina.com/tours">tours de xantolo huasteca potosina</a> disponibles para noviembre.',
+        // 1 oct 2026: decía «nuestros tours no incluyen el Xantolo» (cierto,
+        // pero era la única frase comercial y despedía al lector). Lo cierto y
+        // útil es que la fiesta no se compra y lo demás sí lo resolvemos.
         to:
-          'Nuestros <a href="/tours">tours guiados por la Huasteca Potosina</a> no incluyen el Xantolo, pero sirven para los días de antes o después de la fiesta.',
+          'Las comparsas no necesitan tour: son gratis y en la plaza de cada pueblo. Lo que sí resolvemos es lo demás: hospedaje en Xilitla, traslado desde tu ciudad y <a href="/tours">recorridos guiados</a> para llenar los días.',
       },
       {
         from:
           '<a href="https://www.huasteca-potosina.com/tours" title="ver tours Huasteca Potosina">ver tours disponibles en la Huasteca Potosina</a> con guías que trabajan directamente con comunidades tének.',
-        to: '<a href="/tours">Ver tours disponibles en la Huasteca Potosina</a> para los días de antes o después de la fiesta.',
+        to: '<a href="/tours">Ver los recorridos guiados</a> para los días de fiesta o los de antes y después.',
       },
       {
         from: "Los grupos que llevamos cada temporada al dia de muertos huasteca regresan",
@@ -1089,7 +1092,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       },
       {
         from: "¿Quieres vivir xantolo huasteca potosina con guía experto?",
-        to: "¿Quieres sumar un día de recorrido con guía experto?",
+        to: "¿Quieres sumar recorridos guiados a tu viaje de Xantolo?",
       },
       // 🔴 Tours y paquetes "de Xantolo" de otras agencias con precios
       // inventados (MX$1,000–2,100, MX$3,200), en la prosa, la tabla y una
@@ -1105,7 +1108,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from:
           "Si prefieres un tour organizado desde Ciudad Valles que incluya transporte, guía bilingüe y acceso a comunidades, los precios en 2026 van de <strong>MX$1,000 a MX$2,100 por persona</strong>. Los paquetes de dos días con hospedaje en municipio incluido alcanzan los <strong>MX$3,200 por persona</strong> en temporada alta de Xantolo, y se agotan con frecuencia antes del 15 de octubre.",
         to:
-          `Nuestros recorridos no incluyen las celebraciones del Xantolo, pero sirven para completar el viaje: los que se cobran por persona van de <strong>${dinero(PP_MIN)}</strong> a <strong>${dinero(PP_MAX)}</strong>, ` +
+          `Las comparsas y los altares públicos son gratis: la fiesta no se compra. Lo que sí te ayudamos a armar es el resto del viaje: los recorridos que se cobran por persona van de <strong>${dinero(PP_MIN)}</strong> a <strong>${dinero(PP_MAX)}</strong>, ` +
           `y los paquetes con hotel en Xilitla, ${PAQ_RANGO}.`,
       },
       {
@@ -1117,7 +1120,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from:
           "Los tours organizados desde Ciudad Valles cuestan entre <strong>MX$1,000 y MX$2,100 por persona</strong>.",
         to:
-          `Nuestros recorridos guiados no incluyen el Xantolo; los que se cobran por persona van de <strong>${dinero(PP_MIN)}</strong> a <strong>${dinero(PP_MAX)}</strong>.`,
+          `Ver la fiesta no cuesta; si quieres sumar recorridos guiados, los que se cobran por persona van de <strong>${dinero(PP_MIN)}</strong> a <strong>${dinero(PP_MAX)}</strong>.`,
       },
       {
         from: 'alt="xantolo huasteca potosina dia de muertos guía viaje Huasteca Potosina"',

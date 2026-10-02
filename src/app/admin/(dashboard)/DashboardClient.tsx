@@ -6,6 +6,7 @@ import type { TourBooking, TourQuote } from "@prisma/client";
 import CountUp from "@/components/admin/CountUp";
 import { grupoDe, grupoCorto } from "@/lib/admin/reserva";
 import { RioEstadoControl } from "./RioEstadoControl";
+import { CupoPaqueteControl } from "./CupoPaqueteControl";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
@@ -65,6 +66,10 @@ export default function DashboardClient({
 
       {/* El semáforo del río que anuncia el sitio público (banda del navbar). */}
       <RioEstadoControl />
+
+      {/* Los lugares de los paquetes de evento (Xantolo): lo vendido por
+          WhatsApp se anota aquí para que el sitio no venda de más. */}
+      <CupoPaqueteControl />
 
       {/* ── Las cifras del día ──────────────────────────────────────────────
           Un tamaño para todas y la unidad en gris: así se comparan de un

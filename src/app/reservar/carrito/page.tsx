@@ -16,7 +16,7 @@ import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
 import { leerExtras, guardarExtras, limpiarExtras } from "@/lib/carritoExtras";
 import { TRASLADOS, getTraslado, tarifaTraslado, precioBase } from "@/lib/traslados";
 import { HABITACIONES_HOTEL, serviciosHotel, vistaHabitacion, cotizarHabitaciones, getHabitacion, tarifaNoche } from "@/lib/habitaciones";
-import { formatMXN, formatTourDate, minBookingDate, calcTourTotal } from "@/lib/tourBooking";
+import { formatMXN, formatTourDate, minBookingDate, totalRecorrido, aceptaViajeroSolo, minimoPersonas, esViajeroSolo } from "@/lib/tourBooking";
 import { TOURS_DB, incluyeDeTour, etiquetaUnidad, fraseRecogida, salidaCorta, recogidaDeTour, type Tour } from "@/lib/tours";
 import { resumenSalidas, excepcionesSalida } from "@/lib/recogidaTexto";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -74,7 +74,7 @@ interface Cobro {
   amount: number;
   total: number;
   saldo: number;
-  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string; addOns?: { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[] }[];
+  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string; addOns?: { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[]; viajeroSolo?: boolean }[];
   hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
   traslado:  { ciudad: string; personas: number; total: number } | null;
 }
@@ -195,6 +195,11 @@ function PagoCarrito({ cobro, datos, onListo }: {
               ...cobro.lineItems
                 .filter((l) => l.eleccion)
                 .map((l) => t.notas.eligio(l.tourName.split("—")[0].trim(), l.eleccion!)),
+              // Va UNA persona: pagó la tarifa de viajero solo y el equipo tiene
+              // que sumarla a un grupo armado para esa fecha.
+              ...cobro.lineItems
+                .filter((l) => l.viajeroSolo)
+                .map((l) => t.notas.viajeroSolo(l.tourName.split("—")[0].trim(), l.tourDate)),
               // La actividad opcional se COBRA y hay que operarla: el Salto de
               // las 7 Cascadas necesita guía de rescate. Sin esta línea el
               // equipo en Xilitla no se enteraba de que estaba contratada.
@@ -441,6 +446,13 @@ export default function CarritoPage() {
   const renglonRefs = useRef<Record<string, HTMLDivElement | null>>({});
   /** Renglón que acaba de llegar por `?agregar`: se resalta un momento. */
   const [recienLlegado, setRecienLlegado] = useState<string | null>(null);
+  /**
+   * Renglones en los que la persona intentó bajar de su mínimo. El «−» se
+   * quedaba mudo en el piso: en Clarity alguien lo tocó doce veces seguidas sin
+   * que nada le explicara por qué. Ahora ese intento enseña el aviso del mínimo
+   * con la salida por WhatsApp.
+   */
+  const [enElPiso, setEnElPiso] = useState<Set<string>>(new Set());
   /** Lo que le falta al carrito, por renglón. Se llena al intentar pagar. */
   const [fallos, setFallos] = useState<FalloCarrito[]>([]);
   /** Renglón al que se acaba de llevar la vista por un fallo. */
@@ -782,7 +794,9 @@ export default function CarritoPage() {
     if (!tour || !cat) return;
     const otros   = (i.addOns ?? []).filter((a) => a.id !== id);
     const nuevos  = cantidad > 0 ? [...otros, { id, cantidad }] : otros;
-    const { total: base } = calcTourTotal(tour.precio, i.adults, i.childrenMid, i.childrenSmall, 0);
+    // `totalRecorrido`, no `calcTourTotal` a pelo: con una sola persona aplica
+    // la tarifa de viajero solo, y en el Edén la del grupo completo.
+    const base = totalRecorrido(tour, i.adults, i.childrenMid, i.childrenSmall);
     const extras = nuevos.reduce((s, a) => {
       const c = tour.addOns?.find((x) => x.id === a.id);
       return s + (c ? c.precio * a.cantidad : 0);
@@ -819,9 +833,9 @@ export default function CarritoPage() {
   /**
    * Suma o resta gente de un tramo concreto y recalcula el subtotal.
    *
-   * `calcTourTotal` es la MISMA función que usa el servidor, así que los
-   * tramos de menor (70 % de 6 a 10 años, 50 % por debajo de 6) salen igual
-   * aquí que al cobrar.
+   * `totalRecorrido` es la MISMA cuenta que hace el servidor, así que los
+   * tramos de menor (70 % de 6 a 10 años, 50 % por debajo de 6), la tarifa de
+   * viajero solo y la del grupo completo salen igual aquí que al cobrar.
    */
   function cambiarPersonas(
     i: CarritoItem,
@@ -832,8 +846,11 @@ export default function CarritoPage() {
     if (!tour) return;
 
     // Los adultos no pueden bajar del mínimo del tour; los menores sí llegan a
-    // cero. Y entre todos no pueden pasar del cupo.
-    const piso  = campo === "adults" ? Math.max(1, tour.groupMin) : 0;
+    // cero. Y entre todos no pueden pasar del cupo. Los recorridos que salen
+    // desde 2 bajan hasta UN adulto: viaja solo, con su tarifa (tourBooking.ts).
+    const piso  = campo === "adults"
+      ? (aceptaViajeroSolo(tour) ? 1 : Math.max(1, tour.groupMin))
+      : 0;
     const otros = (["adults", "childrenMid", "childrenSmall"] as const)
       .filter((c) => c !== campo)
       .reduce((s, c) => s + (i[c] ?? 0), 0);
@@ -846,11 +863,17 @@ export default function CarritoPage() {
     const childrenMid   = campo === "childrenMid"   ? valor : i.childrenMid;
     const childrenSmall = campo === "childrenSmall" ? valor : i.childrenSmall;
 
-    // El mínimo del tour (el rafting no sale con menos de 4) cuenta a TODOS los
+    // El mínimo del tour (el rafting no sale con menos de 5) cuenta a TODOS los
     // que van, no solo a los adultos.
-    if (adultos + childrenMid + childrenSmall < tour.groupMin) return;
+    const bajaDelPiso = delta < 0 && (
+      valor === (i[campo] ?? 0) || adultos + childrenMid + childrenSmall < minimoPersonas(tour)
+    );
+    if (bajaDelPiso && campo === "adults") {
+      setEnElPiso((s) => (s.has(i.uid) ? s : new Set(s).add(i.uid)));
+    }
+    if (adultos + childrenMid + childrenSmall < minimoPersonas(tour)) return;
 
-    const { total } = calcTourTotal(tour.precio, adultos, childrenMid, childrenSmall, 0);
+    const total = totalRecorrido(tour, adultos, childrenMid, childrenSmall);
     // Los add-ons se topan a la gente que va: si el grupo baja, la actividad
     // opcional no puede quedar contratada para más personas de las que quedan.
     const addOns = (i.addOns ?? [])
@@ -1218,9 +1241,26 @@ export default function CarritoPage() {
                       precio, y el error salía hasta el cobro, genérico y sin
                       señalar cuál era. La salida por WhatsApp existe porque el
                       equipo sí suma gente suelta a otro grupo. */}
+                    {/* Viaja UNA persona en un recorrido que sale desde 2: se le
+                      cobra la tarifa de viajero solo y se le dice por qué, junto
+                      al precio, antes de pagar. */}
                     {(() => {
                       const tour = TOURS_DB.find((x) => x.slug === i.tourSlug);
-                      if (!tour || i.unidades || personasDeItem(i) >= tour.groupMin) return null;
+                      if (!tour || i.unidades || !esViajeroSolo(tour, i.adults, i.childrenMid, i.childrenSmall)) return null;
+                      return (
+                        <div className="mt-2 border border-verde-selva/35 bg-verde-selva/5 p-2.5">
+                          <p className="font-dm text-[11px] text-negro/70 leading-snug">
+                            <strong>{t.viajeroSoloTitulo}</strong> {t.viajeroSolo}
+                          </p>
+                        </div>
+                      );
+                    })()}
+
+                    {(() => {
+                      const tour = TOURS_DB.find((x) => x.slug === i.tourSlug);
+                      if (!tour || i.unidades || aceptaViajeroSolo(tour)) return null;
+                      // Se enseña si el grupo no llega o si intentó bajar del mínimo.
+                      if (personasDeItem(i) >= tour.groupMin && !enElPiso.has(i.uid)) return null;
                       return (
                         <div className="mt-2 border border-terracota/40 bg-terracota/5 p-2.5">
                           <p className="font-dm text-[11px] text-negro/70 leading-snug">

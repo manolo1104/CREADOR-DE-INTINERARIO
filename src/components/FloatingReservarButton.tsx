@@ -66,7 +66,10 @@ export function FloatingReservarButton() {
     : tourDelDestino
       ? lp(`/tours/${tourDelDestino.slug}`)
       : lp("/reservar");
-  const waHref = waLink(WA_MESSAGES.flotante);
+  // En la guía de Xantolo (la página más visitada) el mensaje ya dice a qué
+  // viene y pide lo que el equipo necesita para armarle el viaje.
+  const esXantolo = /xantolo/.test(pathname);
+  const waHref = waLink(esXantolo ? WA_MESSAGES.xantolo : WA_MESSAGES.flotante);
   const visibility = conBarraInferior ? "hidden lg:flex" : "flex";
 
   /**
@@ -78,7 +81,11 @@ export function FloatingReservarButton() {
    * WhatsApp se queda en las dos: preguntar y reservar no son lo mismo, y es
    * el canal por el que se cierra buena parte de las ventas.
    */
-  const reservarVisibility = tourSlugMatch ? "hidden" : visibility;
+  // La landing del paquete Xantolo ya trae su botón de reservar (al paquete,
+  // con fecha fija). Uno flotante que lleva al catálogo de tours sería un
+  // segundo «reservar» que no reserva lo mismo.
+  const enPaqueteXantolo = pathname === "/paquetes/xantolo-2026";
+  const reservarVisibility = tourSlugMatch || enPaqueteXantolo ? "hidden" : visibility;
 
   /**
    * La barra del carrito ocupa el pie de la pantalla en cuanto hay algo dentro,
@@ -96,7 +103,7 @@ export function FloatingReservarButton() {
   const abajoReservar = sobreBarraCarrito ? "bottom-[96px]"  : "bottom-6";
   // Sin el botón de reservar debajo (ficha de tour), WhatsApp se queda solo y
   // los 86 px lo dejarían levitando sobre un hueco: baja al ras.
-  const abajoWhatsApp = tourSlugMatch
+  const abajoWhatsApp = tourSlugMatch || enPaqueteXantolo
     ? (sobreBarraCarrito ? "bottom-[96px]" : "bottom-6")
     : (sobreBarraCarrito ? "bottom-[158px]" : "bottom-[86px]");
 
@@ -115,7 +122,7 @@ export function FloatingReservarButton() {
           // WhatsApp que aparece en TODAS las páginas no dejaba rastro en
           // TrackEvent, y el embudo reportaba 0 clics a WhatsApp en 14 días
           // como si nadie escribiera — cuando en realidad no se medía.
-          trackTourEvent("WHATSAPP_CLICK", { context: "boton_flotante" });
+          trackTourEvent("WHATSAPP_CLICK", { context: esXantolo ? "boton_flotante_xantolo" : "boton_flotante" });
         }}
         className={`fixed right-6 z-50 items-center justify-center
                    bg-[#25D366] hover:bg-[#1ebe5b] text-white

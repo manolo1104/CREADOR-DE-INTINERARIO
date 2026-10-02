@@ -49,6 +49,14 @@ const CLAVE_CERRADO = "hp_xantolo_cerrado";
 const SEGUNDOS = 20;
 /** El día que deja de tener sentido. Se compara contra la fecha en México. */
 const CADUCA = "2026-11-03";
+
+/**
+ * El paquete Xantolo (2 oct 2026): la noche del 1 de noviembre para 4 parejas.
+ * Se escribe aquí y no se importa de `paquetes.ts` para no cargar el catálogo
+ * entero en este popup, que sale en todas las páginas. Si cambia la página o la
+ * fecha del paquete, cambia también aquí (`XANTOLO_2026` en paquetes.ts).
+ */
+const PAQUETE_XANTOLO = { pagina: "/paquetes/xantolo-2026", ultimoDiaDeVenta: "2026-10-31" };
 /** 🔴 Sin prefijo de idioma: el blog sólo existe en español y `/en/blog/…` da 404. */
 const SLUG_GUIA = "/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia";
 const FOTO = "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg";
@@ -518,6 +526,19 @@ export function PopupXantolo() {
                   {en ? "I'd rather read it now" : "Prefiero leerla ahora"}
                   <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
+                {/* Para quien ya decidió ir: el paquete, solo en español (así se
+                    vende) y solo hasta la víspera. */}
+                {!en && new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) <= PAQUETE_XANTOLO.ultimoDiaDeVenta && (
+                  <Link
+                    href={PAQUETE_XANTOLO.pagina}
+                    onClick={cerrar}
+                    className="inline-flex items-center gap-1.5 font-dm text-[11px] uppercase tracking-[1.6px] transition-opacity duration-200 hover:opacity-80"
+                    style={{ color: CEMPASUCHIL }}
+                  >
+                    Paquete para parejas del 1 de noviembre
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={cerrar}

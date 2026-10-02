@@ -73,10 +73,56 @@ export function calcTourTotal(
   return { subtotal, discount, total: subtotal - discount, childPriceMid, childPriceSmall };
 }
 
+// ── Viajero solo ─────────────────────────────────────────────
+
+/**
+ * Lo que se le resta a la tarifa de DOS personas cuando reserva una sola.
+ *
+ * Decisión de Manolo (1 oct 2026): quien viaja solo puede reservar en línea.
+ * Paga el precio de 2 personas menos $2 y el equipo lo suma a un grupo armado
+ * para su fecha. Hasta ese día el mínimo de 2 era un muro mudo: en Clarity un
+ * visitante de EE. UU. tocó «−» doce veces para bajar a un adulto, el contador
+ * no se movió, nada le explicó por qué, y se fue.
+ *
+ * Por qué cobrar casi dos lugares: la salida tiene costos fijos (en Tamul,
+ * $1,700 por salida contra $395 por persona) y con una sola persona no se paga.
+ */
+export const DESCUENTO_VIAJERO_SOLO = 2;
+
+/** Lo mínimo de un recorrido que la regla necesita para decidir. */
+type TourParaSolo = Pick<Tour, "groupMin" | "precioUnidad" | "tarifaGrupo">;
+
+/**
+ * ¿Este recorrido se puede reservar para UNA persona con la tarifa de viajero
+ * solo? Solo los de precio por persona que salen desde 2. Quedan fuera:
+ * - tarifa por grupo (el Edén): ya acepta a una persona con su propio escalón;
+ * - por vehículo (RZR): no cuenta personas;
+ * - mínimos mayores (rappel 4, rafting 5): «el precio de 2» no completa esa
+ *   salida, así que siguen con su mínimo y la salida por WhatsApp.
+ */
+export function aceptaViajeroSolo(tour: TourParaSolo): boolean {
+  return tour.groupMin === 2 && tour.precioUnidad !== "vehiculo" && !tour.tarifaGrupo?.length;
+}
+
+/** Con cuántas personas se puede reservar en línea este recorrido. */
+export function minimoPersonas(tour: TourParaSolo): number {
+  return aceptaViajeroSolo(tour) ? 1 : tour.groupMin;
+}
+
+/** ¿Este grupo es UNA persona en un recorrido que acepta viajero solo? */
+export function esViajeroSolo(tour: TourParaSolo, adults: number, childrenMid = 0, childrenSmall = 0): boolean {
+  return aceptaViajeroSolo(tour) && adults + childrenMid + childrenSmall === 1;
+}
+
+/** La tarifa de viajero solo: el precio de dos personas menos $2. */
+export function tarifaViajeroSolo(precio: number): number {
+  return precio * 2 - DESCUENTO_VIAJERO_SOLO;
+}
+
 /**
  * Lo que cuesta un recorrido para esta gente, por el camino que le toque:
- * tarifa del GRUPO COMPLETO por escalones si el tour la tiene, y si no el
- * precio por cabeza con los tramos de menor.
+ * tarifa del GRUPO COMPLETO por escalones si el tour la tiene, la de viajero
+ * solo si va una persona, y si no el precio por cabeza con los tramos de menor.
  *
  * 🔴 Existe porque el carrito tenía su propio `calcTourTotal` a pelo y le
  * pintaba al cliente $11,960 (2,990 × 4) por una experiencia que el servidor
@@ -84,7 +130,7 @@ export function calcTourTotal(
  * pasar por aquí; el servidor hace la misma bifurcación en `computeTourCharge`.
  */
 export function totalRecorrido(
-  tour: Pick<Tour, "precio" | "tarifaGrupo">,
+  tour: Pick<Tour, "precio" | "tarifaGrupo" | "groupMin" | "precioUnidad">,
   adults: number,
   childrenMid = 0,
   childrenSmall = 0,
@@ -92,6 +138,10 @@ export function totalRecorrido(
 ): number {
   const delGrupo = precioGrupo(tour, adults + childrenMid + childrenSmall);
   if (delGrupo !== null) return delGrupo - Math.round(delGrupo * promoDiscount / 100);
+  if (esViajeroSolo(tour, adults, childrenMid, childrenSmall)) {
+    const solo = tarifaViajeroSolo(tour.precio);
+    return solo - Math.round(solo * promoDiscount / 100);
+  }
   return calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount).total;
 }
 

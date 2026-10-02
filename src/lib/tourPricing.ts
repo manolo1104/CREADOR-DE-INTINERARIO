@@ -2,7 +2,7 @@
 // El cliente nunca decide el monto a cobrar: aquí se recalcula desde TOURS_DB.
 
 import { TOURS_DB, type Tour, type TourRuta, type TourVehiculo } from "./tours";
-import { totalRecorrido, validatePromoCode } from "./tourBooking";
+import { totalRecorrido, validatePromoCode, minimoPersonas, esViajeroSolo } from "./tourBooking";
 import { descuentoPorPosicion } from "./carrito";
 
 /**
@@ -40,6 +40,8 @@ export interface TourChargeResult {
   /** Add-ons validados, ya con su precio de catálogo. Vacío si no hubo. */
   addOns:        { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[];
   addOnsTotal:   number;
+  /** Va UNA persona y se cobró la tarifa de viajero solo (2 personas − $2). */
+  viajeroSolo:   boolean;
 }
 
 function clampInt(n: unknown, min: number, max: number): number {
@@ -105,7 +107,9 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   // Mínimo del tour. Existía en los datos pero solo lo miraba el bot: por la web
   // se podía pagar un rafting para 2 cuando la balsa no sale con menos de 4, y
   // eso terminaba en una llamada para reprogramar o en un reembolso.
-  if (personas < tour.groupMin) return null;
+  // Desde el 1 oct 2026 los recorridos que salen desde 2 aceptan a UNA persona
+  // con la tarifa de viajero solo (`minimoPersonas`, en tourBooking.ts).
+  if (personas < minimoPersonas(tour)) return null;
 
   // Tours solo para adultos (ej. buceo Media Luna, edad mínima 10): el servidor
   // RECHAZA cualquier reserva con niños aunque la UI los oculte. Sin esta guarda
@@ -148,7 +152,10 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const pct    = normalizarPct(input.pct);
   const charge = pct === 100 ? total : Math.round((total * pct) / 100);
 
-  return { tour, total, charge, saldo: total - charge, pct, promoDiscount, addOns, addOnsTotal };
+  return {
+    tour, total, charge, saldo: total - charge, pct, promoDiscount, addOns, addOnsTotal,
+    viajeroSolo: esViajeroSolo(tour, adults, childrenMid, childrenSmall),
+  };
 }
 
 // ── Tours cobrados POR VEHÍCULO (ej. RZR) ────────────────────────────────────
@@ -235,6 +242,12 @@ export interface LineaCarrito {
   subtotalSinDescuento?: number;
   /** Porcentaje descontado por ser el 2.º, 3.º… recorrido del carrito. */
   descuentoMultiple?: number;
+  /**
+   * Va UNA persona con la tarifa de viajero solo. Viaja con el renglón para que
+   * el correo se lo explique al cliente y las notas le digan al equipo que hay
+   * que sumarlo a un grupo armado para esa fecha.
+   */
+  viajeroSolo?: boolean;
 }
 
 export type TarifaCarrito =
@@ -334,6 +347,7 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
       // Ya validados contra el catálogo por `computeTourCharge`: van con su
       // nombre y su precio real para que el correo y el panel los puedan pintar.
       ...(charge.addOns.length ? { addOns: charge.addOns } : {}),
+      ...(charge.viajeroSolo ? { viajeroSolo: true } : {}),
     });
     total += charge.total;
   }

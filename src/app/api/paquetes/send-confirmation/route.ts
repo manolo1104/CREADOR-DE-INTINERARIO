@@ -86,7 +86,8 @@ export async function POST(req: NextRequest) {
     const nSmall  = Number(meta.childrenSmall) || 0;
     const nNinos  = (nMid + nSmall) || Number(meta.children) || 0;
 
-    const fechaInicio  = String(fecha || meta.tourDate || "");
+    // Un paquete de evento tiene SU fecha: no se toma la del navegador.
+    const fechaInicio  = paquete.evento ? paquete.evento.fecha : String(fecha || meta.tourDate || "");
     const habitacion   = meta.habitacion || "";
     const nocheExtra   = String(meta.nocheExtra || "").startsWith("sí");
     const nochesHotel  = Number(meta.nochesHotel) || paquete.noches;
@@ -169,6 +170,10 @@ export async function POST(req: NextRequest) {
         ? (aLaCarta || paquete.eleccionTour?.dia === undefined
             ? `Recorridos elegidos: ${eleccionNombre}`
             : `Día ${paquete.eleccionTour?.dia} elegido: ${eleccionNombre}`)
+        : null,
+      // Lo que el equipo tiene que operar esa noche y que no sale del catálogo.
+      paquete.evento
+        ? `EVENTO ${paquete.evento.fechaTexto.toUpperCase()}: después de la Ruta Surrealista, degustación (tamales, atole, bocoles y pan de muerto) y transporte con guía al centro de Xilitla (comparsas y shows más representativos del Xantolo). Habitación: la asigna el hotel.`
         : null,
       `Pago inicial: ${pctNum}% (${fmx(cobrado)})`,
       pendiente > 0 ? `Saldo pendiente: ${fmx(pendiente)}` : "Pagado 100%",

@@ -1,5 +1,6 @@
 import { TOURS_DB } from "./tours";
 import { personasDeItem, type CarritoItem } from "./carrito";
+import { minimoPersonas } from "./tourBooking";
 import { getBooking } from "./i18n/booking";
 import { localizeTour } from "./i18n/localize";
 import type { Locale } from "./i18n/config";
@@ -75,8 +76,9 @@ export function validarCarrito(items: CarritoItem[], locale: Locale = "es"): Fal
       });
     }
 
-    // Los tours por vehículo no cuentan personas.
-    if (tour && !i.unidades && personasDeItem(i) < tour.groupMin) {
+    // Los tours por vehículo no cuentan personas. Los que salen desde 2 aceptan
+    // a UNA persona con la tarifa de viajero solo (`minimoPersonas`).
+    if (tour && !i.unidades && personasDeItem(i) < minimoPersonas(tour)) {
       fallos.push({
         uid: i.uid, campo: "grupo",
         mensaje: t.grupoMinimo(tour.groupMin),

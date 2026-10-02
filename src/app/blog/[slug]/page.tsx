@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { GuiaDelLugar } from "@/components/blog/GuiaDelLugar";
+import { XantoloPlanDeViaje, XantoloDiasYNoches, esArticuloXantolo, xantoloVigente } from "@/components/blog/CtaXantolo";
 import { TOURS_DB, etiquetaUnidad, tourDurTexto } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
@@ -789,6 +790,11 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </nav>
               )}
 
+              {/* Xantolo: la página más visitada del sitio. La salida a la venta
+                  va ARRIBA porque la mitad de los lectores en celular no pasa
+                  del 40 % del artículo (Clarity, 1 oct 2026). */}
+              {esArticuloXantolo(post.slug) && <XantoloPlanDeViaje />}
+
               {/* Content first half */}
               <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentFirst }} />
 
@@ -796,7 +802,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   barra está oculta por CSS bajo 1024 px y el 88 % del tráfico
                   es móvil: ahí el único enlace a una ficha de tour no existía.
                   `lg:hidden` evita que en escritorio salga dos veces. */}
-              {relevantTour && <TarjetaTour tour={relevantTour} className="lg:hidden my-10" />}
+              {/* En Xantolo, en lugar de UN tour: cuáles caben en un día de
+                  fiesta y cuáles conviene dejar para antes o después. Sale en
+                  escritorio también: ahí la barra lateral no lo explica. */}
+              {esArticuloXantolo(post.slug) && xantoloVigente()
+                ? <XantoloDiasYNoches />
+                : relevantTour && <TarjetaTour tour={relevantTour} className="lg:hidden my-10" />}
 
               {/* Ficha del lugar + tours que lo visitan. Va a mitad del
                   artículo: es donde el lector ya decidió que quiere ir. */}

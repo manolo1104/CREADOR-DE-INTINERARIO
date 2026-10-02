@@ -2,7 +2,7 @@ import { TOURS_DB, INCLUYE_SIEMPRE, INCLUYE_SIEMPRE_EN, incluyeDeTour, partesRec
 import {
   horaCorreo, lineasCancelacion, pasamosPorEl, recogidaIncierta, salidasCorreo, todosRecogenEnAmbas, toursDeSlugs,
 } from "./recogidaCorreo";
-import { PAQUETES_DB } from "./paquetes";
+import { getPaquete } from "./paquetes";
 import { getEmails, emailLocale } from "./i18n/emails";
 import { localizeTour } from "./i18n/localize";
 import { localizePaquete } from "./i18n/paquetes.en";
@@ -93,7 +93,7 @@ export function buildTourEmailHtml(data: {
     if (locale === "es") return nombre;
     const b = slug ? TOURS_DB.find((t) => t.slug === slug) : undefined;
     if (b) return localizeTour(b, locale).nombre;
-    const paq = slug ? PAQUETES_DB.find((x) => x.slug === slug) : undefined;
+    const paq = slug ? getPaquete(slug) : undefined;
     return paq ? localizePaquete(paq, locale).nombre : nombre;
   };
   // ⚠️ Las reservas que entran por el carrito guardan `tourName` como un
@@ -108,7 +108,7 @@ export function buildTourEmailHtml(data: {
     : data.tourName;
 
   const tourTitulo = nombreTour(nombreReal, slugReal);
-  const tourUrl = PAQUETES_DB.some((p) => p.slug === slugReal)
+  const tourUrl = slugReal && getPaquete(slugReal)
     ? `${base}${pre}/paquetes/${slugReal}`
     : `${base}${pre}/tours/${slugReal}`;
 
@@ -226,6 +226,8 @@ export function buildTourEmailHtml(data: {
       filas.push(`${T.addOnLinea(nombreAddOn(a, t.tourSlug), cant)}${imp}`);
     }
     if (t?.eleccion) filas.push(T.elegiste(String(t.eleccion)));
+    // Pagó casi dos lugares siendo uno: el correo le recuerda por qué y qué sigue.
+    if (t?.viajeroSolo) filas.push(T.viajeroSolo);
     if (!filas.length) return "";
     return `<p style="margin:6px 0 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#3a6b1a;line-height:1.7;">${filas.join("<br>")}</p>`;
   };
@@ -642,7 +644,7 @@ export function buildTourQuoteEmailHtml(data: {
    * exactamente lo que le pasó a Marco Torres el 12 ago 2026 —"la página me
    * marca error"— y obligó a cerrar la venta a mano por WhatsApp.
    */
-  const esPaquete = PAQUETES_DB.some((p) => p.slug === data.tourSlug);
+  const esPaquete = !!(data.tourSlug && getPaquete(data.tourSlug));
   const tourUrl  = esPaquete
     ? `${base}${pre}/reservar-paquete/${data.tourSlug}`
     : `${base}${pre}/reservar/carrito?agregar=${data.tourSlug}`;
@@ -669,7 +671,7 @@ export function buildTourQuoteEmailHtml(data: {
     if (locale === "es") return nombre;
     const b = slug ? TOURS_DB.find((t) => t.slug === slug) : undefined;
     if (b) return localizeTour(b, locale).nombre;
-    const pq = slug ? PAQUETES_DB.find((x) => x.slug === slug) : undefined;
+    const pq = slug ? getPaquete(slug) : undefined;
     return pq ? localizePaquete(pq, locale).nombre : nombre;
   };
 
@@ -693,6 +695,7 @@ export function buildTourQuoteEmailHtml(data: {
       filas.push(`${C.addOnLinea(String(nom), cant)}${imp}`);
     }
     if (it?.eleccion) filas.push(C.elegiste(String(it.eleccion)));
+    if (it?.viajeroSolo) filas.push(C.viajeroSolo);
     if (!filas.length) return "";
     return `<p style="margin:5px 0 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#3a6b1a;line-height:1.7">${filas.join("<br>")}</p>`;
   };

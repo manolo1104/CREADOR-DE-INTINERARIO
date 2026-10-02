@@ -164,6 +164,10 @@ export async function POST(req: NextRequest) {
         children:      String(lineItems.reduce((s, l) => s + l.children, 0)),
         items:         compacto,
         addOns:        addOnsCompacto,
+        // Recorridos donde va UNA persona con la tarifa de viajero solo: si el
+        // cliente cierra la pestaña, el webhook necesita esto para avisarle al
+        // equipo que hay que sumarlo a un grupo armado para esa fecha.
+        viajeroSolo:   lineItems.filter((l) => l.viajeroSolo).map((l) => `${l.tourSlug} ${l.tourDate}`).join("; ").slice(0, 480),
         hospedaje:     hotel ? `${hotel.habitacion} · ${hotel.noches} noches · ${hotel.huespedes} huéspedes · $${hotel.total}` : "",
         traslado:      viaje ? `${viaje.ciudad} → Xilitla · ${viaje.personas} pax · $${viaje.total}` : "",
         // Las mismas dos cosas, en JSON, para que el webhook las pueda

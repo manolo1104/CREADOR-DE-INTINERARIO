@@ -2,7 +2,7 @@ import { nochesGratis } from "./habitaciones";
 // Cálculo AUTORITATIVO del precio de un paquete en el servidor.
 // El cliente nunca decide el monto: aquí se recalcula desde PAQUETES_DB.
 
-import { PAQUETES_DB, type Paquete } from "./paquetes";
+import { getPaquete, type Paquete } from "./paquetes";
 import { TOURS_DB } from "./tours";
 
 /**
@@ -197,7 +197,9 @@ export function computePaqueteCharge(input: {
   nocheExtra?:    unknown;
   pct?:           unknown;
 }): PaqueteChargeResult | null {
-  const paquete = PAQUETES_DB.find((p) => p.slug === input.slug);
+  // `getPaquete` y no `PAQUETES_DB`: los paquetes de evento (Xantolo) viven
+  // fuera del catálogo general y también se cobran aquí.
+  const paquete = getPaquete(String(input.slug ?? ""));
   if (!paquete) return null;
 
   const adultos       = Math.floor(Number(input.personas)      || 0);
@@ -210,12 +212,18 @@ export function computePaqueteCharge(input: {
   // habitaciones.
   if (adultos < 2 || personas > MAX_PERSONAS_PAQUETE) return null;
 
+  // Paquete de evento por pareja (Xantolo): dos adultos y nadie más. El hotel
+  // tiene contadas las habitaciones de esa noche y la oferta es para parejas.
+  if (paquete.evento?.soloPareja && (adultos !== 2 || personas !== 2)) return null;
+
   // 30 % mínimo (decisión de Manolo, 12 ago 2026). Antes el mínimo era 10 %, que
   // no cubre ni la primera noche de hotel del paquete.
   const pct = pctPaqueteValido(input.pct);
   if (pct === null) return null;
 
-  const vistaMontana = !!input.vistaMontana;
+  // En un paquete de evento la habitación la asigna el hotel: no hay vista que
+  // elegir ni suplemento que sumar.
+  const vistaMontana = !!input.vistaMontana && !paquete.evento;
 
   // Hotel: lo que ocupan de verdad —los menores también ocupan cama— menos la
   // habitación ESTÁNDAR de dos que ya viene en el precio publicado. Si eligen
@@ -224,7 +232,9 @@ export function computePaqueteCharge(input: {
   // paquete Completo (3 noches) la persona adicional paga 2, no 3. Antes se
   // multiplicaba por todas las noches y el extra pagaba la que la pareja no
   // paga.
-  const nocheExtra = !!input.nocheExtra;
+  // En un paquete de fecha fija no hay víspera que vender: el hotel no tiene
+  // habitaciones la noche anterior (Xantolo: solo la del 1 al 2 de noviembre).
+  const nocheExtra = !!input.nocheExtra && !paquete.evento;
   const nochesTotales = paquete.noches + (nocheExtra ? 1 : 0);
 
   // Lo que el precio publicado ya cubre: las noches DEL PAQUETE, con su

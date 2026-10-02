@@ -147,6 +147,9 @@ export interface BookingMessages {
     vanMenos: string;
     escribenosYLosSumamos: string;
     waGrupoMinimo: (personas: number, tour: string) => string;
+    /** Va UNA persona en un recorrido que sale desde 2 (ver `aceptaViajeroSolo`). */
+    viajeroSoloTitulo: string;
+    viajeroSolo: string;
     porPersonaExtra: string;
     quitarAddOn: string;
     agregarAddOn: string;
@@ -348,6 +351,8 @@ export interface BookingMessages {
       extras: (tour: string, lista: string) => string;
       hospedaje: (hab: string, noches: number, huespedes: number, entrada: string, salida: string) => string;
       traslado: (ciudad: string, pax: number) => string;
+      /** Pagó la tarifa de viajero solo: hay que sumarlo a un grupo de esa fecha. */
+      viajeroSolo: (tour: string, fecha: string) => string;
       idiomaCliente: string;
     };
     trasladoRenglon: (ciudad: string) => string;
@@ -416,6 +421,9 @@ export interface BookingMessages {
     tarifaDelGrupo: (max: number) => string;
     /** Lo que sale cada uno al dividir la tarifa; solo se enseña si van 2 o más. */
     porCabeza: (monto: string) => string;
+    /** Va UNA persona: tarifa de 2 personas menos $2 y se le suma a un grupo. */
+    viajeroSoloTitulo: string;
+    viajeroSolo: string;
   };
 
   calendario: {
@@ -703,6 +711,8 @@ const es: BookingMessages = {
     escribenosYLosSumamos: "Escríbenos y los sumamos a otro grupo",
     waGrupoMinimo: (personas, tour) =>
       `Hola, somos ${personas} y nos interesa ${tour}. ¿Nos pueden sumar a otro grupo?`,
+    viajeroSoloTitulo: "Viajas solo:",
+    viajeroSolo: "se aplica el precio de 2 personas menos $2 y te incluimos en un grupo armado para tu fecha.",
     porPersonaExtra: "por persona",
     quitarAddOn: "Quitar",
     agregarAddOn: "Agregar",
@@ -900,6 +910,8 @@ const es: BookingMessages = {
         `Hospedaje: ${hab}, ${noches} noche(s), ${huespedes} huésped(es)${entrada ? ` — entrada ${entrada}` : ""}${salida ? `, salida ${salida}` : ""}.`,
       traslado: (ciudad, pax) =>
         `TRASLADO: ${ciudad} → Xilitla, ida y vuelta, ${pax} pasajero(s). Falta acordar hora y domicilio de recogida.`,
+      viajeroSolo: (tour, fecha) =>
+        `${tour} — VIAJA SOLO (${fecha}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.`,
       idiomaCliente: "",
     },
     trasladoRenglon: (ciudad) => `Traslado ${ciudad} → Xilitla (ida y vuelta)`,
@@ -936,6 +948,8 @@ const es: BookingMessages = {
     grupoTope: (max) => `${max} personas es el máximo que permite el jardín por experiencia; no se puede ampliar.`,
     tarifaDelGrupo: (max) => `Tarifa del grupo completo, hasta ${max} personas`,
     porCabeza: (monto) => `Les sale en ${monto} por persona`,
+    viajeroSoloTitulo: "Viajas solo:",
+    viajeroSolo: "se aplica el precio de 2 personas menos $2 y te incluimos en un grupo armado para tu fecha.",
   },
 
   calendario: {
@@ -1245,6 +1259,8 @@ const en: BookingMessages = {
     escribenosYLosSumamos: "Message us and we'll add you to another group",
     waGrupoMinimo: (personas, tour) =>
       `Hi, there are ${personas} of us and we're interested in ${tour}. Could you add us to another group?`,
+    viajeroSoloTitulo: "Traveling solo:",
+    viajeroSolo: "you pay the 2-person price minus $2 MXN and we place you in a group put together for your date.",
     porPersonaExtra: "per person",
     quitarAddOn: "Remove",
     agregarAddOn: "Add",
@@ -1442,6 +1458,8 @@ const en: BookingMessages = {
         `Hospedaje: ${hab}, ${noches} noche(s), ${huespedes} huésped(es)${entrada ? ` — entrada ${entrada}` : ""}${salida ? `, salida ${salida}` : ""}.`,
       traslado: (ciudad, pax) =>
         `TRASLADO: ${ciudad} → Xilitla, ida y vuelta, ${pax} pasajero(s). Falta acordar hora y domicilio de recogida.`,
+      viajeroSolo: (tour, fecha) =>
+        `${tour} — VIAJA SOLO (${fecha}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.`,
       idiomaCliente: "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio.",
     },
     trasladoRenglon: (ciudad) => `Transfer ${ciudad} → Xilitla (round trip)`,
@@ -1478,6 +1496,8 @@ const en: BookingMessages = {
     grupoTope: (max) => `${max} people is the maximum the garden allows per experience; it cannot be extended.`,
     tarifaDelGrupo: (max) => `Flat rate for the whole group, up to ${max} people`,
     porCabeza: (monto) => `That works out to ${monto} per person`,
+    viajeroSoloTitulo: "Traveling solo:",
+    viajeroSolo: "you pay the 2-person price minus $2 MXN and we place you in a group put together for your date.",
   },
 
   calendario: {

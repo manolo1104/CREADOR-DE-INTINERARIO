@@ -29,7 +29,7 @@ const ICONOS = [
 ];
 
 /** PRNG con semilla (mulberry32): mismo resultado en servidor y navegador. */
-function sembrado(semilla: number) {
+export function sembrado(semilla: number) {
   return () => {
     semilla |= 0;
     semilla = (semilla + 0x6d2b79f5) | 0;
