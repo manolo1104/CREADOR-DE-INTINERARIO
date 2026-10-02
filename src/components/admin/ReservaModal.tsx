@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff } from "lucide-react";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
@@ -79,7 +79,7 @@ export interface LineaAddOn {
 
 /** Las actividades opcionales que ofrece ese recorrido, según el catálogo. */
 export function addOnsDeTour(slug: string) {
-  return TOURS_DB.find(t => t.slug === slug)?.addOns ?? [];
+  return TOURS_LISTA.find(t => t.slug === slug)?.addOns ?? [];
 }
 
 /** Cuánta gente lleva contratada esa actividad en esta línea. */
@@ -117,7 +117,7 @@ export function conAddOn(l: LineItem, id: string, cantidad: number): LineItem {
 
 /** Tour cobrado por vehículo (RZR): precio = matriz flota×ruta, NO por persona. */
 export function esTourVehiculo(slug: string) {
-  const t = TOURS_DB.find(t => t.slug === slug);
+  const t = TOURS_LISTA.find(t => t.slug === slug);
   return !!(t && t.precioUnidad === "vehiculo" && t.rutas && t.flota);
 }
 
@@ -228,7 +228,7 @@ export function calcTourLine(l: LineItem): number {
          + Math.round(p * 0.7) * (l.childrenMid   ?? 0)
          + Math.round(p * 0.5) * (l.childrenSmall ?? 0);
   }
-  const t = TOURS_DB.find(t => t.slug === l.tourSlug);
+  const t = TOURS_LISTA.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
   // Tours por vehículo (RZR): la matriz flota×ruta manda; los niños no cambian el precio.
   const base = (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
@@ -248,7 +248,7 @@ export function calcTourLine(l: LineItem): number {
 
 /** Nombre descriptivo de una línea por vehículo, para reservas/correo: "RZR — Ruta X · Vehículo ×2". */
 export function vehiculoLineName(l: LineItem): string {
-  const t = TOURS_DB.find(t => t.slug === l.tourSlug);
+  const t = TOURS_LISTA.find(t => t.slug === l.tourSlug);
   if (!t) return l.tourName;
   const base = t.nombreCorto;
   const un   = Math.max(1, l.unidades ?? 1);
@@ -511,7 +511,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
         if (idx !== i) return l;
         const up = { ...l, [field]: val };
         if (field === "tourSlug") {
-          const t = TOURS_DB.find(t => t.slug === val);
+          const t = TOURS_LISTA.find(t => t.slug === val);
           if (esLineaPersonalizada(String(val))) {
             // Nace en blanco: el nombre y el precio los pone Manolo.
             up.tourName      = "";
@@ -695,7 +695,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                       <div className="space-y-2">
                         <select value={line.tourSlug} onChange={e => updateLine(i, "tourSlug", e.target.value)} className={inputCls}>
                           <option value="">Seleccionar tour...</option>
-                          {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
+                          {TOURS_LISTA.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
                           <option value={SLUG_PERSONALIZADO}>+ Otro concepto (nombre y precio a mano)</option>
                         </select>
                         {esLineaPersonalizada(line.tourSlug) && (
@@ -704,7 +704,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                         )}
                         {esTourVehiculo(line.tourSlug) ? (
                           (() => {
-                            const t = TOURS_DB.find(t => t.slug === line.tourSlug)!;
+                            const t = TOURS_LISTA.find(t => t.slug === line.tourSlug)!;
                             const rutaIdx = Math.max(0, t.rutas!.findIndex(r => r.nombre === line.ruta));
                             return (
                               <>

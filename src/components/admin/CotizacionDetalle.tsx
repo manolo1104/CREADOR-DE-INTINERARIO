@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { TourQuote } from "@prisma/client";
 import { X, BedDouble, Utensils, EyeOff, CalendarClock } from "lucide-react";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, type LineaTour } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
@@ -84,7 +84,7 @@ export default function CotizacionDetalle({
   const personas   = Number(meta.numPersonas) > 0 ? Number(meta.numPersonas) : grupo.total;
 
   const nombreTour = (l: LineaTour) =>
-    TOURS_DB.find(t => t.slug === l.tourSlug)?.nombre || l.tourName || l.tourSlug || "—";
+    TOURS_LISTA.find(t => t.slug === l.tourSlug)?.nombre || l.tourName || l.tourSlug || "—";
 
   const contenido = (
     <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 overflow-y-auto">
@@ -130,7 +130,7 @@ export default function CotizacionDetalle({
           <Seccion titulo={`Itinerario · ${lineas.length || 1} ${lineas.length === 1 ? "recorrido" : "recorridos"}`}>
             <div className="space-y-2">
               {(lineas.length ? lineas : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children, subtotal: q.totalAmount }]).map((l, i) => {
-                const t   = TOURS_DB.find(t => t.slug === l.tourSlug);
+                const t   = TOURS_LISTA.find(t => t.slug === l.tourSlug);
                 const pax = (l.adults ?? 0) + (l.childrenMid ?? (l as any).children ?? 0) + (l.childrenSmall ?? 0);
                 return (
                   <div key={i} className="flex items-start gap-3 bg-[#FAFAF8] border border-[#1B4332]/8 rounded-sm p-3">

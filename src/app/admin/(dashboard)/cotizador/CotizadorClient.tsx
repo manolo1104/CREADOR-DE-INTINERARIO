@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Plus, X, Save, Calculator, AlertTriangle, Users, Percent, Truck, Wallet } from "lucide-react";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import { calcTourLine, esTourVehiculo, type LineItem } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
@@ -87,13 +87,13 @@ export default function CotizadorClient(
   // arrancan vacíos: se ven en la lista con su aviso de "sin costos".
   const [costos, setCostos] = useState<Record<string, CostoTour>>(() => {
     const base: Record<string, CostoTour> = {};
-    for (const t of TOURS_DB) base[t.slug] = { tourSlug: t.slug, conceptos: [], notas: "" };
+    for (const t of TOURS_LISTA) base[t.slug] = { tourSlug: t.slug, conceptos: [], notas: "" };
     for (const c of costosIniciales) base[c.tourSlug] = c;
     return base;
   });
   const [guardando, setGuardando] = useState<string | null>(null);
   const [sucios,    setSucios]    = useState<Record<string, boolean>>({});
-  const [abierto,   setAbierto]   = useState<string | null>(TOURS_DB[0]?.slug ?? null);
+  const [abierto,   setAbierto]   = useState<string | null>(TOURS_LISTA[0]?.slug ?? null);
 
   // Precios de los extras (comida, transporte…): los edita Manolo aquí y de
   // aquí salen ya llenos en cada cotización y en cada reserva.
@@ -213,7 +213,7 @@ export default function CotizadorClient(
   // ── Simulador ─────────────────────────────────────────────────────────────
   const sim = useMemo(() => {
     const filas = lineas.filter(l => l.tourSlug).map(l => {
-      const tour      = TOURS_DB.find(t => t.slug === l.tourSlug);
+      const tour      = TOURS_LISTA.find(t => t.slug === l.tourSlug);
       const conceptos = costos[l.tourSlug]?.conceptos ?? [];
       const personas  = personasDe(l);
       const venta     = calcTourLine(aLineItem(l));
@@ -397,7 +397,7 @@ export default function CotizadorClient(
             Esa diferencia es la que decide cuánto descuento aguanta cada grupo.
           </p>
 
-          {TOURS_DB.map(t => {
+          {TOURS_LISTA.map(t => {
             const c        = costos[t.slug];
             const resumen  = resumirCostos(c.conceptos);
             const abiertoT = abierto === t.slug;
@@ -687,7 +687,7 @@ export default function CotizadorClient(
             </div>
 
             {lineas.map((l, i) => {
-              const t     = TOURS_DB.find(x => x.slug === l.tourSlug);
+              const t     = TOURS_LISTA.find(x => x.slug === l.tourSlug);
               const esVeh = esTourVehiculo(l.tourSlug);
               const rutaIdx = t?.rutas ? Math.max(0, t.rutas.findIndex(r => r.nombre === l.ruta)) : 0;
               const up = (campo: keyof SimLinea, valor: string | number) =>
@@ -695,7 +695,7 @@ export default function CotizadorClient(
                   if (idx !== i) return x;
                   const nueva = { ...x, [campo]: valor } as SimLinea;
                   if (campo === "tourSlug") {
-                    const nt = TOURS_DB.find(y => y.slug === valor);
+                    const nt = TOURS_LISTA.find(y => y.slug === valor);
                     if (nt?.precioUnidad === "vehiculo" && nt.rutas && nt.flota) {
                       nueva.ruta = nt.rutas[0].nombre;
                       nueva.vehiculo = nt.flota[0].nombre;
@@ -720,7 +720,7 @@ export default function CotizadorClient(
 
                   <select value={l.tourSlug} onChange={e => up("tourSlug", e.target.value)} className={inputCls}>
                     <option value="">Seleccionar recorrido…</option>
-                    {TOURS_DB.map(x => (
+                    {TOURS_LISTA.map(x => (
                       <option key={x.slug} value={x.slug}>
                         {x.nombre.split(" — ")[0]}{x.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}
                       </option>

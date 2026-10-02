@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
-import { TOURS_DB, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
+import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
@@ -214,7 +214,7 @@ export default function ReservasClient(
     const tourNames    = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
     return {
       tourId:         primaryLine.tourSlug,
-      tourName:       tourNames || TOURS_DB.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
+      tourName:       tourNames || TOURS_LISTA.find(t => t.slug === primaryLine.tourSlug)?.nombre || "",
       tourSlug:       primaryLine.tourSlug,
       tourDate:       primaryLine.tourDate,
       // El mismo grupo va a TODOS los tours: se guarda el grupo, no la suma por
@@ -311,7 +311,7 @@ export default function ReservasClient(
     // 🔴 El Edén no se reembolsa (`cancelacion` en tours.ts). El recuadro de
     // Cancelación decía "Gratis hasta 48 h antes" en todos los vouchers, y el
     // voucher es justo el papel que el cliente enseña al pedir su dinero.
-    const toursVoucher   = lines.map(l => TOURS_DB.find(t => t.slug === l.tourSlug));
+    const toursVoucher   = lines.map(l => TOURS_LISTA.find(t => t.slug === l.tourSlug));
     const cancelPropias  = toursVoucher
       .filter((t, n) => !!t?.cancelacion && toursVoucher.findIndex(x => x?.slug === t?.slug) === n);
     const todasPropias   = cancelPropias.length > 0 && toursVoucher.every(t => t?.cancelacion);
@@ -321,7 +321,7 @@ export default function ReservasClient(
       : [cancelEstandar, ...cancelPropias.map(t => `<strong>${t!.nombreCorto}:</strong> ${t!.cancelacion!.es}`)].join(" ");
 
     const dayRows = lines.map((l, i) => {
-      const t    = TOURS_DB.find(t => t.slug === l.tourSlug);
+      const t    = TOURS_LISTA.find(t => t.slug === l.tourSlug);
       const dur  = t ? `${t.duracion_hrs} h` : "—";
       const dif  = t ? (DIFIC[t.dificultad] || t.dificultad) : "—";
       const fd   = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short" }) : "—";

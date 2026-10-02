@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import { conceptosDe } from "@/lib/admin/costos";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 
@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest) {
 
     // El slug tiene que existir en el catálogo. Sin esta guarda, un dedazo crea
     // una fila fantasma con costos que ningún recorrido va a leer nunca.
-    if (!TOURS_DB.some(t => t.slug === tourSlug)) {
+    if (!TOURS_LISTA.some(t => t.slug === tourSlug)) {
       return NextResponse.json({ error: "Ese recorrido no existe en el catálogo" }, { status: 400 });
     }
 

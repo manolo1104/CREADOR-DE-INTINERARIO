@@ -11,7 +11,7 @@
 // Los dos contestan la misma pregunta —cuánto me queda— pero por caminos
 // distintos, así que el Cotizador pregunta con cuál calcular antes de nada.
 
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 
 export interface Escalon {
   /** A partir de cuántas personas aplica esta tarifa. */
@@ -126,5 +126,5 @@ export function tarifasDeTour(lista: TarifaProveedor[], tourSlug: string): Tarif
 
 /** El nombre del recorrido del catálogo, para la pantalla del proveedor. */
 export function nombreDeTour(tourSlug: string): string {
-  return TOURS_DB.find(t => t.slug === tourSlug)?.nombreCorto ?? tourSlug;
+  return TOURS_LISTA.find(t => t.slug === tourSlug)?.nombreCorto ?? tourSlug;
 }

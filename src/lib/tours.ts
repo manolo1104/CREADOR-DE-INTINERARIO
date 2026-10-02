@@ -2199,6 +2199,21 @@ export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => {
 });
 
 /**
+ * El mismo catálogo con los precios de LISTA, sin la promo de temporada baja.
+ *
+ * Es el que lee el panel (cotizador, cotizaciones y reservas). Decisión de
+ * Manolo (1 oct 2026): el panel tomaba TOURS_DB y cotizaba con el −$100 ya
+ * restado para cualquier fecha, aunque el recorrido cayera después del 29 de
+ * octubre. Ahí se cotiza siempre al precio normal y el descuento lo pone él a
+ * mano (campo Descuento en cotizaciones, total editable en reservas).
+ */
+export const TOURS_LISTA: Tour[] = TOURS_RAW.map((t) => ({
+  ...t,
+  descripcion: conPrecio(t.descripcion, t.precio),
+  descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, t.precio) : t.descripcionLarga,
+}));
+
+/**
  * El grupo más grande que sacamos, leído del catálogo.
  *
  * 🔴 Estaba escrito a mano ("máximo 12 personas") en 16 lugares del sitio: la

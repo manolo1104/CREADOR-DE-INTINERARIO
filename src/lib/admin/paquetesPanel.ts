@@ -16,7 +16,7 @@
 // paquete se aplica después, en el paso de condiciones, donde se ve.
 
 import { PAQUETES_DB, type Paquete } from "@/lib/paquetes";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import { addDaysYMD } from "@/lib/dates";
 import type { LineItem, PackageItem } from "@/components/admin/ReservaModal";
 
@@ -80,7 +80,7 @@ export function cargarPaquete(
 
   const lineas: LineItem[] = dias.map((d, i) => {
     const slug = d.tourSlug ?? porDefecto[i];
-    const tour = TOURS_DB.find(t => t.slug === slug);
+    const tour = TOURS_LISTA.find(t => t.slug === slug);
     return {
       tourSlug:      slug ?? "",
       tourName:      tour?.nombre ?? d.titulo,

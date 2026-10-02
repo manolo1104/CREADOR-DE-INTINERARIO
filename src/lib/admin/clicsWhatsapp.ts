@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 
 /**
  * Los clics a WhatsApp, contados.
@@ -11,7 +11,7 @@ import { TOURS_DB } from "@/lib/tours";
  */
 
 const NOMBRE_POR_SLUG: Record<string, string> = {};
-for (const t of TOURS_DB) NOMBRE_POR_SLUG[t.slug] = t.nombre;
+for (const t of TOURS_LISTA) NOMBRE_POR_SLUG[t.slug] = t.nombre;
 
 export interface ClicsWhatsapp {
   total: number;

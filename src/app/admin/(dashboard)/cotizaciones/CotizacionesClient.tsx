@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye } from "lucide-react";
-import { TOURS_DB, partesRecogida, type Tour } from "@/lib/tours";
+import { TOURS_LISTA, partesRecogida, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
   type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
@@ -119,7 +119,7 @@ export default function CotizacionesClient(
       if (idx !== i) return l;
       const up = { ...l, [field]: val };
       if (field === "tourSlug") {
-        const t = TOURS_DB.find(t => t.slug === val);
+        const t = TOURS_LISTA.find(t => t.slug === val);
         if (esLineaPersonalizada(String(val))) {
           // Nace en blanco: el nombre y el precio los pone Manolo.
           up.tourName      = "";
@@ -546,7 +546,7 @@ export default function CotizacionesClient(
     // aparte); el RZR y el buceo no recogen. Con renglones libres o solo
     // hospedaje no hay recorrido del que leerla: frase neutra, sin hora.
     const toursCotizados = items
-      .map(l => TOURS_DB.find(t => t.slug === l.tourSlug))
+      .map(l => TOURS_LISTA.find(t => t.slug === l.tourSlug))
       .filter((t): t is Tour => !!t);
     const recogidaTexto = toursCotizados.length
       ? resumenSalidas(toursCotizados, "es").map(esc).join("<br/>")
@@ -1170,7 +1170,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         <div className="space-y-2">
                           <select value={line.tourSlug} onChange={e => updateLine(i, "tourSlug", e.target.value)} className={inputCls}>
                             <option value="">Seleccionar tour...</option>
-                            {TOURS_DB.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
+                            {TOURS_LISTA.map(t => <option key={t.slug} value={t.slug}>{t.nombre}{t.precioUnidad === "vehiculo" ? " (por vehículo)" : ""}</option>)}
                             <option value={SLUG_PERSONALIZADO}>+ Otro concepto (nombre y precio a mano)</option>
                           </select>
                           {esLineaPersonalizada(line.tourSlug) && (
@@ -1179,7 +1179,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           )}
                           {esTourVehiculo(line.tourSlug) ? (
                             (() => {
-                              const t = TOURS_DB.find(t => t.slug === line.tourSlug)!;
+                              const t = TOURS_LISTA.find(t => t.slug === line.tourSlug)!;
                               const rutaIdx = Math.max(0, t.rutas!.findIndex(r => r.nombre === line.ruta));
                               return (
                                 <>

@@ -3,15 +3,15 @@
 import { useState } from "react";
 import type { TourBooking } from "@prisma/client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import { hoyMX } from "@/lib/dates";
 
 // Paleta asignada a cada tour del catálogo (cubre tours nuevos automáticamente).
 const PALETTE = ["#1B4332", "#52B788", "#1a4e8a", "#7a3a6a", "#2a7a6a", "#C9484A", "#5a7a2a", "#40916C", "#3a6b6b", "#6a4a8a"];
 const COLOR_BY_SLUG: Record<string, string> = {};
-TOURS_DB.forEach((t, i) => { COLOR_BY_SLUG[t.slug] = PALETTE[i % PALETTE.length]; });
+TOURS_LISTA.forEach((t, i) => { COLOR_BY_SLUG[t.slug] = PALETTE[i % PALETTE.length]; });
 function tourColor(slug: string) { return COLOR_BY_SLUG[slug] || "#5a5a5a"; }
-function tourLabel(slug: string) { return TOURS_DB.find(t => t.slug === slug)?.nombre || slug.replace(/-/g, " "); }
+function tourLabel(slug: string) { return TOURS_LISTA.find(t => t.slug === slug)?.nombre || slug.replace(/-/g, " "); }
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];

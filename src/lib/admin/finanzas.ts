@@ -25,7 +25,7 @@ import { conceptosDe, costoDeLinea, type ConceptoCosto } from "./costos";
 import { costoExtraLine, type ExtraItem } from "./extras";
 import { categoriaDe, categoriaPorNombre, esDirecta } from "./categorias";
 import { etiquetaMetodo, efectivoEnManos as bolsasDeEfectivo, type BolsaDeEfectivo } from "./cobros";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import type { TourBooking, Movimiento, Socio } from "@prisma/client";
 
 /** Stripe México: 3.6% + IVA sobre lo cobrado con tarjeta. */
@@ -463,7 +463,7 @@ function armarER(
 }
 
 const nombreDeTour = (slug: string, respaldo: string) =>
-  TOURS_DB.find(t => t.slug === slug)?.nombre || respaldo || slug;
+  TOURS_LISTA.find(t => t.slug === slug)?.nombre || respaldo || slug;
 
 export async function calcFinanzas(
   desde: string, hasta: string, base: BaseCorte = "tour",

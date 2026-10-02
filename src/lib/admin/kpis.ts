@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { hoyMX, ymdMX, partsMX, addDaysYMD, weekdayYMD } from "@/lib/dates";
 import type { TourBooking } from "@prisma/client";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_LISTA } from "@/lib/tours";
 import { ORIGENES, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 
 type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" | "totalAmount">;
@@ -45,7 +45,7 @@ interface LineaTour { tourSlug?: string; tourName?: string; subtotal?: number; _
  *  primera variante y parecía que solo se vendió esa. */
 function nombreDeCatalogo(slug?: string): string | undefined {
   if (!slug) return undefined;
-  return TOURS_DB.find(t => t.slug === slug)?.nombre;
+  return TOURS_LISTA.find(t => t.slug === slug)?.nombre;
 }
 
 function lineasDe(b: TourBooking): LineaTour[] {
