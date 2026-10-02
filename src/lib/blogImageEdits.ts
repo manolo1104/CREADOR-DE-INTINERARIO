@@ -24,6 +24,31 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── Lote 1-oct-2026 ───────────────────────────────────────────────────────
+  // Olla de la Luz y Cueva del Salitre — el agente le puso de portada la
+  // LAGUNA MEDIA LUNA (Rioverde) y de foto interior LAS POZAS: ninguna es de
+  // los dos lugares del artículo. Fotos de Manolo: portada = la boca de la
+  // Cueva del Salitre vista desde dentro; interior = la Olla de la Luz desde el
+  // borde (recortada a 4:3; el original es vertical). La foto interior estaba
+  // bajo el título de la Cueva del Salitre: se mueve a la sección de la Olla.
+  "olla-de-la-luz-hoya-de-la-luz-y-cueva-del-salitre-dos-secretos": {
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/blog/olla-de-la-luz-y-cueva-del-salitre/hero.jpg",
+    coverImageAlt:
+      "La gran boca de la Cueva del Salitre vista desde dentro, con árboles, raíces colgantes y cielo azul, en Xilitla, San Luis Potosí",
+    contentReplace: [
+      {
+        // Fuera la figura vieja (Las Pozas) de la sección de la Cueva…
+        from: '<h2>Cueva del Salitre Xilitla: lo que nadie te cuenta antes de entrar</h2>\n\n<figure>\n  <img src="https://www.huasteca-potosina.com/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg" alt="hoya de la luz guía viaje Huasteca Potosina" loading="lazy" width="900" height="500" />\n  <figcaption>El entorno de la olla de la luz comparte el mismo ecosistema de neblina y roca caliza que caracteriza los parajes de la sierra de Xilitla, Huasteca Potosina.</figcaption>\n</figure>',
+        to: "<h2>Cueva del Salitre Xilitla: lo que nadie te cuenta antes de entrar</h2>",
+      },
+      {
+        // …y la Olla de la Luz entra tras el primer párrafo de su sección.
+        from: "razón por la que madrugar no es opcional sino estructural para la visita.</p>",
+        to: 'razón por la que madrugar no es opcional sino estructural para la visita.</p>\n\n<figure>\n  <img src="https://www.huasteca-potosina.com/imagenes/blog/olla-de-la-luz-y-cueva-del-salitre/imagen-2.jpg" alt="La Olla de la Luz vista desde el borde: un sótano de paredes de roca con bosque en el fondo y la sierra de Xilitla al amanecer" loading="lazy" width="900" height="675" />\n  <figcaption>La Olla de la Luz desde el borde: paredes de roca caliza y un bosque entero en el fondo del sótano, en la sierra de Xilitla, Huasteca Potosina.</figcaption>\n</figure>',
+      },
+    ],
+  },
+
   // ── Lote 30-sep-2026 ──────────────────────────────────────────────────────
   // Mejor época — el artículo más leído del blog. Su portada y su segunda foto
   // eran las MISMAS del tour Expedición Tamul, y las dos (más la de las pozas)

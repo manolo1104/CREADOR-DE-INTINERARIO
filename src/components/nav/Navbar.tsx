@@ -154,16 +154,14 @@ export default function Navbar() {
 
             {/* Paquetes ya existe en los dos idiomas (/en/paquetes y su ficha). */}
             <Link href={lp("/paquetes")} className={navLinkClass(lp("/paquetes"))}>{dict.nav.paquetes}</Link>
-            <Link href={lp("/nosotros")} className={navLinkClass(lp("/nosotros"))}>{dict.nav.nosotros}</Link>
+            {/* "Nosotros" y "Precios" salieron de la barra (Manolo, 1 oct 2026).
+                Las páginas siguen vivas: /precios está en el pie (SiteFooter);
+                /nosotros, en el pie solo en inglés. */}
             <Link href={lp("/info-practica")} className={navLinkClass(lp("/info-practica"))}>{dict.nav.infoPractica}</Link>
 
             {/* Secciones solo-ES (aún sin versión en inglés) */}
             {locale === "es" && (
               <>
-                {/* "Precios" y "Contacto" faltaban en el menú: son las dos
-                    entradas de mayor intención de compra y solo se llegaba a
-                    ellas por el pie de la home. */}
-                <Link href="/precios" className={navLinkClass("/precios")}>Precios</Link>
                 <Link href="/blog" className={navLinkClass("/blog")}>{dict.nav.blog}</Link>
                 {/* "Contacto" vive solo en el pie (SiteFooter). El navbar tenía 9
                     enlaces y el CTA de Reservar se perdía entre ellos. */}
@@ -203,9 +201,6 @@ export default function Navbar() {
             <Link href={lp("/paquetes")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.paquetes}
             </Link>
-            <Link href={lp("/nosotros")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
-              {dict.nav.nosotros}
-            </Link>
             <Link href={lp("/info-practica")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.infoPractica}
             </Link>
@@ -215,9 +210,6 @@ export default function Navbar() {
 
             {locale === "es" && (
               <>
-
-                <Link href="/precios" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Precios</Link>
-
                 <Link href="/preguntas-frecuentes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Preguntas frecuentes</Link>
 
                 <Link href="/blog" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
