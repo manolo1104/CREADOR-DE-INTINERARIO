@@ -20,6 +20,8 @@ import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaqueteCheckoutUI } from "@/lib/i18n/paquetes.en";
 import { localizePaquete, getLocalizedHabitaciones } from "@/lib/i18n/paquetes.en";
 import { serviciosHotel, vistaHabitacion, caracteristicasHabitacion } from "@/lib/habitaciones";
+import { trackTourEvent, marcarPasoClarity, sessionId, ga4ClientId } from "@/lib/tourTracker";
+import { trackPurchase } from "@/lib/analytics";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
@@ -27,6 +29,8 @@ const stripePromise = loadStripe(
 );
 
 const WA_NUMBER = "524891090388";
+/** Desde cuántas personas se ofrece pedir precio de grupo por WhatsApp. */
+const GRUPO_DESDE = 5;
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 /**
  * Los porcentajes no dependen del idioma; sus etiquetas sí (ver el diccionario).
@@ -44,17 +48,36 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
   const t = getPaqueteCheckoutUI(locale);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [enProceso, setEnProceso] = useState(false);
+
+  // El formulario de pago está en pantalla: la grabación de Clarity se marca
+  // igual que en el carrito (el servidor ya contó el paso al crear el pago).
+  useEffect(() => {
+    marcarPasoClarity("PAYMENT_INITIATED", { amount: cobrado, tour: paquete.slug });
+  }, [cobrado, paquete.slug]);
 
   async function handlePay(e: React.FormEvent) {
     e.preventDefault();
     if (!stripe || !elements) return;
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setEnProceso(false);
     const { error: sErr, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: { payment_method_data: { billing_details: { name: form.name, email: form.email } } },
       redirect: "if_required",
     });
-    if (sErr) { setError(sErr.message || t.errPago); setLoading(false); return; }
+    if (sErr) {
+      trackTourEvent("PAGO_FALLIDO", {
+        paquete: true, tour: paquete.slug, amount: cobrado,
+        code: sErr.code, decline_code: sErr.decline_code, message: sErr.message, paymentIntentId,
+      });
+      setError(sErr.message || t.errPago); setLoading(false); return;
+    }
+    // `processing` no es un error: el banco todavía no contesta. Antes salía
+    // «El pago no fue completado» y el cliente volvía a pagar.
+    if (paymentIntent?.status === "processing") {
+      trackTourEvent("PAGO_EN_PROCESO", { paquete: true, tour: paquete.slug, amount: cobrado, paymentIntentId });
+      setEnProceso(true); setLoading(false); return;
+    }
     if (paymentIntent?.status === "succeeded") {
       try {
         const res = await fetch("/api/paquetes/send-confirmation", {
@@ -69,8 +92,20 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
           }),
         });
         const data = await res.json();
+        // Como en el carrito: la venta va a GA4 solo con el FOLIO, que es el
+        // mismo número con el que la manda el webhook (así no cuenta doble).
+        if (data.confirmationNumber) trackPurchase({
+          confirmationNumber: data.confirmationNumber,
+          tourId:   paquete.slug,
+          tourName: paquete.nombre,
+          total:    cobrado,
+          adults:   form.personas,
+          children: (form.childrenMid ?? 0) + (form.childrenSmall ?? 0),
+        });
+        trackTourEvent("BOOKING_CONFIRMED", { paquete: true, tour: paquete.slug, amount: cobrado, confirmationNumber: data.confirmationNumber });
         onDone(data.confirmationNumber || "HP");
       } catch {
+        trackTourEvent("BOOKING_CONFIRMED", { paquete: true, tour: paquete.slug, amount: cobrado });
         onDone("HP");
       }
     } else {
@@ -89,7 +124,8 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
         <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
       </section>
       {error && <div className="bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
-      <button type="submit" disabled={loading || !stripe}
+      {enProceso && <div role="status" className="bg-verde-selva/8 border border-verde-selva/30 px-4 py-3"><p className="text-verde-profundo font-dm text-sm">{t.pagoEnProceso}</p></div>}
+      <button type="submit" disabled={loading || !stripe || enProceso}
         className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
         {loading ? t.procesandoPago : <><Lock className="w-3.5 h-3.5" />{t.pagar(fmx(cobrado))}</>}
       </button>
@@ -167,6 +203,15 @@ export default function ReservarPaquetePage() {
   const [error, setError]           = useState("");
 
   const minDate = useMemo(() => minBookingDate(), []);
+
+  // Primer paso del embudo de paquetes: hasta oct 2026 este checkout no
+  // mandaba ningún evento y no había forma de saber cuánta gente llegaba.
+  useEffect(() => {
+    if (!base) return;
+    trackTourEvent("PAQUETE_CHECKOUT_VIEW", { tour: base.slug, evento: !!base.evento });
+    // Solo al entrar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Restaurar desde el link del correo de recuperación (?recuperar=<token>),
   // igual que hace la reserva de un tour suelto.
@@ -330,6 +375,9 @@ export default function ReservarPaquetePage() {
     // Sin cotización no hay precio que cobrar: seguir enseñaba el importe de
     // respaldo (`paquete.precio × pct`), que no es lo que el servidor cobraría.
     if (!cotizacion) { setError(t.errGrupoNoCotizable(MAX_PERSONAS_PAQUETE)); return; }
+    // Sin fecha, el equipo recibía un paquete pagado sin saber cuándo llega el
+    // cliente. El servidor también lo rechaza.
+    if (!evento && !fecha) { setError(t.errFecha); return; }
     if (!name.trim() || !email.trim()) { setError(t.errNombreCorreo); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(t.errCorreoInvalido); return; }
     if (sinHotel && recogida.trim().length < 3) { setError("Dinos dónde te hospedas en Xilitla para pasar por ti."); return; }
@@ -364,6 +412,7 @@ export default function ReservarPaquetePage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
+          sid: sessionId(), gaClientId: ga4ClientId(), locale,
           paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId, recogida: recogida.trim() },
         }),
       });
@@ -519,7 +568,11 @@ export default function ReservarPaquetePage() {
                 {!evento && (
                 <div>
                   <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">{t.fechaInicio}</label>
-                  <input type="date" value={fecha} min={minDate} onChange={(e) => setFecha(e.target.value)}
+                  <input type="date" value={fecha} min={minDate} required
+                    onChange={(e) => {
+                      setFecha(e.target.value);
+                      if (e.target.value) trackTourEvent("DATE_SELECTED", { tour: paquete.slug, paquete: true });
+                    }}
                     className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                   <p className="mt-1.5 text-[11px] text-negro/50 font-dm">
                     {t.salimosA}<strong className="text-negro/75">{t.salimosAFuerte}</strong>{t.salimosACola}
@@ -641,10 +694,41 @@ export default function ReservarPaquetePage() {
                          className="text-verde-selva underline underline-offset-2">Escríbenos por WhatsApp y lo armamos</a>.
                     </p>
                   )}
-                  {!evento && personas >= MAX_PERSONAS_PAQUETE && (
+                  {/* Desde 5 personas (decisión de Manolo, 4 oct 2026), precio
+                      de grupo por WhatsApp con el desglose ya escrito. Un grupo
+                      de 10 armó la Odisea en $86,800 y se fue sin escribir: el
+                      motor cobra la tarifa de lista y nadie le dijo que eso se
+                      negocia. */}
+                  {!evento && totalHuespedes >= GRUPO_DESDE && totalHuespedes < MAX_PERSONAS_PAQUETE && cotizacion && (
+                    <div className="mt-4 border border-[#25D366]/40 bg-[#25D366]/5 p-4">
+                      <p className="font-dm text-[13px] text-negro/85 font-medium">{t.grupoTitulo}</p>
+                      <p className="font-dm text-[12px] text-negro/60 mt-1 leading-snug">{t.grupoTexto}</p>
+                      <a
+                        href={waLink(t.waPaqueteGrupo({
+                          paquete:    paquete.nombre,
+                          fecha,
+                          adultos:    personas,
+                          ninos:      childrenMid + childrenSmall,
+                          habitacion: habElegida?.nombre ?? "",
+                          total:      fmx(cotizacion.total),
+                        }))}
+                        target="_blank" rel="noopener noreferrer"
+                        data-wa-manual="1"
+                        onClick={() => trackTourEvent("WHATSAPP_CLICK", { tour: paquete.slug, amount: cotizacion.total, context: "paquete_grupo", origen: "paquete_grupo" })}
+                        className="mt-3 inline-flex items-center gap-2 border border-[#25D366] text-[#128C4B] hover:bg-[#25D366]/10 px-4 py-2.5 font-dm text-[12px] transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                        {t.grupoCta}
+                      </a>
+                    </div>
+                  )}
+                  {/* Cuenta a TODOS: con `personas` (solo adultos) el aviso no
+                      salía con 10 adultos y 2 niños, justo cuando el «+» ya
+                      estaba bloqueado. */}
+                  {!evento && totalHuespedes >= MAX_PERSONAS_PAQUETE && (
                     <p className="mt-2 text-[11px] font-dm text-negro/55">
                       {t.sonMasDe(MAX_PERSONAS_PAQUETE)}{" "}
-                      <a href={waLink(t.waGrupoGrande(personas + 1, paquete.nombre))}
+                      <a href={waLink(t.waGrupoGrande(totalHuespedes + 1, paquete.nombre))}
                          target="_blank" rel="noopener noreferrer"
                          className="text-verde-selva underline underline-offset-2">{t.cotizamosWhatsapp}</a>.
                     </p>

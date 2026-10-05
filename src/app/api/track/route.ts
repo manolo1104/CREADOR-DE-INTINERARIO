@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { actividad, logger, mxn, nombreCorto } from "@/lib/logger";
 import { TOURS_DB } from "@/lib/tours";
+import { PAQUETES_DB, PAQUETES_EVENTO } from "@/lib/paquetes";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -20,6 +21,12 @@ const SLUG_POR_CLAVE: Record<string, string> = {};
 for (const t of TOURS_DB) {
   SLUG_POR_CLAVE[t.id] = t.slug;
   SLUG_POR_CLAVE[t.slug] = t.slug;
+}
+// Los paquetes también (oct 2026): sin esto los eventos del checkout de
+// paquetes se guardaban sin slug y no había forma de contarlos por paquete.
+for (const p of [...PAQUETES_DB, ...PAQUETES_EVENTO]) {
+  SLUG_POR_CLAVE[p.slug] ??= p.slug;
+  NOMBRE_POR_CLAVE[p.slug] ??= p.nombre;
 }
 function aSlug(v: unknown): string | null {
   if (typeof v !== "string" || !v) return null;
@@ -88,6 +95,10 @@ const SOLO_SE_GUARDA = new Set([
   "COMPARAR_VISTA",
   "COMPARAR_CAMBIO",
   "COMPARAR_FICHA",
+  // Rediseño del checkout (oct 2026): la barra del celular que solo baja al
+  // módulo de reserva, y la vista del checkout de paquetes.
+  "BARRA_A_MODULO",
+  "PAQUETE_CHECKOUT_VIEW",
 ]);
 
 // Cada evento → [etiqueta, ...campos]. Los campos vacíos se omiten en el log.

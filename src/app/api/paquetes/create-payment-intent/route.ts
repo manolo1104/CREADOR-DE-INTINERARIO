@@ -8,6 +8,8 @@ import { habitacionesDePaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
+import { fechaTourValida } from "@/lib/tourPricing";
+import { trackServerEvent } from "@/lib/serverTrack";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, paqueteDetails } = await req.json();
+    const { customerEmail, customerName, paqueteDetails, sid, gaClientId, locale } = await req.json();
 
     const paquete = getPaquete(paqueteDetails?.slug);
     if (!paquete) {
@@ -34,6 +36,14 @@ export async function POST(req: NextRequest) {
     const evento = paquete.evento;
     if (evento && !eventoALaVenta(paquete)) {
       return NextResponse.json({ error: "Este paquete ya no está a la venta." }, { status: 410 });
+    }
+
+    // Sin fecha no hay viaje que operar: el equipo recibía un paquete pagado
+    // sin saber cuándo llegaba el cliente. `fechaTourValida` acepta la fecha
+    // vacía (los tours por WhatsApp la coordinan después), así que aquí se
+    // exige aparte. Los eventos traen su fecha fija y no la mandan.
+    if (!evento && (!paqueteDetails?.fecha || !fechaTourValida(paqueteDetails.fecha))) {
+      return NextResponse.json({ error: "Elige la fecha de inicio de tu viaje para continuar." }, { status: 400 });
     }
 
     // Sin hotel, el equipo pasa por el cliente: sin saber dónde se hospeda no
@@ -150,6 +160,10 @@ export async function POST(req: NextRequest) {
         ? `${paquete.nombre} — ${evento.fechaTexto} (${pct}%) · ${customerName || ""}`
         : `Paquete Huasteca Potosina — ${paquete.nombre} (${pct}%) · ${customerName || ""}`,
       receipt_email: customerEmail || undefined,
+      // Igual que el carrito de tours: solo métodos que se resuelven sin salir
+      // de la página. Sin esto Stripe podía ofrecer uno con redirección y
+      // `confirmPayment` (sin `return_url`) fallaba al pulsar Pagar.
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",
@@ -185,7 +199,22 @@ export async function POST(req: NextRequest) {
         recogida,
         personas,
         source:        "huasteca-potosina.com",
+        // El idioma y la identidad de medición, como en el carrito de tours: si
+        // el cliente cierra la pestaña, el webhook es el único que se entera de
+        // la compra y sin esto no sabe en qué idioma escribirle ni de dónde vino.
+        locale:        locale === "en" ? "en" : "es",
+        gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
+        sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
       },
+    });
+
+    // El paso «llegó al pago» del embudo, contado en el servidor como en el
+    // carrito: hasta hoy el checkout de paquetes no dejaba NINGÚN rastro.
+    await trackServerEvent("PAYMENT_INITIATED", {
+      sid:      typeof sid === "string" ? sid : null,
+      tourSlug: paquete.slug,
+      amount:   charge,
+      data:     { paquete: true, pct, total: cobro.total, personas: cobro.personas, paymentIntentId: paymentIntent.id },
     });
 
     const anticipo = pct === 100 ? "pago completo" : `anticipo ${pct}%`;

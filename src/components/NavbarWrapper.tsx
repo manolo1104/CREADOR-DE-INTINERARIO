@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { CookieBanner } from "@/components/CookieBanner";
 import { PopupXantolo } from "@/components/PopupXantolo";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
+import { enPantallaDePago } from "@/lib/barrasFijas";
 
 function ScrollProgressBar() {
   const barRef = useRef<HTMLDivElement>(null);
@@ -42,7 +43,10 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   // dos, pero como cuelga de `/reservar` se quedaba fuera del patrón y pintaba
   // el pie completo —decenas de enlaces de salida— justo debajo del botón de
   // pagar. `/reservar` a secas es el catálogo y sí lleva pie.
-  const isCheckout = /^\/reservar-(tour|paquete)\/|^\/reservar\/carrito/.test(pathname);
+  // La regla vive en `enPantallaDePago` (`lib/barrasFijas.ts`), la misma que
+  // usa la barra del carrito: aquí estaba copiada sin el `/en/` y el checkout
+  // en inglés pintaba el pie completo debajo del botón de pagar.
+  const isCheckout = enPantallaDePago(pathname);
   // El funnel del curso (/curso) es un embudo autocontenido: sin navbar del
   // sitio, sin pie con decenas de ligas, sin botón flotante de reservar tours.
   // Cada elemento de ésos es una salida del embudo. Trae su propia barra,

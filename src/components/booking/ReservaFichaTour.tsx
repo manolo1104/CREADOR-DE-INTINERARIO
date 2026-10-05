@@ -10,6 +10,7 @@ import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackBeginCheckout, trackDateSelected, trackParticipants } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
+import { pctACobrar } from "@/lib/carrito";
 // El ancla del módulo vive en `lib/anclas.ts`, no aquí: la ficha del tour es un
 // Server Component y una constante importada de este archivo "use client" le
 // llegaba como objeto (`#[object Object]`). Ver la nota en ese archivo.
@@ -87,6 +88,12 @@ export function ReservaFichaTour({
     // tarifa de viajero solo cuando va una persona.
     : totalRecorrido(reglaTour, adultos, ninosMid, ninosSmall);
   const viajaSolo = !porGrupo && esViajeroSolo(reglaTour, adultos, ninosMid, ninosSmall);
+  // Lo que se paga HOY, con la misma cuenta que el carrito y que
+  // `carrito-payment-intent` (redondeo incluido). El botón decía «Reservar
+  // $2,900» y el cliente descubría en el carrito que hoy solo eran $870:
+  // con fecha elegida, el monto que asusta tiene que ser el de hoy.
+  const hoy   = Math.round((total * pctACobrar()) / 100);
+  const resto = total - hoy;
 
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
 
@@ -208,9 +215,14 @@ export function ReservaFichaTour({
           className="flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors"
         >
           <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          {fecha ? tf.reservar(dinero(total)) : tf.continuar}
+          {fecha ? tf.reservarHoy(dinero(hoy)) : tf.continuar}
         </Link>
-        <p className="font-dm text-[10px] text-crema/35 mt-2 text-center">{tf.puedesCambiarlo}</p>
+        {total > 0 && (
+          <p className="font-dm text-[11px] text-crema/60 mt-2 text-center">
+            {tf.restoElDia(pctACobrar(), dinero(resto))}
+          </p>
+        )}
+        <p className="font-dm text-[10px] text-crema/35 mt-1 text-center">{tf.puedesCambiarlo}</p>
       </div>
     </div>
   );

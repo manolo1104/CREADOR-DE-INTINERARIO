@@ -1289,6 +1289,12 @@ export interface PaqueteCheckoutUI {
   sonMasDe: (max: number) => string;
   cotizamosWhatsapp: string;
   waGrupoGrande: (n: number, paquete: string) => string;
+  /** Desde 5 personas: bloque para pedir precio de grupo por WhatsApp. */
+  grupoTitulo: string;
+  grupoTexto: string;
+  grupoCta: string;
+  /** El mensaje lleva el desglose para que el equipo cotice sin preguntar. */
+  waPaqueteGrupo: (d: { paquete: string; fecha: string; adultos: number; ninos: number; habitacion: string; total: string }) => string;
   // Itinerario
   tuViajeDiaPorDia: string;
   salimosCadaDia: string;
@@ -1370,6 +1376,10 @@ export interface PaqueteCheckoutUI {
   errConexion: string;
   /** El grupo salió del rango que el motor cobra solo. */
   errGrupoNoCotizable: (max: number) => string;
+  /** Paquete sin fecha: el servidor también lo rechaza. */
+  errFecha: string;
+  /** El banco aún no confirma (`processing`): no es un error. */
+  pagoEnProceso: string;
   preparandoPago: string;
   continuarPagar: (monto: string) => string;
   cancelacionFlexible: string;
@@ -1424,7 +1434,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   menosPersonas: "Menos personas",
   masPersonas: "Más personas",
   paqueteBase: "Paquete base (2 personas)",
-  hotelPorPersonas: (n, habs) => `Hotel por ${n} persona${n > 1 ? "s" : ""} más · ${habs} habitación${habs > 1 ? "es" : ""}`,
+  hotelPorPersonas: (n, habs) => `Hotel por ${n} persona${n > 1 ? "s" : ""} más · ${habs} ${habs > 1 ? "habitaciones" : "habitación"}`,
   toursPorPersonas: (n) => `Tours por ${n} persona${n > 1 ? "s" : ""} más`,
   totalDelViaje: "Total del viaje",
   precioCubre2: "El precio publicado cubre a 2 personas. Cada persona más suma su hotel y sus tours, y lo verás desglosado aquí.",
@@ -1438,6 +1448,18 @@ const CHK_ES: PaqueteCheckoutUI = {
   sonMasDe: (max) => `¿Son más de ${max}?`,
   cotizamosWhatsapp: "Lo cotizamos por WhatsApp",
   waGrupoGrande: (n, paquete) => `Hola, somos ${n} personas y queremos el ${paquete}. ¿Nos lo cotizan?`,
+  grupoTitulo: "¿Son 5 o más? Les armamos precio de grupo",
+  grupoTexto: "Mándanos tu desglose por WhatsApp y te respondemos con la tarifa para tu grupo. Si prefieres, también puedes seguir y pagar aquí.",
+  grupoCta: "Pedir precio de grupo por WhatsApp",
+  waPaqueteGrupo: (d) => [
+    `Hola, somos un grupo y queremos el ${d.paquete}. ¿Nos dan precio de grupo?`,
+    "",
+    `· Fecha de inicio: ${d.fecha || "por definir"}`,
+    `· Adultos: ${d.adultos}`,
+    `· Niños: ${d.ninos}`,
+    d.habitacion ? `· Habitación: ${d.habitacion}` : null,
+    `· Total en la página: ${d.total} MXN`,
+  ].filter((l) => l !== null).join("\n"),
   tuViajeDiaPorDia: "Tu viaje, día por día",
   salimosCadaDia: "Salimos a las ",
   salimosCadaDiaFuerte: "8:30 AM aprox.",
@@ -1515,6 +1537,8 @@ const CHK_ES: PaqueteCheckoutUI = {
   errEleccionMulti: (cuantos) => `Elige tus ${cuantos} recorridos para continuar.`,
   errConexion: "Error de conexión. Intenta de nuevo.",
   errGrupoNoCotizable: (max) => `No podemos cotizar ese grupo en línea (máximo ${max} personas). Escríbenos por WhatsApp y lo armamos a tu medida.`,
+  errFecha: "Elige la fecha de inicio de tu viaje para continuar.",
+  pagoEnProceso: "Tu pago está en proceso. En cuanto el banco lo confirme te llega el correo con tu reserva.",
   preparandoPago: "Preparando pago seguro...",
   continuarPagar: (monto) => `Continuar — pagar ${monto} MXN`,
   cancelacionFlexible: "Cancelación flexible · Te contactamos para coordinar fechas",
@@ -1531,7 +1555,7 @@ const CHK_ES: PaqueteCheckoutUI = {
   habJungla: "Habitación Jungla",
   habSelva: "Habitación vista a la selva",
   resumenHotelExtra: (noches, habs, habitacion) =>
-    `Hotel · ${noches} noche${noches > 1 ? "s" : ""} · ${habs} habitación${habs > 1 ? "es" : ""}${habitacion ? ` · ${habitacion}` : ""}`,
+    `Hotel · ${noches} noche${noches > 1 ? "s" : ""} · ${habs} ${habs > 1 ? "habitaciones" : "habitación"}${habitacion ? ` · ${habitacion}` : ""}`,
   resumenToursExtra: (personas) =>
     `Boletos de tour · ${personas} persona${personas > 1 ? "s" : ""} más`,
   resumenNocheExtra: "noche extra",
@@ -1578,6 +1602,18 @@ const CHK_EN: PaqueteCheckoutUI = {
   sonMasDe: (max) => `More than ${max} of you?`,
   cotizamosWhatsapp: "We'll quote it on WhatsApp",
   waGrupoGrande: (n, paquete) => `Hi, there are ${n} of us and we'd like the ${paquete}. Could you quote it?`,
+  grupoTitulo: "5 or more of you? We'll put together a group rate",
+  grupoTexto: "Send us your breakdown on WhatsApp and we'll reply with the rate for your group. Or keep going and pay here if you prefer.",
+  grupoCta: "Ask for a group rate on WhatsApp",
+  waPaqueteGrupo: (d) => [
+    `Hi, we're a group and we'd like the ${d.paquete}. Could you give us a group rate?`,
+    "",
+    `· Start date: ${d.fecha || "to be decided"}`,
+    `· Adults: ${d.adultos}`,
+    `· Children: ${d.ninos}`,
+    d.habitacion ? `· Room: ${d.habitacion}` : null,
+    `· Total on the website: ${d.total} MXN`,
+  ].filter((l) => l !== null).join("\n"),
   tuViajeDiaPorDia: "Your trip, day by day",
   salimosCadaDia: "We leave at ",
   salimosCadaDiaFuerte: "8:30 AM approx.",
@@ -1652,6 +1688,8 @@ const CHK_EN: PaqueteCheckoutUI = {
   errEleccionMulti: (cuantos) => `Pick your ${cuantos} tours to continue.`,
   errConexion: "Connection error. Please try again.",
   errGrupoNoCotizable: (max) => `We can't quote that group online (${max} people max). Message us on WhatsApp and we'll put it together for you.`,
+  errFecha: "Choose the start date of your trip to continue.",
+  pagoEnProceso: "Your payment is processing. As soon as the bank confirms it, you'll get the email with your booking.",
   preparandoPago: "Preparing secure payment...",
   continuarPagar: (monto) => `Continue — pay ${monto} MXN`,
   cancelacionFlexible: "Flexible cancellation · We'll contact you to arrange dates",

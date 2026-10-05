@@ -23,7 +23,6 @@ import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { localizeTour } from "@/lib/i18n/localize";
 import type { Locale } from "@/lib/i18n/config";
-import { TOUR_REVIEWS } from "@/lib/tourReviews";
 // La calificación y el perfil salen de resenas.ts: en las dos franjas de
 // confianza de esta página quedaba un «4.9» escrito a mano, justo donde se paga.
 import { GOOGLE_RATING, GOOGLE_PERFIL_URL as GOOGLE_MAPS_REVIEWS_URL } from "@/lib/resenas";
@@ -414,12 +413,8 @@ export default function CarritoPage() {
   // muchos ya vienen con hotel, y la promesa del sitio es justo que no hace
   // falta hospedarse con nosotros.
   const [mostrarLista, setMostrarLista] = useState(false);
-  // Apartado temporal: al pasar al pago se reservan los lugares 15 minutos.
-  // No es un truco de urgencia inventado — es el tiempo real que se sostiene
-  // un cupo sin cobrar, y decirlo evita que alguien deje la pestaña abierta
-  // media hora y llegue a pagar algo que ya se ocupó.
-  const [expiraEn, setExpiraEn] = useState<number | null>(null);
-  const [restante, setRestante] = useState(0);
+  // (Oct 2026: aquí vivía un reloj de 15 minutos «te apartamos tus lugares».
+  // Se quitó: el servidor no apartaba nada, así que era una urgencia falsa.)
   const [conHotel,    setConHotel]    = useState(false);
   // Traslado desde la ciudad de origen. Apagado por defecto igual que el hotel:
   // quien llega en su coche no tiene por qué ver un cargo que no pidió.
@@ -644,15 +639,6 @@ export default function CarritoPage() {
     setCheckout(dia(fechas[fechas.length - 1], 1));
   }, [conHotel, items, checkin, checkout]);
 
-  // Cuenta atrás del apartado.
-  useEffect(() => {
-    if (!expiraEn) return;
-    const tick = () => setRestante(Math.max(0, Math.ceil((expiraEn - Date.now()) / 1000)));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [expiraEn]);
-
   const minDate = minBookingDate();
 
   // Las noches salen del calendario, no de un contador suelto: el cliente
@@ -680,15 +666,6 @@ export default function CarritoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conHotel, JSON.stringify(habs), hotelQuote?.ok]);
 
-  // Testimonios de los recorridos que ESTA persona lleva en el carrito: una
-  // reseña del tour que ya eligió pesa más que una genérica.
-  const resenas = Array.from(
-    new Map(
-      items
-        .flatMap((i) => TOUR_REVIEWS[(TOURS_DB.find((t) => t.slug === i.tourSlug)?.id ?? "") as keyof typeof TOUR_REVIEWS] ?? [])
-        .map((r) => [r.nombre + r.texto.slice(0, 12), r] as const),
-    ).values(),
-  ).slice(0, 3);
   // El hotel entra en el total y, por tanto, en el anticipo del 30 %. El
   // servidor vuelve a cotizarlo con `cotizarHospedaje`, así que esto es solo
   // lo que se pinta.
@@ -998,7 +975,6 @@ export default function CarritoPage() {
         return;
       }
       setCobro(data);
-      setExpiraEn(Date.now() + 15 * 60 * 1000);
     } catch {
       setError(t.noSePudoConectar);
     }
@@ -2127,23 +2103,6 @@ export default function CarritoPage() {
             </div>
           ) : (
             <div className="pt-4">
-              {restante > 0 ? (
-                <p className="mb-3 flex items-center gap-2 border border-dorado/35 bg-dorado/10 px-3 py-2.5 font-dm text-[12px] text-negro/70">
-                  <Clock className="w-4 h-4 text-dorado flex-shrink-0" aria-hidden="true" />
-                  <span>
-                    {conHotel && hotelQuote?.ok ? t.apartadoActivoHabitacion : t.apartadoActivo}{" "}
-                    <strong className="text-negro tabular-nums">
-                      {Math.floor(restante / 60)}:{String(restante % 60).padStart(2, "0")}
-                    </strong>
-                  </span>
-                </p>
-              ) : (
-                expiraEn !== null && (
-                  <p className="mb-3 border border-terracota/40 bg-terracota/8 px-3 py-2.5 font-dm text-[12px] text-terracota">
-                    {t.apartadoVencido}
-                  </p>
-                )
-              )}
               <Elements stripe={stripePromise} options={{ clientSecret: cobro.clientSecret, locale }}>
                 <PagoCarrito cobro={cobro} datos={{ name, email, phone, pickup, checkin, checkout }} onListo={() => setItems([])} />
               </Elements>
@@ -2158,10 +2117,10 @@ export default function CarritoPage() {
           "otros ya lo hicieron", luego las dudas concretas. */}
       <div className="max-w-5xl mx-auto px-6">
 
-        {/* Prueba social a lo ancho, DESPUÉS del pago. En un teléfono el
-          aside cae debajo de todo, así que con las reseñas aquí arriba había
-          que pasar tres testimonios largos antes de ver el total y el botón
-          de pagar. */}
+        {/* Prueba social a lo ancho, DESPUÉS del pago: solo la calificación
+          real de Google y las credenciales. Los testimonios de `TOUR_REVIEWS`
+          no van aquí: están escritos a mano, y en el checkout una reseña que
+          no es de verdad resta confianza justo cuando se decide. */}
               <section className="mt-8 border border-negro/10 bg-white p-5">
                 <a
                   href={GOOGLE_MAPS_REVIEWS_URL}
@@ -2176,28 +2135,10 @@ export default function CarritoPage() {
                   </span>
                   <span className="font-dm text-[11px] text-negro/40 group-hover:text-verde-selva transition-colors">{t.verlas}</span>
                 </a>
-                <p className="flex items-center gap-2 font-dm text-[12px] text-negro/50 mb-4">
+                <p className="flex items-center gap-2 font-dm text-[12px] text-negro/50">
                   <Users className="w-3.5 h-3.5 text-verde-selva" aria-hidden="true" />
                   {t.credenciales}
                 </p>
-
-                {resenas.length > 0 && (
-                  <div className="space-y-3 border-t border-negro/8 pt-4">
-                    {t.resenasEnEspanol && (
-                      <p className="font-dm text-[11px] text-negro/40 italic">{t.resenasEnEspanol}</p>
-                    )}
-                    {resenas.map((r) => (
-                      <div key={r.nombre + r.texto.slice(0, 12)} className="flex gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={r.foto} alt="" width={32} height={32} loading="lazy" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-dm text-[12px] text-negro/70 leading-snug">“{r.texto}”</p>
-                          <p className="font-dm text-[11px] text-negro/40 mt-1">{r.nombre} · {r.ciudad}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </section>
 
           {/* ── PREGUNTAS DE ÚLTIMO MINUTO ─────────────────────────────────

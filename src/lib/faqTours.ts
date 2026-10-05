@@ -329,7 +329,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
       },
       {
         q: "How do I book, and how much do I pay today?",
-        a: `You book online from the tour page — pick a date and the number of travelers — or on WhatsApp, where we reply in under an hour. Book at least 24 hours ahead, subject to availability. A ${ANTICIPO_PCT}% deposit holds your spot and you settle the balance on the day of the tour. Online checkout takes cards (processed by Stripe); if you'd rather pay by bank transfer or a cash deposit at OXXO, message us on WhatsApp and we'll send you the details. You can also pay 100% up front if you'd rather arrive with nothing pending.`,
+        a: `You book online from the tour page — pick a date and the number of travelers — or on WhatsApp, where we reply in under an hour. Book at least 24 hours ahead, subject to availability. A ${ANTICIPO_PCT}% deposit holds your spot and you settle the balance on the day of the tour. Online checkout takes cards (processed by Stripe); if you'd rather pay by bank transfer or a cash deposit at OXXO, message us on WhatsApp and we'll send you the details. If you'd rather arrive with nothing pending, ask us on WhatsApp for a link to pay 100% up front.`,
       },
       {
         q: "Can I bring children?",
@@ -365,7 +365,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     },
     {
       q: "¿Cómo reservo y cuánto tengo que pagar hoy?",
-      a: `Reservas en línea desde la página del tour —eliges fecha y número de personas— o por WhatsApp, donde respondemos en menos de una hora. Reserva con al menos 24 horas de anticipación, sujeto a disponibilidad. Apartas con el ${ANTICIPO_PCT} % y liquidas el saldo el día del tour. El pago en línea es con tarjeta (los cobros los procesa Stripe); si prefieres transferencia bancaria o depósito en OXXO, escríbenos por WhatsApp y te pasamos los datos. También puedes pagar el 100 % desde el principio si prefieres llegar sin pendientes.`,
+      a: `Reservas en línea desde la página del tour —eliges fecha y número de personas— o por WhatsApp, donde respondemos en menos de una hora. Reserva con al menos 24 horas de anticipación, sujeto a disponibilidad. Apartas con el ${ANTICIPO_PCT} % y liquidas el saldo el día del tour. El pago en línea es con tarjeta (los cobros los procesa Stripe); si prefieres transferencia bancaria o depósito en OXXO, escríbenos por WhatsApp y te pasamos los datos. Si prefieres llegar sin pendientes, pídenos por WhatsApp la liga para pagar el 100 % desde el principio.`,
     },
     {
       q: "¿Se puede ir con niños?",

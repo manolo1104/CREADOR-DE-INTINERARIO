@@ -22,11 +22,15 @@ const PASOS: Array<{ label: string; events: string[] }> = [
   { label: "Vio el catálogo",       events: ["TOURS_LIST_VIEW"] },
   { label: "Del destino al tour",   events: ["DESTINO_TOUR_CLICK"] },
   { label: "Vio un tour",           events: ["TOUR_PAGE_VIEW"] },
-  // Sin este paso no se distinguía "no llega a la página de reserva" de "llega
-  // y no elige fecha" — son páginas distintas y piden arreglos opuestos.
-  { label: "Abrió la reserva",      events: ["BOOKING_PAGE_VIEW"] },
-  { label: "Eligió fecha",          events: ["DATE_SELECTED"] },
+  // En el orden en que pasan: el botón de la ficha (CHECKOUT_STARTED) lleva al
+  // carrito (BOOKING_PAGE_VIEW). Estaban al revés y el embudo parecía ganar
+  // gente entre «abrió» e «inició».
   { label: "Inició reserva",        events: ["CHECKOUT_STARTED"] },
+  // Sin este paso no se distinguía "no llega a la página de reserva" de "llega
+  // y no elige fecha" — son páginas distintas y piden arreglos opuestos. El
+  // checkout de paquetes cuenta aquí también (oct 2026).
+  { label: "Abrió la reserva",      events: ["BOOKING_PAGE_VIEW", "PAQUETE_CHECKOUT_VIEW"] },
+  { label: "Eligió fecha",          events: ["DATE_SELECTED"] },
   { label: "Llegó al pago",         events: ["PAYMENT_INITIATED"] },
   { label: "Pago fallido",          events: ["PAGO_FALLIDO"] },
   { label: "RESERVÓ",               events: ["BOOKING_CONFIRMED"] },

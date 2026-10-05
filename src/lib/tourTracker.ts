@@ -73,6 +73,8 @@ const PASO_EMBUDO: Record<string, string> = {
   TOUR_PAGE_VIEW:    "2·ficha_tour",
   CHECKOUT_STARTED:  "3·agrego_al_carrito",
   BOOKING_PAGE_VIEW: "4·abrio_carrito",
+  // El checkout de paquetes, en el mismo escalón que el carrito (oct 2026).
+  PAQUETE_CHECKOUT_VIEW: "4·abrio_checkout_paquete",
   DATE_SELECTED:     "5·eligio_fecha",
   PAYMENT_INITIATED: "6·pantalla_de_pago",
   PAGO_FALLIDO:      "7·pago_fallido",
@@ -88,6 +90,7 @@ const PASO_EMBUDO: Record<string, string> = {
  */
 const GRABAR_SIEMPRE = new Set([
   "BOOKING_PAGE_VIEW",
+  "PAQUETE_CHECKOUT_VIEW",
   "DATE_SELECTED",
   "PAYMENT_INITIATED",
   "PAGO_FALLIDO",

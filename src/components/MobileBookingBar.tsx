@@ -99,7 +99,10 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
         <button
           type="button"
           onClick={() => {
-            track();
+            // Bajar al módulo NO es empezar la reserva: el `begin_checkout` lo
+            // manda el botón del módulo cuando sí se va al carrito. Antes este
+            // toque lo mandaba también y en celular cada reserva contaba doble.
+            trackTourEvent("BARRA_A_MODULO", { tour: tourId ?? tourSlug, source });
             document.getElementById(ID_MODULO_RESERVA)?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
           className={ctaClass}

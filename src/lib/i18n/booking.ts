@@ -283,10 +283,7 @@ export interface BookingMessages {
     noSePudoGuardar: string;
     sinConexion: string;
 
-    // Apartado + pago
-    apartadoActivo: string;
-    apartadoActivoHabitacion: string;
-    apartadoVencido: string;
+    // Pago
     procesando: string;
     pagar: (monto: string) => string;
     pagoCifrado: (saldo: string) => string;
@@ -324,8 +321,6 @@ export interface BookingMessages {
     confianzaCancelas: string;
     /** Recibe el % real que se cobra hoy (`pctACobrar`). */
     confianzaPago: (pct: number) => string;
-    /** Vacío en español; en inglés avisa de que las reseñas van en su idioma original. */
-    resenasEnEspanol: string;
     antesDePagar: string;
     otraDuda: string;
     escribenosWhatsapp: string;
@@ -405,7 +400,10 @@ export interface BookingMessages {
     cuandoVas: string;
     cuantosVan: string;
     total: string;
-    reservar: (monto: string) => string;
+    /** Botón con fecha: el monto es lo que se paga HOY (el anticipo). */
+    reservarHoy: (montoHoy: string) => string;
+    /** Debajo del botón: qué porcentaje es y cuánto queda para el día del tour. */
+    restoElDia: (pct: number, resto: string) => string;
     continuar: string;
     puedesCambiarlo: string;
     grupoLleno: (max: number) => string;
@@ -775,10 +773,10 @@ const es: BookingMessages = {
     entrada: "Entrada",
     salida: "Salida",
     huespedesEnHabitaciones: (huespedes, habs) =>
-      `${huespedes} huésped${huespedes !== 1 ? "es" : ""} en ${habs} habitación${habs !== 1 ? "es" : ""}`,
+      `${huespedes} huésped${huespedes !== 1 ? "es" : ""} en ${habs} ${habs !== 1 ? "habitaciones" : "habitación"}`,
     salidaDespuesDeEntrada: "La salida tiene que ser al menos un día después de la entrada.",
     resumenNoches: (noches, huespedes, habs) =>
-      `${noches} noche${noches > 1 ? "s" : ""} · ${huespedes} huésped${huespedes > 1 ? "es" : ""} · ${habs} habitación${habs > 1 ? "es" : ""}`,
+      `${noches} noche${noches > 1 ? "s" : ""} · ${huespedes} huésped${huespedes > 1 ? "es" : ""} · ${habs} ${habs > 1 ? "habitaciones" : "habitación"}`,
     nochesGratis: (n, ahorro) =>
       `🎁 ${n === 1 ? "La 3.ª noche va gratis" : `${n} noches gratis`}: te ahorras ${ahorro}.`,
     terceraNocheGratisAviso: "Si te quedas una noche más, la 3.ª va gratis — pagarías lo mismo.",
@@ -827,10 +825,6 @@ const es: BookingMessages = {
     noSePudoGuardar: "No se pudo guardar. Intenta de nuevo.",
     sinConexion: "No se pudo conectar. Revisa tu internet.",
 
-    apartadoActivo: "Te apartamos tus lugares por",
-    apartadoActivoHabitacion: "Te apartamos tus lugares y la habitación por",
-    apartadoVencido:
-      "Se acabó el apartado. Puedes seguir pagando, pero vuelve a revisar el resumen por si algo cambió.",
     procesando: "Procesando…",
     pagar: (monto) => `Pagar ${monto} MXN`,
     pagoCifrado: (saldo) => `Pago cifrado con Stripe · El saldo de ${saldo} lo liquidas el día del primer recorrido`,
@@ -868,14 +862,13 @@ const es: BookingMessages = {
     confianzaPago: (pct) => pct >= 100
       ? "Pago seguro con Stripe · Pagas el total y no queda saldo"
       : `Pago seguro con Stripe · Apartas con el ${pct} %`,
-    resenasEnEspanol: "",
     antesDePagar: "Antes de pagar",
     otraDuda: "¿Te quedó otra duda?",
     escribenosWhatsapp: "Escríbenos por WhatsApp",
     faq: [
       {
         q: "¿Cuánto pago hoy y cuándo el resto?",
-        a: "Hoy apartas con el 30 % del total y el saldo lo liquidas el día del primer recorrido, en efectivo o con tarjeta. Si prefieres, también puedes pagar el 100 % al reservar.",
+        a: "Hoy apartas con el 30 % del total y el saldo lo liquidas el día del primer recorrido, en efectivo o con tarjeta. Si prefieres pagar todo de una vez, escríbenos por WhatsApp y te mandamos la liga.",
       },
       {
         q: "¿Puedo cancelar?",
@@ -940,7 +933,8 @@ const es: BookingMessages = {
     cuandoVas: "¿Cuándo vas?",
     cuantosVan: "¿Cuántos van?",
     total: "Total",
-    reservar: (monto) => `Reservar ${monto}`,
+    reservarHoy: (montoHoy) => `Reservar · hoy pagas ${montoHoy}`,
+    restoElDia: (pct, resto) => `Apartas con el ${pct} %. El resto (${resto}) lo pagas el día del tour.`,
     continuar: "Elegir fecha y reservar",
     puedesCambiarlo: "Puedes cambiar fecha y personas en el siguiente paso.",
     grupoLleno: (max) => `Este recorrido sale con grupos de máximo ${max} personas. ¿Van más? Escríbenos y armamos una salida privada.`,
@@ -1369,10 +1363,6 @@ const en: BookingMessages = {
     noSePudoGuardar: "We couldn't save it. Try again.",
     sinConexion: "We couldn't connect. Check your internet.",
 
-    apartadoActivo: "We're holding your spots for",
-    apartadoActivoHabitacion: "We're holding your spots and the room for",
-    apartadoVencido:
-      "The hold has expired. You can still pay, but check the summary again in case something changed.",
     procesando: "Processing…",
     pagar: (monto) => `Pay ${monto} MXN`,
     pagoCifrado: (saldo) => `Encrypted payment with Stripe · You settle the ${saldo} balance on your first tour day`,
@@ -1413,14 +1403,13 @@ const en: BookingMessages = {
     // Las reseñas son de viajeros reales, con nombre y ciudad. Se dejan tal como
     // las escribieron y se avisa de que están en español: traducirlas en
     // silencio sería poner palabras en boca de una persona identificable.
-    resenasEnEspanol: "Reviews from our travellers, in their own words (Spanish).",
     antesDePagar: "Before you pay",
     otraDuda: "Still have a question?",
     escribenosWhatsapp: "Message us on WhatsApp",
     faq: [
       {
         q: "How much do I pay today and when do I pay the rest?",
-        a: "You pay 30 % of the total today and settle the balance on the day of your first tour, in cash or by card. You can also pay 100 % up front if you prefer.",
+        a: "You pay 30 % of the total today and settle the balance on the day of your first tour, in cash or by card. If you'd rather pay everything up front, message us on WhatsApp and we'll send you the link.",
       },
       {
         q: "Can I cancel?",
@@ -1488,7 +1477,8 @@ const en: BookingMessages = {
     cuandoVas: "When are you going?",
     cuantosVan: "How many of you?",
     total: "Total",
-    reservar: (monto) => `Book ${monto}`,
+    reservarHoy: (montoHoy) => `Book · pay ${montoHoy} today`,
+    restoElDia: (pct, resto) => `A ${pct}% deposit holds your spot. The rest (${resto}) is paid on the day of the tour.`,
     continuar: "Pick a date and book",
     puedesCambiarlo: "You can change the date and party size on the next step.",
     grupoLleno: (max) => `This tour runs with groups of up to ${max}. More of you? Message us and we'll set up a private departure.`,
