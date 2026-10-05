@@ -19,7 +19,7 @@ import { BandaRio } from "@/components/BandaRio";
 const ES_CON_EN = new Set([
   "/", "/tours", "/destinos", "/paquetes", "/precios", "/reservar", "/reservar/carrito",
   "/info-practica", "/nosotros", "/contacto", "/preguntas-frecuentes", "/experiencias",
-  "/viaje-septiembre",
+  "/viaje-septiembre", "/comparar",
 ]);
 // Fichas: toda ficha de tour, destino o paquete existe en los dos idiomas.
 const FICHAS_CON_EN = /^\/(?:tours|destinos|paquetes)\/[^/]+$/;
@@ -85,9 +85,38 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [mobileOpen]);
 
+  // La altura REAL del menú, no 64 px fijos.
+  // 🔴 2 oct 2026: la banda del estado del río vive DENTRO del menú (para
+  // esconderse con él) y lo hace 28 a 43 px más alto, pero `--navbar-offset`
+  // seguía en 64. Todo lo que se pega debajo del menú —el subnav de /tours, el
+  // índice de /info-practica, el encabezado del comparador— quedaba tapado
+  // esos píxeles cada vez que el menú reaparecía al subir. Se mide con
+  // ResizeObserver porque la banda llega después (pide el estado al servidor).
+  // Con el menú móvil abierto no se mide: crece a toda la pantalla y ese alto
+  // no es el que tapa nada.
+  const navRef = useRef<HTMLElement>(null);
+  const mobileOpenRef = useRef(false);
+  const [altoNav, setAltoNav] = useState(64);
   useEffect(() => {
-    document.documentElement.style.setProperty("--navbar-offset", navbarVisible ? "64px" : "0px");
-  }, [navbarVisible]);
+    mobileOpenRef.current = mobileOpen;
+  }, [mobileOpen]);
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    const medir = () => {
+      if (mobileOpenRef.current) return;
+      const alto = Math.round(nav.getBoundingClientRect().height);
+      if (alto > 0) setAltoNav(alto);
+    };
+    const ro = new ResizeObserver(medir);
+    ro.observe(nav);
+    medir();
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--navbar-offset", navbarVisible ? `${altoNav}px` : "0px");
+  }, [navbarVisible, altoNav]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -135,7 +164,7 @@ export default function Navbar() {
         {locale === "en" ? "Skip to main content" : "Saltar al contenido principal"}
       </a>
 
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
+      <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
         {/* Estado del río: dentro del contenedor fijo para esconderse con él. */}
         <BandaRio />
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
