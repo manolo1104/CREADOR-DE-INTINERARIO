@@ -85,7 +85,12 @@ export function FloatingReservarButton() {
   // con fecha fija). Uno flotante que lleva al catálogo de tours sería un
   // segundo «reservar» que no reserva lo mismo.
   const enPaqueteXantolo = pathname === "/paquetes/xantolo-2026";
-  const reservarVisibility = tourSlugMatch || enPaqueteXantolo ? "hidden" : visibility;
+  // El comparador (2 oct 2026): cada columna ya trae su «Reservar» con el grupo
+  // puesto. El flotante lleva al catálogo genérico: sería un segundo «reservar»
+  // que no reserva nada de lo que se está comparando.
+  const enComparador = /^\/(?:en\/)?comparar$/.test(pathname);
+  const sinReservar = tourSlugMatch || enPaqueteXantolo || enComparador;
+  const reservarVisibility = sinReservar ? "hidden" : visibility;
 
   /**
    * La barra del carrito ocupa el pie de la pantalla en cuanto hay algo dentro,
@@ -103,7 +108,7 @@ export function FloatingReservarButton() {
   const abajoReservar = sobreBarraCarrito ? "bottom-[96px]"  : "bottom-6";
   // Sin el botón de reservar debajo (ficha de tour), WhatsApp se queda solo y
   // los 86 px lo dejarían levitando sobre un hueco: baja al ras.
-  const abajoWhatsApp = tourSlugMatch || enPaqueteXantolo
+  const abajoWhatsApp = sinReservar
     ? (sobreBarraCarrito ? "bottom-[96px]" : "bottom-6")
     : (sobreBarraCarrito ? "bottom-[158px]" : "bottom-[86px]");
 

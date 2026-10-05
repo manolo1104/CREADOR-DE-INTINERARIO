@@ -13,8 +13,14 @@ import {
 } from "lucide-react";
 import { TOURS_DB, tourDurTexto, type Tour, precioTachado, promoDe, etiquetaUnidad, PROMO_TEMPORADA } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible, precioVisibleTachado, type Paquete } from "@/lib/paquetes";
+// El "Ideal para" de cada tour vive en `lib/idealPara.ts` (2 oct 2026): el
+// comparador también lo pinta, en un Server Component, y una constante de este
+// archivo "use client" le llegaría como `[object Object]`.
+import { IDEAL_PARA } from "@/lib/idealPara";
+import { urlComparar } from "@/lib/comparador";
+import { comparadorUI } from "@/lib/i18n/comparador";
 
-// ── Para quién es y testimonios, por tour ─────────────────────────────────────
+// ── Testimonios, por tour ─────────────────────────────────────────────────────
 //
 // 🔴 28 sep 2026 — Aquí vivían «127 reservas este mes», «23 reservas esta
 // semana», «⚠️ Solo 4 lugares disponibles este fin de semana» y un «🔥 Trending»,
@@ -25,67 +31,57 @@ import { PAQUETES_DB, precioVisible, precioVisibleTachado, type Paquete } from "
 // sale de la disponibilidad real, nunca de una constante.
 
 const TOUR_PROOF: Record<string, {
-  bestFor:       string;
   reviews:       { name: string; city: string; text: string }[];
 }> = {
   "tour-rzr-xilitla": {
-    bestFor:       "Amigos, familias y primerizos",
     reviews: [
       { name: "Andrés P.", city: "Querétaro", text: "Manejar el RZR cruzando los ríos fue lo mejor del viaje. Salimos llenos de lodo y muertos de risa. ¡Repetiría mil veces!" },
       { name: "Karla M.",  city: "Monterrey", text: "Nunca había manejado un todoterreno y el guía me dio toda la confianza. La Aldea Nanacatli, con sus casitas de hongos, al final es un premiazo." },
     ],
   },
   "tour-rappel-tamul": {
-    bestFor:       "Aventureros y grupos de amigos",
     reviews: [
       { name: "Diego S.",   city: "Querétaro", text: "Nunca había hecho rappel y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo." },
       { name: "Mariana C.", city: "CDMX",      text: "La experiencia más adrenalínica de mi vida. El video con dron que te dan al final lo he visto como veinte veces." },
     ],
   },
   "tour-rafting-tampaon": {
-    bestFor:       "Grupos de amigos y amantes de la adrenalina",
     reviews: [
       { name: "Fernando R.", city: "Monterrey", text: "Los rápidos del Tampaón son otra cosa: agua turquesa de verdad y adrenalina sin parar. El guía dentro de la balsa te da toda la confianza." },
       { name: "Alejandra M.", city: "CDMX",     text: "No sé nadar y aun así lo disfruté muchísimo. El chaleco y el briefing te dan mucha seguridad. El rápido de La Tumba es impresionante." },
     ],
   },
   "tour-tamul": {
-    bestFor:       "Amigos y aventureros",
     reviews: [
       { name: "Carlos M.", city: "CDMX",         text: "La Cascada de Tamul me dejó sin palabras. El mejor día de mi vida." },
       { name: "Sofía R.",  city: "Monterrey",     text: "El Sótano de las Huahuas al atardecer es indescriptible. ¡Vuelvo el año que viene!" },
     ],
   },
   "tour-edward-james": {
-    bestFor:       "Parejas y amantes del arte",
     reviews: [
       { name: "Ana L.",    city: "Guadalajara",   text: "Las Pozas de Edward James son otro mundo. Imposible de describir con palabras." },
       { name: "Miguel T.", city: "CDMX",          text: "El tour más único que he hecho en México. Los guías conocen cada rincón." },
     ],
   },
   "tour-meco": {
-    bestFor:       "Fotógrafos y parejas",
     reviews: [
       { name: "Laura G.",  city: "Querétaro",     text: "Las fotos que saqué son las mejores de mi vida. El agua realmente es turquesa." },
       { name: "Javier S.", city: "San Luis Potosí", text: "Llegamos a la hora perfecta de luz. Los guías saben exactamente cuándo ir." },
     ],
   },
   "tour-minas-micos": {
-    bestFor:       "Familias con niños",
     reviews: [
       { name: "Patricia H.", city: "Monterrey",   text: "Mis hijos no querían salirse del agua. Perfectamente organizado para familias." },
       { name: "Roberto V.",  city: "CDMX",        text: "El color del agua de Minas Viejas es imposible. Lo tienes que ver con tus propios ojos." },
     ],
   },
   "tour-puente-dios": {
-    bestFor:       "Grupos de amigos",
     reviews: [
       { name: "Diego F.",  city: "Guadalajara",   text: "El Puente de Dios con la luz entrando por el arco es algo de otro mundo." },
       { name: "Valeria C.", city: "CDMX",         text: "Las Siete Cascadas en secuencia son increíbles. ¡Fuimos cinco amigos y quedamos todos maravillados!" },
     ],
   },
   "tour-buceo-media-luna": {
-    bestFor:       "Primerizos, parejas y curiosos del buceo",
     reviews: [
       { name: "Mariana E.", city: "San Luis Potosí", text: "Nunca había buceado y el instructor me dio toda la confianza. El agua de la Media Luna es tan clara que parece una alberca gigante. ¡Repetiría sin pensarlo!" },
       // Antes firmaba «Diego F.» igual que el de Puente de Dios pero desde otra
@@ -96,23 +92,18 @@ const TOUR_PROOF: Record<string, {
   // Los 5 recorridos nuevos (sep 2026): con su «ideal para» real; sin reseñas
   // todavía —el render lo tolera— porque no hay ninguna que citar.
   "tour-eden-jardin": {
-    bestFor: "Parejas y amantes del arte que quieren el jardín para ellos",
     reviews: [],
   },
   "tour-travesia-cafe": {
-    bestFor: "Familias, ritmo tranquilo y curiosos del café",
     reviews: [],
   },
   "tour-gruta-xilo": {
-    bestFor: "Aventureros que quieren una noche distinta",
     reviews: [],
   },
   "tour-amanecer-nubes": {
-    bestFor: "Fotógrafos y madrugadores",
     reviews: [],
   },
   "tour-olla-de-la-luz": {
-    bestFor: "Senderistas y amantes del bosque de niebla",
     reviews: [],
   },
 };
@@ -243,9 +234,9 @@ function TourResultCard({
         </h3>
         <p className="font-dm text-[11px] text-negro/50 italic mb-3">{highlight}</p>
 
-        {isPrimary && proof && (
+        {isPrimary && IDEAL_PARA[tour.id] && (
           <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-verde-selva mb-2">
-            Ideal para: {proof.bestFor}
+            Ideal para: {IDEAL_PARA[tour.id].es}
           </p>
         )}
 
@@ -707,6 +698,17 @@ export function RecommenderShell() {
                 grupo={state.grupo}
                 origen={state.origen}
               />
+              {/* Solo con "1 día": ahí son dos opciones para UN día y compararlas
+                  ayuda a elegir. Con "2 días" el segundo es otro día del viaje
+                  (no compite con el primero), y con 3+ manda el paquete. */}
+              {state.dias === "1 día" && (
+                <Link
+                  href={urlComparar("recorridos", [primaryTour.slug, secondaryTour.slug], { origen: "recomendador" })}
+                  className="mt-4 inline-flex items-center min-h-[44px] font-dm text-[11px] tracking-[1.5px] uppercase text-verde-selva hover:text-negro underline decoration-verde-selva/40 underline-offset-4 transition-colors"
+                >
+                  {comparadorUI("es").entradas.recomendador}
+                </Link>
+              )}
             </div>
           )}
 

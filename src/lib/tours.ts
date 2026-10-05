@@ -85,7 +85,7 @@ export const INCLUYE_SIEMPRE_EN = [
 ] as const;
 
 /** Clave de comparación: sin mayúsculas, sin acentos y sin puntuación. */
-function claveIncluye(x: string): string {
+export function claveIncluye(x: string): string {
   return x
     .toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")

@@ -10,6 +10,9 @@ import {
   type Tour, type PartesRecogida,
 } from "@/lib/tours";
 import { destinosDeTour } from "@/lib/tourMapping";
+import { toursSimilares } from "@/lib/toursSimilares";
+import { urlComparar } from "@/lib/comparador";
+import { comparadorUI } from "@/lib/i18n/comparador";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
 import { TOUR_REQUISITOS, noIncluyeDe, queLlevarDe } from "@/lib/tourRequisitos";
 import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
@@ -1975,29 +1978,11 @@ export default function TourDetailPage({ params }: Props) {
         const combo = COMBOS[tour.id];
         const comboBase = combo ? TOURS_DB.find((tr) => tr.slug === combo.slug) : null;
         const comboTour = comboBase ? localizeTour(comboBase, locale) : null;
-        // 🔴 Eran siempre los dos primeros del catálogo (el RZR y el Rappel), en
-        // cualquier ficha: al buceo de Rioverde le sugería manejar un RZR en
-        // Xilitla. Ahora van primero los que recogen igual —o también salen de
-        // Xilitla— y los de la misma familia; a igualdad, los que más se venden.
-        // ⚠️ El buceo es el único `en-sitio`: "recoger igual" no le deja a nadie,
-        // y con solo la categoría volvían a ganar el RZR y la Gruta. Su base
-        // natural es Ciudad Valles (a unas 2 h de la laguna), así que para él
-        // cuentan como misma salida los que recogen en Valles.
-        const recActual = recogidaDeTour(base).tipo;
-        const deXilitla = (tipo: string) => tipo === "hospedaje-xilitla" || tipo === "base-xilitla";
-        const afinidad = (tr: Tour) => {
-          const tipo = recogidaDeTour(tr).tipo;
-          const mismaSalida = recActual === "en-sitio"
-            ? tipo === "hospedaje"
-            : tipo === recActual || (deXilitla(tipo) && deXilitla(recActual));
-          return (mismaSalida ? 2 : 0) + (tr.categoria === base.categoria ? 1 : 0);
-        };
-        const otherTours = TOURS_DB
-          .map((tr, i) => ({ tr, i }))
-          .filter(({ tr }) => tr.slug !== tour.slug && tr.slug !== combo?.slug)
-          .sort((a, b) => afinidad(b.tr) - afinidad(a.tr) || rankTour(a.tr.slug) - rankTour(b.tr.slug) || a.i - b.i)
-          .slice(0, 2)
-          .map(({ tr }) => localizeTour(tr, locale));
+        // Los dos más parecidos (misma salida → misma familia → los que más se
+        // venden). La regla vive en `toursSimilares` para que el comparador,
+        // abierto desde aquí, ponga EXACTAMENTE estos dos al lado de este tour.
+        const otherTours = toursSimilares(base, 2, combo ? [combo.slug] : [])
+          .map((tr) => localizeTour(tr, locale));
         const comboMsg = combo ? (en ? combo.msgEn ?? t.comboGeneric : combo.msg) : "";
         // "$2,990 MXN/persona" junto al Edén anunciaba siete veces su precio.
         const precioConUnidad = (tr: Tour, conDesde: boolean) =>
@@ -2052,6 +2037,18 @@ export default function TourDetailPage({ params }: Props) {
                   </Link>
                 ))}
               </div>
+              {/* Los mismos dos de arriba, al lado de este, en el comparador:
+                  precio para el grupo, duración, qué incluye y qué visita cada uno. */}
+              {otherTours.length > 0 && (
+                <div className="mt-6 text-center">
+                  <Link
+                    href={urlComparar("recorridos", [tour.slug, ...otherTours.map((o) => o.slug)], { locale, origen: "ficha" })}
+                    className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+                  >
+                    {comparadorUI(locale).entradas.ficha}
+                  </Link>
+                </div>
+              )}
             </div>
           </section>
         );

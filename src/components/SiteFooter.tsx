@@ -34,6 +34,7 @@ export function SiteFooter() {
         { label: "All-inclusive packages", href: lp("/paquetes") },
         { label: "Tours", href: lp("/tours") },
         { label: "Tour prices 2026", href: lp("/precios") },
+        { label: "Compare tours and packages", href: lp("/comparar") },
         { label: "Destinations", href: lp("/destinos") },
         { label: "Things to do", href: lp("/experiencias") },
         { label: "About us", href: lp("/nosotros") },
@@ -51,6 +52,7 @@ export function SiteFooter() {
         { label: "Tours en la Huasteca Potosina", href: "/tours" },
         { label: "Paquetes todo incluido con hotel", href: "/paquetes" },
         { label: "Precios de los tours 2026", href: "/precios" },
+        { label: "Comparar tours y paquetes", href: "/comparar" },
         // Escuelas, empresas y agencias: se cotizan aparte, no pasan por el
         // motor de reservas. Entra al pie para que no nazca huérfana.
         { label: "Viajes de grupo y escolares", href: "/grupos" },

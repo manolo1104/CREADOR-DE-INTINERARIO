@@ -113,6 +113,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Estaba en `esOnlyStatic` como dos URLs sueltas, así que el sitemap no
     // declaraba el par hreflang que el HTML sí declara.
     ...bilingual("/precios",          { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    // El comparador de recorridos y paquetes (2 oct 2026). Sale del catálogo,
+    // así que su fecha es la del catálogo.
+    ...bilingual("/comparar",         { changeFrequency: "monthly", priority: 0.6, ...CAT }),
     ...bilingual("/nosotros",         { changeFrequency: "monthly", priority: 0.6 }),
     ...bilingual("/info-practica",    { changeFrequency: "monthly", priority: 0.7, ...CAT }),
     // Traducidas el 14 ago 2026: hasta entonces vivían en `esOnlyStatic`.

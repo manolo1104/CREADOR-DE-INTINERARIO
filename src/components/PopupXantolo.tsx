@@ -135,6 +135,9 @@ export function PopupXantolo() {
     // El recomendador YA está pidiendo un correo: dos capturas encimadas
     // a media conversación es la forma de perder las dos.
     ruta.startsWith("/recomendar") ||
+    // El comparador (2 oct 2026): quien está decidiendo entre dos recorridos no
+    // necesita que una ventana le tape la tabla para pedirle el correo.
+    ruta.startsWith("/comparar") ||
     pathname.includes("xantolo");
 
   const cerrar = useCallback(() => {

@@ -21,10 +21,25 @@ export interface TourRequisitos {
   queLlevar?: string[];
   /** Condiciones físicas, de salud o de manejo relevantes para decidir. */
   requisitos?: string[];
-  /** Solo si está publicada en algún lado. `undefined` = no hay dato. */
+  /**
+   * Solo si está publicada en algún lado o la dictó Manolo. `undefined` = no hay dato.
+   *
+   * 2 oct 2026, Manolo: rappel, rafting, Gruta de Xilo, Amanecer de Nubes y Olla de
+   * la Luz son "desde 8 años". Es INFORMATIVA (eligió "solo mostrarlo"): la reserva
+   * sigue vendiendo boleto de niño en esos cinco, nada la bloquea.
+   *
+   * 🔴 La ficha pinta "Edad mínima: N años." y pega `edadNota` detrás: la nota de un
+   * recorrido con edad mínima NO repite la edad, o sale dos veces seguidas.
+   */
   edadMinima?: number;
   /** Matiz de edad cuando no hay un mínimo duro (recomendaciones). */
   edadNota?: string;
+  /**
+   * Edad RECOMENDADA, sin ser mínimo: el número que ya dice `edadNota` ("Recomendamos
+   * a partir de 5 años…"), suelto para que el comparador lo pinte sin leer la frase
+   * (que solo existe en español).
+   */
+  edadRecomendada?: number;
 }
 
 /** Aplica a todos los tours de un día. Copiado de la sección "No incluye" de /precios. */
@@ -86,7 +101,8 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "No se necesita experiencia previa: el primer descenso es 100 % guiado por guías de alta montaña",
       "Las fotos y el video con dron van incluidos, sin costo extra",
     ],
-    edadNota: "Escríbenos antes de reservar si viajas con menores: confirmamos contigo si el descenso es apto según la edad y la complexión.",
+    edadMinima: 8,
+    edadNota: "Si viajas con menores, cuéntanos su edad y complexión al reservar: confirmamos contigo que el descenso sea apto.",
   },
 
   "tour-rafting-tampaon": {
@@ -111,7 +127,8 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "La GoPro solo se permite con soporte de pecho o casco: las dos manos deben quedar libres",
       "La salida se confirma según el nivel del río; en temporada de lluvias (julio–septiembre) puede reprogramarse",
     ],
-    edadNota: "Escríbenos antes de reservar si viajas con menores: en rápidos Clase III confirmamos contigo si la salida es apta según la edad.",
+    edadMinima: 8,
+    edadNota: "Si viajas con menores, cuéntanos sus edades al reservar: en rápidos Clase III confirmamos contigo que la salida sea apta.",
   },
 
   "tour-tamul": {
@@ -152,6 +169,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "La Hacienda Los Gómez está incluida, sin costo adicional",
     ],
     edadNota: "Recomendamos a partir de 5 años por los escalones de bajada.",
+    edadRecomendada: 5,
   },
 
   "tour-buceo-media-luna": {
@@ -266,7 +284,8 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Si sufres de claustrofobia, este no es tu recorrido",
       "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp, o llegas por tu cuenta",
     ],
-    edadNota: "Cuéntanos las edades al reservar. Es una cueva de noche, con piso irregular y agua: para los más chicos conviene que lo valoremos juntos antes de apartar.",
+    edadMinima: 8,
+    edadNota: "Es una cueva de noche, con piso irregular y agua: cuéntanos las edades al reservar y lo valoramos juntos antes de apartar.",
   },
 
   "tour-amanecer-nubes": {
@@ -294,7 +313,8 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "El mar de nubes depende del clima: es frecuente, pero nadie lo puede garantizar",
       "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp",
     ],
-    edadNota: "Sin edad mínima marcada, pero es una caminata larga en pendiente y de madrugada. Cuéntanos las edades al reservar y te decimos si conviene.",
+    edadMinima: 8,
+    edadNota: "Es una caminata larga en pendiente y de madrugada: cuéntanos las edades al reservar y te decimos si conviene.",
   },
 
   "tour-olla-de-la-luz": {
@@ -321,7 +341,8 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Es un abismo de 193 metros: no te acerques al borde sin tu guía",
       "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp",
     ],
-    edadNota: "Sin edad mínima marcada, pero son unas 2 horas de caminata en altura y el sótano tiene bordes expuestos. Cuéntanos las edades al reservar.",
+    edadMinima: 8,
+    edadNota: "Son unas 2 horas de caminata en altura y el sótano tiene bordes expuestos: cuéntanos las edades al reservar.",
   },
 };
 

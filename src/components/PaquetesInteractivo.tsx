@@ -11,6 +11,8 @@ import { PROMO_TEMPORADA } from "@/lib/tours";
 import { ahorroPaquete } from "@/lib/ahorroPaquete";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
+import { urlComparar } from "@/lib/comparador";
+import { comparadorUI } from "@/lib/i18n/comparador";
 
 export type { Paquete };
 
@@ -230,7 +232,16 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
       <PatronDestinos />
 
       <div className="relative mx-auto max-w-6xl px-6">
-        <div className="mb-5 flex items-center justify-end gap-2">
+        <div className="mb-5 flex items-center justify-between gap-2">
+          {/* Los cuatro en el comparador: día por día, qué incluye y el total
+              para el grupo, uno al lado del otro (2 oct 2026). */}
+          <Link
+            href={urlComparar("paquetes", paquetes.map((p) => p.slug), { locale, origen: "paquetes" })}
+            className="inline-flex items-center min-h-[44px] font-dm text-[11px] tracking-[1.5px] uppercase text-verde-selva hover:text-negro underline decoration-verde-selva/40 underline-offset-4 transition-colors"
+          >
+            {comparadorUI(locale).entradas.paquetes}
+          </Link>
+          <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => mover(-1)}
@@ -249,6 +260,7 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
+          </div>
         </div>
       </div>
 

@@ -24,6 +24,8 @@ import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { localizeTour } from "@/lib/i18n/localize";
 import { getToursFaqs, salidaDiaria } from "@/lib/faqTours";
 import { ANTICIPO_PCT } from "@/lib/carrito";
+import { urlComparar } from "@/lib/comparador";
+import { comparadorUI } from "@/lib/i18n/comparador";
 
 import { GRUPO_MAX, GRUPO_MIN, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
 export function generateMetadata(): Metadata {
@@ -382,19 +384,32 @@ export default function ToursPage() {
             );
           })}
         </div>
-        {!en && (
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 border border-white/10 bg-white/[0.03] px-6 py-5">
-            <p className="font-dm text-sm text-crema/75 text-center sm:text-left">
-              ¿No sabes cuál elegir? Contesta 7 preguntas y te decimos cuál va contigo.
-            </p>
+        {/* Dos formas de salir de la duda: ponerlos lado a lado (comparador,
+            con los tres de arriba ya puestos) o contestar 7 preguntas
+            (recomendador, solo en español). */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 border border-white/10 bg-white/[0.03] px-6 py-5">
+          <p className="font-dm text-sm text-crema/75 text-center sm:text-left">
+            {en
+              ? "Not sure which one? Put the favorites side by side: price, length and what each one includes."
+              : "¿No sabes cuál elegir? Contesta 7 preguntas y te decimos cuál va contigo."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
             <Link
-              href="/recomendar"
-              className="inline-flex items-center justify-center border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 flex-shrink-0"
+              href={urlComparar("recorridos", TOURS_RANKING.slice(0, 3), { locale, origen: "favoritos" })}
+              className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
             >
-              Descubrir mi tour →
+              {comparadorUI(locale).entradas.favoritos}
             </Link>
+            {!en && (
+              <Link
+                href="/recomendar"
+                className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+              >
+                Descubrir mi tour →
+              </Link>
+            )}
           </div>
-        )}
+        </div>
       </section>
 
       {/* ── CATEGORÍAS ──
@@ -603,6 +618,12 @@ export default function ToursPage() {
                   <span className="block text-center rounded bg-verde-selva group-hover:bg-verde-vivo text-crema text-[10px] tracking-[2px] uppercase font-dm font-medium py-3.5 transition-colors duration-200">
                     {en ? "View full tour →" : "Ver tour completo →"}
                   </span>
+                  <Link
+                    href={urlComparar("recorridos", [tour.slug], { locale, origen: "tarjeta" })}
+                    className="relative z-10 flex items-center justify-center min-h-[44px] mt-1 font-dm text-[11px] tracking-[1px] text-crema/60 hover:text-dorado underline decoration-white/20 underline-offset-4 transition-colors"
+                  >
+                    {comparadorUI(locale).entradas.parecidos}
+                  </Link>
                 </div>
               </div>
             </article>

@@ -652,6 +652,7 @@ ${full
 - [Home](${SITE}/en)
 - [All tours](${SITE}/en/tours)
 - [Full prices of tours and packages, in MXN](${SITE}/en/precios)
+- [Compare tours or packages side by side](${SITE}/en/comparar): price for your group, duration, what's included, start time and the places each one visits
 - [Frequently asked questions](${SITE}/en/preguntas-frecuentes): prices, best time to go, getting there
 - [All destinations (${DESTINOS_DB.length} entries)](${SITE}/en/destinos)
 - [Book a tour (online booking engine)](${SITE}/en/reservar)
@@ -674,6 +675,7 @@ ${full
 - [Inicio](${SITE})
 - [Todos los tours](${SITE}/tours)
 - [Precios completos de tours y paquetes, en MXN](${SITE}/precios)
+- [Comparar recorridos o paquetes lado a lado](${SITE}/comparar): precio para tu grupo, duración, qué incluye, a qué hora sales y qué visita cada uno
 - [Preguntas frecuentes](${SITE}/preguntas-frecuentes)
 - [Política de cancelación y clima](${SITE}/politica-de-cancelacion): qué pasa si cancelas tarde, si no te presentas, si llueve o si el paraje cierra
 - [Todos los destinos (${DESTINOS_DB.length} fichas)](${SITE}/destinos)

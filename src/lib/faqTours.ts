@@ -104,23 +104,31 @@ export function salidaDiaria(locale: Locale, corta = false): string {
 }
 
 /**
- * Los recorridos cuya ficha pide que le cuentes las edades antes de apartar
- * (rappel, rafting, Gruta, Amanecer, Olla, Edén), leídos de `edadNota`.
+ * Los recorridos SIN edad mínima cuya ficha pide que le cuentes las edades
+ * antes de apartar (hoy, el Edén), leídos de `edadNota`.
  *
  * 🔴 La FAQ de niños decía que "la única actividad que no es para niños
- * pequeños" era el buceo, y `tourRequisitos.ts` pide valorar la edad en seis
- * recorridos más. La edad mínima de los tres nuevos NO está confirmada: aquí
- * no se da ninguna, solo se pide avisar. Ojo: se detecta por la redacción de
- * `edadNota`; si alguien la reescribe sin "cuéntanos las edades" ni
- * "escríbenos antes de reservar", ese recorrido sale de la lista.
+ * pequeños" era el buceo, y `tourRequisitos.ts` pedía valorar la edad en seis
+ * recorridos más. Desde el 2 oct 2026 cinco de ellos tienen edad mínima (8
+ * años, dictada por Manolo) y pasan a `CON_EDAD_MINIMA`. Ojo: se detecta por
+ * la redacción de `edadNota`; si alguien la reescribe sin "cuéntanos las
+ * edades" ni "escríbenos antes de reservar", ese recorrido sale de la lista.
  */
 const CONSULTAR_EDADES = TOURS_DB.filter((t) => {
   const r = TOUR_REQUISITOS[t.id];
   return !r?.edadMinima && /cuéntanos las edades|escríbenos antes de reservar/i.test(r?.edadNota ?? "");
 });
 
-/** Los que sí tienen edad mínima publicada (hoy, el buceo: 10 años). */
+/** Los que sí tienen edad mínima (el buceo, 10 años; rappel, rafting, Gruta, Amanecer y Olla, 8). */
 const CON_EDAD_MINIMA = TOURS_DB.filter((t) => TOUR_REQUISITOS[t.id]?.edadMinima);
+
+/**
+ * Las edades mínimas distintas, de menor a mayor. La FAQ arma UNA frase por
+ * edad: con seis recorridos, una por cada uno eran seis frases casi iguales.
+ */
+const EDADES_MINIMAS = Array.from(
+  new Set(CON_EDAD_MINIMA.map((t) => TOUR_REQUISITOS[t.id]!.edadMinima!)),
+).sort((a, b) => a - b);
 
 /** Tarifa del grupo entero (el Edén): ahí el descuento de niños no aplica. */
 const POR_GRUPO = TOURS_DB.filter((t) => t.precioUnidad === "grupo");
@@ -249,11 +257,17 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
       ? ` On ${yLista(POR_GRUPO.map((t) => conArticulo(t, locale)), locale)} the rate is for the whole group, and each child counts as one more person in it.`
       : ` En ${yLista(POR_GRUPO.map((t) => conArticulo(t, locale)), locale)} la tarifa es del grupo completo y cada niño cuenta como una persona más del grupo.`
     : "";
-  const ninosEdadMin = CON_EDAD_MINIMA.map((t) => {
-    const edad = TOUR_REQUISITOS[t.id]!.edadMinima;
+  // Una frase por edad. "Con buena salud" solo cuando todos los de esa edad son
+  // `soloAdultos` (el buceo): sus requisitos publican las condiciones de salud;
+  // a los de 8 años nadie les puso esa condición y no se inventa.
+  const ninosEdadMin = EDADES_MINIMAS.map((edad) => {
+    const tours = CON_EDAD_MINIMA.filter((t) => TOUR_REQUISITOS[t.id]!.edadMinima === edad);
+    const lista = yLista(tours.map((t) => nombreCorto(t, locale)), locale);
+    const varios = tours.length > 1;
+    const salud = tours.every((t) => t.soloAdultos);
     return en
-      ? ` ${nombreCorto(t, locale)} is for ages ${edad} and up in good health.`
-      : ` ${nombreCorto(t, locale)} es para mayores de ${edad} años con buena salud.`;
+      ? ` ${lista} ${varios ? "are" : "is"} for ages ${edad} and up${salud ? " in good health" : ""}.`
+      : ` ${lista} ${varios ? "son" : "es"} a partir de ${edad} años${salud ? " y con buena salud" : ""}.`;
   }).join("");
   const ninosConsultar = CONSULTAR_EDADES.length
     ? en

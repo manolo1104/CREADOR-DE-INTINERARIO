@@ -52,6 +52,7 @@ const FUENTE: Record<string, string> = {
   floating_button: "el botón flotante",
   tour_card: "la tarjeta del tour",
   tour_widget: "la calculadora",
+  comparador: "el comparador",
 };
 function desde(v: unknown): string {
   const f = typeof v === "string" ? FUENTE[v] ?? v : "";
@@ -82,6 +83,11 @@ const SOLO_SE_GUARDA = new Set([
   "INVENTORY_BADGE_SHOWN",
   "TOAST_SHOWN",
   "TOAST_DISMISSED",
+  // Comparador (2 oct 2026): navegación, no intención de compra. "Reservar"
+  // desde el comparador sale como CHECKOUT_STARTED con `source: "comparador"`.
+  "COMPARAR_VISTA",
+  "COMPARAR_CAMBIO",
+  "COMPARAR_FICHA",
 ]);
 
 // Cada evento → [etiqueta, ...campos]. Los campos vacíos se omiten en el log.

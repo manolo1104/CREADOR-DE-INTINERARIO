@@ -26,6 +26,7 @@ import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
 import { GOOGLE_RATING, GOOGLE_RESENAS } from "../lib/resenas";
+import { TOUR_REQUISITOS } from "../lib/tourRequisitos";
 
 // ── Capa curada (lo que la fuente del sitio no expresa en datos) ─────────────
 // Se mantiene aquí, cerca de la generación, y es lo único que se edita a mano.
@@ -245,6 +246,24 @@ function sinTrasladoNoMarcado(t: (typeof TOURS_DB)[number]): boolean {
 }
 
 /**
+ * Edades mínimas de `tourRequisitos.ts`, salvo las de los `soloAdultos` (el
+ * buceo ya va en la frase de niños con su regla). El 2 oct 2026 Manolo fijó 8
+ * años para rappel, rafting, Gruta, Amanecer y Olla: sin esto el bot seguía
+ * vendiendo esos cinco a cualquier edad mientras la ficha ya decía "desde 8".
+ */
+function edadesMinimasTexto(): string {
+  const porEdad = new Map<number, string[]>();
+  for (const t of TOURS_DB) {
+    const edad = TOUR_REQUISITOS[t.id]?.edadMinima;
+    if (!edad || t.soloAdultos) continue;
+    porEdad.set(edad, [...(porEdad.get(edad) ?? []), t.nombreCorto]);
+  }
+  return Array.from(porEdad)
+    .map(([edad, nombres]) => `${nombres.join(", ")}: a partir de ${edad} años.`)
+    .join(" ");
+}
+
+/**
  * La recogida de UN tour, en la frase que ve el cliente en la ficha y en el
  * correo (`fraseRecogida`).
  *
@@ -298,7 +317,10 @@ const empresa = {
     ...TOURS_DB.filter(sinTrasladoNoMarcado).map((t) => `${t.nombreCorto}: ${TRANSPORTE[t.slug].detalle} La hora de encuentro se confirma al reservar.`),
   ].join(" "),
   cancelacion: "Cancela gratis hasta 48 h antes.",
-  ninos: "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
+  ninos: [
+    "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
+    edadesMinimasTexto(),
+  ].filter(Boolean).join(" "),
   // 🔴 La calificación del NEGOCIO en Google, de `resenas.ts`. El prompt de
   // Camila decía «4.9★ con 492 reseñas» escrito a mano y juraba que eran
   // cifras reales; así no se vuelve a desfasar del sitio.
