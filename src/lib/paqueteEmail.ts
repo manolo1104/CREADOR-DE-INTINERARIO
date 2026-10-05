@@ -55,6 +55,9 @@ export interface PaqueteEmailInput {
   nSmall:             number;   // menores de 6
   habitacion:         string;
   checkin:            string;
+  /** Sin hotel (la Noche de Xantolo): a qué hora sale y dónde se recoge. */
+  horario?:           string;
+  recogida?:          string;
   nochesHotel:        number;
   nocheExtra:         boolean;
   /** El tour que eligió para el día que el paquete deja a elección. */
@@ -103,6 +106,10 @@ const money = (k: string, v: string, acento?: "verde" | "terracota", grande = fa
 };
 
 export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: string; html: string } {
+  // La Noche de Xantolo (sin hotel) no es un «paquete» para quien la compra: el
+  // asunto y la barra la nombran como lo que es. Solo se vende en español.
+  const esNoche = !!d.paquete.evento?.sinHotel;
+  const asunto = esNoche ? `Tu Noche de Xantolo está reservada — ${d.confirmationNumber}` : "";
   const L = d.locale;
   const T = getEmails(L).paquete;
   const paqueteLoc = localizePaquete(d.paquete, L);
@@ -157,7 +164,7 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${T.subject(d.confirmationNumber)}</title>
+<title>${asunto || T.subject(d.confirmationNumber)}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
   * { margin:0; padding:0; }
@@ -191,11 +198,11 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
 
         <!-- CABECERA -->
         <tr><td class="mobile-plg" style="padding:36px 40px 40px 40px;background-color:#1a2e1a;">
-          <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial,sans-serif;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.65);">${T.eyebrow}</p>
+          <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial,sans-serif;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.65);">${esNoche ? "Confirmación" : T.eyebrow}</p>
           <h1 class="hero-title" style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:44px;font-style:italic;font-weight:300;color:#f4edd8;line-height:1.1;">
-            ${T.h1a}<br>${T.h1b}
+            ${esNoche ? "¡Tu noche está<br>reservada!" : `${T.h1a}<br>${T.h1b}`}
           </h1>
-          <p style="margin:14px 0 0 0;font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7;">${T.entradilla}</p>
+          <p style="margin:14px 0 0 0;font-family:'DM Sans',Arial,sans-serif;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7;">${esNoche ? "Ya tienes lugar. Aquí abajo está tu noche, con lo que incluye y lo que falta por cubrir." : T.entradilla}</p>
         </td></tr>
 
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:44px 48px 48px 48px;">
@@ -217,14 +224,16 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
           </table>
 
           <!-- EL VIAJE -->
-          ${barra(T.paquete)}
+          ${barra(esNoche ? "Tu noche" : T.paquete)}
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr><td colspan="2" style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:20px 22px;">
               <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;color:#1a2e1a;line-height:1.2;">${paqueteLoc.nombre}</p>
               <p style="margin:0;font-family:'DM Sans',Arial,sans-serif;font-size:12px;letter-spacing:1px;color:#8a7a5a;">${paqueteLoc.duracion}</p>
             </td></tr>
-            ${d.fechaInicio ? dato(T.fechaInicio, fechaLarga(d.fechaInicio, L) || d.fechaInicio) : ""}
+            ${d.fechaInicio ? dato(esNoche ? "Fecha" : T.fechaInicio, fechaLarga(d.fechaInicio, L) || d.fechaInicio) : ""}
             ${dato(T.personas, T.grupoLinea(d.adultos, d.nMid, d.nSmall))}
+            ${d.horario ? dato(L === "en" ? "Time" : "Horario", d.horario) : ""}
+            ${d.recogida ? dato(L === "en" ? "Pickup" : "Pasamos por ti a", d.recogida) : ""}
             ${d.habitacion ? dato(T.habitacion, d.habitacion) : ""}
             ${d.checkin ? dato(T.entradaHotel, `${fechaLarga(d.checkin, L)}<br><span style="font-family:'DM Sans',Arial,sans-serif;font-size:12px;color:#8a7a5a;">${T.noches(d.nochesHotel)}</span>`) : ""}
             ${d.eleccionNombre && d.paquete.eleccionTour
@@ -290,5 +299,5 @@ export function buildPaqueteConfirmEmailHtml(d: PaqueteEmailInput): { subject: s
 </body>
 </html>`;
 
-  return { subject: T.subject(d.confirmationNumber), html };
+  return { subject: asunto || T.subject(d.confirmationNumber), html };
 }

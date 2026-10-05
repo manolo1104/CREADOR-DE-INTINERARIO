@@ -1,55 +1,49 @@
 // Solo servidor: lee la base.
 import { prisma } from "./prisma";
 import type { Paquete } from "./paquetes";
+import { leerManual, resumirLugares, type LugaresPaquete, type ManualCupo, type UnidadCupo } from "./cupoEvento";
+
+export type { LugaresPaquete } from "./cupoEvento";
 
 /**
- * Los lugares de un paquete de evento (Xantolo 2026: 8 lugares, 4 parejas).
+ * Los lugares de un evento: el paquete Xantolo con hotel (4 cuartos) y las dos
+ * noches de Xantolo sin hotel (12 personas cada una).
  *
  * Se cuentan de DOS fuentes, porque se vende por dos puertas:
  *  - en línea: las reservas del sitio quedan en `TourBooking` con el slug del
- *    paquete; se cuentan solas (todas menos las canceladas).
- *  - por WhatsApp: el panel no guarda un paquete con su slug, así que el equipo
- *    anota a mano cuántas PERSONAS vendió por fuera (control en el tablero).
+ *    evento; se cuentan solas (todas menos las canceladas).
+ *  - por WhatsApp: el panel no guarda el evento con su slug, así que el equipo
+ *    anota a mano lo que vendió por fuera (control en el tablero).
  *
- * Lo que se anuncia («quedan 6 lugares») y lo que deja pagar salen de aquí. Es
- * escasez real: si el número se queda viejo, se vende de más.
+ * Lo que se anuncia («quedan 3 de 4 cuartos») y lo que deja pagar salen de
+ * aquí. Es escasez real: si el número se queda viejo, se vende de más. La
+ * cuenta en sí vive en `cupoEvento.ts`, que no toca la base.
  */
-
-export interface LugaresPaquete {
-  cupo:     number;
-  enLinea:  number;
-  manual:   number;
-  vendidos: number;
-  libres:   number;
-}
 
 /** La clave de `Config` donde vive lo vendido por fuera del sitio. */
 export function claveCupoManual(slug: string): string {
   return `cupo-manual:${slug}`;
 }
 
-/** Personas vendidas por fuera del sitio (lo que anota el equipo). */
-export async function vendidosManual(slug: string): Promise<number> {
+/** Lo vendido por fuera del sitio (lo que anota el equipo). */
+export async function vendidosManual(slug: string, unidad: UnidadCupo): Promise<ManualCupo> {
   const fila = await prisma.config.findUnique({ where: { key: claveCupoManual(slug) } });
-  const n = Math.floor(Number(fila?.value));
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  return leerManual(fila?.value, unidad);
 }
 
-/** Personas vendidas en el sitio: reservas con el slug del paquete, sin canceladas. */
-export async function vendidosEnLinea(slug: string): Promise<number> {
-  const filas = await prisma.tourBooking.findMany({
+/** Reservas del sitio con el slug del evento, sin canceladas. */
+async function reservasEnLinea(slug: string) {
+  return prisma.tourBooking.findMany({
     where:  { tourSlug: slug, status: { not: "cancelled" } },
     select: { adults: true, children: true },
   });
-  return filas.reduce((s, f) => s + (f.adults || 0) + (f.children || 0), 0);
 }
 
 /** El estado del cupo. `null` si el paquete no tiene cupo (no es de evento). */
 export async function lugaresDePaquete(p: Pick<Paquete, "slug" | "evento">): Promise<LugaresPaquete | null> {
   if (!p.evento) return null;
-  const [enLinea, manual] = await Promise.all([vendidosEnLinea(p.slug), vendidosManual(p.slug)]);
-  const vendidos = enLinea + manual;
-  return { cupo: p.evento.cupo, enLinea, manual, vendidos, libres: Math.max(0, p.evento.cupo - vendidos) };
+  const [reservas, manual] = await Promise.all([reservasEnLinea(p.slug), vendidosManual(p.slug, p.evento.unidad)]);
+  return resumirLugares(p.evento, reservas, manual);
 }
 
 /**

@@ -6,6 +6,7 @@
 import { TRASLADOS, precioBase } from "./traslados";
 import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
+import { NOCHE_XANTOLO } from "./nocheXantolo";
 
 export interface ItinerarioDia {
   dia: number;
@@ -53,16 +54,39 @@ export interface EventoPaquete {
   fecha: string;
   /** La fecha como se lee en pantalla. */
   fechaTexto: string;
-  /** Lugares (PERSONAS) a la venta en total: en línea + por WhatsApp. */
+  /**
+   * En qué se cuentan los lugares (4 oct 2026, al abrirlo a familias):
+   *  - "habitacion": el paquete con hotel. Cada reserva ocupa UN cuarto, sea
+   *    una pareja o una familia de cuatro. Contar personas vendía de menos
+   *    (una familia de 4 y dos parejas son 8 personas y solo 3 cuartos).
+   *  - "persona": la Noche de Xantolo, sin hotel. Cada lugar es un asiento.
+   */
+  unidad: "habitacion" | "persona";
+  /** Lugares a la venta en total (en línea + por WhatsApp), en `unidad`. */
   cupo: number;
-  /** Máximo de la salida, para explicarlo (los lugares a la venta son `cupo`). */
+  /** Máximo de PERSONAS en la salida de la noche (el transporte con guía). */
   salidaMaxima: number;
-  /** Se vende por pareja: 2 adultos, sin menores, una habitación. */
-  soloPareja: true;
+  /** Máximo de personas (adultos + menores) en una reserva. */
+  maxPorReserva: number;
+  /** Mínimo de adultos en una reserva. */
+  minAdultos: number;
+  /**
+   * Lo que paga cada persona arriba de la pareja por la parte del evento
+   * (degustación y noche con guía). Los menores pagan con la escala de los
+   * tours. Sin este número el paquete solo se vende a parejas.
+   */
+  extraEventoPorPersona?: number;
+  /** Sin hotel: el precio publicado es POR ADULTO y no hay habitación. */
+  sinHotel?: boolean;
   /** Cómo se dice la habitación: la asigna el hotel, no se elige. */
-  habitacionTexto: string;
+  habitacionTexto?: string;
+  /** Horario de la salida y dónde se recoge (sin hotel). */
+  horario?: string;
+  recogida?: string;
   /** Su página de venta propia. */
   pagina: string;
+  /** Lo que el equipo tiene que operar esa noche. Va a la reserva. */
+  notaEquipo: string;
 }
 
 export interface Paquete {
@@ -873,11 +897,12 @@ const XANTOLO_2026: Paquete = {
   duracion: "2 días / 1 noche",
   dias: 2,
   noches: 1,
-  // 🟡 PRECIO SUGERIDO, pendiente de que Manolo lo confirme (2 oct 2026). Por
-  // pareja, como el resto. Referencia: hotel de una noche ($1,500 en la tabla
-  // del motor) + Ruta Surrealista para dos a precio de lista ($2,800) + la
-  // degustación y la noche guiada, que no se venden sueltas. Es la noche más
-  // pedida del año en un pueblo que se llena: no se anuncia ahorro.
+  // Precio aprobado por Manolo con su «súbelo» del 2 oct. Por pareja, como el
+  // resto. Referencia: hotel de una noche ($1,500 en la tabla del motor) + Ruta
+  // Surrealista para dos a precio de lista ($2,800) + la degustación y la noche
+  // guiada. Es la noche más pedida del año en un pueblo que se llena: no se
+  // anuncia ahorro. Desde el 4 oct cada persona más paga su parte (ver
+  // `extraEventoPorPersona`).
   precio: 6490,
   precioLabel: "por pareja",
   badge: "Solo el 1 de noviembre",
@@ -888,8 +913,8 @@ const XANTOLO_2026: Paquete = {
     "/imagenes/paquetes/xantolo-2026/comparsa-noche.jpg",
     "/imagenes/paquetes/xantolo-2026/habitacion.jpg",
   ],
-  urgencia: "Una sola noche, la del domingo 1 de noviembre, para 4 parejas",
-  perfiles: ["Parejas", "Xantolo", "Una noche"],
+  urgencia: "Una sola noche, la del domingo 1 de noviembre: 4 cuartos, para parejas o familias",
+  perfiles: ["Parejas", "Familias", "Xantolo"],
   tours: [
     "Ruta Surrealista: Edward James, manantiales, cuevas y castillo (domingo 1)",
     "Degustación de temporada y noche de Xantolo con guía (domingo 1)",
@@ -925,15 +950,83 @@ const XANTOLO_2026: Paquete = {
   evento: {
     fecha: "2026-11-01",
     fechaTexto: "Domingo 1 de noviembre de 2026",
-    cupo: 8,
+    // 4 oct 2026: se abre a familias. Siguen siendo 4 cuartos (antes «8
+    // lugares» = 4 parejas); ahora cada cuarto lleva de 2 a 4 personas y la
+    // salida de la noche no pasa de 12.
+    unidad: "habitacion",
+    cupo: 4,
     salidaMaxima: 12,
-    soloPareja: true,
-    habitacionTexto: "Habitación doble en el Hotel Paraíso Encantado (la asigna el hotel)",
+    maxPorReserva: 4,
+    minAdultos: 2,
+    // La persona extra paga lo mismo que la Noche de Xantolo sola (degustación
+    // y noche con guía), además de su parte de hotel y de la Ruta Surrealista,
+    // que ya suma el motor.
+    extraEventoPorPersona: NOCHE_XANTOLO.precioAdulto,
+    habitacionTexto: "Habitación en el Hotel Paraíso Encantado (la asigna el hotel)",
     pagina: "/paquetes/xantolo-2026",
+    notaEquipo: "EVENTO DOMINGO 1 DE NOVIEMBRE DE 2026: después de la Ruta Surrealista, degustación (tamales, atole, bocoles y pan de muerto) y transporte con guía al centro de Xilitla (comparsas y shows más representativos del Xantolo). Habitación: la asigna el hotel.",
   },
 };
 
-export const PAQUETES_EVENTO: Paquete[] = [XANTOLO_2026];
+/**
+ * La Noche de Xantolo sin hotel, una por fecha (4 oct 2026). Cada noche es su
+ * propio «paquete» de evento para reusar lo que ya protege al de hotel: la
+ * fecha la pone el servidor, se vende hasta la víspera, el cupo se cuenta en
+ * la base y el equipo lo ajusta en el panel. Viven aquí y no en `TOURS_DB`
+ * para no salir en el catálogo, en los «desde $X» ni en el recomendador.
+ *
+ * 🔴 `precio` es POR ADULTO (`sinHotel`), no por pareja: el motor lo lee así.
+ */
+export const NOCHES_XANTOLO: Paquete[] = NOCHE_XANTOLO.noches.map((n) => ({
+  id: n.slug,
+  slug: n.slug,
+  nombre: NOCHE_XANTOLO.nombre,
+  subtitulo: `Transporte con guía, degustación de temporada y ${NOCHE_XANTOLO.queVes}`,
+  duracion: "Una noche con guía",
+  dias: 1,
+  noches: 0,
+  precio: NOCHE_XANTOLO.precioAdulto,
+  precioLabel: "por persona",
+  badge: n.corta,
+  imagen: "/imagenes/paquetes/xantolo-2026/comparsa-noche.jpg",
+  collage: [
+    "/imagenes/paquetes/xantolo-2026/comparsa-noche.jpg",
+    "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg",
+  ],
+  urgencia: `${n.cupo} lugares esa noche`,
+  perfiles: ["Familias", "Grupos", "Xantolo"],
+  tours: [`Noche de Xantolo con guía y degustación (${n.corta.toLowerCase()})`],
+  itinerario: [
+    {
+      dia: 1,
+      tipo: "tour",
+      titulo: `Noche de Xantolo · ${n.corta}`,
+      descripcion:
+        `Te recogemos a las ${NOCHE_XANTOLO.horaRecogida} en ${NOCHE_XANTOLO.recogida}. ` +
+        `Degustación de temporada (${NOCHE_XANTOLO.degustacion}) y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes} en el centro de Xilitla. ` +
+        `Regreso a tu hospedaje hacia las ${NOCHE_XANTOLO.regreso}.`,
+    },
+  ],
+  incluye: NOCHE_XANTOLO.incluye,
+  noIncluye: NOCHE_XANTOLO.noIncluye,
+  valor: [],
+  evento: {
+    fecha: n.fecha,
+    fechaTexto: n.fechaTexto,
+    unidad: "persona",
+    cupo: n.cupo,
+    salidaMaxima: n.cupo,
+    maxPorReserva: n.cupo,
+    minAdultos: 1,
+    sinHotel: true,
+    horario: NOCHE_XANTOLO.horario,
+    recogida: NOCHE_XANTOLO.recogida,
+    pagina: NOCHE_XANTOLO.pagina,
+    notaEquipo: `NOCHE DE XANTOLO ${n.fechaTexto.toUpperCase()}: recoger a las ${NOCHE_XANTOLO.horaRecogida} en el hospedaje que indicó el cliente en Xilitla; degustación (${NOCHE_XANTOLO.degustacion}); comparsas y shows más representativos del Xantolo en el centro con guía; regreso hacia las ${NOCHE_XANTOLO.regreso}. Salida aparte de la del paquete con hotel.`,
+  },
+}));
+
+export const PAQUETES_EVENTO: Paquete[] = [XANTOLO_2026, ...NOCHES_XANTOLO];
 
 /** Hoy en Ciudad de México (YYYY-MM-DD). El servidor corre en UTC. */
 function hoyMexico(): string {
@@ -942,7 +1035,9 @@ function hoyMexico(): string {
 
 /**
  * ¿Todavía se puede vender? Hasta el día ANTERIOR al evento: el día 1 el
- * recorrido sale a las 8 de la mañana y ya no hay a quién avisarle.
+ * recorrido sale a las 8 de la mañana y ya no hay a quién avisarle. Las noches
+ * sin hotel siguen la misma regla (valor por defecto del 4 oct: así el equipo
+ * arma la salida con un día de margen).
  */
 export function eventoALaVenta(p: Pick<Paquete, "evento">): boolean {
   return !!p.evento && hoyMexico() < p.evento.fecha;
@@ -951,4 +1046,24 @@ export function eventoALaVenta(p: Pick<Paquete, "evento">): boolean {
 /** Los paquetes de evento que todavía se venden, para anunciarlos. */
 export function paquetesEventoALaVenta(): Paquete[] {
   return PAQUETES_EVENTO.filter(eventoALaVenta);
+}
+
+/**
+ * Lo mismo, pero UNO por página de venta: las dos noches de Xantolo comparten
+ * `/paquetes/noche-de-xantolo`, y anunciarlas por separado repetía la franja y
+ * metía la misma URL dos veces al sitemap.
+ */
+export function paginasDeEventoALaVenta(): Paquete[] {
+  const vistas = new Set<string>();
+  return paquetesEventoALaVenta().filter((p) => {
+    const pagina = p.evento!.pagina;
+    if (vistas.has(pagina)) return false;
+    vistas.add(pagina);
+    return true;
+  });
+}
+
+/** Las noches de Xantolo sin hotel que todavía se venden. */
+export function nochesXantoloALaVenta(): Paquete[] {
+  return NOCHES_XANTOLO.filter(eventoALaVenta);
 }

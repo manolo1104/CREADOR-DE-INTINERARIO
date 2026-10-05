@@ -250,6 +250,10 @@ export async function POST(req: NextRequest) {
             meta.viajeroSolo ? `VIAJA SOLO (${meta.viajeroSolo}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.` : "",
             meta.hospedaje ? `Hospedaje: ${meta.hospedaje}` : "",
             meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
+            // Eventos de Xantolo (4 oct 2026): lo que se opera esa noche y, en la
+            // noche sin hotel, dónde pasar por el cliente.
+            meta.recogida   ? `RECOGER EN: ${meta.recogida}` : "",
+            meta.notaEquipo ? meta.notaEquipo : "",
           ].filter(Boolean).join(" | ");
 
           const creada = await prisma.tourBooking.create({

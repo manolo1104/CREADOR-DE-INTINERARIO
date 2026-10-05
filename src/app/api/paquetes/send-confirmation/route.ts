@@ -17,6 +17,10 @@ export const runtime = "nodejs";
 
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")} MXN`;
 
+/** Lo que escribe el cliente va al HTML del correo: sin etiquetas. */
+const sinEtiquetas = (t: string) =>
+  t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
 /** "2026-10-01" + N días → "2026-10-02". Vacío si no hay fecha base. */
 function sumarDias(ymd: string, dias: number): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return "";
@@ -150,7 +154,12 @@ export async function POST(req: NextRequest) {
             const esDiaElegible = paquete.eleccionTour?.dia === d.dia && elegidos.length === 1;
             return renglon(esDiaElegible ? elegidos[0] : d.tourSlug!, d.dia, d.titulo);
           });
-    const packageItems = [{
+    // La Noche de Xantolo no lleva hotel: ni bloque de hospedaje en el panel ni
+    // renglones de entrada y salida en el correo.
+    const sinHotel = !!paquete.evento?.sinHotel;
+    const recogida = String(meta.recogida || "").trim();
+
+    const packageItems = sinHotel ? [] : [{
       hotel:        "Hotel Paraíso Encantado",
       habitacion:   habitacion || (L === "en" ? "Room" : "Habitación"),
       noches:       nochesHotel,
@@ -160,21 +169,20 @@ export async function POST(req: NextRequest) {
     }];
 
     const notesFull = [
-      `Paquete: ${paquete.nombre} (${paquete.duracion})`,
+      sinHotel ? `${paquete.nombre} · ${paquete.evento!.fechaTexto}` : `Paquete: ${paquete.nombre} (${paquete.duracion})`,
       `Grupo: ${adultos} adulto(s)${nMid ? `, ${nMid} niño(s) 6–10` : ""}${nSmall ? `, ${nSmall} menor(es) de 6` : ""}`,
-      habitacion ? `Habitación: ${habitacion}` : null,
+      sinHotel && recogida ? `RECOGER EN: ${recogida} (${paquete.evento!.horario ?? ""})` : null,
+      habitacion && !sinHotel ? `Habitación: ${habitacion}` : null,
       repartoHab ? `Reparto por habitación: ${repartoHab}` : null,
-      `Noches de hotel: ${nochesHotel}${nocheExtra ? " (incluye noche extra — entra la víspera, check-in 3 PM)" : ""}`,
-      checkin ? `Entrada: ${checkin}${checkout ? ` · Salida: ${checkout}` : ""}` : null,
+      sinHotel ? null : `Noches de hotel: ${nochesHotel}${nocheExtra ? " (incluye noche extra — entra la víspera, check-in 3 PM)" : ""}`,
+      checkin && !sinHotel ? `Entrada: ${checkin}${checkout ? ` · Salida: ${checkout}` : ""}` : null,
       eleccionNombre
         ? (aLaCarta || paquete.eleccionTour?.dia === undefined
             ? `Recorridos elegidos: ${eleccionNombre}`
             : `Día ${paquete.eleccionTour?.dia} elegido: ${eleccionNombre}`)
         : null,
       // Lo que el equipo tiene que operar esa noche y que no sale del catálogo.
-      paquete.evento
-        ? `EVENTO ${paquete.evento.fechaTexto.toUpperCase()}: después de la Ruta Surrealista, degustación (tamales, atole, bocoles y pan de muerto) y transporte con guía al centro de Xilitla (comparsas y shows más representativos del Xantolo). Habitación: la asigna el hotel.`
-        : null,
+      paquete.evento ? paquete.evento.notaEquipo : null,
       `Pago inicial: ${pctNum}% (${fmx(cobrado)})`,
       pendiente > 0 ? `Saldo pendiente: ${fmx(pendiente)}` : "Pagado 100%",
       L === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : null,
@@ -186,7 +194,7 @@ export async function POST(req: NextRequest) {
         data: {
           confirmationNumber,
           tourId:                paquete.slug,
-          tourName:              `Paquete · ${paquete.nombre}`,
+          tourName:              sinHotel ? `${paquete.nombre} · ${paquete.evento!.fechaTexto}` : `Paquete · ${paquete.nombre}`,
           tourSlug:              paquete.slug,
           tourDate:              fechaInicio,
           adults:                adultos,
@@ -237,7 +245,11 @@ export async function POST(req: NextRequest) {
           locale: L, paquete, confirmationNumber,
           customerName, fechaInicio,
           adultos, nMid, nSmall,
-          habitacion, checkin, nochesHotel, nocheExtra,
+          habitacion: sinHotel ? "" : habitacion,
+          checkin: sinHotel ? "" : checkin,
+          nochesHotel, nocheExtra,
+          horario:  sinHotel ? paquete.evento!.horario : undefined,
+          recogida: sinHotel ? sinEtiquetas(recogida) : undefined,
           eleccionNombre, lineItems,
           totalFull, cobrado, pendiente, pctNum,
         });

@@ -51,12 +51,14 @@ const SEGUNDOS = 20;
 const CADUCA = "2026-11-03";
 
 /**
- * El paquete Xantolo (2 oct 2026): la noche del 1 de noviembre para 4 parejas.
- * Se escribe aquí y no se importa de `paquetes.ts` para no cargar el catálogo
- * entero en este popup, que sale en todas las páginas. Si cambia la página o la
- * fecha del paquete, cambia también aquí (`XANTOLO_2026` en paquetes.ts).
+ * La Noche de Xantolo con guía (4 oct 2026): $990 por persona, 31 oct y 1 nov,
+ * sin hotel. Es la oferta más fácil de tomar para quien lee de Xantolo (sirve
+ * con niños, en grupo y llegando el sábado) y su página enlaza al paquete con
+ * hotel. Se escribe aquí y no se importa de `paquetes.ts` para no cargar el
+ * catálogo entero en este popup, que sale en todas las páginas. Si cambian la
+ * página, el precio o las fechas, cambian también aquí (`nocheXantolo.ts`).
  */
-const PAQUETE_XANTOLO = { pagina: "/paquetes/xantolo-2026", ultimoDiaDeVenta: "2026-10-31" };
+const PAQUETE_XANTOLO = { pagina: "/paquetes/noche-de-xantolo", ultimoDiaDeVenta: "2026-10-31" };
 /** 🔴 Sin prefijo de idioma: el blog sólo existe en español y `/en/blog/…` da 404. */
 const SLUG_GUIA = "/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia";
 const FOTO = "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg";
@@ -538,7 +540,7 @@ export function PopupXantolo() {
                     className="inline-flex items-center gap-1.5 font-dm text-[11px] uppercase tracking-[1.6px] transition-opacity duration-200 hover:opacity-80"
                     style={{ color: CEMPASUCHIL }}
                   >
-                    Paquete para parejas del 1 de noviembre
+                    La noche con guía, $990 por persona
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 )}

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { BedDouble, Car, Sun, Moon, ArrowRight } from "lucide-react";
 import { TOURS_DB, regresoDeTour, etiquetaUnidad, type Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { getPaquete, eventoALaVenta, precioVisible } from "@/lib/paquetes";
+import { getPaquete, eventoALaVenta, precioVisible, nochesXantoloALaVenta } from "@/lib/paquetes";
 import { lugaresDePaqueteSeguro } from "@/lib/cupoPaquete";
+import { cabeEnCupo } from "@/lib/cupoEvento";
+import { NOCHE_XANTOLO } from "@/lib/nocheXantolo";
 import { PatronXantolo } from "@/components/blog/PatronXantolo";
 
 /**
@@ -18,9 +20,12 @@ import { PatronXantolo } from "@/components/blog/PatronXantolo";
  * Lo que se promete aquí es SOLO lo que ya existe. Las comparsas son gratis y
  * en la plaza de cada pueblo: no se venden. Desde el 2 oct 2026 hay producto
  * propio, el paquete Xantolo (`/paquetes/xantolo-2026`, la noche del 1 de
- * noviembre para 4 parejas): mientras se vende, el bloque de arriba lo anuncia
- * con los lugares REALES; agotado o pasada su venta, vuelve a lo de antes
- * (armar el viaje por WhatsApp).
+ * noviembre con hotel; desde el 4 oct, para parejas o familias): mientras se
+ * vende, el bloque de arriba lo anuncia con los cuartos REALES. Desde el 4 oct
+ * también la Noche de Xantolo sin hotel (`/paquetes/noche-de-xantolo`, $990 por
+ * persona, 31 oct y 1 nov): sale junto al paquete y, si el paquete se agota, en
+ * su lugar. Sin nada a la venta, vuelve a lo de antes (armar el viaje por
+ * WhatsApp).
  *
  * Colores del popup de Xantolo (`PopupXantolo.tsx`): morado de altar y
  * cempasúchil, fuera de la paleta verde del sitio a propósito.
@@ -75,14 +80,21 @@ function BotonWhatsApp({ texto }: { texto: string }) {
 export async function XantoloPlanDeViaje() {
   if (!xantoloVigente()) return null;
 
-  // El paquete, mientras se vende y le queden lugares para una pareja.
+  // ¿Queda alguna noche sin hotel con lugar? Se anuncia junto al paquete o,
+  // si el paquete se acabó, en su lugar.
+  const noches = nochesXantoloALaVenta();
+  const lugaresNoches = await Promise.all(noches.map((n) => lugaresDePaqueteSeguro(n)));
+  const hayNoche = noches.some((_, i) => !lugaresNoches[i] || cabeEnCupo(lugaresNoches[i]!, 1));
+
+  // El paquete, mientras se vende y le quepa al menos una pareja.
   const paquete = getPaquete(PAQUETE);
   if (paquete?.evento && eventoALaVenta(paquete)) {
     const lugares = await lugaresDePaqueteSeguro(paquete);
-    if (!lugares || lugares.libres >= 2) {
-      return <XantoloPaquete precio={precioVisible(paquete)} libres={lugares?.libres ?? null} cupo={paquete.evento.cupo} pagina={paquete.evento.pagina} />;
+    if (!lugares || cabeEnCupo(lugares, 2)) {
+      return <XantoloPaquete precio={precioVisible(paquete)} libres={lugares?.libres ?? null} cupo={paquete.evento.cupo} pagina={paquete.evento.pagina} conNoche={hayNoche} />;
     }
   }
+  if (hayNoche) return <XantoloNoche />;
 
   const filas = [
     { Icon: BedDouble, texto: "Hospedaje en Xilitla para las noches de fiesta" },
@@ -136,9 +148,9 @@ export async function XantoloPlanDeViaje() {
  * El anuncio del paquete, en el mismo lugar y con la misma piel que el bloque
  * de armar el viaje. El precio y los lugares salen del motor y de la base.
  */
-function XantoloPaquete({ precio, libres, cupo, pagina }: { precio: number; libres: number | null; cupo: number; pagina: string }) {
+function XantoloPaquete({ precio, libres, cupo, pagina, conNoche }: { precio: number; libres: number | null; cupo: number; pagina: string; conNoche: boolean }) {
   const filas = [
-    { Icon: BedDouble, texto: "Una noche en Xilitla, del domingo 1 al lunes 2 de noviembre" },
+    { Icon: BedDouble, texto: "Una noche con hotel en Xilitla, del domingo 1 al lunes 2 de noviembre, para parejas o familias" },
     { Icon: Sun,       texto: "Ruta Surrealista de día, con transporte desde el hotel" },
     { Icon: Moon,      texto: "Degustación de temporada y la noche de Xantolo con guía" },
   ];
@@ -171,7 +183,7 @@ function XantoloPaquete({ precio, libres, cupo, pagina }: { precio: number; libr
         </ul>
         <p className="mt-5 font-dm text-[14px] text-crema/85" style={{ fontVariantNumeric: "lining-nums tabular-nums" }}>
           <strong className="font-medium text-crema">${precio.toLocaleString("es-MX")}</strong> la pareja
-          {libres !== null && <span style={{ color: CEMPASUCHIL }}> · quedan {libres} de {cupo} lugares</span>}
+          {libres !== null && <span style={{ color: CEMPASUCHIL }}> · quedan {libres} de {cupo} cuartos</span>}
         </p>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <Link
@@ -180,6 +192,68 @@ function XantoloPaquete({ precio, libres, cupo, pagina }: { precio: number; libr
             style={{ backgroundColor: CEMPASUCHIL, color: "#1a0c1f" }}
           >
             Ver el paquete <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+          <BotonWhatsApp texto="Armar otro plan" />
+        </div>
+        {/* Para quien ya tiene hospedaje o llega el sábado: la noche sola. */}
+        {conNoche && (
+          <p className="mt-4 font-dm text-[13px] text-crema/70" style={{ fontVariantNumeric: "lining-nums tabular-nums" }}>
+            ¿Ya tienes hospedaje o llegas el sábado?{" "}
+            <Link href={NOCHE_XANTOLO.pagina} className="underline underline-offset-4 hover:text-crema" style={{ color: CEMPASUCHIL }}>
+              Solo la noche, ${NOCHE_XANTOLO.precioAdulto.toLocaleString("es-MX")} por persona
+            </Link>
+          </p>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+/**
+ * La noche sin hotel, cuando el paquete ya no tiene cuartos (o no se vende).
+ * Misma piel y mismo lugar que el anuncio del paquete.
+ */
+function XantoloNoche() {
+  const filas = [
+    { Icon: Car,  texto: `Pasamos por ti a ${NOCHE_XANTOLO.recogida}, ${NOCHE_XANTOLO.horario}` },
+    { Icon: Sun,  texto: `Degustación de temporada: ${NOCHE_XANTOLO.degustacion}` },
+    { Icon: Moon, texto: `Con un guía del pueblo, ${NOCHE_XANTOLO.queVes}` },
+  ];
+  return (
+    <aside
+      aria-labelledby="xantolo-plan-titulo"
+      id="xantolo-plan"
+      className="not-prose relative isolate my-10 scroll-mt-28 overflow-hidden"
+      style={{ backgroundColor: MORADO, border: `1px solid ${CEMPASUCHIL}40` }}
+    >
+      <PatronXantolo />
+      <div className="relative p-6 sm:p-8">
+        <p className="font-dm text-[10px] uppercase tracking-[2.5px]" style={{ color: CEMPASUCHIL }}>
+          ✦ Noche de Xantolo · sábado 31 o domingo 1
+        </p>
+        <h2 id="xantolo-plan-titulo" className="mt-3 font-cormorant text-[28px] font-light leading-[1.1] text-crema sm:text-[34px]" style={{ fontVariantNumeric: "lining-nums", fontFeatureSettings: '"lnum" 1' }}>
+          Las comparsas son gratis.
+          <br />
+          <span style={{ color: CEMPASUCHIL }}>Te llevamos con guía.</span>
+        </h2>
+        <ul className="mt-5 space-y-2.5">
+          {filas.map(({ Icon, texto }) => (
+            <li key={texto} className="flex items-start gap-3 font-dm text-[14px] leading-snug text-crema/80">
+              <Icon className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: CEMPASUCHIL }} aria-hidden="true" />
+              <span>{texto}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 font-dm text-[14px] text-crema/85" style={{ fontVariantNumeric: "lining-nums tabular-nums" }}>
+          <strong className="font-medium text-crema">${NOCHE_XANTOLO.precioAdulto.toLocaleString("es-MX")}</strong> por persona · niños con descuento
+        </p>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href={NOCHE_XANTOLO.pagina}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[1.5px] transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
+            style={{ backgroundColor: CEMPASUCHIL, color: "#1a0c1f" }}
+          >
+            Ver las noches <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
           <BotonWhatsApp texto="Armar otro plan" />
         </div>
@@ -228,6 +302,7 @@ export function XantoloDiasYNoches() {
   if (!xantoloVigente()) return null;
   const paq = getPaquete(PAQUETE);
   const conPaquete = paq?.evento && eventoALaVenta(paq) ? paq.evento.pagina : null;
+  const conNoche = nochesXantoloALaVenta().length > 0;
   const deDia = tours(DE_DIA);
   const completos = tours(DIA_COMPLETO);
   if (!deDia.length) return null;
@@ -273,6 +348,11 @@ export function XantoloDiasYNoches() {
           {conPaquete && (
             <Link href={conPaquete} className="font-dm text-[13px] underline underline-offset-4 hover:text-crema" style={{ color: CEMPASUCHIL }}>
               O todo armado: el paquete del 1 de noviembre
+            </Link>
+          )}
+          {conNoche && (
+            <Link href={NOCHE_XANTOLO.pagina} className="font-dm text-[13px] underline underline-offset-4 hover:text-crema" style={{ color: CEMPASUCHIL }}>
+              O solo la noche con guía
             </Link>
           )}
         </div>

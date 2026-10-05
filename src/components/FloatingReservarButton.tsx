@@ -84,7 +84,7 @@ export function FloatingReservarButton() {
   // La landing del paquete Xantolo ya trae su botón de reservar (al paquete,
   // con fecha fija). Uno flotante que lleva al catálogo de tours sería un
   // segundo «reservar» que no reserva lo mismo.
-  const enPaqueteXantolo = pathname === "/paquetes/xantolo-2026";
+  const enPaqueteXantolo = pathname === "/paquetes/xantolo-2026" || pathname === "/paquetes/noche-de-xantolo";
   // El comparador (2 oct 2026): cada columna ya trae su «Reservar» con el grupo
   // puesto. El flotante lleva al catálogo genérico: sería un segundo «reservar»
   // que no reserva nada de lo que se está comparando.

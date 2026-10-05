@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getPaquete, eventoALaVenta } from "@/lib/paquetes";
 import { lugaresDePaquete } from "@/lib/cupoPaquete";
+import { cabeEnCupo } from "@/lib/cupoEvento";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { habitacionesDePaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
@@ -27,24 +28,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paquete inválido." }, { status: 400 });
     }
 
-    // Paquete de evento (Xantolo): la fecha la pone el servidor, se vende solo
-    // hasta la víspera y solo si quedan lugares. Contar es obligatorio: si la
-    // base no contesta, no se cobra (vender un cuarto que no existe es peor
-    // que perder una venta).
+    // Paquete de evento (Xantolo con hotel y las noches sin hotel): la fecha la
+    // pone el servidor y se vende solo hasta la víspera. Los lugares se
+    // revisan más abajo, cuando ya se sabe cuántas personas son.
     const evento = paquete.evento;
-    if (evento) {
-      if (!eventoALaVenta(paquete)) {
-        return NextResponse.json({ error: "Este paquete ya no está a la venta." }, { status: 410 });
-      }
-      let libres = 0;
-      try {
-        libres = (await lugaresDePaquete(paquete))?.libres ?? 0;
-      } catch {
-        return NextResponse.json({ error: "No pudimos confirmar los lugares. Intenta de nuevo en un momento." }, { status: 503 });
-      }
-      if (libres < 2) {
-        return NextResponse.json({ error: "Se acabaron los lugares de este paquete. Escríbenos por WhatsApp por si se libera uno." }, { status: 409 });
-      }
+    if (evento && !eventoALaVenta(paquete)) {
+      return NextResponse.json({ error: "Este paquete ya no está a la venta." }, { status: 410 });
+    }
+
+    // Sin hotel, el equipo pasa por el cliente: sin saber dónde se hospeda no
+    // se puede operar la salida.
+    const recogida = String(paqueteDetails?.recogida ?? "").trim().slice(0, 200);
+    if (evento?.sinHotel && recogida.length < 3) {
+      return NextResponse.json({ error: "Dinos dónde te hospedas en Xilitla para pasar por ti." }, { status: 400 });
     }
 
     // El monto es AUTORITATIVO desde el servidor. Antes era
@@ -105,13 +101,42 @@ export async function POST(req: NextRequest) {
     });
     if (!cobro) {
       return NextResponse.json(
-        { error: `Número de personas inválido. Para grupos de más de ${MAX_PERSONAS_PAQUETE} escríbenos por WhatsApp y lo cotizamos.` },
+        {
+          error: evento
+            ? `Número de personas inválido. Para más de ${evento.maxPorReserva} personas escríbenos por WhatsApp y lo armamos.`
+            : `Número de personas inválido. Para grupos de más de ${MAX_PERSONAS_PAQUETE} escríbenos por WhatsApp y lo cotizamos.`,
+        },
         { status: 400 },
       );
     }
     const charge = cobro.charge;
     if (charge <= 0) {
       return NextResponse.json({ error: "Monto inválido." }, { status: 400 });
+    }
+
+    // Los lugares, ya con el tamaño del grupo. Contar es obligatorio: si la
+    // base no contesta, no se cobra (vender un cuarto o un asiento que no
+    // existe es peor que perder una venta).
+    if (evento) {
+      let lugares;
+      try {
+        lugares = await lugaresDePaquete(paquete);
+      } catch {
+        return NextResponse.json({ error: "No pudimos confirmar los lugares. Intenta de nuevo en un momento." }, { status: 503 });
+      }
+      if (!lugares || !cabeEnCupo(lugares, cobro.personas)) {
+        const quedan = lugares
+          ? (evento.unidad === "persona" ? lugares.libres : Math.min(lugares.personasLibres, lugares.libres > 0 ? evento.maxPorReserva : 0))
+          : 0;
+        return NextResponse.json(
+          {
+            error: quedan > 0
+              ? `Ya no caben ${cobro.personas} personas: quedan lugares para ${quedan}. Escríbenos por WhatsApp y lo vemos.`
+              : "Se acabaron los lugares. Escríbenos por WhatsApp por si se libera uno.",
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const personas = String(cobro.personas);
@@ -121,14 +146,16 @@ export async function POST(req: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount:        Math.round(charge * 100), // MXN → centavos
       currency:      "mxn",
-      description:   `Paquete Huasteca Potosina — ${paquete.nombre} (${pct}%) · ${customerName || ""}`,
+      description:   evento?.sinHotel
+        ? `${paquete.nombre} — ${evento.fechaTexto} (${pct}%) · ${customerName || ""}`
+        : `Paquete Huasteca Potosina — ${paquete.nombre} (${pct}%) · ${customerName || ""}`,
       receipt_email: customerEmail || undefined,
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",
         // Se guarda como reserva usando los mismos campos de TourBooking (tourId/tourName…)
         tourId:        paquete.slug,
-        tourName:      `Paquete · ${paquete.nombre}`,
+        tourName:      evento?.sinHotel ? `${paquete.nombre} · ${evento.fechaTexto}` : `Paquete · ${paquete.nombre}`,
         tourSlug:      paquete.slug,
         tourDate:      fecha,
         adults:        String(cobro.adultos),
@@ -138,7 +165,7 @@ export async function POST(req: NextRequest) {
         // seguridad a ciegas.
         childrenMid:   String(cobro.childrenMid),
         childrenSmall: String(cobro.childrenSmall),
-        habitacion:    evento ? evento.habitacionTexto : habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
+        habitacion:    evento ? (evento.habitacionTexto ?? "") : habitacionElegida?.nombre ?? (cobro.vistaMontana ? "Jungla (vista a la montaña)" : "Vista a la selva"),
         // Sin esto el equipo recibe un paquete con un día "a elegir" sin saber
         // qué eligió el cliente, y el reparto de habitaciones se perdía.
         tourElegido:   elegidos.join(","),
@@ -151,6 +178,11 @@ export async function POST(req: NextRequest) {
         habitaciones:  String(cobro.habitaciones),
         extraHotel:    String(cobro.extraHotel),
         extraTours:    String(cobro.extraTours),
+        extraEvento:   String(cobro.extraEvento),
+        // Lo que el equipo opera esa noche y, sin hotel, dónde recoger. Si la
+        // pantalla de confirmación no llega, el webhook arma la reserva con esto.
+        notaEquipo:    evento ? evento.notaEquipo.slice(0, 490) : "",
+        recogida,
         personas,
         source:        "huasteca-potosina.com",
       },

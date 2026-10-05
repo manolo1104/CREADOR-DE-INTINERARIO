@@ -43,6 +43,14 @@ export const MAX_POR_HABITACION = 4;
 export const MAX_PERSONAS_PAQUETE = 12;
 
 /**
+ * La escala de menores de siempre (la de los tours sueltos): de 6 a 10 años
+ * pagan el 70 % y los menores de 6 el 50 %. Los bebés menores de 3 no pagan y
+ * no se cuentan.
+ */
+export const FACTOR_NINO_MEDIO = 0.7;
+export const FACTOR_NINO_CHICO = 0.5;
+
+/**
  * Cuánto se puede pagar hoy. 30 % es el mínimo desde el 12 de agosto de 2026
  * (antes era 10 %, que no cubre ni la primera noche de hotel).
  *
@@ -165,6 +173,11 @@ export interface PaqueteChargeResult {
   nochesTotales:  number;
   /** Lo que se suma de boletos de tour por la gente extra. */
   extraTours:     number;
+  /**
+   * Paquete de evento abierto a familias: lo que paga cada persona arriba de
+   * la pareja por la degustación y la noche con guía. 0 en los demás.
+   */
+  extraEvento:    number;
   /** Precio por boleto extra, sumando todos los tours del itinerario. */
   toursPorPersona: number;
   habitaciones:   number;
@@ -207,19 +220,47 @@ export function computePaqueteCharge(input: {
   const childrenSmall = Math.max(0, Math.floor(Number(input.childrenSmall) || 0));
   const personas      = adultos + childrenMid + childrenSmall;
 
-  // El paquete es por pareja: la base son DOS adultos. Menos de eso no se
-  // vende, y arriba del tope se cotiza a mano porque hay que confirmar
-  // habitaciones.
-  if (adultos < 2 || personas > MAX_PERSONAS_PAQUETE) return null;
-
-  // Paquete de evento por pareja (Xantolo): dos adultos y nadie más. El hotel
-  // tiene contadas las habitaciones de esa noche y la oferta es para parejas.
-  if (paquete.evento?.soloPareja && (adultos !== 2 || personas !== 2)) return null;
+  const evento = paquete.evento;
 
   // 30 % mínimo (decisión de Manolo, 12 ago 2026). Antes el mínimo era 10 %, que
   // no cubre ni la primera noche de hotel del paquete.
   const pct = pctPaqueteValido(input.pct);
   if (pct === null) return null;
+
+  // ── La Noche de Xantolo, sin hotel (4 oct 2026) ─────────────────────────
+  // Se cobra POR PERSONA: `paquete.precio` es el de un adulto y los menores
+  // pagan con la escala de los tours. Sin hotel no hay habitaciones, víspera
+  // ni boletos de tour que sumar.
+  if (evento?.sinHotel) {
+    if (adultos < evento.minAdultos || personas > evento.maxPorReserva) return null;
+    const total = Math.round(
+      adultos       * paquete.precio +
+      childrenMid   * paquete.precio * FACTOR_NINO_MEDIO +
+      childrenSmall * paquete.precio * FACTOR_NINO_CHICO,
+    );
+    const charge = pct === 100 ? total : Math.round((total * pct) / 100);
+    return {
+      paquete, personas, adultos, childrenMid, childrenSmall,
+      vistaMontana: false,
+      base: total,
+      extraHotel: 0, nocheExtra: false, nochesTotales: 0,
+      extraTours: 0, extraEvento: 0, toursPorPersona: 0,
+      habitaciones: 0,
+      total, charge, saldo: total - charge, pct,
+    };
+  }
+
+  // El paquete es por pareja: la base son DOS adultos. Menos de eso no se
+  // vende, y arriba del tope se cotiza a mano porque hay que confirmar
+  // habitaciones.
+  if (adultos < 2 || personas > MAX_PERSONAS_PAQUETE) return null;
+
+  // Paquete de evento con hotel (Xantolo): un cuarto por reserva, de 2 a 4
+  // personas. Mientras no haya precio para la persona extra, solo parejas.
+  if (evento) {
+    if (adultos < evento.minAdultos || personas > evento.maxPorReserva) return null;
+    if (evento.extraEventoPorPersona == null && personas !== 2) return null;
+  }
 
   // En un paquete de evento la habitación la asigna el hotel: no hay vista que
   // elegir ni suplemento que sumar.
@@ -259,11 +300,20 @@ export function computePaqueteCharge(input: {
   // 50 % por debajo de 6.
   const extraTours = Math.round(
     Math.max(0, adultos - 2) * toursPorPersona +
-    childrenMid   * toursPorPersona * 0.7 +
-    childrenSmall * toursPorPersona * 0.5,
+    childrenMid   * toursPorPersona * FACTOR_NINO_MEDIO +
+    childrenSmall * toursPorPersona * FACTOR_NINO_CHICO,
   );
 
-  const total  = paquete.precio + extraHotel + extraTours;
+  // La degustación y la noche con guía de cada persona arriba de la pareja.
+  // Con la pareja sola da 0: el precio publicado ya las incluye.
+  const porPersonaEvento = evento?.extraEventoPorPersona ?? 0;
+  const extraEvento = Math.round(
+    Math.max(0, adultos - 2) * porPersonaEvento +
+    childrenMid   * porPersonaEvento * FACTOR_NINO_MEDIO +
+    childrenSmall * porPersonaEvento * FACTOR_NINO_CHICO,
+  );
+
+  const total  = paquete.precio + extraHotel + extraTours + extraEvento;
   const charge = pct === 100 ? total : Math.round((total * pct) / 100);
 
   return {
@@ -276,6 +326,7 @@ export function computePaqueteCharge(input: {
     vistaMontana,
     extraHotel,
     extraTours,
+    extraEvento,
     nocheExtra,
     nochesTotales,
     toursPorPersona,

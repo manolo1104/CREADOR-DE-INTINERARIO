@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible, paquetesEventoALaVenta } from "@/lib/paquetes";
+import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible, paginasDeEventoALaVenta } from "@/lib/paquetes";
 import Link from "next/link";
 import { GOOGLE_RATING } from "@/lib/resenas";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
@@ -208,20 +208,26 @@ export default function PaquetesPage() {
           Va fuera de la fila de paquetes a propósito: es una sola fecha y no
           se compara con los viajes de todo el año. Solo en español (el paquete
           solo se vende así) y solo mientras se vende. */}
-      {locale === "es" && paquetesEventoALaVenta().map((p) => (
+      {locale === "es" && paginasDeEventoALaVenta().map((p) => (
         <section key={p.slug} className="border-y px-6 py-8" style={{ backgroundColor: "#2a1231", borderColor: "#f2942240" }}>
           <div className="mx-auto flex max-w-6xl flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <p className="font-dm text-[10px] uppercase tracking-[2.5px]" style={{ color: "#f29422" }}>Solo el {p.evento!.fechaTexto.toLowerCase()}</p>
+              <p className="font-dm text-[10px] uppercase tracking-[2.5px]" style={{ color: "#f29422" }}>
+                {p.evento!.sinHotel ? "Sábado 31 o domingo 1 de noviembre" : `Solo el ${p.evento!.fechaTexto.toLowerCase()}`}
+              </p>
               <p className="mt-2 font-cormorant text-[30px] font-light leading-tight text-crema">{p.nombre}</p>
-              <p className="mt-1 font-dm text-[14px] text-crema/65">{p.subtitulo}. Para parejas: {p.evento!.cupo / 2} habitaciones, ${precioVisible(p).toLocaleString("es-MX")} la pareja.</p>
+              <p className="mt-1 font-dm text-[14px] text-crema/65">
+                {p.evento!.sinHotel
+                  ? `${p.subtitulo}. Sin hotel, $${precioVisible(p).toLocaleString("es-MX")} por persona.`
+                  : `${p.subtitulo}. Para parejas o familias: ${p.evento!.cupo} cuartos, $${precioVisible(p).toLocaleString("es-MX")} la pareja.`}
+              </p>
             </div>
             <Link
               href={p.evento!.pagina}
               className="inline-flex flex-shrink-0 items-center justify-center px-6 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[2px] transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
               style={{ backgroundColor: "#f29422", color: "#1a0c1f" }}
             >
-              Ver el paquete
+              {p.evento!.sinHotel ? "Ver las noches" : "Ver el paquete"}
             </Link>
           </div>
         </section>

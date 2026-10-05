@@ -5,6 +5,10 @@ import { notFound } from "next/navigation";
 import { Check, Minus, ArrowRight } from "lucide-react";
 import { getPaquete, eventoALaVenta, precioVisible } from "@/lib/paquetes";
 import { lugaresDePaqueteSeguro } from "@/lib/cupoPaquete";
+import { cabeEnCupo } from "@/lib/cupoEvento";
+import { computePaqueteCharge } from "@/lib/paquetePricing";
+import { NOCHE_XANTOLO } from "@/lib/nocheXantolo";
+import { XAN_FONDO, XAN_FLOR, XAN_TINTA_BOTON, XAN_CSS_ENTRADA } from "@/lib/xantoloEstilo";
 import { TOURS_DB, salidaCorta, regresoDeTour } from "@/lib/tours";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
@@ -31,9 +35,9 @@ export const dynamic = "force-dynamic";
 
 const SLUG = "xantolo-2026";
 
-const FONDO = "#140a18";
-const FLOR = "#f29422";
-const TINTA_BOTON = "#1a0c1f";
+const FONDO = XAN_FONDO;
+const FLOR = XAN_FLOR;
+const TINTA_BOTON = XAN_TINTA_BOTON;
 
 const FOTO_ALTAR = "/imagenes/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia/hero.jpg";
 const FOTO_POZAS = "/imagenes/las-pozas-jardin-surrealista/gallery-1.jpg";
@@ -47,31 +51,18 @@ const mxn = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 const rango = (s: string | null | undefined) => (s ?? "").replace(/\s*[–—]\s*/g, "-");
 
 const MENSAJE_WA =
-  "Hola, me interesa el paquete Xantolo en Xilitla (domingo 1 de noviembre) para dos. ¿Me ayudan?";
+  "Hola, me interesa el paquete Xantolo en Xilitla (domingo 1 de noviembre). ¿Me ayudan?";
 const MENSAJE_WA_AGOTADO =
   "Hola, vi que se acabaron los lugares del paquete Xantolo del 1 de noviembre. ¿Me avisan si se libera uno?";
 
-/**
- * 🔴 Va con `dangerouslySetInnerHTML` y no como hijo de texto de <style>: React
- * escapa el texto en el servidor (las comillas salen como &quot;), dentro de
- * <style> el navegador no lo decodifica, y la hidratación truena con el error
- * #425 porque el cliente sí trae las comillas.
- */
-const CSS_ENTRADA = `
-        @keyframes xan-sube { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-        @keyframes xan-asienta { from { transform: scale(1.06); } to { transform: none; } }
-        .xan-sube { animation: xan-sube .7s cubic-bezier(.16,1,.3,1) both; }
-        .xan-asienta { animation: xan-asienta 1.6s cubic-bezier(.16,1,.3,1) both; }
-        .xan-num { font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum" 1, "tnum" 1; }
-        @media (prefers-reduced-motion: reduce) { .xan-sube, .xan-asienta { animation: none; } }
-      `;
+const CSS_ENTRADA = XAN_CSS_ENTRADA;
 
 export function generateMetadata(): Metadata {
   const p = getPaquete(SLUG);
   const aLaVenta = !!p && eventoALaVenta(p);
-  const titulo = "Paquete Xantolo 2026 en Xilitla para parejas, 1 de noviembre";
+  const titulo = "Paquete Xantolo 2026 en Xilitla para parejas y familias, 1 de noviembre";
   const descripcion = p
-    ? `Una noche en Xilitla el 1 de noviembre: Ruta Surrealista de día, degustación de temporada y la noche de Xantolo con guía. Para 4 parejas, ${mxn(precioVisible(p))} la pareja.`
+    ? `Una noche en Xilitla el 1 de noviembre: Ruta Surrealista de día, degustación de temporada y la noche de Xantolo con guía. Para parejas o familias de hasta 4, ${mxn(precioVisible(p))} la pareja.`
     : "Paquete Xantolo 2026 en Xilitla.";
   return {
     title: titulo,
@@ -98,7 +89,12 @@ export default async function PaqueteXantoloPage() {
   const evento = paquete.evento;
   const aLaVenta = eventoALaVenta(paquete);
   const lugares = await lugaresDePaqueteSeguro(paquete);
-  const agotado = lugares !== null && lugares.libres < 2;
+  // Agotado = ya no cabe ni una pareja (sin cuartos o sin lugar en la salida).
+  const agotado = lugares !== null && !cabeEnCupo(lugares, 2);
+  // Un ejemplo de familia con el MISMO motor que cobra: lo que se anuncia es
+  // lo que se paga.
+  const familia = computePaqueteCharge({ slug: SLUG, personas: 2, childrenMid: 2, pct: 100 });
+  const nocheSola = mxn(NOCHE_XANTOLO.precioAdulto);
   const precio = precioVisible(paquete);
   const pctMinimo = PCTS_PAQUETE[0];
   const anticipo = Math.round((paquete.precio * pctMinimo) / 100);
@@ -118,7 +114,7 @@ export default async function PaqueteXantoloPage() {
         description: paquete.subtitulo,
         url: `${SITE}/paquetes/${SLUG}`,
         image: `${SITE}${FOTO_ALTAR}`,
-        touristType: "Parejas",
+        touristType: ["Parejas", "Familias"],
         itinerary: { "@type": "ItemList", itemListElement: paquete.incluye.map((x, i) => ({ "@type": "ListItem", position: i + 1, name: x })) },
         offers: {
           "@type": "Offer",
@@ -155,10 +151,10 @@ export default async function PaqueteXantoloPage() {
     { nombre: "Pan de muerto", texto: "El pan de la temporada." },
   ];
 
-  const preguntas = [
-    { q: "¿Podemos llegar el sábado 31?", a: "El hotel solo tiene habitaciones para la noche del domingo 1. Si llegan antes, necesitan otro hospedaje para el sábado." },
+  const preguntas: { q: string; a: string; enlace?: { texto: string; href: string } }[] = [
+    { q: "¿Podemos llegar el sábado 31?", a: `El hotel solo tiene cuartos para la noche del domingo 1. Si llegan el sábado y ya tienen dónde dormir, la Noche de Xantolo del sábado 31 se vende sola: ${nocheSola} por persona con transporte, guía y degustación.`, enlace: { texto: "Ver la noche sola", href: NOCHE_XANTOLO.pagina } },
     { q: "¿A qué hora tenemos que estar en Xilitla?", a: `Antes de las 8:00 AM del domingo: la Ruta Surrealista sale del hotel entre ${salida}.` },
-    { q: "¿Pueden ir niños o más personas?", a: `Este paquete es para parejas: dos adultos por reserva. La salida es de máximo ${evento.salidaMaxima} personas y a la venta hay ${evento.cupo} lugares. Si son más, escríbenos y vemos opciones.` },
+    { q: "¿Pueden ir niños o más personas?", a: `Sí: hasta ${evento.maxPorReserva} personas por cuarto, tu pareja o tu familia. Cada persona más paga su parte de hotel, de la Ruta Surrealista y de la noche; de 6 a 10 años el 70 %, menores de 6 el 50 %, y los bebés menores de 3 no pagan.${familia ? ` Por ejemplo, 2 adultos y 2 niños de 6 a 10 años pagan ${mxn(familia.total)}.` : ""} La salida de la noche es de máximo ${evento.salidaMaxima} personas. Si son más de ${evento.maxPorReserva}, escríbenos y lo armamos.` },
     { q: "¿Cómo se paga?", a: `En línea con tarjeta. Apartas con el ${pctMinimo} % (${mxn(anticipo)}) y el resto se cubre antes o durante tu llegada.` },
     { q: "¿Y si cambia el programa del pueblo?", a: "Las comparsas y los shows los organiza Xilitla. Si el programa cambia, el guía los lleva a lo que sí haya esa noche." },
     { q: "¿Se puede cancelar?", a: "Es un paquete con hospedaje: las condiciones de cambio y cancelación son las del hotel y te las confirmamos al reservar." },
@@ -204,7 +200,7 @@ export default async function PaqueteXantoloPage() {
             className="xan-sube mt-4 [text-wrap:balance] font-cormorant text-[44px] font-light leading-[1.04] text-crema sm:text-[54px] lg:text-[54px] xl:text-[62px]"
             style={{ animationDelay: "200ms" }}
           >
-            Xantolo en Xilitla, una noche para dos
+            Xantolo en Xilitla, una noche con hotel
           </h1>
           <p className="xan-sube mt-5 max-w-[34ch] font-dm text-[16px] leading-relaxed text-crema/80 sm:text-[17px]" style={{ animationDelay: "300ms" }}>
             Las Pozas de día. Tamales, atole y pan de muerto al atardecer. Comparsas y shows de Xantolo con guía.
@@ -231,7 +227,7 @@ export default async function PaqueteXantoloPage() {
           <Dato valor={mxn(precio)} etiqueta="la pareja" />
           <Dato
             valor={lugares ? (agotado ? "0" : `${lugares.libres} de ${lugares.cupo}`) : `${evento.cupo}`}
-            etiqueta={lugares ? (agotado ? "lugares: agotado" : "lugares libres") : "lugares en total"}
+            etiqueta={lugares ? (agotado ? "cuartos: agotado" : "cuartos libres") : "cuartos en total"}
           />
           <Dato valor={`${pctMinimo} %`} etiqueta={`para apartar (${mxn(anticipo)})`} />
         </dl>
@@ -344,10 +340,14 @@ export default async function PaqueteXantoloPage() {
               Una noche en el Hotel Paraíso Encantado
             </h2>
             <p className="mt-5 max-w-[48ch] font-dm text-[16px] leading-relaxed text-crema/70">
-              Habitación doble en Xilitla, del domingo 1 al lunes 2 de noviembre. La asigna el hotel y la tienes lista al volver de la Ruta Surrealista.
+              Un cuarto para tu pareja o tu familia (hasta {evento.maxPorReserva} personas), del domingo 1 al lunes 2 de noviembre. Lo asigna el hotel y lo tienes listo al volver de la Ruta Surrealista.
             </p>
             <p className="mt-4 max-w-[48ch] font-dm text-[14px] leading-relaxed text-crema/55">
-              Es la única noche con habitaciones: el sábado 31 el hotel ya está lleno.
+              Es la única noche con cuartos: el sábado 31 el hotel ya está lleno. ¿Llegas el sábado y ya tienes dónde dormir?{" "}
+              <Link href={NOCHE_XANTOLO.pagina} className="underline underline-offset-4 hover:text-crema" style={{ color: FLOR }}>
+                La noche del 31 se vende sola
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -388,14 +388,14 @@ export default async function PaqueteXantoloPage() {
         <div className="mx-auto grid max-w-6xl gap-8 border px-6 py-12 sm:px-12 md:grid-cols-[1fr_auto] md:items-end" style={{ borderColor: `${FLOR}55` }}>
           <div>
             <h2 className="font-cormorant text-[36px] font-light leading-tight text-crema sm:text-[44px] [text-wrap:balance]">
-              {agotado ? "Se acabaron los lugares" : "Cuatro parejas, una noche"}
+              {agotado ? "Se acabaron los cuartos" : "Cuatro cuartos, una noche"}
             </h2>
             <p className="xan-num mt-4 font-dm text-[16px] text-crema/75">
-              {mxn(precio)} la pareja. Apartas con el {pctMinimo} % ({mxn(anticipo)}) y el resto se cubre antes o durante tu llegada.
+              {mxn(precio)} la pareja. Cada persona más, hasta {evento.maxPorReserva} por cuarto, suma su parte{familia ? ` (2 adultos y 2 niños de 6 a 10 años: ${mxn(familia.total)})` : ""}. Apartas con el {pctMinimo} % y el resto se cubre antes o durante tu llegada.
             </p>
             {lugares && !agotado && (
               <p className="xan-num mt-2 font-dm text-[14px]" style={{ color: FLOR }}>
-                Quedan {lugares.libres} de {lugares.cupo} lugares.
+                Quedan {lugares.libres} de {lugares.cupo} cuartos.
               </p>
             )}
           </div>
@@ -423,7 +423,17 @@ export default async function PaqueteXantoloPage() {
                 {f.q}
                 <span aria-hidden="true" className="font-dm text-[20px] leading-none transition-transform duration-200 group-open:rotate-45" style={{ color: FLOR }}>+</span>
               </summary>
-              <p className="max-w-[60ch] pb-5 font-dm text-[15px] leading-relaxed text-crema/65">{f.a}</p>
+              <p className="max-w-[60ch] pb-5 font-dm text-[15px] leading-relaxed text-crema/65">
+                {f.a}
+                {f.enlace && (
+                  <>
+                    {" "}
+                    <Link href={f.enlace.href} className="underline underline-offset-4 hover:text-crema" style={{ color: FLOR }}>
+                      {f.enlace.texto}
+                    </Link>
+                  </>
+                )}
+              </p>
             </details>
           ))}
         </div>
@@ -453,7 +463,7 @@ function BotonReservar({ agotado }: { agotado: boolean }) {
       className="group inline-flex items-center justify-center gap-2 px-7 py-4 font-dm text-[11px] font-medium uppercase tracking-[2px] transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
       style={{ backgroundColor: FLOR, color: TINTA_BOTON }}
     >
-      Reservar para dos
+      Reservar mi cuarto
       <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
     </Link>
   );
