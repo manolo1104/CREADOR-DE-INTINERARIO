@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
       reparto:       body?.reparto,
       nocheExtra:    body?.nocheExtra,
       pct:           100,
+      // La promo de temporada baja depende de la fecha de inicio.
+      fecha:         body?.fecha,
     });
     if (!cobro) {
       return NextResponse.json({ error: "Paquete o número de personas inválido." }, { status: 400 });

@@ -34,6 +34,11 @@ import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
 import { getDict, type Messages } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
 
+// Los precios de la promo de temporada baja se apagan solos al terminar (ver
+// `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
+// que lo que anuncia no se quede congelado desde el último despliegue.
+export const revalidate = 3600;
+
 interface Props {
   params: { slug: string };
 }

@@ -164,7 +164,8 @@ export default function Navbar() {
         {locale === "en" ? "Skip to main content" : "Saltar al contenido principal"}
       </a>
 
-      <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
+      {/* `data-navbar-sitio`: el checkout cerrado lo esconde por CSS (globals.css). */}
+      <nav ref={navRef} data-navbar-sitio className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
         {/* Estado del río: dentro del contenedor fijo para esconderse con él. */}
         <BandaRio />
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

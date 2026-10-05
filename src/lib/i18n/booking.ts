@@ -404,6 +404,8 @@ export interface BookingMessages {
     reservarHoy: (montoHoy: string) => string;
     /** Debajo del botón: qué porcentaje es y cuánto queda para el día del tour. */
     restoElDia: (pct: number, resto: string) => string;
+    /** Eligió una fecha después de la promo de temporada baja. */
+    sinPromoEnFecha: (hasta: string) => string;
     continuar: string;
     puedesCambiarlo: string;
     grupoLleno: (max: number) => string;
@@ -568,6 +570,63 @@ export interface BookingMessages {
     admiteHasta: (hab: string, max: number) => string;
     servicios: string[];
     vistas: Record<string, string>;
+  };
+  /**
+   * Checkout rediseñado (oct 2026): encabezado cerrado, banda con foto, tres
+   * pasos que se pliegan y barra fija con «hoy pagas». Lo que ya existía en
+   * `carrito` (pagos, FAQ, hospedaje, traslado) se sigue leyendo de ahí.
+   */
+  checkout: {
+    pagoSeguro: string;
+    dudasWhatsapp: string;
+    waDudas: string;
+    tuViajeHuasteca: string;
+    recorridosYDias: (recorridos: number, rango: string) => string;
+    pasoExperiencia: string;
+    pasoDatos: string;
+    pasoPago: string;
+    editar: string;
+    continuar: string;
+    irAlPago: string;
+    preparandoPago: string;
+    sinFechaResumen: string;
+    // Respuestas rápidas
+    respuestasTitulo: string;
+    edadTitulo: string;
+    nadoTitulo: string;
+    lluviaTitulo: string;
+    cancelTitulo: string;
+    edadNinos: string;
+    edadMinima: (tour: string, edad: number) => string;
+    soloAdultos: (tour: string) => string;
+    /** Solo se usa si el dato existe (`TOUR_REQUISITOS`): nunca se inventa. */
+    nadoSinSaber: string;
+    lluviaGenerica: string;
+    cancelHasta: (fecha: string) => string;
+    cancelGenerica: string;
+    // Extras
+    extrasTitulo: string;
+    extrasSub: (precioNoche: string) => string;
+    cotizacionLink: string;
+    // Datos
+    datosIntro: string;
+    nombreLabel: string;
+    whatsappLabel: string;
+    whatsappAyuda: string;
+    correoLabel: string;
+    correoAyuda: string;
+    hospedajeLabel: string;
+    hospedajeAyuda: string;
+    errNombre: string;
+    errCorreo: string;
+    errWhatsapp: string;
+    // Pago y cierre
+    totalDelViaje: string;
+    queSigueTitulo: string;
+    queSigue: (saldo: string) => string[];
+    verDesglose: string;
+    pagoCifrado: string;
+    barraTotal: (total: string) => string;
   };
 }
 
@@ -935,6 +994,7 @@ const es: BookingMessages = {
     total: "Total",
     reservarHoy: (montoHoy) => `Reservar · hoy pagas ${montoHoy}`,
     restoElDia: (pct, resto) => `Apartas con el ${pct} %. El resto (${resto}) lo pagas el día del tour.`,
+    sinPromoEnFecha: (hasta) => `Precio normal en esta fecha: la promo de temporada baja es para recorridos hasta el ${hasta}.`,
     continuar: "Elegir fecha y reservar",
     puedesCambiarlo: "Puedes cambiar fecha y personas en el siguiente paso.",
     grupoLleno: (max) => `Este recorrido sale con grupos de máximo ${max} personas. ¿Van más? Escríbenos y armamos una salida privada.`,
@@ -1116,6 +1176,57 @@ const es: BookingMessages = {
       "Terraza con vista a la piscina": "Terraza con vista a la piscina",
       Montaña: "Montaña",
     },
+  },
+  checkout: {
+    pagoSeguro: "Pago seguro",
+    dudasWhatsapp: "¿Dudas?",
+    waDudas: "Hola, estoy en el pago de mi reserva y tengo una duda:",
+    tuViajeHuasteca: "Tu viaje por la Huasteca",
+    recorridosYDias: (n, rango) => `${n} ${n === 1 ? "recorrido" : "recorridos"} · ${rango}`,
+    pasoExperiencia: "Tu experiencia",
+    pasoDatos: "Tus datos",
+    pasoPago: "Pago",
+    editar: "Editar",
+    continuar: "Continuar",
+    irAlPago: "Ir al pago",
+    preparandoPago: "Preparando tu pago…",
+    sinFechaResumen: "Falta elegir la fecha",
+    respuestasTitulo: "Lo que más nos preguntan",
+    edadTitulo: "¿Pueden ir niños?",
+    nadoTitulo: "¿Y si no sé nadar?",
+    lluviaTitulo: "¿Y si llueve?",
+    cancelTitulo: "¿Puedo cancelar?",
+    edadNinos: "Sí. De 6 a 10 años pagan el 70 % y los menores de 6, el 50 %.",
+    edadMinima: (tour, edad) => `${tour}: desde ${edad} años.`,
+    soloAdultos: (tour) => `${tour} es solo para adultos.`,
+    nadoSinSaber: "No necesitas saber nadar: llevas chaleco salvavidas todo el recorrido y vas con guía certificado.",
+    lluviaGenerica: "Operamos con lluvia ligera. Si el río no es seguro, eliges: reembolso o cambio de fecha.",
+    cancelHasta: (fecha) => `Gratis hasta el ${fecha} (48 h antes), con reembolso completo.`,
+    cancelGenerica: "Gratis hasta 48 h antes de tu recorrido, con reembolso completo.",
+    extrasTitulo: "¿Necesitas hospedaje o traslado?",
+    extrasSub: (precio) => `Hotel Paraíso Encantado desde ${precio}/noche · traslados desde SLP, Tampico y CDMX`,
+    cotizacionLink: "¿Lo quieres pensar? Te mandamos la cotización por correo",
+    datosIntro: "Para mandarte tu confirmación y coordinar tu recogida.",
+    nombreLabel: "Nombre completo",
+    whatsappLabel: "WhatsApp",
+    whatsappAyuda: "Por aquí te confirmamos la hora de recogida.",
+    correoLabel: "Correo electrónico",
+    correoAyuda: "Aquí te llega tu confirmación.",
+    hospedajeLabel: "¿Dónde te hospedas? (opcional)",
+    hospedajeAyuda: "Hotel y ciudad. Si aún no lo sabes, déjalo vacío.",
+    errNombre: "Escribe tu nombre completo.",
+    errCorreo: "Revisa tu correo: le falta la @ o el dominio.",
+    errWhatsapp: "Escribe tu WhatsApp con lada (10 dígitos en México).",
+    totalDelViaje: "Total del viaje",
+    queSigueTitulo: "Qué pasa después de reservar",
+    queSigue: (saldo) => [
+      "Te llega tu confirmación al instante, por correo.",
+      "Te escribimos por WhatsApp para confirmarte la hora de recogida.",
+      `El día del tour pagas el resto (${saldo}), en efectivo o con tarjeta.`,
+    ],
+    verDesglose: "Ver el desglose",
+    pagoCifrado: "Pago cifrado con Stripe",
+    barraTotal: (total) => `Total ${total}`,
   },
 };
 
@@ -1479,6 +1590,7 @@ const en: BookingMessages = {
     total: "Total",
     reservarHoy: (montoHoy) => `Book · pay ${montoHoy} today`,
     restoElDia: (pct, resto) => `A ${pct}% deposit holds your spot. The rest (${resto}) is paid on the day of the tour.`,
+    sinPromoEnFecha: (hasta) => `Regular price on this date: the low-season deal is for tours through ${hasta}.`,
     continuar: "Pick a date and book",
     puedesCambiarlo: "You can change the date and party size on the next step.",
     grupoLleno: (max) => `This tour runs with groups of up to ${max}. More of you? Message us and we'll set up a private departure.`,
@@ -1660,6 +1772,57 @@ const en: BookingMessages = {
       "Terraza con vista a la piscina": "Terrace overlooking the pool",
       Montaña: "Mountain",
     },
+  },
+  checkout: {
+    pagoSeguro: "Secure checkout",
+    dudasWhatsapp: "Questions?",
+    waDudas: "Hi, I'm on the payment page for my booking and I have a question:",
+    tuViajeHuasteca: "Your Huasteca trip",
+    recorridosYDias: (n, rango) => `${n} ${n === 1 ? "tour" : "tours"} · ${rango}`,
+    pasoExperiencia: "Your experience",
+    pasoDatos: "Your details",
+    pasoPago: "Payment",
+    editar: "Edit",
+    continuar: "Continue",
+    irAlPago: "Go to payment",
+    preparandoPago: "Preparing your payment…",
+    sinFechaResumen: "Date still missing",
+    respuestasTitulo: "What people ask us most",
+    edadTitulo: "Can kids come?",
+    nadoTitulo: "What if I can't swim?",
+    lluviaTitulo: "What if it rains?",
+    cancelTitulo: "Can I cancel?",
+    edadNinos: "Yes. Kids aged 6 to 10 pay 70% and under-6s pay 50%.",
+    edadMinima: (tour, edad) => `${tour}: ages ${edad} and up.`,
+    soloAdultos: (tour) => `${tour} is adults only.`,
+    nadoSinSaber: "You don't need to swim: you wear a life jacket the whole way and go with a certified guide.",
+    lluviaGenerica: "We run in light rain. If the river isn't safe, you choose: a refund or a new date.",
+    cancelHasta: (fecha) => `Free until ${fecha} (48 h before), with a full refund.`,
+    cancelGenerica: "Free up to 48 h before your tour, with a full refund.",
+    extrasTitulo: "Need a place to stay or a transfer?",
+    extrasSub: (precio) => `Hotel Paraíso Encantado from ${precio}/night · transfers from SLP, Tampico and Mexico City`,
+    cotizacionLink: "Want to think it over? We'll email you the quote",
+    datosIntro: "So we can send your confirmation and arrange your pickup.",
+    nombreLabel: "Full name",
+    whatsappLabel: "WhatsApp",
+    whatsappAyuda: "We'll confirm your pickup time here.",
+    correoLabel: "Email",
+    correoAyuda: "Your confirmation goes here.",
+    hospedajeLabel: "Where are you staying? (optional)",
+    hospedajeAyuda: "Hotel and town. Leave it blank if you don't know yet.",
+    errNombre: "Please enter your full name.",
+    errCorreo: "Check your email: it's missing the @ or the domain.",
+    errWhatsapp: "Enter your WhatsApp number with country code (e.g. +1 for the US).",
+    totalDelViaje: "Trip total",
+    queSigueTitulo: "What happens after you book",
+    queSigue: (saldo) => [
+      "Your confirmation arrives instantly by email.",
+      "We message you on WhatsApp to confirm your pickup time.",
+      `On the day of the tour you pay the rest (${saldo}), in cash or by card.`,
+    ],
+    verDesglose: "See the breakdown",
+    pagoCifrado: "Encrypted payment with Stripe",
+    barraTotal: (total) => `Total ${total}`,
   },
 };
 

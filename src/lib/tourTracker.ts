@@ -76,6 +76,9 @@ const PASO_EMBUDO: Record<string, string> = {
   // El checkout de paquetes, en el mismo escalón que el carrito (oct 2026).
   PAQUETE_CHECKOUT_VIEW: "4·abrio_checkout_paquete",
   DATE_SELECTED:     "5·eligio_fecha",
+  // Checkout rediseñado (oct 2026): los dos pasos antes del pago.
+  CHECKOUT_STEP_EXPERIENCIA: "5b·paso_experiencia",
+  CHECKOUT_STEP_DATOS:       "5c·paso_datos",
   PAYMENT_INITIATED: "6·pantalla_de_pago",
   PAGO_FALLIDO:      "7·pago_fallido",
   BOOKING_CONFIRMED: "8·reservo",
@@ -92,6 +95,7 @@ const GRABAR_SIEMPRE = new Set([
   "BOOKING_PAGE_VIEW",
   "PAQUETE_CHECKOUT_VIEW",
   "DATE_SELECTED",
+  "CHECKOUT_STEP_DATOS",
   "PAYMENT_INITIATED",
   "PAGO_FALLIDO",
   "BOOKING_CONFIRMED",

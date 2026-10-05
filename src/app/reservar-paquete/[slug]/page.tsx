@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { loadStripe } from "@stripe/stripe-js";
+import { stripePromise } from "@/lib/stripeCliente";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getPaquete, habitacionesDePaquete, habitacionAsignada, precioVisible } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION, PCTS_PAQUETE, type PctPaquete } from "@/lib/paquetePricing";
@@ -23,10 +23,6 @@ import { serviciosHotel, vistaHabitacion, caracteristicasHabitacion } from "@/li
 import { trackTourEvent, marcarPasoClarity, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
-);
 
 const WA_NUMBER = "524891090388";
 /** Desde cuántas personas se ofrece pedir precio de grupo por WhatsApp. */
@@ -364,7 +360,7 @@ export default function ReservarPaquetePage() {
 
   // `tourElegido` entra al cálculo porque en el paquete a la carta los boletos
   // de la gente extra son los de los recorridos que de verdad eligió.
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, tourElegido, pct });
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, tourElegido, pct, fecha });
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
@@ -914,8 +910,8 @@ export default function ReservarPaquetePage() {
                 ].map((o) => {
                   const activa = nocheExtra === o.extra;
                   const dif = o.extra && cotizacion
-                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra: true, pct })?.total ?? 0)
-                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra: false, pct })?.total ?? 0)
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra: true, pct, fecha })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana, reparto, nocheExtra: false, pct, fecha })?.total ?? 0)
                     : 0;
                   return (
                     <button key={o.t} type="button" onClick={() => setNocheExtra(o.extra)}
@@ -979,8 +975,8 @@ export default function ReservarPaquetePage() {
                   // La diferencia se calcula con las tarifas reales, así que
                   // sube según cuánta gente duerma en la habitación.
                   const dif = o.m && cotizacion
-                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, reparto, nocheExtra, pct })?.total ?? 0)
-                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, reparto, nocheExtra, pct })?.total ?? 0)
+                    ? (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: true, reparto, nocheExtra, pct, fecha })?.total ?? 0)
+                      - (computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: false, reparto, nocheExtra, pct, fecha })?.total ?? 0)
                     : 0;
                   return (
                     <button key={o.t} type="button"

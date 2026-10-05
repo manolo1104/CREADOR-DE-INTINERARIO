@@ -12,7 +12,7 @@
  * ni siquiera decía cuál de sus recorridos era el del problema.
  */
 
-import { TOURS_DB, type Tour } from "./tours";
+import { TOURS_DB, tourEnFecha, type Tour } from "./tours";
 import { totalRecorrido } from "./tourBooking";
 import type { CarritoItem } from "./carrito";
 
@@ -71,9 +71,32 @@ export function itemDesdeTour(
   const ninosSmall = base.childrenSmall ?? 0;
 
   // `totalRecorrido` bifurca sola entre tarifa de grupo y precio por cabeza:
-  // es la misma cuenta que hace el servidor en `computeTourCharge`.
-  const total = totalRecorrido(t, adults, ninosMid, ninosSmall);
+  // es la misma cuenta que hace el servidor en `computeTourCharge`. Con la
+  // fecha que traiga (la de la ficha), porque la promo depende de ella.
+  const total = totalRecorrido(tourEnFecha(t, base.tourDate), adults, ninosMid, ninosSmall);
   return { ...comun, adults, total, ...base };
+}
+
+/**
+ * El subtotal de un renglón por persona, recalculado con el catálogo y SU
+ * fecha: personas, tarifa de viajero solo o de grupo, add-ons y la promo de
+ * temporada baja (solo para recorridos hasta el 29 oct). Lo que se pinta tiene
+ * que coincidir con lo que cobra `computeTourCharge`.
+ *
+ * Los renglones por vehículo se devuelven igual: su precio sale de la matriz
+ * ruta × unidad, que no depende de la fecha.
+ */
+export function retarifarItem<T extends Omit<CarritoItem, "uid">>(i: T): T {
+  if (i.unidades) return i;
+  const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
+  if (!t) return i;
+  const base = totalRecorrido(tourEnFecha(t, i.tourDate), i.adults, i.childrenMid ?? 0, i.childrenSmall ?? 0);
+  const extras = (i.addOns ?? []).reduce((s, a) => {
+    const cat = t.addOns?.find((x) => x.id === a.id);
+    return s + (cat ? cat.precio * a.cantidad : 0);
+  }, 0);
+  const total = base + extras;
+  return total === i.total ? i : { ...i, total };
 }
 
 /** El mismo renglón, a partir del slug. Devuelve `null` si el tour ya no existe. */

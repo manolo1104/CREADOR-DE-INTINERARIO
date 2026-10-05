@@ -9,6 +9,11 @@ import { TrasladoTabla } from "@/components/TrasladoTabla";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
 
+// Los precios de la promo de temporada baja se apagan solos al terminar (ver
+// `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
+// que lo que anuncia no se quede congelado desde el último despliegue.
+export const revalidate = 3600;
+
 export function generateStaticParams() {
   return CIUDADES_ORIGEN.map((c) => ({ ciudad: c.slug }));
 }

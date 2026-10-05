@@ -434,8 +434,8 @@ export default async function HomePage() {
             </span>
             <span className="font-dm text-crema/45 text-xs">
               {en
-                ? `Valid through ${PROMO_TEMPORADA.hastaTexto.en} · packages included`
-                : `Válido hasta el ${PROMO_TEMPORADA.hastaTexto.es} · paquetes incluidos`}
+                ? `For trips through ${PROMO_TEMPORADA.hastaTexto.en} · packages included`
+                : `Para viajes hasta el ${PROMO_TEMPORADA.hastaTexto.es} · paquetes incluidos`}
             </span>
             <span className="font-dm text-dorado text-[10px] tracking-[2px] uppercase">
               {en ? "See tours →" : "Ver los tours →"}

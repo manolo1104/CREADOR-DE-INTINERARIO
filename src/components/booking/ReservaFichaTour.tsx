@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Lock } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { totalRecorrido, aceptaViajeroSolo, esViajeroSolo } from "@/lib/tourBooking";
-import { TOURS_DB, precioGrupo, salidaCorta, recogidaDeTour } from "@/lib/tours";
+import { TOURS_DB, precioGrupo, salidaCorta, recogidaDeTour, precioDeFecha, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "@/lib/tours";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackBeginCheckout, trackDateSelected, trackParticipants } from "@/lib/analytics";
@@ -64,9 +64,19 @@ export function ReservaFichaTour({
   const tf = getBooking(locale).ficha;
 
   const porGrupo = !!tarifaGrupo?.length;
+  const [fecha, setFecha]           = useState("");
+  // La hora y el precio de la fecha salen del catálogo por el slug.
+  const tourCat = TOURS_DB.find((x) => x.slug === slug);
+  // El precio de la FECHA elegida: la promo de temporada baja solo va con los
+  // recorridos hasta el 29 oct (4 oct 2026). Sin fecha, el que se anuncia.
+  const precioFecha = tourCat ? precioDeFecha(tourCat, fecha || null) : precio;
+  const enPromo = !!tourCat && (PROMO_TEMPORADA.tours as ReadonlySet<string>).has(slug);
+  // Eligió una fecha después de la promo mientras todavía se anuncia: se le
+  // dice por qué el total no es el de arriba.
+  const sinPromoEnFecha = enPromo && !!fecha && promoVigente() && !fechaConPromo(fecha);
   // Lo que la regla de viajero solo necesita saber de este recorrido. El módulo
   // solo vive en recorridos por persona o por grupo, nunca por vehículo.
-  const reglaTour = { precio, groupMin, tarifaGrupo, precioUnidad: porGrupo ? "grupo" as const : "persona" as const };
+  const reglaTour = { precio: precioFecha, groupMin, tarifaGrupo, precioUnidad: porGrupo ? "grupo" as const : "persona" as const };
   // Con tarifa de grupo se respeta el mínimo real del recorrido —el Edén sale
   // con UNA persona—. Los que salen desde 2 bajan a UN adulto con la tarifa de
   // viajero solo (1 oct 2026); los de mínimo mayor (rappel, rafting) lo
@@ -74,7 +84,6 @@ export function ReservaFichaTour({
   const minAdultos = porGrupo
     ? Math.max(1, groupMin || 1)
     : aceptaViajeroSolo(reglaTour) ? 1 : Math.max(2, groupMin || 1);
-  const [fecha, setFecha]           = useState("");
   // Arranca en DOS aunque se pueda bajar a uno: así viaja casi todo el mundo y
   // así se leen los precios del resto del sitio.
   const [adultos, setAdultos]       = useState(porGrupo ? minAdultos : Math.max(2, groupMin || 1));
@@ -97,10 +106,9 @@ export function ReservaFichaTour({
 
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
 
-  // La hora sale del catálogo por el slug, no de una prop más: así la ficha no
-  // tiene que acordarse de pasarla y no hay dos fuentes que puedan discrepar.
-  // (`precioGrupo` ya trae `tours.ts` a este bundle; el catálogo no pesa de más.)
-  const tourCat = TOURS_DB.find((x) => x.slug === slug);
+  // La hora sale del catálogo (`tourCat`, arriba), no de una prop más: así la
+  // ficha no tiene que acordarse de pasarla y no hay dos fuentes que puedan
+  // discrepar. (`precioGrupo` ya trae `tours.ts` a este bundle.)
   const hora = tourCat ? salidaCorta(tourCat, locale === "en") : null;
   // El Edén trae el horario del JARDÍN (`horaTexto`), no una hora de salida:
   // va como "Horario:", no como "Salida:".
@@ -205,6 +213,11 @@ export function ReservaFichaTour({
             toca. Con una sola persona no hay nada que dividir. */}
         {porGrupo && personas > 1 && total > 0 && (
           <p className="font-dm text-[11px] text-verde-vivo/80 mt-1">{tf.porCabeza(dinero(Math.round(total / personas)))}</p>
+        )}
+        {sinPromoEnFecha && (
+          <p role="status" className="font-dm text-[11px] text-crema/60 mt-1.5 leading-snug">
+            {tf.sinPromoEnFecha(PROMO_TEMPORADA.hastaTexto[locale === "en" ? "en" : "es"])}
+          </p>
         )}
         <Link
           href={href}

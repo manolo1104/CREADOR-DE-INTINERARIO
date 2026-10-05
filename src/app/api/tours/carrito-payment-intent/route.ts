@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { tarifarRecorridos } from "@/lib/tourPricing";
 import { rateLimit } from "@/lib/rateLimit";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale } = await req.json();
+    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -141,14 +142,10 @@ export async function POST(req: NextRequest) {
       .join("; ")
       .slice(0, 480);
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const datosCobro = {
       amount:        Math.round(cobrar * 100),
-      currency:      "mxn",
       description:   `Tours Huasteca Potosina — ${resumenNombre} · ${customerName || ""}`,
       receipt_email: customerEmail || undefined,
-      // Igual que en el checkout de un tour: solo métodos que se resuelven sin
-      // salir de la página, para que el pago embebido no pida redirección.
-      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",
@@ -188,6 +185,34 @@ export async function POST(req: NextRequest) {
         gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
         sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
       },
+    };
+
+    // Reusar el pago ya creado en vez de abrir otro en cada vuelta. Cambiar una
+    // fecha o una persona invalida el cobro en pantalla, y cada «Continuar»
+    // creaba un PaymentIntent nuevo: Stripe se llenaba de intentos huérfanos que
+    // ensuciaban la cuenta de «quién llegó al pago». Solo se reusa si sigue sin
+    // pagar, es de este carrito y de ESTA visita (`sid`).
+    let paymentIntent: Stripe.PaymentIntent | null = null;
+    if (typeof paymentIntentIdPrevio === "string" && paymentIntentIdPrevio.startsWith("pi_") && typeof sid === "string" && sid) {
+      try {
+        const previo = await stripe.paymentIntents.retrieve(paymentIntentIdPrevio);
+        if (
+          previo.status === "requires_payment_method" &&
+          previo.metadata?.carrito === "1" &&
+          previo.metadata?.sid === sid.slice(0, 60)
+        ) {
+          paymentIntent = await stripe.paymentIntents.update(previo.id, datosCobro);
+        }
+      } catch {
+        // Si no se puede leer o actualizar, se crea uno nuevo: nunca se pierde la venta por esto.
+      }
+    }
+    paymentIntent ??= await stripe.paymentIntents.create({
+      ...datosCobro,
+      currency: "mxn",
+      // Igual que en el checkout de un tour: solo métodos que se resuelven sin
+      // salir de la página, para que el pago embebido no pida redirección.
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
     });
 
     await trackServerEvent("PAYMENT_INITIATED", {

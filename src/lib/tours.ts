@@ -307,6 +307,11 @@ export interface Tour {
    */
   precioOriginal?:  number;
   /**
+   * El precio de LISTA, sin la promo de temporada baja. Lo llena `TOURS_DB`;
+   * sirve para cobrar cada recorrido según SU fecha (`precioDeFecha`).
+   */
+  precioLista?:     number;
+  /**
    * Cómo se cobra el recorrido:
    *
    *   · "persona"  (default) — precio por cabeza, con tarifa de niño.
@@ -445,8 +450,12 @@ export function esPorPersona(t: Pick<Tour, "precioUnidad">): boolean {
 }
 
 /**
- * Último día en que se enseña el precio anterior tachado (horario de México,
- * inclusive: el 1 de noviembre todavía se ve, el 2 ya no).
+ * Último día de RECORRIDO con la promo de temporada baja (inclusive).
+ *
+ * 🔴 4 oct 2026, Manolo: la promo depende de la FECHA DEL TOUR, no del día en
+ * que se compra. Un recorrido el 29 de octubre lleva el descuento; uno el 5 de
+ * noviembre paga precio normal aunque se reserve hoy (es lo mismo que ya hacía
+ * el panel). Y el cambio es automático: nadie tiene que desplegar el 30.
  *
  * 🔴 Existe porque el "10 % OFF" no tenía fecha. Un descuento que no vence no
  * es una promoción, es el precio de siempre con un adorno: le enseña al
@@ -459,15 +468,15 @@ export const PROMO_VENCE = "2026-10-29";
 
 /**
  * Promo de temporada baja (decisión de Manolo, 29 sep 2026): $100 menos POR
- * PERSONA en estos seis recorridos, del 29 sep al 29 oct. El descuento se
- * aplica al armar TOURS_DB, así que el precio que cobra el checkout, el que
- * tacha la tarjeta, el de las descripciones ({precio}), el JSON-LD y el bot
- * salen todos del mismo número.
+ * PERSONA en estos seis recorridos, para recorridos hasta el 29 oct.
  *
- * ⚠️ TOURS_DB se evalúa al ARRANCAR el proceso / compilar las páginas
- * estáticas: el 30 de octubre hay que hacer un deploy para que los precios
- * vuelvan solos a lista (los avisos visibles ya dicen "hasta el 29 de
- * octubre", así que un día de gracia corre a favor del cliente).
+ * - Lo que se COBRA sale de `precioDeFecha(tour, fecha)`: con la fecha del
+ *   recorrido, no con la de hoy (decisión del 4 oct).
+ * - Lo que se ANUNCIA («desde», tachado, descripciones, JSON-LD) sale de
+ *   `TOURS_DB[i].precio`, que es un getter: vale el precio con promo mientras
+ *   todavía se pueda reservar una fecha con promo, y el de lista después, sin
+ *   reiniciar el proceso. Las páginas estáticas que lo pintan se regeneran
+ *   cada hora (`revalidate`).
  */
 export const PROMO_TEMPORADA = {
   monto: 100,
@@ -482,10 +491,35 @@ export const PROMO_TEMPORADA = {
   ]),
 } as const;
 
-/** ¿Sigue viva la promoción hoy, en horario de México? */
+/** ¿Sigue viva la promoción hoy, en horario de México? (Para anunciarla.) */
 export function promoVigente(): boolean {
   const hoyMX = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
   return hoyMX <= PROMO_VENCE;
+}
+
+/** ¿Un recorrido en esta fecha lleva la promo? Sin fecha, lo que se anuncia hoy. */
+export function fechaConPromo(fecha?: string | null): boolean {
+  return fecha ? fecha <= PROMO_VENCE : promoVigente();
+}
+
+/**
+ * Lo que cuesta por persona un recorrido EN UNA FECHA: el de lista, menos la
+ * promo de temporada baja si el recorrido cae hasta el 29 de octubre. Es el
+ * precio que cobran el carrito, el checkout de un tour y los paquetes.
+ */
+export function precioDeFecha(t: Pick<Tour, "slug" | "precio" | "precioLista">, fecha?: string | null): number {
+  const lista = t.precioLista ?? t.precio;
+  const enPromo = (PROMO_TEMPORADA.tours as ReadonlySet<string>).has(t.slug) && fechaConPromo(fecha);
+  return enPromo ? lista - PROMO_TEMPORADA.monto : lista;
+}
+
+/**
+ * El mismo recorrido con `precio` resuelto para una fecha, para pasárselo a
+ * `totalRecorrido` y a todo lo que lee `precio`. Sin fecha (un renglón del
+ * carrito que todavía no la elige) vale lo que se anuncia hoy.
+ */
+export function tourEnFecha<T extends Tour>(t: T, fecha?: string | null): T {
+  return { ...t, precio: precioDeFecha(t, fecha) };
 }
 
 /**
@@ -2183,19 +2217,25 @@ export function conPrecio(texto: string, precio: number, locale: "es" | "en" = "
 
 /**
  * El catálogo que ve todo el sitio: el de arriba, con sus precios resueltos y
- * la promo de temporada baja aplicada. `precio` es SIEMPRE lo que se cobra;
- * `precioOriginal` guarda el de lista para el tachado (`precioTachado`).
+ * la promo de temporada baja aplicada.
+ *
+ * `precio`, `precioOriginal` y las descripciones son GETTERS: se calculan cada
+ * vez que se leen, así que el 30 de octubre vuelven solos al precio de lista
+ * aunque el proceso lleve semanas arriba. (Antes eran valores fijos al
+ * arrancar y había que desplegar ese día.) `precio` es lo que se ANUNCIA; lo
+ * que se cobra depende de la fecha del recorrido: `precioDeFecha`.
  */
 export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => {
-  const enPromo = promoVigente() && (PROMO_TEMPORADA.tours as ReadonlySet<string>).has(t.slug);
-  const precio = enPromo ? t.precio - PROMO_TEMPORADA.monto : t.precio;
-  return {
-    ...t,
-    precio,
-    precioOriginal: enPromo ? t.precio : t.precioOriginal,
-    descripcion: conPrecio(t.descripcion, precio),
-    descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, precio) : t.descripcionLarga,
-  };
+  const enPromo = () => promoVigente() && (PROMO_TEMPORADA.tours as ReadonlySet<string>).has(t.slug);
+  const precio = () => (enPromo() ? t.precio - PROMO_TEMPORADA.monto : t.precio);
+  const tour: Tour = { ...t, precioLista: t.precio };
+  Object.defineProperties(tour, {
+    precio:           { get: precio, enumerable: true },
+    precioOriginal:   { get: () => (enPromo() ? t.precio : t.precioOriginal), enumerable: true },
+    descripcion:      { get: () => conPrecio(t.descripcion, precio()), enumerable: true },
+    descripcionLarga: { get: () => (t.descripcionLarga ? conPrecio(t.descripcionLarga, precio()) : t.descripcionLarga), enumerable: true },
+  });
+  return tour;
 });
 
 /**

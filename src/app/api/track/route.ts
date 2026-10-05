@@ -99,6 +99,9 @@ const SOLO_SE_GUARDA = new Set([
   // módulo de reserva, y la vista del checkout de paquetes.
   "BARRA_A_MODULO",
   "PAQUETE_CHECKOUT_VIEW",
+  "CHECKOUT_STEP_EXPERIENCIA",
+  "EXTRAS_ABIERTO",
+  "RESPUESTA_ABIERTA",
 ]);
 
 // Cada evento → [etiqueta, ...campos]. Los campos vacíos se omiten en el log.
@@ -111,6 +114,8 @@ const EVENTOS: Record<
   PROMO_APPLIED:         (d)    => ["🎟️  APLICÓ CUPÓN", (d.code ?? d.promoCode) as string, d.discountPct != null ? `-${d.discountPct}%` : undefined],
   PROMO_FAILED:          (d)    => ["🚫  CUPÓN INVÁLIDO", (d.code ?? d.promoCode) as string],
   CHECKOUT_STARTED:      (d)    => ["🛒  INICIÓ RESERVA", nombreTour(d), personas(d), mxn(Number(d.amount)), desde(d.source)],
+  // Checkout rediseñado: terminó «Tus datos» (ya tenemos cómo contactarlo).
+  CHECKOUT_STEP_DATOS:   (d)    => ["📝  DEJÓ SUS DATOS", mxn(Number(d.amount)), d.recorridos ? `${d.recorridos} recorrido(s)` : undefined],
   PAYMENT_INITIATED:     (d)    => ["💳  LLEGÓ AL PAGO", nombreTour(d), mxn(Number(d.amount))],
   BOOKING_CONFIRMED:     (d)    => ["✅  RESERVÓ", nombreTour(d), personas(d), mxn(Number(d.amount)), d.confirmationNumber as string],
   // El cliente sí le dio a "Pagar" y no se completó. `code`/`decline_code`

@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
       promoCode:     tourDetails?.promoCode,
       pct:           tourDetails?.pct,
       addOns:        tourDetails?.addOns,
+      tourDate:      tourDetails?.tourDate,
     });
 
     if (!charge) {

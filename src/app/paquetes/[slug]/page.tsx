@@ -26,6 +26,11 @@ import { TourCollage } from "@/components/TourCollage";
 import { HabitacionesDelPaquete } from "@/components/HabitacionesDelPaquete";
 import { waLink } from "@/lib/whatsapp";
 
+// Los precios de la promo de temporada baja se apagan solos al terminar (ver
+// `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
+// que lo que anuncia no se quede congelado desde el último despliegue.
+export const revalidate = 3600;
+
 interface FotoDia { src: string; lugar: string }
 
 const normalizar = (s: string) =>
@@ -373,8 +378,8 @@ export default function PaqueteDetallePage({ params }: Props) {
           {precioVisibleTachado(p) && (
             <p className="mt-2 font-dm text-[11px] text-dorado/90">
               {locale === "en"
-                ? `Low season price · valid through ${PROMO_TEMPORADA.hastaTexto.en}`
-                : `Precio de temporada baja · válido hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
+                ? `Low season price · for trips starting by ${PROMO_TEMPORADA.hastaTexto.en}`
+                : `Precio de temporada baja · para viajes que empiezan hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
             </p>
           )}
 

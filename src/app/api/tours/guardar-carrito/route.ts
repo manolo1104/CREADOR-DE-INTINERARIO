@@ -37,6 +37,12 @@ export async function POST(req: NextRequest) {
       // Idioma en que el cliente armó el carrito: define en qué idioma sale la
       // cotización y, más tarde, los recordatorios del cron.
       locale,
+      // Checkout rediseñado (oct 2026). `silencioso`: el carrito se guarda solo
+      // al terminar «Tus datos», sin que el cliente lo pidiera, así que NO se le
+      // manda la cotización (los recordatorios del cron sí). `enviarCotizacion`:
+      // la pidió con el botón, y se manda aunque el carrito ya existiera por el
+      // guardado silencioso (si no, el dedup se la tragaba).
+      silencioso, enviarCotizacion,
     } = body;
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -48,7 +54,10 @@ export async function POST(req: NextRequest) {
     // pagar se perdía para siempre.
     const esCarrito = Array.isArray(items) && items.length > 0;
     if (esCarrito) {
-      return await guardarCarritoCompleto(items, String(email).trim(), phone, hospedaje, traslado, locale);
+      return await guardarCarritoCompleto(items, String(email).trim(), phone, hospedaje, traslado, locale, {
+        silencioso:       silencioso === true,
+        enviarCotizacion: enviarCotizacion === true,
+      });
     }
 
     if (!tourDate) {
@@ -68,6 +77,7 @@ export async function POST(req: NextRequest) {
       childrenMid: Number(childrenMid) || 0,
       childrenSmall: Number(childrenSmall) || 0,
       promoCode,
+      tourDate: String(tourDate),
     });
     if (!charge) {
       return NextResponse.json({ error: "Tour o participantes inválidos." }, { status: 400 });
@@ -181,6 +191,7 @@ async function guardarCarritoCompleto(
   hospedaje?: { habitaciones?: { habitacionId: string; huespedes: number }[]; noches?: number; checkin?: string; checkout?: string } | null,
   traslado?: { ciudad?: string; personas?: number } | null,
   locale?: unknown,
+  { silencioso = false, enviarCotizacion = false }: { silencioso?: boolean; enviarCotizacion?: boolean } = {},
 ) {
   const tarifa = tarifarRecorridos(items);
   if (!tarifa.ok) {
@@ -298,39 +309,45 @@ async function guardarCarritoCompleto(
 
   const restoreUrl = linkRecuperacion(APP_URL, datos.tourId, datos.tourSlug, token);
 
-  if (esNuevo) {
+  // La cotización: al crear el carrito si no es silencioso, o siempre que la
+  // pida con el botón. El aviso a Manolo, solo al crearlo, también en silencio:
+  // ahí es donde más falta hace que se entere mientras la persona decide.
+  const mandarCotizacion = !silencioso && (esNuevo || enviarCotizacion);
+  if (mandarCotizacion || esNuevo) {
     try {
-      const { subject, html } = buildCartEmailHtml({
-        tipo: "cotizacion",
-        tourName: datos.tourName,
-        tourSlug: datos.tourSlug,
-        tourDate: datos.tourDate,
-        adults: datos.adults,
-        children: datos.childrenMid,
-        total: datos.total,
-        restoreUrl,
-        lineas: tarifa.lineItems.map((l) => ({
-          tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,
-          adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
-          subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
-        })),
-        hospedaje: hotel,
-        traslado:  viaje,
-        email:     datos.customerEmail,
-        locale:    locale === "en" ? "en" : "es",
-      });
-      await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
-        // Y si el carrito es grande, que Manolo se entere mientras la persona
-        // todavía está decidiendo: él cierra el 25 % de lo que atiende y la
-        // página el 2.5 %.
-        await avisarCarritoGrande({
-          total:         datos.total,
-          customerEmail: datos.customerEmail,
-          customerPhone: datos.customerPhone,
-          tourName:      datos.tourName,
-          tourDate:      datos.tourDate,
+      if (mandarCotizacion) {
+        const { subject, html } = buildCartEmailHtml({
+          tipo: "cotizacion",
+          tourName: datos.tourName,
+          tourSlug: datos.tourSlug,
+          tourDate: datos.tourDate,
+          adults: datos.adults,
+          children: datos.childrenMid,
+          total: datos.total,
           restoreUrl,
+          lineas: tarifa.lineItems.map((l) => ({
+            tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,
+            adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
+            subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
+          })),
+          hospedaje: hotel,
+          traslado:  viaje,
+          email:     datos.customerEmail,
+          locale:    locale === "en" ? "en" : "es",
         });
+        await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
+      }
+      // Y si el carrito es grande, que Manolo se entere mientras la persona
+      // todavía está decidiendo: él cierra el 25 % de lo que atiende y la
+      // página el 2.5 %.
+      if (esNuevo) await avisarCarritoGrande({
+        total:         datos.total,
+        customerEmail: datos.customerEmail,
+        customerPhone: datos.customerPhone,
+        tourName:      datos.tourName,
+        tourDate:      datos.tourDate,
+        restoreUrl,
+      });
     } catch {
       // Si el correo falla, el carrito igual queda guardado para el cron.
     }
@@ -343,6 +360,7 @@ async function guardarCarritoCompleto(
     datos.customerEmail,
     datos.tourDate,
     esNuevo ? "nueva" : "actualizada",
+    silencioso ? "(guardado al llenar sus datos)" : "",
   );
 
   return NextResponse.json({ ok: true });

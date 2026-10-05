@@ -280,7 +280,7 @@ function TourResultCard({
             <p className="font-dm text-[10px] text-negro/40 mt-0.5">{etiquetaUnidad(tour)}</p>
             {promo && (
               <p className="font-dm text-[10px] text-dorado mt-0.5 font-medium">
-                Temporada baja · −${promo.monto} hasta el {promo.hastaTexto.es}
+                Temporada baja · −${promo.monto} en fechas hasta el {promo.hastaTexto.es}
               </p>
             )}
           </div>
@@ -393,7 +393,7 @@ function PaqueteResultCard({
             </p>
             {precioVisibleTachado(paquete) && (
               <p className="font-dm text-[10px] text-dorado mt-0.5 font-medium">
-                Temporada baja · válido hasta el {PROMO_TEMPORADA.hastaTexto.es}
+                Temporada baja · para viajes hasta el {PROMO_TEMPORADA.hastaTexto.es}
               </p>
             )}
           </div>

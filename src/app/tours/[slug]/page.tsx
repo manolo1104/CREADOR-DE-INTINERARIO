@@ -36,6 +36,11 @@ import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
 
+// Los precios de la promo de temporada baja se apagan solos al terminar (ver
+// `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
+// que lo que anuncia no se quede congelado desde el último despliegue.
+export const revalidate = 3600;
+
 interface Props { params: { slug: string } }
 
 export function generateStaticParams() {
@@ -1682,7 +1687,7 @@ export default function TourDetailPage({ params }: Props) {
                 <p className="text-[12px] text-crema/35 font-dm leading-none">
                   <span className="line-through">{money(antesDe)}</span>
                   <span className="ml-1.5 text-dorado/80 no-underline">
-                    {locale === "en" ? `until ${PROMO_TEMPORADA.hastaTexto.en}` : `hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
+                    {locale === "en" ? `for dates through ${PROMO_TEMPORADA.hastaTexto.en}` : `para fechas hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
                   </span>
                 </p>
               )}

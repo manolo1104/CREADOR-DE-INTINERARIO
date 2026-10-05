@@ -108,6 +108,8 @@ export async function POST(req: NextRequest) {
       // Ya saneados arriba: el motor cobra los boletos extra de ESTOS tours.
       tourElegido:   elegidos.join(","),
       pct,
+      // La promo de temporada baja va con los viajes que empiezan hasta el 29 oct.
+      fecha:         paqueteDetails?.fecha,
     });
     if (!cobro) {
       return NextResponse.json(

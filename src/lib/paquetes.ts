@@ -4,7 +4,7 @@
  * leen de aquí. Los tours del itinerario se cruzan por `tourSlug` contra TOURS_DB.
  */
 import { TRASLADOS, precioBase } from "./traslados";
-import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente } from "./tours";
+import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
 import { NOCHE_XANTOLO } from "./nocheXantolo";
 
@@ -112,6 +112,8 @@ export interface Paquete {
    * escribe a mano.
    */
   precioOriginal?: number;
+  /** Precio de LISTA de la pareja, sin la promo de temporada baja (lo llena `PAQUETES_DB`). */
+  precioLista?: number;
   precioLabel: string;
   /**
    * El precio se ENSEÑA dividido entre dos y con etiqueta «por persona».
@@ -735,35 +737,57 @@ const PAQUETES_RAW: Paquete[] = [
  * vuelva a anunciar un ahorro inflado. Las filas de `valor` que citan un tour
  * en promo bajan también sus $200, por la misma razón.
  *
- * ⚠️ Igual que TOURS_DB: se evalúa al arrancar; el 30 de octubre un deploy
- * regresa los precios de lista.
+ * Igual que en los tours sueltos (4 oct 2026): lo que se COBRA depende de la
+ * fecha de inicio del paquete (`precioPaqueteDeFecha`), y lo que se ANUNCIA son
+ * getters que vuelven solos al precio de lista el 30 de octubre.
  */
 const PROMO_TOURS = PROMO_TEMPORADA.tours as ReadonlySet<string>;
 const DESCUENTO_PAREJA = PROMO_TEMPORADA.monto * 2;
 
-function conPromoTemporada(p: Paquete): Paquete {
-  if (!promoVigente()) return p;
-  const enPromo = p.itinerario
+/** Los recorridos en promo del itinerario de un paquete. */
+function toursEnPromo(p: Pick<Paquete, "itinerario">): string[] {
+  return p.itinerario
     .map((d) => d.tourSlug)
     .filter((s): s is string => !!s && PROMO_TOURS.has(s));
+}
+
+/**
+ * Lo que cuesta la pareja en un paquete que EMPIEZA en esa fecha: el de lista,
+ * menos $200 por cada recorrido en promo si arranca hasta el 29 de octubre.
+ * Sin fecha, lo que se anuncia hoy.
+ */
+export function precioPaqueteDeFecha(p: Paquete, fecha?: string | null): number {
+  const lista = p.precioLista ?? p.precio;
+  return fechaConPromo(fecha) ? lista - DESCUENTO_PAREJA * toursEnPromo(p).length : lista;
+}
+
+/** El mismo paquete con `precio` resuelto para su fecha de inicio. */
+export function paqueteEnFecha(p: Paquete, fecha?: string | null): Paquete {
+  return { ...p, precio: precioPaqueteDeFecha(p, fecha) };
+}
+
+function conPromoTemporada(p: Paquete): Paquete {
+  const enPromo = toursEnPromo(p);
   if (!enPromo.length) return p;
+  const activa = () => promoVigente();
 
   const nombresPromo = enPromo
     .map((s) => TOURS_DB.find((t) => t.slug === s)?.nombreCorto)
     .filter((n): n is string => !!n);
-  const valor = p.valor?.map((fila) => {
+  const valorPromo = p.valor?.map((fila) => {
     if (!nombresPromo.some((n) => fila.item.includes(n))) return fila;
     const monto = Number(fila.precio.replace(/[$,\s]/g, ""));
     if (!Number.isFinite(monto)) return fila;
     return { ...fila, precio: `$${(monto - DESCUENTO_PAREJA).toLocaleString("es-MX")}` };
   });
 
-  return {
-    ...p,
-    precio: p.precio - DESCUENTO_PAREJA * enPromo.length,
-    precioOriginal: p.precio,
-    valor,
-  };
+  const paquete: Paquete = { ...p, precioLista: p.precio };
+  Object.defineProperties(paquete, {
+    precio:         { get: () => (activa() ? p.precio - DESCUENTO_PAREJA * enPromo.length : p.precio), enumerable: true },
+    precioOriginal: { get: () => (activa() ? p.precio : p.precioOriginal), enumerable: true },
+    valor:          { get: () => (activa() ? valorPromo : p.valor), enumerable: true },
+  });
+  return paquete;
 }
 
 export const PAQUETES_DB: Paquete[] = PAQUETES_RAW.map(conPromoTemporada);

@@ -112,8 +112,8 @@ function PaqueteCard({ p }: { p: Paquete }) {
           {precioVisibleTachado(p) && (
             <p className="mt-1 font-dm text-[10px] font-medium text-dorado">
               {locale === "en"
-                ? `Low season price · valid through ${PROMO_TEMPORADA.hastaTexto.en}`
-                : `Precio de temporada baja · válido hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
+                ? `Low season price · for trips starting by ${PROMO_TEMPORADA.hastaTexto.en}`
+                : `Precio de temporada baja · para viajes que empiezan hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
             </p>
           )}
           {ahorro && (

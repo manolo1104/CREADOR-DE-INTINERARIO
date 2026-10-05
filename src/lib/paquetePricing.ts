@@ -2,8 +2,8 @@ import { nochesGratis } from "./habitaciones";
 // Cálculo AUTORITATIVO del precio de un paquete en el servidor.
 // El cliente nunca decide el monto: aquí se recalcula desde PAQUETES_DB.
 
-import { getPaquete, type Paquete } from "./paquetes";
-import { TOURS_DB } from "./tours";
+import { getPaquete, paqueteEnFecha, type Paquete } from "./paquetes";
+import { TOURS_DB, precioDeFecha } from "./tours";
 
 /**
  * El precio publicado de cada paquete es POR PAREJA: incluye una habitación
@@ -209,11 +209,20 @@ export function computePaqueteCharge(input: {
    */
   nocheExtra?:    unknown;
   pct?:           unknown;
+  /**
+   * Fecha de inicio (YYYY-MM-DD). La promo de temporada baja va con los viajes
+   * que empiezan hasta el 29 oct (4 oct 2026); sin fecha, lo que se anuncia hoy.
+   * En un evento manda la fecha del evento.
+   */
+  fecha?:         unknown;
 }): PaqueteChargeResult | null {
   // `getPaquete` y no `PAQUETES_DB`: los paquetes de evento (Xantolo) viven
   // fuera del catálogo general y también se cobran aquí.
-  const paquete = getPaquete(String(input.slug ?? ""));
-  if (!paquete) return null;
+  const delCatalogo = getPaquete(String(input.slug ?? ""));
+  if (!delCatalogo) return null;
+  const fecha = delCatalogo.evento?.fecha ?? (typeof input.fecha === "string" && input.fecha ? input.fecha : null);
+  // El precio de ESA fecha: la promo solo si el viaje arranca hasta el 29 oct.
+  const paquete = paqueteEnFecha(delCatalogo, fecha);
 
   const adultos       = Math.floor(Number(input.personas)      || 0);
   const childrenMid   = Math.max(0, Math.floor(Number(input.childrenMid)   || 0));
@@ -294,8 +303,9 @@ export function computePaqueteCharge(input: {
   const hotelIncluido  = costoHotelPorNoche(2, montanaIncluida)               * nochesBaseCobradas;
   const extraHotel     = Math.max(0, hotelReal - hotelIncluido);
 
+  // Cada boleto extra al precio del recorrido en la fecha del paquete.
   const toursPorPersona = toursDelPaquete(paquete, parseEleccion(input.tourElegido))
-    .reduce((s, t) => s + t.precio, 0);
+    .reduce((s, t) => s + precioDeFecha(t, fecha), 0);
   // Misma escala de menores que en los tours sueltos: 70 % de 6 a 10 años y
   // 50 % por debajo de 6.
   const extraTours = Math.round(

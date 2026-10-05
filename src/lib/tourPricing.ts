@@ -1,7 +1,7 @@
 // Cálculo de precios AUTORITATIVO en el servidor.
 // El cliente nunca decide el monto a cobrar: aquí se recalcula desde TOURS_DB.
 
-import { TOURS_DB, type Tour, type TourRuta, type TourVehiculo } from "./tours";
+import { TOURS_DB, tourEnFecha, type Tour, type TourRuta, type TourVehiculo } from "./tours";
 import { totalRecorrido, validatePromoCode, minimoPersonas, esViajeroSolo } from "./tourBooking";
 import { descuentoPorPosicion } from "./carrito";
 
@@ -28,6 +28,11 @@ export interface TourChargeInput {
   pct?:           number;
   /** Actividades opcionales. Del cliente SOLO se acepta el id y la cantidad. */
   addOns?:        { id: string; cantidad: number }[];
+  /**
+   * Fecha del recorrido (YYYY-MM-DD). Decide la promo de temporada baja: va
+   * con los recorridos hasta el 29 oct, no con lo que se compre hasta esa fecha.
+   */
+  tourDate?:      string;
 }
 
 export interface TourChargeResult {
@@ -77,8 +82,10 @@ export function fechaTourValida(tourDate: unknown): boolean {
  * servidor. Devuelve null si el tour no existe o si se excede el cupo máximo.
  */
 export function computeTourCharge(input: TourChargeInput): TourChargeResult | null {
-  const tour = TOURS_DB.find((t) => t.id === input.tourId || t.slug === input.tourSlug);
-  if (!tour) return null;
+  const delCatalogo = TOURS_DB.find((t) => t.id === input.tourId || t.slug === input.tourSlug);
+  if (!delCatalogo) return null;
+  // El precio de ESA fecha (promo de temporada baja solo hasta el 29 oct).
+  const tour = tourEnFecha(delCatalogo, input.tourDate);
 
   // 🔴 En un recorrido de tarifa por grupo el cupo NO es una preferencia
   // nuestra: el Jardín Escultórico no deja entrar a más de 7 por experiencia.
@@ -323,6 +330,7 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
       promoCode:     raw.promoCode as string,
       pct:           100,
       addOns:        raw.addOns as { id: string; cantidad: number }[],
+      tourDate:      String(raw.tourDate),
     });
     if (!charge) {
       return { ok: false, error: "Uno de los recorridos del carrito ya no está disponible con esos datos." };

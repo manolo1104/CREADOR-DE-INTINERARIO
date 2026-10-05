@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { loadStripe } from "@stripe/stripe-js";
+import { stripePromise } from "@/lib/stripeCliente";
 import {
   Elements, PaymentElement,
   useStripe, useElements,
@@ -17,10 +17,6 @@ import { trackPurchase } from "@/lib/analytics";
 import { trackTourEvent, marcarPasoClarity, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { ChevronLeft, Lock, ShieldCheck, Clock, Users, MessageCircle, CreditCard, CalendarCheck, Award, Mail } from "lucide-react";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
-);
 
 const WA_NUMBER = "524891090388";
 

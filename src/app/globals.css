@@ -816,3 +816,15 @@ input[type="tel"]:focus {
   .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
   .scrollbar-none::-webkit-scrollbar { display: none; }
 }
+
+/* Checkout cerrado (oct 2026): mientras el checkout rediseñado está en
+   pantalla no hay menú del sitio ni barra de progreso — son salidas del
+   embudo justo en el paso de pagar. Lo enciende `CheckoutCarritoV2` en <html>.
+   El `!important` gana al `--navbar-offset` que el menú escribe en línea. */
+html[data-checkout-cerrado] [data-navbar-sitio],
+html[data-checkout-cerrado] .scroll-progress-bar {
+  display: none !important;
+}
+html[data-checkout-cerrado] {
+  --navbar-offset: 0px !important;
+}

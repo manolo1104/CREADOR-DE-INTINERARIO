@@ -6,31 +6,7 @@ import { CheckCircle2, Calendar, Users, Clock, MessageCircle, Share2, CalendarPl
 import { formatTourDate, formatMXN } from "@/lib/tourBooking";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
-
-interface ConfirmationData {
-  confirmationNumber: string;
-  tourName:           string;
-  tourSlug:           string;
-  tourDate:           string;
-  tourDuration?:      number;
-  adults:             number;
-  children:           number;
-  total:              number;
-  chargeAmount?:      number;
-  paymentMode?:       string;
-  promoCode?:         string;
-  customerName:       string;
-  customerEmail:      string;
-  /**
-   * Los renglones cuando la reserva vino del carrito (varios recorridos y, si
-   * lo contrató, el hospedaje). Con esto la pantalla deja de resumir un viaje
-   * de cuatro días como "4 recorridos" y enseña el itinerario que se pagó.
-   */
-  lineItems?: {
-    tourName: string; tourDate: string;
-    adults: number; children: number; subtotal: number;
-  }[];
-}
+import { leerConfirmacion, type ConfirmationData } from "@/lib/checkout/confirmacion";
 
 export default function ConfirmacionTourPage() {
   const { locale, lp } = useLocale();
@@ -40,17 +16,12 @@ export default function ConfirmacionTourPage() {
   const [shareOk, setShareOk] = useState(false);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("hp_tour_confirmation");
-    if (!raw) return;
-    // Sin el try/catch, un sessionStorage corrupto dejaba la pantalla en blanco
-    // DESPUÉS de haber cobrado. El pago ya está hecho: pase lo que pase aquí,
-    // el cliente tiene que ver algo y su correo ya salió.
-    try {
-      setData(JSON.parse(raw));
-    } catch {
-      /* se queda el estado de "cargando", que remite al correo */
-    }
-    sessionStorage.removeItem("hp_tour_confirmation");
+    // Un sessionStorage corrupto devuelve null en vez de reventar: dejaba la
+    // pantalla en blanco DESPUÉS de haber cobrado. El pago ya está hecho: pase
+    // lo que pase aquí, el cliente tiene que ver algo y su correo ya salió (con
+    // null se queda el estado de "cargando", que remite al correo).
+    const datos = leerConfirmacion();
+    if (datos) setData(datos);
   }, []);
 
   // Con varios recorridos se listan todos: el mensaje es lo que la persona le
