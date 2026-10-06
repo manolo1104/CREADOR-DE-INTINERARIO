@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourQuoteEmailHtml } from "@/lib/tourEmail";
-import { metaAlEnviar, conMeta } from "@/lib/quoteFollowUp";
+import { metaAlEnviar, conMeta, metaCotizacion } from "@/lib/quoteFollowUp";
+import { calcularVencimiento, vigenciaDe } from "@/lib/vencimientoCotizacion";
+import { hoyMX } from "@/lib/dates";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,13 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     // El _meta de la cotización (anticipo, vigencia, numPersonas) vive en packageItems.
     const rawPkgs = Array.isArray((q as any).packageItems) ? (q as any).packageItems : [];
     const meta    = rawPkgs.find((p: any) => p && p._meta) || {};
+
+    // La fecha límite nace al enviar. Si se REENVÍA y la que tenía sigue en
+    // pie, se respeta (el cliente ya la leyó); si ya pasó, cuenta de nuevo.
+    const previa = metaCotizacion(q.lineItems).venceEl;
+    const venceEl = previa && previa >= hoyMX()
+      ? previa
+      : calcularVencimiento(new Date(), vigenciaDe(q.packageItems), q.tourDate);
 
     const html = buildTourQuoteEmailHtml({
       customerName: q.customerName,
@@ -31,6 +40,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       extraItems:   (q as any).extraItems ?? undefined,
       // Idioma del cliente, guardado en el `_meta` de la cotización.
       locale:       meta.locale,
+      venceEl,
     });
 
     const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
@@ -57,7 +67,11 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       where: { id: params.id },
       data:  {
         status:    "enviada",
-        lineItems: conMeta(q.lineItems, seq) as never,
+        // Fecha nueva = recordatorios nuevos: se borran las marcas de la anterior.
+        lineItems: conMeta(q.lineItems, {
+          ...seq, venceEl,
+          ...(venceEl !== previa ? { recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
+        }) as never,
       },
     });
     await registrarEnBitacora({

@@ -629,6 +629,8 @@ export function buildTourQuoteEmailHtml(data: {
   extraItems?:   unknown;
   /** Idioma del cliente. Cae al español si no viene. */
   locale?:       string;
+  /** Fecha límite (`YYYY-MM-DD`). Ver `vencimientoCotizacion.ts`. */
+  venceEl?:      string;
 }): string {
   const locale = emailLocale(data.locale);
   const T = getEmails(locale).cotizacion;
@@ -656,6 +658,10 @@ export function buildTourQuoteEmailHtml(data: {
   };
 
   const fmx = (n: number) => `$${Number(n).toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+  // «hasta el jueves 9 de octubre de 2026»: en español, en minúscula tras «el».
+  const venceTxt = data.venceEl && /^\d{4}-\d{2}-\d{2}$/.test(data.venceEl)
+    ? (locale === "en" ? formatDate(data.venceEl) : formatDate(data.venceEl).replace(/^./, (c) => c.toLowerCase()).replace(",", ""))
+    : "";
   // Lo que incluyen los recorridos de la cotización. Antes se leía solo
   // `data.tourSlug` (el primero) y SIN idioma: una cotización de tres tours
   // prometía lo del primero para todos, y la versión en inglés lo listaba en
@@ -925,6 +931,7 @@ export function buildTourQuoteEmailHtml(data: {
                 </tr>
               </table>
               <p style="margin:12px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a;line-height:1.6">${T.anticipoNota}</p>
+              ${venceTxt ? `<p style="margin:8px 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#9a4a1e;line-height:1.6"><strong>${T.vigenteHasta(venceTxt)}</strong></p>` : ""}
             </td></tr>
           </table>
 

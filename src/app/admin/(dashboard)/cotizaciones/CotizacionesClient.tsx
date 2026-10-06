@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
-import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye } from "lucide-react";
+import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing } from "lucide-react";
 import { TOURS_LISTA, partesRecogida, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
@@ -14,7 +14,12 @@ import {
 import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
 import { HABITACION_POR_DEFECTO } from "@/lib/admin/habitacionesPanel";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
-import { addDaysYMD } from "@/lib/dates";
+import { addDaysYMD, hoyMX, ymdMX } from "@/lib/dates";
+import { telefonoWhatsapp } from "@/lib/reviewRequest";
+import {
+  VIGENCIAS, calcularVencimiento, cuandoVence, diasParaVencer, etapaDe, etiquetaVence,
+  fechaLimite, recordadoPorWhatsapp, urlRecordatorio, vigenciaDe,
+} from "@/lib/vencimientoCotizacion";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
 import { PAQUETES_PANEL, cargarPaquete } from "@/lib/admin/paquetesPanel";
 import { Package } from "lucide-react";
@@ -25,16 +30,39 @@ import {
   calcExtraLine, normalizarExtra, extrasCobrados, extrasIncluidos,
 } from "@/lib/admin/extras";
 
+// «Expirada» se muestra «Vencida»: desde oct 2026 la pone también el cron
+// cuando pasa la fecha límite (ver `vencimientoCotizacion.ts`).
 const STATUS: Record<string, { label: string; cls: string }> = {
   borrador: { label: "Borrador",  cls: "bg-gray-100 text-gray-600"     },
   enviada:  { label: "Enviada",   cls: "bg-yellow-100 text-yellow-800" },
   aceptada: { label: "Aceptada",  cls: "bg-green-100 text-green-800"   },
-  expirada: { label: "Expirada",  cls: "bg-red-100 text-red-700"       },
+  expirada: { label: "Vencida",   cls: "bg-red-100 text-red-700"       },
 };
+
+/** El color del «vence…»: verde con holgura, ámbar el último día, rojo vencida. */
+function claseVence(dias: number): string {
+  if (dias < 0)  return "text-red-600";
+  if (dias <= 1) return "text-amber-600 font-semibold";
+  return "text-[#40916C]";
+}
+
+/** El `_meta` de `lineItems` (seguimiento y fecha límite), aparte de las líneas de tour. */
+function metaLineas(q: TourQuote | null): Record<string, unknown> | null {
+  const ls = (q as any)?.lineItems;
+  return Array.isArray(ls) ? ls.find((l: any) => l && l._meta) ?? null : null;
+}
 
 const fmx    = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate  = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const fDateL = (d: string) => { if (!d) return "—"; const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return r.charAt(0).toUpperCase() + r.slice(1); };
+
+/** «hoy», «ayer» o «el 3 oct», para la marca de «recordado». */
+function fRecordado(iso: string, hoy: string): string {
+  const d = ymdMX(iso);
+  if (d === hoy) return "hoy";
+  if (d === addDaysYMD(hoy, -1)) return "ayer";
+  return `el ${new Date(`${d}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}`;
+}
 
 const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "", notasInternas: "" };
@@ -75,13 +103,18 @@ export default function CotizacionesClient(
   const [anticipoTipo,   setAnticipoTipo]   = useState<"percent" | "fixed">("percent");
   const [anticipoValor,  setAnticipoValor]  = useState<string>("");
   const [vigencia,       setVigencia]       = useState<string>("7dias");
+  // Fecha límite editable a mano. Vacía = la regla de siempre (al enviar).
+  const [venceEdit,      setVenceEdit]      = useState<string>("");
   const [numPersonas,    setNumPersonas]    = useState<string>("");
   const [saving,         setSaving]         = useState(false);
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
-  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "aceptada" | "expirada">("all");
-  const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto">("reciente");
+  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada">("all");
+  const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto" | "vence">("reciente");
+
+  // «Hoy» en México: de aquí salen el «vence…», la franja y los mensajes.
+  const hoy = hoyMX();
 
   const toursTotal = lines.reduce((s, l) => s + calcLine(l), 0);
   const pkgsTotal  = packages.reduce((s, p) => s + calcPackageLine(p), 0);
@@ -242,6 +275,7 @@ export default function CotizacionesClient(
     setExtras([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
     setAnticipoTipo("percent"); setAnticipoValor(""); setVigencia("7dias"); setNumPersonas("");
+    setVenceEdit("");
     setStep(1);
     setModal("new");
   }
@@ -256,7 +290,10 @@ export default function CotizacionesClient(
       notes:         q.notes || "",
       notasInternas: metaNotas.notasInternas || "",
     });
-    const storedLines = (q as any).lineItems as any[] | null;
+    // El `_meta` de seguimiento viaja dentro de `lineItems`: no es una línea de
+    // tour. Antes entraba al editor como renglón vacío y el guardado se negaba
+    // («Completa el concepto…») en toda cotización ya enviada por correo.
+    const storedLines = ((q as any).lineItems as any[] | null)?.filter(l => l && !l._meta) ?? null;
     const editLines: LineItem[] = storedLines?.length
       ? storedLines.map(l => ({
           ...l,
@@ -281,6 +318,7 @@ export default function CotizacionesClient(
       setAnticipoValor(meta.anticipo != null ? String(meta.anticipo) : "");
     }
     setVigencia(meta.vigencia || "7dias");
+    setVenceEdit(fechaLimite(q) ?? "");
     setNumPersonas(meta.numPersonas ? String(meta.numPersonas) : "");
 
     // Restaurar precio editado y descuento.
@@ -308,7 +346,21 @@ export default function CotizacionesClient(
     if (!lines.every(lineaCompleta)) { flash("❌ Completa el concepto y la fecha en cada línea"); return; }
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
-    const lineItems    = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    const lineas       = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
+    // Se conserva el `_meta` de seguimiento (cuándo se envió, qué paso va, la
+    // fecha límite). Si la fecha límite cambió a mano, los recordatorios de la
+    // anterior ya no cuentan, y una Vencida con fecha nueva vuelve a Enviada.
+    const metaPrevio   = modal === "edit" ? metaLineas(editTarget) : null;
+    const venceAntes   = editTarget ? fechaLimite(editTarget) ?? "" : "";
+    const venceCambio  = modal === "edit" && /^\d{4}-\d{2}-\d{2}$/.test(venceEdit) && venceEdit !== venceAntes;
+    const metaNuevo    = metaPrevio || venceCambio
+      ? {
+          ...(metaPrevio ?? {}), _meta: true,
+          ...(venceCambio ? { venceEl: venceEdit, recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
+        }
+      : null;
+    const lineItems    = metaNuevo ? [metaNuevo, ...lineas] : lineas;
+    const reactivar    = venceCambio && editTarget?.status === "expirada" && venceEdit >= hoyMX();
     const extraItems   = extras.filter(e => e.concepto.trim()).map(normalizarExtra);
     const packageItems = [
       {
@@ -338,6 +390,7 @@ export default function CotizacionesClient(
       totalAmount: finalTotal, lineItems, packageItems, extraItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
+      ...(reactivar ? { status: "enviada" } : {}),
     };
 
     let r: Response;
@@ -375,11 +428,11 @@ export default function CotizacionesClient(
   }
 
   async function expireQ(id: string) {
-    if (!confirm("¿Marcar como expirada?")) return;
+    if (!confirm("¿Marcar como vencida?")) return;
     const r = await fetch(`/api/admin/cotizaciones/${id}`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) {
       setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
-      flash("✅ Cotización marcada como expirada");
+      flash("✅ Cotización marcada como vencida");
     } else {
       flash("❌ No se pudo actualizar la cotización");
     }
@@ -496,14 +549,17 @@ export default function CotizacionesClient(
     const rawPkgs  = (q as any).packageItems ?? [];
     const meta     = getMeta(rawPkgs);
     const pkgs: PackageItem[] = cleanPackages(rawPkgs);
-    const items: LineItem[] = Array.isArray((q as any).lineItems) && (q as any).lineItems.length
-      ? (q as any).lineItems.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.children ?? 0), childrenSmall: l.childrenSmall ?? 0 }))
+    // Sin el `_meta` de seguimiento: no es una línea de tour.
+    const lineasTour = Array.isArray((q as any).lineItems) ? (q as any).lineItems.filter((l: any) => l && !l._meta) : [];
+    const items: LineItem[] = lineasTour.length
+      ? lineasTour.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.children ?? 0), childrenSmall: l.childrenSmall ?? 0 }))
       : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }];
 
     const today    = new Date();
-    const vigDays  = meta.vigencia === "48h" ? 2 : meta.vigencia === "15dias" ? 15 : meta.vigencia === "30dias" ? 30 : 7;
-    const vigDate  = new Date(today.getTime() + vigDays * 24 * 60 * 60 * 1000);
-    const vigLabel = meta.vigencia === "48h" ? "48 horas" : meta.vigencia === "15dias" ? "15 días" : meta.vigencia === "30dias" ? "30 días" : "7 días";
+    // La vigencia es la fecha límite GUARDADA. Antes se contaba desde el día en
+    // que se imprimía el PDF, así que cada descarga le alargaba el plazo.
+    const vigDate  = new Date(`${fechaLimite(q) ?? calcularVencimiento(today, vigenciaDe(rawPkgs), q.tourDate)}T12:00:00`);
+    const vigLabel = (VIGENCIAS[meta.vigencia ?? ""] ?? VIGENCIAS["7dias"]).label;
     const fmt      = (d: Date) => d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 
     const toursTotal  = items.reduce((s, l) => s + calcLine(l), 0);
@@ -784,7 +840,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   </div>
 
   <div class="totals">
-    <div class="note"><strong>Sobre los precios:</strong> Todos los importes están en <strong>pesos mexicanos (MXN)</strong>. Vigencia: <strong>${vigLabel}</strong> desde la emisión. Tarifas sujetas a disponibilidad al confirmar.</div>
+    <div class="note"><strong>Sobre los precios:</strong> Todos los importes están en <strong>pesos mexicanos (MXN)</strong>. Vigencia: <strong>${vigLabel}</strong>, hasta el <strong>${fmt(vigDate)}</strong>. Tarifas sujetas a disponibilidad al confirmar.</div>
     <div class="calc">
       <div class="line"><span>Subtotal tours</span><span class="num">$${toursTotal.toLocaleString("es-MX")}</span></div>
       ${pkgsTotal > 0 ? `<div class="line"><span>Subtotal hospedaje</span><span class="num">$${pkgsTotal.toLocaleString("es-MX")}</span></div>` : ""}
@@ -845,23 +901,98 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     setTimeout(() => win.print(), 1000);
   }
 
-  function waMsg(q: TourQuote) {
-    const ph = (q.customerPhone || "524891090388").replace(/\D/g, "");
-    return `https://wa.me/${ph}?text=${encodeURIComponent(`Hola ${q.customerName}, tu cotización *${q.quoteNumber}*:\n\n*${q.tourName}*\nTotal: *${fmx(q.totalAmount)}*\nVálida 48 horas.\n\n¿Confirmamos?`)}`;
+  /**
+   * La fecha límite que lleva (o llevará al enviarse) la cotización. Si la que
+   * tenía ya pasó, la de un envío nuevo: es la que guarda la ruta al reenviar.
+   */
+  function venceDe(q: TourQuote): string {
+    const f = fechaLimite(q);
+    return f && f >= hoy ? f : calcularVencimiento(new Date(), vigenciaDe((q as any).packageItems), q.tourDate);
   }
+
+  function waMsg(q: TourQuote) {
+    // Con lada (52): un número de 10 dígitos suelto abría el chat de otro país.
+    const ph = telefonoWhatsapp(q.customerPhone) ?? "524891090388";
+    // Una ya aceptada no lleva vigencia: no hay nada que decidir.
+    const vigente = q.status === "aceptada" ? "" : `\nVálida hasta ${cuandoVence(venceDe(q))}.`;
+    return `https://wa.me/${ph}?text=${encodeURIComponent(`Hola ${q.customerName}, tu cotización *${q.quoteNumber}*:\n\n*${q.tourName}*\nTotal: *${fmx(q.totalAmount)}*${vigente}\n\n¿Confirmamos?`)}`;
+  }
+
+  /**
+   * Mandarla por WhatsApp también cuenta como enviada: nace su fecha límite (la
+   * misma que dice el mensaje). Sin teléfono del cliente, el WhatsApp se abre
+   * con el número de la empresa y no se marca nada.
+   */
+  function enviarPorWhatsapp(q: TourQuote) {
+    playClick();
+    if (!q.customerPhone || q.status === "aceptada") return;
+    const venceEl = venceDe(q);
+    // `keepalive`: el WhatsApp se abre en otra pestaña o app y la marca debe
+    // llegar aunque la página se cierre o se suspenda en el celular.
+    fetch(`/api/admin/cotizaciones/${q.id}/whatsapp`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+      body: JSON.stringify({ tipo: "envio", venceEl }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.ok) setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.status, lineItems: d.lineItems } : x)); })
+      .catch(() => {});
+  }
+
+  /** El recordatorio de «tu cotización vence…», con el nombre de pila y el 30 %. */
+  function waRecordatorio(q: TourQuote): string | null {
+    return urlRecordatorio(q, venceDe(q));
+  }
+
+  function recordar(q: TourQuote) {
+    const url = waRecordatorio(q);
+    if (!url) return;
+    playClick();
+    // Se abre primero: si la marca fallara, el mensaje igual sale.
+    window.open(url, "_blank", "noopener,noreferrer");
+    const ahora = new Date().toISOString();
+    setQuotes(qs => qs.map(x => {
+      if (x.id !== q.id) return x;
+      const ls = Array.isArray((x as any).lineItems) ? (x as any).lineItems : [];
+      const i = ls.findIndex((l: any) => l && l._meta);
+      const nuevas = i === -1 ? [{ _meta: true, recordadoWaAt: ahora }, ...ls] : ls.map((l: any, j: number) => j === i ? { ...l, recordadoWaAt: ahora } : l);
+      return { ...x, lineItems: nuevas };
+    }));
+    fetch(`/api/admin/cotizaciones/${q.id}/whatsapp`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+      body: JSON.stringify({ tipo: "recordatorio" }),
+    }).catch(() => {});
+  }
+
+  // Lo que toca recordar hoy: Enviadas a las que les queda un día o menos y a
+  // las que nadie les ha escrito todavía por WhatsApp.
+  const porVencer = useMemo(
+    () => quotes
+      .filter(q => etapaDe(q, hoy) === "por-vencer")
+      .sort((a, b) => (fechaLimite(a) ?? "").localeCompare(fechaLimite(b) ?? "")),
+    [quotes, hoy],
+  );
+  // Las que el equipo puede recordar y no ha recordado (sin teléfono solo les llega el correo).
+  const tocaRecordar = porVencer.filter(q => !recordadoPorWhatsapp(q) && !!waRecordatorio(q));
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     const list = quotes.filter(c => {
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (statusFilter === "por-vencer") { if (etapaDe(c, hoy) !== "por-vencer") return false; }
+      else if (statusFilter !== "all" && c.status !== statusFilter) return false;
       return !q || [c.customerName, c.customerEmail, c.quoteNumber, c.tourName].some(v => v?.toLowerCase().includes(q));
     });
     return [...list].sort((a, b) => {
       if (sortBy === "monto") return b.totalAmount - a.totalAmount;
       if (sortBy === "tourDate") return (b.tourDate || "").localeCompare(a.tourDate || "");
+      if (sortBy === "vence") {
+        // Las vivas primero, de la que vence antes a la que vence después.
+        const va = a.status === "enviada" ? fechaLimite(a) ?? "9999" : "9999";
+        const vb = b.status === "enviada" ? fechaLimite(b) ?? "9999" : "9999";
+        return va.localeCompare(vb) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // más recientes
     });
-  }, [quotes, search, statusFilter, sortBy]);
+  }, [quotes, search, statusFilter, sortBy, hoy]);
 
   const isEditMode = modal === "edit";
 
@@ -878,6 +1009,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             <option value="reciente">Más recientes</option>
             <option value="tourDate">Fecha de tour</option>
             <option value="monto">Mayor monto</option>
+            <option value="vence">Fecha límite</option>
           </select>
           <button onClick={() => { playClick(); openNew(); }}
             className="flex items-center gap-2 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-4 py-2.5 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
@@ -890,16 +1022,62 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
       )}
 
+      {/* Toca recordar: las que vencen hoy o mañana */}
+      {porVencer.length > 0 && (
+        <div className="mb-4 border border-amber-300/70 bg-amber-50/70 rounded-sm px-4 py-3">
+          <div className="flex items-center gap-2">
+            <BellRing className="w-4 h-4 text-amber-600 shrink-0" />
+            <p className="font-dm text-sm text-[#1B4332] font-medium">
+              Por vencer · {porVencer.length}
+              <span className="font-normal text-[#1B4332]/60">
+                {tocaRecordar.length > 0
+                  ? ` — toca recordarle${tocaRecordar.length === 1 ? "" : "s"} hoy a ${tocaRecordar.length}`
+                  : " — ya no falta nadie por recordar"}
+              </span>
+            </p>
+          </div>
+          <ul className="mt-2 divide-y divide-amber-200/70">
+            {porVencer.map(q => {
+              const vence = fechaLimite(q) ?? hoy;
+              const rec   = recordadoPorWhatsapp(q);
+              const url   = waRecordatorio(q);
+              return (
+                <li key={q.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2 font-dm">
+                  <button onClick={() => { playClick(); setDetalle(q); }} className="text-[#1B4332] text-sm font-medium hover:underline text-left">{q.customerName}</button>
+                  <span className="text-[#1B4332]/50 text-xs truncate max-w-[240px]">{q.tourName.split("—")[0].trim()} · {fDate(q.tourDate)}</span>
+                  <span className={`text-xs ${claseVence(diasParaVencer(vence, hoy))}`}>{etiquetaVence(vence, hoy)}</span>
+                  <span className="ml-auto flex items-center gap-2.5">
+                    {rec && <span className="text-xs text-[#40916C]">✓ Recordado {fRecordado(rec, hoy)}</span>}
+                    {url ? (
+                      <button onClick={() => recordar(q)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-sm transition-colors ${rec ? "border border-[#25D366]/50 text-[#128C7E] hover:bg-[#25D366]/10" : "bg-[#25D366] hover:bg-[#1fb457] text-white"}`}>
+                        <MessageCircle className="w-3.5 h-3.5" />{rec ? "Otra vez" : "Recordar por WhatsApp"}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-[#1B4332]/40">sin teléfono</span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 text-[11px] font-dm text-[#1B4332]/50">A quien dejó correo le llega además, solo, un aviso de «tu cotización vence mañana».</p>
+        </div>
+      )}
+
       {/* Tabs de estado */}
       <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
         {([
           { key: "all",      label: "Todas"     },
           { key: "borrador", label: "Borrador"  },
           { key: "enviada",  label: "Enviadas"  },
+          { key: "por-vencer", label: "Por vencer" },
           { key: "aceptada", label: "Aceptadas" },
-          { key: "expirada", label: "Expiradas" },
+          { key: "expirada", label: "Vencidas"  },
         ] as const).map(tab => {
-          const count = tab.key === "all" ? quotes.length : quotes.filter(q => q.status === tab.key).length;
+          const count = tab.key === "all" ? quotes.length
+            : tab.key === "por-vencer" ? porVencer.length
+            : quotes.filter(q => q.status === tab.key).length;
           return (
             <button key={tab.key} onClick={() => { playClick(); setStatusFilter(tab.key); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm whitespace-nowrap rounded-sm transition-colors ${
@@ -926,6 +1104,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         {filtered.map(q => {
           const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
           const sinEnviar = q.status === "borrador" && !!q.customerEmail;
+          const vence = fechaLimite(q);
+          const rec   = recordadoPorWhatsapp(q);
           return (
             <div key={q.id} onClick={() => { playClick(); setDetalle(q); }}
               className="bg-white border border-[#1B4332]/10 rounded-md p-4 cursor-pointer active:bg-[#FAFAF8]">
@@ -942,6 +1122,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <p className="text-[#1B4332]/70 text-sm truncate max-w-[60%]">{q.tourName}</p>
                 <span className="text-[#52B788] font-medium text-sm">{fmx(q.totalAmount)}</span>
               </div>
+              {vence && (
+                <p className={`text-[11px] font-dm mt-1 ${claseVence(diasParaVencer(vence, hoy))}`}>
+                  {etiquetaVence(vence, hoy)}{rec ? <span className="text-[#40916C] font-normal"> · ✓ recordado {fRecordado(rec, hoy)}</span> : null}
+                </p>
+              )}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" className="text-[#1B4332]/50 hover:text-[#1B4332]"><Eye className="w-4 h-4" /></button>
                 {q.status !== "aceptada" && q.status !== "expirada" && (
@@ -949,7 +1134,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 )}
                 <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => playClick()} className="text-[#1B4332]/50 hover:text-[#25D366]"><MessageCircle className="w-4 h-4" /></a>
+                <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} className="text-[#1B4332]/50 hover:text-[#25D366]"><MessageCircle className="w-4 h-4" /></a>
+                {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && waRecordatorio(q) && (
+                  <button onClick={() => recordar(q)} title="Recordar que vence" className="text-amber-600/70 hover:text-amber-600"><BellRing className="w-4 h-4" /></button>
+                )}
                 <button onClick={() => { playClick(); downloadPDF(q); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); hardDeleteQ(q.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
               </div>
@@ -974,6 +1162,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               {filtered.map(q => {
                 const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
                 const sinEnviar = q.status === "borrador" && !!q.customerEmail;
+                const vence = fechaLimite(q);
+                const rec   = recordadoPorWhatsapp(q);
                 return (
                   <tr key={q.id} onClick={() => { playClick(); setDetalle(q); }}
                     title="Ver la cotización completa"
@@ -987,6 +1177,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${s.cls}`}>{s.label}</span>
                         {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
                       </div>
+                      {vence && (
+                        <p className={`text-[11px] font-dm mt-1 whitespace-nowrap ${claseVence(diasParaVencer(vence, hoy))}`}
+                          title={`Fecha límite: ${fDate(vence)}`}>
+                          {etiquetaVence(vence, hoy)}
+                        </p>
+                      )}
+                      {rec && <p className="text-[10px] font-dm text-[#40916C] whitespace-nowrap">✓ recordado {fRecordado(rec, hoy)}</p>}
                     </td>
                     <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
@@ -1000,11 +1197,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title="Enviar email"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                        <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => playClick()} title="WhatsApp"
+                        <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} title="Enviar por WhatsApp"
                           className="text-[#1B4332]/40 hover:text-[#25D366] transition-colors"><MessageCircle className="w-4 h-4" /></a>
+                        {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && waRecordatorio(q) && (
+                          <button onClick={() => recordar(q)} title="Recordar por WhatsApp que vence"
+                            className="text-amber-600/60 hover:text-amber-600 transition-colors"><BellRing className="w-4 h-4" /></button>
+                        )}
                         <button onClick={() => { playClick(); downloadPDF(q); }} title="PDF"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar expirada"
+                        <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar vencida"
                           className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); hardDeleteQ(q.id); }} title="Eliminar"
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -1376,6 +1577,31 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     <option value="30dias">30 días</option>
                   </select>
                 </div>
+
+                {/* Fecha límite: nace al enviar; en una ya enviada se puede mover a mano */}
+                {(() => {
+                  const yaEnviada = isEditMode && (editTarget?.status === "enviada" || editTarget?.status === "expirada");
+                  const alEnviar  = calcularVencimiento(new Date(), vigencia, lines[0]?.tourDate);
+                  return (
+                    <div>
+                      <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha límite para decidir</label>
+                      {yaEnviada ? (
+                        <>
+                          <input type="date" value={venceEdit} min={hoyMX()} onChange={e => setVenceEdit(e.target.value)} className={inputCls} />
+                          <p className="text-[11px] text-[#1B4332]/45 font-dm mt-1">
+                            Un día antes sale el recordatorio. Si la mueves, se le vuelve a recordar
+                            {editTarget?.status === "expirada" ? " y la cotización regresa a Enviada." : "."}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[12px] text-[#1B4332]/60 font-dm border border-[#1B4332]/10 bg-[#FAFAF8] px-3 py-2.5 rounded-sm">
+                          Se pone sola al enviarla: <strong className="text-[#1B4332]">{fDateL(alEnviar)}</strong>
+                          <span className="text-[#1B4332]/45"> (la vigencia, sin pasar de la víspera del tour).</span>
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Precio editable */}
                 <div className="border border-[#52B788]/30 bg-[#52B788]/6 px-4 py-3 rounded-sm">

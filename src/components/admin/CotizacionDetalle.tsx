@@ -8,6 +8,8 @@ import { TOURS_LISTA } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, type LineaTour } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
+import { etiquetaVence, fechaLimite, recordadoPorWhatsapp } from "@/lib/vencimientoCotizacion";
+import { ymdMX } from "@/lib/dates";
 
 /**
  * La ficha completa de una cotización, sin abrir el editor.
@@ -25,7 +27,7 @@ const fDate = (d: string) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "—";
 
 const STATUS_LABEL: Record<string, string> = {
-  borrador: "Borrador", enviada: "Enviada", aceptada: "Aceptada", expirada: "Expirada",
+  borrador: "Borrador", enviada: "Enviada", aceptada: "Aceptada", expirada: "Vencida",
 };
 const STATUS_STYLE: Record<string, string> = {
   borrador: "bg-gray-100 text-gray-600",
@@ -76,6 +78,8 @@ export default function CotizacionDetalle({
   const meta      = rawPkgs.find(p => p && p._meta) || {};
   const hospedaje = rawPkgs.filter(p => p && !p._meta);
   const extras    = extrasDe((q as any).extraItems);
+  const vence     = fechaLimite(q);
+  const recordado = recordadoPorWhatsapp(q);
 
   const sumaLineas = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
                    + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
@@ -238,6 +242,14 @@ export default function CotizacionDetalle({
                   <CalendarClock className="w-3.5 h-3.5 text-[#1B4332]/40 shrink-0" />
                   {VIGENCIA_LABEL[meta.vigencia] || "7 días"}
                 </span>
+                {vence && (
+                  <span className="block text-xs text-[#1B4332]/55">
+                    hasta el {fDate(vence)} · {etiquetaVence(vence)}
+                  </span>
+                )}
+                {recordado && (
+                  <span className="block text-xs text-[#40916C]">✓ recordado por WhatsApp el {fDate(ymdMX(recordado))}</span>
+                )}
               </Dato>
             </div>
             <div className="mt-3 space-y-1">

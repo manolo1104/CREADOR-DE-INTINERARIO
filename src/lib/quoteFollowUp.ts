@@ -58,6 +58,12 @@ export interface MetaCotizacion {
   seqUltimoAt?: string;
   /** activo | pausada | terminado | sin-tiempo */
   seqEstado?:   string;
+  /** Fecha límite (`YYYY-MM-DD`, México). Ver `vencimientoCotizacion.ts`. */
+  venceEl?:       string;
+  /** ISO de cuándo el equipo le mandó el recordatorio por WhatsApp. */
+  recordadoWaAt?: string;
+  /** ISO del correo automático «tu cotización vence mañana». */
+  avisoVenceAt?:  string;
 }
 
 function metaDe(lineItems: unknown): MetaCotizacion | undefined {

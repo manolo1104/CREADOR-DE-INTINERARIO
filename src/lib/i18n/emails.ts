@@ -186,6 +186,8 @@ export interface EmailMessages {
     anticipoApartar: (pct: number) => string;
     saldoDia: string;
     anticipoNota: string;
+    /** «Esta cotización vale hasta el jueves 9 de octubre.» La fecha ya viene escrita. */
+    vigenteHasta: (fecha: string) => string;
   };
 
   paquete: {
@@ -390,6 +392,7 @@ const ES: EmailMessages = {
     anticipoApartar: (pct) => `Anticipo para apartar (${pct} %)`,
     saldoDia: "Saldo el día del primer recorrido",
     anticipoNota: "Con el anticipo queda apartado tu lugar. El resto se paga el día del primer recorrido en efectivo, transferencia o tarjeta.",
+    vigenteHasta: (f) => `Esta cotización vale hasta el ${f}.`,
   },
 
   paquete: {
@@ -599,6 +602,7 @@ const EN: EmailMessages = {
     anticipoApartar: (pct) => `Deposit to hold your spot (${pct}%)`,
     saldoDia: "Balance on the day of the first tour",
     anticipoNota: "The deposit holds your spot. The balance is paid on the day of the first tour in cash, by transfer or by card.",
+    vigenteHasta: (f) => `This quote is valid until ${f}.`,
   },
 
   paquete: {

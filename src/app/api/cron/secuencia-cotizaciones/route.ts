@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { buildQuoteSequenceEmail, type QuotePaso } from "@/lib/quoteSequenceEmail";
+import { buildQuoteSequenceEmail, buildQuoteVenceEmail, type QuotePaso } from "@/lib/quoteSequenceEmail";
+import { cuandoVence, diasParaVencer, fechaLimite } from "@/lib/vencimientoCotizacion";
+import { hoyMX } from "@/lib/dates";
 import {
   ESTADOS_VIVOS,
   PASOS_COTIZACION,
@@ -33,6 +35,13 @@ export const maxDuration = 60;
  * deliberado: tres correos que se cortan a la mitad, justo cuando la persona
  * iba a decidir, hacen más daño que no escribir.
  *
+ * Desde oct 2026, además, la FECHA LÍMITE (`vencimientoCotizacion.ts`):
+ *  - el día anterior (o el mismo día) sale UNA vez «tu cotización vence
+ *    mañana» y, desde ahí, ya no salen los pasos normales: nunca dos correos
+ *    seguidos sobre lo mismo;
+ *  - pasada la fecha, la cotización pasa sola a Vencida (`expirada`) y se
+ *    acaba su seguimiento. Esto vale también para las que no tienen correo.
+ *
  * `?dry=1` enseña a quién le tocaría, sin enviar ni marcar nada.
  * Protegido por Bearer <CRON_SECRET o BLOG_AGENT_SECRET>.
  */
@@ -46,10 +55,12 @@ export async function POST(req: NextRequest) {
   const dry = req.nextUrl.searchParams.get("dry") === "1";
   const ahora = new Date();
 
+  const hoy = hoyMX();
+  // También las que no tienen correo: a esas no se les escribe, pero sí vencen.
   const cotizaciones = await prisma.tourQuote.findMany({
-    where:   { status: { in: [...ESTADOS_VIVOS] }, customerEmail: { not: "" } },
+    where:   { status: { in: [...ESTADOS_VIVOS] } },
     orderBy: { createdAt: "asc" },
-    take:    200,
+    take:    500,
   });
 
   let enviados = 0;
@@ -57,10 +68,21 @@ export async function POST(req: NextRequest) {
   let convertidas = 0;
   let sinTiempo = 0;
   let terminadas = 0;
-  const destinatarios: { folio: string; email: string; paso: number }[] = [];
+  const destinatarios: { folio: string; email: string; paso: number | "vence" }[] = [];
+  const vencidas: { folio: string; cliente: string; vencio: string }[] = [];
 
   for (const q of cotizaciones) {
     const meta = metaCotizacion(q.lineItems);
+    const venceEl = fechaLimite(q);
+
+    // Sin correo no hay nada que mandar: solo se revisa si ya venció.
+    if (!q.customerEmail) {
+      if (venceEl && diasParaVencer(venceEl, hoy) < 0) {
+        vencidas.push({ folio: q.quoteNumber, cliente: q.customerName, vencio: venceEl });
+        if (!dry) await vencer(q.id, q.lineItems, venceEl);
+      }
+      continue;
+    }
 
     /**
      * Si CONFIRMÓ la reserva, la secuencia se pausa. Nada peor que seguir
@@ -94,6 +116,55 @@ export async function POST(req: NextRequest) {
       convertidas++;
       continue;
     }
+
+    // Pasó su fecha límite sin respuesta: Vencida, y se acabó el seguimiento.
+    if (venceEl && diasParaVencer(venceEl, hoy) < 0) {
+      vencidas.push({ folio: q.quoteNumber, cliente: q.customerName, vencio: venceEl });
+      if (!dry) await vencer(q.id, q.lineItems, venceEl);
+      continue;
+    }
+
+    // «Vence mañana» (o «hoy»): una sola vez, y no encima de otro correo
+    // recién mandado. Desde que sale, ya no salen los pasos normales.
+    if (venceEl && !meta.avisoVenceAt && diasParaVencer(venceEl, hoy) <= 1) {
+      const ultimo = Date.parse(meta.seqUltimoAt ?? "");
+      const reciente = !Number.isNaN(ultimo) && ahora.getTime() - ultimo < 6 * 60 * 60 * 1000;
+      if (!reciente && !(await deBaja(q.customerEmail))) {
+        destinatarios.push({ folio: q.quoteNumber, email: q.customerEmail, paso: "vence" });
+        if (dry) continue;
+        try {
+          const locale = localeDeCotizacion(q.lineItems);
+          const { subject, html } = buildQuoteVenceEmail({
+            locale,
+            customerName: q.customerName,
+            email:        q.customerEmail,
+            quoteNumber:  q.quoteNumber,
+            tourName:     q.tourName,
+            tourDate:     q.tourDate,
+            totalAmount:  q.totalAmount,
+            lineItems:    q.lineItems,
+            venceEl,
+            cuando:       cuandoVence(venceEl, locale, hoy),
+          });
+          await sendBrevoEmail({ to: [{ email: q.customerEmail, name: q.customerName }], subject, htmlContent: html });
+          await prisma.tourQuote.update({
+            where: { id: q.id },
+            data:  { lineItems: conMeta(q.lineItems, { avisoVenceAt: new Date().toISOString(), seqUltimoAt: new Date().toISOString() }) as never },
+          });
+          enviados++;
+          actividad("📧  COTIZACIÓN VENCE", q.quoteNumber, q.customerEmail, venceEl);
+        } catch (e) {
+          fallidos++;
+          logger.error("secuencia_cotizacion_vence_failed", {
+            quote_id: q.id,
+            reason:   e instanceof Error ? e.message : "desconocido",
+          });
+        }
+        continue;
+      }
+    }
+    if (meta.avisoVenceAt) continue;
+
     const paso = siguientePaso(meta, q.tourDate, ahora);
     if (!paso) continue;
 
@@ -157,13 +228,35 @@ export async function POST(req: NextRequest) {
     dry ? `${destinatarios.length} recibirían` : `${enviados} enviado(s)`,
     `${cotizaciones.length} vivas`,
     convertidas ? `${convertidas} ya reservó` : undefined,
+    vencidas.length ? `${vencidas.length} vencida(s)` : undefined,
     sinTiempo   ? `${sinTiempo} sin tiempo antes del tour` : undefined,
     fallidos    ? `⚠️ ${fallidos} fallaron` : undefined,
   );
 
   return NextResponse.json({
     ok: true, dry, enviados, fallidos, convertidas, sinTiempo, terminadas,
+    vencidas: vencidas.length,
     revisadas: cotizaciones.length,
-    ...(dry ? { recibirian: destinatarios } : {}),
+    ...(dry ? { recibirian: destinatarios, vencerian: vencidas } : {}),
   });
+}
+
+/** Pasa a Vencida y deja escrita la fecha que venció (las viejas no la traían). */
+async function vencer(id: string, lineItems: unknown, venceEl: string) {
+  await prisma.tourQuote.update({
+    where: { id },
+    data:  { status: "expirada", lineItems: conMeta(lineItems, { venceEl, seqEstado: "terminado" }) as never },
+  });
+}
+
+/**
+ * ¿Pidió la baja? `/api/baja` ya vence sus cotizaciones, pero una que el
+ * equipo reactive después a mano no debe volver a escribirle.
+ */
+async function deBaja(email: string): Promise<boolean> {
+  const [lead, carrito] = await Promise.all([
+    prisma.lead.findFirst({ where: { email, status: "baja" }, select: { id: true } }),
+    prisma.abandonedCart.findFirst({ where: { customerEmail: email, status: "baja" }, select: { id: true } }),
+  ]);
+  return !!(lead || carrito);
 }

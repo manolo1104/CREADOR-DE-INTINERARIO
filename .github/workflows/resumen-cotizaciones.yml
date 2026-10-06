@@ -1,0 +1,22 @@
+name: Aviso diario de cotizaciones
+
+on:
+  schedule:
+    # Una vez al día, 13:00 UTC = 7:00 en Ciudad de México. GitHub atrasa los
+    # crons programados (medido: horas), así que en la práctica llega a media
+    # mañana; el correo no promete hora. Solo se manda si hay algo pendiente.
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  resumen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Avisar al equipo qué cotizaciones vencen
+        run: |
+          # -f hace que un 401 (secreto mal configurado) falle el job en vez de
+          # pasar desapercibido como si no hubiera nada que enviar.
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/resumen-cotizaciones
