@@ -6,7 +6,7 @@ import { tarifarRecorridos } from "@/lib/tourPricing";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { getTraslado, tarifaTraslado } from "@/lib/traslados";
 import { rateLimit } from "@/lib/rateLimit";
-import { sendBrevoEmail } from "@/lib/brevo";
+import { sendBrevoEmail, correosEquipo } from "@/lib/brevo";
 import { buildCartEmailHtml } from "@/lib/cartEmail";
 import { actividad, mxn, nombreCorto } from "@/lib/logger";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
         });
         await sendBrevoEmail({
           to: [{ email: datos.customerEmail }],
+          bcc: correosEquipo(),
           subject,
           htmlContent: html,
         });
@@ -335,7 +336,7 @@ async function guardarCarritoCompleto(
           email:     datos.customerEmail,
           locale:    locale === "en" ? "en" : "es",
         });
-        await sendBrevoEmail({ to: [{ email: datos.customerEmail }], subject, htmlContent: html });
+        await sendBrevoEmail({ to: [{ email: datos.customerEmail }], bcc: correosEquipo(), subject, htmlContent: html });
       }
       // Y si el carrito es grande, que Manolo se entere mientras la persona
       // todavía está decidiendo: él cierra el 25 % de lo que atiende y la
