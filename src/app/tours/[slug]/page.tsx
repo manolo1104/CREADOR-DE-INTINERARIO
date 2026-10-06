@@ -939,14 +939,17 @@ export default function TourDetailPage({ params }: Props) {
 
       {/* ── HERO ── */}
       {/* El hero mide 60vh en los 14 recorridos. Los que traen vídeo vertical
-          crecen a 85vh EN TELÉFONO: el corte es 9:16 y dentro de una caja de
-          60vh se veía menos de la mitad del cuadro. En escritorio vuelve a
-          60vh, porque ahí no hay vídeo y una foto apaisada estirada solo
-          empujaría el contenido hacia abajo sin enseñar nada más. */}
+          crecen EN TELÉFONO hasta la barra fija de reservar (4.5rem): el corte
+          es 9:16 y el vídeo llena la pantalla; la franja de duración y nivel
+          aparece al bajar (Manolo, 5 oct 2026: antes era 85vh y la franja se
+          comía el final del vídeo). `svh` y no `vh`: en iOS el `vh` cuenta la
+          barra del navegador escondida y el hero se metía bajo la de reservar.
+          En escritorio vuelve a 60vh, porque ahí no hay vídeo y una foto
+          apaisada estirada solo empujaría el contenido sin enseñar nada más. */}
       <section
         className={`relative overflow-hidden ${
           tour.videoHeroMovil
-            ? "h-[85vh] min-h-[560px] lg:h-[60vh] lg:min-h-[400px]"
+            ? "h-[calc(100svh-4.5rem)] min-h-[560px] lg:h-[60vh] lg:min-h-[400px]"
             : "h-[60vh] min-h-[400px]"
         }`}
       >
@@ -958,7 +961,9 @@ export default function TourDetailPage({ params }: Props) {
         {/* `flex-wrap` y el margen a la derecha son por el sello de
             exclusividad: es el más largo de los tres y en un teléfono se salía
             de la pantalla en vez de bajar a la segunda línea. */}
-        <div className="absolute top-24 left-6 right-6 flex flex-wrap gap-2">
+        {/* Debajo del menú REAL: con la banda del río el menú mide ~108 px en
+            teléfono y el `top-24` (96 px) dejaba los badges medio tapados. */}
+        <div className="absolute left-6 right-6 flex flex-wrap gap-2" style={{ top: "calc(var(--navbar-alto, 96px) + 12px)" }}>
           <span className="bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full">
             {tour.tipo}
           </span>
@@ -1187,6 +1192,24 @@ export default function TourDetailPage({ params }: Props) {
                           sizes="(min-width: 1024px) 420px, 100vw"
                           loading="lazy"
                         />
+                      </div>
+                    )}
+                    {m.fotosExtra && m.fotosExtra.length > 0 && (
+                      /* Las extras, en fila debajo de la principal y al mismo
+                         ancho: se leen como «esto también», no como otra parada. */
+                      <div className="mt-2 grid grid-cols-2 gap-2 w-full max-w-[420px]">
+                        {m.fotosExtra.map((f) => (
+                          <div key={f} className="relative aspect-[4/3] overflow-hidden rounded">
+                            <Image
+                              src={f}
+                              alt={altsGaleria.get(f) ?? `${m.momento} — ${tour.nombreCorto}`}
+                              fill
+                              className="object-cover"
+                              sizes="(min-width: 1024px) 206px, 50vw"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </li>

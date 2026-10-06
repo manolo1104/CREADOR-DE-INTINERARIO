@@ -118,6 +118,12 @@ export default function Navbar() {
     document.documentElement.style.setProperty("--navbar-offset", navbarVisible ? `${altoNav}px` : "0px");
   }, [navbarVisible, altoNav]);
 
+  // El alto del menú aunque esté escondido: lo usa lo que vive DENTRO del
+  // hero (los badges de la ficha de tour) y no debe brincar al esconderse.
+  useEffect(() => {
+    document.documentElement.style.setProperty("--navbar-alto", `${altoNav}px`);
+  }, [altoNav]);
+
   useEffect(() => {
     setMobileOpen(false);
     setDestinosOpen(false);

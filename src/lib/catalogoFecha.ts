@@ -20,7 +20,7 @@
  * el archivo, incluidos los blogs, cuya fecha sí es real. Una fecha que solo se
  * mueve cuando el catálogo cambia de verdad es la única que le sirve.
  */
-export const CATALOGO_ACTUALIZADO = "2026-10-04";
+export const CATALOGO_ACTUALIZADO = "2026-10-05";
 
 /**
  * Archivos cuyo último commit no puede ser posterior a `CATALOGO_ACTUALIZADO`.

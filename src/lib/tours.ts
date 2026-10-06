@@ -1,6 +1,7 @@
 export interface GalleryImage {
   src: string;
   alt: string;
+  /** Ya no se pinta: Manolo quitó la etiqueta «Foto real» de todas las galerías (5 oct 2026). */
   hasRealPeople?: boolean;
   caption?: string;
 }
@@ -35,6 +36,9 @@ export interface TourMomento {
   texto:   string;
   /** Foto de la galería del propio tour. Opcional: no todos los momentos tienen. */
   foto?:   string;
+  /** Fotos chicas debajo de la principal (oct 2026: el Meco enseña la canoa
+   *  incluida y, aparte, el tubing y el paddleboard opcionales). */
+  fotosExtra?: string[];
 }
 
 /** Actividad opcional que se puede sumar a un tour al reservar. */
@@ -911,13 +915,36 @@ const TOURS_RAW: Tour[] = [
       "4 rutas a elegir: Nanacatli, Miradores, Nacimiento o Trinidad",
     ],
     imagen_hero: "/imagenes/tours/rzr-xilitla/hero.jpg",
+    // 8 s con videos de WhatsApp de Manolo (5 oct 2026): costado del RZR por el
+    // camino de la selva, la salpicada de barro y el camino visto desde dentro.
+    // Los originales eran apaisados de 768×576: el corte vertical sale de una
+    // franja de 324 px, así que se ve suave. Solo celular (ver HeroTourMedia).
+    videoHeroMovil: "/videos/tours/rzr-xilitla-v1.mp4",
+    // Tarjeta elegida por Manolo (5 oct 2026): grupo en el mirador → RZR con
+    // kayak en la selva → Defender en el barro. Las tres son verticales: `pos`
+    // baja el encuadre al carro (sin él, la del kayak enseñaba solo copas).
     collage: [
-      "/imagenes/tours/rzr-xilitla/gallery-3.jpg",
-      "/imagenes/tours/rzr-xilitla/gallery-1.jpg",
-      "/imagenes/tours/rzr-xilitla/gallery-2.jpg",
+      { src: "/imagenes/tours/rzr-xilitla/grupo-con-maverick-en-el-mirador.jpg", pos: "50% 62%" },
+      { src: "/imagenes/tours/rzr-xilitla/rzr-con-kayak-en-la-selva.jpg",        pos: "50% 88%" },
+      { src: "/imagenes/tours/rzr-xilitla/defender-en-el-barro.jpg",             pos: "50% 55%" },
     ],
     imagenes: ["/imagenes/tours/rzr-xilitla/hero.jpg", "/imagenes/tours/rzr-xilitla/gallery-1.jpg"],
+    // Fotos de los RZR de Manolo (5 oct 2026), en su orden y al frente. No son
+    // de una ruta en particular, así que los alt no nombran ninguna. Las 4 de
+    // antes quedan detrás.
     gallery: [
+      { src: "/imagenes/tours/rzr-xilitla/camino-entre-el-bosque.jpg",             alt: "Sierra de Xilitla — camino entre el bosque alto" },
+      { src: "/imagenes/tours/rzr-xilitla/defender-en-la-niebla.jpg",              alt: "Sierra de Xilitla — un Defender con las luces encendidas entre la niebla" },
+      { src: "/imagenes/tours/rzr-xilitla/rzr-con-kayak-en-la-selva.jpg",          alt: "Selva de Xilitla — RZR con el kayak en el techo, bajando por un camino de terracería" },
+      { src: "/imagenes/tours/rzr-xilitla/familia-sobre-el-maverick-mirador.jpg",  alt: "Mirador de la sierra — una familia de pie sobre el Maverick, con las montañas detrás" },
+      { src: "/imagenes/tours/rzr-xilitla/grupo-con-maverick-en-el-mirador.jpg",   alt: "Mirador de la sierra — grupo posando con su Maverick al borde de la sierra" },
+      { src: "/imagenes/tours/rzr-xilitla/defender-familia-mirador.jpg",           alt: "Mirador de la sierra — una familia en su Defender bajo el cielo azul" },
+      { src: "/imagenes/tours/rzr-xilitla/pareja-con-defender-sierra.jpg",         alt: "Sierra de Xilitla — pareja junto a su Defender, con la montaña entre nubes" },
+      { src: "/imagenes/tours/rzr-xilitla/grupo-en-el-mirador.jpg",                alt: "Mirador de la sierra — grupo de amigos con el valle de la Huasteca al fondo" },
+      { src: "/imagenes/tours/rzr-xilitla/defender-en-el-barro.jpg",               alt: "Selva de Xilitla — un Defender cruzando el barro" },
+      { src: "/imagenes/tours/rzr-xilitla/mirador-sobre-xilitla-al-anochecer.jpg", alt: "Mirador sobre Xilitla — brazos abiertos frente al pueblo iluminado al anochecer" },
+      { src: "/imagenes/tours/rzr-xilitla/defender-tunel-de-roca.jpg",             alt: "Selva de Xilitla — pareja con su Defender bajo un túnel de roca" },
+      { src: "/imagenes/tours/rzr-xilitla/kayak-en-el-nacimiento.jpg",             alt: "Nacimiento en la selva — remando en kayak sobre el agua turquesa" },
       { src: "/imagenes/tours/rzr-xilitla/gallery-1.jpg", alt: "Grupo de amigos posando sobre un RZR Pro en un mirador de montaña durante el recorrido off-road en Xilitla", hasRealPeople: true },
       { src: "/imagenes/tours/rzr-xilitla/gallery-2.jpg", alt: "Vehículo todoterreno RZR Pro de perfil con las montañas verdes de Xilitla al fondo", hasRealPeople: false },
       { src: "/imagenes/tours/rzr-xilitla/gallery-3.jpg", alt: "Vehículo todoterreno Polaris en el punto de salida del recorrido off-road, con guías y banderas de la base en Xilitla", hasRealPeople: true },
@@ -1069,10 +1096,12 @@ const TOURS_RAW: Tour[] = [
       { hora: "3:00 PM", momento: "Regreso",
         texto: "De vuelta a tu hospedaje." },
     ],
+    // Tarjeta elegida por Manolo (5 oct 2026): balsa azul en los rápidos →
+    // balsas en el cañón turquesa → balsa roja saltando la ola.
     collage: [
+      "/imagenes/rio-tampaon-rafting/gallery-5.webp",
+      "/imagenes/rio-tampaon-rafting/gallery-9.jpg",
       "/imagenes/rio-tampaon-rafting/tour-1.jpg",
-      "/imagenes/rio-tampaon-rafting/gallery-8.jpg",
-      "/imagenes/rio-tampaon-rafting/tour-2.jpg",
     ],
     imagenes: [
       "/imagenes/rio-tampaon-rafting/gallery-5.webp",
@@ -1167,41 +1196,53 @@ const TOURS_RAW: Tour[] = [
     // Fotos de un grupo real del tour (30 sep 2026). Las de antes llevaban la
     // marca ✦ de Gemini —eran generadas con IA— y salían con la etiqueta
     // «Foto real» de la galería.
-    // Elegida por Manolo (30 sep). Es vertical: en escritorio se sube la franja
-    // para que se vea la cascada y no solo el agua.
-    imagen_hero: "/imagenes/tours/tamul/grupo-frente-a-tamul.jpg",
-    posicionHero: "50% 28%",
+    // 5 oct 2026, Manolo: la portada de la ficha es la MISMA foto que abre la
+    // tarjeta del tour (`collage[0]`). Antes era el grupo frente a Tamul (30 sep).
+    imagen_hero: "/imagenes/tours/tamul/cascada-de-tamul-desde-el-rio.jpg",
+    posicionHero: "50% 45%",
     // 15 s con videos de ese mismo grupo: Tamul → cortina de agua → canoa →
     // clavado → Cueva del Agua → grupo frente a Tamul (proyecto Remotion en
     // ~/Desktop/HUASTECA-VIDEO-HERO, composición `TamulMovil`).
     videoHeroMovil: "/videos/tours/expedicion-tamul-v1.mp4",
     logo: "/imagenes/tours/logos/expedicion-tamul-v3.webp",
-    // La pareja frente a Tamul: la elige Manolo para las tarjetas del inicio y
-    // de /tours (30 sep). La ficha conserva el grupo de portada.
+    // La pareja frente a Tamul: la elige Manolo para la tarjeta grande de
+    // «favoritos» en /tours (30 sep). La ficha conserva el grupo de portada.
     imagenTarjeta: "/imagenes/cascada-de-tamul/gallery-6.jpg",
+    // Tarjeta del tour (inicio y rejilla de /tours), en el orden que eligió
+    // Manolo el 5 oct: Tamul → guerra de agua en canoa → Cueva del Agua → las
+    // aves volviendo al sótano.
     collage: [
-      { src: "/imagenes/cascada-de-tamul/gallery-6.jpg", pos: "50% 45%" },
-      "/imagenes/tours/tamul/canoa-entre-cascadas.jpg",
-      "/imagenes/tours/tamul/cueva-del-agua-clavados.jpg",
-      "/imagenes/tours/tamul/gallery-6.jpg",
+      "/imagenes/tours/tamul/cascada-de-tamul-desde-el-rio.jpg",
+      "/imagenes/tours/tamul/canoas-guerra-de-agua.jpg",
+      "/imagenes/tours/tamul/cueva-del-agua-poza-azul.jpg",
+      "/imagenes/tours/tamul/aves-volviendo-al-sotano.jpg",
     ],
     imagenes: [
       "/imagenes/tours/tamul/canoa-entre-cascadas.jpg",
       "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg",
     ],
+    // Galería elegida por Manolo el 5 oct 2026, en su orden. Los alt empiezan
+    // con el lugar («Cueva del Agua — …»): /paquetes los usa para encontrar la
+    // foto de cada parada. Las escaleras son de otro sótano (decisión suya):
+    // su texto no dice cuál.
     gallery: [
-      { src: "/imagenes/tours/tamul/canoa-entre-cascadas.jpg",    alt: "Grupo remando en canoa por el Río Tampaón, entre cascadas y agua turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-de-tamul/gallery-6.jpg",         alt: "Pareja de la mano sobre una roca del Río Tampaón, mirando la Cascada de Tamul", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg",    alt: "Canoa en el Cañón del Tampaón con la Cascada de Tamul al fondo", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/grupo-frente-a-tamul.jpg",    alt: "Grupo sobre las piedras del cañón, justo enfrente de la Cascada de Tamul", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/pareja-frente-a-tamul.jpg",   alt: "Pareja sobre una roca en el Río Tampaón con la Cascada de Tamul detrás", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/cueva-del-agua-clavados.jpg", alt: "Clavados desde la pared de roca en la Cueva del Agua", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/cueva-del-agua-nado.jpg",     alt: "Nadando en el agua turquesa de la Cueva del Agua", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/cascada-del-tampaon.jpg",     alt: "Viajero sobre una de las cascadas que caen al Río Tampaón", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-6.jpg", alt: "Asomándose al borde del Sótano de las Huahuas — 478 metros de profundidad", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-extra-1.jpg", alt: "Viajera sentada en las rocas del Cañón del Tampaón señalando la Cascada de Tamul", hasRealPeople: true },
-      { src: "/imagenes/tours/tamul/gallery-extra-2.jpg", alt: "Aguas turquesas del Río Tampaón con vegetación colgante — Expedición Tamul" },
-      { src: "/imagenes/tours/tamul/gallery-extra-3.jpg", alt: "Grupo de turistas remando en canoas en el Río Tampaón con batalla de agua", hasRealPeople: true },
+      { src: "/imagenes/tours/tamul/sotano-huahuas-desde-el-fondo.jpg",   alt: "Sótano de las Huahuas — la boca del abismo vista desde abajo, entre musgo y luz" },
+      { src: "/imagenes/tours/tamul/escalones-de-piedra-en-la-selva.jpg", alt: "Selva huasteca — escalones de piedra rumbo al borde del sótano" },
+      { src: "/imagenes/tours/tamul/vencejo-de-las-huahuas.jpg",          alt: "Sótano de las Huahuas — un vencejo, de las aves que cada tarde vuelven al abismo" },
+      { src: "/imagenes/tours/tamul/cueva-del-agua-poza-azul.jpg",        alt: "Cueva del Agua — la poza azul bajo la bóveda de roca, con gente nadando" },
+      { src: "/imagenes/tours/tamul/asomado-al-sotano-huahuas.jpg",       alt: "Sótano de las Huahuas — viajero asomado al borde del abismo, asegurado con cuerda" },
+      { src: "/imagenes/tours/tamul/letras-la-morena-tamul.jpg",          alt: "La Morena, Tamul — las letras de colores del embarcadero, junto al Río Tampaón" },
+      { src: "/imagenes/tours/tamul/cueva-del-agua-nadando.jpg",          alt: "Cueva del Agua — nadando en el agua turquesa bajo la roca" },
+      { src: "/imagenes/tours/tamul/puente-colgante-cueva-del-agua.jpg",  alt: "Cueva del Agua — el puente colgante sobre el río, a la salida de la cueva" },
+      { src: "/imagenes/tours/tamul/canoas-en-el-embarcadero.jpg",        alt: "Embarcadero de Tamul — canoas de colores listas para subir por el Río Tampaón" },
+      { src: "/imagenes/tours/tamul/canoa-remando-en-el-canon.jpg",       alt: "Cañón del Tampaón — grupo remando en canoa entre paredes de roca" },
+      { src: "/imagenes/tours/tamul/perico-verde-huahuas.jpg",            alt: "Sótano de las Huahuas — perico verde, de las aves que vuelven al atardecer" },
+      { src: "/imagenes/tours/tamul/aves-volviendo-al-sotano.jpg",        alt: "Sótano de las Huahuas — miles de aves regresan al abismo al atardecer" },
+      { src: "/imagenes/tours/tamul/viajera-frente-a-tamul.jpg",          alt: "Cascada de Tamul — de pie sobre una roca del río, con la cascada detrás" },
+      { src: "/imagenes/tours/tamul/cascada-de-tamul-arcoiris.jpg",       alt: "Cascada de Tamul — la caída de 105 metros con arcoíris sobre el agua turquesa" },
+      { src: "/imagenes/tours/tamul/grupo-selfie-frente-a-tamul.jpg",     alt: "Cascada de Tamul — selfie de un grupo del tour frente a la cascada" },
+      { src: "/imagenes/tours/tamul/canoas-guerra-de-agua.jpg",           alt: "Cañón del Tampaón — guerra de agua entre canoas" },
+      { src: "/imagenes/tours/tamul/grupo-con-guia-en-el-rio.jpg",        alt: "Río Tampaón — selfie con el grupo del tour a la orilla del río" },
     ],
   },
   {
@@ -1253,40 +1294,63 @@ const TOURS_RAW: Tour[] = [
         foto: "/imagenes/tours/edward-james/gallery-2.jpg" },
       { hora: "1:30 PM", momento: "Nacimiento de Huichihuayán",
         texto: "Agua turquesa saliendo de la roca, con los rayos de luz entrando entre la selva. Aquí sí te metes.",
-        foto: "/imagenes/tours/edward-james/gallery-4.jpg" },
+        // Fotos de las paradas 2 y 4 elegidas por Manolo el 5 oct 2026.
+        foto: "/imagenes/tours/edward-james/nacimiento-huichihuayan-entre-arboles.jpg" },
       { hora: "2:45 PM", momento: "Cueva de las Quilas",
         texto: "Se entra a la cueva por un cañón estrecho donde la luz cae desde arriba. El cambio de temperatura se siente al cruzar la boca.",
-        foto: "/imagenes/tours/edward-james/gallery-6.jpg" },
+        // La foto de `gallery-6` sin la ✦ de Gemini: Manolo trajo la versión
+        // limpia el 5 oct 2026 y la eligió para aquí y para la tarjeta.
+        foto: "/imagenes/tours/edward-james/cueva-de-las-quilas-entrada.jpg" },
       { hora: "3:45 PM", momento: "Castillo de la Salud",
         texto: "Torres de colores levantadas entre la selva huasteca, la última parada del día y la más fotogénica al atardecer.",
-        foto: "/imagenes/tours/edward-james/gallery-7.jpg" },
+        foto: "/imagenes/castillo-de-la-salud/hero.jpg" },
       { hora: "4:00–6:00 PM", momento: "Regreso",
         texto: "Te dejamos en tu hospedaje." },
     ],
     logo: "/imagenes/tours/logos/ruta-surrealista-edward-james.webp",
     // Cuatro paradas, cuatro fotos, en el orden en que se visitan: Las Pozas,
     // Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud.
+    // Tarjeta = las 4 fotos del «hora por hora», en el mismo orden (Manolo, 5 oct 2026).
     collage: [
       "/imagenes/tours/edward-james/gallery-2.jpg",
-      "/imagenes/tours/edward-james/gallery-4.jpg",
-      "/imagenes/tours/edward-james/gallery-6.jpg",
-      "/imagenes/tours/edward-james/gallery-3.jpg",
+      "/imagenes/tours/edward-james/nacimiento-huichihuayan-entre-arboles.jpg",
+      "/imagenes/tours/edward-james/cueva-de-las-quilas-entrada.jpg",
+      "/imagenes/castillo-de-la-salud/hero.jpg",
     ],
     imagenes: [
       "/imagenes/tours/edward-james/hero.jpg",
       "/imagenes/tours/edward-james/gallery-1.jpg",
     ],
+    // Galería de Manolo (5 oct 2026): primero el jardín de Las Pozas, pero
+    // revuelto con las otras paradas. Fuera `gallery-6` (Quilas): trae la ✦ de
+    // Gemini, era de IA. Los alt empiezan con la parada («Las Pozas — …»):
+    // /paquetes los usa para encontrar la foto de cada lugar.
     gallery: [
-      { src: "/imagenes/tours/edward-james/gallery-1.jpg",  alt: "Escultura surrealista de Edward James — color y musgo en Las Pozas de Xilitla", hasRealPeople: true },
-      { src: "/imagenes/tours/edward-james/gallery-2.jpg",  alt: "Torres de concreto de Las Pozas emergiendo entre la selva con cielo azul" },
-      { src: "/imagenes/tours/edward-james/gallery-3.jpg",  alt: "Pareja en el Castillo de la Salud — arquitectura colorida de Tamul", hasRealPeople: true },
-      { src: "/imagenes/tours/edward-james/gallery-4.jpg",  alt: "Poza turquesa del Nacimiento de Huichihuayán con rayos de luz natural" },
-      { src: "/imagenes/tours/edward-james/gallery-5.jpg",  alt: "Portal circular de Las Pozas — sendero de adoquín entre helechos y selva" },
-      { src: "/imagenes/tours/edward-james/gallery-6.jpg",  alt: "Interior de la Cueva de las Quilas — hombre admirando la formación rocosa", hasRealPeople: true },
-      { src: "/imagenes/tours/edward-james/gallery-7.jpg",  alt: "Castillo de la Salud — vista aérea de torres coloridas entre selva huasteca" },
-      { src: "/imagenes/tours/edward-james/gallery-8.jpg",  alt: "Estructura principal de Las Pozas rodeada de vegetación exuberante" },
-      { src: "/imagenes/tours/edward-james/gallery-9.jpg",  alt: "Cañón oscuro con luz entrando desde arriba — Cueva de las Quilas", hasRealPeople: true },
-      { src: "/imagenes/tours/edward-james/gallery-10.jpg", alt: "Río turquesa del Nacimiento de Huichihuayán entre piedras y selva verde" },
+      { src: "/imagenes/tours/edward-james/las-pozas-escalera-al-cielo.jpg",             alt: "Las Pozas — la escalera al cielo, con la sierra al fondo" },
+      { src: "/imagenes/tours/edward-james/las-pozas-cascada-y-ruinas.jpg",              alt: "Las Pozas — la cascada detrás de las construcciones de Edward James" },
+      { src: "/imagenes/tours/edward-james/las-pozas-sendero-al-arco.jpg",               alt: "Las Pozas — sendero empedrado hacia el arco, entre esculturas" },
+      { src: "/imagenes/tours/edward-james/nacimiento-huichihuayan-entre-arboles.jpg",   alt: "Nacimiento de Huichihuayán — la poza turquesa vista entre los árboles" },
+      { src: "/imagenes/tours/edward-james/las-pozas-esculturas-azules.jpg",             alt: "Las Pozas — esculturas de columnas azules entre la selva" },
+      { src: "/imagenes/tours/edward-james/las-pozas-portal-de-dos-torres.jpg",          alt: "Las Pozas — portal de dos torres sobre el camino" },
+      { src: "/imagenes/tours/edward-james/castillo-de-la-salud-torres.jpg",             alt: "Castillo de la Salud — las torres de colores" },
+      { src: "/imagenes/tours/edward-james/las-pozas-manos-gigantes.jpg",                alt: "Las Pozas — las manos gigantes de concreto" },
+      { src: "/imagenes/tours/edward-james/las-pozas-poza-bajo-la-cascada.jpg",          alt: "Las Pozas — poza y construcciones al pie de la cascada" },
+      { src: "/imagenes/tours/edward-james/cueva-quilas-luz-entre-rocas.jpg",            alt: "Cueva de las Quilas — el sol entra entre las paredes de roca" },
+      { src: "/imagenes/tours/edward-james/las-pozas-camino-empedrado.jpg",              alt: "Las Pozas — el camino empedrado bordeado de esculturas" },
+      { src: "/imagenes/tours/edward-james/las-pozas-viajera-y-torre.jpg",               alt: "Las Pozas — viajera frente a una de las torres de Edward James" },
+      { src: "/imagenes/tours/edward-james/nacimiento-huichihuayan-agua-cristalina.jpg", alt: "Nacimiento de Huichihuayán — nadando en el agua cristalina" },
+      { src: "/imagenes/tours/edward-james/las-pozas-columnas.jpg",                      alt: "Las Pozas — las columnas de concreto bajo la selva" },
+      { src: "/imagenes/tours/edward-james/las-pozas-escultura-de-arcos.jpg",            alt: "Las Pozas — escultura de arcos de concreto entre la vegetación" },
+      { src: "/imagenes/castillo-de-la-salud/hero.jpg",                                  alt: "Castillo de la Salud — pareja entre los muros de colores" },
+      { src: "/imagenes/tours/edward-james/las-pozas-cascada-y-columnas.jpg",            alt: "Las Pozas — una de las cascadas, junto a las columnas" },
+      { src: "/imagenes/tours/edward-james/las-pozas-construccion-entre-helechos.jpg",   alt: "Las Pozas — una construcción de Edward James entre helechos" },
+      { src: "/imagenes/tours/edward-james/nacimiento-huichihuayan-aereo.jpg",           alt: "Nacimiento de Huichihuayán — la poza vista desde el aire" },
+      { src: "/imagenes/tours/edward-james/las-pozas-escalinata-de-musgo.jpg",           alt: "Las Pozas — escalinata cubierta de musgo" },
+      { src: "/imagenes/tours/edward-james/castillo-de-la-salud-torre-de-colores.jpg",   alt: "Castillo de la Salud — viajera al pie de la torre de colores" },
+      { src: "/imagenes/tours/edward-james/gallery-9.jpg",                               alt: "Cueva de las Quilas — cañón oscuro con la luz entrando desde arriba" },
+      { src: "/imagenes/tours/edward-james/nacimiento-huichihuayan-banistas.jpg",        alt: "Nacimiento de Huichihuayán — la poza turquesa llena de bañistas" },
+      { src: "/imagenes/tours/edward-james/castillo-de-la-salud-aereo.jpg",              alt: "Castillo de la Salud — vista aérea con la sierra al fondo" },
+      { src: "/imagenes/tours/edward-james/nacimiento-huichihuayan-escalinata.jpg",      alt: "Nacimiento de Huichihuayán — la escalinata que baja a la poza" },
     ],
   },
   {
@@ -1469,6 +1533,7 @@ const TOURS_RAW: Tour[] = [
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
       "Botiquín de primeros auxilios",
       "Seguro de viaje para todos los integrantes",
+      "Recorrido en canoa frente a la Cascada del Meco",
     ],
     imagen_hero: "/imagenes/cascada-el-meco/hero.jpg",
     itinerario: [
@@ -1477,11 +1542,14 @@ const TOURS_RAW: Tour[] = [
       { hora: "9:30 AM", momento: "Desayuno",
         texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
       { hora: "10:30 AM", momento: "Cascada del Meco",
-        texto: "Llegas cuando el sol entra en ángulo sobre las pozas y el agua se pone turquesa. Se recorre en panga y se nada, con chaleco incluido.",
-        foto: "/imagenes/cascada-el-meco/hero.jpg" },
+        texto: "Llegas cuando el sol entra en ángulo sobre las pozas y el agua se pone turquesa. El recorrido en canoa frente a la cascada va incluido, y se nada con chaleco. Ahí hay puestos de comida y bebidas, y actividades opcionales con costo aparte: renta de paddleboard, tubing y kayak.",
+        // La principal es la canoa (lo incluido); debajo, dos de los opcionales.
+        foto: "/imagenes/tours/meco/canoa-hacia-el-meco.jpg",
+        fotosExtra: ["/imagenes/tours/meco/tubing-con-guia.jpg", "/imagenes/cascada-el-meco/hero.jpg"] },
       { hora: "1:00 PM", momento: "Mirador panorámico",
         texto: "Caminata corta y plana hasta el mirador: desde arriba se ven las cascadas escalonadas completas. Apta para adultos mayores.",
-        foto: "/imagenes/cascada-el-meco/gallery-5.jpg" },
+        // Era `gallery-5` (una canoa rumbo a la caída, no el mirador): 5 oct 2026.
+        foto: "/imagenes/tours/meco/mirador-del-meco.jpg" },
       { hora: "2:30 PM", momento: "Comida",
         texto: "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar." },
       { hora: "4:00 PM", momento: "Cascada El Salto",
@@ -1502,21 +1570,34 @@ const TOURS_RAW: Tour[] = [
       "/imagenes/cascada-el-salto/gallery-2.jpg",
     ],
     imagenes: ["/imagenes/cascada-el-meco/hero.jpg"],
+    // Galería reordenada por Manolo el 5 oct 2026: primero los destinos que más
+    // impresionan, después lo que se vive. Fuera las gallery-8, 10, 11, 12 y 13:
+    // eran copias más chicas de 3, 5, hero, 4 y 6 (salían repetidas). Fotos
+    // nuevas en `tours/meco/` para no tocar la carpeta del destino. El tubing
+    // NO va incluido: es actividad adicional con costo extra, y su texto lo dice.
+    // De El Salto entran hero, gallery-5 y gallery-2 (5 oct). gallery-1 NO: es la
+    // misma foto que cascada-el-meco/gallery-9. gallery-3 NO: trae la marca de
+    // agua de otra operadora («© Tour Operator: Cascade Adventures»).
     gallery: [
-      { src: "/imagenes/cascada-el-meco/hero.jpg",        alt: "Dos turistas en paddleboard frente a la Cascada del Meco — aguas turquesas de la Huasteca Potosina", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-1.jpg",   alt: "Viajero frente a la Cascada del Meco — caída escalonada sobre agua turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-2.jpg",   alt: "Joven clavándose desde las rocas de la Cascada del Meco — agua turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-3.jpg",   alt: "Panga con viajeros llegando a la Cascada del Meco por el río turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-4.jpg",   alt: "Dos personas saludando al pie de la Cascada del Meco — agua turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-5.jpg",   alt: "Turista en el mirador panorámico del Meco — vista de las cascadas escalonadas", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-6.jpg",   alt: "Pangas de colores frente a la Cascada del Meco — agua turquesa de la Huasteca", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-7.jpg",   alt: "Familia disfrutando las pozas sobre la Cascada del Meco — ideal para todas las edades", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-8.jpg",   alt: "Panga en canoa acercándose a la Cascada del Meco por aguas turquesas", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-9.jpg",   alt: "Cascada del Salto — toma cinematográfica con largos tiempos de exposición" },
-      { src: "/imagenes/cascada-el-meco/gallery-10.jpg",  alt: "Segunda panga acercándose a la Cascada del Meco — recorrido fluvial turquesa", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-11.jpg",  alt: "Mujer en paddleboard en la Cascada del Meco — actividad acuática en la Huasteca", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-12.jpg",  alt: "Padre e hija disfrutando el río turquesa en la Huasteca Potosina", hasRealPeople: true },
-      { src: "/imagenes/cascada-el-meco/gallery-13.jpg",  alt: "Flotilla de pangas frente a la Cascada del Meco — tour grupal con chalecos salvavidas", hasRealPeople: true },
+      { src: "/imagenes/tours/meco/meco-vista-aerea.jpg",            alt: "Cascada del Meco — vista aérea del río turquesa entre la selva" },
+      { src: "/imagenes/cascada-el-salto/hero.jpg",                  alt: "Cascada El Salto — la caída al atardecer, con pasarelas de madera junto a las pozas" },
+      { src: "/imagenes/tours/meco/meco-cascadas-desde-arriba.jpg",  alt: "Cascada del Meco — las caídas escalonadas vistas desde arriba" },
+      { src: "/imagenes/cascada-el-salto/gallery-5.jpg",             alt: "Cascada El Salto — de pie sobre las pozas turquesa frente a la caída" },
+      { src: "/imagenes/cascada-el-meco/gallery-9.jpg",              alt: "Cascada El Salto — la caída sobre pozas de agua turquesa" },
+      { src: "/imagenes/tours/meco/canoa-hacia-el-meco.jpg",         alt: "Cascada del Meco — canoa acercándose a la caída con el sol de frente" },
+      { src: "/imagenes/cascada-el-salto/gallery-2.jpg",             alt: "Cascada El Salto — las caídas y sus pozas escalonadas" },
+      { src: "/imagenes/tours/meco/rio-turquesa-entre-sabinos.jpg",  alt: "Huasteca Potosina — río turquesa bajo sabinos centenarios" },
+      { src: "/imagenes/cascada-el-meco/gallery-6.jpg",              alt: "Cascada del Meco — pangas de colores frente a la caída" },
+      { src: "/imagenes/tours/meco/mirador-del-meco.jpg",            alt: "Mirador del Meco — sentada frente a las cascadas escalonadas" },
+      { src: "/imagenes/cascada-el-meco/hero.jpg",                   alt: "Cascada del Meco — en paddleboard sobre el agua turquesa" },
+      { src: "/imagenes/cascada-el-meco/gallery-2.jpg",              alt: "Cascada del Meco — selfie de un grupo con casco en las pozas" },
+      { src: "/imagenes/tours/meco/tubing-con-guia.jpg",             alt: "Tubing en el río — actividad adicional con costo extra, con guía y cuerda de seguridad" },
+      { src: "/imagenes/cascada-el-meco/gallery-3.jpg",              alt: "Cascada del Meco — panga con viajeros llegando por el río turquesa" },
+      { src: "/imagenes/cascada-el-meco/gallery-7.jpg",              alt: "Mirador del Meco — las cascadas escalonadas vistas desde el borde" },
+      { src: "/imagenes/cascada-el-meco/gallery-4.jpg",              alt: "Cascada del Meco — descansando sobre las rocas de las pozas" },
+      { src: "/imagenes/cascada-el-meco/gallery-1.jpg",              alt: "Cascada del Meco — viajero frente a la caída escalonada" },
+      { src: "/imagenes/tours/meco/tubing-en-el-rio.jpg",            alt: "Tubing en el río — actividad adicional con costo extra" },
+      { src: "/imagenes/cascada-el-meco/gallery-5.jpg",              alt: "Cascada del Meco — en canoa rumbo a la caída" },
     ],
   },
   {
@@ -1678,10 +1759,12 @@ const TOURS_RAW: Tour[] = [
         texto: "Te dejamos en tu hospedaje." },
     ],
     logo: "/imagenes/tours/logos/ruta-acuatica-puente-de-dios.webp",
+    // Tarjeta elegida por Manolo (5 oct 2026): Puente de Dios → Cascadas de
+    // Tamasopo → Hacienda Los Gómez y Siete Cascadas. La galería no cambia.
     collage: [
-      "/imagenes/puente-de-dios-tamasopo/gallery-13.jpg",
-      "/imagenes/puente-de-dios-tamasopo/gallery-new-14.jpg",
-      "/imagenes/puente-de-dios-tamasopo/gallery-new-1.jpg",
+      "/imagenes/puente-de-dios-tamasopo/gallery-new-3.webp",
+      "/imagenes/cascadas-de-tamasopo/gallery-3.jpg",
+      "/imagenes/siete-cascadas-tamasopo/gallery-1.jpg",
     ],
     imagenes: [
       "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
@@ -1975,7 +2058,14 @@ const TOURS_RAW: Tour[] = [
       "/imagenes/tours/gruta-de-xilo/hero.jpg",
       "/imagenes/tours/gruta-de-xilo/gallery-1.jpg",
     ],
+    // Fotos de Manolo (5 oct 2026) al frente, en su orden; las de antes detrás.
     gallery: [
+      { src: "/imagenes/tours/gruta-de-xilo/grupo-en-la-colada-de-piedra.jpg", alt: "Gruta de Xilo — grupo con casco sobre una colada de piedra, junto a una caída de agua" },
+      { src: "/imagenes/tours/gruta-de-xilo/formaciones-sobre-la-cabeza.jpg",  alt: "Gruta de Xilo — formaciones de piedra colgando sobre la cabeza, a la luz de la lámpara" },
+      { src: "/imagenes/tours/gruta-de-xilo/lampara-entre-las-rocas.jpg",      alt: "Gruta de Xilo — la lámpara del casco ilumina las rocas y el agua que corre entre ellas" },
+      { src: "/imagenes/tours/gruta-de-xilo/entre-columnas-en-el-agua.jpg",    alt: "Gruta de Xilo — en cuclillas entre dos columnas, con el agua a los tobillos" },
+      { src: "/imagenes/tours/gruta-de-xilo/brazos-arriba-en-la-gruta.jpg",    alt: "Gruta de Xilo — brazos arriba frente a una colada de piedra por la que baja el agua" },
+      { src: "/imagenes/tours/gruta-de-xilo/cascada-dentro-de-la-gruta.jpg",   alt: "Gruta de Xilo — sentado junto a una cascada dentro de la gruta" },
       { src: "/imagenes/tours/gruta-de-xilo/hero.jpg",      alt: "Grupo avanzando con lámparas frontales por un pasaje inundado de la Gruta de Xilo, con los reflejos en el agua", hasRealPeople: true },
       { src: "/imagenes/tours/gruta-de-xilo/gallery-1.jpg", alt: "Visitante sentado sobre una formación rocosa mirando la bóveda de la gruta, iluminado solo por su lámpara", hasRealPeople: true },
       { src: "/imagenes/tours/gruta-de-xilo/gallery-2.jpg", alt: "Visitante con los brazos abiertos frente a las columnas de la Gruta de Xilo, que lo superan varias veces en altura", hasRealPeople: true },

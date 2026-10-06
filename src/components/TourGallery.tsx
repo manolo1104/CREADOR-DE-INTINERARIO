@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { GalleryImage } from "@/lib/tours";
-import { Camera } from "lucide-react";
 
 interface Props {
   images: GalleryImage[];
@@ -101,12 +100,6 @@ export function TourGallery({ images, tourName }: Props) {
             // mucho mayor que la que se ve.
             sizes="(max-width: 768px) 0px, (max-width: 1280px) 55vw, 620px"
           />
-          {active.hasRealPeople && (
-            <span className="absolute bottom-3 left-3 bg-negro/80 backdrop-blur-sm text-verde-vivo text-[9px] font-dm tracking-wide px-2.5 py-1 rounded-full border border-verde-vivo/30 flex items-center gap-1.5">
-              <Camera className="w-3 h-3" aria-hidden="true" />
-              {active.caption ?? "Foto real del recorrido"}
-            </span>
-          )}
           <span className="absolute top-3 right-3 bg-negro/60 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <svg className="w-3.5 h-3.5 text-crema" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -177,11 +170,6 @@ export function TourGallery({ images, tourName }: Props) {
                 sizes="85vw"
                 loading={i === 0 ? "eager" : "lazy"}
               />
-              {img.hasRealPeople && (
-                <span className="absolute bottom-3 left-3 bg-negro/80 text-verde-vivo text-[9px] font-dm px-2 py-1 rounded-full border border-verde-vivo/30 flex items-center gap-1">
-                  <Camera className="w-3 h-3" aria-hidden="true" /> Foto real
-                </span>
-              )}
             </button>
           ))}
 
@@ -203,10 +191,6 @@ export function TourGallery({ images, tourName }: Props) {
           {movilIdx + 1} / {images.length}
         </p>
       </div>
-
-      <p className="text-[10px] text-dorado/60 italic text-right mt-2 font-dm">
-        Todas las fotos son de recorridos reales realizados por nuestro equipo.
-      </p>
 
       {/* ── VISOR ──
           Tres cosas cambiaron: el fondo ya no es negro casi sólido sino
@@ -242,12 +226,6 @@ export function TourGallery({ images, tourName }: Props) {
                   className="object-contain"
                   sizes="(max-width: 640px) 96vw, 1000px"
                 />
-                {images[lightboxIdx].hasRealPeople && (
-                  <span className="absolute bottom-3 left-3 bg-negro/75 backdrop-blur-sm text-verde-vivo text-[10px] font-dm px-3 py-1.5 rounded-full border border-verde-vivo/30 flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5" aria-hidden="true" />
-                    {images[lightboxIdx].caption ?? "Foto real del recorrido"}
-                  </span>
-                )}
               </div>
 
               {/* Pie del marco: dónde estoy y a dónde puedo saltar */}
