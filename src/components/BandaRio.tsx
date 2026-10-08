@@ -75,7 +75,11 @@ export function BandaRio() {
         <span className="font-medium text-crema">{estadoTexto}</span>
         {dato.nota ? <span className="text-crema/70">— {dato.nota}</span> : null}
         <span aria-hidden="true" className="hidden text-crema/50 sm:inline">·</span>
-        <Link href="/politica-de-cancelacion" className="underline underline-offset-2 decoration-crema/40 hover:text-crema transition-colors">
+        {/* Sin precarga: esta franja sale arriba en casi todas las páginas y la
+            precarga es un render completo en el servidor (el idioma se lee con
+            headers()). La auditoría externa (oct 2026) vio 503 en
+            /politica-de-cancelacion?_rsc=…, que salía de aquí. */}
+        <Link href="/politica-de-cancelacion" prefetch={false} className="underline underline-offset-2 decoration-crema/40 hover:text-crema transition-colors">
           {garantia}
         </Link>
         {!turquesa && aviso === "cerrado" ? (

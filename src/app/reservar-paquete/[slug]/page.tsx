@@ -15,13 +15,15 @@ import { minBookingDate } from "@/lib/tourBooking";
 import { HABITACIONES_HOTEL, SERVICIOS_HOTEL } from "@/lib/habitaciones";
 import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
 import { BotonCompartir } from "@/components/booking/BotonCompartir";
-import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel, Expand } from "lucide-react";
+import { ChevronLeft, Lock, ShieldCheck, MessageCircle, Check, CalendarCheck, Clock, MapPin, Hotel, Expand, CreditCard } from "lucide-react";
 import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
+import { hayMsi, MSI_PLAZOS } from "@/lib/stripeMsi";
 import { getPaqueteCheckoutUI } from "@/lib/i18n/paquetes.en";
 import { localizePaquete, getLocalizedHabitaciones } from "@/lib/i18n/paquetes.en";
 import { serviciosHotel, vistaHabitacion, caracteristicasHabitacion } from "@/lib/habitaciones";
 import { trackTourEvent, marcarPasoClarity, sessionId, ga4ClientId } from "@/lib/tourTracker";
-import { trackPurchase } from "@/lib/analytics";
+import { trackBeginCheckout, trackPurchase } from "@/lib/analytics";
 
 
 const WA_NUMBER = "524891090388";
@@ -42,6 +44,8 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
   const elements = useElements();
   const { locale } = useLocale();
   const t = getPaqueteCheckoutUI(locale);
+  // Los textos de MSI viven con los del carrito: es el mismo mensaje.
+  const tb = getBooking(locale).carrito;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [enProceso, setEnProceso] = useState(false);
@@ -97,6 +101,7 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
           total:    cobrado,
           adults:   form.personas,
           children: (form.childrenMid ?? 0) + (form.childrenSmall ?? 0),
+          reservaTotal: form.reservaTotal,
         });
         trackTourEvent("BOOKING_CONFIRMED", { paquete: true, tour: paquete.slug, amount: cobrado, confirmationNumber: data.confirmationNumber });
         onDone(data.confirmationNumber || "HP");
@@ -118,6 +123,20 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
           <h2 className="font-cormorant text-verde-profundo text-xl">{t.infoPago}</h2>
         </div>
         <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+        {/* Donde los meses sin intereses de verdad importan: un paquete son
+            $8,000-$16,000. El plan se elige DENTRO del formulario de Stripe, al
+            teclear la tarjeta, así que aquí solo se anuncia que existe — si no,
+            nadie llega a verlo. */}
+        {hayMsi(cobrado) && (
+          <p className="mt-4 flex items-start gap-2 border border-verde-selva/30 bg-verde-selva/5 p-3 font-dm text-[12px] leading-relaxed text-verde-profundo">
+            <CreditCard className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-verde-selva" aria-hidden="true" />
+            <span>
+              <strong className="font-medium">{tb.msiTitulo(MSI_PLAZOS.join(", "))}</strong>
+              <br />
+              <span className="text-negro/55">{tb.msiDetalle}</span>
+            </span>
+          </p>
+        )}
       </section>
       {error && <div className="bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
       {enProceso && <div role="status" className="bg-verde-selva/8 border border-verde-selva/30 px-4 py-3"><p className="text-verde-profundo font-dm text-sm">{t.pagoEnProceso}</p></div>}
@@ -205,6 +224,15 @@ export default function ReservarPaquetePage() {
   useEffect(() => {
     if (!base) return;
     trackTourEvent("PAQUETE_CHECKOUT_VIEW", { tour: base.slug, evento: !!base.evento });
+    // Para GA4 es el `begin_checkout`, con lo que la pantalla enseña al abrir
+    // (la gente de arranque, sin extras). La cifra sale de
+    // `computePaqueteCharge`, la misma cuenta que cobra el servidor.
+    const q = computePaqueteCharge({ slug: base.slug, personas, childrenMid, childrenSmall, pct, fecha });
+    if (q) trackBeginCheckout({
+      renglones: [{ tourId: base.slug, tourName: paquete?.nombre ?? base.nombre, total: q.total, cantidad: q.personas }],
+      total: q.total,
+      source: "paquete",
+    });
     // Solo al entrar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -428,7 +456,9 @@ export default function ReservarPaquetePage() {
     appearance: { theme: "stripe" as const, variables: { colorPrimary: "#3a6b1a", colorBackground: "#f4edd8", colorText: "#1a2e1a", fontFamily: "DM Sans, sans-serif", borderRadius: "0px" } },
   };
 
-  const form = { name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim(), pct, personas, childrenMid, childrenSmall, vistaMontana, fecha };
+  // `reservaTotal` solo lo lee GA4 al confirmar (`reserva_total`): lo que vale
+  // el paquete completo, no el anticipo que se cobra hoy.
+  const form = { name: name.trim(), email: email.trim(), phone: phone.trim(), notes: notes.trim(), pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reservaTotal: totalReal };
 
   return (
     <main className="min-h-screen bg-crema pt-24 pb-20">

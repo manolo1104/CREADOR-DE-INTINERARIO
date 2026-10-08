@@ -55,7 +55,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     descripcion:
       "Drive your own off-road vehicle through the humid jungle of Xilitla: cross crystal-clear rivers, plow through the mud and pick from 4 routes — the Nanacatli Village (a hamlet of giant mushroom houses), the mountain lookouts, a hidden jungle spring (with kayak) or the cloud forest of La Trinidad. Pricing is per vehicle (from {precio}), not per person.",
     descripcionLarga:
-      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, reaching the Nanacatli Village, a hamlet of giant mushroom houses known as 'the smurf village'), Miradores (3 h, panoramic mountain lookouts), Nacimiento (5 h, a crystal-clear spring deep in the jungle where we lend you a kayak and life vest) and Trinidad (5 h, climbing to the cloud forest of La Trinidad, a mountain village preserved in time).\n\nWe meet at our base in Xilitla, where we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ({precio} for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
+      "Few ways of seeing the Huasteca are as much fun as taking the wheel of your own off-road vehicle. We offer 4 different routes: Nanacatli (2 h, our most popular, reaching the Nanacatli Village, a hamlet of giant mushroom houses known as 'the smurf village'), Miradores (3 h, panoramic mountain lookouts), Nacimiento (5 h, a crystal-clear spring deep in the jungle where we lend you a kayak and life vest) and Trinidad (5 h, climbing to the cloud forest of La Trinidad, a mountain village preserved in time).\n\nWe meet at our base in Xilitla at the time you choose, from 9:00 AM to 5:00 PM, and there we hand you a helmet and goggles and give you a driving briefing. No experience required: the vehicles are easy to control and an instructor-guide leads the route ahead of you the whole time, marking the way and clearing any obstacle. All you have to do is enjoy the ride.\n\nPricing is PER VEHICLE, not per person, and depends on the route and the unit you choose: from the two-seater RZR 500 ({precio} for the Nanacatli Route) up to the Family Defender for 6 adults and 2 kids, or the premium Polaris Pro S. Every unit includes fuel, safety gear and the guide. Transportation to Xilitla and meals are not included.\n\nWe recommend clothes that can get dirty and wet, closed-toe shoes and a change of clothes: you'll come out covered in mud and with a smile that's hard to wipe off.",
     destinos: [
       "Base in Xilitla (meeting point)",
       "Nanacatli Village — mushroom houses (Nanacatli Route · 2 h)",
@@ -129,7 +129,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     descripcion:
       "Paddle 14 kilometers of Class III rapids on the turquoise water of the Tampaón River, flanked by towering canyon walls. We pick you up at your lodging in Ciudad Valles or Xilitla (round-trip transport), with full gear, a certified guide and a meal included that you take before or after the activity. No experience or swimming skills needed — there are routes for beginners and advanced paddlers.",
     descripcionLarga:
-      "The Tampaón River is considered one of the 10 most scenic rivers in North America, and the first rapid is all it takes to understand why: turquoise water — colored by the same karstic minerals that paint Tamul Waterfall —, canyon walls closing in over the river and jungle peeking over the top of the rock.\n\nThe day starts at your door: we pick you up at your lodging in Ciudad Valles or Xilitla, round-trip transport included. At the river dock we hand you the full gear — professional raft, paddle, helmet and life jacket — and your guide runs the safety and paddling briefing. You don't need experience or even to know how to swim: there are routes for different levels, Class III rapids are the sweet spot between real excitement and beginner-friendly safety, and the guide rides in the raft with you for the whole descent.\n\nIt's a 14-kilometer run alternating rapids with calm stretches where you can swim and take in the canyon. The most anticipated moment is 'La Tumba' rapid, where the walls close in so tightly that the echo disappears — absolute silence right before the river's most technical stretch. You'll come out soaked, with tired arms and wanting to get right back on. Your booking includes the meal, and you decide when: you can have it before setting out, to start with energy, or save it for after the descent.\n\nThe best season is November through March, when the water reaches its most intense color. During the rainy season (July–September) departure depends on the river level: if it's not safe to navigate, we let you know in advance and reschedule or offer an alternative activity. Your safety always comes first.",
+      "The Tampaón River is considered one of the 10 most scenic rivers in North America, and the first rapid is all it takes to understand why: turquoise water — colored by the same karstic minerals that paint Tamul Waterfall —, canyon walls closing in over the river and jungle peeking over the top of the rock.\n\nThe day starts at your door: we pick you up at your lodging in Ciudad Valles or Xilitla, round-trip transport included. At the river dock we hand you the full gear — professional raft, paddle, helmet and life jacket — and your guide runs the safety and paddling briefing. You don't need experience or even to know how to swim: there are routes for different levels, Class III rapids are the sweet spot between real excitement and beginner-friendly safety, and the guide rides in the raft with you for the whole descent.\n\nIt's a 14-kilometer run alternating rapids with calm stretches where you can swim and take in the canyon. The most anticipated moment is 'La Tumba' rapid, where the walls close in so tightly that the echo disappears — absolute silence right before the river's most technical stretch. You'll come out soaked, with tired arms and wanting to get right back on. Your booking includes the meal, and you decide when: you can have it before setting out, to start with energy, or save it for after the descent.\n\nFrom October 30 through May the water runs clear, and its most intense turquoise comes from March to May. During the rainy season (July–September) departure depends on the river level: if it's not safe to navigate, we let you know in advance and reschedule or offer an alternative activity. Your safety always comes first.",
     destinos: [
       "Round-trip transport from your lodging (Ciudad Valles or Xilitla)",
       "Tampaón River dock",
@@ -212,7 +212,11 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Tamul Expedition",
     tagline: "Three wonders in one day: Tamul by canoe, the Water Cave cenote and the Huahuas abyss at sunset",
     tipo: "Adventure & Nature",
-    urgencia: "Our most booked tour — fills up on weekends",
+    // Vuelve el 8 oct 2026, igual que en español (ver la nota larga en
+    // `tours.ts`): la de antes —«Our most booked tour — fills up on weekends»—
+    // era escasez inventada, pero dejar la tarjeta sin su línea dejaba al
+    // recorrido estrella sin argumento. Ésta dice algo cierto.
+    urgencia: "Ends at sunset, when the birds pour back into the sinkhole — book ahead",
     descripcion:
       "Paddle by canoe through the Tampaón Canyon to Tamul Waterfall — the tallest in San Luis Potosí —, swim and dive in at the Water Cave cenote on the way back, and end the day peering into the abyss of the Sótano de las Huahuas at sunset, when thousands of birds return and plunge headlong to the bottom.",
     descripcionLarga:
@@ -760,6 +764,71 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Guide standing on the karst rocks at the rim of Olla de la Luz, in the mist of the cloud forest",
       "Group walking in single file along the Trinidad cloud forest trail toward the sinkhole",
       "The whole group posing on the rocks at the rim of Olla de la Luz at the end of the walk",
+    ],
+  },
+
+  "huasteca-instagrameable": {
+    nombre: "Huasteca Instagrameable — The Most Photogenic Days in the Huasteca Potosina",
+    nombreCorto: "Huasteca Instagrameable",
+    tagline: "The day you go home with the photos, not just the memory",
+    tipo: "Photography & Content",
+    urgencia: "Groups of 6 maximum — your guide carries a camera, not a phone",
+    descripcion:
+      "A day built around the light and the framing, not around the clock. Your guide carries a Fujifilm X-T30 II, knows the exact spots at each place and the hour the water turns turquoise, and sends you 25 to 30 edited photographs within 3 days. You pick which of the three Instagrameable days you want. Groups of 6 maximum. {precio} per person.",
+    descripcionLarga:
+      "Most people come back from the Huasteca with three hundred phone photos and not one worth keeping. It isn’t the phone’s fault: you reach the waterfall at the hour the sun hits it head-on, the group is fourteen people, and nobody has time to stand in the right place for two minutes. Huasteca Instagrameable exists to fix exactly that.\n\nThe difference isn’t the destination, it’s how the day is built. The order of the stops is decided by the light: you reach each place at the hour it looks like the photos that made you want to come. The group is 6 people maximum, because with fourteen there is no way to photograph anyone. And the guide doesn’t carry a phone in his pocket: he carries a Fujifilm X-T30 II, he knows where to stand you, what’s behind you and where to look, and he tells you without being asked.\n\nThere are three different days and you choose one when you book. Day 1 is the fullest: the canoe upriver along the Tampaón until you are facing Tamul Waterfall — 105 metres — in the morning, and Las Pozas, Edward James’s surrealist garden, on the 5:00 PM schedule, when the light comes in sideways between the columns and the garden is nearly empty. The garden only opens that slot Wednesday through Monday, so Day 1 doesn’t run on Tuesdays.\n\nDay 2 goes to the Micos Waterfalls, seven stepped drops with pools of a turquoise that doesn’t look real, and closes at dusk at the Huahuas Sinkhole, when thousands of parakeets pour back into the abyss to sleep. Day 3 is the day of the northern water: the travertine terraces of Minas Viejas, El Meco Waterfall between 9 and 11 in the morning — its hour, when the sun enters the canyon straight on — and the curtain of El Salto.\n\nWhat you take home: 25 to 30 edited photographs, in a private folder, within 3 days. And what we don’t promise, so there are no surprises: there is no drone — Las Pozas bans them, along with tripods — and there is no photographer separate from the guide. It is your guide, with a real camera and the places learned by heart. If what you want is to go home with the material, this is the tour.",
+    destinos: [
+      "Day 1 — Tamul Waterfall by canoe and Las Pozas, Edward James’s surrealist garden",
+      "Day 2 — Micos Waterfalls and the Huahuas Sinkhole",
+      "Day 3 — Minas Viejas Waterfalls, El Meco Waterfall and El Salto",
+    ],
+    incluye: [
+      "Round-trip transport from your lodging in Xilitla or Ciudad Valles",
+      "Canoe trip to Tamul Waterfall (Day 1)",
+      "Admission to every site on the day you choose",
+      "NOM-09 SECTUR certified guide, carrying a Fujifilm X-T30 II",
+      "The marked frames at every stop: your guide knows the spot each one is taken from and the hour it works",
+      "Photos and video of the tour, taken by your guide, plus 25 to 30 edited photographs, in a private folder, within 3 days",
+      "Safety gear (life vest and whatever each site requires)",
+    ],
+    eleccion: {
+      titulo: "Which of the three Instagrameable days do you want?",
+      opciones: [
+        {
+          nombre: "Day 1 — Tamul by canoe and Las Pozas in the afternoon light",
+          nota: "6:00 AM departure. The canoe to Tamul Waterfall in the morning and Edward James’s garden at 5:00 PM. Wednesday through Monday: on Tuesdays the garden has no afternoon slot.",
+        },
+        {
+          nombre: "Day 2 — Micos Waterfalls and the Huahuas Sinkhole",
+          nota: "8:00 AM departure. The stepped pools of Micos in the morning and the parakeets pouring back into the sinkhole at dusk.",
+        },
+        {
+          nombre: "Day 3 — Minas Viejas, El Meco Waterfall and El Salto",
+          nota: "8:00 AM departure. The three turquoise waters of the northern Huasteca, with El Meco between 9 and 11 AM, which is its hour.",
+        },
+      ],
+    },
+    itinerario: [
+      { momento: "Pickup", texto: "We pick you up at your lodging in Xilitla or Ciudad Valles. The early start is deliberate: the Tamul canoe and the morning light can’t be moved." },
+      { momento: "Tampaón boat landing", texto: "Life vest, briefing and into the canoe. The river runs boxed in between hundred-metre rock walls and the water shifts from green to turquoise as the sun comes in." },
+      { momento: "Facing Tamul Waterfall", texto: "A hundred and five metres of water falling in front of you. This is where we take all the time it needs: it is the main frame of the day and the guide already knows which rock shows it whole." },
+      { momento: "Lunch on the way", texto: "A stop to eat on the way back from the river, heading to Xilitla. Meals are not included: you pay at the restaurant." },
+      { momento: "Las Pozas, on the afternoon schedule", texto: "Edward James’s surrealist garden with low light coming in between the columns, and almost no one around. It is the best moment of the day to photograph it. The garden opens this slot Wednesday through Monday." },
+      { momento: "Back to your hotel", texto: "We drop you off at your lodging. The photos are edited and reach you in a private folder within 3 days." },
+    ],
+    gallery: [
+      "Visitor sitting on a rock in the Tampaón canyon with Tamul Waterfall and the turquoise water behind her",
+      "A couple in front of Minas Viejas waterfall, standing on the walkway surrounded by jade-coloured water",
+      "Edward James’s arches and staircases at Las Pozas, opening over the Xilitla jungle",
+      "Visitor jumping one of the drops at the Micos Waterfalls while the group watches from the bank",
+      "Group posing on the rocks of the Tampaón river, facing Tamul Waterfall",
+      "One of the surrealist garden structures framed by the vegetation of Las Pozas",
+      "Parakeets flying over the mouth of the Huahuas Sinkhole at dusk",
+      "El Meco Waterfall dropping into its turquoise pool, boxed into the canyon",
+      "The travertine terraces of Minas Viejas, stepped over jade-green water",
+      "The curtain of water at El Salto, in the northern Huasteca Potosina",
+      "The Tampaón canyon seen from above, with the turquoise river running below",
+      "Staircases and columns of Edward James’s garden among the Xilitla jungle",
     ],
   },
 };

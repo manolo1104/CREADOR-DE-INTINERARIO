@@ -35,7 +35,13 @@ export function GuideProfile() {
               </span>
             </div>
             <p className="text-[11px] text-crema/40 font-dm mb-2">
-              {en ? "8+ years exploring the Huasteca · Native Spanish · Fully bilingual guides available on request" : "Más de 8 años recorriendo la Huasteca · Español nativo · Guías completamente bilingües disponibles, pídelo al reservar"}
+              {/* 🔴 Decía «guías completamente bilingües disponibles». Las dos
+                  fichas de guías del sitio dicen que hablan español, y el
+                  cerebro del bot ya tenía la versión honesta: en una salida
+                  compartida el guía habla inglés básico, y uno bilingüe se
+                  consigue pidiéndolo con anticipación, sin garantía. Desde el
+                  8 oct 2026 el carrito tiene la casilla donde pedirlo. */}
+              {en ? "8+ years exploring the Huasteca · Native Spanish · Ask for an English-speaking guide when you book and we'll arrange one" : "Más de 8 años recorriendo la Huasteca · Español nativo · Pide guía en inglés al reservar y te lo conseguimos"}
             </p>
             <p className="text-sm text-crema/60 font-dm leading-relaxed">
               {en

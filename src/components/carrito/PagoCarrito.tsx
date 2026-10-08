@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { Lock, MessageCircle } from "lucide-react";
+import { Lock, MessageCircle, CreditCard } from "lucide-react";
 import { vaciarCarrito } from "@/lib/carrito";
 import { limpiarExtras } from "@/lib/carritoExtras";
 import { formatMXN, formatTourDate } from "@/lib/tourBooking";
@@ -11,8 +11,11 @@ import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackTourEvent, marcarPasoClarity } from "@/lib/tourTracker";
 import { trackPurchase } from "@/lib/analytics";
+import { TOURS_DB } from "@/lib/tours";
+import { hayMsi, MSI_PLAZOS } from "@/lib/stripeMsi";
 import { nombreCorto, type Cobro } from "@/components/carrito/carritoComun";
 import { guardarConfirmacion } from "@/lib/checkout/confirmacion";
+import { leerApartadoId, olvidarApartado } from "@/components/carrito/useApartado";
 
 // ── Formulario de pago del carrito ───────────────────────────────────────────
 
@@ -20,7 +23,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
   /** Para que la barra fija del celular pueda enviar este formulario. */
   formId?: string;
   cobro: Cobro;
-  datos: { name: string; email: string; phone: string; pickup: string; checkin?: string; checkout?: string };
+  datos: { name: string; email: string; phone: string; pickup: string; checkin?: string; checkout?: string; guiaIngles?: boolean };
   onListo: () => void;
 }) {
   const stripe   = useStripe();
@@ -125,6 +128,9 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
             // justamente lo que el equipo necesita saber antes de llamarle.
             notes: [
               t.notas.idiomaCliente || null,
+              // Lo PIDIÓ, que no es lo mismo que haber comprado desde /en:
+              // alguien puede reservar en español y pedir guía en inglés.
+              datos.guiaIngles ? t.notas.guiaEnIngles : null,
               datos.pickup.trim() ? t.notas.recogida(datos.pickup.trim()) : null,
               t.notas.reservaVarios(cobro.lineItems.length),
               // Sin esto, el equipo recibía la Ruta Acuática sin saber si el
@@ -157,6 +163,9 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
             ].filter(Boolean).join(" | "),
             totalAmount:     cobro.amount,
             paymentIntentId: cobro.paymentIntentId,
+            // El servidor suelta el apartado al crear la reserva. Va también en
+            // la metadata del pago; aquí, por si el reloj arrancó después.
+            apartadoId:      leerApartadoId(),
             // Con UN solo recorrido se guarda su nombre real, no el resumen:
             // "1 recorridos" acababa en el panel y en el correo del cliente
             // como si fuera el nombre del tour. Con varios sí va el resumen,
@@ -229,6 +238,17 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
         total:    cobro.amount,
         adults:   totalAdultos,
         children: totalNinos,
+        // Los recorridos uno por uno y lo que vale la reserva completa, igual
+        // que la compra del webhook: sin esto GA4 recibía un solo artículo con
+        // el nombre del primer tour como id. El id es el del tour (el mismo de
+        // `view_item`), no el slug.
+        reservaTotal: cobro.total,
+        renglones: cobro.lineItems.map((l) => ({
+          tourId:   TOURS_DB.find((x) => x.slug === l.tourSlug)?.id ?? l.tourSlug ?? l.tourName,
+          tourName: l.tourName,
+          total:    l.subtotal,
+          cantidad: l.adults + l.children,
+        })),
       });
       trackTourEvent("BOOKING_CONFIRMED", { carrito: true, amount: cobro.amount, total: cobro.total });
 
@@ -276,6 +296,10 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
             : []),
         ],
       });
+      // Los lugares ya son una reserva: el apartado se olvida SIN soltarlo (lo
+      // suelta el servidor después de crearla; ver `olvidarApartado`). Antes de
+      // vaciar el carrito, o el carrito vacío lo soltaría desde aquí.
+      olvidarApartado();
       vaciarCarrito();
       limpiarExtras();
       onListo();
@@ -285,7 +309,26 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement options={{ layout: "tabs" }} />
+      {/* 🔴 Apple Pay y Google Pay: el carrito era el ÚNICO de los tres cobros
+          que no los ofrecía —el del RZR y el de paquetes sí—, y es por donde
+          pasa casi toda la venta. `auto` los enseña solo si el navegador y la
+          tarjeta los tienen. Apple Pay además necesita el dominio verificado en
+          el panel de Stripe; sin eso no sale y nada se rompe. */}
+      <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+
+      {/* Los meses se eligen DENTRO del formulario de Stripe, al teclear la
+          tarjeta, así que aquí solo se anuncia que existen: si no, nadie llega
+          a verlos. Solo cuando el importe de hoy los habilita. */}
+      {hayMsi(cobro.amount) && (
+        <p className="flex items-start gap-2 border border-verde-selva/30 bg-verde-selva/5 p-3 font-dm text-[12px] leading-relaxed text-verde-profundo">
+          <CreditCard className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-verde-selva" aria-hidden="true" />
+          <span>
+            <strong className="font-medium">{t.msiTitulo(MSI_PLAZOS.join(", "))}</strong>
+            <br />
+            <span className="text-negro/55">{t.msiDetalle}</span>
+          </span>
+        </p>
+      )}
       {error && <p className="text-sm font-dm text-terracota bg-terracota/10 border border-terracota/30 p-3">{error}</p>}
       <button
         type="submit"
@@ -302,8 +345,18 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
       {/* Salida para quien no quiere teclear su tarjeta. El motor solo acepta
           tarjeta, y mucha gente en México prefiere SPEI u OXXO: sin esta puerta
           esa venta se perdía en silencio. El mensaje va con TODO el detalle
-          para que nadie tenga que volver a preguntarlo por chat. */}
+          para que nadie tenga que volver a preguntarlo por chat.
+
+          🔴 8 oct 2026: era una línea de 12 px al final del formulario, debajo
+          del botón de pagar y de la letra chica — o sea, invisible. Manolo pidió
+          que OXXO «quede claro en la pasarela». Ahora es un bloque con su
+          encabezado. Sigue SIN pasar por Stripe a propósito (decisión suya del
+          4 oct): OXXO por Stripe cobra hasta tres días después y el webhook del
+          sitio todavía no está conectado, así que esa reserva se perdería. */}
       <div className="border-t border-negro/10 pt-4">
+        <p className="mb-1 text-center font-dm text-[10px] uppercase tracking-[2px] text-negro/40">
+          {t.otrasFormas}
+        </p>
         <p className="text-center font-dm text-[12px] text-negro/50 mb-3">
           {t.prefieresTransferencia}
         </p>

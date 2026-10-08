@@ -110,7 +110,8 @@ export interface Comparacion {
 type Busqueda = Record<string, string | string[] | undefined>;
 
 export const LIMITES: Record<TipoComparacion, LimitesGrupo> = {
-  // 1 adulto: los recorridos que salen desde 2 aceptan viajero solo.
+  // 1 adulto: desde el 8 oct 2026 cualquier recorrido por persona se puede
+  // reservar bajo su mínimo, con la salida sujeta a que se junte el grupo.
   recorridos: { minAdultos: 1, maxPersonas: GRUPO_MAX },
   // El paquete se arma desde la pareja; arriba de 12 se cotiza a mano.
   paquetes:   { minAdultos: 2, maxPersonas: MAX_PERSONAS_PAQUETE },

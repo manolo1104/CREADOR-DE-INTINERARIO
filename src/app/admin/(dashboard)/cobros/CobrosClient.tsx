@@ -2,21 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { Link2, Copy, Check, Ban, ExternalLink, Loader2, MessageCircle, Search } from "lucide-react";
+import { CodigoTour } from "@/components/admin/CodigoTour";
+import { codigoDeTour } from "@/lib/admin/coloresTour";
 
 interface ReservaConSaldo {
-  id: string; folio: string; cliente: string; tour: string; fecha: string;
+  id: string; folio: string; cliente: string; tour: string; tourSlug: string; fecha: string;
   total: number; cobrado: number; saldo: number; personas: number;
 }
 
 interface Cotizacion {
-  id: string; folio: string; cliente: string; tour: string; fecha: string;
+  id: string; folio: string; cliente: string; tour: string; tourSlug: string; fecha: string;
   total: number; estado: string; personas: number;
 }
 
 /** Para qué es el cobro. Cambia qué se busca, el monto sugerido y el título. */
 type Proposito = "anticipo" | "resto" | "suelto";
 
-/** Los anticipos que ya usa el negocio: 30% en el sitio, 50% en cotizaciones. */
+/**
+ * Los atajos de anticipo. Desde oct 2026 el 30 % es el único por omisión (sitio,
+ * bot y cotizaciones); el 50 % se queda como atajo para quien lo acuerde así.
+ */
 const ANTICIPOS = [30, 50] as const;
 
 interface Cobro {
@@ -158,8 +163,8 @@ export default function CobrosClient(
     if (!tituloTocado) setTitulo(`Pago restante de ${nombreCorto(r.tour)}`);
   }
 
-  /** Elegir la cotización a la que se le cobra el anticipo. */
-  function elegirCotizacion(id: string, pct = 50) {
+  /** Elegir la cotización a la que se le cobra el anticipo (30 % por omisión). */
+  function elegirCotizacion(id: string, pct = 30) {
     setCotizacionId(id);
     const c = cotizaciones.find(x => x.id === id);
     if (!c) return;
@@ -304,7 +309,7 @@ export default function CobrosClient(
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-dm text-[#16362a] truncate">{c.cliente}</span>
                         <span className="block text-[11px] font-dm text-[rgba(22,54,42,0.51)] truncate">
-                          {c.folio} · {nombreCorto(c.tour)}
+                          {c.folio} · <CodigoTour slug={c.tourSlug} className="text-[10px]" /> {nombreCorto(c.tour)}
                         </span>
                       </span>
                       <span className="panel-cifra text-sm font-dm text-[#16362a] flex-shrink-0">{fmx(c.total)}</span>
@@ -318,7 +323,7 @@ export default function CobrosClient(
                   <div className="min-w-0">
                     <p className="text-sm font-dm text-[#16362a] truncate">{cotizacion.cliente}</p>
                     <p className="text-[11px] font-dm text-[rgba(22,54,42,0.51)] truncate">
-                      {cotizacion.folio} · {nombreCorto(cotizacion.tour)} · total {fmx(cotizacion.total)}
+                      {cotizacion.folio} · <CodigoTour slug={cotizacion.tourSlug} className="text-[10px]" /> {nombreCorto(cotizacion.tour)} · total {fmx(cotizacion.total)}
                     </p>
                   </div>
                   <button onClick={() => { setCotizacionId(""); setMonto(""); }}
@@ -365,7 +370,9 @@ export default function CobrosClient(
                 <option value="">Elige una reserva…</option>
                 {reservasConSaldo.map(r => (
                   <option key={r.id} value={r.id}>
-                    {r.folio} · {r.cliente} · debe {fmx(r.saldo)}
+                    {/* Dentro de un <option> no se puede pintar color: aquí el
+                        código va como texto, que es justo para lo que sirve. */}
+                    {codigoDeTour(r.tourSlug)} · {r.folio} · {r.cliente} · debe {fmx(r.saldo)}
                   </option>
                 ))}
               </select>

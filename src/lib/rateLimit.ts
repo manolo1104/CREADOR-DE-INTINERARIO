@@ -10,7 +10,8 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 
-function clientIp(req: NextRequest): string {
+/** La IP del cliente detrás del proxy. La usa también el tope de apartados por conexión (`lib/apartados.ts`). */
+export function clientIp(req: NextRequest): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||

@@ -1,5 +1,6 @@
 import { formatMXN } from "@/lib/tourBooking";
 import { C, boton, bajoBoton, nota, shellCorreo } from "./emailLayout";
+import { escapeHtml as esc } from "./escapeHtml";
 
 /**
  * El aviso diario al equipo (oct 2026): qué cotizaciones vencen hoy y mañana,
@@ -42,6 +43,8 @@ function fechaCorta(ymd: string): string {
   return new Date(`${ymd}T12:00:00`).toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" });
 }
 
+// El nombre y el tour van escapados: en las cotizaciones del bot el nombre lo
+// dicta el cliente por WhatsApp, y este correo lo leen Manolo y el equipo.
 function bloque(titulo: string, explica: string, filas: FilaResumen[], conWa: boolean): string {
   if (!filas.length) return "";
   const renglones = filas.map((f) => {
@@ -55,8 +58,8 @@ function bloque(titulo: string, explica: string, filas: FilaResumen[], conWa: bo
       : "";
     return `
       <tr><td style="padding:12px 0;border-bottom:1px solid #ece4cf;">
-        <p style="margin:0;font-family:'DM Sans',Arial;font-size:14px;color:${C.oscuro};font-weight:500;">${f.cliente}${rec}</p>
-        <p style="margin:2px 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#6a6a5a;">${f.tour} · ${fechaCorta(f.tourDate)} · ${formatMXN(f.total)} · ${f.folio}</p>
+        <p style="margin:0;font-family:'DM Sans',Arial;font-size:14px;color:${C.oscuro};font-weight:500;">${esc(f.cliente)}${rec}</p>
+        <p style="margin:2px 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#6a6a5a;">${esc(f.tour)} · ${fechaCorta(f.tourDate)} · ${formatMXN(f.total)} · ${esc(f.folio)}</p>
         ${wa}
       </td></tr>`;
   }).join("");

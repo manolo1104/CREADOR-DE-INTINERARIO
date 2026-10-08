@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Trash2, AlertCircle } from "lucide-react";
 import { personasDeItem, type CarritoItem } from "@/lib/carrito";
-import { formatMXN, aceptaViajeroSolo, esViajeroSolo } from "@/lib/tourBooking";
+import { formatMXN, esViajeroSolo, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { TOURS_DB, incluyeDeTour } from "@/lib/tours";
 import { localizeTour } from "@/lib/i18n/localize";
 import { TourCalendar } from "@/components/booking/TourCalendar";
@@ -14,7 +14,7 @@ import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 /** Un recorrido del carrito: fecha, personas o vehículo, elección, extras y qué incluye. */
 export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout }) {
   const {
-    locale, t, items, renglonRefs, recienLlegado, enElPiso, fallos, resaltado, resumen,
+    locale, t, items, renglonRefs, recienLlegado, fallos, resaltado, resumen,
     horaDe, quitar, cambiar, cambiarAddOn, cambiarVehiculo, cambiarPersonas,
   } = c;
   return (
@@ -108,6 +108,11 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                         permitirLimpiar
                         salida={horaDe(i.tourSlug).salida}
                         horario={horaDe(i.tourSlug).horario}
+                        // Los lugares de cada día para este grupo. El RZR va
+                        // por vehículo y no lleva cupo por fecha: sin slug, el
+                        // calendario no pregunta nada.
+                        slug={i.unidades ? undefined : i.tourSlug}
+                        personas={personasDeItem(i)}
                       />
                     </div>
 
@@ -258,36 +263,19 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                       return (
                         <div className="mt-2 border border-verde-selva/35 bg-verde-selva/5 p-2.5">
                           <p className="font-dm text-[11px] text-negro/70 leading-snug">
-                            <strong>{t.viajeroSoloTitulo}</strong> {t.viajeroSolo}
+                            <strong>{t.viajeroSoloTitulo}</strong> {t.viajeroSolo(CONFIRMA_SALIDA_DIAS)}
                           </p>
                         </div>
                       );
                     })()}
 
-                    {(() => {
-                      const tour = TOURS_DB.find((x) => x.slug === i.tourSlug);
-                      if (!tour || i.unidades || aceptaViajeroSolo(tour)) return null;
-                      // Se enseña si el grupo no llega o si intentó bajar del mínimo.
-                      if (personasDeItem(i) >= tour.groupMin && !enElPiso.has(i.uid)) return null;
-                      return (
-                        <div className="mt-2 border border-terracota/40 bg-terracota/5 p-2.5">
-                          <p className="font-dm text-[11px] text-negro/70 leading-snug">
-                            {t.saleAPartirDeIntro}<strong>{t.saleAPartirDe(tour.groupMin)}</strong>. {t.vanMenos}{" "}
-                            <a
-                              href={`https://wa.me/524891090388?text=${encodeURIComponent(
-                                t.waGrupoMinimo(personasDeItem(i), nombreCorto(i.tourSlug, i.tourName, locale)),
-                              )}`}
-                              target="_blank" rel="noopener noreferrer"
-                              data-wa-manual="1"
-                              onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_grupo_minimo", tour: i.tourSlug })}
-                              className="text-verde-selva underline underline-offset-2"
-                            >
-                              {t.escribenosYLosSumamos}
-                            </a>.
-                          </p>
-                        </div>
-                      );
-                    })()}
+                    {/* 🔴 Aquí vivía el aviso «sale a partir de N personas» con
+                      su salida por WhatsApp. Quedó INALCANZABLE el 8 oct 2026:
+                      su guarda era `aceptaViajeroSolo(tour)` y ahora eso es
+                      cierto para todos los recorridos por persona. Lo que antes
+                      mandaba a WhatsApp lo dice ahora el aviso de arriba, con
+                      la promesa del reembolso, que es una respuesta y no una
+                      puerta a otra conversación. */}
 
 
                     {/* Actividades opcionales del recorrido. Se agregan aquí

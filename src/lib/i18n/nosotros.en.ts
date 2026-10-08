@@ -2,6 +2,7 @@ import type { Locale } from "./config";
 
 import { GRUPO_MAX } from "@/lib/tours";
 import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
+import { HOTEL_PROPIO as H, horarioRestaurante } from "@/lib/hotelPropio";
 /**
  * Traducción de /nosotros.
  *
@@ -56,6 +57,24 @@ export interface NosotrosContent {
   historiaCita: string;
   historiaCitaAutor: string;
   historiaP3: string;
+
+  /**
+   * «El hotel y el restaurante también son nuestros» (7 oct 2026): la página
+   * no decía «hotel» ni una vez. Los metros, los minutos y el horario salen de
+   * `hotelPropio.ts`; aquí no se escribe ninguna cifra a mano.
+   */
+  casa: {
+    eyebrow: string;
+    h2a: string;
+    h2b: string;
+    texto: string;
+    puntos: string[];
+    ctaPapan: string;
+    ctaPaquetes: string;
+    fotoHotelAlt: string;
+    fotoFogonAlt: string;
+    fotoPlatillosAlt: string;
+  };
 
   valoresEyebrow: string;
   valoresH2: string;
@@ -178,6 +197,26 @@ const ES: NosotrosContent = {
   historiaP3:
     `Hoy, más de quince años después de aquel primer viaje improvisado al Tamul, tenemos ${GOOGLE_RATING} estrellas en Google con ${GOOGLE_RESENAS} reseñas. Pero seguimos siendo las mismas personas que crecieron aquí.`,
 
+  // Sin la recogida (pasamos gratis por cualquier hospedaje, no es ventaja del
+  // hotel) ni el desayuno de los tours (es en El Taco Loco): ver `hotelPropio.ts`.
+  casa: {
+    eyebrow: "Nuestra casa en Xilitla",
+    h2a: "El hotel y el restaurante ",
+    h2b: "también son nuestros",
+    texto: `En Xilitla está nuestro hotel, el ${H.nombre}, y dentro de él ${H.restaurante}, nuestro restaurante de cocina huasteca. Así, quien viaja con nosotros puede dormir, comer y salir al tour con la misma familia.`,
+    puntos: [
+      `En ${H.zona}, a ${H.metrosALasPozas} m de Las Pozas: ${H.minutosCaminando} minutos caminando.`,
+      `Cocina huasteca en ${H.restaurante}, ${horarioRestaurante(false)}: zacahuil, bocoles y café de olla.`,
+      "Alberca al aire libre para los huéspedes.",
+      "¿Llegas en el autobús de la mañana? Si tu cuarto ya está libre, es tuyo al llegar; si no, tus maletas se quedan en recepción mientras sales al tour.",
+    ],
+    ctaPapan: "Conoce El Papán →",
+    ctaPaquetes: "Ver paquetes con hotel →",
+    fotoHotelAlt: `Alberca y jardines del ${H.nombre}, en Xilitla`,
+    fotoFogonAlt: `El fogón de leña encendido en ${H.restaurante}`,
+    fotoPlatillosAlt: `Chilaquiles con arrachera, frijoles y aguacate en ${H.restaurante}`,
+  },
+
   valoresEyebrow: "Lo que nos define",
   valoresH2: "Nuestros",
   valoresH2Em: "valores",
@@ -245,7 +284,7 @@ const ES: NosotrosContent = {
   certificaciones: [
     { titulo: "NOM-09 SECTUR", sub: "Guías de turismo de aventura certificados por la Secretaría de Turismo de México" },
     { titulo: "Primeros Auxilios", sub: "Cruz Roja Mexicana — renovación anual obligatoria" },
-    { titulo: "Guías bilingües", sub: "Español nativo · Guías completamente bilingües disponibles, pídelo al reservar" },
+    { titulo: "Guía en inglés", sub: "Español nativo · Pídelo al reservar, sin costo, y te lo conseguimos" },
     { titulo: "Seguro de viajero", sub: "Responsabilidad civil y asistencia médica incluida en todos los tours" },
     { titulo: "Rescate acuático", sub: "Certificación especializada para tours en cascadas y ríos" },
     { titulo: "Guiando desde 2010", sub: "15 años de experiencia local · Empresa formal fundada en 2019" },
@@ -374,6 +413,24 @@ const EN: NosotrosContent = {
   historiaP3:
     `Today, more than fifteen years after that first improvised trip to Tamul, we're rated ${GOOGLE_RATING} stars on Google across ${GOOGLE_RESENAS} reviews. But we're still the same people who grew up here.`,
 
+  casa: {
+    eyebrow: "Our home base in Xilitla",
+    h2a: "The hotel and the restaurant ",
+    h2b: "are ours too",
+    texto: `In Xilitla we have our own hotel, ${H.nombre}, and inside it ${H.restaurante}, our Huasteca-food restaurant. So when you travel with us, you can sleep, eat and head out on your tour with the same family.`,
+    puntos: [
+      `In ${H.zona}, ${H.metrosALasPozas} m from Las Pozas: a ${H.minutosCaminando}-minute walk.`,
+      `Huasteca cooking at ${H.restaurante}, ${horarioRestaurante(true)}: zacahuil, bocoles and café de olla.`,
+      "Outdoor pool for guests.",
+      "Arriving on the morning bus? If your room is ready, it's yours when you arrive; if not, your bags stay at reception while you head out on your tour.",
+    ],
+    ctaPapan: "About El Papán →",
+    ctaPaquetes: "See packages with hotel →",
+    fotoHotelAlt: `Pool and gardens at ${H.nombre}, in Xilitla`,
+    fotoFogonAlt: `The wood fire burning in the hearth at ${H.restaurante}`,
+    fotoPlatillosAlt: `Chilaquiles with arrachera, beans and avocado at ${H.restaurante}`,
+  },
+
   valoresEyebrow: "What defines us",
   valoresH2: "Our",
   valoresH2Em: "values",
@@ -441,7 +498,7 @@ const EN: NosotrosContent = {
   certificaciones: [
     { titulo: "NOM-09 SECTUR", sub: "Adventure tourism guides certified by Mexico's Ministry of Tourism" },
     { titulo: "First aid", sub: "Mexican Red Cross — mandatory annual renewal" },
-    { titulo: "Bilingual guides", sub: "Native Spanish · Fully bilingual guides available — just ask when you book" },
+    { titulo: "English-speaking guide", sub: "Native Spanish · Ask when you book, at no cost, and we'll arrange it" },
     { titulo: "Traveller insurance", sub: "Public liability and medical assistance included on every tour" },
     { titulo: "Water rescue", sub: "Specialist certification for waterfall and river tours" },
     { titulo: "Guiding since 2010", sub: "15 years of local experience · Company formally founded in 2019" },

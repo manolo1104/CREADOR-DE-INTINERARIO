@@ -24,7 +24,7 @@ export const ORIGEN_ETIQUETA: Record<OrigenReserva, string> = {
   whatsapp: "WhatsApp",
   telefono: "Teléfono",
   walkin:   "Llegó al hotel",
-  ota:      "OTA (Booking, Expedia…)",
+  ota:      "OTA (Viator, GetYourGuide u otra plataforma)",
 };
 
 /**

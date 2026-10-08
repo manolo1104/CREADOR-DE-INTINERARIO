@@ -45,7 +45,8 @@ import { DESTINOS_DB, type Destino } from "@/lib/destinos";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { toursCercaDe } from "@/lib/tourMapping";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
-import { temporadaDe } from "@/lib/temporada";
+import { temporadaDe, fechaInicioTexto } from "@/lib/temporada";
+import { enAuto } from "@/lib/tiemposDeViaje";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { calcTourTotal } from "@/lib/tourBooking";
 
@@ -398,7 +399,7 @@ function mesesDe(rango: string): string {
 }
 /**
  * Los meses que `temporada.ts` pone en la misma ventana que `ancla`, como
- * "julio a octubre". Se pide el día 1 porque octubre se parte el día 5. Si la
+ * "julio a octubre". Se pide el día 1 porque octubre se parte el día 30. Si la
  * ventana deja de ser continua, se nombran sus meses uno a uno en vez de
  * fingir un rango.
  */
@@ -414,13 +415,14 @@ function ventanaComo(ancla: number, debeDecir: RegExp): string {
 const TAMUL_TEMPORADA = mesesDe(D_TAMUL.temporada_ideal);      // "enero a abril"
 const MESES_TURQUESA  = ventanaComo(4, /turquesa/i);           // "marzo a mayo"
 const MESES_LLUVIAS   = ventanaComo(8, /lluvias/i);            // "julio a octubre"
+// Desde cuándo el agua baja clara: el arranque de `MEJOR_TEMPORADA`.
+const INICIO_CLARA    = fechaInicioTexto("es");                // "30 de octubre"
 
-// "~6 horas hasta Ciudad Valles." (landing /desde/monterrey, en auto).
-const MTY_AUTO = (() => {
-  const d = CIUDADES_ORIGEN.find((c) => c.slug === "monterrey")?.llegadas.find((l) => /\bauto\b/i.test(l.modo))?.detalle;
-  const m = d ? /^~?\s*(\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?\s*horas?) hasta Ciudad Valles/.exec(d) : null;
-  return m ? m[1] : null;
-})();
+/* 🔴 Esto SACABA la cifra con una expresión regular sobre la prosa de la
+   landing `/desde/monterrey`, porque no había dónde pedirla. Ya lo hay: desde
+   el 8 oct 2026 los tiempos de carretera viven en `tiemposDeViaje.ts`. Si la
+   landing cambia una palabra, esto deja de romperse. */
+const MTY_AUTO = enAuto("monterrey", "valles") || null;
 
 const HOY = "2026-09-28";
 
@@ -525,26 +527,28 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       // 🔴 Temporada (IA-08): decía "evita marzo–mayo, la ideal va de julio a
       // marzo", al revés de la ficha que se pinta en el mismo artículo (ideal
       // ene–abr) y de `temporada.ts` (en secas el agua baja turquesa, en
-      // lluvias puede bajar marrón). Va con las dos fuentes, sin cifra propia.
+      // lluvias puede bajar con sedimento). Va con las dos fuentes, sin cifra
+      // propia. El "julio a marzo" solo vive en los `from`: el artículo
+      // publicado ya no lo dice (revisado en producción el 7 oct 2026).
       {
         from:
           "En temporada seca —entre <strong>marzo y mayo</strong>— el caudal puede reducirse notablemente. La temporada ideal va de <strong>julio a marzo</strong>.",
         to:
           `La temporada ideal para visitarla va de <strong>${TAMUL_TEMPORADA}</strong>: en secas el agua baja clara y turquesa (de ${MESES_TURQUESA} es cuando más), aunque con menos caudal. ` +
-          `En lluvias, de ${MESES_LLUVIAS}, la cascada va a todo caudal, pero el agua puede bajar marrón.`,
+          `En lluvias, de ${MESES_LLUVIAS}, la cascada va a todo caudal, pero el agua puede bajar con sedimento.`,
       },
       {
         from:
           "<li><strong>Evita visitar en marzo–mayo:</strong> La temporada seca reduce el caudal significativamente. La temporada ideal va de <strong>julio a marzo</strong>.</li>",
         to:
-          `<li><strong>Elige bien la temporada:</strong> la ideal va de <strong>${TAMUL_TEMPORADA}</strong>. En lluvias (${MESES_LLUVIAS}) hay más caudal, pero el agua puede bajar marrón en vez de turquesa.</li>`,
+          `<li><strong>Elige bien la temporada:</strong> la ideal va de <strong>${TAMUL_TEMPORADA}</strong>. En lluvias (${MESES_LLUVIAS}) hay más caudal, pero el agua puede bajar con sedimento en vez de turquesa.</li>`,
       },
       {
         from:
           "La mejor temporada va de <strong>julio a marzo</strong>, cuando el caudal está en su punto máximo. Entre <strong>marzo y mayo</strong> (temporada seca), la cascada puede reducirse considerablemente.",
         to:
           `La temporada ideal va de <strong>${TAMUL_TEMPORADA}</strong>, en secas, cuando el agua baja clara y turquesa. ` +
-          `En lluvias (${MESES_LLUVIAS}) la cascada lleva más caudal, pero el agua puede bajar marrón.`,
+          `En lluvias (${MESES_LLUVIAS}) la cascada lleva más caudal, pero el agua puede bajar con sedimento.`,
       },
     ],
     // Plan top 3 (29 sep): el artículo está en la posición ~9 de «cascada de
@@ -603,6 +607,12 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
     metaDescription:
       `Cuánto cuesta la Huasteca Potosina en 2026: tours guiados desde ${dinero(PP_MIN)} por persona, entradas, hospedaje, transporte y comida.`,
     contentReplace: [
+      // Decía 5 h desde CDMX y 4 h desde Monterrey, que es entre hora y media y
+      // dos horas menos de lo que de verdad se hace (`tiemposDeViaje.ts`).
+      {
+        from: "a unas 5 horas de la Ciudad de México por carretera o a 4 horas desde Monterrey",
+        to: `a unas ${enAuto("cdmx", "valles")} de la Ciudad de México por carretera o a ${enAuto("monterrey", "valles")} desde Monterrey`,
+      },
       // El enlace al planificador lo reescribe la plantilla (está apagado);
       // aquí se ajusta la frase que lo rodea.
       {
@@ -1229,6 +1239,51 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       { from: "</dt>", to: "</summary>" },
       { from: "<dd>", to: "<p>" },
       { from: "</dd>", to: "</p></details>" },
+      // 🔴 Temporada (7 oct 2026): decía «seca de noviembre a abril», «lluvias
+      // de junio a octubre» y «aguas turquesas que solo existen entre noviembre
+      // y marzo», otra regla que la del resto del sitio. Va con la de
+      // `temporada.ts`: del 30 de octubre a mayo el agua baja clara, el
+      // turquesa más intenso es de marzo a mayo, lluvias de julio a octubre y
+      // junio de transición. Los `from` se copiaron del artículo publicado ese día.
+      {
+        from: "Temporada seca (noviembre–abril): la favorita para los ríos",
+        to: `Temporada seca (del ${INICIO_CLARA} a mayo): la favorita para los ríos`,
+      },
+      {
+        from:
+          "La <strong>temporada seca en la Huasteca</strong> abarca de noviembre a abril. Es el período donde los ríos bajan su nivel y revelan ese azul-verde característico que aparece en todas las fotos.",
+        to:
+          `La <strong>temporada seca en la Huasteca</strong> va del ${INICIO_CLARA} a mayo. Es el período en que los ríos bajan su nivel y el agua se aclara hasta ese azul-verde característico que aparece en todas las fotos; el turquesa más intenso llega de ${MESES_TURQUESA}, que es también cuando más gente hay.`,
+      },
+      {
+        // El pie de la foto de Tamul.
+        from: "aguas turquesas que solo existen entre noviembre y marzo",
+        to: `el agua baja clara del ${INICIO_CLARA} a mayo y alcanza su turquesa más intenso de ${MESES_TURQUESA}`,
+      },
+      {
+        from: "Temporada de lluvias (junio–octubre)",
+        to: `Temporada de lluvias (de ${MESES_LLUVIAS})`,
+      },
+      {
+        from: "La temporada de lluvias en la Huasteca dura de junio a octubre.",
+        to: `La temporada de lluvias en la Huasteca va de ${MESES_LLUVIAS}; junio es de transición, con las primeras lluvias.`,
+      },
+      // Las tres siguientes van dentro del FAQPage.
+      {
+        from: "El clima es estable, los ríos turquesa están en su mejor color y hay menos turistas que en Semana Santa.",
+        to: `El clima es estable, el agua baja clara y hay menos turistas que en Semana Santa; el turquesa más intenso llega de ${MESES_TURQUESA}.`,
+      },
+      {
+        from: "La temporada de lluvias va de junio a octubre, con picos en agosto y septiembre.",
+        to: `La temporada de lluvias va de ${MESES_LLUVIAS}, con picos en agosto y septiembre; junio es de transición, con las primeras lluvias.`,
+      },
+      {
+        // Daba por baratos julio y agosto, que son vacaciones de verano (lo dice
+        // el propio artículo): la afirmación se queda solo en los meses sin vacaciones.
+        from:
+          "Los precios bajan notablemente entre junio y octubre (temporada de lluvias) y en enero tras las fiestas de fin de año.",
+        to: "Los precios bajan fuera de vacaciones: en junio, en septiembre y octubre (julio y agosto son vacaciones de verano) y en enero, tras las fiestas de fin de año.",
+      },
     ],
     // La Olla de la Luz primero: su ficha dice que la época seca (nov–may) es
     // la buena para los caminos del bosque, que es justo lo que recomienda el
@@ -1239,6 +1294,8 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       "mejor-temporada-para-ir-el-clima-en-xilitla-cual-es-la-mejor-epoca-par",
       "cuanto-cuesta-huasteca-potosina",
     ],
+    // El día de la corrección de temporada.
+    actualizado: "2026-10-07",
   },
 
   // ══ Precios de NUESTROS productos en el resto del blog (28 sep 2026) ═══════
@@ -1333,6 +1390,38 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: `${mayusculaInicial(PAQ_CORTO_FRASE)}.`,
       },
       alDia("mayo de 2026"),
+      // 🔴 Temporada (7 oct 2026): decía «seca de noviembre a abril» y
+      // «lluvias de mayo a octubre», con mayo en lluvias cuando es mes del
+      // turquesa más intenso. Va con `temporada.ts`, como «Mejor época». El
+      // clima del pueblo (pocas lluvias de noviembre a abril y sus
+      // temperaturas) es del artículo y se queda. Los `from` se copiaron del
+      // artículo publicado ese día.
+      {
+        from: "Temporada seca (noviembre–abril): claridad y senderos accesibles",
+        to: `Temporada seca (del ${INICIO_CLARA} a mayo): claridad y senderos accesibles`,
+      },
+      {
+        from: "Entre noviembre y abril, Xilitla recibe escasas lluvias",
+        to: `Del ${INICIO_CLARA} a mayo el agua baja clara; entre noviembre y abril, Xilitla recibe escasas lluvias`,
+      },
+      {
+        // Título de sección: su entrada del índice cambia con él.
+        from: "qué esperar entre mayo y octubre",
+        to: `qué esperar de ${MESES_LLUVIAS}`,
+      },
+      {
+        // El pie de foto metía las lluvias DENTRO de «la mejor temporada para ir».
+        from: "Las lluvias en la Huasteca Potosina durante la mejor temporada para ir transforman el verde de Xilitla",
+        to: `Las lluvias en la Huasteca Potosina, de ${MESES_LLUVIAS}, transforman el verde de Xilitla`,
+      },
+      // La tabla comparativa: mayo pasa a la fila de Semana Santa (turquesa más
+      // intenso y más gente) y junio se nombra como transición.
+      { from: "<td>Mar – Abr</td>", to: "<td>Mar – May</td>" },
+      { from: "<td>May – Oct</td>", to: "<td>Jul – Oct (junio: transición)</td>" },
+      {
+        from: "Xilitla se ubica a aproximadamente <strong>450 km</strong> y entre <strong>6 y 7 horas</strong> en automóvil",
+        to: `Xilitla se ubica a aproximadamente <strong>450 km</strong> y unas <strong>${enAuto("cdmx")}</strong> en automóvil`,
+      },
     ],
     actualizado: HOY,
   },
@@ -1760,12 +1849,49 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   },
 
   // ── Cómo llegar a Xilitla ──────────────────────────────────────────────────
+  // ── Zacahuil ───────────────────────────────────────────────────────────────
+  // Nada que ver con la comida: su párrafo de «cómo llegar» publicaba 5 h desde
+  // CDMX y 4 h desde Monterrey. Es el mismo error de siempre —quedarse corto
+  // entre 1 y 2 h— en un artículo donde nadie lo iba a buscar.
+  "comida-tipica-la-historia-detras-del-zacahuil-el-platillo-gi": {
+    contentReplace: [
+      {
+        from:
+          "Está a <strong>5 horas</strong> de la Ciudad de México y a <strong>4 horas desde Monterrey</strong> por carretera.",
+        to: `Está a <strong>${enAuto("cdmx", "valles")}</strong> de la Ciudad de México y a <strong>${enAuto("monterrey", "valles")}</strong> desde Monterrey por carretera.`,
+      },
+    ],
+  },
+
   "como-llegar-a-xilitla-rutas-desde-cdmx-monterrey-y-slp": {
     contentReplace: [
       {
         from:
           "Si contratas una excursión desde Ciudad Valles al Jardín Surrealista más el Sótano de las Huahuas, el precio es de <strong>$1,532 MXN por persona</strong> con impuestos incluidos en 2026.",
         to: `Si prefieres ir con guía, ${SURREALISTA_FRASE}.`,
+      },
+      /* 🔴 El artículo que se llama «cómo llegar» era el que peor lo decía: las
+         tres cifras se quedaban cortas contra `tiemposDeViaje.ts`, y es la
+         primera página que abre alguien que todavía no ha comprado nada. */
+      {
+        from:
+          "La ruta carretera más directa desde CDMX a Xilitla cubre aproximadamente <strong>450 km</strong> y toma entre <strong>6 y 7 horas</strong> en automóvil.",
+        to: `La ruta carretera más directa desde CDMX a Xilitla cubre aproximadamente <strong>450 km</strong> y toma unas <strong>${enAuto("cdmx")}</strong> en automóvil.`,
+      },
+      {
+        from:
+          "Desde Monterrey la distancia es de aproximadamente <strong>500 km</strong> con un tiempo estimado de <strong>6.5 a 7.5 horas</strong>.",
+        to: `Desde Monterrey la distancia es de aproximadamente <strong>500 km</strong> con un tiempo estimado de <strong>${enAuto("monterrey")}</strong>.`,
+      },
+      {
+        from:
+          "Desde San Luis Potosí capital la distancia a Xilitla es de <strong>310 km</strong> y el recorrido toma entre <strong>4 y 4.5 horas</strong>.",
+        to: `Desde San Luis Potosí capital la distancia a Xilitla es de <strong>310 km</strong> y el recorrido toma unas <strong>${enAuto("san-luis-potosi")}</strong>.`,
+      },
+      {
+        from:
+          "El recorrido desde CDMX toma entre <strong>6 y 7 horas</strong> en automóvil por la Federal 130D hasta Tamazunchale y luego la Federal 85.",
+        to: `El recorrido desde CDMX toma unas <strong>${enAuto("cdmx")}</strong> en automóvil por la Federal 130D hasta Tamazunchale y luego la Federal 85.`,
       },
       alDia("mayo de 2026"),
     ],

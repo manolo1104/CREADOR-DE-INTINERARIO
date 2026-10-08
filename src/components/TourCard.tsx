@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, precioTachado, type Tour } from "@/lib/tours";
+import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, precioTachado, recogidaDeTour, type Tour } from "@/lib/tours";
+import { IconoInstagram } from "@/components/IconoInstagram";
 import { TourCarrusel } from "@/components/TourCarrusel";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Clock, Users } from "lucide-react";
@@ -30,9 +31,16 @@ interface Props {
    * elegidos a mano y los tres lo tienen.
    */
   conLogo?: boolean;
+  /**
+   * Ninguna foto del carrusel con prisa (ver `TourCarrusel`). Solo en el
+   * inicio, donde las tarjetas quedan muy por debajo del hero: ahí su primera
+   * foto `eager` se precargaba antes que el póster del hero. En /experiencias
+   * y demás listados se queda como estaba.
+   */
+  cargaDiferida?: boolean;
 }
 
-export function TourCard({ tour: t, variant = "default", conLogo = false }: Props) {
+export function TourCard({ tour: t, variant = "default", conLogo = false, cargaDiferida = false }: Props) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
   const lp = (p: string) => (en ? `/en${p}` : p);
@@ -128,6 +136,7 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
             nombre={t.nombre}
             href={lp(`/tours/${t.slug}`)}
             sizes="(min-width: 1024px) 30vw, 100vw"
+            cargaDiferida={cargaDiferida}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-verde-selva/40 via-verde-profundo to-negro" />
@@ -139,7 +148,8 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/30 to-transparent" />
 
         {/* Badge tipo — top left */}
-        <span className="absolute top-3 left-3 z-10 bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full">
+        <span className="absolute top-3 left-3 z-10 bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+          {t.icon === "Instagram" && <IconoInstagram size={12} />}
           {t.tipo}
         </span>
 
@@ -215,7 +225,14 @@ export function TourCard({ tour: t, variant = "default", conLogo = false }: Prop
         <div className="flex items-center gap-4 mb-3 text-[10px] text-crema/40 font-dm flex-wrap">
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" aria-hidden="true" /> {tourDurTexto(t)}</span>
           <span className="flex items-center gap-1"><Users className="w-3 h-3" aria-hidden="true" /> {en ? "max." : "máx."} {t.groupMax}</span>
-          <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
+          {/* 🔴 Iba sin condición, en las quince tarjetas. El Edén sale con el
+              horario del jardín de Las Pozas (`horaTexto`), que no abre todos
+              los días: en el inicio, donde ahora está el catálogo completo, esa
+              tarjeta prometía una salida diaria que no existe. Es la misma
+              guarda que ya usa /tours. */}
+          {!recogidaDeTour(t).horaTexto && (
+            <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
+          )}
         </div>
 
         {/* Precio */}

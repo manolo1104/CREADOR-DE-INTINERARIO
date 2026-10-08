@@ -37,7 +37,10 @@ interface Props {
 }
 
 export function MejorEpocaWidget({ temporada, destinoNombre, tourHref }: Props) {
-  const currentMonth = new Date().getMonth(); // 0-11
+  // El mes de la Huasteca, no el del servidor (Railway corre en UTC) ni el del
+  // visitante: con `getMonth()` el servidor y el navegador no coincidían las
+  // últimas seis horas de cada mes y React tiraba el error de hidratación.
+  const currentMonth = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }).slice(5, 7)) - 1; // 0-11
   const optimalMonths = parseTemporada(temporada);
   const isCurrentOptimal = optimalMonths.includes(currentMonth);
   const currentMonthName = MESES[currentMonth];
@@ -92,8 +95,12 @@ export function MejorEpocaWidget({ temporada, destinoNombre, tourHref }: Props) 
       {/* CTA contextual */}
       {isCurrentOptimal ? (
         <div className="bg-verde-vivo/10 border border-verde-vivo/30 px-3 py-2 flex items-center justify-between gap-3">
+          {/* Decía «es temporada alta — condiciones ideales ahora mismo»:
+              «temporada alta» es cuando más gente hay (marzo-mayo, según
+              temporada.ts), no lo mismo que la mejor época de ESTE lugar, y
+              «ahora mismo» lo contradecía la franja del río en lluvias. */}
           <p className="text-xs font-dm text-verde-vivo font-medium">
-            ✦ {currentMonthName} es temporada alta — condiciones ideales ahora mismo
+            ✦ {currentMonthName}: dentro de su mejor época
           </p>
           {tourHref && (
             <Link href={tourHref} className="text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo border border-verde-vivo/50 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all flex-shrink-0">

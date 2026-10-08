@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { useComparador } from "./ComparadorShell";
 import { TrackedLink } from "@/components/TrackedLink";
 import { dinero, hrefReservarTour, personasDe, totalTourParaGrupo } from "@/lib/comparador";
@@ -8,7 +9,7 @@ import { comparadorUI } from "@/lib/i18n/comparador";
 import { getBooking } from "@/lib/i18n/booking";
 import { waLink } from "@/lib/whatsapp";
 import { trackTourEvent } from "@/lib/tourTracker";
-import { trackBeginCheckout } from "@/lib/analytics";
+import { trackAddToCart } from "@/lib/analytics";
 
 /**
  * El total de UN recorrido para el grupo puesto arriba, o por qué no se puede
@@ -34,7 +35,7 @@ export function CeldaTotalTour({ indice }: { indice: number }) {
         <p className="font-dm text-[11px] text-crema/55 mt-1.5">{r.porGrupo ? ui.total.porGrupo : ui.total.paraTuGrupo}</p>
         {r.viajeroSolo && (
           <p className="font-dm text-[11px] text-crema/60 leading-snug mt-1.5">
-            <strong className="font-medium text-crema/80">{b.viajeroSoloTitulo}</strong> {b.viajeroSolo}
+            <strong className="font-medium text-crema/80">{b.viajeroSoloTitulo}</strong> {b.viajeroSolo(CONFIRMA_SALIDA_DIAS)}
           </p>
         )}
       </div>
@@ -104,7 +105,13 @@ export function CtaReservarTour({ indice, href }: { indice: number; href: string
               amount: monto,
               source: "comparador",
             });
-            trackBeginCheckout({ tourId: ids[indice], tourName: nombres[indice], price: monto, source: "comparador" });
+            // Para GA4 es `add_to_cart`: el botón mete el recorrido al carrito
+            // con el grupo puesto arriba. En el RZR no hay total para el grupo
+            // (va por vehículo): una unidad al precio de arranque.
+            trackAddToCart({
+              tourId: ids[indice], tourName: nombres[indice], total: monto,
+              cantidad: r.ok ? personasDe(grupo) : 1, source: "comparador",
+            });
           }}
           className="inline-flex items-center justify-center w-full min-h-[44px] bg-dorado hover:bg-lima text-negro px-4 font-dm text-[11px] tracking-[2px] uppercase font-medium transition-colors"
         >

@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
-import { totalRecorrido, aceptaViajeroSolo, esViajeroSolo } from "@/lib/tourBooking";
-import { TOURS_DB, precioGrupo, salidaCorta, recogidaDeTour, precioDeFecha, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "@/lib/tours";
+import { totalRecorrido, aceptaViajeroSolo, esViajeroSolo, minBookingDate, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
+import { TOURS_DB, precioGrupo, precioPorCabeza, salidaCorta, recogidaDeTour, precioDeFecha, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "@/lib/tours";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
-import { trackBeginCheckout, trackDateSelected, trackParticipants } from "@/lib/analytics";
+import { trackAddToCart, trackDateSelected, trackParticipants } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { pctACobrar } from "@/lib/carrito";
 // El ancla del módulo vive en `lib/anclas.ts`, no aquí: la ficha del tour es un
@@ -76,7 +76,17 @@ export function ReservaFichaTour({
   const sinPromoEnFecha = enPromo && !!fecha && promoVigente() && !fechaConPromo(fecha);
   // Lo que la regla de viajero solo necesita saber de este recorrido. El módulo
   // solo vive en recorridos por persona o por grupo, nunca por vehículo.
-  const reglaTour = { precio: precioFecha, groupMin, tarifaGrupo, precioUnidad: porGrupo ? "grupo" as const : "persona" as const };
+  // 🔴 `precioLista` y `escalaPersona` van aquí dentro a propósito: sin ellos
+  // `totalRecorrido` no ve la escalera y el módulo pintaría el precio plano
+  // mientras el servidor cobra el del escalón.
+  const reglaTour = {
+    precio: precioFecha,
+    precioLista: tourCat?.precioLista ?? tourCat?.precio ?? precio,
+    escalaPersona: tourCat?.escalaPersona,
+    groupMin,
+    tarifaGrupo,
+    precioUnidad: porGrupo ? "grupo" as const : "persona" as const,
+  };
   // Con tarifa de grupo se respeta el mínimo real del recorrido —el Edén sale
   // con UNA persona—. Los que salen desde 2 bajan a UN adulto con la tarifa de
   // viajero solo (1 oct 2026); los de mínimo mayor (rappel, rafting) lo
@@ -90,6 +100,39 @@ export function ReservaFichaTour({
   const [ninosMid, setNinosMid]     = useState(0);
   const [ninosSmall, setNinosSmall] = useState(0);
 
+  /**
+   * Lo que trae el buscador del inicio: `?fecha=…&adultos=…`.
+   *
+   * 🔴 Va en un efecto y NO en el valor inicial de `useState` porque la ficha
+   * es estática (SSG): el HTML que sirve el servidor no sabe nada de la query,
+   * y arrancar el estado leyéndola rompería la hidratación.
+   *
+   * Se valida todo, porque una URL la escribe cualquiera: la fecha tiene que
+   * ser de mañana en adelante (`minBookingDate`) y el grupo cabe entre el
+   * mínimo del recorrido y su cupo. Después se limpia la barra con
+   * `replaceState`, igual que hace el carrito: si no, compartir el enlace
+   * arrastra la fecha de otro.
+   */
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const f = q.get("fecha");
+      const a = q.get("adultos");
+      if (!f && !a) return;
+      if (f && /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= minBookingDate()) setFecha(f);
+      const n = Number(a);
+      if (Number.isInteger(n) && n >= minAdultos && n <= groupMax) setAdultos(n);
+      q.delete("fecha");
+      q.delete("adultos");
+      const resto = q.toString();
+      window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : "") + window.location.hash);
+    } catch {
+      // Sin `window` o con una query rara, el módulo arranca como siempre.
+    }
+    // Solo al montar: después manda lo que elija la persona en pantalla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const personas = adultos + ninosMid + ninosSmall;
   const total = porGrupo
     ? (precioGrupo({ tarifaGrupo }, personas) ?? 0)
@@ -97,6 +140,25 @@ export function ReservaFichaTour({
     // tarifa de viajero solo cuando va una persona.
     : totalRecorrido(reglaTour, adultos, ninosMid, ninosSmall);
   const viajaSolo = !porGrupo && esViajeroSolo(reglaTour, adultos, ninosMid, ninosSmall);
+  // ── Escalera por tamaño de grupo ──────────────────────────────────────────
+  // `precioPorCabeza` ya decide si manda la promo de temporada o el escalón:
+  // aquí no se vuelve a decidir nada, solo se pinta.
+  // 🔴 Mientras la fecha lleve promo de temporada, la escalera NO corre
+  // (`precioPorCabeza` la deja pasar de largo), así que tampoco se anuncia:
+  // con la promo encima, "es el mejor precio por persona" sería falso — lo
+  // será el escalón de 6, pero solo a partir del 30 de octubre.
+  const llevaPromoFecha = precioFecha < (tourCat?.precioLista ?? precioFecha);
+  const conEscalera = !porGrupo && !llevaPromoFecha && !!tourCat?.escalaPersona?.length;
+  const porCabezaAhora = conEscalera ? precioPorCabeza(reglaTour, personas) : 0;
+  // El primer tamaño de grupo que todavía baja el precio, dentro del cupo.
+  const siguienteEscalon = (() => {
+    if (!conEscalera) return null;
+    for (let n = personas + 1; n <= (groupMax || personas); n++) {
+      const p = precioPorCabeza(reglaTour, n);
+      if (p < porCabezaAhora) return { personas: n, precio: p };
+    }
+    return null;
+  })();
   // Lo que se paga HOY, con la misma cuenta que el carrito y que
   // `carrito-payment-intent` (redondeo incluido). El botón decía «Reservar
   // $2,900» y el cliente descubría en el carrito que hoy solo eran $870:
@@ -172,6 +234,13 @@ export function ReservaFichaTour({
           permitirLimpiar
           salida={esHorario ? null : hora}
           horario={esHorario ? hora : null}
+          // Los lugares de cada día para ESTE grupo: si suben de 2 a 6 y la
+          // fecha ya no alcanza, el calendario lo dice antes del carrito.
+          slug={slug}
+          personas={personas}
+          // La hoja en vidrio esmerilado (8 oct 2026). Solo aquí: el carrito,
+          // el RZR y el buscador del inicio no la piden y siguen igual.
+          hojaVidrio
         />
       </div>
 
@@ -189,11 +258,14 @@ export function ReservaFichaTour({
             {porGrupo ? tf.grupoTope(groupMax) : tf.grupoLleno(groupMax)}
           </p>
         )}
-        {/* Junto a los contadores y antes del total: quien baja a una persona
-            ve en el acto por qué el total no es la mitad. */}
+        {/* Junto a los contadores y antes del total: quien baja del mínimo del
+            recorrido se entera AHÍ de que la salida depende de que se junte el
+            grupo, y no al final, en el correo. Desde el 8 oct 2026 el precio ya
+            es proporcional —antes se cobraban dos lugares— y lo único que hay
+            que avisar es la condición. */}
         {viajaSolo && (
           <p role="status" className="font-dm text-[11px] text-crema/75 leading-snug border-l-2 border-verde-vivo/60 pl-2.5">
-            <strong className="text-crema">{tf.viajeroSoloTitulo}</strong> {tf.viajeroSolo}
+            <strong className="text-crema">{tf.viajeroSoloTitulo}</strong> {tf.viajeroSolo(CONFIRMA_SALIDA_DIAS)}
           </p>
         )}
       </div>
@@ -214,6 +286,21 @@ export function ReservaFichaTour({
         {porGrupo && personas > 1 && total > 0 && (
           <p className="font-dm text-[11px] text-verde-vivo/80 mt-1">{tf.porCabeza(dinero(Math.round(total / personas)))}</p>
         )}
+        {/* La escalera por tamaño de grupo: lo que paga cada quien AHORA y lo
+            que pagaría con uno más. El gancho va solo mientras quede escalón
+            por delante; cuando ya tiene el mejor, se le dice que lo tiene. */}
+        {conEscalera && !viajaSolo && (
+          <>
+            <p className="font-dm text-[11px] text-crema/55 mt-1">{tf.cadaUno(dinero(porCabezaAhora))}</p>
+            {siguienteEscalon ? (
+              <p className="font-dm text-[11px] text-verde-vivo/80 mt-0.5">
+                {tf.unoMasBaja(siguienteEscalon.personas, dinero(siguienteEscalon.precio))}
+              </p>
+            ) : (
+              <p className="font-dm text-[11px] text-verde-vivo/80 mt-0.5">{tf.mejorPrecio}</p>
+            )}
+          </>
+        )}
         {sinPromoEnFecha && (
           <p role="status" className="font-dm text-[11px] text-crema/60 mt-1.5 leading-snug">
             {tf.sinPromoEnFecha(PROMO_TEMPORADA.hastaTexto[locale === "en" ? "en" : "es"])}
@@ -222,7 +309,10 @@ export function ReservaFichaTour({
         <Link
           href={href}
           onClick={() => {
-            trackBeginCheckout({ tourId, tourName: nombre, price: total, source: "widget" });
+            // Para GA4 este botón AGREGA al carrito (que abre con fecha y
+            // personas puestas): `add_to_cart`. El `begin_checkout` lo manda el
+            // carrito al abrirse. El evento interno no cambia.
+            trackAddToCart({ tourId, tourName: nombre, total, cantidad: personas, source: "widget" });
             trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosMid + ninosSmall, amount: total, source: "ficha" });
           }}
           className="flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors"

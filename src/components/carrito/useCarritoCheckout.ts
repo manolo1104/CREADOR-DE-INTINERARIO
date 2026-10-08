@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { leerCarrito, quitarDelCarrito, resumirCarrito, actualizarItem, agregarAlCarrito, pctACobrar, type CarritoItem } from "@/lib/carrito";
+import { MSI_DESDE } from "@/lib/stripeMsi";
+import { leerCarrito, quitarDelCarrito, resumirCarrito, actualizarItem, agregarAlCarrito, pctACobrar, personasDeItem, type CarritoItem } from "@/lib/carrito";
 import { itemDesdeSlug, retarifarItem } from "@/lib/carritoItems";
 import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
 import { leerExtras, guardarExtras } from "@/lib/carritoExtras";
@@ -14,6 +15,7 @@ import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { trackTourEvent, sessionId, ga4ClientId } from "@/lib/tourTracker";
 import { nombreCorto, type Cobro } from "@/components/carrito/carritoComun";
+import { useApartado } from "@/components/carrito/useApartado";
 
 /**
  * Todo lo que el carrito SABE y HACE, sin lo que pinta: el estado, la
@@ -39,6 +41,8 @@ export function useCarritoCheckout() {
   const [email,  setEmail]  = useState("");
   const [phone,  setPhone]  = useState("");
   const [pickup, setPickup] = useState("");
+  /** «Quiero guía en inglés», sin costo. Es del grupo, no de un recorrido. */
+  const [guiaIngles, setGuiaIngles] = useState(false);
   const [cobro,  setCobro]  = useState<Cobro | null>(null);
   /**
    * El último pago creado, aunque `cobro` se haya borrado por un cambio: el
@@ -49,8 +53,16 @@ export function useCarritoCheckout() {
   // muchos ya vienen con hotel, y la promesa del sitio es justo que no hace
   // falta hospedarse con nosotros.
   const [mostrarLista, setMostrarLista] = useState(false);
-  // (Oct 2026: aquí vivía un reloj de 15 minutos «te apartamos tus lugares».
-  // Se quitó: el servidor no apartaba nada, así que era una urgencia falsa.)
+  // Los lugares de los recorridos con fecha, apartados 15 minutos mientras
+  // termina (`useApartado`). Hasta el 4 oct aquí vivía un reloj que no apartaba
+  // nada y se quitó por falso; este lo confirma el servidor y descuenta esos
+  // lugares del cupo de los demás. El RZR va por vehículo, sin cupo por fecha.
+  const apartado = useApartado(
+    items
+      .filter((i) => !i.unidades && i.tourDate && personasDeItem(i) > 0)
+      .map((i) => ({ slug: i.tourSlug, fecha: i.tourDate, personas: personasDeItem(i) })),
+    { activo: !hidratando, locale },
+  );
   const [conHotel,    setConHotel]    = useState(false);
   // Traslado desde la ciudad de origen. Apagado por defecto igual que el hotel:
   // quien llega en su coche no tiene por qué ver un cargo que no pidió.
@@ -231,6 +243,7 @@ export function useCarritoCheckout() {
     if (ex.email)  setEmail(ex.email);
     if (ex.phone)  setPhone(ex.phone);
     if (ex.pickup) setPickup(ex.pickup);
+    setGuiaIngles(ex.guiaIngles);
     setExtrasListos(true);
 
     // Los subtotales guardados se recalculan con el catálogo de HOY: un carrito
@@ -254,9 +267,9 @@ export function useCarritoCheckout() {
     guardarExtras({
       conHotel, habs, checkin, checkout,
       conTraslado, ciudadTraslado, paxTraslado,
-      name, email, phone, pickup,
+      name, email, phone, pickup, guiaIngles,
     });
-  }, [extrasListos, conHotel, habs, checkin, checkout, conTraslado, ciudadTraslado, paxTraslado, name, email, phone, pickup]);
+  }, [extrasListos, conHotel, habs, checkin, checkout, conTraslado, ciudadTraslado, paxTraslado, name, email, phone, pickup, guiaIngles]);
 
   // Lleva la vista al recorrido que acaba de entrar y apaga el resalte.
   useEffect(() => {
@@ -318,7 +331,21 @@ export function useCarritoCheckout() {
   const total    = resumen.total + totalHotel + totalTraslado;
   // El anticipo es el 30 % (`pctACobrar`, regla del 29 sep 2026). El servidor
   // aplica exactamente la misma regla en `carrito-payment-intent`.
-  const pctHoy   = pctACobrar(dias, totalHotel > 0);
+  /**
+   * «Pagar el viaje completo hoy» (8 oct 2026).
+   *
+   * 🔴 Nace de los meses sin intereses. El carrito cobra el 30 % de anticipo
+   * —unos $870— y ningún banco da MSI sobre eso: habilitar los meses sin dar
+   * la opción de pagar completo era anunciarlos y que nunca aparecieran.
+   *
+   * Solo se ofrece cuando el viaje pasa de `MSI_DESDE`; abajo de eso no cambia
+   * nada y el anticipo sigue siendo el de siempre. Nunca se elige solo: si el
+   * cliente no lo toca, paga el 30 %.
+   */
+  const [pagarTodo, setPagarTodo] = useState(false);
+  const pctBase  = pctACobrar(dias, totalHotel > 0);
+  const puedePagarTodo = total >= MSI_DESDE && pctBase < 100;
+  const pctHoy   = pagarTodo && puedePagarTodo ? 100 : pctBase;
   const anticipo = Math.round((total * pctHoy) / 100);
   const saldo    = total - anticipo;
 
@@ -601,6 +628,31 @@ export function useCarritoCheckout() {
     setTimeout(() => setResaltado((r) => (r === uid ? null : r)), 2600);
   }
 
+  /** Lleva al renglón cuya fecha ya no tuvo lugar al apartar (`ApartadoAviso`). */
+  function irAlSinLugar() {
+    const s = apartado.sinCupo[0];
+    const it = s ? items.find((i) => i.tourSlug === s.slug && i.tourDate === s.fecha) : undefined;
+    if (it) irAlRenglon(it.uid);
+  }
+
+  /**
+   * Si quitan recorridos y el viaje baja del umbral, la casilla desaparece de
+   * la pantalla: hay que apagarla también por dentro. Si no, al volver a subir
+   * el total se cobraría el 100 % sin que nadie lo haya vuelto a pedir.
+   */
+  useEffect(() => {
+    if (!puedePagarTodo && pagarTodo) {
+      setPagarTodo(false);
+      setCobro(null);
+    }
+  }, [puedePagarTodo, pagarTodo]);
+
+  /** Cambiar cuánto se paga hoy cambia el importe: el PaymentIntent de antes ya no vale. */
+  function cambiarPagarTodo(valor: boolean) {
+    setPagarTodo(valor);
+    setCobro(null);
+  }
+
   async function irAlPago() {
     const fallos = validarCarrito(items, locale);
     setFallos(fallos);
@@ -645,6 +697,16 @@ export function useCarritoCheckout() {
           // idioma mandarle su confirmación.
           locale,
           paymentIntentIdPrevio: ultimoPagoRef.current,
+          // Su apartado: el cobro no lo cuenta en su contra, lo renueva 15
+          // minutos y lo deja en la metadata para soltarlo al crear la reserva.
+          apartadoId: apartado.apartadoId || null,
+          // Si eligió pagar completo. El servidor NO se fía: comprueba él mismo
+          // que el total llegue al umbral antes de cobrar el 100 %.
+          pagarTodo: pagarTodo && puedePagarTodo,
+          // En qué idioma tiene que salir el guía. Viaja hasta la metadata de
+          // Stripe porque el webhook —que es quien se entera SIEMPRE de la
+          // compra— es el que escribe la reserva si se cierra la pestaña.
+          guiaIngles,
         }),
       });
       const data = await res.json();
@@ -655,6 +717,9 @@ export function useCarritoCheckout() {
       }
       ultimoPagoRef.current = data.paymentIntentId ?? null;
       setCobro(data);
+      // Ya en la pantalla de pago, el reloj vuelve a empezar (solo si el
+      // servidor de verdad renovó el apartado).
+      if (typeof data.apartadoVence === "number") apartado.renovado(data.apartadoVence, data.ahora);
     } catch {
       setError(t.noSePudoConectar);
     }
@@ -662,6 +727,8 @@ export function useCarritoCheckout() {
   }
 
   return {
+    pagarTodo, cambiarPagarTodo, puedePagarTodo, pctBase,
+    guiaIngles, setGuiaIngles,
     locale, en, lp, t, items, setItems, montado, setMontado, hidratando, setHidratando,
     name, setName, email, setEmail, phone, setPhone, pickup, setPickup, cobro,
     setCobro, mostrarLista, setMostrarLista, conHotel, setConHotel, conTraslado,
@@ -678,6 +745,7 @@ export function useCarritoCheckout() {
     cancelPropiaEnCarrito, waRescate, quitar, cambiar, cambiarAddOn,
     agregarDelCatalogo, cambiarVehiculo, cambiarPersonas, sinFechaItems, conFechaItems,
     sinFecha, guardarCotizacion, guardarSilencioso, irAlRenglon, irAlPago,
+    apartado, irAlSinLugar,
   };
 }
 

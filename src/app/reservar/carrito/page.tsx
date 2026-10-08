@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Elements } from "@stripe/react-stripe-js";
 import { ChevronLeft, Lock, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle } from "lucide-react";
@@ -11,7 +12,7 @@ import { GOOGLE_RATING, GOOGLE_PERFIL_URL as GOOGLE_MAPS_REVIEWS_URL } from "@/l
 import { RescatePopup } from "@/components/carrito/RescatePopup";
 import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
 import { BotonCompartir } from "@/components/booking/BotonCompartir";
-import { stripePromise } from "@/lib/stripeCliente";
+import { stripePromise, APARIENCIA_STRIPE } from "@/lib/stripeCliente";
 import { PagoCarrito } from "@/components/carrito/PagoCarrito";
 import { useCarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 import { useCheckoutV2 } from "@/components/checkout/useCheckoutV2";
@@ -21,6 +22,9 @@ import { HospedajeCarrito } from "@/components/carrito/HospedajeCarrito";
 import { TrasladoCarrito } from "@/components/carrito/TrasladoCarrito";
 import { AgregarRecorrido } from "@/components/carrito/AgregarRecorrido";
 import { ResumenCarrito } from "@/components/carrito/ResumenCarrito";
+import { ApartadoAviso } from "@/components/carrito/ApartadoAviso";
+import { PreguntaRecogida } from "@/components/carrito/PreguntaRecogida";
+import { trackBeginCheckout, renglonDeCarrito } from "@/lib/analytics";
 
 /**
  * Las dudas que de verdad frenan el pago viven en `i18n/booking.ts`
@@ -38,7 +42,7 @@ export default function CarritoPage() {
   const c = useCarritoCheckout();
   const {
     locale, lp, t, items, setItems, montado, hidratando, name, setName, email,
-    setEmail, phone, setPhone, pickup, setPickup, cobro, conHotel, conTraslado,
+    setEmail, phone, setPhone, pickup, setPickup, cobro, conHotel, conTraslado, guiaIngles,
     paxTraslado, habs, galeria, setGaleria, checkin, checkout, error, cargando,
     nombreRef, fallos, correoGuardar, setCorreoGuardar, guardando, guardado,
     errorGuardar, setErrorGuardar, noches, rutaTraslado, precioDelTraslado, resumen,
@@ -46,6 +50,22 @@ export default function CarritoPage() {
     nombreCat, cancelacionDe, respuestaCancelar, cancelPropiaEnCarrito, waRescate,
     sinFechaItems, conFechaItems, guardarCotizacion, irAlRenglon, irAlPago,
   } = c;
+
+  // El `begin_checkout` de GA4, una vez por visita: cuando el carrito ya se
+  // armó con lo que traía la URL (`?agregar`, `?recuperar`). Es el mismo
+  // momento en que `useCarritoCheckout` manda el «4·abrio_carrito» del embudo
+  // propio. Sirve a los dos checkouts: el v2 se pinta desde esta misma página.
+  useEffect(() => {
+    if (hidratando || items.length === 0) return;
+    trackBeginCheckout({
+      renglones: items.map(renglonDeCarrito),
+      total,
+      source: v2 ? "checkout_v2" : "carrito",
+    });
+    // Solo al terminar de hidratar: lo que cambie después ya no es abrir el carrito.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidratando]);
+
   if (!montado || hidratando) return <main className="min-h-screen bg-crema pt-32" />;
 
   if (items.length === 0) {
@@ -183,6 +203,11 @@ export default function CarritoPage() {
             </span>
           </div>
 
+          {/* El apartado de 15 minutos, justo arriba de los recorridos que
+              cubre: en el celular se ve al llegar, sin bajar. En escritorio va
+              en la columna del resumen, que no se mueve (más abajo). */}
+          <ApartadoAviso a={c.apartado} locale={locale} className="lg:hidden mb-4" onCambiarFecha={c.irAlSinLugar} />
+
           <div className="space-y-3">
           {/* Dos grupos: primero lo que BLOQUEA el pago (recorridos sin
               fecha, que entran así al agregarlos desde el catálogo) y después
@@ -280,12 +305,19 @@ export default function CarritoPage() {
 
         {/* ── Resumen y pago ── */}
         <aside className="min-w-0 border border-negro/10 bg-white p-6 lg:sticky lg:top-24">
+          {/* El mismo aviso del apartado, para escritorio: esta columna no se
+              mueve y es donde se mira al pagar. Calla: el de arriba ya habla. */}
+          <ApartadoAviso a={c.apartado} locale={locale} className="hidden lg:block mb-4" anunciar={false} onCambiarFecha={c.irAlSinLugar} />
           {/* Mismo resumen que el checkout de un tour: qué se aparta, qué va
               incluido en cada recorrido, la logística y los números. */}
           <ResumenCarrito c={c} />
 
           {!cobro ? (
             <div className="pt-4 space-y-3">
+              {/* Primero y en su propio recuadro (Manolo, 7 oct 2026): es el
+                  dato que el equipo necesita para la logística del día. Antes
+                  era el último renglón gris, «¿Dónde te hospedas?». */}
+              <PreguntaRecogida valor={pickup} cambiar={setPickup} id="carrito-pickup" />
               <input
                 ref={nombreRef}
                 value={name} onChange={(e) => setName(e.target.value)}
@@ -300,11 +332,6 @@ export default function CarritoPage() {
               <input
                 value={phone} onChange={(e) => setPhone(e.target.value)}
                 type="tel" placeholder={t.whatsappOpcional}
-                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
-              />
-              <input
-                value={pickup} onChange={(e) => setPickup(e.target.value)}
-                placeholder={t.dondeTeHospedas}
                 className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               {error && <p className="text-sm font-dm text-terracota">{error}</p>}
@@ -383,8 +410,8 @@ export default function CarritoPage() {
             </div>
           ) : (
             <div className="pt-4">
-              <Elements stripe={stripePromise} options={{ clientSecret: cobro.clientSecret, locale }}>
-                <PagoCarrito cobro={cobro} datos={{ name, email, phone, pickup, checkin, checkout }} onListo={() => setItems([])} />
+              <Elements stripe={stripePromise} options={{ clientSecret: cobro.clientSecret, locale, appearance: APARIENCIA_STRIPE }}>
+                <PagoCarrito cobro={cobro} datos={{ name, email, phone, pickup, checkin, checkout, guiaIngles }} onListo={() => setItems([])} />
               </Elements>
             </div>
           )}

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
+import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
@@ -11,6 +12,7 @@ import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, t
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
 import CobroModal from "@/components/admin/CobroModal";
 import { origenValido } from "@/lib/origenReserva";
+import { escapeHtml as esc } from "@/lib/escapeHtml";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -191,9 +193,18 @@ export default function ReservasClient(
     setModal("edit");
   }
 
-  function buildPayload(form: ReservaFormState) {
+  /**
+   * `metaPrevio`: el `_meta` de la reserva que se edita. Va PRIMERO y lo del
+   * formulario encima: el formulario no captura `cotizacionOrigen`,
+   * `anticipoAcordado`, `locale`, `waChatId`, `zonaHospedaje`… y sin esto
+   * guardar los borraba. Sin `cotizacionOrigen` un /confirma de la cotización
+   * original creaba OTRA reserva con su cobro; sin `locale` la confirmación
+   * salía en español a quien compró en inglés.
+   */
+  function buildPayload(form: ReservaFormState, metaPrevio: Record<string, any> = {}) {
     const lineItems = [
       {
+        ...metaPrevio,
         _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago,
         pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0,
         // Viaja en el `_meta` y NO en la columna `notes`: `notes` se imprime en
@@ -261,7 +272,7 @@ export default function ReservasClient(
     // 🔴 Al editar NO se manda `depositoPagado`: ese número es el espejo de los
     // cobros registrados. Mandarlo desde un formulario abierto hace un rato
     // pisaría un cobro que se capturó mientras tanto.
-    const { depositoPagado: _ignorado, ...payload } = buildPayload(form);
+    const { depositoPagado: _ignorado, ...payload } = buildPayload(form, metaDe(editTarget));
     const r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -289,9 +300,14 @@ export default function ReservasClient(
     // Pago online por Stripe = liquidado al 100% aunque no tenga anticipo registrado.
     const deposito   = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
     const pendiente  = Math.max(0, b.totalAmount - deposito);
-    const metodoPago = meta.metodoPago  || "—";
-    const folioPago  = meta.folioPago   || "—";
-    const pickupLugar = meta.pickupLugar || "Lobby de tu hotel en Xilitla";
+    // 🔴 Todo lo que sale de la base y pudo escribir un cliente, el equipo o el
+    // bot entra al HTML escapado con `esc`: este voucher se abre con
+    // `document.write` dentro de la sesión del panel. Lo del catálogo (horas,
+    // dificultad, cancelación) y el HTML propio se quedan como están.
+    const metodoPago = esc(meta.metodoPago)  || "—";
+    const folioPago  = esc(meta.folioPago)   || "—";
+    const pickupLugar = esc(meta.pickupLugar) || "Lobby de tu hotel en Xilitla";
+    const folioB     = esc(b.confirmationNumber);
 
     const tourDates  = lines.map(l => l.tourDate).filter(Boolean).sort();
     const checkouts  = pkgs.map(p => p.checkout).filter(Boolean).sort();
@@ -303,7 +319,7 @@ export default function ReservasClient(
     const desglose    = grupoLargo(grupo);
     // Resumen de arriba: NO repetir los nombres (el itinerario de abajo ya los lista).
     // Con varios tours mostramos el conteo; con uno solo, su nombre.
-    const tourResumen = lines.length > 1 ? `${lines.length} tours` : (lines[0]?.tourName || b.tourName);
+    const tourResumen = lines.length > 1 ? `${lines.length} tours` : esc(lines[0]?.tourName || b.tourName);
     const confirmDate = new Date(b.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
 
     const DIFIC: Record<string, string> = { baja: "Fácil", media: "Moderada", alta: "Difícil" };
@@ -347,7 +363,7 @@ export default function ReservasClient(
       return `<div class="day">
         <div class="num">${num}</div>
         <div>
-          <h4 class="name">${l.tourName}</h4>
+          <h4 class="name">${esc(l.tourName)}</h4>
           <div class="meta">
             <span><span class="k">Fecha</span> ${fd}</span>
             <span><span class="k">Dur.</span> ${dur}</span>
@@ -377,9 +393,9 @@ export default function ReservasClient(
           return `<div class="stay">
             <div class="stay-ico">${BED_SVG}</div>
             <div>
-              <h4 class="name">${p.habitacion}</h4>
+              <h4 class="name">${esc(p.habitacion)}</h4>
               <div class="meta">
-                ${p.hotel ? `<span><span class="k">Hotel</span> ${p.hotel}</span>` : ""}
+                ${p.hotel ? `<span><span class="k">Hotel</span> ${esc(p.hotel)}</span>` : ""}
                 <span><span class="k">Habitaciones</span> ${habTxt}</span>
                 <span><span class="k">Noches</span> ${noche(p.noches)}</span>
                 ${fechas ? `<span><span class="k">Estancia</span> ${fechas}</span>` : ""}
@@ -404,9 +420,9 @@ export default function ReservasClient(
           return `<div class="stay">
             <div class="stay-ico">${PLUS_SVG}</div>
             <div>
-              <h4 class="name">${ex.concepto}</h4>
+              <h4 class="name">${esc(ex.concepto)}</h4>
               <div class="meta">
-                ${ex.detalle ? `<span>${ex.detalle}</span>` : ""}
+                ${ex.detalle ? `<span>${esc(ex.detalle)}</span>` : ""}
                 ${cant}
                 ${monto}
               </div>
@@ -415,7 +431,7 @@ export default function ReservasClient(
         }).join("")}</div>`
       : "";
 
-    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Confirmación ${b.confirmationNumber}</title>
+    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Confirmación ${folioB}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -545,9 +561,9 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div class="hero-grid">
       <div>
         <div class="conf-badge">✓ Reserva confirmada</div>
-        <h1>Reserva <em>№ ${b.confirmationNumber}</em></h1>
+        <h1>Reserva <em>№ ${folioB}</em></h1>
       </div>
-      <p class="salute">Hola <strong style="color:var(--crema)">${b.customerName}</strong>, gracias por confiar en nosotros. Tu reserva quedó confirmada el ${confirmDate}.</p>
+      <p class="salute">Hola <strong style="color:var(--crema)">${esc(b.customerName)}</strong>, gracias por confiar en nosotros. Tu reserva quedó confirmada el ${confirmDate}.</p>
     </div>
   </div>
 
@@ -778,7 +794,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               </div>
               <p className="text-[#1B4332] font-medium">{b.customerName}</p>
               <p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p>
-              <p className="text-[#1B4332]/70 text-sm mt-1">{b.tourName}</p>
+              <p className="text-[#1B4332]/70 text-sm mt-1 flex items-center gap-1.5">
+                <CodigoTour slug={b.tourSlug} className="text-[11px]" />
+                <span className="truncate">{b.tourName}</span>
+              </p>
               {hosp && (
                 <p className="flex items-center gap-1 text-[#52B788] text-xs mt-0.5">
                   <BedDouble className="w-3 h-3 shrink-0" />{hosp}
@@ -827,7 +846,12 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     <td className="py-3 px-3 text-[#1B4332] font-mono text-xs font-medium">{b.confirmationNumber}</td>
                     <td className="py-3 px-3"><p className="text-[#1B4332] font-medium">{b.customerName}</p><p className="text-[#1B4332]/40 text-xs">{b.customerEmail}</p></td>
                     <td className="py-3 px-3 max-w-[170px]">
-                      <p className="text-[#1B4332]/70 truncate text-xs">{b.tourName}</p>
+                      {/* El nombre viene cortado en esta columna ("ista — Edwar…"):
+                          el código de tres letras es lo que de verdad identifica. */}
+                      <p className="text-[#1B4332]/70 text-xs flex items-center gap-1.5">
+                        <CodigoTour slug={b.tourSlug} className="text-[10px] flex-shrink-0" />
+                        <span className="truncate">{b.tourName}</span>
+                      </p>
                       {hosp && (
                         <p className="flex items-center gap-1 text-[#52B788] text-[10px] mt-0.5" title={hosp}>
                           <BedDouble className="w-3 h-3 shrink-0" /><span className="truncate">{hosp}</span>

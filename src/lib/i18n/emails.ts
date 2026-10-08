@@ -137,6 +137,8 @@ export interface EmailMessages {
     elegiste: (opcion: string) => string;
     /** Va UNA persona con la tarifa de viajero solo (2 personas − $2). */
     viajeroSolo: string;
+    /** Pidió guía en inglés, sin costo (8 oct 2026). */
+    guiaEnIngles: string;
     /** Items sueltos: comida, transporte, guía privado. */
     extrasTitulo: string;
     extraIncluido: string;
@@ -345,7 +347,8 @@ const ES: EmailMessages = {
     confirmaDireccion: "Confirma tu dirección exacta por WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "persona" : "personas"}`,
     elegiste: (opcion) => `Elegiste: ${opcion}`,
-    viajeroSolo: "Viajas solo: precio de 2 personas menos $2; te incluimos en un grupo armado para tu fecha.",
+    viajeroSolo: "Tu grupo va bajo el mínimo de este recorrido: pagas tarifa normal y te sumamos a una salida compartida. Te confirmamos antes de la fecha; si no se junta el grupo, te devolvemos el 100 %.",
+    guiaEnIngles: "Guía en inglés: anotado en tu reserva, sin costo extra. Si ese día no tenemos guía bilingüe, te avisamos antes por WhatsApp.",
     extrasTitulo: "Incluye además",
     extraIncluido: "Incluido",
     extraCantidad: (n) => `Cantidad: ${n}`,
@@ -555,7 +558,8 @@ const EN: EmailMessages = {
     confirmaDireccion: "Confirm your exact address on WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "person" : "people"}`,
     elegiste: (opcion) => `You chose: ${opcion}`,
-    viajeroSolo: "Traveling solo: 2-person price minus $2 MXN; we place you in a group put together for your date.",
+    viajeroSolo: "Your group is below this tour's minimum: you pay the normal rate and we add you to a shared departure. We confirm before your date; if the group does not come together, you get 100 % back.",
+    guiaEnIngles: "English-speaking guide: noted on your booking, at no extra cost. If we don't have a bilingual guide that day, we'll tell you on WhatsApp beforehand.",
     extrasTitulo: "Also included",
     extraIncluido: "Included",
     extraCantidad: (n) => `Quantity: ${n}`,

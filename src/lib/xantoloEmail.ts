@@ -14,6 +14,7 @@
 import {
   BASE, C, WA, bajoBoton, barra, boton, nota, parrafo, shellCorreo, tabla, titulo,
 } from "./emailLayout";
+import { fechaInicioTexto } from "./temporada";
 
 /** Las tres noches de Xantolo 2026. Si cambian, se cambian aquí y en el popup. */
 export const XANTOLO_FECHAS = "31 de octubre, 1 y 2 de noviembre de 2026";
@@ -52,7 +53,13 @@ export function buildXantoloEmailHtml(
         </td></tr>`),
 
       barra("Y si vienes esos días"),
-      parrafo("Xantolo es de noche. Los días quedan libres, y son los mejores del año para el agua turquesa: octubre y noviembre son plena temporada alta en la Huasteca.", "16px 0 18px 0"),
+      // 🔴 Decía que octubre y noviembre son «los mejores del año para el agua
+      // turquesa» y «plena temporada alta»: octubre es lluvias, con agua que
+      // puede bajar con sedimento, y el turquesa más intenso es de marzo a mayo
+      // (temporada.ts, 7 oct 2026). Lo cierto es que las noches de Xantolo
+      // caen justo al arranque de la mejor temporada para venir; vale mientras
+      // `MEJOR_TEMPORADA` arranque a más tardar el 31 de octubre.
+      parrafo(`Xantolo es de noche y los días quedan libres. Este año cae justo al arranque de la mejor temporada para venir, que empieza el ${fechaInicioTexto("es")}: aflojan las lluvias y el agua empieza a aclararse. El turquesa más intenso llega de marzo a mayo, y si esos días el río sigue crecido, reprogramamos el rafting sin costo.`, "16px 0 18px 0"),
       boton(toursUrl, "Ver los recorridos"),
       nota("Si ya tienes fechas, escríbenos por WhatsApp y te decimos qué se puede combinar sin que se te empalme con las noches de fiesta."),
     ].join(""),

@@ -17,7 +17,7 @@ import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 export function ResumenCarrito({ c }: { c: CarritoCheckout }) {
   const {
     locale, en, t, items, hotelQuote, checkin, checkout, noches, totalHotel,
-    total, anticipo, saldo, pctHoy, resumen, cancelacionDe,
+    total, anticipo, saldo, pctHoy, resumen, cancelacionDe, guiaIngles,
   } = c;
   return (
     <ResumenReserva
@@ -73,6 +73,7 @@ export function ResumenCarrito({ c }: { c: CarritoCheckout }) {
       saldo={saldo}
       pct={pctHoy}
       ahorroMultiple={resumen.ahorroMultiple}
+      guiaIngles={guiaIngles}
     />
   );
 }

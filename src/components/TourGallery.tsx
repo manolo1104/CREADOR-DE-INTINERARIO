@@ -10,18 +10,18 @@ interface Props {
 }
 
 /**
- * En móvil no se pintan todas las fotos. Antes se renderizaban las 18 de la
- * Ruta Acuática a 85vw en un carrusel horizontal: varias caían dentro o cerca
- * del viewport a la vez, así que el navegador se traía megas de imagen antes de
- * que nadie hubiera deslizado. Se muestran unas cuantas y el resto vive en el
- * lightbox, que es donde de verdad se ven.
+ * 🔴 Aquí vivía `MOVIL_VISIBLES = 5`: en el teléfono solo se pintaban cinco de
+ * las dieciocho fotos de la Ruta Acuática, porque varias caían cerca del
+ * viewport a la vez y el navegador se traía megas antes de que nadie deslizara.
+ * Ya no hace falta: con una sola foto por pantalla y TODAS en `loading="lazy"`,
+ * el navegador solo pide las que están cerca del carril. Se muestran las
+ * dieciocho.
  */
-const MOVIL_VISIBLES = 5;
 
 export function TourGallery({ images, tourName }: Props) {
-  const [activeIdx, setActiveIdx]   = useState(0);
   const [lightboxOpen, setLightbox] = useState(false);
   const [lightboxIdx, setLbIdx]     = useState(0);
+  /** Qué foto se está viendo, calculada desde el scroll real del carril. */
   const [movilIdx, setMovilIdx]     = useState(0);
 
   // A dónde devolver el foco al cerrar el lightbox. Sin esto, quien navega con
@@ -74,123 +74,101 @@ export function TourGallery({ images, tourName }: Props) {
     touchX.current = null;
   }
 
-  if (images.length === 0) return null;
+  /** Las flechas de escritorio: una «pantalla» de carril por clic. */
+  const mover = useCallback((dir: 1 | -1) => {
+    const caja = carrusel.current;
+    if (!caja) return;
+    caja.scrollBy({ left: dir * caja.clientWidth, behavior: "smooth" });
+  }, []);
 
-  const active   = images[activeIdx];
-  const enMovil  = images.slice(0, MOVIL_VISIBLES);
-  const ocultas  = images.length - enMovil.length;
+  if (images.length === 0) return null;
 
   return (
     <>
-      {/* ── ESCRITORIO: imagen principal + columna de miniaturas ── */}
-      <div className="hidden md:grid grid-cols-5 gap-2 h-[380px]">
-        <button
-          type="button"
-          className="col-span-3 relative overflow-hidden rounded-lg cursor-zoom-in group text-left"
-          onClick={() => openLightbox(activeIdx)}
-          aria-label={`Ampliar: ${active.alt}`}
-        >
-          <Image
-            src={active.src}
-            alt={active.alt}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            // Ocupa 3 de 5 columnas de un contenedor que no pasa de ~1100 px.
-            // Antes decía 60vw fijo, que en pantallas grandes pedía una imagen
-            // mucho mayor que la que se ve.
-            sizes="(max-width: 768px) 0px, (max-width: 1280px) 55vw, 620px"
-          />
-          <span className="absolute top-3 right-3 bg-negro/60 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <svg className="w-3.5 h-3.5 text-crema" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
-          </span>
-        </button>
+      {/* ── CARRUSEL: una foto grande a la vez, en TODOS los tamaños ──
+          🔴 Antes eran dos maquetaciones distintas: en escritorio una rejilla
+          con la foto principal y cuatro miniaturas, y en el teléfono un
+          carrusel de cinco fotos con una casilla de «ver las otras N». Dos
+          comportamientos que mantener y, en escritorio, cinco fotos pedidas de
+          golpe para enseñar una.
 
-        <div className="col-span-2 flex flex-col gap-2">
-          {images.slice(0, 4).map((img, i) => (
-            <button
-              type="button"
-              key={img.src + i}
-              onClick={() => setActiveIdx(i)}
-              aria-label={`Ver: ${img.alt}`}
-              aria-pressed={i === activeIdx}
-              className={`relative flex-1 overflow-hidden rounded transition-all duration-200 ${
-                i === activeIdx
-                  ? "ring-2 ring-verde-vivo ring-offset-1 ring-offset-negro"
-                  : "opacity-70 hover:opacity-100"
-              }`}
-            >
-              <Image src={img.src} alt={img.alt} fill className="object-cover" sizes="(max-width: 1280px) 22vw, 250px" />
-            </button>
-          ))}
-          {images.length > 4 && (
-            <button
-              type="button"
-              onClick={() => openLightbox(4)}
-              aria-label={`Ver las otras ${images.length - 4} fotos`}
-              className="relative flex-1 overflow-hidden rounded opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <Image src={images[4].src} alt={images[4].alt} fill className="object-cover" sizes="(max-width: 1280px) 22vw, 250px" />
-              <span className="absolute inset-0 bg-negro/65 flex items-center justify-center">
-                <span className="text-crema font-dm text-sm font-medium">+{images.length - 4} más</span>
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
+          Ahora es un solo carrusel. El deslizar es `scroll-snap` del navegador
+          —va fuera del hilo principal y funciona aunque el JS tarde—; el JS solo
+          enciende el contador y mueve las flechas, que son un extra de ratón.
 
-      {/* ── MÓVIL: carrusel con contador real ── */}
-      <div className="md:hidden">
+          🔴 `scroll-pl-1` además del `px-1`: con `snap-mandatory` el navegador
+          ancla al borde del CARRIL, no al del relleno, y sin esto la pista se
+          desplaza sola al cargar y la primera foto sale cortada. */}
+      <div className="relative">
         <div
           ref={carrusel}
-          // El contador se calcula desde el scroll de verdad. Antes los puntos
-          // llamaban al estado del ESCRITORIO: no se movían al deslizar y al
-          // pulsarlos no pasaba nada.
           onScroll={(e) => {
             const el = e.currentTarget;
-            const ancho = el.scrollWidth / Math.max(1, enMovil.length);
-            setMovilIdx(Math.min(enMovil.length - 1, Math.round(el.scrollLeft / ancho)));
+            const ancho = el.scrollWidth / Math.max(1, images.length);
+            setMovilIdx(Math.min(images.length - 1, Math.round(el.scrollLeft / ancho)));
           }}
-          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1 -mx-1 px-1"
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth scrollbar-none -mx-1 px-1 scroll-pl-1 pb-1"
         >
-          {enMovil.map((img, i) => (
+          {images.map((img, i) => (
             <button
               type="button"
               key={img.src + i}
               onClick={() => openLightbox(i)}
               aria-label={`Ampliar: ${img.alt}`}
-              className="flex-shrink-0 w-[85vw] snap-start relative aspect-[4/3] overflow-hidden rounded-lg cursor-zoom-in"
+              className="group relative aspect-[4/3] w-[85vw] flex-shrink-0 cursor-zoom-in snap-start overflow-hidden rounded-lg md:aspect-[3/2] md:w-[620px]"
             >
               <Image
                 src={img.src}
                 alt={img.alt}
                 fill
-                className="object-cover"
-                sizes="85vw"
-                loading={i === 0 ? "eager" : "lazy"}
+                sizes="(max-width: 767px) 85vw, 620px"
+                /* TODAS en diferido, también la primera. Una foto `eager` la
+                   PRECARGA React en el <head>, y esta galería vive muy por
+                   debajo del póster del hero, que es el LCP de la ficha. El
+                   navegador solo se trae las que están cerca del carril. */
+                loading="lazy"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
-            </button>
-          ))}
-
-          {ocultas > 0 && (
-            <button
-              type="button"
-              onClick={() => openLightbox(MOVIL_VISIBLES)}
-              className="flex-shrink-0 w-[45vw] snap-start relative aspect-[4/3] overflow-hidden rounded-lg border border-crema/15 bg-negro/50 flex items-center justify-center"
-            >
-              <span className="text-crema/80 font-dm text-sm text-center px-3">
-                Ver las otras
-                <span className="block font-cormorant text-2xl text-dorado">{ocultas} fotos</span>
+              <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-negro/60 p-2 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                <svg className="h-3.5 w-3.5 text-crema" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
               </span>
             </button>
-          )}
+          ))}
         </div>
 
-        <p className="text-center mt-3 font-dm text-[11px] text-crema/40">
-          {movilIdx + 1} / {images.length}
-        </p>
+        {/* Flechas: solo con ratón. En el teléfono se desliza con el dedo y dos
+            discos encima de la foto solo tapan. */}
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => mover(-1)}
+              aria-label="Fotos anteriores"
+              className="absolute left-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-negro/60 text-crema/85 backdrop-blur-md transition-colors hover:bg-negro/85 hover:text-crema md:grid"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => mover(1)}
+              aria-label="Fotos siguientes"
+              className="absolute right-2 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-negro/60 text-crema/85 backdrop-blur-md transition-colors hover:bg-negro/85 hover:text-crema md:grid"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
+
+      <p className="mt-3 text-center font-dm text-[11px] text-crema/40 tabular-nums">
+        {movilIdx + 1} / {images.length}
+      </p>
 
       {/* ── VISOR ──
           Tres cosas cambiaron: el fondo ya no es negro casi sólido sino

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -37,6 +38,10 @@ export async function GET(req: NextRequest) {
   });
 }
 
+// Temporada: cada «Mejor época» de las fichas es la `temporada_ideal` de ese
+// destino en destinos.ts (revisadas el 7 oct 2026: coinciden todas). El consejo
+// de Tamul decía «en octubre, turquesa intensa», al revés de la regla de
+// temporada.ts: hasta el 29 de octubre el agua puede bajar con sedimento.
 function buildGuiaHtml(): string {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -135,13 +140,13 @@ function buildGuiaHtml(): string {
 
   <table>
     <tr><th>Origen</th><th>Opción</th><th>Duración</th><th>Costo aprox.</th><th>Recomendación</th></tr>
-    <tr><td>CDMX</td><td>Autobús ADO/Primera Plus nocturno</td><td>9–10 h</td><td>$500–700 MXN</td><td>✓ Mejor opción económica</td></tr>
-    <tr><td>CDMX</td><td>Vuelo a Tampico + carretera</td><td>2.5 h vuelo + 2 h</td><td>$1,800–3,500 MXN</td><td>Si tienes poco tiempo</td></tr>
-    <tr><td>CDMX</td><td>Carretera propia (MEX-85)</td><td>9–10 h</td><td>$600–900 MXN (gasolina)</td><td>Más libertad, cansado solo</td></tr>
-    <tr><td>Monterrey</td><td>Carretera MEX-80 vía Linares</td><td>5.5–6.5 h</td><td>$550–750 MXN (gasolina)</td><td>✓ Ruta más directa del norte</td></tr>
-    <tr><td>Monterrey</td><td>Autobús directo a Valles</td><td>6–7 h</td><td>$380–500 MXN</td><td>Opción si no rentas auto</td></tr>
+    <tr><td>CDMX</td><td>Autobús ADO/Primera Plus nocturno</td><td>${enAutobus("cdmx", "xilitla")}</td><td>$500–700 MXN</td><td>✓ Mejor opción económica</td></tr>
+    <tr><td>CDMX</td><td>Vuelo a Tampico + carretera</td><td>1 h de vuelo + ${enAuto("tampico", "valles")} a Valles</td><td>$1,800–3,500 MXN</td><td>Si tienes poco tiempo</td></tr>
+    <tr><td>CDMX</td><td>Carretera propia (MEX-85)</td><td>${enAuto("cdmx")} a Xilitla</td><td>$600–900 MXN (gasolina)</td><td>Más libertad, cansado solo</td></tr>
+    <tr><td>Monterrey</td><td>Carretera MEX-80 vía Linares</td><td>${enAuto("monterrey", "valles")} a Valles</td><td>$550–750 MXN (gasolina)</td><td>✓ Ruta más directa del norte</td></tr>
+    <tr><td>Monterrey</td><td>Autobús directo a Valles</td><td>${enAutobus("monterrey", "valles")}</td><td>$380–500 MXN</td><td>Opción si no rentas auto</td></tr>
     <tr><td>Guadalajara</td><td>Carretera vía SLP</td><td>7–8 h</td><td>$700–950 MXN (gasolina)</td><td>Considerar parar en SLP capital</td></tr>
-    <tr><td>Tampico</td><td>Carretera MEX-70</td><td>2–2.5 h</td><td>$200–250 MXN (gasolina)</td><td>✓ Puerta de entrada norte</td></tr>
+    <tr><td>Tampico</td><td>Carretera MEX-70</td><td>${enAuto("tampico", "valles")} a Valles</td><td>$200–250 MXN (gasolina)</td><td>✓ Puerta de entrada norte</td></tr>
   </table>
 
   <div class="consejo">
@@ -194,7 +199,7 @@ function buildGuiaHtml(): string {
       <div class="ficha-item"><div class="ficha-label">Desde Valles</div><div class="ficha-val">45 min → Tanchachín + lancha</div></div>
     </div>
     <div class="advertencia">⚠️ Los lancheros dejan de salir a las 14:00. Si llegas tarde, no hay salida. Solo efectivo — no hay cajero en Tanchachín.</div>
-    <div class="consejo">💡 Tip insider: En octubre la caída de agua tiene coloración turquesa intensa más el follaje naranja de los árboles ribereños. Combinación fotográfica única que pocos conocen.</div>
+    <div class="consejo">💡 Tip insider: el turquesa más intenso es de marzo a mayo, que es también cuando más gente hay. De julio a octubre la cascada va a todo caudal, pero el agua puede bajar con sedimento.</div>
     <p><strong>Qué llevar:</strong> Chaleco salvavidas (lo incluye la lancha), aqua shoes o calzado cerrado que se moje, agua 2L mínimo, efectivo, protector solar biodegradable, chamarra ligera (el río tiene viento).</p>
   </div>
 

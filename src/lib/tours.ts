@@ -50,6 +50,31 @@ export interface TourAddOn {
   precio:      number;
 }
 
+/**
+ * Cuánto BAJA el precio por cabeza a partir de `desde` personas.
+ *
+ * Guarda el DESCUENTO y no el precio final a propósito: así se compone solo
+ * con el precio de la fecha (`precioDeFecha`) y con las tarifas de niño, en vez
+ * de obligar a mantener la misma cifra en dos tablas que se desincronizan.
+ *
+ * El criterio para elegir escalón es el MISMO que usa el cotizador con las
+ * tarifas del proveedor (`src/lib/admin/proveedor.ts`): gana el escalón más
+ * alto que no pase del número de personas. Un grupo de 5 paga el escalón de 3,
+ * no el de 6.
+ *
+ * 🔴 Cada peso de esta tabla sale de un peso que el proveedor YA descuenta por
+ * grupo grande (misma fuente que el cotizador). No es una promoción: es el
+ * ahorro de costo que se le pasa al cliente, y por eso la ganancia por cabeza
+ * no se mueve. Si alguien la hace más agresiva sin cambiar el costo, el margen
+ * se come — con 2 personas estos recorridos ya están entre 16 % y 24 %.
+ */
+export interface EscalonPersona {
+  /** A partir de cuántas personas aplica. */
+  desde: number;
+  /** MXN que se le restan al precio por persona. */
+  menos: number;
+}
+
 /** Ruta off-road disponible en tours cobrados por vehículo (ej. RZR). */
 export interface TourRuta {
   nombre:       string;
@@ -336,6 +361,14 @@ export interface Tour {
    */
   tarifaGrupo?:     number[];
   /**
+   * El precio por cabeza BAJA conforme crece el grupo. Ver `EscalonPersona`.
+   *
+   * Es el tercer modelo de cobro del catálogo y convive con `precio`: éste
+   * sigue siendo lo que paga una persona —y lo que se anuncia—, y los
+   * escalones solo lo rebajan de 3 en adelante. Nunca lo suben.
+   */
+  escalaPersona?:   EscalonPersona[];
+  /**
    * Qué pasa si el cliente cancela, cuando NO aplica la promesa del sitio
    * ("cancelación gratuita 48 h antes, reembolso completo").
    *
@@ -415,6 +448,13 @@ export interface Tour {
   urgencia?:        string;
   reviewCount:      number;
   groupMin:         number;
+  /**
+   * Lo más que se aparta EN LÍNEA (el sitio y el bot) en una reserva, y el
+   * tope de su salida por día (`lib/cupoTour.ts`). Ninguno pasa de 12 desde
+   * el 7 oct 2026: es el cupo diario que decidió Manolo, y una reserva sola
+   * de 14 llenaba un día que ya no tiene 14 lugares. Un grupo más grande lo
+   * cotiza el equipo en el panel, que sabe si sale una segunda unidad.
+   */
   groupMax:         number;
   privateAvailable: boolean;
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
@@ -441,6 +481,38 @@ export function precioGrupo(t: Pick<Tour, "tarifaGrupo">, personas: number): num
   if (!tabla?.length) return null;
   const n = Math.min(Math.max(1, Math.floor(personas) || 1), tabla.length);
   return tabla[n - 1] ?? null;
+}
+
+/** El escalón de descuento que le toca a un grupo de `personas`, en MXN. */
+export function descuentoPorGrupo(t: Pick<Tour, "escalaPersona">, personas: number): number {
+  const tabla = t.escalaPersona;
+  if (!tabla?.length) return 0;
+  const n = Math.max(1, Math.floor(personas) || 1);
+  return tabla.reduce((mejor, e) => (n >= e.desde && e.menos > mejor ? e.menos : mejor), 0);
+}
+
+/**
+ * Lo que paga CADA PERSONA en un grupo de `personas`.
+ *
+ * Una sola definición para el navegador y para el servidor, igual que
+ * `precioGrupo`: la ficha pinta con esto y `computeTourCharge` cobra con esto.
+ *
+ * 🔴 La escalera NO se encima con la promo de temporada baja. Mientras la
+ * fecha del recorrido lleve promo, manda la promo y el precio por cabeza es el
+ * de siempre; después del 29 de octubre manda la escalera. Sumadas, un Tamul de
+ * 6 quedaba en $1,350 contra un costo de proveedor de $1,150 — 15 % de margen,
+ * por debajo del 25 % que el propio panel marca en rojo. Al vencer la promo la
+ * escalera entra sola: no hay que desplegar nada ese día.
+ */
+export function precioPorCabeza(
+  t: Pick<Tour, "precio" | "precioLista" | "escalaPersona">,
+  personas: number,
+): number {
+  // El recorrido llega YA resuelto para su fecha (`tourEnFecha`), así que la
+  // promo se reconoce comparando contra el precio de lista en vez de volver a
+  // calcularla: una sola resolución de fecha, en el sitio de siempre.
+  if (t.precio < (t.precioLista ?? t.precio)) return t.precio;
+  return t.precio - descuentoPorGrupo(t, personas);
 }
 
 /**
@@ -649,11 +721,14 @@ export function regresoDeTour(
   t: Pick<Tour, "recogida" | "duracionRango" | "rutas" | "duracion_hrs">,
   en: boolean,
 ): string {
-  const { horaInicio, horaTexto } = recogidaDeTour(t);
+  const { horaInicio, ventanaHrs, horaTexto } = recogidaDeTour(t);
   const [durMin, durMax] = tourDurRange(t);
   // Con horarios fijos que cambian según el día no hay UNA hora de regreso:
-  // se dice cuánto dura desde que empieza.
-  if (horaTexto) {
+  // se dice cuánto dura desde que empieza. Lo mismo cuando la ventana de
+  // salida es más larga que el propio recorrido: es el cliente quien elige la
+  // hora (el RZR, de 9 AM a 5 PM), y sumar la duración a las 9 prometía un
+  // regreso a las 2 PM a quien empieza a las 4.
+  if (horaTexto || ventanaHrs > durMax) {
     const dur = durMin === durMax ? `${durMax}` : `${durMin}–${durMax}`;
     // Va debajo de "Regreso aprox.": el "aprox." ya lo pone la etiqueta.
     return en ? `${dur} h after the start` : `${dur} h después de empezar`;
@@ -862,8 +937,14 @@ const TOURS_RAW: Tour[] = [
     tipo:             "Aventura Off-Road",
     dificultad:       "media",
     duracion_hrs:     2,
-    /* Nos vemos en la base de Xilitla: el cliente llega por su cuenta. */
-    recogida:         { tipo: "base-xilitla" },
+    /* Nos vemos en la base de Xilitla: el cliente llega por su cuenta.
+       La hora de inicio la ELIGE el cliente, de 9:00 AM a 5:00 PM (decisión de
+       Manolo, 6 oct 2026). Antes caía a la ventana por defecto de 8:00–9:00 AM
+       de los tours de día completo, y en los chats el equipo daba otra.
+       `ventanaHrs: 8` hace que la ficha, el pago y el bot digan "entre 9:00 AM
+       y 5:00 PM"; el regreso se da como "X h después de empezar"
+       (`regresoDeTour`), porque depende de la hora que elija. */
+    recogida:         { tipo: "base-xilitla", horaInicio: 9, ventanaHrs: 8 },
     reviewCount:      86,
     groupMin:         2,
     groupMax:         6,
@@ -879,7 +960,7 @@ const TOURS_RAW: Tour[] = [
     // `conPrecio`): `precio` ES la tarifa más baja de la flota, el RZR 500 en
     // la Ruta Nanacatli. Si cambia, las dos descripciones cambian con él.
     descripcion:      "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: cruza ríos de agua cristalina, atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde {precio}), no por persona.",
-    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, llega a la Aldea Nanacatli, un pueblo de casitas de hongos gigantes conocido como 'la aldea de los pitufos'), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (5 h, un nacimiento de agua cristalina en lo profundo de la selva donde te prestamos kayak y chaleco salvavidas) y la de Trinidad (5 h, sube al bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla, donde te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ({precio} la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
+    descripcionLarga: "Pocas formas de conocer la Huasteca son tan divertidas como ir al volante de tu propio vehículo todoterreno. Tenemos 4 rutas distintas: la Nanacatli (2 h, la más popular, llega a la Aldea Nanacatli, un pueblo de casitas de hongos gigantes conocido como 'la aldea de los pitufos'), la de Miradores (3 h, vistas panorámicas de la sierra), la del Nacimiento (5 h, un nacimiento de agua cristalina en lo profundo de la selva donde te prestamos kayak y chaleco salvavidas) y la de Trinidad (5 h, sube al bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo).\n\nNos encontramos en nuestra base en Xilitla a la hora que elijas, de 9:00 AM a 5:00 PM, y ahí te entregamos casco y goggles y te damos un briefing de manejo. No necesitas experiencia: los vehículos son fáciles de controlar y un guía instructor abre la ruta delante de ti todo el tiempo, marcando el camino y resolviendo cualquier obstáculo. Tú solo te concentras en disfrutar.\n\nEl precio es POR VEHÍCULO, no por persona, y depende de la ruta y de la unidad que elijas: desde el RZR 500 para pareja ({precio} la Ruta Nanacatli) hasta el Defender Familiar para 6 adultos y 2 niños o el Polaris Pro S premium. Todas las unidades incluyen gasolina, equipo de seguridad y guía. No incluye transporte hasta Xilitla ni alimentos.\n\nTe recomendamos ropa que se pueda ensuciar y mojar, calzado cerrado y una muda de cambio: vas a salir con barro y con una sonrisa difícil de borrar.",
     rutas: [
       { nombre: "Ruta Nanacatli",  duracion_hrs: 2, desde: 1600, descripcion: "La más popular de Xilitla y perfecta para primerizos. Te adentras en la selva húmeda, cruzas ríos de agua cristalina y llegas a la Aldea Nanacatli, un pintoresco pueblo de casitas de hongos gigantes —la famosa 'aldea de los pitufos'—, ideal para fotos. Barro, naturaleza y adrenalina en dos horas.",
         destinos: ["Aldea Nanacatli (aldea de los pitufos)", "Mirador Xilitla", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
@@ -1053,7 +1134,7 @@ const TOURS_RAW: Tour[] = [
     descripcion:
       "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida que eliges antes o después de la actividad. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
     descripcionLarga:
-      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Tu reserva incluye la comida, y tú decides cuándo: puedes tomarla antes de salir para arrancar con energía, o dejarla para después del descenso.\n\nLa mejor temporada es de noviembre a marzo, cuando el agua alcanza su color más intenso. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
+      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Tu reserva incluye la comida, y tú decides cuándo: puedes tomarla antes de salir para arrancar con energía, o dejarla para después del descenso.\n\nDel 30 de octubre a mayo el agua baja clara, y su turquesa más intenso llega de marzo a mayo. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
     destinos: [
       "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
       "Embarcadero del Río Tampaón",
@@ -1130,7 +1211,7 @@ const TOURS_RAW: Tour[] = [
     garantiaHuasteca: true,
     reviewCount:      127,
     groupMin:         2,
-    groupMax:         14,
+    groupMax:         12,
     privateAvailable: true,
     nombre:           "Expedición Tamul — Tamul, Cueva del Agua y Sótano",
     nombreCorto:      "Expedición Tamul",
@@ -1139,7 +1220,16 @@ const TOURS_RAW: Tour[] = [
     // llevan a la cascada; la tarjeta tiene que decir POR QUÉ este vale más.
     tagline:          "Tres maravillas en un día: Tamul en canoa, el cenote de la Cueva del Agua y las Huahuas al atardecer",
     precio:           1550,
-    urgencia:         "El más reservado — se llena los fines de semana",
+    // Por persona, según el tamaño del grupo: 1,550 · 1,500 · 1,450 · 1,400 MXN.
+    escalaPersona:    [{ desde: 3, menos: 50 }, { desde: 6, menos: 100 }, { desde: 8, menos: 150 }],
+    // 🔴 El 7 oct se quitó la `urgencia` porque decía «El más reservado — se
+    // llena los fines de semana»: escasez inventada y fija, mientras el
+    // calendario ya dice con datos qué días se están llenando. Pero dejarla
+    // VACÍA tuvo su propio costo —Manolo lo vio el 8 oct en `/reservar`—: el
+    // recorrido estrella era la única tarjeta sin su línea dorada, con un hueco
+    // donde las demás argumentan. Vuelve, diciendo algo CIERTO: el día está
+    // armado para terminar a la hora de las aves, y eso no lo hace ningún otro.
+    urgencia:         "Cierra al atardecer con las aves del sótano — reserva con anticipación",
     descripcion:
       "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
     descripcionLarga:
@@ -1256,13 +1346,15 @@ const TOURS_RAW: Tour[] = [
     duracion_hrs:     8,
     reviewCount:      84,
     groupMin:         2,
-    groupMax:         14,
+    groupMax:         12,
     privateAvailable: true,
     nombre:           "Ruta Surrealista — Edward James, Manantiales, Cuevas y Castillo",
     nombreCorto:      "Ruta Surrealista",
     articulo:         "la",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
     precio:           1400,
+    // Por persona, según el tamaño del grupo: 1,400 · 1,350 · 1,300 MXN.
+    escalaPersona:    [{ desde: 3, menos: 50 }, { desde: 6, menos: 100 }],
     urgencia:         "Cuatro paradas con entradas incluidas — reserva con anticipación",
     descripcion:
       "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
@@ -1508,13 +1600,15 @@ const TOURS_RAW: Tour[] = [
     garantiaHuasteca: true,
     reviewCount:      96,
     groupMin:         2,
-    groupMax:         14,
+    groupMax:         12,
     privateAvailable: true,
     nombre:           "Cascadas del Meco — Meco, Mirador Panorámico y El Gran Salto",
     nombreCorto:      "Cascadas del Meco",
     articulo:         "las",
     tagline:          "Tres caídas de agua, tres emociones distintas",
     precio:           1700,
+    // Por persona, según el tamaño del grupo: 1,700 · 1,650 · 1,600 · 1,550 MXN.
+    escalaPersona:    [{ desde: 3, menos: 50 }, { desde: 6, menos: 100 }, { desde: 8, menos: 150 }],
     urgencia:         "Favorito de fotógrafos — tres paradas en un solo día",
     descripcion:
       "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
@@ -1613,13 +1707,15 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [11, 12],
     reviewCount:      112,
     groupMin:         2,
-    groupMax:         14,
+    groupMax:         12,
     privateAvailable: true,
     nombre:           "Paraíso Escalonado — Minas Viejas & Cascadas de Micos",
     nombreCorto:      "Paraíso Escalonado",
     articulo:         "el",
     tagline:          "Dos joyas naturales, un día perfecto para desconectar",
     precio:           1600,
+    // Por persona, según el tamaño del grupo: 1,600 · 1,500 · 1,450 · 1,400 MXN.
+    escalaPersona:    [{ desde: 3, menos: 100 }, { desde: 6, menos: 150 }, { desde: 8, menos: 200 }],
     urgencia:         "Ideal para familias — reserva con anticipación",
     descripcion:
       "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
@@ -1703,13 +1799,15 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [11, 12],
     reviewCount:      73,
     groupMin:         2,
-    groupMax:         14,
+    groupMax:         12,
     privateAvailable: true,
     nombre:           "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
     nombreCorto:      "Ruta Acuática",
     articulo:         "la",
     tagline:          "El recorrido más refrescante y completo de la región",
     precio:           1600,
+    // Por persona, según el tamaño del grupo: 1,600 · 1,550 · 1,500 · 1,450 MXN.
+    escalaPersona:    [{ desde: 3, menos: 50 }, { desde: 6, menos: 100 }, { desde: 8, menos: 150 }],
     // 🔴 Decía "últimos lugares disponibles" siempre, sin importar el cupo real:
     // escasez inventada. Como en el Rappel, la urgencia no dice cuántos quedan.
     urgencia:         "El más completo — se aparta con anticipación",
@@ -2204,7 +2302,7 @@ const TOURS_RAW: Tour[] = [
     },
     reviewCount:      0,
     groupMin:         2,
-    groupMax:         14,
+    groupMax:         12,
     privateAvailable: true,
     nombre:           "Olla de la Luz — El Sótano del Bosque de Niebla de Xilitla",
     nombreCorto:      "Olla de la Luz",
@@ -2283,6 +2381,173 @@ const TOURS_RAW: Tour[] = [
       { src: "/imagenes/tours/olla-de-la-luz/gallery-3.jpg", alt: "Guía de pie sobre las rocas kársticas del borde de la Olla de la Luz, entre la niebla del bosque", hasRealPeople: true },
       { src: "/imagenes/tours/olla-de-la-luz/gallery-4.jpg", alt: "Grupo caminando en fila por el sendero del bosque de niebla de la Trinidad rumbo al sótano", hasRealPeople: true },
       { src: "/imagenes/tours/olla-de-la-luz/gallery-5.jpg", alt: "Grupo completo posando sobre las rocas del borde de la Olla de la Luz al terminar la caminata", hasRealPeople: true },
+    ],
+  },
+
+  // ── HUASTECA INSTAGRAMEABLE ──────────────────────────────────────────────────────────
+  // Producto nuevo (6 oct 2026, ruta y precio dictados por Manolo). No compite
+  // por precio ni por adrenalina: compite por el RESULTADO. El cliente paga por
+  // irse con las fotos, así que es el ÚNICO recorrido del catálogo que promete
+  // entrega. Esa promesa —25 a 30 fotos editadas en 3 días— está escrita en
+  // cuatro lugares y los cuatro tienen que decir lo mismo:
+  //   1. el `incluye` de aquí abajo
+  //   2. la FAQ de fotos        → `tourFaqs.ts` / `i18n/tourFaqs.en.ts`
+  //   3. el cerebro del bot     → `lib/bot/politicas.ts` (tema "fotos")
+  //   4. los datos del bot      → `scripts/export-bot-data.ts` (FOTOS)
+  // Si alguien baja el plazo, se baja en los cuatro o el bot desmiente la ficha.
+  //
+  // 🔴 El Día 1 cabe en un día SOLO por el horario de las 5:00 PM de Las Pozas,
+  // que el jardín abre de miércoles a lunes (el mismo que sigue el Edén). La
+  // canoa de Tamul va en la mañana y el jardín con la luz de la tarde, que
+  // además es la buena para foto. Los martes ese horario no existe y el Día 1
+  // no sale: por eso la recogida va con `horaTexto` y no con una ventana.
+  {
+    id:               "tour-huasteca-instagrameable",
+    slug:             "huasteca-instagrameable",
+    categoria:        "ecoturismo",
+    // El único recorrido que pinta un glifo de marca en su insignia; lo dibuja
+    // `IconoInstagram`, que vive en un solo archivo por si hay que quitarlo.
+    icon:             "Instagram",
+    tipo:             "Fotografía & Contenido",
+    dificultad:       "media",
+    duracion_hrs:     13,
+    duracionRango:    [11, 14],
+    recogida: {
+      tipo: "hospedaje",
+      // Solo respaldo: `horaTexto` le gana en todo lo que se pinta, porque los
+      // tres días no salen a la misma hora.
+      horaInicio: 6,
+      ventanaHrs: 1,
+      horaTexto: {
+        es: "6:00 AM el Día 1 y 8:00 AM los Días 2 y 3; el Día 1 no sale los martes",
+        en: "6:00 AM on Day 1 and 8:00 AM on Days 2 and 3; Day 1 doesn’t run on Tuesdays",
+      },
+      nota: {
+        es: "Pasamos por ti a tu hospedaje en Xilitla o en Ciudad Valles. Dinos cuál es al apartar: el Día 1 arranca muy temprano y el punto de encuentro cambia la hora.",
+        en: "We pick you up at your hotel in Xilitla or Ciudad Valles. Tell us which one when you book: Day 1 starts very early and the pickup point changes the time.",
+      },
+    },
+    reviewCount:      0,
+    groupMin:         2,
+    // 🔴 Seis, no catorce. El grupo chico es parte de lo que se cobra: con un
+    // grupo grande el guía no alcanza a fotografiar a nadie y la promesa de las
+    // 25 fotos por persona deja de ser sostenible.
+    groupMax:         6,
+    privateAvailable: true,
+    nombre:           "Huasteca Instagrameable — Los Días Más Fotogénicos de la Huasteca Potosina",
+    nombreCorto:      "Huasteca Instagrameable",
+    articulo:         "",
+    seo: {
+      titulo: {
+        es: "Tour de fotos en la Huasteca Potosina — Huasteca Instagrameable",
+        en: "Huasteca Potosina Photo Tour — Huasteca Instagrameable",
+      },
+      descripcion: {
+        es: "Un día armado alrededor de la luz, con guía-fotógrafo y grupo de máximo 6: te llevas de 25 a 30 fotografías editadas en 3 días. {precio} por persona.",
+        en: "A day built around the light, with a photographer-guide and a group of 6 max: you take home 25 to 30 edited photos within 3 days. {precio} per person.",
+      },
+      alias: ["Tour fotográfico Huasteca Potosina", "Lugares instagrameables de la Huasteca", "Huasteca Icons"],
+    },
+    tagline:          "El día en que te vas con las fotos, no sólo con el recuerdo",
+    precio:           1850,
+    // Por persona, según el tamaño del grupo: 1,850 · 1,750 · 1,690 · 1,650 · 1,590 MXN.
+    escalaPersona:    [{ desde: 3, menos: 100 }, { desde: 4, menos: 160 }, { desde: 5, menos: 200 }, { desde: 6, menos: 260 }],
+    precioUnidad:     "persona",
+    urgencia:         "Grupo de máximo 6 — el guía va con cámara, no con teléfono",
+    descripcion:
+      "Un día armado alrededor de la luz y de los encuadres, no del reloj. Tu guía lleva una cámara Fujifilm X-T30 II, conoce los puntos exactos de cada lugar y la hora a la que el agua se ve turquesa, y te entrega de 25 a 30 fotografías editadas dentro de 3 días. Eliges cuál de los tres días instagrameables quieres. Grupo de máximo 6 personas. {precio} por persona.",
+    descripcionLarga:
+      "Casi todo el mundo vuelve de la Huasteca con trescientas fotos de teléfono y ninguna que valga la pena. No es culpa del teléfono: es que se llega a la cascada a la hora en que el sol pega de frente, el grupo es de catorce personas y nadie tiene tiempo de pararse dos minutos en el lugar correcto. Huasteca Instagrameable existe para resolver exactamente eso.\n\nLa diferencia no es el destino, es cómo se arma el día. El orden de las paradas se decide por la luz: a cada lugar se llega a la hora en que se ve como en las fotos que te hicieron querer venir. El grupo es de máximo seis personas, porque con catorce no hay forma de fotografiar a nadie. Y el guía no va con un teléfono en la bolsa: va con una Fujifilm X-T30 II, sabe dónde pararte, qué tienes atrás y hacia dónde mirar, y te lo dice sin que tengas que pedirlo.\n\nSon tres días distintos y eliges el que quieras al reservar. El Día 1 es el más completo: la canoa río arriba por el Tampaón hasta quedar frente a la Cascada de Tamul —105 metros— por la mañana, y Las Pozas, el jardín surrealista de Edward James, en el horario de las 5:00 PM, cuando la luz entra de lado entre las columnas y el jardín se queda casi vacío. Ese horario el jardín lo abre de miércoles a lunes, así que el Día 1 no sale los martes.\n\nEl Día 2 va a las Cascadas de Micos, siete caídas en escalones con pozas de un turquesa que no parece real, y cierra al atardecer en el Sótano de las Huahuas, cuando miles de pericos vuelven a dormir al abismo. El Día 3 es el día del agua del norte: las terrazas de Minas Viejas, la Cascada del Meco entre las 9 y las 11 de la mañana —su hora, cuando el sol entra perpendicular al cañón— y la cortina de El Salto.\n\nLo que te llevas: de 25 a 30 fotografías editadas, en una carpeta privada, dentro de los 3 días siguientes. Y lo que no prometemos, para que no haya sorpresas: no hay dron —en Las Pozas está prohibido, igual que el tripié— y no va un fotógrafo aparte del guía. Es tu guía, con cámara de verdad y con los lugares aprendidos de memoria. Si lo que buscas es volver a casa con el material, este es el recorrido.",
+    eleccion: {
+      titulo: "¿Cuál de los tres días instagrameables quieres?",
+      opciones: [
+        {
+          id: "dia-1-tamul-pozas",
+          nombre: "Día 1 — Tamul en canoa y Las Pozas con la luz de la tarde",
+          nota: "Salida 6:00 AM. La canoa a la Cascada de Tamul por la mañana y el jardín de Edward James a las 5:00 PM. De miércoles a lunes: los martes el jardín no abre por la tarde.",
+        },
+        {
+          id: "dia-2-micos-huahuas",
+          nombre: "Día 2 — Cascadas de Micos y el Sótano de las Huahuas",
+          nota: "Salida 8:00 AM. Las pozas escalonadas de Micos por la mañana y el regreso de los pericos al sótano, al atardecer.",
+        },
+        {
+          id: "dia-3-minas-meco-salto",
+          nombre: "Día 3 — Minas Viejas, la Cascada del Meco y El Salto",
+          nota: "Salida 8:00 AM. Las tres aguas turquesa del norte de la Huasteca, con el Meco entre las 9 y las 11 AM, que es su hora.",
+        },
+      ],
+    },
+    destinos: [
+      "Día 1 — Cascada de Tamul en canoa y Las Pozas, el jardín surrealista de Edward James",
+      "Día 2 — Cascadas de Micos y Sótano de las Huahuas",
+      "Día 3 — Cascadas de Minas Viejas, Cascada del Meco y El Salto",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+      "Paseo en canoa hasta la Cascada de Tamul (Día 1)",
+      "Entradas a todos los lugares del día que elijas",
+      "Guía acreditado NOM-09 SECTUR, con cámara Fujifilm X-T30 II",
+      "Los encuadres marcados de cada lugar: tu guía sabe desde qué punto y a qué hora se ve cada uno",
+      // 🔴 Arranca con el mismo texto que `INCLUYE_SIEMPRE` a propósito: así
+      // `incluyeDeTour()` se queda con esta línea, la larga, en vez de pintar
+      // las dos y prometer las fotos dos veces con distinta promesa.
+      "Fotografías y video del recorrido que toma tu guía, y además de 25 a 30 fotografías editadas, en una carpeta privada, dentro de 3 días",
+      "Equipo de seguridad (chaleco y lo que pida cada lugar)",
+    ],
+    // 🔴 El hero NO es la foto de la chica en Tamul, aunque sea la que mejor
+    // cuenta el producto: su mitad baja es agua turquesa a pleno sol y encima
+    // va el precio, que en teléfono desaparecía (el degradado del hero no da
+    // para una foto tan clara). Esa foto abre la galería y el itinerario, que
+    // es donde se ve entera. Aquí va la de los arcos de Edward James: oscura
+    // abajo, y es LA imagen reconocible de Xilitla.
+    // 🔴 El hero NO es la foto de la chica en Tamul —la que mejor cuenta el
+    // producto— porque su mitad baja es agua turquesa a pleno sol, y encima van
+    // el titular y el PRECIO: en teléfono desaparecían (el degradado del hero
+    // no alcanza con una foto tan clara; se probó moviendo `posicionHero` y no
+    // hay encuadre que lo salve). Esa foto abre la galería y el itinerario, que
+    // es donde se ve entera. Aquí va el cañón del Tampaón: oscuro abajo y a la
+    // izquierda, que es justo donde cae el texto, en escritorio Y en teléfono.
+    imagen_hero: "/imagenes/cascada-de-tamul/hero.jpg",
+    posicionHero: "50% 60%",
+    itinerario: [
+      { hora: "6:00 AM", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. Se sale temprano a propósito: la canoa de Tamul y la luz de la mañana no se pueden recorrer." },
+      { hora: "8:30 AM", momento: "Embarcadero del Tampaón",
+        texto: "Chaleco, briefing y a la canoa. El río va encajonado entre paredes de roca de cien metros y el agua cambia de verde a turquesa según entra el sol." },
+      { hora: "10:30 AM", momento: "Frente a la Cascada de Tamul",
+        texto: "Ciento cinco metros de agua cayendo enfrente. Aquí se para el tiempo que haga falta: es el encuadre principal del día y el guía ya sabe desde qué roca se ve completa.",
+        foto: "/imagenes/cascada-de-tamul/chica-roca.jpg" },
+      { hora: "1:00 PM", momento: "Comida en el camino",
+        texto: "Parada para comer de regreso del río, rumbo a Xilitla. Los alimentos no van incluidos: se paga en el lugar." },
+      { hora: "5:00 PM", momento: "Las Pozas, en el horario de la tarde",
+        texto: "El jardín surrealista de Edward James con la luz baja entrando entre las columnas, y casi sin gente. Es el mejor momento del día para fotografiarlo. El jardín abre este horario de miércoles a lunes.",
+        foto: "/imagenes/las-pozas-jardin-surrealista/arcos.jpg" },
+      { hora: "7:30 PM", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje. Las fotos se editan y te llegan en una carpeta privada dentro de 3 días." },
+    ],
+    collage: [
+      "/imagenes/las-pozas-jardin-surrealista/arcos.jpg",
+      "/imagenes/cascadas-de-micos/gallery-5.jpg",
+      "/imagenes/cascadas-minas-viejas/gallery-5.jpg",
+    ],
+    imagenes: [
+      "/imagenes/cascada-de-tamul/chica-roca.jpg",
+      "/imagenes/cascadas-minas-viejas/gallery-5.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/cascada-de-tamul/chica-roca.jpg",            alt: "Visitante sentada en una roca del cañón del Tampaón con la Cascada de Tamul y el agua turquesa al fondo", hasRealPeople: true },
+      { src: "/imagenes/cascadas-minas-viejas/gallery-5.jpg",        alt: "Pareja frente a la cascada de Minas Viejas, de pie sobre la pasarela y rodeada de agua color jade", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/arcos.jpg",     alt: "Los arcos y las escaleras de Edward James en Las Pozas, abiertos sobre la selva de Xilitla" },
+      { src: "/imagenes/cascadas-de-micos/gallery-5.jpg",            alt: "Visitante saltándose una de las caídas de las Cascadas de Micos mientras el grupo mira desde la orilla", hasRealPeople: true },
+      { src: "/imagenes/cascada-de-tamul/grupo-piedra.jpg",          alt: "Grupo posando sobre las rocas del río Tampaón, frente a la Cascada de Tamul", hasRealPeople: true },
+      { src: "/imagenes/las-pozas-jardin-surrealista/puerta-luna.jpg", alt: "Una de las estructuras del jardín surrealista enmarcada por la vegetación de Las Pozas" },
+      { src: "/imagenes/sotano-de-las-huahuas/pericos.jpg",          alt: "Pericos volando sobre la boca del Sótano de las Huahuas al atardecer" },
+      { src: "/imagenes/cascada-el-meco/gallery-10.jpg",             alt: "La Cascada del Meco cayendo sobre su poza turquesa, encajonada en el cañón" },
+      { src: "/imagenes/cascadas-minas-viejas/gallery-9.jpg",        alt: "Las terrazas de travertino de Minas Viejas, escalonadas sobre el agua verde jade" },
+      { src: "/imagenes/cascada-el-salto/gallery-3.jpg",             alt: "La cortina de agua de El Salto, en el norte de la Huasteca Potosina" },
+      { src: "/imagenes/cascada-de-tamul/vista-abajo.jpg",           alt: "El cañón del Tampaón visto desde lo alto, con el río turquesa corriendo al fondo" },
+      { src: "/imagenes/las-pozas-jardin-surrealista/gallery-9.jpg", alt: "Escaleras y columnas del jardín de Edward James entre la selva de Xilitla" },
     ],
   },
 ];

@@ -12,7 +12,7 @@ import { GOOGLE_PERFIL_URL, GOOGLE_RATING } from "@/lib/resenas";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { precioVisible } from "@/lib/paquetes";
 import { PCTS_PAQUETE } from "@/lib/paquetePricing";
-import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
+import { ToursFiltroReservar } from "@/components/reservar/ToursFiltroReservar";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildTourOffer, ORG_REF } from "@/lib/jsonld";
 import { getBooking } from "@/lib/i18n/booking";
@@ -210,16 +210,12 @@ export default async function ReservarPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {tours.map((tour, i) => (
-            <TarjetaTourReservar
-              key={tour.id}
-              tour={tour}
-              esTop={stats?.masReservado === tour.slug}
-              delay={Math.min(i, 8) * 60}
-            />
-          ))}
-        </div>
+        {/* El mismo filtro que el inicio (8 oct 2026). El buscador del hero manda
+            aquí, y quien eligió «cascadas, 20 de noviembre, 4 personas» llegaba
+            a quince tarjetas sin filtrar y tenía que volver a buscar a ojo lo
+            que acababa de pedir. La intención viaja en sessionStorage, no en la
+            URL: así esta página sigue sirviendo el mismo HTML para todos. */}
+        <ToursFiltroReservar tours={tours} masReservado={stats?.masReservado ?? undefined} />
       </section>
 
       {/* ── PAQUETES ───────────────────────────────────────────────────── */}

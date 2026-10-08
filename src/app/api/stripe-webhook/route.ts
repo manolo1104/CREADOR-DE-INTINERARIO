@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { marcarLinkPagado } from "@/lib/admin/linksPago";
@@ -11,6 +12,8 @@ import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 import { leerJson, reconstruirLineas } from "@/lib/webhookRecuperacion";
 import { enviarCompraGA4 } from "@/lib/ga4Server";
+import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
+import { TOURS_DB } from "@/lib/tours";
 
 export const runtime = "nodejs";
 
@@ -246,8 +249,10 @@ export async function POST(req: NextRequest) {
           const notas = [
             "Reserva registrada automáticamente por webhook — el cliente no completó la pantalla de confirmación.",
             locale === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : "",
+            // Lo PIDIÓ, que no es lo mismo que haber comprado desde /en.
+            meta.idiomaTour === "en" ? "🗣️ PIDIÓ GUÍA EN INGLÉS (sin costo): asignar guía bilingüe o avisarle antes por WhatsApp." : "",
             meta.addOns    ? `ACTIVIDAD EXTRA CONTRATADA: ${meta.addOns}` : "",
-            meta.viajeroSolo ? `VIAJA SOLO (${meta.viajeroSolo}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.` : "",
+            meta.viajeroSolo ? `BAJO EL MÍNIMO (${meta.viajeroSolo}): pagó tarifa normal. Sumarlo a una salida compartida y confirmarle ${CONFIRMA_SALIDA_DIAS} días antes; si no se junta, REEMBOLSO del 100 %.` : "",
             meta.hospedaje ? `Hospedaje: ${meta.hospedaje}` : "",
             meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
             // Eventos de Xantolo (4 oct 2026): lo que se opera esa noche y, en la
@@ -284,6 +289,11 @@ export async function POST(req: NextRequest) {
                     subtotal:     Number(hotel.total) || 0,
                   }]
                 : undefined,
+              // El idioma del GUÍA, de la metadata que escribió el servidor al
+              // crear el cobro. Mismo valor que escribe `send-confirmation`: si
+              // solo uno de los dos lo pusiera, la mitad de las reservas —las de
+              // la pestaña cerrada— perderían el dato.
+              idiomaTour:            meta.idiomaTour === "en" ? "en" : "es",
               status:                "paid",
             },
           });
@@ -364,6 +374,8 @@ export async function POST(req: NextRequest) {
                     }]
                   : undefined,
                 locale,
+                // Lo mismo que se acaba de guardar en la reserva.
+                idiomaTour:    meta.idiomaTour === "en" ? "en" : "es",
               });
               await sendBrevoEmail({
                 to:  [{ email: clienteEmail, name: meta.customerName || undefined }],
@@ -403,6 +415,11 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // La reserva ya existe (la de aquí o la de `send-confirmation`): se
+        // suelta el apartado de 15 minutos del carrito (`lib/apartadosAlmacen.ts`).
+        // Si se cerró la pestaña, nadie más lo haría y estorbaría hasta vencer.
+        if (esIdApartado(meta.apartadoId)) await liberarApartado(meta.apartadoId);
+
         // ── La venta, contada desde el servidor ─────────────────────────────
         // Va FUERA del `if (!existing)`: ahí dentro solo están las reservas que
         // hubo que recuperar porque el cliente cerró la pestaña —la minoría—, y
@@ -412,6 +429,18 @@ export async function POST(req: NextRequest) {
         // `transaction_id` y GA4 se queda con una sola: es deduplicación, no
         // doble conteo.
         const lineasGA4 = reconstruirLineas(meta);
+        // En cada artículo `price` es el de UNA persona y `quantity` cuántas:
+        // GA4 saca el ingreso del recorrido multiplicando los dos. Con el
+        // subtotal entero en `price`, una reserva de $3,000 para 4 salía como
+        // $12,000 de ese tour. A centavos, igual que el navegador.
+        const porPersona = (total: number, personas: number) => Math.round((total / personas) * 100) / 100;
+        const personasSuelto = (Number(meta.adults) || 1) + (Number(meta.children) || 0);
+        // El `item_id` tiene que ser el MISMO en todo el embudo: `view_item` y
+        // `add_to_cart` mandan el id del tour (`tour-tamul`), no su slug. Con el
+        // slug aquí, GA4 veía dos productos distintos y el embudo por recorrido
+        // no cuadraba.
+        const idGA4 = (slug?: string, respaldo?: string) =>
+          (slug && TOURS_DB.find((t) => t.slug === slug)?.id) || respaldo || slug || "tour";
         await enviarCompraGA4({
           transactionId: folioParaGA4 || pi.id,
           clientId:      meta.gaClientId || null,
@@ -419,19 +448,23 @@ export async function POST(req: NextRequest) {
           paymentPlan:   Number(meta.pctPagado) || undefined,
           hasHotel:      !!meta.hospedaje,
           hasTransfer:   !!meta.traslado,
+          reservaTotal:  Number(meta.totalCompleto) || undefined,
           items: lineasGA4.length
-            ? lineasGA4.map((l) => ({
-                item_id:   l.tourSlug || meta.tourSlug || meta.tourId,
-                item_name: l.tourName,
-                price:     l.subtotal ?? 0,
-                quantity:  (l.adults ?? 0) + (l.children ?? 0) || 1,
-              }))
+            ? lineasGA4.map((l) => {
+                const personas = (l.adults ?? 0) + (l.children ?? 0) || 1;
+                return {
+                  item_id:   idGA4(l.tourSlug || meta.tourSlug, meta.tourId),
+                  item_name: l.tourName,
+                  price:     porPersona(l.subtotal ?? 0, personas),
+                  quantity:  personas,
+                };
+              })
             // Tour suelto: la metadata no trae `items`, los datos van planos.
             : [{
-                item_id:   meta.tourSlug || meta.tourId,
+                item_id:   idGA4(meta.tourSlug, meta.tourId),
                 item_name: meta.tourName || "Tour Huasteca",
-                price:     Number(meta.totalCompleto) || Math.round((pi.amount_received || pi.amount) / 100),
-                quantity:  (Number(meta.adults) || 1) + (Number(meta.children) || 0),
+                price:     porPersona(Number(meta.totalCompleto) || Math.round((pi.amount_received || pi.amount) / 100), personasSuelto),
+                quantity:  personasSuelto,
               }],
         });
       } catch (e) {

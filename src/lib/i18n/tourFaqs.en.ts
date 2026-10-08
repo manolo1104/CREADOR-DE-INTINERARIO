@@ -146,7 +146,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "Does the guide speak English?",
-      a: "Our guides are NOM-09 certified and fully bilingual guides are available — just ask when you book and we'll assign one.",
+      a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
     },
     {
       q: "How long do we spend at each stop?",
@@ -261,6 +261,53 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     {
       q: "Is it cold in La Trinidad?",
       a: "Yes, even when you're sweating down in Xilitla. La Trinidad sits in one of the best-preserved cloud forests in the Huasteca, cool and damp all year, with mist tangled in the pines. Bring a jacket or rain shell.",
+    },
+  ],
+
+  "tour-huasteca-instagrameable": [
+    {
+      q: "What photos am I actually going home with?",
+      a: "The frames of your day, which your guide already has mapped. Day 1: the canoe entering the canyon between hundred-metre walls, you on the rock with Tamul’s 105 metres behind you, the turquoise water from inside the canoe, and in the afternoon Edward James’s columns and arches and the staircase that leads nowhere, in the 5 PM light. Day 2: the jump into the Micos pool, the stepped drops from the bank and, at dusk, the parakeets pouring into the Huahuas Sinkhole. Day 3: the travertine terraces and the twin curtain of Minas Viejas from the walkway, El Meco between 9 and 11 AM — its hour — and the drop at El Salto.",
+    },
+    {
+      q: "How many photos do I get, and when?",
+      a: "Between 25 and 30 edited photographs, in a private folder sent to you by WhatsApp or email within 3 days of the tour. They are not the raw files: they are selected and adjusted for light and colour.",
+    },
+    {
+      q: "Who takes the photos? Is there a separate photographer?",
+      a: "Your guide takes them, with a Fujifilm X-T30 II — not a phone. There is no extra photographer: there is a guide who knows the exact spots at each place, the hour each one looks best, and where to put you. That is also why the group is 6 people max.",
+    },
+    {
+      q: "Can I use the photos on my social media? Do you use them too?",
+      a: "They are yours and you can post them anywhere, no permission needed. We may also use one or two on our own channels or website; if you’d rather we didn’t, tell us on the day and we won’t use any.",
+    },
+    {
+      q: "Do you fly a drone?",
+      a: "No. Las Pozas does not allow drones or tripods, so neither is part of this tour. Photos are taken handheld. The only tour of ours with drone video is the Rappel at Tamul Waterfall, because that gear belongs to the rappel operator.",
+    },
+    {
+      q: "Why doesn’t Day 1 run on Tuesdays?",
+      a: "Because Day 1 enters Las Pozas on the 5:00 PM schedule, and the garden only opens that slot Wednesday through Monday. On Tuesdays it doesn’t exist, and moving the garden to the morning would make the Tamul canoe trip impossible on the same day. Days 2 and 3 run any day.",
+    },
+    {
+      q: "Can I do all three days?",
+      a: "Yes. They are three different days at the same price per person, and they can be taken back to back: Tamul and Las Pozas, Micos and the Huahuas Sinkhole, and Minas Viejas with El Meco and El Salto. Message us on WhatsApp and we’ll put the three days and their dates into a single quote.",
+    },
+    {
+      q: "Does the guide tell me how to pose?",
+      a: "He tells you where to stand, what’s behind you and where to look, and he’ll suggest framings if you want them. If you’d rather not be directed and just be photographed as you go, that works too — say so at the start of the day.",
+    },
+    {
+      q: "What if the photos never arrive?",
+      a: "Message us on WhatsApp once the third day has passed and we’ll send them. Keep your booking reference: that’s how the team finds your folder. If the deadline has gone by, tell us — don’t wait weeks — because photos are filed by departure, and the sooner you say something the faster they turn up.",
+    },
+    {
+      q: "Can we have an English-speaking guide?",
+      a: "Tick «I'd like an English-speaking guide» in the checkout — it's free. We note it on your booking and send a guide who speaks English; if we don't have a bilingual guide that day, we tell you on WhatsApp before your date.",
+    },
+    {
+      q: "What if it rains or the river closes?",
+      a: "If the river closes the way to Tamul, Day 1 is rearranged at no cost: you see the waterfall from the upper lookout and the garden stays in the plan. If rain makes the full tour impossible, we reschedule it or refund what you paid, as on every tour of ours.",
     },
   ],
 };

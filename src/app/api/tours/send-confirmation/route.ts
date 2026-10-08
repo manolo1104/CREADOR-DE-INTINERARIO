@@ -9,6 +9,7 @@ import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
 import { actividad, mxn, nombreCorto } from "@/lib/logger";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
+import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import fs from "fs";
 import path from "path";
 
@@ -115,9 +116,26 @@ export async function POST(req: NextRequest) {
           lineItems:      Array.isArray(lineItems) && lineItems.length
             ? [...lineItems, { _meta: true, locale: locale === "en" ? "en" : "es" }]
             : [{ _meta: true, locale: locale === "en" ? "en" : "es" }],
+          /**
+           * En qué idioma tiene que salir el GUÍA. Sale de la metadata del
+           * PaymentIntent y NO del cuerpo de la petición: la metadata la
+           * escribió el servidor al crear el cobro, el cuerpo lo manda el
+           * navegador. Es el mismo criterio que ya se usa para el importe.
+           *
+           * 🔴 Hasta hoy nadie escribía esta columna y TODA reserva web entraba
+           * como «es», incluso las de `/en`. El panel lleva semanas pintando un
+           * dato que siempre decía lo mismo.
+           */
+          idiomaTour:     pi.metadata?.idiomaTour === "en" ? "en" : "es",
           status:         "paid",
         },
       });
+      // Los lugares ya son una reserva: se suelta el apartado del carrito
+      // (`lib/apartadosAlmacen.ts`). Después de crearla y nunca antes: en medio
+      // no contarían ni el apartado ni la reserva. Viene en la metadata del
+      // pago o, si el reloj arrancó después de crear el cobro, en el cuerpo.
+      const apartadoId = [pi.metadata?.apartadoId, body.apartadoId].find(esIdApartado);
+      if (apartadoId) await liberarApartado(apartadoId);
       // El renglón de cobro: sin esto, una venta pagada con tarjeta no aparece
       // en el desglose "cómo entró el dinero" del corte.
       if (cobrado > 0) {
@@ -194,6 +212,9 @@ export async function POST(req: NextRequest) {
           lineItems:     Array.isArray(lineItems) ? lineItems.filter((l: any) => l && !l._meta) : undefined,
           packageItems:  Array.isArray(packageItems) ? packageItems : undefined,
           locale,
+          // De la metadata del PaymentIntent, igual que la reserva: el correo
+          // dice lo mismo que quedó guardado.
+          idiomaTour:    pi.metadata?.idiomaTour === "en" ? "en" : "es",
         });
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";

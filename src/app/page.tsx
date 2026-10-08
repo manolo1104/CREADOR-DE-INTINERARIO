@@ -3,48 +3,45 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { TOURS_DB, partesRecogida, GRUPO_MAX, PROMO_TEMPORADA, promoVigente } from "@/lib/tours";
+import { TOURS_DB, partesRecogida, GRUPO_MIN, GRUPO_MAX, TOUR_CATEGORIAS, rankTour, salidaCorta } from "@/lib/tours";
 import { incluyeDesayuno, rangoPorPersona } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, getPaquete } from "@/lib/paquetes";
 import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_PERFIL_URL } from "@/lib/resenas";
 import { GUIAS } from "@/lib/guias";
-import { TourCard } from "@/components/TourCard";
-import { UrgencyWidget } from "@/components/UrgencyWidget";
+import { BuscadorHero, type GrupoOpciones } from "@/components/BuscadorHero";
+import { ToursGridFiltrable } from "@/components/ToursGridFiltrable";
+import { BloqueConfianza } from "@/components/BloqueConfianza";
+import { PruebaSocial } from "@/components/PruebaSocial";
+import { MapaRegion } from "@/components/MapaRegion";
+import { FaqInicio } from "@/components/FaqInicio";
+import { ETIQUETAS, etiquetasDeTour } from "@/lib/etiquetasTour";
+import { TAMANO_H1_HERO } from "@/lib/hero";
 import { HeroTypewriter } from "@/components/HeroTypewriter";
 import { StatTile } from "@/components/StatTile";
 import { MagneticButton } from "@/components/MagneticButton";
+import { ReservaDirecto } from "@/components/ReservaDirecto";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { HeroStats } from "@/components/HeroStats";
 import { HeroVideo } from "@/components/HeroVideo";
 import { CarruselPromos } from "@/components/CarruselPromos";
 import { ClimaHero } from "@/components/ClimaHero";
 import { VisitantesEnVivo } from "@/components/VisitantesEnVivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { CountdownViaje } from "@/components/CountdownViaje";
-import { GuiaMockup } from "@/components/GuiaMockup";
-import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 import { BandaTemporada } from "@/components/BandaTemporada";
+import { fechaInicioTexto } from "@/lib/temporada";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationJsonLd, buildTourOffer, ORG_REF } from "@/lib/jsonld";
 import { localizeTour } from "@/lib/i18n/localize";
 import { urlBlog } from "@/lib/blogDestinoMap";
 import { TRASLADOS, tarifaTraslado } from "@/lib/traslados";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { HOTEL_PROPIO } from "@/lib/hotelPropio";
 import {
-  Droplet, Mountain, Landmark, Leaf, Camera, Thermometer,
-  MessageCircle, Star, Award, CheckCircle2,
+  MessageCircle, Star, CheckCircle2,
   Bus, Calendar, BedDouble,
-  Quote,
 } from "lucide-react";
 
 const SITE_URL = SITE;
-
-/**
- * Fin del viaje grupal de septiembre (19 sep 2026, hora de la Huasteca). El
- * aviso del inicio se apaga solo: si se queda escrito a mano, en octubre el
- * inicio sigue anunciando una salida que ya ocurrió.
- */
-const VIAJE_SEP_FIN_MS = new Date("2026-09-19T23:59:00-06:00").getTime();
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -106,9 +103,80 @@ export default async function HomePage() {
   // El blog solo existe en español: en EN no se hace fetch ni se muestra.
   const recentPosts = en ? [] : await getRandomPosts();
   const tours = TOURS_DB.map((t) => localizeTour(t, locale));
-  // En el inicio mostramos solo 3 tours destacados; el botón lleva al catálogo completo.
-  const HOME_TOUR_SLUGS = ["expedicion-tamul", "cascadas-del-meco", "ruta-surrealista-edward-james"];
-  const toursHome = HOME_TOUR_SLUGS.map((s) => tours.find((t) => t.slug === s)).filter(Boolean) as typeof tours;
+  /* 🔴 Eran tres slugs elegidos a mano: el 80 % del catálogo no existía desde
+     la portada. Ahora van los quince, ordenados por `rankTour` —el orden real
+     de ventas del panel, no el alfabético— y se filtran en el cliente. */
+  const toursOrdenados = [...tours].sort((a, b) => rankTour(a.slug) - rankTour(b.slug));
+
+  /* Los del `ItemList` de datos estructurados. Son seis y no los quince a
+     propósito: /tours ya publica el catálogo entero y es la página que compite
+     por «tours huasteca potosina»; repetir ahí el mismo ItemList pone a las dos
+     a pelearse por la misma consulta. */
+  const toursDestacados = toursOrdenados.slice(0, 6);
+
+  /* Las opciones del buscador del hero: las tres familias del catálogo, las
+     etiquetas, y los quince recorridos agrupados por familia. Se arma aquí, en
+     el servidor, para no mandar TOURS_DB entero al cliente solo por los nombres. */
+  const gruposDeBusqueda: GrupoOpciones[] = [
+    {
+      grupo: en ? "By type" : "Por tipo",
+      opciones: [
+        ...TOUR_CATEGORIAS
+          .filter((c) => tours.some((t) => t.categoria === c.id))
+          .map((c) => ({ valor: `cat:${c.id}`, etiqueta: en ? c.labelEn : c.label })),
+        ...ETIQUETAS
+          .filter((e) => tours.some((t) => etiquetasDeTour(t).includes(e.id)))
+          .map((e) => ({ valor: `tag:${e.id}`, etiqueta: en ? e.labelEn : e.label })),
+      ],
+    },
+    ...TOUR_CATEGORIAS.map((c) => ({
+      grupo: en ? c.labelEn : c.label,
+      opciones: toursOrdenados
+        .filter((t) => t.categoria === c.id)
+        /* `salida` viaja con cada recorrido para que el calendario del hero
+           diga la hora de ESE tour al elegir el día. Sin ella escribía la misma
+           para todos, y la Gruta de Xilo sale a las 7 de la NOCHE. */
+        .map((t) => ({ valor: `tour:${t.slug}`, etiqueta: t.nombreCorto, salida: salidaCorta(t, en) })),
+    })).filter((g) => g.opciones.length > 0),
+  ];
+
+  /* El muro de fotos de la prueba social: las primeras de las galerías REALES
+     de los recorridos. Nada de `/imagenes/reviews/`, que son de banco.
+
+     🔴 8 oct 2026, Manolo: la loseta de «Expedición Tamul» salía con el sótano
+     de las Huahuas visto desde el fondo —una foto oscura de un abismo— debajo de
+     una etiqueta que promete una cascada. Para los recorridos de esta lista la
+     loseta usa la PORTADA de su ficha, que es la foto por la que se entra.
+     Es una lista y no la regla general porque las otras siete galerías sí
+     empiezan con una foto que corresponde a su etiqueta. */
+  /* El alt va escrito aquí y no se busca en la galería: `imagen_hero` es solo
+     una ruta, sin texto, y las traducciones de `tours.en.ts` van POR POSICIÓN
+     dentro de `gallery` —meter la portada ahí correría todas las demás. */
+  const PORTADA_EN_EL_MURO: Record<string, { es: string; en: string }> = {
+    "expedicion-tamul": {
+      es: "Cascada de Tamul — la caída al fondo del cañón, sobre el agua turquesa del Tampaón",
+      en: "Tamul Waterfall — the drop at the end of the canyon, above the turquoise Tampaón river",
+    },
+  };
+  const fotosViajeros = toursOrdenados
+    .flatMap((t) => {
+      const portada = PORTADA_EN_EL_MURO[t.slug];
+      if (portada && t.imagen_hero) {
+        /* `posicionHero` viaja con ella: el muro recorta en cuadrado y la
+           portada está encuadrada para un hero panorámico. */
+        return [{
+          src: t.imagen_hero,
+          alt: en ? portada.en : portada.es,
+          tour: t.nombreCorto,
+          slug: t.slug,
+          pos: t.posicionHero,
+        }];
+      }
+      return t.gallery?.[0]
+        ? [{ src: t.gallery[0].src, alt: t.gallery[0].alt, tour: t.nombreCorto, slug: t.slug }]
+        : [];
+    })
+    .slice(0, 8);
   const desdePersona = rangoPorPersona().min;
   const nConTraslado = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
   const nConDesayuno = TOURS_DB.filter(incluyeDesayuno).length;
@@ -119,18 +187,21 @@ export default async function HomePage() {
   const salvoEs = sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : "";
   const salvoEn = sinReembolso.length ? ` (except ${sinReembolso.join(", ")})` : "";
 
-  const CATEGORIAS = [
-    { Icon: Droplet,     label: en ? "Waterfalls & Pools" : "Cascadas & Pozas",  href: lp("/experiencias?tipo=cascadas") },
-    { Icon: Mountain,    label: en ? "Extreme Adventure"  : "Aventura Extrema",  href: lp("/experiencias?tipo=aventura") },
-    { Icon: Landmark,    label: en ? "Culture & Art"      : "Cultura & Arte",    href: lp("/experiencias?tipo=cultura") },
-    { Icon: Leaf,        label: en ? "Ecotourism"         : "Ecoturismo",        href: lp("/experiencias?tipo=naturaleza") },
-    { Icon: Camera,      label: en ? "Photography"        : "Fotografía",        href: lp("/experiencias?tipo=fotografia") },
-    { Icon: Thermometer, label: en ? "Wellness"           : "Bienestar",         href: lp("/experiencias?tipo=bienestar") },
-  ];
+  /* 🔴 Aquí vivían seis píldoras de categoría —Cascadas, Aventura, Cultura,
+     Ecoturismo, Fotografía, Bienestar— que apuntaban a
+     `/experiencias?tipo=cascadas`. Comprobado el 7 oct 2026: `/experiencias` NO
+     lee ningún `searchParams`, así que las seis llevaban al mismo listado sin
+     filtrar. Eran adorno, y su taxonomía no existe en el catálogo. Su trabajo
+     lo hace ahora el filtro de verdad de `ToursGridFiltrable` (las tres
+     familias de `TOUR_CATEGORIAS` más las etiquetas de `etiquetasTour.ts`). */
 
   const REGION_STATS = [
     { num: "105m",                   label: en ? "The tallest waterfall" : "La cascada más alta" },
-    { num: "333m",                   label: en ? "Deepest sinkhole"      : "Sótano más profundo" },
+    /* 🔴 Decía «333 m · Sótano más profundo». Esos 333 m son del Sótano de las
+       Golondrinas, que NO operamos (Golondrinas y Huahuas son sitios distintos;
+       ver la nota de `temporada.ts`). El nuestro es el Sótano de las Huahuas y
+       mide 478 m — la misma cifra que ya corrigieron las fichas el 28 sep. */
+    { num: "478m",                   label: en ? "Our sinkhole, Las Huahuas" : "Sótano de las Huahuas" },
     { num: `+${DESTINOS_DB.length}`, label: en ? "Unique destinations"   : "Destinos únicos" },
     { num: en ? "Year-round" : "Todo el año", label: en ? "Open season"  : "Temporada abierta" },
   ];
@@ -158,8 +229,8 @@ export default async function HomePage() {
     name: en ? "Featured Huasteca Potosina tours" : "Tours destacados de la Huasteca Potosina",
     url: `${SITE_URL}${lp("/")}`,
     inLanguage: en ? "en" : "es-MX",
-    numberOfItems: toursHome.length,
-    itemListElement: toursHome.map((t, i) => ({
+    numberOfItems: toursDestacados.length,
+    itemListElement: toursDestacados.map((t, i) => ({
       "@type": "ListItem",
       position: i + 1,
       item: {
@@ -239,17 +310,12 @@ export default async function HomePage() {
   // su ficha, así que la frase no se desfasa si cambian.
   const paqueteIngles = getPaquete("inmersion-huasteca") ?? PAQUETES_DB[0];
 
-  const TESTIMONIOS = en
-    ? [
-        { img: "/imagenes/reviews/reviewer-turquoise-group.png", imgAlt: "Group of travelers in the turquoise waters of the Huasteca", foto: "/imagenes/reviews/reviewer-5.jpg", quote: "Incredible experience! The turquoise water is like nothing we'd ever seen. Our guide was outstanding — he knew every detail of the region and looked after us the whole time. We already booked to come back with more family!", nombre: "Carlos M.", meta: "Monterrey, N.L. · All Huasteca Tour · Mar 2026" },
-        { img: "/imagenes/reviews/reviewer-familia-tamul.png", imgAlt: "Family in front of Tamul Waterfall", foto: "/imagenes/reviews/reviewer-29.jpg", quote: "We took our kids for the first time and it was absolutely magical. Tamul Waterfall exceeded all our expectations. Punctual transport, attentive guide, all-inclusive. The best thing we've done as a family.", nombre: "Ana González", meta: "Mexico City · Tamul Waterfall Tour · Feb 2026" },
-        { img: "/imagenes/reviews/reviewer-tamul-grupo.jpg", imgAlt: "Group of friends in the Tamul Canyon", foto: "/imagenes/reviews/reviewer-3.jpg", quote: "We organized the trip for 8 friends and it was perfectly coordinated. From booking to the last moment of the tour, everything was flawless. The Tamul Canyon landscape is simply unreal. I'll definitely be back!", nombre: "Sofía R.", meta: "Guadalajara, Jal. · Tamul & Río Gallinas Tour · Jan 2026" },
-      ]
-    : [
-        { img: "/imagenes/reviews/reviewer-turquoise-group.png", imgAlt: "Grupo de viajeros en las aguas turquesas de la Huasteca", foto: "/imagenes/reviews/reviewer-5.jpg", quote: "¡Increíble experiencia! El agua turquesa es algo que jamás habíamos visto. El guía fue extraordinario — conocía cada detalle de la región y nos cuidó en todo momento. ¡Ya reservamos para volver con más familia!", nombre: "Carlos M.", meta: "Monterrey, N.L. · Tour Todo Huasteca · Mar 2026" },
-        { img: "/imagenes/reviews/reviewer-familia-tamul.png", imgAlt: "Familia frente a la Cascada Tamul", foto: "/imagenes/reviews/reviewer-29.jpg", quote: "Llevamos a nuestros hijos por primera vez y fue absolutamente mágico. La cascada Tamul superó todas nuestras expectativas. Transporte puntual, guía atento y todo incluido. Lo más recomendable que hemos hecho en familia.", nombre: "Ana González", meta: "Ciudad de México · Tour Cascada Tamul · Feb 2026" },
-        { img: "/imagenes/reviews/reviewer-tamul-grupo.jpg", imgAlt: "Grupo de amigos en el Cañón del Tamul", foto: "/imagenes/reviews/reviewer-3.jpg", quote: "Organizamos el viaje para 8 amigos y fue perfectamente coordinado. Desde la reserva hasta el último momento del tour, todo impecable. El paisaje del Cañón del Tamul es simplemente irreal. ¡Vuelvo seguro!", nombre: "Sofía R.", meta: "Guadalajara, Jal. · Tour Tamul & Río Gallinas · Ene 2026" },
-      ];
+  /* 🔴 Aquí vivían TRES RESEÑAS INVENTADAS («Carlos M.» de Monterrey, «Ana
+     González» de CDMX, «Sofía R.» de Guadalajara), con caras de banco de
+     imágenes, debajo de un H2 que decía «161 Reseñas · 4.7 estrellas»: la cifra
+     real de Google envolviendo citas falsas. Se fueron el 7 oct 2026. Lo que se
+     pinta ahora sale de `lib/resenasReales.ts`, que nace VACÍO: hasta que
+     Manolo copie las de su perfil, el inicio no muestra ninguna cita. */
 
   return (
     <main id="main-content" className="min-h-screen bg-crema">
@@ -263,7 +329,31 @@ export default async function HomePage() {
       {/* ── HERO ── */}
       <section
         aria-label={en ? "Welcome to the Huasteca Potosina" : "Bienvenida a la Huasteca Potosina"}
-        className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-6 py-32 bg-negro overflow-hidden supports-[overflow:clip]:overflow-clip"
+        /* Marcador para `BarraInferiorMovil`: en el celular la barra de abajo
+           sale solo cuando este hero ya pasó, para no tapar su «Reservar tour». */
+        data-hero-inicio=""
+        /* 🔴 `min-h-[100svh]` y no `90vh`, con el relleno de arriba más grande que la
+           barra del río + el menú (109 px en el teléfono).
+           El menú es `fixed` y el hero empieza en y=0, debajo de él. Con
+           `justify-center`, cuando el contenido es más alto que el hueco
+           disponible el sobrante se reparte por ARRIBA y por abajo: el relleno
+           deja de ser un suelo. Al crecer el buscador —el calendario de verdad
+           ocupa más que el campo de fecha que había— la ceja («✦ Tours Huasteca
+           Potosina · San Luis Potosí ✦») se subió a y=96 y quedó TAPADA por el
+           menú. Con la pantalla completa el sobrante desaparece y vuelve a
+           caber. `svh` y no `vh`: en el teléfono `vh` cuenta la barra de
+           direcciones que luego se esconde. */
+        /* 🔴 En el TELÉFONO el contenido se ancla arriba (`justify-start`) con un
+           relleno mayor que la barra del río + el menú, que son fijos y se
+           pintan encima del hero. Con `justify-center` el relleno NO es un
+           suelo: en cuanto el contenido pasa del hueco disponible, el sobrante
+           se reparte por arriba y la ceja se mete debajo del menú — a 360 px
+           quedaban 4 px de holgura. Anclado arriba, la holgura es fija y de
+           paso el buscador sube. En `sm` para arriba sobra sitio y vuelve a ir
+           centrado, que es como se diseñó.
+           `svh` y no `vh`: en el teléfono `vh` cuenta la barra de direcciones
+           que luego se esconde. */
+        className="relative min-h-[100svh] flex flex-col items-center justify-start sm:justify-center text-center px-6 pt-[9.5rem] pb-14 sm:pt-32 bg-negro overflow-hidden supports-[overflow:clip]:overflow-clip"
       >
         {/* El video se queda FIJO a la pantalla mientras se baja por el hero.
             El hero mide casi dos pantallas en el teléfono (390×1514) y más de
@@ -280,225 +370,115 @@ export default async function HomePage() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-negro/60 via-negro/50 to-negro/85" />
 
-        <div className="relative z-10 flex flex-col items-center">
+        {/* 🔴 `lg:max-w-5xl`: el contenedor topaba en 768 px y era él, no el
+            buscador, quien le quitaba el ancho. Con tres campos y el botón en
+            una fila de 768, «Todos los recorridos» y «Cualquier día» salían
+            cortados. El párrafo lleva su propio `max-w-xl`, así que ensanchar
+            esto solo afecta al buscador y a la línea de confianza. */}
+        <div className="relative z-10 flex w-full max-w-3xl flex-col items-center lg:max-w-5xl">
           {/* La etiqueta va FUERA del h1: el h1 tiene que leerse «La Huasteca
               Potosina» (la región, ver generateMetadata). «Tours Huasteca
               Potosina» es la consulta de /tours. */}
-          <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-8 font-dm font-normal drop-shadow-lg">
+          {/* 🔴 `max-w-full` y menos espaciado en el teléfono: el contenedor es
+              un flex centrado, así que cada hijo mide lo que mide su contenido.
+              Con 5 px de `tracking` esta línea medía ~460 px y a 390 el hero la
+              recortaba por los dos lados («…LUIS POTOSÍ ✦»). */}
+          <p className="max-w-full text-[10px] tracking-[2px] sm:tracking-[5px] uppercase text-verde-vivo mb-5 font-dm font-normal drop-shadow-lg">
             ✦ {en ? "Huasteca Potosina Tours" : "Tours Huasteca Potosina"} · San Luis Potosí ✦
           </p>
-          <h1 className="font-cormorant font-light leading-[0.9] tracking-tight mb-8 drop-shadow-2xl">
-            <span className="block text-white" style={{ fontSize: "clamp(64px,12vw,130px)" }}>
+          {/* 🔴 Medía clamp(64px,12vw,130px). Dos renglones de 130 px, más un
+              párrafo de cuatro líneas, se comían la primera pantalla entera y
+              los botones de reservar caían debajo del pliegue (medido a
+              390×844, un iPhone en vertical). El tamaño vive en
+              TAMANO_H1_HERO para que el renglón del typewriter no se vuelva a
+              separar de este. */}
+          <h1 className="font-cormorant font-light leading-[0.95] tracking-tight mb-5 drop-shadow-2xl">
+            <span className="block text-white" style={{ fontSize: TAMANO_H1_HERO }}>
               {en ? "The Huasteca" : "La Huasteca"}
             </span>
             <HeroTypewriter />
           </h1>
 
-          <p className="text-crema/80 max-w-xl mb-6 leading-relaxed font-dm drop-shadow" style={{ fontSize: "clamp(15px,1.8vw,18px)" }}>
-            {/* Antes esta línea describía la REGIÓN ("cascadas turquesas,
-                jardines surrealistas…"), no la empresa: cualquiera de los seis
-                competidores podía pegarla igual. Ahora dice lo único que ellos
-                no pueden copiar — que somos de Xilitla y el hotel y el
-                restaurante son nuestros. Sin superlativos: Huasteca Sharet
-                también tiene hospedaje propio, pero desde Ciudad Valles. */}
-            {/* El inglés SÍ abre describiendo la región, al revés que el
-                español: un mexicano ya sabe qué es la Huasteca, un americano no
-                ha oído el nombre en su vida. Primero se le dice qué hay —con
-                datos concretos que ningún competidor puede copiar: los 344 pies
-                del Tamul y Las Pozas— y enseguida el foso (hotel y guías
-                propios) y cómo llegar. No volver a quitarle la descripción. */}
+          {/* 🔴 Eran cuatro líneas. El texto largo —lo que hay en la región, el
+              foso del hotel y los guías, cómo llegar— se mudó al bloque «Por
+              qué con nosotros», que es donde alguien que está leyendo quiere
+              leerlo. Aquí queda UNA línea de posicionamiento: lo único que los
+              seis competidores no pueden pegar en su sitio.
+              El inglés conserva el nombre de la región, que un americano no ha
+              oído en su vida; el detalle de los 344 pies y Las Pozas vive ahora
+              en el bloque de más abajo. */}
+          <p className="text-crema/85 max-w-xl mb-7 leading-snug font-dm drop-shadow" style={{ fontSize: "clamp(15px,1.8vw,18px)" }}>
+            {/* «y salimos también de Ciudad Valles» lo pidió Manolo el 8 oct:
+                sin eso la línea sugiere que hay que dormir en Xilitla, y la
+                mitad de los recorridos recoge en Valles. Es además la ciudad de
+                entrada de la región, por donde llega casi todo el mundo. */}
             {en
-              ? "Turquoise rivers, a 344-foot waterfall, and a surrealist castle an English poet built in the jungle. We're from Xilitla — the hotel, the restaurant and the guides are ours. Fly into Tampico and we'll pick you up. NOM-09 certified guides and travel insurance included."
-              : "Somos de Xilitla y aquí tenemos nuestro hotel y nuestro restaurante. Duermes, comes y sales al tour desde el mismo lugar — y también te recogemos en Ciudad Valles. Guías certificados NOM-09 y seguro de viaje incluidos."}
+              ? "Local operator in Xilitla, Huasteca Potosina: the hotel, the restaurant and the guides are ours — and we run departures from Ciudad Valles too."
+              : "Operadora local en Xilitla: el hotel, el restaurante y los guías son nuestros, y también salimos desde Ciudad Valles."}
           </p>
 
-          <div className="flex items-center gap-2 mb-12">
-            <div className="flex gap-0.5 star-group">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-dorado text-dorado drop-shadow star-icon" />
-              ))}
-            </div>
-            <span className="font-dm text-crema/90 text-sm drop-shadow">
-              {/* La calificación sale de resenas.ts en TODO el inicio: escrita a
-                  mano, así nacieron los 4.9 que se quedaban en otras páginas. */}
-              {en ? `${GOOGLE_RATING} · Over 10,000 happy travelers` : `${GOOGLE_RATING} · Más de 10,000 viajeros satisfechos`}
-            </span>
-          </div>
+          {/* ── EL BUSCADOR ──
+              Sustituye a los dos botones («Reservar tour» / «Ver los
+              recorridos»), que caían debajo del pliegue. Ninguna de las seis
+              operadoras grandes del sector usa el hero para poesía: lo usan
+              para que el visitante declare su intención en los primeros
+              segundos. No consulta disponibilidad (ver BuscadorHero.tsx). */}
+          <BuscadorHero
+            grupos={gruposDeBusqueda}
+            minPersonas={GRUPO_MIN}
+            maxPersonas={GRUPO_MAX}
+          />
 
-          <div className="flex flex-wrap gap-4 justify-center mb-10">
-            <MagneticButton>
-              {/* Dorado = "reservar" en todo el sitio (es el color del botón del
-                  menú). Desde el 14 ago el motor existe en inglés, así que los
-                  dos idiomas van al motor: mandar el inglés al catálogo era un
-                  rodeo heredado de cuando /en/reservar era un 404. */}
-              <Link
-                href={lp("/reservar")}
-                className="bg-dorado text-negro px-10 py-4 text-sm tracking-[2px] uppercase font-dm font-medium hover:bg-terracota hover:text-crema transition-colors duration-300 flex flex-col items-center gap-0.5"
-              >
-                <span>{en ? "Book a tour →" : "Reservar tour →"}</span>
-                {/* Decía "Apartas con el 30 %" encima del botón que lleva al
-                    motor, donde la mayoría reserva UN recorrido de un día —y
-                    ésos se cobran completos (`pctACobrar`)—. La promesa del
-                    30 % se movió a donde sí aplica (el cierre, que habla de
-                    sumar noches); aquí queda la única garantía que es cierta
-                    en los dos casos. Es un sello de 9 px: la excepción del
-                    Edén (sin reembolso) la dicen su ficha y el pago. */}
-                <span className="text-[9px] tracking-[1.5px] uppercase text-negro/55 font-normal">
-                  {en ? "Free cancellation up to 48 h" : "Cancelas gratis 48 h antes"}
-                </span>
-              </Link>
-            </MagneticButton>
-            <MagneticButton>
-              {/* El segundo botón del hero mandaba al recomendador en español:
-                  en 14 días lo usaron 4 personas, mientras el catálogo llevó
-                  150 sesiones al motor. El inglés ya iba a /tours desde antes;
-                  ahora los dos van al mismo sitio y se acabó el ternario. */}
-              <Link href={lp("/tours")} className="relative bg-verde-selva text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors duration-300 flex flex-col items-center gap-0.5">
-                <span>{en ? "✦ See the tours →" : "✦ Ver los recorridos →"}</span>
-                <span className="text-[9px] tracking-[1.5px] uppercase text-crema/60 font-normal">
-                  {/* Decía "Todo incluido": el RZR no lleva traslado y al buceo
-                      llegas por tu cuenta. Igual en la franja de confianza. */}
-                  {en ? "Final price · Small groups" : "Precio final · Grupos pequeños"}
-                </span>
-              </Link>
-            </MagneticButton>
-          </div>
+          {/* ── UNA sola línea de confianza ──
+              Antes esto eran las estrellas con «Más de 10,000 viajeros» (una
+              cifra sin fuente, escrita a mano en trece sitios) y, dos pantallas
+              más abajo, una barra blanca que repetía lo mismo. Aquí va solo lo
+              verificable: la calificación real de Google, la certificación, la
+              cancelación con su excepción y el precio final. */}
+          <p className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 font-dm text-[11px] leading-relaxed text-crema/75 drop-shadow sm:text-xs">
+            <a
+              href={GOOGLE_PERFIL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-crema"
+            >
+              <Star className="h-3.5 w-3.5 fill-dorado text-dorado" aria-hidden="true" />
+              <span className="font-medium text-crema">{GOOGLE_RATING}</span>
+              {en ? `· ${GOOGLE_RESENAS} Google reviews` : `· ${GOOGLE_RESENAS} reseñas de Google`}
+            </a>
+            <span aria-hidden="true" className="text-crema/30">·</span>
+            <span>{en ? "NOM-09 certified guides" : "Guías certificados NOM-09"}</span>
+            <span aria-hidden="true" className="text-crema/30">·</span>
+            <span>{en ? `Free cancellation up to 48 h${salvoEn}` : `Cancelas gratis 48 h antes${salvoEs}`}</span>
+            <span aria-hidden="true" className="text-crema/30">·</span>
+            <span>{en ? "Final price" : "Precio final"}</span>
+          </p>
 
           {/* Vive DEBAJO de los botones a propósito: monta después de cargar y,
               arriba, su píldora empujaba los dos botones de reserva hacia abajo
               justo cuando el dedo iba a tocarlos. Además reserva su propio alto
               (ver el componente), así que nada se mueve cuando aparece. */}
-          <VisitantesEnVivo en={en} />
-
-          <ClimaHero en={en} />
-
-          <div className="mb-10 bg-white/10 backdrop-blur-sm border border-white/20 px-5 py-2.5 rounded-full">
-            <UrgencyWidget sinReembolso={sinReembolso} />
+          {/* 🔴 `mt-7`: la píldora de «N personas explorando la Huasteca ahora»
+              quedaba pegada a la línea de confianza de arriba y las dos se
+              leían como un solo párrafo (Manolo, 8 oct). Es un dato de otra
+              naturaleza —vivo, no una promesa— y necesita su propio aire. */}
+          <div className="mt-7">
+            <VisitantesEnVivo en={en} />
           </div>
 
-          <HeroStats destinosCount={DESTINOS_DB.length} />
+          {/* 🔴 Aquí vivían tres cosas más que empujaban el buscador fuera del
+              pliegue: el clima de siete días (bajó a «Antes de viajar», que es
+              donde alguien lo busca), la píldora que rotaba cuatro frases cada
+              3.8 s (`UrgencyWidget`, fuera: era ruido y una de sus frases
+              repetía la cifra sin fuente de los 10,000 viajeros) y la fila de
+              estadísticas (`HeroStats`, absorbida en la línea de confianza de
+              arriba). */}
         </div>
       </section>
 
-      {/* ── VIAJE EN GRUPO DE SEPTIEMBRE ───────────────────────────────────
-          `/viaje-septiembre` sale en Google (368 impresiones, posición 9,9) y
-          NINGUNA página pública la enlazaba: desde el sitio no había forma de
-          llegar. Va pegada al hero —lo primero que aparece al bajar, un solo
-          gesto en móvil— y se apaga sola al terminar el viaje. Las cifras son
-          las de esa misma página: 16–19 de sep, 4 días / 3 noches, 3 recorridos,
-          desde $7,900 por persona en ocupación doble y 16 lugares. */}
-      {Date.now() < VIAJE_SEP_FIN_MS && (
-        <section
-          aria-label={en ? "Group trip from Mexico City, September 16–19" : "Viaje en grupo desde CDMX, 16 al 19 de septiembre"}
-          className="bg-negro border-b border-dorado/25 px-6 py-4"
-        >
-          <Link href={lp("/viaje-septiembre")} className="group max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-center">
-            <span className="bg-dorado text-negro text-[9px] font-dm font-bold tracking-[2px] uppercase px-2.5 py-1">
-              {en ? "Scheduled departure" : "Salida programada"}
-            </span>
-            <span className="font-dm text-crema text-sm group-hover:text-dorado transition-colors">
-              {en
-                ? "Group trip to the Huasteca from Mexico City · September 16–19"
-                : "Viaje en grupo a la Huasteca desde CDMX · 16-19 de septiembre"}
-            </span>
-            <span className="font-dm text-crema/45 text-xs">
-              {en
-                ? "4 days · 3 tours · from $7,900 MXN/person · 16 spots"
-                : "4 días · 3 recorridos · desde $7,900 MXN/persona · 16 lugares"}
-            </span>
-            <span className="font-dm text-dorado text-[10px] tracking-[2px] uppercase">
-              {en ? "See the trip →" : "Ver el viaje →"}
-            </span>
-          </Link>
-        </section>
-      )}
-
-      {/* ── TEMPORADA BAJA ─────────────────────────────────────────────────
-          La promo del 29 sep al 29 oct (Manolo): $100 menos por persona en 6
-          recorridos. Mismo patrón que la franja del viaje: pegada al hero y se
-          apaga sola al vencer (`promoVigente`, evaluada por petición porque el
-          inicio es force-dynamic). El descuento real vive en TOURS_DB. */}
-      {promoVigente() && (
-        <section
-          aria-label={en ? "Low season discount" : "Descuento de temporada baja"}
-          className="bg-negro border-b border-dorado/25 px-6 py-4"
-        >
-          <Link href={lp("/tours")} className="group max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-center">
-            <span className="bg-dorado text-negro text-[9px] font-dm font-bold tracking-[2px] uppercase px-2.5 py-1">
-              {en ? "Low season" : "Temporada baja"}
-            </span>
-            <span className="font-dm text-crema text-sm group-hover:text-dorado transition-colors">
-              {en
-                ? `$${PROMO_TEMPORADA.monto} MXN off per person on ${PROMO_TEMPORADA.tours.size} tours`
-                : `$${PROMO_TEMPORADA.monto} menos por persona en ${PROMO_TEMPORADA.tours.size} recorridos`}
-            </span>
-            <span className="font-dm text-crema/45 text-xs">
-              {en
-                ? `For trips through ${PROMO_TEMPORADA.hastaTexto.en} · packages included`
-                : `Para viajes hasta el ${PROMO_TEMPORADA.hastaTexto.es} · paquetes incluidos`}
-            </span>
-            <span className="font-dm text-dorado text-[10px] tracking-[2px] uppercase">
-              {en ? "See tours →" : "Ver los tours →"}
-            </span>
-          </Link>
-        </section>
-      )}
-
-      {/* ── BADGES BANNER ── */}
-      <section aria-label={en ? "Awards and recognition" : "Premios y reconocimientos"} className="bg-negro py-5 border-b border-white/8">
-        <div className="max-w-5xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 md:gap-14">
-          <img src="/badges/tripadvisor.svg" alt="TripAdvisor" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/badges/travellers-choice.svg" alt="Travellers Choice TripAdvisor" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          <img src="/badges/top-rated-google.svg" alt="Top Rated Google Maps" loading="lazy" className="h-9 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-        </div>
-      </section>
-
-      {/* ── TRUST BAR ── */}
-      <section aria-label={en ? "Trust and guarantees" : "Confianza y garantías"} className="bg-white border-y border-negro/8 py-5 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 flex flex-wrap items-center justify-center gap-6 md:gap-10">
-          <div className="flex flex-wrap items-center gap-6 text-[10px] tracking-[1.5px] uppercase font-dm text-negro/50">
-            <span className="flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "+10,000 travelers" : "+10,000 viajeros"}</span>
-            <span className="text-negro/15 hidden sm:block">|</span>
-            {/* 🔴 Iba a maps.app.goo.gl/SWGyih…, que abre la ficha de Hotel
-                Paraíso Encantado (otra marca, otras reseñas). */}
-            <a href={GOOGLE_PERFIL_URL} target="_blank" rel="noopener noreferrer" className="hover:text-negro/80 transition-colors flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-dorado" aria-hidden="true" />
-              <span className="text-negro/70 font-medium">{GOOGLE_RATING}</span> · {en ? `${GOOGLE_RESENAS} Google reviews` : `${GOOGLE_RESENAS} reseñas Google`}
-            </a>
-            <span className="text-negro/15 hidden sm:block">|</span>
-            <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "NOM-09 guides" : "Guías NOM-09"}</span>
-            <span className="text-negro/15 hidden sm:block">|</span>
-            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "Final price" : "Precio final"}</span>
-            <span className="text-negro/15 hidden sm:block">|</span>
-            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" aria-hidden="true" /> {en ? "Daily departures" : "Salidas todos los días"}</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── TEMPORADA ──────────────────────────────────────────────────────
-          Va aquí y no pegada al hero a propósito: el hero y la banda de premios
-          ya son dos franjas oscuras seguidas, y una tercera encima convertía la
-          primera pantalla en un bloque. Entre la barra blanca de confianza y la
-          tira de arena, la franja verde parte el ritmo en vez de sumarse a él.
-          Sigue estando a un scroll corto, que es lo que pide un aviso con
-          fecha. Se esconde sola fuera de temporada. */}
-      <BandaTemporada en={en} hrefTours={lp("/tours")} />
-
-      {/* ── CATEGORÍAS STRIP ── */}
-      <section aria-label={en ? "Experience categories" : "Categorías de experiencias"} className="bg-arena/40 border-b border-negro/8 py-8 overflow-hidden">
-        <div className="overflow-x-auto scrollbar-none">
-          <div className="flex gap-3 px-6 min-w-max mx-auto justify-center">
-            {CATEGORIAS.map(({ Icon, label, href }) => (
-              <Link key={label} href={href} className="flex items-center gap-2 border border-negro/15 bg-white px-5 py-2.5 text-xs tracking-[2px] uppercase font-dm text-negro/60 hover:text-verde-selva hover:border-verde-vivo/60 hover:bg-verde-selva/5 transition-all duration-200 whitespace-nowrap">
-                <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                {label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TOURS ── */}
+      {/* ── PANTALLA 2 · EL PRODUCTO ──────────────────────────────────────
+          Sube aquí, pegado al hero: el primer recorrido con precio estaba en
+          la posición 8, a cuatro pantallas de scroll, y salían 3 de los 15. */}
       <section aria-label={en ? "Discover the region's tours" : "Descubre los destinos de la región"} className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
           <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Explore the region" : "Explora la región"}</p>
@@ -543,233 +523,30 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Más aire arriba y entre filas: el logotipo del tour sale por encima
-            del borde de su tarjeta y sin esto se montaba sobre la de arriba. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16 pt-10">
-          {toursHome.map((t) => (
-            <TourCard key={t.slug} tour={t} variant="compact" conLogo />
-          ))}
-        </div>
-
-        <div className="text-center mt-10">
-          <MagneticButton className="inline-block">
-            <Link href={lp("/tours")} className="inline-block rounded-xl border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
-              {/* El ancla decía "Ver todos los tours": ni Google ni el lector
-                  saben cuántos ni de qué. El número sale de TOURS_DB, así que
-                  no puede quedarse viejo. */}
-              {en ? `See the ${TOURS_DB.length} guided tours` : `Ver los ${TOURS_DB.length} tours guiados`}
-            </Link>
-          </MagneticButton>
+        {/* El catálogo COMPLETO, con filtro de verdad. Antes salían tres
+            recorridos elegidos a mano (`HOME_TOUR_SLUGS`) y el 80 % del
+            catálogo no existía desde la portada. Sin `conLogo`: solo seis de
+            los quince tienen logotipo y en una rejilla de quince la mitad
+            salía con un rótulo enorme encima y la otra mitad sin nada. */}
+        <div className="pt-4">
+          <ToursGridFiltrable tours={toursOrdenados} hrefCatalogo={lp("/tours")} />
         </div>
       </section>
+      {/* ── TEMPORADA ──────────────────────────────────────────────────────
+          Va aquí y no pegada al hero a propósito: el hero y la banda de premios
+          ya son dos franjas oscuras seguidas, y una tercera encima convertía la
+          primera pantalla en un bloque. Entre la barra blanca de confianza y la
+          tira de arena, la franja verde parte el ritmo en vez de sumarse a él.
+          Sigue estando a un scroll corto, que es lo que pide un aviso con
+          fecha. Se esconde sola fuera de temporada. */}
+      <BandaTemporada en={en} hrefTours={lp("/tours")} />
 
-      {/* ── PAQUETES TODO INCLUIDO ── */}
-      {!en && (
-        <section aria-label="Paquetes todo incluido: tours + hospedaje" className="border-y border-white/10 py-20 sm:py-24 px-4 sm:px-6"
-          style={{ background: "linear-gradient(to bottom, #1a2e1a 0%, #0e1710 45%, #1a2e1a 100%)" }}>
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-lima mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
-              <h2 className="reveal-up font-cormorant font-light text-crema" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
-                Paquetes <em className="shimmer-gold">Todo Incluido</em>
-              </h2>
-              <div className="heading-underline" aria-hidden="true" />
-              <p className="reveal-up reveal-d1 text-crema/65 mt-4 font-dm text-sm max-w-md mx-auto">
-                {/* Duración y precio también en prosa: en las tarjetas viven
-                    dentro de insignias sueltas y así no se pueden citar. Todo
-                    sale de PAQUETES_DB (dias, precioLabel) y del ayudante
-                    `precioVisible`. El rango se calcula sobre `precioVisible`,
-                    NO sobre `p.precio`: con `p.precio` diría «de $9.800 a
-                    $20.500» mientras las tarjetas de abajo enseñan de $6.250 a
-                    $10.250, dos cifras que no cuadran en la misma página. */}
-                Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
-                {" "}Los {PAQUETES_DB.length} paquetes van de {Math.min(...PAQUETES_DB.map((p) => p.dias))} a {Math.max(...PAQUETES_DB.map((p) => p.dias))} días
-                {" "}y cuestan de ${Math.min(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} a ${Math.max(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} MXN {new Set(PAQUETES_DB.map((p) => p.precioLabel)).size === 1 ? PAQUETES_DB[0].precioLabel : "según el paquete"}.
-                {" "}Apartas con el 30 % y liquidas el resto el día del tour.
-              </p>
-            </div>
 
-            {/* El cartel del paquete que se está promoviendo. Va ANTES de la
-                rejilla a propósito: es la oferta concreta, con su precio y lo
-                que incluye, y la rejilla es el catálogo para quien no la quiera. */}
-            <div className="mb-12 sm:mb-16">
-              <CarruselPromos />
-            </div>
-
-            {/* Aquí vivía una rejilla con los 5 paquetes repetidos. Se quitó
-                el 24 sep 2026: el carrusel de arriba ya enseña la oferta con
-                su precio y lo que incluye, y debajo salían otra vez los mismos
-                cinco, más chicos y sin foto propia. El catálogo completo está a
-                un clic, en el botón de abajo. */}
-
-            <div className="text-center mt-10">
-              <MagneticButton className="inline-block">
-                <Link href="/paquetes" className="inline-block rounded-xl border border-crema/40 text-crema px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-crema/10 [@media(hover:hover)]:hover:border-crema active:scale-[0.97]">
-                  Ver los {PAQUETES_DB.length} paquetes con hotel incluido
-                </Link>
-              </MagneticButton>
-              {/* /precios no estaba enlazada desde ninguna parte del inicio, y es
-                  la página que responde la pregunta que trae a la gente. Sólo en
-                  español: no existe /en/precios. */}
-              <p className="mt-5">
-                <Link href="/precios" className="text-xs tracking-[1.5px] uppercase font-dm text-crema/75 hover:text-lima underline underline-offset-4 decoration-crema/35 transition-colors">
-                  Ver la lista de precios 2026 de tours y paquetes →
-                </Link>
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── TESTIMONIOS ── */}
-      <section aria-label={en ? "Traveler reviews" : "Reseñas de viajeros"} className="bg-white border-y border-negro/8 py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "What travelers say" : "Lo que dicen los viajeros"}</p>
-            <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
-              {en ? <>{GOOGLE_RESENAS} Reviews · <em className="shimmer-gold">{GOOGLE_RATING} stars</em></> : <>{GOOGLE_RESENAS} Reseñas · <em className="shimmer-gold">{GOOGLE_RATING} estrellas</em></>}
-            </h2>
-            <div className="flex justify-center gap-1 mt-3 star-group">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-dorado text-dorado star-icon" aria-hidden="true" />
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIOS.map((tt) => (
-              <article key={tt.nombre} className="border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors rounded-xl shadow-sm testimonial-card">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={tt.img} alt={tt.imgAlt} className="w-full h-full object-cover" loading="lazy" />
-                </div>
-                <div className="p-6">
-                  <Quote className="w-6 h-6 text-dorado/40 mb-3" aria-hidden="true" />
-                  <p className="text-negro/70 font-dm text-sm leading-relaxed mb-5 italic">&ldquo;{tt.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3">
-                    <img src={tt.foto} alt={tt.nombre} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-negro/10" loading="lazy" />
-                    <div>
-                      <p className="font-dm text-negro/80 text-sm font-medium">{tt.nombre}</p>
-                      <p className="font-dm text-negro/40 text-[11px]">{tt.meta}</p>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <a href={GOOGLE_PERFIL_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-verde-selva/40 text-verde-selva px-8 py-3 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
-              <Star className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
-              {en ? `Read all ${GOOGLE_RESENAS} reviews on Google` : `Ver las ${GOOGLE_RESENAS} reseñas en Google`}
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── BLOG PREVIEW (solo ES) ── */}
-      {!en && recentPosts.length > 0 && (
-        <section aria-label="Artículos recientes del blog" className="bg-arena/30 border-y border-negro/8 py-20 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">Del blog</p>
-              <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(32px,4.5vw,48px)" }}>
-                Guías & <em className="shimmer-gold">Rutas de Viaje</em>
-              </h2>
-              <div className="heading-underline" aria-hidden="true" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* urlBlog quita el sufijo de año: 18 de los 40 artículos lo
-                  arrastran y esa forma responde 308. Enlazar el slug crudo
-                  mandaba a la portada —la página con más clics del sitio— a
-                  una redirección. */}
-              {recentPosts.map((post) => (
-                <Link key={post.slug} href={urlBlog(post.slug)} className="group">
-                  <article className="bg-white border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors h-full flex flex-col rounded-xl shadow-sm">
-                    {post.coverImageUrl && (
-                      <div className="aspect-video overflow-hidden">
-                        <img src={post.coverImageUrl} alt={post.coverImageAlt || post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                      </div>
-                    )}
-                    <div className="p-6 flex flex-col flex-1">
-                      {post.tags[0] && (<span className="text-[9px] tracking-[3px] uppercase text-verde-selva/70 font-dm mb-3">{post.tags[0]}</span>)}
-                      <h3 className="font-cormorant text-verde-profundo text-xl mb-3 leading-snug group-hover:text-dorado transition-colors flex-1">{post.title}</h3>
-                      {post.excerpt && (<p className="text-negro/50 font-dm text-xs leading-relaxed mb-4">{post.excerpt.slice(0, 110)}…</p>)}
-                      <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-negro/30 mt-auto">
-                        <span>{post.readingTime} min lectura</span><span>·</span>
-                        <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
-                      </div>
-                    </div>
-                  </article>
-                </Link>
-              ))}
-            </div>
-            <div className="text-center mt-10">
-              <Link href="/blog" className="inline-block rounded-xl border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:border-verde-selva active:scale-[0.97]">
-                Ver todos los artículos
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── POR QUÉ LA HUASTECA ── */}
-      <section aria-label={en ? "Why visit the Huasteca Potosina" : "Por qué visitar la Huasteca Potosina"} className="bg-white border-b border-negro/8 py-24 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Why here, and not Costa Rica" : "¿Por qué la Huasteca?"}</p>
-            <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
-              {en ? <>Half the flight, <em className="shimmer-gold">a third of the bill</em></> : <>Una región que{" "}<em className="shimmer-gold">te cambia</em></>}
-            </h2>
-            <div className="reveal-up reveal-d1 space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
-              {en ? (
-                <>
-                  {/* 🔴 El tope del grupo sale de GRUPO_MAX (tours.ts): decía
-                      «twelve» y el catálogo y /en/tours dicen 14. */}
-                  {/* Copy escrito para el mercado americano: contra Costa Rica
-                      no se gana con adjetivos, se gana con el precio real. Los
-                      paquetes son POR PAREJA — ese es el dato que convierte. */}
-                  {/* Misma frase citable que en español (paridad ES/EN), y
-                      aquí pesa más todavía: un lector americano no ha oído el
-                      nombre en su vida. Fuente: llmsTxt.ts (GEOGRAFIA). */}
-                  <p>The Huasteca Potosina is a natural region in the northeast of the state of San Luis Potosí, Mexico: Ciudad Valles is its hub city and Xilitla — the Pueblo Mágico where we are based — sits about 2.5 hours from Tampico airport (TAM).</p>
-                  <p>Tampico is a short hop from Texas, and from the airport it&apos;s two and a half hours to Xilitla — in a private vehicle, driven by us. You sleep in a Pueblo Mágico, in our own hotel, not on a resort strip.</p>
-                  <p>Every guide holds NOM-09, Mexico&apos;s federal guiding certification, and travel insurance is in the price for every traveler on every tour. Groups stop at {GRUPO_MAX}. Fully bilingual guides are available — just ask when you book.</p>
-                  <p>{paqueteIngles.dias} days, {paqueteIngles.noches} nights, the tours, the hotel and the insurance: <strong className="text-verde-profundo">${paqueteIngles.precio.toLocaleString("en-US")} MXN for two people</strong>. The price you see on our booking page is the price you pay.</p>
-                </>
-              ) : (
-                <>
-                  {/* La consulta que más impresiones trae al inicio es
-                      "huasteca potosina" a secas, y detrás de ella hay alguien
-                      que todavía no sabe DÓNDE queda ni cómo se llega. Esta
-                      frase es la única del inicio que se puede citar sola.
-                      Todos sus datos salen de GEOGRAFIA y COMO_LLEGAR en
-                      src/lib/llmsTxt.ts: noreste de San Luis Potosí, hub en
-                      Ciudad Valles, base en Xilitla, Tampico (TAM) a ~2.5 h y
-                      CDMX a 5.5–6 h por 339 km de sierra. */}
-                  <p>La Huasteca Potosina es una región natural del noreste del estado de San Luis Potosí, en México: su ciudad de entrada es Ciudad Valles y su Pueblo Mágico es Xilitla, donde tenemos nuestra base. Se llega en avión a Tampico (TAM), a unas 2.5 horas de Xilitla, o por carretera desde la Ciudad de México en 5.5 a 6 horas de auto —339 km de sierra—; en autobús, la salida nocturna desde la Terminal Central del Norte llega a Xilitla a la mañana siguiente.</p>
-                  <p>La Huasteca Potosina es una de las regiones más biodiversas de México, donde la selva tropical coexiste con cañones kársticos, cascadas turquesas y tradiciones milenarias de la cultura Huasteca, reconocida por la UNESCO.</p>
-                  <p>Aquí el tiempo se mide diferente: por el vuelo circular de miles de vencejos al amanecer sobre el Sótano de las Golondrinas, por el color cambiante del agua del Tamul entre enero y octubre, por la luz que atraviesa el Puente de Dios solo entre las 11 y las 13 horas.</p>
-                  <p>No es solo un destino. Es una experiencia que redefine lo que significa la naturaleza en México.</p>
-                </>
-              )}
-            </div>
-            {!en && (
-              <div className="mt-8">
-                <Link href="/sobre-la-huasteca-potosina" className="text-sm tracking-[2px] uppercase text-verde-selva hover:text-verde-vivo transition-colors border-b border-verde-selva/40 pb-0.5 font-dm">
-                  Conoce más sobre la región →
-                </Link>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {REGION_STATS.map((s) => (
-              <StatTile key={s.label} num={s.num} label={s.label} />
-            ))}
-          </div>
-        </div>
-      </section>
-
+      {/* ── PANTALLA 3 · POR QUÉ CON NOSOTROS ─────────────────────────────
+          Un solo bloque. Antes eran cuatro paradas con medio argumento cada
+          una: la banda de premios, la barra blanca de confianza, «Reserva
+          directo» y, ochocientas líneas más abajo, las certificaciones. */}
+      <BloqueConfianza locale={locale} />
       {/* ── QUÉ INCLUYE Y QUÉ NO (solo EN) ──────────────────────────────
           La jugada de mayor conversión del playbook americano: el viajero de
           EE. UU. está entrenado para buscar el costo oculto, y encontrarlo
@@ -850,13 +627,161 @@ export default async function HomePage() {
               <span className="text-negro/15">|</span>
               <span>Apple&nbsp;Pay · Google&nbsp;Pay · Card</span>
               <span className="text-negro/15">|</span>
-              <span>Fully bilingual guides on request</span>
+              <span>English-speaking guide on request, at no extra cost</span>
+            </div>
+          </div>
+        </section>
+      )}
+      {/* ── PAQUETES TODO INCLUIDO ── */}
+      {!en && (
+        <section aria-label="Paquetes todo incluido: tours + hospedaje" className="border-y border-white/10 py-20 sm:py-24 px-4 sm:px-6"
+          style={{ background: "linear-gradient(to bottom, #1a2e1a 0%, #0e1710 45%, #1a2e1a 100%)" }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-lima mb-4 font-dm">Tours + hospedaje · Todo coordinado</p>
+              <h2 className="reveal-up font-cormorant font-light text-crema" style={{ fontSize: "clamp(36px,5vw,56px)" }}>
+                Paquetes <em className="shimmer-gold">Todo Incluido</em>
+              </h2>
+              <div className="heading-underline" aria-hidden="true" />
+              <p className="reveal-up reveal-d1 text-crema/65 mt-4 font-dm text-sm max-w-md mx-auto">
+                {/* Duración y precio también en prosa: en las tarjetas viven
+                    dentro de insignias sueltas y así no se pueden citar. Todo
+                    sale de PAQUETES_DB (dias, precioLabel) y del ayudante
+                    `precioVisible`. El rango se calcula sobre `precioVisible`,
+                    NO sobre `p.precio`: con `p.precio` diría «de $9.800 a
+                    $20.500» mientras las tarjetas de abajo enseñan de $6.250 a
+                    $10.250, dos cifras que no cuadran en la misma página. */}
+                Combinamos nuestros tours con hospedaje en el Hotel Paraíso Encantado Xilitla. Tú solo preocúpate por llegar.
+                {" "}Los {PAQUETES_DB.length} paquetes van de {Math.min(...PAQUETES_DB.map((p) => p.dias))} a {Math.max(...PAQUETES_DB.map((p) => p.dias))} días
+                {" "}y cuestan de ${Math.min(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} a ${Math.max(...PAQUETES_DB.map((p) => precioVisible(p))).toLocaleString("es-MX")} MXN {new Set(PAQUETES_DB.map((p) => p.precioLabel)).size === 1 ? PAQUETES_DB[0].precioLabel : "según el paquete"}.
+                {" "}Apartas con el 30 % y liquidas el resto el día del tour.
+              </p>
+            </div>
+
+            {/* El cartel del paquete que se está promoviendo. Va ANTES de la
+                rejilla a propósito: es la oferta concreta, con su precio y lo
+                que incluye, y la rejilla es el catálogo para quien no la quiera. */}
+            <div className="mb-12 sm:mb-16">
+              {/* Sin prioridad: está pantallas abajo y su `priority` le quitaba
+                  ancho de banda al póster del hero (ver el componente). */}
+              <CarruselPromos cargaDiferida />
+            </div>
+
+            {/* Aquí vivía una rejilla con los 5 paquetes repetidos. Se quitó
+                el 24 sep 2026: el carrusel de arriba ya enseña la oferta con
+                su precio y lo que incluye, y debajo salían otra vez los mismos
+                cinco, más chicos y sin foto propia. El catálogo completo está a
+                un clic, en el botón de abajo. */}
+
+            <div className="text-center mt-10">
+              <MagneticButton className="inline-block">
+                <Link href="/paquetes" className="inline-block rounded-xl border border-crema/40 text-crema px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-crema/10 [@media(hover:hover)]:hover:border-crema active:scale-[0.97]">
+                  Ver los {PAQUETES_DB.length} paquetes con hotel incluido
+                </Link>
+              </MagneticButton>
+              {/* /precios no estaba enlazada desde ninguna parte del inicio, y es
+                  la página que responde la pregunta que trae a la gente. Sólo en
+                  español: no existe /en/precios. */}
+              <p className="mt-5">
+                <Link href="/precios" className="text-xs tracking-[1.5px] uppercase font-dm text-crema/75 hover:text-lima underline underline-offset-4 decoration-crema/35 transition-colors">
+                  Ver la lista de precios 2026 de tours y paquetes →
+                </Link>
+              </p>
             </div>
           </div>
         </section>
       )}
 
-      {/* ── PLANIFICADOR IA + LEAD MAGNET + INFO PRÁCTICA (solo ES) ── */}
+      {/* ── PANTALLA 5 · PRUEBA SOCIAL ──────────────────────────────────
+          Aquí vivían tres reseñas INVENTADAS debajo de un H2 con la cifra
+          real («161 Reseñas · 4.7 estrellas»). Ahora solo sale lo que existe. */}
+      <PruebaSocial locale={locale} fotos={fotosViajeros} />
+
+      {/* ── PANTALLA 6 · EL MAPA ── */}
+      <MapaRegion locale={locale} />
+      {/* ── POR QUÉ LA HUASTECA ── */}
+      <section aria-label={en ? "Why visit the Huasteca Potosina" : "Por qué visitar la Huasteca Potosina"} className="bg-white border-b border-negro/8 py-24 px-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{en ? "Why here, and not Costa Rica" : "¿Por qué la Huasteca?"}</p>
+            <h2 className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(32px,4.5vw,52px)" }}>
+              {en ? <>Half the flight, <em className="shimmer-gold">a third of the bill</em></> : <>Una región que{" "}<em className="shimmer-gold">te cambia</em></>}
+            </h2>
+            <div className="reveal-up reveal-d1 space-y-4 text-negro/60 font-dm text-sm leading-relaxed">
+              {en ? (
+                <>
+                  {/* 🔴 El tope del grupo sale de GRUPO_MAX (tours.ts): decía
+                      «twelve» y el catálogo y /en/tours dicen 14. */}
+                  {/* Copy escrito para el mercado americano: contra Costa Rica
+                      no se gana con adjetivos, se gana con el precio real. Los
+                      paquetes son POR PAREJA — ese es el dato que convierte. */}
+                  {/* Misma frase citable que en español (paridad ES/EN), y
+                      aquí pesa más todavía: un lector americano no ha oído el
+                      nombre en su vida. Fuente: llmsTxt.ts (GEOGRAFIA). */}
+                  <p>The Huasteca Potosina is a natural region in the northeast of the state of San Luis Potosí, Mexico: Ciudad Valles is its hub city and Xilitla — the Pueblo Mágico where we are based — sits about {enAuto("tampico", "xilitla", true)} from Tampico airport (TAM).</p>
+                  {/* El párrafo de los guías NOM-09 y el del grupo máximo se
+                      fueron al bloque «Why with us», que es el único sitio
+                      donde se argumenta la confianza. Aquí quedan la geografía
+                      (lo citable) y el precio contra Costa Rica (lo que
+                      convierte en ese mercado). */}
+                  <p>{paqueteIngles.dias} days, {paqueteIngles.noches} nights, the tours, the hotel and the insurance: <strong className="text-verde-profundo">${paqueteIngles.precio.toLocaleString("en-US")} MXN for two people</strong>. The price you see on our booking page is the price you pay. Tampico is a short hop from Texas, and from the airport it&apos;s {enAuto("tampico", "xilitla", true)} to Xilitla, in a private vehicle driven by us.</p>
+                </>
+              ) : (
+                <>
+                  {/* La consulta que más impresiones trae al inicio es
+                      "huasteca potosina" a secas, y detrás de ella hay alguien
+                      que todavía no sabe DÓNDE queda ni cómo se llega. Esta
+                      frase es la única del inicio que se puede citar sola.
+                      Todos sus datos salen de GEOGRAFIA y COMO_LLEGAR en
+                      src/lib/llmsTxt.ts: noreste de San Luis Potosí, hub en
+                      Ciudad Valles y base en Xilitla. 🔴 Las horas YA NO se
+                      escriben aquí: salen de `tiemposDeViaje.ts`. Escritas a
+                      mano, este párrafo decía 2.5 h desde Tampico y 5.5-6 h
+                      desde CDMX mientras el mapa de arriba, en la MISMA
+                      pantalla, decía 3.5 h y 7 h. */}
+                  {/* 🔴 Eran CUATRO párrafos de texto corrido. Aquí abajo nadie
+                      los lee: los datos fuertes (los 105 m del Tamul, los 478 m
+                      del Sótano de las Huahuas, las horas de carretera) están
+                      ahora en el mapa y en las fichas de al lado, que es donde
+                      se ven de un vistazo. Queda el párrafo citable y el enlace
+                      a la página que lo desarrolla.
+                      Lo que se quitó, y por qué:
+                       · El de la biodiversidad y la UNESCO: adjetivos que
+                         cualquier competidor puede pegar igual.
+                       · El de los vencejos del Sótano de las GOLONDRINAS: ese
+                         sitio NO lo operamos (ver `temporada.ts`), así que el
+                         inicio lo vendía sin poder venderlo.
+                       · «No es solo un destino. Es una experiencia que redefine
+                         lo que significa la naturaleza en México»: no dice nada
+                         que alguien pueda comprobar. */}
+                  <p>La Huasteca Potosina es una región natural del noreste del estado de San Luis Potosí, en México: su ciudad de entrada es Ciudad Valles y su Pueblo Mágico es Xilitla, donde tenemos nuestra base. Se llega en avión a Tampico (TAM), a unas {enAuto("tampico")} de Xilitla, o por carretera desde la Ciudad de México en {enAuto("cdmx")} de auto; en autobús, la salida nocturna desde la Terminal Central del Norte llega a Xilitla a la mañana siguiente.</p>
+                </>
+              )}
+            </div>
+            {!en && (
+              <div className="mt-8">
+                <Link href="/sobre-la-huasteca-potosina" className="text-sm tracking-[2px] uppercase text-verde-selva hover:text-verde-vivo transition-colors border-b border-verde-selva/40 pb-0.5 font-dm">
+                  Conoce más sobre la región →
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {REGION_STATS.map((s) => (
+              <StatTile key={s.label} num={s.num} label={s.label} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PANTALLA 7 · LAS DUDAS ── */}
+      <FaqInicio locale={locale} />
+
+      {/* ── PANTALLA 8 · LA ÚNICA CAPTURA DE CORREO (solo ES) ────────────
+          Aquí estaba también la descarga de la guía PDF: dos formularios
+          peleándose por el mismo correo. Se quitó (decisión de Manolo, 7 oct)
+          y el recomendador se queda solo. La guía sigue en /guia. */}
       {!en && (
         <>
           <section aria-label="Planea tu viaje con IA" className="py-24 px-6 bg-crema">
@@ -881,52 +806,33 @@ export default async function HomePage() {
               <p className="text-xs text-negro/30 tracking-wide font-dm">Gratis · 2 minutos · Te lo enviamos por correo</p>
             </div>
           </section>
-
-          <section aria-label="Guía Definitiva de la Huasteca Potosina" className="relative py-20 px-6 bg-verde-profundo overflow-hidden">
-            <FloatingLeaves />
-            <div className="relative z-10 max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-center md:text-left">
-                <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">✦ Gratis · 2 minutos</span>
-                <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-                  Todo lo que necesitas para{" "}<em className="shimmer-gold">viajar solo por la Huasteca</em>
-                </h2>
-                <p className="reveal-up reveal-d1 text-crema/55 font-dm text-sm leading-relaxed mb-6 max-w-md mx-auto md:mx-0">
-                  {/* Describe el PDF que SE ENTREGA (public/guia-huasteca-potosina.pdf:
-                      13 páginas, UN itinerario de 5 días). Prometía «3 itinerarios
-                      (3, 5 y 7 días)» y «8 destinos», que son de la guía de pago. Tampoco
-                      «lo que cuesta cada parada»: las entradas del PDF no cuadran
-                      con DESTINOS_DB (ver guia/page.tsx). */}
-                  Cómo llegar, dónde quedarte, cuánto gastas al día si vas por tu cuenta, un itinerario de 5 días con la hora de mejor luz, checklist y los tips locales que no encontrarás en ningún blog. Edición 2026.
-                </p>
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8 text-[10px] tracking-[2px] uppercase font-dm text-crema/40">
-                  <span>✓ Itinerario de 5 días</span>
-                  <span>✓ Horarios de luz</span>
-                  <span>✓ Checklist</span>
-                </div>
-                {/* Gratis a cambio del correo. Cobrar $49 por el imán de
-                    leads era cobrar por lo único que convierte a un visitante
-                    frío en alguien a quien puedes escribirle: casi nadie
-                    pagaba, y los que no pagaban se iban sin dejar rastro. */}
-                <GuiaGratisForm />
-              </div>
-              <div className="relative z-10">
-                <GuiaMockup />
-              </div>
-            </div>
-          </section>
-
           <section aria-label="Información práctica para tu viaje" className="bg-white border-y border-negro/8 py-16 px-6">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="reveal-up font-cormorant font-light text-verde-profundo" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
                   Antes de <em className="text-dorado">viajar</em>
                 </h2>
+                {/* El pronóstico de siete días bajó del hero hasta aquí: arriba
+                    empujaba el buscador fuera del pliegue, y aquí está justo
+                    donde alguien que planea el viaje lo busca. */}
+                <div className="mt-6 flex justify-center">
+                  <ClimaHero en={en} />
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                  { Icon: Bus,       title: "Cómo llegar",    text: "Ciudad Valles es la puerta de entrada. Vuelos desde CDMX o autobús ADO directo en 8 horas.", href: "/info-practica#como-llegar" },
-                  { Icon: Calendar,  title: "Mejor época",    text: "Todo el año. Nov–Mayo ideal para cascadas. Jun–Oct lush verde, más lluvia, menos turismo.", href: "/info-practica#cuando-viajar" },
-                  { Icon: BedDouble, title: "Dónde quedarse", text: "Ciudad Valles como base. Opciones boutique en Xilitla y Tamasopo para inmersión total.", href: "/info-practica#donde-quedarse" },
+                  { Icon: Bus,       title: "Cómo llegar",    text: `Ciudad Valles es la puerta de entrada: ${enAuto("cdmx", "valles")} en auto desde CDMX, o ${enAutobus("cdmx", "valles")} en autobús ADO.`, href: "/info-practica#como-llegar" },
+                  // La misma regla de temporada.ts (7 oct 2026), con la fecha de su
+                  // constante: decía «Nov–Mayo ideal… Jun–Oct lush verde», que
+                  // callaba el agua con sedimento y no cuadraba con la banda.
+                  { Icon: Calendar,  title: "Mejor época",    text: `Todo el año. Del ${fechaInicioTexto("es")} a mayo el agua baja clara; de julio a octubre, cascadas a todo caudal y agua con sedimento.`, href: "/info-practica#cuando-viajar" },
+                  /* 🔴 Decía «Ciudad Valles como base», que es mandar a dormir a
+                     otra ciudad desde la portada del negocio que tiene hotel en
+                     Xilitla. Los datos salen de `hotelPropio.ts`, que es donde
+                     viven los que son ciertos (la distancia a Las Pozas, el
+                     restaurante y su horario), y el enlace va al bloque de la
+                     guía que ya tiene fotos, WhatsApp y Google Maps. */
+                  { Icon: BedDouble, title: "Dónde quedarse", text: `En Xilitla, a ${HOTEL_PROPIO.metrosALasPozas} m de Las Pozas: ${HOTEL_PROPIO.minutosCaminando} minutos a pie. El hotel es nuestro y tiene su propio restaurante de cocina huasteca.`, href: "/info-practica#hotel-paraiso" },
                 ].map((card) => (
                   <div key={card.title} className="border border-negro/8 bg-crema/60 p-6 hover:border-verde-selva/30 transition-colors group">
                     <card.Icon className="w-7 h-7 text-verde-selva mb-4" aria-hidden="true" />
@@ -940,7 +846,6 @@ export default async function HomePage() {
           </section>
         </>
       )}
-
       {/* ── CIERRE ─────────────────────────────────────────────────────────
           El inicio terminaba en información práctica y de ahí saltaba a los
           reconocimientos: quien llegaba hasta abajo —el que más leyó, o sea el
@@ -949,7 +854,7 @@ export default async function HomePage() {
         <FloatingLeaves />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            {en ? "November to April is dry season" : "Cuando quieras"}
+            {en ? `Clear water from ${fechaInicioTexto("en")} through May` : "Cuando quieras"}
           </p>
           <h2 className="reveal-up font-cormorant font-light text-crema mb-5" style={{ fontSize: "clamp(30px,4.5vw,50px)" }}>
             {en ? <>Come before we&apos;re the reason <em className="shimmer-gold">it changed</em></> : <>Tu viaje a la Huasteca <em className="shimmer-gold">empieza aquí</em></>}
@@ -957,10 +862,13 @@ export default async function HomePage() {
           {/* La urgencia en inglés va INVERTIDA a propósito: para el viajero
               americano informado "el próximo Tulum" es el destino arruinado, no
               la aspiración. Prometerlo sería prometerle justo lo que evita. La
-              escasez honesta es la temporada seca, no un colapso inventado. */}
+              escasez honesta es la temporada seca, no un colapso inventado.
+              La temporada sale de temporada.ts (7 oct 2026): decía «Dry season
+              runs November through April: bluest water», otra regla que la del
+              resto del sitio; el turquesa más intenso es de marzo a mayo. */}
           <p className="reveal-up reveal-d1 text-crema/60 font-dm text-sm leading-relaxed max-w-xl mx-auto mb-9">
             {en
-              ? `We'd like to keep the rivers the way they are — that's why our groups stop at ${GRUPO_MAX} and we work with the communities we grew up in. Dry season runs November through April: bluest water, best hiking, and the dates that fill first. A 30% deposit holds any trip, with the balance due on tour day. Free cancellation up to 48 h before${salvoEn}.`
+              ? `We'd like to keep the rivers the way they are — that's why our groups stop at ${GRUPO_MAX} and we work with the communities we grew up in. From ${fechaInicioTexto("en")} through May the water runs clear; the turquoise peaks from March to May, which is also the busiest time. A 30% deposit holds any trip, with the balance due on tour day. Free cancellation up to 48 h before${salvoEn}.`
               : `Elige tus recorridos y súmale las noches que necesites: apartas con el 30 % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes${salvoEs}.`}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
@@ -978,23 +886,57 @@ export default async function HomePage() {
             </a>
           </div>
           <p className="reveal-up reveal-d1 mt-7 text-[11px] tracking-[2px] uppercase font-dm text-crema/35">
-            {GOOGLE_RATING} ★ · {GOOGLE_RESENAS} {en ? "Google reviews" : "reseñas Google"} · +10,000 {en ? "travelers" : "viajeros"}
+            {/* 🔴 Terminaba con «+10,000 viajeros». Esa cifra está escrita a
+                mano en trece sitios del repo y no tiene fuente: no sale del
+                catálogo ni de las reservas. Aquí queda lo verificable. */}
+            {GOOGLE_RATING} ★ · {GOOGLE_RESENAS} {en ? "Google reviews" : "reseñas Google"}
           </p>
         </div>
       </section>
 
-      {/* ── BADGES DE CERTIFICACIÓN ── */}
-      <section aria-label={en ? "Official certifications and recognition" : "Certificaciones y reconocimientos oficiales"} className="bg-white border-t border-negro/8 py-10 px-6">
-        <div className="max-w-5xl mx-auto">
-          <p className="reveal-fade text-center text-[9px] tracking-[3px] uppercase text-negro/30 font-dm mb-8">{en ? "Certified and recognized by" : "Certificados y reconocidos por"}</p>
-          <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
-            <img src="/badges/sectur.png" alt="SECTUR — Mexico Ministry of Tourism" loading="lazy" className="h-12 w-auto opacity-75 hover:opacity-100 transition-opacity" />
-            <img src="/badges/tripadvisor-full.png" alt="Tripadvisor" loading="lazy" className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity" />
-            <img src="/badges/viajemos-todos.png" alt="Viajemos Todos por México" loading="lazy" className="h-12 w-auto opacity-75 hover:opacity-100 transition-opacity" />
-            <img src="/badges/travellers-choice.svg" alt="Travellers' Choice — TripAdvisor" loading="lazy" className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity" />
+
+      {/* ── EL BLOG, AL FINAL ───────────────────────────────────────────
+          Estaba a mitad del inicio: una puerta de salida en el momento de
+          mayor intención. Baja después del cierre. */}
+      {/* ── BLOG PREVIEW (solo ES) ── */}
+      {!en && recentPosts.length > 0 && (
+        <section aria-label="Artículos recientes del blog" className="border-t border-negro/10 bg-arena/30 px-6 py-14">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="mb-5 font-dm text-[10px] uppercase tracking-[4px] text-verde-selva">
+              Del blog
+            </p>
+            {/* 🔴 Eran tres tarjetas con portada a mitad del inicio: una puerta
+                de salida justo en el momento de mayor intención, y tres <img>
+                que React precargaba en el <head> compitiendo con el póster del
+                hero. Ahora son tres enlaces de texto, después del cierre.
+                `urlBlog` quita el sufijo de año: 18 de los 40 artículos lo
+                arrastran y esa forma responde 308. Enlazar el slug crudo
+                mandaba a la página con más clics del sitio a una redirección. */}
+            <ul className="flex flex-col items-center gap-2.5">
+              {recentPosts.map((post) => (
+                <li key={post.slug}>
+                  <Link
+                    href={urlBlog(post.slug)}
+                    prefetch={false}
+                    className="font-dm text-sm text-negro/60 underline decoration-negro/20 underline-offset-4 transition-colors hover:text-verde-selva hover:decoration-verde-selva"
+                  >
+                    {post.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-7">
+              <Link
+                href="/blog"
+                prefetch={false}
+                className="font-dm text-xs uppercase tracking-[2px] text-verde-selva underline underline-offset-4 transition-colors hover:text-terracota"
+              >
+                Ver todos los artículos →
+              </Link>
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* El pie de página vive ahora en el shell (SiteFooter), para que lo
           tengan las 43 páginas y no solo la home. */}

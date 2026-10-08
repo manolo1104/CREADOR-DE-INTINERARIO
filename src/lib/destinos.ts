@@ -1007,7 +1007,9 @@ export const DESTINOS_DB: Destino[] = [
     ideal_para: ["natacion", "familia", "relajacion"],
     horario: "Visita de día", dias_abierto: "Lunes a Domingo (tianguis dominicales en la ribera)",
     mejor_hora: "Media mañana", temporada_ideal: "Mar–Jun (aguas claras)",
-    advertencias: "En temporada de lluvias (~jun–oct) el río crece y se vuelve peligroso: evita nadar con el río crecido. Sin horarios ni precios oficiales; confirma con turismo municipal.",
+    // Lluvias de julio a octubre, la temporada de temporada.ts (7 oct 2026):
+    // decía «~jun–oct» y su propia temporada ideal pone junio con aguas claras.
+    advertencias: "En temporada de lluvias (~jul–oct) el río crece y se vuelve peligroso: evita nadar con el río crecido. Sin horarios ni precios oficiales; confirma con turismo municipal.",
     como_llegar: "~1h 30 desde Ciudad Valles (~82 km) por la federal 85 sur; desde el centro de Axtla, ~15 min al río",
     que_llevar: ["traje de baño", "sandalias acuáticas", "efectivo", "bloqueador biodegradable"],
     datos_curiosos: ["El 'chalán' de fierro opera desde hace más de 50 años y es símbolo de Axtla.", "El río se forma por la unión de los ríos Huichihuayán y Tancuilín."],
@@ -1358,7 +1360,8 @@ export const DESTINOS_DB: Destino[] = [
     duracion_hrs: 6, precio_entrada: "$100 MXN por persona (entrada); cabañas para parejas y grupos desde $700 hasta $2,500 MXN aparte", precio_entrada_mxn: 100, dificultad: "media",
     ideal_para: ["naturaleza", "senderismo", "familia", "camping"],
     horario: "Visita y recorridos durante el día (reservar con la comunidad)", dias_abierto: "Todo el año (reservar por anticipado)",
-    mejor_hora: "Amanecer (para la niebla)", temporada_ideal: "Todo el año; la niebla es más densa en lluvias (jun–oct)",
+    // Lluvias de julio a octubre, como temporada.ts (7 oct 2026; decía jun–oct).
+    mejor_hora: "Amanecer (para la niebla)", temporada_ideal: "Todo el año; la niebla es más densa en lluvias (jul–oct)",
     advertencias: "La subida es muy empinada y hay tramos de terracería quebrada: se recomienda un vehículo que no sea muy bajo, para que no pegue. Maneja de día. Arriba hace frío (es bosque de niebla): lleva abrigo aunque en Xilitla haga calor. Es una comunidad habitada; llega con respeto y reserva por anticipado.",
     como_llegar: "~14 km al oeste de Xilitla (8.7 km en línea recta); entre 45 minutos y 1 hora por camino de sierra que asciende a ~1,950 m. El tramo final es una subida muy empinada y de terracería quebrada, así que conviene un auto con buena altura libre (que no sea muy bajo).",
     que_llevar: ["abrigo (arriba hace frío)", "calzado de senderismo", "comida para asar (hay fogatas y asadores)", "cámara", "efectivo"],
@@ -1383,7 +1386,7 @@ export const DESTINOS_DB: Destino[] = [
       faqPrincipales: [
         { pregunta: "¿Cómo llegar a La Trinidad desde Xilitla?", respuesta: "La Trinidad está a unos 14 km al oeste de Xilitla por un camino de sierra que asciende hasta cerca de los 1,950 m de altitud. El trayecto toma entre 45 minutos y 1 hora. El tramo final es una subida muy empinada y de terracería quebrada, por lo que conviene manejar de día y en un auto que no sea muy bajo, para que no pegue." },
         { pregunta: "¿Qué se puede hacer en La Trinidad y cuánto cuesta?", respuesta: "La entrada cuesta $100 por persona. Puedes caminar por senderos a miradores, pozas, cuevas y sótanos (como la Olla de la Luz), hospedarte en cabañas de madera para parejas o grupos (aprox. $700 a $2,500 según el tamaño), acampar, hacer fogatas y asar tu comida. Subir de madrugada con guía a la cima del Cerro del Pilón no entra en esa cuota: es nuestro recorrido Amanecer de Nubes, que se reserva aparte, ya incluye las entradas y llega a la cima al amanecer, cuando suele haber mar de nubes (depende del clima). Arriba hace frío, así que lleva abrigo." },
-        { pregunta: "¿Cuándo es mejor visitar el bosque de niebla de La Trinidad?", respuesta: "Se puede visitar todo el año. La niebla característica es más densa en la temporada de lluvias (junio a octubre). Por la altitud el clima es fresco y húmedo, así que conviene llevar abrigo aunque en Xilitla haga calor." },
+        { pregunta: "¿Cuándo es mejor visitar el bosque de niebla de La Trinidad?", respuesta: "Se puede visitar todo el año. La niebla característica es más densa en la temporada de lluvias (de julio a octubre). Por la altitud el clima es fresco y húmedo, así que conviene llevar abrigo aunque en Xilitla haga calor." },
       ],
     },
   },

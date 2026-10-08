@@ -76,8 +76,10 @@ export function validarCarrito(items: CarritoItem[], locale: Locale = "es"): Fal
       });
     }
 
-    // Los tours por vehículo no cuentan personas. Los que salen desde 2 aceptan
-    // a UNA persona con la tarifa de viajero solo (`minimoPersonas`).
+    // Los tours por vehículo no cuentan personas. Desde el 8 oct 2026 todos los
+    // de precio por persona aceptan UNA (`minimoPersonas` devuelve 1): quien va
+    // bajo el mínimo paga tarifa normal y se le suma a una salida compartida,
+    // así que esto ya solo corta el Edén y los de vehículo.
     if (tour && !i.unidades && personasDeItem(i) < minimoPersonas(tour)) {
       fallos.push({
         uid: i.uid, campo: "grupo",

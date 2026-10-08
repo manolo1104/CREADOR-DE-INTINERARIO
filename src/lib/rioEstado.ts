@@ -2,11 +2,16 @@
  * Estado del río que anuncia la banda del sitio (BandaRio).
  *
  * Manolo lo fija desde el panel (clave `rio_estado` de la tabla `Config`);
- * en "auto" —o si la tabla aún no existe— manda la temporada: jun–oct es
- * época de lluvia (caudal alto, agua con sedimento) y nov–may el agua va
- * turquesa. Es la misma lectura de temporada que usa el resto del sitio
- * (`temporada.ts`), reducida a lo único que la banda necesita.
+ * en "auto" —o si la tabla aún no existe— manda la temporada de
+ * `temporada.ts`: caudal alto (agua con sedimento) de julio al 29 de octubre y
+ * agua turquesa del 30 de octubre a junio.
+ *
+ * 🔴 Este archivo ya no tiene regla propia de meses. La que tenía (jun–oct
+ * caudal) contradecía a temporada.ts en junio y, en octubre, ponía «caudal
+ * alto por lluvias» encima de «estamos en la mejor temporada». Si hay que
+ * mover una fecha, se mueve en temporada.ts y la franja la sigue sola.
  */
+import { rioSegunTemporada } from "@/lib/temporada";
 
 export type RioEstado = "turquesa" | "caudal";
 
@@ -19,16 +24,13 @@ export type RioConfig = {
 
 export const RIO_CONFIG_KEY = "rio_estado";
 
-/** Mes actual en la Huasteca (Railway corre en UTC). */
-function mesEnMexico(ahora?: Date): number {
-  const iso = (ahora ?? new Date()).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
-  return Number(iso.split("-")[1]);
-}
-
-/** El estado que dicta la temporada: jun–oct caudal alto, nov–may turquesa. */
+/**
+ * El estado que dicta la temporada (lo usan /api/rio-estado en «auto» y el
+ * panel para decir qué se anuncia). Se queda con su nombre y su firma; la
+ * regla vive en `rioSegunTemporada`.
+ */
 export function rioPorTemporada(ahora?: Date): RioEstado {
-  const mes = mesEnMexico(ahora);
-  return mes >= 6 && mes <= 10 ? "caudal" : "turquesa";
+  return rioSegunTemporada(ahora);
 }
 
 /** Normaliza lo que venga del panel o de la BD a un RioConfig válido. */

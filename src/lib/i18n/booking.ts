@@ -1,4 +1,5 @@
 import type { Locale } from "./config";
+import { CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 // El número de reseñas sale de resenas.ts (constante pura): escrito a mano en
 // cuatro sitios de este diccionario, se quedaba atrás del JSON-LD.
 import { GOOGLE_RESENAS } from "@/lib/resenas";
@@ -149,7 +150,8 @@ export interface BookingMessages {
     waGrupoMinimo: (personas: number, tour: string) => string;
     /** Va UNA persona en un recorrido que sale desde 2 (ver `aceptaViajeroSolo`). */
     viajeroSoloTitulo: string;
-    viajeroSolo: string;
+    /** `dias` = `CONFIRMA_SALIDA_DIAS`. Es una función para que el número no se escriba a mano. */
+    viajeroSolo: (dias: number) => string;
     porPersonaExtra: string;
     quitarAddOn: string;
     agregarAddOn: string;
@@ -290,6 +292,15 @@ export interface BookingMessages {
     prefieresTransferencia: string;
     apartarPorWhatsapp: string;
     mandamosDatos: string;
+    /** Encabezado del bloque de «otras formas de pago». */
+    otrasFormas: string;
+    /** Meses sin intereses, cuando el importe de hoy llega al umbral. */
+    msiTitulo: (plazos: string) => string;
+    msiDetalle: string;
+    /** El botón de pagar el viaje completo, que es lo que habilita los meses. */
+    pagarTodoTitulo: (total: string) => string;
+    pagarTodoMsi: string;
+    pagarTodoVolver: (anticipo: string) => string;
     errorPago: string;
     pagoEnProceso: string;
     waPagoAlterno: {
@@ -347,6 +358,8 @@ export interface BookingMessages {
       hospedaje: (hab: string, noches: number, huespedes: number, entrada: string, salida: string) => string;
       traslado: (ciudad: string, pax: number) => string;
       /** Pagó la tarifa de viajero solo: hay que sumarlo a un grupo de esa fecha. */
+      /** Pidió guía en inglés. SIEMPRE en español: lo lee el equipo en Xilitla. */
+      guiaEnIngles: string;
       viajeroSolo: (tour: string, fecha: string) => string;
       idiomaCliente: string;
     };
@@ -381,6 +394,8 @@ export interface BookingMessages {
      */
     cancelasGratis: string;
     cancelasGratisResto: string;
+    /** Pidió guía en inglés, sin costo. */
+    guiaEnIngles: string;
     fotosYVideo: string;
     totalDelViaje: string;
     sumaDeRecorridos: string;
@@ -421,9 +436,18 @@ export interface BookingMessages {
     tarifaDelGrupo: (max: number) => string;
     /** Lo que sale cada uno al dividir la tarifa; solo se enseña si van 2 o más. */
     porCabeza: (monto: string) => string;
+    /** Precio por persona del escalón vigente (`escalaPersona` en tours.ts). */
+    cadaUno: (monto: string) => string;
+    /** Lo que bajaría el precio por persona si fueran uno más. El gancho. */
+    unoMasBaja: (personas: number, monto: string) => string;
+    /** El precio por persona más bajo de la escalera, con cuánta gente se logra. */
+    escaleraDesde: (personas: number, monto: string) => string;
+    /** Ya tienen el escalón más barato: no hay nada más que ofrecer. */
+    mejorPrecio: string;
     /** Va UNA persona: tarifa de 2 personas menos $2 y se le suma a un grupo. */
     viajeroSoloTitulo: string;
-    viajeroSolo: string;
+    /** `dias` = `CONFIRMA_SALIDA_DIAS`. Es una función para que el número no se escriba a mano. */
+    viajeroSolo: (dias: number) => string;
   };
 
   calendario: {
@@ -596,6 +620,11 @@ export interface BookingMessages {
     nadoTitulo: string;
     lluviaTitulo: string;
     cancelTitulo: string;
+    /** «¿Cómo puedo pagar?», en el paso ① del checkout nuevo (8 oct 2026). */
+    pagoTitulo: string;
+    pagoTarjeta: string;
+    pagoMsi: string;
+    pagoAlterno: string;
     edadNinos: string;
     edadMinima: (tour: string, edad: number) => string;
     soloAdultos: (tour: string) => string;
@@ -626,6 +655,9 @@ export interface BookingMessages {
     queSigue: (saldo: string) => string[];
     verDesglose: string;
     pagoCifrado: string;
+    /** La casilla de guía en inglés, sin costo (8 oct 2026). */
+    guiaInglesLabel: string;
+    guiaInglesAyuda: string;
     barraTotal: (total: string) => string;
   };
 }
@@ -768,8 +800,8 @@ const es: BookingMessages = {
     escribenosYLosSumamos: "Escríbenos y los sumamos a otro grupo",
     waGrupoMinimo: (personas, tour) =>
       `Hola, somos ${personas} y nos interesa ${tour}. ¿Nos pueden sumar a otro grupo?`,
-    viajeroSoloTitulo: "Viajas solo:",
-    viajeroSolo: "se aplica el precio de 2 personas menos $2 y te incluimos en un grupo armado para tu fecha.",
+    viajeroSoloTitulo: "Falta gente para la salida:",
+    viajeroSolo: (dias) => `pagas tu lugar al precio normal y te sumamos a una salida compartida. Te confirmamos ${dias} días antes; si no se junta el grupo, te devolvemos el 100 %.`,
     porPersonaExtra: "por persona",
     quitarAddOn: "Quitar",
     agregarAddOn: "Agregar",
@@ -780,7 +812,7 @@ const es: BookingMessages = {
     duracionGrupo: (horas, min, max) =>
       `${horas} horas aprox. · grupo de ${min > 1 ? `${min} a ` : "hasta "}${max} personas`,
 
-    agregarOtroRecorrido: "＋ Agregar otro recorrido",
+    agregarOtroRecorrido: "Agregar otro recorrido",
     quedanLugares: (quedan, cupo) =>
       quedan === 1 ? `Queda 1 lugar de ${cupo} para ese día` : `Quedan ${quedan} lugares de ${cupo} para ese día`,
     salidaLlena: "Esa salida ya está llena — elige otro día",
@@ -890,6 +922,12 @@ const es: BookingMessages = {
     prefieresTransferencia: "¿Prefieres transferencia SPEI u OXXO?",
     apartarPorWhatsapp: "Apartar por WhatsApp",
     mandamosDatos: "Te mandamos los datos y apartamos tus lugares al recibir el comprobante.",
+    otrasFormas: "Otras formas de pago",
+    msiTitulo: (plazos) => `Hasta ${plazos} meses sin intereses`,
+    msiDetalle: "Con tarjetas participantes. Los meses se eligen en el formulario de pago, al poner la tarjeta.",
+    pagarTodoTitulo: (total) => `Pagar el viaje completo hoy · ${total}`,
+    pagarTodoMsi: "Es lo que habilita los meses sin intereses: sobre el anticipo no los ofrece ningún banco.",
+    pagarTodoVolver: (anticipo) => `Mejor pago solo el anticipo de ${anticipo}`,
     errorPago: "Error al procesar el pago. Intenta de nuevo.",
     pagoEnProceso: "Tu pago está en proceso. En cuanto el banco lo confirme te llega el correo.",
     waPagoAlterno: {
@@ -945,7 +983,7 @@ const es: BookingMessages = {
       },
       {
         q: "¿Qué pasa si llueve?",
-        a: "Operamos con lluvia ligera. Si hay tormenta eléctrica, reprogramamos sin costo.",
+        a: "Operamos con lluvia ligera: la selva con agua se ve mejor. Si el río no está seguro, primero te cambiamos de actividad —hay recorridos que no dependen del río, como Las Pozas o la Gruta— y si ninguno te late, eliges reembolso o cambio de fecha. La idea es que ese día la pases bien de todos modos.",
       },
       {
         q: "¿Puedo pagar varios recorridos juntos?",
@@ -962,8 +1000,9 @@ const es: BookingMessages = {
         `Hospedaje: ${hab}, ${noches} noche(s), ${huespedes} huésped(es)${entrada ? ` — entrada ${entrada}` : ""}${salida ? `, salida ${salida}` : ""}.`,
       traslado: (ciudad, pax) =>
         `TRASLADO: ${ciudad} → Xilitla, ida y vuelta, ${pax} pasajero(s). Falta acordar hora y domicilio de recogida.`,
+      guiaEnIngles: "PIDIÓ GUÍA EN INGLÉS (sin costo): asignar guía bilingüe o avisarle antes por WhatsApp.",
       viajeroSolo: (tour, fecha) =>
-        `${tour} — VIAJA SOLO (${fecha}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.`,
+        `${tour} — BAJO EL MÍNIMO (${fecha}): pagó tarifa normal. Sumarlo a una salida compartida y confirmarle ${CONFIRMA_SALIDA_DIAS} días antes; si no se junta, REEMBOLSO del 100 %.`,
       idiomaCliente: "",
     },
     trasladoRenglon: (ciudad) => `Traslado ${ciudad} → Xilitla (ida y vuelta)`,
@@ -980,6 +1019,7 @@ const es: BookingMessages = {
     horaExacta: "Confirmamos tu hora exacta por WhatsApp.",
     cancelasGratis: "Cancelas gratis hasta 48 h antes, con reembolso completo.",
     cancelasGratisResto: "Lo demás: cancelas gratis hasta 48 h antes, con reembolso completo.",
+    guiaEnIngles: "Sale un guía que habla inglés, sin costo extra.",
     fotosYVideo: "Fotos y video del recorrido que toma tu guía, sin costo extra.",
     totalDelViaje: "Total del viaje",
     sumaDeRecorridos: "Suma de los recorridos",
@@ -1002,8 +1042,12 @@ const es: BookingMessages = {
     grupoTope: (max) => `${max} personas es el máximo que permite el jardín por experiencia; no se puede ampliar.`,
     tarifaDelGrupo: (max) => `Tarifa del grupo completo, hasta ${max} personas`,
     porCabeza: (monto) => `Les sale en ${monto} por persona`,
-    viajeroSoloTitulo: "Viajas solo:",
-    viajeroSolo: "se aplica el precio de 2 personas menos $2 y te incluimos en un grupo armado para tu fecha.",
+    cadaUno: (monto) => `${monto} por persona`,
+    unoMasBaja: (personas, monto) => `Si van ${personas}, baja a ${monto} por persona`,
+    escaleraDesde: (personas, monto) => `Entre más van, menos pagan: ${monto} por persona si van ${personas}`,
+    mejorPrecio: "Es el mejor precio por persona de este recorrido",
+    viajeroSoloTitulo: "Falta gente para la salida:",
+    viajeroSolo: (dias) => `pagas tu lugar al precio normal y te sumamos a una salida compartida. Te confirmamos ${dias} días antes; si no se junta el grupo, te devolvemos el 100 %.`,
   },
 
   calendario: {
@@ -1196,11 +1240,15 @@ const es: BookingMessages = {
     nadoTitulo: "¿Y si no sé nadar?",
     lluviaTitulo: "¿Y si llueve?",
     cancelTitulo: "¿Puedo cancelar?",
+    pagoTitulo: "¿Cómo puedo pagar?",
+    pagoTarjeta: "Con tarjeta de crédito o débito, y con Apple Pay o Google Pay si tu teléfono los tiene.",
+    pagoMsi: "Y a 3, 6 o 9 meses sin intereses con tarjetas participantes, si eliges pagar el viaje completo hoy.",
+    pagoAlterno: "¿Prefieres transferencia SPEI o pagar en OXXO? Se arma por WhatsApp: te mandamos los datos y apartamos tus lugares al recibir el comprobante.",
     edadNinos: "Sí. De 6 a 10 años pagan el 70 % y los menores de 6, el 50 %.",
     edadMinima: (tour, edad) => `${tour}: desde ${edad} años.`,
     soloAdultos: (tour) => `${tour} es solo para adultos.`,
     nadoSinSaber: "No necesitas saber nadar: llevas chaleco salvavidas todo el recorrido y vas con guía certificado.",
-    lluviaGenerica: "Operamos con lluvia ligera. Si el río no es seguro, eliges: reembolso o cambio de fecha.",
+    lluviaGenerica: "Operamos con lluvia ligera: la selva con agua se ve mejor. Si el río no está seguro, primero te cambiamos de actividad —hay recorridos que no dependen del río, como Las Pozas o la Gruta— y si ninguno te late, eliges reembolso o cambio de fecha. La idea es que ese día la pases bien de todos modos.",
     cancelHasta: (fecha) => `Gratis hasta el ${fecha} (48 h antes), con reembolso completo.`,
     cancelGenerica: "Gratis hasta 48 h antes de tu recorrido, con reembolso completo.",
     extrasTitulo: "¿Necesitas hospedaje o traslado?",
@@ -1226,6 +1274,8 @@ const es: BookingMessages = {
     ],
     verDesglose: "Ver el desglose",
     pagoCifrado: "Pago cifrado con Stripe",
+    guiaInglesLabel: "Quiero guía en inglés · sin costo",
+    guiaInglesAyuda: "Lo anotamos en tu reserva y sale un guía que habla inglés. Si ese día no lo tenemos, te avisamos antes por WhatsApp.",
     barraTotal: (total) => `Total ${total}`,
   },
 };
@@ -1364,8 +1414,8 @@ const en: BookingMessages = {
     escribenosYLosSumamos: "Message us and we'll add you to another group",
     waGrupoMinimo: (personas, tour) =>
       `Hi, there are ${personas} of us and we're interested in ${tour}. Could you add us to another group?`,
-    viajeroSoloTitulo: "Traveling solo:",
-    viajeroSolo: "you pay the 2-person price minus $2 MXN and we place you in a group put together for your date.",
+    viajeroSoloTitulo: "Your group is below the minimum:",
+    viajeroSolo: (dias) => `you pay the normal per-person price and we add you to a shared departure. We confirm ${dias} days ahead; if the group does not come together, you get 100 % back.`,
     porPersonaExtra: "per person",
     quitarAddOn: "Remove",
     agregarAddOn: "Add",
@@ -1376,7 +1426,7 @@ const en: BookingMessages = {
     duracionGrupo: (horas, min, max) =>
       `${horas} hours approx. · group of ${min > 1 ? `${min} to ` : "up to "}${max} people`,
 
-    agregarOtroRecorrido: "＋ Add another tour",
+    agregarOtroRecorrido: "Add another tour",
     quedanLugares: (quedan, cupo) =>
       quedan === 1 ? `1 spot left of ${cupo} for that day` : `${quedan} spots left of ${cupo} for that day`,
     salidaLlena: "That departure is full — pick another day",
@@ -1480,6 +1530,12 @@ const en: BookingMessages = {
     prefieresTransferencia: "Prefer a SPEI transfer or OXXO?",
     apartarPorWhatsapp: "Hold it on WhatsApp",
     mandamosDatos: "We'll send you the details and hold your spots once we get the receipt.",
+    otrasFormas: "Other ways to pay",
+    msiTitulo: (plazos) => `Up to ${plazos} monthly payments, interest free`,
+    msiDetalle: "With participating Mexican cards. You pick the plan in the payment form, once you enter the card.",
+    pagarTodoTitulo: (total) => `Pay for the whole trip today · ${total}`,
+    pagarTodoMsi: "This is what unlocks the interest-free months: no bank offers them on the deposit alone.",
+    pagarTodoVolver: (anticipo) => `I'd rather pay just the ${anticipo} deposit`,
     errorPago: "Something went wrong with the payment. Please try again.",
     pagoEnProceso: "Your payment is processing. As soon as the bank confirms it, you'll get the email.",
     waPagoAlterno: {
@@ -1558,8 +1614,9 @@ const en: BookingMessages = {
         `Hospedaje: ${hab}, ${noches} noche(s), ${huespedes} huésped(es)${entrada ? ` — entrada ${entrada}` : ""}${salida ? `, salida ${salida}` : ""}.`,
       traslado: (ciudad, pax) =>
         `TRASLADO: ${ciudad} → Xilitla, ida y vuelta, ${pax} pasajero(s). Falta acordar hora y domicilio de recogida.`,
+      guiaEnIngles: "PIDIÓ GUÍA EN INGLÉS (sin costo): asignar guía bilingüe o avisarle antes por WhatsApp.",
       viajeroSolo: (tour, fecha) =>
-        `${tour} — VIAJA SOLO (${fecha}): pagó el precio de 2 personas menos $2. Incluirlo en un grupo armado para esa fecha.`,
+        `${tour} — BAJO EL MÍNIMO (${fecha}): pagó tarifa normal. Sumarlo a una salida compartida y confirmarle ${CONFIRMA_SALIDA_DIAS} días antes; si no se junta, REEMBOLSO del 100 %.`,
       idiomaCliente: "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio.",
     },
     trasladoRenglon: (ciudad) => `Transfer ${ciudad} → Xilitla (round trip)`,
@@ -1576,6 +1633,8 @@ const en: BookingMessages = {
     horaExacta: "We confirm your exact time on WhatsApp.",
     cancelasGratis: "Cancel free up to 48 h before, with a full refund.",
     cancelasGratisResto: "Everything else: cancel free up to 48 h before, with a full refund.",
+    /** Pidió guía en inglés, sin costo (8 oct 2026). */
+    guiaEnIngles: "We'll send a guide who speaks English, at no extra cost.",
     fotosYVideo: "Photos and video of the tour, taken by your guide, at no extra charge.",
     totalDelViaje: "Trip total",
     sumaDeRecorridos: "Tours subtotal",
@@ -1598,8 +1657,12 @@ const en: BookingMessages = {
     grupoTope: (max) => `${max} people is the maximum the garden allows per experience; it cannot be extended.`,
     tarifaDelGrupo: (max) => `Flat rate for the whole group, up to ${max} people`,
     porCabeza: (monto) => `That works out to ${monto} per person`,
-    viajeroSoloTitulo: "Traveling solo:",
-    viajeroSolo: "you pay the 2-person price minus $2 MXN and we place you in a group put together for your date.",
+    cadaUno: (monto) => `${monto} per person`,
+    unoMasBaja: (personas, monto) => `With ${personas} it drops to ${monto} per person`,
+    escaleraDesde: (personas, monto) => `The more of you, the less you pay: ${monto} per person with ${personas}`,
+    mejorPrecio: "That's the best per-person price on this tour",
+    viajeroSoloTitulo: "Your group is below the minimum:",
+    viajeroSolo: (dias) => `you pay the normal per-person price and we add you to a shared departure. We confirm ${dias} days ahead; if the group does not come together, you get 100 % back.`,
   },
 
   calendario: {
@@ -1792,11 +1855,15 @@ const en: BookingMessages = {
     nadoTitulo: "What if I can't swim?",
     lluviaTitulo: "What if it rains?",
     cancelTitulo: "Can I cancel?",
+    pagoTitulo: "How can I pay?",
+    pagoTarjeta: "By credit or debit card, and with Apple Pay or Google Pay if your phone has them.",
+    pagoMsi: "And in 3, 6 or 9 interest-free monthly payments with participating Mexican cards, if you choose to pay for the whole trip today.",
+    pagoAlterno: "Prefer a SPEI transfer or paying in cash at OXXO? We set it up on WhatsApp: we send you the details and hold your spots once we get the receipt.",
     edadNinos: "Yes. Kids aged 6 to 10 pay 70% and under-6s pay 50%.",
     edadMinima: (tour, edad) => `${tour}: ages ${edad} and up.`,
     soloAdultos: (tour) => `${tour} is adults only.`,
     nadoSinSaber: "You don't need to swim: you wear a life jacket the whole way and go with a certified guide.",
-    lluviaGenerica: "We run in light rain. If the river isn't safe, you choose: a refund or a new date.",
+    lluviaGenerica: "We run in light rain: the jungle looks better wet. If the river isn't safe we first switch you to another activity — there are tours that don't depend on the river, like Las Pozas or the Xilo Cave — and if none of them appeals, you choose a refund or a new date. The point is that you still have a good day.",
     cancelHasta: (fecha) => `Free until ${fecha} (48 h before), with a full refund.`,
     cancelGenerica: "Free up to 48 h before your tour, with a full refund.",
     extrasTitulo: "Need a place to stay or a transfer?",
@@ -1822,6 +1889,8 @@ const en: BookingMessages = {
     ],
     verDesglose: "See the breakdown",
     pagoCifrado: "Encrypted payment with Stripe",
+    guiaInglesLabel: "I'd like an English-speaking guide · no extra cost",
+    guiaInglesAyuda: "We note it on your booking and send a guide who speaks English. If we don't have one that day, we'll tell you on WhatsApp beforehand.",
     barraTotal: (total) => `Total ${total}`,
   },
 };

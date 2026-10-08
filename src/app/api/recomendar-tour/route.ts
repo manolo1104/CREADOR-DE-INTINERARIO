@@ -123,6 +123,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     "tour-gruta-xilo":   0,
     "tour-amanecer-nubes": 0,
     "tour-olla-de-la-luz": 0,
+    "tour-huasteca-instagrameable": 0,
   };
 
   if (intereses.some((i) => ["Fotografía perfecta", "Cascadas turquesas"].includes(i))) {
@@ -133,6 +134,12 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-buceo-media-luna"] += 1;
     scores["tour-amanecer-nubes"] += 3;   // amanecer sobre el mar de nubes
     scores["tour-olla-de-la-luz"] += 2;   // el haz de luz en la gruta
+  }
+  // Instagrameable solo entra con "Fotografía perfecta" dicho a propósito, no con
+  // "Cascadas turquesas": es el único recorrido cuyo producto SON las fotos,
+  // pero cuesta más y no es lo que busca quien solo quiere agua bonita.
+  if (intereses.includes("Fotografía perfecta")) {
+    scores["tour-huasteca-instagrameable"] += 5;
   }
   if (intereses.includes("Aventura extrema")) {
     scores["tour-rappel-tamul"] += 4;
@@ -176,6 +183,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-puente-dios"]  += 1;
   }
   if (grupo === "En pareja") {
+    scores["tour-huasteca-instagrameable"] += 2;
     scores["tour-edward-james"] += 1;
     scores["tour-meco"]         += 1;
     scores["tour-rappel-tamul"] += 1;
@@ -225,6 +233,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   if (destino.includes("Xilo") || destino.toLowerCase().includes("gruta")) scores["tour-gruta-xilo"] += 4;
   if (destino.toLowerCase().includes("amanecer") || destino.toLowerCase().includes("nubes")) scores["tour-amanecer-nubes"] += 4;
   if (destino.includes("Olla") || destino.includes("Hoya"))        scores["tour-olla-de-la-luz"] += 4;
+  if (/foto|instagram|reel|contenido|creador/i.test(destino))      scores["tour-huasteca-instagrameable"] += 4;
 
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   return { primaryId: sorted[0][0], secondaryId: sorted[1][0] };

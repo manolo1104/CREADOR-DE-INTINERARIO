@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Cormorant_Garamond, DM_Sans, JetBrains_Mono, Sora } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ItinerarioProvider } from "@/context/ItinerarioContext";
@@ -9,6 +9,13 @@ import { Analytics } from "@/components/Analytics";
 import WhatsAppClickTracker from "@/components/WhatsAppClickTracker";
 import { asLocale } from "@/lib/i18n/config";
 
+// La itálica se sigue precargando a propósito (7 oct 2026): la segunda línea
+// del h1 del inicio («Potosina», HeroTypewriter) es Cormorant 300 itálica, a
+// 64–130 px y a la vista desde el primer pintado. next/font precarga por
+// llamada, no por estilo: sacarla a una declaración aparte crea OTRA familia,
+// y los más de cien <em> e `italic` que viven dentro de `font-cormorant`
+// saldrían en itálica falsa (la normal inclinada) sin una regla de CSS que los
+// mande a ella.
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["300", "400", "600"],
@@ -22,21 +29,20 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
-// Sólo las usa el funnel del curso (/curso): ahí la piel es negra y técnica,
-// no la de la marca de tours. Se cargan aquí porque next/font vive en el
-// layout raíz, pero ninguna página de tours las referencia.
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-  variable: "--font-sora",
-});
-
+// Sora se mudó al layout de /curso (7 oct 2026): solo la usa el funnel del
+// curso, y desde aquí se precargaba en TODAS las páginas de tours.
+//
+// JetBrains Mono se queda aquí porque no es solo del curso: los folios y
+// números de cotización del panel (/admin) van en `font-mono`. Sin la variable
+// en <html>, `var(--font-mono)` queda vacía y el folio ni siquiera cae a
+// monoespaciada. Va con `preload: false`: ninguna página la precarga y el
+// navegador la baja solo donde hay texto que la usa (/admin y /curso).
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
   display: "swap",
   variable: "--font-mono",
+  preload: false,
 });
 
 /**
@@ -100,7 +106,7 @@ export function generateMetadata(): Metadata {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = asLocale(headers().get("x-locale"));
   return (
-    <html lang={locale} className={`${cormorant.variable} ${dmSans.variable} ${sora.variable} ${mono.variable}`}>
+    <html lang={locale} className={`${cormorant.variable} ${dmSans.variable} ${mono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico?v=2" sizes="32x32" />
         <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />

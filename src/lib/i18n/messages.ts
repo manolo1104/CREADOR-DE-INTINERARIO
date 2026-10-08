@@ -145,6 +145,9 @@ export interface Messages {
     analiticaTexto: string;
     grabacionNombre: string;
     grabacionTexto: string;
+    /** Solo se enseña con un Pixel de Meta o una etiqueta de Google Ads (ver `CookieBanner`). */
+    publicidadNombre: string;
+    publicidadTexto: string;
     enlacePie: string;
   };
   footer: {
@@ -295,6 +298,8 @@ const es: Messages = {
     analiticaTexto: "Cuenta las visitas y qué tours se miran, sin tu nombre ni tus datos de contacto.",
     grabacionNombre: "Microsoft Clarity",
     grabacionTexto: "Graba de forma anónima cómo se recorre la página, para ver dónde se atora la gente.",
+    publicidadNombre: "Publicidad",
+    publicidadTexto: "Le avisan a Meta (Facebook e Instagram) y a Google qué anuncio te trajo, para saber cuáles funcionan. También pueden enseñarte anuncios nuestros después.",
     enlacePie: "Preferencias de cookies",
   },
   footer: {
@@ -446,6 +451,8 @@ const en: Messages = {
     analiticaTexto: "Counts visits and which tours people look at, without your name or contact details.",
     grabacionNombre: "Microsoft Clarity",
     grabacionTexto: "Anonymously records how the page is used, so we can see where people get stuck.",
+    publicidadNombre: "Advertising",
+    publicidadTexto: "They tell Meta (Facebook and Instagram) and Google which ad brought you here, so we know which ones work. They may also show you our ads later.",
     enlacePie: "Cookie preferences",
   },
   footer: {

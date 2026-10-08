@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Lock, ShoppingBag } from "lucide-react";
-import { trackBeginCheckout } from "@/lib/analytics";
+import { trackAddToCart } from "@/lib/analytics";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -32,15 +32,19 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   const esGrupo    = precioUnidad === "grupo";
   const { locale, en, lp } = useLocale();
   const t = getBooking(locale).barra;
-  // Esta barra es la ÚNICA de abajo en las fichas de tour: `CarritoBar` se
-  // esconde aquí (ver `lib/barrasFijas.ts`) porque las dos vivían en `bottom-0`
-  // y se tapaban. Así que si el visitante ya lleva recorridos, el acceso al
-  // carrito tiene que estar aquí dentro o se pierde.
+  // Esta barra es la ÚNICA de abajo en las fichas de tour EN EL CELULAR:
+  // `BarraInferiorMovil` se aparta aquí (ver `lib/barrasFijas.ts`) porque las
+  // dos vivían en `bottom-0` y se tapaban. Así que si el visitante ya lleva
+  // recorridos, el acceso al carrito tiene que estar aquí dentro o se pierde.
   const enCarrito = useCarritoSlugs();
   const yaEnCarrito = enCarrito.has(tourSlug);
   const llevaAlgo = enCarrito.size > 0;
+  // «Agregar» mete el recorrido al carrito: en GA4 es `add_to_cart` (el
+  // `begin_checkout` lo manda el carrito al abrirse). Aquí todavía no hay
+  // personas elegidas, así que va UNA unidad al precio de la barra: la misma
+  // cifra que lleva el evento interno.
   const track = () => {
-    trackBeginCheckout({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, price: precio, source });
+    trackAddToCart({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, total: precio, cantidad: 1, source });
     trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, source });
   };
   const trackWa = () => {
@@ -49,7 +53,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   const ctaClass = "flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium flex-shrink-0";
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-negro/97 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-negro/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
       <div className="flex-1 min-w-0">
         <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">{t.desde}</p>
         <p className="font-cormorant text-dorado text-xl leading-none">
@@ -99,7 +103,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
         <button
           type="button"
           onClick={() => {
-            // Bajar al módulo NO es empezar la reserva: el `begin_checkout` lo
+            // Bajar al módulo NO es empezar la reserva: el `add_to_cart` lo
             // manda el botón del módulo cuando sí se va al carrito. Antes este
             // toque lo mandaba también y en celular cada reserva contaba doble.
             trackTourEvent("BARRA_A_MODULO", { tour: tourId ?? tourSlug, source });

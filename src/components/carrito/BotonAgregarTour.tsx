@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { Check, Plus, ShoppingBag } from "lucide-react";
 import { agregarAlCarrito } from "@/lib/carrito";
 import { itemDesdeSlug } from "@/lib/carritoItems";
+import type { CarritoItem } from "@/lib/carrito";
+import { leerIntencion } from "@/lib/intencionInicio";
+import { TOURS_DB } from "@/lib/tours";
+import { minBookingDate, minimoPersonas } from "@/lib/tourBooking";
+import { trackAddToCart, renglonDeCarrito } from "@/lib/analytics";
 import { useCarritoSlugs } from "./useCarritoSlugs";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
@@ -13,11 +18,16 @@ import { getBooking } from "@/lib/i18n/booking";
  * Agrega un recorrido al carrito desde la propia tarjeta del catálogo, sin
  * tener que entrar a la ficha.
  *
- * Va SIN fecha a propósito. Obligar a elegirla aquí metería un calendario en
- * cada tarjeta del catálogo; la fecha se pone en el carrito, que además es donde
- * el cliente ya está viendo sus días juntos y puede ordenarlos. El pago no deja
- * cobrar nada sin fecha, así que no hay forma de que se cuele una reserva sin
- * día.
+ * NO pide la fecha aquí: un calendario en cada tarjeta del catálogo es ruido, y
+ * la fecha se elige dentro del carrito, que es donde el cliente ve sus días
+ * juntos y puede ordenarlos. El pago no deja cobrar nada sin fecha, así que no
+ * hay forma de que se cuele una reserva sin día.
+ *
+ * 🔴 Lo que sí hace desde el 8 oct 2026 es USAR la que ya dio. Quien declaró
+ * «20 de noviembre, 4 personas» en el buscador del inicio llegaba al catálogo,
+ * agregaba un recorrido y el renglón entraba vacío y con 2 personas: tenía que
+ * volver a decir lo mismo por tercera vez. Pedirla y aprovecharla no son lo
+ * mismo.
  *
  * El botón refleja si el tour YA está en el carrito, no solo si se acaba de
  * pulsar. Antes el "Agregado" era un `setTimeout` de 2.2 s y luego volvía a
@@ -46,9 +56,26 @@ export function BotonAgregarTour({
       router.push(lp("/reservar/carrito"));
       return;
     }
-    const item = itemDesdeSlug(tourSlug);
+    /* Lo que declaró en el buscador del inicio, si sigue valiendo. Se valida
+       aquí y no se confía: `leerIntencion` ya borra una fecha de ayer, pero el
+       grupo tiene que caber en ESTE recorrido —el buscador no sabe de cupos— y
+       una fecha de hoy no sirve, porque el mínimo del motor es mañana. */
+    const intencion = leerIntencion();
+    const tour = TOURS_DB.find((x) => x.slug === tourSlug);
+    const base: Partial<Omit<CarritoItem, "uid">> = {};
+    if (intencion && tour) {
+      if (intencion.fecha && intencion.fecha >= minBookingDate()) base.tourDate = intencion.fecha;
+      const n = intencion.personas;
+      if (n >= minimoPersonas(tour) && n <= tour.groupMax && tour.precioUnidad !== "vehiculo") {
+        base.adults = n;
+      }
+    }
+    const item = itemDesdeSlug(tourSlug, base);
     if (!item) return;
     agregarAlCarrito(item);
+    // A GA4 va el renglón tal como entró de verdad: con la fecha y la gente que
+    // traía del buscador, si las traía.
+    trackAddToCart({ ...renglonDeCarrito(item), source: "catalogo" });
     setRecienAgregado(true);
     setTimeout(() => setRecienAgregado(false), 2200);
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, MapPin, ShieldCheck, Camera } from "lucide-react";
+import { Clock, MapPin, ShieldCheck, Camera, Languages } from "lucide-react";
 import { formatMXN, formatTourDate } from "@/lib/tourBooking";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
@@ -59,7 +59,7 @@ export interface RenglonResumen {
  * responsable de mandar el `incluye` completo del catálogo.
  */
 export function ResumenReserva({
-  items, total, pagaHoy, saldo, pct, ahorroMultiple = 0,
+  items, total, pagaHoy, saldo, pct, ahorroMultiple = 0, guiaIngles = false,
 }: {
   items:   RenglonResumen[];
   total:   number;
@@ -68,6 +68,8 @@ export function ResumenReserva({
   pct:     number;
   /** Pesos rebajados por llevar varios recorridos. Se enseña como renglón. */
   ahorroMultiple?: number;
+  /** Pidió guía en inglés. Va en la logística, no en los números: es gratis. */
+  guiaIngles?: boolean;
 }) {
   const { locale } = useLocale();
   const t = getBooking(locale).resumen;
@@ -227,6 +229,14 @@ export function ResumenReserva({
           <Camera className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span>{t.fotosYVideo}</span>
         </p>
+        {/* Va con la logística y NO con los números: es gratis, y meterlo entre
+            los importes haría pensar que se cobra. */}
+        {guiaIngles && (
+          <p className="flex items-start gap-2 font-dm text-[12px] text-negro/60">
+            <Languages className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span>{t.guiaEnIngles}</span>
+          </p>
+        )}
       </div>
 
       {/* ── Números ── */}

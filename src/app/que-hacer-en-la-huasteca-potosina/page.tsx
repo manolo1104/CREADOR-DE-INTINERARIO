@@ -155,6 +155,13 @@ const EXPERIENCIAS: Experiencia[] = [
     cta: "Ver el Amanecer de Nubes",
   },
   {
+    titulo: "Véte con las fotos: un día armado por la luz, no por el reloj",
+    descripcion:
+      "Huasteca Instagrameable es el recorrido pensado para fotografía y contenido: grupo de máximo 6, paradas en la hora en que cada lugar se ve mejor y un guía que va con cámara y conoce los puntos exactos. Se eligen uno de tres días —Tamul y Las Pozas, Micos y el Sótano de las Huahuas, o Minas Viejas con el Meco y El Salto— y te entregan de 25 a 30 fotografías editadas dentro de 3 días.",
+    href: "/tours/huasteca-instagrameable",
+    cta: "Ver Huasteca Instagrameable",
+  },
+  {
     titulo: "Fotografía las cascadas gemelas de Minas Viejas",
     descripcion:
       "Dos cortinas de agua turquesa de unos 50 metros que caen juntas en una poza perfecta para nadar. De los rincones más fotogénicos de El Naranjo y mucho menos concurrido que Tamul.",

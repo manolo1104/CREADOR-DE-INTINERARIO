@@ -332,6 +332,53 @@ export default function NosotrosPage() {
         </div>
       </section>
 
+      {/* EL HOTEL Y EL RESTAURANTE — 7 oct 2026 (acción 6 de la auditoría).
+          La página contaba la familia y los guías pero no decía «hotel» ni una
+          vez. Textos en `nosotros.en.ts`; las cifras, en `hotelPropio.ts`. Sin
+          JSON-LD a propósito: el hotel es otra marca, con su propia ficha. */}
+      <section aria-labelledby="casa-propia" className="bg-arena/30 border-t border-negro/10 py-20 px-6">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-4 font-dm">{t.casa.eyebrow}</p>
+            <h2 id="casa-propia" className="reveal-up font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(28px,4vw,44px)" }}>
+              {t.casa.h2a}<em className="shimmer-gold">{t.casa.h2b}</em>
+            </h2>
+            <p className="text-negro/65 font-dm text-sm leading-relaxed mb-6">{t.casa.texto}</p>
+            <ul className="space-y-2.5 mb-8">
+              {t.casa.puntos.map((p) => (
+                <li key={p} className="flex items-start gap-3 text-negro/70 font-dm text-sm leading-relaxed">
+                  <span className="text-dorado mt-0.5 flex-shrink-0" aria-hidden="true">✦</span>
+                  {p}
+                </li>
+              ))}
+            </ul>
+            {/* Sin precarga, como el pie: cada precarga es un render completo en el servidor. */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href={lp("/paquetes")} prefetch={false} className="inline-flex items-center justify-center bg-verde-selva text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-[background-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-vivo active:scale-[0.97]">
+                {t.casa.ctaPaquetes}
+              </Link>
+              <Link href={`${lp("/info-practica")}#papan-huasteco`} prefetch={false} className="inline-flex items-center justify-center border border-negro/20 text-negro/70 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-[border-color,color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-verde-selva/40 [@media(hover:hover)]:hover:text-verde-selva active:scale-[0.97]">
+                {t.casa.ctaPapan}
+              </Link>
+            </div>
+          </div>
+
+          {/* Fotos que ya existían: la alberca del hotel y El Papán (el fogón y
+              la carta). Carga diferida: la sección está a media página. */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative col-span-2 aspect-[16/10] overflow-hidden">
+              <Image src="/imagenes/hotel-paraiso-encantado/hero.jpg" alt={t.casa.fotoHotelAlt} fill loading="lazy" className="object-cover" sizes="(min-width: 1024px) 464px, 100vw" />
+            </div>
+            <div className="relative aspect-square overflow-hidden">
+              <Image src="/imagenes/papan-huasteco/fogon-de-lena.jpg" alt={t.casa.fotoFogonAlt} fill loading="lazy" className="object-cover" sizes="(min-width: 1024px) 228px, 50vw" />
+            </div>
+            <div className="relative aspect-square overflow-hidden">
+              <Image src="/imagenes/papan-huasteco/chilaquiles-con-arrachera.jpg" alt={t.casa.fotoPlatillosAlt} fill loading="lazy" className="object-cover" sizes="(min-width: 1024px) 228px, 50vw" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* VALORES CON FOTOS */}
       <section className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-5xl mx-auto">

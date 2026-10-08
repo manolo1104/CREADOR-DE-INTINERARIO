@@ -1,7 +1,9 @@
 /* BandaTemporada — el aviso de que arranca la mejor época (Server Component) */
 import Link from "next/link";
 import Image from "next/image";
-import { ventanaMejorTemporada, MEJOR_TEMPORADA } from "@/lib/temporada";
+import { ventanaMejorTemporada, inicioMejorTemporada, fechaInicioTexto, MEJOR_TEMPORADA } from "@/lib/temporada";
+import { PROMO_TEMPORADA, promoVigente } from "@/lib/tours";
+import { CuentaRegresivaTemporada } from "@/components/CuentaRegresivaTemporada";
 
 /**
  * La banda del inicio que avisa que está por arrancar —o que ya arrancó— la
@@ -11,13 +13,16 @@ import { ventanaMejorTemporada, MEJOR_TEMPORADA } from "@/lib/temporada";
  * más turquesa»: el sitio ya afirma, en /destinos, en el boletín y en llms.txt,
  * que el agua se ve más turquesa entre marzo y mayo. Las dos cosas son ciertas
  * y no se pelean mientras se digan bien —en primavera el color es mejor pero
- * hay más gente; de octubre a diciembre el agua ya bajó clara y todavía no
+ * hay más gente; del 30 de octubre a diciembre el agua se aclara y todavía no
  * llegan las multitudes—, pero si se mezclan, el inicio contradice al resto del
  * sitio. Es el mismo error que ya costó caro con Tamul y con las Huahuas.
  *
- * No lleva estado ni temporizador: el inicio es `force-dynamic`, así que la
- * cuenta sale del servidor y está fresca en cada visita. Y no lleva
- * `"use client"` porque no hace falta: es texto y una foto.
+ * La banda sigue siendo de servidor (es texto y una foto); lo único que vive
+ * en el navegador es el temporizador (`CuentaRegresivaTemporada`), que cuenta
+ * días, horas, minutos y segundos hasta la medianoche del arranque en hora de
+ * México. Manolo pidió rehacerlo el 7 oct 2026: antes era un «N días» fijo que
+ * sólo cambiaba al recargar. El inicio es `force-dynamic`, así que el valor de
+ * partida del temporizador está fresco en cada visita.
  *
  * Se borra sola. Fuera de la ventana (y de los 45 días previos) no devuelve
  * nada, así que nadie tiene que acordarse de quitarla en enero.
@@ -39,12 +44,24 @@ const FOTO_ALT_ES =
 const FOTO_ALT_EN =
   "Aerial view of Minas Viejas Waterfalls: a triple drop over turquoise pools, with nobody around";
 
+/** Los dos titulares (cuenta y ya arrancó) llevan la misma letra y la misma entrada. */
+const CLASE_TITULAR = "reveal-up reveal-d1 mb-4 font-cormorant font-light leading-[1.08] text-crema";
+const TAMANO_TITULAR = { fontSize: "clamp(28px,4.2vw,46px)" };
+
 export function BandaTemporada({ en, hrefTours }: { en: boolean; hrefTours: string }) {
-  const { estado, dias } = ventanaMejorTemporada();
+  const { estado } = ventanaMejorTemporada();
   if (estado === "fuera") return null;
 
-  const cuenta = estado === "cuenta-regresiva";
-  const fecha = en ? "October 5" : "5 de octubre";
+  // La fecha sale de la constante: estaba escrita a mano («5 de octubre» /
+  // «October 5») y se quedó atrás cuando Manolo movió el arranque al 30.
+  const fecha = fechaInicioTexto(en ? "en" : "es");
+  // El temporizador arranca de lo que faltaba al pintar aquí (ver
+  // CuentaRegresivaTemporada); dentro de la temporada esto ya es 0.
+  const objetivo = inicioMejorTemporada();
+  const restante = Math.max(0, objetivo - Date.now());
+  // Cuántos recorridos llevan el precio de temporada baja: sale del Set de la
+  // promo, así que si se agrega o se quita uno, la línea lo dice sola.
+  const nPromo = PROMO_TEMPORADA.tours.size;
 
   return (
     <section
@@ -86,60 +103,62 @@ export function BandaTemporada({ en, hrefTours }: { en: boolean; hrefTours: stri
             </span>
           </div>
 
-          {/* En escritorio el número y el titular comparten línea de base: el
-              número es el dato y el titular lo que significa. En teléfono se
-              apilan, porque lado a lado el titular quedaba en columnas de tres
-              palabras. */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:gap-7">
-            {cuenta ? (
-              <div className="reveal-up flex flex-shrink-0 items-baseline gap-2 sm:block">
-                <span
-                  className="shimmer-gold block font-cormorant font-light leading-[0.9] tabular-nums"
-                  style={{ fontSize: "clamp(72px,12vw,132px)" }}
-                >
-                  {dias}
-                </span>
-                {/* Separada del número y un punto más clara: con `leading-[0.82]`
-                    la etiqueta se le montaba a la cola del dígito y al 45 % de
-                    opacidad casi no se leía. */}
-                <span className="block font-dm text-[10px] uppercase tracking-[4px] text-crema/60 sm:mt-4 sm:text-center">
-                  {dias === 1 ? (en ? "day" : "día") : en ? "days" : "días"}
-                </span>
-              </div>
-            ) : (
-              <div className="reveal-up mb-5 flex-shrink-0 sm:mb-0">
-                <span className="inline-block border border-dorado/50 bg-dorado/10 px-4 py-2 font-dm text-[10px] uppercase tracking-[3px] text-dorado">
-                  {en ? "Season is open" : "Ya arrancó"}
-                </span>
-              </div>
-            )}
-
-            <div className="min-w-0 pt-5 sm:pt-2">
-              <h2
-                className="reveal-up reveal-d1 mb-4 font-cormorant font-light leading-[1.08] text-crema"
-                style={{ fontSize: "clamp(28px,4.2vw,46px)" }}
-              >
-                {cuenta
-                  ? en
-                    ? <>for the <em className="shimmer-gold not-italic">best season</em> to visit the Huasteca</>
-                    : <>para que arranque <em className="shimmer-gold not-italic">la mejor temporada</em> de la Huasteca</>
-                  : en
-                    ? <>We are in the <em className="shimmer-gold not-italic">best season</em> to visit the Huasteca</>
-                    : <>Estamos en <em className="shimmer-gold not-italic">la mejor temporada</em> de la Huasteca</>}
-              </h2>
-
-              {/* El matiz va dentro del párrafo, no escondido en una nota: lo
-                  que cambia el 5 de octubre es que aflojan las lluvias, no que
-                  aparezca el turquesa de primavera. */}
-              <p className="reveal-up reveal-d2 mb-7 max-w-lg font-dm text-sm leading-relaxed text-crema/65">
+          {/* El temporizador va arriba y el titular debajo, en teléfono y en
+              escritorio: con días, horas, minutos y segundos ya no cabe junto
+              al titular como cabía el «N días» de antes, y apilados se leen
+              como una frase («22 días 04 horas… para que arranque la mejor
+              temporada»). Al llegar a cero el temporizador pone el titular de
+              «Estamos en…» y quita la línea de la promo, sin recargar. */}
+          <CuentaRegresivaTemporada
+            objetivo={objetivo}
+            restanteInicial={restante}
+            en={en}
+            titularCuenta={
+              <h2 className={CLASE_TITULAR} style={TAMANO_TITULAR}>
                 {en
-                  ? "The rains ease off, the rivers run clear again and the spring crowds are still months away. It is the stretch of the year with the best mix of clear water and quiet trails, and Xantolo falls right inside it."
-                  : "Aflojan las lluvias, los ríos vuelven a bajar claros y todavía faltan meses para las multitudes de primavera. Es el tramo del año con la mejor mezcla de agua clara y poca gente, y encima cae Xantolo dentro."}
-              </p>
+                  ? <>for the <em className="shimmer-gold not-italic">best season</em> to visit the Huasteca</>
+                  : <>para que arranque <em className="shimmer-gold not-italic">la mejor temporada</em> de la Huasteca</>}
+              </h2>
+            }
+            titularDentro={
+              <h2 className={CLASE_TITULAR} style={TAMANO_TITULAR}>
+                {en
+                  ? <>We are in the <em className="shimmer-gold not-italic">best season</em> to visit the Huasteca</>
+                  : <>Estamos en <em className="shimmer-gold not-italic">la mejor temporada</em> de la Huasteca</>}
+              </h2>
+            }
+            aviso={
+              // Una línea discreta, debajo del botón y no encima: el titular
+              // es la temporada; la promo es el empujón para no esperar a ella.
+              promoVigente() ? (
+                <p className="reveal-fade mt-5 flex items-start gap-2.5 font-dm text-[11px] leading-snug text-crema/60">
+                  {/* Arriba y bajado medio renglón, no centrado: en teléfono la
+                      línea se parte en dos y el punto quedaba entre ambos. */}
+                  <span aria-hidden="true" className="mt-[0.5em] h-1 w-1 flex-shrink-0 rounded-full bg-dorado/80" />
+                  {en
+                    ? `Until ${PROMO_TEMPORADA.hastaTexto.en}: low-season price on ${nPromo} tours`
+                    : `Hasta el ${PROMO_TEMPORADA.hastaTexto.es}: precio de temporada baja en ${nPromo} recorridos`}
+                </p>
+              ) : null
+            }
+          >
+            {/* El matiz va dentro del párrafo, no escondido en una nota: lo que
+                cambia el 30 de octubre es que aflojan las lluvias, no que
+                aparezca el turquesa de primavera. */}
+            <p className="reveal-up reveal-d2 mb-7 max-w-lg font-dm text-sm leading-relaxed text-crema/65">
+              {en
+                ? "The rains ease off, the rivers run clear again and the spring crowds are still months away. It is the stretch of the year with the best mix of clear water and quiet trails, and Xantolo falls right inside it."
+                : "Aflojan las lluvias, los ríos vuelven a bajar claros y todavía faltan meses para las multitudes de primavera. Es el tramo del año con la mejor mezcla de agua clara y poca gente, y encima cae Xantolo dentro."}
+            </p>
 
+            {/* La entrada (`reveal-up`) va en un envoltorio y no en el botón: su
+                animación se queda con `transform` al terminar (relleno `both`)
+                y anulaba el `active:scale`, así que el botón no se hundía al
+                tocarlo. */}
+            <div className="reveal-up reveal-d3">
               <Link
                 href={hrefTours}
-                className="reveal-up reveal-d3 group inline-flex items-center gap-3 bg-dorado px-9 py-4 font-dm text-[11px] font-medium uppercase tracking-[3px] text-negro transition-colors duration-200 hover:bg-lima active:scale-[0.98]"
+                className="group inline-flex items-center gap-3 bg-dorado px-9 py-4 font-dm text-[11px] font-medium uppercase tracking-[3px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
               >
                 {en ? "See the tours" : "Ver los recorridos"}
                 {/* La flecha se adelanta un pelo al pasar el cursor. Solo con
@@ -152,7 +171,7 @@ export function BandaTemporada({ en, hrefTours }: { en: boolean; hrefTours: stri
                 </span>
               </Link>
             </div>
-          </div>
+          </CuentaRegresivaTemporada>
         </div>
       </div>
     </section>

@@ -13,6 +13,7 @@
 
 import { TOURS_DB, etiquetaUnidad } from "./tours";
 import { ANTICIPO_PCT } from "./carrito";
+import { fechaInicioTexto } from "./temporada";
 import {
   BASE, C, WA, bajoBoton, barra, boton, fotoTour, parrafo, shellCorreo, tabla, titulo,
 } from "./emailLayout";
@@ -52,7 +53,9 @@ const DIAS: Dia[] = [
       "Sótano de las Huahuas — mirador al abismo de 478 m",
       "Cenote Cueva del Agua",
     ],
-    tip: "Tamul lleva agua turquesa de noviembre a mayo. En temporada de lluvias baja café y con más caudal.",
+    // La regla de temporada.ts y su fecha. Decía «turquesa de noviembre a
+    // mayo», que ya no cuadraba con el arranque del 30 de octubre.
+    tip: `Del ${fechaInicioTexto("es")} a mayo el agua de Tamul baja clara, y de marzo a mayo en su turquesa más intenso. De julio a octubre la cascada va a todo caudal y el agua puede bajar con sedimento.`,
     tourSlug: "expedicion-tamul",
   },
   {

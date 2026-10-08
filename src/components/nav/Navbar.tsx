@@ -27,6 +27,12 @@ const FICHAS_CON_EN = /^\/(?:tours|destinos|paquetes)\/[^/]+$/;
 // quitarles el /en daba 404, así que el botón "Español" lleva al inicio.
 const SOLO_EN = /^\/en\/(?:press|from)(?:\/|$)/;
 
+// «Sustentabilidad» en el menú en español, de escritorio y de celular (Manolo,
+// 7 oct 2026: «súbelo, si no me gusta lo bajamos»). Solo en español: la página
+// no existe en /en. Para BAJARLO basta con poner `false` aquí; con él se va
+// también el espaciado más corto que necesita el menú de escritorio.
+const MENU_SUSTENTABILIDAD = true;
+
 // Contraparte de idioma para el selector (sin pareja → inicio del otro idioma,
 // nunca un 404).
 function counterpartHref(pathname: string, locale: Locale): string {
@@ -180,8 +186,12 @@ export default function Navbar() {
             <img src="/logos/huasteca-logo.svg" alt="Tours Huasteca Potosina" width={942} height={267} className="h-11 w-auto transition-opacity duration-200 group-hover:opacity-85" />
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-5 xl:gap-7">
+          {/* Desktop Nav
+              Con «Sustentabilidad» el menú en español mide ~1,030 px con el
+              hueco de 20 px y a 1024 se encimaba con el logo (medido con la
+              fuente real). Con 14 px cabe desde ~980 px, también en Windows,
+              donde la barra de scroll se come 17. Desde 1280 vuelve el de 28. */}
+          <div className={`hidden lg:flex items-center ${locale === "es" && MENU_SUSTENTABILIDAD ? "gap-3.5" : "gap-5"} xl:gap-7`}>
             <Link href={lp("/")} className={navLinkClass(lp("/"))}>{dict.nav.tours && (locale === "en" ? "Home" : "Inicio")}</Link>
 
             <Link href={lp("/destinos")} className={navLinkClass(lp("/destinos"))}>{dict.nav.destinos}</Link>
@@ -199,6 +209,9 @@ export default function Navbar() {
             {locale === "es" && (
               <>
                 <Link href="/blog" className={navLinkClass("/blog")}>{dict.nav.blog}</Link>
+                {MENU_SUSTENTABILIDAD && (
+                  <Link href="/sustentabilidad-y-conservacion" className={navLinkClass("/sustentabilidad-y-conservacion")}>Sustentabilidad</Link>
+                )}
                 {/* "Contacto" vive solo en el pie (SiteFooter). El navbar tenía 9
                     enlaces y el CTA de Reservar se perdía entre ellos. */}
               </>
@@ -249,6 +262,10 @@ export default function Navbar() {
                 <Link href="/preguntas-frecuentes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Preguntas frecuentes</Link>
 
                 <Link href="/blog" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
+
+                {MENU_SUSTENTABILIDAD && (
+                  <Link href="/sustentabilidad-y-conservacion" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/5">Sustentabilidad</Link>
+                )}
               </>
             )}
 

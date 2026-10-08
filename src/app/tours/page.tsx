@@ -14,6 +14,7 @@ import { TOURS_DB, TOUR_CATEGORIAS, TOURS_RANKING, rankTour, tourCollage, tourDu
 import { excepcionesSalida } from "@/lib/recogidaTexto";
 import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { TourCarrusel } from "@/components/TourCarrusel";
+import { IconoInstagram } from "@/components/IconoInstagram";
 import { SelloGarantia } from "@/components/SelloGarantia";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
@@ -26,6 +27,7 @@ import { getToursFaqs, salidaDiaria } from "@/lib/faqTours";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { urlComparar } from "@/lib/comparador";
 import { comparadorUI } from "@/lib/i18n/comparador";
+import { ListaToursTracker } from "@/components/ListaToursTracker";
 
 import { GRUPO_MAX, GRUPO_MIN, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
 export function generateMetadata(): Metadata {
@@ -396,6 +398,7 @@ export default function ToursPage() {
           <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
             <Link
               href={urlComparar("recorridos", TOURS_RANKING.slice(0, 3), { locale, origen: "favoritos" })}
+              prefetch={false}
               className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
             >
               {comparadorUI(locale).entradas.favoritos}
@@ -455,6 +458,14 @@ export default function ToursPage() {
       </section>
 
       <PageViewTracker event="TOURS_LIST_VIEW" data={{ total: tours.length }} />
+      {/* La misma vista para GA4 (`view_item_list`), con los recorridos en el
+          orden en que se ven abajo: por familia y, dentro, por ventas. */}
+      <ListaToursTracker
+        listaId="catalogo_tours"
+        listaNombre="Catálogo de tours"
+        tours={TOUR_CATEGORIAS.flatMap((cat) => ordenados.filter((t) => t.categoria === cat.id))
+          .map((t) => ({ id: t.id, nombre: t.nombre, precio: t.precio, tipo: t.tipo }))}
+      />
 
       {/* ── CATÁLOGO POR CATEGORÍA ──
           Las tres familias sustituyen al par "Los más reservados / Otros
@@ -527,7 +538,10 @@ export default function ToursPage() {
 
               {/* ── INFO ── */}
               <div className="flex flex-col flex-1 p-7">
-                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{tour.tipo}</p>
+                <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2 flex items-center gap-1.5">
+                  {tour.icon === "Instagram" && <IconoInstagram size={12} />}
+                  {tour.tipo}
+                </p>
                 {/* El nombre del tour se ve SIEMPRE, tenga logotipo o no: el
                     logo va sobre la foto y el nombre completo es lo que dice a
                     dónde se va. Antes se ocultaba a la vista cuando había logo
@@ -620,6 +634,12 @@ export default function ToursPage() {
                   </span>
                   <Link
                     href={urlComparar("recorridos", [tour.slug], { locale, origen: "tarjeta" })}
+                    /* Sin precarga (7 oct 2026): /comparar es dinámica, así que
+                       cada una de las 15 tarjetas la renderizaba en el servidor
+                       en cuanto se veía — 15 renders por visita a /tours para un
+                       enlace que casi nadie pulsa. Las fichas sí se precargan:
+                       son estáticas y salen baratas. */
+                    prefetch={false}
                     className="relative z-10 flex items-center justify-center min-h-[44px] mt-1 font-dm text-[11px] tracking-[1px] text-crema/60 hover:text-dorado underline decoration-white/20 underline-offset-4 transition-colors"
                   >
                     {comparadorUI(locale).entradas.parecidos}

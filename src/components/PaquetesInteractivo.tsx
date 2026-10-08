@@ -237,6 +237,7 @@ export function PaquetesInteractivo({ paquetes }: { paquetes: Paquete[] }) {
               para el grupo, uno al lado del otro (2 oct 2026). */}
           <Link
             href={urlComparar("paquetes", paquetes.map((p) => p.slug), { locale, origen: "paquetes" })}
+            prefetch={false}
             className="inline-flex items-center min-h-[44px] font-dm text-[11px] tracking-[1.5px] uppercase text-verde-selva hover:text-negro underline decoration-verde-selva/40 underline-offset-4 transition-colors"
           >
             {comparadorUI(locale).entradas.paquetes}

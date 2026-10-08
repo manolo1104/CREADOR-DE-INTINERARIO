@@ -19,6 +19,7 @@ import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
 import { TourGallery } from "@/components/TourGallery";
 import { HeroTourMedia } from "@/components/HeroTourMedia";
 import { TourDeparture, ciudadUnicaDeRecogida } from "@/components/TourDeparture";
+import { IconoInstagram } from "@/components/IconoInstagram";
 import { SelloGarantia } from "@/components/SelloGarantia";
 import { ItinerarioLinea } from "@/components/ItinerarioLinea";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
@@ -29,6 +30,8 @@ import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour } from "@/components/booking/ReservaFichaTour";
 import { ID_MODULO_RESERVA } from "@/lib/anclas";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
+import { ReservaDirecto } from "@/components/ReservaDirecto";
+import { BloqueCasaPropia } from "@/components/BloqueCasaPropia";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { guiasDeTour } from "@/lib/guias";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
@@ -509,6 +512,16 @@ export default function TourDetailPage({ params }: Props) {
       ? { titulo: locale === "en" ? "Weather rescheduling" : "Reprogramación por clima", sub: climaPropio }
       : null;
 
+  // La insignia de fotos del bloque de confianza dice, para todos, "los toma tu
+  // guía, sin costo extra". En Huasteca Instagrameable eso se queda corto y contradice a
+  // su propio `incluye`: ahí las fotos son el producto y hay entrega prometida.
+  // Se lee del `incluye` del recorrido —no de una lista de slugs— para que el
+  // día que otro recorrido prometa entrega, la insignia cambie sola.
+  const prometeEntrega = tour.incluye.some((x) => /editad/i.test(x));
+  const fotosSub = prometeEntrega
+    ? (locale === "en" ? "25–30 edited photos · Within 3 days" : "25–30 fotos editadas · En 3 días")
+    : t.photosIncludedSub;
+
   // ── Datos de la banda de "Datos rápidos" ──────────────────────────────────
   // Salen del catálogo y de `TOUR_REQUISITOS`; ninguno se escribe a mano.
   const req = TOUR_REQUISITOS[tour.id];
@@ -964,7 +977,8 @@ export default function TourDetailPage({ params }: Props) {
         {/* Debajo del menú REAL: con la banda del río el menú mide ~108 px en
             teléfono y el `top-24` (96 px) dejaba los badges medio tapados. */}
         <div className="absolute left-6 right-6 flex flex-wrap gap-2" style={{ top: "calc(var(--navbar-alto, 96px) + 12px)" }}>
-          <span className="bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full">
+          <span className="bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
+            {tour.icon === "Instagram" && <IconoInstagram size={13} />}
             {tour.tipo}
           </span>
           <span className={`${dif.bg} text-white text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full flex items-center gap-1.5`}>
@@ -1528,6 +1542,10 @@ export default function TourDetailPage({ params }: Props) {
 
           </section>
 
+          {/* Reserva directo: lo que cambia cuando reservas aquí. Lo de «guías
+              propios NOM-09» solo donde el `incluye` del recorrido lo trae. */}
+          <ReservaDirecto locale={locale} donde="ficha" guiasPropios={/nom-09/.test(incluyeBase)} />
+
           {/* ── NO INCLUYE · QUÉ LLEVAR · REQUISITOS ──
               La ficha solo listaba lo que SÍ incluye. Lo demás vivía disperso
               (el "No incluye" en /precios, el "Qué llevar" en /info-practica)
@@ -1620,6 +1638,10 @@ export default function TourDetailPage({ params }: Props) {
 
           <TourDeparture tourId={tour.id} />
 
+          {/* Justo después de «dónde pasamos por ti»: dónde dormir. Con `base`
+              (el catálogo en español): el bloque busca «Las Pozas» en los destinos. */}
+          <BloqueCasaPropia tour={base} locale={locale} />
+
           {/* La misma caja, para móvil, al final de todo (ver la nota del aside). */}
           <div className="lg:hidden space-y-4">
             <div className="border border-white/10 bg-negro/60 p-5">
@@ -1646,7 +1668,7 @@ export default function TourDetailPage({ params }: Props) {
                 )}
                 <li className="flex items-start gap-3">
                   <Camera className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.photosIncluded}</p><p className="text-[10px] font-dm text-crema/40">{t.photosIncludedSub}</p></div>
+                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.photosIncluded}</p><p className="text-[10px] font-dm text-crema/40">{fotosSub}</p></div>
                 </li>
                 <li className="flex items-start gap-3">
                   <Headphones className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -1873,7 +1895,7 @@ export default function TourDetailPage({ params }: Props) {
                 )}
                 <li className="flex items-start gap-3">
                   <Camera className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.photosIncluded}</p><p className="text-[10px] font-dm text-crema/40">{t.photosIncludedSub}</p></div>
+                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.photosIncluded}</p><p className="text-[10px] font-dm text-crema/40">{fotosSub}</p></div>
                 </li>
                 <li className="flex items-start gap-3">
                   <Headphones className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -2002,6 +2024,13 @@ export default function TourDetailPage({ params }: Props) {
             msg: "Combínalo con el Amanecer de Nubes en otro día: el mismo bosque de niebla de La Trinidad, pero de madrugada, con el Cerro del Pilón y el mirador del mar de nubes.",
             msgEn: "Pair it with the Sea of Clouds Sunrise on another day: the same La Trinidad cloud forest, but before dawn, with Cerro del Pilón and the sea-of-clouds lookout.",
           },
+          // Instagrameable se combina consigo mismo: son tres días distintos del mismo
+          // recorrido y quien compra uno es a quien tiene sentido ofrecerle otro.
+          "tour-huasteca-instagrameable": {
+            slug: "expedicion-tamul",
+            msg: "¿Quieres más de un día instagrameable? Son tres días distintos y se pueden tomar seguidos: escríbenos y te los armamos con sus fechas. Si viajas con un grupo más grande, la Expedición Tamul cubre la cascada sin el límite de seis personas.",
+            msgEn: "Want more than one Instagrameable day? There are three different days and they can run back to back: message us and we’ll put them together with their dates. Travelling with a bigger group? Tamul Expedition covers the waterfall without the six-person cap.",
+          },
         };
         const combo = COMBOS[tour.id];
         const comboBase = combo ? TOURS_DB.find((tr) => tr.slug === combo.slug) : null;
@@ -2071,6 +2100,7 @@ export default function TourDetailPage({ params }: Props) {
                 <div className="mt-6 text-center">
                   <Link
                     href={urlComparar("recorridos", [tour.slug, ...otherTours.map((o) => o.slug)], { locale, origen: "ficha" })}
+                    prefetch={false}
                     className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
                   >
                     {comparadorUI(locale).entradas.ficha}

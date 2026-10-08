@@ -5,6 +5,7 @@ import { comparadorUI } from "@/lib/i18n/comparador";
 import { resolverComparacion } from "@/lib/comparadorDatos";
 import { buildBreadcrumbJsonLd } from "@/lib/jsonld";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { ListaToursTracker } from "@/components/ListaToursTracker";
 import { ComparadorShell } from "@/components/comparador/ComparadorShell";
 import { NavComparador } from "@/components/comparador/NavComparador";
 import { SelectorGrupo } from "@/components/comparador/SelectorGrupo";
@@ -57,6 +58,14 @@ export default function CompararPage({ searchParams }: { searchParams: Record<st
         key={c.tipo}
         event="COMPARAR_VISTA"
         data={{ tipo: c.tipo, items: c.columnas.map((col) => col.slug).join(","), origen: c.origen ?? "directo" }}
+      />
+      {/* Las columnas como lista de GA4 (`view_item_list`), con la misma regla:
+          una por pestaña. En paquetes no hay tarifas y va sin precio. */}
+      <ListaToursTracker
+        key={`lista-${c.tipo}`}
+        listaId={`comparador_${c.tipo}`}
+        listaNombre={c.tipo === "paquetes" ? "Comparador de paquetes" : "Comparador de recorridos"}
+        tours={c.columnas.map((col, i) => ({ id: col.id, nombre: col.nombre, precio: c.tarifas[i]?.precio }))}
       />
 
       <ComparadorShell

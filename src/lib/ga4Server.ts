@@ -40,6 +40,12 @@ export interface CompraGA4 {
   hasHotel?: boolean;
   hasTransfer?: boolean;
   coupon?: string | null;
+  /**
+   * Lo que vale la reserva COMPLETA. `value` es lo cobrado hoy (con anticipo,
+   * el 30 %): sin esto no se puede saber cuánto vendió de verdad una campaña.
+   * Es el mismo `reserva_total` que manda el navegador.
+   */
+  reservaTotal?: number;
 }
 
 /**
@@ -85,6 +91,7 @@ export async function enviarCompraGA4(compra: CompraGA4): Promise<void> {
               engagement_time_msec: 1,
               items:               compra.items,
               ...(compra.coupon      ? { coupon: compra.coupon } : {}),
+              ...(compra.reservaTotal ? { reserva_total: compra.reservaTotal } : {}),
               ...(compra.paymentPlan ? { payment_plan: compra.paymentPlan } : {}),
               has_hotel:    compra.hasHotel    ? 1 : 0,
               has_transfer: compra.hasTransfer ? 1 : 0,

@@ -55,6 +55,14 @@ const PIEL = {
 
 type Piel = (typeof PIEL)["sitio"];
 
+/**
+ * El interruptor de «Publicidad» solo sale cuando hay algo que apagar: hoy no
+ * se pauta y no hay Pixel de Meta ni etiqueta de Google Ads. Aparece solo en el
+ * despliegue que traiga alguno de los dos ids, y ese día se actualiza también
+ * el Aviso de Privacidad (ver `PreferenciasCookies.publicidad`).
+ */
+const HAY_PUBLICIDAD = !!(process.env.NEXT_PUBLIC_META_PIXEL_ID || process.env.NEXT_PUBLIC_GOOGLE_ADS_ID);
+
 const BOTON =
   "h-11 rounded-full px-5 font-dm text-[11px] uppercase tracking-[1.5px] whitespace-nowrap " +
   "transition-[background-color,border-color,color,transform] duration-200 ease-smooth-out active:scale-[0.97] " +
@@ -177,6 +185,10 @@ export function CookieBanner() {
                 interruptor={{ activo: prefs.analitica, alCambiar: v => setPrefs(p => ({ ...p, analitica: v })) }} />
               <Renglon piel={piel} nombre={t.grabacionNombre} texto={t.grabacionTexto}
                 interruptor={{ activo: prefs.grabacion, alCambiar: v => setPrefs(p => ({ ...p, grabacion: v })) }} />
+              {HAY_PUBLICIDAD && (
+                <Renglon piel={piel} nombre={t.publicidadNombre} texto={t.publicidadTexto}
+                  interruptor={{ activo: prefs.publicidad, alCambiar: v => setPrefs(p => ({ ...p, publicidad: v })) }} />
+              )}
             </ul>
 
             <button type="button" onClick={() => decidir(prefs)} className={`${BOTON} mt-4 w-full ${piel.primario} ${piel.anillo}`}>

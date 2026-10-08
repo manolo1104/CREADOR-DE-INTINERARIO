@@ -96,7 +96,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Qué pasa si llueve?",
-      a: "Operamos con lluvia ligera. Si hay tormenta eléctrica, reprogramamos sin costo.",
+      a: "Operamos con lluvia ligera: la selva con agua se ve mejor. Si el río no está seguro, primero te cambiamos de actividad —hay recorridos que no dependen del río, como Las Pozas o la Gruta— y si ninguno te late, eliges reembolso o cambio de fecha. La idea es que ese día la pases bien de todos modos.",
     },
   ],
   "tour-edward-james": [
@@ -106,7 +106,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿El guía habla inglés?",
-      a: "Nuestros guías están certificados NOM-09 y tenemos guías completamente bilingües disponibles: pídelo al reservar y te asignamos uno.",
+      a: "Nuestros guías están certificados NOM-09 y en una salida compartida manejan inglés básico. Si quieres uno que lo hable con soltura, márcalo al reservar —la casilla «Quiero guía en inglés», sin costo— y te lo conseguimos; si ese día no lo tenemos, te avisamos antes por WhatsApp.",
     },
     {
       q: "¿Cuánto tiempo estamos en cada lugar?",
@@ -261,6 +261,56 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     {
       q: "¿Hace frío en La Trinidad?",
       a: "Sí, aunque en Xilitla estés sudando. La Trinidad está en uno de los bosques de niebla mejor conservados de la Huasteca, fresco y húmedo todo el año, con la niebla enredada entre los pinos. Lleva chamarra o impermeable.",
+    },
+  ],
+
+  // 🔴 Huasteca Instagrameable es el Único recorrido que promete ENTREGA de fotos. El
+  // número (25 a 30) y el plazo (3 días) tienen que ser idénticos aquí, en el
+  // `incluye` de `tours.ts`, en `lib/bot/politicas.ts` y en `export-bot-data.ts`.
+  "tour-huasteca-instagrameable": [
+    {
+      q: "¿Qué fotos me voy a llevar exactamente?",
+      a: "Los encuadres de tu día, que el guía ya tiene ubicados. Día 1: la canoa entrando al cañón entre paredes de cien metros, tú sobre la roca con los 105 metros de Tamul atrás, el agua turquesa desde dentro de la canoa, y en la tarde las columnas y los arcos de Edward James y la escalera que no lleva a ningún lado, con la luz de las 5 PM. Día 2: el salto a la poza de Micos, las caídas en escalones desde la orilla y, al atardecer, los pericos entrando al Sótano de las Huahuas. Día 3: las terrazas de travertino y la cortina doble de Minas Viejas desde la pasarela, el Meco entre las 9 y las 11 AM —su hora— y la caída de El Salto.",
+    },
+    {
+      q: "¿Cuántas fotos me entregan y cuándo?",
+      a: "Entre 25 y 30 fotografías editadas, en una carpeta privada que te llega por WhatsApp o correo dentro de los 3 días siguientes al recorrido. No son las fotos en crudo: van revisadas y ajustadas de luz y color.",
+    },
+    {
+      q: "¿Quién toma las fotos? ¿Va un fotógrafo aparte?",
+      a: "Las toma tu guía, con una cámara Fujifilm X-T30 II —no con un teléfono—. No va un fotógrafo adicional: va un guía que conoce los puntos exactos de cada lugar, la hora a la que se ven mejor y dónde pararte. Por eso el grupo es de máximo 6 personas.",
+    },
+    {
+      q: "¿Puedo usar las fotos en mis redes? ¿Ustedes también las usan?",
+      a: "Son tuyas y puedes publicarlas donde quieras, sin pedirnos permiso. Nosotros también podríamos usar alguna en nuestras redes o en el sitio; si prefieres que no, dínoslo el mismo día y no se usa ninguna.",
+    },
+    {
+      q: "¿Llevan dron?",
+      a: "No. En Las Pozas están prohibidos los drones y los tripiés, así que no forman parte de este recorrido. Las fotos se hacen con cámara en mano. El único recorrido nuestro con video de dron es el Rappel en la Cascada de Tamul, porque el equipo es del operador del rappel.",
+    },
+    {
+      q: "¿Por qué el Día 1 no sale los martes?",
+      a: "Porque el Día 1 entra a Las Pozas en el horario de las 5:00 PM, y el jardín abre ese horario de miércoles a lunes. Los martes no existe, y mover el jardín a la mañana haría imposible la canoa de Tamul el mismo día. Los Días 2 y 3 salen cualquier día.",
+    },
+    {
+      q: "¿Puedo hacer los tres días?",
+      a: "Sí. Son tres días distintos, cada uno al mismo precio por persona, y se pueden tomar seguidos: Tamul y Las Pozas, Micos y el Sótano de las Huahuas, y Minas Viejas con el Meco y El Salto. Escríbenos por WhatsApp y te armamos los tres días con sus fechas en una sola cotización.",
+    },
+    {
+      q: "¿El guía me dice cómo posar?",
+      a: "Te dice dónde pararte, qué tienes detrás y hacia dónde mirar, y si quieres te propone encuadres. Si prefieres que no te dirija y solo te fotografíe como vas, también: dínoslo al empezar el día.",
+    },
+    {
+      q: "¿Y si no me llegan las fotos?",
+      a: "Escríbenos por WhatsApp al terminar el tercer día y te las mandamos. Guarda tu folio de reserva: con él el equipo ubica tu carpeta. Si se pasó el plazo, dínoslo —no esperes semanas—, porque las fotos se ordenan por salida y entre más pronto avises, más rápido se encuentran.",
+    },
+    {
+      q: "¿Pueden ir con guía que hable inglés?",
+      a: "Se pide con anticipación y el equipo lo revisa según la fecha; no lo damos por hecho al reservar. Dinos desde el principio si lo necesitas y te confirmamos antes de apartar.",
+    },
+    {
+      q: "¿Y si llueve o el río cierra?",
+      a: "Si el río cierra el paso a Tamul, el Día 1 se reacomoda sin costo: se ve la cascada desde el mirador de arriba y el jardín se mantiene. Si la lluvia impide el recorrido completo, lo reagendamos o te devolvemos lo pagado, como en todos nuestros recorridos.",
     },
   ],
 };

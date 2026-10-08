@@ -30,12 +30,20 @@ export function TourCarrusel({
   nombre,
   href,
   sizes = "(min-width: 1024px) 45vw, 100vw",
+  cargaDiferida = false,
 }: {
   panels: Panel[];
   nombre: string;
   /** Si viene, cada foto es un enlace al tour: al tocarla se entra, como espera todo el mundo. */
   href?: string;
   sizes?: string;
+  /**
+   * Ninguna foto con prisa, ni la primera. Para carruseles que viven lejos de
+   * la primera pantalla (las tarjetas del inicio): una foto `eager` hace que
+   * React la PRECARGUE en el <head>, y en el inicio esas tres le quitaban
+   * ancho de banda al póster del hero, que es lo que Google mide (LCP).
+   */
+  cargaDiferida?: boolean;
 }) {
   const pista = useRef<HTMLDivElement>(null);
   const [activa, setActiva] = useState(0);
@@ -93,9 +101,9 @@ export function TourCarrusel({
               sizes={sizes}
               className="object-cover"
               style={p.pos ? { objectPosition: p.pos } : undefined}
-              /* Solo la primera entra con prisa. Las demás están fuera de
-                 cuadro hasta que alguien desliza. */
-              loading={i === 0 ? "eager" : "lazy"}
+              /* Solo la primera entra con prisa (salvo `cargaDiferida`). Las
+                 demás están fuera de cuadro hasta que alguien desliza. */
+              loading={i === 0 && !cargaDiferida ? "eager" : "lazy"}
             />
           );
           return (

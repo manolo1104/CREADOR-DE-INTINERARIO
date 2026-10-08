@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing } from "lucide-react";
+import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, partesRecogida, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
@@ -25,6 +26,7 @@ import { PAQUETES_PANEL, cargarPaquete } from "@/lib/admin/paquetesPanel";
 import { Package } from "lucide-react";
 import { grupoDe, grupoParaGuardar, grupoLargo } from "@/lib/admin/reserva";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
+import { escapeHtml } from "@/lib/escapeHtml";
 import {
   type ExtraItem, type PresetExtra, EXTRAS_PRESET, extrasDe, totalExtras,
   calcExtraLine, normalizarExtra, extrasCobrados, extrasIncluidos,
@@ -74,11 +76,35 @@ function cleanPackages(pkgs: any[]): PackageItem[] {
   return pkgs.filter((p: any) => !p._meta);
 }
 
+/**
+ * La armó el bot de WhatsApp (`origen: "bot"` en el `_meta` de `packageItems`).
+ * Se marca para que el equipo sepa que nadie la revisó antes de salir y que
+ * el chat de ese cliente lo lleva el bot.
+ */
+function esDelBot(q: TourQuote): boolean {
+  const pkgs = (q as any).packageItems;
+  return Array.isArray(pkgs) && (getMeta(pkgs) as any).origen === "bot";
+}
+
+/** El chip «Bot»: discreto, con la misma forma que «Sin enviar». */
+function ChipBot() {
+  return (
+    <span title="La armó y la envió el bot de WhatsApp"
+      className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#1B4332]/8 text-[#1B4332]/70 font-bold">
+      Bot
+    </span>
+  );
+}
+
 // Mismo cálculo que las reservas (incluye tours por vehículo como el RZR).
 const calcLine = calcTourLine;
 
-/** Escapa el texto libre que se inyecta en el HTML del PDF. */
-const esc = (t: string) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+/**
+ * Escapa el texto libre que se inyecta en el HTML del PDF. Es el helper común
+ * (`lib/escapeHtml`): el mismo que usan los correos, para que los dos escapen
+ * igual lo que escribió el cliente o copió el bot.
+ */
+const esc = escapeHtml;
 
 const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
@@ -102,7 +128,9 @@ export default function CotizacionesClient(
   const [discountValue,  setDiscountValue]  = useState<string>("");
   const [anticipoTipo,   setAnticipoTipo]   = useState<"percent" | "fixed">("percent");
   const [anticipoValor,  setAnticipoValor]  = useState<string>("");
-  const [vigencia,       setVigencia]       = useState<string>("7dias");
+  // 48 h por omisión SOLO en las nuevas (decisión de oct 2026, igual que el
+  // bot). Las viejas sin vigencia guardada se siguen leyendo como 7 días.
+  const [vigencia,       setVigencia]       = useState<string>("48h");
   // Fecha límite editable a mano. Vacía = la regla de siempre (al enviar).
   const [venceEdit,      setVenceEdit]      = useState<string>("");
   const [numPersonas,    setNumPersonas]    = useState<string>("");
@@ -110,7 +138,7 @@ export default function CotizacionesClient(
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
-  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada">("all");
+  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "bot">("all");
   const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto" | "vence">("reciente");
 
   // «Hoy» en México: de aquí salen el «vence…», la franja y los mensajes.
@@ -133,9 +161,10 @@ export default function CotizacionesClient(
   const finalTotal = Math.max(0, baseTotal - discountAmt);
   // El anticipo se puede fijar de las dos formas: "el 30 %" o "$4,000".
   // En porcentaje se recalcula solo si cambia el total; en monto se respeta el
-  // número tal cual. Vacío = la mitad, que es lo que se pedía siempre.
+  // número tal cual. Vacío = el 30 %: desde oct 2026 es el anticipo único
+  // (bot, carrito, correo y panel). Antes era la mitad.
   const anticipoNum = anticipoValor === ""
-    ? Math.round(finalTotal * 0.5)
+    ? Math.round(finalTotal * 0.3)
     : anticipoTipo === "percent"
       // Se topa en el total en las dos formas: un "150 %" tecleado sin querer
       // no debe pedirle al cliente más dinero del que cuesta el viaje.
@@ -145,6 +174,19 @@ export default function CotizacionesClient(
   const saldoRestante = Math.max(0, finalTotal - anticipoNum);
 
   const esFecha = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+  /**
+   * Al tocar un renglón, el precio editado se suelta y el total vuelve a la
+   * suma de lista. En una cotización del bot ese total era el que cobra la web
+   * (viajero solo): se avisa, para que el total no cambie sin que nadie lo vea.
+   */
+  function soltarPrecioEditado() {
+    if (priceOverride === "") return;
+    if (editTarget && esDelBot(editTarget)) {
+      flash("⚠️ Este total venía del bot (el precio de la web). Al cambiar renglones se recalcula a precio de lista: revisa el total antes de guardar.");
+    }
+    setPriceOverride("");
+  }
 
   function updateLine(i: number, field: keyof LineItem, val: string | number) {
     setLines(ls => {
@@ -193,7 +235,7 @@ export default function CotizacionesClient(
       }
       return next;
     });
-    if (priceOverride !== "") setPriceOverride("");
+    soltarPrecioEditado();
   }
 
   /** Editar una habitación. Entrada, noches y salida quedan siempre cuadradas. */
@@ -209,7 +251,7 @@ export default function CotizacionesClient(
       up.subtotal = calcPackageLine(up);
       return up;
     }));
-    if (priceOverride !== "") setPriceOverride("");
+    soltarPrecioEditado();
   }
 
   /**
@@ -248,7 +290,7 @@ export default function CotizacionesClient(
   function addPackage() {
     const primeraFecha = lines.map(l => l.tourDate).filter(Boolean).sort()[0] || "";
     setPackages(ps => [...ps, sincronizarNoches({ ...EMPTY_PACKAGE, checkin: primeraFecha }, "checkin")]);
-    if (priceOverride !== "") setPriceOverride("");
+    soltarPrecioEditado();
   }
 
   function addLine() {
@@ -274,7 +316,7 @@ export default function CotizacionesClient(
     setPackages([]);
     setExtras([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
-    setAnticipoTipo("percent"); setAnticipoValor(""); setVigencia("7dias"); setNumPersonas("");
+    setAnticipoTipo("percent"); setAnticipoValor(""); setVigencia("48h"); setNumPersonas("");
     setVenceEdit("");
     setStep(1);
     setModal("new");
@@ -364,6 +406,14 @@ export default function CotizacionesClient(
     const extraItems   = extras.filter(e => e.concepto.trim()).map(normalizarExtra);
     const packageItems = [
       {
+        // Al editar se conserva lo que el panel no captura (`origen`, `waChatId`,
+        // `waTelefono`, `locale`… de las que armó el bot): sin esto, corregir
+        // una cotización del bot le borraba la etiqueta «Bot» y el chat al que
+        // pertenece. Lo que sí se captura aquí va después y manda. Solo el
+        // `_meta: true` de verdad: el viejo `_meta: "cotizado"` era un hotel.
+        ...(modal === "edit" && editTarget
+          ? [getMeta((editTarget as any).packageItems ?? [])].filter((m: any) => m._meta === true)[0] ?? {}
+          : {}),
         // `anticipo` sigue siendo el IMPORTE: es lo que leen el PDF, el correo
         // y la reserva. El tipo y el valor van aparte solo para poder reabrir
         // la cotización y ver "30 %" en vez de un número suelto.
@@ -595,7 +645,11 @@ export default function CotizacionesClient(
     const numPersonas  = Number(meta.numPersonas) > 0
       ? Number(meta.numPersonas)
       : (perTourMax > 0 ? perTourMax : q.adults + (q.children ?? 0));
-    const hospNombre   = pkgs.length ? pkgs[0].hotel : "No incluye";
+    // 🔴 Todo lo que sale de la base y pudo escribir un cliente o el bot (nombre,
+    // notas, hotel, conceptos a mano) entra al HTML escapado con `esc`: este
+    // PDF se abre con `document.write` dentro de la sesión del panel.
+    const hospNombre   = pkgs.length ? esc(pkgs[0].hotel) : "No incluye";
+    const folioQ       = esc(q.quoteNumber);
     // 🔴 La recogida sale de los recorridos cotizados. Decía "Pasamos por ti a
     // tu hospedaje en Xilitla o Ciudad Valles" en todas las cotizaciones, y la
     // Gruta, el Edén y otros solo recogen en Xilitla (desde Valles, con costo
@@ -650,13 +704,13 @@ export default function CotizacionesClient(
         .filter(x => x.n > 0)
         .map(({ a, n }) => `+ ${esc(a.nombre)} · ${n} ${n === 1 ? "persona" : "personas"} · $${(a.precio * n).toLocaleString("es-MX")}`)
         .join("<br/>");
-      return `<div class="row"><div><div class="tour-name">${l.tourName}</div><div class="tour-sub">${sub}</div>${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
+      return `<div class="row"><div><div class="tour-name">${esc(l.tourName)}</div><div class="tour-sub">${sub}</div>${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const hospRows = pkgs.map(p => {
       const fechas = [p.checkin ? fDate(p.checkin) : "", p.checkout ? fDate(p.checkout) : ""].filter(Boolean).join(" → ");
       const ocupacion = p.huespedes ? ` · ${p.huespedes} ${p.huespedes === 1 ? "persona" : "personas"} por habitación` : "";
-      return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${p.hotel} — ${p.habitacion}${ocupacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
+      return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${esc(p.hotel)} — ${esc(p.habitacion)}${ocupacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const extraRows = extrasCobradosQ.map(ex => {
@@ -664,7 +718,7 @@ export default function CotizacionesClient(
       return `<div class="row"><div><div class="tour-name">${esc(ex.concepto)}</div><div class="tour-sub">${sub}</div></div><div class="num">—</div><div class="num right">${ex.cantidad}</div><div class="amt right">$${calcExtraLine(ex).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
-    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Cotización ${q.quoteNumber}</title>
+    win.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Cotización ${folioQ}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -804,7 +858,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   </header>
 
   <div class="title-block">
-    <div><h1>Cotización<br/><em class="ital">№ ${q.quoteNumber}</em></h1></div>
+    <div><h1>Cotización<br/><em class="ital">№ ${folioQ}</em></h1></div>
     <div class="meta">
       <div class="row"><span class="k">Emitida</span><span class="v">${fmt(today)}</span></div>
       <div class="row"><span class="k">Vigencia</span><span class="v">${fmt(vigDate)}</span></div>
@@ -815,11 +869,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div class="card">
       <h3>Cliente</h3>
       <div class="field">
-        <div><div class="k">Nombre</div><div class="v">${q.customerName}</div></div>
+        <div><div class="k">Nombre</div><div class="v">${esc(q.customerName)}</div></div>
         <div><div class="k">Personas</div><div class="v">${numPersonas}</div><div class="v" style="font-size:7pt;color:rgba(14,23,16,.5)">${desgloseQ}</div></div>
-        <div><div class="k">WhatsApp</div><div class="v">${q.customerPhone || "—"}</div></div>
-        <div><div class="k">Email</div><div class="v" style="font-size:7.5pt">${q.customerEmail || "—"}</div></div>
-        ${q.notes ? `<div style="grid-column:1/-1"><div class="k">Notas</div><div class="v" style="font-size:7.5pt">${q.notes}</div></div>` : ""}
+        <div><div class="k">WhatsApp</div><div class="v">${esc(q.customerPhone) || "—"}</div></div>
+        <div><div class="k">Email</div><div class="v" style="font-size:7.5pt">${esc(q.customerEmail) || "—"}</div></div>
+        ${q.notes ? `<div style="grid-column:1/-1"><div class="k">Notas</div><div class="v" style="font-size:7.5pt">${esc(q.notes)}</div></div>` : ""}
       </div>
     </div>
     <div class="card dark">
@@ -876,7 +930,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <a class="cta" href="https://wa.me/524891090388"><div class="lbl">Confirmar por WhatsApp</div><div class="num">+52 489 109 0388</div></a>
   </div>
 
-  <span class="runfoot">Cotización № ${q.quoteNumber}</span>
+  <span class="runfoot">Cotización № ${folioQ}</span>
 </section>
 <script>
 /* La hoja se mide contra una A4 real y se aprieta sola hasta caber. Se hace
@@ -978,6 +1032,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     const q = search.toLowerCase();
     const list = quotes.filter(c => {
       if (statusFilter === "por-vencer") { if (etapaDe(c, hoy) !== "por-vencer") return false; }
+      else if (statusFilter === "bot") { if (!esDelBot(c)) return false; }
       else if (statusFilter !== "all" && c.status !== statusFilter) return false;
       return !q || [c.customerName, c.customerEmail, c.quoteNumber, c.tourName].some(v => v?.toLowerCase().includes(q));
     });
@@ -1074,9 +1129,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           { key: "por-vencer", label: "Por vencer" },
           { key: "aceptada", label: "Aceptadas" },
           { key: "expirada", label: "Vencidas"  },
+          { key: "bot",      label: "Bot"       },
         ] as const).map(tab => {
           const count = tab.key === "all" ? quotes.length
             : tab.key === "por-vencer" ? porVencer.length
+            : tab.key === "bot" ? quotes.filter(esDelBot).length
             : quotes.filter(q => q.status === tab.key).length;
           return (
             <button key={tab.key} onClick={() => { playClick(); setStatusFilter(tab.key); }}
@@ -1112,6 +1169,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</span>
                 <div className="flex items-center gap-1.5">
+                  {esDelBot(q) && <ChipBot />}
                   {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
                   <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${s.cls}`}>{s.label}</span>
                 </div>
@@ -1119,7 +1177,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               <p className="text-[#1B4332] font-medium">{q.customerName}</p>
               <p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p>
               <div className="flex items-center justify-between mt-1.5">
-                <p className="text-[#1B4332]/70 text-sm truncate max-w-[60%]">{q.tourName}</p>
+                <p className="text-[#1B4332]/70 text-sm truncate max-w-[60%] flex items-center gap-1.5">
+                  <CodigoTour slug={q.tourSlug} className="text-[11px] flex-shrink-0" />
+                  <span className="truncate">{q.tourName}</span>
+                </p>
                 <span className="text-[#52B788] font-medium text-sm">{fmx(q.totalAmount)}</span>
               </div>
               {vence && (
@@ -1170,12 +1231,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors cursor-pointer">
                     <td className="py-3 px-4 text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</td>
                     <td className="py-3 px-4"><p className="text-[#1B4332] font-medium">{q.customerName}</p><p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p></td>
-                    <td className="py-3 px-4 text-[#1B4332]/70 max-w-[200px]"><p className="truncate text-xs">{q.tourName}</p><p className="text-xs text-[#1B4332]/40">{fDate(q.tourDate)}</p></td>
+                    <td className="py-3 px-4 text-[#1B4332]/70 max-w-[200px]"><p className="text-xs flex items-center gap-1.5"><CodigoTour slug={q.tourSlug} className="text-[10px] flex-shrink-0" /><span className="truncate">{q.tourName}</span></p><p className="text-xs text-[#1B4332]/40">{fDate(q.tourDate)}</p></td>
                     <td className="py-3 px-4 text-[#52B788] font-medium whitespace-nowrap">{fmx(q.totalAmount)}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${s.cls}`}>{s.label}</span>
                         {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
+                        {esDelBot(q) && <ChipBot />}
                       </div>
                       {vence && (
                         <p className={`text-[11px] font-dm mt-1 whitespace-nowrap ${claseVence(diasParaVencer(vence, hoy))}`}
@@ -1247,6 +1309,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               <h2 className="font-cormorant text-[#1B4332] text-xl font-light">
                 {isEditMode ? "Editar Cotización" : "Nueva Cotización"}
                 {isEditMode && editTarget && <span className="text-[#1B4332] text-sm font-dm ml-2">{editTarget.quoteNumber}</span>}
+                {isEditMode && editTarget && esDelBot(editTarget) && <span className="ml-2 align-middle"><ChipBot /></span>}
               </h2>
               <button onClick={closeModal} className="text-[#1B4332]/40 hover:text-[#1B4332]"><X className="w-5 h-5" /></button>
             </div>
@@ -1447,7 +1510,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                               personas={Number(numPersonas) || (line.adults + (line.childrenMid ?? 0) + (line.childrenSmall ?? 0))}
                               onChange={nueva => {
                                 setLines(ls => ls.map((x, idx) => idx === i ? { ...nueva, subtotal: calcLine(nueva) } : x));
-                                if (priceOverride !== "") setPriceOverride("");
+                                soltarPrecioEditado();
                               }}
                             />
                           )}
@@ -1542,7 +1605,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   extras={extras}
                   personas={personasGrupo}
                   presets={presetsExtras}
-                  onChange={next => { setExtras(next); if (priceOverride !== "") setPriceOverride(""); }}
+                  onChange={next => { setExtras(next); soltarPrecioEditado(); }}
                 />
 
                 {/* Running total */}
@@ -1689,7 +1752,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                     </div>
                     <input type="number" min={0} value={anticipoValor}
                       onChange={e => setAnticipoValor(e.target.value)}
-                      placeholder={anticipoTipo === "percent" ? "50" : String(Math.round(finalTotal * 0.5))}
+                      placeholder={anticipoTipo === "percent" ? "30" : String(Math.round(finalTotal * 0.3))}
                       className={`flex-1 ${inputCls}`} />
                     {anticipoValor !== "" && (
                       <button type="button" onClick={() => setAnticipoValor("")} className="text-[#1B4332]/30 hover:text-red-500">
@@ -1716,7 +1779,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   {finalTotal > 0 && (
                     <div className="mt-2.5 pt-2.5 border-t border-[#C9484A]/15 space-y-0.5">
                       <p className="flex justify-between text-xs font-dm text-[#1B4332]">
-                        <span>Anticipo{anticipoValor === "" && " (50% por omisión)"}</span>
+                        <span>Anticipo{anticipoValor === "" && " (30% por omisión)"}</span>
                         <span className="font-medium">{fmx(anticipoNum)} <span className="text-[#1B4332]/40">({anticipoPct}%)</span></span>
                       </p>
                       <p className="flex justify-between text-xs font-dm text-[#1B4332]/50">

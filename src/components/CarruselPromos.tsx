@@ -35,14 +35,52 @@ const CADA_MS = 5000;
  * en cuanto se monta el actual. Así siempre hay uno listo con cinco segundos de
  * adelanto y no se bajan los cuatro carteles de golpe al abrir el inicio.
  */
-export function CarruselPromos() {
+export function CarruselPromos({
+  cargaDiferida = false,
+}: {
+  /**
+   * Para cuando el carrusel vive lejos de la primera pantalla (el inicio, 7 oct
+   * 2026): el primer cartel ya no lleva `priority` y nada se pide hasta que el
+   * carrusel está cerca de verse. Con `priority` y el segundo en `eager`, React
+   * precargaba los dos en el <head> y le quitaban ancho de banda al póster del
+   * hero, que es el LCP del inicio. Sin la prop se comporta como siempre.
+   */
+  cargaDiferida?: boolean;
+} = {}) {
   const promos = PROMOS_PAQUETES;
   const [i, setI] = useState(0);
   const [detenido, setDetenido] = useState(false);
+  /**
+   * ¿El carrusel ya está cerca de la pantalla? Sin `cargaDiferida` lo está
+   * desde el principio (el comportamiento de siempre). Con ella, hasta que el
+   * observador de abajo lo vea venir no se pide ni el segundo cartel ni rota.
+   */
+  const [cerca, setCerca] = useState(!cargaDiferida);
+  const raiz = useRef<HTMLDivElement>(null);
   /** Índices que ya deben descargarse: el actual, los ya vistos y el siguiente. */
   const [pedidas, setPedidas] = useState<number[]>(() =>
-    promos.length > 1 ? [0, 1] : [0],
+    // Con carga diferida el segundo no nace pedido: en `eager` desde el
+    // servidor, React lo precargaba aunque el carrusel quedara pantallas abajo.
+    promos.length > 1 && !cargaDiferida ? [0, 1] : [0],
   );
+
+  useEffect(() => {
+    if (cerca) return;
+    const el = raiz.current;
+    if (!el) return;
+    // 600 px de margen: el siguiente cartel llega con tiempo de sobra antes de
+    // que la persona baje hasta aquí.
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        setCerca(true);
+        io.disconnect();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [cerca]);
   /**
    * Quién pidió el cambio. Es lo que decide cuánto tarda:
    * cuando lo pide una persona, el cartel cambia en 200 ms —esperar medio
@@ -53,7 +91,8 @@ export function CarruselPromos() {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (promos.length < 2 || detenido) return;
+    // Lejos de la pantalla no rota: rotaría hacia carteles que aún no se piden.
+    if (promos.length < 2 || detenido || !cerca) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const avanzar = () => {
@@ -67,12 +106,13 @@ export function CarruselPromos() {
     return () => {
       if (timer.current) clearInterval(timer.current);
     };
-  }, [promos.length, detenido]);
+  }, [promos.length, detenido, cerca]);
 
   // Cada vez que se muestra uno, se pide el siguiente. Un efecto y no un
   // `setPedidas` dentro del temporizador, para que valga igual cuando el cambio
   // lo hace una persona con las flechas o con los puntos.
   useEffect(() => {
+    if (!cerca) return;
     const siguiente = (i + 1) % promos.length;
     setPedidas((ps) => {
       if (ps.includes(i) && ps.includes(siguiente)) return ps;
@@ -81,7 +121,7 @@ export function CarruselPromos() {
       for (const n of [i, siguiente]) if (!nuevas.includes(n)) nuevas.push(n);
       return nuevas;
     });
-  }, [i, promos.length]);
+  }, [i, promos.length, cerca]);
 
   if (promos.length === 0) return null;
 
@@ -98,6 +138,7 @@ export function CarruselPromos() {
 
   return (
     <div
+      ref={raiz}
       className="mx-auto w-full max-w-none sm:max-w-[440px]"
       onMouseEnter={() => setDetenido(true)}
       onMouseLeave={() => setDetenido(false)}
@@ -127,10 +168,12 @@ export function CarruselPromos() {
                 transitionDuration: aMano ? "200ms" : "600ms",
                 transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)",
               }}
-              priority={idx === 0}
+              priority={idx === 0 && !cargaDiferida}
               // Sin esto se quedan en "lazy" y no se descargan nunca: el
-              // navegador no baja una imagen que está en opacidad 0.
-              loading={idx === 0 ? undefined : pedidas.includes(idx) ? "eager" : "lazy"}
+              // navegador no baja una imagen que está en opacidad 0. El
+              // primero, con carga diferida, sí puede ir en "lazy": está a la
+              // vista (opacidad 1) y baja solo al acercarse.
+              loading={idx === 0 ? (cargaDiferida ? "lazy" : undefined) : pedidas.includes(idx) ? "eager" : "lazy"}
             />
           ))}
         </div>

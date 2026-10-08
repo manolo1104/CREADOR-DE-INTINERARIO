@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { waLink } from "@/lib/whatsapp";
 import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
@@ -456,35 +457,11 @@ export default function InfoPracticaPage() {
         </p>
 
         <div className="space-y-5">
-          {/* Ciudad Valles */}
-          <InfoCard title={t.vallesTitulo} accent="verde">
-            <p className="text-crema/70 text-sm mb-3">
-              {t.vallesTexto}
-            </p>
-            <BulletList
-              items={t.vallesItems}
-            />
-            {/* Links afiliados */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <a
-                href="https://www.airbnb.mx/s/Ciudad-Valles--San-Luis-Potos%C3%AD/homes"
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                className="flex items-center gap-1.5 rounded-lg text-[10px] font-dm text-lima border border-verde-vivo/30 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all"
-              >
-                <ExternalLink className="w-3 h-3" /> {t.verEnAirbnb}
-              </a>
-              <a
-                href="https://www.booking.com/searchresults.es.html?ss=Ciudad+Valles%2C+San+Luis+Potos%C3%AD"
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                className="flex items-center gap-1.5 rounded-lg text-[10px] font-dm text-lima border border-verde-vivo/30 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all"
-              >
-                <ExternalLink className="w-3 h-3" /> {t.verEnBooking}
-              </a>
-            </div>
-          </InfoCard>
-
+          {/* 🔴 El orden importa y estaba al revés: Ciudad Valles abría la
+              sección y nuestro hotel salía en segundo lugar. Desde el 8 oct
+              2026 abre Xilitla, que es donde está el hotel; Valles se queda
+              porque sigue siendo cierto que tiene la mejor logística para
+              quien hace los recorridos del norte. */}
           {/* Xilitla — con Hotel Paraíso Encantado destacado */}
           <InfoCard title={t.xilitlaTitulo} accent="dorado">
             <p className="text-crema/70 text-sm mb-4">
@@ -515,7 +492,7 @@ export default function InfoPracticaPage() {
                 ))}
               </ul>
               <a
-                href="https://wa.me/524891090388?text=Hola%2C%20me%20interesa%20hospedarme%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
+                href={waLink(t.waHospedaje)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block rounded-lg text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/50 hover:border-dorado hover:bg-dorado/10 px-4 py-1.5 transition-all"
@@ -534,7 +511,7 @@ export default function InfoPracticaPage() {
           <div className="flex items-center gap-2 ml-4 -mt-2">
             <span className="text-dorado text-sm">→</span>
             <Link
-              href="https://wa.me/524891090388?text=Hola%2C%20quiero%20reservar%20el%20Hotel%20Para%C3%ADso%20Encantado%20con%20tarifa%20especial%20de%20tour"
+              href={waLink(t.waTarifaTour)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-dm text-dorado hover:text-lima underline underline-offset-2 transition-colors"
@@ -542,6 +519,20 @@ export default function InfoPracticaPage() {
               {t.xilitlaMicroCta}
             </Link>
           </div>
+
+          {/* Ciudad Valles */}
+          <InfoCard title={t.vallesTitulo} accent="verde">
+            <p className="text-crema/70 text-sm mb-3">
+              {t.vallesTexto}
+            </p>
+            <BulletList
+              items={t.vallesItems}
+            />
+            {/* 🔴 Aquí había dos enlaces `sponsored` a Airbnb y a Booking para
+                buscar hospedaje en Ciudad Valles. Los quitó Manolo el 8 oct
+                2026: la guía del negocio que tiene hotel propio estaba
+                mandando a buscar cama con la competencia. */}
+          </InfoCard>
 
           {/* Tamasopo */}
           <InfoCard title={t.tamasopoTitulo} accent="agua">
@@ -617,7 +608,7 @@ export default function InfoPracticaPage() {
                 {t.reservasTexto}
               </p>
               <a
-                href="https://wa.me/524891090388?text=Hola%2C%20quisiera%20reservar%20habitaci%C3%B3n%20en%20el%20Hotel%20Para%C3%ADso%20Encantado%20Xilitla"
+                href={waLink(t.waHospedaje)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block rounded-lg text-[10px] tracking-[2px] uppercase font-dm text-[#25D366] border border-[#25D366]/40 hover:border-[#25D366] hover:bg-[#25D366]/10 px-4 py-2 transition-all rounded"
@@ -730,7 +721,7 @@ export default function InfoPracticaPage() {
             </div>
             <div className="relative aspect-square overflow-hidden rounded-xl">
               <Image
-                src="/imagenes/papan-huasteco/platillos.jpg"
+                src="/imagenes/papan-huasteco/chilaquiles-con-arrachera.jpg"
                 alt={t.papanFotoPlatillosAlt}
                 fill
                 className="object-cover"
@@ -739,7 +730,7 @@ export default function InfoPracticaPage() {
             </div>
             <div className="relative aspect-square overflow-hidden rounded-xl">
               <Image
-                src="/imagenes/papan-huasteco/fogon.webp"
+                src="/imagenes/papan-huasteco/fogon-de-lena.jpg"
                 alt={t.papanFotoFogonAlt}
                 fill
                 className="object-cover"

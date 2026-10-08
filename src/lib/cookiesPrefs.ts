@@ -22,9 +22,18 @@ export interface PreferenciasCookies {
   analitica: boolean;
   /** Microsoft Clarity: mapas de clics y grabaciones. */
   grabacion: boolean;
+  /**
+   * Pixel de Meta y etiqueta de Google Ads: qué anuncio trajo la venta. Hoy no
+   * se pauta y no hay ninguno instalado, así que el aviso no enseña el
+   * interruptor (`CookieBanner`). Se enciende el día que se pauta, y ese mismo
+   * día se actualiza el Aviso de Privacidad: hoy solo declara cookies de
+   * sesión y analíticas, y promete que no se ceden datos a terceros con fines
+   * de mercadotecnia.
+   */
+  publicidad: boolean;
 }
 
-export const TODAS: PreferenciasCookies = { analitica: true, grabacion: true };
+export const TODAS: PreferenciasCookies = { analitica: true, grabacion: true, publicidad: true };
 
 /** null = todavía no ha decidido (el aviso debe salir). */
 export function decisionTomada(): boolean {
@@ -39,12 +48,13 @@ export function leerPreferencias(): PreferenciasCookies {
   try {
     // Quien pulsó "Rechazar" en el aviso anterior lo rechazó todo.
     if (localStorage.getItem(CLAVE_CONSENTIMIENTO) === "rejected") {
-      return { analitica: false, grabacion: false };
+      return { analitica: false, grabacion: false, publicidad: false };
     }
     const guardadas = JSON.parse(localStorage.getItem(CLAVE_PREFERENCIAS) || "{}");
     return {
-      analitica: guardadas.analitica !== false,
-      grabacion: guardadas.grabacion !== false,
+      analitica:  guardadas.analitica  !== false,
+      grabacion:  guardadas.grabacion  !== false,
+      publicidad: guardadas.publicidad !== false,
     };
   } catch {
     return { ...TODAS };
@@ -52,7 +62,7 @@ export function leerPreferencias(): PreferenciasCookies {
 }
 
 export function guardarPreferencias(p: PreferenciasCookies) {
-  const todas = p.analitica && p.grabacion;
+  const todas = p.analitica && p.grabacion && p.publicidad;
   try {
     localStorage.setItem(CLAVE_PREFERENCIAS, JSON.stringify(p));
     localStorage.setItem(CLAVE_CONSENTIMIENTO, todas ? "accepted" : "custom");
@@ -111,6 +121,13 @@ export function aplicarPreferencias(antes: PreferenciasCookies, ahora: Preferenc
     try { w.clarity?.("consent", false); } catch { /* sin Clarity cargado */ }
     borrarCookies(["_clck", "_clsk"]);
     if (w.clarity) recargar = true;
+  }
+  if (antes.publicidad && !ahora.publicidad) {
+    // Las del Pixel de Meta (_fbp, _fbc) y las de Google Ads (_gcl_au, _gcl_aw…).
+    // Hoy nada las pone; el día que se instale el pixel, su script tiene que
+    // revisar `hpPermite('publicidad')` en `Analytics.tsx` y, si ya corría,
+    // apagarlo aquí con una recarga, como Clarity.
+    borrarCookies(["_fbp", "_fbc", "_gcl_"]);
   }
   if (recargar) {
     location.reload();

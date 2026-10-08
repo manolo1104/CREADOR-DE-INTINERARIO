@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, Calendar, FileText, TrendingUp, Users, Plus, ArrowRight } from "lucide-react";
 import type { TourBooking, TourQuote } from "@prisma/client";
 import CountUp from "@/components/admin/CountUp";
+import { CodigoTour } from "@/components/admin/CodigoTour";
 import { grupoDe, grupoCorto } from "@/lib/admin/reserva";
 import { RioEstadoControl } from "./RioEstadoControl";
 import { CupoPaqueteControl } from "./CupoPaqueteControl";
@@ -117,7 +118,10 @@ export default function DashboardClient({
               {todayBookings.map(b => (
                 <div key={b.id} className="px-5 py-3">
                   <p className="font-dm text-sm font-medium text-[#1B4332]">{b.customerName}</p>
-                  <p className="font-dm text-xs text-[#1B4332]/50 truncate">{b.tourName}</p>
+                  <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
+                    <CodigoTour slug={b.tourSlug} className="text-[10px]" />
+                    <span className="truncate">{b.tourName}</span>
+                  </p>
                   <div className="flex items-center justify-between mt-1">
                     <span className="font-dm text-[10px] text-[#1B4332]/40">{grupoCorto(grupoDe(b as any))}</span>
                     <span className="font-dm text-xs text-[#52B788] font-medium">{fmx(b.totalAmount)}</span>
@@ -154,7 +158,10 @@ export default function DashboardClient({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-dm text-sm font-medium text-[#1B4332] truncate">{b.customerName}</p>
-                    <p className="font-dm text-xs text-[#1B4332]/50 truncate">{b.tourName}</p>
+                    <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
+                      <CodigoTour slug={b.tourSlug} className="text-[10px]" />
+                      <span className="truncate">{b.tourName}</span>
+                    </p>
                   </div>
                   <span className="font-dm text-[10px] text-[#1B4332]/40 whitespace-nowrap">{grupoCorto(grupoDe(b as any))}</span>
                 </div>
@@ -189,7 +196,10 @@ export default function DashboardClient({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="font-dm text-sm font-medium text-[#1B4332] truncate">{q.customerName}</p>
-                      <p className="font-dm text-xs text-[#1B4332]/50 truncate">{q.tourName}</p>
+                      <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
+                        <CodigoTour slug={q.tourSlug} className="text-[10px]" />
+                        <span className="truncate">{q.tourName}</span>
+                      </p>
                     </div>
                     <span className={`text-[9px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm whitespace-nowrap flex-shrink-0 ${q.status === "enviada" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-600"}`}>
                       {q.status}
@@ -229,7 +239,10 @@ export default function DashboardClient({
                       {STATUS_LABEL[b.status] || b.status}
                     </span>
                   </div>
-                  <p className="font-dm text-xs text-[#1B4332]/50 truncate">{b.tourName} · {fDate(b.tourDate)}</p>
+                  <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
+                    <CodigoTour slug={b.tourSlug} className="text-[10px]" />
+                    <span className="truncate">{b.tourName} · {fDate(b.tourDate)}</span>
+                  </p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-dm text-sm text-[#52B788] font-medium">{fmx(b.totalAmount)}</p>

@@ -6,6 +6,7 @@
 import { TRASLADOS, precioBase } from "./traslados";
 import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
+import { enAuto, enAutobus } from "./tiemposDeViaje";
 import { NOCHE_XANTOLO } from "./nocheXantolo";
 
 export interface ItinerarioDia {
@@ -303,8 +304,8 @@ export const LOGISTICA = {
       icon: "Car",
       titulo: "En auto",
       puntos: [
-        "Desde la Ciudad de México: ~5.5 horas (aprox. 339 km).",
-        "Desde la ciudad de San Luis Potosí: ~5 horas.",
+        `Desde la Ciudad de México: ${enAuto("cdmx")} (aprox. 339 km).`,
+        `Desde la ciudad de San Luis Potosí: ${enAuto("san-luis-potosi")}.`,
         "El acceso a Xilitla es carretera de sierra, con curvas cerradas y neblina: te recomendamos manejar de día, despacio y con el tanque lleno.",
       ],
     },
@@ -313,8 +314,8 @@ export const LOGISTICA = {
       icon: "Plane",
       titulo: "En avión",
       puntos: [
-        "El aeropuerto más práctico es Tampico (TAM): ~2.5 h a Xilitla y ~2 h a Ciudad Valles.",
-        "Alternativas: San Luis Potosí (~5 h), Querétaro (vía Jalpan) o Ciudad de México / AIFA (más lejos).",
+        `El aeropuerto más práctico es Tampico (TAM): ${enAuto("tampico")} a Xilitla y ${enAuto("tampico", "valles")} a Ciudad Valles.`,
+        `Alternativas: San Luis Potosí (${enAuto("san-luis-potosi")}), Querétaro (vía Jalpan) o Ciudad de México / AIFA (más lejos).`,
         "Desde el aeropuerto conviene renta de auto o transfer privado, ya que los autobuses salen de las centrales urbanas, no de la terminal aérea.",
       ],
     },
@@ -324,7 +325,7 @@ export const LOGISTICA = {
       titulo: "En autobús",
       puntos: [
         "Desde CDMX hay salida nocturna de la Terminal Central del Norte alrededor de las 10:15 PM (líneas Servicios Coordinados, Transportes Frontera y ETN).",
-        "Llega a Xilitla por la mañana (aprox. 6:30 AM); el trayecto dura ~9–10 h. Tarifa aproximada $520–$900 MXN por persona.",
+        `Llega a Xilitla por la mañana (aprox. 6:30 AM); el trayecto dura ${enAutobus("cdmx", "xilitla")}. Tarifa aproximada $520–$900 MXN por persona.`,
         "Si llegas en ese autobús de la mañana, podemos arrancar el primer tour ese mismo día.",
       ],
     },

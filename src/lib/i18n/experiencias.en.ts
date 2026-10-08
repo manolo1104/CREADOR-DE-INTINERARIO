@@ -1,9 +1,11 @@
 import type { Locale } from "./config";
 
 import { GRUPO_MAX, TOURS_DB } from "@/lib/tours";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { incluyeDesayuno } from "@/lib/catalogoResumen";
 import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { fechaInicioTexto } from "@/lib/temporada";
 import { localizeDestino, localizeTour } from "./localize";
 
 /**
@@ -190,8 +192,11 @@ const ES: ExperienciasContent = {
   faqTituloEnfasis: "frecuentes",
   faqs: [
     {
+      // La regla de temporada.ts, con su fecha (7 oct 2026). Decía «de
+      // noviembre a marzo… el color turquesa más intenso», y ese turquesa es de
+      // marzo a mayo; también va en el FAQPage de la página.
       q: "¿Cuál es la mejor época para visitar la Huasteca Potosina?",
-      a: "De noviembre a marzo es la temporada ideal: clima fresco (18–26°C), cascadas con nivel óptimo y el color turquesa más intenso. Semana Santa y julio–agosto son temporada alta con más afluencia y calor.",
+      a: `Se puede venir todo el año. Del ${fechaInicioTexto("es")} a mayo el agua baja clara, y el turquesa más intenso es de marzo a mayo, que es también cuando más gente hay. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; si el río crece, reprogramamos el rafting sin costo. Si buscas agua clara antes de las multitudes de primavera, la mejor temporada para venir es del ${fechaInicioTexto("es")} a diciembre. Semana Santa y julio–agosto son temporada alta, con más afluencia y calor.`,
     },
     {
       q: "¿Qué incluye el precio de cada experiencia?",
@@ -203,7 +208,7 @@ const ES: ExperienciasContent = {
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde Ciudad de México?",
-      a: "Desde CDMX son 430 km por la autopista Mex-85 / MEX-70: unas 6.5 a 7 horas en coche. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son unas 8 horas ($600–900 MXN en clase ejecutiva). Ciudad Valles es la base de operaciones de la región.",
+      a: `Desde CDMX son 430 km por la autopista Mex-85 / MEX-70: unas ${enAuto("cdmx", "valles")} en coche. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son ${enAutobus("cdmx", "valles")} ($600–900 MXN en clase ejecutiva). Ciudad Valles es la base de operaciones de la región.`,
     },
   ],
 
@@ -292,8 +297,9 @@ const EN: ExperienciasContent = {
   faqTituloEnfasis: "questions",
   faqs: [
     {
+      // La misma regla que en español (temporada.ts, 7 oct 2026).
       q: "When is the best time to visit the Huasteca Potosina?",
-      a: "November through March is the sweet spot: cool weather (64–79°F / 18–26°C), waterfalls at their best level and the most intense turquoise. Easter week and July–August are high season — more crowds and more heat.",
+      a: `You can come any time of year. From ${fechaInicioTexto("en")} through May the water runs clear, and the turquoise is at its most intense from March to May, which is also the busiest time. From July to October the waterfalls run at full force and the water can carry sediment; if the river rises, we reschedule rafting at no cost. For clear water ahead of the spring crowds, the best season to visit is ${fechaInicioTexto("en")} through December. Easter week and July–August are high season — more crowds and more heat.`,
     },
     {
       q: "What does the price on each place include?",
@@ -305,7 +311,7 @@ const EN: ExperienciasContent = {
     },
     {
       q: "How do I get to the Huasteca Potosina from Mexico City?",
-      a: "It's 267 miles (430 km) from Mexico City on the Mex-85 / MEX-70 toll highway — about 6.5 to 7 hours by car. By bus, ADO runs from Terminal Norte to Ciudad Valles in about 8 hours ($600–900 MXN in executive class). Ciudad Valles is the region's base.",
+      a: `It's 267 miles (430 km) from Mexico City on the Mex-85 / MEX-70 toll highway — about ${enAuto("cdmx", "valles", true)} by car. By bus, ADO runs from Terminal Norte to Ciudad Valles in about ${enAutobus("cdmx", "valles", true)} ($600–900 MXN in executive class). Ciudad Valles is the region's base.`,
     },
   ],
 

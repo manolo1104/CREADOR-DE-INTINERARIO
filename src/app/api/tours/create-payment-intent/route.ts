@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { opcionesMsi } from "@/lib/stripeMsi";
 import { stripe } from "@/lib/stripe";
 import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName, fechaTourValida } from "@/lib/tourPricing";
+import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, tourDetails, sid, gaClientId } = await req.json();
+    const { customerEmail, customerName, tourDetails, sid, gaClientId, locale } = await req.json();
 
     // La fecha nunca se validaba en el servidor: se podía cobrar una reserva
     // para ayer o para dentro de dos años tocando el sessionStorage.
@@ -53,6 +55,9 @@ export async function POST(req: NextRequest) {
         // habilita OXXO o SPEI en el panel de Stripe, el checkout embebido los
         // ofrecería y fallaría al pedir redirección: esto lo impide.
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+        // Meses sin intereses si el importe llega al umbral (lib/stripeMsi.ts).
+        // MSI va sobre la TARJETA, no es un método con redirección.
+        ...opcionesMsi(veh.charge),
         metadata: {
           customerEmail: customerEmail || "",
           customerName:  customerName  || "",
@@ -121,6 +126,22 @@ export async function POST(req: NextRequest) {
     const childrenTotal =
       (Number(tourDetails?.childrenMid) || 0) + (Number(tourDetails?.childrenSmall) || 0);
 
+    // 🔴 El cupo de ESE día, antes de cobrar (`lib/cupoTour.ts`). El calendario
+    // ya pinta los días llenos, pero lo que llega aquí sale del sessionStorage:
+    // el día pudo llenarse mientras el cliente escribía su tarjeta. Sin fecha
+    // no hay qué contar (esos tours la acuerdan por WhatsApp).
+    if (tourDetails?.tourDate) {
+      const [sinLugar] = await pedidosSinCupo([{
+        slug:     charge.tour.slug,
+        fecha:    String(tourDetails.tourDate),
+        personas: (Number(tourDetails.adults) || 1) + childrenTotal,
+      }]);
+      if (sinLugar) {
+        logger.warn("payment_intent_sin_cupo", { tourSlug: charge.tour.slug, tourDate: sinLugar.fecha, personas: sinLugar.personas, estado: sinLugar.estado });
+        return NextResponse.json({ error: mensajeSinCupo(sinLugar, locale === "en" ? "en" : "es") }, { status: 409 });
+      }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount:        Math.round(charge.charge * 100), // MXN → centavos (calculado en el servidor)
       currency:      "mxn",
@@ -128,6 +149,7 @@ export async function POST(req: NextRequest) {
       receipt_email: customerEmail || undefined,
       // Solo métodos que se resuelven sin salir de la página (ver nota arriba).
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      ...opcionesMsi(charge.charge),
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",

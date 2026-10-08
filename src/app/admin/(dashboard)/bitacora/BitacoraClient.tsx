@@ -30,6 +30,8 @@ const ESTILO_ACCION: Record<string, EstiloAccion> = {
   "envió":           { emoji: "📨", clase: "bg-[#7a3a6a]/12 text-[#7a3a6a]",   borde: "border-l-[#7a3a6a]" },
   "entró":           { emoji: "🔑", clase: "bg-[#1B4332]/8 text-[#1B4332]/65", borde: "border-l-[#1B4332]/25" },
   "intento fallido": { emoji: "⛔", clase: "bg-[#C9484A]/20 text-[#A33638]",   borde: "border-l-[#C9484A]" },
+  // El bot pasó un chat al equipo: naranja, porque alguien tiene que atenderlo.
+  "escaló":          { emoji: "🙋", clase: "bg-orange-100 text-orange-800",    borde: "border-l-orange-400" },
 };
 
 const SIN_ESTILO: EstiloAccion = { emoji: "•", clase: "bg-[#1B4332]/8 text-[#1B4332]/70", borde: "border-l-[#1B4332]/20" };
@@ -48,6 +50,7 @@ const EMOJI_ENTIDAD: Record<string, string> = {
   socio:        "🤝",
   corte:        "🔒",
   panel:        "🚪",
+  "conversación": "💬",
 };
 const emojiEntidad = (e: string) => EMOJI_ENTIDAD[e] ?? "•";
 
@@ -67,6 +70,7 @@ const TIPOS = [
   { id: "socio",       label: "🤝 Socios" },
   { id: "corte",       label: "🔒 Cortes cerrados" },
   { id: "panel",       label: "🚪 Entradas al panel" },
+  { id: "conversación", label: "💬 Chats que el bot pasó al equipo" },
 ];
 
 const fFecha = (iso: string) =>

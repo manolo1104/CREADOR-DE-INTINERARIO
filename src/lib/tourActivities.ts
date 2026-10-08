@@ -15,7 +15,7 @@ Momentos que vas a vivir:
 - El primer rápido te empapa entero y te saca el primer grito. Son 14 kilómetros de descenso Clase III: emoción de verdad, con rutas para principiantes y avanzados — el guía va dentro de la balsa contigo y marca cada remada.
 - Entre rápido y rápido, el río se calma y puedes lanzarte a nadar con el chaleco puesto, flotando entre las paredes del cañón mientras la selva se asoma desde lo alto de la roca.
 - Llega el momento más esperado: el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece. Silencio absoluto, y luego el tramo más técnico del río. Sales del otro lado con los brazos cansados, una adrenalina que no se olvida y una comida incluida esperándote (antes o después de la actividad, como prefieras).
-NOTA: Actividad de día en el río (~7 h). Incluye TRASLADO REDONDO desde tu hospedaje en Ciudad Valles o Xilitla, equipo completo, guía certificado y COMIDA (antes o después). No necesitas experiencia NI saber nadar (chaleco + guía en la balsa); hay rutas para diferentes niveles. La mejor temporada es nov–mar; en lluvias (jul–sep) la salida depende del nivel del río y se confirma al reservar.`,
+NOTA: Actividad de día en el río (~7 h). Incluye TRASLADO REDONDO desde tu hospedaje en Ciudad Valles o Xilitla, equipo completo, guía certificado y COMIDA (antes o después). No necesitas experiencia NI saber nadar (chaleco + guía en la balsa); hay rutas para diferentes niveles. El agua baja clara del 30 oct a mayo (turquesa más intenso mar–may); en lluvias (jul–sep) la salida depende del nivel del río y se confirma al reservar.`,
 
   "tour-rappel-tamul": `
 Momentos que vas a vivir:
@@ -103,4 +103,12 @@ Momentos que vas a vivir:
 - Llegas al borde de la Olla de la Luz: un sótano vertical de 193 metros de profundidad y 233 de diámetro que se abre de golpe en medio del bosque.
 - Los miradores del Cerro de la Luz regalan la vista de la sierra completa antes de bajar.
 NOTA: Caminata de montaña de 8-9 h en total, dificultad media. $1,800 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA, la caminata guiada, equipo de seguridad y guía acreditado NOM-09. Es montaña y bosque de niebla, NO actividad acuática: perfecto para senderistas y fotografía de paisaje.`,
+
+  "tour-huasteca-instagrameable": `
+Momentos que vas a vivir:
+- El día no se arma por el reloj sino por la luz: a cada lugar se llega a la hora en que se ve como en las fotos que te hicieron querer venir.
+- El grupo es de máximo 6 personas y el guía va con una cámara Fujifilm X-T30 II: te dice dónde pararte, qué tienes detrás y hacia dónde mirar, sin que tengas que pedirlo.
+- Eliges UNO de tres días. Día 1: canoa por el Tampaón hasta quedar frente a los 105 metros de la Cascada de Tamul por la mañana, y Las Pozas —el jardín surrealista de Edward James— en el horario de las 5:00 PM, con la luz de lado y el jardín casi vacío. Día 2: las pozas escalonadas de las Cascadas de Micos y, al atardecer, los miles de pericos volviendo al Sótano de las Huahuas. Día 3: las terrazas de Minas Viejas, la Cascada del Meco entre 9 y 11 AM (su hora) y la cortina de El Salto.
+- Lo que te llevas no es solo el recuerdo: de 25 a 30 fotografías editadas en una carpeta privada, dentro de 3 días.
+NOTA: Es el recorrido de FOTOGRAFÍA del catálogo, pensado para parejas, creadores de contenido y quien viene por el material. $1,850 MXN por persona POR DÍA; son tres días distintos y se elige uno al reservar (los tres juntos se cotizan por WhatsApp). Incluye traslado redondo desde Xilitla o Ciudad Valles, entradas, canoa en el Día 1, guía NOM-09 con cámara y la entrega de fotos editadas. NO incluye alimentos, NO hay dron (Las Pozas lo prohíbe) y NO va un fotógrafo aparte del guía. El Día 1 no sale los martes.`,
 };

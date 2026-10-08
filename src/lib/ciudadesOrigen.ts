@@ -1,4 +1,5 @@
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 /**
  * Landings por ciudad de origen.
  *
@@ -50,17 +51,17 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
       {
         modo: "En autobús (lo más práctico)",
         detalle:
-          "Salida nocturna de la Terminal Central del Norte alrededor de las 10:15 PM (Servicios Coordinados, Transportes Frontera, ETN). Llega a Xilitla cerca de las 6:30 AM; el trayecto dura ~9–10 h. Tarifa aproximada $520–$900 MXN por persona.",
+          `Salida nocturna de la Terminal Central del Norte alrededor de las 10:15 PM (Servicios Coordinados, Transportes Frontera, ETN). Llega a Xilitla cerca de las 6:30 AM; el trayecto dura ${enAutobus("cdmx", "xilitla")}. Tarifa aproximada $520–$900 MXN por persona.`,
       },
       {
         modo: "En auto",
         detalle:
-          "~5.5–6 horas (aprox. 339 km). El tramo final es carretera de sierra con curvas cerradas y neblina: conviene manejar de día.",
+          `${enAuto("cdmx")} (aprox. 339 km). El tramo final es carretera de sierra con curvas cerradas y neblina: conviene manejar de día.`,
       },
       {
         modo: "En avión",
         detalle:
-          "El aeropuerto más práctico es Tampico (TAM), a ~2.5 h de Xilitla. Desde ahí conviene renta de auto o transfer privado.",
+          `El aeropuerto más práctico es Tampico (TAM), a ${enAuto("tampico")} de Xilitla. Desde ahí conviene renta de auto o transfer privado.`,
       },
     ],
     paqueteSugerido: "aventura-extrema",
@@ -90,17 +91,17 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
       {
         modo: "En autobús",
         detalle:
-          "Salidas desde la Central de Autobuses de Monterrey hacia Ciudad Valles (Transportes Frontera, Grupo Senda). El trayecto ronda las 8 horas y la tarifa arranca alrededor de $630 MXN por persona.",
+          `Salidas desde la Central de Autobuses de Monterrey hacia Ciudad Valles (Transportes Frontera, Grupo Senda). El trayecto ronda ${enAutobus("monterrey", "valles")} y la tarifa arranca alrededor de $630 MXN por persona.`,
       },
       {
         modo: "En auto",
         detalle:
-          "~6 horas hasta Ciudad Valles. Es el trayecto más cómodo de los dos: carretera de llanura casi todo el camino, sin el tramo de sierra que sí tiene la ruta desde CDMX.",
+          `${enAuto("monterrey", "valles")} hasta Ciudad Valles. Es el trayecto más cómodo de los dos: carretera de llanura casi todo el camino, sin el tramo de sierra que sí tiene la ruta desde CDMX.`,
       },
       {
         modo: "En avión",
         detalle:
-          "Tampico (TAM) es el aeropuerto más cercano, a ~2 h de Ciudad Valles. Desde ahí conviene renta de auto o transfer privado.",
+          `Tampico (TAM) es el aeropuerto más cercano, a ${enAuto("tampico", "valles")} de Ciudad Valles. Desde ahí conviene renta de auto o transfer privado.`,
       },
     ],
     paqueteSugerido: "tu-huasteca",

@@ -2,12 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { sesionActual } from "./sesion";
 
 export type AccionBitacora =
-  | "creó" | "modificó" | "eliminó" | "envió" | "entró" | "intento fallido";
+  | "creó" | "modificó" | "eliminó" | "envió" | "entró" | "intento fallido"
+  // El bot de WhatsApp pasó un chat al equipo o le avisó de algo (/api/bot/escalacion).
+  | "escaló";
 
 export interface Actor { usuario: string; nombre: string; rol: string }
 
 // Lo que no hizo una persona desde el panel (checkout del sitio, bot, cron).
 export const SISTEMA: Actor = { usuario: "sistema", nombre: "Sitio web", rol: "sistema" };
+
+// El bot de WhatsApp de Tours: cotiza, convierte en reserva y registra los
+// cobros que confirmó una persona (Manolo con /confirma). Va aparte de SISTEMA
+// porque «Sitio web» haría pasar por una compra en línea lo que se cerró en el
+// chat, y el equipo tiene que poder ver qué movió el bot y qué movió el sitio.
+export const BOT: Actor = { usuario: "bot", nombre: "Bot WhatsApp", rol: "sistema" };
 
 export interface Cambio { campo: string; antes: unknown; despues: unknown }
 

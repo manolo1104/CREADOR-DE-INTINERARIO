@@ -7,10 +7,12 @@ import { hoyMX } from "@/lib/dates";
 import {
   ESTADOS_VIVOS,
   PASOS_COTIZACION,
+  anterioresDelMismoCliente,
   conMeta,
   localeDeCotizacion,
   metaCotizacion,
   siguientePaso,
+  type MetaCotizacion,
 } from "@/lib/quoteFollowUp";
 import { actividad, logger } from "@/lib/logger";
 
@@ -42,6 +44,11 @@ export const maxDuration = 60;
  *  - pasada la fecha, la cotización pasa sola a Vencida (`expirada`) y se
  *    acaba su seguimiento. Esto vale también para las que no tienen correo.
  *
+ * Y UNA secuencia por cliente (oct 2026, respaldo del reemplazo del bot): de
+ * las vivas del mismo cliente (correo; si no, teléfono; si no, chat) solo la
+ * más reciente recibe pasos y «vence mañana». A las anteriores se les termina
+ * el seguimiento SIN correo; su estado no cambia y se pueden seguir pagando.
+ *
  * `?dry=1` enseña a quién le tocaría, sin enviar ni marcar nada.
  * Protegido por Bearer <CRON_SECRET o BLOG_AGENT_SECRET>.
  */
@@ -70,17 +77,67 @@ export async function POST(req: NextRequest) {
   let terminadas = 0;
   const destinatarios: { folio: string; email: string; paso: number | "vence" }[] = [];
   const vencidas: { folio: string; cliente: string; vencio: string }[] = [];
+  const duplicadas: { folio: string; masReciente: string }[] = [];
+
+  // 🔴 Un cliente, UNA secuencia. Si cambió algo y la cotización anterior no
+  // alcanzó a quedar reemplazada (o el equipo le mandó dos), le llegaban los
+  // correos de las dos. De las VIVAS de cada cliente solo sigue la más
+  // reciente; las que vencen en esta corrida no cuentan, para que una que hoy
+  // pasa a Vencida no deje sin seguimiento a otra que sí vale.
+  const anteriores = anterioresDelMismoCliente(
+    cotizaciones
+      .filter((q) => {
+        const v = fechaLimite(q);
+        return !(v && diasParaVencer(v, hoy) < 0);
+      })
+      .map((q) => {
+        const pm = metaDePaquete(q.packageItems);
+        return {
+          id:         q.id,
+          folio:      q.quoteNumber,
+          createdAt:  q.createdAt,
+          correo:     q.customerEmail,
+          telefono:   q.customerPhone,
+          waTelefono: typeof pm.waTelefono === "string" ? pm.waTelefono : null,
+          waChatId:   typeof pm.waChatId === "string" ? pm.waChatId : null,
+        };
+      }),
+  );
+
+  /**
+   * ¿Hay una más reciente del mismo cliente? Entonces ésta ya no le escribe:
+   * ni pasos ni «vence mañana». Se marca «terminado» SIN correo, y solo si su
+   * seguimiento seguía vivo («sin-tiempo» y «pausada» ya dicen por qué no
+   * recibe nada). El estado no se toca: sigue valiendo y se puede pagar.
+   */
+  const esAnterior = async (q: (typeof cotizaciones)[number], meta: MetaCotizacion): Promise<boolean> => {
+    const masReciente = anteriores.get(q.id);
+    if (!masReciente) return false;
+    if (!meta.seqEstado || meta.seqEstado === "activo") {
+      duplicadas.push({ folio: q.quoteNumber, masReciente });
+      if (!dry) {
+        await prisma.tourQuote.update({
+          where: { id: q.id },
+          data:  { lineItems: conMeta(q.lineItems, { seqEstado: "terminado", seqMasReciente: masReciente }) as never },
+        });
+      }
+    }
+    return true;
+  };
 
   for (const q of cotizaciones) {
     const meta = metaCotizacion(q.lineItems);
     const venceEl = fechaLimite(q);
 
-    // Sin correo no hay nada que mandar: solo se revisa si ya venció.
+    // Sin correo no hay nada que mandar: solo se revisa si ya venció (y, si
+    // tiene una más nueva, se deja dicho que su seguimiento terminó).
     if (!q.customerEmail) {
       if (venceEl && diasParaVencer(venceEl, hoy) < 0) {
         vencidas.push({ folio: q.quoteNumber, cliente: q.customerName, vencio: venceEl });
         if (!dry) await vencer(q.id, q.lineItems, venceEl);
+        continue;
       }
+      await esAnterior(q, meta);
       continue;
     }
 
@@ -124,6 +181,9 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
+    // El mismo cliente tiene una más reciente: solo esa le escribe.
+    if (await esAnterior(q, meta)) continue;
+
     // «Vence mañana» (o «hoy»): una sola vez, y no encima de otro correo
     // recién mandado. Desde que sale, ya no salen los pasos normales.
     if (venceEl && !meta.avisoVenceAt && diasParaVencer(venceEl, hoy) <= 1) {
@@ -143,6 +203,9 @@ export async function POST(req: NextRequest) {
             tourDate:     q.tourDate,
             totalAmount:  q.totalAmount,
             lineItems:    q.lineItems,
+            // Paquete u hotel: el botón no puede mandar al carrito con los tours sueltos.
+            packageItems: q.packageItems,
+            tourSlug:     q.tourSlug,
             venceEl,
             cuando:       cuandoVence(venceEl, locale, hoy),
           });
@@ -196,6 +259,8 @@ export async function POST(req: NextRequest) {
         tourDate:     q.tourDate,
         totalAmount:  q.totalAmount,
         lineItems:    q.lineItems,
+        packageItems: q.packageItems,
+        tourSlug:     q.tourSlug,
       });
       await sendBrevoEmail({ to: [{ email: q.customerEmail, name: q.customerName }], subject, htmlContent: html });
 
@@ -230,15 +295,27 @@ export async function POST(req: NextRequest) {
     convertidas ? `${convertidas} ya reservó` : undefined,
     vencidas.length ? `${vencidas.length} vencida(s)` : undefined,
     sinTiempo   ? `${sinTiempo} sin tiempo antes del tour` : undefined,
+    duplicadas.length ? `${duplicadas.length} terminada(s) por duplicado` : undefined,
     fallidos    ? `⚠️ ${fallidos} fallaron` : undefined,
   );
 
   return NextResponse.json({
     ok: true, dry, enviados, fallidos, convertidas, sinTiempo, terminadas,
     vencidas: vencidas.length,
+    // Las que se terminaron (o, en prueba, se terminarían) por tener una más reciente del mismo cliente.
+    porDuplicado: duplicadas.length,
     revisadas: cotizaciones.length,
-    ...(dry ? { recibirian: destinatarios, vencerian: vencidas } : {}),
+    ...(dry ? { recibirian: destinatarios, vencerian: vencidas, duplicadas } : {}),
   });
+}
+
+/** El `_meta` de `packageItems` (el del precio y los datos del bot: waChatId, waTelefono). */
+function metaDePaquete(packageItems: unknown): Record<string, unknown> {
+  if (!Array.isArray(packageItems)) return {};
+  const m = (packageItems as unknown[]).find(
+    (p) => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta === true,
+  );
+  return (m as Record<string, unknown> | undefined) ?? {};
 }
 
 /** Pasa a Vencida y deja escrita la fecha que venció (las viejas no la traían). */

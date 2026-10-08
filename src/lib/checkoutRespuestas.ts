@@ -16,10 +16,11 @@ import { recogidaDeTour, fmtHora12, type Tour } from "./tours";
 import { TOUR_REQUISITOS } from "./tourRequisitos";
 import { localizeTour } from "./i18n/localize";
 import { getBooking } from "./i18n/booking";
+import { hayMsi } from "./stripeMsi";
 import type { Locale } from "./i18n/config";
 
 export interface RespuestaRapida {
-  id: "edad" | "nado" | "lluvia" | "cancelacion";
+  id: "edad" | "nado" | "lluvia" | "cancelacion" | "pago";
   pregunta: string;
   respuesta: string;
 }
@@ -61,7 +62,20 @@ function climaDe(t: Tour, locale: Locale): string | null {
   return t.cancelacion?.[locale].split(/(?<=\.)\s+/).find((f) => /clima|weather/i.test(f)) ?? null;
 }
 
-export function respuestasRapidas(recorridos: RecorridoFechado[], locale: Locale): RespuestaRapida[] {
+export function respuestasRapidas(
+  recorridos: RecorridoFechado[],
+  locale: Locale,
+  /**
+   * El TOTAL del viaje: decide si se nombran los meses sin intereses. 0 = no.
+   *
+   * 🔴 Va el total y NO el anticipo a propósito. El anticipo del 30 % casi
+   * nunca llega al umbral —$1,800 de un viaje de $6,000—, así que midiéndolo
+   * contra él la respuesta no habría nombrado los meses nunca y nadie se
+   * enteraría de que existen. Existen pagando el viaje completo, y eso es lo
+   * que dice el texto.
+   */
+  totalViaje = 0,
+): RespuestaRapida[] {
   const m = getBooking(locale).checkout;
   const varios = recorridos.length > 1;
   const conNombre = (t: Tour, texto: string) => (varios ? `${nombre(t, locale)}: ${texto}` : texto);
@@ -129,6 +143,24 @@ export function respuestasRapidas(recorridos: RecorridoFechado[], locale: Locale
     if (tour.cancelacion) cancel.push(conNombre(tour, tour.cancelacion[locale]));
   }
   if (cancel.length) out.push({ id: "cancelacion", pregunta: m.cancelTitulo, respuesta: cancel.join(" ") });
+
+  /**
+   * 🔴 «¿Cómo puedo pagar?» va ANTES de la pasarela, no dentro.
+   *
+   * Manolo pidió que OXXO y los meses «queden claros en la pasarela», pero en
+   * el paso ③ ya es tarde para el que no quiere teclear su tarjeta: llega,
+   * ve un formulario de tarjeta y se va a WhatsApp o no vuelve. Aquí se ve
+   * mientras todavía está eligiendo.
+   *
+   * El importe que decide si se nombran los meses es el que se cobra HOY.
+   */
+  out.push({
+    id: "pago",
+    pregunta: m.pagoTitulo,
+    respuesta: [m.pagoTarjeta, hayMsi(totalViaje) ? m.pagoMsi : "", m.pagoAlterno]
+      .filter(Boolean)
+      .join(" "),
+  });
 
   return out;
 }

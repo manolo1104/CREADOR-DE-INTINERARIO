@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { TAMANO_H1_HERO } from "@/lib/hero";
 
 const WORDS_ES = ["Potosina", "Aventura", "Naturaleza", "Cascadas", "Magia"];
 const WORDS_EN = ["Potosina", "Adventure", "Nature", "Waterfalls", "Magic"];
@@ -85,7 +86,7 @@ export function HeroTypewriter() {
   return (
     <span
       className="block text-dorado italic"
-      style={{ fontSize: "clamp(64px,12vw,130px)" }}
+      style={{ fontSize: TAMANO_H1_HERO }}
       aria-live="polite"
       aria-label={WORDS[wordIndex.current]}
     >

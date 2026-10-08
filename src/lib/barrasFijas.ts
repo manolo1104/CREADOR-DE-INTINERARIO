@@ -8,6 +8,17 @@ import { toursQueIncluyen } from "./tourMapping";
  * se tapaban entre ellas: en una ficha de tour con algo en el carrito, "Ver
  * carrito" quedaba encima de "Reservar", los dos a `bottom-0`. Aquí vive la
  * única respuesta a "¿ya hay una barra abajo?", y todas preguntan lo mismo.
+ *
+ * Desde el 7 oct 2026 ya no hay tres: los flotantes y la barra del carrito se
+ * fundieron en `BarraInferiorMovil`, que vale en TODOS los tamaños.
+ * `FloatingReservarButton` y `carrito/CarritoBar` se borraron.
+ *
+ * Qué significa cada regla hoy:
+ *  · `enPantallaDePago` → no hay barra, en ningún tamaño.
+ *  · `hayBarraDeTour`   → en el celular manda `MobileBookingBar`; en escritorio
+ *    la barra sale, pero solo con WhatsApp (la ficha ya trae su módulo de
+ *    reserva fijo en la barra lateral).
+ *  · `sinFlotantes` / `conReservarPropio` → igual que antes.
  */
 
 /** Alto real de una barra inferior, para levantar lo que flote encima. */
@@ -44,4 +55,35 @@ export function enPantallaDePago(pathname: string | null | undefined): boolean {
   return /^\/(?:en\/)?reservar\/carrito/.test(p)
       || /^\/(?:en\/)?reservar-(tour|paquete)\//.test(p)
       || /\/checkout$/.test(p);
+}
+
+/**
+ * ¿Ruta SIN botón fijo de reservar ni de WhatsApp? El planificador y el
+ * recomendador (llevan su propio flujo) y todo /reservar…: el catálogo y
+ * cualquier reserva en curso. Dentro de una reserva el «Reservar tour» fijo
+ * hacía daño: en el celular era el ÚNICO control fijo y llevaba a /reservar, o
+ * sea, abandonaba la reserva a medias y devolvía al catálogo.
+ *
+ * ⚠️ La barra del carrito NO sigue esta regla, sigue `enPantallaDePago`: en el
+ * catálogo y en el recomendador sí recuerda lo que llevas.
+ */
+export function sinFlotantes(pathname: string | null | undefined): boolean {
+  const p = pathname ?? "";
+  return p === "/planear" || p === "/recomendar" || /^\/(?:en\/)?reservar(-tour|-paquete)?(\/|$)/.test(p);
+}
+
+/**
+ * ¿La página ya trae su propio «Reservar»? Entonces abajo solo cabe WhatsApp.
+ *
+ * - Landings del paquete Xantolo: su botón reserva el paquete con fecha fija.
+ *   Uno fijo que lleva al catálogo de tours sería un segundo «reservar» que no
+ *   reserva lo mismo.
+ * - El comparador (2 oct 2026): cada columna trae su «Reservar» con el grupo
+ *   puesto; el genérico no reservaría nada de lo que se está comparando.
+ */
+export function conReservarPropio(pathname: string | null | undefined): boolean {
+  const p = pathname ?? "";
+  return p === "/paquetes/xantolo-2026"
+      || p === "/paquetes/noche-de-xantolo"
+      || /^\/(?:en\/)?comparar$/.test(p);
 }

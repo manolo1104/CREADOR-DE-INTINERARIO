@@ -33,6 +33,19 @@ export interface TourChargeInput {
    * con los recorridos hasta el 29 oct, no con lo que se compre hasta esa fecha.
    */
   tourDate?:      string;
+  /**
+   * Cotizar POR ENCIMA del cupo del recorrido. Decisión de Manolo (7 oct 2026):
+   * el tope existe para la venta en línea —un desconocido no puede apartar 20
+   * lugares de una salida de 12—, pero en el panel un grupo grande SÍ se cotiza:
+   * ahí hay alguien que ya acordó la logística y sabe si sale una segunda unidad.
+   *
+   * 🔴 Solo lo puede poner código de servidor detrás de sesión de administrador.
+   * NUNCA se lee del cuerpo de una petición pública ni se le pasa al bot: con
+   * esta bandera encendida, cualquiera podría pagar en línea una salida de 40
+   * personas que no existe. Las rutas del sitio (`create-payment-intent`,
+   * `carrito-payment-intent`, `guardar-carrito`) no la mandan nunca.
+   */
+  sinTopeDeCupo?: boolean;
 }
 
 export interface TourChargeResult {
@@ -87,29 +100,38 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   // El precio de ESA fecha (promo de temporada baja solo hasta el 29 oct).
   const tour = tourEnFecha(delCatalogo, input.tourDate);
 
-  // 🔴 En un recorrido de tarifa por grupo el cupo NO es una preferencia
-  // nuestra: el Jardín Escultórico no deja entrar a más de 7 por experiencia.
-  // El `clampInt` de abajo recorta en silencio, así que una petición de 8
-  // acababa cobrada y registrada como 7 — y el día del recorrido se presentan
-  // ocho en la puerta de un Patrimonio Nacional que solo deja pasar a siete.
-  // Aquí se rechaza en vez de recortar.
-  if (tour.tarifaGrupo?.length) {
-    const pedidas = (Number(input.adults) || 0)
-      + (Number(input.childrenMid) || 0)
-      + (Number(input.childrenSmall) || 0);
-    if (pedidas > tour.groupMax) return null;
-  }
+  // 🔴 El cupo se mira ANTES de recortar, y en TODOS los recorridos.
+  //
+  // Nació por el Jardín Escultórico, que no deja entrar a más de 7: el
+  // `clampInt` de abajo recorta en silencio, así que una petición de 8 acababa
+  // cobrada y registrada como 7 — y el día del recorrido se presentaban ocho en
+  // la puerta de un Patrimonio Nacional que solo deja pasar a siete.
+  //
+  // 6 oct 2026: la guarda valía sólo para los de tarifa por grupo, y en los
+  // demás pasaba lo mismo sin que nadie lo viera — Huasteca Instagrameable
+  // pidiendo 9 lugares cobraba 6, que es su cupo, y el grupo chico es justo lo
+  // que ese recorrido promete. Con la escalera por tamaño de grupo encima,
+  // además, se llevaba el escalón más barato. Se rechaza en vez de recortar: el
+  // sitio nunca manda más del cupo, así que esto sólo corta peticiones armadas
+  // a mano.
+  const pedidas = (Number(input.adults) || 0)
+    + (Number(input.childrenMid) || 0)
+    + (Number(input.childrenSmall) || 0);
+  if (pedidas > tour.groupMax && !input.sinTopeDeCupo) return null;
 
   // Tours cobrados POR VEHÍCULO (ej. RZR) no se venden por el flujo por persona:
   // el precio depende de ruta + unidad y se cotiza por WhatsApp.
   if (tour.precioUnidad === "vehiculo") return null;
 
-  const adults        = clampInt(input.adults, 1, tour.groupMax);
-  const childrenMid   = clampInt(input.childrenMid, 0, tour.groupMax);
-  const childrenSmall = clampInt(input.childrenSmall, 0, tour.groupMax);
+  // Con la bandera del panel el techo deja de ser el cupo del catálogo y pasa a
+  // ser lo que se pidió; sin ella, todo sigue igual que siempre.
+  const tope = input.sinTopeDeCupo ? Math.max(tour.groupMax, pedidas) : tour.groupMax;
+  const adults        = clampInt(input.adults, 1, tope);
+  const childrenMid   = clampInt(input.childrenMid, 0, tope);
+  const childrenSmall = clampInt(input.childrenSmall, 0, tope);
 
   const personas = adults + childrenMid + childrenSmall;
-  if (personas > tour.groupMax) return null;
+  if (personas > tope) return null;
 
   // Mínimo del tour. Existía en los datos pero solo lo miraba el bot: por la web
   // se podía pagar un rafting para 2 cuando la balsa no sale con menos de 4, y
@@ -265,7 +287,22 @@ export type TarifaCarrito =
       /** Pesos ahorrados por llevar varios recorridos. 0 si va uno solo. */
       ahorroMultiple: number;
     }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      /**
+       * De qué renglón del carrito habla el error, para que la pantalla pueda
+       * señalarlo en vez de dejar al cliente adivinar.
+       *
+       * 🔴 Por qué existe: `computeTourCharge` devuelve `null` por SIETE
+       * motivos distintos (sin cupo, bajo el mínimo, niños en un recorrido de
+       * adultos, por vehículo, slug inexistente…) y todos acababan en el mismo
+       * 400 —«uno de los recorridos ya no está disponible con esos datos»— que
+       * no nombraba ni el recorrido ni el motivo. Justo en el paso de pagar.
+       */
+      uid?: string;
+      tourSlug?: string;
+    };
 
 
 /**
@@ -279,17 +316,54 @@ export type TarifaCarrito =
  * Regla que no se rompe: lo que manda el cliente son referencias (qué tour, qué
  * día, cuánta gente). El `total` que viaja en su localStorage jamás se cobra.
  */
+/**
+ * Por qué `computeTourCharge` dijo que no. Solo para el MENSAJE de error: el
+ * cobro nunca depende de esto.
+ *
+ * ⚠️ Repite a propósito las guardas de `computeTourCharge` en vez de que
+ * aquélla devuelva un motivo, para no tocar la firma de la función por la que
+ * pasa todo el dinero del sitio. Si se agrega o cambia una guarda allá arriba,
+ * se agrega aquí: viven pegadas para que se vean juntas en el mismo diff.
+ */
+function motivoSinTarifa(raw: Record<string, unknown>): string | null {
+  // Se busca igual que en `computeTourCharge` (línea ~98), por id o por slug.
+  const tour = TOURS_DB.find((t) => t.id === raw.tourId || t.slug === raw.tourSlug);
+  if (!tour) return null;
+  const nombre = tour.nombreCorto || tour.nombre;
+  const pedidas = (Number(raw.adults) || 0)
+    + (Number(raw.childrenMid) || 0)
+    + (Number(raw.childrenSmall) || 0);
+  const ninos = (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0);
+
+  if (pedidas > tour.groupMax) {
+    return `${nombre} sale con grupos de hasta ${tour.groupMax} personas y el carrito pide ${pedidas}. Quita a alguien o escríbenos por WhatsApp.`;
+  }
+  const minimo = minimoPersonas(tour);
+  if (pedidas < minimo) {
+    return `${nombre} sale desde ${minimo} ${minimo === 1 ? "persona" : "personas"} y el carrito tiene ${pedidas}. Súbelo o escríbenos por WhatsApp.`;
+  }
+  if (tour.soloAdultos && ninos > 0) {
+    return `${nombre} es solo para adultos: quita a los menores de ese recorrido.`;
+  }
+  if (tour.precioUnidad === "vehiculo") {
+    return `${nombre} se cobra por vehículo y se reserva aparte.`;
+  }
+  return null;
+}
+
 export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
   const lineItems: LineaCarrito[] = [];
   let total = 0;
 
   for (const bruto of items) {
     const raw = bruto as Record<string, unknown>;
+    const uid = typeof raw?.uid === "string" ? raw.uid : undefined;
+    const slugRenglon = typeof raw?.tourSlug === "string" ? raw.tourSlug : undefined;
     if (!raw?.tourDate) {
-      return { ok: false, error: "Falta la fecha de uno de los recorridos del carrito." };
+      return { ok: false, error: "Falta la fecha de uno de los recorridos del carrito.", uid, tourSlug: slugRenglon };
     }
     if (!fechaTourValida(raw.tourDate)) {
-      return { ok: false, error: "Una de las fechas no es válida. Revisa tu carrito." };
+      return { ok: false, error: "Una de las fechas no es válida. Revisa tu carrito.", uid, tourSlug: slugRenglon };
     }
 
     // Tours por vehículo (RZR, café): el precio sale de la matriz ruta×unidad.
@@ -304,7 +378,7 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
         unidades: raw.unidades as number,
         pct:      100,
       });
-      if (!veh) return { ok: false, error: "Ruta o vehículo inválido en el carrito." };
+      if (!veh) return { ok: false, error: "Ruta o vehículo inválido en el carrito.", uid, tourSlug: slugRenglon };
       lineItems.push({
         tourId:   veh.tour.id,
         tourSlug: veh.tour.slug,
@@ -333,7 +407,13 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
       tourDate:      String(raw.tourDate),
     });
     if (!charge) {
-      return { ok: false, error: "Uno de los recorridos del carrito ya no está disponible con esos datos." };
+      return {
+        ok: false,
+        error: motivoSinTarifa(raw)
+          ?? "Uno de los recorridos del carrito ya no está disponible con esos datos.",
+        uid: typeof raw.uid === "string" ? raw.uid : undefined,
+        tourSlug: typeof raw.tourSlug === "string" ? raw.tourSlug : undefined,
+      };
     }
 
     // La elección se valida contra el catálogo, no se acepta a ciegas: viene del

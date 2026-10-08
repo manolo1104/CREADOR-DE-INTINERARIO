@@ -2,11 +2,13 @@ import type { Locale } from "./config";
 import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { TRASLADOS } from "@/lib/traslados";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { formatMXN } from "@/lib/tourBooking";
 import { fmtMoney } from "./format";
 import { localizePaquete } from "./paquetes.en";
 import { localizeTour } from "./localize";
 import { rangoPorPersona, rangoGrupo } from "@/lib/catalogoResumen";
+import { fechaInicioTexto } from "@/lib/temporada";
 
 import { GRUPO_MAX } from "@/lib/tours";
 /**
@@ -18,16 +20,14 @@ import { GRUPO_MAX } from "@/lib/tours";
  * comparaba dos páginas del mismo sitio encontraba la contradicción en un
  * minuto. Traducirla a mano habría abierto ese mismo hueco en inglés.
  *
- * ⚠️ CDMX → Ciudad Valles son **6.5 a 7 horas** en auto (430 km). Es el dato de
- * Manolo, que hace la carretera, y el 14 ago 2026 se puso en TODAS las páginas
- * a la vez. Ninguna de las dos cifras que publicaba el sitio era correcta: esta
- * página decía 9–10 h (que es el tiempo del AUTOBÚS, colado en la fila del
- * coche) y la guía práctica decía 5.5 h. Lo de "9 horas desde Guadalajara" no
- * tenía ninguna fuente — `ciudadesOrigen.ts` había dejado fuera esa ciudad a
- * propósito por eso mismo — y se sustituyó por el tramo que sí está medido.
+ * ⚠️ Ningún tiempo de carretera se escribe a mano: salen de
+ * `tiemposDeViaje.ts`. El 14 ago 2026 se emparejaron NUEVE páginas a mano y en
+ * seis semanas volvieron a desparejarse, porque el número no vivía en ningún
+ * sitio una sola vez. Dos respuestas seguidas de ESTA página llegaron a decir
+ * 2.5 h y 2 h del aeropuerto de Tampico a Ciudad Valles.
  *
- * OJO al comparar: los 339 km / ~5.5–6 h de `ciudadesOrigen.ts` y `paquetes.ts`
- * son CDMX → **Xilitla**, otro destino, y esos siguen siendo correctos.
+ * OJO al leerlas: «a Xilitla» y «a Ciudad Valles» son destinos distintos y sus
+ * tiempos también. Por eso la fuente tiene los dos y hay que pedir el que toca.
  *
  * ⚠️ Las CIFRAS son las mismas en los dos idiomas. Lo único que cambia es la
  * unidad cuando el lector americano no piensa en métrico: el Sótano de las
@@ -293,11 +293,14 @@ const ES: FaqContent = {
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde CDMX, Monterrey o Guadalajara?",
-      a: "En auto, con Ciudad Valles como destino: unas 6.5 a 7 horas desde Ciudad de México (430 km por la autopista de cuota Mex-85 / MEX-70) y unas 6 horas desde Monterrey. Desde Guadalajara se llega vía la ciudad de San Luis Potosí, de donde son 260 km / ~3 horas del tramo final. En autobús hay salidas nocturnas desde la Terminal del Norte de CDMX: ~8 horas a Ciudad Valles y ~9–10 horas si vas directo a Xilitla. En avión, Tampico es el aeropuerto más práctico (~2 h en auto a Ciudad Valles, ~2.5 h a Xilitla); también puedes volar a la ciudad de San Luis Potosí (~3 h). Recomendamos manejar de día por la sierra.",
+      a: `En auto, con Ciudad Valles como destino: unas ${enAuto("cdmx", "valles")} desde Ciudad de México (430 km por la autopista de cuota Mex-85 / MEX-70) y unas ${enAuto("monterrey", "valles")} desde Monterrey. Desde Guadalajara se llega vía la ciudad de San Luis Potosí, de donde son 260 km / ${enAuto("san-luis-potosi", "valles")} del tramo final. En autobús hay salidas nocturnas desde la Terminal del Norte de CDMX: ${enAutobus("cdmx", "valles")} a Ciudad Valles y ${enAutobus("cdmx", "xilitla")} si vas directo a Xilitla. En avión, Tampico es el aeropuerto más práctico (${enAuto("tampico", "valles")} en auto a Ciudad Valles, ${enAuto("tampico")} a Xilitla); también puedes volar a la ciudad de San Luis Potosí (${enAuto("san-luis-potosi", "valles")}). Recomendamos manejar de día por la sierra.`,
     },
     {
+      // La regla de temporada.ts, con su fecha (7 oct 2026). Decía «seca de
+      // noviembre a junio» y «se suspenden actividades»; la política de
+      // cancelación dice que con el río crecido se reprograma sin costo.
       q: "¿Cuál es la mejor época para visitar la Huasteca Potosina?",
-      a: "Para ver el agua en su tono turquesa más intenso, la mejor temporada es la seca: aproximadamente de noviembre a junio, con su punto más claro entre marzo y mayo. Durante la temporada de lluvias (julio a octubre) el caudal de las cascadas aumenta y es muy fotogénico, pero el agua puede tornarse marrón y algunas actividades acuáticas se suspenden por seguridad. Salimos todos los días del año.",
+      a: `Se puede venir todo el año: salimos todos los días. Del ${fechaInicioTexto("es")} a mayo el agua baja clara, y el turquesa más intenso es de marzo a mayo, que es también cuando más gente hay. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; si el río crece, reprogramamos el rafting sin costo. Si buscas agua clara antes de las multitudes de primavera, la mejor temporada para venir es del ${fechaInicioTexto("es")} a diciembre.`,
     },
     {
       q: "¿Es seguro viajar a la Huasteca Potosina?",
@@ -337,7 +340,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Qué pasa si llueve el día de mi tour?",
-      a: `Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, cancelamos nosotros y eliges entre reembolso del 100 % o reagendar sin costo.${climaPropio("es")} Nunca sacamos un grupo con el río crecido.`,
+      a: `Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, lo primero que te ofrecemos es CAMBIAR DE ACTIVIDAD: hay recorridos que no dependen del río —Las Pozas de Edward James, la Gruta de Xilo, el pueblo— y ese día se puede armar igual. Si ninguno te late, eliges entre reembolso del 100 % o reagendar sin costo.${climaPropio("es")} Nunca sacamos un grupo con el río crecido, y la idea es que la pases bien de todos modos.`,
     },
     {
       q: "¿Hacen tours privados o para grupos grandes?",
@@ -345,7 +348,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Los guías hablan inglés?",
-      a: "Nuestros guías están certificados NOM-09 y tenemos guías completamente bilingües disponibles: pídelo al reservar y te asignamos uno.",
+      a: "Nuestros guías están certificados NOM-09 y en una salida compartida manejan inglés básico. Si quieres uno que lo hable con soltura, márcalo al reservar —la casilla «Quiero guía en inglés», sin costo— y te lo conseguimos; si ese día no lo tenemos, te avisamos antes por WhatsApp.",
     },
   ],
 
@@ -409,15 +412,15 @@ const EN: FaqContent = {
     },
     {
       q: "How do I get to the Huasteca Potosina from the United States?",
-      a: `Fly into Tampico (TAM): it's the closest airport, about a 2.5-hour drive to Ciudad Valles and roughly the same to Xilitla. Mexico City (MEX) is the other common route — about 6.5 to 7 hours by road — and San Luis Potosí (SLP) is around 3.5 hours. You do not need to rent a car: we run private round-trip transfers priced per vehicle for up to 12 passengers, from ${fmtMoney(trasladoBase("tampico"), "en")} from Tampico, ${fmtMoney(trasladoBase("san-luis-potosi"), "en")} from San Luis Potosí and ${fmtMoney(trasladoBase("cdmx"), "en")} from Mexico City. If you do drive yourself, drive the mountain stretch in daylight.`,
+      a: `Fly into Tampico (TAM): it's the closest airport, about ${enAuto("tampico", "valles", true)} by road to Ciudad Valles and ${enAuto("tampico", "xilitla", true)} to Xilitla. Mexico City (MEX) is the other common route — about ${enAuto("cdmx", "valles", true)} by road — and San Luis Potosí (SLP) is around ${enAuto("san-luis-potosi", "valles", true)}. You do not need to rent a car: we run private round-trip transfers priced per vehicle for up to 12 passengers, from ${fmtMoney(trasladoBase("tampico"), "en")} from Tampico, ${fmtMoney(trasladoBase("san-luis-potosi"), "en")} from San Luis Potosí and ${fmtMoney(trasladoBase("cdmx"), "en")} from Mexico City. If you do drive yourself, drive the mountain stretch in daylight.`,
     },
     {
       q: "How do I get there from Mexico City or Monterrey?",
-      a: "By car, with Ciudad Valles as your destination: about 6.5 to 7 hours from Mexico City — 267 miles (430 km) on the Mex-85 / MEX-70 toll highway — and about 6 hours from Monterrey. By bus, there are overnight departures from Mexico City's Terminal del Norte: roughly 8 hours to Ciudad Valles, or 9–10 if you ride straight through to Xilitla. By air, Tampico is the most practical airport (about a 2-hour drive to Ciudad Valles, 2.5 to Xilitla); San Luis Potosí is another option at about 3 hours. Drive the mountain stretches in daylight.",
+      a: `By car, with Ciudad Valles as your destination: about ${enAuto("cdmx", "valles", true)} from Mexico City — 267 miles (430 km) on the Mex-85 / MEX-70 toll highway — and about ${enAuto("monterrey", "valles", true)} from Monterrey. By bus, there are overnight departures from Mexico City's Terminal del Norte: roughly ${enAutobus("cdmx", "valles", true)} to Ciudad Valles, or ${enAutobus("cdmx", "xilitla", true)} if you ride straight through to Xilitla. By air, Tampico is the most practical airport (about ${enAuto("tampico", "valles", true)} by road to Ciudad Valles, ${enAuto("tampico", "xilitla", true)} to Xilitla); San Luis Potosí is another option at about ${enAuto("san-luis-potosi", "valles", true)}. Drive the mountain stretches in daylight.`,
     },
     {
       q: "When is the best time to visit the Huasteca Potosina?",
-      a: "For water at its most intense turquoise, come in the dry season: roughly November through June, at its clearest between March and May. During the rainy season (July to October) the waterfalls carry far more volume and are dramatic to photograph, but the water can turn brown and some river activities are suspended for safety. We run tours every day of the year.",
+      a: `You can come any time of year: we run tours every day. From ${fechaInicioTexto("en")} through May the water runs clear, and the turquoise is at its most intense from March to May, which is also the busiest time. From July to October the waterfalls run at full force and the water can carry sediment; if the river rises, we reschedule rafting at no cost. For clear water ahead of the spring crowds, the best season to visit is ${fechaInicioTexto("en")} through December.`,
     },
     {
       q: "Is the Huasteca Potosina safe to travel to?",
@@ -457,7 +460,7 @@ const EN: FaqContent = {
     },
     {
       q: "What happens if it rains on the day of my tour?",
-      a: `We run in light rain: the Huasteca is jungle, and the waterfalls are at their most spectacular with water coming down. If there's an electrical storm, a weather alert, or the river isn't in safe condition, we cancel and you choose between a 100% refund or rescheduling at no cost.${climaPropio("en")} We never take a group out on a swollen river.`,
+      a: `We run in light rain: the Huasteca is jungle, and the waterfalls are at their most spectacular with water coming down. If there's an electrical storm, a weather alert, or the river isn't in safe condition, the first thing we offer is to SWITCH THE ACTIVITY: some tours don't depend on the river — Las Pozas de Edward James, the Xilo Cave, the town itself — and the day still works. If none of them appeals, you choose between a 100% refund or rescheduling at no cost.${climaPropio("en")} We never take a group out on a swollen river, and the point is that you have a good day anyway.`,
     },
     {
       q: "Do you run private tours or tours for large groups?",
@@ -465,7 +468,7 @@ const EN: FaqContent = {
     },
     {
       q: "Do the guides speak English?",
-      a: "Our guides are NOM-09 certified and we have fully bilingual guides available — ask for one when you book and we'll assign them to your tour.",
+      a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
     },
   ],
 

@@ -55,7 +55,7 @@ export const GUIAS: Guia[] = [
       es: ["Guía NOM-09 SECTUR", "Rescate acuático", "Primeros auxilios"],
       en: ["NOM-09 SECTUR guide", "Water rescue", "First aid"],
     },
-    idiomas: { es: "Español", en: "Spanish" },
+    idiomas: { es: "Español · inglés básico", en: "Spanish · basic English" },
     frase: {
       es: "El río se conoce caminándolo todos los días. Mi trabajo es que tú nada más te ocupes de disfrutarlo.",
       en: "You get to know this river by walking it every day. My job is to make sure enjoying it is all you have to do.",
@@ -77,7 +77,7 @@ export const GUIAS: Guia[] = [
       es: ["Guía NOM-09 SECTUR", "Primeros auxilios y rescate"],
       en: ["NOM-09 SECTUR guide", "First aid and rescue"],
     },
-    idiomas: { es: "Español", en: "Spanish" },
+    idiomas: { es: "Español · inglés básico", en: "Spanish · basic English" },
     frase: {
       es: "Crecí junto a estos ríos y todavía no me toca un día que se repita. Eso es lo que quiero que te lleves.",
       en: "I grew up next to these rivers and no two days out here are ever the same. That's what I want you to take home.",

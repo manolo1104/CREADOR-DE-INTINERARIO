@@ -8,7 +8,7 @@ import { formatMXN } from "@/lib/tourBooking";
 import { TOURS_DB, type Tour } from "@/lib/tours";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { getBooking } from "@/lib/i18n/booking";
-import { stripePromise } from "@/lib/stripeCliente";
+import { stripePromise, APARIENCIA_STRIPE } from "@/lib/stripeCliente";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { validarCarrito } from "@/lib/carritoValidacion";
 import { respuestasRapidas, cancelacionJuntoAlBoton, type RecorridoFechado } from "@/lib/checkoutRespuestas";
@@ -19,6 +19,7 @@ import { RenglonCarrito } from "@/components/carrito/RenglonCarrito";
 import { AgregarRecorrido } from "@/components/carrito/AgregarRecorrido";
 import { ResumenCarrito } from "@/components/carrito/ResumenCarrito";
 import { PagoCarrito } from "@/components/carrito/PagoCarrito";
+import { ApartadoAviso } from "@/components/carrito/ApartadoAviso";
 import { nombreCorto } from "@/components/carrito/carritoComun";
 import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 import { EncabezadoCerrado } from "./EncabezadoCerrado";
@@ -52,6 +53,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
     total, anticipo, saldo, pctHoy, waRescate, sinFechaItems, conFechaItems, correoGuardar,
     setCorreoGuardar, guardando, guardado, errorGuardar, setErrorGuardar, guardarCotizacion,
     guardarSilencioso, irAlRenglon, irAlPago, setFallos,
+    pagarTodo, cambiarPagarTodo, puedePagarTodo, guiaIngles, setGuiaIngles,
   } = c;
   const tc = getBooking(locale).checkout;
 
@@ -90,7 +92,9 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
       .filter((r): r is { tour: Tour; fecha: string } => !!r.tour),
     [items],
   );
-  const respuestas = useMemo(() => respuestasRapidas(recorridos, locale), [recorridos, locale]);
+  // El TOTAL del viaje (no el anticipo) decide si «¿Cómo puedo pagar?» nombra
+  // los meses: existen pagando completo, y sobre el 30 % no los da ningún banco.
+  const respuestas = useMemo(() => respuestasRapidas(recorridos, locale, total), [recorridos, locale, total]);
   const cancelacion = useMemo(() => cancelacionJuntoAlBoton(recorridos, locale), [recorridos, locale]);
 
   /** ① → ②: el carrito tiene que estar completo (fechas, elecciones, mínimos). */
@@ -103,6 +107,15 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
     }
     trackTourEvent("CHECKOUT_STEP_EXPERIENCIA", { recorridos: items.length, amount: anticipo, total });
     setPaso(2);
+  }
+
+  /**
+   * Del aviso del apartado al renglón que ya no tiene lugar. Primero se abre
+   * el paso ①: plegado no pinta sus renglones y no habría adónde llevar la vista.
+   */
+  function cambiarFechaSinLugar() {
+    setPaso(1);
+    setTimeout(c.irAlSinLugar, 50);
   }
 
   function validarCampo(campo: CampoContacto) {
@@ -148,6 +161,10 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
           <ChevronLeft className="w-3 h-3" aria-hidden="true" />
           {t.seguirEligiendo}
         </Link>
+        {/* El apartado de 15 minutos, arriba de los tres pasos: en el celular se
+            ve en cualquiera de ellos. En escritorio va en el resumen de la
+            derecha, que no se mueve. */}
+        <ApartadoAviso a={c.apartado} locale={locale} className="lg:hidden mt-3" onCambiarFecha={cambiarFechaSinLugar} />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 grid lg:grid-cols-[1fr_360px] gap-6 lg:gap-8 items-start min-w-0">
@@ -175,8 +192,13 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
               {conFechaItems.map((i) => <RenglonCarrito key={i.uid} i={i} c={c} />)}
             </div>
 
-            <RespuestasRapidas titulo={tc.respuestasTitulo} respuestas={respuestas} />
+            {/* 🔴 «Agregar otro recorrido» subió por encima de las dudas y de
+                los extras (Manolo, 8 oct). Donde estaba —debajo del FAQ— lo
+                veía quien ya había bajado por todo, que es justo quien ya
+                decidió. Y la mayoría hace 2 o 3 recorridos: es el renglón que
+                más sube el ticket, no un pie de página. */}
             <AgregarRecorrido c={c} />
+            <RespuestasRapidas titulo={tc.respuestasTitulo} respuestas={respuestas} />
             <LineaExtras c={c} />
 
             <button
@@ -230,8 +252,31 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
               m={tc}
               name={name} setName={setName} email={email} setEmail={setEmail}
               phone={phone} setPhone={setPhone} pickup={pickup} setPickup={setPickup}
+              guiaIngles={guiaIngles} setGuiaIngles={setGuiaIngles}
               errores={erroresDatos} onSalirDe={validarCampo}
             />
+            {/* 🔴 «Pagar completo» va AQUÍ y no en el paso ③: el importe se fija
+                al crear el PaymentIntent, que es lo que pasa al pulsar el botón
+                de abajo. Elegirlo después obligaría a rehacer el cobro.
+                Solo aparece cuando el viaje llega al umbral de los meses sin
+                intereses: debajo de eso no le sirve a nadie. */}
+            {puedePagarTodo && (
+              <div className="mt-5 border border-verde-selva/30 bg-verde-selva/5 p-3.5">
+                <label className="flex cursor-pointer items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={pagarTodo}
+                    onChange={(e) => cambiarPagarTodo(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#3a6b1a]"
+                  />
+                  <span className="font-dm text-[12px] leading-relaxed text-verde-profundo">
+                    <strong className="font-medium">{t.pagarTodoTitulo(formatMXN(total))}</strong>
+                    <br />
+                    <span className="text-negro/55">{t.pagarTodoMsi}</span>
+                  </span>
+                </label>
+              </div>
+            )}
             {error && <p className="mt-3 font-dm text-[12px] text-terracota">{error}</p>}
             <button
               type="button"
@@ -245,6 +290,12 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
 
           {/* ── ③ Pago ───────────────────────────────────────────────────── */}
           <PasoAcordeon id="paso-3" numero={3} titulo={tc.pasoPago} estado={estado(3)} textoEditar={tc.editar}>
+            {/* 🔴 El error se pintaba en los pasos ① y ② pero NO aquí. Un fallo
+                del servidor al rehacer el cobro —cambiar la fecha ya en el paso
+                de pagar vuelve a pedir el PaymentIntent— dejaba la pantalla
+                muda: el efecto devuelve al paso ②, pero quien no mira hacia
+                arriba solo ve que el botón no hizo nada. */}
+            {error && !cobro && <p className="mb-3 font-dm text-[12px] text-terracota">{error}</p>}
             {cobro && (
               <>
                 {/* En celular el resumen no tiene columna propia: va aquí,
@@ -253,11 +304,11 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
                   <summary className="cursor-pointer list-none px-3 py-2.5 font-dm text-[12px] text-verde-selva">{tc.verDesglose} +</summary>
                   <div className="px-3 pb-3"><ResumenCarrito c={c} /></div>
                 </details>
-                <Elements stripe={stripePromise} options={{ clientSecret: cobro.clientSecret, locale }}>
+                <Elements stripe={stripePromise} options={{ clientSecret: cobro.clientSecret, locale, appearance: APARIENCIA_STRIPE }}>
                   <PagoCarrito
                     formId={FORM_PAGO}
                     cobro={cobro}
-                    datos={{ name, email, phone, pickup, checkin, checkout }}
+                    datos={{ name, email, phone, pickup, checkin, checkout, guiaIngles }}
                     onListo={() => setItems([])}
                   />
                 </Elements>
@@ -291,6 +342,8 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
         {/* `ResumenReserva` ya trae su propia tarjeta: el aside no pone otra
             alrededor (tarjeta dentro de tarjeta). */}
         <aside className="hidden lg:block min-w-0 lg:sticky lg:top-6 space-y-3">
+          {/* Calla: el de arriba ya habla (un lector de pantalla oiría dos). */}
+          <ApartadoAviso a={c.apartado} locale={locale} anunciar={false} onCambiarFecha={cambiarFechaSinLugar} />
           <ResumenCarrito c={c} />
           <div className="border border-negro/10 bg-white px-5 pb-4 pt-1">
             <ConfianzaJuntoAlBoton resenas={t.resenasGoogle} cancelacion={cancelacion} pagoCifrado={tc.pagoCifrado} />

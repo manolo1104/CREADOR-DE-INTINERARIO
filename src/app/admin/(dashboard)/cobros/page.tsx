@@ -27,7 +27,7 @@ export default async function CobrosPage() {
     select: {
       id: true, confirmationNumber: true, customerName: true,
       totalAmount: true, depositoPagado: true, stripePaymentIntentId: true,
-      tourName: true, tourDate: true, adults: true, children: true, lineItems: true,
+      tourName: true, tourSlug: true, tourDate: true, adults: true, children: true, lineItems: true,
     },
   });
 
@@ -41,6 +41,10 @@ export default async function CobrosPage() {
         folio: r.confirmationNumber,
         cliente: r.customerName,
         tour: r.tourName,
+        // El slug, para pintar el código de color del recorrido igual que en el
+        // resto del panel (`CodigoTour`). El nombre no sirve: cuando la reserva
+        // lleva dos tours viene pegado con " + ".
+        tourSlug: r.tourSlug,
         fecha: r.tourDate,
         personas: personasDe(r),
         // El total y lo ya cobrado viajan para poder calcular el anticipo aquí
@@ -61,7 +65,7 @@ export default async function CobrosPage() {
     take: 200,
     select: {
       id: true, quoteNumber: true, customerName: true,
-      tourName: true, tourDate: true, totalAmount: true, status: true,
+      tourName: true, tourSlug: true, tourDate: true, totalAmount: true, status: true,
       adults: true, children: true, lineItems: true,
     },
   });
@@ -74,6 +78,7 @@ export default async function CobrosPage() {
         folio: c.quoteNumber,
         cliente: c.customerName,
         tour: c.tourName,
+        tourSlug: c.tourSlug,
         fecha: c.tourDate,
         total: c.totalAmount,
         estado: c.status,

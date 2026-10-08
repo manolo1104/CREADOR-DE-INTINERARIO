@@ -9,6 +9,13 @@ import { localizePaquete } from "./i18n/paquetes.en";
 import type { Locale } from "./i18n/config";
 import { extrasDe, calcExtraLine, totalExtras } from "./admin/extras";
 import { desgloseCotizacion } from "./admin/totalesCotizacion";
+import { hospedajeDeReserva } from "./admin/hospedaje";
+import { CONTACTO } from "./contacto";
+import { HOTEL_PROPIO, horarioRestaurante } from "./hotelPropio";
+// 🔴 El nombre, las notas, el hotel o los conceptos a mano los escribe el
+// cliente o los copia el bot de un WhatsApp: entran al HTML escapados con
+// `esc`. Lo del catálogo y las plantillas (`T.*`) son HTML nuestro y se quedan.
+import { escapeHtml as esc } from "./escapeHtml";
 
 /**
  * Lo que incluye ESE tour, tomado del catálogo.
@@ -78,6 +85,11 @@ export function buildTourEmailHtml(data: {
   extraItems?:       any[];
   /** Idioma en que el cliente reservó. Cae al español si no viene. */
   locale?:           string;
+  /**
+   * En qué idioma sale el GUÍA (`TourBooking.idiomaTour`). NO es `locale`: se
+   * puede reservar en español y pedir guía en inglés, y al revés.
+   */
+  idiomaTour?:       string;
 }): string {
   const locale = emailLocale(data.locale);
   const T = getEmails(locale).confirmacion;
@@ -107,7 +119,8 @@ export function buildTourEmailHtml(data: {
     ? (lineasReserva[0].tourName || data.tourName)
     : data.tourName;
 
-  const tourTitulo = nombreTour(nombreReal, slugReal);
+  const tourTitulo = esc(nombreTour(nombreReal, slugReal));
+  const folio      = esc(data.confirmationNumber);
   const tourUrl = slugReal && getPaquete(slugReal)
     ? `${base}${pre}/paquetes/${slugReal}`
     : `${base}${pre}/tours/${slugReal}`;
@@ -148,7 +161,8 @@ export function buildTourEmailHtml(data: {
       ].filter(Boolean).join("<br>")
     : T.pickupDefault;
   // Lo que capturó el equipo (el hotel del cliente) manda sobre lo genérico.
-  const pickupText = data.pickupLugar || pickupCatalogo;
+  // Escapado: en las reservas del sitio sale de lo que el cliente escribió.
+  const pickupText = data.pickupLugar ? esc(data.pickupLugar) : pickupCatalogo;
 
   /** La línea bajo la fecha, para el bloque de un solo recorrido. Vacía si no se sabe cuál es. */
   const tourUnico = toursCatalogo.length === 1 ? toursCatalogo[0] : undefined;
@@ -223,9 +237,9 @@ export function buildTourEmailHtml(data: {
     for (const a of Array.isArray(t?.addOns) ? t.addOns : []) {
       const cant = Math.max(1, Number(a?.cantidad) || 1);
       const imp  = a?.subtotal != null ? ` · ${fmxEmail(Number(a.subtotal))}` : "";
-      filas.push(`${T.addOnLinea(nombreAddOn(a, t.tourSlug), cant)}${imp}`);
+      filas.push(`${T.addOnLinea(esc(nombreAddOn(a, t.tourSlug)), cant)}${imp}`);
     }
-    if (t?.eleccion) filas.push(T.elegiste(String(t.eleccion)));
+    if (t?.eleccion) filas.push(T.elegiste(esc(t.eleccion)));
     // Pagó casi dos lugares siendo uno: el correo le recuerda por qué y qué sigue.
     if (t?.viajeroSolo) filas.push(T.viajeroSolo);
     if (!filas.length) return "";
@@ -250,7 +264,7 @@ export function buildTourEmailHtml(data: {
             ${tours.map((t: any, i: number) => `
             <tr>
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${nombreTour(t.tourName, t.tourSlug) || "Tour"}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${esc(nombreTour(t.tourName, t.tourSlug)) || "Tour"}</p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${lineDetail(t)}</p>
                 ${lineExtras(t)}
               </td>
@@ -299,6 +313,21 @@ export function buildTourEmailHtml(data: {
             </tr>` : ""}
           </table>`;
 
+  /**
+   * «Guía en inglés», cuando lo pidió. Va a lo ancho y DESPUÉS del detalle
+   * porque es del grupo entero, no de un recorrido: con tres días en el
+   * carrito, repetirlo en cada renglón diría tres veces lo mismo.
+   *
+   * Sin importe a propósito: es gratis (Manolo, 8 oct 2026), y un renglón con
+   * el precio en blanco se lee como un cobro que no se cerró.
+   */
+  const guiaInglesHtml = data.idiomaTour === "en" ? `
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 28px 0;">
+            <tr><td style="border:1px solid #d4ccbc;background-color:#faf7ee;padding:14px 22px;">
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#3a6b1a;line-height:1.7;">${T.guiaEnIngles}</p>
+            </td></tr>
+          </table>` : "";
+
   // Bloque de hospedaje (si la reserva incluye paquete con noches de hotel).
   const lodgingHtml = packages.length ? `
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
@@ -312,7 +341,7 @@ export function buildTourEmailHtml(data: {
               return `
             <tr>
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || (locale === "en" ? "Room" : "Habitación")}${p.hotel ? ` · ${p.hotel}` : ""}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${esc(p.habitacion) || (locale === "en" ? "Room" : "Habitación")}${p.hotel ? ` · ${esc(p.hotel)}` : ""}</p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${T.noches(noches)}${habs > 1 ? T.habitaciones(habs) : ""}${fechas ? ` · ${fechas}` : ""}</p>
               </td>
               <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
@@ -338,11 +367,11 @@ export function buildTourEmailHtml(data: {
             </td></tr>
             ${extras.map((ex) => {
               const cobro = calcExtraLine(ex);
-              const sub   = [ex.detalle, ex.cantidad > 1 ? T.extraCantidad(ex.cantidad) : ""].filter(Boolean).join(" · ");
+              const sub   = [esc(ex.detalle), ex.cantidad > 1 ? T.extraCantidad(ex.cantidad) : ""].filter(Boolean).join(" · ");
               return `
             <tr>
               <td style="width:62%;border:1px solid #d4ccbc;border-top:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${ex.concepto}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${esc(ex.concepto)}</p>
                 ${sub ? `<p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${sub}</p>` : ""}
               </td>
               <td style="width:38%;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#faf7ee;padding:16px 22px;vertical-align:top;text-align:right;">
@@ -352,12 +381,79 @@ export function buildTourEmailHtml(data: {
             }).join("")}
           </table>` : "";
 
+  // ── EL CIERRE, SEGÚN DÓNDE DUERME ──────────────────────────────────────────
+  /**
+   * El último bloque del correo (acción 6 de la auditoría externa, 7 oct 2026).
+   *
+   * Era «Mientras esperas → Ver todos los tours» para todos: el catálogo que el
+   * cliente acaba de ver, justo cuando ya nos compró y lee con calma. Ahora
+   * depende de la reserva:
+   *  - Si no sabemos dónde va a dormir: nuestro hotel, a 400 m de Las Pozas, con
+   *    El Papán dentro. El botón abre WhatsApp con el folio ya escrito: ya pagó
+   *    su tour y lo que le falta es el cuarto, no un paquete entero. (El sitio
+   *    no reserva el hotel suelto en paraisoencantado.com: /info-practica
+   *    también manda a WhatsApp.) Los paquetes quedan como enlace.
+   *  - Si ya tiene dónde dormir: su siguiente tour, por WhatsApp y con el folio.
+   *
+   * Dónde duerme: primero el hotel que nos compró (`hospedajeDeReserva`, la
+   * regla del panel, sobre `packageItems`); si no, lo que escribió en el campo
+   * de hospedaje (`pickupLugar`, lo que iba tras «Recogida:» en las notas). El
+   * correo no recibe las notas, así que los otros dos formatos del panel
+   * («RECOGER EN:», «Hospedaje:») no llegan aquí; el hotel que recupera el
+   * webhook ya viene como `packageItems`.
+   *
+   * 🔴 «Por definir — te contactaremos por WhatsApp» es lo que guarda el
+   * checkout de un tour cuando el cliente deja el campo en blanco: eso NO es
+   * tener dónde dormir, como tampoco «aún no sé» y parecidos.
+   *
+   * A quien solo reservó el buceo (en la Media Luna, Rioverde) no se le ofrece
+   * un cuarto a más de dos horas de su recorrido: recibe el del siguiente tour.
+   */
+  const SIN_HOSPEDAJE = /por definir|por confirmar|a[uú]n no|todav[ií]a no|no s[eé](?![a-záéíóúñ])|no tengo|no tenemos|sin (?:hotel|hospedaje)|ninguno|pendiente|not sure|not yet|no hotel|tbd/i;
+  const dondeDuerme = hospedajeDeReserva({ notes: null, packageItems: data.packageItems })
+    ?? (data.pickupLugar?.trim() || null);
+  const paqueteReservado = slugReal ? getPaquete(slugReal) : undefined;
+  const tieneHospedaje = (!!dondeDuerme && !SIN_HOSPEDAJE.test(dondeDuerme))
+    || (!!paqueteReservado && !paqueteReservado.evento?.sinHotel);
+  const soloEnSitio = toursCatalogo.length > 0 && toursCatalogo.every((t) => partesRecogida(t, en).tipo === "en-sitio");
+  // El texto va crudo a la URL y la URL escapada al atributo: el folio no se escapa dos veces.
+  const waConFolio = (texto: string) => esc(`${CONTACTO.whatsappUrl}?text=${encodeURIComponent(texto)}`);
+  const cierre = !tieneHospedaje && !soloEnSitio
+    ? {
+        eyebrow: en ? "Still need a place to stay?" : "¿Ya tienes dónde dormir?",
+        titulo:  en
+          ? `Our hotel is ${HOTEL_PROPIO.metrosALasPozas}&nbsp;m from Las&nbsp;Pozas`
+          : `Nuestro hotel está a ${HOTEL_PROPIO.metrosALasPozas}&nbsp;m de Las&nbsp;Pozas`,
+        texto:   en
+          ? `${HOTEL_PROPIO.nombre} is ours too: a ${HOTEL_PROPIO.minutosCaminando}-minute walk from Edward James's garden, with an outdoor pool. Inside is ${HOTEL_PROPIO.restaurante}, our Huasteca-food restaurant, open ${horarioRestaurante(true)}.`
+          : `El ${HOTEL_PROPIO.nombre} también es nuestro: está a ${HOTEL_PROPIO.minutosCaminando} minutos caminando del jardín de Edward James y tiene alberca. Adentro está ${HOTEL_PROPIO.restaurante}, nuestro restaurante de cocina huasteca, abierto ${horarioRestaurante(false)}.`,
+        boton:   en ? "Ask about a room" : "Pregunta por tu cuarto",
+        href:    waConFolio(en
+          ? `Hi, I have booking ${data.confirmationNumber} and I'd like to stay at ${HOTEL_PROPIO.nombre}. Do you have a room for those dates?`
+          : `Hola, tengo la reserva ${data.confirmationNumber} y quiero hospedarme en el ${HOTEL_PROPIO.nombre}. ¿Tienen cuarto para esas fechas?`),
+        enlace:  en ? "or see our packages with hotel →" : "o mira los paquetes con hotel →",
+        enlaceHref: `${base}${pre}/paquetes`,
+      }
+    : {
+        eyebrow: en ? "Staying a few more days?" : "¿Te quedas más días?",
+        titulo:  en ? "Your next tour, straight on WhatsApp" : "Tu siguiente tour, directo por WhatsApp",
+        texto:   en
+          ? `Message us with your booking number (<strong>${folio}</strong>) and we'll set up the next one with you.`
+          : `Escríbenos con tu folio (<strong>${folio}</strong>) y armamos contigo el siguiente.`,
+        boton:   en ? "Message us on WhatsApp" : "Escribir por WhatsApp",
+        href:    waConFolio(en
+          ? `Hi, I have booking ${data.confirmationNumber} and I'd like to add another tour.`
+          : `Hola, tengo la reserva ${data.confirmationNumber} y quiero agregar otro tour.`),
+        enlace:  en ? `or see all ${TOURS_DB.length} tours →` : `o mira los ${TOURS_DB.length} tours →`,
+        enlaceHref: `${base}${pre}/tours`,
+      };
+
   return `<!DOCTYPE html>
 <html lang="${locale === "en" ? "en" : "es"}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${T.subject(data.confirmationNumber)}</title>
+  <title>${T.subject(folio)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
     * { margin:0; padding:0; }
@@ -410,7 +506,7 @@ export function buildTourEmailHtml(data: {
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:48px 48px;">
 
           <p style="margin:0 0 6px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;color:#1a2e1a;line-height:1.2;">
-            ${T.hola} <span style="font-style:italic;color:#c4882a;">${data.customerName}!</span>
+            ${T.hola} <span style="font-style:italic;color:#c4882a;">${esc(data.customerName)}!</span>
           </p>
           <p style="margin:20px 0 30px 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:#3a3a2e;line-height:1.85;">
             ${T.lugarApartado}
@@ -430,7 +526,7 @@ export function buildTourEmailHtml(data: {
                       ${T.numeroConfirmacion}
                     </p>
                     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;font-weight:500;color:#1a2e1a;letter-spacing:1px;">
-                      ${data.confirmationNumber}
+                      ${folio}
                     </p>
                   </td>
                   <td style="vertical-align:middle;text-align:right;width:44px;">
@@ -444,6 +540,7 @@ export function buildTourEmailHtml(data: {
             </td></tr>
           </table>
           ${detallesHtml}
+          ${guiaInglesHtml}
           ${lodgingHtml}
           ${extrasHtml}
 
@@ -466,7 +563,7 @@ export function buildTourEmailHtml(data: {
                 ${hasPromo ? `
                 <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.3);">
                   <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:#8fbe3a;">
-                    ${T.codigoAplicado(String(data.promoCode), Number(data.promoDiscount))}
+                    ${T.codigoAplicado(esc(data.promoCode), Number(data.promoDiscount))}
                   </p>
                 </td></tr>` : ""}
                 ${deposito > 0 ? `
@@ -484,7 +581,7 @@ export function buildTourEmailHtml(data: {
                 </td></tr>
                 ${data.metodoPago ? `
                 <tr><td colspan="2" style="padding-top:10px;border-top:1px solid rgba(196,136,42,0.2);">
-                  <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.5);">${T.metodoPago} <span style="color:rgba(244,237,216,0.8);">${data.metodoPago}</span></p>
+                  <p style="margin:0;font-family:'DM Sans',Arial;font-size:11px;color:rgba(244,237,216,0.5);">${T.metodoPago} <span style="color:rgba(244,237,216,0.8);">${esc(data.metodoPago)}</span></p>
                 </td></tr>` : ""}` : ""}
               </table>
             </td></tr>
@@ -538,7 +635,7 @@ export function buildTourEmailHtml(data: {
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
                   <a href="https://wa.me/524891090388" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">+52 489 109 0388</a><br>
-                  ${T.enviaTuNumero} <strong>${data.confirmationNumber}</strong>
+                  ${T.enviaTuNumero} <strong>${folio}</strong>
                 </p>
               </td>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-top:none;border-left:none;background-color:#f4edd8;">
@@ -546,28 +643,34 @@ export function buildTourEmailHtml(data: {
                   ${T.alSubir}
                 </p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5;">
-                  ${T.presentaAlGuia}<br><strong>${data.confirmationNumber}</strong>
+                  ${T.presentaAlGuia}<br><strong>${folio}</strong>
                 </p>
               </td>
             </tr>
           </table>
         </td></tr>
 
-        <!-- CTA -->
+        <!-- CIERRE: nuestro hotel o el siguiente tour, según la reserva -->
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:40px 48px;text-align:center;border-top:1px solid #d4ccbc;">
           <p style="margin:0 0 10px 0;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a;">
-            ${T.mientrasEsperas}
+            ${cierre.eyebrow}
           </p>
-          <h2 style="margin:0 0 22px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-style:italic;font-weight:300;color:#1a2e1a;">
-            ${T.descubreMas}
+          <h2 style="margin:0 0 14px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-style:italic;font-weight:300;color:#1a2e1a;">
+            ${cierre.titulo}
           </h2>
+          <p style="margin:0 0 22px 0;font-family:'DM Sans',Arial;font-size:13px;font-weight:300;color:#3a3a2e;line-height:1.75;">
+            ${cierre.texto}
+          </p>
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
-            <tr><td style="background-color:#3a6b1a;padding:14px 36px;">
-              <a href="${base}${pre}/tours" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block;">
-                ${T.verTodos}
+            <tr><td bgcolor="#3a6b1a" style="background-color:#3a6b1a;padding:14px 36px;">
+              <a href="${cierre.href}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block;">
+                ${cierre.boton}
               </a>
             </td></tr>
           </table>
+          <p style="margin:16px 0 0 0;font-family:'DM Sans',Arial;font-size:12px;">
+            <a href="${cierre.enlaceHref}" style="color:#3a6b1a;border-bottom:1px solid #3a6b1a;">${cierre.enlace}</a>
+          </p>
         </td></tr>
 
         <!-- CONTACTO -->
@@ -582,7 +685,7 @@ export function buildTourEmailHtml(data: {
             📧 <a href="mailto:hola@huasteca-potosina.com" style="color:#1a2e1a;border-bottom:1px solid #d4ccbc;">hola@huasteca-potosina.com</a>
           </p>
           <p style="margin:12px 0 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a;">
-            ${T.idPago(data.paymentIntentId || "N/A")}
+            ${T.idPago(esc(data.paymentIntentId) || "N/A")}
           </p>
         </td></tr>
 
@@ -643,13 +746,32 @@ export function buildTourQuoteEmailHtml(data: {
    *
    * ⚠️ Antes era SIEMPRE `/tours/<slug>`. En una cotización de PAQUETE el slug
    * es "completo" o "gran-huasteca", que no son tours: el botón daba 404. Es
-   * exactamente lo que le pasó a Marco Torres el 12 ago 2026 —"la página me
+   * exactamente lo que le pasó a un cliente el 12 ago 2026 —"la página me
    * marca error"— y obligó a cerrar la venta a mano por WhatsApp.
    */
   const esPaquete = !!(data.tourSlug && getPaquete(data.tourSlug));
-  const tourUrl  = esPaquete
+  // Las noches de hotel cotizadas (el `_meta` viaja dentro de packageItems y se excluye).
+  const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p) => p && !p._meta) : [];
+  // Lo cotizado además del recorrido y del hotel: comida, transporte, guía.
+  const extrasQ = extrasDe(data.extraItems);
+  /**
+   * El botón de pagar en línea, SOLO si una página de la web cobra exactamente
+   * lo cotizado (la misma regla que el `linkPago` del bot): un paquete del
+   * catálogo, o recorridos por persona sin hotel (el carrito con TODOS, no
+   * solo el primero). Con noches de hotel a la medida o un RZR no hay página
+   * que lo cobre igual: el carrito vendía los tours sueltos, a otro precio y
+   * sin el hotel. Ahí queda solo el botón de WhatsApp.
+   */
+  const slugsCotizados = Array.from(new Set(
+    (data.lineItems ?? []).map((l) => l.tourSlug).filter((x): x is string => !!x && TOURS_DB.some((t) => t.slug === x)),
+  ));
+  const conVehiculo = (data.lineItems ?? []).some((l) => !!l.vehiculo);
+  const tourUrl: string | null = esPaquete
     ? `${base}${pre}/reservar-paquete/${data.tourSlug}`
-    : `${base}${pre}/reservar/carrito?agregar=${data.tourSlug}`;
+    : packages.length || conVehiculo
+      ? null
+      // Los slugs van dentro de un `href`: codificados, uno raro no rompe el atributo.
+      : `${base}${pre}/reservar/carrito?${(slugsCotizados.length ? slugsCotizados : [data.tourSlug ?? ""]).map((x) => `agregar=${encodeURIComponent(x)}`).join("&")}`;
 
   const formatDate = (d: string) => {
     if (!d) return C.porConfirmar;
@@ -683,6 +805,8 @@ export function buildTourQuoteEmailHtml(data: {
 
   const totalParticipants = data.adults + data.children;
   const participantsText  = `${C.adultos(data.adults)}${data.children > 0 ? ` · ${C.menores(data.children)}` : ""}`;
+  const nombreCliente     = esc(data.customerName);
+  const folioQ            = esc(data.quoteNumber);
 
   /**
    * Lo contratado ADEMÁS del recorrido dentro del mismo renglón: la actividad
@@ -698,21 +822,26 @@ export function buildTourQuoteEmailHtml(data: {
       const nom  = locale === "es"
         ? (a?.nombre || a?.id || "")
         : (base ? localizeTour(base, locale).addOns?.find((x) => x.id === a?.id)?.nombre : undefined) || a?.nombre || a?.id || "";
-      filas.push(`${C.addOnLinea(String(nom), cant)}${imp}`);
+      filas.push(`${C.addOnLinea(esc(nom), cant)}${imp}`);
     }
-    if (it?.eleccion) filas.push(C.elegiste(String(it.eleccion)));
+    if (it?.eleccion) filas.push(C.elegiste(esc(it.eleccion)));
     if (it?.viajeroSolo) filas.push(C.viajeroSolo);
     if (!filas.length) return "";
     return `<p style="margin:5px 0 0 0;font-family:'DM Sans',Arial;font-size:12px;color:#3a6b1a;line-height:1.7">${filas.join("<br>")}</p>`;
   };
 
-  // Tabla de items si hay paquete multi-tour
-  const itemsRows = (data.lineItems && data.lineItems.length > 1)
+  // Un renglón por recorrido, con SU subtotal, si hay varios o si además va
+  // hotel o un extra. Con un solo renglón y el TOTAL a la derecha, un tour con
+  // dos noches de hotel se leía «Tamul $6,700» y abajo «Hotel $3,800», como si
+  // todo sumara $10,500.
+  const lineasConPrecio = (data.lineItems ?? []).length > 0 && (data.lineItems ?? []).every((l) => Number.isFinite(Number(l.subtotal)));
+  const porRenglon = !!data.lineItems && (data.lineItems.length > 1 || (lineasConPrecio && (packages.length > 0 || extrasQ.length > 0)));
+  const itemsRows = porRenglon && data.lineItems
     ? data.lineItems.map(it => `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3;">
       <tr>
         <td style="padding:14px 0;vertical-align:top;width:65%">
-          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${esc(it.tourName)}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${it.vehiculo ? `${formatDate(it.tourDate)} · ${C.vehiculos(Math.max(1, Number(it.unidades) || 1))}` : `${formatDate(it.tourDate)} · ${C.adultos(it.adults)}${(it.childrenMid ?? 0) > 0 ? ` · ${T.ninos(it.childrenMid!)} (6-10)` : ""}${(it.childrenSmall ?? 0) > 0 ? ` · ${T.ninos(it.childrenSmall!)} (<6)` : ""}${(it.children ?? 0) > 0 && !it.childrenMid && !it.childrenSmall ? ` · ${T.ninos(it.children!)}` : ""}`}</p>
           ${extrasDeLinea(it)}
         </td>
@@ -725,7 +854,7 @@ export function buildTourQuoteEmailHtml(data: {
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3;">
       <tr>
         <td style="padding:14px 0;vertical-align:top">
-          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${data.tourName}</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${esc(data.tourName)}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(data.tourDate)} · ${participantsText}</p>
           ${extrasDeLinea(data.lineItems?.[0])}
         </td>
@@ -736,8 +865,6 @@ export function buildTourQuoteEmailHtml(data: {
     </table>`;
 
   // Bloque de hospedaje (si la cotización incluye paquete con noches de hotel).
-  // El _meta viaja dentro de packageItems, se excluye.
-  const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p) => p && !p._meta) : [];
   const lodgingHtml = packages.length ? `
           <!-- HOSPEDAJE COTIZADO -->
           <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">${T.hospedajeIncluido}</p>
@@ -752,7 +879,7 @@ export function buildTourQuoteEmailHtml(data: {
               return `
             <tr>
               <td style="width:62%;padding:16px 22px;vertical-align:top;">
-                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${p.habitacion || T.hospedajeTitulo}${p.hotel ? ` · ${p.hotel}` : ""}</p>
+                <p style="margin:0 0 4px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#1a2e1a;font-weight:400;">${esc(p.habitacion) || T.hospedajeTitulo}${p.hotel ? ` · ${esc(p.hotel)}` : ""}</p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#8a7a5a;">${C.noches(noches)}${habs > 1 ? C.habitaciones(habs) : ""}${fechas ? ` · ${fechas}` : ""}</p>
               </td>
               <td style="width:38%;padding:16px 22px;vertical-align:top;text-align:right;white-space:nowrap;">
@@ -762,9 +889,8 @@ export function buildTourQuoteEmailHtml(data: {
             }).join("")}
           </table>` : "";
 
-  // Lo cotizado además del recorrido y del hotel. Lo que va sin cargo se dice
-  // "Incluido": el cliente tiene que ver por escrito que la comida entra.
-  const extrasQ = extrasDe(data.extraItems);
+  // Los extras (`extrasQ`, arriba): lo que va sin cargo se dice "Incluido":
+  // el cliente tiene que ver por escrito que la comida entra.
 
   /**
    * El desglose del dinero, con el MISMO cálculo que el PDF (ver
@@ -782,12 +908,12 @@ export function buildTourQuoteEmailHtml(data: {
           <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">${T.extrasTitulo}</p>
           ${extrasQ.map((ex) => {
             const cobro = calcExtraLine(ex);
-            const sub   = [ex.detalle, ex.cantidad > 1 ? T.extraCantidad(ex.cantidad) : ""].filter(Boolean).join(" · ");
+            const sub   = [esc(ex.detalle), ex.cantidad > 1 ? T.extraCantidad(ex.cantidad) : ""].filter(Boolean).join(" · ");
             return `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3;">
       <tr>
         <td style="padding:14px 0;vertical-align:top;width:65%">
-          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${ex.concepto}</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${esc(ex.concepto)}</p>
           ${sub ? `<p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${sub}</p>` : ""}
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
@@ -802,7 +928,7 @@ export function buildTourQuoteEmailHtml(data: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${T.tituloTab(data.quoteNumber)}</title>
+  <title>${T.tituloTab(folioQ)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
     * { margin:0; padding:0; }
@@ -835,14 +961,14 @@ export function buildTourQuoteEmailHtml(data: {
         <tr><td class="mobile-plg" style="padding:36px 40px 40px;background-color:#1a2e1a">
           <p style="margin:0 0 10px;font-family:'DM Sans',Arial;font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,0.55)">${T.eyebrow}</p>
           <h1 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;font-style:italic;font-weight:300;color:#f4edd8;line-height:1.1">${T.h1a}<br>${T.h1b}</h1>
-          <p style="margin:14px 0 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7">${T.preview(data.customerName)}</p>
+          <p style="margin:14px 0 0;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:rgba(244,237,216,0.75);line-height:1.7">${T.preview(nombreCliente)}</p>
         </td></tr>
 
         <!-- CARD PRINCIPAL -->
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:44px 48px">
 
           <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#1a2e1a;line-height:1.2">
-            ${T.hola} <span style="font-style:italic;color:#c4882a">${data.customerName}</span>
+            ${T.hola} <span style="font-style:italic;color:#c4882a">${nombreCliente}</span>
           </p>
           <p style="margin:18px 0 28px;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:#3a3a2e;line-height:1.85">
             ${T.intro1} <strong>${T.validez}</strong>${T.intro2}
@@ -859,7 +985,7 @@ export function buildTourQuoteEmailHtml(data: {
                 <tr>
                   <td>
                     <p style="margin:0 0 6px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">${T.numeroCotizacion}</p>
-                    <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#1a2e1a;letter-spacing:1px">${data.quoteNumber}</p>
+                    <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#1a2e1a;letter-spacing:1px">${folioQ}</p>
                     <p style="margin:6px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${T.validaHoy}</p>
                   </td>
                   <td style="vertical-align:middle;text-align:right;width:48px">
@@ -949,7 +1075,7 @@ export function buildTourQuoteEmailHtml(data: {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ede8dc;padding:16px 18px;margin:18px 0">
             <tr><td>
               <p style="margin:0 0 4px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8a7a5a">${T.notas}</p>
-              <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.7">${data.notes}</p>
+              <p style="margin:0;font-family:'DM Sans',Arial;font-size:13px;color:#3a3a2e;line-height:1.7">${esc(data.notes)}</p>
             </td></tr>
           </table>` : ""}
 
@@ -963,7 +1089,7 @@ export function buildTourQuoteEmailHtml(data: {
             <tr>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;background-color:#f4edd8">
                 <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${T.whatsappDirecto}</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${T.escribenosFolio} <strong>${data.quoteNumber}</strong></p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${T.escribenosFolio} <strong>${folioQ}</strong></p>
               </td>
               <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-left:none;background-color:#f4edd8">
                 <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${T.reservarEnLinea}</p>
@@ -978,17 +1104,18 @@ export function buildTourQuoteEmailHtml(data: {
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto">
             <tr>
               <td style="background-color:#25D366;padding:14px 28px;margin-right:8px">
-                <a href="${waUrl}?text=Hola%2C+confirmo+cotizaci%C3%B3n+${data.quoteNumber}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#ffffff;text-decoration:none;display:block">${T.btnWhatsapp}</a>
+                <a href="${waUrl}?text=Hola%2C+confirmo+cotizaci%C3%B3n+${encodeURIComponent(data.quoteNumber)}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#ffffff;text-decoration:none;display:block">${T.btnWhatsapp}</a>
               </td>
             </tr>
           </table>
+          ${tourUrl ? `
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:12px auto 0">
             <tr>
               <td style="background-color:#3a6b1a;padding:14px 28px">
                 <a href="${tourUrl}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block">${T.btnReservar}</a>
               </td>
             </tr>
-          </table>
+          </table>` : ""}
           <p style="margin:16px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${T.vence}</p>
         </td></tr>
 
@@ -1059,7 +1186,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
       <tr>
         <td style="padding:16px 0;vertical-align:top;width:64%">
           <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Día ${i + 1}</p>
-          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${it.tourName}</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${esc(it.tourName)}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(it.tourDate)} · ${personasTexto(it)}</p>
         </td>
         <td style="padding:16px 0 16px 16px;text-align:right;vertical-align:top;white-space:nowrap">
@@ -1121,7 +1248,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
       <tr>
         <td style="padding:16px 0;vertical-align:top;width:64%">
           <p style="margin:0 0 4px 0;font-family:Arial;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c4882a">Hospedaje</p>
-          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${h.hotel ?? "Hotel Paraíso Encantado"}${h.habitacion ? ` · ${h.habitacion}` : ""}</p>
+          <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${h.hotel != null ? esc(h.hotel) : "Hotel Paraíso Encantado"}${h.habitacion ? ` · ${esc(h.habitacion)}` : ""}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${h.noches ? `${h.noches} noche${h.noches !== 1 ? "s" : ""}` : "Fechas por confirmar"}${h.checkin ? ` · llegada ${formatDate(h.checkin)}` : ""}${(h.habitaciones ?? 1) > 1 ? ` · ${h.habitaciones} habitaciones` : ""}</p>
           ${(h.nochesGratis ?? 0) > 0 ? `<p style="font-size:12px;color:#5a9e2a;font-family:Arial;margin:4px 0 0 0">🎁 ${h.nochesGratis} noche${h.nochesGratis !== 1 ? "s" : ""} de regalo — te ahorras ${fmx(Number(h.ahorro ?? 0))}</p>` : ""}
         </td>
@@ -1159,12 +1286,12 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
         <tr><td style="background:#1a2e1a;padding:30px 32px">
           <p style="margin:0;font-family:Arial;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#8fbe3a">Tours Huasteca Potosina</p>
           <p style="margin:8px 0 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#f4edd8">Tu viaje, armado a tu medida</p>
-          <p style="margin:6px 0 0 0;font-family:Arial;font-size:12px;color:#f4edd8;opacity:.6">Folio ${data.folio}</p>
+          <p style="margin:6px 0 0 0;font-family:Arial;font-size:12px;color:#f4edd8;opacity:.6">Folio ${esc(data.folio)}</p>
         </td></tr>
 
         <tr><td style="padding:28px 32px 0 32px">
           <p style="font-family:Arial;font-size:14px;line-height:1.7;color:#4a4a3a;margin:0">
-            Hola ${data.customerName}, esto es lo que armamos contigo. Nada de esto está apartado todavía
+            Hola ${esc(data.customerName)}, esto es lo que armamos contigo. Nada de esto está apartado todavía
             — cuando nos digas que sí, apartamos con el ${data.pctAnticipo} %.
           </p>
         </td></tr>
@@ -1205,7 +1332,7 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
 
         ${data.notes ? `<tr><td style="padding:18px 32px 0 32px">
           <p style="margin:0 0 6px 0;font-family:Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c4882a">Notas</p>
-          <p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0">${data.notes}</p>
+          <p style="font-family:Arial;font-size:13px;line-height:1.7;color:#4a4a3a;margin:0">${esc(data.notes)}</p>
         </td></tr>` : ""}
 
         <tr><td style="padding:26px 32px 30px 32px" align="center">

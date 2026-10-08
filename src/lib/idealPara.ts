@@ -71,4 +71,8 @@ export const IDEAL_PARA: Record<string, { es: string; en: string }> = {
     es: "Senderistas y amantes del bosque de niebla",
     en: "Hikers and cloud-forest lovers",
   },
+  "tour-huasteca-instagrameable": {
+    es: "Creadores de contenido y parejas",
+    en: "Content creators and couples",
+  },
 };

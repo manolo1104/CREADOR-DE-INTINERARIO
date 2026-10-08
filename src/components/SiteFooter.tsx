@@ -67,6 +67,13 @@ export function SiteFooter() {
         { label: "Tours en Ciudad Valles", href: "/tours-en-ciudad-valles" },
         { label: "Cómo llegar a la Huasteca Potosina", href: "/info-practica" },
         { label: "¿Qué tour es para mí?", href: "/recomendar" },
+        // 🔴 Entra el 7 oct 2026. Ese día se quitó del inicio el bloque que
+        // regalaba la guía PDF a cambio del correo (decisión de Manolo: que solo
+        // el recomendador junte correos), y con él se fue la única entrada a
+        // /guia que había en una página que la gente visita: ni el menú ni el
+        // pie la enlazaban. Sin esto, `public/guia-huasteca-potosina.pdf`
+        // quedaba inalcanzable salvo desde /experiencias.
+        { label: "Guía gratuita de la Huasteca Potosina", href: "/guia" },
         { label: "Blog", href: "/blog" },
         { label: "Sobre la Huasteca", href: "/sobre-la-huasteca-potosina" },
         { label: "Sustentabilidad", href: "/sustentabilidad-y-conservacion" },
@@ -90,6 +97,12 @@ export function SiteFooter() {
         { label: "Créditos de fotos", href: "/creditos" },
       ];
 
+  // 🔴 Todos los <Link> de aquí van con `prefetch={false}`. Las páginas son
+  // dinámicas (el idioma se lee con headers()), así que cada precarga es un
+  // render completo en el servidor; el pie trae ~25 enlaces que se precargaban
+  // solos en cuanto asomaba, y la auditoría externa (oct 2026) vio 503 justo
+  // en esas precargas (/tours?_rsc=…). Al hacer clic la página carga igual. El
+  // menú (Navbar) sí conserva su precarga: ahí sí se navega.
   return (
     <footer className="relative bg-verde-profundo border-t border-white/8 py-16 px-6 overflow-hidden">
       <FloatingLeaves count={16} />
@@ -132,6 +145,7 @@ export function SiteFooter() {
                   <li key={d.slug}>
                     <Link
                       href={lp(`/destinos/${d.slug}`)}
+                      prefetch={false}
                       className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                     >
                       <span className="text-lima text-xs" aria-hidden="true">→</span>
@@ -152,6 +166,7 @@ export function SiteFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
+                    prefetch={false}
                     className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                   >
                     <span className="text-lima text-xs" aria-hidden="true">→</span>
@@ -171,6 +186,7 @@ export function SiteFooter() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
+                    prefetch={false}
                     className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                   >
                     <span className="text-lima text-xs" aria-hidden="true">→</span>
@@ -241,6 +257,7 @@ export function SiteFooter() {
               <li key={c.slug}>
                 <Link
                   href={c.href}
+                  prefetch={false}
                   className="text-crema/55 hover:text-crema text-sm font-dm transition-colors flex items-center gap-2"
                 >
                   <span className="text-lima text-xs" aria-hidden="true">→</span>

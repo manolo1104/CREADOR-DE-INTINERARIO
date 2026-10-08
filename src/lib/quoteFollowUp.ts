@@ -64,6 +64,12 @@ export interface MetaCotizacion {
   recordadoWaAt?: string;
   /** ISO del correo automático «tu cotización vence mañana». */
   avisoVenceAt?:  string;
+  /**
+   * Folio de la cotización MÁS RECIENTE del mismo cliente, cuando el cron
+   * terminó el seguimiento de ésta por tener otra más nueva
+   * (`anterioresDelMismoCliente`). Solo explica el «terminado».
+   */
+  seqMasReciente?: string;
 }
 
 function metaDe(lineItems: unknown): MetaCotizacion | undefined {
@@ -200,4 +206,81 @@ export function siguientePaso(
   const toca = desde + ESPERA_HORAS[paso] * HORA_MS;
   if (ahora.getTime() + margen < toca) return null;
   return { paso };
+}
+
+// ── Una sola secuencia por cliente ──────────────────────────────────────────
+//
+// 🔴 Cuando el cliente cambia algo (tour, fecha, gente, hotel), el bot manda
+// la cotización nueva con `reemplazaA` y la anterior queda Vencida. Pero si el
+// reemplazo no se pudo (el bot de antes, un folio que no cuadró) o el equipo
+// mandó dos opciones al mismo cliente, le llegaban los correos de las DOS:
+// dos «aquí la tienes», dos «vence mañana». Esto es el respaldo del cron: por
+// cliente, solo la más reciente le sigue escribiendo.
+
+/** Lo que hace falta de una cotización para saber de qué cliente es. */
+export interface CotizacionDeCliente {
+  id:          string;
+  folio:       string;
+  createdAt:   Date | string;
+  correo?:     string | null;
+  telefono?:   string | null;
+  /** Del `_meta` de `packageItems` (las que armó el bot). */
+  waTelefono?: string | null;
+  waChatId?:   string | null;
+}
+
+/** Los últimos 10 dígitos de un teléfono (el número sin lada), o "" si no alcanzan. */
+function diezDigitos(v: unknown): string {
+  const d = String(v ?? "").replace(/\D/g, "");
+  return d.length >= 10 ? d.slice(-10) : "";
+}
+
+/**
+ * Quién es el cliente de una cotización: su correo en minúsculas; sin correo,
+ * los últimos 10 dígitos de su teléfono (52…, 521… y los 10 solos dan lo
+ * mismo); sin teléfono, su chat de WhatsApp. "" si no hay con qué juntarla:
+ * esa nunca se toma por duplicada.
+ */
+export function claveDeCliente(c: Pick<CotizacionDeCliente, "correo" | "telefono" | "waTelefono" | "waChatId">): string {
+  const correo = String(c.correo ?? "").trim().toLowerCase();
+  if (correo) return `correo:${correo}`;
+  const tel = diezDigitos(c.telefono) || diezDigitos(c.waTelefono);
+  if (tel) return `tel:${tel}`;
+  const chat = String(c.waChatId ?? "").trim();
+  return chat ? `chat:${chat}` : "";
+}
+
+const instanteDe = (c: CotizacionDeCliente) => {
+  const t = new Date(c.createdAt).getTime();
+  return Number.isNaN(t) ? 0 : t;
+};
+
+/** ¿`a` es más reciente que `b`? Por creación; en empate, el folio mayor (los folios llevan la hora). */
+function esMasReciente(a: CotizacionDeCliente, b: CotizacionDeCliente): boolean {
+  const ta = instanteDe(a), tb = instanteDe(b);
+  return ta !== tb ? ta > tb : a.folio > b.folio;
+}
+
+/**
+ * De las cotizaciones vivas, las que NO son la más reciente de su cliente
+ * (`claveDeCliente`): id → folio de la más reciente, que es la única que sigue
+ * con su seguimiento. Pura: el cron decide qué escribir.
+ *
+ * Pasarle solo las VIVAS (las que no vencen en esa corrida): una que hoy pasa
+ * a Vencida no puede dejar sin seguimiento a otra que sí sigue valiendo.
+ */
+export function anterioresDelMismoCliente(cotizaciones: CotizacionDeCliente[]): Map<string, string> {
+  const ultima = new Map<string, CotizacionDeCliente>();
+  for (const c of cotizaciones) {
+    const clave = claveDeCliente(c);
+    if (!clave) continue;
+    const previa = ultima.get(clave);
+    if (!previa || esMasReciente(c, previa)) ultima.set(clave, c);
+  }
+  const anteriores = new Map<string, string>();
+  for (const c of cotizaciones) {
+    const u = ultima.get(claveDeCliente(c));
+    if (u && u.id !== c.id) anteriores.set(c.id, u.folio);
+  }
+  return anteriores;
 }

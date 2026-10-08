@@ -2,8 +2,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Navbar from "@/components/nav/Navbar";
-import { FloatingReservarButton } from "@/components/FloatingReservarButton";
-import { CarritoBar } from "@/components/carrito/CarritoBar";
+import { BarraInferiorMovil } from "@/components/BarraInferiorMovil";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookieBanner } from "@/components/CookieBanner";
 import { PopupXantolo } from "@/components/PopupXantolo";
@@ -67,8 +66,16 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       {!isAdmin && <Navbar />}
       {children}
       {!isAdmin && !isCheckout && <SiteFooter />}
-      {!isAdmin && <FloatingReservarButton />}
-      {!isAdmin && <CarritoBar />}
+      {/* Justo después del pie: además de la barra fija trae el hueco que
+          evita que tape el final de la página. En el celular sustituye a los
+          dos de abajo, que quedaron solo para escritorio. */}
+      {/* 🔴 Era UNA barra para celular más dos componentes solo de escritorio:
+          `FloatingReservarButton` (la burbuja de WhatsApp y la píldora «Reservar
+          tour», las dos a z-50) y `carrito/CarritoBar` (z-45). Tres cosas
+          flotando a la vez, con las píldoras subiendo a `bottom-[158px]` cuando
+          había algo en el carrito. Desde el 7 oct 2026 es una sola barra en
+          todos los tamaños, con precio + botón + ícono de WhatsApp. */}
+      {!isAdmin && <BarraInferiorMovil />}
       {!isAdmin && <CookieBanner />}
       {!isAdmin && <PopupXantolo />}
     </>

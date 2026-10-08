@@ -192,7 +192,7 @@ export function buildBreadcrumbJsonLd(crumbs: Crumb[], locale: Locale = "es") {
  *   · por vehículo → toda la matriz `flota[].precios` (el RZR: de la unidad más
  *     chica en la ruta corta a la más grande en la larga).
  */
-function tarifaDeTour(t: Pick<Tour, "precio" | "precioUnidad" | "tarifaGrupo" | "flota">) {
+function tarifaDeTour(t: Pick<Tour, "precio" | "precioUnidad" | "tarifaGrupo" | "escalaPersona" | "flota">) {
   if (t.precioUnidad === "grupo") {
     const r = rangoGrupo(t);
     return { ...r, n: t.tarifaGrupo?.length || 1 };
@@ -200,6 +200,12 @@ function tarifaDeTour(t: Pick<Tour, "precio" | "precioUnidad" | "tarifaGrupo" | 
   if (t.precioUnidad === "vehiculo") {
     const precios = (t.flota ?? []).flatMap((v) => v.precios);
     if (precios.length) return { min: Math.min(...precios), max: Math.max(...precios), n: precios.length };
+  }
+  // Escalera por tamaño de grupo: el precio por persona baja de 3 en adelante,
+  // así que lo honesto para Google es el rango, no el precio de una persona.
+  if (t.escalaPersona?.length) {
+    const menos = Math.max(...t.escalaPersona.map((e) => e.menos));
+    return { min: t.precio - menos, max: t.precio, n: t.escalaPersona.length + 1 };
   }
   return { min: t.precio, max: t.precio, n: 1 };
 }
@@ -227,7 +233,7 @@ function tarifaDeTour(t: Pick<Tour, "precio" | "precioUnidad" | "tarifaGrupo" | 
  * organización (y en ese caso debe tener el nodo en su grafo).
  */
 export function buildTourOffer(
-  t: Pick<Tour, "slug" | "precio" | "precioUnidad" | "tarifaGrupo" | "flota">,
+  t: Pick<Tour, "slug" | "precio" | "precioUnidad" | "tarifaGrupo" | "escalaPersona" | "flota">,
   locale: Locale = "es",
   url: string = localeUrl(`/tours/${t.slug}`, locale),
 ) {

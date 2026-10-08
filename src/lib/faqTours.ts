@@ -8,6 +8,7 @@ import { fmtMoney, fmtNumber } from "@/lib/i18n/format";
 import { localizeTour } from "@/lib/i18n/localize";
 import { localizePaquete } from "@/lib/i18n/paquetes.en";
 import type { Locale } from "@/lib/i18n/config";
+import { fechaInicioTexto } from "@/lib/temporada";
 
 /**
  * Preguntas frecuentes de /tours.
@@ -324,8 +325,11 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
         a: `Between ${DUR_MIN} and ${DUR_MAX} hours, depending on the route. ${DIA_COMPLETO.length} of them are full-day trips of ${DIA_COMPLETO_MIN} to ${DIA_COMPLETO_MAX} hours: ${diaCompleto}. The rest: ${cortos}.${regreso}`,
       },
       {
+        // La regla de temporada.ts, con su fecha. Decía «seca de noviembre a
+        // junio» y que en lluvias «se suspenden» actividades; la política dice
+        // que con el río crecido se reprograma sin costo.
         q: "When is the best time to visit, and can I come year-round?",
-        a: `${salidaDiaria(locale)}. For water at its most intense turquoise, come in the dry season: roughly November through June, at its clearest between March and May. During the rainy season (July to October) the waterfalls carry far more volume and are dramatic to photograph, but the water can turn brown and some river activities are suspended for safety — rafting on the Tampaón, for instance, is confirmed according to the river level on the day.`,
+        a: `${salidaDiaria(locale)}. From ${fechaInicioTexto("en")} through May the water runs clear, and the turquoise is at its most intense from March to May, which is also the busiest time. From July to October the waterfalls run at full force and the water can carry sediment; if the river rises, we reschedule rafting at no cost. For clear water ahead of the spring crowds, the best season to visit is ${fechaInicioTexto("en")} through December.`,
       },
       {
         q: "How do I book, and how much do I pay today?",
@@ -361,7 +365,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     },
     {
       q: "¿Cuál es la mejor época para ir y se puede todo el año?",
-      a: `${salidaDiaria(locale)}. Para ver el agua en su tono turquesa más intenso, la mejor temporada es la seca: aproximadamente de noviembre a junio, con su punto más claro entre marzo y mayo. Durante la temporada de lluvias (julio a octubre) el caudal de las cascadas aumenta y es muy fotogénico, pero el agua puede tornarse marrón y algunas actividades acuáticas se suspenden por seguridad — el rafting en el Tampaón, por ejemplo, se confirma según el nivel del río ese día.`,
+      a: `${salidaDiaria(locale)}. Del ${fechaInicioTexto("es")} a mayo el agua baja clara, y el turquesa más intenso es de marzo a mayo, que es también cuando más gente hay. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; si el río crece, reprogramamos el rafting sin costo. Si buscas agua clara antes de las multitudes de primavera, la mejor temporada para venir es del ${fechaInicioTexto("es")} a diciembre.`,
     },
     {
       q: "¿Cómo reservo y cuánto tengo que pagar hoy?",

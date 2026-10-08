@@ -363,6 +363,11 @@ function splitAtMidpoint(html: string): [string, string] {
 function inferTour(tags: string[], keyword: string) {
   const text = (tags.join(" ") + " " + keyword).toLowerCase();
   const porSlug = (slug: string) => TOURS_DB.find((t) => t.slug === slug);
+  // Un artículo de intención FOTOGRÁFICA va a Huasteca Instagrameable, aunque mencione
+  // Tamul o Las Pozas: lo que el lector busca ahí es el material, no el destino.
+  // La regla es estrecha a propósito (nada de /foto/ a secas, que sale en medio
+  // catálogo) y va primera porque gana a la del lugar.
+  if (/instagramea|instagram|fotog[eé]nic|tour de fotos|reels/.test(text))  return porSlug("huasteca-instagrameable");
   if (/rafting|r[aá]pidos/.test(text))                        return TOURS_DB.find((t) => t.id === "tour-rafting-tampaon");
   if (/rzr|off.?road|todoterreno|nanacatli/.test(text))       return TOURS_DB.find((t) => t.id === "tour-rzr-xilitla");
   if (/tamul|tampaon|tampa[oó]n|s[oó]tano.*huah/.test(text)) return TOURS_DB.find((t) => t.id === "tour-tamul");

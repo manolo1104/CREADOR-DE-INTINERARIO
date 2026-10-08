@@ -79,7 +79,7 @@ export function itemDesdeTour(
 
 /**
  * El subtotal de un renglón por persona, recalculado con el catálogo y SU
- * fecha: personas, tarifa de viajero solo o de grupo, add-ons y la promo de
+ * fecha: personas, tarifa de grupo, add-ons y la promo de
  * temporada baja (solo para recorridos hasta el 29 oct). Lo que se pinta tiene
  * que coincidir con lo que cobra `computeTourCharge`.
  *

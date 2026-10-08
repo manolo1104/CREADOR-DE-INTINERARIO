@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
+import { reglaRioTexto } from "@/lib/temporada";
 
 type Estado = "auto" | "turquesa" | "caudal";
 
+// La regla del automático sale de temporada.ts («jul–29 oct caudal, 30 oct–jun
+// turquesa»): decía «jun–oct caudal», que ya no es lo que hace la franja.
 const OPCIONES: { valor: Estado; titulo: string; detalle: string }[] = [
-  { valor: "auto",     titulo: "Automático", detalle: "Lo decide la temporada (jun–oct caudal, nov–may turquesa)" },
+  { valor: "auto",     titulo: "Automático", detalle: `Lo decide la temporada (${reglaRioTexto()})` },
   { valor: "turquesa", titulo: "🟢 Turquesa", detalle: "El sitio anuncia agua turquesa" },
   { valor: "caudal",   titulo: "🟤 Caudal alto", detalle: "El sitio avisa caudal alto por lluvias" },
 ];

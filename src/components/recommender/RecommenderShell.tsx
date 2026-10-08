@@ -106,6 +106,9 @@ const TOUR_PROOF: Record<string, {
   "tour-olla-de-la-luz": {
     reviews: [],
   },
+  "tour-huasteca-instagrameable": {
+    reviews: [],
+  },
 };
 
 // ── Wizard data ──────────────────────────────────────────────────────────────
@@ -704,6 +707,7 @@ export function RecommenderShell() {
               {state.dias === "1 día" && (
                 <Link
                   href={urlComparar("recorridos", [primaryTour.slug, secondaryTour.slug], { origen: "recomendador" })}
+                  prefetch={false}
                   className="mt-4 inline-flex items-center min-h-[44px] font-dm text-[11px] tracking-[1.5px] uppercase text-verde-selva hover:text-negro underline decoration-verde-selva/40 underline-offset-4 transition-colors"
                 >
                   {comparadorUI("es").entradas.recomendador}

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { opcionesMsi } from "@/lib/stripeMsi";
 import { stripe } from "@/lib/stripe";
 import { getPaquete, eventoALaVenta } from "@/lib/paquetes";
 import { lugaresDePaquete } from "@/lib/cupoPaquete";
 import { cabeEnCupo } from "@/lib/cupoEvento";
+import { mensajeSinCupo, pedidosSinCupo, toursDePaquete } from "@/lib/cupoTour";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { habitacionesDePaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
@@ -151,6 +153,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Los recorridos del paquete ocupan su salida de cada día igual que
+    // comprados sueltos (`lib/cupoTour.ts`): sin esto, un paquete podía meter
+    // a cuatro personas en una Expedición Tamul ya llena. Los de evento se
+    // quedan con su propio cupo (arriba), que ya decide cuánta gente sale.
+    if (!evento) {
+      const sinLugar = await pedidosSinCupo(
+        toursDePaquete(paquete, String(paqueteDetails.fecha), elegidos)
+          .map((r) => ({ ...r, personas: cobro.personas })),
+      );
+      if (sinLugar.length) {
+        logger.warn("paquete_sin_cupo", { slug: paquete.slug, dias: sinLugar.map((s) => `${s.slug} ${s.fecha}`).join("; ") });
+        return NextResponse.json(
+          { error: sinLugar.map((s) => mensajeSinCupo(s, locale === "en" ? "en" : "es")).join(" ") },
+          { status: 409 },
+        );
+      }
+    }
+
     const personas = String(cobro.personas);
     // La fecha de un evento NO viene del navegador.
     const fecha    = evento ? evento.fecha : String(paqueteDetails?.fecha || "");
@@ -166,6 +186,8 @@ export async function POST(req: NextRequest) {
       // de la página. Sin esto Stripe podía ofrecer uno con redirección y
       // `confirmPayment` (sin `return_url`) fallaba al pulsar Pagar.
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      // Meses sin intereses. Donde más se nota: un paquete son $8,000-$16,000.
+      ...opcionesMsi(charge),
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",

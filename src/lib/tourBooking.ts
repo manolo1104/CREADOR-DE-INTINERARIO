@@ -1,6 +1,6 @@
 // Estado del carrito de reserva de tours — persiste en sessionStorage
 
-import { precioGrupo, type Tour } from "./tours";
+import { precioGrupo, precioPorCabeza, type Tour } from "./tours";
 
 export interface TourBookingState {
   tourId:        string;
@@ -76,32 +76,45 @@ export function calcTourTotal(
 // ── Viajero solo ─────────────────────────────────────────────
 
 /**
- * Lo que se le resta a la tarifa de DOS personas cuando reserva una sola.
+ * Cuántos días antes se le confirma —o se le cancela— a quien reservó solo.
  *
- * Decisión de Manolo (1 oct 2026): quien viaja solo puede reservar en línea.
- * Paga el precio de 2 personas menos $2 y el equipo lo suma a un grupo armado
- * para su fecha. Hasta ese día el mínimo de 2 era un muro mudo: en Clarity un
- * visitante de EE. UU. tocó «−» doce veces para bajar a un adulto, el contador
- * no se movió, nada le explicó por qué, y se fue.
- *
- * Por qué cobrar casi dos lugares: la salida tiene costos fijos (en Tamul,
- * $1,700 por salida contra $395 por persona) y con una sola persona no se paga.
+ * No es un plazo de reembolso: el dinero lo devuelve Manolo a mano en Stripe y
+ * prometer un «en X días» que nadie va a cumplir es peor que no decir nada. Es
+ * cuándo se le avisa si la salida corre o no.
  */
-export const DESCUENTO_VIAJERO_SOLO = 2;
+export const CONFIRMA_SALIDA_DIAS = 7;
 
 /** Lo mínimo de un recorrido que la regla necesita para decidir. */
 type TourParaSolo = Pick<Tour, "groupMin" | "precioUnidad" | "tarifaGrupo">;
 
 /**
- * ¿Este recorrido se puede reservar para UNA persona con la tarifa de viajero
- * solo? Solo los de precio por persona que salen desde 2. Quedan fuera:
- * - tarifa por grupo (el Edén): ya acepta a una persona con su propio escalón;
- * - por vehículo (RZR): no cuenta personas;
- * - mínimos mayores (rappel 4, rafting 5): «el precio de 2» no completa esa
- *   salida, así que siguen con su mínimo y la salida por WhatsApp.
+ * ¿Este recorrido se puede reservar para UNA persona?
+ *
+ * ## La historia, porque el modelo cambió dos veces
+ *
+ * Hasta el 1 oct 2026 el mínimo de 2 era un muro mudo: en Clarity, un visitante
+ * de EE. UU. tocó «−» doce veces para bajar a un adulto, el contador no se
+ * movió, nada le explicó por qué, y se fue. Ese día se abrió, pero cobrándole
+ * **el precio de dos personas menos $2**: la salida tiene costos fijos (en
+ * Tamul, $1,700 por salida contra $395 por persona) y con uno no se pagaban.
+ *
+ * 🔴 **8 oct 2026, Manolo lo cambió:** paga SU lugar, a tarifa normal, se le
+ * une a una salida compartida y **si no se junta el mínimo se le devuelve
+ * todo**. Lo que protege el margen ya no es el precio, es que la salida no
+ * corre si no se llena. Pagar casi el doble por ir solo era, en los hechos,
+ * seguir diciéndole que no.
+ *
+ * Por eso ahora entran TAMBIÉN el rappel (mínimo 4) y el rafting (mínimo 5),
+ * que antes mandaban a WhatsApp: con la promesa del reembolso, el mínimo deja
+ * de ser el muro y pasa a ser la condición, que es algo que sí se puede decir.
+ *
+ * Siguen fuera, y no por capricho:
+ * - **tarifa por grupo** (el Edén): ya acepta a una persona con su escalón, y
+ *   ahí el precio es del grupo, no de la cabeza;
+ * - **por vehículo** (el RZR): no cuenta personas, cuenta unidades.
  */
 export function aceptaViajeroSolo(tour: TourParaSolo): boolean {
-  return tour.groupMin === 2 && tour.precioUnidad !== "vehiculo" && !tour.tarifaGrupo?.length;
+  return tour.precioUnidad !== "vehiculo" && !tour.tarifaGrupo?.length;
 }
 
 /** Con cuántas personas se puede reservar en línea este recorrido. */
@@ -109,14 +122,14 @@ export function minimoPersonas(tour: TourParaSolo): number {
   return aceptaViajeroSolo(tour) ? 1 : tour.groupMin;
 }
 
-/** ¿Este grupo es UNA persona en un recorrido que acepta viajero solo? */
+/**
+ * ¿Va UNA persona a una salida que todavía no está armada?
+ *
+ * Sirve para avisar —en la ficha, en el carrito, en el correo y al equipo— que
+ * esa reserva depende de que se junte el grupo. Ya NO cambia el precio.
+ */
 export function esViajeroSolo(tour: TourParaSolo, adults: number, childrenMid = 0, childrenSmall = 0): boolean {
-  return aceptaViajeroSolo(tour) && adults + childrenMid + childrenSmall === 1;
-}
-
-/** La tarifa de viajero solo: el precio de dos personas menos $2. */
-export function tarifaViajeroSolo(precio: number): number {
-  return precio * 2 - DESCUENTO_VIAJERO_SOLO;
+  return aceptaViajeroSolo(tour) && adults + childrenMid + childrenSmall < tour.groupMin;
 }
 
 /**
@@ -130,7 +143,7 @@ export function tarifaViajeroSolo(precio: number): number {
  * pasar por aquí; el servidor hace la misma bifurcación en `computeTourCharge`.
  */
 export function totalRecorrido(
-  tour: Pick<Tour, "precio" | "tarifaGrupo" | "groupMin" | "precioUnidad">,
+  tour: Pick<Tour, "precio" | "precioLista" | "tarifaGrupo" | "escalaPersona" | "groupMin" | "precioUnidad">,
   adults: number,
   childrenMid = 0,
   childrenSmall = 0,
@@ -138,11 +151,14 @@ export function totalRecorrido(
 ): number {
   const delGrupo = precioGrupo(tour, adults + childrenMid + childrenSmall);
   if (delGrupo !== null) return delGrupo - Math.round(delGrupo * promoDiscount / 100);
-  if (esViajeroSolo(tour, adults, childrenMid, childrenSmall)) {
-    const solo = tarifaViajeroSolo(tour.precio);
-    return solo - Math.round(solo * promoDiscount / 100);
-  }
-  return calcTourTotal(tour.precio, adults, childrenMid, childrenSmall, promoDiscount).total;
+  // 🔴 Aquí vivía la tarifa de viajero solo (precio × 2 − $2). Se fue el 8 oct
+  // 2026: quien va solo paga su lugar y punto. Lo que cuida el margen es que la
+  // salida no corre bajo el mínimo, no cobrarle el doble.
+  // El escalón lo decide el total de cabezas —los niños también ocupan lugar—
+  // y después cada quien paga lo suyo sobre ESE precio: el adulto completo, el
+  // de 6 a 10 el 70 % y el menor de 6 el 50 %.
+  const porCabeza = precioPorCabeza(tour, adults + childrenMid + childrenSmall);
+  return calcTourTotal(porCabeza, adults, childrenMid, childrenSmall, promoDiscount).total;
 }
 
 // ── Códigos promo ────────────────────────────────────────────
@@ -159,11 +175,20 @@ export function totalRecorrido(
  * México. Para retirar un código basta con ponerle una fecha pasada; para
  * dejarlo indefinido, omitir el campo — pero eso debería ser la excepción.
  */
-// Sin códigos activos por decisión de Manolo (20 ago 2026). Los tres que había
-// —HUASTECA20, GRUPAL15, XILITLA10— se retiraron; se agregarán otros después.
-// La maquinaria se queda en pie: basta añadir una línea aquí para revivirlos,
-// y `vence` los caduca solo.
-const PROMO_CODES: Record<string, { pct: number; vence?: string }> = {};
+// Los tres que había —HUASTECA20, GRUPAL15, XILITLA10— se retiraron por
+// decisión de Manolo (20 ago 2026). Para revivir uno basta una línea aquí, y
+// `vence` lo caduca solo.
+const PROMO_CODES: Record<string, { pct: number; vence?: string }> = {
+  // Tarjeta impresa que el guía entrega EN PERSONA a quien llegó por Viator o
+  // GetYourGuide, para que su siguiente tour lo reserve directo (decisión de
+  // Manolo, 7 oct 2026; nunca «traslado gratis»: cuesta más que la comisión).
+  // 🔴 Los contratos de Viator (Supplier Agreement 4.5, ago 2026) y de
+  // GetYourGuide (Supplier T&C 5.1, 1 oct 2026) prohíben promover la reserva
+  // directa entre SUS clientes: a quién se entrega lo decide Manolo.
+  // El carrito no tiene campo de código: se canjea por WhatsApp y el equipo lo
+  // aplica en la cotización o la reserva del panel.
+  DIRECTO10: { pct: 10, vence: "2027-10-31" },
+};
 
 /** Hoy en Ciudad de México, como YYYY-MM-DD. El servidor puede correr en UTC. */
 function hoyMX(): string {

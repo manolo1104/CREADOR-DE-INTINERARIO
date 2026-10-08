@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { TourQuote } from "@prisma/client";
 import { X, BedDouble, Utensils, EyeOff, CalendarClock } from "lucide-react";
+import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, type LineaTour } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
@@ -140,7 +141,10 @@ export default function CotizacionDetalle({
                   <div key={i} className="flex items-start gap-3 bg-[#FAFAF8] border border-[#1B4332]/8 rounded-sm p-3">
                     <span className="font-mono text-[10px] text-[#1B4332]/35 mt-0.5">{String(i + 1).padStart(2, "0")}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[#1B4332] font-dm text-sm font-medium">{nombreTour(l)}</p>
+                      <p className="text-[#1B4332] font-dm text-sm font-medium flex items-center gap-1.5">
+                        <CodigoTour slug={l.tourSlug || ""} className="text-[11px]" />
+                        <span className="truncate">{nombreTour(l)}</span>
+                      </p>
                       <p className="text-[#1B4332]/55 font-dm text-xs mt-0.5">
                         {fDate(l.tourDate || "")}
                         {pax > 0 && ` · ${pax} ${pax === 1 ? "persona" : "personas"}`}

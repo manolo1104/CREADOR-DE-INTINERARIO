@@ -39,8 +39,12 @@ const GUARDA = `
 /**
  * ¿El visitante dejó encendido este servicio en el aviso de cookies?
  * Mismas claves que `src/lib/cookiesPrefs.ts` (este script en línea no puede
- * importarlo). Mientras no decida, se mide; "rejected" es el botón Rechazar
- * del aviso anterior, que apagaba todo.
+ * importarlo): 'analitica' (GA4), 'grabacion' (Clarity) y 'publicidad' (Pixel
+ * de Meta, Google Ads). Mientras no decida, se mide; "rejected" es el botón
+ * Rechazar del aviso anterior, que apagaba todo.
+ *
+ * 'publicidad' todavía no la consulta nadie: no se pauta y no hay pixel. El
+ * día que se instale, su script se carga solo si `hpPermite('publicidad')`.
  */
 const PERMITE = `
   function hpPermite(clave) {

@@ -1,7 +1,9 @@
 import type { Locale } from "./config";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, precioVisible, horasDeTour, type Paquete, type Habitacion } from "@/lib/paquetes";
 import { TOURS_DB, esPorPersona } from "@/lib/tours";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { GOOGLE_RESENAS } from "@/lib/resenas";
+import { ventanaMejorTemporada, fechaInicioTexto } from "@/lib/temporada";
 import { localizeTour } from "./localize";
 
 /**
@@ -313,7 +315,7 @@ const LOGISTICA_EN = {
     {
       titulo: "By car",
       puntos: [
-        "From Mexico City: ~5.5 hours (about 339 km).",
+        `From Mexico City: ${enAuto("cdmx", "xilitla", true)} (about 339 km).`,
         "From the city of San Luis Potosí: ~5 hours.",
         "The approach to Xilitla is a mountain road with tight bends and fog: we recommend driving in daylight, slowly and with a full tank.",
       ],
@@ -321,8 +323,8 @@ const LOGISTICA_EN = {
     {
       titulo: "By plane",
       puntos: [
-        "The most practical airport is Tampico (TAM): ~2.5 h to Xilitla and ~2 h to Ciudad Valles.",
-        "Alternatives: San Luis Potosí (~5 h), Querétaro (via Jalpan) or Mexico City / AIFA (further away).",
+        `The most practical airport is Tampico (TAM): ${enAuto("tampico", "xilitla", true)} to Xilitla and ${enAuto("tampico", "valles", true)} to Ciudad Valles.`,
+        `Alternatives: San Luis Potosí (${enAuto("san-luis-potosi", "xilitla", true)}), Querétaro (via Jalpan) or Mexico City / AIFA (further away).`,
         "From the airport it's best to rent a car or take a private transfer, since the buses leave from city terminals, not the airport.",
       ],
     },
@@ -330,7 +332,7 @@ const LOGISTICA_EN = {
       titulo: "By bus",
       puntos: [
         "From Mexico City there's an overnight departure from the Terminal Central del Norte at around 10:15 PM (Servicios Coordinados, Transportes Frontera and ETN).",
-        "It reaches Xilitla in the morning (about 6:30 AM); the trip takes ~9–10 h. Fares are roughly $520–$900 MXN per person.",
+        `It reaches Xilitla in the morning (about 6:30 AM); the trip takes ${enAutobus("cdmx", "xilitla", true)}. Fares are roughly $520–$900 MXN per person.`,
         "If you arrive on that morning bus, we can start the first tour that same day.",
       ],
     },
@@ -701,6 +703,28 @@ export interface PaquetesUI {
   ctaWa: string;
 }
 
+/**
+ * La franja de temporada de /paquetes, según el momento del año: la misma
+ * ventana y la misma fecha que la banda del inicio (`temporada.ts`).
+ *
+ * 🔴 Decía «Empieza la mejor temporada» todo el año, también en marzo o en
+ * agosto. Por eso es un getter y no un texto fijo: /paquetes se pinta en cada
+ * visita (lee `headers()`), así que la franja cambia sola al arrancar la
+ * temporada y al terminar.
+ */
+function textoBannerTemporada(locale: Locale): string {
+  const { estado } = ventanaMejorTemporada();
+  const fecha = fechaInicioTexto(locale);
+  if (locale === "en") {
+    if (estado === "dentro") return "We're in the best season to visit the Huasteca";
+    if (estado === "cuenta-regresiva") return `The best season to visit the Huasteca starts ${fecha}`;
+    return `The best season to visit the Huasteca: ${fecha} through December`;
+  }
+  if (estado === "dentro") return "Estamos en la mejor temporada para venir a la Huasteca";
+  if (estado === "cuenta-regresiva") return `El ${fecha} arranca la mejor temporada para venir a la Huasteca`;
+  return `La mejor temporada para venir a la Huasteca: del ${fecha} a diciembre`;
+}
+
 const UI_ES: PaquetesUI = {
   metaTitle: "Paquetes Huasteca Potosina — Tours + Hotel Todo Incluido",
   // Medía 183 y cerraba con «salvo el de Luna de Miel», un paquete retirado.
@@ -738,7 +762,7 @@ const UI_ES: PaquetesUI = {
   heroCta: "Ver los paquetes",
   heroCtaWa: "Preguntar por WhatsApp",
   heroWaMsg: "Hola, estoy viendo los paquetes de la Huasteca. ¿Me ayudas a elegir el que me conviene?",
-  bannerTemporada: "Empieza la mejor temporada en la Huasteca",
+  get bannerTemporada() { return textoBannerTemporada("es"); },
   bannerTemporadaNota:
     "Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora. Sin pago anticipado.",
   googleReviews: "Google Reviews",
@@ -810,7 +834,7 @@ const UI_EN: PaquetesUI = {
   heroCta: "See the packages",
   heroCtaWa: "Ask on WhatsApp",
   heroWaMsg: "Hi, I'm looking at your Huasteca packages. Could you help me pick the right one?",
-  bannerTemporada: "The best season in the Huasteca is starting",
+  get bannerTemporada() { return textoBannerTemporada("en"); },
   bannerTemporadaNota:
     "Book on WhatsApp and we confirm hotel availability in under an hour. No prepayment.",
   googleReviews: "Google Reviews",

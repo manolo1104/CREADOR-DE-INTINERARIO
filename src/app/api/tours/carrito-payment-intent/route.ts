@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { opcionesMsi, MSI_DESDE } from "@/lib/stripeMsi";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { tarifarRecorridos } from "@/lib/tourPricing";
+import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
+import { esIdApartado, renovarApartado } from "@/lib/apartadosAlmacen";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn } from "@/lib/logger";
 import { trackServerEvent } from "@/lib/serverTrack";
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio } = await req.json();
+    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -111,11 +114,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 🔴 El cupo de cada día, antes de cobrar (`lib/cupoTour.ts`). El carrito
+    // vive en el localStorage: una fecha que tenía lugar ayer pudo llenarse
+    // hoy. El RZR va por vehículo y no lleva cupo por fecha.
+    // Sin contar el apartado de ESTE carrito (`lib/apartadosAlmacen.ts`): esos
+    // lugares ya son suyos, y contarlos lo dejaría sin lugar por su propio reloj.
+    const apartado = esIdApartado(apartadoId) ? apartadoId : undefined;
+    const pedidos = lineItems
+      .filter((l) => !l.unidades)
+      .map((l) => ({ slug: l.tourSlug, fecha: l.tourDate, personas: l.adults + l.children }));
+    const sinLugar = await pedidosSinCupo(pedidos, { excluirApartado: apartado });
+    if (sinLugar.length) {
+      logger.warn("carrito_sin_cupo", { dias: sinLugar.map((s) => `${s.slug} ${s.fecha} (${s.personas}, ${s.estado})`).join("; ") });
+      return NextResponse.json(
+        { error: sinLugar.map((s) => mensajeSinCupo(s, locale === "en" ? "en" : "es")).join(" ") },
+        { status: 409 },
+      );
+    }
+
+    // Ya está en la pantalla de pago: su apartado corre 15 minutos más, con los
+    // renglones que se van a cobrar (pudo cambiar algo un instante antes). Solo
+    // si sigue vivo: uno vencido se vuelve a apartar desde el aviso del carrito.
+    const apartadoVence = apartado ? await renovarApartado(apartado, pedidos) : null;
+
     // Un solo día de recorrido se cobra COMPLETO; con hospedaje o varios días,
     // el 30 % de siempre. Misma función que usa el carrito para pintarlo, para
     // que el importe de la pantalla y el de Stripe no puedan diferir.
     const diasCobro = new Set(lineItems.map((l) => l.tourDate)).size;
-    const pctHoy    = pctACobrar(diasCobro, !!hotel);
+    const pctBase   = pctACobrar(diasCobro, !!hotel);
+    /**
+     * «Pagar el viaje completo hoy», que es lo que habilita los meses sin
+     * intereses (ver `lib/stripeMsi.ts`).
+     *
+     * La bandera del cliente NO basta: se vuelve a comprobar aquí que el total
+     * llegue al umbral, igual que se recalcula el precio. Lo peor que puede
+     * hacer alguien manipulándola es pagar de MÁS, pero la regla de cuánto se
+     * cobra hoy vive en el servidor como todas las demás.
+     */
+    const cobraTodo = pagarTodo === true && total >= MSI_DESDE && pctBase < 100;
+    const pctHoy    = cobraTodo ? 100 : pctBase;
     const cobrar    = Math.round((total * pctHoy) / 100);
     const saldo     = total - cobrar;
 
@@ -146,6 +183,12 @@ export async function POST(req: NextRequest) {
       amount:        Math.round(cobrar * 100),
       description:   `Tours Huasteca Potosina — ${resumenNombre} · ${customerName || ""}`,
       receipt_email: customerEmail || undefined,
+      // 🔴 Los meses van AQUÍ y no solo en el `create` de abajo, porque este
+      // objeto se usa también para ACTUALIZAR un PaymentIntent que ya existe:
+      // el carrito lo reutiliza mientras no se haya pagado, y el importe cambia
+      // debajo. Si se quedara en el create, un carrito que crece por encima del
+      // umbral nunca ofrecería meses. Ver `lib/stripeMsi.ts`.
+      ...opcionesMsi(cobrar),
       metadata: {
         customerEmail: customerEmail || "",
         customerName:  customerName  || "",
@@ -176,6 +219,10 @@ export async function POST(req: NextRequest) {
         pctPagado:     String(pctHoy),
         saldo:         String(saldo),
         locale:        locale === "en" ? "en" : "es",
+        // 🔴 En qué idioma sale el GUÍA, que no es el idioma en que compró el
+        // cliente: alguien puede reservar en español y pedirlo en inglés. Va a
+        // `TourBooking.idiomaTour`, que el panel y el calendario ya pintan.
+        idiomaTour:    guiaIngles === true ? "en" : "es",
         source:        "huasteca-potosina.com",
         // Identidad de Google Analytics y de nuestro propio embudo. El webhook
         // es el único que se entera de TODAS las compras (la pestaña cerrada,
@@ -184,6 +231,9 @@ export async function POST(req: NextRequest) {
         // vino. Stripe admite 500 caracteres por valor; ambos son cortos.
         gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
         sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
+        // El apartado de 15 minutos de este carrito: quien cree la reserva
+        // (`send-confirmation` o, con la pestaña cerrada, el webhook) lo suelta.
+        apartadoId:    apartado ?? "",
       },
     };
 
@@ -242,6 +292,9 @@ export async function POST(req: NextRequest) {
       lineItems,
       hospedaje: hotel,
       traslado: viaje,
+      // El reloj del carrito vuelve a empezar con la hora del servidor (`ahora`).
+      apartadoVence,
+      ahora: Date.now(),
     });
   } catch (err) {
     const e = err as Error;

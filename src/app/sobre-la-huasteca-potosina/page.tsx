@@ -1,9 +1,11 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { MapPin, Thermometer, Calendar, Globe, Mountain, Droplet } from "lucide-react";
 
 import { GRUPO_MAX } from "@/lib/tours";
+import { fechaInicioTexto } from "@/lib/temporada";
 const SITE = "https://www.huasteca-potosina.com";
 export const metadata: Metadata = {
   title: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
@@ -33,7 +35,12 @@ const DATOS = [
   { Icon: MapPin,       label: "Ubicación",    valor: "San Luis Potosí, México" },
   { Icon: Mountain,     label: "Altitud",       valor: "50 – 2,000 msnm" },
   { Icon: Thermometer,  label: "Temperatura",   valor: "22 – 34°C promedio" },
-  { Icon: Calendar,     label: "Mejor época",   valor: "Nov – Mayo" },
+  // La regla de temporada.ts y del inicio: del 30 de octubre a mayo el agua
+  // baja clara. Decía «Nov – Mayo», con otra fecha. No se acorta a «a
+  // diciembre» aunque esa sea la ventana de la banda del inicio: en una ficha
+  // de la región daría a entender que de enero a mayo no conviene, y es justo
+  // cuando el turquesa está más intenso.
+  { Icon: Calendar,     label: "Mejor época",   valor: `Del ${fechaInicioTexto("es")} a mayo` },
   { Icon: Globe,        label: "Idiomas",        valor: "Español · Teenek (Huasteco)" },
   { Icon: Droplet,      label: "Ríos",           valor: "Tampaón, Axtla, Gallinas, Moctezuma" },
 ];
@@ -223,8 +230,8 @@ export default function SobreLaHuastecaPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-left">
           {[
             { medio: "Avión", detalle: "Vuelos a Ciudad Valles (CVM) o Tampico (TAM). Desde CVM son ~40 min a la zona." },
-            { medio: "Autobús", detalle: "ADO y Ómnibus de México desde CDMX, Monterrey y SLP. Ciudad Valles en 8–10 h." },
-            { medio: "Auto",   detalle: "Desde CDMX por la carretera 85D. ~6 h por autopista. Recomendamos llegar de día." },
+            { medio: "Autobús", detalle: `ADO y Ómnibus de México desde CDMX, Monterrey y SLP. Ciudad Valles en ${enAutobus("cdmx", "valles")} desde CDMX.` },
+            { medio: "Auto",   detalle: `Desde CDMX por la carretera 85D: ${enAuto("cdmx", "valles")} por autopista. Recomendamos llegar de día.` },
           ].map((t) => (
             <div key={t.medio} className="border border-negro/8 bg-white p-5">
               <p className="font-cormorant text-dorado text-lg mb-2">{t.medio}</p>

@@ -2,6 +2,7 @@
 
 import type { BookingMessages } from "@/lib/i18n/booking";
 import type { CampoContacto, ErroresContacto } from "@/lib/checkout/validarContacto";
+import { PreguntaRecogida } from "@/components/carrito/PreguntaRecogida";
 
 interface Campo {
   campo: CampoContacto | "pickup";
@@ -27,6 +28,7 @@ interface Campo {
 export function DatosContacto({
   m,
   name, setName, email, setEmail, phone, setPhone, pickup, setPickup,
+  guiaIngles, setGuiaIngles,
   errores,
   onSalirDe,
 }: {
@@ -35,6 +37,8 @@ export function DatosContacto({
   email: string; setEmail: (v: string) => void;
   phone: string; setPhone: (v: string) => void;
   pickup: string; setPickup: (v: string) => void;
+  /** «Quiero guía en inglés», sin costo. Del grupo, no de un recorrido. */
+  guiaIngles: boolean; setGuiaIngles: (v: boolean) => void;
   errores: ErroresContacto;
   /** Al salir de un campo: valida solo ese. */
   onSalirDe: (campo: CampoContacto) => void;
@@ -43,12 +47,16 @@ export function DatosContacto({
     { campo: "name",   etiqueta: m.nombreLabel,    valor: name,   cambiar: setName,   tipo: "text",  autoComplete: "name" },
     { campo: "phone",  etiqueta: m.whatsappLabel,  ayuda: m.whatsappAyuda, valor: phone, cambiar: setPhone, tipo: "tel", autoComplete: "tel", inputMode: "tel", placeholder: "+52 489 123 4567" },
     { campo: "email",  etiqueta: m.correoLabel,    ayuda: m.correoAyuda,   valor: email, cambiar: setEmail, tipo: "email", autoComplete: "email", inputMode: "email" },
-    { campo: "pickup", etiqueta: m.hospedajeLabel, ayuda: m.hospedajeAyuda, valor: pickup, cambiar: setPickup, tipo: "text", autoComplete: "off" },
   ];
 
   return (
     <div className="space-y-4">
       <p className="font-dm text-[13px] text-negro/60">{m.datosIntro}</p>
+      {/* Primero, y en su propio recuadro (Manolo, 7 oct 2026): es el dato que
+          el equipo necesita para la logística del día. Antes era el último
+          renglón, «¿Dónde te hospedas? (opcional)», perdido entre el correo y
+          el WhatsApp. */}
+      <PreguntaRecogida valor={pickup} cambiar={setPickup} id="datos-pickup" />
       {campos.map((c) => {
         const error = c.campo !== "pickup" ? errores[c.campo] : undefined;
         const id = `datos-${c.campo}`;
@@ -84,6 +92,24 @@ export function DatosContacto({
           </div>
         );
       })}
+
+      {/* 🔴 El sitio prometía guía en inglés en SEIS lugares («pídelo al
+          reservar») y no existía el campo donde pedirlo: el cliente lo escribía
+          por WhatsApp o no lo pedía. Esta casilla escribe `idiomaTour` en la
+          reserva, que el panel y el calendario ya pintan desde hace semanas.
+          Sin costo (Manolo, 8 oct 2026). */}
+      <label className="flex cursor-pointer items-start gap-2.5 border border-negro/15 bg-white p-3.5">
+        <input
+          type="checkbox"
+          checked={guiaIngles}
+          onChange={(e) => setGuiaIngles(e.target.checked)}
+          className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#3a6b1a]"
+        />
+        <span className="font-dm text-[13px] leading-relaxed text-negro">
+          {m.guiaInglesLabel}
+          <span className="block text-[11px] text-negro/45">{m.guiaInglesAyuda}</span>
+        </span>
+      </label>
     </div>
   );
 }

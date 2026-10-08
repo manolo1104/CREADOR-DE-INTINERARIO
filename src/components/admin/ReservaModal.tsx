@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff } from "lucide-react";
-import { TOURS_LISTA } from "@/lib/tours";
+import { TOURS_LISTA, precioGrupo, precioPorCabeza } from "@/lib/tours";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
@@ -230,6 +230,15 @@ export function calcTourLine(l: LineItem): number {
   }
   const t = TOURS_LISTA.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
+  const personas = (l.adults || 0) + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+  // 🔴 Tarifa del GRUPO completo (el Edén): una sola cifra para todos. Faltaba,
+  // y el panel cotizaba un Edén de 4 en $11,960 ($2,990 × 4) cuando la web lo
+  // cobra en $3,480 — el escalón de cuatro.
+  const delGrupo = precioGrupo(t, personas);
+  if (delGrupo !== null) return delGrupo + calcAddOnsLinea(l);
+  // Lo que paga cada cabeza: el precio de lista menos el escalón que le toque
+  // al tamaño del grupo (`escalaPersona`). Sin escalera, el precio de siempre.
+  const porCabeza = precioPorCabeza(t, personas);
   // Tours por vehículo (RZR): la matriz flota×ruta manda; los niños no cambian el precio.
   const base = (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
     ? (() => {
@@ -239,9 +248,9 @@ export function calcTourLine(l: LineItem): number {
         return (veh?.precios[rutaIdx] ?? t.precio) * unidades;
       })()
     : (
-        t.precio * l.adults +
-        Math.round(t.precio * 0.7) * (l.childrenMid   ?? 0) +
-        Math.round(t.precio * 0.5) * (l.childrenSmall ?? 0)
+        porCabeza * l.adults +
+        Math.round(porCabeza * 0.7) * (l.childrenMid   ?? 0) +
+        Math.round(porCabeza * 0.5) * (l.childrenSmall ?? 0)
       );
   return base + calcAddOnsLinea(l);
 }

@@ -798,7 +798,8 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     dias_abierto: "Monday to Sunday (Sunday street markets along the bank)",
     mejor_hora: "Mid-morning",
     temporada_ideal: "Mar–Jun (clear water)",
-    advertencias: "In the rainy season (~Jun–Oct) the river rises and becomes dangerous: don't swim when it's running high. No official hours or prices; check with the municipal tourism office.",
+    // Lluvias de julio a octubre, como en español (temporada.ts, 7 oct 2026).
+    advertencias: "In the rainy season (~Jul–Oct) the river rises and becomes dangerous: don't swim when it's running high. No official hours or prices; check with the municipal tourism office.",
     como_llegar: "~1 h 30 from Ciudad Valles (~82 km) on federal highway 85 south; ~15 min from downtown Axtla to the river",
     que_llevar: [
       "swimsuit",
@@ -1161,7 +1162,8 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Nature & Forest",
     precio_entrada: "$100 MXN per person (entrance); wooden cabins for couples and groups from $700 to $2,500 MXN separate",
     dias_abierto: "Year-round (book in advance)",
-    temporada_ideal: "Year-round; the fog is densest in the rainy season (Jun–Oct)",
+    // Lluvias de julio a octubre, como en español (temporada.ts, 7 oct 2026).
+    temporada_ideal: "Year-round; the fog is densest in the rainy season (Jul–Oct)",
     advertencias: "The climb is very steep with rough dirt-road sections, so a vehicle that isn't too low is recommended so it doesn't scrape. It's cold up there (cloud forest): bring a jacket even if it's warm down in Xilitla. It's an inhabited community — come with respect and book ahead.",
     como_llegar: "~14 km west of Xilitla; 45 min to 1 h on a mountain road climbing to ~1,950 m. The final stretch is very steep and rough dirt road, so a vehicle with good ground clearance (not too low) is recommended.",
     seo: {
@@ -1176,7 +1178,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
         {
           pregunta: "When is the best time to visit the La Trinidad cloud forest?",
-          respuesta: "You can visit year-round. The signature fog is densest in the rainy season (June to October). Because of the altitude the weather is cool and damp, so bring a jacket even if it's hot down in Xilitla.",
+          respuesta: "You can visit year-round. The signature fog is densest in the rainy season (July to October). Because of the altitude the weather is cool and damp, so bring a jacket even if it's hot down in Xilitla.",
         },
       ],
       metaTitle: "La Trinidad Xilitla 2026 | Cloud Forest in the Sierra",

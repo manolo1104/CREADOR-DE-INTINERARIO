@@ -17,13 +17,16 @@
  *
  * Las distancias por carretera NO son nuevas: salen de `infoPractica.en.ts` y
  * de `ciudadesOrigen.ts`, que son las páginas donde ya viven auditadas.
- * Tampico → Ciudad Valles ~2 h; Tampico → Xilitla ~2.5 h; Monterrey → Ciudad
- * Valles ~6 h en auto y ~8 h en autobús; San Luis Potosí → Ciudad Valles ~3 h.
+ * 🔴 Los tiempos de carretera ya NO se escriben aquí: salen de
+ * `tiemposDeViaje.ts`, la única fuente del sitio. Esta página publicaba
+ * «Tampico → Xilitla ~2.5 h» mientras el mapa del inicio decía 3.5 h.
  *
  * ⚠️ Ningún horario, aerolínea o precio de vuelo se promete: se describe la
  * ruta y se marca como aproximada. Las aerolíneas cambian su malla cada
  * temporada y una landing no puede envejecer peor que el producto.
  */
+
+import { enAuto } from "@/lib/tiemposDeViaje";
 
 export interface RutaLlegada {
   /** Etiqueta corta del modo: "Fly into Tampico (TAM) — best route". */
@@ -52,7 +55,7 @@ export interface CiudadOrigenEn {
 
 // Texto que se repite en las cuatro y que describe el mismo tramo mexicano.
 const TRAMO_TAMPICO =
-  "From Tampico it's about a 2-hour drive to Ciudad Valles and about 2.5 hours to Xilitla. You can rent a car at the airport, or we can pick you up — our private transfer is priced per vehicle, round trip, for up to 12 passengers.";
+  `From Tampico it's about ${enAuto("tampico", "valles", true)} by road to Ciudad Valles and about ${enAuto("tampico", "xilitla", true)} to Xilitla. You can rent a car at the airport, or we can pick you up — our private transfer is priced per vehicle, round trip, for up to 12 passengers.`;
 
 export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
   {
@@ -98,7 +101,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       },
       {
         q: "Do the guides speak English?",
-        a: "Our guides are NOM-09 certified and we have fully bilingual guides available — ask for one when you book and we'll assign them to your group.",
+        a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
       },
     ],
   },
@@ -145,7 +148,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       },
       {
         q: "Do the guides speak English?",
-        a: "Our guides are NOM-09 certified and we have fully bilingual guides available — ask for one when you book and we'll assign them to your group.",
+        a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
       },
     ],
   },
@@ -192,7 +195,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       },
       {
         q: "Do the guides speak English?",
-        a: "Our guides are NOM-09 certified and we have fully bilingual guides available — ask for one when you book and we'll assign them to your group.",
+        a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
       },
     ],
   },
@@ -239,7 +242,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
       },
       {
         q: "Do the guides speak English?",
-        a: "Our guides are NOM-09 certified and we have fully bilingual guides available — ask for one when you book and we'll assign them to your group.",
+        a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
       },
     ],
   },

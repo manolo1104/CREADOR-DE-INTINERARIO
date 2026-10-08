@@ -828,3 +828,113 @@ html[data-checkout-cerrado] .scroll-progress-bar {
 html[data-checkout-cerrado] {
   --navbar-offset: 0px !important;
 }
+
+/* ── Colores del CUERPO del calendario (TourCalendar) ───────────────────────
+   En canales RGB sueltos para poder darles opacidad desde Tailwind
+   (`text-[rgb(var(--cal-fg)/0.4)]`). Estos valores son los de siempre: negro
+   sobre crema. La hoja del calendario del inicio los redefine en línea para
+   salir en oscuro, y como son variables heredadas, todo el cuerpo —la rejilla
+   del mes, los días, la leyenda y el aviso— cambia con ellos sin tocar una
+   clase. Cualquier otro sitio donde se monte el calendario (el carrito, la
+   ficha del tour) sigue leyendo estos y se ve igual que antes.
+   negro #0e1710 · crema #f4edd8 · verde-profundo #1a2e1a · terracota #9a4a1e */
+:root {
+  --cal-fg:     14 23 16;
+  --cal-titulo: 26 46 26;
+  --cal-aviso:  154 74 30;
+  /* Dos grises resueltos, no canales: sobre negro no basta con bajar la
+     opacidad del mismo color. `apagado` es el día que no se puede elegir y
+     `tenue` las etiquetas (días de la semana, leyenda). En oscuro suben para
+     que «sin cupo» no desaparezca.
+
+     🔴 8 oct 2026: eran 0.25 y 0.45 y NO se leían, ni siquiera sobre el crema
+     sólido de siempre. Medido con las capturas del carrito y de la ficha:
+     `tenue` daba 2.9:1 en el carrito y 2.5:1 sobre la hoja de vidrio, cuando
+     el mínimo de la WCAG para texto es 4.5:1. No lo rompió el vidrio —ya venía
+     roto—, pero el vidrio lo empeoraba, así que se arregla para los dos.
+
+     0.70 es el primer valor que pasa 4.5:1 sobre los TRES fondos medidos: el
+     peor del vidrio rgb(192,183,155) da 4.8:1, y el crema sólido 6.3:1.
+     `apagado` sube a 0.55 (3.2:1): no llega a 4.5 a propósito, porque un día
+     sin cupo tiene que verse MÁS claro que uno elegible —que va a plena
+     opacidad— o parece que se puede pulsar. Lo que lo distingue de verdad no
+     es el color, es el tachado y la leyenda. */
+  --cal-apagado: rgb(14 23 16 / 0.55);
+  --cal-tenue:   rgb(14 23 16 / 0.70);
+}
+
+/* ── La hoja del calendario en VIDRIO (ficha del tour, 8 oct 2026) ──────────
+   La ficha es oscura y una hoja de crema sólido entraba como un ladrillo. Esta
+   es la misma receta del buscador del inicio y de `.gloss-dropdown`: UNA sola
+   superficie translúcida con desenfoque, no cajas apiladas.
+
+   Vive aquí y no en clases de Tailwind sueltas por tres razones, y las tres ya
+   nos costaron un arreglo:
+   1. `-webkit-backdrop-filter` hace falta para el Safari del iPhone, y Tailwind
+      no lo escribe.
+   2. El respaldo para quien pide menos transparencia tiene que ir pegado a la
+      receta, como en `.panel-glass`. Separados, se olvida uno.
+   3. Tailwind solo genera opacidades en pasos de 5: un `/82` escrito a mano no
+      existe y el panel se queda SIN fondo. En CSS el valor es el que es.
+
+   El fondo va al 82 % a propósito: con el velo oscuro detrás, el texto negro
+   del cuerpo (`--cal-fg`) se queda por encima de 10:1, así que se lee igual que
+   sobre el crema sólido de antes. Bajarlo más sí lo pone en riesgo. */
+.cal-hoja-vidrio {
+  background: linear-gradient(145deg, rgba(244, 237, 216, 0.86) 0%, rgba(230, 212, 176, 0.78) 100%);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 24px 64px rgba(14, 23, 16, 0.42),
+    0 8px 20px rgba(14, 23, 16, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* El velo de atrás desenfoca MENOS cuando la hoja es de vidrio: dos
+   `backdrop-filter` apilados se notan al pintar cada cuadro, y el de la hoja ya
+   hace el trabajo. */
+.cal-velo-vidrio {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Sin soporte de `backdrop-filter` (Firefox con la bandera apagada) el fondo
+   translúcido deja ver la foto del hero a través del calendario y no se lee
+   nada. Vuelve a ser opaco. No es un extra: es la diferencia entre «menos
+   bonito» e «ilegible». */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cal-hoja-vidrio { background: #f4edd8; }
+}
+
+/* Y lo mismo para quien pide menos transparencia en su sistema. */
+@media (prefers-reduced-transparency: reduce) {
+  .cal-hoja-vidrio {
+    background: #f4edd8;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .cal-velo-vidrio {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ── Aparecer CENTRADO ───────────────────────────────────────────────────────
+   🔴 `animate-fade-in` no sirve para un modal centrado. Su keyframe escribe
+   `transform: translateY(4px)`, y `transform` es UNA sola propiedad: mientras
+   dura la animación pisa el `-translate-x-1/2 -translate-y-1/2` de Tailwind que
+   centra el panel. El resultado es que el panel sale desde abajo a la derecha y
+   salta al centro al acabar — que es justo lo que se veía al abrir «¿Qué
+   quieres ver?».
+   Aquí el centrado va DENTRO del keyframe, así que nunca se pierde. */
+@keyframes aparecerCentrado {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.animate-centrado {
+  animation: aparecerCentrado 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-centrado { animation: none; }
+}

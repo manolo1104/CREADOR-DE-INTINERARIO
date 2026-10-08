@@ -5,7 +5,24 @@ import { buildResumenCotizacionesHtml, hayAlgo, type FilaResumen, type Resumen }
 import { diasParaVencer, fechaLimite, recordadoPorWhatsapp, urlRecordatorio } from "@/lib/vencimientoCotizacion";
 import { addDaysYMD, hoyMX, ymdMX } from "@/lib/dates";
 import { actividad, logger } from "@/lib/logger";
+import { metaCotizacion } from "@/lib/quoteFollowUp";
 import type { TourQuote } from "@prisma/client";
+
+/**
+ * ¿Ya no es un pendiente del equipo? La REEMPLAZADA (el cliente cambió algo y
+ * el bot le mandó otra: `reemplazadaPor` en el `_meta` de packageItems) y la
+ * que el cron de seguimiento cortó por tener una más nueva del mismo cliente
+ * (`seqMasReciente` en el de lineItems). 🔴 Salían en «Vencieron ayer» («en el
+ * panel se le pone otra fecha») o en «vencen hoy» con su link de recordatorio:
+ * el equipo le escribía al cliente por un folio que ya no vale.
+ */
+function yaNoCuenta(q: TourQuote): boolean {
+  const pm = Array.isArray(q.packageItems)
+    ? (q.packageItems as unknown[]).find((p) => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta === true) as { reemplazadaPor?: unknown } | undefined
+    : undefined;
+  if (pm && typeof pm.reemplazadaPor === "string" && pm.reemplazadaPor) return true;
+  return Boolean(metaCotizacion(q.lineItems).seqMasReciente);
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -64,6 +81,7 @@ export async function POST(req: NextRequest) {
 
   const resumen: Resumen = { vencenHoy: [], vencenManana: [], vencieronAyer: [], borradores: [] };
   for (const q of vivas) {
+    if (yaNoCuenta(q)) continue;
     const vence = fechaLimite(q);
     if (!vence) continue;
     const dias = diasParaVencer(vence, hoy);
@@ -73,9 +91,10 @@ export async function POST(req: NextRequest) {
     else if (dias === -1) resumen.vencieronAyer.push(fila(q, null));
   }
   for (const q of vencidasRecientes) {
+    if (yaNoCuenta(q)) continue;
     if (fechaLimite(q) === ayer) resumen.vencieronAyer.push(fila(q, null));
   }
-  resumen.borradores = borradores.map((q) => fila(q, null));
+  resumen.borradores = borradores.filter((q) => !yaNoCuenta(q)).map((q) => fila(q, null));
 
   const cuenta = {
     vencenHoy:     resumen.vencenHoy.length,

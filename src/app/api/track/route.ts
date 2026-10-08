@@ -60,6 +60,10 @@ const FUENTE: Record<string, string> = {
   tour_card: "la tarjeta del tour",
   tour_widget: "la calculadora",
   comparador: "el comparador",
+  // La barra única de abajo en el celular (`BarraInferiorMovil`), fuera de las
+  // fichas de tour: esas siguen con la suya (`mobile_bar`).
+  barra_movil: "la barra de abajo del celular",
+  barra_movil_xantolo: "la barra de abajo del celular, en Xantolo",
 };
 function desde(v: unknown): string {
   const f = typeof v === "string" ? FUENTE[v] ?? v : "";
@@ -102,6 +106,9 @@ const SOLO_SE_GUARDA = new Set([
   "CHECKOUT_STEP_EXPERIENCIA",
   "EXTRAS_ABIERTO",
   "RESPUESTA_ABIERTA",
+  // El apartado de 15 minutos del carrito (`useApartado`): lo crea cualquier
+  // carrito con fecha, como elegirla. Lo que sí se imprime es cuando se pierde.
+  "APARTADO_CREADO",
 ]);
 
 // Cada evento → [etiqueta, ...campos]. Los campos vacíos se omiten en el log.
@@ -129,6 +136,10 @@ const EVENTOS: Record<
     d.message as string,
   ],
   PAGO_EN_PROCESO:       (d)    => ["⏳  PAGO EN PROCESO", nombreTour(d), mxn(Number(d.amount))],
+  // El apartado de 15 minutos del carrito: se le acabó sin pagar, o lo que
+  // quería ya no cabía (`useApartado`, 7 oct 2026).
+  APARTADO_VENCIDO:      (d)    => ["⌛  SE LE VENCIÓ EL APARTADO", nombreTour(d), d.personas ? `${d.personas} persona(s)` : undefined],
+  APARTADO_SIN_LUGAR:    (d)    => ["🚫  SIN LUGAR PARA APARTAR", nombreTour(d), d.dias as string],
   WHATSAPP_CLICK:        (d)    => ["💬  CLIC A WHATSAPP", nombreTour(d), mxn(Number(d.amount)), desde(d.context ?? d.source)],
   RECOMMENDER_STARTED:   (d)    => ["🎯  USÓ EL RECOMENDADOR", d.grupo as string, d.origen ? `desde ${d.origen}` : undefined, d.dias as string, lista(d.intereses), d.actividad as string],
   RECOMMENDER_COMPLETED: (d)    => ["🏆  EL RECOMENDADOR SUGIRIÓ", resolver(d.primary_tour), d.secondary_tour ? `(2º ${resolver(d.secondary_tour)})` : undefined, d.grupo as string, d.origen ? `desde ${d.origen}` : undefined],

@@ -9,6 +9,7 @@ import { TOURS_DB } from "./tours";
 import { localizeTour } from "./i18n/localize";
 import { GOOGLE_REVIEW_URL } from "./reviewRequest";
 import { C, boton, fotoTour, nota, parrafo, shellCorreo } from "./emailLayout";
+import { escapeHtml as esc } from "./escapeHtml";
 import type { Locale } from "./i18n/config";
 
 /**
@@ -69,7 +70,8 @@ export function buildReviewEmailHtml(d: ReviewEmailInput): { subject: string; ht
 
   // Solo el nombre de pila: "Hola Manuel Arturo Covarrubias Martínez," suena a
   // carta del banco, no a los guías con los que pasó el día.
-  const nombre = (d.customerName || "").trim().split(/\s+/)[0] || (locale === "en" ? "there" : "hola");
+  // Escapado: el nombre puede venir tal cual de un WhatsApp (lo guarda el bot).
+  const nombre = esc((d.customerName || "").trim().split(/\s+/)[0]) || (locale === "en" ? "there" : "hola");
   const tour = nombreTour(d.tourName, d.tourSlug, locale).split("—")[0].trim();
 
   // La foto del recorrido que hizo: no es decoración, es lo que le devuelve el

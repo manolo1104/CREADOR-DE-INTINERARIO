@@ -30,6 +30,7 @@
  * fechas, y para entonces lo importante es seguir estando ahí.
  */
 
+import { enAuto } from "./tiemposDeViaje";
 import { TOURS_DB } from "./tours";
 import { normalizaSlugBlog } from "./blogDestinoMap";
 import { temporadaDe, nombreMes } from "./temporada";
@@ -69,7 +70,7 @@ const CONSEJOS = [
   "Puente de Dios tiene cupo limitado por día. En fin de semana largo, llega antes de las 10.",
   "Las Pozas de Edward James abre a las 9:00. A las 11 ya hay fila y las fotos salen con multitud.",
   "Xilitla y Ciudad Valles son las dos bases. Xilitla te ahorra carretera si vas por Las Pozas; Ciudad Valles, si vas por cascadas.",
-  "De Ciudad de México a Ciudad Valles son 6.5 a 7 horas. El tramo final a Xilitla es sierra: mejor no manejarlo de noche.",
+  `De Ciudad de México a Ciudad Valles son ${enAuto("cdmx", "valles")}. El tramo final a Xilitla es sierra: mejor no manejarlo de noche.`,
   "El agua turquesa es de temporada seca. Si vienes en lluvias, vienes por el caudal — que también vale la pena, pero es otra foto.",
   "Nadie hace la Huasteca en un día. Las cascadas quedan lejos unas de otras; con dos días completos ya se siente distinto.",
   "Pregunta antes de descartar un recorrido por edad o condición física. La mayoría admite más gente de la que la foto sugiere.",

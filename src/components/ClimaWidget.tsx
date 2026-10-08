@@ -20,17 +20,28 @@ function nombreMes(i: number, locale: "es" | "en", corto: boolean): string {
 
 type Rec = "ideal" | "buena" | "caluroso" | "lluvia";
 
+/**
+ * Las cifras del clima no se tocan; la recomendación de cada mes sigue las
+ * ventanas de `temporada.ts` (7 oct 2026), con sus textos en infoPractica.en.ts:
+ *   · ideal (nov–feb): agua clara y poca gente; ahí cae la mejor temporada.
+ *   · buena (mar–abr): el turquesa más intenso, y la mayor afluencia.
+ *   · caluroso (may–jun): calor; junio es de transición, primeras lluvias.
+ *   · lluvia (jul–oct): cascadas a todo caudal, agua con sedimento.
+ * 🔴 Antes octubre iba como «buena» («las temperaturas suben», el texto de
+ * abril), junio como «lluvia» (la franja del río dice turquesa en junio) y
+ * marzo como «ideal» (prometía poca gente en plena temporada de más gente).
+ */
 const CLIMA: { temp: string; lluvia: string; cascadas: string; rec: Rec }[] = [
   { temp: "18–26°C", lluvia: "Poca",     cascadas: "Excelente", rec: "ideal"    },
   { temp: "18–26°C", lluvia: "Poca",     cascadas: "Excelente", rec: "ideal"    },
-  { temp: "22–30°C", lluvia: "Poca",     cascadas: "Excelente", rec: "ideal"    },
+  { temp: "22–30°C", lluvia: "Poca",     cascadas: "Excelente", rec: "buena"    },
   { temp: "26–36°C", lluvia: "Baja",     cascadas: "Muy buena", rec: "buena"    },
   { temp: "28–38°C", lluvia: "Moderada", cascadas: "Buena",     rec: "caluroso" },
-  { temp: "26–34°C", lluvia: "Alta",     cascadas: "Variable",  rec: "lluvia"   },
+  { temp: "26–34°C", lluvia: "Alta",     cascadas: "Variable",  rec: "caluroso" },
   { temp: "26–34°C", lluvia: "Alta",     cascadas: "Variable",  rec: "lluvia"   },
   { temp: "26–34°C", lluvia: "Alta",     cascadas: "Variable",  rec: "lluvia"   },
   { temp: "26–32°C", lluvia: "Alta",     cascadas: "Variable",  rec: "lluvia"   },
-  { temp: "22–30°C", lluvia: "Bajando",  cascadas: "Buena",     rec: "buena"    },
+  { temp: "22–30°C", lluvia: "Bajando",  cascadas: "Buena",     rec: "lluvia"   },
   { temp: "18–28°C", lluvia: "Poca",     cascadas: "Muy buena", rec: "ideal"    },
   { temp: "16–24°C", lluvia: "Poca",     cascadas: "Muy buena", rec: "ideal"    },
 ];

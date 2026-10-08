@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { TOURS_DB, tourDurTexto, etiquetaUnidad, fraseRecogida, partesRecogida, salidaCorta } from "@/lib/tours";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
@@ -76,7 +77,7 @@ const FAQS_CV: { q: string; a: string }[] = [
   },
   {
     q: "¿Cómo llego a Ciudad Valles?",
-    a: "En autobús hay salidas nocturnas directas desde la Terminal del Norte de CDMX (~9–10 horas, llegas temprano y puedes tomar el tour ese mismo día). En auto son ~6.5 a 7 horas desde CDMX y ~6 desde Monterrey. En avión, el aeropuerto de Tampico queda a ~2.5 horas en auto.",
+    a: `En autobús hay salidas nocturnas directas desde la Terminal del Norte de CDMX (${enAutobus("cdmx", "valles")}, llegas temprano y puedes tomar el tour ese mismo día). En auto son ${enAuto("cdmx", "valles")} desde CDMX y ${enAuto("monterrey", "valles")} desde Monterrey. En avión, el aeropuerto de Tampico queda a ${enAuto("tampico", "valles")} en auto.`,
   },
   {
     q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
@@ -203,21 +204,21 @@ export default function ToursCiudadVallesPage() {
           <div className="border border-white/10 p-7">
             <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En autobús</h3>
             <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              Salidas nocturnas directas desde la Terminal del Norte de CDMX (~9–10 h). Llegas temprano a Ciudad Valles
-              y puedes tomar el tour ese mismo día.
+              Salidas nocturnas directas desde la Terminal del Norte de CDMX ({enAutobus("cdmx", "valles")}). Llegas temprano a
+              Ciudad Valles y puedes tomar el tour ese mismo día.
             </p>
           </div>
           <div className="border border-white/10 p-7">
             <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En auto</h3>
             <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              ~6.5 a 7 horas desde CDMX y ~6 desde Monterrey. Recomendamos manejar de día por la sierra y usar Ciudad Valles
-              como base.
+              {enAuto("cdmx", "valles")} desde CDMX y {enAuto("monterrey", "valles")} desde Monterrey. Recomendamos manejar
+              de día por la sierra y usar Ciudad Valles como base.
             </p>
           </div>
           <div className="border border-white/10 p-7">
             <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En avión</h3>
             <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              El aeropuerto más práctico es Tampico (~2.5 h en auto). También puedes volar a San Luis Potosí capital.
+              El aeropuerto más práctico es Tampico ({enAuto("tampico", "valles")} en auto). También puedes volar a San Luis Potosí capital.
             </p>
           </div>
         </div>

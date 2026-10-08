@@ -344,6 +344,44 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     edadMinima: 8,
     edadNota: "Son unas 2 horas de caminata en altura y el sótano tiene bordes expuestos: cuéntanos las edades al reservar.",
   },
+
+  // Huasteca Instagrameable. La lista base de agua no sirve tal cual: el día incluye un
+  // jardín con reglas propias (ni dron ni tripié) y lo que el cliente viene a
+  // hacer es salir en las fotos, así que "qué llevar" incluye de qué vestirse.
+  // 🔴 Sin `edadMinima`: Manolo no ha dictado una para este recorrido y aquí no
+  // se inventan números. La nota pide las edades, como en el Edén.
+  "tour-huasteca-instagrameable": {
+    // Reemplaza la base: la línea "Comidas y cenas fuera del desayuno" daría a
+    // entender que hay desayuno incluido, y este recorrido no lo lleva.
+    reemplazaBase: true,
+    noIncluye: [
+      "Alimentos: hay una parada para comer durante el día y se paga en el lugar",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
+      "Fotógrafo aparte del guía: las fotos las toma tu guía, con cámara",
+      "Dron y tripié: en Las Pozas están prohibidos y no los llevamos",
+    ],
+    queLlevar: [
+      "Aqua shoes o tenis que se puedan mojar (indispensables en ríos y pozas)",
+      "Traje de baño, toalla y una muda completa de ropa seca",
+      "Ropa de color liso para las fotos: el blanco, el rojo y el amarillo se ven mejor contra el agua turquesa; los estampados chicos no",
+      "Un cambio de ropa para el jardín si vas en el Día 1: se llega mojado del río y las fotos de Las Pozas son al final",
+      "Bloqueador y repelente BIODEGRADABLES (son los únicos permitidos en el agua)",
+      "Gorra o sombrero y lentes de sol",
+      "Efectivo para la comida y gastos personales: en los parajes no hay cajero",
+      "INE o pasaporte vigente",
+    ],
+    requisitos: [
+      "El grupo es de máximo 6 personas: es parte de lo que hace posible fotografiar a todos",
+      "El Día 1 sale a las 6:00 AM y regresa cerca de las 7:30 PM; no sale los martes, porque Las Pozas no abre su horario de las 5:00 PM ese día",
+      "No necesitas saber nadar: se usa chaleco salvavidas en el agua",
+      "Si te mareas en lancha, toma tu medicamento antes: el trayecto en canoa del Día 1 es largo",
+      "En Las Pozas no se permite el acceso con dron ni tripié: las fotos se hacen con cámara en mano",
+      "El Día 1 son unas 13 horas con canoa de por medio. Si viajas con niños pequeños, con alguien a quien le cuesta caminar o estás embarazada, cuéntanos antes de apartar: los Días 2 y 3 son más tranquilos y salen a las 8:00 AM",
+    ],
+    edadNota: "El Día 1 son unas 13 horas con canoa de por medio: cuéntanos las edades al reservar y te decimos si es buena idea.",
+  },
 };
 
 /** Lo que NO incluye un tour, ya resuelto contra la base. */

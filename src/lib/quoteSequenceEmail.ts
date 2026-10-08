@@ -11,6 +11,11 @@
  */
 
 import { TOURS_DB } from "./tours";
+import { getPaquete } from "./paquetes";
+// 🔴 El nombre del cliente lo dicta él por WhatsApp (el bot lo guarda tal
+// cual): sin escapar, un «nombre» con un <a href> salía como enlace real en
+// un correo con la marca y el dominio de Tours.
+import { escapeHtml as esc } from "./escapeHtml";
 import { lineasCancelacion, lineasRecogida } from "./recogidaCorreo";
 import {
   C, bajoBoton, boton, filaDato, filaMoney, fotoTour, garantias, nota, parrafo,
@@ -35,6 +40,13 @@ export interface QuoteEmailInput {
   totalAmount:  number;
   /** Los recorridos cotizados, para armar el link del carrito. */
   lineItems?:   unknown;
+  /**
+   * El hotel y el `_meta` de la cotización (`packageItems`) y su `tourSlug`:
+   * con ellos el botón sabe si es un paquete del catálogo (su página) o lleva
+   * noches de hotel (WhatsApp). Sin ellos, el carrito como antes.
+   */
+  packageItems?: unknown;
+  tourSlug?:     string | null;
 }
 
 const TEXTOS = {
@@ -145,19 +157,44 @@ function slugsDe(lineItems: unknown): string[] {
   return Array.from(new Set(slugs));
 }
 
+/** Las filas que no son el `_meta`: las noches de hotel cotizadas. */
+function filasHotel(packageItems: unknown): unknown[] {
+  return Array.isArray(packageItems)
+    ? packageItems.filter((p) => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta !== true)
+    : [];
+}
+
+/** El paquete del catálogo de la cotización: el del `_meta` del bot o, si no, su `tourSlug`. */
+function paqueteDe(packageItems: unknown, tourSlug?: string | null): string | null {
+  const meta = Array.isArray(packageItems)
+    ? (packageItems.find((p) => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta === true) as { paqueteSlug?: unknown } | undefined)
+    : undefined;
+  const slug = typeof meta?.paqueteSlug === "string" ? meta.paqueteSlug : tourSlug ?? "";
+  return slug && getPaquete(slug) ? slug : null;
+}
+
 /**
- * A dónde manda el botón.
+ * A dónde manda el botón: la misma regla que el `linkPago` del bot.
  *
- * Con recorridos reconocidos, al carrito ya cargado. Un paquete o un RZR no se
- * pagan en línea, así que ahí el botón lleva a WhatsApp, que es donde de verdad
- * se cierran — mandarlos a un carrito que no los acepta sería un callejón.
+ *  · Un paquete del catálogo → su página (/reservar-paquete), con su precio.
+ *  · Noches de hotel a la medida o un RZR → WhatsApp: ninguna página los
+ *    cobra igual. 🔴 Antes el carrito se abría con los recorridos sueltos (los
+ *    del paquete incluidos): el cliente pagaba los tours sin el hotel y a otro
+ *    precio, el cron daba la cotización por aceptada y el hotel nunca se apartaba.
+ *  · Recorridos reconocidos → al carrito ya cargado.
  */
-function destino(lineItems: unknown, tourName: string, T: (typeof TEXTOS)["es"] | (typeof TEXTOS)["en"]): { href: string; esWa: boolean } {
-  const slugs = slugsDe(lineItems);
+function destino(d: Pick<QuoteEmailInput, "lineItems" | "packageItems" | "tourSlug">, tourName: string, T: (typeof TEXTOS)["es"] | (typeof TEXTOS)["en"]): { href: string; esWa: boolean } {
+  const wa = { href: `https://wa.me/${WA}?text=${encodeURIComponent(T.waTexto(tourName))}`, esWa: true };
+  const paquete = paqueteDe(d.packageItems, d.tourSlug);
+  if (paquete) return { href: `${BASE}/reservar-paquete/${encodeURIComponent(paquete)}`, esWa: false };
+  const conVehiculo = Array.isArray(d.lineItems)
+    && d.lineItems.some((l) => !!l && typeof l === "object" && !(l as { _meta?: unknown })._meta && !!(l as { vehiculo?: unknown }).vehiculo);
+  if (filasHotel(d.packageItems).length || conVehiculo) return wa;
+  const slugs = slugsDe(d.lineItems);
   if (slugs.length) {
     return { href: `${BASE}/reservar/carrito?${slugs.map((s) => `agregar=${encodeURIComponent(s)}`).join("&")}`, esWa: false };
   }
-  return { href: `https://wa.me/${WA}?text=${encodeURIComponent(T.waTexto(tourName))}`, esWa: true };
+  return wa;
 }
 
 function fechaLarga(ymd: string, locale: Locale): string {
@@ -183,7 +220,7 @@ export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; 
   // El paso 4 manda a una persona; los otros dos, a cerrar.
   const { href, esWa } = d.paso === 4
     ? { href: `https://wa.me/${WA}?text=${encodeURIComponent(T.waTexto(nombreCorto))}`, esWa: true }
-    : destino(d.lineItems, nombreCorto, T);
+    : destino(d, nombreCorto, T);
 
   const colorBoton = esWa ? "#25D366" : "#3a6b1a";
 
@@ -203,9 +240,9 @@ export function buildQuoteSequenceEmail(d: QuoteEmailInput): { subject: string; 
       // (un paquete, el RZR) no se pone ninguna: mejor sin foto que con la de
       // otra cosa.
       primero ? fotoTour(primero.slug, primero.nombre, 200) + `<div style="height:26px"></div>` : "",
-      parrafo(T.saludo(d.customerName), "0 0 20px 0"),
+      parrafo(T.saludo(esc(d.customerName)), "0 0 20px 0"),
       tabla([
-        filaDato(T.para, nombreCorto, true),
+        filaDato(T.para, esc(nombreCorto), true),
         filaDato(T.cuando, fechaLarga(d.tourDate, d.locale) || T.porDefinir),
         filaMoney(T.total, T.moneda(d.totalAmount), undefined, true),
         filaMoney(T.apartas, T.moneda(anticipo), "verde"),
@@ -275,7 +312,7 @@ export function buildQuoteVenceEmail(d: QuoteVenceInput): { subject: string; htm
   const anticipo = Math.round(d.totalAmount * 0.3);
   const recogida = lineasRecogida(slugs, d.locale, { generica: T.garantiaRecogida, sinTours: T.garantiaRecogidaSinTours });
   const cancelacion = lineasCancelacion(slugs, d.locale, T.garantiaCancelacion);
-  const { href, esWa } = destino(d.lineItems, nombreCorto, T);
+  const { href, esWa } = destino(d, nombreCorto, T);
   const primero = slugs.length ? TOURS_DB.find((t) => t.slug === slugs[0]) : undefined;
   const fechaVence = fechaLarga(d.venceEl, d.locale);
   // «hasta el jueves 9 de octubre de 2026»: en español, en minúscula tras «el».
@@ -292,9 +329,9 @@ export function buildQuoteVenceEmail(d: QuoteVenceInput): { subject: string; htm
     entradilla: V.cuerpo(fechaEnFrase),
     cuerpo: [
       primero ? fotoTour(primero.slug, primero.nombre, 200) + `<div style="height:26px"></div>` : "",
-      parrafo(T.saludo(d.customerName), "0 0 20px 0"),
+      parrafo(T.saludo(esc(d.customerName)), "0 0 20px 0"),
       tabla([
-        filaDato(T.para, nombreCorto, true),
+        filaDato(T.para, esc(nombreCorto), true),
         filaDato(T.cuando, fechaLarga(d.tourDate, d.locale) || T.porDefinir),
         filaDato(V.vence, fechaVence),
         filaMoney(T.total, T.moneda(d.totalAmount), undefined, true),

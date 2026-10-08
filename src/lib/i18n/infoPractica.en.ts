@@ -2,6 +2,20 @@ import type { Locale } from "./config";
 import type { FAQCategory } from "@/components/FAQAccordion";
 
 import { GRUPO_MAX, TOURS_DB, partesRecogida, salidaCorta } from "@/lib/tours";
+import { fechaInicioTexto } from "@/lib/temporada";
+import { HOTEL_PROPIO, horarioRestaurante } from "@/lib/hotelPropio";
+import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
+
+// 🔴 Lo del hotel sale de `hotelPropio.ts` y de las tarifas del catálogo (7 oct
+// 2026). Este texto decía «a 50 metros» del jardín (son 400 m), «desde $1,200»
+// la noche (la habitación más barata cuesta $1,500), «desayuno incluido en los
+// tours» como ventaja del hotel (el desayuno es en El Taco Loco, camino al
+// tour), «recepción 24 h» (sin fuente) y que El Papán está «en el corazón de
+// Xilitla» (está DENTRO del hotel).
+const NOCHE_DESDE = Math.min(...HABITACIONES_HOTEL.flatMap((h) => Object.values(h.tarifas)));
+const A_PIE_ES = `a ${HOTEL_PROPIO.metrosALasPozas} m (${HOTEL_PROPIO.minutosCaminando} min a pie)`;
+const A_PIE_EN = `${HOTEL_PROPIO.metrosALasPozas} m (a ${HOTEL_PROPIO.minutosCaminando}-minute walk)`;
 
 /**
  * Traducción de /info-practica, la guía práctica de viaje.
@@ -36,6 +50,18 @@ const HORA_COMUN_ES = partesRecogida({}, false).hora ?? "";
 const HORA_COMUN_EN = partesRecogida({}, true).hora ?? "";
 const TAMUL = TOURS_DB.find((t) => t.slug === "expedicion-tamul");
 const SALIDA_TAMUL = TAMUL ? salidaCorta(TAMUL) : null;
+
+/**
+ * «Cuándo viajar» y la herramienta del clima dicen la regla de `temporada.ts`
+ * (7 oct 2026) con su fecha: del 30 de octubre a mayo el agua baja clara, el
+ * turquesa más intenso es de marzo a mayo (y es cuando más gente hay), de julio
+ * a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento,
+ * y junio es de transición. 🔴 Decían «noviembre a marzo, temporada ideal:
+ * caudal óptimo y color turquesa» y «junio a octubre, lluvia», cada una con su
+ * propia regla. Las cifras de temperatura y lluvia no se tocaron.
+ */
+const INICIO_ES = fechaInicioTexto("es");
+const INICIO_EN = fechaInicioTexto("en");
 
 /** Ver `faqPreguntaCancelacion`: una sola cadena para la FAQ y para la página. */
 const Q_CANCELACION_ES = "¿Cuál es la política de cancelación?";
@@ -101,8 +127,6 @@ export interface InfoPracticaContent {
   vallesTitulo: string;
   vallesTexto: string;
   vallesItems: string[];
-  verEnAirbnb: string;
-  verEnBooking: string;
   xilitlaTitulo: string;
   xilitlaTexto1: string;
   xilitlaLasPozas: string;
@@ -112,6 +136,13 @@ export interface InfoPracticaContent {
   hotelTexto: string;
   hotelItems: string[];
   consultarDisponibilidad: string;
+  /**
+   * Los dos mensajes de WhatsApp del hotel. 🔴 Iban escritos a mano EN ESPAÑOL
+   * dentro del JSX, así que quien pulsaba «Check availability» desde `/en`
+   * abría WhatsApp con un mensaje en español.
+   */
+  waHospedaje: string;
+  waTarifaTour: string;
   otrasOpciones: string;
   xilitlaOtras: string[];
   xilitlaMicroCta: string;
@@ -296,8 +327,8 @@ const ES: InfoPracticaContent = {
     {
       titulo: "En avión",
       items: [
-        "Aeropuerto más cercano: San Luis Potosí (SLP) — 3.5h en coche",
-        "Alternativa: Tampico (TAM) — 2h en coche, más conexiones",
+        `Aeropuerto más cercano: Tampico (TAM) — ${enAuto("tampico", "valles")} en coche`,
+        `Alternativa: San Luis Potosí (SLP) — ${enAuto("san-luis-potosi", "valles")} en coche`,
         "Desde CDMX: ~1h de vuelo + renta de auto recomendada",
         "Aeroméxico y VivaAerobus operan rutas directas",
       ],
@@ -305,18 +336,18 @@ const ES: InfoPracticaContent = {
     {
       titulo: "En autobús",
       items: [
-        "ADO GL desde CDMX (Terminal Norte) → Ciudad Valles: ~8 horas",
+        `ADO GL desde CDMX (Terminal Norte) → Ciudad Valles: ${enAutobus("cdmx", "valles")}`,
         "Precio aprox: $600-900 MXN por persona (clase ejecutiva)",
         "Salidas frecuentes: 10pm, 11:30pm, 12am (llegada madrugada)",
-        "También desde Monterrey: ~4.5h, desde Tampico: ~2h",
+        `También desde Monterrey: ${enAutobus("monterrey", "valles")}. Desde Tampico hay corridas cortas todo el día`,
       ],
     },
     {
       titulo: "En coche",
       items: [
-        "Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ~6.5 a 7h",
-        "Desde Monterrey: 340 km por la MEX-85, unas 4 h",
-        "Desde San Luis Potosí capital: 260 km, unas 3 h",
+        `Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ${enAuto("cdmx", "valles")}`,
+        `Desde Monterrey: 340 km por la MEX-85, unas ${enAuto("monterrey", "valles")}`,
+        `Desde San Luis Potosí capital: 260 km, unas ${enAuto("san-luis-potosi", "valles")}`,
         "Autopista de cuota recomendada: segura y rápida",
         "Gasolina disponible en Valles. Llenar tanque antes de excursiones",
       ],
@@ -345,41 +376,44 @@ const ES: InfoPracticaContent = {
   ],
 
   cuandoIntro: "La Huasteca recibe visitantes todo el año, pero cada temporada tiene su carácter.",
-  fotoSecaAlt: "Cueva del Agua con agua turquesa — temporada seca Nov-Mar",
-  fotoSecaPie: "De noviembre a marzo, agua turquesa",
+  fotoSecaAlt: "Cueva del Agua con agua turquesa, en temporada seca",
+  fotoSecaPie: `Del ${INICIO_ES} a mayo, agua clara`,
   fotoVerdeAlt: "Sótano de las Huahuas con vegetación verde exuberante — temporada lluvias",
-  fotoVerdePie: "De junio a octubre, verde intenso",
+  fotoVerdePie: "De julio a octubre, verde intenso",
   temporadas: [
     {
-      meses: "De noviembre a marzo",
-      etiqueta: "Temporada ideal",
+      meses: `Del ${INICIO_ES} a febrero`,
+      etiqueta: "Agua clara y poca gente",
       puntos: [
-        "Cascadas en su nivel óptimo de caudal y color turquesa",
-        "Clima fresco (18-26°C), menos humedad",
-        "Sótano de Golondrinas: vencejos activos en sus mejores vuelos",
-        "Tamtoc: visitable sin calor extremo",
-        "Temporada alta de turismo: reservar hospedaje con anticipación",
+        `Aflojan las lluvias y el agua se aclara: del ${INICIO_ES} a diciembre es la mejor temporada para venir`,
+        "Todavía faltan meses para las multitudes de primavera; fin de año sí se llena, aparta con tiempo",
+        "Clima fresco (16-30°C), menos humedad",
+        "Sótano de Golondrinas: de noviembre a marzo, los vencejos en sus mejores vuelos",
+        "Tamtoc: de diciembre a febrero se visita sin calor extremo",
       ],
     },
     {
-      meses: "De abril a mayo",
-      etiqueta: "Primavera, de transición",
+      meses: "De marzo a junio",
+      etiqueta: "Turquesa intenso y calor",
       puntos: [
-        "Temperaturas suben (28-38°C), especialmente en Tamuín",
-        "Cascadas aún con buen caudal, color intenso",
-        "Semana Santa: muy concurrido, precios al alza",
-        "Ideal para Tamul y Las Pozas (follaje exuberante)",
+        "De marzo a mayo, el agua en su turquesa más intenso",
+        "Es cuando más gente hay: Semana Santa, muy concurrida y con precios al alza",
+        "Temperaturas suben (24-36°C), especialmente en Tamuín",
+        "Junio es de transición: llegan las primeras lluvias",
       ],
     },
     {
-      meses: "De junio a octubre",
-      etiqueta: "Temporada de lluvia",
+      meses: "De julio a octubre",
+      etiqueta: "Temporada de lluvias",
       puntos: [
         "Lluvias frecuentes (especialmente julio-septiembre)",
-        "Vegetación explosivamente verde y fotogénica",
-        "Ríos crecidos: algunas actividades acuáticas se suspenden",
-        "Menos turistas, precios más bajos",
-        "Consultar condiciones antes de ir a Tamul (corrientes peligrosas)",
+        "Cascadas a todo caudal y vegetación explosivamente verde",
+        "El agua puede bajar con sedimento; si el río crece, reprogramamos el rafting sin costo",
+        "Si vas por tu cuenta, consulta las condiciones antes de ir a Tamul (corrientes peligrosas)",
+        // Decía «Menos turistas, precios más bajos» (7 oct 2026): julio y agosto
+        // son vacaciones de verano, y el precio de temporada baja es una promo
+        // con fecha (`PROMO_VENCE`) que este texto fijo no puede seguir.
+        "Julio y agosto son vacaciones de verano; septiembre y octubre, más tranquilos",
       ],
     },
   ],
@@ -394,8 +428,8 @@ const ES: InfoPracticaContent = {
   ],
 
   quedarseIntro:
-    "Elige tu base según el estilo de viaje. Ciudad Valles tiene la mejor logística; Xilitla y Tamasopo ofrecen inmersión total en la naturaleza.",
-  vallesTitulo: "Ciudad Valles · Base logística ideal",
+    "Elige tu base según el estilo de viaje. Xilitla es donde tenemos el hotel y donde está Las Pozas; Ciudad Valles tiene la mejor logística si vas por las cascadas del norte, y Tamasopo es inmersión total en la naturaleza.",
+  vallesTitulo: "Ciudad Valles · La base para las cascadas del norte",
   vallesTexto:
     "El hub perfecto. Acceso a todos los destinos en menos de 2 horas, con la mayor variedad de hospedaje, restaurantes y servicios. Aeropuerto pequeño y terminal ADO.",
   vallesItems: [
@@ -404,8 +438,6 @@ const ES: InfoPracticaContent = {
     "Hostal La Huasteca: viajeros solo/mochilero, desde $280 MXN/cama",
     "Airbnb: casas completas desde $600 MXN/noche",
   ],
-  verEnAirbnb: "Ver en Airbnb",
-  verEnBooking: "Ver en Booking.com",
   xilitlaTitulo: "Xilitla · Experiencia boutique",
   xilitlaTexto1: "El pueblo mágico más cercano a ",
   xilitlaLasPozas: "Las Pozas de Edward James",
@@ -418,7 +450,7 @@ const ES: InfoPracticaContent = {
   // desde allá, y la FAQ de esta misma página ya lo decía. "Muchos" y no "la
   // mayoría": sin costo desde Valles recoge 7 de 14 (`recogida` en tours.ts).
   hotelTexto:
-    "Nuestra base de operaciones y la mejor opción en Xilitla. A 50 metros del Jardín Surrealista, con piscina y restaurante de cocina huasteca. Pasamos por ti aquí sin costo extra, igual que a cualquier hospedaje de Xilitla y, en muchos de los recorridos, de Ciudad Valles.",
+    `Nuestra base de operaciones y la mejor opción en Xilitla. ${A_PIE_ES.charAt(0).toUpperCase() + A_PIE_ES.slice(1)} del Jardín Surrealista, con alberca y nuestro propio restaurante de cocina huasteca dentro, ${HOTEL_PROPIO.restaurante}. Pasamos por ti aquí sin costo extra, igual que a cualquier hospedaje de Xilitla y, en muchos de los recorridos, de Ciudad Valles.`,
   hotelItems: [
     // 🔴 Decía "entre 8:00 y 9:00 AM" como regla de todos. La Gruta de Xilo
     // sale de noche y el Amanecer de Nubes de madrugada: la hora de cada uno
@@ -426,9 +458,11 @@ const ES: InfoPracticaContent = {
     `Recogida en la puerta: ${HORA_COMUN_ES} en la mayoría de los recorridos; algunos, como la Gruta de Xilo, son de noche`,
     "Piscina con vista al cañón · Restaurante propio · AC y WiFi",
     "Tarifa especial para viajeros que reservan tours con nosotros",
-    "Desde $1,200 MXN/noche (habitación doble)",
+    `Desde $${NOCHE_DESDE.toLocaleString("es-MX")} MXN/noche (habitación doble)`,
   ],
   consultarDisponibilidad: "Consultar disponibilidad →",
+  waHospedaje: "Hola, me interesa hospedarme en el Hotel Paraíso Encantado Xilitla.",
+  waTarifaTour: "Hola, quiero reservar el Hotel Paraíso Encantado con la tarifa especial de tour.",
   otrasOpciones: "Otras opciones",
   xilitlaOtras: [
     "Castillo El Buen Café: histórico, vista panorámica, desde $1,500 MXN",
@@ -455,11 +489,11 @@ const ES: InfoPracticaContent = {
   porQueHospedarte: "¿Por qué hospedarte aquí?",
   paraisoPorQue: [
     "Sales por la puerta: cero traslado antes de empezar el tour",
-    "A 50 metros del Jardín Surrealista de Edward James",
-    "Desayuno de cocina huasteca incluido en los tours",
+    `${A_PIE_ES.charAt(0).toUpperCase() + A_PIE_ES.slice(1)} del Jardín Surrealista de Edward James`,
+    `${HOTEL_PROPIO.restaurante}, nuestro restaurante de cocina huasteca, dentro del hotel (${horarioRestaurante(false)})`,
     "Piscina con vista al cañón y zona de selva",
     "Habitaciones con AC, WiFi y baño privado",
-    "Recepción 24h para coordinación de logística",
+    "¿Llegas en autobús? Tu cuarto al llegar si está libre; si no, dejas las maletas en recepción y la camioneta del tour pasa por ti ahí",
   ],
   reservasTitulo: "Reservas",
   reservasTexto: "Mencionando que vas con nosotros al reservar obtienes tarifa preferencial.",
@@ -478,10 +512,10 @@ const ES: InfoPracticaContent = {
     { label: "Puente de Dios", dist: "45 min desde Valles" },
   ],
 
-  papanIntroA: "En el mismo corazón de Xilitla, el ",
+  papanIntroA: `Dentro de nuestro hotel, ${A_PIE_ES} de Las Pozas, está el `,
   papanNombre: "Restaurante Papán Huasteco",
   papanIntroB:
-    " es nuestra recomendación número uno para cocina regional auténtica. Platillos tradicionales huastecos cocinados en fogón de leña, con ingredientes de la región.",
+    ", también nuestro: cocina regional auténtica. Platillos tradicionales huastecos cocinados en fogón de leña, con ingredientes de la región.",
   papanNoPerderte: "Lo que no debes perderte",
   papanPlatillos: [
     "Zacahuil — el tamal gigante huasteco en hoja de plátano",
@@ -499,8 +533,8 @@ const ES: InfoPracticaContent = {
     "Perfecto antes o después de visitar Las Pozas",
   ],
   papanFotoHeroAlt: "Restaurante Papán Huasteco — cocina regional auténtica en Xilitla",
-  papanFotoPlatillosAlt: "Platillos típicos huastecos — zacahuil y bocoles",
-  papanFotoFogonAlt: "Fogón de leña en el Restaurante Papán Huasteco",
+  papanFotoPlatillosAlt: "Chilaquiles con arrachera, frijoles y aguacate en El Papán Huasteco",
+  papanFotoFogonAlt: "El fogón de leña encendido en el Restaurante Papán Huasteco",
 
   presupuestoIntro:
     "Costos aproximados por persona/día (2026). La Huasteca es sorprendentemente accesible.",
@@ -743,7 +777,7 @@ const ES: InfoPracticaContent = {
         },
         {
           q: "¿El guía habla inglés?",
-          a: "Nuestros guías están certificados NOM-09 y tenemos guías completamente bilingües disponibles: pídelo al reservar y te asignamos uno.",
+          a: "Nuestros guías están certificados NOM-09 y en una salida compartida manejan inglés básico. Si quieres uno que lo hable con soltura, márcalo al reservar —la casilla «Quiero guía en inglés», sin costo— y te lo conseguimos; si ese día no lo tenemos, te avisamos antes por WhatsApp.",
         },
         {
           q: "¿Cuántas personas hay en cada tour?",
@@ -846,27 +880,34 @@ const ES: InfoPracticaContent = {
     lluviaValores: { Poca: "Poca", Baja: "Baja", Moderada: "Moderada", Alta: "Alta", Bajando: "Bajando" },
     cascadasValores: { Excelente: "Excelente", "Muy buena": "Muy buena", Buena: "Buena", Variable: "Variable" },
     recomendaciones: {
+      // Cada texto vale para todos los meses de su grupo (ver CLIMA en
+      // ClimaWidget): ideal nov–feb, buena mar–abr, caluroso may–jun,
+      // lluvia jul–oct.
       ideal: {
-        titulo: "Temporada ideal, la mejor época",
-        texto: "Las cascadas están en su caudal óptimo con el agua turquesa característico de la Huasteca. Clima fresco (16-30°C) y agradable. Es temporada alta — reserva hospedaje y tours con anticipación.",
+        titulo: "Agua clara y poca gente",
+        texto: `El agua baja clara, el clima es fresco (16-30°C) y todavía faltan meses para las multitudes de primavera. Del ${INICIO_ES} a diciembre es la mejor temporada para venir; en fin de año se llena, así que aparta hospedaje y tours con anticipación.`,
         // Los dos últimos, por la `temporada_ideal` de su destino en destinos.ts:
         // Olla de la Luz "época seca (nov–may)" y Las Pozas "Nov–Mar". Van en
         // el mismo orden que los `slugs` de ClimaWidget.
         tours: ["Expedición Tamul + Sótano de las Huahuas", "Ruta Surrealista (Las Pozas)", "Cascadas del Meco", "Olla de la Luz (Hoya de la Luz)", "El Edén en el Jardín (Las Pozas en privado)"],
       },
       buena: {
-        titulo: "Buena temporada para visitar",
-        texto: "El agua conserva su color intenso. Las temperaturas suben — actívate temprano por las mañanas. Ideal para tours con sombra natural como Las Pozas o los ríos. Menos concurrencia que temporada alta.",
+        titulo: "El turquesa más intenso",
+        texto: "El agua está en su turquesa más intenso, y es también cuando más gente hay: Semana Santa se llena y los precios van al alza. Las temperaturas suben — actívate temprano por las mañanas. Ideal para tours con sombra natural como Las Pozas o los ríos.",
         tours: ["Ruta Surrealista (Las Pozas)", "Paraíso Escalonado + Minas Viejas y Micos", "Ruta Acuática Puente de Dios"],
       },
       caluroso: {
         titulo: "Temporada calurosa: prepárate bien",
-        texto: "28-38°C en zonas bajas. Hidratación constante, actívate antes de las 10am. Las pozas se disfrutan mucho — el agua fresca es un alivio. Evita Tamtoc (sin sombra). Lleva sombrero y ropa UV.",
+        // Sin cifra propia: vale para mayo y junio, y la temperatura de cada
+        // mes ya sale debajo, en la tarjeta.
+        texto: "Calor fuerte en zonas bajas. Hidratación constante, actívate antes de las 10am. Las pozas se disfrutan mucho — el agua fresca es un alivio. Evita Tamtoc (sin sombra). Lleva sombrero y ropa UV. En mayo el agua sigue en su turquesa más intenso; en junio llegan las primeras lluvias.",
         tours: ["Paraíso Escalonado + Minas Viejas y Micos (pozas frescas)", "Ruta Acuática Puente de Dios"],
       },
       lluvia: {
         titulo: "Temporada de lluvias: consulta condiciones",
-        texto: "Vegetación explosivamente verde y muy fotogénica. Algunos tours de río pueden suspenderse por corrientes altas (especialmente Tamul en septiembre). Menos turistas y precios más bajos. Consulta antes de reservar.",
+        // Sin «menos turistas y precios más bajos»: ver la tarjeta de julio a
+        // octubre de arriba.
+        texto: `Las cascadas van a todo caudal y la selva está en su verde más intenso. El agua puede bajar con sedimento y, si el río crece, reprogramamos el rafting sin costo. Julio y agosto son vacaciones de verano; septiembre y octubre son más tranquilos. Desde el ${INICIO_ES} arranca la mejor temporada para venir.`,
         tours: ["Ruta Surrealista (Las Pozas — siempre operamos)", "Paraíso Escalonado + Minas Viejas y Micos"],
       },
     },
@@ -916,8 +957,8 @@ const EN: InfoPracticaContent = {
     {
       titulo: "By plane",
       items: [
-        "Nearest airport: San Luis Potosí (SLP) — 3.5h by car",
-        "Alternative: Tampico (TAM) — 2h by car, more connections",
+        `Nearest airport: Tampico (TAM) — ${enAuto("tampico", "valles", true)} by car`,
+        `Alternative: San Luis Potosí (SLP) — ${enAuto("san-luis-potosi", "valles", true)} by car`,
         "From Mexico City: ~1h flight + a rental car is recommended",
         "Aeroméxico and VivaAerobus run direct routes",
       ],
@@ -925,18 +966,18 @@ const EN: InfoPracticaContent = {
     {
       titulo: "By bus",
       items: [
-        "ADO GL from Mexico City (Terminal Norte) → Ciudad Valles: ~8 hours",
+        `ADO GL from Mexico City (Terminal Norte) → Ciudad Valles: ${enAutobus("cdmx", "valles", true)}`,
         "Approx. price: $600-900 MXN per person (executive class)",
         "Frequent departures: 10pm, 11:30pm, 12am (arriving before dawn)",
-        "Also from Monterrey: ~4.5h, from Tampico: ~2h",
+        `Also from Monterrey: ${enAutobus("monterrey", "valles", true)}. From Tampico there are short runs all day`,
       ],
     },
     {
       titulo: "By car",
       items: [
-        "From Mexico City: 430km (267 mi) on the Mex-85 / MEX-70 toll highway — ~6.5 to 7h",
-        "From Monterrey: 340 km on the MEX-85, about 4 h",
-        "From the city of San Luis Potosí: 260 km, about 3 h",
+        `From Mexico City: 430km (267 mi) on the Mex-85 / MEX-70 toll highway — ${enAuto("cdmx", "valles", true)}`,
+        `From Monterrey: 340 km on the MEX-85, about ${enAuto("monterrey", "valles", true)}`,
+        `From the city of San Luis Potosí: 260 km, about ${enAuto("san-luis-potosi", "valles", true)}`,
         "The toll motorway is recommended: safe and fast",
         "Fuel available in Valles. Fill up before heading out on trips",
       ],
@@ -965,41 +1006,42 @@ const EN: InfoPracticaContent = {
   ],
 
   cuandoIntro: "The Huasteca welcomes visitors all year round, but each season has its own character.",
-  fotoSecaAlt: "The Water Cave with turquoise water — dry season Nov-Mar",
-  fotoSecaPie: "November to March, turquoise water",
+  fotoSecaAlt: "The Water Cave with turquoise water, in the dry season",
+  fotoSecaPie: `${INICIO_EN} to May, clear water`,
   fotoVerdeAlt: "Sótano de las Huahuas with lush green vegetation — rainy season",
-  fotoVerdePie: "June to October, deep green",
+  fotoVerdePie: "July to October, deep green",
   temporadas: [
     {
-      meses: "November to March",
-      etiqueta: "The best season",
+      meses: `${INICIO_EN} to February`,
+      etiqueta: "Clear water, fewer crowds",
       puntos: [
-        "Waterfalls at their best flow and turquoise color",
-        "Cool weather (18-26°C), less humidity",
-        "Sótano de Golondrinas: the swifts are at their most active",
-        "Tamtoc: visitable without extreme heat",
-        "High season: book accommodation well in advance",
+        `The rains ease off and the water clears: ${INICIO_EN} through December is the best season to visit`,
+        "The spring crowds are still months away; the year-end holidays do fill up, so book early",
+        "Cool weather (16-30°C), less humidity",
+        "Sótano de Golondrinas: from November to March the swifts are at their most active",
+        "Tamtoc: from December to February you can visit without the extreme heat",
       ],
     },
     {
-      meses: "April to May",
-      etiqueta: "Spring, in between",
+      meses: "March to June",
+      etiqueta: "Most intense turquoise, and heat",
       puntos: [
-        "Temperatures rise (28-38°C), especially in Tamuín",
-        "Waterfalls still flowing well, with intense color",
-        "Holy Week: very busy, prices go up",
-        "Ideal for Tamul and Las Pozas (lush foliage)",
+        "From March to May the water is at its most intense turquoise",
+        "It's also the busiest time: Holy Week is very crowded and prices go up",
+        "Temperatures rise (24-36°C), especially in Tamuín",
+        "June is a transition month: the first rains arrive",
       ],
     },
     {
-      meses: "June to October",
+      meses: "July to October",
       etiqueta: "Rainy season",
       puntos: [
         "Frequent rain (especially July-September)",
-        "Explosively green, photogenic vegetation",
-        "Swollen rivers: some water activities are suspended",
-        "Fewer tourists, lower prices",
-        "Check conditions before heading to Tamul (dangerous currents)",
+        "Waterfalls at full force and explosively green vegetation",
+        "The water can carry sediment; if the river rises, we reschedule rafting at no cost",
+        "If you're going on your own, check conditions before heading to Tamul (dangerous currents)",
+        // Igual que en español: decía «Fewer tourists, lower prices».
+        "July and August are Mexico's summer holidays; September and October are quieter",
       ],
     },
   ],
@@ -1014,8 +1056,8 @@ const EN: InfoPracticaContent = {
   ],
 
   quedarseIntro:
-    "Pick your base according to how you travel. Ciudad Valles has the best logistics; Xilitla and Tamasopo offer full immersion in nature.",
-  vallesTitulo: "Ciudad Valles · The best logistical base",
+    "Pick your base according to how you travel. Xilitla is where our hotel is and where Las Pozas is; Ciudad Valles has the best logistics if you are heading for the northern waterfalls, and Tamasopo is full immersion in nature.",
+  vallesTitulo: "Ciudad Valles · The base for the northern waterfalls",
   vallesTexto:
     "The perfect hub. Every destination within 2 hours, with the widest choice of accommodation, restaurants and services. Small airport and an ADO bus terminal.",
   vallesItems: [
@@ -1024,8 +1066,6 @@ const EN: InfoPracticaContent = {
     "Hostal La Huasteca: solo travellers/backpackers, from $280 MXN/bed",
     "Airbnb: whole houses from $600 MXN/night",
   ],
-  verEnAirbnb: "See on Airbnb",
-  verEnBooking: "See on Booking.com",
   xilitlaTitulo: "Xilitla · The boutique experience",
   xilitlaTexto1: "The Pueblo Mágico closest to ",
   xilitlaLasPozas: "Edward James's Las Pozas",
@@ -1034,14 +1074,16 @@ const EN: InfoPracticaContent = {
   recomendacionEquipo: "Our team's recommendation",
   hotelNombre: "Hotel Paraíso Encantado Xilitla",
   hotelTexto:
-    "Our base of operations and the best option in Xilitla. 50 meters from the Surrealist Garden, with a pool and a restaurant serving Huastec cooking. We pick you up here at no extra cost, just as we do at any lodging in Xilitla and, on many tours, in Ciudad Valles.",
+    `Our base of operations and the best option in Xilitla. ${A_PIE_EN} from the Surrealist Garden, with a pool and our own Huastec restaurant, ${HOTEL_PROPIO.restaurante}, right inside. We pick you up here at no extra cost, just as we do at any lodging in Xilitla and, on many tours, in Ciudad Valles.`,
   hotelItems: [
     `Door-to-door pickup: ${HORA_COMUN_EN} on most tours; some, like the Xilo Cave, run at night`,
     "Pool overlooking the canyon · Its own restaurant · AC and WiFi",
     "Special rate for travellers who book tours with us",
-    "From $1,200 MXN/night (double room)",
+    `From $${NOCHE_DESDE.toLocaleString("en-US")} MXN/night (double room)`,
   ],
   consultarDisponibilidad: "Check availability →",
+  waHospedaje: "Hi! I'd like to stay at Hotel Paraíso Encantado in Xilitla.",
+  waTarifaTour: "Hi! I'd like to book Hotel Paraíso Encantado with the special tour rate.",
   otrasOpciones: "Other options",
   xilitlaOtras: [
     "Castillo El Buen Café: historic, panoramic views, from $1,500 MXN",
@@ -1068,11 +1110,11 @@ const EN: InfoPracticaContent = {
   porQueHospedarte: "Why stay here?",
   paraisoPorQue: [
     "Set off from the door: no transfer before the tour even starts",
-    "50 meters from Edward James's Surrealist Garden",
-    "Huastec breakfast included with the tours",
+    `${A_PIE_EN} from Edward James's Surrealist Garden`,
+    `${HOTEL_PROPIO.restaurante}, our Huastec restaurant, right inside the hotel (${horarioRestaurante(true)})`,
     "Pool overlooking the canyon and the jungle area",
     "Rooms with AC, WiFi and private bathroom",
-    "24h reception to sort out the logistics",
+    "Arriving by bus? Your room on arrival if it's free; if not, leave your bags at reception and the tour van picks you up right there",
   ],
   reservasTitulo: "Bookings",
   reservasTexto: "Mention that you're traveling with us when you book and you get a preferential rate.",
@@ -1091,10 +1133,10 @@ const EN: InfoPracticaContent = {
     { label: "Puente de Dios", dist: "45 min from Valles" },
   ],
 
-  papanIntroA: "Right in the heart of Xilitla, ",
+  papanIntroA: `Inside our hotel, ${A_PIE_EN} from Las Pozas, you'll find `,
   papanNombre: "Restaurante Papán Huasteco",
   papanIntroB:
-    " is our number one recommendation for authentic regional cooking. Traditional Huastec dishes cooked over a wood fire, with ingredients from the region.",
+    ", also ours: authentic regional cooking. Traditional Huastec dishes cooked over a wood fire, with ingredients from the region.",
   papanNoPerderte: "What you shouldn't miss",
   papanPlatillos: [
     "Zacahuil — the giant Huastec tamal wrapped in banana leaf",
@@ -1112,8 +1154,8 @@ const EN: InfoPracticaContent = {
     "Perfect before or after visiting Las Pozas",
   ],
   papanFotoHeroAlt: "Restaurante Papán Huasteco — authentic regional cooking in Xilitla",
-  papanFotoPlatillosAlt: "Typical Huastec dishes: zacahuil and bocoles",
-  papanFotoFogonAlt: "Wood-fired stove at Restaurante Papán Huasteco",
+  papanFotoPlatillosAlt: "Chilaquiles with arrachera, beans and avocado at El Papán Huasteco",
+  papanFotoFogonAlt: "The wood fire burning in the hearth at Restaurante Papán Huasteco",
 
   presupuestoIntro:
     "Approximate cost per person per day (2026). The Huasteca is surprisingly affordable.",
@@ -1351,7 +1393,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "Does the guide speak English?",
-          a: "Our guides are NOM-09 certified and fully bilingual guides are available — just ask when you book and we'll assign one.",
+          a: "Our guides are NOM-09 certified and handle basic English on a shared departure. If you want one who speaks it fluently, tick «I'd like an English-speaking guide» when you book — it's free — and we'll arrange it; if we don't have one that day, we'll tell you on WhatsApp beforehand.",
         },
         {
           q: "How many people are on each tour?",
@@ -1435,23 +1477,23 @@ const EN: InfoPracticaContent = {
     cascadasValores: { Excelente: "Excellent", "Muy buena": "Very good", Buena: "Good", Variable: "Variable" },
     recomendaciones: {
       ideal: {
-        titulo: "The best season, the ideal time",
-        texto: "The waterfalls are at their best flow, with the turquoise water the Huasteca is known for. Cool, pleasant weather (16-30°C). It's high season — book accommodation and tours well ahead.",
+        titulo: "Clear water, fewer crowds",
+        texto: `The water runs clear, the weather is cool (16-30°C) and the spring crowds are still months away. ${INICIO_EN} through December is the best season to visit; the year-end holidays fill up, so book accommodation and tours well ahead.`,
         tours: ["Tamul Expedition + Sótano de las Huahuas", "Surrealist Route (Las Pozas)", "El Meco Waterfalls", "Olla de la Luz (Hoya de la Luz)", "Eden in the Garden (Las Pozas, private)"],
       },
       buena: {
-        titulo: "Good season for a visit",
-        texto: "The water keeps its intense color. Temperatures are rising — get going early in the mornings. Ideal for tours with natural shade, like Las Pozas or the rivers. Quieter than high season.",
+        titulo: "The most intense turquoise",
+        texto: "The water is at its most intense turquoise, and it's also the busiest time: Holy Week fills up and prices go up. Temperatures are rising — get going early in the mornings. Ideal for tours with natural shade, like Las Pozas or the rivers.",
         tours: ["Surrealist Route (Las Pozas)", "Stepped Paradise + Minas Viejas and Micos", "Water Route, Puente de Dios"],
       },
       caluroso: {
         titulo: "Hot season: come prepared",
-        texto: "28-38°C in the lowlands. Drink constantly and get going before 10am. The pools are a real pleasure — the cool water is a relief. Avoid Tamtoc (no shade). Bring a hat and UV clothing.",
+        texto: "Strong heat in the lowlands. Drink constantly and get going before 10am. The pools are a real pleasure — the cool water is a relief. Avoid Tamtoc (no shade). Bring a hat and UV clothing. In May the water is still at its most intense turquoise; in June the first rains arrive.",
         tours: ["Stepped Paradise + Minas Viejas and Micos (cool pools)", "Water Route, Puente de Dios"],
       },
       lluvia: {
         titulo: "Rainy season: check conditions",
-        texto: "Explosively green and very photogenic vegetation. Some river tours may be suspended because of high currents (especially Tamul in September). Fewer tourists and lower prices. Check with us before booking.",
+        texto: `The waterfalls run at full force and the jungle is at its greenest. The water can carry sediment and, if the river rises, we reschedule rafting at no cost. July and August are Mexico's summer holidays; September and October are quieter. The best season to visit starts on ${INICIO_EN}.`,
         tours: ["Surrealist Route (Las Pozas — we always run it)", "Stepped Paradise + Minas Viejas and Micos"],
       },
     },

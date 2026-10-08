@@ -14,3 +14,25 @@ export const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
   "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
 );
+
+/**
+ * El aspecto del formulario de Stripe, para que no entre como una caja de otro
+ * sitio justo en el paso de pagar.
+ *
+ * 🔴 El CARRITO era el único de los tres cobros que montaba `<Elements>` SIN
+ * `appearance`: el checkout del RZR y el de paquetes sí lo tenían. Resultado:
+ * el flujo por el que pasa casi toda la venta era el que peor se veía.
+ *
+ * Los valores son los del sitio (`tailwind.config.ts`): verde-selva, crema,
+ * verde-profundo y DM Sans, con esquinas rectas como todo lo demás.
+ */
+export const APARIENCIA_STRIPE = {
+  theme: "stripe" as const,
+  variables: {
+    colorPrimary:    "#3a6b1a",
+    colorBackground: "#f4edd8",
+    colorText:       "#1a2e1a",
+    fontFamily:      "DM Sans, sans-serif",
+    borderRadius:    "0px",
+  },
+};

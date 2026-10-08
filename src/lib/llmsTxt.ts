@@ -54,12 +54,14 @@ import {
   type Tour,
 } from "@/lib/tours";
 import { excepcionesSalida, horaEnLista } from "@/lib/recogidaTexto";
+import { enAuto } from "@/lib/tiemposDeViaje";
 import { salidaDiaria } from "@/lib/faqTours";
 import { rangoGrupo, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { urlBlog } from "@/lib/blogDestinoMap";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { fechaInicioTexto } from "@/lib/temporada";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { GOOGLE_RATING, GOOGLE_RESENAS, resenasTexto } from "@/lib/resenas";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
@@ -97,7 +99,22 @@ function precioTour(t: Tour, locale: Locale): string {
       ? `${rango} PER WHOLE GROUP, depending on its size (not per person)`
       : `${rango} POR GRUPO COMPLETO, según cuántos vayan (no por persona)`;
   }
-  if (t.precioUnidad !== "vehiculo") return mxn(t.precio);
+  if (t.precioUnidad !== "vehiculo") {
+    // La escalera por tamaño de grupo se dice entera: un asistente que solo lea
+    // "$1,550 por persona" cotizaría de más a un grupo de seis.
+    if (t.escalaPersona?.length) {
+      const tramos = [...t.escalaPersona]
+        .sort((a, b) => a.desde - b.desde)
+        .map((e) => (en
+          ? `from ${e.desde} people ${mxn(t.precio - e.menos)} each`
+          : `desde ${e.desde} personas ${mxn(t.precio - e.menos)} cada uno`))
+        .join(" · ");
+      return en
+        ? `${mxn(t.precio)} per person for 1 or 2; the per-person price drops with the group size: ${tramos}. It does NOT stack with the low-season promo.`
+        : `${mxn(t.precio)} por persona con 1 o 2; el precio por persona baja según el tamaño del grupo: ${tramos}. NO se suma a la promo de temporada baja.`;
+    }
+    return mxn(t.precio);
+  }
   return en
     ? `FROM ${mxn(t.precio)} PER VEHICLE (not per person)`
     : `DESDE ${mxn(t.precio)} POR VEHÍCULO (no por persona)`;
@@ -313,9 +330,11 @@ Su ciudad-hub es Ciudad Valles y su Pueblo Mágico es Xilitla, donde tenemos nue
 Es conocida por sus cascadas de agua turquesa, el jardín surrealista de Edward James
 (Las Pozas) en Xilitla, el Sótano de las Golondrinas (un abismo vertical con ~376 m de
 caída libre, hasta 512 m de profundidad) y la Cascada de Tamul (la más alta del estado,
-~105 m). El agua luce más turquesa en la temporada seca (aproximadamente de noviembre a
-junio, con su punto más claro entre marzo y mayo); en temporada de lluvias (julio–octubre)
-el caudal aumenta y el agua puede volverse marrón.`,
+~105 m). Se puede venir todo el año. Del ${fechaInicioTexto("es")} a mayo el agua baja clara;
+el turquesa más intenso es de marzo a mayo, y es cuando más gente hay. De julio a octubre
+las cascadas van a todo caudal y el agua puede bajar con sedimento; si el río crece,
+reprogramamos el rafting sin costo. La mejor temporada para venir, con agua clara y antes
+de las multitudes de primavera, es del ${fechaInicioTexto("es")} a diciembre.`,
   },
   en: {
     titulo: "Geographic context",
@@ -324,9 +343,11 @@ Mexico. Its hub city is Ciudad Valles and its "Pueblo Mágico" is Xilitla, where
 It is known for its turquoise waterfalls, for Edward James's surrealist garden (Las Pozas)
 in Xilitla, for the Sótano de las Golondrinas — a vertical shaft with a ~376 m free fall and
 up to 512 m deep — and for Tamul Waterfall, the tallest in the state at ~105 m.
-The water is at its most turquoise in the dry season (roughly November to June, clearest
-between March and May); in the rainy season (July–October) the flow rises and the water can
-turn brown.`,
+You can visit year-round. From ${fechaInicioTexto("en")} through May the water runs clear; the
+turquoise is at its most intense from March to May, which is also the busiest time. From
+July to October the waterfalls run at full force and the water can carry sediment; if the
+river rises, we reschedule rafting at no cost. The best season to visit, with clear water
+and ahead of the spring crowds, is ${fechaInicioTexto("en")} through December.`,
   },
 };
 
@@ -339,13 +360,13 @@ const COMO_LLEGAR: Record<Locale, Bloque> = {
   Al llegar, un taxi de ~$60 MXN llega al Hotel Paraíso Encantado en unos 7 minutos.
 - Como llegas al amanecer, entregamos la habitación temprano para descansar y ese mismo día
   arranca el primer tour: el Día 1 del paquete NO se pierde.
-- En auto: ~5.5–6 horas (aprox. 339 km) por carretera de sierra; se recomienda manejar de día.
-- En avión: el aeropuerto más práctico es Tampico (TAM), a ~2.5 h de Xilitla.`,
+- En auto: ${enAuto("cdmx")} (aprox. 339 km) por carretera de sierra; se recomienda manejar de día.
+- En avión: el aeropuerto más práctico es Tampico (TAM), a ${enAuto("tampico")} de Xilitla.`,
   },
   en: {
     titulo: "How to reach Xilitla",
-    cuerpo: `- Flying in: the most practical airport is Tampico (TAM), ~2.5 h from Xilitla. Mexico City (MEX)
-  is the other common entry point, ~5.5–6 h away by road (about 339 km of mountain highway;
+    cuerpo: `- Flying in: the most practical airport is Tampico (TAM), ${enAuto("tampico", "xilitla", true)} from Xilitla. Mexico City (MEX)
+  is the other common entry point, ${enAuto("cdmx", "xilitla", true)} away by road (about 339 km of mountain highway;
   driving in daylight is recommended).
 - By bus from Mexico City (what most package travelers do): an overnight departure from the
   Terminal Central del Norte around 10:15 PM (Servicios Coordinados / ETN), arriving in Xilitla
