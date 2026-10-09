@@ -5,6 +5,7 @@ import type { Paquete } from "./paquetes";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "./dates";
 import { localizeTour } from "./i18n/localize";
 import { apartadosVigentes, type Apartado } from "./apartadosAlmacen";
+import { LIBRES_CASI_LLENO } from "./cupoConstantes";
 
 /**
  * El cupo de cada recorrido POR FECHA (decisión de Manolo, 7 oct 2026).
@@ -41,12 +42,12 @@ import { apartadosVigentes, type Apartado } from "./apartadosAlmacen";
 export const CUPO_DIARIO = 12;
 
 /**
- * Desde cuántos lugares libres un día se pinta «casi lleno». Con el cupo de 12
- * son las 9 a 11 personas que pidió Manolo; en un recorrido de grupo chico (la
- * Gruta de Xilo sale con 8) se pone rojo cuando quedan 3, que es lo mismo
- * dicho en lugares.
+ * Desde cuántos lugares libres un día se pinta «casi lleno». Vive en
+ * `cupoConstantes.ts` porque el calendario del navegador también lo necesita y
+ * este archivo arrastra Prisma. Se re-exporta para no romper a quien ya lo
+ * pedía aquí.
  */
-const LIBRES_CASI_LLENO = 3;
+export { LIBRES_CASI_LLENO };
 
 /**
  * Las reservas que no apartan lugar: las canceladas y los «borrador» del bot
@@ -306,6 +307,49 @@ export async function disponibilidadDeTour(
   for (let i = 0; i <= n; i++) {
     const f = addDaysYMD(desde, i);
     dias[f] = estadoDia(porFecha.get(f) ?? 0, { cupo, cerrada: cerradas.has(f), grupo, privada: esPrivadaDelDia(t) });
+  }
+  return dias;
+}
+
+/**
+ * El estado de TODOS los recorridos en UN día, con una sola consulta.
+ *
+ * 🔴 Por qué no se resuelve llamando quince veces a `disponibilidadDeTour`
+ * (9 oct 2026, «un botón para buscar lugares… que el resultado sea los tours
+ * en los que hay lugares»): serían quince consultas a la base y quince lecturas
+ * de `Config` por cada clic del visitante. `ocupacionDe` ya devuelve el mapa
+ * completo `slug → fecha → personas` de una sola lectura, y
+ * `todasLasFechasCerradas` hace lo propio con los días cerrados. Dos consultas
+ * para los quince recorridos.
+ *
+ * `grupo` son las personas que quieren entrar: con él, un día con ocho
+ * reservados sale `no-cabe` para un grupo de seis y `casi-lleno` para una
+ * pareja. Es la misma cuenta que hace el cobro, así que lo que diga aquí es lo
+ * que va a pasar al pagar.
+ *
+ * Los recorridos sin cupo por fecha (el RZR, que se cobra por vehículo) no
+ * salen en el mapa: su tope son las unidades, no las personas, y decir de ellos
+ * «sin lugar» sería falso.
+ */
+export async function disponibilidadDelDia(
+  fecha: string,
+  grupo: number,
+): Promise<Record<string, EstadoDia>> {
+  const [reservas, cerradas] = await Promise.all([
+    reservasEntre(fecha, fecha),
+    todasLasFechasCerradas(),
+  ]);
+  const ocupacion = ocupacionDe(reservas);
+  const dias: Record<string, EstadoDia> = {};
+  for (const t of TOURS_DB) {
+    const cupo = cupoDeTour(t);
+    if (cupo === null) continue;
+    dias[t.slug] = estadoDia(ocupacion.get(t.slug)?.get(fecha) ?? 0, {
+      cupo,
+      cerrada: (cerradas.get(t.slug) ?? []).includes(fecha),
+      grupo,
+      privada: esPrivadaDelDia(t),
+    });
   }
   return dias;
 }

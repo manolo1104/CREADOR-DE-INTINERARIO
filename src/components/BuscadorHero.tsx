@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ChevronDown, Minus, Plus, Search, Check, X, Users } from "lucide-react";
 import { SelectorPersonas, CONTROL_BUSCADOR } from "@/components/buscador/SelectorPersonas";
+import { CELDA_BUSCADOR, ETIQUETA_BUSCADOR, FILA_BUSCADOR, SEPARADOR_BUSCADOR } from "@/components/buscador/estilos";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { buscadorUI } from "@/lib/i18n/buscador";
 import { TourCalendar } from "@/components/booking/TourCalendar";
@@ -86,8 +87,8 @@ function aFiltro(valor: string): FiltroQue {
  * El `backdrop-blur` vive solo en la fila, una vez. Apilado en cuatro capas se
  * nota en el pintado de cada cuadro y en una pantalla de 120 Hz se ve.
  */
-const CELDA = "relative flex-1 min-w-0 px-5 py-3.5 transition-colors duration-200 hover:bg-white/[0.06] focus-within:bg-white/[0.08]";
-const ETIQUETA = "mb-0.5 block font-dm text-[10px] uppercase tracking-[2px] text-crema/55";
+const CELDA = CELDA_BUSCADOR;
+const ETIQUETA = ETIQUETA_BUSCADOR;
 /** Sin borde ni fondo: el vidrio es la fila, no cada campo. Vive con el
     selector de personas, que lo comparte con `/reservar`. */
 const CONTROL = CONTROL_BUSCADOR;
@@ -213,9 +214,7 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
 
   return (
     <div className="w-full max-w-3xl lg:max-w-5xl">
-      <div
-        className="flex flex-col overflow-hidden rounded-2xl border border-white/25 bg-white/[0.07] shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 sm:flex-row sm:items-stretch"
-      >
+      <div className={FILA_BUSCADOR}>
         {/* ── ¿Qué quieres ver? ── nuestro desplegable, no el del sistema ── */}
         <div ref={cajaRef} className={`${CELDA} relative sm:flex-[1.25]`}>
           <span className={ETIQUETA} id="buscador-que">{ui.queVer}</span>
@@ -303,7 +302,7 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
           )}
         </div>
 
-        <div className="h-px bg-white/15 sm:h-auto sm:w-px" aria-hidden="true" />
+        <div className={SEPARADOR_BUSCADOR} aria-hidden="true" />
 
         {/* ── ¿Cuándo? ── el calendario de VERDAD ──
             Con `slug` consulta la disponibilidad real del recorrido y pinta los
@@ -333,7 +332,7 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
           />
         </div>
 
-        <div className="h-px bg-white/15 sm:h-auto sm:w-px" aria-hidden="true" />
+        <div className={SEPARADOR_BUSCADOR} aria-hidden="true" />
 
         {/* ── ¿Cuántos? ──
             🔴 Antes eran los botones −/+ metidos en la fila (Manolo, 8 oct:

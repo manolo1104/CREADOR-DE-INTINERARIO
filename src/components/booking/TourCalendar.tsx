@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Clock, TriangleAlert, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Hourglass, TriangleAlert, X } from "lucide-react";
 import { minBookingDate } from "@/lib/tourBooking";
 import { bloquearScroll } from "@/lib/scrollLock";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -10,6 +10,7 @@ import { getBooking } from "@/lib/i18n/booking";
 import type { Locale } from "@/lib/i18n/config";
 // Solo el TIPO: `cupoTour.ts` lee la base y no puede viajar al navegador.
 import type { EstadoDia } from "@/lib/cupoTour";
+import { LIBRES_CASI_LLENO } from "@/lib/cupoConstantes";
 import { useApartadoId } from "@/components/carrito/useApartado";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -105,6 +106,12 @@ interface TextosCupo {
   revisando:   string;
   /** La fecha que YA estaba elegida se quedó sin lugar: cambió el grupo o se llenó. */
   yaNoHayLugar: (estado: EstadoDia, personas: number) => string;
+  /**
+   * La fecha elegida está en «casi lleno». Dicho en LUGARES, no en personas
+   * reservadas: cuántos van ese día es el volumen de ventas del negocio, y
+   * `/api/tours/disponibilidad` nunca lo manda (devuelve solo el estado).
+   */
+  quedanPocos: (libres: number) => string;
 }
 
 /**
@@ -124,6 +131,8 @@ const TEXTOS_CUPO: Record<Locale, TextosCupo> = {
       e === "cerrada"
         ? "Ese día no hay salida. Elige otra fecha."
         : `Ese día ya no hay lugar${n > 0 ? ` para ${n} ${n === 1 ? "persona" : "personas"}` : ""}. Elige otra fecha.`,
+    quedanPocos: (libres) =>
+      `Quedan ${libres} lugares o menos para esta fecha. Aparta el tuyo con el anticipo.`,
   },
   en: {
     libre:       "Open",
@@ -137,6 +146,8 @@ const TEXTOS_CUPO: Record<Locale, TextosCupo> = {
       e === "cerrada"
         ? "There's no departure that day. Please choose another date."
         : `That day is full${n > 0 ? ` for ${n} ${n === 1 ? "person" : "people"}` : ""}. Please choose another date.`,
+    quedanPocos: (libres) =>
+      `${libres} spots or fewer left for this date. Hold yours with the deposit.`,
   },
 };
 
@@ -789,6 +800,29 @@ export function TourCalendar({
     }`}>
       <TriangleAlert className="w-3 h-3 flex-shrink-0 mt-px" aria-hidden="true" />
       <span>{tc.yaNoHayLugar(estadoElegido!, personas)}</span>
+    </p>
+  ) : estadoElegido === "casi-lleno" ? (
+    /*
+     * Escasez REAL, dicha en texto (9 oct 2026).
+     *
+     * El dato existía desde el 7 de octubre y solo se pintaba: el día salía
+     * amarillo con un triangulito en el calendario, y la leyenda decía «Casi
+     * lleno» dentro de la hoja. Quien elegía el día y cerraba la hoja ya no
+     * veía nada — el aviso vivía justo donde se deja de mirar.
+     *
+     * Se dice en LUGARES LIBRES (`LIBRES_CASI_LLENO`, el mismo umbral con el
+     * que `cupoTour.ts` pinta el día) y no en personas reservadas: el endpoint
+     * público manda solo el estado del día, a propósito, porque la ocupación
+     * de cada fecha es el volumen de ventas del negocio.
+     *
+     * Si la base no contesta, `dias` llega vacío, `estadoElegido` es
+     * `undefined` y aquí no se dice nada. Prometer sin saber es peor que callar.
+     */
+    <p role="status" className={`mt-1.5 flex items-start gap-1.5 font-dm text-[11px] leading-snug ${
+      tema === "oscuro" ? "text-dorado/90" : "text-terracota"
+    }`}>
+      <Hourglass className="w-3 h-3 flex-shrink-0 mt-px" aria-hidden="true" />
+      <span>{tc.quedanPocos(LIBRES_CASI_LLENO)}</span>
     </p>
   ) : null;
 

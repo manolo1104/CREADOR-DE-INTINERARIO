@@ -325,7 +325,11 @@ export function ReservaFichaTour({
             {tf.restoElDia(pctACobrar(), dinero(resto))}
           </p>
         )}
-        <p className="font-dm text-[10px] text-crema/35 mt-1 text-center">{tf.puedesCambiarlo}</p>
+        {/* Cuánto falta. Hasta ahora la ficha no lo decía: el botón «Reservar ·
+            hoy pagas $X» con un candado se lee como «aquí se cobra», y quien no
+            quiere dar la tarjeta todavía no lo toca. Paraíso lleva su barra «1
+            Fechas · 2 Datos · 3 Pago» desde el primer paso por lo mismo. */}
+        <p className="font-dm text-[10px] text-crema/35 mt-1 text-center">{tf.pasoUnoDeTres}</p>
       </div>
     </div>
   );

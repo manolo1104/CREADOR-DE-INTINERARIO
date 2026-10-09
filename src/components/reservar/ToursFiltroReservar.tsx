@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { SelectorPersonas } from "@/components/buscador/SelectorPersonas";
+import { CELDA_BUSCADOR, ETIQUETA_BUSCADOR, FILA_BUSCADOR, SEPARADOR_BUSCADOR } from "@/components/buscador/estilos";
 import { GRUPO_MIN, GRUPO_MAX, TOUR_CATEGORIAS, type Tour, type TourCategoria } from "@/lib/tours";
 import type { EtiquetaTour } from "@/lib/etiquetasTour";
 import { chipsDeTours, porChipYTexto, porGrupo, minimoQuePiden, chipDeIntencion, PREFIJO_TOUR } from "@/lib/filtroTours";
@@ -43,6 +44,9 @@ interface Props {
   masReservado?: string;
 }
 
+/** El degradado que avisa de que la fila de píldoras sigue a la derecha. */
+const BORDE_DIFUMINADO = "linear-gradient(to right, #000 0, #000 calc(100% - 48px), transparent 100%)";
+
 export function ToursFiltroReservar({ tours, masReservado }: Props) {
   const { locale, en } = useLocale();
   const ui = buscadorUI(locale);
@@ -72,12 +76,80 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
   const personas = intencion?.personas ?? 0;
   const fecha = intencion?.fecha ?? "";
 
+  /**
+   * El resultado de «Ver disponibilidad»: qué recorridos admiten a ESTE grupo
+   * en ESTA fecha, según la base.
+   *
+   * 🔴 Esto NO es lo mismo que el filtro por tamaño de grupo que ya había. Ése
+   * mira el catálogo —el rafting sale desde 5 personas— y contesta sin
+   * preguntarle a nadie. Éste pregunta por los lugares que de verdad quedan ese
+   * día, que es lo que el visitante quiere saber antes de elegir y lo único que
+   * el catálogo no puede contestar solo.
+   *
+   * Se guarda junto a la fecha y el grupo con los que se consultó: en cuanto
+   * cambia cualquiera de los dos, el resultado deja de valer y se descarta. Un
+   * «8 con lugar» de otra fecha es peor que no decir nada.
+   */
+  const [cupo, setCupo] = useState<{ fecha: string; personas: number; conLugar: string[]; sinLugar: string[] } | null>(null);
+  const [consultando, setConsultando] = useState(false);
+  const cupoVigente = cupo && cupo.fecha === fecha && cupo.personas === personas ? cupo : null;
+
+  useEffect(() => {
+    if (cupo && (cupo.fecha !== fecha || cupo.personas !== personas)) setCupo(null);
+  }, [fecha, personas, cupo]);
+
+  async function verDisponibilidad() {
+    if (!fecha) {
+      // Sin fecha no hay nada que consultar. En vez de un botón apagado, el
+      // foco va al campo que falta.
+      document.getElementById("reservar-cuando")?.parentElement?.querySelector("button")?.click();
+      return;
+    }
+    setConsultando(true);
+    trackTourEvent("VER_DISPONIBILIDAD", { fecha, personas });
+    try {
+      const r = await fetch(`/api/tours/disponibilidad-del-dia?fecha=${fecha}&personas=${personas}`);
+      const d = await r.json();
+      if (Array.isArray(d?.conLugar)) {
+        setCupo({ fecha, personas, conLugar: d.conLugar, sinLugar: d.sinLugar ?? [] });
+      }
+    } catch {
+      // Falla en silencio: la rejilla se queda como estaba, con todo a la vista.
+    } finally {
+      setConsultando(false);
+    }
+  }
+
   const sinContarGrupo = useMemo(
     () => porChipYTexto(tours, chips, chip, texto),
     [tours, chips, chip, texto],
   );
-  const filtrados = useMemo(() => porGrupo(sinContarGrupo, personas), [sinContarGrupo, personas]);
-  const soloPorElGrupo = filtrados.length === 0 && sinContarGrupo.length > 0 && !!personas;
+  const porTamano = useMemo(() => porGrupo(sinContarGrupo, personas), [sinContarGrupo, personas]);
+  /**
+   * Tras consultar, solo los que tienen lugar. Los recorridos que no llevan
+   * cupo por fecha (el RZR, que se cobra por vehículo) no vienen en ninguna de
+   * las dos listas y se quedan: de ellos la consulta no dice nada, y
+   * esconderlos sería afirmar lo que no se sabe.
+   */
+  const filtrados = useMemo(() => {
+    if (!cupoVigente) return porTamano;
+    const sin = new Set(cupoVigente.sinLugar);
+    return porTamano.filter((t) => !sin.has(t.slug));
+  }, [porTamano, cupoVigente]);
+  /**
+   * Cuántos quitó LA CONSULTA, no cuántos están llenos en total.
+   *
+   * 🔴 La primera versión decía los que la base reportó sin lugar —cinco— y de
+   * la rejilla solo desaparecía uno: los otros cuatro ya estaban fuera porque
+   * no salen con diez personas (la Gruta de Xilo sale con ocho). Un número que
+   * no cuadra con lo que se ve en pantalla hace dudar de los dos.
+   */
+  const ocultosPorCupo = useMemo(() => {
+    if (!cupoVigente) return 0;
+    const sin = new Set(cupoVigente.sinLugar);
+    return porTamano.filter((t) => sin.has(t.slug)).length;
+  }, [porTamano, cupoVigente]);
+  const soloPorElGrupo = porTamano.length === 0 && sinContarGrupo.length > 0 && !!personas;
   const minimo = soloPorElGrupo ? minimoQuePiden(sinContarGrupo, personas) : 0;
   const hayFiltro = chip !== "todos" || !!texto.trim() || !!personas || !!fecha;
 
@@ -85,6 +157,7 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
     setChip("todos");
     setTexto("");
     setIntencion(null);
+    setCupo(null);
     anunciarIntencion({ que: { tipo: "todos" }, fecha: "", personas: 0 });
   }
 
@@ -117,71 +190,107 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
   return (
     <>
       <div className="mb-8">
-        <label className="relative mx-auto mb-5 flex max-w-md items-center gap-2.5 border border-white/15 bg-negro/40 px-4 py-3 transition-colors focus-within:border-dorado">
-          <Search className="h-4 w-4 shrink-0 text-crema/40" aria-hidden="true" />
-          <input
-            type="search"
-            aria-label={ui.buscarLabel}
-            placeholder={ui.buscar}
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            /* `text-base`: con menos de 16 px el iPhone hace zoom al enfocar. */
-            className="w-full bg-transparent font-dm text-base text-crema placeholder:text-crema/40 focus:outline-none"
-          />
-          {!!texto && (
+        {/* ── Buscar · ¿Cuándo? · ¿Cuántos? ──
+            Una SOLA fila de vidrio, la misma del buscador del inicio
+            (`components/buscador/estilos.ts`). Antes eran tres cajas con su
+            propio borde, apiladas una encima de otra: el mismo gesto del hero
+            pero con tres veces el ruido. */}
+        <div className="mb-5 w-full">
+          <div className={FILA_BUSCADOR}>
+            {/* El rótulo es el CORTO, el mismo del hero: «Buscar un recorrido
+                por nombre o lugar» partía en dos renglones y estiraba la fila
+                entera. El largo sigue estando, de `aria-label`, que es donde
+                hace falta. */}
+            <label className={`${CELDA_BUSCADOR} sm:flex-[1.25]`}>
+              <span className={ETIQUETA_BUSCADOR}>{ui.queVer}</span>
+              <span className="flex items-center gap-2.5">
+                <Search className="h-4 w-4 shrink-0 text-dorado" aria-hidden="true" />
+                <input
+                  type="search"
+                  aria-label={ui.buscarLabel}
+                  placeholder={ui.buscar}
+                  value={texto}
+                  onChange={(e) => setTexto(e.target.value)}
+                  /* `text-base`: con menos de 16 px el iPhone hace zoom al enfocar. */
+                  className="min-w-0 flex-1 bg-transparent font-dm text-base text-crema placeholder:text-crema/40 focus:outline-none"
+                />
+                {!!texto && (
+                  <button
+                    type="button"
+                    onClick={() => setTexto("")}
+                    aria-label={ui.limpiar}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-crema/40 transition-colors hover:text-dorado"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
+              </span>
+            </label>
+
+            <div className={SEPARADOR_BUSCADOR} aria-hidden="true" />
+
+            <div className={`${CELDA_BUSCADOR} sm:flex-[0.85]`}>
+              <span id="reservar-cuando" className={ETIQUETA_BUSCADOR}>{ui.cuando}</span>
+              <TourCalendar
+                value={fecha}
+                onChange={(ymd) => cambiar({ fecha: ymd })}
+                modo="compact"
+                tema="oscuro"
+                placeholder={ui.cuandoSinFecha}
+                titulo={ui.cuando}
+                permitirLimpiar
+                /* Sin `slug`: aquí todavía no hay un recorrido elegido, así que no
+                   se consulta disponibilidad de nada. */
+                disparadorSinCaja
+                hojaTema="oscura"
+                hojaPosicion="centro"
+                proximosDias={false}
+              />
+            </div>
+
+            <div className={SEPARADOR_BUSCADOR} aria-hidden="true" />
+
+            <div className={`${CELDA_BUSCADOR} sm:flex-[1]`}>
+              <span id="reservar-cuantos" className={ETIQUETA_BUSCADOR}>{ui.cuantos}</span>
+              <SelectorPersonas
+                personas={personas || 2}
+                min={GRUPO_MIN}
+                max={GRUPO_MAX}
+                onChange={(n) => cambiar({ personas: n })}
+                ui={ui}
+                montado={montado}
+                etiquetaId="reservar-cuantos"
+              />
+            </div>
+
+            {/* El botón que de verdad consulta. Dorado y con la misma caja que
+                «Ver tours» del hero, porque es el mismo gesto: aquí terminas de
+                decir lo que quieres. La diferencia es que éste va a la base y
+                vuelve con los recorridos que SÍ tienen lugar ese día. */}
             <button
               type="button"
-              onClick={() => setTexto("")}
-              aria-label={ui.limpiar}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-crema/40 transition-colors hover:text-dorado"
+              onClick={verDisponibilidad}
+              disabled={consultando}
+              className="flex min-h-[60px] items-center justify-center gap-2 bg-dorado px-7 font-dm text-[13px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-terracota hover:text-crema disabled:cursor-wait disabled:opacity-70 sm:min-h-0 sm:min-w-[190px]"
             >
-              <X className="h-4 w-4" aria-hidden="true" />
+              {consultando ? ui.comprobando : fecha ? ui.verDisponibilidad : ui.eligeFechaPrimero}
             </button>
-          )}
-        </label>
-
-        {/* ── ¿Cuándo? y ¿Cuántos?, con el mismo gesto que en el hero ──
-            Aquí NO hay vidrio: la página es verde oscuro, así que cada campo
-            lleva su propia caja, como el buscador de texto de arriba. */}
-        <div className="mx-auto mb-5 flex max-w-md flex-col gap-2.5 sm:flex-row">
-          <div className="flex-1 border border-white/15 bg-negro/40 px-4 py-2.5 transition-colors focus-within:border-dorado">
-            <span id="reservar-cuando" className="mb-0.5 block font-dm text-[10px] uppercase tracking-[2px] text-crema/55">
-              {ui.cuando}
-            </span>
-            <TourCalendar
-              value={fecha}
-              onChange={(ymd) => cambiar({ fecha: ymd })}
-              modo="compact"
-              tema="oscuro"
-              placeholder={ui.cuandoSinFecha}
-              titulo={ui.cuando}
-              permitirLimpiar
-              /* Sin `slug`: aquí todavía no hay un recorrido elegido, así que no
-                 se consulta disponibilidad de nada. */
-              disparadorSinCaja
-              hojaTema="oscura"
-              hojaPosicion="centro"
-              proximosDias={false}
-            />
-          </div>
-          <div className="flex-1 border border-white/15 bg-negro/40 px-4 py-2.5 transition-colors focus-within:border-dorado">
-            <span id="reservar-cuantos" className="mb-0.5 block font-dm text-[10px] uppercase tracking-[2px] text-crema/55">
-              {ui.cuantos}
-            </span>
-            <SelectorPersonas
-              personas={personas || 2}
-              min={GRUPO_MIN}
-              max={GRUPO_MAX}
-              onChange={(n) => cambiar({ personas: n })}
-              ui={ui}
-              montado={montado}
-              etiquetaId="reservar-cuantos"
-            />
           </div>
         </div>
 
-        <div className="-mx-6 overflow-x-auto px-6 scrollbar-none md:overflow-visible">
-          <div className="mx-auto flex min-w-max justify-center gap-2.5 md:min-w-0 md:flex-wrap">
+        {/* 🔴 UNA fila, también en escritorio (9 oct 2026). Las once píldoras
+            con `md:flex-wrap` caían en dos renglones centrados, y dos bandas de
+            botones dorados y grises entre el buscador y las fotos eran el bloque
+            más ruidoso de la página. En una sola fila que se desliza ocupan la
+            mitad y se leen como lo que son: un filtro, no un menú. */}
+        <div
+          className="-mx-6 overflow-x-auto px-6 scrollbar-none"
+          /* El degradado del borde derecho dice que hay más píldoras sin
+             pintar una flecha ni robar espacio. Sin él, en escritorio la
+             última se ve cortada y parece un fallo. */
+          style={{ maskImage: BORDE_DIFUMINADO, WebkitMaskImage: BORDE_DIFUMINADO }}
+        >
+          <div className="flex min-w-max gap-2.5">
             {[{ id: "todos", label: ui.todos, n: tours.length }, ...chips].map((c) => {
               const activo = c.id === chip;
               return (
@@ -195,7 +304,7 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
                      a anunciar la intención completa, y ésta todavía llevaba el
                      `que` viejo. Una sola fuente para los tres campos. */
                   onClick={() => { setChip(c.id); cambiar({ que: queDeChip(c.id) }); trackTourEvent("FILTRO_RESERVAR", { chip: c.id }); }}
-                  className={`inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap border px-5 font-dm text-xs uppercase tracking-[2px] transition-colors duration-200 ${
+                  className={`inline-flex min-h-[40px] items-center gap-2 whitespace-nowrap border px-4 font-dm text-[11px] uppercase tracking-[2px] transition-colors duration-200 ${
                     activo
                       ? "border-dorado bg-dorado text-negro"
                       : "border-white/15 text-crema/70 hover:border-dorado/50 hover:text-crema"
@@ -211,7 +320,33 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
           </div>
         </div>
 
-        <p aria-live="polite" className="mt-5 text-center font-dm text-xs text-crema/50">
+        {/* Lo que contestó la base, con la fecha escrita entera: «8 recorridos
+            con lugar el sábado 25 de octubre». Sin la fecha delante, un número
+            suelto no se puede comprobar. */}
+        {cupoVigente && (
+          <p role="status" className="mt-5 text-center font-dm text-[13px] text-lima">
+            {filtrados.length === 0
+              ? <span className="text-dorado">{ui.sinLugarNinguno(fechaCorta(fecha, en))}</span>
+              : <>
+                  {ui.conLugar(filtrados.length, fechaCorta(fecha, en))}
+                  {ocultosPorCupo > 0 && (
+                    <span className="text-crema/45"> · {ui.sinLugarAlgunos(ocultosPorCupo)}</span>
+                  )}
+                </>}
+            {" · "}
+            <button
+              type="button"
+              onClick={() => setCupo(null)}
+              className="underline underline-offset-2 text-crema/50 transition-colors hover:text-dorado"
+            >
+              {ui.verTodosIgual}
+            </button>
+          </p>
+        )}
+
+        {/* El renglón de siempre se calla mientras está el de disponibilidad:
+            decían lo mismo con otras palabras, uno encima del otro. */}
+        <p aria-live="polite" className={`mt-5 text-center font-dm text-xs text-crema/50 ${cupoVigente ? "sr-only" : ""}`}>
           {ui.resultados(filtrados.length)}
           {!!personas && <> · {ui.paraGrupo(personas)}</>}
           {!!fecha && <> · {ui.paraFecha(fechaCorta(fecha, en))}</>}
@@ -238,6 +373,10 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
               tour={tour}
               esTop={masReservado === tour.slug}
               delay={Math.min(i, 8) * 60}
+              // Lo que ya declaró en el buscador: la tarjeta enseña SU total,
+              // no el precio por cabeza que hay que multiplicar.
+              personas={personas}
+              fecha={fecha}
             />
           ))}
         </div>

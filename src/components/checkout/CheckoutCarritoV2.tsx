@@ -15,6 +15,7 @@ import { respuestasRapidas, cancelacionJuntoAlBoton, type RecorridoFechado } fro
 import { validarContacto, type CampoContacto, type ErroresContacto } from "@/lib/checkout/validarContacto";
 import { GaleriaHabitacion } from "@/components/booking/GaleriaHabitacion";
 import { RescatePopup } from "@/components/carrito/RescatePopup";
+import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { RenglonCarrito } from "@/components/carrito/RenglonCarrito";
 import { AgregarRecorrido } from "@/components/carrito/AgregarRecorrido";
 import { ResumenCarrito } from "@/components/carrito/ResumenCarrito";
@@ -369,6 +370,19 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
       {/* El rescate por WhatsApp solo mientras arma su viaje y antes de dejar
           su correo: después ya tenemos cómo escribirle, y en el pago estorba. */}
       <RescatePopup activo={items.length > 0 && !cobro && paso === 1 && !email.trim()} mensaje={waRescate} />
+
+      {/*
+        Quién reservó de verdad, SOLO en el paso ② (sus datos).
+
+        En el ① ya vive el rescate por WhatsApp, que en un teléfono ocupa el
+        ancho entero de abajo: dos cajas apiladas ahí no son prueba social, son
+        un estorbo. Y en el ③ no va nada: es la pantalla de la tarjeta, y el
+        carrito ya saca de ahí hasta las reseñas a propósito.
+
+        El ② es justo donde sirve: está escribiendo su nombre, a un clic de
+        pagar, y lo que lee es que otras personas ya lo hicieron.
+      */}
+      {paso === 2 && <ReservasRecientes />}
     </div>
   );
 }

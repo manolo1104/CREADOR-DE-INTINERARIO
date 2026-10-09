@@ -41,6 +41,19 @@ const ES = {
     `Los que quedan necesitan al menos ${min} personas para salir. Puedes verlos de todos modos y escribirnos: con menos gente los armamos como privado.`,
   verlosIgual:   (n: number) => (n === 1 ? "Ver el recorrido igual" : `Ver los ${n} igual`),
   limpiar:       "Quitar los filtros",
+
+  // ── Botón de disponibilidad real (9 oct 2026) ──
+  verDisponibilidad: "Ver disponibilidad",
+  comprobando:       "Consultando lugares…",
+  // Sin fecha no hay nada que consultar: el botón abre el calendario.
+  eligeFechaPrimero: "Elige una fecha",
+  conLugar:          (n: number, f: string) =>
+    n === 1
+      ? `1 recorrido con lugar el ${f}`
+      : `${n} recorridos con lugar el ${f}`,
+  sinLugarNinguno:   (f: string) => `Ningún recorrido tiene lugar el ${f} para ese grupo.`,
+  sinLugarAlgunos:   (n: number) => (n === 1 ? "1 ya no tiene lugar ese día" : `${n} ya no tienen lugar ese día`),
+  verTodosIgual:     "Ver todos los recorridos",
   verCatalogo:   "Ver la página de todos los recorridos →",
   anterior:      "Recorridos anteriores",
   siguiente:     "Más recorridos",
@@ -77,6 +90,15 @@ const EN: BuscadorUI = {
     `The remaining ones need at least ${min} people to go out. You can still see them and write to us: with fewer, we run them as a private tour.`,
   verlosIgual:   (n) => (n === 1 ? "See it anyway" : `See all ${n} anyway`),
   limpiar:       "Clear the filters",
+
+  verDisponibilidad: "Check availability",
+  comprobando:       "Checking spots…",
+  eligeFechaPrimero: "Pick a date first",
+  conLugar:          (n, f) =>
+    n === 1 ? `1 tour with room on ${f}` : `${n} tours with room on ${f}`,
+  sinLugarNinguno:   (f) => `No tour has room on ${f} for that group.`,
+  sinLugarAlgunos:   (n) => (n === 1 ? "1 is already full that day" : `${n} are already full that day`),
+  verTodosIgual:     "Show every tour",
   verCatalogo:   "See the full tour catalog →",
   anterior:      "Previous tours",
   siguiente:     "More tours",

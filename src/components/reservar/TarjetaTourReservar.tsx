@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Clock, Users, MapPin, X, Check } from "lucide-react";
 import type { Tour } from "@/lib/tours";
-import { incluyeDeTour, tourDurTexto, precioTachado, promoDe } from "@/lib/tours";
+import { incluyeDeTour, tourDurTexto, precioTachado, promoDe, tourEnFecha } from "@/lib/tours";
 import { rangoGrupo } from "@/lib/catalogoResumen";
-import { formatMXN } from "@/lib/tourBooking";
+import { formatMXN, totalRecorrido } from "@/lib/tourBooking";
 import { BotonAgregarTour } from "@/components/carrito/BotonAgregarTour";
 import { Tilt } from "@/components/ui/Tilt";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -25,11 +25,18 @@ import { getBooking } from "@/lib/i18n/booking";
  * abra además la vista rápida.
  */
 export function TarjetaTourReservar({
-  tour, esTop, delay,
+  tour, esTop, delay, personas = 0, fecha = "",
 }: {
   tour: Tour;
   esTop: boolean;
   delay: number;
+  /**
+   * Las personas que la persona ya declaró en el buscador. 0 = no dijo nada y
+   * la tarjeta se porta como siempre.
+   */
+  personas?: number;
+  /** La fecha declarada (AAAA-MM-DD), para tarifar con la promo que le toca. */
+  fecha?: string;
 }) {
   const [abierto, setAbierto] = useState(false);
   const disparador = useRef<HTMLElement | null>(null);
@@ -43,6 +50,31 @@ export function TarjetaTourReservar({
   // de siete pagara eso, cuando paga $4,160; y "$1,600 por vehículo" de un
   // recorrido que llega a $7,000. /precios ya lo decía bien.
   const esDesde = unidad !== "persona";
+
+  /**
+   * Lo que de verdad va a pagar ESTE grupo, antes de entrar a la ficha.
+   *
+   * 🔴 Por qué (9 oct 2026, medido en el navegador a 390 px)
+   *
+   * Quien dice «4 personas» en el buscador del inicio llegaba a una tarjeta
+   * que seguía diciendo «$1,450 MXN por persona». Dos problemas en una línea:
+   * tenía que multiplicar de cabeza, y el número ni siquiera era el suyo —la
+   * Expedición Tamul baja por escalones, así que tres personas pagan $1,500
+   * cada una y seis pagan $1,450—. En Paraíso, declarar la estancia te deja
+   * delante de los precios reales; aquí la cuenta se hacía dos pantallas
+   * después.
+   *
+   * Se usa `totalRecorrido`, que es la cuenta canónica (la misma del carrito y
+   * la del cobro), sobre el recorrido ya resuelto para su fecha: así la promo
+   * de temporada baja entra o no entra según el día elegido, igual que en la
+   * ficha. Nada que calcular aparte.
+   *
+   * Los recorridos que se cobran por vehículo (el RZR) quedan fuera: ahí el
+   * total depende de cuántas unidades, no de cuánta gente.
+   */
+  const totalGrupo = personas > 0 && !porVehiculo
+    ? totalRecorrido(tourEnFecha(tour, fecha || null), personas)
+    : null;
   const grupo = unidad === "grupo" ? rangoGrupo(tour) : null;
 
   useEffect(() => {
@@ -97,7 +129,7 @@ export function TarjetaTourReservar({
         tabIndex={0}
         aria-haspopup="dialog"
         aria-label={t.vistaRapidaDe(tour.nombre)}
-        className="stagger-reveal group relative flex flex-col h-full border border-white/10 bg-negro/40 hover:border-verde-vivo/45 overflow-hidden cursor-pointer focus:outline-none focus:border-verde-vivo"
+        className="stagger-reveal group relative flex flex-col h-full rounded-2xl border border-white/10 bg-negro/40 hover:border-verde-vivo/45 overflow-hidden cursor-pointer focus:outline-none focus:border-verde-vivo"
       >
         <div className="relative h-44 overflow-hidden flex-shrink-0">
           <Image
@@ -152,6 +184,13 @@ export function TarjetaTourReservar({
                 MXN {unidad === null ? t.porVehiculo : unidad === "grupo" ? t.porGrupo : t.porPersona}
               </span>
             </p>
+            {totalGrupo !== null && (
+              <p className="text-[13px] font-dm text-crema mb-0.5">
+                <strong className="font-medium">
+                  {getBooking(locale).catalogo.totalParaGrupo(formatMXN(totalGrupo), personas)}
+                </strong>
+              </p>
+            )}
             {lineaGrupo && (
               <p className="text-[11px] font-dm text-crema/55 mb-0.5">{lineaGrupo}</p>
             )}
@@ -190,7 +229,7 @@ export function TarjetaTourReservar({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full sm:max-w-2xl max-h-[88vh] overflow-y-auto bg-negro border border-white/12"
+            className="relative w-full sm:max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl bg-negro border border-white/12"
           >
             <button
               onClick={cerrar}
@@ -266,6 +305,13 @@ export function TarjetaTourReservar({
                     {t.precioUnidadYPago(unidad === null ? t.porVehiculo : unidad === "grupo" ? t.porGrupo : t.porPersona)}
                   </span>
                 </div>
+                {totalGrupo !== null && (
+                  <p className="text-[13px] font-dm text-crema mt-1.5">
+                    <strong className="font-medium">
+                      {getBooking(locale).catalogo.totalParaGrupo(formatMXN(totalGrupo), personas)}
+                    </strong>
+                  </p>
+                )}
                 {lineaGrupo && <p className="text-[12px] font-dm text-crema/55 mt-1.5">{lineaGrupo}</p>}
               </div>
 

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { unstable_cache } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, Users, Shield, Check, MapPin, CalendarCheck, CreditCard, Lock, Star } from "lucide-react";
+import { Clock, Users, Shield, Check, MapPin, CalendarCheck, CreditCard, Lock, Star, Flame } from "lucide-react";
 import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
 import { formatMXN } from "@/lib/tourBooking";
 import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats";
@@ -13,6 +13,7 @@ import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { precioVisible } from "@/lib/paquetes";
 import { PCTS_PAQUETE } from "@/lib/paquetePricing";
 import { ToursFiltroReservar } from "@/components/reservar/ToursFiltroReservar";
+import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildTourOffer, ORG_REF } from "@/lib/jsonld";
 import { getBooking } from "@/lib/i18n/booking";
@@ -116,18 +117,40 @@ export default async function ReservarPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogoSchema) }} />
 
       {/* ── ENCABEZADO ─────────────────────────────────────────────────── */}
-      <section className="relative bg-verde-profundo px-6 pt-32 pb-12 text-center overflow-hidden">
-        <div className="max-w-3xl mx-auto relative">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-4">
-            {t.eyebrow}
-          </p>
+      {/*
+        🔴 El encabezado (9 oct 2026), en dos pasos del mismo día.
+
+        Primero adelgazó: era un H1 de 68 px con `pt-32`/`pb-12`, 487 px —más de
+        media pantalla de teléfono— antes del primer recorrido, y el de Paraíso
+        cabe en 190 px. Mismo texto y mismo orden, menos aire.
+
+        Después tomó el DISEÑO del hero de /sustentabilidad (Manolo: «copia el
+        diseño y ponlo en /reservar, solo el diseño»): el resplandor verde de
+        arriba, la píldora con borde e icono en vez del rótulo suelto, y el
+        título partido con la segunda mitad en cursiva lima. Lo que NO se copió
+        de ahí es el tamaño (`pt-36 pb-28`, H1 de 70 px): volvería a inflar
+        justo lo que se acababa de recortar.
+      */}
+      <section className="relative bg-verde-profundo px-6 pt-28 pb-9 text-center overflow-hidden">
+        {/* El resplandor verde que nace arriba al centro: es lo que levanta el
+            verde plano y lo que hace que ese hero se vea distinto. */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(90,158,42,0.3),transparent_70%)]"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 max-w-3xl mx-auto">
+          {/* La píldora con borde e icono, en vez del rótulo suelto. */}
+          <span className="mb-5 inline-flex items-center gap-2 border border-lima/30 px-4 py-1.5 font-dm text-[10px] uppercase tracking-[4px] text-lima">
+            <CalendarCheck className="h-3 w-3" aria-hidden="true" /> {t.eyebrow}
+          </span>
           <h1
-            className="font-cormorant font-light text-crema mb-5"
-            style={{ fontSize: "clamp(38px,6vw,68px)", lineHeight: 1.05 }}
+            className="font-cormorant font-light text-crema mb-4 leading-tight"
+            style={{ fontSize: "clamp(32px,4.2vw,48px)" }}
           >
             {t.h1}
+            <em className="block italic text-lima">{t.h1Acento}</em>
           </h1>
-          <p className="text-crema/70 font-dm text-base leading-relaxed max-w-xl mx-auto">
+          <p className="text-crema/65 font-dm text-sm leading-relaxed max-w-2xl mx-auto">
             {t.introApartas}<strong className="text-crema">{t.introY}</strong>
             {t.introMedio}
             <strong className="text-crema">{t.introCancelas}</strong>.
@@ -146,7 +169,7 @@ export default async function ReservarPage() {
             href={GOOGLE_PERFIL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 group inline-flex items-center gap-2.5 border border-dorado/30 bg-dorado/10 px-4 py-2.5 hover:border-dorado/60 transition-colors"
+            className="mt-5 group inline-flex items-center gap-2.5 border border-dorado/30 bg-dorado/10 px-4 py-2 hover:border-dorado/60 transition-colors"
           >
             <span className="flex gap-0.5" aria-hidden="true">
               {[...Array(5)].map((_, i) => (
@@ -181,22 +204,16 @@ export default async function ReservarPage() {
         </div>
       </section>
 
-      {/* ── CÓMO FUNCIONA ──────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-6 pt-14 pb-4">
-        <div className="grid sm:grid-cols-3 gap-6">
-          {t.pasos.map((paso) => (
-            <div key={paso.n} className="flex gap-3">
-              <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 border border-verde-selva/40 bg-verde-profundo/40 font-cormorant text-dorado text-lg">
-                {paso.n}
-              </span>
-              <span>
-                <span className="block font-dm text-[13px] text-crema/90 font-medium mb-0.5">{paso.t}</span>
-                <span className="block font-dm text-[12px] text-crema/50 leading-snug">{paso.s}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/*
+        🔴 Aquí vivía «Cómo funciona», tres pasos explicados (9 oct 2026, Manolo:
+        «la de Paraíso se ve mucho más limpia, quita lo que no sea
+        indispensable»). Decía lo mismo que la barra de confianza que tiene
+        JUSTO ENCIMA —«apartas con el 30 %», «liquidas el día del tour»— con
+        otras palabras y 127 px más, y empujaba el catálogo media pantalla hacia
+        abajo. Quien entra al motor viene a elegir recorrido, no a leer cómo
+        funciona el motor. Los textos siguen en `i18n/booking.ts` (`t.pasos`)
+        por si vuelven a hacer falta en otra parte.
+      */}
 
       {/* ── CATÁLOGO ───────────────────────────────────────────────────── */}
       <section id="catalogo" className="max-w-6xl mx-auto px-6 py-12">
@@ -204,10 +221,37 @@ export default async function ReservarPage() {
           <h2 className="font-cormorant font-light text-crema" style={{ fontSize: "clamp(24px,3.5vw,38px)" }}>
             {t.todosLosRecorridos}
           </h2>
-          <p className="text-[11px] font-dm text-crema/45">
-            {t.conteo(TOURS_DB.length, formatMXN(desde))}
-            {stats && t.ordenadosPorReservas}
-          </p>
+          <div className="flex flex-col items-start gap-1.5 sm:items-end">
+            <p className="text-[11px] font-dm text-crema/45">
+              {t.conteo(TOURS_DB.length, formatMXN(desde))}
+              {stats && t.ordenadosPorReservas}
+            </p>
+            {/*
+              El ritmo real de ventas, por fin dicho en voz alta.
+              `getReservasStats` ya lo contaba desde siempre para ordenar las
+              tarjetas, pero el número nunca se veía.
+
+              🔴 Va AQUÍ y no en el encabezado de la página: ahí arriba está la
+              calificación de Google, y el comentario de más arriba explica por
+              qué el conteo se había quitado —un número chico al lado del
+              "+10,000 viajeros" resta—. Pegado al catálogo no compite con
+              nada: dice que esto se mueve justo cuando se va a elegir.
+
+              El umbral es el de la casa (`vale()`, 5 reservas): por debajo no
+              impresiona, así que no se enseña.
+
+              Va en DORADO y no en terracota: esta página es negra (#0e1710) y
+              el terracota da 2.95:1 contra ella, que no pasa AA. El dorado da
+              6.07:1, y es el color con el que el calendario ya avisa en
+              oscuro.
+            */}
+            {stats && vale(stats.ultimos30) && (
+              <p className="flex items-center gap-1.5 font-dm text-[11px] text-dorado" role="status">
+                <Flame className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                <span>{t.reservasUltimoMes(stats.ultimos30)}</span>
+              </p>
+            )}
+          </div>
         </div>
 
         {/* El mismo filtro que el inicio (8 oct 2026). El buscador del hero manda
@@ -367,6 +411,10 @@ export default async function ReservarPage() {
           </a>
         </div>
       </section>
+
+      {/* Quién reservó de verdad (`/api/prueba-social`). Aquí no hay otro aviso
+          en la esquina, pero pide turno igual: el componente es el mismo. */}
+      <ReservasRecientes />
     </main>
   );
 }

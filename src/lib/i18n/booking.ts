@@ -29,6 +29,12 @@ export interface BookingMessages {
     ogDescription: string;
     eyebrow: string;
     h1: string;
+    /**
+     * La segunda mitad del H1, la que va en cursiva lima. El hero de
+     * /sustentabilidad parte el título en dos y el acento es lo que le da
+     * carácter; sin partir la frase no hay dónde ponerlo.
+     */
+    h1Acento: string;
     /** Lleva <strong> alrededor del 30 % y de la cancelación. */
     introApartas: string;
     introY: string;
@@ -41,6 +47,10 @@ export interface BookingMessages {
     todosLosRecorridos: string;
     conteo: (n: number, desde: string) => string;
     ordenadosPorReservas: string;
+    /** Reservas pagadas del último mes. Solo se pinta si pasan el mínimo de `reservasStats.ts`. */
+    reservasUltimoMes: (n: number) => string;
+    /** El total real del grupo que la persona declaró en el buscador. */
+    totalParaGrupo: (total: string, personas: number) => string;
     viajesVariosDias: string;
     viajesVariosDiasSub: string;
     paquete: string;
@@ -422,7 +432,12 @@ export interface BookingMessages {
     /** Eligió una fecha después de la promo de temporada baja. */
     sinPromoEnFecha: (hasta: string) => string;
     continuar: string;
-    puedesCambiarlo: string;
+    /**
+     * Cuántos pasos faltan desde la ficha. Paraíso lo dice desde el primer
+     * paso con su barra «1 Fechas · 2 Datos · 3 Pago»; aquí no se decía en
+     * ningún lado y el botón parecía llevar directo al cobro.
+     */
+    pasoUnoDeTres: string;
     grupoLleno: (max: number) => string;
     /** Contador de un recorrido de tarifa por grupo: una sola casilla, sin tramos de niño. */
     personas: string;
@@ -674,7 +689,8 @@ const es: BookingMessages = {
     ogTitle: "Reservar tour en la Huasteca Potosina",
     ogDescription: "Aparta con el 30 % y liquida el resto el día del tour. Cancelación gratuita hasta 48 h antes.",
     eyebrow: "Motor de reservas",
-    h1: "Elige tu recorrido y aparta tu lugar",
+    h1: "Elige tu recorrido",
+    h1Acento: "y aparta tu lugar",
     introApartas: "No pagas todo hoy: ",
     introY: "apartas con el 30 %",
     introMedio: " y liquidas el día del tour. Si algo cambia, ",
@@ -697,6 +713,8 @@ const es: BookingMessages = {
     todosLosRecorridos: "Todos los recorridos",
     conteo: (n, desde) => `${n} recorridos · desde ${desde} MXN`,
     ordenadosPorReservas: " · ordenados por los más reservados",
+    reservasUltimoMes: (n) => `${n} reservas confirmadas en los últimos 30 días`,
+    totalParaGrupo: (total, n) => `${total} MXN en total para ${n} ${n === 1 ? "persona" : "personas"}`,
     viajesVariosDias: "Viajes de varios días",
     viajesVariosDiasSub: "Con hospedaje, desayunos y traslados incluidos",
     paquete: "Paquete",
@@ -1036,7 +1054,7 @@ const es: BookingMessages = {
     restoElDia: (pct, resto) => `Apartas con el ${pct} %. El resto (${resto}) lo pagas el día del tour.`,
     sinPromoEnFecha: (hasta) => `Precio normal en esta fecha: la promo de temporada baja es para recorridos hasta el ${hasta}.`,
     continuar: "Elegir fecha y reservar",
-    puedesCambiarlo: "Puedes cambiar fecha y personas en el siguiente paso.",
+    pasoUnoDeTres: "Paso 1 de 3 · después: tus datos y el pago. Puedes cambiar fecha y personas.",
     grupoLleno: (max) => `Este recorrido sale con grupos de máximo ${max} personas. ¿Van más? Escríbenos y armamos una salida privada.`,
     personas: "personas",
     grupoTope: (max) => `${max} personas es el máximo que permite el jardín por experiencia; no se puede ampliar.`,
@@ -1290,7 +1308,8 @@ const en: BookingMessages = {
     ogTitle: "Book a Huasteca Potosina tour",
     ogDescription: "A 30 % deposit holds your spot. Free cancellation up to 48 h before.",
     eyebrow: "Booking engine",
-    h1: "Pick your tour and hold your spot",
+    h1: "Pick your tour",
+    h1Acento: "and hold your spot",
     introApartas: "You don't pay it all today: ",
     introY: "hold your spot with 30 %",
     introMedio: " and settle the rest on tour day. If anything changes, ",
@@ -1311,6 +1330,8 @@ const en: BookingMessages = {
     todosLosRecorridos: "All tours",
     conteo: (n, desde) => `${n} tours · from ${desde} MXN`,
     ordenadosPorReservas: " · sorted by most booked",
+    reservasUltimoMes: (n) => `${n} confirmed bookings in the last 30 days`,
+    totalParaGrupo: (total, n) => `${total} MXN total for ${n} ${n === 1 ? "person" : "people"}`,
     viajesVariosDias: "Multi-day trips",
     viajesVariosDiasSub: "Lodging, breakfasts and transfers included",
     paquete: "Package",
@@ -1651,7 +1672,7 @@ const en: BookingMessages = {
     restoElDia: (pct, resto) => `A ${pct}% deposit holds your spot. The rest (${resto}) is paid on the day of the tour.`,
     sinPromoEnFecha: (hasta) => `Regular price on this date: the low-season deal is for tours through ${hasta}.`,
     continuar: "Pick a date and book",
-    puedesCambiarlo: "You can change the date and party size on the next step.",
+    pasoUnoDeTres: "Step 1 of 3 · next: your details and payment. You can still change date and party size.",
     grupoLleno: (max) => `This tour runs with groups of up to ${max}. More of you? Message us and we'll set up a private departure.`,
     personas: "people",
     grupoTope: (max) => `${max} people is the maximum the garden allows per experience; it cannot be extended.`,

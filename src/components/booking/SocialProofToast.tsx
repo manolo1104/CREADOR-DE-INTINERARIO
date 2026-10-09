@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
+import { pedirEsquina, soltarEsquina } from "@/lib/avisoEsquina";
 
 // Prueba social REAL y verificable (sin reservas inventadas ni timestamps falsos).
 // Cada toast muestra un dato cierto de la operación: reseñas reales, premios,
@@ -82,6 +83,14 @@ function pruebasDe(tourId: string, en: boolean): { texto: string; fuente: string
  */
 const MAX_TOASTS = 8;
 
+/**
+ * El nombre con el que este aviso pide la esquina de abajo a la izquierda.
+ * La comparte con `ReservasRecientes` (ver `lib/avisoEsquina.ts`): en un
+ * teléfono las dos cajas miden casi el ancho de la pantalla y sin turno una
+ * tapaba a la otra.
+ */
+const QUIEN = "social-proof-toast";
+
 // Fisher-Yates: baraja los índices 0..n-1 para recorrer las pruebas
 // en orden aleatorio sin repetir ninguna hasta agotar la lista.
 function makeShuffledDeck(n: number): number[] {
@@ -121,6 +130,12 @@ export function SocialProofToast({ tourId, tourName }: Props) {
     // Con el mazo recortado a lo que este tour sí cumple, el tope es su largo:
     // con ocho fijo, las que quedan se repetirían.
     if (mostrados.current >= Math.min(MAX_TOASTS, PRUEBAS.length)) return;
+    // La esquina la puede tener `ReservasRecientes`. No se hace cola: se
+    // reintenta pasado el hueco de siempre.
+    if (!pedirEsquina(QUIEN)) {
+      nextTimer.current = setTimeout(() => showToast(), 55_000 + Math.random() * 65_000);
+      return;
+    }
     mostrados.current += 1;
     // Toma el siguiente índice del mazo barajado; re-baraja al agotarse
     if (deck.current.length === 0) deck.current = makeShuffledDeck(PRUEBAS.length);
@@ -133,6 +148,7 @@ export function SocialProofToast({ tourId, tourName }: Props) {
 
     hideTimer.current = setTimeout(() => {
       setVisible(false);
+      soltarEsquina(QUIEN);
       nextTimer.current = setTimeout(() => {
         showToast();
       }, 55_000 + Math.random() * 65_000);
@@ -147,6 +163,7 @@ export function SocialProofToast({ tourId, tourName }: Props) {
       clearTimeout(firstTimer);
       if (hideTimer.current)  clearTimeout(hideTimer.current);
       if (nextTimer.current)  clearTimeout(nextTimer.current);
+      soltarEsquina(QUIEN);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -154,6 +171,7 @@ export function SocialProofToast({ tourId, tourName }: Props) {
   function dismiss() {
     setVisible(false);
     setDismissed(true);
+    soltarEsquina(QUIEN);
     if (hideTimer.current)  clearTimeout(hideTimer.current);
     if (nextTimer.current)  clearTimeout(nextTimer.current);
     trackTourEvent("TOAST_DISMISSED", { tour: tourId });

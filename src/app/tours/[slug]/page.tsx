@@ -30,6 +30,7 @@ import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour } from "@/components/booking/ReservaFichaTour";
 import { ID_MODULO_RESERVA } from "@/lib/anclas";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
+import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { ReservaDirecto } from "@/components/ReservaDirecto";
 import { BloqueCasaPropia } from "@/components/BloqueCasaPropia";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
@@ -2116,6 +2117,10 @@ export default function TourDetailPage({ params }: Props) {
       <div className="h-20 lg:hidden" aria-hidden="true" />
 
       <SocialProofToast tourId={tour.id} tourName={tour.nombre} />
+      {/* Quién reservó de verdad. Comparte la esquina con el aviso de arriba
+          por el turno de `lib/avisoEsquina.ts`, y se calla mientras el módulo
+          de reserva esté en pantalla: ahí no puede tapar nada. */}
+      <ReservasRecientes evitar={`#${ID_MODULO_RESERVA}`} />
     </main>
   );
 }
