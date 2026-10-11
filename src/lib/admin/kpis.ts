@@ -4,7 +4,14 @@ import type { TourBooking } from "@prisma/client";
 import { TOURS_LISTA } from "@/lib/tours";
 import { ORIGENES, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 
-type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" | "totalAmount">;
+type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" | "totalAmount"> & { createdAt?: Date };
+
+/**
+ * Desde aquí toda reserva pagada en línea nace con su `depositoPagado` y su
+ * renglón de cobro (`cobros.ts`, 29 sep 2026). El respaldo «Stripe sin depósito
+ * = pagada completa» es SOLO para las de antes.
+ */
+const DESDE_DEPOSITO_SIEMPRE = new Date("2026-09-29T00:00:00-06:00");
 
 /**
  * Dinero realmente cobrado de una reserva = el anticipo registrado, o el total si fue
@@ -19,6 +26,10 @@ type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" |
 export function montoCobrado(b: CashFields): number {
   const dep = b.depositoPagado ?? 0;
   if (dep > 0) return dep;
+  // 🔴 Con una reserva nueva, depósito en 0 quiere decir que se ANULÓ su cobro
+  // (un reembolso): antes salía como cobrada al 100 % y el panel no dejaba
+  // registrar otro pago («ya está liquidada»).
+  if (b.createdAt && b.createdAt >= DESDE_DEPOSITO_SIEMPRE) return 0;
   return b.stripePaymentIntentId ? b.totalAmount : 0;
 }
 

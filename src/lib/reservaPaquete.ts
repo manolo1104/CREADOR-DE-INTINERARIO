@@ -25,6 +25,7 @@ import { TOURS_DB } from "@/lib/tours";
 import { parseEleccion } from "@/lib/paquetePricing";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
+import { revisarSobrecupo } from "@/lib/sobrecupo";
 import fs from "fs";
 import path from "path";
 
@@ -210,7 +211,11 @@ export async function registrarReservaPaquete(
     checkout,
   }];
 
+  // ¿Cabían sus recorridos (y la Ruta del combo)? Ya pagó: entra marcada.
+  const avisoCupo = await revisarSobrecupo(renglones, { folio: confirmationNumber, cliente: customerName });
+
   const notesFull = [
+    avisoCupo,
     origen === "webhook" ? "Reserva registrada por el webhook: el cliente pagó pero no llegó a la pantalla de confirmación (sin teléfono ni notas)." : null,
     sinHotel ? nombreReserva : `Paquete: ${paquete.nombre} (${paquete.duracion})`,
     `Grupo: ${adultos} adulto(s)${nMid ? `, ${nMid} niño(s) 6–10` : ""}${nSmall ? `, ${nSmall} menor(es) de 6` : ""}`,

@@ -23,9 +23,14 @@ export async function GET(req: NextRequest) {
     }
     const desde = searchParams.get("desde") || hoyMX();
     const hasta = searchParams.get("hasta") || hoyMX();
+    // 🔴 Sin esto, Operación pedía `?desde=2000-01-01&hasta=2099-12-31` y veía
+    // TODOS los gastos generales, repartos a socios y reembolsos. Operación ve
+    // lo que opera: los costos de salida y los cobros; lo demás, solo socios.
+    const sesion = await sesionActual();
+    const veTodo = !!sesion && puedeHacer(sesion.rol, "capturarGastoGeneral");
     return NextResponse.json(
       await prisma.movimiento.findMany({
-        where:   { fecha: { gte: desde, lte: hasta } },
+        where:   { fecha: { gte: desde, lte: hasta }, ...(veTodo ? {} : { tipo: { in: ["costo", "cobro"] } }) },
         orderBy: { fecha: "asc" },
       }),
     );

@@ -3,6 +3,7 @@ import { actividad, logger, mxn, nombreCorto } from "@/lib/logger";
 import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB, PAQUETES_EVENTO } from "@/lib/paquetes";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +83,9 @@ function lista(v: unknown): string {
  * esto es solo para que se pueda leer.
  */
 const SOLO_SE_GUARDA = new Set([
+  // Sale cada ~13 s por visitante mientras rota la prueba social: era 153 de
+  // ~500 líneas del log de Railway y tapaba lo que sí importa (11 oct 2026).
+  "PRUEBA_SOCIAL_SHOWN",
   "TOUR_PAGE_VIEW",
   "TOURS_LIST_VIEW",
   "DESTINO_PAGE_VIEW",
@@ -182,9 +186,23 @@ async function persistir(event: string, d: Datos, path?: string, sid?: string, d
   }
 }
 
+/** Lo más que pesa un evento de verdad, con holgura. */
+const MAX_BYTES = 8 * 1024;
+
 export async function POST(req: NextRequest) {
+  // 🔴 Sin límite ni tope de tamaño, cualquiera podía llenar la base de
+  // Railway con JSON arbitrario o inventar clics a WhatsApp y pasos del embudo
+  // en los KPIs del panel. 120 por minuto sobra para un visitante real.
+  const limited = rateLimit(req, { key: "track", limit: 120, windowMs: 60_000 });
+  if (limited) return limited;
+  if (Number(req.headers.get("content-length") || 0) > MAX_BYTES) {
+    return NextResponse.json({ ok: false }, { status: 413 });
+  }
+
   try {
-    const body = await req.json();
+    const texto = await req.text();
+    if (texto.length > MAX_BYTES) return NextResponse.json({ ok: false }, { status: 413 });
+    const body = JSON.parse(texto);
     const { event, data, path, sid, device, referrer } = body as {
       event: string;
       data?: Datos;
@@ -194,7 +212,10 @@ export async function POST(req: NextRequest) {
       referrer?: string;
     };
 
-    if (!event) return NextResponse.json({ ok: false }, { status: 400 });
+    // Nombres de evento como los del sitio (MAYÚSCULAS_Y_GUIONES): nada de texto libre.
+    if (!event || typeof event !== "string" || !/^[A-Z0-9_]{2,60}$/.test(event)) {
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
 
     // etiqueta corta del visitante para poder seguir su recorrido en los logs
     const visitante =

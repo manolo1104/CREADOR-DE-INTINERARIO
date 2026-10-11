@@ -37,7 +37,8 @@ const KEY = "hp_tour_booking_state";
 
 export function saveTourBookingState(state: TourBookingState) {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(KEY, JSON.stringify(state));
+  // Con el almacenamiento bloqueado escribir lanza: se sigue sin guardar.
+  try { sessionStorage.setItem(KEY, JSON.stringify(state)); } catch { /* sin almacenamiento */ }
 }
 
 export function loadTourBookingState(): TourBookingState | null {
@@ -50,7 +51,7 @@ export function loadTourBookingState(): TourBookingState | null {
 
 export function clearTourBookingState() {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem(KEY);
+  try { sessionStorage.removeItem(KEY); } catch { /* sin almacenamiento */ }
 }
 
 export function formatMXN(n: number) {

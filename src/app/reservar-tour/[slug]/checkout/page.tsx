@@ -187,7 +187,9 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
               adults:   booking.adults,
               childrenMid: 0,
               childrenSmall: 0,
-              subtotal: chargeAmt,
+              // El TOTAL del renglón, no el anticipo: con el 30 % las líneas no
+              // cuadraban con el total en el panel, finanzas y el correo.
+              subtotal: cobro.total,
             }] : undefined,
           }),
         });

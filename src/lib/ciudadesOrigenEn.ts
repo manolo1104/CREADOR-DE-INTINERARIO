@@ -27,6 +27,7 @@
  */
 
 import { enAuto } from "@/lib/tiemposDeViaje";
+import { PAQUETES_DB } from "@/lib/paquetes";
 
 export interface RutaLlegada {
   /** Etiqueta corta del modo: "Fly into Tampico (TAM) — best route". */
@@ -85,7 +86,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
           "It's a long haul — Houston to the Huasteca is a two-day drive with a border crossing and a mountain stretch at the end. Almost everyone who asks us ends up flying to Tampico instead.",
       },
     ],
-    paqueteSugerido: "completo",
+    paqueteSugerido: "gran-huasteca", // 4 días / 3 noches, como dice su FAQ
     faqs: [
       {
         q: "Why fly to Tampico instead of Mexico City?",
@@ -132,7 +133,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
           "A short flight into northern Mexico, but Monterrey leaves you about 6 hours from Ciudad Valles by car (around 8 by bus). The Tampico nonstop is the better trade almost every time.",
       },
     ],
-    paqueteSugerido: "completo",
+    paqueteSugerido: "gran-huasteca", // 4 días / 3 noches, como dice su FAQ
     faqs: [
       {
         q: "Is there a nonstop from Dallas to the Huasteca Potosina?",
@@ -179,7 +180,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
           "The most frequent option, but it leaves 267 miles (430 km) of road ahead of you — about 6.5 to 7 hours on the Mex-85 / MEX-70 toll highway to Ciudad Valles.",
       },
     ],
-    paqueteSugerido: "completo",
+    paqueteSugerido: "gran-huasteca", // 4 días / 3 noches, como dice su FAQ
     faqs: [
       {
         q: "Can I fly from Austin to the Huasteca Potosina without connecting?",
@@ -226,7 +227,7 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
           "The option with the most departures, at the cost of the longest drive: 267 miles (430 km) and about 6.5 to 7 hours to Ciudad Valles on the toll highway.",
       },
     ],
-    paqueteSugerido: "completo",
+    paqueteSugerido: "gran-huasteca", // 4 días / 3 noches, como dice su FAQ
     faqs: [
       {
         q: "What's the fastest way from San Antonio to the Huasteca Potosina?",
@@ -247,6 +248,15 @@ export const CIUDADES_ORIGEN_EN: CiudadOrigenEn[] = [
     ],
   },
 ];
+
+// «completo» ya no existe (redirige a gran-huasteca) y la página caía en
+// silencio al primero del catálogo. El build se cae si vuelve a pasar.
+for (const c of CIUDADES_ORIGEN_EN) {
+  if (!PAQUETES_DB.some((p) => p.slug === c.paqueteSugerido)) {
+    throw new Error(`ciudadesOrigenEn: "${c.slug}" suggests package "${c.paqueteSugerido}", which does not exist`);
+  }
+}
+
 
 export function getCiudadOrigenEn(slug: string): CiudadOrigenEn | undefined {
   return CIUDADES_ORIGEN_EN.find((c) => c.slug === slug);

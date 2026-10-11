@@ -47,6 +47,14 @@
  */
 export const MINUTOS_VALLES_XILITLA = 90;
 
+/** «hora y media» · «2 horas»: el tramo Valles–Xilitla dicho en una frase. */
+export function horasEnPalabras(minutos: number): string {
+  if (minutos === 90) return "hora y media";
+  if (minutos === 180) return "tres horas";
+  const h = minutos / 60;
+  return Number.isInteger(h) ? `${h} hora${h === 1 ? "" : "s"}` : `${h.toString().replace(".", ",")} horas`;
+}
+
 /** Cada tramo, en horas, tal como se le dice al cliente. */
 export interface TiempoDesde {
   /** Coincide con el slug de `traslados.ts` y de la landing `/desde/<slug>`. */

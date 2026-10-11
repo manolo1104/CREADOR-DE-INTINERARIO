@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Elements } from "@stripe/react-stripe-js";
 import { ChevronLeft, AlertCircle } from "lucide-react";
@@ -74,9 +74,14 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
     if (paso === 3 && !cobro && !cargando) setPaso(2);
   }, [paso, cobro, cargando]);
 
-  // El cobro llegó: se abre el pago.
+  // El cobro llegó: se abre el pago. Solo cuando LLEGA uno nuevo (cada «Ir al
+  // pago» lo vuelve a pedir): 🔴 antes bastaba con que existiera, así que
+  // «Editar» en «Tus datos» regresaba al pago en el mismo instante y no se
+  // podía corregir el correo ni el teléfono.
+  const cobroVisto = useRef(cobro);
   useEffect(() => {
-    if (cobro && paso === 2) setPaso(3);
+    if (cobro && cobro !== cobroVisto.current && paso === 2) setPaso(3);
+    cobroVisto.current = cobro;
   }, [cobro, paso]);
 
   // Al cambiar de paso, la vista va al paso abierto (en celular, el de arriba

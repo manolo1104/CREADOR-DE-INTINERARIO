@@ -263,6 +263,16 @@ export async function editarCobro(
   const metodo = cambios.metodo && metodoValido(cambios.metodo) ? cambios.metodo : (antes.metodoPago ?? "otro");
   const fecha  = /^\d{4}-\d{2}-\d{2}$/.test(String(cambios.fecha ?? "")) ? String(cambios.fecha) : antes.fecha;
   const folio  = cambios.folio === undefined ? null : (cambios.folio ? String(cambios.folio).trim().slice(0, 60) : null);
+  const recibidoPor = cambios.recibidoPor !== undefined
+    ? (cambios.recibidoPor ? String(cambios.recibidoPor).slice(0, 80) : null)
+    : antes.recibidoPor;
+
+  // 🔴 Un efectivo sin «quién lo recibió» desaparece de «efectivo sin entregar»
+  // en el corte (esa cuenta solo mira los que tienen nombre). Vaciarlo era una
+  // forma de hacer invisible dinero en mano, y la bitácora ni lo anotaba.
+  if (metodo === "efectivo" && !recibidoPor) {
+    throw new Error("Un cobro en efectivo tiene que decir quién lo recibió");
+  }
 
   await prisma.movimiento.update({
     where: { id },
@@ -273,9 +283,7 @@ export async function editarCobro(
       // El concepto se rehace para que la bitácora y los listados digan la
       // verdad: si no, seguiría leyéndose "Cobro efectivo" en un SPEI.
       concepto:    `Cobro ${etiquetaMetodo(metodo).toLowerCase()}${folio ? ` · ${folio}` : ""}`,
-      recibidoPor: cambios.recibidoPor !== undefined
-        ? (cambios.recibidoPor ? String(cambios.recibidoPor).slice(0, 80) : null)
-        : antes.recibidoPor,
+      recibidoPor,
       // Corregir el método de un efectivo que ya se entregó no lo "des-entrega",
       // pero si deja de ser efectivo, la entrega pierde sentido.
       ...(metodo !== "efectivo" ? { entregadoA: null, entregadoAt: null } : {}),
@@ -287,6 +295,10 @@ export async function editarCobro(
       ? { campo: "método", antes: etiquetaMetodo(antes.metodoPago), despues: etiquetaMetodo(metodo) }
       : null,
     antes.fecha !== fecha ? { campo: "fecha", antes: antes.fecha, despues: fecha } : null,
+    // Quién tiene el efectivo es justo lo que el corte cuadra: el cambio se anota.
+    (antes.recibidoPor ?? null) !== (recibidoPor ?? null)
+      ? { campo: "lo recibió", antes: antes.recibidoPor ?? "—", despues: recibidoPor ?? "—" }
+      : null,
   ].filter(Boolean) as { campo: string; antes: unknown; despues: unknown }[];
 
   await registrarEnBitacora({

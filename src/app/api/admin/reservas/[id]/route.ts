@@ -4,6 +4,9 @@ import { origenValido } from "@/lib/origenReserva";
 import {
   registrarEnBitacora, camposCambiados, ETIQUETAS_RESERVA, pesos,
 } from "@/lib/admin/bitacora";
+import { sesionActual } from "@/lib/admin/sesion";
+import { puedeHacer } from "@/lib/admin/usuarios";
+import { anularCobro } from "@/lib/admin/cobros";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +31,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // desglose de ingresos y una cadena libre lo convertiría en otra columna
     // sin agrupar.
     if (body.origen !== undefined) data.origen = origenValido(body.origen);
+    // 🔴 Lo cobrado sale de los renglones de cobro (`cobros.ts`), con método y
+    // comprobante. La pantalla ya no lo manda, pero la API lo aceptaba de
+    // cualquier rol: se podía «cobrar» o «des-cobrar» sin dejar renglón. Solo
+    // un socio o el dueño lo corrigen a mano.
+    const sesion = await sesionActual();
+    if (data.depositoPagado !== undefined && !(sesion && puedeHacer(sesion.rol, "anularMovimiento"))) {
+      delete data.depositoPagado;
+    }
     // Foto de cómo estaba ANTES, para poder contar qué cambió en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
     const updated = await prisma.tourBooking.update({
@@ -59,6 +70,29 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     // si no, quedarían bytes huérfanos ocupando espacio para siempre.
     // Se lee antes de borrar: después ya no hay a quién nombrar en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
+
+    // 🔴 Los cobros no tienen llave foránea: al borrar la reserva quedaban
+    // huérfanos, seguían contando como efectivo en mano en los cortes y
+    // desaparecían de Finanzas. Si tiene cobros vivos, solo un socio o el dueño
+    // la borra, y sus cobros se ANULAN con motivo (queda rastro); Operación la
+    // cancela en vez de borrarla.
+    const sesion = await sesionActual();
+    const cobrosVivos = await prisma.movimiento.findMany({
+      where:  { reservaId: params.id, tipo: "cobro", anulado: false },
+      select: { id: true },
+    });
+    if (cobrosVivos.length) {
+      if (!sesion || !puedeHacer(sesion.rol, "anularMovimiento")) {
+        return NextResponse.json(
+          { error: "Esta reserva tiene cobros registrados. Cámbiala a «cancelada» o pídele a un socio que la elimine." },
+          { status: 403 },
+        );
+      }
+      for (const c of cobrosVivos) {
+        await anularCobro(c.id, `Reserva ${antes?.confirmationNumber ?? params.id} eliminada`, sesion.nombre);
+      }
+    }
+
     await prisma.evidencia.deleteMany({ where: { bookingId: params.id } });
     await prisma.tourBooking.delete({ where: { id: params.id } });
 

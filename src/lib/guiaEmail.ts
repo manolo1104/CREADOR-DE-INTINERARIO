@@ -23,7 +23,9 @@ export interface GuiaEmailInput {
 export function buildGuiaEmailHtml(d: GuiaEmailInput): { subject: string; html: string } {
   const appUrl      = d.appUrl ?? BASE_POR_DEFECTO;
   const downloadUrl = `${appUrl}/guia/descarga?session_id=${d.sessionId}`;
-  const tripUrl     = `${appUrl}/viaje-septiembre`;
+  // El viaje de septiembre (16–19 sep 2026) ya pasó: el correo ofrece los
+  // paquetes, que se venden cualquier fecha.
+  const paquetesUrl = `${appUrl}/paquetes`;
   const toursUrl    = `${appUrl}/tours`;
 
   const html = shellCorreo({
@@ -39,10 +41,10 @@ export function buildGuiaEmailHtml(d: GuiaEmailInput): { subject: string; html: 
       barra("¿Y si lo dejas en nuestras manos?"),
       tabla(`
         <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:22px;">
-          ${titulo("El viaje de septiembre, todo incluido", "0 0 10px 0")}
-          ${parrafo("Salimos de CDMX del <strong>16 al 19 de septiembre de 2026</strong>: transporte redondo, hospedaje y 3 recorridos guiados. Desde $7,900 por persona.", "0")}
+          ${titulo("Paquetes todo incluido", "0 0 10px 0")}
+          ${parrafo("Hotel en Xilitla, recorridos guiados, desayunos y entradas, en la fecha que tú elijas.", "0")}
         </td></tr>`),
-      boton(tripUrl, "Ver el viaje de septiembre"),
+      boton(paquetesUrl, "Ver los paquetes"),
       bajoBoton(`¿Prefieres armarlo tú? <a href="${toursUrl}" style="color:${C.verde};font-weight:500;">Mira los tours sueltos</a>.`),
     ].join(""),
     pie: `¿Alguna duda? Responde a este correo o escríbenos por WhatsApp al <a href="https://wa.me/${WA}" style="color:${C.verde};font-weight:500;">+52 489 109 0388</a>.`,

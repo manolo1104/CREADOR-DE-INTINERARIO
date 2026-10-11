@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { estaDeBaja, mismoCorreo } from "@/lib/estaDeBaja";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildBoletinEmail } from "@/lib/boletinEmail";
 import { actividad, logger } from "@/lib/logger";
@@ -68,7 +69,8 @@ export async function POST(req: NextRequest) {
   // Un correo, un envío. Mucha gente está en la lista dos veces —dejó su correo
   // en el blog y después en la guía— y son filas distintas de `Lead`.
   const porEmail = new Map<string, (typeof candidatos)[number]>();
-  for (const l of candidatos) if (!porEmail.has(l.email)) porEmail.set(l.email, l);
+  // En minúsculas: «Ana@…» y «ana@…» son la misma persona.
+  for (const l of candidatos) if (!porEmail.has(l.email.toLowerCase())) porEmail.set(l.email.toLowerCase(), l);
   // `Array.from` y no spread: el `target` del proyecto no itera Map.
   const unicos = Array.from(porEmail.values());
 
@@ -77,6 +79,10 @@ export async function POST(req: NextRequest) {
   const destinatarios: { email: string; fuente: string }[] = [];
 
   for (const lead of unicos) {
+    // Una fila «terminado» no quiere decir que siga suscrito: si esa persona
+    // pidió la baja desde otro correo (otra fila, una cotización), aquí no se
+    // enteraba (`lib/estaDeBaja.ts`).
+    if (await estaDeBaja(lead.email)) continue;
     destinatarios.push({ email: lead.email, fuente: lead.fuente });
     if (dry) continue;
 
@@ -93,7 +99,7 @@ export async function POST(req: NextRequest) {
       // —no solo la que se tomó— para que la deduplicación del mes que viene
       // siga funcionando.
       await prisma.lead.updateMany({
-        where: { email: lead.email },
+        where: { email: mismoCorreo(lead.email) },
         data:  { lastEmailAt: ahora },
       });
       enviados++;

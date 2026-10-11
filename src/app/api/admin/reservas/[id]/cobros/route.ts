@@ -51,7 +51,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const reserva = await prisma.tourBooking.findUnique({
       where: { id: params.id },
-      select: { totalAmount: true, depositoPagado: true, stripePaymentIntentId: true },
+      // `createdAt` para que un cobro anulado (reembolso) no la dé por liquidada.
+      select: { totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true },
     });
     if (!reserva) return NextResponse.json({ error: "Esa reserva no existe" }, { status: 404 });
 

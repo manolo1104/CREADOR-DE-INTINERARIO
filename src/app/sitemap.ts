@@ -103,7 +103,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const bilingualStatic: MetadataRoute.Sitemap = [
     ...bilingual("/",                 { changeFrequency: "weekly",  priority: 1.0, ...CAT }),
     ...bilingual("/tours",            { changeFrequency: "weekly",  priority: 0.9, ...CAT }),
-    ...bilingual("/viaje-septiembre", { changeFrequency: "weekly",  priority: 0.9 }),
+    // /viaje-septiembre salió del sitemap el 11 oct 2026: el viaje fue del 16 al
+    // 19 de septiembre y la página ya solo manda a /paquetes y /tours.
     ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8, ...CAT }),
     // El catálogo del motor. Es de conversión, no un paso del checkout: tiene
     // canonical y metadata propios en los dos idiomas. El carrito y la

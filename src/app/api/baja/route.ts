@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { emailDeToken } from "@/lib/baja";
+import { mismoCorreo, FUENTE_BAJA } from "@/lib/estaDeBaja";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
 import { actividad, logger } from "@/lib/logger";
 
@@ -46,25 +47,37 @@ export async function POST(req: NextRequest) {
      */
     const [leads, carritos, cotizaciones, curso] = await prisma.$transaction([
       prisma.lead.updateMany({
-        where: { email, status: { not: "baja" } },
+        // Sin distinguir mayúsculas: el token lleva el correo en minúsculas y
+        // los formularios lo guardan como se escribió («Ana.Lopez@Gmail.com»).
+        // Con la búsqueda exacta la baja respondía «listo» y no cambiaba nada.
+        where: { email: mismoCorreo(email), status: { not: "baja" } },
         data:  { status: "baja" },
       }),
       // "baja" no está en `ESTADOS_VIVOS` de `cartFollowUp`, así que el cron
       // deja de verlos por construcción, sin un `if` que alguien pueda olvidar.
       prisma.abandonedCart.updateMany({
-        where: { customerEmail: email, status: { in: [...ESTADOS_VIVOS] } },
+        where: { customerEmail: mismoCorreo(email), status: { in: [...ESTADOS_VIVOS] } },
         data:  { status: "baja" },
       }),
       prisma.tourQuote.updateMany({
-        where: { customerEmail: email, status: "enviada" },
+        where: { customerEmail: mismoCorreo(email), status: "enviada" },
         data:  { status: "expirada" },
       }),
       // Curso "Turismo con IA": solo prospectos. A un ALUMNO no se le apagan
       // sus recordatorios de sesión por un enlace viejo de marketing — sus
       // correos de la secuencia C no son publicidad (y por eso no llevan baja).
       prisma.cursoLead.updateMany({
-        where: { email, compro: false, status: { not: "baja" } },
+        where: { email: mismoCorreo(email), compro: false, status: { not: "baja" } },
         data:  { status: "baja" },
+      }),
+      // La marca que la hace DURAR: una fila de lista con fuente «Baja». Quien
+      // se daba de baja desde una cotización no tenía ninguna fila «baja» que
+      // consultar, y el siguiente formulario lo volvía a inscribir. Ahora
+      // `estaDeBaja()` la encuentra siempre.
+      prisma.lead.upsert({
+        where:  { email_fuente: { email: email.toLowerCase(), fuente: FUENTE_BAJA } },
+        create: { email: email.toLowerCase(), fuente: FUENTE_BAJA, status: "baja" },
+        update: { status: "baja" },
       }),
     ]);
 

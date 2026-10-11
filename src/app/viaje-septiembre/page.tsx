@@ -18,6 +18,17 @@ const TARGET = "2026-09-16T07:00:00-06:00";
 const PRECIO = 7900;
 const VALOR_TOTAL = 10200;
 const HERO_IMG = "/imagenes/cascada-de-tamul/hero.jpg";
+/** Último día del viaje. Después, la página deja de venderlo (ver abajo). */
+const REGRESO = "2026-09-19";
+
+/**
+ * ¿Ya pasó? 🔴 El 10 oct seguía en el sitemap con prioridad 0.9, con la cuenta
+ * regresiva en 00:00:00:00, botones de WhatsApp para reservar y un Event
+ * «EventScheduled / InStock» en el JSON-LD. Ahora deja de venderse sola.
+ */
+function viajePasado(): boolean {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) > REGRESO;
+}
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -42,6 +53,8 @@ export function generateMetadata(): Metadata {
     },
     twitter: { card: "summary_large_image", title, description },
     alternates: buildAlternates("/viaje-septiembre", locale),
+    // Ya pasó: fuera del índice, pero que siga sirviendo a quien llega por un enlace viejo.
+    ...(viajePasado() ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -160,6 +173,31 @@ export default function ViajeSeptiembrePage() {
   const locale = asLocale(headers().get("x-locale"));
   const en = locale === "en";
   const lp = (p: string) => localePath(p, locale);
+
+  if (viajePasado()) {
+    return (
+      <main className="flex min-h-[70vh] items-center bg-negro px-5 pb-20 pt-36 text-crema sm:px-8">
+        <div className="mx-auto max-w-xl">
+          <h1 className="font-cormorant text-[40px] font-light leading-tight">
+            {en ? "The September trip already happened" : "El viaje de septiembre ya pasó"}
+          </h1>
+          <p className="mt-4 font-dm text-[16px] text-crema/70">
+            {en
+              ? "That group trip ran on September 16–19, 2026. You can still travel any date with our packages (hotel + tours) or build your own trip with day tours."
+              : "Ese viaje grupal salió del 16 al 19 de septiembre de 2026. Puedes venir cualquier fecha con nuestros paquetes (hotel + tours) o armar tu viaje con los recorridos de un día."}
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href={lp("/paquetes")} className="inline-flex items-center justify-center bg-dorado px-6 py-4 font-dm text-[11px] font-medium uppercase tracking-[2px] text-negro">
+              {en ? "See packages" : "Ver paquetes"}
+            </Link>
+            <Link href={lp("/tours")} className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90">
+              {en ? "See day tours" : "Ver tours de un día"}
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
   const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
 
   const ITINERARIO = en ? ITINERARIO_EN : ITINERARIO_ES;

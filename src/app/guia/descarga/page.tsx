@@ -59,15 +59,16 @@ function DescargaContent() {
             </p>
             <div className="border border-dorado/25 bg-dorado/5 p-5 text-left mb-3">
               <p className="text-[10px] tracking-[3px] uppercase text-dorado/70 mb-2">Lleva el viaje resuelto</p>
+              {/* Antes ofrecía el viaje grupal del 16–19 sep 2026, que ya pasó. */}
               <p className="text-sm text-crema/65 leading-relaxed mb-3">
-                ¿Y si no quieres manejar? Tenemos un viaje grupal de CDMX a la Huasteca (16–19 sep 2026):
-                transporte redondo, hotel y 3 recorridos, todo incluido desde $7,900/persona.
+                ¿Prefieres que te lo armemos? Nuestros paquetes traen hotel en Xilitla, recorridos guiados,
+                desayunos y entradas, en la fecha que tú elijas.
               </p>
               <Link
-                href="/viaje-septiembre"
+                href="/paquetes"
                 className="text-[11px] tracking-[3px] uppercase text-dorado hover:text-lima border-b border-dorado/30 pb-0.5 transition-colors"
               >
-                Ver el viaje de septiembre →
+                Ver los paquetes →
               </Link>
             </div>
             <div className="border border-white/8 p-5 text-left">

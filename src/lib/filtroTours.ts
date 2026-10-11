@@ -1,4 +1,4 @@
-import { TOUR_CATEGORIAS, type Tour } from "./tours";
+import { TOUR_CATEGORIAS, claveIncluye, type Tour } from "./tours";
 import { ETIQUETAS, etiquetasDeTour } from "./etiquetasTour";
 import type { IntencionInicio } from "./intencionInicio";
 
@@ -63,12 +63,14 @@ export function porChipYTexto(tours: Tour[], chips: ChipTour[], chip: string, te
   // Un recorrido concreto elegido en el buscador: se enseña ese y nada más.
   const soloEste = chip.startsWith(PREFIJO_TOUR) ? chip.slice(PREFIJO_TOUR.length) : null;
   const activo = chips.find((c) => c.id === chip);
-  const q = texto.trim().toLowerCase();
+  // Sin acentos ni mayúsculas en los dos lados: en el teléfono casi nadie
+  // escribe «café» ni «jardín», y «cafe» no encontraba la Travesía del Café.
+  const q = claveIncluye(texto);
   return tours.filter((t) => {
     if (soloEste) return t.slug === soloEste;
     if (activo && !activo.test(t)) return false;
     if (!q) return true;
-    const heno = [t.nombre, t.nombreCorto, t.tipo, t.tagline, ...t.destinos].join(" ").toLowerCase();
+    const heno = claveIncluye([t.nombre, t.nombreCorto, t.tipo, t.tagline, ...t.destinos].join(" "));
     return heno.includes(q);
   });
 }

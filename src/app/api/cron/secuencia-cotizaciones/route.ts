@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { estaDeBaja } from "@/lib/estaDeBaja";
 import { buildQuoteSequenceEmail, buildQuoteVenceEmail, type QuotePaso } from "@/lib/quoteSequenceEmail";
 import { cuandoVence, diasParaVencer, fechaLimite } from "@/lib/vencimientoCotizacion";
 import { hoyMX } from "@/lib/dates";
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
     if (venceEl && !meta.avisoVenceAt && diasParaVencer(venceEl, hoy) <= 1) {
       const ultimo = Date.parse(meta.seqUltimoAt ?? "");
       const reciente = !Number.isNaN(ultimo) && ahora.getTime() - ultimo < 6 * 60 * 60 * 1000;
-      if (!reciente && !(await deBaja(q.customerEmail))) {
+      if (!reciente && !(await estaDeBaja(q.customerEmail))) {
         destinatarios.push({ folio: q.quoteNumber, email: q.customerEmail, paso: "vence" });
         if (dry) continue;
         try {
@@ -244,6 +245,10 @@ export async function POST(req: NextRequest) {
       }
       continue;
     }
+
+    // 🔴 Antes la baja solo se miraba antes del aviso «vence mañana»: los pasos
+    // 2 a 4 le seguían llegando a quien la había pedido.
+    if (await estaDeBaja(q.customerEmail)) continue;
 
     destinatarios.push({ folio: q.quoteNumber, email: q.customerEmail, paso: paso.paso });
     if (dry) continue;
@@ -326,14 +331,4 @@ async function vencer(id: string, lineItems: unknown, venceEl: string) {
   });
 }
 
-/**
- * ¿Pidió la baja? `/api/baja` ya vence sus cotizaciones, pero una que el
- * equipo reactive después a mano no debe volver a escribirle.
- */
-async function deBaja(email: string): Promise<boolean> {
-  const [lead, carrito] = await Promise.all([
-    prisma.lead.findFirst({ where: { email, status: "baja" }, select: { id: true } }),
-    prisma.abandonedCart.findFirst({ where: { customerEmail: email, status: "baja" }, select: { id: true } }),
-  ]);
-  return !!(lead || carrito);
-}
+// (La regla de la baja vive en `lib/estaDeBaja.ts`, igual para todos los crons.)

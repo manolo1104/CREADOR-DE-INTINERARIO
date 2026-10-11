@@ -34,6 +34,7 @@ import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import { TOURS_DB } from "@/lib/tours";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { registrarReservaPaquete } from "@/lib/reservaPaquete";
+import { revisarSobrecupo } from "@/lib/sobrecupo";
 
 /**
  * Cuánto espera el webhook antes de actuar. La pantalla de confirmación tarda
@@ -187,7 +188,14 @@ export async function recuperarPago(
         });
       }
 
+      // ¿Cabía? Ya pagó: entra igual, marcada (`lib/sobrecupo.ts`).
+      const avisoCupo = await revisarSobrecupo(
+        lineas.length ? lineas : [{ tourSlug: meta.tourSlug, tourDate: meta.tourDate, adults: Number(meta.adults) || 1, children: Number(meta.children) || 0 }],
+        { folio: confirmationNumber, cliente: meta.customerName || "cliente sin nombre", excluirApartado: esIdApartado(meta.apartadoId) ? meta.apartadoId : undefined },
+      );
+
       const notas = [
+        avisoCupo,
         `${origen === "conciliacion" ? "Reserva registrada por la conciliación de pagos" : "Reserva registrada automáticamente por webhook"} — el cliente no completó la pantalla de confirmación.`,
         locale === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : "",
         // Lo PIDIÓ, que no es lo mismo que haber comprado desde /en.

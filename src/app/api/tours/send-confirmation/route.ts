@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
+import { revisarSobrecupo } from "@/lib/sobrecupo";
 import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { stripe } from "@/lib/stripe";
@@ -89,6 +90,18 @@ export async function POST(req: NextRequest) {
       console.error("❌ Sheets tour:", e.message);
     }
 
+    // ¿Cabía? El cupo se revisó al abrir el pago, no al cobrarlo: si en medio
+    // se llenó la salida, la reserva entra igual (ya pagó) pero marcada.
+    const avisoCupo = await revisarSobrecupo(
+      Array.isArray(lineItems) && lineItems.length
+        ? lineItems
+        : [{ tourSlug, tourDate, adults: Number(adults) || 1, children: Number(children) || 0 }],
+      {
+        folio: confirmationNumber, cliente: customerName,
+        excluirApartado: [pi.metadata?.apartadoId, body.apartadoId].find(esIdApartado),
+      },
+    );
+
     try {
       const creada = await prisma.tourBooking.create({
         data: {
@@ -107,7 +120,7 @@ export async function POST(req: NextRequest) {
           customerName,
           customerEmail:  email,
           customerPhone:  customerPhone || null,
-          notes:          notes         || null,
+          notes:          [avisoCupo, notes].filter(Boolean).join(" | ") || null,
           // Tours por vehículo (RZR): guarda la línea con ruta/vehículo/unidades
           // para que /reservas, el PDF y el modal del admin la reconstruyan.
           // El idioma va en el objeto `_meta` (patrón del proyecto): sin él,

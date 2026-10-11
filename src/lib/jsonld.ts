@@ -79,7 +79,10 @@ export function buildOrganizationNode(locale: Locale = "es", description?: strin
     // 🔴 28 sep 2026 — se retiró `award`. Declaraba un premio con nombre,
     // categoría, región y año sin ninguna fuente que lo respaldara en el sitio.
     // Los datos estructurados son justo lo que se contrasta.
-    sameAs: [CONTACTO.facebook, GOOGLE_REVIEWS_URL, CONTACTO.mapsUrl],
+    // Sin `CONTACTO.mapsUrl`: esa liga abre la ficha de Google del HOTEL Paraíso
+    // Encantado, otra marca (`resenas.ts`), y `sameAs` declara que es la misma
+    // entidad que Tours.
+    sameAs: [CONTACTO.facebook, GOOGLE_REVIEWS_URL],
   };
 }
 

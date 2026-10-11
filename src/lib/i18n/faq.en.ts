@@ -1,5 +1,5 @@
 import type { Locale } from "./config";
-import { TOURS_DB } from "@/lib/tours";
+import { TOURS_DB, promoVigente } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { TRASLADOS } from "@/lib/traslados";
 import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
@@ -90,6 +90,13 @@ export interface FaqContent {
 // el inglés lleva la etiqueta "MXN" pegada: un lector americano que ve "$1,400"
 // sin moneda asume dólares y se lleva un susto de 20x).
 
+// ── Desde aquí, todo depende del precio de HOY ──────────────────────────────
+// 🔴 `t.precio` es un getter: vale la promo hasta el 29 oct y el de lista
+// después. Como constantes de módulo, las respuestas se armaban UNA vez al
+// arrancar el servidor y desde el 30 oct /preguntas-frecuentes (y su FAQPage)
+// habrían seguido diciendo «Tamul $1,450». Ahora se arman en `construirFaq()`
+// y `getFaq()` las rehace cuando cambia `promoVigente()`. (Sin reindentar.)
+function construirFaq(): { ES: FaqContent; EN: FaqContent } {
 const precioTour = (id: string) => TOURS_DB.find((t) => t.id === id)?.precio ?? 0;
 
 // 🔴 Filtraba con `!== "vehiculo"` y el Edén —tarifa del GRUPO entero— subía
@@ -487,6 +494,13 @@ const EN: FaqContent = {
   cierreHref: "/en/destinos",
 };
 
+return { ES, EN };
+}
+
+let cacheFaq: { promo: boolean; faq: { ES: FaqContent; EN: FaqContent } } | null = null;
+
 export function getFaq(locale: Locale): FaqContent {
-  return locale === "en" ? EN : ES;
+  const promo = promoVigente();
+  if (!cacheFaq || cacheFaq.promo !== promo) cacheFaq = { promo, faq: construirFaq() };
+  return locale === "en" ? cacheFaq.faq.EN : cacheFaq.faq.ES;
 }

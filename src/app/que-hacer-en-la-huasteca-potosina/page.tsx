@@ -18,7 +18,6 @@ const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunctio
  * la Gruta de Xilo y la Travesía del Café cuestan $900 y ni esos dos ni los
  * recorridos de montaña llevan desayuno.
  */
-const RANGO = rangoPorPersona();
 const NO_POR_PERSONA = TOURS_DB.filter((t) => !esPorPersona(t));
 const CON_DESAYUNO = TOURS_DB.filter(incluyeDesayuno);
 const EDEN = TOURS_DB.find((t) => t.slug === "eden-en-el-jardin");
@@ -212,7 +211,11 @@ const EXPERIENCIAS: Experiencia[] = [
   },
 ];
 
-const FAQS: { q: string; a: string }[] = [
+// Una función y no una constante: el rango de precios lee `t.precio`, que vale
+// la promo hasta el 29 oct; como constante de módulo se congelaba al arrancar.
+function faqs(): { q: string; a: string }[] {
+const RANGO = rangoPorPersona();
+return [
   {
     q: "¿Cuántos días necesito para conocer la Huasteca Potosina?",
     a: "Con 3 días cubres lo esencial (Cascada de Tamul, Las Pozas de Xilitla y un día de cascadas turquesas). Con 4 o 5 días recorres con calma e incluyes rafting, sótanos o el Puente de Dios. Menos de 3 días se siente apresurado porque las distancias entre destinos son de 1 a 2 horas.",
@@ -234,8 +237,10 @@ const FAQS: { q: string; a: string }[] = [
     a: "Sí se puede, sobre todo si viajas en auto. Considera que varios accesos (como el embarcadero de Tamul o las lanchas del Tampaón) se contratan en sitio, las carreteras de la sierra requieren manejar de día y en temporada alta los cupos se agotan. Un tour resuelve transporte, entradas, seguridad y logística por un precio cerrado.",
   },
 ];
+}
 
 export default function QueHacerPage() {
+  const faqsHoy = faqs();
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
@@ -258,7 +263,7 @@ export default function QueHacerPage() {
       },
       {
         "@type": "FAQPage",
-        mainEntity: FAQS.map((f) => ({
+        mainEntity: faqsHoy.map((f) => ({
           "@type": "Question",
           name: f.q,
           acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -351,7 +356,7 @@ export default function QueHacerPage() {
         <div className="max-w-3xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-8">Preguntas frecuentes</h2>
           <div className="space-y-6">
-            {FAQS.map((f) => (
+            {faqsHoy.map((f) => (
               <div key={f.q} className="border-b border-white/10 pb-6">
                 <h3 className="font-dm font-medium text-crema text-sm mb-2">{f.q}</h3>
                 <p className="font-dm text-sm text-crema/65 leading-relaxed">{f.a}</p>

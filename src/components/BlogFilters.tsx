@@ -141,7 +141,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
               <div className="flex items-center gap-4 text-[10px] tracking-[2px] uppercase font-dm text-crema/30">
                 <span>{featuredPost!.readingTime} min lectura</span>
                 <span>·</span>
-                <span>{new Date(featuredPost!.publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</span>
+                <span>{new Date(featuredPost!.publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" })}</span>
               </div>
             </div>
           </article>
@@ -183,7 +183,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
                     <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/45 mt-auto">
                       <span>{post.readingTime} min</span>
                       <span>·</span>
-                      <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric" })}</span>
+                      <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric", timeZone: "America/Mexico_City" })}</span>
                     </div>
                   </div>
                 </article>

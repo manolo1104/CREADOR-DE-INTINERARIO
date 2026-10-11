@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { linkRecuperacion } from "@/lib/recuperacion";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { estaDeBaja } from "@/lib/estaDeBaja";
 import { buildCartEmailHtml, type CartEmailTipo, type CartEmailLinea } from "@/lib/cartEmail";
 import { actividad, logger } from "@/lib/logger";
 import {
@@ -84,6 +85,13 @@ export async function POST(req: NextRequest) {
     else if (c.emailsSent === 1 && (!c.lastEmailAt || c.lastEmailAt < hace24h)) tipo = "recordatorio2";
     else if (c.emailsSent === 2 && (!c.lastEmailAt || c.lastEmailAt < hace72h)) tipo = "recordatorio3";
     if (!tipo) continue;
+
+    // Pidió la baja (desde este carrito, otra lista o una cotización): no se le
+    // escribe más y el carrito sale de la cola (`lib/estaDeBaja.ts`).
+    if (await estaDeBaja(c.customerEmail)) {
+      await prisma.abandonedCart.update({ where: { id: c.id }, data: { status: "baja" } });
+      continue;
+    }
 
     const restoreUrl = linkRecuperacion(APP_URL, c.tourId, c.tourSlug, c.token);
 

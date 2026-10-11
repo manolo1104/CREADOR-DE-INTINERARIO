@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BedDouble, Car, Sun, Moon, ArrowRight } from "lucide-react";
-import { TOURS_DB, regresoDeTour, etiquetaUnidad, type Tour } from "@/lib/tours";
+import { TOURS_DB, regresoDeTour, etiquetaUnidad, precioDeFecha, type Tour } from "@/lib/tours";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { getPaquete, eventoALaVenta, precioVisible, nochesXantoloALaVenta } from "@/lib/paquetes";
 import { lugaresDePaqueteSeguro } from "@/lib/cupoPaquete";
@@ -293,7 +293,10 @@ function FilaTour({ t }: { t: Tour }) {
           </span>
         </span>
         <span className="whitespace-nowrap font-dm text-[13px]" style={{ color: CEMPASUCHIL }}>
-          ${t.precio.toLocaleString("es-MX")} <span className="text-[10px] text-crema/45">{etiquetaUnidad(t)}</span>
+          {/* El precio de ESAS fechas (31 oct–3 nov), no el de hoy: la promo de
+              temporada baja vence el 29 oct y aquí salía $100 más barato que lo
+              que cobra el carrito para esos días. */}
+          ${precioDeFecha(t, NOCHE_XANTOLO.noches[0].fecha).toLocaleString("es-MX")} <span className="text-[10px] text-crema/45">{etiquetaUnidad(t)}</span>
         </span>
       </Link>
     </li>

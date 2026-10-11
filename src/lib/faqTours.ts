@@ -36,7 +36,9 @@ export interface FaqTour {
 
 // 🔴 Filtraba con `!== "vehiculo"` y el Edén —tarifa del GRUPO entero— subía
 // el techo a $2,990 "por persona". `rangoPorPersona` filtra con `esPorPersona`.
-const { min: PRECIO_MIN, max: PRECIO_MAX } = rangoPorPersona();
+// Función y no constante: `t.precio` vale la promo hasta el 29 oct y el de
+// lista después, y una constante de módulo se congela al arrancar el servidor.
+const rangoHoy = () => rangoPorPersona();
 
 /** Los que no se cobran por cabeza: el RZR por vehículo y el Edén por grupo. */
 const OTRA_UNIDAD = TOURS_DB.filter((t) => !esPorPersona(t));
@@ -311,7 +313,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     return [
       {
         q: "How much does a tour in the Huasteca Potosina cost, and what does the price include?",
-        a: `Our guided day tours run from $${fmtNumber(PRECIO_MIN, locale)} to ${m(PRECIO_MAX)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
+        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
       },
       {
         q: "Where do the tours depart from? Do you pick me up at my hotel?",
@@ -345,7 +347,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
       },
       {
         q: "What's the difference between a single tour and a package with lodging?",
-        a: `A tour is a one-day departure, usually priced per person, from ${m(PRECIO_MIN)}, with transport from your accommodation, entrance fees and a guide depending on the route, but no hotel. A package is several days with lodging included at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, the tours themselves, transport from the hotel to the start of each tour, entrance fees and certified guides; it is ${comoSeCobra}, from ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} for the ${paqueteMasBarato.dias}-day / ${paqueteMasBarato.noches}-night package. Both are held with a ${ANTICIPO_PCT}% deposit, with the balance due on the day of the tour. Regular tours run in small groups of up to ${GRUPO_MAX} people either way.`,
+        a: `A tour is a one-day departure, usually priced per person, from ${m(rangoHoy().min)}, with transport from your accommodation, entrance fees and a guide depending on the route, but no hotel. A package is several days with lodging included at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, the tours themselves, transport from the hotel to the start of each tour, entrance fees and certified guides; it is ${comoSeCobra}, from ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} for the ${paqueteMasBarato.dias}-day / ${paqueteMasBarato.noches}-night package. Both are held with a ${ANTICIPO_PCT}% deposit, with the balance due on the day of the tour. Regular tours run in small groups of up to ${GRUPO_MAX} people either way.`,
       },
     ];
   }
@@ -353,7 +355,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
   return [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina y qué incluye el precio?",
-      a: `Los tours guiados de un día cuestan de $${fmtNumber(PRECIO_MIN, locale)} a ${m(PRECIO_MAX)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía.${excepcionUnidad}`,
+      a: `Los tours guiados de un día cuestan de $${fmtNumber(rangoHoy().min, locale)} a ${m(rangoHoy().max)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía.${excepcionUnidad}`,
     },
     {
       q: "¿De dónde salen los tours? ¿Pasan por mi hotel?",
@@ -381,7 +383,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     },
     {
       q: "¿Cuál es la diferencia entre un tour suelto y un paquete con hospedaje?",
-      a: `Un tour es una salida de un día que casi siempre se cobra por persona, desde ${m(PRECIO_MIN)}, e incluye —según el recorrido— traslado desde tu hospedaje, entradas y guía, pero no el hotel. Un paquete son varios días con hospedaje incluido en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, los tours, el transporte del hotel al inicio de cada recorrido, las entradas y los guías certificados; ${comoSeCobra} y va desde ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} el de ${paqueteMasBarato.dias} días / ${paqueteMasBarato.noches} noches. Los dos se apartan con el ${ANTICIPO_PCT} % y el saldo se liquida el día del tour. En los dos casos los tours regulares salen en grupos pequeños de máximo ${GRUPO_MAX} personas.`,
+      a: `Un tour es una salida de un día que casi siempre se cobra por persona, desde ${m(rangoHoy().min)}, e incluye —según el recorrido— traslado desde tu hospedaje, entradas y guía, pero no el hotel. Un paquete son varios días con hospedaje incluido en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, los tours, el transporte del hotel al inicio de cada recorrido, las entradas y los guías certificados; ${comoSeCobra} y va desde ${m(precioVisible(paqueteMasBarato))} ${etiqueta(paqueteMasBarato)} el de ${paqueteMasBarato.dias} días / ${paqueteMasBarato.noches} noches. Los dos se apartan con el ${ANTICIPO_PCT} % y el saldo se liquida el día del tour. En los dos casos los tours regulares salen en grupos pequeños de máximo ${GRUPO_MAX} personas.`,
     },
   ];
 }

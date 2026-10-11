@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { escapeHtml } from "@/lib/escapeHtml";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { correoPorId, REMITENTE_CURSO, type ContextoCorreo } from "@/lib/cursoEmail";
 import { rateLimit } from "@/lib/rateLimit";
@@ -78,18 +79,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 🔴 Cualquiera puede mandar este formulario con el correo de otro: a un
+    // ALUMNO que ya pagó no se le pisan nombre ni WhatsApp (el panel usa ese
+    // número para mandarle las ligas de las sesiones), y a quien pidió la baja
+    // no se le reactiva la secuencia.
+    const previo = await prisma.cursoLead.findUnique({ where: { email }, select: { compro: true, status: true } });
+    const protegido = !!previo?.compro;
     const lead = await prisma.cursoLead.upsert({
       where: { email },
       create: { email, nombre, whatsapp, tipoNegocio, ciudad, origen, webinar: esWebinar },
       update: {
         // No se pisa un dato existente con vacío, y registrarse al taller
         // no borra el origen original.
-        ...(nombre ? { nombre } : {}),
-        ...(whatsapp ? { whatsapp } : {}),
-        ...(tipoNegocio ? { tipoNegocio } : {}),
-        ...(ciudad ? { ciudad } : {}),
+        ...(nombre && !protegido ? { nombre } : {}),
+        ...(whatsapp && !protegido ? { whatsapp } : {}),
+        ...(tipoNegocio && !protegido ? { tipoNegocio } : {}),
+        ...(ciudad && !protegido ? { ciudad } : {}),
         ...(esWebinar ? { webinar: true } : {}),
-        status: "activo",
+        ...(previo?.status === "baja" ? {} : { status: "activo" }),
       },
     });
 
@@ -154,7 +161,8 @@ export async function POST(req: NextRequest) {
         where: esWebinar ? { webinar: true, status: "activo" } : { status: "activo" },
       });
       const fila = (k: string, v: string | null) =>
-        v ? `<tr><td style="padding:3px 14px 3px 0;color:#777">${k}</td><td style="padding:3px 0"><strong>${v}</strong></td></tr>` : "";
+        // Escapado: lo escribe quien llena el formulario y va al buzón de Manolo.
+        v ? `<tr><td style="padding:3px 14px 3px 0;color:#777">${k}</td><td style="padding:3px 0"><strong>${escapeHtml(v)}</strong></td></tr>` : "";
       await sendBrevoEmail({
         to: [{ email: AVISO_A }],
         subject: esWebinar

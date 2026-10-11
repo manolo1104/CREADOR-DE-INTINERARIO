@@ -39,6 +39,7 @@ import {
   partesRecogida,
   recogidaDeTour,
   tourDurRange,
+  promoVigente,
   type Tour,
 } from "@/lib/tours";
 import { DESTINOS_DB, type Destino } from "@/lib/destinos";
@@ -49,6 +50,7 @@ import { temporadaDe, fechaInicioTexto } from "@/lib/temporada";
 import { enAuto } from "@/lib/tiemposDeViaje";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { calcTourTotal } from "@/lib/tourBooking";
+import { NOCHE_XANTOLO } from "@/lib/nocheXantolo";
 
 export interface BlogSeoOverride {
   metaTitle?: string;
@@ -249,6 +251,15 @@ const enlacesTours = (ts: Tour[]) =>
     }),
   );
 
+// ── Desde aquí, todo depende del precio de HOY ──────────────────────────────
+// 🔴 `t.precio` es un getter: vale la promo de temporada baja hasta el 29 oct y
+// el de lista después. Como constantes de módulo, todo esto se evaluaba UNA vez
+// al arrancar el servidor (Railway corre un proceso largo), y desde el 30 oct
+// los artículos habrían seguido anunciando la promo hasta el siguiente deploy.
+// Ahora se arma dentro de `construirBlogSeo()` y `blogSeo()` lo rehace cuando
+// cambia `promoVigente()`. (El cuerpo no se reindentó para no mover 1,900
+// líneas en el historial.)
+function construirBlogSeo(): Record<string, BlogSeoOverride> {
 const POR_PERSONA  = TOURS_DB.filter(esPorPersona);
 const PP_MIN       = Math.min(...POR_PERSONA.map((t) => t.precio));
 const PP_MAX       = Math.max(...POR_PERSONA.map((t) => t.precio));
@@ -1119,7 +1130,10 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Si prefieres un tour organizado desde Ciudad Valles que incluya transporte, guía bilingüe y acceso a comunidades, los precios en 2026 van de <strong>MX$1,000 a MX$2,100 por persona</strong>. Los paquetes de dos días con hospedaje en municipio incluido alcanzan los <strong>MX$3,200 por persona</strong> en temporada alta de Xantolo, y se agotan con frecuencia antes del 15 de octubre.",
         to:
           `Las comparsas y los altares públicos son gratis: la fiesta no se compra. Lo que sí te ayudamos a armar es el resto del viaje: los recorridos que se cobran por persona van de <strong>${dinero(PP_MIN)}</strong> a <strong>${dinero(PP_MAX)}</strong>, ` +
-          `y los paquetes con hotel en Xilitla, ${PAQ_RANGO}.`,
+          // 🔴 Ya no ofrece paquetes con hotel: Xilitla está lleno esas noches y el
+          // paquete con hotel de Xantolo se retiró (10 oct 2026). Lo que sí se vende
+          // es la noche con guía.
+          `y para la noche grande, la <a href="${NOCHE_XANTOLO.pagina}">Noche de Xantolo con guía</a>, de <strong>${dinero(NOCHE_XANTOLO.precioAdulto)}</strong> por persona y sin hotel (esas fechas Xilitla se llena).`,
       },
       {
         from:
@@ -2140,6 +2154,16 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
     ],
   },
 };
+return BLOG_SEO;
+}
+
+/** Las correcciones con los precios de hoy; se rehacen cuando vence la promo. */
+let cacheBlogSeo: { promo: boolean; seo: Record<string, BlogSeoOverride> } | null = null;
+function blogSeo(): Record<string, BlogSeoOverride> {
+  const promo = promoVigente();
+  if (!cacheBlogSeo || cacheBlogSeo.promo !== promo) cacheBlogSeo = { promo, seo: construirBlogSeo() };
+  return cacheBlogSeo.seo;
+}
 
 function mayusculaInicial(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -2147,7 +2171,7 @@ function mayusculaInicial(s: string): string {
 
 // Los `tours` y `relacionados` también se validan al cargar: un slug que no
 // existe dejaría el recuadro vacío sin que nadie se enterara.
-for (const [blog, o] of Object.entries(BLOG_SEO)) {
+for (const [blog, o] of Object.entries(blogSeo())) {
   for (const s of o.tours ?? []) tour(s);
   // Algunas metas llevan precios del catálogo: un dígito más no debe tumbar el build.
   if (o.metaDescription && o.metaDescription.length > 155) {
@@ -2157,7 +2181,7 @@ for (const [blog, o] of Object.entries(BLOG_SEO)) {
 
 /** Las correcciones de un artículo, por su slug de la base (con o sin año). */
 export function seoDeBlog(slug: string): BlogSeoOverride | undefined {
-  return BLOG_SEO[normalizaSlugBlog(slug)];
+  return blogSeo()[normalizaSlugBlog(slug)];
 }
 
 /** "AAAA-MM-DD" → Date a mediodía en México, para que no cambie de día al formatear. */

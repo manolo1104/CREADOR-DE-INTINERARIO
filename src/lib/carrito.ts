@@ -72,7 +72,9 @@ export function leerCarrito(): CarritoItem[] {
 function guardar(items: CarritoItem[]): CarritoItem[] {
   if (typeof window === "undefined") return items;
   const recortado = items.slice(0, MAX_ITEMS);
-  window.localStorage.setItem(CARRITO_KEY, JSON.stringify(recortado));
+  // Con el almacenamiento bloqueado (Safari privado, cuota llena) escribir
+  // lanza: sin el try, «Agregar» reventaba en vez de seguir sin guardar.
+  try { window.localStorage.setItem(CARRITO_KEY, JSON.stringify(recortado)); } catch { /* sigue sin guardar */ }
   window.dispatchEvent(new CustomEvent(CARRITO_EVENT));
   return recortado;
 }

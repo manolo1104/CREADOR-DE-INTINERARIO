@@ -1,5 +1,5 @@
 import { PAQUETES_DB } from "@/lib/paquetes";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { enAuto, enAutobus, MINUTOS_VALLES_XILITLA, horasEnPalabras } from "@/lib/tiemposDeViaje";
 /**
  * Landings por ciudad de origen.
  *
@@ -64,7 +64,8 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
           `El aeropuerto más práctico es Tampico (TAM), a ${enAuto("tampico")} de Xilitla. Desde ahí conviene renta de auto o transfer privado.`,
       },
     ],
-    paqueteSugerido: "aventura-extrema",
+    // Coincide con su FAQ («con 3 días y 2 noches alcanzas»).
+    paqueteSugerido: "inmersion-huasteca",
     faqs: [
       {
         q: "¿Pierdo un día viajando desde CDMX?",
@@ -86,7 +87,7 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
     nombreLargo: "Monterrey",
     baseRecomendada: "Ciudad Valles",
     razonBase:
-      "Viniendo del norte, Ciudad Valles queda antes y es donde te deja el autobús. Desde ahí Micos está a 20 minutos y Tamul a 45. Si quieres Xilitla y Las Pozas, son otras dos horas hacia el sur — también pasamos por ti allá.",
+      `Viniendo del norte, Ciudad Valles queda antes y es donde te deja el autobús. Desde ahí Micos está a 20 minutos y Tamul a 45. Si quieres Xilitla y Las Pozas, son otra ${horasEnPalabras(MINUTOS_VALLES_XILITLA)} hacia la sierra — también pasamos por ti allá.`,
     llegadas: [
       {
         modo: "En autobús",
@@ -104,11 +105,12 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
           `Tampico (TAM) es el aeropuerto más cercano, a ${enAuto("tampico", "valles")} de Ciudad Valles. Desde ahí conviene renta de auto o transfer privado.`,
       },
     ],
-    paqueteSugerido: "tu-huasteca",
+    // Coincide con su FAQ («con 4 días y 3 noches va cómodo»).
+    paqueteSugerido: "gran-huasteca",
     faqs: [
       {
         q: "¿Me conviene quedarme en Ciudad Valles o en Xilitla viniendo de Monterrey?",
-        a: "Si vienes por las cascadas y tienes pocos días, Ciudad Valles: llegas antes y los destinos principales quedan a menos de una hora. Si vienes por Las Pozas de Edward James, Xilitla te ahorra casi dos horas de carretera al día. Pasamos por ti en las dos.",
+        a: `Si vienes por las cascadas y tienes pocos días, Ciudad Valles: llegas antes y los destinos principales quedan a menos de una hora. Si vienes por Las Pozas de Edward James, dormir en Xilitla te ahorra unas ${horasEnPalabras(2 * MINUTOS_VALLES_XILITLA)} de carretera ida y vuelta. Pasamos por ti en las dos.`,
       },
       {
         q: "¿Cuántos días necesito viniendo desde Monterrey?",
@@ -121,6 +123,17 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
     ],
   },
 ];
+
+// 🔴 Los slugs sugeridos eran de paquetes que ya no existen («aventura-extrema»,
+// «tu-huasteca»): la página caía en silencio al primero del catálogo y su
+// propia FAQ hablaba de otra duración. El tipo es `string`, así que TypeScript
+// no lo ve: se revisa aquí y el build se cae si vuelve a pasar.
+for (const c of CIUDADES_ORIGEN) {
+  if (!PAQUETES_DB.some((p) => p.slug === c.paqueteSugerido)) {
+    throw new Error(`ciudadesOrigen: "${c.slug}" sugiere el paquete "${c.paqueteSugerido}", que no existe`);
+  }
+}
+
 
 export function getCiudadOrigen(slug: string): CiudadOrigen | undefined {
   return CIUDADES_ORIGEN.find((c) => c.slug === slug);

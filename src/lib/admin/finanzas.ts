@@ -475,7 +475,10 @@ export async function calcFinanzas(
   })();
 
   const [todas, costosFilas, sociosFilas] = await Promise.all([
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" } } }),
+    // Sin «borrador» (una cotización convertida que aún no se confirma), igual
+    // que `cotizaciones/convertir.ts`: no es venta todavía. «pending» SÍ cuenta:
+    // en esta base es una reserva con anticipo cobrado y saldo por cobrar.
+    prisma.tourBooking.findMany({ where: { status: { notIn: ["cancelled", "borrador"] } } }),
     prisma.tourCosto.findMany(),
     prisma.socio.findMany({ where: { estado: "activo" }, orderBy: { nombre: "asc" } }),
   ]);

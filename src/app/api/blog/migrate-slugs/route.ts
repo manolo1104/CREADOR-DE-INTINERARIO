@@ -5,7 +5,10 @@ export const dynamic = "force-dynamic";
 
 function auth(req: NextRequest) {
   const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${process.env.BLOG_AGENT_SECRET}`;
+  // Sin la variable, la comparación era contra «Bearer undefined» y cualquiera
+  // que mandara ese texto entraba: falla cerrado.
+  const secreto = process.env.BLOG_AGENT_SECRET;
+  return !!secreto && header === `Bearer ${secreto}`;
 }
 
 /** Strips trailing -YYYY (e.g. -2026, -2025) from a slug */

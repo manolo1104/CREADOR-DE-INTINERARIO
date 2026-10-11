@@ -20,7 +20,10 @@ const URL = `${SITE}/tours-en-ciudad-valles`;
  * más. Todo lo de abajo —precios, hora, desayuno— sale de esta lista.
  */
 const TOURS_CV = recogenEnValles(TOURS_DB);
-const CV_RANGO = rangoPorPersona(TOURS_CV);
+// Función y no constante: `t.precio` vale la promo hasta el 29 oct y el de
+// lista después; una constante de módulo (y una `metadata` estática) se
+// congelaban al arrancar el servidor y seguían anunciando la promo.
+const cvRango = () => rangoPorPersona(TOURS_CV);
 const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
 /** La hora de salida si todos los de la lista la comparten ("entre 8:00 y 9:00 AM"); si no, null. */
 const CV_HORA =
@@ -33,7 +36,9 @@ const OTROS = TOURS_DB.filter((t) => !TOURS_CV.includes(t));
 const SOLO_XILITLA = OTROS.filter((t) => partesRecogida(t, false).valles);
 const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
 
-export const metadata: Metadata = {
+export function generateMetadata(): Metadata {
+  const CV_RANGO = cvRango();
+  return {
   title: "Tours en Ciudad Valles, SLP — Salidas Diarias 2026",
   description:
     `Tours guiados con salida desde Ciudad Valles: Cascada de Tamul, rafting, Micos y Xilitla. Pasamos por ti a tu hotel, desde ${money(CV_RANGO.min)} MXN por persona.`,
@@ -61,12 +66,15 @@ export const metadata: Metadata = {
     description: "Tours guiados con pickup en tu hotel de Ciudad Valles.",
     images: [`${SITE}/imagenes/cascadas-de-micos/hero.jpg`],
   },
-};
+  };
+}
 
 // FAQ local: texto plano reutilizado tal cual en el FAQPage JSON-LD. Sin datos inventados.
 // Las cifras y las listas se leen de TOURS_CV: escritas a mano ya anunciaban
 // "de $900 a $1,950" con recorridos que ni recogen en Valles.
-const FAQS_CV: { q: string; a: string }[] = [
+function faqsCv(): { q: string; a: string }[] {
+const CV_RANGO = cvRango();
+return [
   {
     q: "¿Los tours pasan por mi hotel en Ciudad Valles?",
     a: `Sí, en los ${TOURS_CV.length} recorridos de esta página el transporte está incluido: pasamos por ti a tu hospedaje en Ciudad Valles (también en Xilitla)${CV_HORA ? `, todos los días ${CV_HORA}` : ", a la hora de salida de cada recorrido"}.${SOLO_XILITLA.length ? ` ${lista(SOLO_XILITLA.map((t) => t.nombreCorto))} recogen solo en hospedajes de Xilitla: desde Ciudad Valles se pueden hacer, pero el traslado tiene costo adicional que te cotizamos por WhatsApp.` : ""}`,
@@ -88,9 +96,11 @@ const FAQS_CV: { q: string; a: string }[] = [
     a: "Sí, aceptamos reservas con 24 horas de anticipación (sujeto a disponibilidad). Escríbenos por WhatsApp y te confirmamos en menos de 1 hora.",
   },
 ];
+}
 
 export default function ToursCiudadVallesPage() {
   const toursCV = TOURS_CV;
+  const FAQS_CV = faqsCv();
 
   const schema = {
     "@context": "https://schema.org",

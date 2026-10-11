@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible, paginasDeEventoALaVenta } from "@/lib/paquetes";
+import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible, paginasDeEventoALaVenta, nochesXantoloALaVenta } from "@/lib/paquetes";
 import Link from "next/link";
 import { GOOGLE_RATING } from "@/lib/resenas";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
@@ -213,7 +213,11 @@ export default function PaquetesPage() {
           <div className="mx-auto flex max-w-6xl flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
               <p className="font-dm text-[10px] uppercase tracking-[2.5px]" style={{ color: "#f29422" }}>
-                {p.evento!.sinHotel ? "Sábado 31 o domingo 1 de noviembre" : `Solo el ${p.evento!.fechaTexto.toLowerCase()}`}
+                {/* Las noches que SIGUEN a la venta: desde el 30 oct ya no se vende el
+                    sábado 31 y la franja seguía ofreciéndolo. */}
+                {p.evento!.sinHotel
+                  ? nochesXantoloALaVenta().map((n) => n.evento!.fechaTexto.replace(/ de \d{4}$/, "")).join(" o ")
+                  : `Solo el ${p.evento!.fechaTexto.toLowerCase()}`}
               </p>
               <p className="mt-2 font-cormorant text-[30px] font-light leading-tight text-crema">{p.nombre}</p>
               <p className="mt-1 font-dm text-[14px] text-crema/65">

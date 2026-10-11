@@ -19,26 +19,37 @@ const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
 const DIF_LABEL_ES: Record<string, string> = { baja: "Fácil", media: "Moderado", alta: "Avanzado" };
 const DIF_LABEL_EN: Record<string, string> = { baja: "Easy", media: "Moderate", alta: "Advanced" };
 
-// El rango se calcula del catálogo, no se escribe a mano: el texto decía
-// "$1,300 a $1,850" mientras la tabla de esta misma página llegaba a $1,950
-// (rafting) y bajaba a $900 (Travesía del Café).
-// 🔴 Y filtraba con `!== "vehiculo"`: la tarifa del Edén —del grupo entero—
-// subía el techo a "$2,990 por persona". `rangoPorPersona` usa `esPorPersona`.
-const RANGO = rangoPorPersona();
-const RANGO_MIN = `$${RANGO.min.toLocaleString("es-MX")}`;
-const RANGO_MAX = `$${RANGO.max.toLocaleString("es-MX")}`;
-// Derivado del catálogo: estos importes estaban escritos a mano en la respuesta
-// de abajo y se quedaron viejos en cuanto cambió un paquete.
-//
-// El rango se calcula sobre `precioVisible`, que es el importe que se ANUNCIA
-// —la mitad en los paquetes por persona—, no sobre `p.precio`, que es siempre
-// el total de la pareja que cobra el motor. Mezclar los dos publicaría un rango
-// de $9,800 a $20,500 cuando lo que esta página enseña va de $6,250 a $10,250.
-const PAQ_VISIBLES = PAQUETES_DB.map((p) => ({ p, v: precioVisible(p) }));
-const PAQ_BARATO = PAQ_VISIBLES.reduce((a, b) => (b.v < a.v ? b : a));
-const PAQ_CARO = PAQ_VISIBLES.reduce((a, b) => (b.v > a.v ? b : a));
-const PAQ_MIN = money(PAQ_BARATO.v);
-const PAQ_MAX = money(PAQ_CARO.v);
+/**
+ * 🔴 Los importes que dependen del precio de HOY. `t.precio` es un getter: vale
+ * la promo de temporada baja hasta el 29 oct y el de lista después. Como
+ * constantes de módulo se evaluaban UNA vez al arrancar el servidor (Railway
+ * corre un proceso largo) y desde el 30 oct esta página —y su meta— habrían
+ * seguido anunciando la promo. Ahora se calculan en cada página (`preciosUI`).
+ */
+function preciosDeHoy() {
+  // El rango se calcula del catálogo, no se escribe a mano: el texto decía
+  // "$1,300 a $1,850" mientras la tabla de esta misma página llegaba a $1,950
+  // (rafting) y bajaba a $900 (Travesía del Café).
+  // 🔴 Y filtraba con `!== "vehiculo"`: la tarifa del Edén —del grupo entero—
+  // subía el techo a "$2,990 por persona". `rangoPorPersona` usa `esPorPersona`.
+  const RANGO = rangoPorPersona();
+  const RANGO_MIN = `$${RANGO.min.toLocaleString("es-MX")}`;
+  const RANGO_MAX = `$${RANGO.max.toLocaleString("es-MX")}`;
+  // Derivado del catálogo: estos importes estaban escritos a mano en la respuesta
+  // de abajo y se quedaron viejos en cuanto cambió un paquete.
+  //
+  // El rango se calcula sobre `precioVisible`, que es el importe que se ANUNCIA
+  // —la mitad en los paquetes por persona—, no sobre `p.precio`, que es siempre
+  // el total de la pareja que cobra el motor. Mezclar los dos publicaría un rango
+  // de $9,800 a $20,500 cuando lo que esta página enseña va de $6,250 a $10,250.
+  const PAQ_VISIBLES = PAQUETES_DB.map((p) => ({ p, v: precioVisible(p) }));
+  const PAQ_BARATO = PAQ_VISIBLES.reduce((a, b) => (b.v < a.v ? b : a));
+  const PAQ_CARO = PAQ_VISIBLES.reduce((a, b) => (b.v > a.v ? b : a));
+  const PAQ_MIN = money(PAQ_BARATO.v);
+  const PAQ_MAX = money(PAQ_CARO.v);
+  const PRIVADO_DESDE = `$${(Math.min(...PRIVADOS.map((t) => t.precio)) + PRIVADO_EXTRA_POR_PERSONA).toLocaleString("es-MX")}`;
+  return { RANGO_MIN, RANGO_MAX, PAQ_BARATO, PAQ_CARO, PAQ_MIN, PAQ_MAX, PRIVADO_DESDE };
+}
 
 /**
  * La unidad en la que se ANUNCIA un paquete.
@@ -115,7 +126,6 @@ const diasDeTour = (p: Paquete) => p.itinerario.filter((d) => d.tipo !== "salida
 // dos personas son $3,600, no $8,500 — el sitio anunciaba más del doble. El
 // campo se eliminó del catálogo; aquí se calcula con la regla de verdad.
 const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable);
-const PRIVADO_DESDE = `$${(Math.min(...PRIVADOS.map((t) => t.precio)) + PRIVADO_EXTRA_POR_PERSONA).toLocaleString("es-MX")}`;
 const PRIVADO_EXTRA = `$${PRIVADO_EXTRA_POR_PERSONA.toLocaleString("es-MX")}`;
 // Cuántos son, dicho en cada idioma. Era una constante de módulo escrita solo
 // en español y se colaba tal cual dentro de la respuesta inglesa ("5 de
@@ -136,6 +146,7 @@ const PRIVADOS_CUANTOS = (locale: Locale) =>
  * reutilizan tal cual en el FAQPage del JSON-LD.
  */
 function preciosUI(locale: Locale) {
+  const { RANGO_MIN, RANGO_MAX, PAQ_BARATO, PAQ_CARO, PAQ_MIN, PAQ_MAX, PRIVADO_DESDE } = preciosDeHoy();
   const en = locale === "en";
   const paquetes = getLocalizedPaquetes(locale);
   /**

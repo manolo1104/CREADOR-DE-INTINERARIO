@@ -51,10 +51,12 @@ export default async function AdminDashboard() {
       upcomingBookings={upcomingBookings}
       recentBookings={recentBookings}
       pendingQuotes={pendingQuotes}
-      monthIngresos={monthIngresos}
+      // Sin permiso de ver dinero, las cifras NO viajan al navegador: antes se
+      // escondían en pantalla pero iban dentro de la página.
+      monthIngresos={verDinero ? monthIngresos : 0}
       monthReservas={monthBookings.length}
       verDinero={verDinero}
-      pendingAmount={pendingAmount}
+      pendingAmount={verDinero ? pendingAmount : 0}
       activeQuotes={activeQuotesCount}
     />
   );

@@ -60,10 +60,17 @@ const CSS_ENTRADA = XAN_CSS_ENTRADA;
 export function generateMetadata(): Metadata {
   const p = getPaquete(SLUG);
   const aLaVenta = !!p && eventoALaVenta(p);
-  const titulo = "Paquete Xantolo 2026 en Xilitla para parejas y familias, 1 de noviembre";
-  const descripcion = p
-    ? `Una noche en Xilitla el 1 de noviembre: Ruta Surrealista de día, degustación de temporada y la noche de Xantolo con guía. Para parejas o familias de hasta 4, ${mxn(precioVisible(p))} la pareja.`
-    : "Paquete Xantolo 2026 en Xilitla.";
+  // Retirado (el hotel se llenó): la pestaña y la tarjeta de WhatsApp de un
+  // enlace viejo ya no anuncian el paquete con su precio, sino lo que sí se vende.
+  const retirado = !!p?.evento?.retirado;
+  const titulo = retirado
+    ? "Noche de Xantolo en Xilitla con guía — el paquete con hotel ya no se vende"
+    : "Paquete Xantolo 2026 en Xilitla para parejas y familias, 1 de noviembre";
+  const descripcion = retirado
+    ? `El hotel se llenó para Xantolo. Lo que sí puedes reservar: la noche de Xantolo con guía y degustación, el 31 de octubre o el 1 de noviembre, desde ${mxn(NOCHE_XANTOLO.precioAdulto)} por persona.`
+    : p
+      ? `Una noche en Xilitla el 1 de noviembre: Ruta Surrealista de día, degustación de temporada y la noche de Xantolo con guía. Para parejas o familias de hasta 4, ${mxn(precioVisible(p))} la pareja.`
+      : "Paquete Xantolo 2026 en Xilitla.";
   return {
     title: titulo,
     description: descripcion,

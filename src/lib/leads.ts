@@ -5,6 +5,7 @@
 import { google } from "googleapis";
 import { actividad, logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { estaDeBaja } from "@/lib/estaDeBaja";
 
 const SHEET_ID  = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_TAB = "Leads";
@@ -127,6 +128,11 @@ export async function registrarLead(
       return { id: existente.id, esNuevo: false };
     }
 
+    // 🔴 Quien ya pidió la baja NO vuelve a la secuencia por dejar su correo en
+    // otro formulario (o porque un tercero lo deje): la fila nueva nace «baja».
+    // Lo que pidió en ese momento (la guía, su plan) se le entrega igual; lo que
+    // ya no recibe son los correos automáticos que siguen.
+    const deBaja = await estaDeBaja(email);
     try {
       const creado = await prisma.lead.create({
         data: {
@@ -135,6 +141,7 @@ export async function registrarLead(
           ...datos,
           emailsSent:  pasosYaEnviados,
           lastEmailAt: pasosYaEnviados > 0 ? new Date() : undefined,
+          ...(deBaja ? { status: "baja" } : {}),
         },
         select: { id: true },
       });

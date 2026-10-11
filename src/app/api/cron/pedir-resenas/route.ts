@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { estaDeBaja } from "@/lib/estaDeBaja";
 import { buildReviewEmailHtml } from "@/lib/reviewEmail";
 import { actividad, logger } from "@/lib/logger";
 import {
@@ -80,6 +81,9 @@ export async function POST(req: NextRequest) {
     // Con los dos idiomas activos esto ya no descarta a nadie; se deja porque
     // es el interruptor, y el contador avisaría si apareciera un locale nuevo.
     if (!IDIOMAS_ACTIVOS.includes(locale)) { otroIdioma++; continue; }
+
+    // Quien pidió la baja de los correos tampoco recibe la petición de reseña.
+    if (await estaDeBaja(b.customerEmail)) continue;
 
     destinatarios.push({ email: b.customerEmail, tour: b.tourName, fecha: b.tourDate });
     if (dry) continue;

@@ -382,15 +382,20 @@ const PAQ_BARATO = [...PAQUETES_DB].sort((a, b) => precioVisible(a) - precioVisi
  * `!== "vehiculo"`: así se colaba la tarifa de GRUPO del Edén y la FAQ decía
  * que un tour de un día costaba hasta $2,990 "por persona".
  */
-const PRECIOS_TOUR_PERSONA = TOURS_DB.filter(esPorPersona).map((t) => t.precio);
-const TOUR_MIN = Math.min(...PRECIOS_TOUR_PERSONA);
-const TOUR_MAX = Math.max(...PRECIOS_TOUR_PERSONA);
+//
+// 🔴 Funciones y no constantes: `t.precio` es un getter que vale la promo hasta
+// el 29 oct y el de lista después, y una constante de módulo se evalúa UNA vez
+// al arrancar el servidor (Railway corre un proceso largo). Desde el 30 oct las
+// FAQ y la meta de /paquetes habrían seguido anunciando la promo.
+const preciosTourPersona = () => TOURS_DB.filter(esPorPersona).map((t) => t.precio);
+const tourMin = () => Math.min(...preciosTourPersona());
+const tourMax = () => Math.max(...preciosTourPersona());
 /**
  * La cifra que se ANUNCIA del más barato. `precioVisible` ya divide entre dos
  * cuando el paquete se vende por persona, así que aquí no se vuelve a dividir:
  * hacerlo enseñaría la mitad de la mitad.
  */
-const VISIBLE_BARATO = precioVisible(PAQ_BARATO);
+const visibleBarato = () => precioVisible(PAQ_BARATO);
 
 /**
  * Los tours de un día con política de cancelación PROPIA (hoy, el Edén, que no
@@ -522,7 +527,7 @@ function faqsExtra(locale: Locale): { q: string; a: string }[] {
     return [
       {
         q: "How much does a trip to the Huasteca Potosina cost?",
-        a: `An all-inclusive package with hotel starts at ${m(VISIBLE_BARATO)} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} for ${PAQ_BARATO.dias} days and ${PAQ_BARATO.noches} nights, with lodging, tours, entrance fees, certified guides and breakfasts included. The longest one, ${PAQ_LARGO.dias} days and ${PAQ_LARGO.noches} nights, costs ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. In between sit the rest: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. If you only want tours and no lodging, single-day tours run from ${m(TOUR_MIN)} to ${m(TOUR_MAX)} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
+        a: `An all-inclusive package with hotel starts at ${m(visibleBarato())} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} for ${PAQ_BARATO.dias} days and ${PAQ_BARATO.noches} nights, with lodging, tours, entrance fees, certified guides and breakfasts included. The longest one, ${PAQ_LARGO.dias} days and ${PAQ_LARGO.noches} nights, costs ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. In between sit the rest: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. If you only want tours and no lodging, single-day tours run from ${m(tourMin())} to ${m(tourMax())} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
       },
       {
         q: "How many days do I need for the Huasteca Potosina?",
@@ -545,7 +550,7 @@ function faqsExtra(locale: Locale): { q: string; a: string }[] {
   return [
     {
       q: "¿Cuánto cuesta ir a la Huasteca Potosina?",
-      a: `Un paquete todo incluido con hotel arranca en ${m(VISIBLE_BARATO)} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} por ${PAQ_BARATO.dias} días y ${PAQ_BARATO.noches} noches, con hospedaje, tours, entradas, guías certificados y desayunos incluidos. El más largo, de ${PAQ_LARGO.dias} días y ${PAQ_LARGO.noches} noches, cuesta ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. En medio quedan los demás: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. Si solo quieres recorridos, sin hospedaje, los tours de un día van de ${m(TOUR_MIN)} a ${m(TOUR_MAX)} MXN por persona. A eso se suma tu traslado hasta Xilitla, las comidas y las cenas, que no van incluidos.`,
+      a: `Un paquete todo incluido con hotel arranca en ${m(visibleBarato())} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} por ${PAQ_BARATO.dias} días y ${PAQ_BARATO.noches} noches, con hospedaje, tours, entradas, guías certificados y desayunos incluidos. El más largo, de ${PAQ_LARGO.dias} días y ${PAQ_LARGO.noches} noches, cuesta ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. En medio quedan los demás: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. Si solo quieres recorridos, sin hospedaje, los tours de un día van de ${m(tourMin())} a ${m(tourMax())} MXN por persona. A eso se suma tu traslado hasta Xilitla, las comidas y las cenas, que no van incluidos.`,
     },
     {
       q: "¿Cuántos días necesito para conocer la Huasteca Potosina?",
@@ -731,10 +736,11 @@ const UI_ES: PaquetesUI = {
   // El precio y su unidad salen del catálogo (el más barato, con su etiqueta).
   // 🔴 «Traslados» pegado a los tours y no «transporte» suelto: se leía como
   // transporte desde tu ciudad, y llegar a Xilitla va por tu cuenta (`noIncluye`).
-  metaDescription: primeroQueQuepa([
-    `Paquetes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días en la Huasteca Potosina: tours guiados con traslados, hotel en Xilitla, desayunos y entradas. Desde ${formatoMXN(VISIBLE_BARATO, "es")} MXN ${etiquetaPrecio(PAQ_BARATO, "es")}.`,
-    `Paquetes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días en la Huasteca Potosina: tours guiados y hotel en Xilitla. Desde ${formatoMXN(VISIBLE_BARATO, "es")} MXN ${etiquetaPrecio(PAQ_BARATO, "es")}.`,
-  ], 155),
+  // Getter: el precio «desde» se lee al pedir la página, no al arrancar.
+  get metaDescription() { return primeroQueQuepa([
+    `Paquetes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días en la Huasteca Potosina: tours guiados con traslados, hotel en Xilitla, desayunos y entradas. Desde ${formatoMXN(visibleBarato(), "es")} MXN ${etiquetaPrecio(PAQ_BARATO, "es")}.`,
+    `Paquetes de ${PAQ_CORTO.dias} a ${PAQ_LARGO.dias} días en la Huasteca Potosina: tours guiados y hotel en Xilitla. Desde ${formatoMXN(visibleBarato(), "es")} MXN ${etiquetaPrecio(PAQ_BARATO, "es")}.`,
+  ], 155); },
   keywords: [
     "paquetes huasteca potosina",
     "paquetes todo incluido huasteca potosina",
@@ -806,10 +812,11 @@ const UI_ES: PaquetesUI = {
 
 const UI_EN: PaquetesUI = {
   metaTitle: "Huasteca Potosina Packages — Tours + Hotel, All Inclusive",
-  metaDescription: primeroQueQuepa([
-    `${PAQ_CORTO.dias}- to ${PAQ_LARGO.dias}-day Huasteca Potosina packages: guided tours with transfers, a hotel in Xilitla, breakfasts and entrance fees. From ${formatoMXN(VISIBLE_BARATO, "en")} MXN ${etiquetaPrecio(PAQ_BARATO, "en")}.`,
-    `${PAQ_CORTO.dias}- to ${PAQ_LARGO.dias}-day Huasteca Potosina packages: guided tours and a hotel in Xilitla. From ${formatoMXN(VISIBLE_BARATO, "en")} MXN ${etiquetaPrecio(PAQ_BARATO, "en")}.`,
-  ], 155),
+  // Getter: el precio «desde» se lee al pedir la página, no al arrancar.
+  get metaDescription() { return primeroQueQuepa([
+    `${PAQ_CORTO.dias}- to ${PAQ_LARGO.dias}-day Huasteca Potosina packages: guided tours with transfers, a hotel in Xilitla, breakfasts and entrance fees. From ${formatoMXN(visibleBarato(), "en")} MXN ${etiquetaPrecio(PAQ_BARATO, "en")}.`,
+    `${PAQ_CORTO.dias}- to ${PAQ_LARGO.dias}-day Huasteca Potosina packages: guided tours and a hotel in Xilitla. From ${formatoMXN(visibleBarato(), "en")} MXN ${etiquetaPrecio(PAQ_BARATO, "en")}.`,
+  ], 155); },
   keywords: [
     "huasteca potosina packages",
     "all inclusive huasteca potosina",

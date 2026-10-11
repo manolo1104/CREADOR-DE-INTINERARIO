@@ -9,6 +9,15 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // 🔴 Tailwind 3 solo trae opacidades en pasos de 5. El sitio usa ~300 veces
+      // /8, /6, /12, /98…, que NO generaban CSS: los bordes salían del gris del
+      // reset (#e5e7eb, una raya clara sobre el fondo oscuro) y las barras fijas
+      // con bg-negro/98 quedaban transparentes. Se agregan los pasos en uso en
+      // vez de tocar 300 clases.
+      opacity: {
+        2: "0.02", 3: "0.03", 4: "0.04", 6: "0.06", 8: "0.08",
+        12: "0.12", 18: "0.18", 22: "0.22", 72: "0.72", 98: "0.98",
+      },
       colors: {
         negro: "#0e1710",
         "verde-profundo": "#1a2e1a",
