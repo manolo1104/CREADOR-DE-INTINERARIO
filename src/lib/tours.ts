@@ -2608,6 +2608,69 @@ export const TOURS_LISTA: Tour[] = TOURS_RAW.map((t) => ({
   descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, t.precio) : t.descripcionLarga,
 }));
 
+/** Sin acentos ni mayusculas, para comparar nombres escritos a mano. */
+const sinAdornos = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/** Las palabras con las que se puede reconocer un recorrido. */
+const palabrasDe = (s: string) =>
+  new Set(sinAdornos(s).split(/[^a-z0-9]+/).filter((p) => p.length >= 4));
+
+/**
+ * El recorrido del catálogo que alguien quiso nombrar al teclear un texto.
+ *
+ * 🔴 Para qué hace falta (11 oct 2026, leído de la base real). El panel tiene
+ * su selector del catálogo, pero también una línea de «otro concepto» para lo
+ * que no tiene ficha — y ahí se están capturando recorridos que SÍ están en el
+ * catálogo: «Ruta surrealista », «Expedicion Tamul», «Cascadas el Meco-Meco,
+ * Mirador Panorámico y el Gran Salto», «Recorrido en RZR Nacimiemto 5h CAN-AM
+ * DEFENDER». Hace dos daños, y el segundo cuesta dinero:
+ *   1. el aviso de reservas recientes enseñaba el texto crudo, con su errata;
+ *   2. esas reservas NO consumen el cupo de su recorrido (`cupoTour.ts` cuenta
+ *      por slug), así que el sitio puede vender otra vez el mismo asiento.
+ *
+ * Dos exigencias distintas, de ahí el modo:
+ *  - **estricto** (por omisión): el mismo nombre salvo acentos, mayúsculas y
+ *    la cola después del guion largo o de la coma. Lo usa el aviso del sitio,
+ *    donde atribuir mal una reserva es peor que no enseñarla.
+ *  - **laxo**: además, el recorrido que más palabras comparte —dos como
+ *    mínimo, contando las rutas y los vehículos—. Lo usa el panel, donde esto
+ *    es una sugerencia con un botón y equivocarse no cuesta nada.
+ */
+export function tourPorNombre(
+  texto: string | null | undefined,
+  opciones?: { laxo?: boolean },
+): Tour | null {
+  const crudo = (texto ?? "").trim();
+  if (crudo.length < 4) return null;
+
+  const buscado = sinAdornos(nombreCortoDe(crudo).split(",")[0]);
+  const exacto = TOURS_LISTA.find((x) =>
+    [x.nombre, nombreCortoDe(x.nombre), x.nombreCorto].some((n) => sinAdornos(n) === buscado),
+  );
+  if (exacto || !opciones?.laxo) return exacto ?? null;
+
+  // Lo que se teclea trae erratas («Meco-Meco», «Nacimiemto») y datos que no
+  // son el nombre («5h», «CAN-AM»), así que se cuentan palabras en común
+  // contra todo lo que identifica al recorrido, rutas y flota incluidas.
+  const buscadas = palabrasDe(crudo);
+  let mejor: Tour | null = null;
+  let max = 1; // con una sola palabra en común no se adivina nada
+  for (const x of TOURS_LISTA) {
+    const suyas = palabrasDe([
+      x.nombre,
+      x.nombreCorto,
+      ...(x.rutas ?? []).map((r) => r.nombre),
+      ...(x.flota ?? []).map((v) => v.nombre),
+    ].join(" "));
+    // `forEach` y no `for…of`: el `target` del repo no itera Sets.
+    let n = 0;
+    buscadas.forEach((p) => { if (suyas.has(p)) n++; });
+    if (n > max) { max = n; mejor = x; }
+  }
+  return mejor;
+}
+
 /**
  * El grupo más grande que sacamos, leído del catálogo.
  *

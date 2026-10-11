@@ -40,6 +40,13 @@
  * - **Los tiempos de vuelo.** No los maneja nadie: los pone la aerolínea.
  */
 
+/**
+ * El tramo de sierra entre Ciudad Valles y Xilitla, en minutos (1.5 h, el
+ * número de Manolo que ya suman las filas de abajo). Lo usa la Noche de Xantolo
+ * para decir a qué hora se pasa por quien duerme en Valles y a qué hora vuelve.
+ */
+export const MINUTOS_VALLES_XILITLA = 90;
+
 /** Cada tramo, en horas, tal como se le dice al cliente. */
 export interface TiempoDesde {
   /** Coincide con el slug de `traslados.ts` y de la landing `/desde/<slug>`. */

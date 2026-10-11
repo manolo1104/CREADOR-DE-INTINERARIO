@@ -6,9 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { stripePromise } from "@/lib/stripeCliente";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { getPaquete, habitacionesDePaquete, habitacionAsignada, precioVisible } from "@/lib/paquetes";
+import { getPaquete, habitacionesDePaquete, habitacionAsignada, precioVisible, eventoALaVenta } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION, PCTS_PAQUETE, type PctPaquete } from "@/lib/paquetePricing";
-import { NOCHE_XANTOLO, precioNinoNoche } from "@/lib/nocheXantolo";
+import { NOCHE_XANTOLO, haciaLa, precioNinoNoche, precioNocheConTour } from "@/lib/nocheXantolo";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
@@ -104,10 +104,13 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
           reservaTotal: form.reservaTotal,
         });
         trackTourEvent("BOOKING_CONFIRMED", { paquete: true, tour: paquete.slug, amount: cobrado, confirmationNumber: data.confirmationNumber });
-        onDone(data.confirmationNumber || "HP");
+        // Sin folio NO se inventa uno: antes salía «HP» y el cliente guardaba
+        // un número que no existe. El pago sí entró; el webhook o la
+        // conciliación crean la reserva y le mandan el folio por correo.
+        onDone(data.confirmationNumber || "");
       } catch {
         trackTourEvent("BOOKING_CONFIRMED", { paquete: true, tour: paquete.slug, amount: cobrado });
-        onDone("HP");
+        onDone("");
       }
     } else {
       setError(t.errPagoIncompleto);
@@ -171,6 +174,8 @@ export default function ReservarPaquetePage() {
   // no aplican. Sus textos van en español: los eventos solo se venden así.
   const evento          = base?.evento;
   const sinHotel        = !!evento?.sinHotel;
+  /** El día completo que se puede agregar a esta salida (Ruta Surrealista). */
+  const tourOpcional    = evento?.tourOpcional;
   /** Mínimo de adultos: 2 en los paquetes, 1 en la noche sin hotel. */
   const minAdultos      = evento?.minAdultos ?? 2;
 
@@ -208,6 +213,22 @@ export default function ReservarPaquetePage() {
   const [showNotes, setShowNotes] = useState(false);
   /** Sin hotel: dónde se hospeda, para pasar por él. */
   const [recogida, setRecogida] = useState("");
+  /**
+   * Cómo lo recogemos (10 oct 2026). Antes solo existía «escribe tu hospedaje en
+   * Xilitla», obligatorio en cliente y servidor: justo lo que NO tiene quien
+   * apenas está planeando el viaje, y en Clarity los que abrieron este checkout
+   * no hicieron ni un clic. «punto» no pide hotel y se acuerda por WhatsApp.
+   */
+  const [modoRecogida, setModoRecogida] = useState<"xilitla" | "valles" | "punto">("xilitla");
+  /** Agregar el día completo (la Ruta Surrealista) a la noche de Xantolo. */
+  const [conTour, setConTour] = useState(false);
+
+  // Las tarjetas de la landing llegan con el extra ya elegido (`?conTour=1`).
+  // Se lee en un efecto y no en el estado inicial: en el servidor no hay
+  // `window` y leerlo ahí rompería la hidratación.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("conTour") === "1") setConTour(true);
+  }, []);
 
   const [stage, setStage]           = useState<"form" | "pay" | "done">("form");
   const [clientSecret, setCS]       = useState("");
@@ -227,7 +248,10 @@ export default function ReservarPaquetePage() {
     // Para GA4 es el `begin_checkout`, con lo que la pantalla enseña al abrir
     // (la gente de arranque, sin extras). La cifra sale de
     // `computePaqueteCharge`, la misma cuenta que cobra el servidor.
-    const q = computePaqueteCharge({ slug: base.slug, personas, childrenMid, childrenSmall, pct, fecha });
+    // El extra del día se lee de la URL y no del estado: `setConTour` de arriba
+    // todavía no se refleja en el cierre de este efecto.
+    const conTourUrl = new URLSearchParams(window.location.search).get("conTour") === "1";
+    const q = computePaqueteCharge({ slug: base.slug, personas, childrenMid, childrenSmall, pct, fecha, conTour: conTourUrl });
     if (q) trackBeginCheckout({
       renglones: [{ tourId: base.slug, tourName: paquete?.nombre ?? base.nombre, total: q.total, cantidad: q.personas }],
       total: q.total,
@@ -327,6 +351,29 @@ export default function ReservarPaquetePage() {
     );
   }
 
+  // Un evento retirado (el paquete con hotel de Xantolo) o que ya cerró (una
+  // noche desde su víspera). Antes esta pantalla se dejaba llenar entera y el
+  // «ya no está a la venta» del servidor salía hasta el botón de pagar.
+  if (base?.evento && !eventoALaVenta(base)) {
+    return (
+      <main className="min-h-screen bg-crema flex items-center justify-center px-6 pt-24">
+        <div className="max-w-md text-center">
+          <p className="font-cormorant text-verde-profundo text-2xl mb-3">Esta salida ya no se vende en línea</p>
+          <p className="font-dm text-sm text-negro/60 mb-6">
+            {base.evento.retirado
+              ? "Se llenaron los cuartos para esas fechas. Todavía puedes reservar la noche de Xantolo con guía."
+              : "Ya pasó la fecha límite para reservarla aquí. Escríbenos por WhatsApp por si queda un lugar."}
+          </p>
+          <div className="flex flex-col gap-3 items-center">
+            <Link href={NOCHE_XANTOLO.pagina} className="text-verde-selva underline font-dm text-sm">Ver las noches de Xantolo</Link>
+            <a href={waLink(`Hola, quería reservar ${base.nombre}. ¿Todavía se puede?`)} target="_blank" rel="noopener noreferrer"
+              className="text-verde-selva underline font-dm text-sm">Preguntar por WhatsApp</a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   // El precio ya NO es fijo: el publicado cubre a dos personas, y cada persona
   // extra suma hotel y boletos de tour. Se usa la MISMA función que el servidor
   // (`computePaqueteCharge`), así lo que se ve es lo que se cobra.
@@ -388,7 +435,17 @@ export default function ReservarPaquetePage() {
 
   // `tourElegido` entra al cálculo porque en el paquete a la carta los boletos
   // de la gente extra son los de los recorridos que de verdad eligió.
-  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, tourElegido, pct, fecha });
+  // Valles: transporte aparte, con cargo por grupo (decisión de Manolo, 11 oct 2026).
+  const desdeValles = sinHotel && !!evento?.desdeValles && modoRecogida === "valles";
+  const cotizacion = computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, vistaMontana: vistaReal, reparto, nocheExtra, tourElegido, pct, fecha, conTour, desdeValles });
+  /**
+   * Lo que paga cada quien por la Ruta con ESTE grupo (la escalera del tour:
+   * $1,350 desde 3, $1,300 desde 6). Se calcula aunque el día no esté marcado,
+   * para que la tarjeta «Día completo» enseñe el precio que se cobraría.
+   */
+  const rutaPorPersona = !(sinHotel && tourOpcional) ? 0
+    : (conTour ? cotizacion : computePaqueteCharge({ slug: paquete.slug, personas, childrenMid, childrenSmall, pct, fecha, conTour: true }))?.toursPorPersona
+      || tourOpcional.precioPorPersona;
   const totalReal  = cotizacion?.total  ?? paquete.precio;
   const chargeAmt  = cotizacion?.charge ?? Math.round(paquete.precio * pct / 100);
   const pendiente  = totalReal - chargeAmt;
@@ -404,7 +461,16 @@ export default function ReservarPaquetePage() {
     if (!evento && !fecha) { setError(t.errFecha); return; }
     if (!name.trim() || !email.trim()) { setError(t.errNombreCorreo); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(t.errCorreoInvalido); return; }
-    if (sinHotel && recogida.trim().length < 3) { setError("Dinos dónde te hospedas en Xilitla para pasar por ti."); return; }
+    // Quien llega por su cuenta no tiene hotel que escribir: el punto de
+    // encuentro se acuerda por WhatsApp y la frase la arma el servidor
+    // (`create-payment-intent`). Antes este campo era obligatorio siempre y dejaba fuera
+    // justo a quien apenas está planeando.
+    if (sinHotel && modoRecogida !== "punto" && recogida.trim().length < 3) {
+      setError(modoRecogida === "valles"
+        ? "Dinos dónde te hospedas en Ciudad Valles para pasar por ti."
+        : "Dinos dónde te hospedas en Xilitla para pasar por ti.");
+      return;
+    }
     // Un paquete con día "a elegir" y sin elegir no se puede operar: el equipo
     // no sabría a dónde llevarlo el día 3.
     if (!habitacionId && !evento) {
@@ -437,7 +503,9 @@ export default function ReservarPaquetePage() {
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
           sid: sessionId(), gaClientId: ga4ClientId(), locale,
-          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId, recogida: recogida.trim() },
+          // Desde el 11 oct el modo viaja aparte y la frase la arma el servidor
+          // (el cargo de Valles no puede depender de un texto del navegador).
+          paqueteDetails: { slug: paquete!.slug, pct, personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId, recogida: modoRecogida === "punto" ? "" : recogida.trim(), modoRecogida, conTour, desdeValles },
         }),
       });
       const d = await res.json();
@@ -524,7 +592,9 @@ export default function ReservarPaquetePage() {
               <Check className="w-7 h-7 text-verde-selva" />
             </div>
             <h2 className="font-cormorant text-verde-profundo text-2xl mb-2">{t.reservaConfirmada}</h2>
-            <p className="font-dm text-sm text-negro/60 mb-1">{t.tuConfirmacionEs} <strong className="text-negro">{confNum}</strong></p>
+            {confNum
+              ? <p className="font-dm text-sm text-negro/60 mb-1">{t.tuConfirmacionEs} <strong className="text-negro">{confNum}</strong></p>
+              : <p className="font-dm text-sm text-negro/60 mb-1">{locale === "en" ? "Your payment went through. Your booking number arrives by email in a few minutes." : "Tu pago entró. Tu folio te llega por correo en unos minutos."}</p>}
             <p className="font-dm text-sm text-negro/60 mb-6">{t.detallesPorCorreo} {pendiente > 0 ? t.pagasteParcial(fmx(chargeAmt), pct, fmx(pendiente)) : t.pagaste100} {t.teContactamos}</p>
             <Link href={lp("/paquetes")} className="text-verde-selva underline font-dm text-sm">{t.verMasPaquetes}</Link>
           </div>
@@ -545,13 +615,14 @@ export default function ReservarPaquetePage() {
                 {sinHotel ? (
                   <>
                     <p className="font-dm text-sm text-negro/65 leading-relaxed">
-                      {`Pasamos por ti a las ${NOCHE_XANTOLO.horaRecogida} a ${NOCHE_XANTOLO.recogida} y te regresamos hacia las ${NOCHE_XANTOLO.regreso}. Degustación de temporada y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes}.`}
+                      {`La noche es de ${NOCHE_XANTOLO.horario}: degustación de temporada y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes}. Te regresamos hacia las ${NOCHE_XANTOLO.regreso}.`}
+                      {conTour && tourOpcional ? ` Y ese mismo día, la ${tourOpcional.nombre}: salimos ${tourOpcional.horaRecogida} y regresamos a tiempo para la noche.` : ""}
                     </p>
                     {/* La otra noche, por si esta no les queda. */}
                     {otraNoche && (
                       <p className="mt-3 font-dm text-[12px] text-negro/55">
                         ¿Mejor el {otraNoche.corta.toLowerCase()}?{" "}
-                        <Link href={`/reservar-paquete/${otraNoche.slug}`} className="text-verde-selva underline underline-offset-2">Cambiar de noche</Link>
+                        <Link href={`/reservar-paquete/${otraNoche.slug}${conTour ? "?conTour=1" : ""}`} className="text-verde-selva underline underline-offset-2">Cambiar de noche</Link>
                       </p>
                     )}
                   </>
@@ -582,6 +653,54 @@ export default function ReservarPaquetePage() {
                        className="text-verde-selva underline underline-offset-2">WhatsApp</a>{" "}
                     por si se libera uno.
                   </p>
+                )}
+              </section>
+            )}
+
+            {/* ── EL DÍA COMPLETO (10 oct 2026) ──
+                El hotel se llenó, así que lo que se puede vender sin cuartos es
+                el DÍA: la Ruta Surrealista regresa entre 4 y 6 PM y la noche
+                sale a las 5:30 PM, misma unidad y mismo guía. Va como extra de
+                esta misma reserva —un solo asiento, un solo cupo— y no como
+                paquete aparte. */}
+            {sinHotel && tourOpcional && !agotado && (
+              <section className="bg-white border border-negro/8 p-6">
+                <h2 className="font-cormorant text-verde-profundo text-xl mb-1">¿Aprovechas el día?</h2>
+                <p className="font-dm text-sm text-negro/60 leading-relaxed mb-4">
+                  Ya que vienes esa noche, el mismo día puedes hacer {tourOpcional.nombreLargo}.
+                  Mismo guía y misma camioneta: te recogemos {tourOpcional.horaRecogida} y te dejamos listo para la noche.
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { on: false, titulo: "Solo la noche de Xantolo", precio: NOCHE_XANTOLO.precioAdulto, nota: NOCHE_XANTOLO.horario },
+                    { on: true,  titulo: `Día completo: ${tourOpcional.nombre} + la noche`, precio: NOCHE_XANTOLO.precioAdulto + rutaPorPersona, nota: `${tourOpcional.horario} y la noche hasta las ${NOCHE_XANTOLO.regreso}` },
+                  ].map((o) => (
+                    <button key={String(o.on)} type="button"
+                      onClick={() => {
+                        setConTour(o.on);
+                        trackTourEvent("PAQUETE_DIA_COMPLETO", { tour: paquete.slug, conTour: o.on });
+                      }}
+                      aria-pressed={conTour === o.on}
+                      className={`w-full text-left border px-4 py-3 transition-colors ${conTour === o.on ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="min-w-0">
+                          <span className="block font-dm text-sm text-negro">{o.titulo}</span>
+                          <span className="block font-dm text-[11px] text-negro/50 mt-0.5">{o.nota}</span>
+                        </span>
+                        <span className="font-dm text-sm text-negro whitespace-nowrap">{fmx(o.precio)}<span className="text-negro/45"> /persona</span></span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {conTour && (
+                  <ul className="mt-4 space-y-1.5">
+                    {tourOpcional.incluye.map((x) => (
+                      <li key={x} className="flex gap-2 font-dm text-[12px] text-negro/60 leading-relaxed">
+                        <Check className="w-3.5 h-3.5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                        <span>{x}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </section>
             )}
@@ -624,26 +743,45 @@ export default function ReservarPaquetePage() {
                       de $12,500 a $19,670 sin una sola línea que lo explicara.
                       Ahora se dispara con los extras de verdad. */}
                   {/* La noche sin hotel se cobra por persona: el desglose va siempre. */}
-                  {sinHotel && cotizacion ? (
+                  {sinHotel && cotizacion ? (() => {
+                    // Con el día completo, cada renglón vale la noche MÁS la
+                    // Ruta: si aquí se enseñara solo la noche, el desglose
+                    // diría «2 × $990 = $1,980» y abajo «Total $4,780».
+                    const uno    = (f = 1) => Math.round((paquete.precio + (cotizacion.conTour ? cotizacion.toursPorPersona : 0)) * f);
+                    const pAdult = uno();
+                    const pMedio = uno(0.7);
+                    const pChico = uno(0.5);
+                    return (
                     <div className="mt-3 border-t border-negro/8 pt-3 space-y-1">
                       <p className="flex justify-between font-dm text-[12px] text-negro/55">
-                        <span>{t.adultos(personas)} × {fmx(paquete.precio)}</span><span>{fmx(personas * paquete.precio)}</span>
+                        <span>{t.adultos(personas)} × {fmx(pAdult)}</span><span>{fmx(personas * pAdult)}</span>
                       </p>
                       {childrenMid > 0 && (
                         <p className="flex justify-between font-dm text-[12px] text-negro/55">
-                          <span>{t.ninos610Resumen(childrenMid)} × {fmx(precioNinoNoche("medio"))}</span><span>{fmx(childrenMid * precioNinoNoche("medio"))}</span>
+                          <span>{t.ninos610Resumen(childrenMid)} × {fmx(pMedio)}</span><span>{fmx(childrenMid * pMedio)}</span>
                         </p>
                       )}
                       {childrenSmall > 0 && (
                         <p className="flex justify-between font-dm text-[12px] text-negro/55">
-                          <span>{t.menores6Resumen(childrenSmall)} × {fmx(precioNinoNoche("chico"))}</span><span>{fmx(childrenSmall * precioNinoNoche("chico"))}</span>
+                          <span>{t.menores6Resumen(childrenSmall)} × {fmx(pChico)}</span><span>{fmx(childrenSmall * pChico)}</span>
+                        </p>
+                      )}
+                      {cotizacion.conTour && tourOpcional && (
+                        <p className="font-dm text-[11px] text-negro/40 pt-0.5">
+                          Incluye la noche ({fmx(paquete.precio)}) y la {tourOpcional.nombre} ({fmx(cotizacion.toursPorPersona)}) por persona.
+                        </p>
+                      )}
+                      {cotizacion.extraTraslado > 0 && (
+                        <p className="flex justify-between font-dm text-[12px] text-negro/55">
+                          <span>Traslado desde Ciudad Valles (por grupo)</span><span>+{fmx(cotizacion.extraTraslado)}</span>
                         </p>
                       )}
                       <p className="flex justify-between font-dm text-[13px] text-negro/85 font-medium pt-1">
                         <span>{t.totalDelViaje}</span><span>{fmx(cotizacion.total)} MXN</span>
                       </p>
                     </div>
-                  ) : cotizacion && (cotizacion.extraHotel > 0 || cotizacion.extraTours > 0 || cotizacion.extraEvento > 0) ? (
+                    );
+                  })() : cotizacion && (cotizacion.extraHotel > 0 || cotizacion.extraTours > 0 || cotizacion.extraEvento > 0) ? (
                     <div className="mt-3 border-t border-negro/8 pt-3 space-y-1">
                       <p className="flex justify-between font-dm text-[12px] text-negro/55">
                         <span>{t.paqueteBase}</span><span>{fmx(cotizacion.base)}</span>
@@ -680,8 +818,8 @@ export default function ReservarPaquetePage() {
                   {/* Menores, con la misma escala que los tours sueltos. */}
                   <div className="mt-4 space-y-2.5 border-t border-negro/8 pt-3">
                     {[
-                      { label: t.ninos610, nota: sinHotel ? fmx(precioNinoNoche("medio")) : t.ninos610Nota, v: childrenMid,   set: setChildrenMid },
-                      { label: t.menores6, nota: sinHotel ? fmx(precioNinoNoche("chico")) : t.menores6Nota, v: childrenSmall, set: setChildrenSmall },
+                      { label: t.ninos610, nota: sinHotel ? fmx(conTour ? precioNocheConTour("medio", rutaPorPersona) : precioNinoNoche("medio")) : t.ninos610Nota, v: childrenMid,   set: setChildrenMid },
+                      { label: t.menores6, nota: sinHotel ? fmx(conTour ? precioNocheConTour("chico", rutaPorPersona) : precioNinoNoche("chico")) : t.menores6Nota, v: childrenSmall, set: setChildrenSmall },
                     ].map((c) => (
                       <div key={c.label} className="flex items-center justify-between">
                         <span className="font-dm text-[12px] text-negro/65">
@@ -770,13 +908,31 @@ export default function ReservarPaquetePage() {
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.tuViajeDiaPorDia}</h2>
               {/* La etiqueta sola ("· por persona") se quedaba sin referente al
                   dejar de ser "por pareja": va con su importe visible. */}
-              <p className="font-dm text-xs text-negro/45 mb-5">{paquete.duracion} · {fmx(precioVisible(paquete))} MXN {paquete.precioLabel}</p>
+              <p className="font-dm text-xs text-negro/45 mb-5">
+                {conTour && tourOpcional
+                  ? `Un día completo · ${fmx(precioVisible(paquete) + rutaPorPersona)} MXN por persona`
+                  : `${paquete.duracion} · ${fmx(precioVisible(paquete))} MXN ${paquete.precioLabel}`}
+              </p>
 
               <ol className="space-y-3 mb-6">
+                {/* El día agregado va PRIMERO: pasa antes que la noche y es la
+                    mitad de lo que se está pagando. Sin esto el itinerario del
+                    checkout no mencionaba el recorrido que acaba de comprar. */}
+                {conTour && tourOpcional && (
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-7 h-7 border border-verde-selva/30 bg-verde-selva/5 flex items-center justify-center font-cormorant text-verde-selva text-sm">1</span>
+                    <div className="min-w-0">
+                      <p className="font-dm text-[13px] text-negro/85 leading-snug">{tourOpcional.nombreLargo}</p>
+                      <p className="font-dm text-[12px] text-negro/50 leading-snug mt-0.5">
+                        {`Salimos ${tourOpcional.horaRecogida} y regresamos a tiempo para la noche. ${tourOpcional.incluye.join(". ")}.`}
+                      </p>
+                    </div>
+                  </li>
+                )}
                 {paquete.itinerario.map((dia, i) => (
                   <li key={i} className="flex gap-3">
                     <span className="flex-shrink-0 w-7 h-7 border border-verde-selva/30 bg-verde-selva/5 flex items-center justify-center font-cormorant text-verde-selva text-sm">
-                      {i + 1}
+                      {i + 1 + (conTour && tourOpcional ? 1 : 0)}
                     </span>
                     <div className="min-w-0">
                       <p className="font-dm text-[13px] text-negro/85 leading-snug">{dia.titulo}</p>
@@ -790,11 +946,24 @@ export default function ReservarPaquetePage() {
               <div className="border-t border-negro/8 pt-4 space-y-2.5">
                 <p className="flex items-start gap-2.5 font-dm text-[12px] text-negro/65">
                   <Clock className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>Sale a las <strong className="text-negro/85">{NOCHE_XANTOLO.horaRecogida}</strong> y regresa hacia las {NOCHE_XANTOLO.regreso}.</span>
+                  <span>
+                    {conTour && tourOpcional
+                      ? <>El día sale <strong className="text-negro/85">{tourOpcional.horaRecogida}</strong>, la Ruta termina en Xilitla y de ahí sigue la noche, que regresa {haciaLa(NOCHE_XANTOLO.regreso)}.</>
+                      : <>Sale a las <strong className="text-negro/85">{NOCHE_XANTOLO.horaRecogida}</strong> y regresa {haciaLa(NOCHE_XANTOLO.regreso)}.</>}
+                    {desdeValles && evento?.desdeValles && <> Desde Ciudad Valles llegas de vuelta {haciaLa(evento.desdeValles.regreso)}.</>}
+                  </span>
                 </p>
                 <p className="flex items-start gap-2.5 font-dm text-[12px] text-negro/65">
                   <MapPin className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>Pasamos por ti a <strong className="text-negro/85">{NOCHE_XANTOLO.recogida}</strong>: escríbelo abajo.</span>
+                  <span>
+                    {/* Ya no se promete recoger en un hotel: quien no tenga
+                        hospedaje elige punto de encuentro abajo. El transporte
+                        incluido es solo dentro de Xilitla (Manolo, 11 oct). */}
+                    Pasamos por ti donde te hospedes en <strong className="text-negro/85">Xilitla</strong>
+                    , o nos vemos en el centro si todavía no tienes hotel
+                    {evento?.desdeValles ? <>. Desde <strong className="text-negro/85">Ciudad Valles</strong> también, con {fmx(evento.desdeValles.cargoPorGrupo)} de traslado por grupo</> : null}
+                    : lo eliges abajo.
+                  </span>
                 </p>
               </div>
               ) : (
@@ -1213,7 +1382,9 @@ export default function ReservarPaquetePage() {
                     // elegida, el precio es el de Jungla y el resumen decía
                     // "vista a la selva".
                     sinHotel
-                      ? (recogida.trim() ? `Pasamos por ti a: ${recogida.trim()}` : "")
+                      ? (modoRecogida === "punto"
+                          ? "Nos vemos en el centro de Xilitla"
+                          : (recogida.trim() ? `Pasamos por ti a: ${recogida.trim()}` : ""))
                       : evento ? "Habitación (la asigna el hotel)" : (habElegida?.nombre ?? (vistaReal ? t.habJungla : t.habSelva)),
                     nocheExtra ? t.resumenNocheExtra : "",
                   ].filter(Boolean).join(" · "),
@@ -1232,7 +1403,12 @@ export default function ReservarPaquetePage() {
                       subtotal: cotizacion.extraHotel,
                     }] : []),
                     ...(cotizacion.extraTours > 0 ? [{
-                      nombre:   t.resumenToursExtra(cotizacion.personas - 2),
+                      // En la noche de Xantolo el extra es el DÍA completo y lo
+                      // paga cada quien; en los paquetes son los boletos de la
+                      // gente arriba de dos.
+                      nombre:   cotizacion.conTour && tourOpcional
+                        ? `${tourOpcional.nombre} · ${cotizacion.personas} persona${cotizacion.personas === 1 ? "" : "s"}`
+                        : t.resumenToursExtra(cotizacion.personas - 2),
                       subtotal: cotizacion.extraTours,
                     }] : []),
                     ...(cotizacion.extraEvento > 0 ? [{
@@ -1298,13 +1474,50 @@ export default function ReservarPaquetePage() {
                     className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                   <p className="mt-1.5 text-xs text-negro/40 font-dm">{t.confirmacionSeEnvia}</p>
                 </div>
+                {/* ── ¿DÓNDE PASAMOS POR TI? (10 oct 2026) ──
+                    Antes aquí había un solo campo obligatorio, «¿Dónde te
+                    hospedas en Xilitla?», y era el bloqueo de verdad: quien
+                    apenas planea el viaje todavía no tiene hotel, y el botón de
+                    pagar no avanzaba sin escribirlo. Ahora quien llega por su
+                    cuenta elige punto de encuentro y sí puede comprar. */}
                 {sinHotel && (
                   <div>
-                    <label htmlFor="recogida" className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">¿Dónde te hospedas en Xilitla?</label>
-                    <input id="recogida" type="text" value={recogida} maxLength={200} onChange={(e) => setRecogida(e.target.value)}
-                      placeholder="Nombre del hotel o dirección"
-                      className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
-                    <p className="mt-1.5 text-xs text-negro/40 font-dm">Ahí pasamos por ti a las {NOCHE_XANTOLO.horaRecogida}. Si te hospedas fuera de Xilitla, escríbelo y te decimos dónde vernos.</p>
+                    <span className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">¿Dónde pasamos por ti?</span>
+                    <div role="radiogroup" aria-label="¿Dónde pasamos por ti?" className="space-y-2">
+                      {([
+                        { k: "xilitla", t: "Me hospedo en Xilitla", n: conTour && tourOpcional ? `Pasamos por ti ${tourOpcional.horaRecogida}. Sin costo extra.` : `Pasamos por ti a las ${NOCHE_XANTOLO.horaRecogida}. Sin costo extra.` },
+                        // Valles: el transporte incluido es solo dentro de
+                        // Xilitla; desde Valles va con cargo por grupo (Manolo, 11 oct).
+                        ...(evento?.desdeValles
+                          ? [{ k: "valles" as const, t: `Me hospedo en Ciudad Valles (+${fmx(evento.desdeValles.cargoPorGrupo)} por grupo)`, n: conTour && tourOpcional
+                              ? `Pasamos por ti en la mañana (te confirmamos la hora por WhatsApp) y te regresamos ${haciaLa(evento.desdeValles.regreso)}.`
+                              : `Pasamos por ti ${haciaLa(evento.desdeValles.recogidaNoche)} y te regresamos ${haciaLa(evento.desdeValles.regreso)}.` }]
+                          : []),
+                        { k: "punto", t: "Todavía no tengo hospedaje", n: `Nos vemos en el centro de Xilitla ${conTour && tourOpcional ? tourOpcional.horaRecogida : `a las ${NOCHE_XANTOLO.horaRecogida}`}; te confirmamos el punto exacto por WhatsApp.` },
+                      ] as const).map((o) => (
+                        <button key={o.k} type="button" role="radio" aria-checked={modoRecogida === o.k}
+                          onClick={() => setModoRecogida(o.k as typeof modoRecogida)}
+                          className={`w-full text-left border px-4 py-3 transition-colors ${modoRecogida === o.k ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                          <span className="block font-dm text-sm text-negro">{o.t}</span>
+                          <span className="block font-dm text-[11px] text-negro/50 mt-0.5">{o.n}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {modoRecogida !== "punto" && (
+                      <div className="mt-3">
+                        <label htmlFor="recogida" className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">
+                          {modoRecogida === "valles" ? "¿Dónde te hospedas en Ciudad Valles?" : "¿Dónde te hospedas en Xilitla?"}
+                        </label>
+                        <input id="recogida" type="text" value={recogida} maxLength={200} onChange={(e) => setRecogida(e.target.value)}
+                          placeholder="Nombre del hotel o dirección"
+                          className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                      </div>
+                    )}
+                    {modoRecogida === "punto" && (
+                      <p className="mt-2.5 text-xs text-negro/45 font-dm">
+                        Si antes del {evento?.fechaTexto.replace(" de 2026", "")} ya tienes hotel en Xilitla, avísanos por WhatsApp y pasamos por ti ahí sin costo.
+                      </p>
+                    )}
                   </div>
                 )}
                 <div>

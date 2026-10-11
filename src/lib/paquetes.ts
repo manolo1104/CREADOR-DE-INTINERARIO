@@ -7,7 +7,7 @@ import { TRASLADOS, precioBase } from "./traslados";
 import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
 import { enAuto, enAutobus } from "./tiemposDeViaje";
-import { NOCHE_XANTOLO } from "./nocheXantolo";
+import { NOCHE_XANTOLO, haciaLa } from "./nocheXantolo";
 
 export interface ItinerarioDia {
   dia: number;
@@ -84,6 +84,37 @@ export interface EventoPaquete {
   /** Horario de la salida y dónde se recoge (sin hotel). */
   horario?: string;
   recogida?: string;
+  /**
+   * El día completo que se puede AGREGAR a esta salida (10 oct 2026): no es un
+   * paquete aparte con su propio cupo, es un extra sobre el mismo asiento. Lo
+   * define `NOCHE_XANTOLO.tourOpcional`.
+   */
+  tourOpcional?: {
+    tourSlug: string;
+    nombre: string;
+    nombreLargo: string;
+    precioPorPersona: number;
+    horario: string;
+    horaRecogida: string;
+    recogida: string;
+    incluye: string[];
+  };
+  /**
+   * Recoger en Ciudad Valles, con cargo POR GRUPO (11 oct 2026). Lo define
+   * `NOCHE_XANTOLO.desdeValles`; sin él, solo se recoge en Xilitla.
+   */
+  desdeValles?: {
+    cargoPorGrupo: number;
+    recogidaNoche: string;
+    regreso: string;
+  };
+  /**
+   * Retirado de la venta a mano, aunque la fecha no haya pasado (10 oct 2026:
+   * el paquete con hotel de Xantolo, porque el hotel se llenó). Sale de las
+   * vitrinas —catálogo, sitemap, popup, cotizador— pero su página sigue viva
+   * para cerrar por WhatsApp lo que quede.
+   */
+  retirado?: boolean;
   /** Su página de venta propia. */
   pagina: string;
   /** Lo que el equipo tiene que operar esa noche. Va a la reserva. */
@@ -988,6 +1019,14 @@ const XANTOLO_2026: Paquete = {
     // que ya suma el motor.
     extraEventoPorPersona: NOCHE_XANTOLO.precioAdulto,
     habitacionTexto: "Habitación en el Hotel Paraíso Encantado (la asigna el hotel)",
+    // 🔴 10 oct 2026 — RETIRADO del sitio por decisión de Manolo. El hotel se
+    // llenó: con 4 cuartos de una sola noche y el sábado 31 imposible, el
+    // paquete partía la atención con la noche sola y en 9 días de Clarity nadie
+    // tocó «Reservar». Lo que se vende ahora es la noche de Xantolo, con la Ruta
+    // Surrealista como extra opcional del mismo día (ver `NOCHE_XANTOLO`).
+    // La página sigue viva, sin enlaces entrantes, para cerrar por WhatsApp lo
+    // que quede de esos 4 cuartos. Para revivirlo: borrar esta línea.
+    retirado: true,
     pagina: "/paquetes/xantolo-2026",
     notaEquipo: "EVENTO DOMINGO 1 DE NOVIEMBRE DE 2026: después de la Ruta Surrealista, degustación (tamales, atole, bocoles y pan de muerto) y transporte con guía al centro de Xilitla (comparsas y shows más representativos del Xantolo). Habitación: la asigna el hotel.",
   },
@@ -1027,9 +1066,9 @@ export const NOCHES_XANTOLO: Paquete[] = NOCHE_XANTOLO.noches.map((n) => ({
       tipo: "tour",
       titulo: `Noche de Xantolo · ${n.corta}`,
       descripcion:
-        `Te recogemos a las ${NOCHE_XANTOLO.horaRecogida} en ${NOCHE_XANTOLO.recogida}. ` +
+        `Nos vemos a las ${NOCHE_XANTOLO.horaRecogida}: pasamos por ti a ${NOCHE_XANTOLO.recogida}, o en el centro si todavía no tienes dónde quedarte. ` +
         `Degustación de temporada (${NOCHE_XANTOLO.degustacion}) y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes} en el centro de Xilitla. ` +
-        `Regreso a tu hospedaje hacia las ${NOCHE_XANTOLO.regreso}.`,
+        `Te dejamos donde te recogimos hacia las ${NOCHE_XANTOLO.regreso}.`,
     },
   ],
   incluye: NOCHE_XANTOLO.incluye,
@@ -1046,8 +1085,10 @@ export const NOCHES_XANTOLO: Paquete[] = NOCHE_XANTOLO.noches.map((n) => ({
     sinHotel: true,
     horario: NOCHE_XANTOLO.horario,
     recogida: NOCHE_XANTOLO.recogida,
+    tourOpcional: NOCHE_XANTOLO.tourOpcional,
+    desdeValles: NOCHE_XANTOLO.desdeValles,
     pagina: NOCHE_XANTOLO.pagina,
-    notaEquipo: `NOCHE DE XANTOLO ${n.fechaTexto.toUpperCase()}: recoger a las ${NOCHE_XANTOLO.horaRecogida} en el hospedaje que indicó el cliente en Xilitla; degustación (${NOCHE_XANTOLO.degustacion}); comparsas y shows más representativos del Xantolo en el centro con guía; regreso hacia las ${NOCHE_XANTOLO.regreso}. Salida aparte de la del paquete con hotel.`,
+    notaEquipo: `NOCHE DE XANTOLO ${n.fechaTexto.toUpperCase()}: recoger a las ${NOCHE_XANTOLO.horaRecogida} donde indicó el cliente (si eligió punto de encuentro, confirmarlo por WhatsApp; si es de Ciudad Valles, pasar por él ${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)} y dejarlo allá ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}); degustación (${NOCHE_XANTOLO.degustacion}); comparsas y shows más representativos del Xantolo en el centro con guía; regreso hacia las ${NOCHE_XANTOLO.regreso}. Si la reserva trae la ${NOCHE_XANTOLO.tourOpcional.nombre}, ese mismo día sale ${NOCHE_XANTOLO.tourOpcional.horaRecogida} y regresa a tiempo para la noche.`,
   },
 }));
 
@@ -1065,7 +1106,7 @@ function hoyMexico(): string {
  * arma la salida con un día de margen).
  */
 export function eventoALaVenta(p: Pick<Paquete, "evento">): boolean {
-  return !!p.evento && hoyMexico() < p.evento.fecha;
+  return !!p.evento && !p.evento.retirado && hoyMexico() < p.evento.fecha;
 }
 
 /** Los paquetes de evento que todavía se venden, para anunciarlos. */

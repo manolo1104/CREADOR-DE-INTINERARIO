@@ -267,59 +267,76 @@ export default function DestinoPage({ params }: Props) {
 
             <p className="text-crema/75 max-w-2xl leading-relaxed text-base mb-5">{destino.descripcion}</p>
 
+            {/* Son los CTA más ALTOS de la página y eran `Link` pelones: por eso
+                DESTINO_TOUR_CLICK salía en 4 en nueve días y el salto
+                destino→tour parecía no existir. Con `TrackedLink` se mide. */}
             {toursRelacionados.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {toursRelacionados.map((t) => (
-                  <Link key={t.slug} href={localePath(`/tours/${t.slug}`, locale)}
+                  <TrackedLink key={t.slug} href={localePath(`/tours/${t.slug}`, locale)}
+                    event="DESTINO_TOUR_CLICK"
+                    data={{ destino: base.slug, tourSlug: t.slug, tour_name: t.nombre, source: "pildora_hero" }}
                     className="inline-flex items-center gap-1.5 bg-verde-selva/80 hover:bg-verde-vivo text-crema text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 transition-colors">
                     <Map className="w-3 h-3 flex-shrink-0" />
                     {dd.includedIn} {t.nombre} →
-                  </Link>
+                  </TrackedLink>
                 ))}
               </div>
             )}
           </div>
         </div>
 
+        {/* ── BANDA DE PRODUCTO ──
+            🔴 10 oct 2026 — esta banda estaba DESPUÉS de la galería. El
+            comentario decía que ponía el producto «arriba del pliegue», pero la
+            galería es un bento de filas de 34vw: en Puente de Dios son ~240vw
+            de scroll antes del único botón que lleva a un tour. En 9 días de
+            Clarity, 186 sesiones vieron una ficha de destino y solo el 7,5 %
+            llegó a ver un tour; el título, que no es clicable, recibía clics
+            muertos. Va ANTES de la galería, pegada al héroe.
+
+            Y ahora también se pinta cuando NINGÚN tour visita el lugar
+            (23 de los 41 destinos): en esos casos se ofrece el tour de la misma
+            zona, que es lo que el bloque del final ya hacía donde nadie lo veía. */}
+        {(tourPrincipal ?? toursCercanos[0]) && (() => {
+          const t = tourPrincipal ?? toursCercanos[0];
+          const esCercano = !tourPrincipal;
+          return (
+            <section className="bg-verde-profundo border-y border-verde-vivo/20">
+              <div className="max-w-5xl mx-auto px-6 md:px-8 py-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                <div className="flex-1 min-w-0">
+                  <p className="font-cormorant text-crema text-xl md:text-2xl leading-snug">
+                    {esCercano ? dd.nearbyIntro(destino.nombre) : dd.partOfTour(destino.nombre, t.nombre)}
+                  </p>
+                  <p className="font-dm text-crema/60 text-sm mt-1">
+                    {esCercano ? `${t.nombre} · ` : ""}
+                    {precioConUnidad(t, locale)}
+                    {t.precioUnidad === "vehiculo" || t.cancelacion ? "" : ` · ${dd.deposit30}`}
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <TrackedLink
+                    href={localePath(`/tours/${t.slug}`, locale)}
+                    event="DESTINO_TOUR_CLICK"
+                    data={{
+                      destino:  base.slug,
+                      tourSlug: t.slug,
+                      tour_name: t.nombre,
+                      amount:   t.precio,
+                      source:   esCercano ? "banda_destino_cerca" : "banda_destino",
+                    }}
+                    className="inline-flex items-center gap-2 bg-lima text-negro px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-crema transition-colors"
+                  >
+                    {dd.seeDepartures} →
+                  </TrackedLink>
+                </div>
+              </div>
+            </section>
+          );
+        })()}
+
         {(allImages.length > 1 || (!destino.imagen_hero && allImages.length > 0)) && (
           <DestinoGallery images={allImages} nombre={destino.nombre} />
-        )}
-
-        {/* ── BANDA DE PRODUCTO ──
-            El 92 % del tráfico entra por contenido (destinos) y se va sin ver
-            un tour. El bloque completo de "Tours relacionados" vive hasta
-            abajo, después del mapa, las FAQs y las reseñas — casi nadie llega.
-            Esta banda pone el producto y su precio arriba del pliegue. */}
-        {tourPrincipal && (
-          <section className="bg-verde-profundo border-y border-verde-vivo/20">
-            <div className="max-w-5xl mx-auto px-6 md:px-8 py-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              <div className="flex-1 min-w-0">
-                <p className="font-cormorant text-crema text-xl md:text-2xl leading-snug">
-                  {dd.partOfTour(destino.nombre, tourPrincipal.nombre)}
-                </p>
-                <p className="font-dm text-crema/60 text-sm mt-1">
-                  {precioConUnidad(tourPrincipal, locale)}
-                  {tourPrincipal.precioUnidad === "vehiculo" || tourPrincipal.cancelacion ? "" : ` · ${dd.deposit30}`}
-                </p>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <TrackedLink
-                  href={localePath(`/tours/${tourPrincipal.slug}`, locale)}
-                  event="DESTINO_TOUR_CLICK"
-                  data={{
-                    destino:  base.slug,
-                    tourSlug: tourPrincipal.slug,
-                    tour_name: tourPrincipal.nombre,
-                    amount:   tourPrincipal.precio,
-                    source:   "banda_destino",
-                  }}
-                  className="inline-flex items-center gap-2 bg-lima text-negro px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-crema transition-colors"
-                >
-                  {dd.seeDepartures} →
-                </TrackedLink>
-              </div>
-            </div>
-          </section>
         )}
 
         {narrativa && (
@@ -714,22 +731,31 @@ export default function DestinoPage({ params }: Props) {
 
         {/* Barra móvil de reserva. En /tours/[slug] es el CTA que más convierte
             (todos los "INICIÓ RESERVA" del log salieron de ahí) y vivía en una
-            sola plantilla. Aquí solo aparece si hay un tour que SÍ visita el
-            destino, para no prometer un itinerario que no existe. */}
-        {tourPrincipal && (
-          <>
-            <MobileBookingBar
-              tourSlug={tourPrincipal.slug}
-              precio={tourPrincipal.precio}
-              tourId={tourPrincipal.id}
-              tourName={tourPrincipal.nombre}
-              precioUnidad={tourPrincipal.precioUnidad}
-              waHref={waLink(waDestino)}
-              source="destino_bar"
-            />
-            <div className="h-20 lg:hidden" aria-hidden="true" />
-          </>
-        )}
+            sola plantilla.
+            🔴 10 oct 2026 — antes solo se montaba si había un tour que SÍ visita
+            el destino, «para no prometer un itinerario que no existe». El efecto
+            real: 23 de los 41 destinos se quedaban sin NINGÚN CTA persistente.
+            Con el tour de la zona la promesa sigue siendo honesta —la banda de
+            arriba dice que no lo visitamos y que se puede combinar— y el teléfono
+            deja de ser un callejón sin salida. */}
+        {(tourPrincipal ?? toursCercanos[0]) && (() => {
+          const t = tourPrincipal ?? toursCercanos[0];
+          return (
+            <>
+              <MobileBookingBar
+                tourSlug={t.slug}
+                precio={t.precio}
+                tourId={t.id}
+                tourName={t.nombre}
+                precioUnidad={t.precioUnidad}
+                waHref={waLink(waDestino)}
+                source="destino_bar"
+                etiqueta={t.nombreCorto || t.nombre}
+              />
+              <div className="h-20 lg:hidden" aria-hidden="true" />
+            </>
+          );
+        })()}
       </main>
     </>
   );

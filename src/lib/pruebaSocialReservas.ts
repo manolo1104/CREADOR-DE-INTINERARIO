@@ -1,7 +1,8 @@
 // Solo servidor: lee las reservas reales para la prueba social del sitio.
 import { prisma } from "./prisma";
 import { lineasDe, type ConLineas } from "./admin/reserva";
-import { TOURS_DB } from "./tours";
+import { TOURS_DB, tourPorNombre } from "./tours";
+import { NO_CUENTAN } from "./cupoTour";
 
 /**
  * Prueba social con las reservas que de verdad entraron.
@@ -58,8 +59,15 @@ const TITULOS = /^(ing|lic|sr|sra|srta|dr|dra|arq|mtro|mtra|c\.?p|profe?|don|do�
  * Las reservas que no cuentan como venta: las canceladas y los «borrador» del
  * bot viejo, que eran cotizaciones grabadas como reserva y nunca se pagaron.
  * Es la misma lista que usa el cupo (`NO_CUENTAN` en `cupoTour.ts`).
+ *
+ * 🔴 10 oct 2026 — antes esto era `const ESTADO_VALIDO = "paid"` y el
+ * comentario de arriba ya mentía: el cupo cuenta todo menos canceladas y
+ * borradores, y aquí solo entraban las pagadas al 100 %. Como casi toda venta
+ * del negocio entra con el anticipo del 30 % y el panel la deja en `pending`,
+ * el aviso enseñaba la reserva más nueva con una semana de retraso.
+ * Decisión de Manolo: cuentan TODAS, pendientes o pagadas.
  */
-const ESTADO_VALIDO = "paid";
+const NO_SON_VENTA = NO_CUENTAN;
 
 export interface ReservaReciente {
   /** Nombre de pila + inicial del apellido: «María G.». */
@@ -71,7 +79,7 @@ export interface ReservaReciente {
 }
 
 export interface PruebaSocial {
-  /** Reservas pagadas en los últimos 30 días (0 = no enseñar nada). */
+  /** Reservas de los últimos 30 días (0 = no enseñar nada). Ver `NO_SON_VENTA`. */
   count30d: number;
   recientes: ReservaReciente[];
 }
@@ -101,28 +109,54 @@ export function anonimizarNombre(completo: string): string | null {
 }
 
 /**
- * El recorrido que se enseña de una reserva.
+ * El recorrido que se enseña de una reserva, siempre con el nombre del
+ * catálogo de HOY.
  *
  * 🔴 No se puede usar `tourName` tal cual: en los carritos de varios
  * recorridos llega como «Expedición Tamul + Sótano de las Golondrinas + …» y
  * en el aviso no cabe. Y `tourSlug` tampoco basta: según `admin/kpis.ts`, las
  * Cascadas del Meco salen en 18 reservas pero como `tourSlug` solo en 4. Así
- * que se toma la PRIMERA línea del carrito, que sí trae su propio slug, y se
- * resuelve contra el catálogo para que el nombre sea el de hoy y no el que se
- * guardó hace meses.
+ * que se recorren las líneas del carrito, que sí traen su propio slug.
+ *
+ * 🔴 11 oct 2026 — por qué NO se toma la primera línea y punto, y por qué si
+ * nada cuadra con el catálogo esta reserva no sale en el aviso.
+ *
+ * Al empezar a contar también las reservas capturadas a mano, el `tourName`
+ * dejó de venir siempre del catálogo: la línea de «otro concepto» del panel
+ * es texto libre. En la base real, la reserva más nueva traía de primera
+ * línea «Cascadas el Meco-Meco, Mirador Panorámico y el Gran Salto» —el nombre
+ * del recorrido con una errata— y el aviso la publicaba así, con errata y
+ * todo. Dos reglas lo arreglan:
+ *
+ *  1. se devuelve el PRIMER renglón que se reconozca en el catálogo (por slug
+ *     o, si fue escrito a mano, por nombre con `tourPorNombre`). En esa misma
+ *     reserva el segundo renglón era `rzr-xilitla`, que es un recorrido real y
+ *     se enseña bien;
+ *  2. si no se reconoce ninguno, se devuelve `null` y la reserva no sale.
+ *     Sigue contando en `count30d` —la venta existió—, pero el aviso no
+ *     publica un nombre que no está en el catálogo: nadie puede comprobarlo y
+ *     se lee como una errata nuestra, que es justo lo contrario de lo que este
+ *     aviso viene a hacer.
  */
 export function recorridoDeReserva(b: ConLineas): string | null {
   const lineas = lineasDe(b);
-  const slug = lineas[0]?.tourSlug ?? b.tourSlug;
-  const guardado = lineas[0]?.tourName ?? b.tourName;
+  // Las líneas en el orden en que se capturaron y, al final, las columnas
+  // viejas: las reservas de antes de `lineItems` solo tienen eso.
+  const candidatos = [
+    ...lineas.map((l) => ({ slug: l.tourSlug, nombre: l.tourName })),
+    { slug: b.tourSlug, nombre: b.tourName },
+  ];
 
-  const delCatalogo = slug ? TOURS_DB.find((t) => t.slug === slug) : undefined;
-  // El nombre del catálogo (en español: el aviso se traduce con el recorrido
-  // ya elegido, y los nombres propios no cambian) o, si el slug ya no existe,
-  // lo que se guardó. En los dos casos sin la cola de la coma y sin el « — ».
-  const bruto = delCatalogo?.nombre ?? guardado ?? "";
-  const corto = bruto.split("—")[0].split(" + ")[0].trim();
-  return corto.length > 1 ? corto : null;
+  for (const c of candidatos) {
+    const t = (c.slug ? TOURS_DB.find((x) => x.slug === c.slug) : undefined)
+      ?? tourPorNombre(c.nombre);
+    // `nombreCorto` y no `nombre`: el largo trae la cola de después del guion
+    // («— Tamul, Cueva del Agua y Sótano») y en la caja del aviso no cabe.
+    // Va en español incluso en inglés: el aviso se traduce alrededor del
+    // recorrido, y los nombres propios no se traducen.
+    if (t) return t.nombreCorto;
+  }
+  return null;
 }
 
 /**
@@ -138,7 +172,7 @@ export async function getPruebaSocial(): Promise<PruebaSocial> {
     const hace30 = new Date(ahora - 30 * 864e5);
 
     const reservas = await prisma.tourBooking.findMany({
-      where: { status: ESTADO_VALIDO, createdAt: { gte: desde } },
+      where: { status: { notIn: NO_SON_VENTA }, createdAt: { gte: desde } },
       orderBy: { createdAt: "desc" },
       // Solo las columnas que hacen falta. Ni correo, ni teléfono, ni notas:
       // lo que no se trae no se puede filtrar mal más adelante.

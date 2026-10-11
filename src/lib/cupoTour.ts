@@ -52,8 +52,13 @@ export { LIBRES_CASI_LLENO };
 /**
  * Las reservas que no apartan lugar: las canceladas y los «borrador» del bot
  * viejo, que eran cotizaciones grabadas como reserva y nunca se pagaron.
+ *
+ * Se exporta desde el 10 oct 2026: la prueba social del sitio decía en su
+ * comentario que usaba «la misma lista que el cupo», pero tenía su propia
+ * regla (solo `paid`) y por eso dejaba fuera las reservas con anticipo pagado.
+ * Una sola lista, un solo criterio de «esto es una venta».
  */
-const NO_CUENTAN = ["cancelled", "borrador"];
+export const NO_CUENTAN = ["cancelled", "borrador"];
 
 /**
  * Cuántos días se pueden pedir de una vez: los seis meses que deja elegir el

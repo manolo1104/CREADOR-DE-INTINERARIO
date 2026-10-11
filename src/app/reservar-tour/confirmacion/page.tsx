@@ -151,16 +151,26 @@ export default function ConfirmacionTourPage() {
         {/* ── NÚMERO DE CONFIRMACIÓN ── */}
         <div className="bg-white border border-negro/8 p-6 mb-6 text-center">
           <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm mb-2">{t.numeroConfirmacion}</p>
-          <p className="font-cormorant text-dorado mb-3" style={{ fontSize: "clamp(28px,5vw,40px)" }}>
-            {data.confirmationNumber}
-          </p>
-          <button
-            onClick={copyConfirmation}
-            className="inline-flex items-center gap-2 text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors border border-verde-selva/30 hover:border-verde-vivo px-4 py-2"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            {copied ? t.copiado : t.copiar}
-          </button>
+          {/* Sin folio del servidor no se inventa uno: el pago entró y el
+              folio llega por correo cuando se registra la reserva. */}
+          {data.confirmationNumber ? (
+            <>
+              <p className="font-cormorant text-dorado mb-3" style={{ fontSize: "clamp(28px,5vw,40px)" }}>
+                {data.confirmationNumber}
+              </p>
+              <button
+                onClick={copyConfirmation}
+                className="inline-flex items-center gap-2 text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors border border-verde-selva/30 hover:border-verde-vivo px-4 py-2"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {copied ? t.copiado : t.copiar}
+              </button>
+            </>
+          ) : (
+            <p className="font-dm text-sm text-negro/70 mb-1">
+              {locale === "en" ? "Your payment went through. Your booking number arrives by email in a few minutes." : "Tu pago entró. Tu folio te llega por correo en unos minutos."}
+            </p>
+          )}
           <p className="font-dm text-xs text-negro/40 mt-3">{t.presentaAlGuia}</p>
         </div>
 

@@ -5,7 +5,7 @@ import { Check, Minus, ArrowRight } from "lucide-react";
 import { getPaquete, eventoALaVenta, type Paquete } from "@/lib/paquetes";
 import { lugaresDePaqueteSeguro, type LugaresPaquete } from "@/lib/cupoPaquete";
 import { cabeEnCupo } from "@/lib/cupoEvento";
-import { NOCHE_XANTOLO, precioNinoNoche } from "@/lib/nocheXantolo";
+import { NOCHE_XANTOLO, haciaLa, precioNinoNoche } from "@/lib/nocheXantolo";
 import { PCTS_PAQUETE } from "@/lib/paquetePricing";
 import { waLink } from "@/lib/whatsapp";
 import { SITE } from "@/lib/i18n/config";
@@ -121,17 +121,23 @@ export default async function NocheXantoloPage() {
   };
 
   const pasos = [
-    { cuando: NOCHE_XANTOLO.horaRecogida, titulo: "Pasamos por ti", texto: `A ${NOCHE_XANTOLO.recogida}. Nos dices dónde al reservar.` },
+    { cuando: NOCHE_XANTOLO.horaRecogida, titulo: "Nos vemos", texto: `En ${NOCHE_XANTOLO.recogida}, o en el centro de Xilitla si todavía no tienes dónde quedarte. Desde Ciudad Valles también pasamos por ti (${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)}, ${mxn(NOCHE_XANTOLO.desdeValles.cargoPorGrupo)} de traslado por grupo). Lo eliges al reservar.` },
     { cuando: "Al caer la tarde", titulo: "Degustación de temporada", texto: "Tamales, atole, bocoles y pan de muerto." },
     { cuando: "En la noche", titulo: "El centro de Xilitla, con guía", texto: `Un guía del pueblo te lleva a ver ${NOCHE_XANTOLO.queVes}.` },
-    { cuando: NOCHE_XANTOLO.regreso, titulo: "De regreso", texto: "Te dejamos en tu hospedaje." },
+    { cuando: NOCHE_XANTOLO.regreso, titulo: "De regreso", texto: `Te dejamos donde te recogimos; en Ciudad Valles, ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}.` },
   ];
 
   const preguntas: { q: string; a: string; enlace?: { texto: string; href: string } }[] = [
-    { q: "¿Dónde nos recogen?", a: `En tu hospedaje en Xilitla, a las ${NOCHE_XANTOLO.horaRecogida}. Si te hospedas fuera de Xilitla, escríbelo al reservar y te decimos dónde vernos.` },
+    { q: "¿Dónde nos recogen?", a: `En tu hospedaje en Xilitla, a las ${NOCHE_XANTOLO.horaRecogida}, sin costo extra. Si todavía no tienes hospedaje, al reservar eliges «Todavía no tengo hospedaje» y nos vemos en el centro de Xilitla; te confirmamos el punto exacto por WhatsApp. Si duermes en Ciudad Valles, pasamos por ti ${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)} y te regresamos ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}, con ${mxn(NOCHE_XANTOLO.desdeValles.cargoPorGrupo)} de traslado por grupo (no por persona).` },
     { q: "¿Pueden ir niños?", a: `Sí. De 6 a 10 años pagan ${mxn(precioNinoNoche("medio"))}, los menores de 6 pagan ${mxn(precioNinoNoche("chico"))} y los bebés menores de 3 no pagan. Avísanos de los bebés en una nota para contarlos en la camioneta.` },
     { q: "Somos un grupo, ¿caben?", a: `Cada noche hay ${NOCHE_XANTOLO.noches[0].cupo} lugares. Si son más de los que quedan, escríbenos por WhatsApp y vemos cómo acomodarlos.` },
-    { q: "¿Todavía no tenemos hospedaje?", a: "Pregúntanos por WhatsApp. Para la noche del domingo 1 hay un paquete con hotel para parejas y familias.", enlace: { texto: "Ver el paquete con hotel", href: "/paquetes/xantolo-2026" } },
+    { q: "¿Todavía no tenemos hospedaje?", a: "No importa para reservar: eliges «Todavía no tengo hospedaje» y nos vemos en el centro de Xilitla. Si quieres que te busquemos dónde dormir, escríbenos: Xilitla se llena en Xantolo, así que mejor pronto." },
+    ...(NOCHE_XANTOLO.tourOpcional
+      ? [{
+          q: `¿Qué es el día completo con ${NOCHE_XANTOLO.tourOpcional.nombre}?`,
+          a: `Ese mismo día, antes de la noche, hacemos ${NOCHE_XANTOLO.tourOpcional.nombreLargo}: salimos ${NOCHE_XANTOLO.tourOpcional.horaRecogida} y regresamos a tiempo para la noche. Son ${mxn(NOCHE_XANTOLO.precioAdulto + NOCHE_XANTOLO.tourOpcional.precioPorPersona)} por persona en total, con el mismo guía y la misma camioneta; en grupo de 3 o más la Ruta baja igual que si la compraras sola. Lo eliges al reservar.`,
+        }]
+      : []),
     { q: "¿Cómo se paga?", a: `En línea con tarjeta. Apartas con el ${pctMinimo} % y el resto se cubre el día de la salida.` },
     { q: "¿Se puede cancelar?", a: NOCHE_XANTOLO.cancelacion },
     { q: "¿Y si cambia el programa del pueblo?", a: "Las comparsas y los shows los organiza Xilitla. Si el programa cambia, el guía los lleva a lo que sí haya esa noche. El programa oficial sale a mediados de octubre y te lo mandamos por WhatsApp." },
@@ -171,7 +177,11 @@ export default async function NocheXantoloPage() {
             La noche de Xantolo en Xilitla, con guía
           </h1>
           <p className="xan-sube mt-5 max-w-[36ch] font-dm text-[16px] leading-relaxed text-crema/80 sm:text-[17px]" style={{ animationDelay: "300ms" }}>
-            Pasamos por ti, probamos lo de la temporada y vamos al centro a ver {NOCHE_XANTOLO.queVes}. Sin hotel: para quien ya tiene dónde dormir.
+            {/* 🔴 Decía «Sin hotel: para quien ya tiene dónde dormir», que es
+                exactamente a quien espantaba: casi nadie llega con el hotel
+                resuelto. Ahora se dice que el hospedaje no te detiene. */}
+            Pasamos por ti, probamos lo de la temporada y vamos al centro a ver {NOCHE_XANTOLO.queVes}.
+            Si todavía no tienes hospedaje, nos vemos en el centro.
           </p>
           <div className="xan-sube mt-7 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "400ms" }}>
             {todasAgotadas ? (
@@ -215,7 +225,16 @@ export default async function NocheXantoloPage() {
         <h2 className="font-cormorant text-[34px] font-light leading-tight text-crema sm:text-[42px]">Elige tu noche</h2>
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           {noches.map((n) => (
-            <div key={n.paquete.slug} className="border p-6 sm:p-8" style={{ borderColor: `${XAN_FLOR}55`, backgroundColor: XAN_MORADO }}>
+            /* 🔴 10 oct 2026 — la tarjeta entera es clicable. Antes era un `div`
+               inerte con el botón como único enlace, y los dos botones decían lo
+               mismo («Reservar esta noche»): en Clarity, quien venía del sitio del
+               hotel tocó el título del sábado —clic muerto— y acabó dos veces en el
+               checkout del domingo antes de irse. La fecha va DENTRO del botón. */
+            <div
+              key={n.paquete.slug}
+              className={`relative border p-6 sm:p-8 ${n.aLaVenta && !n.agotada ? "transition-colors hover:border-crema/40" : ""}`}
+              style={{ borderColor: `${XAN_FLOR}55`, backgroundColor: XAN_MORADO }}
+            >
               <p className="font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: XAN_FLOR }}>{NOCHE_XANTOLO.horario}</p>
               <p className="xan-num mt-3 font-cormorant text-[32px] font-light leading-tight text-crema">{n.corta}</p>
               <p className="xan-num mt-2 font-dm text-[14px] text-crema/70">
@@ -229,14 +248,28 @@ export default async function NocheXantoloPage() {
               </p>
               <div className="mt-6">
                 {n.aLaVenta && !n.agotada ? (
-                  <Link
-                    href={`/reservar-paquete/${n.paquete.slug}`}
-                    className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[2px] transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
-                    style={{ backgroundColor: XAN_FLOR, color: XAN_TINTA_BOTON }}
-                  >
-                    Reservar esta noche
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
-                  </Link>
+                  <>
+                    <Link
+                      href={`/reservar-paquete/${n.paquete.slug}`}
+                      className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[2px] transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
+                      style={{ backgroundColor: XAN_FLOR, color: XAN_TINTA_BOTON }}
+                    >
+                      {/* El `span` de abajo estira este enlace a toda la tarjeta. */}
+                      <span className="absolute inset-0 z-10" aria-hidden="true" />
+                      Reservar el {n.corta.toLowerCase().replace("sábado ", "sáb. ").replace("domingo ", "dom. ")}
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+                    </Link>
+                    {/* La segunda oferta: el mismo asiento, con el día incluido.
+                        `z-20` para quedar ENCIMA de la capa que estira la tarjeta. */}
+                    {NOCHE_XANTOLO.tourOpcional && (
+                      <Link
+                        href={`/reservar-paquete/${n.paquete.slug}?conTour=1`}
+                        className="relative z-20 mt-3 block font-dm text-[13px] leading-relaxed text-crema/75 underline decoration-crema/25 underline-offset-4 transition-colors hover:text-crema hover:decoration-crema/60"
+                      >
+                        …o el día completo con {NOCHE_XANTOLO.tourOpcional.nombre}, {mxn(NOCHE_XANTOLO.precioAdulto + NOCHE_XANTOLO.tourOpcional.precioPorPersona)} por persona
+                      </Link>
+                    )}
+                  </>
                 ) : (
                   <a
                     href={waLink(`Hola, me interesa la Noche de Xantolo del ${n.corta.toLowerCase()}. ¿Se libera algún lugar?`)}
@@ -314,23 +347,31 @@ export default async function NocheXantoloPage() {
         </div>
       </section>
 
-      {/* ── ¿Con hotel? ───────────────────────────────────────────────── */}
+      {/* ── ¿Y si no tienes dónde dormir? ──────────────────────────────
+          🔴 10 oct 2026 — aquí estaba la franja «Ver el paquete con hotel», que
+          mandaba al paquete del domingo 1. El hotel se llenó y ese paquete se
+          retiró del sitio, así que la pregunta se contesta con lo que sí se
+          puede resolver: hospedaje por WhatsApp, o llegar por tu cuenta y vernos
+          en el centro (que es lo que ahora permite el checkout). */}
       <section className="px-5 sm:px-8">
         <div className="mx-auto grid max-w-6xl gap-6 border px-6 py-10 sm:px-12 md:grid-cols-[1fr_auto] md:items-center" style={{ borderColor: `${XAN_FLOR}55` }}>
           <div>
             <h2 className="font-cormorant text-[30px] font-light leading-tight text-crema sm:text-[36px] [text-wrap:balance]">
-              ¿Todavía no tienes dónde dormir el domingo 1?
+              ¿Todavía no tienes dónde dormir?
             </h2>
             <p className="mt-3 font-dm text-[15px] text-crema/70">
-              El paquete con hotel trae la Ruta Surrealista de día, la degustación y esta misma noche con guía. Para parejas y familias de hasta 4.
+              No te detiene: reservas tu lugar y, si llegas por tu cuenta, nos vemos en el centro de Xilitla.
+              Si quieres que te busquemos hospedaje, escríbenos y lo vemos.
             </p>
           </div>
-          <Link
-            href="/paquetes/xantolo-2026"
+          <a
+            href={waLink("Hola, quiero ir a la Noche de Xantolo pero todavía no tengo hospedaje en Xilitla. ¿Me ayudan?")}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema"
           >
-            Ver el paquete con hotel <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
+            Pregúntanos por hospedaje <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </a>
         </div>
       </section>
 

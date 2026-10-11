@@ -1,18 +1,19 @@
 import { prisma } from "@/lib/prisma";
+import { NO_CUENTAN } from "@/lib/cupoTour";
 
 /**
- * Prueba social del motor de reservas, sacada de reservas REALES y pagadas.
+ * Prueba social del motor de reservas, sacada de reservas REALES.
  *
  * Regla de la casa: aquí no se inventan números. Nada de "23 personas viendo
  * ahora" ni contadores que suben solos. Si el dato real no da, no se enseña
  * nada — omitir es honesto, inflar no.
  */
 export interface ReservasStats {
-  /** Reservas pagadas en los últimos 30 días. */
+  /** Reservas de los últimos 30 días. Qué cuenta: ver `esVenta` más abajo. */
   ultimos30: number;
-  /** Reservas pagadas en total. */
+  /** Reservas en total. */
   total: number;
-  /** Reservas pagadas por slug de tour. */
+  /** Reservas por slug de tour. */
   porTour: Record<string, number>;
   /** El tour con más reservas, si destaca de verdad sobre el resto. */
   masReservado: string | null;
@@ -34,12 +35,30 @@ export async function getReservasStats(): Promise<ReservasStats | null> {
   try {
     const hace30 = new Date(Date.now() - 30 * 864e5);
 
+    // 🔴 10 oct 2026 — antes era `status: "paid"` a secas, igual que la prueba
+    // social, y por lo mismo se quedaba corto: casi toda venta entra con el
+    // anticipo del 30 % y el panel la deja en `pending`. Cuentan TODAS menos
+    // canceladas y borradores (decisión de Manolo), con la misma lista que el
+    // cupo. Si las dos pantallas usaran reglas distintas, el número de
+    // `/reservar` contradiría al aviso de reservas recientes de esa misma
+    // página.
+    const esVenta = { status: { notIn: NO_CUENTAN } };
+
+    // 🔴 Y por qué el texto de `/reservar` puede seguir diciendo «reservas
+    // CONFIRMADAS» con las `pending` dentro (comprobado el 11 oct 2026 contra
+    // la base): ninguna fila nace sin cobro —solo las crean el webhook de
+    // Stripe, `send-confirmation` y el panel—, y las 52 de los últimos 90 días
+    // tienen `depositoPagado > 0`. `pending` aquí significa «anticipo cobrado,
+    // saldo pendiente», no «sin pagar»; lo dice igual `api/bot/booking`. Si
+    // algún día se crearan reservas antes de cobrar, ESTE número deja de ser
+    // honesto y hay que volver a filtrar.
+
     const [total, ultimos30, agrupado] = await Promise.all([
-      prisma.tourBooking.count({ where: { status: "paid" } }),
-      prisma.tourBooking.count({ where: { status: "paid", createdAt: { gte: hace30 } } }),
+      prisma.tourBooking.count({ where: esVenta }),
+      prisma.tourBooking.count({ where: { ...esVenta, createdAt: { gte: hace30 } } }),
       prisma.tourBooking.groupBy({
         by: ["tourSlug"],
-        where: { status: "paid" },
+        where: esVenta,
         _count: { _all: true },
       }),
     ]);

@@ -103,7 +103,16 @@ export default async function PaqueteXantoloPage() {
   const salida = rango(ruta ? salidaCorta(ruta, false) : "8:00-9:00 AM");
   const regreso = rango(ruta ? regresoDeTour(ruta, false) : "4:00-6:00 PM");
 
-  if (!aLaVenta) return <EventoPasado />;
+  // Retirado ≠ pasado. Desde el 10 oct 2026 este paquete ya no se vende en
+  // línea (el hotel se llenó), pero la fecha no ha llegado: mandar a la gente
+  // a «ya pasó» tiraría a la basura los cuartos que todavía se pueden cerrar a
+  // mano y a quien llegue por un enlace viejo.
+  if (!aLaVenta) {
+    // La misma cuenta de fecha que `eventoALaVenta` (hora de Ciudad de México;
+    // el servidor corre en UTC).
+    const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+    return evento.retirado && hoy < evento.fecha ? <EventoRetirado /> : <EventoPasado />;
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -476,6 +485,41 @@ function Dato({ valor, etiqueta }: { valor: string; etiqueta: string }) {
       <dd className="xan-num font-cormorant text-[26px] leading-none text-crema sm:text-[36px]">{valor}</dd>
       <dd className="mt-2 font-dm text-[11px] text-crema/55 sm:text-[13px]">{etiqueta}</dd>
     </div>
+  );
+}
+
+/**
+ * Retirado de la venta en línea, pero la noche no ha llegado (10 oct 2026).
+ *
+ * El hotel se llenó y el paquete salió de las vitrinas del sitio; esta página
+ * sigue viva porque quedan cuartos que el equipo puede cerrar a mano y porque
+ * hay enlaces viejos (blog, correos, WhatsApp) apuntando aquí. Lo que se ofrece
+ * es lo que sí se puede comprar hoy: la noche de Xantolo con guía.
+ */
+function EventoRetirado() {
+  return (
+    <main className="flex min-h-[70vh] items-center px-5 pb-20 pt-36 text-crema sm:px-8" style={{ backgroundColor: FONDO }}>
+      <div className="mx-auto max-w-xl">
+        <h1 className="font-cormorant text-[40px] font-light leading-tight">El paquete con hotel ya no se vende en línea</h1>
+        <p className="mt-4 font-dm text-[16px] text-crema/70">
+          El hotel se llenó para esas fechas. Lo que sí puedes reservar es la <strong className="text-crema">noche de Xantolo con guía</strong>:
+          el sábado 31 o el domingo 1, con degustación de temporada, y si quieres el día completo con la Ruta Surrealista.
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link href={NOCHE_XANTOLO.pagina} className="inline-flex items-center justify-center px-6 py-4 font-dm text-[11px] font-medium uppercase tracking-[2px]" style={{ backgroundColor: FLOR, color: TINTA_BOTON }}>
+            Ver las noches
+          </Link>
+          <a
+            href={waLink("Hola, vi el paquete de Xantolo con hotel. ¿Queda algún cuarto?")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90"
+          >
+            Preguntar por un cuarto
+          </a>
+        </div>
+      </div>
+    </main>
   );
 }
 

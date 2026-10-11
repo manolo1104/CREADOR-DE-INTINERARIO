@@ -127,7 +127,9 @@ export async function POST(req: NextRequest) {
            * dato que siempre decía lo mismo.
            */
           idiomaTour:     pi.metadata?.idiomaTour === "en" ? "en" : "es",
-          status:         "paid",
+          // Con saldo es «pending», como en el panel (`ReservasClient`): un
+          // anticipo marcado «paid» salía de la lista de pendientes.
+          status:         saldo > 0 ? "pending" : "paid",
         },
       });
       // Los lugares ya son una reserva: se suelta el apartado del carrito
@@ -171,19 +173,30 @@ export async function POST(req: NextRequest) {
       );
     } catch (e: any) {
       if (e?.code === "P2002") {
-        // Carrera con el webhook: ya existe una reserva para este pago. El @unique
-        // impidió el duplicado; reusamos su número real para que el correo coincida.
+        // Carrera con el webhook: ya existe una reserva para este pago y quien
+        // la creó ya mandó el correo. El @unique impidió el duplicado; aquí solo
+        // se devuelve su folio real (antes se mandaba un SEGUNDO correo).
         const ya = await prisma.tourBooking.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
-        if (ya) confirmationNumber = ya.confirmationNumber;
-      } else {
-        console.error("❌ prisma.tourBooking.create:", e.message);
+        return NextResponse.json({ status: "ok", confirmationNumber: ya?.confirmationNumber ?? confirmationNumber });
       }
+      // 🔴 Antes se anotaba y se seguía: el cliente recibía un correo con un
+      // folio que NO existía en la base, y nadie lo volvía a intentar. Ahora no
+      // se le inventa nada: sin fila, el webhook o la conciliación
+      // (`/api/cron/conciliar-pagos`) crean la reserva y le mandan su correo.
+      console.error("❌ prisma.tourBooking.create:", e.message);
+      return NextResponse.json(
+        { error: "Tu pago entró. Estamos registrando tu reserva y te llega el correo con tu folio en unos minutos.", pagoRecibido: true },
+        { status: 503 },
+      );
     }
 
     // El cliente pagó: marca su carrito abandonado como convertido para que el
     // cron de recuperación deje de mandarle recordatorios. Misma función que
     // usa el panel de admin, para que la regla no viva en dos sitios.
-    await cerrarCarritosDe(email, [{ tourSlug, tourDate }]);
+    // TODOS los recorridos: el carrito se guarda con el de fecha más temprana y
+    // aquí llegaba solo el primero que se agregó, así que con varios tours el
+    // recordatorio «tu carrito te espera» le seguía llegando a quien ya pagó.
+    await cerrarCarritosDe(email, [{ tourSlug, tourDate }, ...(Array.isArray(lineItems) ? lineItems : [])]);
 
     if (!email?.includes("@")) {
       console.warn("⚠️ Email inválido — confirmación omitida");

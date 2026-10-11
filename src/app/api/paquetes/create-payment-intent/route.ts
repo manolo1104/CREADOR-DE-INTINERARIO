@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { opcionesMsi } from "@/lib/stripeMsi";
 import { stripe } from "@/lib/stripe";
 import { getPaquete, eventoALaVenta } from "@/lib/paquetes";
+import { NOCHE_XANTOLO, haciaLa } from "@/lib/nocheXantolo";
 import { lugaresDePaquete } from "@/lib/cupoPaquete";
 import { cabeEnCupo } from "@/lib/cupoEvento";
 import { mensajeSinCupo, pedidosSinCupo, toursDePaquete } from "@/lib/cupoTour";
@@ -44,16 +45,58 @@ export async function POST(req: NextRequest) {
     // sin saber cuándo llegaba el cliente. `fechaTourValida` acepta la fecha
     // vacía (los tours por WhatsApp la coordinan después), así que aquí se
     // exige aparte. Los eventos traen su fecha fija y no la mandan.
-    if (!evento && (!paqueteDetails?.fecha || !fechaTourValida(paqueteDetails.fecha))) {
+    if (!evento && (!paqueteDetails?.fecha || !fechaTourValida(paqueteDetails.fecha, { desdeManana: true }))) {
       return NextResponse.json({ error: "Elige la fecha de inicio de tu viaje para continuar." }, { status: 400 });
     }
 
-    // Sin hotel, el equipo pasa por el cliente: sin saber dónde se hospeda no
-    // se puede operar la salida.
-    const recogida = String(paqueteDetails?.recogida ?? "").trim().slice(0, 200);
-    if (evento?.sinHotel && recogida.length < 3) {
-      return NextResponse.json({ error: "Dinos dónde te hospedas en Xilitla para pasar por ti." }, { status: 400 });
+    // Sin hotel, el equipo pasa por el cliente: hace falta saber DÓNDE lo
+    // recoge. Desde el 10 oct 2026 vale también «punto de encuentro en el
+    // centro de Xilitla» (el cliente llega por su cuenta y se acuerda por
+    // WhatsApp): exigir el nombre de un hotel dejaba fuera a quien apenas está
+    // planeando el viaje, que es casi todo el tráfico de estas páginas.
+    //
+    // Desde el 11 oct la pantalla manda el MODO aparte del hotel y la frase la
+    // arma el servidor: el cargo de Ciudad Valles no puede depender de que el
+    // navegador escriba «Ciudad Valles» al principio. Una pestaña abierta con
+    // la versión anterior manda solo `recogida` ya armada y se respeta.
+    const textoLibre = String(paqueteDetails?.recogida ?? "").trim().slice(0, 200);
+    const modoRecogida = (["xilitla", "valles", "punto"] as const).find((m) => m === paqueteDetails?.modoRecogida);
+    if (evento?.sinHotel && modoRecogida === "valles" && !evento.desdeValles) {
+      return NextResponse.json({ error: "Esta salida no recoge en Ciudad Valles. Escríbenos por WhatsApp y lo vemos." }, { status: 400 });
     }
+    // Ciudad Valles: transporte aparte, con cargo por grupo (decisión de Manolo, 11 oct 2026).
+    const desdeValles = !!evento?.sinHotel && !!evento.desdeValles
+      && (modoRecogida ? modoRecogida === "valles" : /^Ciudad Valles/i.test(textoLibre));
+    let recogida = textoLibre;
+    if (evento?.sinHotel && modoRecogida) {
+      if (modoRecogida === "punto") {
+        recogida = "PUNTO DE ENCUENTRO en el centro de Xilitla (llega por su cuenta) — confirmarle el punto por WhatsApp";
+      } else if (textoLibre.length >= 3) {
+        recogida = desdeValles
+          ? `Ciudad Valles (traslado +${mxn(evento.desdeValles!.cargoPorGrupo)} por grupo): ${textoLibre}`
+          : `Xilitla: ${textoLibre}`;
+      } else {
+        recogida = "";
+      }
+    }
+    if (evento?.sinHotel && recogida.length < 3) {
+      return NextResponse.json({ error: "Dinos dónde pasamos por ti para operar la salida." }, { status: 400 });
+    }
+    // Lo mismo, dicho al CLIENTE para su correo: `recogida` es la frase del
+    // equipo («confirmarle el punto por WhatsApp» no se le escribe a él).
+    const conTourPedido = paqueteDetails?.conTour === true && !!evento?.tourOpcional;
+    const saleA = conTourPedido ? evento!.tourOpcional!.horaRecogida : `a las ${NOCHE_XANTOLO.horaRecogida}`;
+    const recogidaCliente = !evento?.sinHotel || !modoRecogida ? recogida
+      : modoRecogida === "punto"
+        ? `En el centro de Xilitla, ${saleA}. Te confirmamos el punto exacto por WhatsApp.`
+        : desdeValles
+          ? `${textoLibre}, en Ciudad Valles, ${conTourPedido ? "por la mañana (te confirmamos la hora por WhatsApp)" : haciaLa(evento.desdeValles!.recogidaNoche)}. Te regresamos ${haciaLa(evento.desdeValles!.regreso)}. El traslado desde Valles (${mxn(evento.desdeValles!.cargoPorGrupo)} por grupo) ya va en tu total.`
+          : `${textoLibre}, en Xilitla, ${saleA}.`;
+
+    // El día completo que se agrega a la noche (la Ruta Surrealista). Solo
+    // existe si ESTE evento lo ofrece: el precio lo pone `paquetePricing` con
+    // el número del catálogo, nunca el navegador.
+    const conTour = paqueteDetails?.conTour === true && !!evento?.tourOpcional;
 
     // El monto es AUTORITATIVO desde el servidor. Antes era
     // `paquete.precio × pct` a secas: el precio publicado es POR PAREJA, así que
@@ -112,6 +155,10 @@ export async function POST(req: NextRequest) {
       pct,
       // La promo de temporada baja va con los viajes que empiezan hasta el 29 oct.
       fecha:         paqueteDetails?.fecha,
+      // El día completo, ya saneado contra lo que ofrece este evento.
+      conTour,
+      // El traslado desde Valles, ya saneado arriba.
+      desdeValles,
     });
     if (!cobro) {
       return NextResponse.json(
@@ -148,6 +195,21 @@ export async function POST(req: NextRequest) {
               ? `Ya no caben ${cobro.personas} personas: quedan lugares para ${quedan}. Escríbenos por WhatsApp y lo vemos.`
               : "Se acabaron los lugares. Escríbenos por WhatsApp por si se libera uno.",
           },
+          { status: 409 },
+        );
+      }
+    }
+
+    // La Ruta del día completo sale en SU salida de ese día (la de la noche es
+    // otra): ocupa los mismos 12 lugares que comprada suelta. El cupo de la
+    // noche, revisado arriba, no la cuidaba: con 10 en la Ruta del 31 vendida
+    // por el carrito, una familia de 6 con el combo la dejaba en 16.
+    if (evento && cobro.conTour && evento.tourOpcional) {
+      const sinLugar = await pedidosSinCupo([{ slug: evento.tourOpcional.tourSlug, fecha: evento.fecha, personas: cobro.personas }]);
+      if (sinLugar.length) {
+        logger.warn("paquete_sin_cupo", { slug: paquete.slug, dias: sinLugar.map((s) => `${s.slug} ${s.fecha}`).join("; ") });
+        return NextResponse.json(
+          { error: sinLugar.map((s) => mensajeSinCupo(s, locale === "en" ? "en" : "es")).join(" ") },
           { status: 409 },
         );
       }
@@ -193,7 +255,9 @@ export async function POST(req: NextRequest) {
         customerName:  customerName  || "",
         // Se guarda como reserva usando los mismos campos de TourBooking (tourId/tourName…)
         tourId:        paquete.slug,
-        tourName:      evento?.sinHotel ? `${paquete.nombre} · ${evento.fechaTexto}` : `Paquete · ${paquete.nombre}`,
+        tourName:      evento?.sinHotel
+          ? `${paquete.nombre}${cobro.conTour ? ` + ${evento.tourOpcional!.nombre}` : ""} · ${evento.fechaTexto}`
+          : `Paquete · ${paquete.nombre}`,
         tourSlug:      paquete.slug,
         tourDate:      fecha,
         adults:        String(cobro.adultos),
@@ -217,10 +281,20 @@ export async function POST(req: NextRequest) {
         extraHotel:    String(cobro.extraHotel),
         extraTours:    String(cobro.extraTours),
         extraEvento:   String(cobro.extraEvento),
+        extraTraslado: String(cobro.extraTraslado),
         // Lo que el equipo opera esa noche y, sin hotel, dónde recoger. Si la
         // pantalla de confirmación no llega, el webhook arma la reserva con esto.
-        notaEquipo:    evento ? evento.notaEquipo.slice(0, 490) : "",
+        // Con el día completo, la operación cambia: se avisa al principio para
+        // que no se pierda en el recorte a 490 caracteres de la metadata.
+        notaEquipo:    evento
+          ? (cobro.conTour
+              ? `CON ${evento.tourOpcional!.nombre.toUpperCase()} ESE DÍA (sale ${evento.tourOpcional!.horaRecogida}). ${evento.notaEquipo}`.slice(0, 490)
+              : evento.notaEquipo.slice(0, 490))
+          : "",
+        // Para la confirmación y el panel: si la reserva trae el día completo.
+        conTour:       cobro.conTour ? "sí" : "no",
         recogida,
+        recogidaCliente: recogidaCliente.slice(0, 490),
         personas,
         source:        "huasteca-potosina.com",
         // El idioma y la identidad de medición, como en el carrito de tours: si

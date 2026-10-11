@@ -215,7 +215,9 @@ function XantoloPaquete({ precio, libres, cupo, pagina, conNoche }: { precio: nu
  */
 function XantoloNoche() {
   const filas = [
-    { Icon: Car,  texto: `Pasamos por ti a ${NOCHE_XANTOLO.recogida}, ${NOCHE_XANTOLO.horario}` },
+    // No se promete recoger en un hotel: desde el 10 oct 2026 quien no tiene
+    // hospedaje puede reservar y verse con el guía en el centro.
+    { Icon: Car,  texto: `${NOCHE_XANTOLO.horario}; pasamos por ti o nos vemos en el centro` },
     { Icon: Sun,  texto: `Degustación de temporada: ${NOCHE_XANTOLO.degustacion}` },
     { Icon: Moon, texto: `Con un guía del pueblo, ${NOCHE_XANTOLO.queVes}` },
   ];
@@ -246,6 +248,11 @@ function XantoloNoche() {
         </ul>
         <p className="mt-5 font-dm text-[14px] text-crema/85" style={{ fontVariantNumeric: "lining-nums tabular-nums" }}>
           <strong className="font-medium text-crema">${NOCHE_XANTOLO.precioAdulto.toLocaleString("es-MX")}</strong> por persona · niños con descuento
+          {NOCHE_XANTOLO.tourOpcional && (
+            <span className="mt-1 block text-[13px] text-crema/60">
+              {`Con la ${NOCHE_XANTOLO.tourOpcional.nombre} ese mismo día: $${(NOCHE_XANTOLO.precioAdulto + NOCHE_XANTOLO.tourOpcional.precioPorPersona).toLocaleString("es-MX")} por persona`}
+            </span>
+          )}
         </p>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <Link

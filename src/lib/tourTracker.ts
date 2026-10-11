@@ -69,6 +69,10 @@ function getReferrer(): string | undefined {
  */
 const PASO_EMBUDO: Record<string, string> = {
   DESTINO_PAGE_VIEW: "0·destino",
+  // El salto del destino al tour (10 oct 2026). Es el escalón que más gente
+  // pierde —186 fichas de destino, 7,5 % llegó a un tour— y no tenía etiqueta,
+  // así que en Clarity no se podía filtrar quién lo dio.
+  DESTINO_TOUR_CLICK: "0b·destino_a_tour",
   TOURS_LIST_VIEW:   "1·catalogo",
   TOUR_PAGE_VIEW:    "2·ficha_tour",
   CHECKOUT_STARTED:  "3·agrego_al_carrito",
@@ -94,6 +98,11 @@ const PASO_EMBUDO: Record<string, string> = {
 const GRABAR_SIEMPRE = new Set([
   "BOOKING_PAGE_VIEW",
   "PAQUETE_CHECKOUT_VIEW",
+  // El recomendador (10 oct 2026): son las sesiones de más intención del sitio
+  // —de 8 que lo empezaron, 2 escribieron por WhatsApp— y ninguna se forzaba a
+  // grabar, así que no había video de por qué abandonan.
+  "RECOMMENDER_STARTED",
+  "RECOMMENDER_COMPLETED",
   "DATE_SELECTED",
   "CHECKOUT_STEP_DATOS",
   "PAYMENT_INITIATED",

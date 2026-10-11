@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
   for (const c of abiertos) {
     // Red de seguridad: si ya reservó (mismo correo+tour+fecha), no le escribimos.
     const yaReservo = await prisma.tourBooking.findFirst({
-      where: { customerEmail: c.customerEmail, tourSlug: c.tourSlug, tourDate: c.tourDate },
+      // Sin distinguir mayúsculas: la reserva guarda el correo como lo escribió.
+      where: { customerEmail: { equals: c.customerEmail, mode: "insensitive" }, tourSlug: c.tourSlug, tourDate: c.tourDate },
     });
     if (yaReservo) {
       await prisma.abandonedCart.update({ where: { id: c.id }, data: { status: "converted" } });

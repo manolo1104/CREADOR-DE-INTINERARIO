@@ -707,6 +707,11 @@ export function useCarritoCheckout() {
           // Stripe porque el webhook —que es quien se entera SIEMPRE de la
           // compra— es el que escribe la reserva si se cierra la pestaña.
           guiaIngles,
+          // Teléfono y recogida viajan a la metadata del cobro: si el cliente
+          // cierra la pestaña, la reserva la arma el webhook y sin esto quedaba
+          // sin forma de contactarlo ni de saber dónde pasar por él.
+          customerPhone: phone.trim(),
+          recogida:      pickup.trim(),
         }),
       });
       const data = await res.json();

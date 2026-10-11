@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { actividad as logActividad, nombreCorto } from "@/lib/logger";
 import { guardarLead, esEmailValido } from "@/lib/leads";
 import { arrancarSecuenciaRecomendador, FUENTE_RECOMENDADOR } from "@/lib/leadSequenceStart";
+import { recordarRazon } from "@/lib/razonesRecomendador";
 
 export const runtime = "nodejs";
 
@@ -480,6 +481,10 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin texto antes ni después
       // El correo NO va al log en claro; basta saber si lo dejó.
       esEmailValido(email) ? "con correo" : "sin correo",
     );
+
+    // Lo único que `/api/recomendar-tour/enviar` acepta como redacción: lo que
+    // la IA escribió aquí (ver `lib/razonesRecomendador.ts`).
+    if (iaPrimaria) recordarRazon(lleno(result?.primary?.reason));
 
     // Guarda al lead CON su recomendación y le manda la propuesta al momento.
     await mandarPropuesta(email, { origen, grupo, intereses, dias, primaryId, secondaryId, paquete, razonIA: iaPrimaria ? lleno(result?.primary?.reason) : null });

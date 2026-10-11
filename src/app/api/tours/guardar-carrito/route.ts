@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
     // Sin esto se guardaban cotizaciones con fechas imposibles y el cron
     // perseguía durante días a alguien con un tour ya pasado.
-    if (!fechaTourValida(tourDate)) {
+    if (!fechaTourValida(tourDate, { desdeManana: true })) {
       return NextResponse.json({ error: "La fecha del tour no es válida." }, { status: 400 });
     }
 

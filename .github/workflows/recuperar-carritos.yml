@@ -13,6 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Conciliar pagos sin reserva
+        # Va PRIMERO: si alguien pagó y su reserva no quedó (cerró la pestaña y
+        # el servidor se reinició, o falló la base), se crea aquí y su carrito
+        # se cierra antes de que el paso siguiente le escriba «olvidaste…».
+        # Si falla, no frena los correos de abajo.
+        continue-on-error: true
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/conciliar-pagos
+
       - name: Llamar al endpoint de recuperación
         run: |
           # -f hace que un 401 (secreto mal configurado) falle el job en vez de

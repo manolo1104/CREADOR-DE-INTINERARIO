@@ -53,8 +53,10 @@ const CADUCA = "2026-11-03";
 /**
  * La Noche de Xantolo con guía (4 oct 2026): $990 por persona, 31 oct y 1 nov,
  * sin hotel. Es la oferta más fácil de tomar para quien lee de Xantolo (sirve
- * con niños, en grupo y llegando el sábado) y su página enlaza al paquete con
- * hotel. Se escribe aquí y no se importa de `paquetes.ts` para no cargar el
+ * con niños, en grupo y llegando el sábado) y desde el 10 oct 2026 es la ÚNICA:
+ * el paquete con hotel se retiró porque el hotel se llenó, y su página ofrece
+ * el día completo con la Ruta Surrealista como extra de la misma noche.
+ * Se escribe aquí y no se importa de `paquetes.ts` para no cargar el
  * catálogo entero en este popup, que sale en todas las páginas. Si cambian la
  * página, el precio o las fechas, cambian también aquí (`nocheXantolo.ts`).
  */

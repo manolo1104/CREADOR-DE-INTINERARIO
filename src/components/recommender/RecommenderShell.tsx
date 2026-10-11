@@ -9,7 +9,7 @@ import {
   Camera, Waves, Zap, Leaf, Sunset,
   Star, Clock, MapPin, Shield, ChevronRight,
   MessageCircle, ArrowRight,
-  CalendarDays, Moon,
+  CalendarDays, Moon, Check,
 } from "lucide-react";
 import { TOURS_DB, tourDurTexto, type Tour, precioTachado, promoDe, etiquetaUnidad, PROMO_TEMPORADA } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible, precioVisibleTachado, type Paquete } from "@/lib/paquetes";
@@ -448,7 +448,9 @@ const DESTINOS_BUCKET = [
   "Sin preferencia — sorpréndeme",
 ];
 
-type WizardStep = "origen" | "dias" | "grupo" | "intereses" | "actividad" | "destino" | "detalles" | "correo" | "loading" | "result" | "error";
+// Ya no hay paso «correo»: el plan se enseña al terminar las 7 preguntas y el
+// correo se ofrece en la pantalla del resultado (10 oct 2026).
+type WizardStep = "origen" | "dias" | "grupo" | "intereses" | "actividad" | "destino" | "detalles" | "loading" | "result" | "error";
 
 interface WizardState {
   origen:    string;
@@ -469,6 +471,9 @@ interface AIResult {
 
 const ESTADO_INICIAL: WizardState = { origen: "", dias: "", grupo: "", intereses: [], actividad: "", destino: "", notas: "" };
 
+/** El mismo criterio que `esEmailValido` del servidor, sin importar el módulo. */
+const esCorreo = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 export function RecommenderShell() {
   const [step,   setStep]   = useState<WizardStep>("origen");
   const [state,  setState]  = useState<WizardState>(ESTADO_INICIAL);
@@ -477,6 +482,9 @@ export function RecommenderShell() {
   const [showInput, setShowInput]     = useState(false);
   const [email,      setEmail]      = useState("");
   const [emailError, setEmailError] = useState("");
+  /** El correo se ofrece DESPUÉS del plan: estos dos son de ese envío. */
+  const [enviando,   setEnviando]   = useState(false);
+  const [enviado,    setEnviado]    = useState(false);
   // 🔴 Aquí vivía un contador FALSO («12-19 personas están buscando tours»)
   // animado con un setInterval de números al azar. Fuera: es la misma clase de
   // escasez inventada que ya se limpió del resto del sitio.
@@ -521,13 +529,51 @@ export function RecommenderShell() {
   // qué se le recomendó.
   function submitCorreo() {
     const e = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
-      setEmailError("Escribe un correo válido para ver tu recomendación.");
+    if (!esCorreo(e)) {
+      setEmailError("Escribe un correo válido para que te lo mandemos.");
       return;
     }
     setEmailError("");
     setEmail(e);
-    void submit(e);
+    void mandarPorCorreo(e);
+  }
+
+  /**
+   * Mandar por correo el plan QUE YA ESTÁ EN PANTALLA (10 oct 2026).
+   *
+   * No se vuelve a llamar a `/api/recomendar-tour`: eso pagaría una segunda
+   * corrida de la IA y podría devolver otros tours, así que el correo diría una
+   * cosa y la pantalla otra. Esta ruta solo arranca la secuencia con los tours
+   * que la persona está viendo.
+   */
+  async function mandarPorCorreo(correo: string) {
+    if (!result || enviando) return;
+    setEnviando(true);
+    setEmailError("");
+    try {
+      const res = await fetch("/api/recomendar-tour/enviar", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email:       correo,
+          origen:      state.origen,
+          dias:        state.dias,
+          grupo:       state.grupo,
+          intereses:   state.intereses,
+          primaryId:   result.primary.tourId,
+          secondaryId: result.secondary.tourId,
+          paquete:     result.paquete?.slug ?? null,
+          razonIA:     result.primary.reason ?? null,
+        }),
+      });
+      if (!res.ok) throw new Error("no-enviado");
+      setEnviado(true);
+      trackTourEvent("LEAD_RECOMENDADOR", { fuente: "Recomendador" });
+    } catch {
+      setEmailError("No pudimos mandarlo. Intenta de nuevo o escríbenos por WhatsApp.");
+    } finally {
+      setEnviando(false);
+    }
   }
 
   /**
@@ -562,9 +608,15 @@ export function RecommenderShell() {
       }
       setResult(data);
       setStep("result");
+      // 🔴 Antes estos dos eventos salían juntos, con la misma condición: el
+      // correo era obligatorio para ver el plan, así que «completó el
+      // recomendador» y «dejó su correo» eran el mismo número (2 y 2) y nadie
+      // podía ver cuánta gente contestaba todo y se iba. Ahora COMPLETED es
+      // «vio su plan» y LEAD_ sale solo si de verdad dejó el correo.
       // El puente de `trackTourEvent` convierte LEAD_* en `generate_lead` de GA4.
-      trackTourEvent("LEAD_RECOMENDADOR", { fuente: "Recomendador" });
+      if (esCorreo(correo)) trackTourEvent("LEAD_RECOMENDADOR", { fuente: "Recomendador" });
       trackTourEvent("RECOMMENDER_COMPLETED", {
+        conCorreo:      esCorreo(correo),
         primary_tour:   data.primary.tourId,
         secondary_tour: data.secondary.tourId,
         paquete:        data.paquete?.slug ?? null,
@@ -734,8 +786,53 @@ export function RecommenderShell() {
             ))}
           </div>
 
+          {/* ── ¿TE LO MANDO POR CORREO? ──
+              Aquí el correo es un favor, no un peaje: la persona ya tiene su
+              plan. Antes se pedía ANTES de enseñar nada y era la única salida
+              del cuestionario. */}
+          <div className="bg-white border border-negro/8 p-5">
+            {enviado ? (
+              <p className="font-dm text-sm text-negro/70 flex items-start gap-2.5">
+                <Check className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <span>Listo, te lo mandamos a <strong className="text-negro">{email}</strong>. Revisa también la carpeta de promociones.</span>
+              </p>
+            ) : (
+              <>
+                <p className="font-cormorant text-verde-profundo text-xl mb-1">¿Te lo mando por correo?</p>
+                <p className="font-dm text-xs text-negro/50 mb-4">
+                  Te llega este plan por escrito, con consejos para tu viaje. Te das de baja con un clic ·{" "}
+                  <Link href="/aviso-de-privacidad" className="underline hover:text-negro/80">Aviso de privacidad</Link>
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <label htmlFor="correo-plan" className="sr-only">Tu correo electrónico</label>
+                  <input
+                    id="correo-plan"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitCorreo(); }}
+                    placeholder="tucorreo@ejemplo.com"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "correo-plan-error" : undefined}
+                    className="flex-1 min-w-0 border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+                  />
+                  <button
+                    onClick={submitCorreo}
+                    disabled={!email.trim() || enviando}
+                    className="bg-verde-selva text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-negro transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {enviando ? "Enviando…" : "Mandármelo"}
+                  </button>
+                </div>
+                {emailError && <p id="correo-plan-error" role="alert" className="text-terracota text-xs font-dm mt-2">{emailError}</p>}
+              </>
+            )}
+          </div>
+
           <button
-            onClick={() => { setResult(null); setStep("origen"); setState(ESTADO_INICIAL); setEmail(""); setEmailError(""); setOrigenInput(""); setShowInput(false); }}
+            onClick={() => { setResult(null); setStep("origen"); setState(ESTADO_INICIAL); setEmail(""); setEmailError(""); setEnviado(false); setOrigenInput(""); setShowInput(false); }}
             className="text-xs font-dm text-negro/35 hover:text-negro/60 underline text-center block mx-auto transition-colors"
           >
             ← Volver a empezar con otro perfil
@@ -748,7 +845,9 @@ export function RecommenderShell() {
   // ── Wizard ───────────────────────────────────────────────────────────────
 
   const TOTAL_PASOS = 7;
-  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, intereses: 4, actividad: 5, destino: 6, detalles: 7, correo: 7 };
+  // `correo` ya no es un paso del cuestionario (el plan se enseña sin él), así
+  // que la barra ya no se queda clavada en 100 % en dos pantallas distintas.
+  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, intereses: 4, actividad: 5, destino: 6, detalles: 7 };
   const stepNum = STEP_NUMS[step] ?? 1;
   const progress = (stepNum / TOTAL_PASOS) * 100;
 
@@ -1108,65 +1207,23 @@ export function RecommenderShell() {
 
             <div className="flex gap-3">
               <button onClick={() => setStep("destino")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              {/* 🔴 10 oct 2026 — este botón hacía `setStep("correo")`: se
+                  contestaban las 7 preguntas y la ÚNICA salida era el muro de
+                  correo. En 9 días de Clarity, 8 personas empezaron el
+                  recomendador y solo 2 dejaron su correo; las otras se salieron
+                  por el menú al catálogo y se fueron en 3-9 segundos, después de
+                  contestar todo. Ahora el plan se enseña y el correo se ofrece
+                  DESPUÉS, en la pantalla del resultado. */}
               <button
-                onClick={() => setStep("correo")}
+                onClick={() => void submit("")}
                 className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors"
               >
-                {state.notas.trim() ? "✦ Ver mi plan perfecto" : "Saltar y ver mi plan →"}
+                ✦ Ver mi plan
               </button>
             </div>
           </div>
         )}
 
-        {/* GATE: CORREO — se pide antes de mostrar la recomendación */}
-        {step === "correo" && (
-          <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Último paso</p>
-            {/* «Tu plan ya está listo» era mentira: la IA corre DESPUÉS. */}
-            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              Tu plan está a <em className="text-dorado">un paso</em>
-            </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">
-              Déjanos tu correo: te mostramos tu recomendación aquí mismo y te la enviamos por escrito, con consejos para tu viaje.
-            </p>
-
-            <input
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(""); }}
-              onKeyDown={(e) => { if (e.key === "Enter") submitCorreo(); }}
-              placeholder="tucorreo@ejemplo.com"
-              aria-label="Tu correo electrónico"
-              aria-invalid={!!emailError}
-              aria-describedby={emailError ? "correo-error" : undefined}
-              className="w-full bg-white/5 border border-crema/20 text-crema placeholder:text-crema/30 px-4 py-4 font-dm text-sm focus:border-verde-vivo focus:outline-none transition-colors"
-            />
-            {emailError && <p id="correo-error" role="alert" className="text-terracota text-xs font-dm mt-2">{emailError}</p>}
-
-            {/* «Solo lo usamos para enviarte tu plan. Sin spam» era mentira:
-                arranca una secuencia de consejos. Se dice tal cual es. */}
-            <div className="flex items-center gap-3 bg-white/5 border border-white/8 px-4 py-3 mb-6 mt-5">
-              <Shield className="w-4 h-4 text-verde-selva flex-shrink-0" />
-              <p className="text-[11px] font-dm text-crema/50 leading-snug">
-                Te mandamos tu plan y algunos consejos para tu viaje · Te das de baja con un clic ·{" "}
-                <Link href="/aviso-de-privacidad" className="underline hover:text-crema">Aviso de privacidad</Link>
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("detalles")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button
-                onClick={submitCorreo}
-                disabled={!email.trim()}
-                className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ✦ Ver mi recomendación
-              </button>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

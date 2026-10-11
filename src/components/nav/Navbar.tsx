@@ -23,6 +23,9 @@ const ES_CON_EN = new Set([
 ]);
 // Fichas: toda ficha de tour, destino o paquete existe en los dos idiomas.
 const FICHAS_CON_EN = /^\/(?:tours|destinos|paquetes)\/[^/]+$/;
+// …menos las de Xantolo, que solo se venden en español: /en/paquetes/noche-de-xantolo
+// daba 404 y /en/paquetes/xantolo-2026 rebota al español. Van al catálogo en inglés.
+const FICHAS_SOLO_ES = new Set(["/paquetes/noche-de-xantolo", "/paquetes/xantolo-2026"]);
 // Solo existen en inglés (sala de prensa y landings de ciudades de EE. UU.):
 // quitarles el /en daba 404, así que el botón "Español" lleva al inicio.
 const SOLO_EN = /^\/en\/(?:press|from)(?:\/|$)/;
@@ -41,6 +44,7 @@ function counterpartHref(pathname: string, locale: Locale): string {
     return pathname.replace(/^\/en/, "") || "/";
   }
   if (pathname === "/") return "/en";
+  if (FICHAS_SOLO_ES.has(pathname)) return "/en/paquetes";
   if (ES_CON_EN.has(pathname) || FICHAS_CON_EN.test(pathname)) return "/en" + pathname;
   return "/en";
 }

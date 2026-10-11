@@ -218,7 +218,11 @@ export default function PaquetesPage() {
               <p className="mt-2 font-cormorant text-[30px] font-light leading-tight text-crema">{p.nombre}</p>
               <p className="mt-1 font-dm text-[14px] text-crema/65">
                 {p.evento!.sinHotel
-                  ? `${p.subtitulo}. Sin hotel, $${precioVisible(p).toLocaleString("es-MX")} por persona.`
+                  ? `${p.subtitulo}. $${precioVisible(p).toLocaleString("es-MX")} por persona${
+                      p.evento!.tourOpcional
+                        ? `, o $${(precioVisible(p) + p.evento!.tourOpcional.precioPorPersona).toLocaleString("es-MX")} con la ${p.evento!.tourOpcional.nombre} ese mismo día.`
+                        : "."
+                    }`
                   : `${p.subtitulo}. Para parejas o familias: ${p.evento!.cupo} cuartos, $${precioVisible(p).toLocaleString("es-MX")} la pareja.`}
               </p>
             </div>

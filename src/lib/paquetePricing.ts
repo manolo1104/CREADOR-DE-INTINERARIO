@@ -3,7 +3,7 @@ import { nochesGratis } from "./habitaciones";
 // El cliente nunca decide el monto: aquí se recalcula desde PAQUETES_DB.
 
 import { getPaquete, paqueteEnFecha, type Paquete } from "./paquetes";
-import { TOURS_DB, precioDeFecha } from "./tours";
+import { TOURS_DB, precioDeFecha, precioPorCabeza, tourEnFecha } from "./tours";
 
 /**
  * El precio publicado de cada paquete es POR PAREJA: incluye una habitación
@@ -180,6 +180,16 @@ export interface PaqueteChargeResult {
   extraEvento:    number;
   /** Precio por boleto extra, sumando todos los tours del itinerario. */
   toursPorPersona: number;
+  /**
+   * Noche de Xantolo con el día completo agregado (`evento.tourOpcional`):
+   * la Ruta Surrealista va por persona, no por reserva. false en los demás.
+   */
+  conTour:        boolean;
+  /**
+   * Traslado desde Ciudad Valles en la Noche de Xantolo (`evento.desdeValles`):
+   * un cargo POR GRUPO, no por persona. 0 en los demás.
+   */
+  extraTraslado:  number;
   habitaciones:   number;
   total:          number;
   charge:         number;
@@ -215,6 +225,16 @@ export function computePaqueteCharge(input: {
    * En un evento manda la fecha del evento.
    */
   fecha?:         unknown;
+  /**
+   * Agregar el día completo a la Noche de Xantolo (`evento.tourOpcional`).
+   * Se cobra por persona y solo existe en los eventos sin hotel.
+   */
+  conTour?:       unknown;
+  /**
+   * Recogerlo en Ciudad Valles (`evento.desdeValles`). Solo en los eventos sin
+   * hotel que lo ofrecen; suma un cargo por grupo.
+   */
+  desdeValles?:   unknown;
 }): PaqueteChargeResult | null {
   // `getPaquete` y no `PAQUETES_DB`: los paquetes de evento (Xantolo) viven
   // fuera del catálogo general y también se cobran aquí.
@@ -242,18 +262,40 @@ export function computePaqueteCharge(input: {
   // ni boletos de tour que sumar.
   if (evento?.sinHotel) {
     if (adultos < evento.minAdultos || personas > evento.maxPorReserva) return null;
-    const total = Math.round(
-      adultos       * paquete.precio +
-      childrenMid   * paquete.precio * FACTOR_NINO_MEDIO +
-      childrenSmall * paquete.precio * FACTOR_NINO_CHICO,
+    // El día completo (10 oct 2026): la Ruta Surrealista sobre el MISMO asiento
+    // de la noche. Va por persona y con la misma escala de menores, así que se
+    // suma al precio por persona antes de repartir, no al final.
+    const conTour   = !!evento.tourOpcional && input.conTour === true;
+    // Lo mismo que paga cada quien por la Ruta comprada suelta para ESA fecha y
+    // ESE grupo (promo o escalera, `precioPorCabeza`). Antes eran $1,400 fijos:
+    // un grupo de 6 pagaba $600 más en el combo que en el carrito.
+    const ruta      = conTour ? TOURS_DB.find((t) => t.slug === evento.tourOpcional!.tourSlug) : undefined;
+    const porDia    = !conTour ? 0
+      : ruta ? precioPorCabeza(tourEnFecha(ruta, fecha), personas)
+      : evento.tourOpcional!.precioPorPersona;
+    // Valles: un cargo por grupo, no por cabeza (decisión de Manolo, 11 oct).
+    const extraTraslado = evento.desdeValles && input.desdeValles === true ? evento.desdeValles.cargoPorGrupo : 0;
+    const porNoche  = paquete.precio;
+    const base      = Math.round(
+      adultos       * porNoche +
+      childrenMid   * porNoche * FACTOR_NINO_MEDIO +
+      childrenSmall * porNoche * FACTOR_NINO_CHICO,
     );
+    const extraTours = Math.round(
+      adultos       * porDia +
+      childrenMid   * porDia * FACTOR_NINO_MEDIO +
+      childrenSmall * porDia * FACTOR_NINO_CHICO,
+    );
+    const total  = base + extraTours + extraTraslado;
     const charge = pct === 100 ? total : Math.round((total * pct) / 100);
     return {
       paquete, personas, adultos, childrenMid, childrenSmall,
       vistaMontana: false,
-      base: total,
+      base,
       extraHotel: 0, nocheExtra: false, nochesTotales: 0,
-      extraTours: 0, extraEvento: 0, toursPorPersona: 0,
+      extraTours, extraEvento: 0, toursPorPersona: porDia,
+      conTour,
+      extraTraslado,
       habitaciones: 0,
       total, charge, saldo: total - charge, pct,
     };
@@ -340,6 +382,10 @@ export function computePaqueteCharge(input: {
     nocheExtra,
     nochesTotales,
     toursPorPersona,
+    // El día opcional solo existe en la Noche de Xantolo (sin hotel): aquí los
+    // tours ya vienen en el itinerario del paquete.
+    conTour: false,
+    extraTraslado: 0,
     habitaciones: Math.max(1, Math.ceil(personas / MAX_POR_HABITACION)),
     total,
     charge,

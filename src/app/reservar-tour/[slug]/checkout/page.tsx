@@ -192,7 +192,10 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
           }),
         });
         const data = await res.json();
-        const confirmationNumber = data.confirmationNumber || "HP" + Date.now().toString(36).toUpperCase();
+        // Sin folio del servidor NO se inventa uno (antes «HP» + la hora): el
+        // cliente guardaba un número que no existe. El pago entró; el webhook o
+        // la conciliación crean la reserva y le mandan su folio por correo.
+        const confirmationNumber: string = data.confirmationNumber || "";
 
         // Solo con el folio REAL del servidor. El de reserva (`"HP" + ahora`)
         // sirve para que la pantalla no se quede vacía, pero como número de

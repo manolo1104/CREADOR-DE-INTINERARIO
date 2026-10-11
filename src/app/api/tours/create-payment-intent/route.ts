@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     // La fecha nunca se validaba en el servidor: se podía cobrar una reserva
     // para ayer o para dentro de dos años tocando el sessionStorage.
-    if (!fechaTourValida(tourDetails?.tourDate)) {
+    if (!fechaTourValida(tourDetails?.tourDate, { desdeManana: true })) {
       logger.warn("payment_intent_fecha_invalida", { tourDate: tourDetails?.tourDate, tourSlug: tourDetails?.tourSlug });
       return NextResponse.json(
         { error: "La fecha del tour no es válida. Elige otra fecha." },

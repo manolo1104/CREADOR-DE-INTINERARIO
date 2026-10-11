@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff } from "lucide-react";
-import { TOURS_LISTA, precioGrupo, precioPorCabeza } from "@/lib/tours";
+import { TOURS_LISTA, precioGrupo, precioPorCabeza, tourPorNombre } from "@/lib/tours";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
@@ -323,11 +323,23 @@ export function NotasInternas(
  * Nombre y precio por persona de un concepto que no está en el catálogo.
  * Compartido por cotizaciones y reservas: el renglón tiene que cobrar igual en
  * las dos pantallas, porque una cotización se convierte en reserva tal cual.
+ *
+ * 🔴 11 oct 2026 — y avisa cuando el concepto SÍ está en el catálogo. En la
+ * base real hay cuatro renglones así: «Ruta surrealista », «Expedicion Tamul»,
+ * «Cascadas el Meco-Meco, Mirador Panorámico y el Gran Salto» y «Recorrido en
+ * RZR Nacimiemto 5h CAN-AM DEFENDER». Lo que cuesta no es la errata: una línea
+ * escrita a mano NO consume el cupo de su recorrido —`cupoTour.ts` cuenta por
+ * slug— así que el sitio sigue ofreciendo un lugar que ya está vendido. El
+ * aviso lleva el botón que arregla las dos cosas de un clic.
  */
 export function ConceptoPersonalizado(
   { line, onField, inputCls }:
   { line: LineItem; onField: (campo: keyof LineItem, valor: string | number) => void; inputCls: string },
 ) {
+  // Laxo a propósito: aquí es una sugerencia con un botón, y las erratas son
+  // justo lo que hay que reconocer. Ver `tourPorNombre` en `lib/tours.ts`.
+  const delCatalogo = tourPorNombre(line.tourName, { laxo: true });
+
   return (
     <div className="border border-[#C4882A]/30 bg-[#C4882A]/6 rounded-sm p-2.5 space-y-2">
       <div>
@@ -338,6 +350,26 @@ export function ConceptoPersonalizado(
           placeholder="Ej. Recorrido a la Cascada del Salto"
           onChange={e => onField("tourName", e.target.value)} className={inputCls} />
       </div>
+
+      {delCatalogo && (
+        <div className="border border-[#C9484A]/35 bg-[#C9484A]/8 rounded-sm p-2.5">
+          <p className="font-dm text-[11px] leading-snug text-[#C9484A]">
+            Esto ya está en el catálogo: <strong className="font-medium">{delCatalogo.nombreCorto}</strong>.
+            Escrito a mano <strong className="font-medium">no cuenta en el cupo</strong> de ese
+            recorrido, y el sitio puede volver a vender el mismo lugar.
+          </p>
+          <button type="button" onClick={() => onField("tourSlug", delCatalogo.slug)}
+            className="mt-2 inline-flex items-center gap-1.5 border border-[#C9484A]/50 px-2.5 py-1
+                       font-dm text-[11px] text-[#C9484A] rounded-sm
+                       transition-colors hover:bg-[#C9484A] hover:text-white">
+            <Check className="h-3 w-3" aria-hidden="true" />
+            Usar «{delCatalogo.nombreCorto}» del catálogo
+          </button>
+          <p className="mt-1.5 font-dm text-[10px] text-[#8a6a1a]/70">
+            Si de verdad es otra cosa, ignora este aviso y sigue.
+          </p>
+        </div>
+      )}
       <div>
         <label className="block text-[9px] tracking-[2px] uppercase text-[#8a6a1a] font-dm mb-1">
           Precio por persona

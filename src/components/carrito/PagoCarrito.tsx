@@ -256,7 +256,9 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
       // el carrito escribía sus propios nombres y la pantalla de éxito enseñaba
       // el TOTAL donde va lo COBRADO. Ahora un campo mal escrito no compila.
       guardarConfirmacion({
-        confirmationNumber: confirmationNumber || cobro.paymentIntentId,
+        // Sin folio la pantalla de éxito dice «te llega por correo»: el id del
+        // PaymentIntent no es un número que el cliente pueda dar al guía.
+        confirmationNumber,
         tourName:      resumen,
         tourSlug:      primero.tourSlug ?? "",
         tourDate:      primero.tourDate,

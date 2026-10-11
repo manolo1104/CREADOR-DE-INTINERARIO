@@ -3,6 +3,10 @@ import { rateLimit } from "@/lib/rateLimit";
 import { guardarLead, registrarLead, esEmailValido, normalizarFuente } from "@/lib/leads";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildXantoloEmailHtml } from "@/lib/xantoloEmail";
+import { buildXantoloPromoEmail } from "@/lib/xantoloPromoEmail";
+import { nochesXantoloALaVenta } from "@/lib/paquetes";
+import { lugaresDePaqueteSeguro } from "@/lib/cupoPaquete";
+import { cabeEnCupo } from "@/lib/cupoEvento";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +51,8 @@ export async function POST(req: NextRequest) {
     const { subject, html } = buildXantoloEmailHtml(email);
     await sendBrevoEmail({ to: [{ email }], subject, htmlContent: html });
 
+    await enviarPromoPaquete(email);
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     logger.error("xantolo_lead_failed", {
@@ -56,5 +62,37 @@ export async function POST(req: NextRequest) {
       { error: "No pudimos enviarlo. Intenta de nuevo o léela aquí mismo." },
       { status: 500 },
     );
+  }
+}
+
+/**
+ * La promo de la Noche de Xantolo (pedido de Manolo, 2 oct 2026: «ese correo se
+ * lo tienes que mandar a cada persona que se registre en el popup»).
+ *
+ * Misma regla que el bloque del artículo: mientras quede alguna noche a la
+ * venta con lugar para UNA persona; si la base no contesta se manda igual,
+ * porque el pago sí cierra en falso. Va DESPUÉS de la guía y con su propio
+ * `try`: lo que la persona pidió es la guía, y un fallo de la promo no debe
+ * convertir su registro en un error.
+ *
+ * 🔴 10 oct 2026: antes miraba el paquete CON HOTEL. Se retiró (el hotel se
+ * llenó) y mirarlo dejaba este correo sin mandarse nunca, en silencio.
+ */
+async function enviarPromoPaquete(email: string): Promise<void> {
+  try {
+    const noches = nochesXantoloALaVenta();
+    if (!noches.length) return;
+    const lugares = await Promise.all(noches.map((n) => lugaresDePaqueteSeguro(n)));
+    // Que quepa alguien en alguna noche. Si no se pudo contar (null), se manda:
+    // el candado de verdad está en el pago.
+    const hayLugar = noches.some((_, i) => !lugares[i] || cabeEnCupo(lugares[i]!, 1));
+    if (!hayLugar) return;
+
+    const { subject, html, text } = buildXantoloPromoEmail(email);
+    await sendBrevoEmail({ to: [{ email }], subject, htmlContent: html, textContent: text });
+  } catch (err) {
+    logger.error("xantolo_promo_failed", {
+      reason: err instanceof Error ? err.message : "desconocido",
+    });
   }
 }

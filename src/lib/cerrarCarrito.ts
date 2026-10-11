@@ -49,7 +49,10 @@ export async function cerrarCarritosDe(
   try {
     const { count } = await prisma.abandonedCart.updateMany({
       where: {
-        customerEmail: email,
+        // Sin distinguir mayúsculas: el carrito de paquetes guarda el correo en
+        // minúsculas y la reserva como lo escribió el cliente («Ana.Lopez@…»),
+        // y con la comparación exacta el comprador seguía recibiendo «olvidaste…».
+        customerEmail: { equals: email.trim(), mode: "insensitive" },
         status: { in: [...ESTADOS_VIVOS] },
         OR: pares,
       },

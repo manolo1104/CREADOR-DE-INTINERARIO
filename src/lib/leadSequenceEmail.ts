@@ -17,6 +17,7 @@ import { CIUDADES_ORIGEN } from "./ciudadesOrigen";
 import { temporadaDe, nombreMes } from "./temporada";
 import { GRUPO_MAX } from "@/lib/tours";
 import { resenasTexto } from "@/lib/resenas";
+import { escapeHtml as esc } from "./escapeHtml";
 import {
   BASE, C, WA, bajoBoton, barra, boton, fotoTour, nota, parrafo, shellCorreo, tabla, titulo,
 } from "./emailLayout";
@@ -362,7 +363,9 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
             eyebrow: "Tu recomendación",
             h1a: "Esto es lo que",
             h1b: "te recomendamos",
-            entradilla: d.razonIA?.trim()
+            // Escapada: la redacción de la IA es texto, y la IA lee lo que la
+            // persona escribió en «notas» (una etiqueta ahí saldría en el correo).
+            entradilla: esc(d.razonIA?.trim())
               || `Con lo que nos contaste${conQuien}, este es el recorrido que mejor te queda. Te lo dejamos por escrito para que lo revises con calma — sin prisa y sin compromiso.`,
           }, `
             ${tarjetaTour(principal, "Tu mejor opción")}
@@ -391,7 +394,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
             eyebrow: "Tu plan completo",
             h1a: "Tu viaje, armado",
             h1b: "de principio a fin",
-            entradilla: d.razonIA?.trim()
+            entradilla: esc(d.razonIA?.trim())
               || `Con lo que nos contaste${conQuien}, este es el plan que mejor te queda: ${paq.subtitulo}.`,
           }, `
             <div style="border:1px solid #d4ccbc;background:#faf7ee;padding:20px 22px;margin:0 0 20px;text-align:center">
@@ -425,7 +428,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
       // suelta obliga a concordar género y número con cada una. Citadas se leen
       // como lo que son —lo que ella marcó— y ninguna combinación queda coja.
       const gustos = (d.intereses ?? []).length
-        ? ` y que marcaste ${(d.intereses as string[]).map((i) => `«${i}»`).join(" y ")}`
+        ? ` y que marcaste ${(d.intereses as string[]).map((i) => `«${esc(i)}»`).join(" y ")}`
         : "";
 
       return {
@@ -434,7 +437,7 @@ export function buildLeadSequenceEmail(d: LeadEmailInput): { subject: string; ht
           eyebrow: "Tu plan de viaje",
           h1a: `Tus ${plan.length} días,`,
           h1b: "día por día",
-          entradilla: `Nos dijiste que vienes ${d.dias}${conQuien}${gustos}. Así lo armaríamos nosotros.`,
+          entradilla: `Nos dijiste que vienes ${esc(d.dias)}${conQuien}${gustos}. Así lo armaríamos nosotros.`,
         }, `
 
           <div style="border:1px solid #d4ccbc;padding:14px 16px;margin:0 0 20px">

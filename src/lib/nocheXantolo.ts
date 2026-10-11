@@ -17,10 +17,32 @@
  * representativos de esta celebración». No se nombran desfiles ni procesiones
  * concretas: el programa lo pone el pueblo.
  *
- * Este archivo no importa nada a propósito: lo leen el catálogo, el checkout
- * (cliente) y el popup que sale en todas las páginas, y no debe arrastrarles
- * el catálogo entero.
+ * Este archivo casi no importa nada a propósito: lo leen el catálogo, el
+ * checkout (cliente) y el popup que sale en todas las páginas, y no debe
+ * arrastrarles el catálogo entero. Solo trae el tramo Valles–Xilitla de
+ * `tiemposDeViaje`, que tampoco importa nada.
  */
+
+import { MINUTOS_VALLES_XILITLA } from "./tiemposDeViaje";
+
+/** "5:30 PM" ± minutos → "4:00 PM". Solo para las horas de esta salida. */
+function moverHora(hora: string, minutos: number): string {
+  const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(hora);
+  if (!m) return hora;
+  const h24 = (Number(m[1]) % 12) + (m[3] === "PM" ? 12 : 0);
+  const total = (((h24 * 60 + Number(m[2]) + minutos) % 1440) + 1440) % 1440;
+  const h = Math.floor(total / 60);
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(total % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** "hacia las 4:00 PM" · "hacia la 1:00 AM". */
+export function haciaLa(hora: string): string {
+  return `hacia la${/^1:/.test(hora) ? "" : "s"} ${hora}`;
+}
+
+const RECOGIDA_NOCHE = "5:30 PM";
+const REGRESO_NOCHE  = "11:30 PM";
 
 export interface NocheXantoloFecha {
   /** El slug de la reserva: una noche, un cupo. */
@@ -44,8 +66,8 @@ export const NOCHE_XANTOLO = {
   /** Menores de 6. Los bebés menores de 3 no pagan. */
   factorNinoChico: 0.5,
   horario: "de 5:30 a 11:30 PM",
-  horaRecogida: "5:30 PM",
-  regreso: "11:30 PM",
+  horaRecogida: RECOGIDA_NOCHE,
+  regreso: REGRESO_NOCHE,
   recogida: "tu hospedaje en Xilitla",
   queVes: "las comparsas y los shows más representativos de esta celebración",
   degustacion: "tamales, atole, bocoles y pan de muerto",
@@ -62,6 +84,55 @@ export const NOCHE_XANTOLO = {
     "Comidas y cenas fuera de la degustación",
     "Propinas y gastos personales",
   ],
+  /**
+   * El día completo, opcional, de la misma noche (10 oct 2026).
+   *
+   * Por qué: el hotel está lleno el sábado 31, así que el paquete con hotel se
+   * retiró del sitio. Lo que sí se puede vender sin cuartos es el DÍA: la Ruta
+   * Surrealista termina entre 4:00 y 6:00 PM y la noche recoge a las 5:30 PM,
+   * misma camioneta y mismo guía. Va como extra DENTRO de la noche, no como
+   * paquete aparte: los dos salen en la misma unidad (`salidaMaxima`) y dos
+   * cupos separados venderían dos veces el mismo asiento.
+   *
+   * El precio es el del tour (`TOURS_DB`, ruta-surrealista-edward-james): no
+   * se anuncia ningún ahorro, porque no lo hay. Lo que se gana es logística.
+   */
+  tourOpcional: {
+    tourSlug: "ruta-surrealista-edward-james",
+    nombre: "Ruta Surrealista",
+    nombreLargo: "Ruta Surrealista — Edward James, manantiales, cuevas y castillo",
+    /**
+     * Por adulto, el de LISTA (1 o 2 personas): sirve para anunciar «desde».
+     * Lo que se COBRA lo calcula `paquetePricing` con el tour real y su
+     * escalera por grupo ($1,350 desde 3, $1,300 desde 6), igual que suelta.
+     * Los menores pagan con los mismos factores que la noche.
+     */
+    precioPorPersona: 1400,
+    // La Ruta termina en Xilitla y empalma con la noche: no hay un «6:00 PM»
+    // de fin del día (decía «de 8:00 AM a 6:00 PM» con la noche saliendo 5:30).
+    horario: "desde las 8:00 AM",
+    horaRecogida: "entre 8:00 y 9:00 AM",
+    recogida: "tu hospedaje en Xilitla",
+    incluye: [
+      "Las Pozas de Edward James, el Nacimiento de Huichihuayán, la Cueva de las Quilas y el Castillo de la Salud",
+      "Desayuno buffet camino a los destinos",
+      "Entradas a todas las atracciones y guía certificado NOM-09",
+      "Seguro de viaje y equipo de seguridad",
+    ],
+  },
+  /**
+   * Quien duerme en Ciudad Valles (decisión de Manolo, 11 oct 2026): el
+   * transporte incluido es SOLO dentro de Xilitla; desde Valles se va y se
+   * regresa con un cargo POR GRUPO, no por persona, en la noche sola y con la
+   * Ruta. Las horas salen del tramo de sierra, no se escriben a mano.
+   */
+  desdeValles: {
+    cargoPorGrupo: 500,
+    /** La noche sola sale de Valles con el tramo de anticipación. */
+    recogidaNoche: moverHora(RECOGIDA_NOCHE, -MINUTOS_VALLES_XILITLA),
+    /** Y llega a Valles con el tramo de vuelta. */
+    regreso: moverHora(REGRESO_NOCHE, MINUTOS_VALLES_XILITLA),
+  },
   noches: [
     { slug: "noche-de-xantolo-31-oct", fecha: "2026-10-31", fechaTexto: "Sábado 31 de octubre de 2026", corta: "Sábado 31 de octubre", cupo: 12 },
     { slug: "noche-de-xantolo-1-nov",  fecha: "2026-11-01", fechaTexto: "Domingo 1 de noviembre de 2026", corta: "Domingo 1 de noviembre", cupo: 12 },
@@ -72,6 +143,21 @@ export const NOCHE_XANTOLO = {
 export function precioNinoNoche(tramo: "medio" | "chico"): number {
   const f = tramo === "medio" ? NOCHE_XANTOLO.factorNinoMedio : NOCHE_XANTOLO.factorNinoChico;
   return Math.round(NOCHE_XANTOLO.precioAdulto * f);
+}
+
+/**
+ * El día completo: la Ruta Surrealista más la noche, por persona. `ruta` es lo
+ * que paga cada uno por la Ruta en SU grupo (`cotizacion.toursPorPersona`); sin
+ * él, el de lista.
+ */
+export function precioNocheConTour(
+  tramo: "adulto" | "medio" | "chico",
+  ruta: number = NOCHE_XANTOLO.tourOpcional.precioPorPersona,
+): number {
+  const base = NOCHE_XANTOLO.precioAdulto + ruta;
+  if (tramo === "adulto") return base;
+  const f = tramo === "medio" ? NOCHE_XANTOLO.factorNinoMedio : NOCHE_XANTOLO.factorNinoChico;
+  return Math.round(base * f);
 }
 
 /** ¿Este slug es una de las noches? */

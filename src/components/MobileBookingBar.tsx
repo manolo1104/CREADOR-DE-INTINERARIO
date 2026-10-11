@@ -25,9 +25,17 @@ interface Props {
   source?:  "mobile_bar" | "destino_bar";
   /** La ficha trae módulo de reserva (fecha + personas): el botón baja a él en vez de saltar al carrito. */
   conModulo?: boolean;
+  /**
+   * El nombre del recorrido, a la vista. En la ficha del tour sobra (es la
+   * página entera), pero en un DESTINO la barra vende un tour que no se llama
+   * como la página —y en 23 destinos, uno que ni siquiera lo visita—: sin el
+   * nombre, «Desde $1,450 · Agregar» en Sótano de las Golondrinas metía la
+   * Expedición Tamul al carrito sin decirlo.
+   */
+  etiqueta?: string;
 }
 
-export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar", conModulo = false }: Props) {
+export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUnidad, waHref, source = "mobile_bar", conModulo = false, etiqueta }: Props) {
   const esVehiculo = precioUnidad === "vehiculo";
   const esGrupo    = precioUnidad === "grupo";
   const { locale, en, lp } = useLocale();
@@ -55,6 +63,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-negro/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
       <div className="flex-1 min-w-0">
+        {etiqueta && <p className="font-dm text-[12px] text-crema/80 leading-tight truncate mb-0.5">{etiqueta}</p>}
         <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">{t.desde}</p>
         <p className="font-cormorant text-dorado text-xl leading-none">
           ${precio.toLocaleString(en ? "en-US" : "es-MX")}

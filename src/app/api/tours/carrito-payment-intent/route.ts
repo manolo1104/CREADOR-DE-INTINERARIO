@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles } = await req.json();
+    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles, customerPhone, recogida } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -234,6 +234,10 @@ export async function POST(req: NextRequest) {
         // El apartado de 15 minutos de este carrito: quien cree la reserva
         // (`send-confirmation` o, con la pestaña cerrada, el webhook) lo suelta.
         apartadoId:    apartado ?? "",
+        // Para la reserva que arma el webhook si se cierra la pestaña
+        // (`lib/recuperarPago.ts`): sin ellos quedaba sin teléfono ni recogida.
+        customerPhone: typeof customerPhone === "string" ? customerPhone.trim().slice(0, 40) : "",
+        recogida:      typeof recogida === "string" ? recogida.trim().slice(0, 300) : "",
       },
     };
 

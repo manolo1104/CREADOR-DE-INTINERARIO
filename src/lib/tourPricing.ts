@@ -74,7 +74,16 @@ function clampInt(n: unknown, min: number, max: number): number {
  * de dos años manipulando el sessionStorage. Vacía se acepta (los tours por
  * WhatsApp coordinan la fecha después).
  */
-export function fechaTourValida(tourDate: unknown): boolean {
+export function fechaTourValida(
+  tourDate: unknown,
+  /**
+   * Las rutas PÚBLICAS de cobro piden de mañana en adelante, igual que el
+   * calendario (`minBookingDate`). 🔴 Aceptaban HOY: un carrito guardado anoche
+   * para «mañana» se podía pagar al día siguiente a las 2 PM, con el tour ya
+   * salido. El cotizador del panel no lo pasa y conserva la regla de siempre.
+   */
+  { desdeManana = false }: { desdeManana?: boolean } = {},
+): boolean {
   if (!tourDate) return true;
   if (typeof tourDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(tourDate)) return false;
 
@@ -87,7 +96,7 @@ export function fechaTourValida(tourDate: unknown): boolean {
   const fecha = new Date(ty, tm - 1, td);
   if (Number.isNaN(fecha.getTime())) return false;
 
-  return fecha >= hoy && fecha <= tope;
+  return (desdeManana ? fecha > hoy : fecha >= hoy) && fecha <= tope;
 }
 
 /**
@@ -362,8 +371,16 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
     if (!raw?.tourDate) {
       return { ok: false, error: "Falta la fecha de uno de los recorridos del carrito.", uid, tourSlug: slugRenglon };
     }
-    if (!fechaTourValida(raw.tourDate)) {
-      return { ok: false, error: "Una de las fechas no es válida. Revisa tu carrito.", uid, tourSlug: slugRenglon };
+    if (!fechaTourValida(raw.tourDate, { desdeManana: true })) {
+      // Hoy es válida para el panel pero no para cobrar en línea: el tour ya salió.
+      const esHoy = fechaTourValida(raw.tourDate);
+      return {
+        ok: false,
+        error: esHoy
+          ? "Uno de tus recorridos es para hoy y ya salió. Elige otra fecha o escríbenos por WhatsApp."
+          : "Una de las fechas no es válida. Revisa tu carrito.",
+        uid, tourSlug: slugRenglon,
+      };
     }
 
     // Tours por vehículo (RZR, café): el precio sale de la matriz ruta×unidad.
