@@ -60,8 +60,8 @@ export default function IngresosClient({ kpis, clics }: { kpis: KPIs; clics?: Da
     <div className="p-6 max-w-7xl mx-auto">
       <h1 className="font-cormorant text-[#1B4332] text-2xl font-light mb-1">Ventas &amp; Métricas</h1>
       <p className="text-[#1B4332]/50 font-dm text-sm mb-6">
-        Cómo va el año y de dónde llegan las ventas. El dinero (costos, utilidad
-        y cortes) vive en <strong className="font-medium text-[#16362a]">Finanzas</strong>.
+        Cómo va el año y de dónde llegan las ventas. Los costos, la utilidad y
+        el reparto viven en <strong className="font-medium text-[#16362a]">Corte semanal</strong>.
       </p>
 
       {clics && <ClicsWhatsapp datos={clics} />}

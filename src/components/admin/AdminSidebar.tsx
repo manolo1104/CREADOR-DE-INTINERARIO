@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Wallet, Link2, Camera, Star } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Scissors, Link2, Camera, Star } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
 import { puedeVer, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
 
@@ -32,7 +32,7 @@ const GRUPOS: { titulo: string; items: ItemNav[] }[] = [
   {
     titulo: "Dinero",
     items: [
-      { href: "/admin/finanzas",     icon: Wallet,          label: "Finanzas",     seccion: "finanzas"      },
+      { href: "/admin/cortes",       icon: Scissors,        label: "Corte semanal", seccion: "cortes"       },
       { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador",    seccion: "cotizador"     },
       { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ventas",       seccion: "ingresos"      },
     ],

@@ -575,6 +575,9 @@ model Movimiento {
 }
 
 // ── Socios ──────────────────────────────────────────────────────────────────
+// ⚠️ Ya no se usa (era de la pestaña Finanzas, que se quitó el 14 oct 2026). El
+// reparto 50/50 vive ahora en `src/lib/admin/corteSemanal.ts`. Se deja el modelo
+// porque `db push --accept-data-loss` borraría la tabla y lo que tiene.
 // El reparto se calcula SIEMPRE sobre la utilidad ya calculada, nunca sobre la
 // venta. Y nunca se mezcla con lo que un socio cobra por trabajar, por rentar
 // su camioneta o por un gasto que pagó de su bolsa: eso son costos y
@@ -596,6 +599,8 @@ model Socio {
 }
 
 // ── Cortes cerrados ─────────────────────────────────────────────────────────
+// ⚠️ Ya no se usa: lo reemplazó `CorteSemanal`. Se deja por la misma razón que
+// `Socio` (quitarlo borraría los cortes viejos en producción).
 // Un corte cerrado es una FOTO: se guarda el resumen tal como se calculó ese
 // día. Si mañana se captura un costo viejo, el corte cerrado no cambia — para
 // eso está el corte en vivo. Sin esto, "lo que dijimos que ganamos en agosto"
@@ -614,6 +619,29 @@ model CorteCerrado {
 
   @@unique([tipo, desde, hasta])
   @@index([desde])
+}
+
+// ── Corte semanal con el socio ──────────────────────────────────────────────
+// Uno por semana (lunes a domingo). Lo que se guarda es lo CAPTURADO —qué
+// salidas entran y qué costó cada una— más la foto de las cifras al guardar,
+// para el historial y la hoja impresa. Las ventas no se capturan: son lo
+// cobrado en el panel. Ver `src/lib/admin/corteSemanal.ts`.
+model CorteSemanal {
+  id          String   @id @default(cuid())
+  /// Lunes de la semana, YYYY-MM-DD.
+  semana      String   @unique
+  /// Domingo de la semana, YYYY-MM-DD.
+  hasta       String
+  /// { [claveSalida]: { incluida, costos: [{ concepto, monto }] } }
+  captura     Json
+  /// Las cifras tal como quedaron al guardar (ver `ResumenCorte`).
+  resumen     Json
+  ventas      Int
+  costos      Int
+  utilidad    Int
+  guardadoPor String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ── Links de pago ───────────────────────────────────────────────────────────

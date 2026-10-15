@@ -68,7 +68,7 @@ const TIPOS = [
   { id: "precios",     label: "🏷️ Precios y costos del Cotizador" },
   { id: "comprobante", label: "📎 Comprobantes" },
   { id: "socio",       label: "🤝 Socios" },
-  { id: "corte",       label: "🔒 Cortes cerrados" },
+  { id: "corte",       label: "🔒 Cortes" },
   { id: "panel",       label: "🚪 Entradas al panel" },
   { id: "conversación", label: "💬 Chats que el bot pasó al equipo" },
 ];
