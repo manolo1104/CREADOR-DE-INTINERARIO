@@ -41,6 +41,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Foto de cómo estaba ANTES, para poder contar qué cambió en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
+
+    // 🔴 Un lugar del viaje CDMX–Xilitla solo cambia de fecha o de personas
+    // desde Salidas, que pasa por el candado del cupo. Desde aquí se podría
+    // mover a alguien a una salida llena sin que nada lo frenara.
+    if (antes?.salidaId) {
+      const cambia = (k: "tourDate" | "adults" | "children") => data[k] !== undefined && data[k] !== antes[k];
+      if (cambia("tourDate") || cambia("adults") || cambia("children")) {
+        return NextResponse.json(
+          { error: "Esta reserva es del viaje CDMX–Xilitla: la fecha y las personas se cambian desde Salidas → Mover." },
+          { status: 409 },
+        );
+      }
+      delete data.tourId; delete data.tourName; delete data.tourSlug;
+      // Del `lineItems` que mande el panel solo se toma el `_meta` (notas,
+      // método): el renglón del viaje se queda como estaba.
+      if (data.lineItems !== undefined) {
+        const nuevoMeta = Array.isArray(data.lineItems) ? (data.lineItems as any[]).find((l) => l && l._meta) : null;
+        const viejas = Array.isArray(antes.lineItems) ? (antes.lineItems as any[]) : [];
+        data.lineItems = [
+          { ...(viejas.find((l) => l && l._meta) ?? { _meta: true }), ...(nuevoMeta ?? {}), salidaId: antes.salidaId },
+          ...viejas.filter((l) => l && !l._meta),
+        ];
+      }
+    }
     const updated = await prisma.tourBooking.update({
       where: { id: params.id },
       data,

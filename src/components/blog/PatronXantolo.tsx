@@ -25,12 +25,20 @@ const ICONOS = [
   Flower, Sparkles, Croissant, Guitar, MoonStar, Candy, Leaf, Star,
 ];
 
-const COLS = 9;
-const FILAS = 12;
+/**
+ * La rejilla se calcula UNA vez por forma (columnas × filas): el artículo usa la
+ * alta de 9 × 12 y las franjas anchas del inicio y de /paquetes (15 oct 2026),
+ * una baja y ancha para que los iconos no se amontonen en vertical.
+ */
+type Pieza = { Icon: (typeof ICONOS)[number]; left: number; top: number; size: number; rot: number; op: number };
+const rejillas = new Map<string, Pieza[]>();
 
-const PIEZAS = (() => {
+function piezas(COLS: number, FILAS: number): Pieza[] {
+  const clave = `${COLS}x${FILAS}`;
+  const hecha = rejillas.get(clave);
+  if (hecha) return hecha;
   const r = sembrado(20261101);
-  return Array.from({ length: COLS * FILAS }, (_, i) => {
+  const nuevas = Array.from({ length: COLS * FILAS }, (_, i) => {
     const cx = i % COLS;
     const cy = Math.floor(i / COLS);
     const corrimiento = cy % 2 === 0 ? 0 : 0.5;
@@ -45,12 +53,25 @@ const PIEZAS = (() => {
       op: 0.07 + r() * 0.07,
     };
   });
-})();
+  rejillas.set(clave, nuevas);
+  return nuevas;
+}
 
-export function PatronXantolo({ color = "#f29422" }: { color?: string }) {
+export function PatronXantolo({
+  color = "#f29422",
+  cols = 9,
+  filas = 12,
+  intensidad = 1,
+}: {
+  color?: string;
+  cols?: number;
+  filas?: number;
+  /** Multiplica la opacidad de cada icono (1 = la del artículo). */
+  intensidad?: number;
+}) {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      {PIEZAS.map((p, i) => (
+      {piezas(cols, filas).map((p, i) => (
         <p.Icon
           key={i}
           className="absolute"
@@ -60,7 +81,7 @@ export function PatronXantolo({ color = "#f29422" }: { color?: string }) {
             width: p.size,
             height: p.size,
             color,
-            opacity: p.op,
+            opacity: Math.min(0.5, p.op * intensidad),
             transform: `translate(-50%, -50%) rotate(${p.rot}deg)`,
           }}
           strokeWidth={1.4}

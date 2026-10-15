@@ -58,6 +58,19 @@ export function enPantallaDePago(pathname: string | null | undefined): boolean {
 }
 
 /**
+ * ¿La página trae su PROPIA barra fija abajo? Entonces la global no se pinta
+ * —ni siquiera la del carrito—: dos barras a `bottom-0` se tapan.
+ *
+ * - El viaje CDMX–Xilitla (15 oct 2026): su barra dice el precio real de la
+ *   fecha elegida y lleva a SU calendario; la global llevaría al catálogo de
+ *   tours, que vende otra cosa. A diferencia de `enPantallaDePago`, el pie del
+ *   sitio sí se queda: es una landing, no una pantalla de pago.
+ */
+export function conBarraPropia(pathname: string | null | undefined): boolean {
+  return /^\/viaje-cdmx-xilitla(\/|$)/.test(pathname ?? "");
+}
+
+/**
  * ¿Ruta SIN botón fijo de reservar ni de WhatsApp? El planificador y el
  * recomendador (llevan su propio flujo) y todo /reservar…: el catálogo y
  * cualquier reserva en curso. Dentro de una reserva el «Reservar tour» fijo

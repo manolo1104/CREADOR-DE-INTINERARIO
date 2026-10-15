@@ -9,7 +9,7 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
   | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
-  | "cortes" | "cobros" | "fotos" | "resenas";
+  | "cortes" | "cobros" | "fotos" | "resenas" | "salidas";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -30,6 +30,10 @@ const OPERACION: SeccionAdmin[] = [
   "fotos",
   // Pedir la reseña por WhatsApp es trabajo de quien atiende a los clientes.
   "resenas",
+  // El viaje mensual CDMX–Xilitla: pasajeros, ventas por WhatsApp, mover de
+  // fecha y lista de espera son operación. Crear salidas, precios, cupo y
+  // cortesías los frena la propia API para Operación (15 oct 2026).
+  "salidas",
   // El Cotizador NO: enseña lo que nos cuesta cada tour y el margen que deja.
   // Estaba dentro y contradecía la propia definición del rol —"sin ver los
   // números del negocio"—. Fuera por decisión de Manolo, 23 sep 2026.

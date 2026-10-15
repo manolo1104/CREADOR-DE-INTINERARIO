@@ -24,6 +24,16 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/conciliar-pagos
 
+      - name: Viaje CDMX (apartados, saldos, lista de espera)
+        # Suelta los lugares de apartados vencidos (cancelando antes su cobro),
+        # crea la reserva de un pago que quedó sin ella, manda la liga del
+        # saldo y avisa a la lista de espera. Si falla, no frena lo demás.
+        continue-on-error: true
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/viaje-cdmx
+
       - name: Llamar al endpoint de recuperación
         run: |
           # -f hace que un 401 (secreto mal configurado) falle el job en vez de

@@ -11,7 +11,7 @@ import { trackTourEvent } from "@/lib/tourTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { formatMXN } from "@/lib/tourBooking";
 import { rangoPorPersona } from "@/lib/catalogoResumen";
-import { conReservarPropio, enPantallaDePago, hayBarraDeTour, sinFlotantes } from "@/lib/barrasFijas";
+import { conBarraPropia, conReservarPropio, enPantallaDePago, hayBarraDeTour, sinFlotantes } from "@/lib/barrasFijas";
 import { useResumenCarrito } from "@/components/carrito/useResumenCarrito";
 
 /**
@@ -131,7 +131,8 @@ export function BarraInferiorMovil() {
 
   // En una pantalla de pago no hay barra, en ningún tamaño: repetiría lo que ya
   // está en pantalla e invitaría a otra compra justo antes de pagar.
-  const cedida = enPantallaDePago(pathname);
+  // Y en la página que trae su propia barra (el viaje CDMX), tampoco.
+  const cedida = enPantallaDePago(pathname) || conBarraPropia(pathname);
   // En la ficha de tour la barra existe SOLO en escritorio, y solo con
   // WhatsApp: en el celular manda `MobileBookingBar` (que reserva ese tour) y
   // en escritorio el módulo lateral ya trae el «Reservar».

@@ -142,6 +142,10 @@ export function PopupXantolo() {
     // El comparador (2 oct 2026): quien está decidiendo entre dos recorridos no
     // necesita que una ventana le tape la tabla para pedirle el correo.
     ruta.startsWith("/comparar") ||
+    // El viaje CDMX–Xilitla (15 oct 2026): llega gente de un anuncio de ESE
+    // viaje, con su propio calendario y pago; una oferta distinta encima se
+    // la lleva a otra compra.
+    ruta.startsWith("/viaje-cdmx-xilitla") ||
     pathname.includes("xantolo");
 
   const cerrar = useCallback(() => {

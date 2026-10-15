@@ -1,11 +1,12 @@
 import { Metadata } from "next";
+import { BannerViaje } from "@/components/viajeCdmx/BannerViaje";
+import { BloqueXantolo } from "@/components/BloqueXantolo";
 import { headers } from "next/headers";
 import Image from "next/image";
 import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
 import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible, paginasDeEventoALaVenta, nochesXantoloALaVenta } from "@/lib/paquetes";
-import Link from "next/link";
+import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible } from "@/lib/paquetes";
 import { GOOGLE_RATING } from "@/lib/resenas";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
@@ -166,6 +167,13 @@ export default function PaquetesPage() {
         </div>
       </section>
 
+      {/* ── EL VIAJE CDMX–XILITLA ── Justo debajo del hero (Manolo, 15 oct 2026).
+          Solo en español: el viaje solo se vende así. */}
+      {locale === "es" && <BannerViaje origen="paquetes" />}
+      {/* ── PAQUETE DE EVENTO (Xantolo) ── Subió aquí, debajo del viaje (15 oct 2026), con su patrón de temporada.
+          Va fuera de la fila de paquetes a propósito: es una sola fecha y no se compara con los viajes de todo el año. */}
+      {locale === "es" && <BloqueXantolo origen="paquetes" />}
+
       {/* ── TEMPORADA ──
           Sustituye a la franja que sólo repetía la nota de WhatsApp: ahora
           encabeza con el momento del año y deja la nota como su respaldo. */}
@@ -203,43 +211,6 @@ export default function PaquetesPage() {
           </div>
         </div>
       </div>
-
-      {/* ── PAQUETE DE EVENTO (Xantolo) ──
-          Va fuera de la fila de paquetes a propósito: es una sola fecha y no
-          se compara con los viajes de todo el año. Solo en español (el paquete
-          solo se vende así) y solo mientras se vende. */}
-      {locale === "es" && paginasDeEventoALaVenta().map((p) => (
-        <section key={p.slug} className="border-y px-6 py-8" style={{ backgroundColor: "#2a1231", borderColor: "#f2942240" }}>
-          <div className="mx-auto flex max-w-6xl flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <p className="font-dm text-[10px] uppercase tracking-[2.5px]" style={{ color: "#f29422" }}>
-                {/* Las noches que SIGUEN a la venta: desde el 30 oct ya no se vende el
-                    sábado 31 y la franja seguía ofreciéndolo. */}
-                {p.evento!.sinHotel
-                  ? nochesXantoloALaVenta().map((n) => n.evento!.fechaTexto.replace(/ de \d{4}$/, "")).join(" o ")
-                  : `Solo el ${p.evento!.fechaTexto.toLowerCase()}`}
-              </p>
-              <p className="mt-2 font-cormorant text-[30px] font-light leading-tight text-crema">{p.nombre}</p>
-              <p className="mt-1 font-dm text-[14px] text-crema/65">
-                {p.evento!.sinHotel
-                  ? `${p.subtitulo}. $${precioVisible(p).toLocaleString("es-MX")} por persona${
-                      p.evento!.tourOpcional
-                        ? `, o $${(precioVisible(p) + p.evento!.tourOpcional.precioPorPersona).toLocaleString("es-MX")} con la ${p.evento!.tourOpcional.nombre} ese mismo día.`
-                        : "."
-                    }`
-                  : `${p.subtitulo}. Para parejas o familias: ${p.evento!.cupo} cuartos, $${precioVisible(p).toLocaleString("es-MX")} la pareja.`}
-              </p>
-            </div>
-            <Link
-              href={p.evento!.pagina}
-              className="inline-flex flex-shrink-0 items-center justify-center px-6 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[2px] transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
-              style={{ backgroundColor: "#f29422", color: "#1a0c1f" }}
-            >
-              {p.evento!.sinHotel ? "Ver las noches" : "Ver el paquete"}
-            </Link>
-          </div>
-        </section>
-      ))}
 
       {/* ── PAQUETES + BARRA FIJA ── */}
       <PaquetesInteractivo paquetes={paquetes} />

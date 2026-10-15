@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { BannerViaje } from "@/components/viajeCdmx/BannerViaje";
+import { BloqueXantolo } from "@/components/BloqueXantolo";
 import { Metadata } from "next";
 import Image from "next/image";
 import { headers } from "next/headers";
@@ -475,6 +477,12 @@ export default async function HomePage() {
               arriba). */}
         </div>
       </section>
+
+      {/* ── EL VIAJE CDMX–XILITLA ── Justo debajo del hero (Manolo, 15 oct 2026).
+          Solo en español: el viaje solo se vende así. */}
+      {!en && <BannerViaje origen="inicio" />}
+      {/* Y debajo, el paquete de Xantolo con su patrón de temporada; se va solo cuando deja de venderse. */}
+      {!en && <BloqueXantolo origen="inicio" />}
 
       {/* ── PANTALLA 2 · EL PRODUCTO ──────────────────────────────────────
           Sube aquí, pegado al hero: el primer recorrido con precio estaba en

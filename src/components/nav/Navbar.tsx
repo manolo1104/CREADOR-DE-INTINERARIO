@@ -19,7 +19,7 @@ import { BandaRio } from "@/components/BandaRio";
 const ES_CON_EN = new Set([
   "/", "/tours", "/destinos", "/paquetes", "/precios", "/reservar", "/reservar/carrito",
   "/info-practica", "/nosotros", "/contacto", "/preguntas-frecuentes", "/experiencias",
-  "/viaje-septiembre", "/comparar",
+  "/comparar",
 ]);
 // Fichas: toda ficha de tour, destino o paquete existe en los dos idiomas.
 const FICHAS_CON_EN = /^\/(?:tours|destinos|paquetes)\/[^/]+$/;

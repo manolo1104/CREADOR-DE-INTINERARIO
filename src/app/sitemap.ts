@@ -103,8 +103,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const bilingualStatic: MetadataRoute.Sitemap = [
     ...bilingual("/",                 { changeFrequency: "weekly",  priority: 1.0, ...CAT }),
     ...bilingual("/tours",            { changeFrequency: "weekly",  priority: 0.9, ...CAT }),
-    // /viaje-septiembre salió del sitemap el 11 oct 2026: el viaje fue del 16 al
-    // 19 de septiembre y la página ya solo manda a /paquetes y /tours.
+    // /viaje-septiembre salió del sitemap el 11 oct 2026 y desde el 15 oct
+    // redirige al viaje mensual CDMX–Xilitla (que es solo en español: va abajo).
     ...bilingual("/destinos",         { changeFrequency: "monthly", priority: 0.8, ...CAT }),
     // El catálogo del motor. Es de conversión, no un paso del checkout: tiene
     // canonical y metadata propios en los dos idiomas. El carrito y la
@@ -171,6 +171,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, changeFrequency: "monthly", priority: 0.8, ...CAT },
     { url: `${BASE}/tours-en-ciudad-valles`,            changeFrequency: "monthly", priority: 0.8, ...CAT },
     { url: `${BASE}/grupos`,                            changeFrequency: "monthly", priority: 0.8, ...CAT },
+    // El viaje mensual CDMX–Xilitla (15 oct 2026). Sin `CAT`: sus precios y
+    // lugares cambian en cada visita, no con el catálogo.
+    { url: `${BASE}/viaje-cdmx-xilitla`,                changeFrequency: "daily",   priority: 0.9 },
     { url: `${BASE}/tours-en-xilitla`,                  changeFrequency: "monthly", priority: 0.8, ...CAT },
     { url: `${BASE}/politica-de-cancelacion`, changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                changeFrequency: "yearly",  priority: 0.3 },

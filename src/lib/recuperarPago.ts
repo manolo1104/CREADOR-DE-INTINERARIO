@@ -126,6 +126,17 @@ export async function recuperarPago(
 ): Promise<ResultadoRecuperacion> {
   if (!esPagoDeTours(pi) || pi.status !== "succeeded") return "no-es-de-tours";
   const meta = pi.metadata ?? {};
+  // El viaje CDMX–Xilitla arma su reserva desde su apartado (`viajeCdmx/confirmar.ts`).
+  if (meta.producto === "viaje-cdmx") {
+    const { confirmarPasaje } = await import("@/lib/viajeCdmx/confirmar");
+    try {
+      const r = await confirmarPasaje(pi, origen);
+      return r.estado === "creada" ? "creada" : r.estado === "ya-existia" ? "ya-existia" : "error";
+    } catch (e) {
+      logger.error("viaje_cdmx_recuperar_fallo", { payment_intent: pi.id, reason: e instanceof Error ? e.message : String(e) });
+      return "error";
+    }
+  }
   try {
     const existing = await prisma.tourBooking.findFirst({
       where: { stripePaymentIntentId: pi.id },

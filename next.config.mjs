@@ -94,6 +94,10 @@ const nextConfig = {
       // esas direcciones ya tienen dueño: si se dejaran, los paquetes serían
       // inalcanzables, porque las redirecciones se evalúan antes que las
       // páginas y nada avisa de ello.
+      // El viaje de septiembre (16-19 sep 2026) fue el primero desde CDMX; su
+      // lugar lo toma la salida mensual. Conserva lo que traía de Google.
+      { source: "/viaje-septiembre",             destination: "/viaje-cdmx-xilitla",          permanent: true },
+      { source: "/en/viaje-septiembre",          destination: "/viaje-cdmx-xilitla",          permanent: true },
       { source: "/paquetes/completo",            destination: "/paquetes/gran-huasteca",      permanent: true },
       { source: "/en/paquetes/completo",         destination: "/en/paquetes/gran-huasteca",   permanent: true },
       { source: "/paquetes/familiar",            destination: "/paquetes/gran-huasteca",      permanent: true },

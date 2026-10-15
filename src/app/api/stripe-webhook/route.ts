@@ -6,6 +6,9 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
 import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
 import { recuperarPago, esPagoDeTours, ESPERA_WEBHOOK_MS } from "@/lib/recuperarPago";
+import { esPagoDelViaje } from "@/lib/viajeCdmx/confirmar";
+import { manejarEventoViaje } from "@/lib/viajeCdmx/webhook";
+import type Stripe from "stripe";
 
 export const runtime = "nodejs";
 
@@ -33,6 +36,23 @@ export async function POST(req: NextRequest) {
     const msg = err instanceof Error ? err.message : "Signature verification failed";
     logger.error("stripe_webhook_signature_error", { reason: msg });
     return NextResponse.json({ error: msg }, { status: 400 });
+  }
+
+  // ── Viaje mensual CDMX–Xilitla ────────────────────────────────────────────
+  // Va PRIMERO y se espera: si algo falla, 500 y Stripe reintenta. Sin los 90 s
+  // de espera de los tours: su reserva se arma con el apartado que guardó el
+  // servidor, la pantalla no le añade nada. Ver `lib/viajeCdmx/webhook.ts`.
+  if (event.type.startsWith("payment_intent.")) {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    if (esPagoDelViaje(pi)) {
+      try {
+        await manejarEventoViaje(event.type, pi);
+      } catch (e: unknown) {
+        logger.error("viaje_cdmx_webhook_fallo", { tipo: event.type, payment_intent: pi.id, reason: e instanceof Error ? e.message : String(e) });
+        return NextResponse.json({ error: "viaje-cdmx" }, { status: 500 });
+      }
+      return NextResponse.json({ received: true });
+    }
   }
 
   if (event.type === "checkout.session.completed") {

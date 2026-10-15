@@ -288,6 +288,11 @@ model TourBooking {
   /// Las reservas anteriores a este campo quedan como "web": es el valor que
   /// más probablemente les corresponde, pero conviene revisarlas a mano.
   origen                String    @default("web")
+  /// Si la reserva es un lugar del viaje mensual CDMX–Xilitla, de qué salida
+  /// (`SalidaGrupal.id`). Opcional: el resto de las reservas no lo usa. La
+  /// fecha y las personas de estas reservas solo cambian desde Salidas, que
+  /// pasa por el candado del cupo; Reservas las rechaza.
+  salidaId              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -295,6 +300,7 @@ model TourBooking {
   @@index([tourDate])
   @@index([status])
   @@index([origen])
+  @@index([salidaId])
 }
 
 model BlogPost {
@@ -702,4 +708,122 @@ model Config {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// ─── Viaje mensual CDMX–Xilitla (15 oct 2026) ───────────────────────────────
+// Una salida grupal con fecha fija cada mes. Todo lo que vende —precio,
+// preventa, plazos, cupo— vive en la fila de su salida y en ningún otro lado:
+// la página, el calendario, el cobro y los correos lo leen de aquí a través de
+// `src/lib/viajeCdmx/precio.ts`. Columnas opcionales o con `@default` porque
+// `prisma db push` corre en cada arranque de Railway.
+
+/// Una fecha del viaje. El candado contra la sobreventa es un `FOR UPDATE`
+/// sobre ESTA fila (`src/lib/viajeCdmx/cupo.ts`): todo lo que gasta o libera un
+/// lugar de la salida pasa por ahí.
+model SalidaGrupal {
+  id             String    @id @default(cuid())
+  /// YYYY-MM-DD, día de salida. Una salida por día.
+  fechaSalida    String    @unique
+  /// YYYY-MM-DD, día de regreso.
+  fechaRegreso   String
+  capacidad      Int       @default(14)
+  /// Lo mínimo para que la salida corra. Si a la fecha de corte no se llega,
+  /// se ofrece cambio de fecha o reembolso del 100 %.
+  minimo         Int       @default(8)
+  /// Pesos por persona, sin centavos.
+  precio         Int
+  /// Pesos por persona mientras dure la preventa. Vacío = sin preventa.
+  precioPreventa Int?
+  /// Desde cuándo se puede apartar. La preventa corre desde aquí.
+  abreEl         DateTime
+  /// Hasta cuándo vale el precio de preventa.
+  finPreventa    DateTime?
+  /// Último momento para apartar.
+  fechaCorte     DateTime
+  /// Cuántos días antes de la salida vence el saldo.
+  saldoDiasAntes Int       @default(14)
+  /// borrador | publicada | cancelada
+  estado         String    @default("borrador")
+  /// Los cuartos de Paraíso viven en la hoja del hotel, que este sitio no
+  /// toca: esta casilla es la única constancia de que alguien los bloqueó.
+  hotelBloqueado Boolean   @default(false)
+  notas          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([estado, fechaSalida])
+}
+
+/// Lugares retenidos mientras alguien paga. Cuentan como ocupados hasta que se
+/// pagan (pasan a reserva) o se liberan. El precio queda congelado aquí: quien
+/// apartó en preventa paga el precio de preventa aunque termine de pagar un
+/// minuto después de que acabó.
+model ApartadoSalida {
+  id              String   @id @default(cuid())
+  salidaId        String
+  personas        Int
+  precioUnitario  Int
+  total           Int
+  anticipo        Int
+  nombre          String
+  email           String
+  telefono        String?
+  liderCodigo     String?
+  paymentIntentId String?  @unique
+  /// card | oxxo — con qué se está pagando, cuando ya se sabe.
+  metodo          String?
+  /// Hasta cuándo cuenta como ocupado. Con OXXO se alarga hasta que vence la
+  /// ficha más un día hábil (Stripe confirma el pago hasta un día después).
+  expiraEl        DateTime
+  /// activo | pagado | liberado
+  estado          String   @default("activo")
+  bookingId       String?
+  /// Huella de la IP (hash), para el tope de apartados por persona.
+  huella          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([salidaId, estado, expiraEl])
+  @@index([estado, expiraEl])
+}
+
+/// Quien quiere ir a una salida agotada o a la siguiente que abra. Tabla
+/// propia a propósito: en `Lead` le llegarían las secuencias de los tours.
+model ListaEspera {
+  id        String    @id @default(cuid())
+  /// La salida que pidió; "" = la siguiente fecha que abra (un NULL no
+  /// serviría para el `@@unique`: Postgres los trata como distintos).
+  salidaId  String    @default("")
+  nombre    String
+  email     String
+  whatsapp  String?
+  personas  Int       @default(1)
+  /// esperando | avisado | aparto | baja
+  estado    String    @default("esperando")
+  avisadoEl DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([salidaId, email])
+  @@index([estado])
+}
+
+/// Quien arma un grupo para viajar gratis. Su código viaja en la liga que
+/// comparte y en cada reserva que trae; el lugar gratis lo agrega el equipo
+/// desde el panel (gasta lugar como cualquier otro).
+model LiderGrupo {
+  id                String   @id @default(cuid())
+  codigo            String   @unique
+  nombre            String
+  email             String
+  whatsapp          String
+  personasEstimadas Int      @default(6)
+  salidaId          String?
+  /// nuevo | contactado | confirmado | descartado
+  estado            String   @default("nuevo")
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([estado])
 }

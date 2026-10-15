@@ -51,9 +51,12 @@ export async function POST(req: NextRequest) {
         currency:      "mxn",
         description:   `Tour Huasteca Potosina — ${bookingName} · ${customerName || ""}`,
         receipt_email: customerEmail || undefined,
-        // Solo métodos que se resuelven sin salir de la página. Si algún día se
-        // habilita OXXO o SPEI en el panel de Stripe, el checkout embebido los
-        // ofrecería y fallaría al pedir redirección: esto lo impide.
+        // Solo métodos que se resuelven sin salir de la página.
+        // 🔴 OJO: esto NO deja fuera a OXXO ni a SPEI. No son redirecciones
+        // (enseñan una ficha o una CLABE), así que si se encienden en la
+        // configuración por defecto de Stripe aparecerían aquí, en el carrito,
+        // en los paquetes y en Kora. El viaje CDMX los pide por nombre
+        // (`lib/viajeCdmx/apartar.ts`) para que puedan seguir apagados aquí.
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
         // Meses sin intereses si el importe llega al umbral (lib/stripeMsi.ts).
         // MSI va sobre la TARJETA, no es un método con redirección.

@@ -102,6 +102,12 @@ export async function crearLinkDePago(datos: DatosLink, creadoPor: string): Prom
 
   const link = await stripe.paymentLinks.create({
     line_items: [{ price: price.id, quantity: 1 }],
+    // Solo tarjeta (Apple Pay y Google Pay van dentro). Sin esto la liga toma
+    // los métodos de la configuración por defecto de la cuenta: si algún día se
+    // enciende OXXO ahí, la liga lo ofrecería y su pago llegaría DÍAS después
+    // por `checkout.session.async_payment_succeeded`, que el webhook no atiende:
+    // el saldo se pagaría y el panel nunca se enteraría.
+    payment_method_types: ["card"],
     // Un solo pago por liga.
     restrictions: { completed_sessions: { limit: 1 } },
     // El correo se pide en el checkout: es como se le manda el comprobante.
