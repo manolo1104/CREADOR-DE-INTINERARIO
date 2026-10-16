@@ -173,7 +173,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/grupos`,                            changeFrequency: "monthly", priority: 0.8, ...CAT },
     // El viaje mensual CDMX–Xilitla (15 oct 2026). Sin `CAT`: sus precios y
     // lugares cambian en cada visita, no con el catálogo.
-    { url: `${BASE}/viaje-cdmx-xilitla`,                changeFrequency: "daily",   priority: 0.9 },
+    // Con su gemela en inglés (16 oct 2026), con otro slug: se declaran juntas.
+    {
+      url: `${BASE}/viaje-cdmx-xilitla`, changeFrequency: "daily", priority: 0.9,
+      alternates: { languages: { "es-MX": `${BASE}/viaje-cdmx-xilitla`, en: `${BASE}/en/huasteca-potosina-from-mexico-city`, "x-default": `${BASE}/viaje-cdmx-xilitla` } },
+    },
+    {
+      url: `${BASE}/en/huasteca-potosina-from-mexico-city`, changeFrequency: "daily", priority: 0.8,
+      alternates: { languages: { "es-MX": `${BASE}/viaje-cdmx-xilitla`, en: `${BASE}/en/huasteca-potosina-from-mexico-city`, "x-default": `${BASE}/viaje-cdmx-xilitla` } },
+    },
     { url: `${BASE}/tours-en-xilitla`,                  changeFrequency: "monthly", priority: 0.8, ...CAT },
     { url: `${BASE}/politica-de-cancelacion`, changeFrequency: "yearly",  priority: 0.6 },
     { url: `${BASE}/terminos`,                changeFrequency: "yearly",  priority: 0.3 },

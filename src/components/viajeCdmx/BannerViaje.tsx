@@ -3,7 +3,7 @@ import { Bus, BedDouble, Coffee, Landmark, Waves, ArrowRight } from "lucide-reac
 import { TrackedLink } from "@/components/TrackedLink";
 import { salidasPublicas, type SalidaVista } from "@/lib/viajeCdmx/salidas";
 import { diaMX, pesos, rangoLargo } from "@/lib/viajeCdmx/precio";
-import { ANTICIPO_PCT, DIAS, NOCHES, PUNTO_SALIDA, SALIDA_TEXTO, VIAJE_RUTA } from "@/lib/viajeCdmx/config";
+import { ANTICIPO_PCT, DESAYUNOS, DIAS, HORA_REGRESO, NOCHES, NOCHES_TEXTO, PUNTO_SALIDA, SALIDA_TEXTO, VIAJE_RUTA } from "@/lib/viajeCdmx/config";
 
 /**
  * El viaje CDMX–Xilitla, justo debajo del hero del inicio y de /paquetes
@@ -17,16 +17,16 @@ import { ANTICIPO_PCT, DIAS, NOCHES, PUNTO_SALIDA, SALIDA_TEXTO, VIAJE_RUTA } fr
  */
 const INCLUYE_CORTO = [
   { Icon: Bus, t: "Transporte redondo" },
-  { Icon: BedDouble, t: `${NOCHES} noches en Paraíso Encantado` },
-  { Icon: Coffee, t: "3 desayunos en El Papán" },
+  { Icon: BedDouble, t: `${NOCHES_TEXTO} en Paraíso Encantado` },
+  { Icon: Coffee, t: `${DESAYUNOS} desayunos en El Papán` },
   { Icon: Landmark, t: "Ruta Surrealista" },
   { Icon: Waves, t: "Expedición Tamul" },
 ];
 
 const CIFRAS: [string, string][] = [
   [String(DIAS), "días"],
-  [String(NOCHES), "noches"],
-  ["3", "desayunos"],
+  [String(NOCHES), NOCHES === 1 ? "noche" : "noches"],
+  [String(DESAYUNOS), "desayunos"],
   ["2", "recorridos"],
 ];
 
@@ -72,7 +72,7 @@ export async function BannerViaje({ origen }: { origen: "inicio" | "paquetes" })
             Viaje CDMX–Xilitla, <em className="text-dorado">todo incluido</em>
           </h2>
           <p className="mt-3 font-dm text-[15px] text-crema/75 leading-relaxed">
-            Sales {SALIDA_TEXTO} del {PUNTO_SALIDA.nombre} y despiertas en Xilitla. Sin manejar y sin armar nada.
+            Sales {SALIDA_TEXTO} del {PUNTO_SALIDA.nombre} y despiertas en Xilitla. Estás de vuelta el lunes a las {HORA_REGRESO}. Sin manejar y sin armar nada.
           </p>
 
           <dl className="mt-6 grid grid-cols-4 border-y border-white/10 divide-x divide-white/10">

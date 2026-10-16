@@ -38,7 +38,13 @@ const MENU_SUSTENTABILIDAD = true;
 
 // Contraparte de idioma para el selector (sin pareja → inicio del otro idioma,
 // nunca un 404).
+/** Gemelas con slug distinto en cada idioma (el viaje desde CDMX, 16 oct 2026). */
+const PARES: Record<string, string> = { "/viaje-cdmx-xilitla": "/en/huasteca-potosina-from-mexico-city" };
+const PARES_EN: Record<string, string> = Object.fromEntries(Object.entries(PARES).map(([es, en]) => [en, es]));
+
 function counterpartHref(pathname: string, locale: Locale): string {
+  if (PARES[pathname]) return PARES[pathname];
+  if (PARES_EN[pathname]) return PARES_EN[pathname];
   if (locale === "en") {
     if (SOLO_EN.test(pathname)) return "/";
     return pathname.replace(/^\/en/, "") || "/";

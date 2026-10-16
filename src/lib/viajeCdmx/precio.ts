@@ -150,3 +150,48 @@ export function diaMX(d: Date | string): string {
 export function pesos(n: number): string {
   return `$${Math.round(n).toLocaleString("es-MX")}`;
 }
+
+// ── Fechas en inglés (página /en, 16 oct 2026) ──────────────────────────────
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** «Nov 20–22» · «Jan 29–Feb 1» */
+export function rangoCortoEn(desde: string, hasta: string): string {
+  const a = partes(desde), b = partes(hasta);
+  return a.m === b.m ? `${MONTHS_SHORT[a.m]} ${a.d}–${b.d}` : `${MONTHS_SHORT[a.m]} ${a.d}–${MONTHS_SHORT[b.m]} ${b.d}`;
+}
+
+/** «November 20–22» · «January 29–February 1» */
+export function rangoLargoEn(desde: string, hasta: string): string {
+  const a = partes(desde), b = partes(hasta);
+  return a.m === b.m ? `${MONTHS[a.m]} ${a.d}–${b.d}` : `${MONTHS[a.m]} ${a.d}–${MONTHS[b.m]} ${b.d}`;
+}
+
+/** «Friday, November 20» */
+export function fechaLargaEn(ymd: string): string {
+  const p = partes(ymd);
+  return `${WEEKDAYS[weekdayYMD(ymd)]}, ${MONTHS[p.m]} ${p.d}`;
+}
+
+/** «November 6» de un YYYY-MM-DD. */
+export function diaYMDEn(ymd: string): string {
+  const p = partes(ymd);
+  return `${MONTHS[p.m]} ${p.d}`;
+}
+
+/** «November 6» de un instante, en hora de México. */
+export function diaMXEn(d: Date | string): string {
+  return diaYMDEn(new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }));
+}
+
+/** «MX$4,990» — en inglés el peso lleva su código: «$» a secas se lee como dólar. */
+export function pesosEn(n: number): string {
+  return `MX$${Math.round(n).toLocaleString("en-US")}`;
+}
+
+/** «US$270» aproximado, con el tipo de cambio que se le pase. */
+export function dolares(n: number, mxnPorUsd: number): string {
+  return `US$${Math.round(n / mxnPorUsd).toLocaleString("en-US")}`;
+}

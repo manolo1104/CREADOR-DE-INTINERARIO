@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { pesos } from "@/lib/viajeCdmx/precio";
+import type { Locale } from "@/lib/viajeCdmx/config";
+import { textosViaje } from "./textos";
 
 /**
  * El botón fijo del celular: precio real «desde» y «Apartar», que baja al
@@ -10,7 +11,8 @@ import { pesos } from "@/lib/viajeCdmx/precio";
  * botón queda debajo del pliegue, y sin la barra la primera pantalla no
  * tendría ningún «Apartar».
  */
-export function BarraViaje({ desde, quedan }: { desde: number | null; quedan: number | null }) {
+export function BarraViaje({ desde, quedan, locale = "es" }: { desde: number | null; quedan: number | null; locale?: Locale }) {
+  const t = textosViaje(locale);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -40,20 +42,20 @@ export function BarraViaje({ desde, quedan }: { desde: number | null; quedan: nu
         <div className="min-w-0 flex-1">
           {desde ? (
             <>
-              <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-crema/50">Desde</p>
-              <p className="font-cormorant text-dorado text-2xl leading-none">{pesos(desde)} <span className="font-dm text-xs text-crema/55">por persona</span></p>
+              <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-crema/50">{t.desde}</p>
+              <p className="font-cormorant text-dorado text-2xl leading-none">{t.pesos(desde)} <span className="font-dm text-xs text-crema/55">{t.porPersonaBarra}</span></p>
             </>
           ) : (
-            <p className="text-sm font-dm text-crema/70">Nuevas fechas muy pronto</p>
+            <p className="text-sm font-dm text-crema/70">{t.nuevasFechas}</p>
           )}
-          {quedan != null && quedan > 0 && <p className="text-[11px] font-dm text-crema/50 mt-0.5">Próxima salida: quedan {quedan}</p>}
+          {quedan != null && quedan > 0 && <p className="text-[11px] font-dm text-crema/50 mt-0.5">{t.proximaQuedan(quedan)}</p>}
         </div>
         <a
           href="#fechas"
           tabIndex={visible ? 0 : -1}
           className="shrink-0 min-h-[48px] inline-flex items-center px-6 bg-dorado text-negro text-[11px] tracking-[2px] uppercase font-dm"
         >
-          {desde ? "Apartar" : "Avísame"}
+          {desde ? t.apartarBarra : t.avisame}
         </a>
       </div>
     </div>

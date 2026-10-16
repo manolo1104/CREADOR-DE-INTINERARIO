@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { GuiaDelLugar } from "@/components/blog/GuiaDelLugar";
+import { TarjetaViajeCdmx, tarjetaViajeEnBlog } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { XantoloPlanDeViaje, XantoloDiasYNoches, esArticuloXantolo, xantoloVigente } from "@/components/blog/CtaXantolo";
 import { TOURS_DB, etiquetaUnidad, tourDurTexto } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
@@ -551,6 +552,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     .map((s) => TOURS_DB.find((t) => t.slug === s))
     .filter((t): t is (typeof TOURS_DB)[number] => Boolean(t));
   const relevantTour = toursFijados[0] ?? inferTour(post.tags, post.focusKeyword);
+  const tarjetaViaje = tarjetaViajeEnBlog(post.slug);
   const promoPost  = isPromocional(post.tags, post.title);
   const ofertas    = ofertasDeBlog(post.slug);
   const seccion    = seccionDe(post);
@@ -799,6 +801,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   va ARRIBA porque la mitad de los lectores en celular no pasa
                   del 40 % del artículo (Clarity, 1 oct 2026). */}
               {esArticuloXantolo(post.slug) && <XantoloPlanDeViaje />}
+              {tarjetaViaje === "arriba" && <TarjetaViajeCdmx origen={`blog-${post.slug}`} className="mb-10" />}
 
               {/* Content first half */}
               <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentFirst }} />
@@ -817,6 +820,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               {/* Ficha del lugar + tours que lo visitan. Va a mitad del
                   artículo: es donde el lector ya decidió que quiere ir. */}
               <GuiaDelLugar blogSlug={post.slug} />
+              {tarjetaViaje === "medio" && <TarjetaViajeCdmx origen={`blog-${post.slug}`} className="my-10" />}
 
               {/* Newsletter inline (a mitad del artículo) */}
               <BlogNewsletterInline />

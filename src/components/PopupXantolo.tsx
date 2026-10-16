@@ -145,7 +145,7 @@ export function PopupXantolo() {
     // El viaje CDMX–Xilitla (15 oct 2026): llega gente de un anuncio de ESE
     // viaje, con su propio calendario y pago; una oferta distinta encima se
     // la lleva a otra compra.
-    ruta.startsWith("/viaje-cdmx-xilitla") ||
+    ruta.startsWith("/viaje-cdmx-xilitla") || ruta.startsWith("/en/huasteca-potosina-from-mexico-city") ||
     pathname.includes("xantolo");
 
   const cerrar = useCallback(() => {

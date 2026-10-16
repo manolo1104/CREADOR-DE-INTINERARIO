@@ -263,6 +263,12 @@ export default function GruposPage() {
                 Traslados entre los destinos durante todo el viaje, y transporte desde la Ciudad de México si salen de
                 ahí. Desde otras ciudades lo revisamos caso por caso.
               </p>
+              {/* Para el grupo chico que sale de la CDMX ya existe un producto con fecha (16 oct 2026). */}
+              <p className="font-dm text-sm text-crema/65 leading-relaxed mt-3">
+                ¿Son menos de 14 y salen de la CDMX? Súmense a nuestro{" "}
+                <Link href="/viaje-cdmx-xilitla" className="text-dorado underline underline-offset-4 hover:text-crema">viaje a la Huasteca desde CDMX</Link>,
+                que sale cada mes del Ángel de la Independencia.
+              </p>
             </div>
           </div>
         </div>

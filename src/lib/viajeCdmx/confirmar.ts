@@ -71,8 +71,13 @@ export async function confirmarPasaje(
       const salidaTexto = rangoCorto(salida.fechaSalida, salida.fechaRegreso);
       const tourName = `${VIAJE_NOMBRE} · ${salidaTexto}`;
       const metodo = apartado?.metodo === "oxxo" ? "OXXO" : "Tarjeta";
+      const cuarto = apartado?.cuarto ?? (meta.cuarto || "compartido");
+      const compartirCon = apartado?.compartirCon ?? (meta.compartirCon || null);
+      const locale = apartado?.locale ?? (meta.locale || "es");
       const notasInternas = [
         sobrecupo ? `⚠️ SOBRECUPO: el pago llegó cuando la salida ya estaba llena (${o.ocupados} de ${salida.capacidad}). Mover a otra fecha o subir el cupo.` : "",
+        cuarto === "privado" ? "🛏️ Cuarto PRIVADO con cama king." : `Cuarto compartido${compartirCon ? ` (viaja solo: compartir con ${compartirCon})` : ""}.`,
+        locale === "en" ? "🇺🇸 Apartó en inglés." : "",
         apartado?.liderCodigo ? `Viene con el líder ${apartado.liderCodigo}.` : "",
       ].filter(Boolean).join(" ");
 
@@ -104,7 +109,9 @@ export async function confirmarPasaje(
               liderCodigo:  apartado?.liderCodigo ?? (meta.liderCodigo || null),
               precioUnitario: apartado?.precioUnitario ?? (Number(meta.precioUnitario) || null),
               pickupLugar:  PUNTO_SALIDA.nombre ? `${PUNTO_SALIDA.nombre} · ${HORA_SALIDA}` : `CDMX · ${HORA_SALIDA}`,
-              locale:       "es",
+              cuarto,
+              compartirCon,
+              locale,
               ...(notasInternas ? { notasInternas } : {}),
             },
             {

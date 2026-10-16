@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CIUDADES_ORIGEN, getCiudadOrigen } from "@/lib/ciudadesOrigen";
+import { AUTOBUS_CDMX, CIUDADES_ORIGEN, getCiudadOrigen } from "@/lib/ciudadesOrigen";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { TOURS_DB, TOURS_DESTACADOS } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { getTraslado } from "@/lib/traslados";
@@ -24,8 +25,15 @@ export function generateMetadata({ params }: { params: { ciudad: string } }): Me
 
   const url = `${SITE}/desde/${c.slug}`;
   const desde = Math.min(...TOURS_DB.map((t) => t.precio));
-  const title = `Huasteca Potosina desde ${c.nombre} — Cómo Llegar y Qué Reservar 2026`;
-  const description = `Cómo llegar desde ${c.nombre}, cuántos días necesitas y qué paquete te queda. Tours desde $${desde.toLocaleString("es-MX")}, apartas con el 30 %.`;
+  // CDMX tiene salida grupal propia cada mes (16 oct 2026): el título lo dice,
+  // porque «huasteca potosina desde cdmx» mezcla al que busca autobús con el
+  // que busca quién lo lleve.
+  const title = c.slug === "cdmx"
+    ? "Huasteca Potosina desde CDMX — Cómo Llegar y Viaje Todo Incluido"
+    : `Huasteca Potosina desde ${c.nombre} — Cómo Llegar y Qué Reservar 2026`;
+  const description = c.slug === "cdmx"
+    ? `Cómo llegar desde CDMX en autobús ($${AUTOBUS_CDMX.min}–$${AUTOBUS_CDMX.max}), en auto o en avión, cuántos días necesitas y nuestro viaje grupal de cada mes desde el Ángel, todo incluido.`
+    : `Cómo llegar desde ${c.nombre}, cuántos días necesitas y qué paquete te queda. Tours desde $${desde.toLocaleString("es-MX")}, apartas con el 30 %.`;
 
   return {
     title,
@@ -98,6 +106,18 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
           dónde te conviene quedarte y qué alcanzas a ver según los días que tengas.
         </p>
       </section>
+
+      {/* El viaje grupal mensual: para quien busca cómo ir desde la CDMX, la
+          respuesta más corta es que lo llevemos. Va antes de las formas de llegar. */}
+      {c.slug === "cdmx" && (
+        <div className="px-6 pb-14">
+          <TarjetaViajeCdmx
+            origen="desde-cdmx"
+            titulo="La forma más fácil: el viaje del mes desde el Ángel"
+            className="max-w-3xl mx-auto"
+          />
+        </div>
+      )}
 
       {/* ── CÓMO LLEGAR ── */}
       <section className="px-6 pb-14">

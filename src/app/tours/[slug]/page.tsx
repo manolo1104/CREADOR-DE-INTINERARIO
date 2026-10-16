@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { resenasTexto, GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 import { headers } from "next/headers";
 import Image from "next/image";
@@ -39,6 +40,9 @@ import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
+
+/** Los recorridos que van dentro del viaje CDMX–Xilitla (`lib/viajeCdmx/config.ts`). */
+const TOURS_DEL_VIAJE_CDMX = ["expedicion-tamul", "ruta-surrealista-edward-james"];
 
 // Los precios de la promo de temporada baja se apagan solos al terminar (ver
 // `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
@@ -1112,6 +1116,16 @@ export default function TourDetailPage({ params }: Props) {
               </details>
             )}
           </section>
+
+          {/* Los dos recorridos del viaje CDMX–Xilitla: quien lee esta ficha y
+              sale de la CDMX tiene aquí la versión con transporte y hotel. */}
+          {TOURS_DEL_VIAJE_CDMX.includes(tour.slug) && (
+            <TarjetaViajeCdmx
+              origen={`tour-${tour.slug}${locale === "en" ? "-en" : ""}`}
+              titulo={locale === "en" ? "In Mexico City? This tour is included in our weekend trip" : "¿Sales de la CDMX? Este recorrido va incluido"}
+              locale={locale === "en" ? "en" : "es"}
+            />
+          )}
 
           {/* ── GARANTÍA HUASTECA ──────────────────────────────────────────
               El sello sale en la tarjeta de /tours sin explicación: aquí dice

@@ -67,7 +67,8 @@ export function enPantallaDePago(pathname: string | null | undefined): boolean {
  *   sitio sí se queda: es una landing, no una pantalla de pago.
  */
 export function conBarraPropia(pathname: string | null | undefined): boolean {
-  return /^\/viaje-cdmx-xilitla(\/|$)/.test(pathname ?? "");
+  // Y su gemela en inglés (16 oct 2026).
+  return /^\/(viaje-cdmx-xilitla|en\/huasteca-potosina-from-mexico-city)(\/|$)/.test(pathname ?? "");
 }
 
 /**

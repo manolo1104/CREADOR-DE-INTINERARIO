@@ -14,17 +14,22 @@ import { telefonoWhatsapp } from "@/lib/reviewRequest";
 import {
   BASE, C, WA, barra, boton, bajoBoton, filaDato, filaMoney, nota, parrafo, shellCorreo, tabla, titulo,
 } from "@/lib/emailLayout";
-import { diaMX, fechaLarga, pesos, rangoLargo, saldoVence } from "./precio";
+import { diaMX, fechaLarga, fechaLargaEn, pesos, pesosEn, rangoLargo, rangoLargoEn, saldoVence } from "./precio";
 import {
-  ANTICIPO_PCT, HORA_CITA, HORA_SALIDA, INCLUYE, LIDER_PERSONAS, PUNTO_SALIDA, QUE_LLEVAR, VIAJE_NOMBRE, VIAJE_RUTA, mensajeWhatsApp,
+  ANTICIPO_PCT, CAMBIO_SOLO_DIAS_ANTES, CUARTOS, HORA_CITA, HORA_SALIDA, INCLUYE, LIDER_PERSONAS, PUNTO_SALIDA, QUE_LLEVAR, VIAJE_NOMBRE,
+  VIAJE_RUTA, mensajeWhatsApp, type Cuarto,
 } from "./config";
+import { INCLUYE_EN, QUE_LLEVAR_EN, VIAJE_NOMBRE_EN, mensajeWhatsAppEn } from "./en";
+import { metaDe } from "@/lib/admin/reserva";
 
 const URL_VIAJE = `${BASE}${VIAJE_RUTA}`;
 const wa = (texto: string) => `https://wa.me/${WA}?text=${encodeURIComponent(texto)}`;
 const nombrePila = (n: string) => escapeHtml((n || "").trim().split(/\s+/)[0] || "");
 
-function puntoDeSalida(): string {
-  return `${escapeHtml(PUNTO_SALIDA.nombre)} · viernes ${HORA_SALIDA} (llega a las ${HORA_CITA})`;
+function puntoDeSalida(en = false): string {
+  return en
+    ? `Angel of Independence · meet Friday at ${HORA_CITA}, we leave at midnight (${HORA_SALIDA})`
+    : `${escapeHtml(PUNTO_SALIDA.nombre)} · cita el viernes a las ${HORA_CITA}, salida a la medianoche (${HORA_SALIDA})`;
 }
 
 async function salidaDe(r: TourBooking): Promise<SalidaGrupal | null> {
@@ -33,59 +38,86 @@ async function salidaDe(r: TourBooking): Promise<SalidaGrupal | null> {
 
 // ── Al cliente ──────────────────────────────────────────────────────────────
 
-/** Confirmación del anticipo. Al cliente, con el equipo en copia oculta. */
+/**
+ * Confirmación del anticipo. Al cliente, con el equipo en copia oculta. En
+ * inglés si apartó en la página en inglés (16 oct 2026); el cuarto que eligió
+ * va en la tabla.
+ */
 export async function correoConfirmacion(reservaId: string): Promise<void> {
   const r = await prisma.tourBooking.findUnique({ where: { id: reservaId } });
   if (!r) return;
   const s = await salidaDe(r);
   if (!s) return;
-  const fechas = rangoLargo(s.fechaSalida, s.fechaRegreso);
+  const meta = metaDe(r);
+  const en = meta.locale === "en";
+  const cuarto: Cuarto = meta.cuarto === "privado" ? "privado" : "compartido";
+  const cuartoTexto = CUARTOS[cuarto][en ? "en" : "es"].titulo + (meta.compartirCon
+    ? (en ? ` (shared with ${meta.compartirCon === "mujeres" ? "women" : "men"})` : ` (con ${escapeHtml(String(meta.compartirCon))})`)
+    : "");
+  const fechas = en ? rangoLargoEn(s.fechaSalida, s.fechaRegreso) : rangoLargo(s.fechaSalida, s.fechaRegreso);
   const saldo = Math.max(0, r.totalAmount - r.depositoPagado);
   const vence = saldoVence(s);
+  const $ = en ? pesosEn : pesos;
+  const dia = en ? fechaLargaEn : fechaLarga;
+  const nombre = en ? VIAJE_NOMBRE_EN : VIAJE_NOMBRE;
+  const waTexto = en ? mensajeWhatsAppEn(fechas) : mensajeWhatsApp(fechas);
 
   const cuerpo = [
-    titulo(`Tu lugar está apartado, ${nombrePila(r.customerName)}.`),
-    parrafo(`Nos vemos el <strong>${fechaLarga(s.fechaSalida)}</strong>. Guarda este correo: aquí está todo lo que necesitas.`),
+    titulo(en ? `Your spot is booked, ${nombrePila(r.customerName)}.` : `Tu lugar está apartado, ${nombrePila(r.customerName)}.`),
+    parrafo(en
+      ? `See you on <strong>${dia(s.fechaSalida)}</strong>. Keep this email: everything you need is here.`
+      : `Nos vemos el <strong>${dia(s.fechaSalida)}</strong>. Guarda este correo: aquí está todo lo que necesitas.`),
     tabla([
-      filaDato("Folio", escapeHtml(r.confirmationNumber), true),
-      filaDato("Fechas", fechas),
-      filaDato("Viajeros", `${r.adults} persona${r.adults === 1 ? "" : "s"}`),
-      filaDato("Salida", puntoDeSalida()),
+      filaDato(en ? "Booking code" : "Folio", escapeHtml(r.confirmationNumber), true),
+      filaDato(en ? "Dates" : "Fechas", fechas),
+      filaDato(en ? "Travelers" : "Viajeros", en ? `${r.adults} ${r.adults === 1 ? "person" : "people"}` : `${r.adults} persona${r.adults === 1 ? "" : "s"}`),
+      filaDato(en ? "Room" : "Cuarto", cuartoTexto),
+      filaDato(en ? "Departure" : "Salida", puntoDeSalida(en)),
     ].join("")),
-    barra("Tu pago"),
+    barra(en ? "Your payment" : "Tu pago"),
     tabla([
-      filaMoney("Total del viaje", pesos(r.totalAmount), undefined, false, true),
-      filaMoney(`Anticipo pagado (${ANTICIPO_PCT} %)`, pesos(r.depositoPagado), "verde"),
-      filaMoney("Saldo", pesos(saldo), saldo > 0 ? "terracota" : undefined, true),
+      filaMoney(en ? "Trip total" : "Total del viaje", $(r.totalAmount), undefined, false, true),
+      filaMoney(en ? `Deposit paid (${ANTICIPO_PCT}%)` : `Anticipo pagado (${ANTICIPO_PCT} %)`, $(r.depositoPagado), "verde"),
+      filaMoney(en ? "Balance" : "Saldo", $(saldo), saldo > 0 ? "terracota" : undefined, true),
     ].join("")),
     saldo > 0
-      ? nota(`El saldo vence el <strong>${fechaLarga(vence)}</strong>. Unos días antes te mandamos por correo la liga para pagarlo con tarjeta.`)
+      ? nota(en
+        ? `The balance is due on <strong>${dia(vence)}</strong>. A few days before, we email you the link to pay it by card.`
+        : `El saldo vence el <strong>${dia(vence)}</strong>. Unos días antes te mandamos por correo la liga para pagarlo con tarjeta.`)
       : "",
-    nota("Tu anticipo no es reembolsable, pero sí transferible: si no puedes ir, lo pasamos a otra fecha del viaje. Si la salida no junta el mínimo de viajeros, te ofrecemos otra fecha o te devolvemos el 100 %."),
-    barra("Tu viaje incluye"),
-    parrafo(INCLUYE.map((x) => `✓ ${escapeHtml(x)}`).join("<br>"), "18px 0 0 0"),
-    barra("Qué llevar"),
-    parrafo(QUE_LLEVAR.map((x) => `· ${escapeHtml(x)}`).join("<br>"), "18px 0 0 0"),
-    boton(wa(mensajeWhatsApp(fechas) + ` Mi folio es ${r.confirmationNumber}.`), "Escríbenos por WhatsApp", "whatsapp"),
-    bajoBoton("Para cambios, dudas o si viajas con alguien que necesite algo especial."),
+    nota(en
+      ? `Your deposit is non-refundable but transferable to another date. If the departure doesn't reach the minimum group, you choose another date or a 100% refund. From ${CAMBIO_SOLO_DIAS_ANTES} days before departure there are no refunds, only date changes.`
+      : `Tu anticipo no es reembolsable, pero sí transferible a otra fecha del viaje. Si la salida no junta el mínimo de viajeros, te ofrecemos otra fecha o te devolvemos el 100 %. A partir de ${CAMBIO_SOLO_DIAS_ANTES} días antes de salir ya no hay devoluciones, solo cambio de fecha.`),
+    barra(en ? "Your trip includes" : "Tu viaje incluye"),
+    parrafo((en ? INCLUYE_EN : INCLUYE).map((x) => `✓ ${escapeHtml(x)}`).join("<br>"), "18px 0 0 0"),
+    barra(en ? "What to bring" : "Qué llevar"),
+    parrafo((en ? QUE_LLEVAR_EN : QUE_LLEVAR).map((x) => `· ${escapeHtml(x)}`).join("<br>"), "18px 0 0 0"),
+    boton(wa(waTexto + (en ? ` My booking code is ${r.confirmationNumber}.` : ` Mi folio es ${r.confirmationNumber}.`)), en ? "Message us on WhatsApp" : "Escríbenos por WhatsApp", "whatsapp"),
+    bajoBoton(en ? "For changes, questions or anything special someone in your group needs." : "Para cambios, dudas o si viajas con alguien que necesite algo especial."),
   ].join("");
 
   await sendBrevoEmail({
     to:  [{ email: r.customerEmail, name: r.customerName }],
     bcc: correosEquipo(),
-    subject: `Lugar apartado · ${VIAJE_NOMBRE} · ${fechas} · ${r.confirmationNumber}`,
+    subject: en
+      ? `Booked · ${nombre} · ${fechas} · ${r.confirmationNumber}`
+      : `Lugar apartado · ${nombre} · ${fechas} · ${r.confirmationNumber}`,
     htmlContent: shellCorreo({
-      locale: "es",
-      preheader: `Folio ${r.confirmationNumber}`,
-      eyebrow: VIAJE_NOMBRE,
-      h1a: "Tu lugar",
-      h1b: "está apartado",
+      locale: en ? "en" : "es",
+      preheader: en ? `Booking code ${r.confirmationNumber}` : `Folio ${r.confirmationNumber}`,
+      eyebrow: nombre,
+      h1a: en ? "Your spot" : "Tu lugar",
+      h1b: en ? "is booked" : "está apartado",
       entradilla: fechas,
       cuerpo,
-      pie: `¿Dudas? Contesta este correo o escríbenos por <a href="${wa(mensajeWhatsApp(fechas))}" style="color:${C.verde};">WhatsApp</a>.`,
-      origen: `Correo de tu reserva ${escapeHtml(r.confirmationNumber)}.`,
+      pie: en
+        ? `Questions? Reply to this email or message us on <a href="${wa(waTexto)}" style="color:${C.verde};">WhatsApp</a>.`
+        : `¿Dudas? Contesta este correo o escríbenos por <a href="${wa(waTexto)}" style="color:${C.verde};">WhatsApp</a>.`,
+      origen: en ? `Email for your booking ${escapeHtml(r.confirmationNumber)}.` : `Correo de tu reserva ${escapeHtml(r.confirmationNumber)}.`,
     }),
-    textContent: `Tu lugar está apartado. Folio ${r.confirmationNumber}. ${VIAJE_NOMBRE}, ${fechas}. ${r.adults} persona(s). Anticipo ${pesos(r.depositoPagado)} de ${pesos(r.totalAmount)}. Saldo ${pesos(saldo)}, vence el ${fechaLarga(vence)}.`,
+    textContent: en
+      ? `Your spot is booked. Code ${r.confirmationNumber}. ${nombre}, ${fechas}. ${r.adults} traveler(s). ${cuartoTexto}. Deposit ${$(r.depositoPagado)} of ${$(r.totalAmount)}. Balance ${$(saldo)}, due ${dia(vence)}.`
+      : `Tu lugar está apartado. Folio ${r.confirmationNumber}. ${nombre}, ${fechas}. ${r.adults} persona(s). ${cuartoTexto}. Anticipo ${$(r.depositoPagado)} de ${$(r.totalAmount)}. Saldo ${$(saldo)}, vence el ${dia(vence)}.`,
   });
 }
 

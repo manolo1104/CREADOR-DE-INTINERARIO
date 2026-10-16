@@ -24,6 +24,7 @@ import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { TrackedLink } from "@/components/TrackedLink";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import {
   NARRATIVA_DESTINO,
   COMBINACION_DESTINO,
@@ -33,6 +34,16 @@ import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } f
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
 import { getDict, type Messages } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
+
+/** Los destinos que recorre el viaje CDMX–Xilitla, con el titular de su tarjeta. */
+const DESTINOS_DEL_VIAJE_CDMX: Record<string, string> = {
+  "xilitla-pueblo-magico": "¿Sales de la CDMX? Duerme en Xilitla, todo incluido",
+  "las-pozas-jardin-surrealista": "¿Sales de la CDMX? Las Pozas va incluido en el viaje del mes",
+  "cascada-de-tamul": "¿Sales de la CDMX? Tamul va incluido en el viaje del mes",
+  "nacimiento-huichihuayan": "¿Sales de la CDMX? Huichihuayán va incluido en el viaje del mes",
+  "castillo-de-la-salud": "¿Sales de la CDMX? El Castillo de la Salud va incluido en el viaje",
+  "sotano-de-las-huahuas": "¿Sales de la CDMX? Las Huahuas van incluidas en el viaje del mes",
+};
 
 // Los precios de la promo de temporada baja se apagan solos al terminar (ver
 // `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
@@ -354,6 +365,16 @@ export default function DestinoPage({ params }: Props) {
               destinoNombre={destino.nombre}
               tourHref={tourHref}
             />
+          </div>
+        )}
+
+        {/* Los lugares del viaje CDMX–Xilitla: la ficha del lugar es lo que lee
+            quien todavía no decide cómo llegar. */}
+        {DESTINOS_DEL_VIAJE_CDMX[destino.slug] && (
+          <div className="max-w-4xl mx-auto px-6 pt-12">
+            {locale === "en"
+              ? <TarjetaViajeCdmx origen={`destino-${destino.slug}-en`} locale="en" titulo="In Mexico City? It's on our weekend trip, all included" />
+              : <TarjetaViajeCdmx origen={`destino-${destino.slug}`} titulo={DESTINOS_DEL_VIAJE_CDMX[destino.slug]} />}
           </div>
         )}
 

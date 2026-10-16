@@ -6,6 +6,7 @@ import { trackServerEvent } from "@/lib/serverTrack";
 import { apartarLugares, barrerApartados, crearCobroDelApartado, soltarAnteriores } from "@/lib/viajeCdmx/apartar";
 import { ErrorViaje } from "@/lib/viajeCdmx/cupo";
 import { EMAIL_RE, respuestaDeError, telefonoValido } from "@/lib/viajeCdmx/respuesta";
+import { COMPARTIR_VALIDO, CUARTO_VALIDO } from "@/lib/viajeCdmx/config";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
       liderCodigo,
       precioVisto: b.precioVisto == null ? null : Number(b.precioVisto),
       huella,
+      cuarto: CUARTO_VALIDO(b.cuarto) ? b.cuarto : "compartido",
+      compartirCon: COMPARTIR_VALIDO(b.compartirCon) ? b.compartirCon : null,
+      locale: b.locale === "en" ? "en" : "es",
     });
     const pi = await crearCobroDelApartado(creado, {
       sid: typeof b.sid === "string" ? b.sid : null,
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
       sid: typeof b.sid === "string" ? b.sid : null,
       tourSlug: "viaje-cdmx-xilitla",
       amount: creado.montos.anticipo,
-      data: { salida: creado.salida.fechaSalida, personas: creado.montos.personas, oxxo: creado.oxxo },
+      data: { salida: creado.salida.fechaSalida, personas: creado.montos.personas, oxxo: creado.oxxo, cuarto: creado.apartado.cuarto, locale: creado.apartado.locale },
     });
     // De paso, lo que se quedó vencido de otros (sin hacer esperar a este cliente).
     barrerApartados().catch(() => {});

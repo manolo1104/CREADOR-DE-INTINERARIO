@@ -1,4 +1,5 @@
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { DESAYUNOS, NOCHES_TEXTO, REGRESO_TEXTO } from "@/lib/viajeCdmx/config";
 import { enAuto, enAutobus, MINUTOS_VALLES_XILITLA, horasEnPalabras } from "@/lib/tiemposDeViaje";
 /**
  * Landings por ciudad de origen.
@@ -16,6 +17,13 @@ import { enAuto, enAutobus, MINUTOS_VALLES_XILITLA, horasEnPalabras } from "@/li
  * Regla: todo horario y tarifa va marcado como aproximado. Cambian por
  * temporada y el viajero lo comprueba en dos clics.
  */
+
+/**
+ * El autobús nocturno CDMX → Xilitla, aproximado y por trayecto. Una sola
+ * cifra para /desde/cdmx, la comparación del viaje CDMX–Xilitla y llms.txt:
+ * llms.txt decía «$650» y esta página «$520–$900».
+ */
+export const AUTOBUS_CDMX = { min: 520, max: 900, terminal: "Terminal Central del Norte", hora: "10:15 PM", llega: "6:30 AM" } as const;
 
 export interface CiudadOrigen {
   slug: string;
@@ -51,7 +59,7 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
       {
         modo: "En autobús (lo más práctico)",
         detalle:
-          `Salida nocturna de la Terminal Central del Norte alrededor de las 10:15 PM (Servicios Coordinados, Transportes Frontera, ETN). Llega a Xilitla cerca de las 6:30 AM; el trayecto dura ${enAutobus("cdmx", "xilitla")}. Tarifa aproximada $520–$900 MXN por persona.`,
+          `Salida nocturna de la ${AUTOBUS_CDMX.terminal} alrededor de las ${AUTOBUS_CDMX.hora} (Servicios Coordinados, Transportes Frontera, ETN). Llega a Xilitla cerca de las ${AUTOBUS_CDMX.llega}; el trayecto dura ${enAutobus("cdmx", "xilitla")}. Tarifa aproximada $${AUTOBUS_CDMX.min}–$${AUTOBUS_CDMX.max} MXN por persona, por trayecto.`,
       },
       {
         modo: "En auto",
@@ -68,12 +76,18 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
     paqueteSugerido: "inmersion-huasteca",
     faqs: [
       {
+        // El viaje grupal de cada mes (16 oct 2026). Sin precio ni fecha: esta
+        // página es estática y la cifra viva está en /viaje-cdmx-xilitla.
+        q: "¿Hay tours a la Huasteca Potosina desde CDMX?",
+        a: `Sí. Cada mes sale nuestro viaje grupal del Ángel de la Independencia: el viernes a la medianoche en Urvan, ${NOCHES_TEXTO} en nuestro hotel en Xilitla, ${DESAYUNOS} desayunos, Las Pozas de Edward James y la cascada de Tamul con guía, y regresas ${REGRESO_TEXTO}. Las fechas y el precio están en la página del viaje.`,
+      },
+      {
         q: "¿Pierdo un día viajando desde CDMX?",
         a: "No, si tomas el autobús nocturno. Llegas a Xilitla cerca de las 6:30 AM y ese mismo día arranca el primer recorrido. En los paquetes entregamos la habitación temprano para que descanses antes de salir.",
       },
       {
         q: "¿Cuántos días necesito viniendo desde CDMX?",
-        a: "Con 3 días y 2 noches alcanzas para dos o tres recorridos completos sin sentir que solo estuviste en la carretera. Si quieres cubrir tanto el lado de Xilitla como el de Ciudad Valles, mejor 4 o 5.",
+        a: `Con 3 días y 2 noches alcanzas para dos o tres recorridos completos sin sentir que solo estuviste en la carretera. Si quieres cubrir tanto el lado de Xilitla como el de Ciudad Valles, mejor 4 o 5. Si solo tienes el fin de semana, nuestro viaje grupal hace dos recorridos completos: sales el viernes a la medianoche y regresas ${REGRESO_TEXTO}.`,
       },
       {
         q: "¿Conviene manejar desde CDMX?",

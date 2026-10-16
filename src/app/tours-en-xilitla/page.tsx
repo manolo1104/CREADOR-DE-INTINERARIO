@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import {
   TOURS_DB, tourDurTexto, etiquetaUnidad, esPorPersona, recogidaDeTour, partesRecogida,
@@ -389,6 +390,11 @@ export default function ToursEnXilitlaPage() {
           </p>
         </div>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX: duerme en Xilitla y hace los dos recorridos de aquí. */}
+      <div className="px-6 pb-16">
+        <TarjetaViajeCdmx origen="tours-en-xilitla" className="max-w-5xl mx-auto" />
+      </div>
 
       {/* ── PLANEAR EL VIAJE ──
           Lo informacional NO se contesta aquí: se enlaza. Esos artículos ya están

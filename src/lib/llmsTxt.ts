@@ -60,11 +60,12 @@ import { rangoGrupo, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResu
 import { urlBlog } from "@/lib/blogDestinoMap";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
+import { NOCHES_TEXTO, REGRESO_TEXTO, VIAJE_RUTA } from "@/lib/viajeCdmx/config";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { fechaInicioTexto } from "@/lib/temporada";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { GOOGLE_RATING, GOOGLE_RESENAS, resenasTexto } from "@/lib/resenas";
-import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
+import { AUTOBUS_CDMX, CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
 // La MISMA función con que la ficha del tour decide la ciudad de recogida (ver
 // `salidaDeTour`). Vive en el componente y no en `tours.ts`; se importa de ahí
@@ -354,9 +355,12 @@ and ahead of the spring crowds, is ${fechaInicioTexto("en")} through December.`,
 const COMO_LLEGAR: Record<Locale, Bloque> = {
   es: {
     titulo: "Cómo llegar a Xilitla desde la Ciudad de México",
-    cuerpo: `- En autobús (lo más práctico para los paquetes): salida nocturna desde la Terminal Central del
-  Norte alrededor de las 10:15 PM (líneas Servicios Coordinados / ETN), llegada a Xilitla cerca de
-  las 6:30 AM. Tarifa aproximada $650 MXN por persona. Boletos: https://coordinados.conectagfa.com.mx/
+    cuerpo: `- Sin manejar ni organizar nada: nuestro viaje grupal de cada mes sale del Ángel de la
+  Independencia el viernes a la medianoche e incluye transporte redondo, ${NOCHES_TEXTO} de hotel en
+  Xilitla, desayunos, Las Pozas y la cascada de Tamul con guía; regresas ${REGRESO_TEXTO}: ${SITE}${VIAJE_RUTA}
+- En autobús (lo más práctico para los paquetes): salida nocturna desde la ${AUTOBUS_CDMX.terminal}
+  alrededor de las ${AUTOBUS_CDMX.hora} (líneas Servicios Coordinados / ETN), llegada a Xilitla cerca de
+  las ${AUTOBUS_CDMX.llega}. Tarifa aproximada $${AUTOBUS_CDMX.min}–$${AUTOBUS_CDMX.max} MXN por persona y trayecto. Boletos: https://coordinados.conectagfa.com.mx/
   Al llegar, un taxi de ~$60 MXN llega al Hotel Paraíso Encantado en unos 7 minutos.
 - Como llegas al amanecer, entregamos la habitación temprano para descansar y ese mismo día
   arranca el primer tour: el Día 1 del paquete NO se pierde.
@@ -678,6 +682,7 @@ ${full
 - [All destinations (${DESTINOS_DB.length} entries)](${SITE}/en/destinos)
 - [Book a tour (online booking engine)](${SITE}/en/reservar)
 - [Packages with accommodation](${SITE}/en/paquetes)
+- [Huasteca Potosina from Mexico City: monthly small-group trip](${SITE}/en/huasteca-potosina-from-mexico-city): leaves the Angel of Independence on Friday at midnight, back Monday 6 am; transport, a night in Xilitla, breakfasts, Las Pozas and Tamul; dates and price updated live
 - [Practical travel information](${SITE}/en/info-practica): airports, driving times, when to go, what to pack
 ${desde.join("\n")}
 - [About us](${SITE}/en/nosotros)
@@ -702,6 +707,7 @@ ${full
 - [Todos los destinos (${DESTINOS_DB.length} fichas)](${SITE}/destinos)
 - [Reservar un tour (motor de reservas)](${SITE}/reservar)
 - [Paquetes con hospedaje](${SITE}/paquetes)
+- [Viaje a la Huasteca Potosina desde CDMX](${SITE}${VIAJE_RUTA}): salida grupal mensual desde el Ángel de la Independencia, todo incluido (transporte, ${NOCHES_TEXTO} en Xilitla, desayunos, Las Pozas y Tamul); fechas, lugares y precio al día
 - [¿Xilitla o Ciudad Valles? Dónde hospedarte](${SITE}/xilitla-o-ciudad-valles): tiempos desde cada base y qué tours recogen en cada una
 - [Tours y paquetes en Xilitla](${SITE}/tours-en-xilitla)
 - [Tours con salida desde Ciudad Valles](${SITE}/tours-en-ciudad-valles)
@@ -815,11 +821,22 @@ manda la de aquí.`,
 }
 
 /**
+ * El viaje CDMX–Xilitla con sus fechas y su precio de hoy (16 oct 2026). Lo
+ * arma la ruta con `viajeParaLlms()` porque sale de la base; si la base falla,
+ * la ruta manda `null` y el archivo sale sin este bloque, nunca con una cifra
+ * vieja. Solo en español: el viaje solo se vende así.
+ */
+function bloqueViajeCdmx(texto: string | null | undefined, locale: Locale): Bloque | null {
+  if (!texto) return null;
+  return { titulo: locale === "en" ? "Monthly group trip from Mexico City" : "Viaje grupal mensual desde la Ciudad de México", cuerpo: texto };
+}
+
+/**
  * Versión concisa: /llms.txt y /en/llms.txt. Sigue llmstxt.org al pie (ver la
  * cabecera del archivo): toda la prosa en el preámbulo, sin encabezados, y
  * después solo secciones H2 de enlaces, un enlace por renglón.
  */
-export function buildLlmsTxt(locale: Locale = "es", blog: BlogLlms[] = []): string {
+export function buildLlmsTxt(locale: Locale = "es", blog: BlogLlms[] = [], viajeCdmx: string | null = null): string {
   const prosa = (b: Bloque | null) => (b ? bloque(b, false) : null);
   return (
     [
@@ -830,6 +847,7 @@ export function buildLlmsTxt(locale: Locale = "es", blog: BlogLlms[] = []): stri
       prosa(notaPaquetes(locale)),
       prosa(notaDestinos(locale)),
       prosa(notaBlog(blog, locale)),
+      prosa(bloqueViajeCdmx(viajeCdmx, locale)),
       prosa(COMO_LLEGAR[locale]),
       prosa(CERTIFICACIONES[locale]),
       prosa(GEOGRAFIA[locale]),
@@ -847,7 +865,7 @@ export function buildLlmsTxt(locale: Locale = "es", blog: BlogLlms[] = []): stri
 }
 
 /** Versión extensa: /llms-full.txt — cada tour con su descripción e incluye completos. */
-export function buildLlmsFullTxt(locale: Locale = "es", blog: BlogLlms[] = []): string {
+export function buildLlmsFullTxt(locale: Locale = "es", blog: BlogLlms[] = [], viajeCdmx: string | null = null): string {
   const en = locale === "en";
   const toursDetallados = TOURS_DB.map((base, i) => {
     const t = localizeTour(base, locale);
@@ -899,6 +917,7 @@ export function buildLlmsFullTxt(locale: Locale = "es", blog: BlogLlms[] = []): 
         ? `## TOURS IN DETAIL\n\n${toursDetallados.join("\n\n")}`
         : `## TOURS EN DETALLE\n\n${toursDetallados.join("\n\n")}`,
       seccionPaquetes(locale, true),
+      (() => { const b = bloqueViajeCdmx(viajeCdmx, locale); return b ? bloque(b, true) : null; })(),
       bloque(COMO_LLEGAR[locale], true),
       bloque(reserva(locale), true),
       seccionDestinos(locale, true),

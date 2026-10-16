@@ -611,9 +611,12 @@ export default async function HomePage() {
                     const desde = tarifaTraslado(ruta, 1);
                     return (
                       <li key={ruta.slug} className="flex items-baseline justify-between gap-3 text-sm font-dm border-b border-negro/8 pb-2">
-                        <span className="text-negro/70">From {ruta.ciudad}</span>
+                        {/* «From CDMX from $14,000 MXN» lo citaba un buscador con IA como el
+                            precio del TOUR desde la CDMX (16 oct 2026): cada renglón dice
+                            ahora que es un traslado privado y que se cobra por vehículo. */}
+                        <span className="text-negro/70">Private transfer, {ruta.ciudad} ↔ Xilitla</span>
                         <span className="text-verde-profundo font-medium tabular-nums">
-                          {desde ? `from $${desde.precio.toLocaleString("en-US")} MXN` : "on request"}
+                          {desde ? `from $${desde.precio.toLocaleString("en-US")} MXN per vehicle` : "on request"}
                         </span>
                       </li>
                     );

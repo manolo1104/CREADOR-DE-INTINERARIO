@@ -18,7 +18,8 @@ import { conSalidaBloqueada, ErrorViaje, libres, ocupacion } from "./cupo";
 import { montos, precioVigente, rangoCorto, seVende, type Montos } from "./precio";
 import {
   APARTADO_MIN, MAX_POR_APARTADO, OXXO_DIAS_FICHA, OXXO_HASTA_DIAS_ANTES_DEL_CORTE, OXXO_MAXIMO,
-  RENOVAR_MIN, ULTIMOS_LUGARES, VIAJE_NOMBRE, VIAJE_SLUG,
+  RENOVAR_MIN, ULTIMOS_LUGARES, VIAJE_NOMBRE, VIAJE_SLUG, COMPARTIR_VALIDO, CUARTO_VALIDO, precioCuarto,
+  type CompartirCon, type Cuarto,
 } from "./config";
 
 /** Cuántos apartados vivos puede tener una misma conexión, entre todas las salidas. */
@@ -31,9 +32,15 @@ export interface DatosApartado {
   email: string;
   telefono?: string | null;
   liderCodigo?: string | null;
-  /** El precio por persona que vio el cliente. Si ya no vale, 409. */
+  /** El precio por persona que vio el cliente (ya con su cuarto). Si ya no vale, 409. */
   precioVisto?: number | null;
   huella?: string | null;
+  /** Compartido ($ de la salida) o privado con cama king (+ `SUPLEMENTO_PRIVADO`). */
+  cuarto?: Cuarto | null;
+  /** Con quién comparte quien viaja solo en cuarto compartido. */
+  compartirCon?: CompartirCon | null;
+  /** El idioma de la página donde apartó. */
+  locale?: "es" | "en" | null;
 }
 
 export interface ApartadoCreado {
@@ -62,6 +69,12 @@ export async function apartarLugares(d: DatosApartado, ahora: Date = new Date())
   if (personas > MAX_POR_APARTADO) {
     throw new ErrorViaje(400, "grupo", `Para más de ${MAX_POR_APARTADO} personas escríbenos por WhatsApp: te armamos el grupo.`);
   }
+  const cuarto: Cuarto = CUARTO_VALIDO(d.cuarto) ? d.cuarto : "compartido";
+  const compartirCon: CompartirCon | null = cuarto === "compartido" && personas === 1 && COMPARTIR_VALIDO(d.compartirCon) ? d.compartirCon : null;
+  // Quien viaja solo en cuarto compartido dice con quién: sin eso no se le puede acomodar.
+  if (cuarto === "compartido" && personas === 1 && !compartirCon) {
+    throw new ErrorViaje(400, "compartir", "Dinos si compartes cuarto con mujeres o con hombres.");
+  }
 
   if (d.huella) {
     const vivos = await prisma.apartadoSalida.count({
@@ -88,7 +101,7 @@ export async function apartarLugares(d: DatosApartado, ahora: Date = new Date())
         { disponibles: quedan, enPago: o.enPago });
     }
 
-    const unitario = precioVigente(salida, ahora);
+    const unitario = precioCuarto(precioVigente(salida, ahora), cuarto);
     if (d.precioVisto != null && Number(d.precioVisto) !== unitario) {
       throw new ErrorViaje(409, "precio-cambio",
         `El precio de esta fecha cambió a $${unitario.toLocaleString("es-MX")} por persona.`,
@@ -109,6 +122,9 @@ export async function apartarLugares(d: DatosApartado, ahora: Date = new Date())
         liderCodigo:    d.liderCodigo ? String(d.liderCodigo).trim().toUpperCase().slice(0, 20) : null,
         expiraEl:       new Date(ahora.getTime() + APARTADO_MIN * 60_000),
         huella:         d.huella ?? null,
+        cuarto,
+        compartirCon,
+        locale:         d.locale === "en" ? "en" : "es",
       },
     });
 
@@ -144,7 +160,7 @@ export async function crearCobroDelApartado(c: ApartadoCreado, ctx: ContextoCobr
   const base = {
     amount:        m.anticipo * 100,
     currency:      "mxn",
-    description:   `${VIAJE_NOMBRE} · ${fechas} · ${m.personas} persona${m.personas === 1 ? "" : "s"} · anticipo`,
+    description:   `${VIAJE_NOMBRE} · ${fechas} · ${m.personas} persona${m.personas === 1 ? "" : "s"}${apartado.cuarto === "privado" ? " · cuarto privado" : ""} · anticipo`,
     receipt_email: apartado.email,
     metadata: {
       // `source` + `tourId` hacen que la conciliación de pagos lo vea como de
@@ -166,7 +182,9 @@ export async function crearCobroDelApartado(c: ApartadoCreado, ctx: ContextoCobr
       customerEmail:  apartado.email,
       customerPhone:  apartado.telefono ?? "",
       liderCodigo:    apartado.liderCodigo ?? "",
-      locale:         "es",
+      cuarto:         apartado.cuarto ?? "compartido",
+      compartirCon:   apartado.compartirCon ?? "",
+      locale:         apartado.locale ?? "es",
       sid:            ctx.sid ? String(ctx.sid).slice(0, 80) : "",
       gaClientId:     ctx.gaClientId ? String(ctx.gaClientId).slice(0, 80) : "",
     },

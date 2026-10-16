@@ -98,6 +98,10 @@ const nextConfig = {
       // lugar lo toma la salida mensual. Conserva lo que traía de Google.
       { source: "/viaje-septiembre",             destination: "/viaje-cdmx-xilitla",          permanent: true },
       { source: "/en/viaje-septiembre",          destination: "/viaje-cdmx-xilitla",          permanent: true },
+      // La dirección corta del cartel de grupos de Facebook y WhatsApp (16 oct
+      // 2026): se dicta y se teclea fácil, y deja en GA4 de dónde vino la visita.
+      // Temporal a propósito: la página que cuenta para Google es la del viaje.
+      { source: "/cdmx", destination: "/viaje-cdmx-xilitla?utm_source=cartel&utm_medium=grupos&utm_campaign=viaje-cdmx", permanent: false },
       { source: "/paquetes/completo",            destination: "/paquetes/gran-huasteca",      permanent: true },
       { source: "/en/paquetes/completo",         destination: "/en/paquetes/gran-huasteca",   permanent: true },
       { source: "/paquetes/familiar",            destination: "/paquetes/gran-huasteca",      permanent: true },

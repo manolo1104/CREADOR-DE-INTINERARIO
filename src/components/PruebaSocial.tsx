@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { AvatarResena } from "@/components/AvatarResena";
 import Link from "next/link";
 import { Star, Quote } from "lucide-react";
 import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_PERFIL_URL } from "@/lib/resenas";
@@ -85,14 +86,10 @@ export function PruebaSocial({ locale, fotos }: { locale: Locale; fotos: FotoVia
                   &ldquo;{r.texto}&rdquo;
                 </blockquote>
                 <div className="mt-auto flex items-center gap-3">
-                  {/* Sin foto de archivo: la inicial. Nadie firma con la cara
+                  {/* La foto de perfil que el autor tiene en Google, o su
+                      inicial. Nunca una foto de archivo: nadie firma con la cara
                       de otro, que es como nacieron las reseñas falsas. */}
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-verde-selva/10 font-cormorant text-base text-verde-selva"
-                  >
-                    {r.autor.trim().charAt(0).toUpperCase()}
-                  </span>
+                  <AvatarResena autor={r.autor} foto={r.foto} className="h-9 w-9" />
                   <div>
                     <p className="font-dm text-sm font-medium text-negro/80">{r.autor}</p>
                     <p className="font-dm text-[11px] text-negro/40">

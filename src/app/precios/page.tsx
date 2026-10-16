@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { headers } from "next/headers";
 import { TOURS_DB, tourDurRange, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, esPorPersona, partesRecogida } from "@/lib/tours";
 import { excepcionesSalida } from "@/lib/recogidaTexto";
@@ -738,6 +739,17 @@ export default function PreciosPage() {
           </p>
         </div>
       </section>
+
+      {/* El viaje desde la CDMX con transporte: /precios ya sale en «cuánto cuesta ir desde cdmx». */}
+      {locale === "es" && (
+        <div className="px-6 pb-20">
+          <TarjetaViajeCdmx
+            origen="precios"
+            titulo="¿Sales de la CDMX? Un solo precio con transporte y hotel"
+            className="max-w-5xl mx-auto"
+          />
+        </div>
+      )}
 
       {/* ── QUÉ INCLUYE ── */}
       <section className="px-6 pb-20">

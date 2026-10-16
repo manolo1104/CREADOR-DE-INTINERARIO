@@ -1,11 +1,12 @@
 import { ImageResponse } from "next/og";
+import { DESAYUNOS, NOCHES_TEXTO } from "@/lib/viajeCdmx/config";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
 // La tarjeta para compartir y para los anuncios. 🔴 Sin precio ni lugares:
 // Facebook guarda la imagen días, y una cifra vieja ahí sería urgencia falsa.
 export const runtime = "nodejs";
-export const alt = "Viaje a Xilitla desde CDMX: salida grupal cada mes";
+export const alt = "Viaje a la Huasteca Potosina desde CDMX: salida grupal cada mes a Xilitla";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -26,10 +27,10 @@ export default async function Image() {
             Xilitla desde CDMX
           </h1>
           <h2 style={{ color: "#c4882a", fontSize: 36, fontStyle: "italic", fontWeight: 300, margin: "0 0 34px", fontFamily: "serif" }}>
-            Todo incluido · 3 días
+            Todo incluido · fin de semana
           </h2>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {["Transporte redondo", "2 noches de hotel", "3 desayunos", "Tamul y Las Pozas"].map((t) => (
+            {["Transporte redondo", `${NOCHES_TEXTO} de hotel`, `${DESAYUNOS} desayunos`, "Tamul y Las Pozas"].map((t) => (
               <span key={t} style={{ border: "1px solid rgba(244,237,216,0.35)", color: "rgba(244,237,216,0.9)", fontSize: 18, padding: "8px 18px", fontFamily: "sans-serif" }}>
                 {t}
               </span>

@@ -45,10 +45,67 @@ export interface ResenaReal {
   estrellas: number;
   /** Qué recorrido menciona, si lo menciona. Solo para el pie de la cita. */
   recorrido?: string;
+  /**
+   * La foto de perfil que el propio autor tiene en Google (lh3.googleusercontent),
+   * tal cual la enseña Google junto a su reseña. Se enlaza, no se copia al repo
+   * (es público); si un día deja de cargar, sale la inicial (`AvatarResena`).
+   */
+  foto?: string;
 }
 
 /**
- * Vacío hasta que Manolo pase las del perfil. El bloque de prueba social sabe
- * esconder las citas cuando esto está vacío.
+ * 🟢 Copiadas del perfil de Google el 16 oct 2026 (Google Maps → Huasteca
+ * Potosina Tours → Opiniones), literales, con la ortografía de quien las
+ * escribió. Google enseña fechas relativas («hace 5 años»): aquí van como mes y
+ * año para las recientes y como año para las viejas, contadas desde ese día.
+ *
+ * Por qué estas seis: son las de 5 estrellas que hablan del SERVICIO (guías,
+ * atención, logística). Las dos primeras son las únicas recientes con texto; la
+ * mayoría del perfil es de 2019. Se dejó fuera la del propio Manolo (2018): una
+ * reseña del dueño a su negocio no es prueba de nada.
  */
-export const RESENAS_REALES: ResenaReal[] = [];
+export const RESENAS_REALES: ResenaReal[] = [
+  {
+    autor: "jetsay martinez",
+    fecha: "Septiembre 2026",
+    texto: "Nos encantó, ya no tienes que preocuparte por nada ellos se encargan de todo. Muy amables y serviciales todos, incluso no encontrábamos taxi y nos llevaron a la terminal de autobuses. Nos prestaron habitación para cambiarnos, nos recomendaron buenos restaurantes. Y los paisajes de ensueño, las fotos no les hacen justicia. Sin duda volveremos.",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjUdyaV6bxlbiRo7iMhnNREKotBRt_5HPJ5UG-Z17U1ORVm1OuLZ",
+  },
+  {
+    autor: "Miguel Peres",
+    fecha: "Agosto 2026",
+    texto: "Muy buen servicio y exelente guía lo disfrute demaciado🌟…",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjUxQS25tcsLx7yOsu7xGwvqSZ1V3zguoQBk_3T6vprjatyMeW80",
+  },
+  {
+    autor: "Erika Martínez",
+    fecha: "2021",
+    texto: "Pronta respuesta, amabilidad y excelente servicio. Tanto quien atendió nuestra solicitud especial como Pedro, el guía que nos asignaron, fueron siempre amables y pacientes, además de brindarnos datos muy interesantes sobre los lugares que visitamos. Sin duda volveremos a contactarlos cuando tengamos la oportunidad.",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjUU1Uzw9o-arip0-mGOxRVR9d5c-PEdmcoD5Yi-mPLKrPDf3qBgFw",
+  },
+  {
+    autor: "Wendy Haro",
+    fecha: "2019",
+    texto: "Muy recomendable agencia, tomamos el tour del Jardín surrealista con ellos, y no hubo necesidad de hacer las largas filas para el ingreso al jardín, además de los chicos que nos acompañaron dan muy buenas explicaciones y reseñas del lugar, y muy amables.",
+    estrellas: 5,
+    recorrido: "Jardín Surrealista",
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjWpRdkJDJnwlj32iZFgiGv72H1StzV7BI9hsLRHdTyrSRb-rw",
+  },
+  {
+    autor: "Arturo García",
+    fecha: "2020",
+    texto: "Excelente servicio. Guías muy bien preparados y experimentados.",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjWIDJJxwWNr_gdXrK6Y8q3qzd4QZ4dh5bCF4tgtHvf8cAAI_oHc",
+  },
+  {
+    autor: "Patricia Alvarado",
+    fecha: "2019",
+    texto: "Es un lugar fantástico, hay mucho que ver muchos ríos, cascadas, lagunas y todo limpio es hermoso ver los lugares tan bien conservados, los guías capacitados y amables y todo es con un ambiente de cordialidad muy bien por su esfuerzo",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjW_tRx71H5gyEmNyn8vUa6nN8fdtV5vLxyCYa3yrguXHwaFRJrgxw",
+  },
+];

@@ -780,6 +780,12 @@ model ApartadoSalida {
   bookingId       String?
   /// Huella de la IP (hash), para el tope de apartados por persona.
   huella          String?
+  /// compartido | privado — el cuarto que eligió (16 oct 2026). Vacío = compartido.
+  cuarto          String?
+  /// mujeres | hombres — con quién comparte cuarto quien viaja solo en compartido.
+  compartirCon    String?
+  /// es | en — el idioma de la página donde apartó.
+  locale          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

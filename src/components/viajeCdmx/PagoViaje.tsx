@@ -10,8 +10,8 @@ import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-
 import { Lock } from "lucide-react";
 import { stripePromise, APARIENCIA_STRIPE } from "@/lib/stripeCliente";
 import { hayMsi } from "@/lib/stripeMsi";
-import { pesos } from "@/lib/viajeCdmx/precio";
-import { VIAJE_RUTA } from "@/lib/viajeCdmx/config";
+import { VIAJE_RUTA, type Locale } from "@/lib/viajeCdmx/config";
+import { textosViaje } from "./textos";
 import { FaltaPara } from "./FaltaPara";
 
 export interface CobroViaje {
@@ -39,20 +39,24 @@ interface Props {
   onResultado: (r: ResultadoPago) => void;
   /** Su lugar se lo llevó otro: hay que volver a elegir. */
   onPerdido: (mensaje: string) => void;
+  locale?: Locale;
 }
 
 export default function PagoViaje(props: Props) {
   return (
     <Elements
       stripe={stripePromise}
-      options={{ clientSecret: props.cobro.clientSecret, appearance: APARIENCIA_STRIPE, locale: "es" }}
+      options={{ clientSecret: props.cobro.clientSecret, appearance: APARIENCIA_STRIPE, locale: props.locale === "en" ? "en" : "es" }}
     >
       <Formulario {...props} />
     </Elements>
   );
 }
 
-function Formulario({ cobro, datos, onResultado, onPerdido }: Props) {
+function Formulario({ cobro, datos, onResultado, onPerdido, locale = "es" }: Props) {
+  const t = textosViaje(locale);
+  // En inglés, los mensajes del servidor (que vienen en español) se cambian por los nuestros.
+  const delServidor = (m: unknown) => (locale === "en" ? "" : typeof m === "string" ? m : "");
   const stripe = useStripe();
   const elements = useElements();
   const [enviando, setEnviando] = useState(false);
@@ -75,8 +79,8 @@ function Formulario({ cobro, datos, onResultado, onPerdido }: Props) {
     const rj = ren ? await ren.json().catch(() => ({})) : {};
     if (!ren || !ren.ok) {
       setEnviando(false);
-      if (ren && (ren.status === 409 || ren.status === 404)) return onPerdido(rj.error || "Tu apartado venció. Vuelve a elegir la fecha.");
-      return setError(rj.error || "No pudimos comprobar tu lugar. Revisa tu conexión e intenta de nuevo.");
+      if (ren && (ren.status === 409 || ren.status === 404)) return onPerdido(delServidor(rj.error) || t.apartadoVencio);
+      return setError(delServidor(rj.error) || t.noComprobar);
     }
     if (rj.expiraEl) setExpira(rj.expiraEl);
 
@@ -91,7 +95,7 @@ function Formulario({ cobro, datos, onResultado, onPerdido }: Props) {
     });
     if (err) {
       setEnviando(false);
-      return setError(err.message || "No se pudo completar el pago. Tu lugar sigue apartado: intenta de nuevo.");
+      return setError(err.message || t.pagoNoCompleto);
     }
 
     // 3) El servidor le pregunta a Stripe y arma la reserva.
@@ -102,17 +106,17 @@ function Formulario({ cobro, datos, onResultado, onPerdido }: Props) {
     }).catch(() => null);
     const cj = conf ? await conf.json().catch(() => ({})) : {};
     setEnviando(false);
-    if (conf?.status === 409) return onPerdido(cj.error);
+    if (conf?.status === 409) return onPerdido(delServidor(cj.error) || t.apartadoVencio);
     if (cj.estado === "pagado" || cj.estado === "oxxo" || cj.estado === "procesando") return onResultado(cj as ResultadoPago);
     // El pago pasó pero la confirmación no contestó: el webhook la arma igual.
     if (paymentIntent?.status === "succeeded") return onResultado({ estado: "procesando" });
-    setError("No pudimos confirmar tu pago. Si se te cobró, tu lugar está seguro: te llega el correo en unos minutos.");
+    setError(t.noConfirmar);
   }
 
   return (
     <form onSubmit={pagar} className="space-y-4">
       <p className="text-xs font-dm text-verde-profundo/70">
-        Tu lugar está apartado mientras pagas
+        {t.apartadoMientras}
         {" · "}
         <FaltaPara hasta={expira} className="text-verde-profundo font-medium" />
       </p>
@@ -125,12 +129,11 @@ function Formulario({ cobro, datos, onResultado, onPerdido }: Props) {
       />
       {conOxxo && (
         <p className="text-xs font-dm text-verde-profundo/60 leading-relaxed">
-          Con OXXO te damos una ficha para pagar en efectivo antes de que termine el día siguiente. Tu lugar queda apartado
-          hasta que OXXO confirme (hasta un día hábil).
+          {t.oxxoAviso}
         </p>
       )}
       {hayMsi(cobro.anticipo) && (
-        <p className="text-xs font-dm text-verde-profundo/60">Con tarjeta de crédito participante puedes pagar a 3, 6 o 9 meses.</p>
+        <p className="text-xs font-dm text-verde-profundo/60">{t.msi}</p>
       )}
       {error && <p className="text-sm font-dm text-terracota" role="alert">{error}</p>}
       <button
@@ -139,10 +142,10 @@ function Formulario({ cobro, datos, onResultado, onPerdido }: Props) {
         className="w-full min-h-[52px] bg-verde-profundo text-crema hover:bg-verde-selva disabled:opacity-60 text-[12px] tracking-[2px] uppercase font-dm inline-flex items-center justify-center gap-2 transition-colors"
       >
         <Lock className="w-4 h-4" aria-hidden="true" />
-        {enviando ? "Procesando…" : `Pagar anticipo · ${pesos(cobro.anticipo)}`}
+        {enviando ? t.procesando : t.pagarAnticipo(cobro.anticipo)}
       </button>
       <p className="text-[11px] font-dm text-verde-profundo/50 text-center">
-        Pago seguro con Stripe. Hoy pagas {pesos(cobro.anticipo)}; el resto ({pesos(cobro.saldo)}) antes de la salida.
+        {t.pagoSeguro(cobro.anticipo, cobro.saldo)}
       </p>
     </form>
   );

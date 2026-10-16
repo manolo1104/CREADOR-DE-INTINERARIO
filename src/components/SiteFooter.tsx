@@ -32,6 +32,8 @@ export function SiteFooter() {
     ? [
         { label: "Book a tour", href: lp("/reservar") },
         { label: "All-inclusive packages", href: lp("/paquetes") },
+        // The monthly trip from Mexico City, in English (16 oct 2026).
+        { label: "Weekend trip from Mexico City", href: "/en/huasteca-potosina-from-mexico-city" },
         { label: "Tours", href: lp("/tours") },
         { label: "Tour prices 2026", href: lp("/precios") },
         { label: "Compare tours and packages", href: lp("/comparar") },
@@ -51,6 +53,10 @@ export function SiteFooter() {
         { label: "Reservar un tour", href: "/reservar" },
         { label: "Tours en la Huasteca Potosina", href: "/tours" },
         { label: "Paquetes todo incluido con hotel", href: "/paquetes" },
+        // El viaje grupal de cada mes (16 oct 2026): sin esto solo lo enlazaban
+        // el inicio y /paquetes. El ancla es como lo busca la gente.
+        { label: "Viaje a la Huasteca desde CDMX", href: "/viaje-cdmx-xilitla" },
+        { label: "Cómo llegar desde CDMX", href: "/desde/cdmx" },
         { label: "Precios de los tours 2026", href: "/precios" },
         { label: "Comparar tours y paquetes", href: "/comparar" },
         // Escuelas, empresas y agencias: se cotizan aparte, no pasan por el
