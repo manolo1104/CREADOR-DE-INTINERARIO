@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
 import DestinosClient from "./DestinosClient";
@@ -96,6 +97,11 @@ export default function DestinosPage() {
             : `${n} destinos únicos en la Huasteca Potosina. Cascadas, pozas, cañones, arte y cultura ancestral en uno de los paisajes más diversos de México.`}
         </p>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): Las Pozas y Tamul, con transporte. */}
+      <div className="max-w-4xl mx-auto px-6 pb-12">
+        <TarjetaViajeCdmx origen={`destinos${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} />
+      </div>
 
       <DestinosClient />
     </main>

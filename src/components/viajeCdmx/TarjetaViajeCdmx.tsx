@@ -71,15 +71,22 @@ export function TarjetaViajeCdmx({
 }
 
 /**
- * En qué artículos del blog sale la tarjeta, y dónde. Arriba en los de cómo
- * llegar desde la CDMX (es la respuesta a lo que buscaron); a mitad en los de
- * planeación y en las guías de los lugares del itinerario, que son los que más
- * leen (en GA4, sep 2026: guía de lugar 4.5×, planeación 3× las vistas del resto).
- * Xantolo trae su propia salida a la venta y no se toca.
+ * En qué artículos del blog sale la tarjeta, y dónde (17 oct 2026: por lo que
+ * DICE el artículo, no solo por su dirección, para que los nuevos que hable de
+ * la CDMX o de viajes de varios días la traigan solos).
+ *
+ *  · Arriba: los que hablan de la CDMX o de cómo llegar (es la respuesta a lo
+ *    que buscaron).
+ *  · A mitad: los de planeación, paquetes, itinerarios o fines de semana, y las
+ *    guías de los lugares del itinerario (en GA4, sep 2026: guía de lugar 4.5×,
+ *    planeación 3× las vistas del resto).
+ *  · Xantolo trae su propia salida a la venta y no se toca.
  */
-export function tarjetaViajeEnBlog(slug: string): "arriba" | "medio" | null {
+export function tarjetaViajeEnBlog(slug: string, contenido = ""): "arriba" | "medio" | null {
   if (/xantolo/.test(slug)) return null;
-  if (/cdmx|como-llegar/.test(slug)) return "arriba";
+  const texto = contenido.replace(/<[^>]+>/g, " ");
+  if (/cdmx|como-llegar/.test(slug) || /\bCDMX\b|Ciudad de M[eé]xico|\bD\.?F\.?\b/i.test(texto)) return "arriba";
   if (/itinerario|cuanto-cuesta|presupuesto|guia-definitiva|mejor-epoca|mejor-temporada|en-octubre|las-pozas|boletos-las-pozas|tamul|huichihuayan|xilitla-en-pareja|hoteles-cerca-de-las-pozas|seguridad-xilitla/.test(slug)) return "medio";
+  if (/paquetes?\b|fin de semana|varios d[ií]as|\b[2-7] d[ií]as\b|\b[1-6] noches?\b|itinerario/i.test(texto)) return "medio";
   return null;
 }

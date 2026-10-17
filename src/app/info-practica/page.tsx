@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { waLink } from "@/lib/whatsapp";
 import Image from "next/image";
 import { Metadata } from "next";
@@ -367,6 +368,11 @@ export default function InfoPracticaPage() {
           </div>
         </div>
       </Section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <TarjetaViajeCdmx origen={`info-practica${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} titulo={locale === "en" ? "In Mexico City? The easiest way: our monthly trip with transport" : "¿Sales de la CDMX? La forma más fácil: el viaje del mes con transporte"} />
+      </div>
 
       {/* ── CUÁNDO VIAJAR ── */}
       <Section alterna id="cuando-viajar" Icon={Calendar} title={t.tituloCuandoViajar}>

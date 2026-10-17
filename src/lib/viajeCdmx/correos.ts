@@ -15,11 +15,12 @@ import {
   BASE, C, WA, barra, boton, bajoBoton, filaDato, filaMoney, nota, parrafo, shellCorreo, tabla, titulo,
 } from "@/lib/emailLayout";
 import { diaMX, fechaLarga, fechaLargaEn, pesos, pesosEn, rangoLargo, rangoLargoEn, saldoVence } from "./precio";
+import type { SalidaVista } from "./salidas";
 import {
-  ANTICIPO_PCT, CAMBIO_SOLO_DIAS_ANTES, CUARTOS, HORA_CITA, HORA_SALIDA, INCLUYE, LIDER_PERSONAS, PUNTO_SALIDA, QUE_LLEVAR, VIAJE_NOMBRE,
-  VIAJE_RUTA, mensajeWhatsApp, type Cuarto,
+  ANTICIPO_PCT, CAMBIO_SOLO_DIAS_ANTES, CORTE_DIAS_ANTES, CUARTOS, HORA_CITA, HORA_SALIDA, INCLUYE, LIDER_PERSONAS, PUNTO_SALIDA, QUE_LLEVAR,
+  SUPLEMENTO_PRIVADO, VIAJE_NOMBRE, VIAJE_RUTA, mensajeWhatsApp, type Cuarto,
 } from "./config";
-import { INCLUYE_EN, QUE_LLEVAR_EN, VIAJE_NOMBRE_EN, mensajeWhatsAppEn } from "./en";
+import { INCLUYE_EN, QUE_LLEVAR_EN, VIAJE_NOMBRE_EN, VIAJE_RUTA_EN, mensajeWhatsAppEn } from "./en";
 import { metaDe } from "@/lib/admin/reserva";
 
 const URL_VIAJE = `${BASE}${VIAJE_RUTA}`;
@@ -182,6 +183,65 @@ export async function correoListaEspera(e: ListaEspera, s: SalidaGrupal, disponi
     subject: `Hay lugar · ${VIAJE_NOMBRE} · ${fechas}`,
     htmlContent: shellCorreo({ locale: "es", preheader: "Te avisamos porque estás en la lista de espera", eyebrow: VIAJE_NOMBRE, h1a: "Hay lugar", entradilla: fechas, cuerpo, paraBaja: e.email, origen: "Te llega porque te anotaste en la lista de espera del viaje." }),
     textContent: `Hay ${disponibles} lugar(es) en el ${VIAJE_NOMBRE} del ${fechas}. Aparta aquí: ${URL_VIAJE}?fecha=${s.fechaSalida}`,
+  });
+  return true;
+}
+
+/**
+ * La información del viaje, al momento, para quien dejó su correo en el popup
+ * (17 oct 2026): las fechas abiertas con sus lugares, el precio por cuarto, lo
+ * que incluye y el botón a la página. Es publicidad que pidió: lleva baja.
+ */
+export async function correoInfoViaje(email: string, locale: "es" | "en", salidas: SalidaVista[]): Promise<boolean> {
+  if (await estaDeBaja(email)) return false;
+  const en = locale === "en";
+  const $ = en ? pesosEn : pesos;
+  const rango = (x: SalidaVista) => (en ? rangoLargoEn(x.fechaSalida, x.fechaRegreso) : rangoLargo(x.fechaSalida, x.fechaRegreso));
+  const abiertas = salidas.filter((x) => x.estado === "preventa" || x.estado === "disponible" || x.estado === "ultimos").slice(0, 3);
+  const desde = abiertas.length ? Math.min(...abiertas.map((x) => x.precioVigente)) : null;
+  const base = en ? `${BASE}${VIAJE_RUTA_EN}` : URL_VIAJE;
+  const liga = `${base}?utm_source=popup&utm_medium=email&utm_campaign=viaje-cdmx#fechas`;
+  const waTexto = en ? mensajeWhatsAppEn() : mensajeWhatsApp();
+
+  const cuerpo = [
+    titulo(en ? "Here's the Mexico City trip." : "Aquí está el viaje desde la CDMX."),
+    parrafo(en
+      ? "Leave the Angel of Independence on Friday at midnight, wake up in Xilitla, and be back at the Angel on Monday at 6:00 am, in time for work."
+      : "Sales del Ángel de la Independencia el viernes a la medianoche, despiertas en Xilitla y estás de vuelta en el Ángel el lunes a las 6:00 am, a tiempo para trabajar."),
+    abiertas.length
+      ? barra(en ? "Next dates" : "Próximas salidas") + tabla(abiertas.map((x, i) => filaDato(rango(x), en ? `${x.disponibles} of ${x.capacidad} spots left` : `Quedan ${x.disponibles} de ${x.capacidad} lugares`, i === 0)).join(""))
+      : "",
+    desde != null
+      ? barra(en ? "Price per person" : "Precio por persona") + tabla([
+          filaDato(CUARTOS.compartido[en ? "en" : "es"].titulo, $(desde), true),
+          filaDato(CUARTOS.privado[en ? "en" : "es"].titulo, $(desde + SUPLEMENTO_PRIVADO)),
+        ].join("")) + nota(en ? `You book with ${ANTICIPO_PCT}% and pay the rest ${CORTE_DIAS_ANTES} days before departure.` : `Apartas con el ${ANTICIPO_PCT} % y pagas el resto ${CORTE_DIAS_ANTES} días antes de salir.`)
+      : "",
+    barra(en ? "What's included" : "Qué incluye"),
+    parrafo((en ? INCLUYE_EN : INCLUYE).map((x) => `✓ ${escapeHtml(x)}`).join("<br>"), "18px 0 0 0"),
+    boton(liga, en ? "See dates and book" : "Ver fechas y apartar", "dorado"),
+    boton(wa(waTexto), en ? "Ask on WhatsApp" : "Preguntar por WhatsApp", "whatsapp"),
+  ].join("");
+
+  await sendBrevoEmail({
+    to: [{ email }],
+    subject: en
+      ? `Huasteca Potosina from Mexico City${desde != null ? ` · from ${pesosEn(desde)}` : ""}`
+      : `Viaje a la Huasteca desde CDMX${desde != null ? ` · desde ${pesos(desde)}` : ""}`,
+    htmlContent: shellCorreo({
+      locale: en ? "en" : "es",
+      preheader: en ? "Dates, prices and what's included" : "Fechas, precios y lo que incluye",
+      eyebrow: en ? VIAJE_NOMBRE_EN : VIAJE_NOMBRE,
+      h1a: en ? "The Huasteca" : "La Huasteca",
+      h1b: en ? "from Mexico City" : "desde la CDMX",
+      entradilla: en ? "A weekend, all included" : "Un fin de semana, todo incluido",
+      cuerpo,
+      paraBaja: email,
+      origen: en ? "You get this because you asked for the trip details on our website." : "Te llega porque pediste la información del viaje en nuestra página.",
+    }),
+    textContent: (en ? "The Mexico City trip: " : "El viaje desde la CDMX: ") +
+      abiertas.map((x) => `${rango(x)} (${x.disponibles})`).join(", ") +
+      (desde != null ? (en ? `. From ${pesosEn(desde)} per person.` : `. Desde ${pesos(desde)} por persona.`) : ".") + ` ${liga}`,
   });
   return true;
 }

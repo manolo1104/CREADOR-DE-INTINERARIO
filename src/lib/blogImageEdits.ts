@@ -386,6 +386,32 @@ export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
     coverImageAlt:
       "Alberca turquesa rodeada de la arquitectura y la vegetación de Paraíso Encantado en Xilitla",
   },
+  // ── Lote 17-oct-2026 (Manolo: «cambiar las imágenes de los 3 últimos blogs») ──
+  // Los tres traían fotos de OTRO lugar (el agente reusa): Aquismón llevaba el
+  // hotel de portada y Tamul dentro; la Media Luna, Huichihuayán dentro; La
+  // Trinidad, Las Pozas de portada y la Media Luna dentro. Fotos de la página de
+  // destino de cada lugar (Trinidad, Media Luna) y dos de Manolo (Aquismón).
+  // Rutas ABSOLUTAS: estos posts no existen en la base local, la vista previa
+  // no aplica; se verifican en vivo tras el --aplicar.
+  "aquismon-pueblo-magico-que-ver-y-como-llegar-2026": {
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/blog/aquismon-pueblo-magico/hero.jpg",
+    coverImageAlt: "Las letras de colores de Aquismón, Pueblo Mágico, en la plaza principal, con el kiosco y la sierra al fondo",
+    contentReplace: [
+      { from: "<img src=\"https://www.huasteca-potosina.com/imagenes/cascada-de-tamul/gallery-1.jpg\" alt=\"que hacer en aquismon guía viaje Huasteca Potosina\" loading=\"lazy\" width=\"900\" height=\"500\" />", to: "<img src=\"https://www.huasteca-potosina.com/imagenes/blog/aquismon-pueblo-magico/imagen-2.jpg\" alt=\"Canoas sobre el agua turquesa del río Tampaón, entre cerros cubiertos de selva, en Aquismón, San Luis Potosí\" loading=\"lazy\" width=\"900\" height=\"500\" />" },
+      { from: "Vista desde la panga en tamul aquismon: el Río Tampaón desemboca en la base de la Cascada de Tamul, en pleno corazón de Aquismón Pueblo Mágico, San Luis Potosí.", to: "Canoas sobre el agua turquesa del río Tampaón, en Aquismón: es el río que se remonta para llegar a la cascada de Tamul." },
+    ],
+  },
+  // La portada (la laguna desde la orilla) estaba bien: solo cambia la foto de dentro.
+  "laguna-de-la-media-luna-manantiales-y-buceo-guia-2026": {
+    contentReplace: [{ from: "<img src=\"https://www.huasteca-potosina.com/imagenes/nacimiento-huichihuayan/gallery-1.jpg\" alt=\"laguna media luna rioverde aguas termales buceo Huasteca Potosina\" loading=\"lazy\" width=\"900\" height=\"500\" />", to: "<img src=\"https://www.huasteca-potosina.com/imagenes/blog/laguna-media-luna/imagen-2.jpg\" alt=\"Bañistas nadando junto al muelle de la Laguna de la Media Luna, de agua azul y transparente, en Rioverde, San Luis Potosí\" loading=\"lazy\" width=\"900\" height=\"500\" />" }],
+  },
+  // Portada = la neblina sobre la sierra (foto principal del destino, recortada a 16:9);
+  // dentro = el mar de nubes, que es lo que describe su pie de foto.
+  "la-trinidad-el-bosque-de-niebla-de-xilitla-guia-2026": {
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/blog/la-trinidad-bosque-de-niebla/hero.jpg",
+    coverImageAlt: "La neblina cubre la sierra y un sótano de paredes de roca en La Trinidad, el bosque de niebla de Xilitla",
+    contentReplace: [{ from: "<img src=\"https://www.huasteca-potosina.com/imagenes/laguna-media-luna/gallery-1.avif\" alt=\"la trinidad xilitla bosque de niebla mar de nubes guía viaje Huasteca Potosina\" loading=\"lazy\" width=\"900\" height=\"500\" />", to: "<img src=\"https://www.huasteca-potosina.com/imagenes/blog/la-trinidad-bosque-de-niebla/imagen-2.jpg\" alt=\"Un fotógrafo frente al mar de nubes en La Trinidad, el bosque de niebla de Xilitla, con el cielo despejado arriba\" loading=\"lazy\" width=\"900\" height=\"500\" />" }],
+  },
 };
 
 /**

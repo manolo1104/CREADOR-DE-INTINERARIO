@@ -552,7 +552,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     .map((s) => TOURS_DB.find((t) => t.slug === s))
     .filter((t): t is (typeof TOURS_DB)[number] => Boolean(t));
   const relevantTour = toursFijados[0] ?? inferTour(post.tags, post.focusKeyword);
-  const tarjetaViaje = tarjetaViajeEnBlog(post.slug);
+  const tarjetaViaje = tarjetaViajeEnBlog(post.slug, post.content);
   const promoPost  = isPromocional(post.tags, post.title);
   const ofertas    = ofertasDeBlog(post.slug);
   const seccion    = seccionDe(post);

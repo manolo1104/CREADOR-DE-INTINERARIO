@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
+import { ALTO_BANDA_VIAJE } from "@/lib/viajeCdmx/config";
 import { resenasTexto, GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 import { headers } from "next/headers";
 import Image from "next/image";
@@ -981,7 +982,7 @@ export default function TourDetailPage({ params }: Props) {
             de la pantalla en vez de bajar a la segunda línea. */}
         {/* Debajo del menú REAL: con la banda del río el menú mide ~108 px en
             teléfono y el `top-24` (96 px) dejaba los badges medio tapados. */}
-        <div className="absolute left-6 right-6 flex flex-wrap gap-2" style={{ top: "calc(var(--navbar-alto, 96px) + 12px)" }}>
+        <div className="absolute left-6 right-6 flex flex-wrap gap-2" style={{ top: `calc(var(--navbar-alto, 126px) - ${ALTO_BANDA_VIAJE}px + 12px)` }}>
           <span className="bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
             {tour.icon === "Instagram" && <IconoInstagram size={13} />}
             {tour.tipo}

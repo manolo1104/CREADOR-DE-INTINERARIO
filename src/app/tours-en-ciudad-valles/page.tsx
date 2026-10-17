@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import { TOURS_DB, tourDurTexto, etiquetaUnidad, fraseRecogida, partesRecogida, salidaCorta } from "@/lib/tours";
 import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
@@ -241,6 +242,11 @@ export default function ToursCiudadVallesPage() {
           </Link>
         </p>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <TarjetaViajeCdmx origen="tours-en-valles" titulo="¿Sales de la CDMX? Tamul va incluido en el viaje del mes" />
+      </div>
 
       {/* ── FAQ ── */}
       <section className="px-6 pb-20">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { GuiaHeroMockup } from "@/components/GuiaHeroMockup";
 import { GuiaGratisForm } from "@/components/GuiaGratisForm";
 import { resenasTexto } from "@/lib/resenas";
@@ -198,6 +199,11 @@ export default function GuiaPage() {
           ))}
         </div>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <TarjetaViajeCdmx origen="guia" titulo="¿Sales de la CDMX? Ve la Huasteca en un fin de semana, todo incluido" />
+      </div>
 
       {/* CTA final */}
       <section className="bg-verde-profundo/40 border-t border-white/6 px-6 py-20 text-center">

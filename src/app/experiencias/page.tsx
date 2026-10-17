@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
@@ -222,6 +223,11 @@ export default function ExperienciasPage() {
         </Link>
         </div>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <TarjetaViajeCdmx origen={`experiencias${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} />
+      </div>
 
       {/* ── FAQ ── */}
       <section className="py-16 px-6 border-t border-white/6">

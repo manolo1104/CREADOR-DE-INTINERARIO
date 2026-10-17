@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
@@ -109,6 +110,9 @@ export default function PreguntasFrecuentesPage() {
               </section>
             ))}
           </div>
+
+          {/* El viaje de cada mes desde la CDMX (17 oct 2026). */}
+          <TarjetaViajeCdmx origen={`preguntas-frecuentes${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} className="mt-16" />
 
           {/* CTA + links internos estratégicos */}
           <div className="mt-16 border border-verde-vivo/20 bg-verde-selva/10 p-8 text-center">

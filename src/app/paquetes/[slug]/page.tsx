@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
@@ -391,6 +392,11 @@ export default function PaqueteDetallePage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <TarjetaViajeCdmx origen={`paquete${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} titulo={locale === "en" ? "From Mexico City with just a weekend? There's a trip with transport included" : "¿Sales de la CDMX y solo tienes el fin de semana? Hay viaje con transporte incluido"} />
+      </div>
 
       {/* ── LOS RECORRIDOS QUE SE ELIGEN ──
           Sólo en el paquete a la carta. Es lo que de verdad se está comprando:

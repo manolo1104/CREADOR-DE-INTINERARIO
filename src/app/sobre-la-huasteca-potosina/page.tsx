@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import Image from "next/image";
 import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
@@ -246,6 +247,11 @@ export default function SobreLaHuastecaPage() {
           Guía completa de información práctica →
         </Link>
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <TarjetaViajeCdmx origen="sobre-la-huasteca" />
+      </div>
 
       {/* ── CTA TOURS ── */}
       <section className="bg-verde-profundo py-20 px-6 text-center">

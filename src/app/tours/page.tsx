@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { resenasTexto } from "@/lib/resenas";
 import Image from "next/image";
 import { Metadata } from "next";
@@ -662,6 +663,11 @@ export default function ToursPage() {
           </p>
         )}
       </section>
+
+      {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
+      <div className="max-w-5xl mx-auto px-6 pb-16">
+        <TarjetaViajeCdmx origen={`tours${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} titulo={locale === "en" ? "In Mexico City? Do Tamul and Las Pozas in one weekend, transport included" : "¿Sales de la CDMX? Haz Tamul y Las Pozas en un fin de semana, con transporte"} />
+      </div>
 
       {/* ── CÓMO FUNCIONA ── */}
       <section className="relative bg-verde-profundo/20 border-y border-white/6 py-20 px-6 overflow-hidden">
