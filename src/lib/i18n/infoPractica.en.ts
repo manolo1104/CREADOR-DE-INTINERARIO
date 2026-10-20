@@ -152,6 +152,12 @@ export interface InfoPracticaContent {
 
   // ── Hotel Paraíso ──
   paraisoIntroA: string;
+  /**
+   * Adónde enlaza el nombre del hotel en la intro de #hotel-paraiso (SEO-10,
+   * 19 oct 2026): su sitio, con www. El hotel no tiene versión en inglés de
+   * sus páginas interiores, solo de la portada (/en).
+   */
+  paraisoUrl: string;
   paraisoIntroB: string;
   paraisoFotoHeroAlt: string;
   paraisoFotoHabAlt: string;
@@ -480,6 +486,7 @@ const ES: InfoPracticaContent = {
   ],
 
   paraisoIntroA: "El ",
+  paraisoUrl: "https://www.paraisoencantado.com/",
   paraisoIntroB:
     " es nuestra casa, a pasos del Jardín Surrealista de Edward James. No hace falta hospedarte aquí para tomar un tour —en la mayoría de los recorridos pasamos por ti a donde te quedes, en Xilitla o en Ciudad Valles—, pero si te quedas con nosotros la logística es más simple y sales por la puerta.",
   paraisoFotoHeroAlt: "Hotel Paraíso Encantado Xilitla — fachada y jardines",
@@ -1101,6 +1108,7 @@ const EN: InfoPracticaContent = {
   ],
 
   paraisoIntroA: "",
+  paraisoUrl: "https://www.paraisoencantado.com/en",
   paraisoIntroB:
     " is our home, steps from Edward James's Surrealist Garden. You don't have to stay here to take a tour — on most tours we pick you up wherever you're staying, in Xilitla or Ciudad Valles — but if you stay with us the logistics are simpler and you set off straight from the door.",
   paraisoFotoHeroAlt: "Hotel Paraíso Encantado Xilitla — façade and gardens",

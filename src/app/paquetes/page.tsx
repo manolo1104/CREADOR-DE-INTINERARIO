@@ -46,7 +46,7 @@ export default function PaquetesPage() {
       // La operadora y el hotel: dos entidades distintas del mismo dueño. Los
       // paquetes son justo donde se juntan (tours de una, camas del otro).
       buildOrganizationNode(locale),
-      buildHotelNode(locale),
+      buildHotelNode(),
       {
         "@type": "BreadcrumbList",
         itemListElement: [

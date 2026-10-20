@@ -64,8 +64,20 @@ function claveTag(t: string): string {
 
 const tagsEspecificos = (tags: string[]) => tags.filter((t) => !TAGS_GENERICOS.has(claveTag(t)));
 
-/** Dominio dado de baja: el hotel vive en paraisoencantado.com. */
-const DOMINIO_MUERTO = /https?:\/\/(?:www\.)?paraisoencantadoxilitla\.lat/gi;
+/**
+ * El hotel vive en www.paraisoencantado.com. En la base sobreviven dos formas
+ * viejas de enlazarlo y las dos se llevan a la canónica, con www y barra: el
+ * dominio dado de baja (`paraisoencantadoxilitla.lat`) y el dominio a secas,
+ * que redirige (301) a www.
+ *
+ * 🔴 Hasta el 19 oct 2026 el dominio muerto se cambiaba por el dominio A
+ * SECAS: los tres enlaces del blog al hotel pasaban por una redirección
+ * (SEO-10). Ese dominio a secas lo escribía esta plantilla, no la base, así
+ * que un `contentReplace` de `blogSeo.ts` no lo habría encontrado.
+ */
+const DOMINIO_MUERTO =
+  /https?:\/\/(?:www\.)?paraisoencantadoxilitla\.lat(?![\w.-])\/?|https?:\/\/paraisoencantado\.com(?![\w.-])\/?/gi;
+const HOTEL_WWW = "https://www.paraisoencantado.com/";
 
 function mayusculaInicial(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -646,7 +658,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   // ── Content processing ───────────────────────────────────────────────────
   const contenidoBase = (post.content || "")
     .replace(RAILWAY_REGEX, SITE)
-    .replace(DOMINIO_MUERTO, "https://paraisoencantado.com")
+    .replace(DOMINIO_MUERTO, HOTEL_WWW)
     .replace(/href="\/planear[^"]*"/gi, `href="${SITE}/planear"`)
     .replace(ENLACE_BLOG_CON_ANIO, (_todo, dominio: string, slug: string, ancla?: string) =>
       `href="${dominio ? SITE : ""}${urlBlog(slug)}${ancla ?? ""}"`)

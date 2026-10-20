@@ -327,7 +327,7 @@ export default function PaqueteDetallePage({ params }: Props) {
       {/* El hotel donde duerme el paquete, como entidad propia: es lo que se
           está comprando junto con los tours, y tiene su propia presencia
           (sitio e Instagram) distinta de la de la operadora. */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", ...buildHotelNode(locale) }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", ...buildHotelNode() }) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(paqueteSchema) }} />
 
       {/* ── HERO ──

@@ -78,6 +78,40 @@ export interface Destino {
   };
 }
 
+/**
+ * 🔴 Cómo se entra HOY a Las Pozas (portada oficial laspozasxilitla.org.mx,
+ * leída el 19 oct 2026): POR AHORA NO HAY VENTA EN LÍNEA. El turno se reserva
+ * sin costo en el sistema oficial (hasta 60 días antes) y se paga SOLO en la
+ * taquilla de la entrada del jardín, el día de la visita, en efectivo o con
+ * tarjeta. La guía es obligatoria. Quien llega tarde pierde el turno.
+ *
+ * La página «Planea tu visita» del mismo sitio sigue enseñando el esquema de
+ * principios de 2026 ($170 en línea / $180 en taquilla): está vieja, y diez
+ * artículos del blog la habían copiado. Evidencia en
+ * ~/Documents/paraiso-medicion/seo-oct19/evidencia/las-pozas-boletos-19oct.md.
+ *
+ * Lo usan la ficha del jardín (abajo, y su traducción) y las correcciones del
+ * blog (`blogSeo.ts`): si el jardín cambia una tarifa o el horario, se cambia
+ * AQUÍ y todo lo demás lo sigue.
+ */
+export const POZAS_ACCESO = {
+  /** El sistema donde se reserva el turno (la portada oficial enlaza aquí). */
+  reservaUrl: "https://boletos.laspozasxilitla.org.mx/guest",
+  reservaHastaDias: 60,
+  /** MXN por adulto. */
+  adulto: 180,
+  /** MXN: niños de 6 a 12 años y adultos de 65 o más. Los menores de 6 no pagan. */
+  reducida: 120,
+  /** MXN por persona: guía obligatoria en español / en otro idioma. */
+  guiaEspanol: 30,
+  guiaOtroIdioma: 60,
+  abre: "9:00",
+  cierra: "18:00",
+  ultimoAcceso: "16:00",
+  /** Minutos antes del turno: si llegas tarde, lo pierdes. */
+  llegarAntesMin: 10,
+} as const;
+
 export const DESTINOS_DB: Destino[] = [
   // ─── DESTINOS ORIGINALES (8) ───────────────────────────────────────────────
   {
@@ -88,7 +122,10 @@ export const DESTINOS_DB: Destino[] = [
     ideal_para: ["fotografia", "pareja", "solo", "cultura"],
     horario: "09:00–18:00", dias_abierto: "Miércoles a Lunes (cerrado martes)",
     mejor_hora: "09:00–11:00", temporada_ideal: "Nov–Mar",
-    advertencias: "Comprar ticket digital antes. Cerrado martes.",
+    // 🔴 Decía «Comprar ticket digital antes»: no hay venta en línea (ver
+    // `POZAS_ACCESO`). Sin «efectivo» a propósito: `faqPrecioDestino`
+    // (jsonld.ts) lo lee como «solo efectivo», y la taquilla acepta tarjeta.
+    advertencias: "Reservar tu turno en línea (se paga en taquilla). Cerrado martes.",
     como_llegar: "1h 45min desde Valles · Taxi $1,200 · Bus $110",
     que_llevar: ["calzado antiderrapante", "repelente biodegradable"],
     datos_curiosos: ["Fue plantación de orquídeas", "Edward James nunca vivió en las estructuras"],
@@ -109,7 +146,15 @@ export const DESTINOS_DB: Destino[] = [
       metaDescription: "El jardín surrealista de Edward James en Xilitla: entrada $180 MXN, abre de miércoles a lunes 09:00–18:00 (cerrado martes). Cómo llegar desde Ciudad Valles, mejor hora y qué llevar.",
       keywords: ["las pozas xilitla", "jardín surrealista edward james", "las pozas precio", "las pozas horario", "qué hacer en xilitla"],
       faqPrincipales: [
-        { pregunta: "¿Qué días abre Las Pozas y cuánto cuesta?", respuesta: "Abre de miércoles a lunes de 09:00 a 18:00 y cierra los martes. La entrada cuesta $180 MXN. Conviene comprar el boleto digital antes de llegar." },
+        // 🔴 19 oct 2026: «Conviene comprar el boleto digital» era el esquema
+        // viejo. `blogSeo.ts` pega esta respuesta en «¿Cuánto cuesta la Huasteca?».
+        {
+          pregunta: "¿Qué días abre Las Pozas y cuánto cuesta?",
+          respuesta:
+            `Abre de miércoles a lunes de ${POZAS_ACCESO.abre} a ${POZAS_ACCESO.cierra}, con último acceso a las ${POZAS_ACCESO.ultimoAcceso}, y cierra los martes. ` +
+            `La entrada cuesta $${POZAS_ACCESO.adulto} MXN por adulto y $${POZAS_ACCESO.reducida} MXN para niños de 6 a 12 años y mayores de 65 (los menores de 6 no pagan), más la guía obligatoria: $${POZAS_ACCESO.guiaEspanol} MXN por persona en español. ` +
+            "Por ahora no hay venta en línea: reservas tu turno sin costo en el sistema oficial y pagas en la taquilla del jardín el día de tu visita.",
+        },
         { pregunta: "¿Cuánto tiempo se necesita para recorrer Las Pozas?", respuesta: "Unas 4 horas para recorrerlo con calma. La mejor hora para entrar es entre 09:00 y 11:00, cuando hay menos gente y mejor luz para fotos." },
         { pregunta: "¿Quién construyó Las Pozas?", respuesta: "El poeta británico Edward James, que levantó las estructuras de concreto entre cascadas y selva. El terreno antes era una plantación de orquídeas y él nunca vivió dentro de las estructuras." },
       ],

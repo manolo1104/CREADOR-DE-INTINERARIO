@@ -3,7 +3,7 @@
 // La `zona` (municipio) NO se traduce: es un nombre de lugar.
 
 import { conPrecio } from "../tours";
-import { PRECIO_TOUR_RAFTING } from "../destinos";
+import { PRECIO_TOUR_RAFTING, POZAS_ACCESO } from "../destinos";
 
 export interface FaqTranslation { pregunta: string; respuesta: string }
 
@@ -72,7 +72,10 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     dias_abierto: "Wednesday to Monday (closed Tuesdays)",
     mejor_hora: "09:00–11:00",
     temporada_ideal: "Nov–Mar",
-    advertencias: "Buy your digital ticket in advance. Closed Tuesdays.",
+    // 🔴 19 oct 2026: decía «Buy your digital ticket»; no hay venta en línea
+    // (ver `POZAS_ACCESO`). Sin «cash» a propósito: `faqPrecioDestino`
+    // (jsonld.ts) lo lee como «cash only», y la taquilla acepta tarjeta.
+    advertencias: "Reserve your time slot online (you pay at the ticket booth). Closed Tuesdays.",
     como_llegar: "1h 45min from Ciudad Valles · Taxi $1,200 MXN · Bus $110 MXN",
     que_llevar: ["non-slip footwear", "biodegradable insect repellent"],
     datos_curiosos: ["It was once an orchid plantation", "Edward James never lived in the structures"],
@@ -81,7 +84,10 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         faqPrincipales: [
           {
             pregunta: "What days is Las Pozas open and how much does it cost?",
-            respuesta: "It's open Wednesday to Monday from 09:00 to 18:00 and closed on Tuesdays. Admission is $180 MXN. It's worth buying your digital ticket before you arrive.",
+            respuesta:
+              `It's open Wednesday to Monday from ${POZAS_ACCESO.abre} to ${POZAS_ACCESO.cierra}, with last entry at ${POZAS_ACCESO.ultimoAcceso}, and closed on Tuesdays. ` +
+              `Admission is $${POZAS_ACCESO.adulto} MXN per adult and $${POZAS_ACCESO.reducida} MXN for children 6 to 12 and visitors over 65 (under-6s go free), plus the required guide: $${POZAS_ACCESO.guiaEspanol} MXN per person in Spanish or $${POZAS_ACCESO.guiaOtroIdioma} MXN in another language. ` +
+              "For now there is no online sale: you reserve your time slot for free in the official system and pay at the ticket booth at the garden entrance on the day of your visit.",
           },
           {
             pregunta: "How long do you need to tour Las Pozas?",

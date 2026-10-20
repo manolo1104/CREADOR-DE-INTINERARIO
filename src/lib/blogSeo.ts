@@ -42,7 +42,7 @@ import {
   promoVigente,
   type Tour,
 } from "@/lib/tours";
-import { DESTINOS_DB, type Destino } from "@/lib/destinos";
+import { DESTINOS_DB, POZAS_ACCESO, type Destino } from "@/lib/destinos";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { toursCercaDe } from "@/lib/tourMapping";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
@@ -166,6 +166,13 @@ function duracionMin(min: number): string {
   const m = min % 60;
   if (!h) return `${m} min`;
   return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+/** "16:00" → "4:00 p.m." · "9:00" → "9:00 a.m.": como escriben la hora los artículos. */
+function horaAmPm(h: string): string {
+  const [hh, mm] = h.split(":").map(Number);
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  return `${h12}:${String(mm).padStart(2, "0")} ${hh < 12 ? "a.m." : "p.m."}`;
 }
 
 /** 22.576111 → "22°35′N". */
@@ -369,26 +376,55 @@ const RANGO_TOURS =
 const D_COMALES    = destino("cascada-los-comales");
 const D_HUICHI     = destino("nacimiento-huichihuayan");
 
-/**
- * La respuesta de la ficha cuya pregunta encaja, sin depender del orden. Si
- * la pregunta se reescribe, en producción devuelve "" (ver `aviso`): quien la
- * use tiene que omitir su frase con un texto vacío, como `POZAS_REDUCIDA`.
- */
-function respuestaSobre(d: Destino, pregunta: RegExp): string {
-  const r = d.seo?.faqPrincipales?.find((f) => pregunta.test(f.pregunta))?.respuesta;
-  if (!r) aviso(`la ficha "${d.slug}" ya no tiene la pregunta ${pregunta}`);
-  return r ?? "";
-}
+// ── Las Pozas: cómo se entra HOY (SEO-10, 19 oct 2026) ───────────────────────
+//
+// 🔴 Diez artículos decían «$170 en línea / $180 en taquilla» (el esquema de
+// principios de 2026, que la página «Planea tu visita» del jardín todavía
+// enseña) y otros, lo contrario: «no existe taquilla física», «solo en línea».
+// La portada oficial dice que por ahora NO hay venta en línea: el turno se
+// reserva gratis y se paga en la taquilla el día de la visita. Varios decían
+// además que en las pozas se puede nadar: el reglamento lo prohíbe.
+// Las cifras salen de `POZAS_ACCESO` (destinos.ts), donde está la fuente.
+const PA = POZAS_ACCESO;
+/** «sistema oficial», enlazado al sistema donde se reserva el turno. */
+const POZAS_SISTEMA = `<a href="${PA.reservaUrl}" rel="noopener nofollow" target="_blank">sistema oficial</a>`;
+/** Cómo se entra, sin el aviso de que no hay venta en línea. */
+const POZAS_COMO =
+  `reservas tu turno sin costo en el ${POZAS_SISTEMA} (hasta ${PA.reservaHastaDias} días antes) ` +
+  "y pagas en la taquilla del jardín el día de tu visita, en efectivo o con tarjeta.";
+const POZAS_RESERVA = `Por ahora no hay venta en línea: ${POZAS_COMO}`;
+/** La misma, para seguir a una etiqueta con dos puntos («Reserva tu turno:»). */
+const POZAS_RESERVA_SIGUE = `por ahora no hay venta en línea, así que ${POZAS_COMO}`;
+const POZAS_PRECIOS =
+  `La entrada cuesta $${PA.adulto} por adulto y $${PA.reducida} para niños de 6 a 12 años y mayores de 65; los menores de 6 no pagan.`;
+const POZAS_GUIA = `La guía es obligatoria: $${PA.guiaEspanol} por persona en español y $${PA.guiaOtroIdioma} en otro idioma.`;
+const POZAS_HORARIO =
+  `Abre de miércoles a lunes de ${PA.abre} a ${PA.cierra}, con último acceso a las ${PA.ultimoAcceso}; cierra los martes.`;
+const POZAS_PUNTUAL = `Llega ${PA.llegarAntesMin} minutos antes: si llegas tarde, pierdes el turno.`;
+/** Para quien compara con otra página que todavía enseña el esquema viejo. */
+const POZAS_170 = "Si ves $170 en otras páginas: era el precio en línea de principios de 2026.";
+/** El párrafo entero, donde el artículo tenía su bloque de precio y boletos. */
+const POZAS_PARRAFO = [POZAS_RESERVA, POZAS_PRECIOS, POZAS_GUIA, POZAS_HORARIO, POZAS_PUNTUAL, POZAS_170].join(" ");
+/** Dónde se paga, para las menciones de paso. */
+const POZAS_SE_PAGA = "se paga en la taquilla del jardín el día de la visita, después de reservar el turno sin costo en el sistema oficial";
+const POZAS_NO_NADAR = "Las pozas del jardín son para verse: el reglamento prohíbe nadar y entrar con traje de baño.";
+// Antes salía de la ficha de Xilitla («adultos mayores con INAPAM»); el
+// jardín dice «adultos mayores (65+)», y la credencial INAPAM se da desde los 60.
+const POZAS_REDUCIDA_FRASE =
+  ` Los niños de 6 a 12 años y los adultos de 65 años o más pagan <strong>$${PA.reducida} MXN</strong>, y los menores de 6 años entran gratis.`;
 
-// "Adultos: $180 MXN. Niños 6–12 años y adultos mayores con INAPAM: $120 MXN.
-// Menores de 6 años: gratis. …" (la ficha de Xilitla). Si cambia de forma, la
-// frase de la tarifa reducida se omite en vez de inventarla.
-const POZAS_TARIFAS = respuestaSobre(D_XILITLA, /cuánto cuesta la entrada a las pozas/i);
-const POZAS_REDUCIDA = /INAPAM: (\$[\d,]+ MXN)/.exec(POZAS_TARIFAS)?.[1] ?? null;
-const POZAS_REDUCIDA_FRASE = POZAS_REDUCIDA
-  ? ` Los niños de 6 a 12 años y los adultos mayores con credencial INAPAM pagan <strong>${POZAS_REDUCIDA}</strong>` +
-    `${/menores de 6 años: gratis/i.test(POZAS_TARIFAS) ? ", y los menores de 6 años entran gratis" : ""}.`
-  : "";
+/**
+ * El hotel, con www y sin nofollow: los enlaces de SEO-10 (19 oct 2026). Cada
+ * uno con un ancla distinta. 🔴 Sin metros nuevos: el sitio dice 400 m, Google
+ * mide ~560 y nadie lo ha medido a pie.
+ */
+const HOTEL = "https://www.paraisoencantado.com";
+/** «Dónde dormir» para la guía del jardín; la ficha del lugar lleva el suyo, con otras anclas. */
+const POZAS_DONDE_DORMIR =
+  "<h3>Dónde dormir cerca de Las Pozas</h3>\n" +
+  "<p>Para tomar el primer turno sin manejar, duerme sobre el camino al jardín, que no tiene estacionamiento: " +
+  `el Hotel Paraíso Encantado está a unos minutos a pie de la entrada (<a href="${HOTEL}/hotel-cerca-de-las-pozas">hospedarte junto a Las Pozas</a>). ` +
+  `Si buscas otras opciones del pueblo, aquí están comparadas: <a href="${HOTEL}/hoteles-en-xilitla">los hoteles de Xilitla</a>.</p>`;
 
 // "Cuota local (~$20 MXN, confirmar en sitio)" no cabe a media frase.
 const COMALES_CUOTA = /~?\$[\d,]+ MXN/.exec(D_COMALES.precio_entrada)?.[0] ?? null;
@@ -436,11 +472,16 @@ const INICIO_CLARA    = fechaInicioTexto("es");                // "30 de octubre
 const MTY_AUTO = enAuto("monterrey", "valles") || null;
 
 const HOY = "2026-09-28";
+/**
+ * El día de las correcciones de Las Pozas (SEO-10). Los artículos que se
+ * tocaron ese día lo llevan en `actualizado` y en su «Última actualización».
+ */
+const HOY_POZAS = "2026-10-20";
 
 /** El "Última actualización: <mes>" del cuerpo, igual a la fecha de `actualizado`. */
-const alDia = (antes: string) => ({
+const alDia = (antes: string, hoy: string = HOY) => ({
   from: `<em>Última actualización: ${antes}.</em>`,
-  to: `<em>Última actualización: ${mesAnio(HOY)}.</em>`,
+  to: `<em>Última actualización: ${mesAnio(hoy)}.</em>`,
 });
 
 // ── Correcciones por artículo ─────────────────────────────────────────────────
@@ -685,8 +726,9 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           `No va en nuestros recorridos (la ${TAMUL.nombreCorto} cierra en el Sótano de las Huahuas), pero puedes <a href="/destinos/sotano-de-las-golondrinas">conocer más sobre este destino único</a>.</li>`,
       },
       {
+        // La fecha de `actualizado`: la línea de Las Pozas cambió el 19 oct 2026.
         from: "actualizadas a marzo de 2026,",
-        to: `actualizadas a ${mesAnio(HOY)},`,
+        to: `actualizadas a ${mesAnio(HOY_POZAS)},`,
       },
     ],
     faqs: [
@@ -729,7 +771,9 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       "itinerario-huasteca-potosina-3-dias-3-dias-en-la-huasteca-po",
       "mejor-epoca-para-visitar-la-huasteca-potosina",
     ],
-    actualizado: HOY,
+    // 19 oct 2026: su línea de Las Pozas es la ficha del jardín, que ese día
+    // dejó de recomendar «comprar el boleto digital» (SEO-10).
+    actualizado: HOY_POZAS,
   },
 
   // ── Nacimiento de Tambaque ─────────────────────────────────────────────────
@@ -1354,9 +1398,16 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           " En 2026, el <strong>94%</strong> de los viajeros encuestados calificó la <strong>calidad en el servicio</strong> como excelente o muy buena.",
         to: "",
       },
+      // SEO-10 (19 oct 2026): el enlace a su página gemela, las reseñas en el
+      // sitio del hotel. Y la «Última actualización» del cuerpo decía abril.
+      {
+        from: "para que puedas evaluar la <strong>calidad en el servicio</strong> antes de tomar una decisión.",
+        to: `para que puedas evaluar la <strong>calidad en el servicio</strong> antes de tomar una decisión. Si lo que buscas son las opiniones sobre el hospedaje, están en las <a href="${HOTEL}/reviews">reseñas del hotel</a>.`,
+      },
+      alDia("abril de 2026", HOY_POZAS),
     ],
     tours: [RAPPEL.slug, SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Itinerario de 3 días por la Huasteca ───────────────────────────────────
@@ -1403,7 +1454,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Los paquetes completos de 3 días y 2 noches en la Huasteca Potosina arrancan desde <strong>$8,890 MXN</strong> por persona en temporada alta.",
         to: `${mayusculaInicial(PAQ_CORTO_FRASE)}.`,
       },
-      alDia("mayo de 2026"),
+      alDia("mayo de 2026", HOY_POZAS),
       // 🔴 Temporada (7 oct 2026): decía «seca de noviembre a abril» y
       // «lluvias de mayo a octubre», con mayo en lluvias cuando es mes del
       // turquesa más intenso. Va con `temporada.ts`, como «Mejor época». El
@@ -1436,8 +1487,24 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "Xilitla se ubica a aproximadamente <strong>450 km</strong> y entre <strong>6 y 7 horas</strong> en automóvil",
         to: `Xilitla se ubica a aproximadamente <strong>450 km</strong> y unas <strong>${enAuto("cdmx")}</strong> en automóvil`,
       },
+      // 🔴 SEO-10 (19 oct 2026): «$200 para turistas y $120 para residentes».
+      // Son $180 por adulto y $120 de 6 a 12 años y mayores de 65; los vecinos
+      // de Xilitla entran gratis.
+      {
+        from:
+          "El acceso a Las Pozas en 2026 cuesta <strong>$200 MXN</strong> para turistas no residentes y <strong>$120 MXN</strong> para residentes.",
+        to:
+          `El acceso a Las Pozas en 2026 cuesta <strong>$${PA.adulto} MXN</strong> por adulto y <strong>$${PA.reducida} MXN</strong> para niños de 6 a 12 años y mayores de 65; ` +
+          `los vecinos de Xilitla entran gratis con su INE. ${mayusculaInicial(POZAS_SE_PAGA)}.`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "El acceso a Las Pozas cuesta <strong>$200 MXN</strong> para turistas no residentes y <strong>$120 MXN</strong> para residentes en 2026.",
+        to: POZAS_PARRAFO,
+      },
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Equipaje para la selva ─────────────────────────────────────────────────
@@ -1449,9 +1516,23 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Los paquetes de agencia local que incluyen <strong>3 o 4 atractivos por día</strong> tienen un costo de entre <strong>$450 y $850 MXN por persona</strong> en <strong>2026</strong>, mientras que los paquetes de <strong>3 días y 2 noches</strong> parten desde <strong>$8,890 MXN</strong> por persona.",
         to: `${mayusculaInicial(RANGO_TOURS)}, y ${PAQ_CORTO_FRASE}.`,
       },
-      alDia("mayo de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): Las Pozas a «$200 para turistas». Son $180 por
+      // adulto, más la guía obligatoria.
+      {
+        from: "el acceso en <strong>2026</strong> cuesta <strong>$200 MXN</strong> para turistas no residentes, y el recorrido",
+        to: `el acceso en <strong>2026</strong> cuesta <strong>$${PA.adulto} MXN</strong> por adulto, que se pagan en la taquilla del jardín, y el recorrido`,
+      },
+      {
+        from: "hasta <strong>$200 MXN</strong> (Las Pozas de Xilitla).",
+        to: `hasta <strong>$${PA.adulto} MXN</strong> (Las Pozas de Xilitla, más <strong>$${PA.guiaEspanol} MXN</strong> de guía obligatoria).`,
+      },
+      {
+        from: "Las Pozas de Xilitla <strong>$200 MXN</strong> para turistas",
+        to: `Las Pozas de Xilitla <strong>$${PA.adulto} MXN</strong> por adulto`,
+      },
+      alDia("mayo de 2026", HOY_POZAS),
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Huasteca con niños ─────────────────────────────────────────────────────
@@ -1475,8 +1556,15 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           `Los recorridos de un día que se cobran por persona van de ${dinero(PP_MIN)} a ${dinero(PP_MAX)} por adulto; ${NINOS_FRASE}. ` +
           `Los paquetes con hotel en Xilitla van de ${dinero(precioVisible(PAQ_MIN))} a ${dinero(precioVisible(PAQ_MAX))} ${PAQ_UNIDAD}, y para familias armamos la cotización a su medida.`,
       },
+      // 🔴 SEO-10 (19 oct 2026): el jardín de Edward James «a $100 por persona».
+      {
+        from: "en Xilitla cuesta <strong>$100 pesos por persona</strong> y combina arte surrealista con naturaleza.",
+        to:
+          `en Xilitla cuesta <strong>$${PA.adulto} pesos por adulto</strong> y <strong>$${PA.reducida}</strong> de 6 a 12 años (los menores de 6 no pagan), más la guía obligatoria; ` +
+          `${POZAS_SE_PAGA}. Combina arte surrealista con naturaleza.`,
+      },
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Xilitla con niños ──────────────────────────────────────────────────────
@@ -1505,8 +1593,38 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Los paquetes de <strong>5 días desde Ciudad Valles</strong> incluyen alojamiento en hoteles familiares, desayunos, excursiones y entradas en un solo precio.",
         to: `Nuestros paquetes con hotel en Xilitla, ${PAQ_DIAS_RANGO}, van ${PAQ_RANGO}; para familias armamos la cotización a su medida.`,
       },
+      // 🔴 SEO-10 (19 oct 2026): que el jardín «admite niños desde los 6 años»
+      // (los menores de 6 entran gratis), los precios «vía web» y el «horario
+      // del ticket, sin reembolso»: no hay venta en línea (ver `POZAS_ACCESO`).
+      {
+        from:
+          "Un dato clave: el Jardín Escultórico Edward James (Las Pozas) admite niños desde los <strong>6 años</strong> en grupos con guía, y el acceso en taquilla cuesta <strong>$120 pesos</strong> para menores entre 6 y 12 años.",
+        to: `Un dato clave: en el Jardín Escultórico Edward James (Las Pozas) los menores de 6 años no pagan entrada, y los niños de 6 a 12 años pagan <strong>$${PA.reducida} pesos</strong> en la taquilla.`,
+      },
+      {
+        from:
+          "El acceso tiene un costo de <strong>$180 pesos por adulto</strong> y <strong>$120 pesos para niños de 6 a 12 años</strong> en taquilla (vía web: <strong>$170</strong> y <strong>$115</strong> respectivamente).",
+        to: `El acceso tiene un costo de <strong>$${PA.adulto} pesos por adulto</strong> y <strong>$${PA.reducida} pesos para niños de 6 a 12 años</strong>; los menores de 6 no pagan. ${POZAS_RESERVA}`,
+      },
+      {
+        from:
+          "<strong>Respeta el horario del boleto:</strong> En Las Pozas el acceso se niega si no se cumple el horario indicado en el ticket, <strong>sin reembolso</strong>.",
+        to: "<strong>Respeta el horario de tu turno:</strong> en Las Pozas, si llegas tarde, pierdes el turno.",
+      },
+      {
+        from:
+          "<strong>Compra en línea para ahorrar:</strong> La entrada vía web cuesta <strong>$170 adultos / $115 niños</strong>, es decir, <strong>$10 pesos menos por persona</strong> respecto a taquilla.",
+        to: `<strong>Reserva tu turno en línea:</strong> la reservación en el sistema oficial no cuesta y la entrada se paga en la taquilla el día de la visita. ${POZAS_170}`,
+      },
+      { from: "para los pasos de compra anticipada.", to: "para los pasos de la reservación." },
+      {
+        // Va dentro del FAQPage («¿Desde qué edad pueden entrar los niños?»).
+        from:
+          "<p>Los niños pueden ingresar al Jardín Escultórico Edward James (Las Pozas) desde los <strong>6 años</strong>. El precio de entrada para menores de 6 a 12 años en 2026 es de <strong>$115 pesos vía web</strong> y <strong>$120 pesos en taquilla</strong>. Menores de 6 años no tienen tarifa diferenciada publicada oficialmente.</p>",
+        to: `<p>No hay que esperar a los 6 años: los menores de 6 entran sin costo y los niños de 6 a 12 pagan <strong>$${PA.reducida} pesos</strong> en 2026. La entrada ${POZAS_SE_PAGA}.</p>`,
+      },
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Tamtoc ─────────────────────────────────────────────────────────────────
@@ -1572,16 +1690,74 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "También puedes contratar una excursión organizada desde <strong>$1,532 MXN por persona</strong> con transporte y acceso incluidos.",
         to: `También puedes ir con nosotros: ${SURREALISTA_FRASE}.`,
       },
-      alDia("mayo de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): decía que los boletos se venden «únicamente en
+      // línea» o en el museo, que «no existe taquilla física» y que la guía
+      // cuesta «$250 por grupo». El jardín dice lo contrario (ver
+      // `POZAS_ACCESO`); el «60 % menos filas» tampoco sale de ningún dato.
+      {
+        // Sin pago por adelantado no hay «reembolso» que perder: se pierde el turno.
+        from: "puede significar perder el acceso sin reembolso, así que conviene leer esto antes de salir.",
+        to: "puede significar quedarte sin turno, así que conviene leer esto antes de salir.",
+      },
+      {
+        from:
+          "cuyo costo es de <strong>$30 MXN por persona</strong> o <strong>$250 MXN</strong> para grupos de hasta <strong>10 personas</strong>, con una duración de <strong>hora y media</strong>.",
+        to: `cuyo costo es de <strong>$${PA.guiaEspanol} MXN por persona</strong> en español o <strong>$${PA.guiaOtroIdioma} MXN</strong> en otro idioma, con una duración de <strong>hora y media</strong>.`,
+      },
+      {
+        from:
+          "El jardín abre de <strong>9:00 a.m. a 6:00 p.m.</strong> de miércoles a lunes. Los <strong>martes permanece cerrado</strong>.",
+        // Sin punto tras la hora: «p.m.» ya lo trae.
+        to: `El jardín abre de <strong>${horaAmPm(PA.abre)} a ${horaAmPm(PA.cierra)}</strong> de miércoles a lunes, con último acceso a las <strong>${horaAmPm(PA.ultimoAcceso)}</strong> Los <strong>martes permanece cerrado</strong>.`,
+      },
+      {
+        from:
+          "Un dato que repetimos en todos nuestros tours: si no respetas el horario específico registrado en tu boleto, el acceso se niega sin derecho a reembolso.",
+        to: `Un dato que repetimos en todos nuestros tours: llega ${PA.llegarAntesMin} minutos antes del horario de tu turno, porque si llegas tarde lo pierdes.`,
+      },
+      {
+        from:
+          "<p>La venta de <strong>boletos las pozas</strong> se realiza <strong>únicamente en línea</strong> a través del sitio web oficial del jardín o de forma presencial en el <strong>Museo de Leonora Carrington</strong> en Xilitla. No existe venta en taquilla física en el acceso al jardín. Este sistema ha reducido las filas en más del <strong>60%</strong> desde su implementación en <strong>2024</strong>.</p>",
+        // La puntualidad ya la dicen el párrafo de arriba y la lista de consejos.
+        to: `<p>${POZAS_RESERVA} ${POZAS_170}</p>`,
+      },
+      {
+        from:
+          "<li><strong>Compra en línea con anticipación:</strong> Los <strong>boletos las pozas</strong> solo se venden en línea o en el Museo de Leonora Carrington. No hay venta en puerta.</li>",
+        to: `<li><strong>Reserva tu turno con anticipación:</strong> la reservación no cuesta y se hace en el sistema oficial hasta ${PA.reservaHastaDias} días antes; los <strong>boletos las pozas</strong> se pagan en la taquilla del jardín el día de la visita, en efectivo o con tarjeta.</li>`,
+      },
+      {
+        from:
+          "<li><strong>Respeta el horario de tu boleto:</strong> El acceso se niega sin reembolso si llegas fuera del rango horario reservado.",
+        to: `<li><strong>Respeta el horario de tu turno:</strong> llega ${PA.llegarAntesMin} minutos antes, porque si llegas tarde lo pierdes.`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "<p>No. Los <strong>boletos las pozas</strong> se adquieren únicamente en línea a través del sitio oficial del jardín o de forma presencial en el Museo de Leonora Carrington en Xilitla. No existe taquilla física en la entrada del jardín en <strong>2026</strong>.</p>",
+        to:
+          `<p>Se pagan ahí, en la taquilla de la entrada del jardín, el día de tu visita, en efectivo o con tarjeta, pero antes hay que reservar el turno, sin costo, en el sistema oficial (hasta ${PA.reservaHastaDias} días antes). ` +
+          `Por ahora no hay venta en línea. ${POZAS_PUNTUAL}</p>`,
+      },
+      {
+        from:
+          "La guía obligatoria cuesta <strong>$30 MXN</strong> adicionales por persona, o <strong>$250 MXN</strong> para grupos de hasta 10 personas.",
+        to: `La guía obligatoria cuesta <strong>$${PA.guiaEspanol} MXN</strong> adicionales por persona en español, o <strong>$${PA.guiaOtroIdioma} MXN</strong> en otro idioma. ${POZAS_RESERVA}`,
+      },
+      alDia("mayo de 2026", HOY_POZAS),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Las Pozas ──────────────────────────────────────────────────────────────
-  // Los $170 en línea / $180 en taquilla NO son un error: es lo que marca la
-  // ficha para taquilla. Lo inventado era la "excursión desde Ciudad Valles con
-  // el jardín, el pueblo y el Sótano de las Huahuas desde $1,459".
+  // La "excursión desde Ciudad Valles con el jardín, el pueblo y el Sótano de
+  // las Huahuas desde $1,459" era el combo inventado.
+  // 🔴 Este comentario decía que los «$170 en línea / $180 en taquilla» NO eran
+  // un error. Lo eran: no hay venta en línea (SEO-10, 19 oct 2026; ver
+  // `POZAS_ACCESO`). Y la guía decía que en las pozas «es posible bañarse»
+  // (el reglamento lo prohíbe), recomendaba sandalias «si planeas bañarte» y
+  // nombraba estructuras sin fuente («Paraguas Abiertos»).
   "las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece": {
     contentReplace: [
       {
@@ -1589,9 +1765,49 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Si prefieres llegar en grupo organizado, hay excursiones desde Ciudad Valles que incluyen el jardín de Edward James, el pueblo de Xilitla y el Sótano de las Huahuas desde <strong>$1,459 MXN por persona</strong>, impuestos incluidos.",
         to: `Si prefieres ir con guía, ${SURREALISTA_FRASE}.`,
       },
+      {
+        from:
+          'El <strong>jardin surrealista edward james</strong> maneja dos esquemas de precio según el canal de compra. Si adquieres tu boleto en línea a través de <a href="https://www.laspozasxilitla.org.mx" rel="noopener nofollow" target="_blank">laspozasxilitla.org.mx</a>, el costo es de <strong>$170 pesos para adultos</strong> y <strong>$115 pesos para niños de 6 a 12 años y adultos mayores</strong>. Si prefieres pagar en taquilla física, el precio sube a <strong>$180 y $120 pesos</strong>, respectivamente. Los menores de 6 años no pagan entrada.',
+        to:
+          `El <strong>jardin surrealista edward james</strong> no vende entradas en línea por ahora: ${POZAS_COMO} ${POZAS_PRECIOS} ${POZAS_170}`,
+      },
+      {
+        from:
+          "Dado que el número de visitantes diarios es limitado, se recomienda comprar en línea con al menos dos o tres días de anticipación,",
+        to: "Dado que el número de visitantes diarios es limitado, se recomienda reservar tu turno en línea con al menos dos o tres días de anticipación,",
+      },
+      {
+        // Solo estos cuatro nombres salen de una fuente (el sitio del jardín).
+        from:
+          'y pozas naturales donde es posible bañarse en temporadas permitidas. En <strong>xilitla que ver</strong> siempre encabezan la lista los "Paraguas Abiertos", la "Casa del Destino" y la "Puerta de San Eduardo".',
+        to:
+          `y pozas naturales. ${POZAS_NO_NADAR} En <strong>xilitla que ver</strong> siempre encabezan la lista la Escalera al Cielo, ` +
+          "la Casa de tres pisos que podrían ser cinco, el Palacio de Bambú y la Puerta de San Pedro y San Pablo.",
+      },
+      {
+        from:
+          "<li><strong>Lleva efectivo:</strong> aunque la entrada se puede pagar en línea, algunos servicios dentro del pueblo solo aceptan efectivo.</li>",
+        to: "<li><strong>Lleva efectivo:</strong> la taquilla del jardín acepta efectivo o tarjeta, pero algunos servicios dentro del pueblo solo aceptan efectivo.</li>",
+      },
+      {
+        from:
+          "<li><strong>Ropa adecuada:</strong> el ambiente es húmedo todo el año. Una muda extra y sandalias para las pozas son útiles si planeas bañarte.</li>",
+        to: "<li><strong>Ropa adecuada:</strong> el ambiente es húmedo todo el año, así que lleva ropa ligera y calzado cerrado con suela antideslizante. Las pozas del jardín son para verse, no para nadar.</li>",
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "<p>La entrada vía web cuesta $170 pesos para adultos y $115 para niños de 6 a 12 años o adultos mayores. En taquilla física sube a $180 y $120 respectivamente. A esto se suman $30 pesos obligatorios por guía en español. Menores de 6 años entran gratis.</p>",
+        to: `<p>${POZAS_PARRAFO}</p>`,
+      },
+      {
+        // Dónde dormir (SEO-10): al cerrar los consejos, antes de los recuadros.
+        from: "Así contribuyes a preservar este espacio para quienes vengan después.</p>",
+        to: `Así contribuyes a preservar este espacio para quienes vengan después.</p>\n\n${POZAS_DONDE_DORMIR}`,
+      },
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Puente de Dios ─────────────────────────────────────────────────────────
@@ -1752,9 +1968,27 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           '<a href="https://www.huasteca-potosina.com/tours" title="ver tours Huasteca Potosina">Ver tours disponibles en la Huasteca Potosina</a> con cena incluida.',
         to: '<a href="https://www.huasteca-potosina.com/tours" title="ver tours Huasteca Potosina">Ver tours disponibles en la Huasteca Potosina</a>.',
       },
-      alDia("julio de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): Las Pozas a «$125 por persona», la guía a
+      // «$250 por grupo», «compra las entradas en línea» y que la taquilla no
+      // acepta tarjeta. Son $180 por adulto, la guía es por persona y en la
+      // taquilla se paga en efectivo o con tarjeta (ver `POZAS_ACCESO`).
+      {
+        from:
+          "La entrada general cuesta <strong>$125 MXN por persona</strong> en 2026, con guía obligatoria a <strong>$30 MXN adicionales por persona</strong> o <strong>$250 MXN para grupos de hasta 10</strong>.",
+        to: `La entrada cuesta <strong>$${PA.adulto} MXN por adulto</strong> en 2026 ($${PA.reducida} de 6 a 12 años y mayores de 65), con guía obligatoria a <strong>$${PA.guiaEspanol} MXN adicionales por persona</strong> en español ($${PA.guiaOtroIdioma} en otro idioma).`,
+      },
+      {
+        from:
+          "<strong>Compra las entradas a Las Pozas en línea:</strong> El cupo diario es limitado y los accesos presenciales pueden agotarse, especialmente en Semana Santa. La reserva en línea se habilita hasta <strong>60 días antes</strong>.",
+        to: `<strong>Reserva tu turno de Las Pozas en línea:</strong> el cupo diario es limitado y los turnos pueden agotarse, especialmente en Semana Santa. La reserva, sin costo, se habilita hasta <strong>${PA.reservaHastaDias} días antes</strong>, y la entrada se paga en la taquilla el día de la visita.`,
+      },
+      {
+        from: "El pago en taquilla del jardín, propinas a guías y compras en mercado local no aceptan tarjeta.",
+        to: "Las propinas a guías y las compras en el mercado local no aceptan tarjeta; la taquilla del jardín acepta efectivo o tarjeta.",
+      },
+      alDia("julio de 2026", HOY_POZAS),
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Café de altura: de la planta a la taza ─────────────────────────────────
@@ -1775,10 +2009,17 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "Los tours de un día con guía certificado cuestan entre <strong>$1,300 y $1,850 MXN por persona</strong> todo incluido.",
         to: `La ${CAFE.nombreCorto} cuesta <strong>${precioDe(CAFE)}</strong>, con ${trasladoDe(CAFE)}, recorrido guiado por el cafetal y cata de café.`,
       },
-      alDia("agosto de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): «$170 comprando en línea». Y el último acceso,
+      // que no decía (el artículo manda al jardín «por la tarde»).
+      {
+        from:
+          "cuesta <strong>$180 MXN en taquilla</strong> o <strong>$170 MXN comprando en línea</strong> en 2026. El jardín abre <strong>miércoles a lunes, de 9:00 a.m. a 6:00 p.m.</strong> — cierra los martes.",
+        to: `cuesta <strong>$${PA.adulto} MXN</strong> por adulto en 2026 y ${POZAS_SE_PAGA}. El jardín abre <strong>miércoles a lunes, de ${horaAmPm(PA.abre)} a ${horaAmPm(PA.cierra)}</strong>, con último acceso a las ${horaAmPm(PA.ultimoAcceso)} — cierra los martes.`,
+      },
+      alDia("agosto de 2026", HOY_POZAS),
     ],
     tours: [CAFE.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Café de altura en Xilitla ──────────────────────────────────────────────
@@ -1857,9 +2098,15 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           `La ${SURREALISTA.nombreCorto}, que recorre Las Pozas de Edward James, cuesta <strong>${precioDe(SURREALISTA)}</strong> con ${trasladoDe(SURREALISTA)}. ` +
           `El Sótano de las Huahuas va en la ${TAMUL.nombreCorto}: <strong>${precioDe(TAMUL)}</strong>.`,
       },
+      // 🔴 SEO-10 (19 oct 2026): el horario de Las Pozas no decía que cierra
+      // los martes ni el último acceso.
+      {
+        from: "</a>, abiertas de <strong>9:00 am a 6:00 pm</strong>.",
+        to: `</a>, abiertas de miércoles a lunes de <strong>${horaAmPm(PA.abre)} a ${horaAmPm(PA.cierra)}</strong>, con último acceso a las <strong>${horaAmPm(PA.ultimoAcceso)}</strong>; los martes cierran.`,
+      },
     ],
     tours: [SURREALISTA.slug, TAMUL.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Cómo llegar a Xilitla ──────────────────────────────────────────────────
@@ -1907,9 +2154,32 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "El recorrido desde CDMX toma entre <strong>6 y 7 horas</strong> en automóvil por la Federal 130D hasta Tamazunchale y luego la Federal 85.",
         to: `El recorrido desde CDMX toma unas <strong>${enAuto("cdmx")}</strong> en automóvil por la Federal 130D hasta Tamazunchale y luego la Federal 85.`,
       },
-      alDia("mayo de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): «$170 en línea», y que el jardín «cierra» a las
+      // 4:00 pm: es el último acceso; cierra a las 6:00 pm.
+      {
+        from:
+          "La entrada al Jardín Escultórico Edward James cuesta <strong>$170 MXN</strong> en línea y <strong>$180 MXN</strong> en taquilla para adultos; niños de <strong>6 a 12 años</strong> pagan <strong>$115–$120 MXN</strong>.",
+        to: POZAS_PARRAFO,
+      },
+      {
+        from: "llegar antes de las <strong>4:00 pm</strong> garantiza acceso al Jardín, que cierra a esa hora.",
+        // Sin punto final: «p.m.» ya lo trae.
+        to: `llegar antes de las <strong>${horaAmPm(PA.ultimoAcceso)}</strong> es indispensable para entrar al Jardín: es su último acceso, aunque cierra a las ${horaAmPm(PA.cierra)}`,
+      },
+      {
+        from:
+          "<strong>Compra boletos en línea:</strong> los precios en línea son <strong>$10 MXN más baratos</strong> y se pueden adquirir hasta <strong>60 días antes</strong>;",
+        to: `<strong>Reserva tu turno en línea:</strong> la reservación no cuesta y se puede hacer hasta <strong>${PA.reservaHastaDias} días antes</strong>; la entrada se paga en la taquilla del jardín el día de tu visita;`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada cuesta <strong>$180 MXN</strong> en taquilla y <strong>$170 MXN</strong> comprada en línea para adultos. Niños de <strong>6 a 12 años</strong> y adultos mayores con INAPAM pagan <strong>$115–$120 MXN</strong>.",
+        to: `La entrada cuesta <strong>$${PA.adulto} MXN</strong> para adultos y ${POZAS_SE_PAGA}; por ahora no hay venta en línea. Niños de <strong>6 a 12 años</strong> y adultos de 65 o más pagan <strong>$${PA.reducida} MXN</strong>.`,
+      },
+      alDia("mayo de 2026", HOY_POZAS),
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Hoteles cerca de Las Pozas ─────────────────────────────────────────────
@@ -1939,10 +2209,33 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           " Según operadores locales de la región, <strong>más del 70% de los visitantes que llegan desde Ciudad Valles en visita de día lamentan no haberse quedado a dormir en Xilitla</strong> al menos una noche.",
         to: "",
       },
-      alDia("julio de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): el boleto «comprado en línea desde $170». Y el
+      // enlace al hotel, en la mención de la cercanía que ya tenía el artículo
+      // (sin escribir metros: el sitio dice 400 m y Google mide ~560).
+      {
+        from:
+          "pueden formarse en taquilla o ingresar con boleto comprado en línea desde <strong>$170 MXN por adulto</strong> en 2026 sin el estrés del desplazamiento.",
+        to: `pueden tomar el primer turno —se reserva sin costo en el sistema oficial— y pagar en la taquilla <strong>$${PA.adulto} MXN por adulto</strong> en 2026, sin el estrés del desplazamiento.`,
+      },
+      {
+        from:
+          '<strong>Compra boletos en línea con anticipación:</strong> La entrada en taquilla sube a <strong>$180 MXN para adultos y $120 MXN para niños de 6 a 12 años</strong> en 2026. Comprando en <a href="https://laspozasxilitla.org.mx" rel="noopener nofollow" title="Las Pozas Xilitla boletos oficiales">laspozasxilitla.org.mx</a> pagas <strong>$170 y $115</strong> respectivamente y aseguras cupo.',
+        to: `<strong>Reserva tu turno con anticipación:</strong> ${[POZAS_RESERVA_SIGUE, POZAS_PRECIOS, POZAS_GUIA, POZAS_HORARIO, POZAS_PUNTUAL, POZAS_170].join(" ")}`,
+      },
+      {
+        from: "Su posición, a menos de <strong>5 minutos caminando</strong> del acceso al Jardín Surrealista,",
+        to: `Su posición, <a href="${HOTEL}/hotel-cerca-de-las-pozas">a menos de 5 minutos caminando del acceso al Jardín Surrealista</a>,`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada al Jardín Surrealista cuesta <strong>$170 MXN para adultos y $115 MXN para niños de 6 a 12 años</strong> comprando en línea en 2026. En taquilla sube a $180 y $120 respectivamente. Menores de 6 años entran gratis.",
+        to: `La entrada al Jardín Surrealista cuesta <strong>$${PA.adulto} MXN para adultos y $${PA.reducida} MXN para niños de 6 a 12 años</strong> y mayores de 65 en 2026, y ${POZAS_SE_PAGA}; por ahora no hay venta en línea. Menores de 6 años entran gratis.`,
+      },
+      alDia("julio de 2026", HOY_POZAS),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Precios para viajar a Xilitla ──────────────────────────────────────────
@@ -1964,9 +2257,49 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to:
           `<tr><td>${SURREALISTA.nombreCorto} (tour guiado)</td><td>${precioDe(SURREALISTA)}</td><td>Incluye ${trasladoDe(SURREALISTA)}, desayuno, entradas y guía</td></tr>`,
       },
+      // 🔴 SEO-10 (19 oct 2026): el boleto «$170 en línea / $180 en taquilla»,
+      // la apertura de fin de semana «a las 7:00 am» y el último acceso «a las
+      // 3:00 pm» eran del esquema de principios de 2026 (ver `POZAS_ACCESO`).
+      {
+        from: "Los precios xilitla oscilan entre <strong>$170 MXN</strong> por una entrada básica a Las Pozas",
+        to: `Los precios xilitla oscilan entre <strong>$${PA.adulto} MXN</strong> por una entrada básica a Las Pozas`,
+      },
+      {
+        from: "</a> cuesta <strong>$170 MXN</strong> en línea y <strong>$180 MXN</strong> en taquilla, pero ese es solo el primer renglón",
+        to: `</a> cuesta <strong>$${PA.adulto} MXN</strong> por adulto, que se pagan en la taquilla del jardín (por ahora no hay venta en línea), pero ese es solo el primer renglón`,
+      },
+      {
+        // La guía la explica el párrafo siguiente.
+        from:
+          'El boleto en línea a través de <a href="https://laspozasxilitla.org.mx" rel="noopener nofollow" title="Las Pozas Xilitla boletos en línea">laspozasxilitla.org.mx</a> cuesta <strong>$170 MXN</strong> para adultos y <strong>$115 MXN</strong> para niños de 6 a 12 años. Comprar en taquilla física sube el precio a <strong>$180 MXN</strong> y <strong>$120 MXN</strong> respectivamente, y los menores de 6 años entran gratis. El jardín abre de <strong>miércoles a lunes de 9:00 am a 6:00 pm</strong>, y los fines de semana desde las <strong>7:00 am</strong> con último acceso a las <strong>3:00 pm</strong> — el martes es día de cierre total.',
+        to: [POZAS_RESERVA, POZAS_PRECIOS, POZAS_HORARIO, POZAS_PUNTUAL, POZAS_170].join(" "),
+      },
+      {
+        from:
+          "<strong>Compra tus boletos en línea con anticipación:</strong> El boleto digital cuesta <strong>$10 MXN menos</strong> que en taquilla y evita perder el cupo",
+        to: "<strong>Reserva tu turno con anticipación:</strong> la reservación en el sistema oficial no cuesta, la entrada se paga en la taquilla y así evitas quedarte sin cupo",
+      },
+      {
+        from:
+          "<strong>Madruga los fines de semana:</strong> La apertura sabatina y dominical a las <strong>7:00 am</strong> permite recorrer Las Pozas",
+        to: `<strong>Madruga:</strong> el jardín abre a las <strong>${horaAmPm(PA.abre)}</strong>, también en fin de semana, y el primer turno permite recorrer Las Pozas`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada a Las Pozas cuesta <strong>$170 MXN</strong> por adulto comprando en línea y <strong>$180 MXN</strong> en taquilla. Niños de 6 a 12 años pagan <strong>$115 MXN</strong> en línea o <strong>$120 MXN</strong> en taquilla. Menores de 6 años entran gratis.",
+        to:
+          `La entrada a Las Pozas cuesta <strong>$${PA.adulto} MXN</strong> por adulto y <strong>$${PA.reducida} MXN</strong> para niños de 6 a 12 años y mayores de 65; los menores de 6 años entran gratis. ` +
+          `${mayusculaInicial(POZAS_SE_PAGA)}: por ahora no hay venta en línea.`,
+      },
+      {
+        from: "Las Pozas acepta pago con tarjeta para boletos comprados en línea, pero una vez en el pueblo",
+        to: "En la taquilla de Las Pozas se paga en efectivo o con tarjeta, pero una vez en el pueblo",
+      },
+      alDia("septiembre de 2026", HOY_POZAS),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Guía definitiva de Xilitla ─────────────────────────────────────────────
@@ -1995,9 +2328,49 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "El paquete combinado desde Ciudad Valles que incluye ambas atracciones tiene un costo de <strong>$1,532 MXN por persona con impuestos</strong> y es la opción más práctica para quienes no cuentan con vehículo propio.",
         to: `Nosotros no los combinamos en un mismo recorrido: ${POZAS_Y_HUAHUAS}.`,
       },
+      // 🔴 SEO-10 (19 oct 2026): «$170 comprando en línea» (no hay venta en
+      // línea) y las pozas «espectaculares para nadar» (en el jardín no se nada).
+      {
+        from:
+          "la entrada a Las Pozas cuesta <strong>$180 MXN por adulto</strong> en taquilla o <strong>$170 MXN</strong> comprándola en línea, más <strong>$30 MXN obligatorios</strong> de guía en español.",
+        to: `la entrada a Las Pozas cuesta <strong>$${PA.adulto} MXN por adulto</strong>, más <strong>$${PA.guiaEspanol} MXN obligatorios</strong> de guía en español, y ${POZAS_SE_PAGA}.`,
+      },
+      {
+        // El horario lo explica el párrafo siguiente.
+        from:
+          'La entrada en taquilla cuesta <strong>$180 MXN adultos</strong> y <strong>$120 MXN niños de 6 a 12 años</strong>; comprando en línea directamente en <a href="https://laspozasxilitla.org.mx" rel="noopener nofollow" title="Las Pozas Xilitla sitio oficial">laspozasxilitla.org.mx</a> el precio baja a <strong>$170 MXN</strong> y <strong>$115 MXN</strong> respectivamente. Recuerda agregar los <strong>$30 MXN por persona</strong> de guía en español, tarifa que no es opcional sino parte del protocolo de conservación del sitio.',
+        to: [POZAS_RESERVA, POZAS_PRECIOS, POZAS_GUIA, POZAS_170].join(" "),
+      },
+      {
+        from:
+          "En julio y agosto las pozas naturales alcanzan su caudal máximo, lo que las hace espectaculares para nadar, pero los caminos interiores del jardín se vuelven resbaladizos.",
+        to: `En julio y agosto las pozas y cascadas alcanzan su caudal máximo y lucen espectaculares, pero los caminos interiores del jardín se vuelven resbaladizos. ${POZAS_NO_NADAR}`,
+      },
+      {
+        from:
+          "llega el primer turno de apertura a las <strong>9:00 a.m.</strong> y compra tu boleto en línea con al menos dos días de anticipación.",
+        to: `toma el primer turno, a las <strong>${horaAmPm(PA.abre)}</strong>, y resérvalo sin costo en el sistema oficial con al menos dos días de anticipación; la entrada se paga en la taquilla ese mismo día.`,
+      },
+      {
+        from:
+          "Entrada a Las Pozas: <strong>$170–$180 MXN adultos</strong> dependiendo del canal de compra, más <strong>$30 MXN</strong> de guía obligatorio.",
+        to: `Entrada a Las Pozas: <strong>$${PA.adulto} MXN adultos</strong>, que se pagan en la taquilla del jardín, más <strong>$${PA.guiaEspanol} MXN</strong> de guía obligatorio.`,
+      },
+      {
+        from:
+          "<strong>Compra el boleto de Las Pozas en línea:</strong> Ahorras <strong>$10 MXN por adulto</strong> y <strong>$5 MXN por niño</strong>, pero más importante, evitas la fila de taquilla en temporada alta.",
+        to: "<strong>Reserva tu turno de Las Pozas en línea:</strong> la reservación no cuesta y te asegura lugar en temporada alta; la entrada se paga en la taquilla del jardín el día de tu visita, en efectivo o con tarjeta.",
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada en taquilla cuesta <strong>$180 MXN adultos</strong> y <strong>$120 MXN niños</strong> (6–12 años). Comprando en línea el precio baja a <strong>$170 MXN</strong> y <strong>$115 MXN</strong>.",
+        to: `La entrada cuesta <strong>$${PA.adulto} MXN adultos</strong> y <strong>$${PA.reducida} MXN niños</strong> (6–12 años) y mayores de 65, y ${POZAS_SE_PAGA}: por ahora no hay venta en línea.`,
+      },
+      alDia("septiembre de 2026", HOY_POZAS),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Rafting en el Tampaón ──────────────────────────────────────────────────
@@ -2093,10 +2466,37 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "Hay autobuses directos y tours organizados que salen desde Ciudad Valles desde <strong>$700 MXN por persona</strong>.",
         to: `Hay autobuses directos, y nuestra ${SURREALISTA.nombreCorto} cuesta <strong>${precioDe(SURREALISTA)}</strong> con ${trasladoDe(SURREALISTA)}.`,
       },
-      alDia("mayo de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): $170 / $115 eran los precios en línea de
+      // principios de 2026; hoy son $180 / $120, y solo en taquilla.
+      {
+        from:
+          "El Jardín Escultórico Edward James tiene un costo de entrada de <strong>$170 pesos por adulto</strong> y <strong>$115 pesos</strong> para niños de 6 a 12 años y personas con credencial INAPAM. Los pobladores de Xilitla ingresan <strong>sin costo</strong> presentando su INE. El horario es de <strong>miércoles a lunes, 9:00 am a 6:00 pm</strong>, con último acceso a las <strong>4:00 pm</strong>; cierra los <strong>martes</strong>. El pago se realiza exclusivamente en taquilla física.",
+        to: `${POZAS_PARRAFO} Los pobladores de Xilitla entran <strong>sin costo</strong> presentando su INE con domicilio en el municipio.`,
+      },
+      {
+        from: "<td>Entrada Las Pozas (adulto)</td><td><strong>$170 MXN</strong></td>",
+        to: `<td>Entrada Las Pozas (adulto)</td><td><strong>$${PA.adulto} MXN</strong></td>`,
+      },
+      {
+        from: "<td>Entrada Las Pozas (niño/INAPAM)</td><td><strong>$115 MXN</strong></td>",
+        to: `<td>Entrada Las Pozas (6 a 12 años y mayores de 65)</td><td><strong>$${PA.reducida} MXN</strong></td>`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada cuesta <strong>$170 pesos por adulto</strong> y <strong>$115 pesos</strong> para niños de 6 a 12 años y personas con credencial INAPAM. Los residentes de Xilitla entran sin costo presentando INE. No se venden boletos en línea; el pago es exclusivamente en taquilla física el día de la visita.",
+        to:
+          `La entrada cuesta <strong>$${PA.adulto} pesos por adulto</strong> y <strong>$${PA.reducida} pesos</strong> para niños de 6 a 12 años y mayores de 65. Los residentes de Xilitla entran sin costo presentando su INE con domicilio en el municipio. ` +
+          "No hay venta en línea: reservas tu turno sin costo en el sistema oficial y pagas en la taquilla del jardín el día de la visita, en efectivo o con tarjeta.",
+      },
+      {
+        from: "Los espacios del centro histórico y Las Pozas son accesibles para niños mayores de 6 años.",
+        to: "Los espacios del centro histórico y Las Pozas son aptos para niños; en el jardín, los menores de 6 años no pagan entrada.",
+      },
+      alDia("mayo de 2026", HOY_POZAS),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Museo Leonora Carrington ───────────────────────────────────────────────
@@ -2110,9 +2510,15 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "<td>Incluye guía local, transporte y entrada al museo Leonora Carrington</td>",
         to: `<td>Incluye Las Pozas, ${trasladoDe(SURREALISTA)} y guía; el museo, a pasos de la plaza, lo visitas por tu cuenta</td>`,
       },
-      alDia("julio de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): «con Las Pozas necesitarás ropa que se pueda
+      // mojar»: en el jardín no se nada.
+      {
+        from: "El recinto es interior, pero si combinas la visita con Las Pozas necesitarás ropa que se pueda mojar.",
+        to: "El recinto es interior, pero si combinas la visita con Las Pozas necesitarás calzado antiderrapante para sus senderos húmedos; las pozas del jardín son para verse, no para nadar.",
+      },
+      alDia("julio de 2026", HOY_POZAS),
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Fotos en Xilitla (Paraíso) ─────────────────────────────────────────────
@@ -2124,9 +2530,37 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Si prefieres un tour organizado desde Ciudad Valles, Viator ofrece el combo Xilitla + Jardín Surrealista + Sótano de las Huahuas <strong>desde $72 USD</strong> (~12 horas) en 2026.",
         to: `Si prefieres ir con guía, ${SURREALISTA_FRASE}.`,
       },
-      alDia("mayo de 2026"),
+      // 🔴 SEO-10 (19 oct 2026): Las Pozas «$170 vía web» y «reserva en línea:
+      // ahorra $10». Y el enlace a su página gemela en el sitio del hotel.
+      {
+        from:
+          "</a> cuesta <strong>$170 MXN</strong> por adulto vía web o <strong>$180 MXN</strong> en taquilla en 2026, más <strong>$30 MXN</strong> de guía obligatorio en español.",
+        to: `</a> cuesta <strong>$${PA.adulto} MXN</strong> por adulto en 2026, que se pagan en la taquilla del jardín el día de la visita, más <strong>$${PA.guiaEspanol} MXN</strong> de guía obligatorio en español.`,
+      },
+      {
+        from: "durante la <strong>hora azul</strong> (entre las <strong>5:45 p.m.</strong> y <strong>6:15 p.m.</strong>).",
+        to: `durante la <strong>hora azul</strong> (entre las <strong>5:45 p.m.</strong> y <strong>6:15 p.m.</strong>). Antes de ir, mira la <a href="${HOTEL}/galeria">galería de fotos del hotel</a> para elegir tus encuadres.`,
+      },
+      {
+        from:
+          "La entrada a Las Pozas vía web cuesta <strong>$170 MXN</strong> adulto (<strong>$115 MXN</strong> niños 6–12 años y adultos mayores); en taquilla sube a <strong>$180 MXN</strong> y <strong>$120 MXN</strong>. El guía obligatorio añade <strong>$30 MXN</strong> en español o <strong>$60 MXN</strong> en inglés por persona.",
+        to: POZAS_PARRAFO,
+      },
+      {
+        from: "<li><strong>Reserva en línea Las Pozas:</strong> ahorra <strong>$10 MXN</strong> por entrada y evita filas.</li>",
+        to: "<li><strong>Reserva tu turno de Las Pozas:</strong> la reservación en el sistema oficial no cuesta y te asegura lugar; la entrada se paga en la taquilla el día de la visita.</li>",
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada cuesta <strong>$170 MXN</strong> adulto por web o <strong>$180 MXN</strong> en taquilla. Se añade guía obligatorio de <strong>$30 MXN</strong> en español. Niños de 6 a 12 años y adultos mayores pagan <strong>$115 MXN</strong> web o <strong>$120 MXN</strong> taquilla.",
+        to:
+          `La entrada cuesta <strong>$${PA.adulto} MXN</strong> por adulto y ${POZAS_SE_PAGA}; por ahora no hay venta en línea. ` +
+          `Se añade guía obligatorio de <strong>$${PA.guiaEspanol} MXN</strong> en español. Niños de 6 a 12 años y mayores de 65 pagan <strong>$${PA.reducida} MXN</strong>.`,
+      },
+      alDia("mayo de 2026", HOY_POZAS),
     ],
-    actualizado: HOY,
+    actualizado: HOY_POZAS,
   },
 
   // ── Reservar hotel directo (Paraíso) ───────────────────────────────────────
@@ -2151,7 +2585,90 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           " Según operadores locales, más de <strong>8,500 huéspedes en 2026</strong> han elegido la reserva directa tras comparar precios, y el ahorro promedio reportado es de <strong>$340 MXN por noche</strong> frente a la tarifa OTA equivalente. Eso equivale, en una estancia de tres noches, al costo completo de los boletos de entrada a Las Pozas para dos personas más el servicio de guía.",
         to: "",
       },
+      // 🔴 SEO-10 (19 oct 2026): «no existe taquilla física», boletos «$170 en
+      // línea» con «descuento» y el cierre del jardín «a las 5:00 p.m.» (cierra
+      // a las 6:00). Y el enlace a su página gemela: el artículo es «reservar
+      // directo», y la reserva directa del hotel está en su sitio.
+      {
+        from: "de lo que incluye el hotel paraíso encantado que las plataformas intermediarias no muestran,",
+        to: `de lo que incluye la <a href="${HOTEL}/reservar">reserva directa en el Hotel Paraíso Encantado</a>, que las plataformas intermediarias no muestran,`,
+      },
+      {
+        from:
+          "o que el precio del boleto en taquilla física es de <strong>$180 MXN por adulto</strong> mientras que comprarlo en línea cuesta <strong>$170 MXN</strong>.",
+        to: `o que la entrada cuesta <strong>$${PA.adulto} MXN por adulto</strong> y ${POZAS_SE_PAGA}.`,
+      },
+      {
+        from: "El horario de cierre del jardín es a las <strong>5:00 p.m.</strong>,",
+        to: `El horario de cierre del jardín es a las <strong>${horaAmPm(PA.cierra)}</strong>,`,
+      },
+      {
+        from:
+          "<strong>Compra los boletos en línea con anticipación:</strong> El precio en línea (<strong>$170 MXN adulto / $115 MXN niño 6–12 años</strong>) es menor que en taquilla (<strong>$180 MXN / $120 MXN</strong>). Además, en temporada alta los cupos se agotan. No existe taquilla física en la entrada del jardín en 2026: la compra es en laspozasxilitla.org.mx o en el Museo de Leonora Carrington en el pueblo.",
+        to: `<strong>Reserva tu turno con anticipación:</strong> ${POZAS_RESERVA_SIGUE} ${POZAS_PRECIOS} Además, en temporada alta los cupos se agotan. ${POZAS_170}`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "El boleto de entrada a Las Pozas en 2026 cuesta <strong>$170 MXN adulto en línea</strong> o <strong>$180 MXN en taquilla</strong>.",
+        to: `La entrada a Las Pozas en 2026 cuesta <strong>$${PA.adulto} MXN por adulto</strong> y se paga en la taquilla del jardín el día de la visita, en efectivo o con tarjeta.`,
+      },
+      {
+        from: "reciben orientación previa sobre cómo comprar los boletos con descuento en línea.",
+        to: "reciben orientación previa sobre cómo reservar el turno en el sistema oficial, que no cuesta.",
+      },
+      alDia("agosto de 2026", HOY_POZAS),
     ],
+    actualizado: HOY_POZAS,
+  },
+
+  // ── Hotel en Xilitla (Paraíso) ─────────────────────────────────────────────
+  // 🔴 SEO-10 (19 oct 2026): Las Pozas «$125 con guía incluida» y «$160 en
+  // taquilla con cargo de guía»: son $180 por adulto y la guía obligatoria se
+  // paga aparte. Y los dos enlaces al sitio del hotel que pide la auditoría.
+  // Las tarifas de la tabla («desde $1,200») no son las del hotel, que empiezan
+  // en $1,500: igual que en «Reservar directo», eso lo decide Manolo.
+  "hotel-en-xilitla-hoteles-con-encanto-en-xilitla-por-que-elegir-paraiso": {
+    contentReplace: [
+      {
+        from:
+          "<p>Paraíso Encantado se encuentra a escasos minutos del Jardín Escultórico de Edward James, conocido como Las Pozas, cuya entrada general cuesta <strong>$125 pesos por persona</strong> en 2026 e incluye guía obligatorio.",
+        to:
+          `<p>El <a href="${HOTEL}/">Hotel Paraíso Encantado</a> se encuentra a escasos minutos del Jardín Escultórico de Edward James, conocido como Las Pozas, ` +
+          `cuya entrada cuesta <strong>$${PA.adulto} pesos por adulto</strong> en 2026, más <strong>$${PA.guiaEspanol}</strong> por persona de guía obligatoria.`,
+      },
+      {
+        from:
+          "La entrada a Las Pozas suma <strong>$160 pesos</strong> en taquilla con cargo de guía incluido, mientras que la experiencia privada madrugadora opera a las <strong>7:30 am</strong> con un máximo de <strong>7 personas</strong> por sesión.",
+        to:
+          `La entrada a Las Pozas cuesta <strong>$${PA.adulto} pesos</strong> por adulto, más la guía obligatoria, y ${POZAS_SE_PAGA}; ` +
+          "la experiencia privada madrugadora opera a las <strong>7:30 am</strong> con un máximo de <strong>7 personas</strong> por sesión. " +
+          `Si quieres comparar precio, zona y distancia a Las Pozas con <a href="${HOTEL}/hoteles-en-xilitla">otros hoteles de Xilitla</a>, están uno por uno en el sitio del hotel.`,
+      },
+      alDia("mayo de 2026", HOY_POZAS),
+    ],
+    actualizado: HOY_POZAS,
+  },
+
+  // ── Seguridad en carretera ─────────────────────────────────────────────────
+  // 🔴 SEO-10 (19 oct 2026): Las Pozas «$125 en línea o $150 en taquilla»
+  // (también en el FAQPage): ni hay venta en línea ni son esos precios.
+  "seguridad-xilitla-consejos-de-seguridad-para-viajar-por-carretera-en-l": {
+    contentReplace: [
+      {
+        from:
+          "cuesta <strong>$125 MXN</strong> en línea o <strong>$150 MXN</strong> en taquilla para adultos; niños de 6 a 12 años y mayores de 65 pagan <strong>$60 MXN</strong> (en línea) o <strong>$75 MXN</strong> en taquilla.",
+        to: `cuesta <strong>$${PA.adulto} MXN</strong> para adultos y <strong>$${PA.reducida} MXN</strong> para niños de 6 a 12 años y mayores de 65 (los menores de 6 no pagan); ${POZAS_RESERVA_SIGUE}`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "La entrada en línea cuesta <strong>$125 MXN</strong> para adultos y <strong>$60 MXN</strong> para niños (6–12 años) y mayores de 65. En taquilla física, los precios son <strong>$150 MXN</strong> y <strong>$75 MXN</strong> respectivamente. El guía obligatorio tiene un costo adicional de <strong>$30 MXN</strong> por persona.",
+        to: POZAS_PARRAFO,
+      },
+      alDia("mayo de 2026", HOY_POZAS),
+    ],
+    actualizado: HOY_POZAS,
   },
 };
 return BLOG_SEO;

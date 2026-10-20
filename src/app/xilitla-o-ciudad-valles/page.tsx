@@ -194,8 +194,17 @@ export default function XilitlaOCiudadVallesPage() {
       <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto border border-white/10 bg-negro/40 p-7">
           <h2 className="font-cormorant font-light text-crema text-2xl mb-4">Con nosotros no tienes que elegir</h2>
+          {/* SEO-10 (19 oct 2026): el hotel se nombra y enlaza a su sitio, con
+              www y sin nofollow; antes era «nuestro hotel» a secas. */}
           <p className="text-crema/70 font-dm text-sm leading-relaxed mb-5">
-            Somos de Xilitla y aquí tenemos nuestro hotel y nuestro restaurante, pero en {EN_LAS_DOS.length} de
+            Somos de Xilitla y aquí tenemos nuestro hotel, el{" "}
+            <a
+              href="https://www.paraisoencantado.com/"
+              className="text-lima underline underline-offset-2 hover:text-crema transition-colors"
+            >
+              Paraíso Encantado
+            </a>
+            , y nuestro restaurante, pero en {EN_LAS_DOS.length} de
             nuestros {TOURS_DB.length} recorridos{" "}
             <strong className="text-crema">pasamos por ti a tu hospedaje en las dos ciudades</strong>, sin costo
             extra. Si te quedas en Ciudad Valles, te recogemos ahí. Si te quedas con nosotros en Xilitla, sales

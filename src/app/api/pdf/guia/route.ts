@@ -42,6 +42,11 @@ export async function GET(req: NextRequest) {
 // destino en destinos.ts (revisadas el 7 oct 2026: coinciden todas). El consejo
 // de Tamul decía «en octubre, turquesa intensa», al revés de la regla de
 // temporada.ts: hasta el 29 de octubre el agua puede bajar con sedimento.
+//
+// 🔴 Las Pozas (19 oct 2026, SEO-10): la ficha decía «Comprar tickets en línea
+// antes de ir». Por ahora no hay venta en línea: el turno se reserva sin costo
+// y la entrada se paga en la taquilla del jardín (ver `POZAS_ACCESO` en
+// lib/destinos.ts, con la fuente). Se agregó el último acceso, a las 16:00.
 function buildGuiaHtml(): string {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -215,13 +220,13 @@ function buildGuiaHtml(): string {
     <p>El excéntrico poeta inglés Edward James construyó entre 1949 y 1984 un laberinto de estructuras de concreto entre cascadas y selva tropical en las montañas de la Sierra Madre Oriental. Columnas que no sostienen nada, escaleras que terminan en el cielo, flores de concreto del tamaño de una casa. Es el lugar más surrealista de México y no hay nada comparable en el continente.</p>
     <div class="ficha">
       <div class="ficha-item"><div class="ficha-label">Precio entrada</div><div class="ficha-val">$180 MXN</div></div>
-      <div class="ficha-item"><div class="ficha-label">Horario</div><div class="ficha-val">09:00–18:00 (cerrado martes)</div></div>
+      <div class="ficha-item"><div class="ficha-label">Horario</div><div class="ficha-val">09:00–18:00, último acceso 16:00 (cerrado martes)</div></div>
       <div class="ficha-item"><div class="ficha-label">Duración recomendada</div><div class="ficha-val">4 horas</div></div>
       <div class="ficha-item"><div class="ficha-label">Mejor época</div><div class="ficha-val">Noviembre–Marzo</div></div>
       <div class="ficha-item"><div class="ficha-label">Dificultad</div><div class="ficha-val">Media (muchos escalones)</div></div>
       <div class="ficha-item"><div class="ficha-label">Desde Valles</div><div class="ficha-val">1h 45min en coche</div></div>
     </div>
-    <div class="advertencia">⚠️ Comprar tickets en línea antes de ir — en temporada alta se agotan. Cerrado todos los martes.</div>
+    <div class="advertencia">⚠️ Reserva tu turno en línea antes de ir: no cuesta, y la entrada ($180 MXN por adulto, más $30 MXN de guía obligatoria) se paga en la taquilla del jardín el día de la visita, en efectivo o con tarjeta. En temporada alta los turnos se agotan. Llega 10 minutos antes: si llegas tarde, pierdes el turno. Cerrado todos los martes.</div>
     <div class="consejo">💡 Llega en la apertura (09:00). A las 11:00 ya hay grupos y la magia de tener el jardín casi solo desaparece. La luz matinal entre la selva es impresionante para fotografía.</div>
   </div>
 

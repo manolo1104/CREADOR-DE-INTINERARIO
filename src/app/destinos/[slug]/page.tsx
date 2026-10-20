@@ -462,6 +462,37 @@ export default function DestinoPage({ params }: Props) {
           </div>
         </div>
 
+        {/* ── DÓNDE DORMIR (solo Las Pozas, solo en español) ──
+            SEO-10, 19 oct 2026. El jardín no tiene estacionamiento y quien
+            llega tarde pierde su turno: dormir sobre el camino es un dato de
+            la visita. Enlaces normales (sin nofollow) a las dos páginas del
+            hotel que responden «dónde dormir»; no tienen versión en inglés,
+            por eso el bloque no sale en /en. 🔴 Sin metros: el sitio dice
+            400 m, Google mide ~560 y nadie lo ha medido a pie. */}
+        {base.slug === "las-pozas-jardin-surrealista" && locale !== "en" && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
+            <h2 className="font-cormorant text-crema text-xl mb-4">Dónde dormir cerca de Las Pozas</h2>
+            <p className="text-crema/70 font-dm text-sm leading-relaxed">
+              Para tomar el primer turno sin manejar, duerme sobre el camino al jardín, que no tiene
+              estacionamiento: el Hotel Paraíso Encantado está a unos minutos a pie de la entrada (
+              <a
+                href="https://www.paraisoencantado.com/hotel-cerca-de-las-pozas"
+                className="text-lima underline underline-offset-2 hover:text-crema transition-colors"
+              >
+                dormir junto al jardín
+              </a>
+              ). Si buscas otras opciones del pueblo, aquí están comparadas:{" "}
+              <a
+                href="https://www.paraisoencantado.com/hoteles-en-xilitla"
+                className="text-lima underline underline-offset-2 hover:text-crema transition-colors"
+              >
+                hoteles en Xilitla
+              </a>
+              .
+            </p>
+          </div>
+        )}
+
         {/* ── MAPA ── */}
         <div className="max-w-4xl mx-auto px-6 pb-12">
           <h2 className="font-cormorant text-crema text-xl mb-4 flex items-center gap-2">

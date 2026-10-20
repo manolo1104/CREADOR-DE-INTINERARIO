@@ -556,7 +556,16 @@ export default function InfoPracticaPage() {
       <Section alterna id="hotel-paraiso" Icon={Hotel} title={t.tituloHotelParaiso}>
         <p className="text-crema/70 font-dm text-sm mb-8 leading-relaxed">
           {t.paraisoIntroA}
-          <strong className="text-crema">{t.hotelNombre}</strong>{t.paraisoIntroB}
+          {/* SEO-10 (19 oct 2026): el nombre enlaza al sitio del hotel, dentro
+              del texto y sin nofollow. Los botones de abajo no cambian
+              (WhatsApp y Google Maps). */}
+          <a
+            href={t.paraisoUrl}
+            className="text-crema underline underline-offset-2 decoration-dorado/60 hover:text-lima transition-colors"
+          >
+            <strong>{t.hotelNombre}</strong>
+          </a>
+          {t.paraisoIntroB}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
