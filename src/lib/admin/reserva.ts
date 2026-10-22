@@ -52,7 +52,7 @@ export function lineasDe(b: ConLineas): LineaTour[] {
 }
 
 /** La línea `_meta` (método de pago, folio, pickup, numPersonas). */
-export function metaDe(b: ConLineas): Record<string, any> {
+export function metaDe(b: { lineItems?: unknown }): Record<string, any> {
   const raw = b.lineItems;
   if (!Array.isArray(raw)) return {};
   return (raw as any[]).find(l => l && l._meta) || {};

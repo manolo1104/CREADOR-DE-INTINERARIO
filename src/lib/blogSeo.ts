@@ -32,6 +32,7 @@
  */
 import {
   TOURS_DB,
+  cargoVallesDe,
   conPrecio,
   esPorPersona,
   etiquetaUnidad,
@@ -322,8 +323,15 @@ const MIN_MINAS    = minutosDesdeValles(D_MINAS);
 const MIN_MICOS    = minutosDesdeValles(D_MICOS);
 const MIN_XILITLA  = minutosDesdeValles(D_XILITLA);
 
-/** "Traslado desde tu hospedaje en Xilitla o Ciudad Valles" para ESTE recorrido. */
-const trasladoDe = (t: Tour) => `traslado desde ${partesRecogida(t, false).lugar}`;
+/**
+ * "Traslado desde tu hospedaje en Xilitla o Ciudad Valles" para ESTE recorrido,
+ * con lo que cobra de más desde Valles si lo cobra (la Ruta Surrealista, $400
+ * por reserva): sin eso, el blog la prometía al mismo precio desde las dos.
+ */
+const trasladoDe = (t: Tour) => {
+  const cargo = cargoVallesDe(t);
+  return `traslado desde ${partesRecogida(t, false).lugar}${cargo > 0 ? ` (desde Valles, $${cargo.toLocaleString("es-MX")} más por reserva)` : ""}`;
+};
 
 /**
  * Avisa si un recorrido deja de pasar por un lugar, o de incluir algo, que
@@ -2249,7 +2257,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from:
           "los tours organizados desde Ciudad Valles que combinan el jardín surrealista, el pueblo de Xilitla y el Sótano de las Huahuas parten desde <strong>$1,459 MXN por persona</strong> con impuestos incluidos. Ese precio contempla transporte, guía, costos entradas y el acompañamiento durante todo el recorrido. La salida habitual desde Ciudad Valles es a las <strong>7:00 am</strong>, con regreso aproximado a las <strong>6:00 pm</strong>, lo que permite cubrir el jardín y al menos una atracción adicional en el mismo día.",
         to:
-          `${SURREALISTA_FRASE}. ${fraseRecogida(SURREALISTA, false)} Dura de ${horas(SURREALISTA)} horas y, además del jardín, incluye ${SURREALISTA_OTRAS}.`,
+          `${SURREALISTA_FRASE}. Pasamos por ti ${partesRecogida(SURREALISTA, false).hora}. Dura de ${horas(SURREALISTA)} horas y, además del jardín, incluye ${SURREALISTA_OTRAS}.`,
       },
       {
         from:

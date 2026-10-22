@@ -2,7 +2,7 @@
 
 import { personasDeItem } from "@/lib/carrito";
 import { formatMXN, formatTourDate } from "@/lib/tourBooking";
-import { TOURS_DB, incluyeDeTour, fraseRecogida } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour, fraseRecogida, cargoVallesDe } from "@/lib/tours";
 import { serviciosHotel } from "@/lib/habitaciones";
 import { localizeTour } from "@/lib/i18n/localize";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
@@ -17,20 +17,23 @@ import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 export function ResumenCarrito({ c }: { c: CarritoCheckout }) {
   const {
     locale, en, t, items, hotelQuote, checkin, checkout, noches, totalHotel,
-    total, anticipo, saldo, pctHoy, resumen, cancelacionDe, guiaIngles,
+    total, anticipo, saldo, pctHoy, resumen, cancelacionDe, guiaIngles, zona,
   } = c;
   return (
     <ResumenReserva
       items={[...items.map((i) => {
         const base = TOURS_DB.find((x) => x.slug === i.tourSlug);
         const tour = base ? localizeTour(base, locale) : undefined;
+        // Desde Ciudad Valles este recorrido cobra el traslado aparte (la Ruta
+        // Surrealista, +$400 por reserva): se pinta como un extra del renglón.
+        const cargo = zona === "valles" ? cargoVallesDe(base) : 0;
         return {
           nombre:  nombreCorto(i.tourSlug, i.tourName, locale),
           fecha:   i.tourDate,
           detalle: i.unidades
             ? `${i.ruta} · ${i.unidades} × ${i.vehiculo}`
             : t.personas(personasDeItem(i)),
-          subtotal: i.total,
+          subtotal: i.total + cargo,
           incluye:  incluyeDeTour({ incluye: tour?.incluye ?? [] }, locale),
           eleccion: i.eleccion,
           recogida: base ? fraseRecogida(base, en) : undefined,
@@ -38,14 +41,17 @@ export function ResumenCarrito({ c }: { c: CarritoCheckout }) {
           // Las actividades opcionales se cobran, así que tienen que
           // verse en el resumen. Se contratan en el renglón de arriba y
           // no aparecían por ningún lado antes de pagar.
-          addOns: (i.addOns ?? []).map((a) => {
-            const cat = tour?.addOns?.find((x) => x.id === a.id);
-            return {
-              nombre:   cat?.nombre ?? a.id,
-              cantidad: a.cantidad,
-              subtotal: (cat?.precio ?? 0) * a.cantidad,
-            };
-          }),
+          addOns: [
+            ...(i.addOns ?? []).map((a) => {
+              const cat = tour?.addOns?.find((x) => x.id === a.id);
+              return {
+                nombre:   cat?.nombre ?? a.id,
+                cantidad: a.cantidad,
+                subtotal: (cat?.precio ?? 0) * a.cantidad,
+              };
+            }),
+            ...(cargo > 0 ? [{ nombre: en ? "Transport from Ciudad Valles" : "Traslado desde Ciudad Valles", subtotal: cargo }] : []),
+          ],
         };
       }), ...(hotelQuote?.ok ? [{
         nombre:  t.hospedajeRenglon("Hotel Paraíso Encantado"),

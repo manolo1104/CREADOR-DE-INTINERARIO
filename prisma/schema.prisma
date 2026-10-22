@@ -293,6 +293,9 @@ model TourBooking {
   /// fecha y las personas de estas reservas solo cambian desde Salidas, que
   /// pasa por el candado del cupo; Reservas las rechaza.
   salidaId              String?
+  /// Check-in previo y encuesta de satisfacción (21 oct 2026). Tabla aparte, no
+  /// el `_meta`: el PATCH de Reservas reescribe `lineItems` entero.
+  encuesta              EncuestaReserva?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -638,7 +641,8 @@ model CorteSemanal {
   semana      String   @unique
   /// Domingo de la semana, YYYY-MM-DD.
   hasta       String
-  /// { [claveSalida]: { incluida, costos: [{ concepto, monto }] } }
+  /// { ["YYYY-MM-DD|<id de la reserva>|<slug>"]: { incluida, costos: [{ concepto, monto }] } }
+  /// Una entrada por reserva en cada tour y día (desde el 20 oct 2026).
   captura     Json
   /// Las cifras tal como quedaron al guardar (ver `ResumenCorte`).
   resumen     Json
@@ -646,6 +650,13 @@ model CorteSemanal {
   costos      Int
   utilidad    Int
   guardadoPor String
+  /// "borrador": solo se guardaron los costos («Guardar costos»). "cerrado":
+  /// se hizo el corte. Un cerrado no vuelve a borrador.
+  estado      String   @default("cerrado")
+  /// Lo cobrado de la semana, escrito a mano en «La semana»:
+  /// [{ monto, recibio: "Manolo" | "Martín", concepto: <de qué, texto libre> }].
+  /// Nullable: los cortes de antes no lo tienen y `db push` no debe tumbarse.
+  cobros      Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -832,4 +843,84 @@ model LiderGrupo {
   updatedAt         DateTime @updatedAt
 
   @@index([estado])
+}
+
+// ─── Check-in, cumpleaños y satisfacción (21 oct 2026) ──────────────────────
+// Lo que el cliente nos cuenta de sí mismo un día antes del tour y lo que nos
+// dice al volver. Vive en su propia tabla y no en el `_meta` de `lineItems`
+// porque el PATCH de Reservas reescribe ese arreglo entero (un panel abierto
+// sin recargar borraría las respuestas), porque los tableros de Análisis
+// necesitan consultarlas, y porque un dato personal tiene que poder borrarse
+// solo si la persona lo pide (derechos ARCO). Todo opcional: `db push` corre en
+// cada arranque de Railway.
+
+/// Una por reserva. El `token` es la liga pública del check-in y de la
+/// encuesta (`/checkin/<token>`, `/opina/<token>`): aleatorio y guardado, como
+/// el de `AbandonedCart`, para poder invalidarlo sin rotar ninguna llave.
+model EncuestaReserva {
+  id        String      @id @default(cuid())
+  bookingId String      @unique
+  booking   TourBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  token     String      @unique @default(cuid())
+
+  /// Check-in: cuándo y por dónde se le mandó (correo | whatsapp), y cuándo contestó.
+  checkinEnviadoEn   DateTime?
+  checkinEnviadoPor  String?
+  checkinEn          DateTime?
+  ciudadOrigen       String?
+  /// YYYY-MM-DD. Para el correo de cumpleaños (solo con `aceptaPromos`).
+  fechaNacimiento    String?
+  /// pareja | amigos | familia | empresa | solo
+  tipoGrupo          String?
+  /// google | maps | instagram | recomendacion | paraiso | otro
+  comoNosConocio     String?
+  /// De quién fue la recomendación, o cuál fue el «otro».
+  comoNosConocioOtro String?
+  primeraVez         Boolean?
+  /// vacaciones | pareja | celebracion | escapada | trabajo | otro
+  motivo             String?
+  /// Casilla obligatoria del aviso de privacidad y la versión que aceptó.
+  aceptaAviso        Boolean   @default(false)
+  avisoVersion       String?
+  /// Finalidad secundaria: felicitación de cumpleaños y promociones. Aparte y
+  /// opcional; la baja la apaga.
+  aceptaPromos       Boolean   @default(false)
+
+  /// Satisfacción: cuándo salió el correo y lo que contestó.
+  satisfaccionEnviadaEn DateTime?
+  satisfaccionEn        DateTime?
+  /// 1 a 5 estrellas.
+  calificacion          Int?
+  /// 0 a 10: ¿qué tan probable es que nos recomiendes?
+  recomendaria          Int?
+  comentario            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([checkinEn])
+  @@index([satisfaccionEn])
+}
+
+/// El regalo de cumpleaños: 10 % en los tours (sin RZR, hotel ni extras) de su
+/// siguiente reserva. Uno por persona y año, de un solo uso, 60 días.
+model CodigoCumple {
+  id         String    @id @default(cuid())
+  /// CUMPLE-XXXXX
+  codigo     String    @unique
+  email      String
+  nombre     String
+  /// El año del cumpleaños: impide mandarlo dos veces el mismo año.
+  anio       Int
+  /// YYYY-MM-DD, último día en que vale.
+  venceEl    String
+  /// De qué check-in salió.
+  encuestaId String?
+  enviadoEn  DateTime?
+  canjeadoEn DateTime?
+  /// Folio de la reserva donde se usó.
+  folioCanje String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([email, anio])
 }

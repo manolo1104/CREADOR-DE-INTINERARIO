@@ -1,7 +1,7 @@
 import { TOURS_DB, tourDurRange, GRUPO_MAX, esPorPersona, fmtHora12, partesRecogida, recogidaDeTour, salidaCorta } from "@/lib/tours";
 import { excepcionesSalida } from "@/lib/recogidaTexto";
 import { TOUR_REQUISITOS } from "@/lib/tourRequisitos";
-import { incluyeDesayuno, rangoGrupo, rangoPorPersona } from "@/lib/catalogoResumen";
+import { incluyeDesayuno, notaCargoValles, rangoGrupo, rangoPorPersona } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { fmtMoney, fmtNumber } from "@/lib/i18n/format";
@@ -313,7 +313,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     return [
       {
         q: "How much does a tour in the Huasteca Potosina cost, and what does the price include?",
-        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
+        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
       },
       {
         q: "Where do the tours depart from? Do you pick me up at my hotel?",
@@ -355,7 +355,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
   return [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina y qué incluye el precio?",
-      a: `Los tours guiados de un día cuestan de $${fmtNumber(rangoHoy().min, locale)} a ${m(rangoHoy().max)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía.${excepcionUnidad}`,
+      a: `Los tours guiados de un día cuestan de $${fmtNumber(rangoHoy().min, locale)} a ${m(rangoHoy().max)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía.${excepcionUnidad}`,
     },
     {
       q: "¿De dónde salen los tours? ¿Pasan por mi hotel?",

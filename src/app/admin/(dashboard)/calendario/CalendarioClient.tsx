@@ -8,7 +8,12 @@ import type { TourBooking } from "@prisma/client";
 import { ChevronLeft, ChevronRight, MapPin, Phone } from "lucide-react";
 import { hoyMX } from "@/lib/dates";
 import { hospedajeDeReserva } from "@/lib/admin/hospedaje";
+import { grupoDe } from "@/lib/admin/reserva";
 import { colorDeTour, codigoDeTour, nombreDeTour } from "@/lib/admin/coloresTour";
+import { playClick } from "@/lib/admin/sfx";
+import ReservaDetalle from "@/components/admin/ReservaDetalle";
+import { CheckinBoton } from "@/components/admin/Checkin";
+import type { EstadoCheckin } from "@/lib/encuestas/opciones";
 
 const DIAS = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -28,6 +33,8 @@ interface Salida {
   /** Para llamarle la víspera y para pasar por él. Lo que el chofer necesita. */
   telefono: string;
   hospedaje: string | null;
+  /** La reserva completa, para abrir su ficha (la misma de la pestaña Reservas). */
+  reserva: TourBooking;
 }
 
 /** Un apartado de 15 minutos del carrito del sitio en un recorrido y un día (lo arma `page.tsx`). */
@@ -38,11 +45,15 @@ export interface ApartadoDelDia {
   vence:    number;
 }
 
-export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
+export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {} }: {
   bookings: TourBooking[];
   cupo: ResumenCupoPanel;
   apartados?: Record<string, ApartadoDelDia[]>;
+  /** El estado del check-in de cada reserva (21 oct 2026). */
+  checkins?: Record<string, EstadoCheckin>;
 }) {
+  const [checkins, setCheckins] = useState(checkinsIniciales);
+  const ponCheckin = (id: string) => (e: EstadoCheckin) => setCheckins(c => ({ ...c, [id]: e }));
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -53,6 +64,8 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
   const [cupoDias, setCupoDias] = useState(cupo.dias);
   const [guardandoCupo, setGuardandoCupo] = useState<string | null>(null);
   const [msjCupo, setMsjCupo] = useState<string | null>(null);
+  // La reserva abierta en su ficha, encima del panel del día.
+  const [detalle, setDetalle] = useState<TourBooking | null>(null);
 
   function prevMonth() { if (month===0) { setMonth(11); setYear(y=>y-1); } else setMonth(m=>m-1); }
   function nextMonth() { if (month===11) { setMonth(0); setYear(y=>y+1); } else setMonth(m=>m+1); }
@@ -64,10 +77,11 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
   // Cada reserva puede incluir varios tours (lineItems), cada uno con su propia fecha.
   // Expandimos en "salidas": una por tour para que aparezcan en TODOS sus días, no solo
   // en la fecha del tour principal.
-  const salidas = bookings.flatMap(b => {
+  const salidas = bookings.flatMap((b): Salida[] => {
     const lines = Array.isArray((b as any).lineItems)
       ? (b as any).lineItems.filter((l: any) => l && !l._meta && l.tourDate)
       : [];
+    const hospedaje = hospedajeDeReserva(b);
     if (lines.length > 0) {
       return lines.map((l: any, i: number) => ({
         key:          `${b.id}-${i}`,
@@ -84,13 +98,17 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
         // 🔴 El carrito guarda `children` (los dos tramos juntos) ADEMÁS de
         // `childrenMid` y `childrenSmall`: sumar los tres contaba dos veces a
         // cada niño. La misma cuenta que el cupo (`lib/cupoTour.ts`).
-        personas:     (Number(l.adults) || 0) + Math.max(Number(l.children) || 0, (Number(l.childrenMid) || 0) + (Number(l.childrenSmall) || 0)),
+        // El RZR va por vehículo (`adults: 0` y `unidades`): sin el respaldo
+        // de `grupoDe`, que lee el `numPersonas` capturado, salía «0p».
+        personas:     ((Number(l.adults) || 0) + Math.max(Number(l.children) || 0, (Number(l.childrenMid) || 0) + (Number(l.childrenSmall) || 0)))
+                        || grupoDe(b).total,
         monto:        l.subtotal != null ? Number(l.subtotal) : b.totalAmount,
         confirmationNumber: b.confirmationNumber,
         guia:         ((b as any).guia || "") as string,
         idiomaTour:   ((b as any).idiomaTour || "es") as string,
         telefono:     b.customerPhone || "",
-        hospedaje:    hospedajeDeReserva(b),
+        hospedaje,
+        reserva:      b,
       }));
     }
     return [{
@@ -99,13 +117,14 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
       tourSlug:     b.tourSlug,
       tourName:     b.tourName,
       customerName: b.customerName,
-      personas:     b.adults + b.children,
+      personas:     grupoDe(b).total,
       monto:        b.totalAmount,
       confirmationNumber: b.confirmationNumber,
       guia:         ((b as any).guia || "") as string,
       idiomaTour:   ((b as any).idiomaTour || "es") as string,
       telefono:     b.customerPhone || "",
-      hospedaje:    hospedajeDeReserva(b),
+      hospedaje,
+      reserva:      b,
     }];
   });
 
@@ -302,10 +321,20 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
               <p className="font-dm text-[11px] text-[#1B4332]/50 mb-3">Sin salidas este día.</p>
             )}
             <div className="space-y-3">
+              {/* Clic en la tarjeta → la ficha completa de la reserva, la misma
+                  de la pestaña Reservas (Manolo, 20 oct 2026): antes había que
+                  ir a buscarla allá para ver el grupo, los cobros o las notas.
+                  El nombre es el botón (teclado y lector de pantalla); el resto
+                  de la tarjeta solo amplía el área de clic. */}
               {sel.map(s => (
-                <div key={s.key} className="border border-[#1B4332]/10 p-3 rounded-sm"
+                <div key={s.key} onClick={() => { playClick(); setDetalle(s.reserva); }}
+                  className="border border-[#1B4332]/10 p-3 rounded-sm cursor-pointer hover:border-[#1B4332]/30 hover:bg-[#FAFAF8] transition-colors"
                   style={{borderLeft:`3px solid ${colorDeTour(s.tourSlug)}`}}>
-                  <p className="font-dm text-sm font-medium text-[#1B4332]">{s.customerName}</p>
+                  <button type="button"
+                    onClick={(e) => { e.stopPropagation(); playClick(); setDetalle(s.reserva); }}
+                    className="block text-left font-dm text-sm font-medium text-[#1B4332] hover:underline panel-foco">
+                    {s.customerName}
+                  </button>
                   <p className="font-dm text-xs text-[#1B4332]/50 mb-1">
                     <span className="font-bold" style={{color:colorDeTour(s.tourSlug)}}>{codigoDeTour(s.tourSlug)}</span>{" "}{s.tourName}
                   </p>
@@ -341,7 +370,10 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
                     </p>
                   </div>
 
-                  <p className="font-mono text-[9px] text-[#1B4332] mt-1">{s.confirmationNumber}</p>
+                  <div className="flex items-center justify-between gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                    <p className="font-mono text-[9px] text-[#1B4332]">{s.confirmationNumber}</p>
+                    <CheckinBoton r={s.reserva} estado={checkins[s.reserva.id]} onEstado={ponCheckin(s.reserva.id)} variante="chip" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -399,6 +431,10 @@ export default function CalendarioClient({ bookings, cupo, apartados = {} }: {
           </aside>
         </div>
       )}
+
+      {/* Fuera del panel: es un portal con z-[60], encima del panel (z-50), y
+          Escape la cierra a ella sola. */}
+      {detalle && <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} onCheckin={ponCheckin(detalle.id)} />}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { CodigoTour } from "@/components/admin/CodigoTour";
 import { grupoDe, grupoCorto } from "@/lib/admin/reserva";
 import { RioEstadoControl } from "./RioEstadoControl";
 import { CupoPaqueteControl } from "./CupoPaqueteControl";
+import { PermisosPanel, type PersonaPermisos } from "./PermisosPanel";
+import { Cifra } from "@/components/admin/Cifra";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
@@ -30,11 +32,13 @@ interface Props {
   activeQuotes:     number;
   /** Ingresos del mes: solo para quien puede ver los números del negocio. */
   verDinero?:       boolean;
+  /** Las demás personas del panel y qué pestañas ve cada una (solo Manolo ve Inicio). */
+  personas?:        PersonaPermisos[];
 }
 
 export default function DashboardClient({
   todayBookings, upcomingBookings, recentBookings, pendingQuotes,
-  monthIngresos, monthReservas, pendingAmount, activeQuotes, verDinero = true,
+  monthIngresos, monthReservas, pendingAmount, activeQuotes, verDinero = true, personas = [],
 }: Props) {
   const today      = new Date();
   const dateStr    = today.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -273,40 +277,13 @@ export default function DashboardClient({
           </Link>
         ))}
       </div>
-    </div>
-  );
-}
 
-
-/**
- * Una cifra del panel.
- *
- * Todas comparten tamaño y peso: la diferencia la marca el color, y solo
- * cuando significa algo (verde = entró dinero, ámbar = falta cobrarlo). Antes
- * cada tarjeta elegía su tamaño y la que estaba en verde parecía la
- * importante aunque no lo fuera.
- */
-function Cifra({ etiqueta, valor, pie, tono }: {
-  etiqueta: string;
-  valor: React.ReactNode;
-  pie: string;
-  tono: "positivo" | "acento" | "alerta" | "neutro" | "apagado";
-}) {
-  const color = {
-    positivo: "text-[#2b845c]",
-    acento:   "text-[#1B4332]",
-    alerta:   "text-[#a86814]",
-    neutro:   "text-[#16362a]",
-    apagado:  "text-[rgba(22,54,42,0.28)]",
-  }[tono];
-
-  return (
-    <div className="panel-card panel-card-alta px-4 py-3.5">
-      <p className="panel-eyebrow mb-2">{etiqueta}</p>
-      <p className={`panel-cifra font-cormorant text-[28px] leading-none font-light mb-1 ${color}`}>
-        {valor}
-      </p>
-      <p className="text-[11px] font-dm text-[rgba(22,54,42,0.51)]">{pie}</p>
+      {/* Qué pestañas ve cada persona: se decide aquí, y aquí solo entra Manolo. */}
+      {personas.length > 0 && (
+        <div className="mt-6">
+          <PermisosPanel personas={personas} />
+        </div>
+      )}
     </div>
   );
 }

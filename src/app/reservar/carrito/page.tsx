@@ -317,7 +317,7 @@ export default function CarritoPage() {
               {/* Primero y en su propio recuadro (Manolo, 7 oct 2026): es el
                   dato que el equipo necesita para la logística del día. Antes
                   era el último renglón gris, «¿Dónde te hospedas?». */}
-              <PreguntaRecogida valor={pickup} cambiar={setPickup} id="carrito-pickup" />
+              <PreguntaRecogida valor={pickup} cambiar={setPickup} id="carrito-pickup" zona={c.zona} cambiarZona={c.cambiarZona} errorZona={c.errorZona} />
               <input
                 ref={nombreRef}
                 value={name} onChange={(e) => setName(e.target.value)}

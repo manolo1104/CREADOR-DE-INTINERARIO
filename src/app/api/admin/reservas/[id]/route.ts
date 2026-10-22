@@ -7,6 +7,11 @@ import {
 import { sesionActual } from "@/lib/admin/sesion";
 import { puedeHacer } from "@/lib/admin/usuarios";
 import { anularCobro } from "@/lib/admin/cobros";
+import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
+import {
+  canjearCodigoCumple, codigoCumpleAlGuardar, codigoDeLineas, liberarCodigoCumple, liberarCodigosDeFolio,
+} from "@/lib/encuestas/cumple";
+import { hoyMX } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +70,59 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ];
       }
     }
+    // El descuento: si cambió, queda sellado con quién y cuándo, y en su
+    // historial; si no, se queda el sello de antes (ver `descuento.ts`).
+    let eventoDescuento = null;
+    if (data.lineItems !== undefined) {
+      const sellado = sellarEnLineItems(data.lineItems, antes?.lineItems ?? [], sesion?.nombre ?? "Desconocido");
+      data.lineItems = sellado.lineItems;
+      eventoDescuento = sellado.evento;
+    }
+    // El código de cumpleaños: se canjea si es nuevo, se libera si se quitó.
+    let resumenCumple: string | null = null;
+    let canjeado: string | null = null;
+    let porLiberar: string | null = null;
+    if (data.lineItems !== undefined && antes) {
+      const r = await codigoCumpleAlGuardar(data.lineItems, antes.lineItems, antes.confirmationNumber, hoyMX());
+      if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 });
+      ({ resumen: resumenCumple, canjeado, porLiberar } = r);
+    }
+    // Cancelar suelta el código (el regalo le vuelve a servir al cliente);
+    // reactivar una cancelada lo vuelve a tomar, si nadie más lo usó.
+    const cancela   = !!antes && data.status === "cancelled" && antes.status !== "cancelled";
+    const reactiva  = !!antes && data.status !== undefined && data.status !== "cancelled" && antes.status === "cancelled";
+    if (reactiva && antes) {
+      const codigo = codigoDeLineas(data.lineItems !== undefined ? data.lineItems : antes.lineItems);
+      if (codigo && codigo !== canjeado) {
+        const r = await canjearCodigoCumple(codigo, antes.confirmationNumber, hoyMX());
+        if (!r.ok) {
+          if (canjeado) await liberarCodigoCumple(canjeado, antes.confirmationNumber);
+          return NextResponse.json({ error: `${r.error} Quítalo de la reserva antes de reactivarla.` }, { status: 409 });
+        }
+        canjeado = codigo;
+      }
+    }
     const updated = await prisma.tourBooking.update({
       where: { id: params.id },
       data,
+    }).catch(async (e) => {
+      // No se guardó: el código recién tomado se suelta y el de antes se queda.
+      if (canjeado && antes) await liberarCodigoCumple(canjeado, antes.confirmationNumber);
+      throw e;
     });
+    if (porLiberar) await liberarCodigoCumple(porLiberar, updated.confirmationNumber);
+    if (cancela && (await liberarCodigosDeFolio(updated.confirmationNumber))) {
+      resumenCumple = [resumenCumple, "al cancelarla se liberó su código de cumpleaños"].filter(Boolean).join(" · ");
+    }
+    if (eventoDescuento || resumenCumple) {
+      await registrarEnBitacora({
+        accion:     "modificó",
+        entidad:    "reserva",
+        referencia: updated.confirmationNumber,
+        resumen:    `Reserva ${updated.confirmationNumber} — ${updated.customerName}: `
+          + [eventoDescuento ? resumenEvento(eventoDescuento) : null, resumenCumple].filter(Boolean).join(" · "),
+      });
+    }
 
     const cambios = camposCambiados(antes as any, data, ETIQUETAS_RESERVA);
     if (cambios.length) {
@@ -119,6 +173,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
     await prisma.evidencia.deleteMany({ where: { bookingId: params.id } });
     await prisma.tourBooking.delete({ where: { id: params.id } });
+    // El código de cumpleaños que usaba vuelve a servirle al cliente.
+    if (antes) await liberarCodigosDeFolio(antes.confirmationNumber);
 
     await registrarEnBitacora({
       accion:     "eliminó",

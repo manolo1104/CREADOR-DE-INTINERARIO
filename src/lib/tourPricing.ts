@@ -1,7 +1,7 @@
 // Cálculo de precios AUTORITATIVO en el servidor.
 // El cliente nunca decide el monto a cobrar: aquí se recalcula desde TOURS_DB.
 
-import { TOURS_DB, tourEnFecha, type Tour, type TourRuta, type TourVehiculo } from "./tours";
+import { TOURS_DB, tourEnFecha, cargoVallesDe, type Tour, type TourRuta, type TourVehiculo } from "./tours";
 import { totalRecorrido, validatePromoCode, minimoPersonas, esViajeroSolo } from "./tourBooking";
 import { descuentoPorPosicion } from "./carrito";
 
@@ -286,6 +286,29 @@ export interface LineaCarrito {
    * que sumarlo a un grupo armado para esa fecha.
    */
   viajeroSolo?: boolean;
+  /** Sale de Ciudad Valles y este recorrido lo cobra (`cargoValles`): lo cobrado, ya dentro de `subtotal`. */
+  cargoValles?: number;
+}
+
+/** Dónde se hospeda el cliente, cuando un recorrido del carrito lo necesita para cobrar. */
+export type ZonaHospedaje = "xilitla" | "valles";
+
+/** El add-on con que viaja el cargo de Valles en el renglón: así lo ven el correo, las notas y el panel. */
+export const ID_TRASLADO_VALLES = "traslado-valles";
+
+/** Lo que llega del navegador, ya validado. Cualquier otra cosa es «no eligió». */
+export function zonaValida(z: unknown): ZonaHospedaje | null {
+  return z === "xilitla" || z === "valles" ? z : null;
+}
+
+/** «Ciudad Valles» / «Xilitla»: el mismo texto que escriben el bot y el panel en `_meta.zonaHospedaje`. */
+export function nombreZona(z: ZonaHospedaje): string {
+  return z === "valles" ? "Ciudad Valles" : "Xilitla";
+}
+
+/** ¿Algún recorrido de estos cobra distinto según la zona? Entonces hay que preguntarla antes de cobrar. */
+export function carritoPideZona(slugs: string[]): boolean {
+  return slugs.some((s) => cargoVallesDe(TOURS_DB.find((t) => t.slug === s)) > 0);
 }
 
 export type TarifaCarrito =
@@ -360,7 +383,7 @@ function motivoSinTarifa(raw: Record<string, unknown>): string | null {
   return null;
 }
 
-export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
+export function tarifarRecorridos(items: unknown[], { zona }: { zona?: ZonaHospedaje | null } = {}): TarifaCarrito {
   const lineItems: LineaCarrito[] = [];
   let total = 0;
 
@@ -493,6 +516,29 @@ export function tarifarRecorridos(items: unknown[]): TarifaCarrito {
         ahorroMultiple += rebaja;
       });
       total -= ahorroMultiple;
+    }
+  }
+
+  // ── Traslado desde Ciudad Valles (solo los recorridos con `cargoValles`) ──
+  // DESPUÉS del descuento por varios recorridos, a propósito: son $400 por
+  // reserva, exactos. Metido antes, la Ruta como segundo recorrido cobraba $360.
+  // Va dentro del renglón (subtotal + add-on) y no como renglón suelto: así lo
+  // llevan el webhook (`items` compacto), el corte y el panel sin tocarlos.
+  if (zona === "valles") {
+    for (const linea of lineItems) {
+      const cargo = cargoVallesDe(TOURS_DB.find((t) => t.slug === linea.tourSlug));
+      if (cargo <= 0) continue;
+      linea.cargoValles = cargo;
+      // En el nombre también: el correo de confirmación no pinta los add-ons, y
+      // sin esto el cliente veía $400 de más sin explicación.
+      linea.tourName = `${linea.tourName} · desde Ciudad Valles (+$${cargo.toLocaleString("es-MX")} de traslado)`;
+      linea.subtotal += cargo;
+      if (linea.subtotalSinDescuento !== undefined) linea.subtotalSinDescuento += cargo;
+      linea.addOns = [
+        ...(linea.addOns ?? []),
+        { id: ID_TRASLADO_VALLES, nombre: "Traslado desde Ciudad Valles", cantidad: 1, precio: cargo, subtotal: cargo },
+      ];
+      total += cargo;
     }
   }
 

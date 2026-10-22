@@ -5,13 +5,16 @@ import { estaDeBaja } from "@/lib/estaDeBaja";
 import { buildReviewEmailHtml } from "@/lib/reviewEmail";
 import { actividad, logger } from "@/lib/logger";
 import {
-  ESTADO_ELEGIBLE,
+  DESDE_PENDIENTES,
+  ESTADOS_NO_ELEGIBLES,
   fechaLimiteResena,
   fechaMinimaResena,
   localeDeReserva,
   marcarReviewPedida,
   reviewPedidaEn,
 } from "@/lib/reviewRequest";
+import { asegurarEncuesta, correoUtil, linkOpina, ultimoDiaDelTour } from "@/lib/encuestas/encuesta";
+import { hoyMX } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -52,18 +55,30 @@ export async function POST(req: NextRequest) {
 
   // `tourDate` es String ISO `YYYY-MM-DD`: la comparación lexicográfica de
   // Prisma es exacta para este formato (mismo criterio que `cartFollowUp.ts`).
-  const candidatos = await prisma.tourBooking.findMany({
+  // La columna es la del PRIMER renglón: se trae hasta hoy y se decide con el
+  // ÚLTIMO día del viaje, para no pedir la opinión a media estancia.
+  const traidos = await prisma.tourBooking.findMany({
     where: {
-      status:    ESTADO_ELEGIBLE,
-      tourDate:  { lte: hasta, gte: desde },
+      status:    { notIn: ESTADOS_NO_ELEGIBLES },
+      tourDate:  { lte: hoyMX(), gte: desde },
       customerEmail: { not: "" },
+      // Pagada, o pendiente con anticipo (ver `DESDE_PENDIENTES`).
+      OR: [{ status: { not: "pending" } }, { depositoPagado: { gt: 0 } }],
     },
     select: {
       id: true, customerName: true, customerEmail: true,
       tourName: true, tourSlug: true, tourDate: true, lineItems: true,
+      adults: true, children: true, totalAmount: true, status: true,
+      encuesta: { select: { satisfaccionEnviadaEn: true, satisfaccionEn: true } },
     },
-    orderBy: { tourDate: "asc" },
-    take: 200,
+    // Los más recientes primero: con el tope de 300, los que se quedan fuera
+    // son los de hace semanas, nunca los de ayer.
+    orderBy: { tourDate: "desc" },
+    take: 300,
+  });
+  const candidatos = traidos.filter((b) => {
+    const fin = ultimoDiaDelTour(b);
+    return fin <= hasta && (b.status !== "pending" || fin >= DESDE_PENDIENTES) && correoUtil(b.customerEmail);
   });
 
   let enviados = 0;
@@ -74,8 +89,10 @@ export async function POST(req: NextRequest) {
 
   for (const b of candidatos) {
     // Una sola vez por reserva. Sin esta marca, el cron volvería a pedir la
-    // misma reseña cada día que el tour siga dentro de la ventana.
-    if (reviewPedidaEn(b.lineItems)) { yaPedidas++; continue; }
+    // misma reseña cada día que el tour siga dentro de la ventana. Se mira
+    // también la tabla de encuestas: el `_meta` lo puede pisar un PATCH del panel.
+    // Y si ya contestó la encuesta (por la liga del check-in), tampoco.
+    if (reviewPedidaEn(b.lineItems) || b.encuesta?.satisfaccionEnviadaEn || b.encuesta?.satisfaccionEn) { yaPedidas++; continue; }
 
     const locale = localeDeReserva(b.lineItems);
     // Con los dos idiomas activos esto ya no descarta a nadie; se deja porque
@@ -89,11 +106,13 @@ export async function POST(req: NextRequest) {
     if (dry) continue;
 
     try {
+      const enc = await asegurarEncuesta(b.id);
       const { subject, html } = buildReviewEmailHtml({
         customerName: b.customerName,
         tourName:     b.tourName,
         tourSlug:     b.tourSlug,
         locale,
+        opinaUrl:     linkOpina(enc.token),
       });
       await sendBrevoEmail({ to: [{ email: b.customerEmail }], subject, htmlContent: html });
 
@@ -103,6 +122,7 @@ export async function POST(req: NextRequest) {
         where: { id: b.id },
         data:  { lineItems: marcarReviewPedida(b.lineItems) as never },
       });
+      await prisma.encuestaReserva.update({ where: { id: enc.id }, data: { satisfaccionEnviadaEn: new Date() } });
       enviados++;
     } catch (e) {
       fallidos++;

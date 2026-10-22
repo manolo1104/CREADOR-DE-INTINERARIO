@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { resumenCupoPanel, todasLasFechasCerradas } from "@/lib/cupoTour";
 import { apartadosVigentes } from "@/lib/apartadosAlmacen";
+import { estadosDe } from "@/lib/encuestas/encuesta";
 import CalendarioClient, { type ApartadoDelDia } from "./CalendarioClient";
 
 export const dynamic = "force-dynamic";
@@ -27,5 +28,6 @@ export default async function CalendarioPage() {
   // (`lib/cupoTour.ts`): si el panel contara a su modo, enseñaría libre un día
   // que el sitio ya no vende. Se cuenta aquí porque esa cuenta lee la base y
   // no puede viajar al navegador.
-  return <CalendarioClient bookings={bookings} cupo={resumenCupoPanel(bookings, cerradas)} apartados={apartadosPorDia} />;
+  const checkins = await estadosDe(bookings.map(b => b.id));
+  return <CalendarioClient bookings={bookings} cupo={resumenCupoPanel(bookings, cerradas)} apartados={apartadosPorDia} checkins={checkins} />;
 }

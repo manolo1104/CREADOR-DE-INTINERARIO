@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, MessageCircle, ChevronRight, X } from "lucide-react";
+import { Search, MessageCircle, ChevronRight, X, Cake } from "lucide-react";
 
 import type { Cliente } from "@/lib/admin/clientes";
+import { COMO_NOS_CONOCIO, TIPOS_GRUPO, etiqueta, textoCumple } from "@/lib/encuestas/opciones";
+
+/** «10» = octubre: el mes en México, para «cumpleaños este mes». */
+const mesMX = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }).slice(5, 7);
+const cumpleEsteMes = (c: Cliente) => !!c.perfil?.cumple && c.perfil.cumple.slice(5, 7) === mesMX();
 
 const fmx  = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) => d ? new Date(d+"T12:00:00").toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"}) : "—";
@@ -11,11 +16,15 @@ const fDate = (d: string) => d ? new Date(d+"T12:00:00").toLocaleDateString("es-
 export default function ClientesClient({ clientes }: { clientes: Cliente[] }) {
   const [search,   setSearch]   = useState("");
   const [selected, setSelected] = useState<Cliente|null>(null);
+  const [soloCumple, setSoloCumple] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return clientes.filter(c => !q || [c.nombre, c.email, c.telefono, ...c.tours].some(v => v?.toLowerCase().includes(q)));
-  }, [clientes, search]);
+    return clientes
+      .filter(c => !soloCumple || cumpleEsteMes(c))
+      .filter(c => !q || [c.nombre, c.email, c.telefono, c.perfil?.ciudad ?? "", ...c.tours].some(v => v?.toLowerCase().includes(q)));
+  }, [clientes, search, soloCumple]);
+  const cumplenEsteMes = useMemo(() => clientes.filter(cumpleEsteMes).length, [clientes]);
 
   const waUrl = (c: Cliente) =>
     `https://wa.me/${c.telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${c.nombre}, te escribimos de Tours Huasteca Potosina 🌿`)}`;
@@ -39,6 +48,15 @@ export default function ClientesClient({ clientes }: { clientes: Cliente[] }) {
         />
       </div>
 
+      {/* Los que cumplen este mes (del check-in). El correo con su 10 % sale solo
+          si aceptaron promociones; esto es para felicitarlos también en persona. */}
+      <div className="mb-4">
+        <button type="button" onClick={() => setSoloCumple(v => !v)} aria-pressed={soloCumple}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-dm rounded-full border transition-colors ${soloCumple ? "bg-[#1B4332] border-[#1B4332] text-white" : "border-[#1B4332]/15 text-[#1B4332]/70 hover:border-[#1B4332]/40"}`}>
+          <Cake className="w-3.5 h-3.5" /> Cumpleaños este mes ({cumplenEsteMes})
+        </button>
+      </div>
+
       <div className="panel-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-dm">
@@ -59,7 +77,10 @@ export default function ClientesClient({ clientes }: { clientes: Cliente[] }) {
                 <tr key={c.clave} onClick={() => setSelected(c)}
                   className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 cursor-pointer transition-colors">
                   <td className="py-3 px-4">
-                    <p className="text-[#1B4332] font-medium">{c.nombre}</p>
+                    <p className="text-[#1B4332] font-medium">
+                      {c.nombre}
+                      {cumpleEsteMes(c) && <Cake className="inline w-3.5 h-3.5 ml-1.5 -mt-0.5 text-[#a86814]" aria-label={`Cumple el ${textoCumple(c.perfil?.cumple)}`} />}
+                    </p>
                     <p className="text-[#1B4332]/40 text-xs">{c.email || c.telefono || "Sin correo ni teléfono"}</p>
                   </td>
                   <td className="py-3 px-4 text-center text-[#1B4332]/70">{c.totalReservas}</td>
@@ -101,6 +122,13 @@ export default function ClientesClient({ clientes }: { clientes: Cliente[] }) {
                   {label:"Por cobrar",value:selected.saldo>0?fmx(selected.saldo):"—"},
                   {label:"Último tour",value:fDate(selected.ultimaFecha)},
                   {label:"Teléfono",value:selected.telefono||"—"},
+                  // Del check-in (21 oct 2026).
+                  ...(selected.perfil ? [
+                    {label:"Viene de",value:selected.perfil.ciudad||"—"},
+                    {label:"Viaja",value:etiqueta(TIPOS_GRUPO, selected.perfil.tipoGrupo)||"—"},
+                    {label:"Cumpleaños",value:selected.perfil.cumple ? `${textoCumple(selected.perfil.cumple)}${selected.perfil.aceptaPromos ? " 🎁" : ""}` : "—"},
+                    {label:"Nos conoció por",value:etiqueta(COMO_NOS_CONOCIO, selected.perfil.comoNosConocio)||"—"},
+                  ] : [{label:"Check-in",value:"Nunca lo ha hecho"}]),
                 ].map(({label,value}) => (
                   <div key={label} className="border border-[#1B4332]/10 bg-[#FAFAF8]/50 p-3 rounded-sm">
                     <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/40 font-dm mb-1">{label}</p>

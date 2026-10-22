@@ -215,6 +215,9 @@ export async function recuperarPago(
         meta.viajeroSolo ? `BAJO EL MÍNIMO (${meta.viajeroSolo}): pagó tarifa normal. Sumarlo a una salida compartida y confirmarle ${CONFIRMA_SALIDA_DIAS} días antes; si no se junta, REEMBOLSO del 100 %.` : "",
         meta.hospedaje ? `Hospedaje: ${meta.hospedaje}` : "",
         meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
+        // Ruta Surrealista desde Ciudad Valles (+$400 por reserva): ya va dentro
+        // del subtotal del renglón; aquí, para que el equipo sepa ir por él allá.
+        Number(meta.cargoValles) > 0 ? `🚐 SE HOSPEDA EN CIUDAD VALLES: traslado cobrado +$${Number(meta.cargoValles).toLocaleString("es-MX")}.` : "",
         // Eventos de Xantolo (4 oct 2026): lo que se opera esa noche y, en la
         // noche sin hotel, dónde pasar por el cliente.
         meta.recogida   ? `RECOGER EN: ${meta.recogida}` : "",
@@ -237,7 +240,7 @@ export async function recuperarPago(
           customerEmail:         emailValido ? clienteEmail : "pendiente@desconocido",
           customerPhone:         meta.customerPhone || null,
           notes:                 notas,
-          lineItems:             [...lineas, { _meta: true, locale }],
+          lineItems:             [...lineas, { _meta: true, locale, ...(meta.zonaHospedaje ? { zonaHospedaje: meta.zonaHospedaje } : {}) }],
           packageItems:          hotel?.habitacion
             ? [{
                 hotel:        "Hotel Paraíso Encantado",

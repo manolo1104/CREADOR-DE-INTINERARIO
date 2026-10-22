@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { MessageCircle, Check, Printer, Mail } from "lucide-react";
 import { playClick } from "@/lib/admin/sfx";
+import type { ResumenSatisfaccion } from "@/lib/admin/satisfaccion";
+import { Satisfaccion } from "./Satisfaccion";
 
 export interface FilaResena {
   id:       string;
@@ -25,7 +27,7 @@ function haceDias(ymd: string): string {
   return d <= 1 ? "ayer" : `hace ${d} días`;
 }
 
-export default function ResenasClient({ filas: iniciales }: { filas: FilaResena[] }) {
+export default function ResenasClient({ filas: iniciales, satisfaccion }: { filas: FilaResena[]; satisfaccion: ResumenSatisfaccion }) {
   const [filas, setFilas] = useState(iniciales);
 
   // Pendientes primero (del viaje más reciente al más viejo); luego las ya pedidas.
@@ -48,11 +50,19 @@ export default function ResenasClient({ filas: iniciales }: { filas: FilaResena[
 
   return (
     <div className="px-5 sm:px-7 py-6 max-w-[1400px] mx-auto">
+      {/* Qué tan contentos quedan (21 oct 2026): Google, la encuesta propia,
+          los que vuelven y los que llegan recomendados. */}
+      <div className="mb-5">
+        <p className="panel-eyebrow mb-1.5">Satisfacción</p>
+        <h1 className="font-cormorant text-[#16362a] text-[30px] leading-none font-light">Qué tan contentos quedan</h1>
+      </div>
+      <Satisfaccion r={satisfaccion} />
+
       <div className="mb-6">
-        <p className="panel-eyebrow mb-1.5">Reseñas de Google</p>
-        <h1 className="font-cormorant text-[#16362a] text-[30px] leading-none font-light">
+        <p className="panel-eyebrow mb-1.5">Reseñas de Google por WhatsApp</p>
+        <h2 className="font-cormorant text-[#16362a] text-[26px] leading-none font-light">
           {pendientes > 0 ? `${pendientes} por pedir` : "Todos al día"}
-        </h1>
+        </h2>
         <p className="mt-2 max-w-2xl text-[13px] font-dm text-[rgba(22,54,42,0.66)] leading-relaxed">
           Las reseñas son lo que más sube a la ficha en el mapa de Google. Por correo casi nadie
           reseña; por WhatsApp, al día siguiente del tour, sí. Un clic abre el WhatsApp con el

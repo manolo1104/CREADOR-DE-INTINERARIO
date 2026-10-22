@@ -1,4 +1,4 @@
-name: Petición de reseñas (post-tour)
+name: Petición de reseñas (post-tour) y cumpleaños
 
 on:
   schedule:
@@ -25,3 +25,15 @@ jobs:
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/pedir-resenas
+
+      - name: Felicitar a quien cumple años (10 % en su próximo tour)
+        # Solo a quien lo aceptó en el check-in. Revisa también los dos días
+        # anteriores por si GitHub se saltó una corrida; nunca manda dos el
+        # mismo año. Corre aunque la reseña haya fallado (`always()`), y si
+        # falla él, no tumba nada.
+        if: always()
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/cumpleanos

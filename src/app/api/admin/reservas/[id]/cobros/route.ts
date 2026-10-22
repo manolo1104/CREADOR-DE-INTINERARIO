@@ -8,6 +8,14 @@ import {
   cobrosDeReserva, registrarCobro, anularCobro, marcarEntregado, editarCobro,
   metodoValido, requiereComprobante,
 } from "@/lib/admin/cobros";
+import { RECEPTORES } from "@/lib/admin/corteSemanal";
+
+/**
+ * Quién tiene el dinero: solo los dos socios (Manolo, 20 oct 2026). Antes era
+ * texto libre y se anotaba «Erick», «Sitio web», «Guía del tour»…, y el corte no
+ * podía saber de quién era cada peso para las cuentas con Martín.
+ */
+const esReceptor = (v: unknown): v is string => typeof v === "string" && (RECEPTORES as string[]).includes(v);
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +55,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         { error: "Ese método necesita comprobante: sube la captura o el PDF." },
         { status: 400 },
       );
+    }
+    if (!esReceptor(b?.recibidoPor)) {
+      return NextResponse.json({ error: `Elige quién lo recibió: ${RECEPTORES.join(" o ")}.` }, { status: 400 });
     }
 
     const reserva = await prisma.tourBooking.findUnique({
@@ -99,7 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       monto,
       metodo,
       fecha:       b?.fecha,
-      recibidoPor: b?.recibidoPor ? String(b.recibidoPor) : sesion.nombre,
+      recibidoPor: String(b.recibidoPor),
       folio:       b?.folio,
       nota:        b?.nota ?? (desglosar ? "Se registró cómo entró dinero que ya figuraba cobrado" : null),
       creadoPor:   sesion.nombre,
@@ -163,6 +174,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       if (b?.metodo !== undefined && !metodoValido(b.metodo)) {
         return NextResponse.json({ error: "Método de pago desconocido" }, { status: 400 });
+      }
+      if (b?.recibidoPor !== undefined && !esReceptor(b.recibidoPor)) {
+        return NextResponse.json({ error: `Elige quién lo recibió: ${RECEPTORES.join(" o ")}.` }, { status: 400 });
+      }
+      // Pasar un cobro a un método que pide comprobante (la liga de pago, una
+      // transferencia) exige el comprobante, igual que al registrarlo. Solo si
+      // el método CAMBIA: los que registró Stripe solos no traen foto y se
+      // pueden corregir de otra cosa sin inventarles una.
+      const evidenciaNueva = Array.isArray(b?.evidenciaIds) && b.evidenciaIds.length > 0;
+      if (b?.metodo !== undefined && b.metodo !== cobro.metodoPago && requiereComprobante(b.metodo) && !evidenciaNueva) {
+        const tiene = await prisma.evidencia.count({ where: { movimientoId: id } });
+        if (tiene === 0) {
+          return NextResponse.json({ error: "Ese método necesita comprobante: sube la captura o el PDF." }, { status: 400 });
+        }
       }
       await editarCobro(id, {
         metodo:      b?.metodo,

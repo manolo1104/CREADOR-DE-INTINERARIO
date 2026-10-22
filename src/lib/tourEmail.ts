@@ -9,7 +9,7 @@ import { localizePaquete } from "./i18n/paquetes.en";
 import type { Locale } from "./i18n/config";
 import { extrasDe, calcExtraLine, totalExtras } from "./admin/extras";
 import { desgloseCotizacion } from "./admin/totalesCotizacion";
-import { hospedajeDeReserva } from "./admin/hospedaje";
+import { hospedajeDeReserva, SIN_HOSPEDAJE } from "./admin/hospedaje";
 import { CONTACTO } from "./contacto";
 import { HOTEL_PROPIO, horarioRestaurante } from "./hotelPropio";
 // 🔴 El nombre, las notas, el hotel o los conceptos a mano los escribe el
@@ -404,12 +404,12 @@ export function buildTourEmailHtml(data: {
    *
    * 🔴 «Por definir — te contactaremos por WhatsApp» es lo que guarda el
    * checkout de un tour cuando el cliente deja el campo en blanco: eso NO es
-   * tener dónde dormir, como tampoco «aún no sé» y parecidos.
+   * tener dónde dormir, como tampoco «aún no sé» y parecidos (`SIN_HOSPEDAJE`,
+   * en `admin/hospedaje.ts`: el panel usa la misma lista).
    *
    * A quien solo reservó el buceo (en la Media Luna, Rioverde) no se le ofrece
    * un cuarto a más de dos horas de su recorrido: recibe el del siguiente tour.
    */
-  const SIN_HOSPEDAJE = /por definir|por confirmar|a[uú]n no|todav[ií]a no|no s[eé](?![a-záéíóúñ])|no tengo|no tenemos|sin (?:hotel|hospedaje)|ninguno|pendiente|not sure|not yet|no hotel|tbd/i;
   const dondeDuerme = hospedajeDeReserva({ notes: null, packageItems: data.packageItems })
     ?? (data.pickupLugar?.trim() || null);
   const paqueteReservado = slugReal ? getPaquete(slugReal) : undefined;

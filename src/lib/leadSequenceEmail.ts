@@ -307,7 +307,7 @@ function recogidaDelDia(t: Tour): string {
   const veh  = p.vehiculo ? `, en ${p.vehiculo},` : "";
   const hora = p.hora ? ` ${p.hora}` : "";
   return `<strong style="color:#1a2e1a">Pasamos por ti</strong> a ${p.lugar}${veh}${hora}, `
-    + `y te regresamos aprox. ${regresoDeTour(t, false)}.${p.valles ? ` ${p.valles}` : ""} `
+    + `y te regresamos aprox. ${regresoDeTour(t, false)}.${p.valles ? ` ${p.valles}` : p.cargoValles ? ` ${p.cargoValles}` : ""} `
     + `No necesitas hospedarte con nosotros ni tener coche.`;
 }
 

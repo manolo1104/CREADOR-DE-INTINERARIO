@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import DescuentoEditor from "@/components/admin/DescuentoEditor";
+import { descuentoDeMeta, historialDeMeta, type Descuento, type EventoDescuento } from "@/lib/admin/descuento";
+import { useState, useMemo, useEffect } from "react";
 import type { TourQuote } from "@prisma/client";
-import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing } from "lucide-react";
+import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing, MapPin } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
-import { TOURS_LISTA, partesRecogida, type Tour } from "@/lib/tours";
+import { TOURS_LISTA, partesRecogida, cargoVallesDe, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
   type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
   sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn, EMPTY_PACKAGE, HUESPEDES_POR_DEFECTO,
   aplicarHabitacion, SelectorHabitacion, ConceptoPersonalizado, NotasInternas,
-  SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta,
+  SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta, TrasladoVallesLinea, conTrasladoValles,
 } from "@/components/admin/ReservaModal";
 import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
 import { HABITACION_POR_DEFECTO } from "@/lib/admin/habitacionesPanel";
@@ -67,7 +69,19 @@ function fRecordado(iso: string, hoy: string): string {
 }
 
 const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
-const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "", notasInternas: "" };
+/** De dónde sale el cliente: decide el traslado, y el Corte marca las de Valles (`zonaDeReserva`). */
+type ZonaCliente = "" | "xilitla" | "valles";
+const ZONA_TEXTO: Record<Exclude<ZonaCliente, "">, string> = { xilitla: "Xilitla", valles: "Ciudad Valles" };
+/** Lo guardado (del panel o lo que entendió el bot) → el botón que va prendido. */
+function zonaDeTexto(t: unknown): ZonaCliente {
+  const v = typeof t === "string" ? t : "";
+  return /\bvalles\b|\b(?:ciudad|cd)\.?\s*valle\b/i.test(v) ? "valles" : /xilitla/i.test(v) ? "xilitla" : "";
+}
+
+/** Los recorridos que cobran el traslado desde Valles (hoy solo la Ruta Surrealista). */
+const TOURS_CON_CARGO_VALLES = TOURS_LISTA.filter(t => cargoVallesDe(t) > 0);
+
+const EMPTY_FORM = { customerName: "", customerEmail: "", customerPhone: "", notes: "", notasInternas: "", zona: "" as ZonaCliente };
 
 function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string; numPersonas?: number | null; priceOverride?: number | null; discountType?: "percent" | "fixed"; discountValue?: number | null } {
   return pkgs.find((p: any) => p._meta) || {};
@@ -126,6 +140,12 @@ export default function CotizacionesClient(
   // Descuento
   const [discountType,   setDiscountType]   = useState<"percent" | "fixed">("percent");
   const [discountValue,  setDiscountValue]  = useState<string>("");
+  // Lo que ya está guardado del descuento (sello y cambios): solo se lee. Ver `descuento.ts`.
+  const [descuentoGuardado,  setDescuentoGuardado]  = useState<Descuento | null>(null);
+  const [descuentoHistorial, setDescuentoHistorial] = useState<EventoDescuento[]>([]);
+  // Código de cumpleaños que respalda el descuento (21 oct 2026). Aquí solo se
+  // valida; se marca como usado cuando la cotización se vuelve reserva.
+  const [codigoCumple,   setCodigoCumple]   = useState<string>("");
   const [anticipoTipo,   setAnticipoTipo]   = useState<"percent" | "fixed">("percent");
   const [anticipoValor,  setAnticipoValor]  = useState<string>("");
   // 48 h por omisión SOLO en las nuevas (decisión de oct 2026, igual que el
@@ -143,6 +163,16 @@ export default function CotizacionesClient(
 
   // «Hoy» en México: de aquí salen el «vence…», la franja y los mensajes.
   const hoy = hoyMX();
+
+  // Ruta Surrealista desde Ciudad Valles: +$400 POR RESERVA (Manolo, 20 oct
+  // 2026). Lo decide «¿De dónde sale el cliente?»: con Valles se pone solo en
+  // su línea y con Xilitla se quita. Los demás tours no cambian.
+  useEffect(() => {
+    setLines(ls => {
+      const nuevas = ls.map(l => conTrasladoValles(l, form.zona === "valles"));
+      return nuevas.some((l, i) => l !== ls[i]) ? nuevas : ls;
+    });
+  }, [form.zona, lines]);
 
   const toursTotal = lines.reduce((s, l) => s + calcLine(l), 0);
   const pkgsTotal  = packages.reduce((s, p) => s + calcPackageLine(p), 0);
@@ -316,6 +346,7 @@ export default function CotizacionesClient(
     setPackages([]);
     setExtras([]);
     setPriceOverride(""); setDiscountValue(""); setDiscountType("percent");
+    setDescuentoGuardado(null); setDescuentoHistorial([]); setCodigoCumple("");
     setAnticipoTipo("percent"); setAnticipoValor(""); setVigencia("48h"); setNumPersonas("");
     setVenceEdit("");
     setStep(1);
@@ -331,6 +362,7 @@ export default function CotizacionesClient(
       customerPhone: q.customerPhone || "",
       notes:         q.notes || "",
       notasInternas: metaNotas.notasInternas || "",
+      zona:          zonaDeTexto(metaNotas.zonaHospedaje),
     });
     // El `_meta` de seguimiento viaja dentro de `lineItems`: no es una línea de
     // tour. Antes entraba al editor como renglón vacío y el guardado se negaba
@@ -367,11 +399,16 @@ export default function CotizacionesClient(
     const calc = editLines.reduce((s, l) => s + calcLine(l), 0)
                + editPkgs.reduce((s, p) => s + calcPackageLine(p), 0)
                + totalExtras(editExtras);
-    if (meta.priceOverride != null || meta.discountValue != null) {
+    // El descuento guardado, con su candado y su historial (ver `descuento.ts`).
+    const descuento = descuentoDeMeta(meta as any);
+    setDescuentoGuardado(descuento);
+    setDescuentoHistorial(historialDeMeta(meta as any));
+    setCodigoCumple(typeof (meta as any).codigoCumple === "string" ? (meta as any).codigoCumple : "");
+    if (meta.priceOverride != null || meta.discountValue != null || descuento) {
       // Formato nuevo: descuento y precio editado guardados explícitamente.
       setPriceOverride(meta.priceOverride != null ? String(meta.priceOverride) : "");
-      setDiscountType(meta.discountType === "fixed" ? "fixed" : "percent");
-      setDiscountValue(meta.discountValue != null ? String(meta.discountValue) : "");
+      setDiscountType(descuento?.tipo ?? (meta.discountType === "fixed" ? "fixed" : "percent"));
+      setDiscountValue(descuento ? String(descuento.valor) : "");
     } else {
       // Cotizaciones viejas (sin descuento guardado): preservar el total como precio editado.
       setPriceOverride(q.totalAmount !== calc ? String(q.totalAmount) : "");
@@ -426,9 +463,17 @@ export default function CotizacionesClient(
         priceOverride: priceOverride !== "" ? Number(priceOverride) : null,
         discountType,
         discountValue: discountValue !== "" ? Number(discountValue) : null,
+        // El descuento dicho siempre (también «sin descuento»): el servidor lo
+        // sella con quién lo puso o lo cambió (ver `descuento.ts`).
+        descuento: Number(discountValue) > 0 ? { tipo: discountType, valor: Math.round(Number(discountValue)) } : null,
         // Viaja en el `_meta` y NO en la columna `notes`: `notes` se imprime en
         // el correo y en el PDF del cliente, y esto no puede salir de aquí.
         notasInternas: form.notasInternas.trim(),
+        // De dónde sale el cliente (Manolo, 20 oct 2026): el mismo campo en que
+        // el bot guarda lo que entendió, para que la reserva y el Corte lo lean
+        // igual. Sin elegir, se queda lo que hubiera.
+        ...(form.zona ? { zonaHospedaje: ZONA_TEXTO[form.zona] } : {}),
+        codigoCumple: codigoCumple || null,
       },
       ...packages.map(p => ({ ...p, subtotal: calcPackageLine(p) })),
     ];
@@ -517,7 +562,12 @@ export default function CotizacionesClient(
         // reserva nace pendiente), pero es la cantidad que el modal de cobro
         // propone: casi siempre lo primero que entra es justo el anticipo.
         anticipoAcordado: anticipo,
-        pickupLugar: "Lobby de tu hotel en Xilitla",
+        // A quien sale de Valles no se le escribe el lobby de Xilitla: el correo
+        // imprime este texto en vez de la recogida del catálogo. Se deja vacío
+        // para anotar ahí su hotel, como hace la conversión del bot.
+        pickupLugar: zonaDeTexto((meta as any).zonaHospedaje) === "valles" ? "" : "Lobby de tu hotel en Xilitla",
+        // La zona viaja a la reserva: con ella el Corte marca la tarjeta.
+        ...((meta as any).zonaHospedaje ? { zonaHospedaje: (meta as any).zonaHospedaje } : {}),
         numPersonas: personas,
         // Rastro de la cotización de origen y del descuento que se le aplicó:
         // sin esto se perdía POR QUÉ el total no cuadra con la suma de líneas.
@@ -527,6 +577,13 @@ export default function CotizacionesClient(
         priceOverride:    meta.priceOverride ?? null,
         discountType:     meta.discountType ?? null,
         discountValue:    meta.discountValue ?? null,
+        // El descuento pasa a la reserva con su candado: el mismo, con quién lo
+        // puso y su historial (ver `descuento.ts`), para que no se pierda al editarla.
+        ...((meta as any).descuento !== undefined ? { descuento: (meta as any).descuento } : {}),
+        ...(Array.isArray((meta as any).descuentoHistorial) ? { descuentoHistorial: (meta as any).descuentoHistorial } : {}),
+        // El código de cumpleaños pasa a la reserva y ahí se canjea (el
+        // servidor lo rechaza si ya se usó en otra).
+        ...((meta as any).codigoCumple ? { codigoCumple: (meta as any).codigoCumple } : {}),
       },
       ...tourLines,
     ];
@@ -668,8 +725,11 @@ export default function CotizacionesClient(
     // Recogida. Los que solo recogen en Xilitla cobran aparte desde Valles.
     const trasladoTodos = toursCotizados.every(t => partesRecogida(t, false).incluyeTraslado);
     const conCostoValles = toursCotizados.filter(t => partesRecogida(t, false).valles).length;
-    const notaValles    = conCostoValles === 0 ? ""
-      : conCostoValles === toursCotizados.length ? " (desde Ciudad Valles, con costo adicional)"
+    // Y los que recogen en las dos pero cobran el traslado desde Valles (la
+    // Ruta Surrealista, +$400 por reserva): también «con costo adicional».
+    const conCargoValles = toursCotizados.filter(t => cargoVallesDe(t) > 0).length;
+    const notaValles    = conCostoValles + conCargoValles === 0 ? ""
+      : conCostoValles + conCargoValles === toursCotizados.length ? " (desde Ciudad Valles, con costo adicional)"
       : " (desde Ciudad Valles, en algunos con costo adicional)";
     const trasladoLi    = trasladoTodos
       ? `Transporte desde y hacia tu hotel${notaValles}`
@@ -1358,6 +1418,31 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                       onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={inputCls} />
                   </div>
                 </div>
+                {/* Dos botones y ya: de dónde sale cambia el traslado y los costos, y
+                    el Corte marca las de Valles para revisarlos. */}
+                <div>
+                  <p className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1" id="zona-cliente">¿De dónde sale el cliente?</p>
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="zona-cliente">
+                    {(["xilitla", "valles"] as const).map(z => {
+                      const activa = form.zona === z;
+                      return (
+                        <button key={z} type="button" role="radio" aria-checked={activa}
+                          onClick={() => { playClick(); setForm(f => ({ ...f, zona: z })); }}
+                          className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-sm border font-dm text-sm transition-colors panel-foco ${
+                            activa ? "bg-[#1B4332] border-[#1B4332] text-white" : "bg-white border-[#1B4332]/20 text-[#1B4332] hover:border-[#1B4332]/45"}`}>
+                          <MapPin size={14} aria-hidden="true" /> {ZONA_TEXTO[z]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {form.zona === "valles" && (
+                    <p className="mt-1.5 font-dm text-[11px] leading-snug text-[#7a4b0e]">
+                      {TOURS_CON_CARGO_VALLES.map(t => `${t.nombreCorto} +${fmx(cargoVallesDe(t))}`).join(" · ")} de traslado
+                      desde Ciudad Valles, por reserva (no por persona); se suma solo a su línea. Los demás tours pasan
+                      por el cliente sin costo extra.
+                    </p>
+                  )}
+                </div>
                 <div>
                   <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Notas</label>
                   <textarea value={form.notes} rows={3} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -1514,6 +1599,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                               }}
                             />
                           )}
+                          {line.tourSlug && <TrasladoVallesLinea line={line} />}
                           {line.tourSlug && <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcLine(line))}</p>}
                         </div>
                       </div>
@@ -1708,28 +1794,24 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   </div>
                 </div>
 
-                {/* Descuento */}
-                <div className="border border-[#1B4332]/20 bg-[#1B4332]/5 px-4 py-3 rounded-sm">
-                  <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-3">Descuento (opcional)</p>
-                  <div className="flex gap-2 items-center">
-                    <div className="flex border border-[#1B4332]/15 rounded-sm overflow-hidden">
-                      <button onClick={() => setDiscountType("percent")}
-                        className={`px-3 py-2 text-xs font-dm transition-colors ${discountType === "percent" ? "bg-[#1B4332] text-white" : "bg-white text-[#1B4332]/60 hover:bg-[#FAFAF8]"}`}>%</button>
-                      <button onClick={() => setDiscountType("fixed")}
-                        className={`px-3 py-2 text-xs font-dm transition-colors ${discountType === "fixed" ? "bg-[#1B4332] text-white" : "bg-white text-[#1B4332]/60 hover:bg-[#FAFAF8]"}`}>$</button>
-                    </div>
-                    <input type="number" min={0} value={discountValue}
-                      onChange={e => setDiscountValue(e.target.value)}
-                      placeholder={discountType === "percent" ? "ej. 10" : "ej. 500"}
-                      className={`flex-1 ${inputCls}`} />
-                    {discountValue !== "" && <button onClick={() => setDiscountValue("")} className="text-[#1B4332]/30 hover:text-red-500"><X className="w-4 h-4" /></button>}
-                  </div>
-                  {discountAmt > 0 && (
-                    <p className="mt-2 text-xs font-dm text-[#1B4332]">
-                      Descuento: −{fmx(discountAmt)}{discountType === "percent" && ` (${discountValue}%)`}
-                    </p>
-                  )}
-                </div>
+                {/* Descuento, con candado (ver `descuento.ts`) */}
+                <DescuentoEditor
+                  tipo={discountType}
+                  valor={discountValue}
+                  onCambio={(tipo, valor) => { setDiscountType(tipo); setDiscountValue(valor); }}
+                  base={baseTotal}
+                  guardado={descuentoGuardado}
+                  historial={descuentoHistorial}
+                  inputCls={inputCls}
+                  cumple={{
+                    codigo: codigoCumple,
+                    lineas: lines,
+                    cuando: "cuando la cotización se convierta en reserva",
+                    onAplicar: (codigo, monto) => { setCodigoCumple(codigo); setDiscountType("fixed"); setDiscountValue(String(monto)); },
+                    // Quitar el código quita también el descuento que puso.
+                    onQuitar: () => { setCodigoCumple(""); setDiscountType("percent"); setDiscountValue(""); },
+                  }}
+                />
 
                 {/* Total final */}
                 {(discountAmt > 0 || baseTotal > 0) && (

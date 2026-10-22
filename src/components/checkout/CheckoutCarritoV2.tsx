@@ -55,6 +55,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
     setCorreoGuardar, guardando, guardado, errorGuardar, setErrorGuardar, guardarCotizacion,
     guardarSilencioso, irAlRenglon, irAlPago, setFallos,
     pagarTodo, cambiarPagarTodo, puedePagarTodo, guiaIngles, setGuiaIngles,
+    zona, cambiarZona, errorZona,
   } = c;
   const tc = getBooking(locale).checkout;
 
@@ -259,6 +260,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
               name={name} setName={setName} email={email} setEmail={setEmail}
               phone={phone} setPhone={setPhone} pickup={pickup} setPickup={setPickup}
               guiaIngles={guiaIngles} setGuiaIngles={setGuiaIngles}
+              zona={zona} cambiarZona={cambiarZona} errorZona={errorZona}
               errores={erroresDatos} onSalirDe={validarCampo}
             />
             {/* 🔴 «Pagar completo» va AQUÍ y no en el paso ③: el importe se fija

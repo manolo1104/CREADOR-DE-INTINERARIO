@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
-import { usuariosAdmin, type UsuarioAdmin } from "./usuarios";
+import { usuariosAdmin, type SeccionAdmin, type UsuarioAdmin } from "./usuarios";
 
 // Sin fallback: si falta ADMIN_JWT_SECRET la app no puede firmar/verificar sesiones.
 function getSecret(): Uint8Array {
@@ -11,16 +11,22 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(raw);
 }
 
-export async function createToken(usuario: UsuarioAdmin): Promise<string> {
+/**
+ * La sesión lleva las pestañas que ve esa persona (`secciones`): el middleware
+ * no puede leer la base, así que las lee de aquí. `expira` (segundos epoch) sirve
+ * para volver a firmar la MISMA sesión con pestañas nuevas sin alargarla.
+ */
+export async function createToken(usuario: UsuarioAdmin, secciones: SeccionAdmin[], expira?: number): Promise<string> {
   return new SignJWT({
     role:   "admin",
     user:   usuario.user,
     rol:    usuario.rol,
     nombre: usuario.nombre,
+    secciones,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(expira ?? "7d")
     .sign(getSecret());
 }
 

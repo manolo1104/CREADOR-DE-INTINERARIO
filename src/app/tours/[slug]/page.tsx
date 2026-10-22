@@ -603,7 +603,7 @@ export default function TourDetailPage({ params }: Props) {
   const fraseCitable = (en
     ? `The ${nombreCitable} tour costs ${precioCitable}, ${duracionCitable} and ${salidaCitable}.`
     : `El tour ${nombreCitable} cuesta ${precioCitable}, ${duracionCitable} y ${salidaCitable}.`)
-    + (pRec.valles ? ` ${pRec.valles}` : "");
+    + (pRec.valles ? ` ${pRec.valles}` : pRec.cargoValles ? ` ${pRec.cargoValles}` : "");
 
   // Lo que va dentro de ese precio, leído del `incluye` en español —la fuente—
   // y no de una plantilla: dos de los diez recorridos NO llevan traslado y
@@ -811,7 +811,7 @@ export default function TourDetailPage({ params }: Props) {
             ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging in Xilitla and bring you back at the end.${recogida.nota ? " " + recogida.nota.en : ""}` }
           : ciudadUnica
             ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging — hotel, hostel, cabin or Airbnb — in ${ciudadUnica} and bring you back at the end. Transport is included and you don't need to stay with us. We confirm the exact time and address by WhatsApp after you book.` }
-            : { q: "Where does the tour depart from?", a: "There is no single departure point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. Round-trip transport is included and you don't need to stay with us. We confirm the exact time and address by WhatsApp after you book." },
+            : { q: "Where does the tour depart from?", a: `There is no single departure point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. ${recogida.cargoValles > 0 ? `Round-trip transport is included from Xilitla; from Ciudad Valles it's $${recogida.cargoValles.toLocaleString("en-US")} MXN extra per booking (not per person). You` : "Round-trip transport is included and you"} don't need to stay with us. We confirm the exact time and address by WhatsApp after you book.` },
       ]
     : [
         { q: `¿Qué ${esPlural ? "incluyen" : "incluye"} ${conArticulo}?`, a: incluyeLista.join(", ") + (todoIncluido ? ". Todo incluido en el precio." : ". Todo esto va incluido en el precio.") },
@@ -836,7 +836,7 @@ export default function TourDetailPage({ params }: Props) {
             ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje en Xilitla${recogida.vehiculo ? ` —en el propio ${recogida.vehiculo.es}—` : ""} y te regresamos al terminar.${recogida.nota ? " " + recogida.nota.es : ""}` }
           : ciudadUnica
             ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en ${ciudadUnica} y te regresamos al terminar. El traslado va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar.` }
-            : { q: "¿Dónde es el punto de salida?", a: "No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. El traslado redondo va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar." },
+            : { q: "¿Dónde es el punto de salida?", a: `No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. ${recogida.cargoValles > 0 ? `Desde Xilitla el traslado redondo va incluido; desde Ciudad Valles cuesta $${recogida.cargoValles.toLocaleString("es-MX")} más por reserva (no por persona). No` : "El traslado redondo va incluido y no"} necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar.` },
       ];
 
   // `TOUR_FAQS` llevaba ~150 líneas de preguntas específicas por tour que
@@ -1368,7 +1368,7 @@ export default function TourDetailPage({ params }: Props) {
                 {locale === "en" ? "Our fleet — price per vehicle (MXN)" : "Nuestra flota — precio por vehículo (MXN)"}
               </h3>
               <div className="overflow-x-auto border border-white/10">
-                <table className="w-full text-left font-dm text-xs min-w-[560px]">
+                <table className="w-full text-left font-dm text-xs min-w-[620px]">
                   <thead>
                     <tr className="border-b border-white/10 bg-negro/60">
                       <th className="px-4 py-3 text-[9px] tracking-[1.5px] uppercase text-crema/40 font-medium">
@@ -1385,8 +1385,22 @@ export default function TourDetailPage({ params }: Props) {
                     {tour.flota.map((v) => (
                       <tr key={v.nombre} className="border-b border-white/5 last:border-b-0">
                         <td className="px-4 py-3">
-                          <p className="text-crema/85 font-medium">{v.nombre}</p>
-                          <p className="text-[10px] text-crema/40">{v.capacidad}</p>
+                          <div className="flex items-center gap-3">
+                            {v.foto && (
+                              <Image
+                                src={v.foto}
+                                alt={`${v.nombre} — ${v.capacidad}`}
+                                width={96}
+                                height={96}
+                                sizes="96px"
+                                className="w-20 h-20 sm:w-24 sm:h-24 object-cover flex-shrink-0 border border-white/10"
+                              />
+                            )}
+                            <div>
+                              <p className="text-crema/85 font-medium">{v.nombre}</p>
+                              <p className="text-[10px] text-crema/40">{v.capacidad}</p>
+                            </div>
+                          </div>
                         </td>
                         {v.precios.map((p, i) => (
                           <td key={i} className="px-3 py-3 text-dorado whitespace-nowrap">{money(p)}</td>

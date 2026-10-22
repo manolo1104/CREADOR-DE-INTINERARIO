@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import {
   registrarEnBitacora, camposCambiados, ETIQUETAS_COTIZACION, pesos,
 } from "@/lib/admin/bitacora";
+import { sesionActual } from "@/lib/admin/sesion";
+import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (body[k] !== undefined) data[k] = body[k];
     }
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
+    // El descuento: sellado con quién y cuándo si cambió (ver `descuento.ts`).
+    let eventoDescuento = null;
+    // En las cotizaciones el `_meta` de precio va en `packageItems`.
+    if (data.packageItems !== undefined) {
+      const sesion  = await sesionActual();
+      const sellado = sellarEnLineItems(data.packageItems, antes?.packageItems ?? [], sesion?.nombre ?? "Desconocido");
+      data.packageItems = sellado.lineItems;
+      eventoDescuento = sellado.evento;
+    }
     const quote = await prisma.tourQuote.update({ where: { id: params.id }, data });
+    if (eventoDescuento) {
+      await registrarEnBitacora({
+        accion:     "modificó",
+        entidad:    "cotización",
+        referencia: quote.quoteNumber,
+        resumen:    `Cotización ${quote.quoteNumber} — ${quote.customerName}: ${resumenEvento(eventoDescuento)}`,
+      });
+    }
 
     const cambios = camposCambiados(antes as any, data, ETIQUETAS_COTIZACION);
     if (cambios.length) {

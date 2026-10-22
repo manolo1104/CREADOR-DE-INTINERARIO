@@ -53,6 +53,11 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   // Cada elemento de ésos es una salida del embudo. Trae su propia barra,
   // su propio pie y su propio botón de WhatsApp.
   const isCurso = pathname.startsWith("/curso");
+  // El check-in y la encuesta (ligas personales de un cliente que ya compró):
+  // solo el formulario. Con el sitio alrededor, a los 20 s le salía encima la
+  // ventana de Xantolo pidiéndole su correo, a media pregunta. Sin aviso de
+  // cookies: ahí no corre GA4 ni Clarity (`Analytics.tsx`).
+  if (/^\/(checkin|opina)\//.test(pathname)) return <>{children}</>;
   if (isCurso) {
     return (
       <>

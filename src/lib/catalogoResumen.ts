@@ -13,7 +13,7 @@
  * Solo depende de `tours.ts` (no de `localize.ts`) para poder usarse también
  * desde componentes de cliente sin arrastrar las traducciones.
  */
-import { TOURS_DB, esPorPersona, recogidaDeTour, type Tour } from "@/lib/tours";
+import { TOURS_DB, cargoVallesDe, esPorPersona, recogidaDeTour, type Tour } from "@/lib/tours";
 
 /**
  * ¿Su `incluye` trae desayuno?
@@ -31,11 +31,27 @@ export function incluyeDesayuno(t: Pick<Tour, "id" | "incluye">): boolean {
 
 /**
  * Los recorridos que pasan por ti a tu hospedaje en Xilitla O en Ciudad Valles
- * sin costo extra. Los de "solo Xilitla" (Gruta, Amanecer, Olla, Edén,
+ * (sin costo extra salvo la Ruta Surrealista: ver `notaCargoValles`). Los de "solo Xilitla" (Gruta, Amanecer, Olla, Edén,
  * Travesía), el RZR (base en Xilitla) y el buceo (en la laguna) no entran.
  */
 export function recogenEnValles<T extends Pick<Tour, "recogida">>(tours: T[]): T[] {
   return tours.filter((t) => recogidaDeTour(t).tipo === "hospedaje");
+}
+
+/**
+ * «desde Ciudad Valles, la Ruta Surrealista cuesta $400 más por reserva»: los que
+ * recogen en las dos ciudades pero cobran el traslado desde Valles. Va en las
+ * frases que dicen que el precio ya incluye pasar por ti; sin esto prometían la
+ * Surrealista al mismo precio desde Valles. "" si ninguno cobra.
+ */
+export function notaCargoValles(en: boolean, nombre: (t: Tour) => string = (t) => t.nombreCorto): string {
+  const partes = recogenEnValles(TOURS_DB)
+    .filter((t) => cargoVallesDe(t) > 0)
+    .map((t) => en
+      ? `the ${nombre(t)} is $${cargoVallesDe(t).toLocaleString("en-US")} MXN extra per booking`
+      : `${t.articulo ? `${t.articulo} ` : ""}${nombre(t)} cuesta $${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva`);
+  if (!partes.length) return "";
+  return `${en ? "from Ciudad Valles" : "desde Ciudad Valles"}, ${partes.join("; ")}`;
 }
 
 /**

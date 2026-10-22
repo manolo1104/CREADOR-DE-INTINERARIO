@@ -78,7 +78,8 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "eden-en-el-jardin": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Desde Ciudad Valles NO va incluido: se cotiza aparte. Nunca prometas recogida incluida en Ciudad Valles para esta experiencia." },
   "rafting-rio-tampaon": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o Xilitla." },
   "expedicion-tamul": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
-  "ruta-surrealista-edward-james": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
+  // Desde Valles cobra $400 por RESERVA (no por persona): `cargoValles` en tours.ts (Manolo, 20 oct 2026).
+  "ruta-surrealista-edward-james": { incluido: true, detalle: "SÍ incluye traslado redondo desde el hospedaje en Xilitla. Desde Ciudad Valles también pasamos por el cliente, pero cuesta $400 MÁS POR RESERVA (no por persona). Es el ÚNICO recorrido que cobra el traslado desde Valles." },
   "cascadas-del-meco": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   "paraiso-escalonado-minas-micos": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
   "ruta-acuatica-puente-de-dios": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles." },
@@ -233,6 +234,9 @@ function puntoEncuentro(t: (typeof TOURS_DB)[number]): string {
   const ciudad = ciudadUnica(t);
   if (ciudad) {
     return `Pasamos por ti a tu hospedaje en ${ciudad} (traslado incluido). Si te hospedas en otra zona, el punto de encuentro te lo confirma el equipo.${entregaAlRecoger(t)}`;
+  }
+  if (rec.tipo === "hospedaje" && rec.cargoValles > 0) {
+    return `Pasamos por ti a tu hospedaje en Xilitla (traslado redondo incluido) o en Ciudad Valles, con $${rec.cargoValles.toLocaleString("es-MX")} MÁS POR RESERVA, no por persona (no necesitas hospedarte con nosotros).${entregaAlRecoger(t)}`;
   }
   if (rec.tipo === "hospedaje") {
     return `Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).${entregaAlRecoger(t)}`;

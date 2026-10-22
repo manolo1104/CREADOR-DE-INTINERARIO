@@ -13,6 +13,17 @@ export interface Cliente {
   saldo: number;          // lo que falta cobrarle
   ultimaFecha: string;
   tours: string[];
+  /** Lo que contó en su check-in más reciente (21 oct 2026); null si nunca lo hizo. */
+  perfil: PerfilCliente | null;
+}
+
+export interface PerfilCliente {
+  ciudad: string | null;
+  /** YYYY-MM-DD */
+  cumple: string | null;
+  tipoGrupo: string | null;
+  comoNosConocio: string | null;
+  aceptaPromos: boolean;
 }
 
 const soloDigitos = (s: string) => s.replace(/\D/g, "");
@@ -65,7 +76,7 @@ export function agruparClientes(bookings: TourBooking[]): Cliente[] {
       nombre: b.customerName || "(sin nombre)",
       telefono: b.customerPhone || "",
       totalReservas: 0, totalGastado: 0, totalVendido: 0, saldo: 0,
-      ultimaFecha: b.tourDate, tours: [],
+      ultimaFecha: b.tourDate, tours: [], perfil: null,
     };
     const c = map[clave];
     c.totalReservas++;
@@ -86,6 +97,22 @@ export async function getClientes(): Promise<Cliente[]> {
   const bookings = await prisma.tourBooking.findMany({
     where: { status: { not: "cancelled" } },
     orderBy: { createdAt: "desc" },
+    include: { encuesta: true },
   });
-  return agruparClientes(bookings);
+  const clientes = agruparClientes(bookings);
+  // El perfil sale del check-in contestado más reciente de cualquiera de sus reservas.
+  const porClave = new Map(clientes.map(c => [c.clave, c]));
+  const conCheckin = bookings
+    .filter(b => b.encuesta?.checkinEn)
+    .sort((a, b) => b.encuesta!.checkinEn!.getTime() - a.encuesta!.checkinEn!.getTime());
+  for (const b of conCheckin) {
+    const c = porClave.get(claveCliente(b));
+    if (!c || c.perfil) continue;
+    const e = b.encuesta!;
+    c.perfil = {
+      ciudad: e.ciudadOrigen, cumple: e.fechaNacimiento, tipoGrupo: e.tipoGrupo,
+      comoNosConocio: e.comoNosConocio, aceptaPromos: e.aceptaPromos,
+    };
+  }
+  return clientes;
 }

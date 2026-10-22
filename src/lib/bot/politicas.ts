@@ -26,7 +26,7 @@
  * que el cliente lo pregunta, en español y en inglés). Después se regenera
  * `data.json` y se vuelve a desplegar el bot.
  */
-import { TOURS_DB, partesRecogida, recogidaDeTour, type Tour } from "@/lib/tours";
+import { TOURS_DB, partesRecogida, recogidaDeTour, cargoVallesDe, type Tour } from "@/lib/tours";
 import { aceptaViajeroSolo, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { enAuto } from "@/lib/tiemposDeViaje";
 import { TRASLADOS } from "@/lib/traslados";
@@ -103,8 +103,11 @@ const nombresDe = (f: (t: Tour) => boolean) => TOURS_DB.filter(f).map((t) => t.n
  * nuevo cae solo en su grupo.
  */
 const ZONAS = {
-  /** Pasamos por él a su hospedaje en Xilitla o en Ciudad Valles. */
-  ambas:       nombresDe((t) => recogidaDeTour(t).tipo === "hospedaje" && !ciudadUnica(t)),
+  /** Pasamos por él a su hospedaje en Xilitla o en Ciudad Valles, sin costo extra. */
+  ambas:       nombresDe((t) => recogidaDeTour(t).tipo === "hospedaje" && !ciudadUnica(t) && cargoVallesDe(t) === 0),
+  /** En las dos, pero desde Valles cobra el traslado por reserva (la Ruta Surrealista, +$400). */
+  conCargoValles: TOURS_DB.filter((t) => cargoVallesDe(t) > 0)
+    .map((t) => `${t.nombreCorto} (desde Ciudad Valles, +$${cargoVallesDe(t).toLocaleString("es-MX")} por reserva, no por persona)`),
   /** Solo en su hospedaje de Xilitla; desde Ciudad Valles el traslado se cotiza aparte. */
   soloXilitla: nombresDe((t) => recogidaDeTour(t).tipo === "hospedaje-xilitla" || ciudadUnica(t) === "Xilitla"),
   /** Solo en su hospedaje de Ciudad Valles. */
@@ -127,6 +130,7 @@ const ZONAS = {
 const DONDE_HOSPEDARSE = [
   "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió.",
   ZONAS.ambas.length ? `En Xilitla o en Ciudad Valles, cualquiera le sirve: ${listaY(ZONAS.ambas)}.` : "",
+  ZONAS.conCargoValles.length ? `En Xilitla va incluido; desde Ciudad Valles cuesta más: ${listaY(ZONAS.conCargoValles)}.` : "",
   ZONAS.soloXilitla.length
     ? `Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): ${listaY(ZONAS.soloXilitla)}.`
     : "",

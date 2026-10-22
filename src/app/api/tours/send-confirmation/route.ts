@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
       },
     );
 
+    const zonaMeta = pi.metadata?.zonaHospedaje ? { zonaHospedaje: pi.metadata.zonaHospedaje } : {};
     try {
       const creada = await prisma.tourBooking.create({
         data: {
@@ -126,9 +127,12 @@ export async function POST(req: NextRequest) {
           // El idioma va en el objeto `_meta` (patrón del proyecto): sin él,
           // reenviar la confirmación desde el panel la mandaría en español a un
           // cliente que compró en inglés.
+          // La zona («Ciudad Valles»/«Xilitla») sale de la metadata que escribió
+          // el servidor al cobrar, no del navegador: es lo que el panel lee con
+          // `zonaDeReserva` para marcar la reserva de Valles en el corte.
           lineItems:      Array.isArray(lineItems) && lineItems.length
-            ? [...lineItems, { _meta: true, locale: locale === "en" ? "en" : "es" }]
-            : [{ _meta: true, locale: locale === "en" ? "en" : "es" }],
+            ? [...lineItems, { _meta: true, locale: locale === "en" ? "en" : "es", ...zonaMeta }]
+            : [{ _meta: true, locale: locale === "en" ? "en" : "es", ...zonaMeta }],
           /**
            * En qué idioma tiene que salir el GUÍA. Sale de la metadata del
            * PaymentIntent y NO del cuerpo de la petición: la metadata la

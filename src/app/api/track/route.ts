@@ -157,6 +157,9 @@ const EVENTOS: Record<
  * Nunca bloquea ni revienta la respuesta: si la tabla aún no existe o la base
  * está caída, se pierde el evento y el sitio sigue igual.
  */
+const sinToken = (s: unknown): string | undefined =>
+  typeof s === "string" ? s.replace(/\/(checkin|opina)\/[^/?#\s]+/g, "/$1") : undefined;
+
 async function persistir(event: string, d: Datos, path?: string, sid?: string, device?: string, referrer?: string) {
   try {
     const monto = Number(d.amount);
@@ -203,7 +206,7 @@ export async function POST(req: NextRequest) {
     const texto = await req.text();
     if (texto.length > MAX_BYTES) return NextResponse.json({ ok: false }, { status: 413 });
     const body = JSON.parse(texto);
-    const { event, data, path, sid, device, referrer } = body as {
+    const { event, data, path: pathCrudo, sid, device, referrer: referrerCrudo } = body as {
       event: string;
       data?: Datos;
       path?: string;
@@ -211,6 +214,10 @@ export async function POST(req: NextRequest) {
       device?: string;
       referrer?: string;
     };
+    // 🔒 El token de `/checkin/<token>` y `/opina/<token>` es la llave de las
+    // respuestas de un cliente: no se guarda ni se imprime en el log.
+    const path = sinToken(pathCrudo);
+    const referrer = sinToken(referrerCrudo);
 
     // Nombres de evento como los del sitio (MAYÚSCULAS_Y_GUIONES): nada de texto libre.
     if (!event || typeof event !== "string" || !/^[A-Z0-9_]{2,60}$/.test(event)) {

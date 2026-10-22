@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Banknote, ArrowLeftRight, Building2, CreditCard, MoreHorizontal, Check, Pencil } from "lucide-react";
-import { METODOS_COBRO, type MetodoCobro } from "@/lib/admin/metodosCobro";
+import { METODOS_COBRO, requiereComprobante, type MetodoCobro } from "@/lib/admin/metodosCobro";
+import { RECEPTORES } from "@/lib/admin/corteSemanal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import Comprobantes, { type ArchivoComprobante } from "./Comprobantes";
 
@@ -95,7 +96,8 @@ export default function CobroModal({
   const [montoTocado, setMontoTocado] = useState(false);
   const [metodo,      setMetodo]      = useState<MetodoCobro | "">("");
   const [fecha,       setFecha]       = useState(hoy());
-  const [recibidoPor, setRecibidoPor] = useState(quien);
+  // Arranca con quien abrió la ventana si es socio; si no (Erick), hay que elegir.
+  const [recibidoPor, setRecibidoPor] = useState((RECEPTORES as string[]).includes(quien) ? quien : "");
   const [folio,       setFolio]       = useState("");
   const [nota,        setNota]        = useState("");
   const [archivos,    setArchivos]    = useState<ArchivoComprobante[]>([]);
@@ -136,6 +138,7 @@ export default function CobroModal({
     if (exigeComprobante && archivos.length === 0) {
       playError(); flash("❌ Ese método necesita comprobante: sube la captura o el PDF"); return;
     }
+    if (!recibidoPor) { playError(); flash(`❌ Falta decir quién lo recibió: ${RECEPTORES.join(" o ")}`); return; }
 
     setGuardando(true);
     const r = await fetch(`/api/admin/reservas/${reserva.id}/cobros`, {
@@ -298,6 +301,14 @@ export default function CobroModal({
             </div>
           </div>
 
+          {/* Quién lo tiene: solo los dos socios, con dos botones */}
+          <div>
+            <p className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5" id="cobro-recibio">
+              ¿Quién lo recibió?
+            </p>
+            <QuienRecibio valor={recibidoPor} onCambio={setRecibidoPor} etiqueta="cobro-recibio" />
+          </div>
+
           {/* Comprobante */}
           <div>
             <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">
@@ -321,22 +332,15 @@ export default function CobroModal({
                 className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]" />
             </div>
             <div>
-              <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">Lo recibió</label>
-              <input value={recibidoPor} onChange={e => setRecibidoPor(e.target.value)}
-                className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
               <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">Referencia</label>
               <input value={folio} onChange={e => setFolio(e.target.value)} placeholder="Folio, últimos 4…"
                 className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]" />
             </div>
-            <div>
-              <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">Nota</label>
-              <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Opcional"
-                className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]" />
-            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] tracking-[2px] uppercase text-[#1B4332]/45 font-dm mb-1.5">Nota</label>
+            <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Opcional"
+              className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]" />
           </div>
 
           {/* Cobros ya registrados */}
@@ -415,14 +419,21 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
   const [metodo, setMetodo] = useState(c.metodo);
   const [folio,  setFolio]  = useState("");
   const [archivos, setArchivos] = useState<ArchivoComprobante[]>([]);
+  // Los cobros viejos dicen «Erick», «Guía»…: aquí se corrige a uno de los socios.
+  const [recibio, setRecibio] = useState((RECEPTORES as string[]).includes(c.recibidoPor ?? "") ? (c.recibidoPor as string) : "");
 
   async function guardar() {
+    // Pasarlo a liga de pago o transferencia pide comprobante, como al registrarlo.
+    if (metodo !== c.metodo && requiereComprobante(metodo) && c.comprobantes.length === 0 && archivos.length === 0) {
+      playError(); flash("❌ Ese método necesita comprobante: sube la captura o el PDF"); return;
+    }
     setGuardando(true);
     const r = await fetch(`/api/admin/reservas/${reservaId}/cobros`, {
       method:  "PATCH",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
         accion: "editar", cobroId: c.id, metodo, folio,
+        ...(recibio ? { recibidoPor: recibio } : {}),
         evidenciaIds: archivos.map(a => a.id),
       }),
     }).catch(() => null);
@@ -460,6 +471,10 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
             );
           })}
         </div>
+        <p className="text-[11px] font-dm text-[#1B4332]/55 mb-1.5" id={`recibio-${c.id}`}>¿Quién lo recibió?</p>
+        <div className="mb-2">
+          <QuienRecibio valor={recibio} onCambio={setRecibio} etiqueta={`recibio-${c.id}`} />
+        </div>
         <input
           value={folio} onChange={e => setFolio(e.target.value)}
           placeholder="Referencia (opcional)"
@@ -467,6 +482,9 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
         />
         {c.comprobantes.length === 0 && (
           <div className="mb-2">
+            {metodo !== c.metodo && requiereComprobante(metodo) && (
+              <p className="text-[11px] font-dm text-orange-600 mb-1">Comprobante obligatorio con este método</p>
+            )}
             <Comprobantes reservaId={reservaId} archivos={archivos} onCambio={setArchivos} flash={flash} />
           </div>
         )}
@@ -499,7 +517,7 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
       ))}
       {!c.anulado && (
         <>
-          <button type="button" onClick={() => { playClick(); setEditando(true); }} title="Cambiar el método"
+          <button type="button" onClick={() => { playClick(); setEditando(true); }} title="Cambiar el método o quién lo recibió"
             className="panel-foco text-[#1B4332]/30 hover:text-[#1B4332] shrink-0 w-11 h-11 -my-3 grid place-items-center">
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -510,5 +528,24 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
         </>
       )}
     </li>
+  );
+}
+
+/** Dos botones: quién de los socios tiene el dinero. */
+function QuienRecibio({ valor, onCambio, etiqueta }: { valor: string; onCambio: (v: string) => void; etiqueta: string }) {
+  return (
+    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby={etiqueta}>
+      {RECEPTORES.map(q => {
+        const activo = valor === q;
+        return (
+          <button key={q} type="button" role="radio" aria-checked={activo}
+            onClick={() => { playClick(); onCambio(q); }}
+            className={`panel-foco panel-pulsable min-h-[44px] px-3 rounded-sm border text-sm font-dm transition-colors ${
+              activo ? "border-[#1B4332] bg-[#1B4332] text-white" : "border-[#1B4332]/15 text-[#1B4332]/75 hover:border-[#1B4332]/45"}`}>
+            {q}
+          </button>
+        );
+      })}
+    </div>
   );
 }

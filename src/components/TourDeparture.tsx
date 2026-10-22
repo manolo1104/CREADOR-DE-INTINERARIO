@@ -382,6 +382,11 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
   // en el hospedaje del cliente (no hace falta que sea nuestro hotel). Salvo
   // donde la fuente nombra una sola ciudad (ver `ciudadUnicaDeRecogida`): ahí
   // se nombra esa y no se dice "redondo", que su `incluye` no dice.
+  // Con `cargoValles` (la Ruta Surrealista) recoge en las dos, pero desde
+  // Valles cobra de más: el bloque lo dice en el texto, en la tarjeta de Valles
+  // y en «Traslado», para que nadie lea «incluido» y llegue al pago sorprendido.
+  const cargo = rec.cargoValles;
+  const cargoTxt = en ? `$${cargo.toLocaleString("en-US")} MXN` : `$${cargo.toLocaleString("es-MX")}`;
   return (
     <section>
       <h2 className="font-cormorant text-crema text-2xl mb-6 flex items-center gap-3">
@@ -408,13 +413,27 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
             hotel, hostel, cabin or Airbnb— in{" "}
             <strong className="text-crema font-medium">Xilitla</strong> or{" "}
             <strong className="text-crema font-medium">Ciudad Valles</strong>, and bring you back at
-            the end of the day. Round-trip transport is included; you don&apos;t need to stay with us.</>
+            the end of the day.{" "}
+            {cargo > 0 ? (
+              <>Round-trip transport is included from Xilitla; from Ciudad Valles it&apos;s{" "}
+              <strong className="text-crema font-medium">{cargoTxt} extra per booking</strong> (not per
+              person). You don&apos;t need to stay with us.</>
+            ) : (
+              <>Round-trip transport is included; you don&apos;t need to stay with us.</>
+            )}</>
           ) : (
             <><strong className="text-crema font-medium">Pasamos por ti a tu hospedaje</strong>
             —hotel, hostal, cabaña o Airbnb— en{" "}
             <strong className="text-crema font-medium">Xilitla</strong> o{" "}
             <strong className="text-crema font-medium">Ciudad Valles</strong>, y te regresamos al
-            terminar el día. El traslado redondo va incluido y no necesitas hospedarte con nosotros.</>
+            terminar el día.{" "}
+            {cargo > 0 ? (
+              <>Desde Xilitla el traslado redondo va incluido; desde Ciudad Valles son{" "}
+              <strong className="text-crema font-medium">{cargoTxt} más por reserva</strong> (no por
+              persona). No necesitas hospedarte con nosotros.</>
+            ) : (
+              <>El traslado redondo va incluido y no necesitas hospedarte con nosotros.</>
+            )}</>
           )}
         </p>
 
@@ -422,12 +441,12 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {(en
             ? [
-                { ciudad: "Xilitla",       nota: "Sierra, Surrealist Garden and surroundings" },
-                { ciudad: "Ciudad Valles", nota: "Waterfalls, Tamul and the Tampaón river" },
+                { ciudad: "Xilitla",       nota: cargo > 0 ? "Transport included" : "Sierra, Surrealist Garden and surroundings" },
+                { ciudad: "Ciudad Valles", nota: cargo > 0 ? `Transport: ${cargoTxt} extra per booking (not per person)` : "Waterfalls, Tamul and the Tampaón river" },
               ]
             : [
-                { ciudad: "Xilitla",       nota: "Sierra, Jardín Surrealista y alrededores" },
-                { ciudad: "Ciudad Valles", nota: "Cascadas, Tamul y el río Tampaón" },
+                { ciudad: "Xilitla",       nota: cargo > 0 ? "Traslado incluido" : "Sierra, Jardín Surrealista y alrededores" },
+                { ciudad: "Ciudad Valles", nota: cargo > 0 ? `Traslado: ${cargoTxt} más por reserva (no por persona)` : "Cascadas, Tamul y el río Tampaón" },
               ]
           ).filter((c) => !ciudadUnica || c.ciudad === ciudadUnica).map((c) => (
             <div key={c.ciudad} className="bg-verde-profundo/30 border border-white/8 p-4 rounded">
@@ -445,12 +464,12 @@ export function TourDeparture({ tourId }: { tourId?: string }) {
           {(en
             ? [
                 { Icon: Clock,        label: "Pickup time",    value: horario[0].value },
-                { Icon: Bus,          label: "Transport",      value: ciudadUnica ? `From ${ciudadUnica}, included` : "Round trip, included" },
+                { Icon: Bus,          label: "Transport",      value: ciudadUnica ? `From ${ciudadUnica}, included` : cargo > 0 ? `Included from Xilitla · Valles +${cargoTxt}` : "Round trip, included" },
                 { Icon: CheckCircle2, label: "Approx. return", value: horario[1].value },
               ]
             : [
                 { Icon: Clock,        label: "Hora de recogida", value: horario[0].value },
-                { Icon: Bus,          label: "Traslado",          value: ciudadUnica ? `Desde ${ciudadUnica}, incluido` : "Redondo, incluido" },
+                { Icon: Bus,          label: "Traslado",          value: ciudadUnica ? `Desde ${ciudadUnica}, incluido` : cargo > 0 ? `Incluido desde Xilitla · Valles +${cargoTxt}` : "Redondo, incluido" },
                 { Icon: CheckCircle2, label: "Regreso aprox.",    value: horario[1].value },
               ]
           ).map((item) => (

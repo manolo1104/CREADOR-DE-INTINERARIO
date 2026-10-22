@@ -26,10 +26,10 @@ import type { TourQuote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   TOURS_DB, TOURS_LISTA, PROMO_TEMPORADA, PROMO_VENCE, fechaConPromo, precioDeFecha, promoVigente,
-  precioGrupo, precioPorCabeza,
+  precioGrupo, precioPorCabeza, cargoVallesDe,
   type Tour, type TourVehiculo,
 } from "@/lib/tours";
-import { computeTourCharge, computeVehiculoCharge, fechaTourValida, vehiculoBookingName } from "@/lib/tourPricing";
+import { computeTourCharge, computeVehiculoCharge, fechaTourValida, vehiculoBookingName, ID_TRASLADO_VALLES } from "@/lib/tourPricing";
 import { computePaqueteCharge, MAX_POR_HABITACION, MAX_PERSONAS_PAQUETE } from "@/lib/paquetePricing";
 import { PAQUETES_DB, eventoALaVenta, getPaquete, habitacionesDePaquete, paqueteEnFecha, paquetesEventoALaVenta, type Paquete } from "@/lib/paquetes";
 import { minimoPersonas, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
@@ -234,7 +234,10 @@ export function subtotalPanel(l: LineItem): number {
         return def ? s + def.precio * Math.max(0, a.cantidad || 0) : s;
       }, 0)
     : 0;
-  return base + addOns;
+  // Igual que `calcAddOnsLinea` del panel: el traslado desde Valles es el
+  // `cargoValles` del recorrido (por reserva), no un add-on del catálogo.
+  const valles = (l.addOns ?? []).some((a) => a.id === ID_TRASLADO_VALLES) ? cargoVallesDe(t) : 0;
+  return base + addOns + valles;
 }
 
 /** Lo que vale una habitación para el panel (`calcPackageLine`). */

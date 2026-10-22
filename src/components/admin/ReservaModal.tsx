@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff } from "lucide-react";
-import { TOURS_LISTA, precioGrupo, precioPorCabeza, tourPorNombre } from "@/lib/tours";
+import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff, MapPin } from "lucide-react";
+import { TOURS_LISTA, precioGrupo, precioPorCabeza, tourPorNombre, cargoVallesDe } from "@/lib/tours";
+import { ID_TRASLADO_VALLES } from "@/lib/tourPricing";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
+import DescuentoEditor from "@/components/admin/DescuentoEditor";
+import { montoDescuento, type Descuento, type EventoDescuento, type TipoDescuento } from "@/lib/admin/descuento";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
 import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
@@ -95,12 +98,34 @@ export function cantidadAddOn(l: Pick<LineItem, "addOns">, id: string): number {
  * traiga el número viejo pegado.
  */
 export function calcAddOnsLinea(l: LineItem): number {
+  // El traslado desde Ciudad Valles no es un add-on del catálogo: es el
+  // `cargoValles` del recorrido (Ruta Surrealista, $400 POR RESERVA). Lo traen
+  // las reservas web de Valles y lo pone «Nueva cotización» al elegir Valles.
+  const valles = (l.addOns ?? []).some(a => a.id === ID_TRASLADO_VALLES)
+    ? cargoVallesDe(TOURS_LISTA.find(t => t.slug === l.tourSlug))
+    : 0;
   const cat = addOnsDeTour(l.tourSlug);
-  if (!cat.length) return 0;
-  return (l.addOns ?? []).reduce((s, a) => {
+  if (!cat.length) return valles;
+  return valles + (l.addOns ?? []).reduce((s, a) => {
     const def = cat.find(x => x.id === a.id);
     return def ? s + def.precio * Math.max(0, a.cantidad || 0) : s;
   }, 0);
+}
+
+/**
+ * Pone o quita el traslado desde Ciudad Valles en la línea. Solo hace algo en
+ * los recorridos que lo cobran (`cargoValles`); en los demás Valles no cuesta más.
+ */
+export function conTrasladoValles(l: LineItem, desdeValles: boolean): LineItem {
+  const cargo = cargoVallesDe(TOURS_LISTA.find(t => t.slug === l.tourSlug));
+  const tiene = (l.addOns ?? []).some(a => a.id === ID_TRASLADO_VALLES);
+  if (desdeValles === tiene || (desdeValles && cargo <= 0)) return l;
+  const resto = (l.addOns ?? []).filter(a => a.id !== ID_TRASLADO_VALLES);
+  const addOns = desdeValles
+    ? [...resto, { id: ID_TRASLADO_VALLES, nombre: "Traslado desde Ciudad Valles", cantidad: 1, precio: cargo, subtotal: cargo }]
+    : resto;
+  const nueva = { ...l, addOns: addOns.length ? addOns : undefined };
+  return { ...nueva, subtotal: calcTourLine(nueva) };
 }
 
 /** Pone (o quita) una actividad opcional en la línea, ya con su precio y subtotal. */
@@ -151,10 +176,30 @@ export interface ReservaFormState {
   /** Comida, transporte, guía privado… lo que va aparte del recorrido y del hotel. */
   extras:         ExtraItem[];
   totalOverride:  string;
+  /**
+   * El descuento, aparte del total (Manolo, 20 oct 2026): así no se pierde al
+   * cambiar un tour, un cuarto o un extra. `descuentoGuardado` e `historial` son
+   * lo que ya está en el registro (sello y cambios); solo se leen.
+   */
+  descuentoTipo:      TipoDescuento;
+  descuentoValor:     string;
+  descuentoGuardado:  Descuento | null;
+  descuentoHistorial: EventoDescuento[];
+  /**
+   * Código de cumpleaños (CUMPLE-XXXXX) que respalda el descuento, si lo trae.
+   * Va a `_meta.codigoCumple`; el servidor lo marca como usado al guardar.
+   */
+  codigoCumple:   string;
   depositoPagado: string;
   metodoPago:     string;
   folioPago:      string;
   pickupLugar:    string;
+  /**
+   * De dónde sale el cliente (Manolo, 20 oct 2026): va a `_meta.zonaHospedaje`
+   * y de ahí al Corte, que dice de dónde salió la Ruta Surrealista. Elegir
+   * «Ciudad Valles» le suma su traslado. Vacío: no se ha dicho.
+   */
+  zona:           ZonaReserva;
   numPersonas:    string;  // tamaño real del grupo (para el email; evita sumar por tour)
   /** Por dónde entró: es COLUMNA de la base, no `_meta`, porque hay que agrupar por ella. */
   origen:         OrigenReserva;
@@ -169,6 +214,16 @@ export interface ReservaFormState {
    */
   notasInternas:  string;
 }
+
+export type ZonaReserva = "" | "xilitla" | "valles";
+/** Cómo se guarda en `_meta.zonaHospedaje`: lo mismo que «Nueva cotización». */
+export const ZONA_TEXTO: Record<Exclude<ZonaReserva, "">, string> = { xilitla: "Xilitla", valles: "Ciudad Valles" };
+/** Lo guardado (del panel, la web o lo que entendió el bot) → el botón que va prendido. */
+export function zonaDeTexto(t: unknown): ZonaReserva {
+  const v = typeof t === "string" ? t : "";
+  return /\bvalles\b|\b(?:ciudad|cd)\.?\s*valle\b/i.test(v) ? "valles" : /xilitla/i.test(v) ? "xilitla" : "";
+}
+const PICKUP_POR_OMISION = "Lobby de tu hotel en Xilitla";
 
 /** La habitación nueva nace con 2 personas: es la ocupación normal. */
 export const HUESPEDES_POR_DEFECTO = 2;
@@ -207,7 +262,10 @@ export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", 
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
   lines: [{ ...EMPTY_LINE }], packages: [], extras: [], totalOverride: "", depositoPagado: "",
+  descuentoTipo: "percent", descuentoValor: "", descuentoGuardado: null, descuentoHistorial: [],
+  codigoCumple: "",
   metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
+  zona: "",
   numPersonas: "",
   // Una reserva que se captura a mano viene casi siempre del chat: ése es el
   // valor que ahorra clics y el que menos se va a quedar mal puesto.
@@ -502,6 +560,46 @@ export function AddOnsLinea({ line, personas, onChange }: {
   );
 }
 
+/**
+ * El traslado desde Ciudad Valles en la línea de un recorrido que lo cobra
+ * (hoy solo la Ruta Surrealista: $400 POR RESERVA, no por persona; Manolo,
+ * 20 oct 2026). En los demás no se pinta: desde Valles no cuestan más.
+ *
+ * Con `onChange` es una casilla (Reservas, donde no hay botones de zona); sin
+ * él solo informa, porque en «Nueva cotización» lo decide «¿De dónde sale el
+ * cliente?» y una casilla aparte se contradiría con esos botones.
+ */
+export function TrasladoVallesLinea({ line, onChange }: {
+  line:      LineItem;
+  onChange?: (linea: LineItem) => void;
+}) {
+  const cargo = cargoVallesDe(TOURS_LISTA.find(t => t.slug === line.tourSlug));
+  if (cargo <= 0) return null;
+  const tiene = (line.addOns ?? []).some(a => a.id === ID_TRASLADO_VALLES);
+  const texto = (
+    <span className="min-w-0">
+      <span className="block text-[#1B4332] font-dm text-xs font-medium">
+        {tiene ? `Sale de Ciudad Valles: +${fmx(cargo)} de traslado` : `Desde Ciudad Valles: +${fmx(cargo)} de traslado`}
+      </span>
+      <span className="block text-[#1B4332]/50 font-dm text-[10px]">
+        Por reserva, no por persona. Solo este recorrido lo cobra; desde Xilitla va incluido.
+        {!onChange && !tiene ? " Se suma solo al elegir «Ciudad Valles» arriba." : ""}
+      </span>
+    </span>
+  );
+  return onChange ? (
+    <label className="flex cursor-pointer items-start gap-2 border border-[#a86814]/30 bg-[#a86814]/5 rounded-sm p-2.5">
+      <input type="checkbox" checked={tiene} onChange={e => onChange(conTrasladoValles(line, e.target.checked))}
+        className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#7a4b0e]" />
+      {texto}
+    </label>
+  ) : (
+    <div className={`flex items-start gap-2 rounded-sm p-2.5 border ${tiene ? "border-[#a86814]/35 bg-[#a86814]/10" : "border-[#1B4332]/12 bg-white"}`}>
+      {texto}
+    </div>
+  );
+}
+
 interface Props {
   title:   string;
   /** Los conceptos con sus precios, tal como Manolo los dejó en el Cotizador. */
@@ -521,9 +619,11 @@ interface Props {
    * Al CREAR una reserva sí se captura aquí: todavía no hay a qué colgar el cobro.
    */
   soloLecturaCobro?: boolean;
+  /** El folio de la reserva que se edita: su propio código de cumpleaños sigue sirviéndole. */
+  folio?: string;
 }
 
-export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [], soloLecturaCobro = false }: Props) {
+export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [], soloLecturaCobro = false, folio }: Props) {
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
 
@@ -536,7 +636,13 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
   // extras que se cobran por persona.
   const grupoActual   = grupoParaGuardar(form.lines, form.numPersonas);
   const personasGrupo = Number(form.numPersonas) || (grupoActual.adults + grupoActual.children);
-  const calcTotal     = toursTotal + packagesTotal + extrasTotal;
+  const sinDescuento  = toursTotal + packagesTotal + extrasTotal;
+  const descuentoMonto = montoDescuento(
+    Number(form.descuentoValor) > 0 ? { tipo: form.descuentoTipo, valor: Math.round(Number(form.descuentoValor)) } : null,
+    sinDescuento,
+  );
+  // El total automático ya trae el descuento: editar un tour no lo borra.
+  const calcTotal     = sinDescuento - descuentoMonto;
   const finalTotal    = form.totalOverride !== "" ? Number(form.totalOverride) || 0 : calcTotal;
   const deposito      = Number(form.depositoPagado) || 0;
   const pendiente     = Math.max(0, finalTotal - deposito);
@@ -586,10 +692,29 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
         // El nombre de línea de un tour por vehículo lleva ruta/vehículo (así lo ven reservas y el correo).
         if (esTourVehiculo(up.tourSlug)) up.tourName = vehiculoLineName(up);
         up.subtotal = calcTourLine(up);
+        // Otro tour: el traslado de Valles se quita y vuelve según la zona elegida.
+        if (field === "tourSlug") return conTrasladoValles(conTrasladoValles(up, false), f.zona === "valles");
         return up;
       }),
       totalOverride: "",
     }));
+  }
+
+  /**
+   * Los botones Xilitla / Ciudad Valles: guardan la zona, ponen o quitan el
+   * traslado de Valles en las líneas que lo cobran y no dejan el «Lobby de tu
+   * hotel en Xilitla» a quien sale de Valles.
+   */
+  function elegirZona(z: Exclude<ZonaReserva, "">) {
+    setForm(f => {
+      const lines   = f.lines.map(l => conTrasladoValles(l, z === "valles"));
+      const cambio  = lines.some((l, i) => l !== f.lines[i]);
+      const lugar   = f.pickupLugar.trim();
+      const pickupLugar = z === "valles" && lugar === PICKUP_POR_OMISION ? ""
+        : z === "xilitla" && !lugar ? PICKUP_POR_OMISION
+        : f.pickupLugar;
+      return { ...f, zona: z, lines, pickupLugar, totalOverride: cambio ? "" : f.totalOverride };
+    });
   }
 
   function updatePackage(i: number, field: keyof PackageItem, val: string | number) {
@@ -677,6 +802,30 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   <input type="tel" value={form.customerPhone} placeholder="+52 489 000 0000"
                     onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={inputCls} />
                 </div>
+              </div>
+              {/* Los mismos dos botones de «Nueva cotización»: el Corte lee de aquí
+                  de dónde salió el tour. */}
+              <div>
+                <p className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1" id="zona-reserva">¿De dónde sale el cliente?</p>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="zona-reserva">
+                  {(["xilitla", "valles"] as const).map(z => {
+                    const activa = form.zona === z;
+                    return (
+                      <button key={z} type="button" role="radio" aria-checked={activa} onClick={() => elegirZona(z)}
+                        className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-sm border font-dm text-sm transition-colors ${
+                          activa ? "bg-[#1B4332] border-[#1B4332] text-white" : "bg-white border-[#1B4332]/20 text-[#1B4332] hover:border-[#1B4332]/45"}`}>
+                        <MapPin size={14} aria-hidden="true" /> {ZONA_TEXTO[z]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.zona === "valles" && (
+                  <p className="mt-1.5 font-dm text-[11px] leading-snug text-[#7a4b0e]">
+                    {TOURS_LISTA.filter(t => cargoVallesDe(t) > 0).map(t => `${t.nombreCorto} +${fmx(cargoVallesDe(t))}`).join(" · ")} de traslado
+                    desde Ciudad Valles, por reserva (no por persona); se suma solo a su línea. Los demás tours pasan
+                    por el cliente sin costo extra.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Notas</label>
@@ -824,6 +973,16 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                           />
                         )}
                         {line.tourSlug && (
+                          <TrasladoVallesLinea
+                            line={line}
+                            onChange={nueva => setForm(f => ({
+                              ...f,
+                              lines: f.lines.map((x, idx) => idx === i ? nueva : x),
+                              totalOverride: "",
+                            }))}
+                          />
+                        )}
+                        {line.tourSlug && (
                           <p className="text-right text-xs font-dm text-[#52B788]">Subtotal: {fmx(calcTourLine(line))}</p>
                         )}
                       </div>
@@ -949,8 +1108,30 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
           {step === 3 && (
             <div className="space-y-4">
               {/* Total editable */}
+              {/* El descuento, con candado: va aparte del total para que no se
+                  pierda al editar (ver `descuento.ts`). */}
+              <DescuentoEditor
+                tipo={form.descuentoTipo}
+                valor={form.descuentoValor}
+                onCambio={(tipo, valor) => setForm(f => ({ ...f, descuentoTipo: tipo, descuentoValor: valor, totalOverride: "" }))}
+                base={sinDescuento}
+                guardado={form.descuentoGuardado}
+                historial={form.descuentoHistorial}
+                inputCls={inputCls}
+                cumple={{
+                  codigo: form.codigoCumple,
+                  lineas: form.lines,
+                  cuando: "al guardar la reserva",
+                  folio,
+                  onAplicar: (codigo, monto) => setForm(f => ({ ...f, codigoCumple: codigo, descuentoTipo: "fixed", descuentoValor: String(monto), totalOverride: "" })),
+                  // Quitar el código quita también el descuento que puso: si no,
+                  // la reserva se quedaba con el 10 % y el código libre para otra.
+                  onQuitar: () => setForm(f => ({ ...f, codigoCumple: "", descuentoTipo: "percent", descuentoValor: "", totalOverride: "" })),
+                }}
+              />
+
               <div className="border border-[#52B788]/30 bg-[#52B788]/6 px-4 py-3 rounded-sm">
-                {(packagesTotal > 0 || extrasTotal > 0) && (
+                {(packagesTotal > 0 || extrasTotal > 0 || descuentoMonto > 0) && (
                   <div className="mb-2 pb-2 border-b border-[#52B788]/15 space-y-1">
                     <div className="flex justify-between text-xs font-dm text-[#1B4332]/50">
                       <span>Tours</span><span>{fmx(toursTotal)}</span>
@@ -963,6 +1144,11 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                     {extrasTotal > 0 && (
                       <div className="flex justify-between text-xs font-dm text-[#C4882A]">
                         <span>Extras</span><span>{fmx(extrasTotal)}</span>
+                      </div>
+                    )}
+                    {descuentoMonto > 0 && (
+                      <div className="flex justify-between text-xs font-dm text-[#1B4332]">
+                        <span>Descuento</span><span>−{fmx(descuentoMonto)}</span>
                       </div>
                     )}
                   </div>

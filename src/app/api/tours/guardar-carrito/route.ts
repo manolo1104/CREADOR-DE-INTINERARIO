@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { linkRecuperacion } from "@/lib/recuperacion";
-import { computeTourCharge, fechaTourValida } from "@/lib/tourPricing";
+import { computeTourCharge, fechaTourValida, zonaValida, type ZonaHospedaje } from "@/lib/tourPricing";
 import { tarifarRecorridos } from "@/lib/tourPricing";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { getTraslado, tarifaTraslado } from "@/lib/traslados";
@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
       // la pidió con el botón, y se manda aunque el carrito ya existiera por el
       // guardado silencioso (si no, el dedup se la tragaba).
       silencioso, enviarCotizacion,
+      // «¿Xilitla o Ciudad Valles?», si ya la eligió: la Ruta Surrealista cobra
+      // +$400 desde Valles y la cotización tiene que decir el mismo total que el cobro.
+      zona,
     } = body;
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -57,6 +60,7 @@ export async function POST(req: NextRequest) {
       return await guardarCarritoCompleto(items, String(email).trim(), phone, hospedaje, traslado, locale, {
         silencioso:       silencioso === true,
         enviarCotizacion: enviarCotizacion === true,
+        zona:             zonaValida(zona),
       });
     }
 
@@ -192,9 +196,11 @@ async function guardarCarritoCompleto(
   hospedaje?: { habitaciones?: { habitacionId: string; huespedes: number }[]; noches?: number; checkin?: string; checkout?: string } | null,
   traslado?: { ciudad?: string; personas?: number } | null,
   locale?: unknown,
-  { silencioso = false, enviarCotizacion = false }: { silencioso?: boolean; enviarCotizacion?: boolean } = {},
+  { silencioso = false, enviarCotizacion = false, zona = null }: { silencioso?: boolean; enviarCotizacion?: boolean; zona?: ZonaHospedaje | null } = {},
 ) {
-  const tarifa = tarifarRecorridos(items);
+  // Sin zona elegida (el guardado silencioso puede llegar antes) se cotiza sin
+  // el cargo de Valles; el cobro lo vuelve a pedir y no deja pagar sin ella.
+  const tarifa = tarifarRecorridos(items, { zona });
   if (!tarifa.ok) {
     return NextResponse.json({ error: tarifa.error }, { status: 400 });
   }
@@ -277,6 +283,7 @@ async function guardarCarritoCompleto(
       items,
       hospedaje: hospedaje ?? null,
       traslado:  traslado ?? null,
+      zona:      zona ?? null,
       locale:    locale === "en" ? "en" : "es",
       lineas:    tarifa.lineItems.map((l) => ({
         tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,

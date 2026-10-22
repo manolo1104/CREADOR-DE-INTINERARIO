@@ -84,7 +84,6 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     flota: [
       { nombre: "RZR 500",         capacidad: "2 adults + 1 child",  descripcion: "Agile, sporty and full of character. Ideal for couples or a small family." },
       { nombre: "Can-Am 800",      capacidad: "2 adults",            descripcion: "The Canadian beast. Brutal power for two adventurers chasing extreme thrills." },
-      { nombre: "RZR 900",         capacidad: "4 adults",            descripcion: "Twice the power, twice the excitement. For groups of 4 who fear nothing." },
       { nombre: "Defender",        capacidad: "6 adults",            descripcion: "Sturdy, reliable and roomy. Comfort without giving up the adventure." },
       { nombre: "Family Defender", capacidad: "6 adults + 2 kids",   descripcion: "The biggest in our fleet. Built for whole families or groups." },
       { nombre: "Maverick X3",     capacidad: "4 adults",            descripcion: "The fastest, most adrenaline-fueled unit. Competition suspension for speed lovers." },
@@ -326,7 +325,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
   },
   "ruta-surrealista-edward-james": {
     itinerario: [
-      { momento: "Pickup", texto: "We pick you up at your lodging in Xilitla or Ciudad Valles, in an air-conditioned vehicle." },
+      { momento: "Pickup", texto: "We pick you up at your lodging in Xilitla or Ciudad Valles ($400 MXN extra per booking from Valles), in an air-conditioned vehicle." },
       { momento: "Breakfast", texto: "A buffet of regional Huasteca dishes and stews at El Taco Loco, on the way to the sites. It's included." },
       { momento: "Las Pozas", texto: "Edward James's surrealist garden: staircases that lead nowhere, concrete columns rising out of the jungle and about two hours to walk it with your guide." },
       { momento: "Huichihuayán Spring", texto: "Turquoise water coming straight out of the rock, with shafts of light falling through the jungle. This one you get into." },
@@ -350,7 +349,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Castillo de la Salud",
     ],
     incluye: [
-      "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
+      "Round-trip transport from your lodging in Xilitla, in a comfortable air-conditioned vehicle (from Ciudad Valles, $400 MXN extra per booking)",
       "Buffet breakfast on the way to the sites, at El Taco Loco: typical regional dishes and stews",
       "Admission to all attractions",
       "NOM-09 SECTUR certified guide, specialized in history and culture",

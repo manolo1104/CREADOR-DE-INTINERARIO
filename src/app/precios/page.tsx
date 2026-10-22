@@ -4,7 +4,7 @@ import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { headers } from "next/headers";
 import { TOURS_DB, tourDurRange, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, esPorPersona, partesRecogida } from "@/lib/tours";
 import { excepcionesSalida } from "@/lib/recogidaTexto";
-import { incluyeDesayuno, rangoGrupo, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
+import { incluyeDesayuno, notaCargoValles, rangoGrupo, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
@@ -248,7 +248,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "What is included in the price, and what is not?",
-          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes travel insurance and the photos and video of the trip. It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
+          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes travel insurance and the photos and video of the trip. It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
         },
         {
           q: "How much do you pay when you book?",
@@ -286,7 +286,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "¿Qué incluye el precio del tour y qué no?",
-          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen seguro de viaje y las fotos y el video del recorrido. No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
+          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen seguro de viaje y las fotos y el video del recorrido. No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
         },
         {
           q: "¿Cuánto se paga al reservar?",

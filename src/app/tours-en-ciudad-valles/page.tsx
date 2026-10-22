@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto, etiquetaUnidad, fraseRecogida, partesRecogida, salidaCorta } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, etiquetaUnidad, fraseRecogida, partesRecogida, salidaCorta, cargoVallesDe } from "@/lib/tours";
 import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { waLink } from "@/lib/whatsapp";
@@ -21,6 +21,8 @@ const URL = `${SITE}/tours-en-ciudad-valles`;
  * más. Todo lo de abajo —precios, hora, desayuno— sale de esta lista.
  */
 const TOURS_CV = recogenEnValles(TOURS_DB);
+/** Recogen en Valles, pero con el traslado cobrado aparte (la Ruta Surrealista, +$400 por reserva). */
+const CON_CARGO = TOURS_CV.filter((t) => cargoVallesDe(t) > 0);
 // Función y no constante: `t.precio` vale la promo hasta el 29 oct y el de
 // lista después; una constante de módulo (y una `metadata` estática) se
 // congelaban al arrancar el servidor y seguían anunciando la promo.
@@ -78,7 +80,7 @@ const CV_RANGO = cvRango();
 return [
   {
     q: "¿Los tours pasan por mi hotel en Ciudad Valles?",
-    a: `Sí, en los ${TOURS_CV.length} recorridos de esta página el transporte está incluido: pasamos por ti a tu hospedaje en Ciudad Valles (también en Xilitla)${CV_HORA ? `, todos los días ${CV_HORA}` : ", a la hora de salida de cada recorrido"}.${SOLO_XILITLA.length ? ` ${lista(SOLO_XILITLA.map((t) => t.nombreCorto))} recogen solo en hospedajes de Xilitla: desde Ciudad Valles se pueden hacer, pero el traslado tiene costo adicional que te cotizamos por WhatsApp.` : ""}`,
+    a: `Sí, los ${TOURS_CV.length} recorridos de esta página pasan por ti a tu hospedaje en Ciudad Valles (también en Xilitla)${CV_HORA ? `, todos los días ${CV_HORA}` : ", a la hora de salida de cada recorrido"}${CON_CARGO.length ? `. El traslado va incluido en todos menos ${lista(CON_CARGO.map((t) => `${t.nombreCorto}, que desde Valles cuesta $${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva (no por persona)`))}` : ", con el traslado incluido"}.${SOLO_XILITLA.length ? ` ${lista(SOLO_XILITLA.map((t) => t.nombreCorto))} recogen solo en hospedajes de Xilitla: desde Ciudad Valles se pueden hacer, pero el traslado tiene costo adicional que te cotizamos por WhatsApp.` : ""}`,
   },
   {
     q: "¿Por qué Ciudad Valles es la mejor base para la Huasteca?",
@@ -90,7 +92,7 @@ return [
   },
   {
     q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
-    a: `Los ${TOURS_CV.length} tours de un día con recogida en Ciudad Valles van de ${money(CV_RANGO.min)} a ${money(CV_RANGO.max)} MXN por persona. Incluyen traslado desde tu hospedaje, guía certificado, equipo de seguridad, seguro de viaje y las fotos del recorrido${CV_DESAYUNO.length ? `; ${CV_DESAYUNO.length === TOURS_CV.length ? "todos" : `${CV_DESAYUNO.length} de ellos (${lista(CV_DESAYUNO.map((t) => t.nombreCorto))})`} llevan además desayuno regional` : ""}. Lo que incluye cada uno, con detalle, está en su ficha.`,
+    a: `Los ${TOURS_CV.length} tours de un día con recogida en Ciudad Valles van de ${money(CV_RANGO.min)} a ${money(CV_RANGO.max)} MXN por persona. Incluyen traslado desde tu hospedaje${CON_CARGO.length ? ` (${lista(CON_CARGO.map((t) => `${t.nombreCorto}: $${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva desde Valles`))})` : ""}, guía certificado, equipo de seguridad, seguro de viaje y las fotos del recorrido${CV_DESAYUNO.length ? `; ${CV_DESAYUNO.length === TOURS_CV.length ? "todos" : `${CV_DESAYUNO.length} de ellos (${lista(CV_DESAYUNO.map((t) => t.nombreCorto))})`} llevan además desayuno regional` : ""}. Lo que incluye cada uno, con detalle, está en su ficha.`,
   },
   {
     q: "¿Puedo reservar para mañana?",
@@ -182,7 +184,7 @@ export default function ToursCiudadVallesPage() {
                   <span className="font-cormorant text-dorado text-2xl">{money(t.precio)}</span>
                   {/* Decía "· todo incluido" en las siete: dos no llevan desayuno y el
                       rappel no incluye entradas. Lo que sí comparten es el traslado. */}
-                  <span className="text-crema/40 text-xs"> MXN {etiquetaUnidad(t)}{partesRecogida(t, false).incluyeTraslado ? " · traslado incluido" : ""}</span>
+                  <span className="text-crema/40 text-xs"> MXN {etiquetaUnidad(t)}{cargoVallesDe(t) > 0 ? ` · traslado desde Valles +$${cargoVallesDe(t).toLocaleString("es-MX")} por reserva` : partesRecogida(t, false).incluyeTraslado ? " · traslado incluido" : ""}</span>
                 </p>
               </Link>
             ))}

@@ -205,6 +205,10 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
     trackTourEvent("BUSCADOR_HERO", {
       que: valor || "todos",
       conFecha: fecha ? "si" : "no",
+      // La fecha misma (20 oct 2026, Manolo): con solo «sí/no», 59 búsquedas
+      // con fecha no decían CUÁNDO quiere venir la gente, que es lo que decide
+      // qué salidas abrir. `conFecha` se queda para comparar con lo de antes.
+      ...(fecha ? { fecha } : {}),
       personas,
     });
   }

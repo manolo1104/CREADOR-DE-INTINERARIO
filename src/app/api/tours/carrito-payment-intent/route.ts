@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { opcionesMsi, MSI_DESDE } from "@/lib/stripeMsi";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
-import { tarifarRecorridos } from "@/lib/tourPricing";
+import { tarifarRecorridos, zonaValida, nombreZona, carritoPideZona } from "@/lib/tourPricing";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { esIdApartado, renovarApartado } from "@/lib/apartadosAlmacen";
 import { rateLimit } from "@/lib/rateLimit";
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles, customerPhone, recogida } = await req.json();
+    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles, customerPhone, recogida, zona: zonaPedida } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -45,9 +45,24 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Tarificación renglón por renglón, siempre en el servidor ──────────
+    // ── ¿Xilitla o Ciudad Valles? ─────────────────────────────────────────
+    // Solo importa si algún recorrido cobra distinto desde Valles (la Ruta
+    // Surrealista, +$400 por reserva). Ahí es OBLIGATORIA: sin ella no se sabe
+    // cuánto cobrar, y adivinar «Xilitla» le regalaría el traslado a quien
+    // viene de Valles. Del cliente solo se acepta CUÁL zona; el monto lo pone
+    // el catálogo.
+    const zona = zonaValida(zonaPedida);
+    const slugs = items.map((i: unknown) => String((i as Record<string, unknown>)?.tourSlug ?? ""));
+    if (carritoPideZona(slugs) && !zona) {
+      return NextResponse.json(
+        { error: locale === "en" ? "Tell us whether you're staying in Xilitla or in Ciudad Valles." : "Dinos si te hospedas en Xilitla o en Ciudad Valles." },
+        { status: 400 },
+      );
+    }
+
     // La MISMA función que usa `guardar-carrito` para la cotización por correo:
     // si divergieran, el correo prometería un precio que el cobro no respeta.
-    const tarifa = tarifarRecorridos(items);
+    const tarifa = tarifarRecorridos(items, { zona });
     if (!tarifa.ok) {
       return NextResponse.json({ error: tarifa.error }, { status: 400 });
     }
@@ -238,6 +253,11 @@ export async function POST(req: NextRequest) {
         // (`lib/recuperarPago.ts`): sin ellos quedaba sin teléfono ni recogida.
         customerPhone: typeof customerPhone === "string" ? customerPhone.trim().slice(0, 40) : "",
         recogida:      typeof recogida === "string" ? recogida.trim().slice(0, 300) : "",
+        // Lo que eligió en «¿Xilitla o Ciudad Valles?», con el texto que lee el
+        // panel (`zonaDeReserva`). Lo escriben en `_meta.zonaHospedaje` tanto
+        // `send-confirmation` como el webhook.
+        zonaHospedaje: zona ? nombreZona(zona) : "",
+        cargoValles:   String(lineItems.reduce((s, l) => s + (l.cargoValles ?? 0), 0)),
       },
     };
 

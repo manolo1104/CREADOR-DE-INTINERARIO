@@ -9,7 +9,8 @@ import { leerExtras, guardarExtras } from "@/lib/carritoExtras";
 import { TRASLADOS, getTraslado, tarifaTraslado } from "@/lib/traslados";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { minBookingDate, totalRecorrido, aceptaViajeroSolo, minimoPersonas } from "@/lib/tourBooking";
-import { TOURS_DB, salidaCorta, recogidaDeTour, tourEnFecha, type Tour } from "@/lib/tours";
+import { TOURS_DB, salidaCorta, recogidaDeTour, tourEnFecha, cargoVallesDe, type Tour } from "@/lib/tours";
+import { carritoPideZona, type ZonaHospedaje } from "@/lib/tourPricing";
 import { resumenSalidas, excepcionesSalida } from "@/lib/recogidaTexto";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
@@ -43,6 +44,15 @@ export function useCarritoCheckout() {
   const [pickup, setPickup] = useState("");
   /** «Quiero guía en inglés», sin costo. Es del grupo, no de un recorrido. */
   const [guiaIngles, setGuiaIngles] = useState(false);
+  /**
+   * «¿Xilitla o Ciudad Valles?». Solo se pide si un recorrido del carrito
+   * cobra distinto desde Valles (la Ruta Surrealista, +$400 por reserva;
+   * Manolo, 20 oct 2026). Es del grupo, no de un renglón: se hospedan en un
+   * solo lugar. El servidor no deja pagar sin ella.
+   */
+  const [zona, setZona] = useState<"" | ZonaHospedaje>("");
+  /** Intentó pagar sin elegir la zona: la pregunta se marca en rojo. */
+  const [errorZona, setErrorZona] = useState(false);
   const [cobro,  setCobro]  = useState<Cobro | null>(null);
   /**
    * El último pago creado, aunque `cobro` se haya borrado por un cambio: el
@@ -181,6 +191,7 @@ export function useCarritoCheckout() {
             if (guardado.hospedaje.checkin)  setCheckin(guardado.hospedaje.checkin);
             if (guardado.hospedaje.checkout) setCheckout(guardado.hospedaje.checkout);
           }
+          if (guardado?.zona === "xilitla" || guardado?.zona === "valles") setZona(guardado.zona);
           if (guardado?.traslado?.ciudad) {
             setConTraslado(true);
             setCiudadTraslado(guardado.traslado.ciudad);
@@ -243,6 +254,7 @@ export function useCarritoCheckout() {
     if (ex.email)  setEmail(ex.email);
     if (ex.phone)  setPhone(ex.phone);
     if (ex.pickup) setPickup(ex.pickup);
+    if (ex.zona)   setZona(ex.zona);
     setGuiaIngles(ex.guiaIngles);
     setExtrasListos(true);
 
@@ -267,9 +279,9 @@ export function useCarritoCheckout() {
     guardarExtras({
       conHotel, habs, checkin, checkout,
       conTraslado, ciudadTraslado, paxTraslado,
-      name, email, phone, pickup, guiaIngles,
+      name, email, phone, pickup, zona, guiaIngles,
     });
-  }, [extrasListos, conHotel, habs, checkin, checkout, conTraslado, ciudadTraslado, paxTraslado, name, email, phone, pickup, guiaIngles]);
+  }, [extrasListos, conHotel, habs, checkin, checkout, conTraslado, ciudadTraslado, paxTraslado, name, email, phone, pickup, zona, guiaIngles]);
 
   // Lleva la vista al recorrido que acaba de entrar y apaga el resalte.
   useEffect(() => {
@@ -328,7 +340,14 @@ export function useCarritoCheckout() {
   // lo que se pinta.
   const resumen  = resumirCarrito(items);
   const dias     = resumen.dias;
-  const total    = resumen.total + totalHotel + totalTraslado;
+  // El traslado desde Valles de los recorridos que lo cobran: una vez por
+  // reserva, no por persona, y fuera del descuento por varios recorridos (igual
+  // que en `tarifarRecorridos`, que es quien de verdad lo cobra).
+  const pideZona    = carritoPideZona(items.map((i) => i.tourSlug));
+  const cargoValles = zona === "valles"
+    ? items.reduce((s, i) => s + cargoVallesDe(TOURS_DB.find((x) => x.slug === i.tourSlug)), 0)
+    : 0;
+  const total    = resumen.total + totalHotel + totalTraslado + cargoValles;
   // El anticipo es el 30 % (`pctACobrar`, regla del 29 sep 2026). El servidor
   // aplica exactamente la misma regla en `carrito-payment-intent`.
   /**
@@ -584,6 +603,7 @@ export function useCarritoCheckout() {
           traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
             ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
             : null,
+          zona: pideZona && zona ? zona : null,
         }),
       });
       const d = await r.json().catch(() => null);
@@ -617,6 +637,7 @@ export function useCarritoCheckout() {
         traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
           ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
           : null,
+        zona: pideZona && zona ? zona : null,
       }),
     }).catch(() => {});
   }
@@ -647,6 +668,13 @@ export function useCarritoCheckout() {
     }
   }, [puedePagarTodo, pagarTodo]);
 
+  /** Cambiar de zona puede cambiar el importe (Valles +$400): el cobro de antes ya no vale. */
+  function cambiarZona(z: ZonaHospedaje) {
+    setZona(z);
+    setErrorZona(false);
+    setCobro(null);
+  }
+
   /** Cambiar cuánto se paga hoy cambia el importe: el PaymentIntent de antes ya no vale. */
   function cambiarPagarTodo(valor: boolean) {
     setPagarTodo(valor);
@@ -665,6 +693,12 @@ export function useCarritoCheckout() {
     }
     if (!name.trim() || !email.trim()) {
       setError(t.necesitamosNombreCorreo);
+      return;
+    }
+    if (pideZona && !zona) {
+      setErrorZona(true);
+      setError(en ? "Tell us whether you're staying in Xilitla or in Ciudad Valles." : "Dinos si te hospedas en Xilitla o en Ciudad Valles.");
+      document.querySelector("[data-pregunta-zona]")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setCargando(true);
@@ -712,6 +746,10 @@ export function useCarritoCheckout() {
           // sin forma de contactarlo ni de saber dónde pasar por él.
           customerPhone: phone.trim(),
           recogida:      pickup.trim(),
+          // Solo la zona: el +$400 de Valles lo pone el servidor con el catálogo.
+          // Si el carrito ya no la pide, no se manda: una zona vieja guardada
+          // acabaría escrita en la reserva sin que nadie la haya visto.
+          zona:          pideZona && zona ? zona : null,
         }),
       });
       const data = await res.json();
@@ -745,6 +783,7 @@ export function useCarritoCheckout() {
     guardando, setGuardando, guardado, setGuardado, errorGuardar, setErrorGuardar,
     hidratarDesdeUrl, minDate, noches, huespedes, rutaTraslado, precioDelTraslado,
     totalTraslado, hotelQuote, totalHotel, resumen, dias, total, pctHoy, anticipo,
+    zona, cambiarZona, pideZona, cargoValles, errorZona,
     saldo, toursCarrito, lineasSalida, respuestaSalidas, horaDe, conCancelPropia,
     todosCancelPropia, nombreCat, cancelacionDe, respuestaCancelar,
     cancelPropiaEnCarrito, waRescate, quitar, cambiar, cambiarAddOn,

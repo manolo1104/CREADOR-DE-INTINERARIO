@@ -1,4 +1,4 @@
-name: Correos automáticos (carritos + leads + cotizaciones)
+name: Correos automáticos (carritos + leads + cotizaciones + check-in)
 
 on:
   schedule:
@@ -33,6 +33,17 @@ jobs:
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/viaje-cdmx
+
+      - name: Check-in previo (un día antes del tour)
+        # Manda la liga del check-in a las reservas cuyo viaje empieza mañana
+        # (y, si no salió a tiempo, la mañana del mismo día antes de las 11),
+        # solo entre 8 AM y 9 PM de México (fuera de ese horario no hace nada).
+        # Si falla, no frena los correos de abajo.
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/checkin
 
       - name: Llamar al endpoint de recuperación
         run: |

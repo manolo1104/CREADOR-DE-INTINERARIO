@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Scissors, Link2, Camera, Star, Bus } from "lucide-react";
+import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Scissors, Link2, Camera, Star, Bus, PieChart } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
-import { puedeVer, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
+import { type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
 
 interface ItemNav {
   href: string; icon: typeof BookOpen; label: string;
@@ -36,6 +36,7 @@ const GRUPOS: { titulo: string; items: ItemNav[] }[] = [
       { href: "/admin/cortes",       icon: Scissors,        label: "Corte semanal", seccion: "cortes"       },
       { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador",    seccion: "cotizador"     },
       { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ventas",       seccion: "ingresos"      },
+      { href: "/admin/analisis",     icon: PieChart,        label: "Análisis",     seccion: "analisis"      },
     ],
   },
   {
@@ -51,9 +52,29 @@ const ETIQUETA_ROL: Record<string, string> = {
   dueno: "Dueño", socio: "Socio", operacion: "Operación",
 };
 
-export default function AdminSidebar({ rol = "dueno", nombre = "" }: { rol?: RolAdmin; nombre?: string }) {
+export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [] }: {
+  rol?: RolAdmin; nombre?: string;
+  /** Las pestañas que ve esta persona (las decide Manolo desde Inicio). */
+  secciones?: SeccionAdmin[];
+}) {
   const pathname = usePathname();
   const router   = useRouter();
+
+  // En cada cambio de página se vuelve a firmar la sesión con las pestañas de
+  // HOY: lo que Manolo cambie desde Inicio vale desde el siguiente clic. Si ya
+  // no trae alguna de las que se ven, se vuelve a pedir la página y el menú.
+  useEffect(() => {
+    let vigente = true;
+    fetch("/api/admin/sesion", { method: "POST" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!vigente || !Array.isArray(d?.secciones)) return;
+        const cambio = d.secciones.length !== secciones.length || secciones.some(s => !d.secciones.includes(s));
+        if (cambio) router.refresh();
+      })
+      .catch(() => {});
+    return () => { vigente = false; };
+  }, [pathname, secciones, router]);
   const [open, setOpen] = useState(false);
   const [muted, setMuted] = useState(false);
   useEffect(() => { setMuted(isSfxMuted()); }, []);
@@ -67,7 +88,7 @@ export default function AdminSidebar({ rol = "dueno", nombre = "" }: { rol?: Rol
   const navItems = (
     <nav className="flex-1 px-3 py-3 overflow-y-auto">
       {GRUPOS.map(grupo => {
-        const visibles = grupo.items.filter(({ seccion }) => puedeVer(rol, seccion));
+        const visibles = grupo.items.filter(({ seccion }) => secciones.includes(seccion));
         if (visibles.length === 0) return null;
         return (
           <div key={grupo.titulo} className="mb-4 last:mb-0">

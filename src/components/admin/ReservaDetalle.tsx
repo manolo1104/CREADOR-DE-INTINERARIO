@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TourBooking } from "@prisma/client";
-import { X, BedDouble, MapPin, Utensils, EyeOff } from "lucide-react";
+import { X, BedDouble, MapPin, Utensils, EyeOff, Lock } from "lucide-react";
+import { descuentoDeMeta, montoDescuento, textoDescuento } from "@/lib/admin/descuento";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, metaDe, type LineaTour } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } from "@/lib/admin/extras";
+import { CheckinSeccion } from "@/components/admin/Checkin";
+import type { EstadoCheckin } from "@/lib/encuestas/opciones";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) =>
@@ -44,9 +47,11 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
 }
 
 export default function ReservaDetalle({
-  reserva: b, onClose,
+  reserva: b, onClose, onCheckin,
 }: {
   reserva: TourBooking; onClose: () => void;
+  /** Para que la lista de atrás pinte el estado nuevo del check-in. */
+  onCheckin?: (e: EstadoCheckin) => void;
 }) {
   // Los cobros de la reserva: de dónde salió cada peso y con qué comprobante.
   // Se piden aparte porque los bytes de los archivos no viajan con la reserva.
@@ -127,6 +132,9 @@ export default function ReservaDetalle({
               {new Date(b.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}
             </Dato>
           </div>
+
+          {/* Check-in previo (21 oct 2026): estado, respuestas y cómo mandarlo. */}
+          <CheckinSeccion r={b} onEstado={onCheckin} />
 
           {/* Itinerario */}
           <Seccion titulo={`Itinerario · ${lineas.length || 1} ${lineas.length === 1 ? "recorrido" : "recorridos"}`}>
@@ -245,11 +253,19 @@ export default function ReservaDetalle({
               </Dato>
               <Dato label="Método">{meta.metodoPago || "—"}{meta.folioPago ? <span className="block text-xs text-[#1B4332]/45 font-mono">{meta.folioPago}</span> : null}</Dato>
             </div>
-            {sumaLineas > 0 && sumaLineas !== b.totalAmount && (
-              <p className="text-[#1B4332]/45 font-dm text-xs mt-3">
+            {/* El descuento asegurado (ver `descuento.ts`): con candado y quién lo puso. */}
+            {descuentoDeMeta(meta) && (
+              <p className="flex items-center gap-1.5 text-[#1B4332] font-dm text-xs mt-3">
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                Descuento {textoDescuento(descuentoDeMeta(meta))}
+                {sumaLineas > 0 && <> · −{fmx(montoDescuento(descuentoDeMeta(meta), sumaLineas))}</>}
+                {descuentoDeMeta(meta)?.por ? <span className="text-[#1B4332]/45"> · lo puso {descuentoDeMeta(meta)?.por}</span> : null}
+              </p>
+            )}
+            {sumaLineas > 0 && sumaLineas - montoDescuento(descuentoDeMeta(meta), sumaLineas) !== b.totalAmount && (
+              <p className="text-[#1B4332]/45 font-dm text-xs mt-1">
                 Las líneas suman {fmx(sumaLineas)} y el total es {fmx(b.totalAmount)}: hay un precio ajustado a mano
-                {meta.cotizacionOrigen ? ` (viene de la cotización ${meta.cotizacionOrigen})` : ""}
-                {meta.discountValue ? ` · descuento ${meta.discountType === "fixed" ? fmx(Number(meta.discountValue)) : `${meta.discountValue}%`}` : ""}.
+                {meta.cotizacionOrigen ? ` (viene de la cotización ${meta.cotizacionOrigen})` : ""}.
               </p>
             )}
             {b.promoCode && (

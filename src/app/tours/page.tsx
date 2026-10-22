@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 // ellos (verificado con grep antes de quitarlos).
 import { TOURS_DB, TOUR_CATEGORIAS, TOURS_RANKING, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado, promoDe, esPorPersona, partesRecogida, recogidaDeTour } from "@/lib/tours";
 import { excepcionesSalida } from "@/lib/recogidaTexto";
-import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
+import { incluyeDesayuno, notaCargoValles, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { TourCarrusel } from "@/components/TourCarrusel";
 import { IconoInstagram } from "@/components/IconoInstagram";
 import { SelloGarantia } from "@/components/SelloGarantia";
@@ -195,9 +195,10 @@ export default function ToursPage() {
     tiposResto.includes("base-xilitla") ? (en ? "at our base in Xilitla" : "en nuestra base de Xilitla") : null,
     tiposResto.includes("en-sitio") ? (en ? "at the site itself" : "en el mismo destino") : null,
   ].filter(Boolean).join(en ? " or " : " o ");
+  const cargoValles = notaCargoValles(en, (t) => localizeTour(t, locale).nombreCorto);
   const desglose = en
-    ? `On ${nValles} of them we pick you up at your accommodation in Ciudad Valles or Xilitla${nSoloXilitla ? `; on another ${nSoloXilitla}, only at your lodging in Xilitla (from Ciudad Valles, for an additional charge)` : ""}${nResto ? `; and on the remaining ${nResto} we meet ${dondeResto}` : ""}`
-    : `En ${nValles} de ellos pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla${nSoloXilitla ? `; en otros ${nSoloXilitla}, solo en tu hospedaje de Xilitla (desde Ciudad Valles, con costo adicional)` : ""}${nResto ? `, y en ${nResto === 1 ? "el restante" : `los ${nResto} restantes`} nos vemos ${dondeResto}` : ""}`;
+    ? `On ${nValles} of them we pick you up at your accommodation in Ciudad Valles or Xilitla${cargoValles ? ` (${cargoValles})` : ""}${nSoloXilitla ? `; on another ${nSoloXilitla}, only at your lodging in Xilitla (from Ciudad Valles, for an additional charge)` : ""}${nResto ? `; and on the remaining ${nResto} we meet ${dondeResto}` : ""}`
+    : `En ${nValles} de ellos pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla${cargoValles ? ` (${cargoValles})` : ""}${nSoloXilitla ? `; en otros ${nSoloXilitla}, solo en tu hospedaje de Xilitla (desde Ciudad Valles, con costo adicional)` : ""}${nResto ? `, y en ${nResto === 1 ? "el restante" : `los ${nResto} restantes`} nos vemos ${dondeResto}` : ""}`;
   // Tours con política de cancelación propia (el Edén no reembolsa).
   const cancelPropia = tours.filter((t) => t.cancelacion).map((t) => t.nombreCorto);
 

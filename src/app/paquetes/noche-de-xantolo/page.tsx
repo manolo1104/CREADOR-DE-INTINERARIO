@@ -40,6 +40,7 @@ const MENSAJE_WA = "Hola, me interesa la Noche de Xantolo en Xilitla. ¿Me ayuda
 interface NocheConLugares {
   paquete: Paquete;
   corta: string;
+  programa: string;
   lugares: LugaresPaquete | null;
   aLaVenta: boolean;
   agotada: boolean;
@@ -51,7 +52,7 @@ async function lasNoches(): Promise<NocheConLugares[]> {
       const paquete = getPaquete(n.slug)!;
       const aLaVenta = eventoALaVenta(paquete);
       const lugares = aLaVenta ? await lugaresDePaqueteSeguro(paquete) : null;
-      return { paquete, corta: n.corta, lugares, aLaVenta, agotada: lugares !== null && !cabeEnCupo(lugares, 1) };
+      return { paquete, corta: n.corta, programa: n.programa, lugares, aLaVenta, agotada: lugares !== null && !cabeEnCupo(lugares, 1) };
     }),
   );
 }
@@ -120,13 +121,6 @@ export default async function NocheXantoloPage() {
     ],
   };
 
-  const pasos = [
-    { cuando: NOCHE_XANTOLO.horaRecogida, titulo: "Nos vemos", texto: `En ${NOCHE_XANTOLO.recogida}, o en el centro de Xilitla si todavía no tienes dónde quedarte. Desde Ciudad Valles también pasamos por ti (${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)}, ${mxn(NOCHE_XANTOLO.desdeValles.cargoPorGrupo)} de traslado por grupo). Lo eliges al reservar.` },
-    { cuando: "Al caer la tarde", titulo: "Degustación de temporada", texto: "Tamales, atole, bocoles y pan de muerto." },
-    { cuando: "En la noche", titulo: "El centro de Xilitla, con guía", texto: `Un guía del pueblo te lleva a ver ${NOCHE_XANTOLO.queVes}.` },
-    { cuando: NOCHE_XANTOLO.regreso, titulo: "De regreso", texto: `Te dejamos donde te recogimos; en Ciudad Valles, ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}.` },
-  ];
-
   const preguntas: { q: string; a: string; enlace?: { texto: string; href: string } }[] = [
     { q: "¿Dónde nos recogen?", a: `En tu hospedaje en Xilitla, a las ${NOCHE_XANTOLO.horaRecogida}, sin costo extra. Si todavía no tienes hospedaje, al reservar eliges «Todavía no tengo hospedaje» y nos vemos en el centro de Xilitla; te confirmamos el punto exacto por WhatsApp. Si duermes en Ciudad Valles, pasamos por ti ${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)} y te regresamos ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}, con ${mxn(NOCHE_XANTOLO.desdeValles.cargoPorGrupo)} de traslado por grupo (no por persona).` },
     { q: "¿Pueden ir niños?", a: `Sí. De 6 a 10 años pagan ${mxn(precioNinoNoche("medio"))}, los menores de 6 pagan ${mxn(precioNinoNoche("chico"))} y los bebés menores de 3 no pagan. Avísanos de los bebés en una nota para contarlos en la camioneta.` },
@@ -140,7 +134,7 @@ export default async function NocheXantoloPage() {
       : []),
     { q: "¿Cómo se paga?", a: `En línea con tarjeta. Apartas con el ${pctMinimo} % y el resto se cubre el día de la salida.` },
     { q: "¿Se puede cancelar?", a: NOCHE_XANTOLO.cancelacion },
-    { q: "¿Y si cambia el programa del pueblo?", a: "Las comparsas y los shows los organiza Xilitla. Si el programa cambia, el guía los lleva a lo que sí haya esa noche. El programa oficial sale a mediados de octubre y te lo mandamos por WhatsApp." },
+    { q: "¿Y si el pueblo cambia la hora?", a: "Los desfiles y los concursos los organiza el Ayuntamiento de Xilitla y a veces se recorren. Si algo cambia, te avisamos por WhatsApp y el guía los lleva a lo que sí haya esa noche; tu hora de recogida y de regreso se queda igual." },
   ];
 
   return (
@@ -237,6 +231,7 @@ export default async function NocheXantoloPage() {
             >
               <p className="font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: XAN_FLOR }}>{NOCHE_XANTOLO.horario}</p>
               <p className="xan-num mt-3 font-cormorant text-[32px] font-light leading-tight text-crema">{n.corta}</p>
+              {n.programa && <p className="mt-1 font-dm text-[15px] text-crema/85">{n.programa}</p>}
               <p className="xan-num mt-2 font-dm text-[14px] text-crema/70">
                 {!n.aLaVenta
                   ? "Ya no se vende en línea."
@@ -289,33 +284,48 @@ export default async function NocheXantoloPage() {
         </p>
       </section>
 
-      {/* ── La noche, en orden ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-28">
-        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-6">
-            <h2 className="font-cormorant text-[34px] font-light leading-tight text-crema sm:text-[42px] [text-wrap:balance]">Cómo es la noche</h2>
-            <ol className="mt-10 grid gap-9 border-l border-crema/15 pl-6 sm:pl-8">
-              {pasos.map((p) => (
-                <li key={p.titulo} className="grid gap-1 sm:grid-cols-[8rem_1fr] sm:gap-6">
-                  <p className="xan-num font-dm text-[13px] font-medium" style={{ color: XAN_FLOR }}>{p.cuando}</p>
-                  <div className="min-w-0">
-                    <h3 className="font-cormorant text-[24px] leading-snug text-crema">{p.titulo}</h3>
-                    <p className="mt-1 max-w-[52ch] font-dm text-[15px] leading-relaxed text-crema/65">{p.texto}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-          {/* La comparsa mide 921×519: en un recuadro, nunca a sangre. */}
-          <div className="relative aspect-[16/9] w-full max-w-[921px] overflow-hidden lg:col-span-6">
-            <Image
-              src={FOTO_COMPARSA}
-              alt="Comparsa de Xantolo de noche: danzantes con máscaras, una calavera y trajes de colores en pleno desfile"
-              fill
-              sizes="(min-width: 1024px) 560px, 100vw"
-              className="object-cover"
-            />
-          </div>
+      {/* ── La noche, hora por hora ───────────────────────────────────────
+          Una columna por noche: el pueblo pone cosas distintas cada día
+          (comparsas el 31, catrinas el 1). Las horas viven en `nocheXantolo.ts`. */}
+      <section id="hora-por-hora" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-20 sm:px-8 lg:pb-28">
+        <h2 className="font-cormorant text-[34px] font-light leading-tight text-crema sm:text-[42px] [text-wrap:balance]">La noche, hora por hora</h2>
+        <p className="mt-3 max-w-[60ch] font-dm text-[15px] leading-relaxed text-crema/65">
+          Con los horarios del programa del Ayuntamiento de Xilitla. Cada noche trae algo distinto: elige la que más te guste.
+        </p>
+        <div className="mt-10 grid gap-12 md:grid-cols-2 md:gap-10">
+          {NOCHE_XANTOLO.noches.map((n) => (
+            <div key={n.slug} className="min-w-0">
+              <p className="font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: XAN_FLOR }}>{n.corta}</p>
+              <h3 className="mt-2 font-cormorant text-[26px] leading-snug text-crema">{n.programa}</h3>
+              <ol className="mt-6 grid gap-6 border-l border-crema/15 pl-5 sm:pl-6">
+                {n.horas.map((h) => (
+                  <li key={h.titulo} className="grid gap-1 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
+                    <p className="xan-num font-dm text-[13px] font-medium" style={{ color: XAN_FLOR }}>{h.hora}</p>
+                    <div className="min-w-0">
+                      <p className="font-dm text-[16px] font-medium leading-snug text-crema">{h.titulo}</p>
+                      <p className="mt-1 max-w-[46ch] font-dm text-[14px] leading-relaxed text-crema/65">{h.texto}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+        <p className="mt-10 max-w-[70ch] font-dm text-[14px] leading-relaxed text-crema/60">
+          {NOCHE_XANTOLO.tourOpcional && (
+            <>Con el día completo, antes va la {NOCHE_XANTOLO.tourOpcional.nombre}: pasamos por ti {NOCHE_XANTOLO.tourOpcional.horaRecogida} y la Ruta termina en Xilitla, a tiempo para la noche. </>
+          )}
+          Desde Ciudad Valles pasamos por ti {haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)}, con {mxn(NOCHE_XANTOLO.desdeValles.cargoPorGrupo)} de traslado por grupo (no por persona). Lo eliges al reservar.
+        </p>
+        {/* La comparsa mide 921×519: en un recuadro, nunca a sangre. */}
+        <div className="relative mt-12 aspect-[16/9] w-full max-w-[921px] overflow-hidden">
+          <Image
+            src={FOTO_COMPARSA}
+            alt="Comparsa de Xantolo de noche: danzantes con máscaras, una calavera y trajes de colores en pleno desfile"
+            fill
+            sizes="(min-width: 1024px) 921px, 100vw"
+            className="object-cover"
+          />
         </div>
       </section>
 

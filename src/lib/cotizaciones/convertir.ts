@@ -36,6 +36,7 @@ import { lugaresDePaquete, type LugaresPaquete } from "@/lib/cupoPaquete";
 import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
 import { fechaLimite } from "@/lib/vencimientoCotizacion";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
+import { canjearCodigoCumple, codigoDeLineas } from "@/lib/encuestas/cumple";
 import { HOTEL_PARAISO, metaDeCotizacion } from "./armar";
 import type {
   ComprobanteBot, ConfirmacionResultado, ConfirmarPagoInput, LocaleBot, RecorridoConfirmado,
@@ -341,6 +342,11 @@ export async function convertirCotizacionEnReserva(
         priceOverride:    meta.priceOverride ?? null,
         discountType:     meta.discountType ?? null,
         discountValue:    meta.discountValue ?? null,
+        // El descuento pasa tal cual, con su sello y su historial (ver `descuento.ts`).
+        ...((meta as any).descuento !== undefined ? { descuento: (meta as any).descuento } : {}),
+        ...(Array.isArray((meta as any).descuentoHistorial) ? { descuentoHistorial: (meta as any).descuentoHistorial } : {}),
+        // El código de cumpleaños con que se cotizó: se canjea al crear la reserva.
+        ...(typeof (meta as any).codigoCumple === "string" && (meta as any).codigoCumple ? { codigoCumple: (meta as any).codigoCumple } : {}),
         // Lo del bot: el idioma del correo de confirmación, a qué chat se le
         // contesta y dónde dijo que se hospeda (para pedirle la dirección).
         ...(meta.locale === "en" ? { locale: "en" } : meta.locale === "es" ? { locale: "es" } : {}),
@@ -399,6 +405,22 @@ export async function convertirCotizacionEnReserva(
   }
 
   if (r.nueva) {
+    // El código de cumpleaños de la cotización queda usado por esta reserva. Ya
+    // está pagada: si el código no sirvió (otra reserva lo usó antes), no se
+    // deshace la venta; queda en la bitácora para revisarlo.
+    const codigo = codigoDeLineas(r.reserva.lineItems);
+    if (codigo) {
+      const c = await canjearCodigoCumple(codigo, r.reserva.confirmationNumber, hoyMX());
+      await registrarEnBitacora({
+        accion:     "modificó",
+        entidad:    "reserva",
+        referencia: r.reserva.confirmationNumber,
+        resumen:    c.ok
+          ? `Reserva ${r.reserva.confirmationNumber}: usó el código de cumpleaños ${codigo}`
+          : `⚠️ Reserva ${r.reserva.confirmationNumber}: trae el descuento del código ${codigo}, pero no se pudo usar (${c.error})`,
+        actor,
+      });
+    }
     // La venta ya está cerrada: se apaga el carrito abandonado que la originó,
     // o el cron le seguiría escribiendo «¿Apartamos tu lugar?».
     const cerrados = await cerrarCarritosDe(r.reserva.customerEmail, toursDeReserva(r.reserva));

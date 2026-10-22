@@ -91,6 +91,8 @@ export interface TourVehiculo {
   capacidad:   string;
   descripcion: string;
   precios:     number[];
+  /** Foto cuadrada de la unidad para la tabla de la ficha. */
+  foto?:       string;
 }
 
 /**
@@ -250,6 +252,16 @@ export interface TourRecogida {
    * pinta, porque "entre 7 y 8" contradice a su propia pregunta frecuente.
    */
   horaTexto?: { es: string; en: string };
+  /**
+   * Lo que se cobra de más, en MXN, si el cliente se hospeda en Ciudad Valles:
+   * UNA vez por reserva, no por persona. Solo con `tipo: "hospedaje"`.
+   *
+   * 🔴 Hoy solo la Ruta Surrealista ($400, decisión de Manolo del 20 oct 2026):
+   * en los demás recorridos que recogen en las dos ciudades Valles no cuesta
+   * más. Con este campo el carrito pregunta «¿Xilitla o Ciudad Valles?» y el
+   * servidor lo suma (`tarifarRecorridos`); nunca se acepta un monto del cliente.
+   */
+  cargoValles?: number;
 }
 
 /**
@@ -667,7 +679,13 @@ export function recogidaDeTour(t: Pick<Tour, "recogida">) {
     nota:       r?.nota,
     lugar:      r?.lugar,
     horaTexto:  r?.horaTexto,
+    cargoValles: r?.tipo === "hospedaje" ? Math.max(0, r.cargoValles ?? 0) : 0,
   };
+}
+
+/** Cuánto cuesta de más salir de Ciudad Valles en este recorrido (por reserva). 0 si no cobra. */
+export function cargoVallesDe(t: Pick<Tour, "recogida"> | undefined): number {
+  return t ? recogidaDeTour(t).cargoValles : 0;
 }
 
 /**
@@ -764,6 +782,12 @@ export interface PartesRecogida {
   vehiculo: string | null;
   /** Qué pasa con Ciudad Valles cuando solo recogemos en Xilitla. Sin montos: se cotiza. */
   valles: string | null;
+  /**
+   * Recoge en las dos ciudades, pero desde Valles cobra de más (`cargoValles`).
+   * Aparte de `valles` a propósito: muchas páginas cuentan con `valles` los
+   * recorridos «solo Xilitla», y éste no lo es.
+   */
+  cargoValles: string | null;
   /** ¿El precio incluye que pasemos por él? */
   incluyeTraslado: boolean;
 }
@@ -805,6 +829,11 @@ export function partesRecogida(t: Pick<Tour, "recogida">, en: boolean): PartesRe
           ? "From Ciudad Valles the transfer costs extra — we'll quote it on WhatsApp."
           : "Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.")
       : null,
+    cargoValles: rec.cargoValles > 0
+      ? (en
+          ? `From Ciudad Valles the transfer is $${rec.cargoValles.toLocaleString("en-US")} MXN extra per booking (not per person).`
+          : `Desde Ciudad Valles el traslado cuesta $${rec.cargoValles.toLocaleString("es-MX")} más por reserva (no por persona).`)
+      : null,
     incluyeTraslado: rec.tipo === "hospedaje" || rec.tipo === "hospedaje-xilitla",
   };
 }
@@ -837,7 +866,8 @@ export function fraseRecogida(t: Pick<Tour, "recogida">, en: boolean): string {
       : `Nos vemos en ${p.lugar}${hora}. El transporte hasta Xilitla no está incluido.`;
   }
   const base = en ? `We pick you up at ${p.lugar}${veh}${hora}.` : `Pasamos por ti a ${p.lugar}${veh}${hora}.`;
-  return p.valles ? `${base} ${p.valles}` : base;
+  const nota = p.valles ?? p.cargoValles;
+  return nota ? `${base} ${nota}` : base;
 }
 
 /**
@@ -972,14 +1002,17 @@ const TOURS_RAW: Tour[] = [
       { nombre: "Ruta Trinidad",   duracion_hrs: 5, desde: 3800, descripcion: "Historia, cultura y naturaleza en un solo recorrido. Caminos de sierra que suben hasta el bosque de niebla de La Trinidad, un pueblo serrano preservado en el tiempo, con parada en la Aldea Nanacatli (la aldea de los pitufos) y en varios miradores. El recorrido más alto y verde de Xilitla.",
         destinos: ["Bosque de niebla La Trinidad", "Aldea Nanacatli (aldea de los pitufos)", "Mirador Xilitla", "Túnel Tlahuilapa", "Camino Antiguo a las Pozas", "Xilitla Pueblo Mágico", "Jardín Surrealista (por fuera)"] },
     ],
+    // El RZR 900 salió de la flota el 20 oct 2026 (ya no lo tienen). Las fotos
+    // son recortes de los volantes de cada unidad que mandó Manolo ese día, SIN
+    // los precios del volante: el precio vive solo aquí, y una foto con la cifra
+    // pintada mentiría el día que cambie.
     flota: [
-      { nombre: "RZR 500",           capacidad: "2 adultos + 1 niño",  descripcion: "Ágil, deportivo y lleno de carácter. Ideal para parejas o familia pequeña.",                          precios: [1600, 2600, 3800, 3800] },
-      { nombre: "Can-Am 800",        capacidad: "2 adultos",           descripcion: "La bestia canadiense. Potencia brutal para dos aventureros que buscan emociones extremas.",          precios: [1600, 2600, 3800, 3800] },
-      { nombre: "RZR 900",           capacidad: "4 adultos",           descripcion: "El doble de potencia, el doble de emoción. Para grupos de 4 que no le temen a nada.",                precios: [1900, 2800, 4500, 4500] },
-      { nombre: "Defender",          capacidad: "6 adultos",           descripcion: "Robusto, confiable y espacioso. Comodidad sin sacrificar aventura.",                                 precios: [2200, 3000, 5000, 5000] },
-      { nombre: "Defender Familiar", capacidad: "6 adultos + 2 niños", descripcion: "El más grande de la flota. Diseñado para familias completas o grupos.",                              precios: [2500, 3400, 6000, 6000] },
-      { nombre: "Maverick X3",       capacidad: "4 adultos",           descripcion: "El más rápido y adrenalínico. Suspensión de competencia para amantes de la velocidad.",              precios: [2500, 3500, 5500, 5500] },
-      { nombre: "Polaris Pro S",     capacidad: "4 adultos",           descripcion: "La experiencia premium. Tecnología de punta, potencia extraordinaria y acabados de lujo.",           precios: [3500, 4500, 7000, 7000] },
+      { nombre: "RZR 500",           capacidad: "2 adultos + 1 niño",  descripcion: "Ágil, deportivo y lleno de carácter. Ideal para parejas o familia pequeña.",                          precios: [1600, 2600, 3800, 3800], foto: "/imagenes/tours/rzr-xilitla/flota/rzr-500.jpg" },
+      { nombre: "Can-Am 800",        capacidad: "2 adultos",           descripcion: "La bestia canadiense. Potencia brutal para dos aventureros que buscan emociones extremas.",          precios: [1600, 2600, 3800, 3800], foto: "/imagenes/tours/rzr-xilitla/flota/can-am-800.jpg" },
+      { nombre: "Defender",          capacidad: "6 adultos",           descripcion: "Robusto, confiable y espacioso. Comodidad sin sacrificar aventura.",                                 precios: [2200, 3000, 5000, 5000], foto: "/imagenes/tours/rzr-xilitla/flota/defender.jpg" },
+      { nombre: "Defender Familiar", capacidad: "6 adultos + 2 niños", descripcion: "El más grande de la flota. Diseñado para familias completas o grupos.",                              precios: [2500, 3400, 6000, 6000], foto: "/imagenes/tours/rzr-xilitla/flota/defender-familiar.jpg" },
+      { nombre: "Maverick X3",       capacidad: "4 adultos",           descripcion: "El más rápido y adrenalínico. Suspensión de competencia para amantes de la velocidad.",              precios: [2500, 3500, 5500, 5500], foto: "/imagenes/tours/rzr-xilitla/flota/maverick-x3.jpg" },
+      { nombre: "Polaris Pro S",     capacidad: "4 adultos",           descripcion: "La experiencia premium. Tecnología de punta, potencia extraordinaria y acabados de lujo.",           precios: [3500, 4500, 7000, 7000], foto: "/imagenes/tours/rzr-xilitla/flota/polaris-pro-s.jpg" },
     ],
     destinos: [
       "Base en Xilitla (punto de encuentro)",
@@ -1344,6 +1377,10 @@ const TOURS_RAW: Tour[] = [
     tipo:             "Cultura & Naturaleza",
     dificultad:       "baja",
     duracion_hrs:     8,
+    // Recoge en Xilitla o en Ciudad Valles, pero desde Valles son $400 más POR
+    // RESERVA (no por persona). Es el único recorrido que lo cobra (Manolo,
+    // 20 oct 2026); el checkout pregunta la zona por esto.
+    recogida:         { tipo: "hospedaje", cargoValles: 400 },
     reviewCount:      84,
     groupMin:         2,
     groupMax:         12,
@@ -1367,7 +1404,7 @@ const TOURS_RAW: Tour[] = [
       "Castillo de la Salud",
     ],
     incluye: [
-      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
+      "Traslado redondo desde tu hospedaje en Xilitla, en unidad cómoda con aire acondicionado (desde Ciudad Valles, $400 más por reserva)",
       "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
       "Entradas a todas las atracciones",
       "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
@@ -1378,7 +1415,7 @@ const TOURS_RAW: Tour[] = [
     imagen_hero: "/imagenes/tours/edward-james/hero.jpg",
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
-        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (desde Valles, $400 más por reserva), en unidad con aire acondicionado." },
       { hora: "9:30 AM", momento: "Desayuno",
         texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
       { hora: "11:00 AM", momento: "Las Pozas",

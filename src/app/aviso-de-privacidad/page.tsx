@@ -13,7 +13,9 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const FECHA = "27 de abril de 2026";
+// Al cambiar el aviso, cambiar también `AVISO_VERSION` de
+// `src/lib/encuestas/opciones.ts`: el check-in guarda qué versión aceptó cada quien.
+const FECHA = "21 de octubre de 2026";
 const RESPONSABLE = "Tours Huasteca Potosina";
 const RFC = "En trámite";
 const DOMICILIO = "Xilitla, San Luis Potosí, México";
@@ -101,16 +103,19 @@ export default function AvisoPrivacidadPage() {
           <Li><strong>Datos de identificación:</strong> nombre completo, número de personas en el grupo.</Li>
           <Li><strong>Datos de contacto:</strong> número de teléfono (WhatsApp), correo electrónico.</Li>
           <Li><strong>Datos de preferencias de viaje:</strong> fechas deseadas, tour de interés, número de participantes, presupuesto aproximado.</Li>
+          <Li><strong>Datos del check-in previo al tour</strong> (opcional, lo llena usted): ciudad de origen, fecha de nacimiento, con quién viaja (pareja, amigos, familia, empresa o solo), cómo nos conoció, si es su primera visita a la Huasteca Potosina y el motivo del viaje.</Li>
+          <Li><strong>Su opinión sobre el servicio:</strong> la calificación, la probabilidad de recomendarnos y los comentarios que nos deje en la encuesta de satisfacción.</Li>
           <Li><strong>Datos financieros:</strong> información de pago procesada a través de Stripe (los datos de tarjeta son gestionados exclusivamente por Stripe y no son almacenados por el Responsable).</Li>
           <Li><strong>Datos de navegación:</strong> dirección IP, tipo de navegador, páginas visitadas, duración de la sesión (vía cookies analíticas).</Li>
         </ul>
-        <P>El Responsable <strong>no recaba datos personales sensibles</strong> en el sentido del artículo 3, fracción VI de la LFPDPPP.</P>
+        <P>El Responsable <strong>no recaba datos personales sensibles</strong> en el sentido de la LFPDPPP. La fecha de nacimiento y la ciudad de origen no son datos sensibles.</P>
 
         <H2>III. Finalidades del tratamiento</H2>
         <P><strong>Finalidades primarias</strong> (necesarias para la relación jurídica):</P>
         <ul className="mb-6">
           <Li>Procesar y confirmar reservaciones de tours guiados.</Li>
           <Li>Enviar información sobre el tour reservado (punto de encuentro, hora de salida, lista de qué llevar).</Li>
+          <Li>Preparar la logística de su tour con lo que nos cuente en el check-in previo.</Li>
           <Li>Procesar pagos a través de la pasarela Stripe.</Li>
           <Li>Emitir confirmaciones y comprobantes de pago.</Li>
           <Li>Atender aclaraciones, cambios o cancelaciones de reservación.</Li>
@@ -119,13 +124,16 @@ export default function AvisoPrivacidadPage() {
         <P><strong>Finalidades secundarias</strong> (no necesarias para la relación jurídica — puede oponerse):</P>
         <ul className="mb-4">
           <Li>Enviar información sobre nuevos tours, destinos y promociones.</Li>
+          <Li>Enviarle una felicitación en su cumpleaños con un beneficio (un descuento para su siguiente tour), solo si lo autoriza con la casilla correspondiente del check-in.</Li>
           <Li>Realizar encuestas de satisfacción post-tour.</Li>
+          <Li>Elaborar estadísticas internas sobre el perfil de nuestros visitantes y los medios por los que nos conocen, para mejorar nuestros servicios y nuestra publicidad.</Li>
           <Li>Análisis estadístico anónimo de navegación para mejorar el sitio web.</Li>
         </ul>
         <P>
           Si no desea que sus datos sean tratados para las finalidades secundarias, puede manifestarlo
           enviando un correo a <a href={`mailto:${EMAIL_ARCO}`} className="text-verde-selva underline">{EMAIL_ARCO}</a> con
-          el asunto "Oposición a finalidades secundarias".
+          el asunto "Oposición a finalidades secundarias", dejando sin marcar la casilla de promociones
+          del check-in, o con la liga «Darme de baja» que viene en nuestros correos de promoción.
         </P>
 
         <H2>IV. Transferencias de datos personales</H2>
@@ -136,6 +144,11 @@ export default function AvisoPrivacidadPage() {
           <Li><strong>Guías y operadores locales</strong> — exclusivamente para coordinar la logística de los tours reservados, con datos mínimos necesarios.</Li>
         </ul>
         <P>
+          Además, proveedores que nos prestan servicios tratan sus datos solo por cuenta nuestra y
+          bajo nuestras instrucciones: el envío de correos (Brevo) y el alojamiento del sitio y de la
+          base de datos (Railway).
+        </P>
+        <P>
           El Responsable no comercializa, vende ni cede datos personales a terceros con fines de
           mercadotecnia ajena. Todas las transferencias están sujetas a las mismas medidas de
           seguridad descritas en este aviso.
@@ -144,7 +157,8 @@ export default function AvisoPrivacidadPage() {
         <H2>V. Derechos ARCO</H2>
         <P>
           Usted tiene derecho a <strong>Acceder, Rectificar, Cancelar y Oponerse</strong> (derechos ARCO)
-          al tratamiento de sus datos personales, conforme a los artículos 22 al 35 de la LFPDPPP.
+          al tratamiento de sus datos personales, conforme a la LFPDPPP. También puede revocar en
+          cualquier momento el consentimiento que nos haya dado.
         </P>
         <P>Para ejercer sus derechos ARCO, envíe una solicitud a <a href={`mailto:${EMAIL_ARCO}`} className="text-verde-selva underline">{EMAIL_ARCO}</a> que contenga:</P>
         <ul className="mb-4">
@@ -196,9 +210,8 @@ export default function AvisoPrivacidadPage() {
           <p className="text-negro/40 font-dm text-xs">
             Este Aviso de Privacidad fue elaborado conforme a la{" "}
             <em>Ley Federal de Protección de Datos Personales en Posesión de los Particulares</em>{" "}
-            (DOF 5 de julio de 2010) y su Reglamento (DOF 21 de diciembre de 2011),
-            emitidos por el Instituto Nacional de Transparencia, Acceso a la Información y
-            Protección de Datos Personales (INAI).
+            publicada en el DOF el 20 de marzo de 2025. La autoridad en la materia es la Secretaría
+            Anticorrupción y Buen Gobierno, que asumió las funciones del extinto INAI.
           </p>
         </div>
 

@@ -8,7 +8,7 @@ import { stripePromise } from "@/lib/stripeCliente";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { getPaquete, habitacionesDePaquete, habitacionAsignada, precioVisible, eventoALaVenta } from "@/lib/paquetes";
 import { computePaqueteCharge, toursDelPaquete, MAX_PERSONAS_PAQUETE, MAX_POR_HABITACION, PCTS_PAQUETE, type PctPaquete } from "@/lib/paquetePricing";
-import { NOCHE_XANTOLO, haciaLa, precioNinoNoche, precioNocheConTour } from "@/lib/nocheXantolo";
+import { NOCHE_XANTOLO, haciaLa, horasEnFrase, precioNinoNoche, precioNocheConTour } from "@/lib/nocheXantolo";
 import { waLink } from "@/lib/whatsapp";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
 import { minBookingDate } from "@/lib/tourBooking";
@@ -318,6 +318,9 @@ export default function ReservarPaquetePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lugares]);
 
+  /** En la noche sin hotel: esta fecha, con su hora por hora. */
+  const estaNoche = sinHotel ? NOCHE_XANTOLO.noches.find((n) => n.slug === base?.slug) ?? null : null;
+
   /** En la noche sin hotel: la otra fecha, si todavía se vende. */
   const otraNoche = sinHotel
     ? NOCHE_XANTOLO.noches.find(
@@ -615,7 +618,9 @@ export default function ReservarPaquetePage() {
                 {sinHotel ? (
                   <>
                     <p className="font-dm text-sm text-negro/65 leading-relaxed">
-                      {`La noche es de ${NOCHE_XANTOLO.horario}: degustación de temporada y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes}. Te regresamos hacia las ${NOCHE_XANTOLO.regreso}.`}
+                      {estaNoche
+                        ? `La noche es ${NOCHE_XANTOLO.horario}, con un guía del pueblo: ${horasEnFrase(estaNoche)}. Te regresamos hacia las ${NOCHE_XANTOLO.regreso}.`
+                        : `La noche es ${NOCHE_XANTOLO.horario}: degustación de temporada y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes}. Te regresamos hacia las ${NOCHE_XANTOLO.regreso}.`}
                       {conTour && tourOpcional ? ` Y ese mismo día, la ${tourOpcional.nombre}: salimos ${tourOpcional.horaRecogida} y regresamos a tiempo para la noche.` : ""}
                     </p>
                     {/* La otra noche, por si esta no les queda. */}

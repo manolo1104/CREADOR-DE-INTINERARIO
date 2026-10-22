@@ -13,9 +13,10 @@
  * La cancelación (48 h, como los tours) es el valor por defecto: él puede
  * cambiarlo.
  *
- * 🔴 La noche se describe SOLO como «las comparsas y los shows más
- * representativos de esta celebración». No se nombran desfiles ni procesiones
- * concretas: el programa lo pone el pueblo.
+ * 🔴 La noche se describe como «las comparsas y los shows más representativos
+ * de esta celebración». Desde el 20 oct, con el programa oficial publicado, el
+ * hora por hora (`horaPorHora`) sí nombra los desfiles y concursos del
+ * Ayuntamiento; la procesión sigue sin nombrarse.
  *
  * Este archivo casi no importa nada a propósito: lo leen el catálogo, el
  * checkout (cliente) y el popup que sale en todas las páginas, y no debe
@@ -43,6 +44,44 @@ export function haciaLa(hora: string): string {
 
 const RECOGIDA_NOCHE = "5:30 PM";
 const REGRESO_NOCHE  = "11:30 PM";
+const DEGUSTACION    = "tamales, atole, bocoles y pan de muerto";
+/** Quien duerme en Valles sale antes y llega después: el tramo de sierra. */
+const VALLES_SALIDA  = moverHora(RECOGIDA_NOCHE, -MINUTOS_VALLES_XILITLA);
+const VALLES_REGRESO = moverHora(REGRESO_NOCHE, MINUTOS_VALLES_XILITLA);
+
+/** Un renglón del hora por hora: «7:00 PM · Desfile de comparsas». */
+export interface HoraNoche {
+  hora: string;
+  titulo: string;
+  texto: string;
+}
+
+/**
+ * La noche hora por hora (20 oct 2026, Manolo: «ya se publicó el programa
+ * oficial de Xilitla, acomoda los horarios y agrega un itinerario hora por
+ * hora»).
+ *
+ * Lo del pueblo sale de la convocatoria del Ayuntamiento de Xilitla para los
+ * concursos de Xantolo 2026: sáb 31, desfile a las 7:00 PM desde la Escuela
+ * Secundaria General Benemérito de las Américas y concurso regional de
+ * comparsas a las 8:00 PM en la plaza principal (de 5 a 10 minutos cada
+ * comparsa); dom 1, desfile a las 7:00 PM desde la misma secundaria y
+ * concurso de catrinas.
+ * 🔴 Cotejar con el cartel oficial: si el pueblo recorre una hora, se cambia
+ * AQUÍ y se mueve sola en la página, el pago, el correo y la nota del equipo.
+ *
+ * Lo nuestro (recoger 5:30 PM, degustación, regreso 11:30 PM) no se movió: con
+ * el desfile a las 7:00 la degustación cabe antes, sin prisas.
+ */
+function horaPorHora(delPueblo: HoraNoche[]): HoraNoche[] {
+  return [
+    { hora: RECOGIDA_NOCHE, titulo: "Pasamos por ti", texto: `A tu hospedaje en Xilitla, o nos vemos en el centro si todavía no tienes dónde quedarte. Desde Ciudad Valles salimos ${haciaLa(VALLES_SALIDA)}.` },
+    { hora: "6:00 PM", titulo: "Degustación de temporada", texto: "Tamales, atole, bocoles y pan de muerto: lo que se come en estos días en la Huasteca." },
+    { hora: "6:40 PM", titulo: "Al centro con el guía", texto: "Llegamos antes que el desfile para verlo pasar desde buen lugar." },
+    ...delPueblo,
+    { hora: REGRESO_NOCHE, titulo: "De regreso", texto: `Te dejamos donde te recogimos; en Ciudad Valles, ${haciaLa(VALLES_REGRESO)}.` },
+  ];
+}
 
 export interface NocheXantoloFecha {
   /** El slug de la reserva: una noche, un cupo. */
@@ -54,6 +93,10 @@ export interface NocheXantoloFecha {
   corta: string;
   /** Lugares (personas) a la venta esa noche. */
   cupo: number;
+  /** Lo que pone el pueblo esa noche, en corto: «Desfile y concurso de comparsas». */
+  programa: string;
+  /** La noche completa, hora por hora (`horaPorHora`). */
+  horas: HoraNoche[];
 }
 
 export const NOCHE_XANTOLO = {
@@ -70,7 +113,7 @@ export const NOCHE_XANTOLO = {
   regreso: REGRESO_NOCHE,
   recogida: "tu hospedaje en Xilitla",
   queVes: "las comparsas y los shows más representativos de esta celebración",
-  degustacion: "tamales, atole, bocoles y pan de muerto",
+  degustacion: DEGUSTACION,
   cancelacion: "Cancelas gratis hasta 48 horas antes de la salida, con reembolso completo.",
   incluye: [
     "Transporte con guía desde tu hospedaje en Xilitla, ida y vuelta",
@@ -129,15 +172,42 @@ export const NOCHE_XANTOLO = {
   desdeValles: {
     cargoPorGrupo: 500,
     /** La noche sola sale de Valles con el tramo de anticipación. */
-    recogidaNoche: moverHora(RECOGIDA_NOCHE, -MINUTOS_VALLES_XILITLA),
+    recogidaNoche: VALLES_SALIDA,
     /** Y llega a Valles con el tramo de vuelta. */
-    regreso: moverHora(REGRESO_NOCHE, MINUTOS_VALLES_XILITLA),
+    regreso: VALLES_REGRESO,
   },
   noches: [
-    { slug: "noche-de-xantolo-31-oct", fecha: "2026-10-31", fechaTexto: "Sábado 31 de octubre de 2026", corta: "Sábado 31 de octubre", cupo: 12 },
-    { slug: "noche-de-xantolo-1-nov",  fecha: "2026-11-01", fechaTexto: "Domingo 1 de noviembre de 2026", corta: "Domingo 1 de noviembre", cupo: 12 },
+    {
+      slug: "noche-de-xantolo-31-oct", fecha: "2026-10-31", fechaTexto: "Sábado 31 de octubre de 2026", corta: "Sábado 31 de octubre", cupo: 12,
+      programa: "Desfile y concurso de comparsas",
+      horas: horaPorHora([
+        { hora: "7:00 PM", titulo: "Desfile de comparsas", texto: "Sale de la Secundaria Benemérito de las Américas rumbo a la plaza principal: máscaras, disfraces y danza." },
+        { hora: "8:00 PM", titulo: "Concurso regional de comparsas", texto: "En la plaza principal. Cada comparsa baila de 5 a 10 minutos y el guía te cuenta qué representa cada personaje." },
+      ]),
+    },
+    {
+      slug: "noche-de-xantolo-1-nov", fecha: "2026-11-01", fechaTexto: "Domingo 1 de noviembre de 2026", corta: "Domingo 1 de noviembre", cupo: 12,
+      programa: "Desfile y concurso de catrinas",
+      horas: horaPorHora([
+        { hora: "7:00 PM", titulo: "Desfile de catrinas", texto: "Sale de la Secundaria Benemérito de las Américas rumbo al centro." },
+        { hora: "Enseguida", titulo: "Concurso de catrinas", texto: "Al llegar el desfile al centro, con el guía a tu lado." },
+      ]),
+    },
   ] as NocheXantoloFecha[],
 };
+
+/**
+ * Lo de en medio del hora por hora, en una línea (sin la recogida ni el
+ * regreso, que cada texto dice a su modo): «6:00 PM, degustación de temporada;
+ * … 8:00 PM, concurso regional de comparsas». Para el pago, el correo y la
+ * nota del equipo.
+ */
+export function horasEnFrase(n: NocheXantoloFecha): string {
+  return n.horas
+    .slice(1, -1)
+    .map((h) => `${/^\d/.test(h.hora) ? h.hora : h.hora.toLowerCase()}, ${h.titulo.charAt(0).toLowerCase()}${h.titulo.slice(1)}`)
+    .join("; ");
+}
 
 /** Lo que paga un niño, redondeado como lo cobra el motor. */
 export function precioNinoNoche(tramo: "medio" | "chico"): number {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ID_TRASLADO_VALLES } from "@/lib/tourPricing";
 import { useRouter } from "next/navigation";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Lock, MessageCircle, CreditCard } from "lucide-react";
@@ -147,11 +148,16 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
               // las 7 Cascadas necesita guía de rescate. Sin esta línea el
               // equipo en Xilitla no se enteraba de que estaba contratada.
               ...cobro.lineItems
-                .filter((l) => (l.addOns ?? []).length > 0)
+                .filter((l) => (l.addOns ?? []).some((a) => a.id !== ID_TRASLADO_VALLES))
                 .map((l) => t.notas.extras(
                   l.tourName.split("—")[0].trim(),
-                  (l.addOns ?? []).map((a) => `${a.nombre} x${a.cantidad}`).join(", "),
+                  (l.addOns ?? []).filter((a) => a.id !== ID_TRASLADO_VALLES).map((a) => `${a.nombre} x${a.cantidad}`).join(", "),
                 )),
+              // Sale de Ciudad Valles y la Ruta Surrealista cobra el traslado
+              // (+$400 por reserva): el equipo tiene que ir por él hasta allá.
+              ...cobro.lineItems
+                .filter((l) => (l.cargoValles ?? 0) > 0)
+                .map((l) => `🚐 SE HOSPEDA EN CIUDAD VALLES: traslado cobrado +$${(l.cargoValles ?? 0).toLocaleString("es-MX")} en ${l.tourName.split("—")[0].trim()} (${l.tourDate}).`),
               cobro.hospedaje
                 ? t.notas.hospedaje(cobro.hospedaje.habitacion, cobro.hospedaje.noches, cobro.hospedaje.huespedes, datos.checkin || "", datos.checkout || "")
                 : null,

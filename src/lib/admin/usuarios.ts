@@ -9,7 +9,7 @@ export type RolAdmin = "dueno" | "socio" | "operacion";
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
   | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
-  | "cortes" | "cobros" | "fotos" | "resenas" | "salidas";
+  | "cortes" | "cobros" | "fotos" | "resenas" | "salidas" | "analisis";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -46,7 +46,9 @@ const OPERACION: SeccionAdmin[] = [
 const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "cortes", "cotizador"];
 // dueño: todo. La bitácora (quién hizo qué) es SOLO suya: si quien está siendo
 // registrado pudiera leerla, dejaría de servir para lo que se hizo.
-const DUENO: SeccionAdmin[] = [...SOCIO, "curso", "bitacora"];
+// Análisis (21 oct 2026) cruza datos personales del check-in con el dinero:
+// solo suyo de entrada; desde Inicio se la puede abrir a quien quiera.
+const DUENO: SeccionAdmin[] = [...SOCIO, "curso", "bitacora", "analisis"];
 
 export const SECCIONES_POR_ROL: Record<RolAdmin, SeccionAdmin[]> = {
   dueno:     DUENO,
@@ -56,6 +58,52 @@ export const SECCIONES_POR_ROL: Record<RolAdmin, SeccionAdmin[]> = {
 
 export function puedeVer(rol: RolAdmin, seccion: SeccionAdmin): boolean {
   return SECCIONES_POR_ROL[rol].includes(seccion);
+}
+
+// ── Qué pestañas ve CADA PERSONA (Manolo, 20 oct 2026) ──────────────────────
+// Manolo decide desde Inicio qué pestañas ve cada quien; se guarda en la base
+// (`permisos.ts`) y viaja dentro de la sesión, porque el middleware que bloquea
+// las páginas no puede leer la base. Lo de arriba (por rol) es solo lo que
+// cada quien ve mientras Manolo no haya decidido nada.
+
+/** Todas las pestañas, en el orden del menú, con su página y su nombre. */
+export const PESTANAS: { seccion: SeccionAdmin; pagina: string; etiqueta: string; grupo: string }[] = [
+  { seccion: "inicio",       pagina: "/admin",              etiqueta: "Inicio",        grupo: "Operación" },
+  { seccion: "reservas",     pagina: "/admin/reservas",     etiqueta: "Reservas",      grupo: "Operación" },
+  { seccion: "calendario",   pagina: "/admin/calendario",   etiqueta: "Calendario",    grupo: "Operación" },
+  { seccion: "salidas",      pagina: "/admin/salidas",      etiqueta: "Viaje CDMX",    grupo: "Operación" },
+  { seccion: "cotizaciones", pagina: "/admin/cotizaciones", etiqueta: "Cotizaciones",  grupo: "Operación" },
+  { seccion: "cobros",       pagina: "/admin/cobros",       etiqueta: "Cobros",        grupo: "Operación" },
+  { seccion: "fotos",        pagina: "/admin/fotos",        etiqueta: "Fotos",         grupo: "Operación" },
+  { seccion: "resenas",      pagina: "/admin/resenas",      etiqueta: "Reseñas",       grupo: "Operación" },
+  { seccion: "clientes",     pagina: "/admin/clientes",     etiqueta: "Clientes",      grupo: "Operación" },
+  { seccion: "cortes",       pagina: "/admin/cortes",       etiqueta: "Corte semanal", grupo: "Dinero" },
+  { seccion: "cotizador",    pagina: "/admin/cotizador",    etiqueta: "Cotizador",     grupo: "Dinero" },
+  { seccion: "ingresos",     pagina: "/admin/ingresos",     etiqueta: "Ventas",        grupo: "Dinero" },
+  { seccion: "analisis",     pagina: "/admin/analisis",     etiqueta: "Análisis",      grupo: "Dinero" },
+  { seccion: "bitacora",     pagina: "/admin/bitacora",     etiqueta: "Bitácora",      grupo: "Control" },
+  { seccion: "curso",        pagina: "/admin/curso",        etiqueta: "Curso IA",      grupo: "Control" },
+];
+
+/** La pestaña que solo ve el dueño: desde ahí se decide lo de los demás. */
+export const SECCION_SOLO_DUENO: SeccionAdmin = "inicio";
+
+const esSeccion = (v: unknown): v is SeccionAdmin => PESTANAS.some(p => p.seccion === v);
+
+/**
+ * Lo que de verdad puede ver alguien, a partir de lo guardado (o de nada): el
+ * dueño lo ve TODO siempre —no puede dejarse fuera—, e Inicio es solo suyo.
+ * Sin nada guardado, lo de su rol.
+ */
+export function seccionesValidas(rol: RolAdmin, raw: unknown): SeccionAdmin[] {
+  if (rol === "dueno") return PESTANAS.map(p => p.seccion);
+  const base = Array.isArray(raw) ? raw.filter(esSeccion) : SECCIONES_POR_ROL[rol];
+  return PESTANAS.map(p => p.seccion).filter(x => x !== SECCION_SOLO_DUENO && base.includes(x));
+}
+
+/** A dónde mandar a alguien: su primera pestaña, en el orden del menú. */
+export function primeraPagina(secciones: SeccionAdmin[]): string | null {
+  return PESTANAS.find(p => secciones.includes(p.seccion))?.pagina ?? null;
 }
 
 // ── Qué se puede TOCAR, no solo ver ─────────────────────────────────────────
@@ -87,11 +135,30 @@ export function rolDesdeToken(valor: unknown): RolAdmin {
 }
 
 // ── Rutas restringidas ──────────────────────────────────────────────────────
-// Solo se listan las secciones que algún rol NO puede ver. Todo lo demás del
-// panel es operación básica y lo ven los tres.
-const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
+// Cada pestaña con su página: desde que Manolo decide por persona (20 oct
+// 2026), cualquiera se puede quitar. De las APIs solo se listan las que son de
+// UNA pestaña; las de reservas o clientes las usan varias pestañas a la vez
+// (Cotizaciones convierte en reserva, el Viaje CDMX registra cobros) y
+// cerrarlas rompería pestañas que sí se ven.
+const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boolean }[] = [
+  { prefijo: "/admin",                       seccion: "inicio", exacto: true },
+  { prefijo: "/api/admin/permisos",          seccion: "inicio" },
+  { prefijo: "/admin/reservas",              seccion: "reservas"     },
+  { prefijo: "/admin/calendario",            seccion: "calendario"   },
+  { prefijo: "/admin/salidas",               seccion: "salidas"      },
+  { prefijo: "/admin/cotizaciones",          seccion: "cotizaciones" },
+  { prefijo: "/admin/fotos",                 seccion: "fotos"        },
+  { prefijo: "/admin/resenas",               seccion: "resenas"      },
+  // La lectura de Google se anota desde Reseñas; nadie más la usa.
+  { prefijo: "/api/admin/resenas",           seccion: "resenas"      },
+  { prefijo: "/admin/clientes",              seccion: "clientes"     },
+  // Trae el perfil del check-in (cumpleaños, ciudad); ninguna otra pestaña la llama.
+  { prefijo: "/api/admin/clientes",          seccion: "clientes"     },
   { prefijo: "/admin/ingresos",   seccion: "ingresos" },
   { prefijo: "/api/admin/kpis",   seccion: "ingresos" },
+  // Segmentos y canales: cruza el check-in (datos personales) con el dinero.
+  { prefijo: "/admin/analisis",     seccion: "analisis" },
+  { prefijo: "/api/admin/analisis", seccion: "analisis" },
   { prefijo: "/admin/cobros",                seccion: "cobros"   },
   { prefijo: "/api/admin/links-pago",        seccion: "cobros"   },
   // El corte semanal enseña costos, utilidad y el reparto entre socios.
@@ -111,8 +178,9 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin }[] = [
 ];
 
 export function seccionRestringida(pathname: string): SeccionAdmin | null {
+  const limpio = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const hit = RUTAS_RESTRINGIDAS.find(
-    r => pathname === r.prefijo || pathname.startsWith(`${r.prefijo}/`)
+    r => limpio === r.prefijo || (!r.exacto && limpio.startsWith(`${r.prefijo}/`))
   );
   return hit ? hit.seccion : null;
 }

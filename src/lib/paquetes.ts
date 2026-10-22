@@ -7,7 +7,7 @@ import { TRASLADOS, precioBase } from "./traslados";
 import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
 import { enAuto, enAutobus } from "./tiemposDeViaje";
-import { NOCHE_XANTOLO, haciaLa } from "./nocheXantolo";
+import { NOCHE_XANTOLO, haciaLa, horasEnFrase } from "./nocheXantolo";
 
 export interface ItinerarioDia {
   dia: number;
@@ -1067,7 +1067,7 @@ export const NOCHES_XANTOLO: Paquete[] = NOCHE_XANTOLO.noches.map((n) => ({
       titulo: `Noche de Xantolo · ${n.corta}`,
       descripcion:
         `Nos vemos a las ${NOCHE_XANTOLO.horaRecogida}: pasamos por ti a ${NOCHE_XANTOLO.recogida}, o en el centro si todavía no tienes dónde quedarte. ` +
-        `Degustación de temporada (${NOCHE_XANTOLO.degustacion}) y, con un guía del pueblo, ${NOCHE_XANTOLO.queVes} en el centro de Xilitla. ` +
+        `Hora por hora: ${horasEnFrase(n)}. La degustación es de ${NOCHE_XANTOLO.degustacion}, y un guía del pueblo va contigo toda la noche. ` +
         `Te dejamos donde te recogimos hacia las ${NOCHE_XANTOLO.regreso}.`,
     },
   ],
@@ -1088,7 +1088,7 @@ export const NOCHES_XANTOLO: Paquete[] = NOCHE_XANTOLO.noches.map((n) => ({
     tourOpcional: NOCHE_XANTOLO.tourOpcional,
     desdeValles: NOCHE_XANTOLO.desdeValles,
     pagina: NOCHE_XANTOLO.pagina,
-    notaEquipo: `NOCHE DE XANTOLO ${n.fechaTexto.toUpperCase()}: recoger a las ${NOCHE_XANTOLO.horaRecogida} donde indicó el cliente (si eligió punto de encuentro, confirmarlo por WhatsApp; si es de Ciudad Valles, pasar por él ${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)} y dejarlo allá ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}); degustación (${NOCHE_XANTOLO.degustacion}); comparsas y shows más representativos del Xantolo en el centro con guía; regreso hacia las ${NOCHE_XANTOLO.regreso}. Si la reserva trae la ${NOCHE_XANTOLO.tourOpcional.nombre}, ese mismo día sale ${NOCHE_XANTOLO.tourOpcional.horaRecogida} y regresa a tiempo para la noche.`,
+    notaEquipo: `NOCHE DE XANTOLO ${n.fechaTexto.toUpperCase()}: recoger a las ${NOCHE_XANTOLO.horaRecogida} donde indicó el cliente (si eligió punto de encuentro, confirmarlo por WhatsApp; si es de Ciudad Valles, pasar por él ${haciaLa(NOCHE_XANTOLO.desdeValles.recogidaNoche)} y dejarlo allá ${haciaLa(NOCHE_XANTOLO.desdeValles.regreso)}); degustación (${NOCHE_XANTOLO.degustacion}); con guía, ${n.programa.toLowerCase()} (${horasEnFrase(n)}); regreso hacia las ${NOCHE_XANTOLO.regreso}. Si la reserva trae la ${NOCHE_XANTOLO.tourOpcional.nombre}, ese mismo día sale ${NOCHE_XANTOLO.tourOpcional.horaRecogida} y regresa a tiempo para la noche.`,
   },
 }));
 

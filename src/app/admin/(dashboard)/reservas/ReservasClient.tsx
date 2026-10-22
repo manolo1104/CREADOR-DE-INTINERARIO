@@ -5,14 +5,18 @@ import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
-import { ReservaModal, EMPTY_RESERVA_FORM, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
+import { descuentoDeMeta, historialDeMeta, montoDescuento } from "@/lib/admin/descuento";
+import { ReservaModal, EMPTY_RESERVA_FORM, ZONA_TEXTO, zonaDeTexto, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
+import { zonaDeReserva } from "@/lib/admin/hospedaje";
 import CobroModal from "@/components/admin/CobroModal";
 import { origenValido } from "@/lib/origenReserva";
 import { escapeHtml as esc } from "@/lib/escapeHtml";
+import { CheckinBoton } from "@/components/admin/Checkin";
+import type { EstadoCheckin } from "@/lib/encuestas/opciones";
 
 const STATUS_STYLE: Record<string, string> = {
   paid:      "bg-green-100 text-green-800",
@@ -65,10 +69,14 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin" }:
-  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string },
+  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin", checkins: checkinsIniciales = {} }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string; checkins?: Record<string, EstadoCheckin> },
 ) {
   const [bookings,      setBookings]      = useState(initialBookings);
+  // El estado del check-in de cada reserva (21 oct 2026). Vive aparte de la
+  // reserva: lo actualizan el botón de la fila y la ficha.
+  const [checkins,      setCheckins]      = useState(checkinsIniciales);
+  const ponCheckin = (id: string) => (e: EstadoCheckin) => setCheckins(c => ({ ...c, [id]: e }));
   const [detalle,       setDetalle]       = useState<TourBooking | null>(null);
   const [cobrando,      setCobrando]      = useState<TourBooking | null>(null);
   const [search,        setSearch]        = useState("");
@@ -164,9 +172,13 @@ export default function ReservasClient(
     // Preservar el total editado a mano: si el total guardado difiere del
     // calculado (precio ajustado, descuento de una cotización convertida, etc.)
     // lo cargamos como total editado para no perderlo al reabrir/guardar.
+    // El descuento guardado (o el de la cotización de origen) se vuelve a poner
+    // como descuento, con su candado: ya no se esconde dentro del total.
+    const descuento = descuentoDeMeta(meta);
     const calcTotal = lines.reduce((s, l) => s + calcLine(l), 0)
                     + (storedPkgs ?? []).reduce((s, p) => s + calcPackageLine(p), 0)
                     + totalExtras(extrasDe((b as any).extraItems));
+    const conDescuento = calcTotal - montoDescuento(descuento, calcTotal);
 
     setForm({
       customerName:   b.customerName,
@@ -176,11 +188,21 @@ export default function ReservasClient(
       lines,
       packages:       storedPkgs ?? [],
       extras:         extrasDe((b as any).extraItems),
-      totalOverride:  b.totalAmount !== calcTotal ? String(b.totalAmount) : "",
+      totalOverride:  b.totalAmount !== conDescuento ? String(b.totalAmount) : "",
+      descuentoTipo:      descuento?.tipo ?? "percent",
+      descuentoValor:     descuento ? String(descuento.valor) : "",
+      descuentoGuardado:  descuento,
+      descuentoHistorial: historialDeMeta(meta),
+      codigoCumple: typeof meta.codigoCumple === "string" ? meta.codigoCumple : "",
       depositoPagado: String((b as any).depositoPagado ?? 0),
       metodoPago:     meta.metodoPago  || "Transferencia",
       folioPago:      meta.folioPago   || "",
-      pickupLugar:    meta.pickupLugar || "Lobby de tu hotel en Xilitla",
+      // A quien sale de Valles no se le propone el lobby de Xilitla: guardar la
+      // reserva lo escribiría y el correo le diría que pasan por él a Xilitla.
+      pickupLugar:    meta.pickupLugar || (zonaDeReserva(b) === "valles" ? "" : "Lobby de tu hotel en Xilitla"),
+      // Solo lo que se ELIGIÓ (botones, web o bot): adivinarla del hotel la
+      // escribiría al guardar como si alguien la hubiera elegido.
+      zona:           zonaDeTexto(meta.zonaHospedaje),
       numPersonas:    meta.numPersonas ? String(meta.numPersonas) : "",
       // Al EDITAR se respeta lo guardado (las reservas viejas traen el "web"
       // del default). Al CREAR manda `EMPTY_RESERVA_FORM`, que arranca en
@@ -207,6 +229,16 @@ export default function ReservasClient(
         ...metaPrevio,
         _meta: true, metodoPago: form.metodoPago, folioPago: form.folioPago,
         pickupLugar: form.pickupLugar, numPersonas: Number(form.numPersonas) || 0,
+        // El descuento va dicho siempre (también «sin descuento»): el servidor
+        // compara con lo guardado y sella quién lo cambió (ver `descuento.ts`).
+        descuento: Number(form.descuentoValor) > 0
+          ? { tipo: form.descuentoTipo, valor: Math.round(Number(form.descuentoValor)) }
+          : null,
+        // Sin elegir se queda lo que ya traía (lo que entendió el bot, la web).
+        ...(form.zona ? { zonaHospedaje: ZONA_TEXTO[form.zona] } : {}),
+        // El código de cumpleaños que respalda el descuento: el servidor lo
+        // canjea al guardar (o lo libera si se quitó). Va siempre dicho.
+        codigoCumple: form.codigoCumple || null,
         // Viaja en el `_meta` y NO en la columna `notes`: `notes` se imprime en
         // el correo y en el comprobante del cliente, y esto no puede salir de
         // aquí. Ver `notasInternas` en ReservaModal.
@@ -219,7 +251,11 @@ export default function ReservasClient(
     const toursTotal   = lineItems.reduce((s, l) => s + ((l as any).subtotal ?? 0), 0);
     const pkgsTotal    = packageItems.reduce((s, p) => s + p.subtotal, 0);
     const extrasTotal  = totalExtras(extraItems);
-    const calcTotal    = toursTotal + pkgsTotal + extrasTotal;
+    const sinDescuento = toursTotal + pkgsTotal + extrasTotal;
+    const calcTotal    = sinDescuento - montoDescuento(
+      Number(form.descuentoValor) > 0 ? { tipo: form.descuentoTipo, valor: Math.round(Number(form.descuentoValor)) } : null,
+      sinDescuento,
+    );
     const totalAmount  = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
     const primaryLine  = form.lines[0];
     const tourNames    = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
@@ -263,6 +299,8 @@ export default function ReservasClient(
       body: JSON.stringify({ confirmationNumber, status, ...datos }),
     });
     if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM); flash("✅ Reserva creada"); }
+    // Antes un error no decía nada: el botón dejaba de girar y ya.
+    else { const j = await r.json().catch(() => ({})); flash(`❌ ${j.error || "No se pudo guardar la reserva"}`); }
     setSaving(false);
   }
 
@@ -280,6 +318,9 @@ export default function ReservasClient(
     if (r.ok) {
       await refresh();
       setModal(null); setEditTarget(null); flash("✅ Reserva actualizada");
+    } else {
+      const j = await r.json().catch(() => ({}));
+      flash(`❌ ${j.error || "No se pudo guardar la reserva"}`);
     }
     setSaving(false);
   }
@@ -714,7 +755,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       </div>
 
       {msg && (
-        <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>
+        // Con el formulario abierto el aviso flota encima (si no, queda tapado
+        // por el modal y un error al guardar no se ve). Sin translate: la
+        // animación escribe `transform` y descentraría el aviso.
+        <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${modal ? "fixed top-4 inset-x-4 md:left-auto md:right-6 md:max-w-md z-[90] shadow-lg" : ""} ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>
           {msg}
         </div>
       )}
@@ -814,6 +858,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                   className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
+                <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
                 <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
@@ -911,6 +956,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
+                        <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
                         <button onClick={() => { playClick(); hardDelete(b.id); }} title="Eliminar"
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -924,7 +970,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       </div>
 
       {detalle && (
-        <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} />
+        <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} onCheckin={ponCheckin(detalle.id)} />
       )}
 
       {cobrando && (
@@ -947,6 +993,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       )}
       {modal === "edit" && (
         <ReservaModal soloLecturaCobro title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
+          folio={editTarget?.confirmationNumber}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}
     </div>

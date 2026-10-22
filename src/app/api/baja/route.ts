@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
      * Lo que NO se toca: las reservas. Una confirmación de compra no es
      * publicidad y se sigue mandando.
      */
-    const [leads, carritos, cotizaciones, curso] = await prisma.$transaction([
+    const [leads, carritos, cotizaciones, curso, , cumple] = await prisma.$transaction([
       prisma.lead.updateMany({
         // Sin distinguir mayúsculas: el token lleva el correo en minúsculas y
         // los formularios lo guardan como se escribió («Ana.Lopez@Gmail.com»).
@@ -79,6 +79,13 @@ export async function POST(req: NextRequest) {
         create: { email: email.toLowerCase(), fuente: FUENTE_BAJA, status: "baja" },
         update: { status: "baja" },
       }),
+      // El regalo de cumpleaños del check-in (21 oct 2026) también es
+      // promoción: se apaga la casilla que lo autorizaba. El cron además
+      // consulta `estaDeBaja()`, pero el consentimiento tiene que quedar dicho.
+      prisma.encuestaReserva.updateMany({
+        where: { aceptaPromos: true, booking: { customerEmail: mismoCorreo(email) } },
+        data:  { aceptaPromos: false },
+      }),
     ]);
 
     actividad(
@@ -87,6 +94,7 @@ export async function POST(req: NextRequest) {
       `${carritos.count} carrito(s)`,
       `${cotizaciones.count} cotización(es)`,
       `${curso.count} curso`,
+      `${cumple.count} cumpleaños`,
     );
     // Los contadores pueden venir en 0 si ya estaba dado de baja: para la
     // persona el resultado es el mismo y no tiene por qué ver un error.

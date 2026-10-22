@@ -19,13 +19,27 @@ import type { Locale } from "./i18n/config";
 export const GOOGLE_REVIEW_URL = "https://g.page/r/CZg8hdQa_GI9EBM/review";
 
 /**
- * Días tras el tour antes de pedir la reseña. Dos: ya llegó a casa y descargó
- * las fotos, pero todavía no se le pasó el entusiasmo.
+ * Días tras el tour antes de pedir la reseña. Uno desde el 21 oct 2026 (antes
+ * dos): el correo es ahora también la encuesta de satisfacción, y la
+ * calificación se contesta mejor con el día fresco. Sale a las 10 AM del día
+ * siguiente al ÚLTIMO día del viaje.
  */
-export const DIAS_ESPERA = 2;
+export const DIAS_ESPERA = 1;
 
-/** Solo se le pide reseña a quien efectivamente pagó y fue. */
-export const ESTADO_ELEGIBLE = "paid";
+/**
+ * Antes solo `paid`: dejaba fuera a quien pagó el anticipo en línea y el resto
+ * en persona sin que nadie lo marcara en el panel — viajó igual. Ahora todo lo
+ * que no esté cancelado ni en borrador (`NO_CUENTAN` de `cupoTour.ts`).
+ */
+export const ESTADOS_NO_ELEGIBLES = ["cancelled", "borrador"];
+
+/**
+ * Una `pending` solo entra si dejó anticipo (`depositoPagado > 0`): sin él no
+ * hay prueba de que viajó. Y solo si su tour terminó desde esta fecha, cuando
+ * se abrió la regla: sin el corte, la primera corrida le escribía de golpe a
+ * todas las pendientes de los últimos 45 días («hace unos días saliste…»).
+ */
+export const DESDE_PENDIENTES = "2026-10-21";
 
 interface MetaLinea {
   _meta?: boolean;

@@ -3,6 +3,7 @@
 import type { BookingMessages } from "@/lib/i18n/booking";
 import type { CampoContacto, ErroresContacto } from "@/lib/checkout/validarContacto";
 import { PreguntaRecogida } from "@/components/carrito/PreguntaRecogida";
+import type { ZonaHospedaje } from "@/lib/tourPricing";
 
 interface Campo {
   campo: CampoContacto | "pickup";
@@ -29,6 +30,7 @@ export function DatosContacto({
   m,
   name, setName, email, setEmail, phone, setPhone, pickup, setPickup,
   guiaIngles, setGuiaIngles,
+  zona, cambiarZona, errorZona,
   errores,
   onSalirDe,
 }: {
@@ -39,6 +41,8 @@ export function DatosContacto({
   pickup: string; setPickup: (v: string) => void;
   /** «Quiero guía en inglés», sin costo. Del grupo, no de un recorrido. */
   guiaIngles: boolean; setGuiaIngles: (v: boolean) => void;
+  /** «¿Xilitla o Ciudad Valles?», solo si un recorrido cobra distinto desde Valles. */
+  zona: "" | ZonaHospedaje; cambiarZona: (z: ZonaHospedaje) => void; errorZona: boolean;
   errores: ErroresContacto;
   /** Al salir de un campo: valida solo ese. */
   onSalirDe: (campo: CampoContacto) => void;
@@ -56,7 +60,7 @@ export function DatosContacto({
           el equipo necesita para la logística del día. Antes era el último
           renglón, «¿Dónde te hospedas? (opcional)», perdido entre el correo y
           el WhatsApp. */}
-      <PreguntaRecogida valor={pickup} cambiar={setPickup} id="datos-pickup" />
+      <PreguntaRecogida valor={pickup} cambiar={setPickup} id="datos-pickup" zona={zona} cambiarZona={cambiarZona} errorZona={errorZona} />
       {campos.map((c) => {
         const error = c.campo !== "pickup" ? errores[c.campo] : undefined;
         const id = `datos-${c.campo}`;

@@ -25,10 +25,14 @@ const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID?.replace(/[^A-Za-z0-9]/g, 
  *    (`hp_interno` en localStorage): quien abre el panel es del equipo, y sus
  *    visitas al sitio público (revisar precios, mandar ligas) tampoco deben
  *    contar como clientes. Para medir desde ese navegador, usar incógnito.
+ *  - /checkin y /opina (21 oct 2026) → nunca se miden: la URL lleva la liga
+ *    personal del cliente (quien la tiene abre su formulario) y la página
+ *    muestra su nombre y lo que escribe de sí mismo (cumpleaños, ciudad).
  */
 const GUARDA = `
   var h = location.hostname;
   if (h === 'localhost' || h === '127.0.0.1' || /\\.local$/.test(h)) return;
+  if (/^\\/(checkin|opina)\\//.test(location.pathname)) return;
   if (location.pathname.indexOf('/admin') === 0) {
     try { localStorage.setItem('hp_interno', '1'); } catch (e) {}
     return;

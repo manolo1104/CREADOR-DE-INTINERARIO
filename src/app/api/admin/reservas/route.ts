@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { cerrarCarritosDe, toursDeReserva } from "@/lib/cerrarCarrito";
 import { origenValido } from "@/lib/origenReserva";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
+import { sesionActual } from "@/lib/admin/sesion";
+import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
+import { codigoCumpleAlGuardar, liberarCodigoCumple } from "@/lib/encuestas/cumple";
+import { hoyMX } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +29,14 @@ export async function POST(req: NextRequest) {
     if (!body?.confirmationNumber || !body?.customerName) {
       return NextResponse.json({ error: "Faltan datos requeridos" }, { status: 400 });
     }
+    // El descuento se sella aquí con quién lo puso (ver `descuento.ts`).
+    const sesion = await sesionActual();
+    const sellado = sellarEnLineItems(body.lineItems, null, sesion?.nombre ?? "Desconocido");
+    // El código de cumpleaños se canjea ANTES de crear: si ya se usó, no se
+    // guarda una reserva con un descuento que no le toca.
+    const folio = String(body.confirmationNumber);
+    const cumple = await codigoCumpleAlGuardar(sellado.lineItems, null, folio, hoyMX());
+    if (!cumple.ok) return NextResponse.json({ error: cumple.error }, { status: 409 });
     // Whitelist de campos permitidos (evita asignación masiva de columnas inesperadas).
     const booking = await prisma.tourBooking.create({
       data: {
@@ -44,7 +56,7 @@ export async function POST(req: NextRequest) {
         customerEmail:         body.customerEmail || "",
         customerPhone:         body.customerPhone || null,
         notes:                 body.notes || null,
-        lineItems:             body.lineItems    ?? undefined,
+        lineItems:             (sellado.lineItems as any) ?? undefined,
         packageItems:          body.packageItems ?? undefined,
         extraItems:            body.extraItems   ?? undefined,
         status:                body.status || "paid",
@@ -54,6 +66,10 @@ export async function POST(req: NextRequest) {
         // formulario la marca y aquí solo se normaliza.
         origen:                origenValido(body.origen),
       },
+    }).catch(async (e) => {
+      // No se creó: el código vuelve a quedar libre.
+      if (cumple.canjeado) await liberarCodigoCumple(cumple.canjeado, folio);
+      throw e;
     });
     // La venta ya está cerrada: apaga el carrito abandonado que la originó.
     // Sin esto el cron de recuperación le sigue escribiendo "¿Apartamos tu
@@ -68,7 +84,9 @@ export async function POST(req: NextRequest) {
       accion:     "creó",
       entidad:    "reserva",
       referencia: booking.confirmationNumber,
-      resumen:    `Reserva ${booking.confirmationNumber} — ${booking.customerName}, ${booking.tourName || "sin tour"} el ${booking.tourDate || "sin fecha"}, ${pesos(booking.totalAmount)}`,
+      resumen:    `Reserva ${booking.confirmationNumber} — ${booking.customerName}, ${booking.tourName || "sin tour"} el ${booking.tourDate || "sin fecha"}, ${pesos(booking.totalAmount)}`
+        + (sellado.evento ? ` · ${resumenEvento(sellado.evento)}` : "")
+        + (cumple.resumen ? ` · ${cumple.resumen}` : ""),
     });
 
     return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });

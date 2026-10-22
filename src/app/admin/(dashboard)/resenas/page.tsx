@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { hoyMX, addDaysYMD } from "@/lib/dates";
 import {
-  DIAS_MAXIMOS, ESTADO_ELEGIBLE, localeDeReserva, mensajeResenaWhatsapp,
+  DIAS_MAXIMOS, ESTADOS_NO_ELEGIBLES, localeDeReserva, mensajeResenaWhatsapp,
   reviewPedidaEn, reviewWhatsappEn, telefonoWhatsapp,
 } from "@/lib/reviewRequest";
+import { resumenSatisfaccion } from "@/lib/admin/satisfaccion";
 import ResenasClient, { type FilaResena } from "./ResenasClient";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function ResenasPage() {
   const desde = addDaysYMD(hoy, -DIAS_MAXIMOS);
 
   const reservas = await prisma.tourBooking.findMany({
-    where:   { status: ESTADO_ELEGIBLE, tourDate: { gte: desde, lte: hasta } },
+    where:   { status: { notIn: ESTADOS_NO_ELEGIBLES }, tourDate: { gte: desde, lte: hasta } },
     select:  {
       id: true, confirmationNumber: true, customerName: true, customerPhone: true,
       tourName: true, tourDate: true, lineItems: true,
@@ -45,5 +46,5 @@ export default async function ResenasPage() {
     };
   });
 
-  return <ResenasClient filas={filas} />;
+  return <ResenasClient filas={filas} satisfaccion={await resumenSatisfaccion()} />;
 }

@@ -214,6 +214,8 @@ function recogidaCelda(t: Tour, en: boolean, ui: ComparadorUI): Celda {
   } else {
     const ciudad = ciudadUnicaDeRecogida(t);
     frase = ciudad ? ui.recogida.hospedajeCiudad(ciudad) : ui.recogida.hospedaje;
+    // Recoge en las dos, pero desde Valles cobra de más (la Ruta Surrealista).
+    nota = p.cargoValles ? sinRaya(p.cargoValles) : undefined;
   }
   if (p.vehiculo) frase = ui.recogida.conVehiculo(frase, p.vehiculo);
   return texto(frase, nota ? { nota } : {});

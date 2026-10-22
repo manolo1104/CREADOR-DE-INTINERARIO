@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkCredentials, createToken } from "@/lib/admin/auth";
+import { seccionesDe } from "@/lib/admin/permisos";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -60,7 +61,10 @@ export async function POST(req: NextRequest) {
       actor:   { usuario: usuario.user, nombre: usuario.nombre, rol: usuario.rol },
     });
 
-    const token = await createToken(usuario);
+    // Las pestañas que le dio Manolo viajan en la sesión. Si la página a la que
+    // lo manda el login no es suya, el middleware lo pasa a su primera pestaña.
+    const secciones = await seccionesDe(usuario);
+    const token = await createToken(usuario, secciones);
     const res = NextResponse.json({ ok: true });
     res.cookies.set("admin_session", token, {
       httpOnly: true,

@@ -3,6 +3,7 @@ import { hoyMX, addDaysYMD, partsMX, mxMonthStart } from "@/lib/dates";
 import { montoCobrado, saldoPendiente } from "@/lib/admin/kpis";
 import { sesionActual } from "@/lib/admin/sesion";
 import { puedeVer } from "@/lib/admin/usuarios";
+import { permisosDeTodos } from "@/lib/admin/permisos";
 import DashboardClient from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,8 @@ export default async function AdminDashboard() {
     // dijera siempre "5" aunque hubiera decenas abiertas.
     prisma.tourQuote.count({ where: { status: { in: ["borrador", "enviada"] } } }),
   ]);
+  // Inicio es solo de Manolo: desde aquí decide qué pestañas ve cada quien.
+  const personas = sesion?.rol === "dueno" ? (await permisosDeTodos()).filter(p => p.rol !== "dueno") : [];
 
   const monthIngresos = monthBookings.reduce((s, b) => s + montoCobrado(b), 0);
   const pendingAmount = allPending.reduce((s, b) => s + saldoPendiente(b), 0);
@@ -58,6 +61,7 @@ export default async function AdminDashboard() {
       verDinero={verDinero}
       pendingAmount={verDinero ? pendingAmount : 0}
       activeQuotes={activeQuotesCount}
+      personas={personas}
     />
   );
 }

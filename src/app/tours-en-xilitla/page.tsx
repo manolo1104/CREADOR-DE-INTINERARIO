@@ -3,7 +3,7 @@ import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import {
   TOURS_DB, tourDurTexto, etiquetaUnidad, esPorPersona, recogidaDeTour, partesRecogida,
-  salidaCorta, rankTour,
+  salidaCorta, rankTour, cargoVallesDe,
 } from "@/lib/tours";
 import { excepcionesSalida, horaEnLista } from "@/lib/recogidaTexto";
 import { destinosDeTour } from "@/lib/tourMapping";
@@ -316,6 +316,7 @@ export default function ToursEnXilitlaPage() {
                   {salida && (
                     <p className="font-dm text-[11px] text-crema/60 leading-snug mb-2">
                       Salida: {salida}, desde {partesRecogida(t, false).lugar}
+                      {cargoVallesDe(t) > 0 && ` (desde Valles, +$${cargoVallesDe(t).toLocaleString("es-MX")} por reserva)`}
                     </p>
                   )}
                   <p className="font-dm text-sm">

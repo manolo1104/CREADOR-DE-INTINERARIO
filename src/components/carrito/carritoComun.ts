@@ -31,7 +31,7 @@ export interface Cobro {
   amount: number;
   total: number;
   saldo: number;
-  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string; addOns?: { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[]; viajeroSolo?: boolean }[];
+  lineItems: { tourSlug?: string; tourName: string; tourDate: string; adults: number; children: number; childrenMid?: number; childrenSmall?: number; subtotal: number; eleccion?: string; addOns?: { id: string; nombre: string; cantidad: number; precio: number; subtotal: number }[]; viajeroSolo?: boolean; cargoValles?: number }[];
   hospedaje: { habitacion: string; noches: number; huespedes: number; total: number; ahorro: number } | null;
   traslado:  { ciudad: string; personas: number; total: number } | null;
 }

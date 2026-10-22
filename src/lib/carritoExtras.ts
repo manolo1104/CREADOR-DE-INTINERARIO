@@ -28,6 +28,8 @@ export interface CarritoExtras {
   email:          string;
   phone:          string;
   pickup:         string;
+  /** «¿Xilitla o Ciudad Valles?». Vacío mientras no elija; solo se pide si un recorrido cobra distinto. */
+  zona:           "" | "xilitla" | "valles";
   /**
    * «Quiero guía en inglés», sin costo (Manolo, 8 oct 2026).
    *
@@ -51,6 +53,7 @@ export const EXTRAS_VACIOS: CarritoExtras = {
   email: "",
   phone: "",
   pickup: "",
+  zona: "",
   guiaIngles: false,
 };
 
@@ -77,6 +80,7 @@ export function leerExtras(): CarritoExtras {
       email:          typeof d.email  === "string" ? d.email  : "",
       phone:          typeof d.phone  === "string" ? d.phone  : "",
       pickup:         typeof d.pickup === "string" ? d.pickup : "",
+      zona:           d.zona === "xilitla" || d.zona === "valles" ? d.zona : "",
       guiaIngles:     d.guiaIngles === true,
     };
   } catch {

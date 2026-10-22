@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { TOURS_DB, partesRecogida, recogidaDeTour } from "@/lib/tours";
+import { TOURS_DB, cargoVallesDe, partesRecogida, recogidaDeTour } from "@/lib/tours";
 import { rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
@@ -21,6 +21,10 @@ const URL = `${SITE}/xilitla-o-ciudad-valles`;
  * decide dónde dormir.
  */
 const EN_LAS_DOS = recogenEnValles(TOURS_DB);
+/** Recogen en las dos, pero desde Valles cobran el traslado (la Ruta Surrealista, $400 por reserva). */
+const CON_CARGO = EN_LAS_DOS.filter((t) => cargoVallesDe(t) > 0);
+const cargoTexto = (t: (typeof TOURS_DB)[number]) =>
+  `$${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva (no por persona)`;
 const SOLO_XILITLA = TOURS_DB.filter((t) => partesRecogida(t, false).valles);
 const OTROS = TOURS_DB.filter((t) => !EN_LAS_DOS.includes(t) && !SOLO_XILITLA.includes(t));
 const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
@@ -74,6 +78,10 @@ const FAQS: { q: string; a: string }[] = [
     q: "¿Puedo quedarme en Xilitla y aun así hacer el tour a Tamul?",
     a: "Sí. Pasamos por ti a tu hospedaje tanto en Xilitla como en Ciudad Valles, sin costo extra. Desde Xilitla, Tamul queda a poco más de una hora.",
   },
+  ...CON_CARGO.map((t) => ({
+    q: `¿Puedo hacer la ${t.nombreCorto} si me quedo en Ciudad Valles?`,
+    a: `Sí. Pasamos por ti a tu hospedaje en Ciudad Valles, pero desde ahí el traslado cuesta ${cargoTexto(t)}; desde Xilitla va incluido. Las Pozas queda a 1 h 45 min de Valles y en el pueblo si duermes en Xilitla.`,
+  })),
   {
     q: "¿Cuántos días necesito para la Huasteca Potosina?",
     a: "Con 3 días alcanzas para tres recorridos completos si te quedas en una sola base. Con 4 o 5 puedes combinar el lado de Xilitla (Las Pozas, Comales, Huichihuayán) con el lado de Valles (Tamul, Micos, Tamasopo) sin manejar de más.",
@@ -182,7 +190,10 @@ export default function XilitlaOCiudadVallesPage() {
           <div className="border border-lima/25 bg-verde-profundo/40 p-6">
             <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">Quédate en Xilitla si…</p>
             <ul className="space-y-2 text-crema/70 font-dm text-sm leading-relaxed">
-              <li>· Vienes principalmente por Las Pozas de Edward James: el jardín está en el pueblo.</li>
+              <li>
+                · Vienes principalmente por Las Pozas de Edward James: el jardín está en el pueblo
+                {CON_CARGO[0] ? ` y la ${CON_CARGO[0].nombreCorto} pasa por ti sin costo; desde Valles son $${cargoVallesDe(CON_CARGO[0]).toLocaleString("es-MX")} más por reserva.` : "."}
+              </li>
               <li>· Quieres el Pueblo Mágico, el café de altura y la sierra, no solo las cascadas.</li>
               <li>· Prefieres hospedaje con carácter a la oferta de ciudad.</li>
             </ul>
@@ -204,11 +215,12 @@ export default function XilitlaOCiudadVallesPage() {
             >
               Paraíso Encantado
             </a>
-            , y nuestro restaurante, pero en {EN_LAS_DOS.length} de
+            , y nuestro restaurante, pero en {EN_LAS_DOS.length - CON_CARGO.length} de
             nuestros {TOURS_DB.length} recorridos{" "}
             <strong className="text-crema">pasamos por ti a tu hospedaje en las dos ciudades</strong>, sin costo
             extra. Si te quedas en Ciudad Valles, te recogemos ahí. Si te quedas con nosotros en Xilitla, sales
             al tour desde la puerta.
+            {CON_CARGO.map((t) => ` ${t.articulo ? `${t.articulo.charAt(0).toUpperCase()}${t.articulo.slice(1)} ` : ""}${t.nombreCorto} también pasa por ti en Ciudad Valles, con ${cargoTexto(t)}.`)}
           </p>
           {SOLO_XILITLA.length > 0 && (
             <p className="text-crema/60 font-dm text-sm leading-relaxed mb-5">

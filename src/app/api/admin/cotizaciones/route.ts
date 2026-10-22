@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
+import { sesionActual } from "@/lib/admin/sesion";
+import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Faltan datos requeridos" }, { status: 400 });
     }
     const quoteNumber = "COT-" + Date.now().toString(36).toUpperCase();
+    // El descuento se sella aquí con quién lo puso (ver `descuento.ts`).
+    const sesion  = await sesionActual();
+    // En las cotizaciones el `_meta` de precio va en `packageItems`.
+    const sellado = sellarEnLineItems(body.packageItems, null, sesion?.nombre ?? "Desconocido");
     // Whitelist de campos permitidos.
     const quote = await prisma.tourQuote.create({
       data: {
@@ -36,7 +42,7 @@ export async function POST(req: NextRequest) {
         customerPhone: body.customerPhone || null,
         notes:         body.notes || null,
         lineItems:     body.lineItems    ?? undefined,
-        packageItems:  body.packageItems ?? undefined,
+        packageItems:  (sellado.lineItems as any) ?? undefined,
         extraItems:    body.extraItems   ?? undefined,
         status:        "borrador",
       },
@@ -45,7 +51,8 @@ export async function POST(req: NextRequest) {
       accion:     "creó",
       entidad:    "cotización",
       referencia: quote.quoteNumber,
-      resumen:    `Cotización ${quote.quoteNumber} — ${quote.customerName}, ${quote.tourName || "sin tour"} el ${quote.tourDate || "sin fecha"}, ${pesos(quote.totalAmount)}`,
+      resumen:    `Cotización ${quote.quoteNumber} — ${quote.customerName}, ${quote.tourName || "sin tour"} el ${quote.tourDate || "sin fecha"}, ${pesos(quote.totalAmount)}`
+        + (sellado.evento ? ` · ${resumenEvento(sellado.evento)}` : ""),
     });
 
     return NextResponse.json({ ok: true, id: quote.id, quoteNumber });
