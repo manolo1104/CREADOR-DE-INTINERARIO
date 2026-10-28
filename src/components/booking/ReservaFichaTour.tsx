@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { totalRecorrido, aceptaViajeroSolo, esViajeroSolo, minBookingDate, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { TOURS_DB, precioGrupo, precioPorCabeza, salidaCorta, recogidaDeTour, precioDeFecha, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "@/lib/tours";
@@ -345,7 +344,6 @@ export function ReservaFichaTour({
             }}
             className={BOTON_RESERVAR}
           >
-            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
             {tf.reservarHoy(dinero(hoy))}
           </Link>
         ) : (
@@ -358,7 +356,6 @@ export function ReservaFichaTour({
             onClick={() => abrirCalendario(slug)}
             className={BOTON_RESERVAR}
           >
-            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
             {sinLugar ? tf.sinLugarEligeOtra : tf.continuar}
           </button>
         )}

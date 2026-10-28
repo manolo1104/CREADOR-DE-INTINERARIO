@@ -52,6 +52,7 @@ import {
   fraseRecogida,
   incluyeDeTour,
   partesRecogida,
+  promoVigente,
   type Tour,
 } from "@/lib/tours";
 import { excepcionesSalida, horaEnLista } from "@/lib/recogidaTexto";
@@ -111,9 +112,14 @@ function precioTour(t: Tour, locale: Locale): string {
           ? `from ${e.desde} people ${mxn(t.precio - e.menos)} each`
           : `desde ${e.desde} personas ${mxn(t.precio - e.menos)} cada uno`))
         .join(" · ");
+      // La aclaración de la promo solo mientras exista: retirada, hablar de
+      // ella le anuncia al asistente un descuento que ya no se da.
+      const sinPromo = promoVigente()
+        ? (en ? " It does NOT stack with the low-season promo." : " NO se suma a la promo de temporada baja.")
+        : "";
       return en
-        ? `${mxn(t.precio)} per person for 1 or 2; the per-person price drops with the group size: ${tramos}. It does NOT stack with the low-season promo.`
-        : `${mxn(t.precio)} por persona con 1 o 2; el precio por persona baja según el tamaño del grupo: ${tramos}. NO se suma a la promo de temporada baja.`;
+        ? `${mxn(t.precio)} per person for 1 or 2; the per-person price drops with the group size: ${tramos}.${sinPromo}`
+        : `${mxn(t.precio)} por persona con 1 o 2; el precio por persona baja según el tamaño del grupo: ${tramos}.${sinPromo}`;
     }
     return mxn(t.precio);
   }

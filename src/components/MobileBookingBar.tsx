@@ -139,7 +139,6 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
             }}
             className={ctaClass}
           >
-            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
             {tf.reservarHoy(dinero(hoy))}
           </Link>
         ) : (

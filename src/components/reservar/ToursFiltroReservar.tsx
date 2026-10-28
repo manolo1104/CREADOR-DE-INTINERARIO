@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { TarjetaTourReservar } from "@/components/reservar/TarjetaTourReservar";
+import { DestinosAlTour } from "@/components/reservar/DestinosAlTour";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { SelectorPersonas } from "@/components/buscador/SelectorPersonas";
 import { CELDA_BUSCADOR, ETIQUETA_BUSCADOR, FILA_BUSCADOR, SEPARADOR_BUSCADOR } from "@/components/buscador/estilos";
@@ -277,6 +278,9 @@ export function ToursFiltroReservar({ tours, masReservado }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Del lugar al recorrido: la lista de destinos (28 oct 2026). */}
+        <DestinosAlTour fecha={fecha} personas={personas} />
 
         {/* 🔴 UNA fila, también en escritorio (9 oct 2026). Las once píldoras
             con `md:flex-wrap` caían en dos renglones centrados, y dos bandas de

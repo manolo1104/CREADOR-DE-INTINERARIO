@@ -84,7 +84,11 @@ function PaqueteCard({ p }: { p: Paquete }) {
       </div>
 
       <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
-        <h2 className="font-cormorant text-[26px] font-light leading-tight text-negro">{p.nombre}</h2>
+        {/* El título es enlace: 6 personas le dieron clics de rabia a títulos y
+            fotos de estas tarjetas que no llevaban a nada (Clarity, 11–28 oct). */}
+        <h2 className="font-cormorant text-[26px] font-light leading-tight text-negro">
+          <Link href={lp(`/paquetes/${p.slug}`)} className="transition-colors hover:text-verde-selva">{p.nombre}</Link>
+        </h2>
         <p className="mt-0.5 font-dm text-xs text-negro/65">{p.subtitulo}</p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">

@@ -551,8 +551,13 @@ export function esPorPersona(t: Pick<Tour, "precioUnidad">): boolean {
  * busca— y en México un "precio anterior" permanente puede leerse como
  * publicidad engañosa. Para prorrogarlo basta con mover esta fecha; para
  * retirarlo, ponerle una pasada.
+ *
+ * 🔴 26 oct 2026, Manolo: «quita el precio de temporada baja». Se retiró tres
+ * días antes de lo anunciado poniéndole la fecha de ayer: ninguna fecha que
+ * todavía se pueda reservar lleva el descuento, y las reservas y cotizaciones
+ * de días ya pasados se siguen leyendo con el precio con el que se hicieron.
  */
-export const PROMO_VENCE = "2026-10-29";
+export const PROMO_VENCE = "2026-10-25";
 
 /**
  * Promo de temporada baja (decisión de Manolo, 29 sep 2026): $100 menos POR

@@ -35,6 +35,10 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+  // El banco rechazó la tarjeta al menos una vez: la salida por WhatsApp sube
+  // junto al error. El 16 oct 2026 un visitante lo intentó 3 veces (3 rechazos)
+  // y se fue sin ver el bloque de abajo.
+  const [rechazada, setRechazada] = useState(false);
 
   // El formulario de pago está en pantalla: la grabación de Clarity se marca
   // como «6·pantalla_de_pago» (el servidor ya cuenta el paso por su lado).
@@ -96,6 +100,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
         message: stripeError.message, paymentIntentId: cobro.paymentIntentId,
       });
       setError(stripeError.message || t.errorPago);
+      if (stripeError.type === "card_error" || stripeError.code === "card_declined") setRechazada(true);
       setLoading(false);
       return;
     }
@@ -338,6 +343,22 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
         </p>
       )}
       {error && <p className="text-sm font-dm text-terracota bg-terracota/10 border border-terracota/30 p-3">{error}</p>}
+      {rechazada && (
+        <div className="border border-[#25D366]/50 bg-[#25D366]/8 p-3.5">
+          <p className="font-dm text-[12px] leading-snug text-negro/75">{t.tarjetaRechazadaAyuda}</p>
+          <a
+            href={waPagoAlterno}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wa-manual="1"
+            onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_tarjeta_rechazada", amount: cobro.amount, recorridos: cobro.lineItems.length })}
+            className="mt-3 flex w-full items-center justify-center gap-2.5 bg-[#25D366] py-3.5 font-dm text-[11px] uppercase tracking-[2px] text-white transition-[filter] hover:brightness-110"
+          >
+            <MessageCircle className="w-4 h-4" aria-hidden="true" />
+            {t.apartarPorWhatsapp}
+          </a>
+        </div>
+      )}
       <button
         type="submit"
         disabled={!stripe || loading}

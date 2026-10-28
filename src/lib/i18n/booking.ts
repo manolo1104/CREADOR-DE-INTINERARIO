@@ -312,6 +312,8 @@ export interface BookingMessages {
     pagarTodoMsi: string;
     pagarTodoVolver: (anticipo: string) => string;
     errorPago: string;
+    /** Debajo del error cuando el banco rechazó la tarjeta: la salida por WhatsApp/OXXO, a la vista. */
+    tarjetaRechazadaAyuda: string;
     pagoEnProceso: string;
     waPagoAlterno: {
       intro: string;
@@ -951,6 +953,7 @@ const es: BookingMessages = {
     pagarTodoMsi: "Es lo que habilita los meses sin intereses: sobre el anticipo no los ofrece ningún banco.",
     pagarTodoVolver: (anticipo) => `Mejor pago solo el anticipo de ${anticipo}`,
     errorPago: "Error al procesar el pago. Intenta de nuevo.",
+    tarjetaRechazadaAyuda: "Tu banco no aceptó la tarjeta (pasa seguido con tarjetas extranjeras o de débito). Puedes probar con otra, o apartar ahora mismo por WhatsApp con transferencia u OXXO: tu carrito va armado en el mensaje.",
     pagoEnProceso: "Tu pago está en proceso. En cuanto el banco lo confirme te llega el correo.",
     waPagoAlterno: {
       intro: "Hola, quiero apartar este viaje pero prefiero pagar por transferencia SPEI u OXXO.",
@@ -1054,7 +1057,9 @@ const es: BookingMessages = {
     cuandoVas: "¿Cuándo vas?",
     cuantosVan: "¿Cuántos van?",
     total: "Total",
-    reservarHoy: (montoHoy) => `Reservar · hoy pagas ${montoHoy}`,
+    // Sin «hoy pagas» ni candado (28 oct 2026): 16 de 17 personas que eligieron
+    // fecha en la ficha no tocaron el botón; el monto va debajo, en `restoElDia`.
+    reservarHoy: () => "Continuar con la reserva",
     restoElDia: (pct, resto) => `Apartas con el ${pct} %. El resto (${resto}) lo pagas el día del tour.`,
     sinPromoEnFecha: (hasta) => `Precio normal en esta fecha: la promo de temporada baja es para recorridos hasta el ${hasta}.`,
     continuar: "Elegir fecha y reservar",
@@ -1564,6 +1569,7 @@ const en: BookingMessages = {
     pagarTodoMsi: "This is what unlocks the interest-free months: no bank offers them on the deposit alone.",
     pagarTodoVolver: (anticipo) => `I'd rather pay just the ${anticipo} deposit`,
     errorPago: "Something went wrong with the payment. Please try again.",
+    tarjetaRechazadaAyuda: "Your bank didn't accept the card (common with foreign or debit cards). Try another one, or hold your spots right now on WhatsApp with a bank transfer or OXXO: your cart goes in the message.",
     pagoEnProceso: "Your payment is processing. As soon as the bank confirms it, you'll get the email.",
     waPagoAlterno: {
       intro: "Hi, I'd like to book this trip but I'd rather pay by SPEI transfer or OXXO.",
@@ -1674,7 +1680,7 @@ const en: BookingMessages = {
     cuandoVas: "When are you going?",
     cuantosVan: "How many of you?",
     total: "Total",
-    reservarHoy: (montoHoy) => `Book · pay ${montoHoy} today`,
+    reservarHoy: () => "Continue booking",
     restoElDia: (pct, resto) => `A ${pct}% deposit holds your spot. The rest (${resto}) is paid on the day of the tour.`,
     sinPromoEnFecha: (hasta) => `Regular price on this date: the low-season deal is for tours through ${hasta}.`,
     continuar: "Pick a date and book",
