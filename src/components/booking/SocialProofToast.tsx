@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { pedirEsquina, soltarEsquina } from "@/lib/avisoEsquina";
+import { ID_MODULO_RESERVA } from "@/lib/anclas";
 
 // Prueba social REAL y verificable (sin reservas inventadas ni timestamps falsos).
 // Cada toast muestra un dato cierto de la operación: reseñas reales, premios,
@@ -107,6 +108,14 @@ interface Props {
   tourName: string;
 }
 
+/** El módulo de fecha y personas de la ficha está (en parte) en pantalla. */
+function moduloALaVista(): boolean {
+  const el = document.getElementById(ID_MODULO_RESERVA);
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  return r.bottom > 0 && r.top < window.innerHeight;
+}
+
 export function SocialProofToast({ tourId, tourName }: Props) {
   const pathname = usePathname();
   const en = pathname === "/en" || pathname.startsWith("/en/");
@@ -130,6 +139,15 @@ export function SocialProofToast({ tourId, tourName }: Props) {
     // Con el mazo recortado a lo que este tour sí cumple, el tope es su largo:
     // con ocho fijo, las que quedan se repetirían.
     if (mostrados.current >= Math.min(MAX_TOASTS, PRUEBAS.length)) return;
+    // Ni con la pestaña escondida (Clarity, 11–28 oct 2026: disparaba cada
+    // ~90 s con la página oculta y gastaba el mazo sin que nadie lo viera), ni
+    // mientras el módulo de reserva está a la vista: en el celular el aviso
+    // cae justo ENCIMA del botón «Reservar · hoy pagas…» (visto el 28 oct).
+    // En los dos casos se reintenta pasado el hueco de siempre.
+    if (document.visibilityState !== "visible" || moduloALaVista()) {
+      nextTimer.current = setTimeout(() => showToast(), 55_000 + Math.random() * 65_000);
+      return;
+    }
     // La esquina la puede tener `ReservasRecientes`. No se hace cola: se
     // reintenta pasado el hueco de siempre.
     if (!pedirEsquina(QUIEN)) {
@@ -155,6 +173,23 @@ export function SocialProofToast({ tourId, tourName }: Props) {
     }, 8_000);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dismissed, tourId, en]);
+
+  // Si el módulo entra en pantalla con el aviso puesto, el aviso se quita:
+  // el botón de reservar no se tapa con nada.
+  useEffect(() => {
+    if (!visible) return;
+    const revisar = () => {
+      if (moduloALaVista()) {
+        setVisible(false);
+        soltarEsquina(QUIEN);
+        if (hideTimer.current) clearTimeout(hideTimer.current);
+        nextTimer.current = setTimeout(() => showToast(), 55_000 + Math.random() * 65_000);
+      }
+    };
+    window.addEventListener("scroll", revisar, { passive: true });
+    return () => window.removeEventListener("scroll", revisar);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   useEffect(() => {
     // First appearance: 5s after mount

@@ -13,3 +13,19 @@
 
 /** El módulo de fecha y personas de la ficha de un tour. */
 export const ID_MODULO_RESERVA = "reservar-este-tour";
+
+/**
+ * Pedirle al calendario de un recorrido que se abra.
+ *
+ * Clarity (8–28 oct 2026): «Ver fechas disponibles», «Elegir fecha» de la
+ * barra del celular y «Reservar» del menú solo bajaban al módulo; la persona
+ * llegaba a un botón cerrado y 21 de 24 nunca abrieron el calendario. Los
+ * tres son enlaces de Server Components, así que no pueden tocar el estado
+ * del calendario: mandan este evento y el calendario del slug lo escucha.
+ */
+export const EVENTO_ABRIR_CALENDARIO = "hp:abrir-calendario";
+
+export function abrirCalendario(slug?: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(EVENTO_ABRIR_CALENDARIO, { detail: { slug } }));
+}

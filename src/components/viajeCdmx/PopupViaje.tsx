@@ -74,6 +74,9 @@ export function PopupViaje() {
     ruta.startsWith("/reservar-tour") ||
     ruta.startsWith("/reservar-paquete") ||
     ruta.startsWith("/reservar/carrito") ||
+    // La ficha de un tour: Clarity (11–28 oct 2026) vio gente elegir fecha y, a
+    // los 20 s, irse al blog por este aviso. Ahí no se interrumpe la compra.
+    /^\/tours\/[^/]+/.test(ruta) ||
     ruta.startsWith("/confirmacion") ||
     ruta.startsWith("/recomendar") ||
     ruta.startsWith("/comparar") ||

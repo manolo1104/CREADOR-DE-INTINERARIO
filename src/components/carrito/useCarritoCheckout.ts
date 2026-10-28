@@ -1,5 +1,7 @@
 "use client";
 
+import { huboToqueHumano, marcarToqueHumano } from "@/lib/toqueHumano";
+
 import { useState, useEffect, useRef } from "react";
 import { MSI_DESDE } from "@/lib/stripeMsi";
 import { leerCarrito, quitarDelCarrito, resumirCarrito, actualizarItem, agregarAlCarrito, pctACobrar, personasDeItem, type CarritoItem } from "@/lib/carrito";
@@ -67,11 +69,29 @@ export function useCarritoCheckout() {
   // termina (`useApartado`). Hasta el 4 oct aquí vivía un reloj que no apartaba
   // nada y se quitó por falso; este lo confirma el servidor y descuenta esos
   // lugares del cupo de los demás. El RZR va por vehículo, sin cupo por fecha.
+  // Solo con una persona del otro lado: los robots que abren el enlace del
+  // correo apartaban lugares reales (6 de 12 el 11 oct 2026). Quien llega
+  // desde un botón del sitio ya tocó (`marcarToqueHumano`); al resto se le
+  // espera al primer toque, que llega antes de que vea el aviso.
+  const [huboToque, setHuboToque] = useState(false);
+  useEffect(() => {
+    if (huboToqueHumano()) { setHuboToque(true); return; }
+    const marcar = () => { marcarToqueHumano(); setHuboToque(true); };
+    const opts: AddEventListenerOptions = { once: true, passive: true };
+    window.addEventListener("pointerdown", marcar, opts);
+    window.addEventListener("keydown", marcar, opts);
+    window.addEventListener("touchstart", marcar, opts);
+    return () => {
+      window.removeEventListener("pointerdown", marcar);
+      window.removeEventListener("keydown", marcar);
+      window.removeEventListener("touchstart", marcar);
+    };
+  }, []);
   const apartado = useApartado(
     items
       .filter((i) => !i.unidades && i.tourDate && personasDeItem(i) > 0)
       .map((i) => ({ slug: i.tourSlug, fecha: i.tourDate, personas: personasDeItem(i) })),
-    { activo: !hidratando, locale },
+    { activo: !hidratando && huboToque, locale },
   );
   const [conHotel,    setConHotel]    = useState(false);
   // Traslado desde la ciudad de origen. Apagado por defecto igual que el hotel:

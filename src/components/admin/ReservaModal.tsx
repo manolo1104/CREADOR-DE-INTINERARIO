@@ -202,7 +202,7 @@ export interface ReservaFormState {
   zona:           ZonaReserva;
   numPersonas:    string;  // tamaño real del grupo (para el email; evita sumar por tour)
   /** Por dónde entró: es COLUMNA de la base, no `_meta`, porque hay que agrupar por ella. */
-  origen:         OrigenReserva;
+  origen:         OrigenReserva | "";
   /** Quién sale a guiar. Vacío = sin asignar todavía. */
   guia:           string;
   /** En qué idioma sale el tour: "es" | "en". */
@@ -267,9 +267,10 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
   metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
   zona: "",
   numPersonas: "",
-  // Una reserva que se captura a mano viene casi siempre del chat: ése es el
-  // valor que ahorra clics y el que menos se va a quedar mal puesto.
-  origen: "whatsapp",
+  // Sin valor de antemano, a propósito: con «WhatsApp» puesto, 36 de 43
+  // reservas capturadas a mano se quedaron con lo que venía (11 oct 2026) y
+  // el dato no servía para saber cuánto vende el sitio. Ahora hay que elegir.
+  origen: "",
   guia: "",
   idiomaTour: "es",
   notasInternas: "",
@@ -649,7 +650,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
 
   const step1Valid = !!form.customerName.trim();
   const step2Valid = form.lines.every(lineaCompleta);
-  const canSave    = !saving && step1Valid && step2Valid;
+  const canSave    = !saving && step1Valid && step2Valid && !!form.origen;
 
   function updateLine(i: number, field: keyof LineItem, val: string | number) {
     setForm(f => ({
@@ -1251,8 +1252,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
               <div>
                 <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">¿Por dónde entró?</label>
                 <select value={form.origen}
-                  onChange={e => setForm(f => ({ ...f, origen: origenValido(e.target.value) }))}
-                  className={inputCls}>
+                  onChange={e => setForm(f => ({ ...f, origen: e.target.value ? origenValido(e.target.value) : "" }))}
+                  className={`${inputCls} ${form.origen ? "" : "border-terracota/60"}`}
+                  aria-invalid={!form.origen}>
+                  <option value="">— Elige por dónde entró (obligatorio) —</option>
                   {ORIGENES.map(o => (
                     <option key={o} value={o}>{ORIGEN_ETIQUETA[o]}</option>
                   ))}

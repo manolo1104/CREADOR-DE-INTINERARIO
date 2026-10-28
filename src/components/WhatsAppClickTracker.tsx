@@ -58,6 +58,9 @@ export default function WhatsAppClickTracker() {
         pagina:  path,
         // De qué parte de la página salió el clic, cuando la sección lo dice.
         seccion: enlace.closest("[data-seccion]")?.getAttribute("data-seccion") ?? undefined,
+        // Lo que el botón sabe de la reserva (la ficha lo pone en el enlace).
+        fecha:    enlace.dataset.fecha || undefined,
+        personas: enlace.dataset.personas ? Number(enlace.dataset.personas) : undefined,
       });
     }
 

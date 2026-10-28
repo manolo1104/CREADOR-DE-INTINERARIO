@@ -7,7 +7,11 @@ import { trackTourEvent } from "@/lib/tourTracker";
 import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
-import { ID_MODULO_RESERVA } from "@/lib/anclas";
+import { ID_MODULO_RESERVA, abrirCalendario } from "@/lib/anclas";
+import { useSeleccionFicha } from "@/lib/seleccionFicha";
+import { WA_MESSAGES, waLink } from "@/lib/whatsapp";
+import { marcarToqueHumano } from "@/lib/toqueHumano";
+import { pctACobrar } from "@/lib/carrito";
 
 interface Props {
   tourSlug: string;
@@ -40,6 +44,18 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   const esGrupo    = precioUnidad === "grupo";
   const { locale, en, lp } = useLocale();
   const t = getBooking(locale).barra;
+  const tf = getBooking(locale).ficha;
+  // Lo que la persona ya eligió en el módulo de la ficha (fecha, personas,
+  // total): el WhatsApp va con esos datos y el botón ya sabe si hay fecha.
+  const sel = useSeleccionFicha(tourSlug);
+  const waHrefFinal = sel && waHref && !esVehiculo
+    ? waLink(WA_MESSAGES.tourConFecha(en ? "en" : "es", tourName ?? tourSlug, sel.fecha, sel.adultos, sel.ninos, sel.total))
+    : waHref;
+  const hrefConSeleccion = sel && sel.fecha
+    ? lp(`/reservar/carrito?agregar=${tourSlug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosMid=${sel.ninosMid}&ninosSmall=${sel.ninosSmall}`)
+    : null;
+  const hoy = sel ? Math.round((sel.total * pctACobrar()) / 100) : 0;
+  const dinero = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   // Esta barra es la ÚNICA de abajo en las fichas de tour EN EL CELULAR:
   // `BarraInferiorMovil` se aparta aquí (ver `lib/barrasFijas.ts`) porque las
   // dos vivían en `bottom-0` y se tapaban. Así que si el visitante ya lleva
@@ -56,7 +72,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
     trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, source });
   };
   const trackWa = () => {
-    trackTourEvent("WHATSAPP_CLICK", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: precio, context: source });
+    trackTourEvent("WHATSAPP_CLICK", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: sel?.total ?? precio, fecha: sel?.fecha || undefined, personas: sel ? sel.adultos + sel.ninos : undefined, context: source, boton: "barra_movil" });
   };
   const ctaClass = "flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium flex-shrink-0";
 
@@ -74,10 +90,12 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
       </div>
       {waHref && (
         <a
-          href={waHref}
+          href={waHrefFinal}
           target="_blank"
           rel="noopener noreferrer"
           data-wa-manual="1"
+          data-fecha={sel?.fecha || undefined}
+          data-personas={sel ? sel.adultos + sel.ninos : undefined}
           onClick={trackWa}
           aria-label={t.preguntarWhatsapp}
           className="flex items-center justify-center w-11 h-11 bg-[#25D366] text-white flex-shrink-0 hover:brightness-110 transition-all"
@@ -109,6 +127,22 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
            pantalla donde la persona ya está convencida para preguntarle lo
            mismo en otra. Aquí se le baja al módulo y elige ahí; el carrito
            llega con fecha y personas puestas. */
+        hrefConSeleccion && !sel?.sinLugar ? (
+          /* Ya eligió fecha en el módulo: la barra reserva con esa selección,
+             sin volver a bajar. */
+          <Link
+            href={hrefConSeleccion}
+            onClick={() => {
+              marcarToqueHumano();
+              trackAddToCart({ tourId: tourId ?? tourSlug, tourName: tourName ?? tourSlug, total: sel!.total, cantidad: sel!.adultos + sel!.ninos, source });
+              trackTourEvent("CHECKOUT_STARTED", { tour: tourId ?? tourSlug, tour_name: tourName ?? tourSlug, amount: sel!.total, adults: sel!.adultos, children: sel!.ninos, fecha: sel!.fecha, source });
+            }}
+            className={ctaClass}
+          >
+            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+            {tf.reservarHoy(dinero(hoy))}
+          </Link>
+        ) : (
         <button
           type="button"
           onClick={() => {
@@ -117,12 +151,17 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
             // toque lo mandaba también y en celular cada reserva contaba doble.
             trackTourEvent("BARRA_A_MODULO", { tour: tourId ?? tourSlug, source });
             document.getElementById(ID_MODULO_RESERVA)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Y abre el calendario: bajar a un botón cerrado no servía de nada
+            // (Clarity, 8–28 oct). Después del desplazamiento, para que la hoja
+            // no se abra encima de la mitad del camino.
+            window.setTimeout(() => abrirCalendario(tourSlug), 450);
           }}
           className={ctaClass}
         >
           <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          {t.elegirFecha}
+          {sel?.sinLugar ? tf.sinLugarEligeOtra : t.elegirFecha}
         </button>
+        )
       ) : (
         <Link href={lp(`/reservar/carrito?agregar=${tourSlug}`)} onClick={track} className={ctaClass}>
           <Lock className="w-3.5 h-3.5" aria-hidden="true" />

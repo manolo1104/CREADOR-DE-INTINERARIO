@@ -13,6 +13,37 @@ export const WA_MESSAGES = {
       ninos > 0 ? ` y ${ninos} niño${ninos > 1 ? "s" : ""}` : ""
     }. Total estimado: $${total.toLocaleString("es-MX")} MXN. ¿Tienen disponibilidad?`,
 
+  /**
+   * El mensaje de la ficha con lo que la persona YA eligió en el módulo:
+   * fecha, adultos y niños, y el total que vio. Clarity (11–28 oct 2026): el
+   * mensaje fijo decía siempre «2 adultos» y sin fecha, y el equipo tenía que
+   * volver a preguntar lo que el sitio ya sabía. Sin fecha elegida, pregunta
+   * por fechas; «me hospedo en» va vacío para que lo llene quien escribe.
+   */
+  tourConFecha: (
+    locale: "es" | "en",
+    tourName: string,
+    fecha: string,
+    adultos: number,
+    ninos: number,
+    total: number,
+  ) => {
+    const en = locale === "en";
+    const dia = fecha ? fechaParaMensaje(fecha, locale) : "";
+    const gente = en
+      ? `${adultos} adult${adultos === 1 ? "" : "s"}${ninos > 0 ? ` and ${ninos} child${ninos === 1 ? "" : "ren"}` : ""}`
+      : `${adultos} adulto${adultos === 1 ? "" : "s"}${ninos > 0 ? ` y ${ninos} niño${ninos === 1 ? "" : "s"}` : ""}`;
+    const monto = `$${total.toLocaleString(en ? "en-US" : "es-MX")} MXN`;
+    if (en) {
+      return dia
+        ? `Hi, I'd like to book "${tourName}" on ${dia} for ${gente} (total shown: ${monto}). Is it available? I'm staying at: `
+        : `Hi, I'm interested in "${tourName}" for ${gente} (total shown: ${monto}). Which dates are available? I'm staying at: `;
+    }
+    return dia
+      ? `Hola, quiero reservar "${tourName}" el ${dia} para ${gente} (total que vi: ${monto}). ¿Hay lugar? Me hospedo en: `
+      : `Hola, me interesa "${tourName}" para ${gente} (total que vi: ${monto}). ¿Qué fechas tienen? Me hospedo en: `;
+  },
+
   destino: (destinoName: string) =>
     `Hola, me interesa visitar ${destinoName}. ¿En qué tour puedo incluirlo y cuánto cuesta?`,
 
@@ -56,3 +87,11 @@ export const WA_MESSAGES = {
   faq: (tour: string, pregunta: string) =>
     `Hola, tengo una pregunta sobre el tour "${tour}": ${pregunta}`,
 };
+
+/** «sábado 14 de noviembre» / «Saturday, November 14» a partir de YYYY-MM-DD, sin zona horaria de por medio. */
+export function fechaParaMensaje(ymd: string, locale: "es" | "en"): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  if (!y || !m || !d) return ymd;
+  const f = new Date(y, m - 1, d, 12);
+  return f.toLocaleDateString(locale === "en" ? "en-US" : "es-MX", { weekday: "long", day: "numeric", month: "long" });
+}

@@ -1,5 +1,7 @@
 "use client";
 
+import { EVENTO_ABRIR_CALENDARIO } from "@/lib/anclas";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Clock, Hourglass, TriangleAlert, X } from "lucide-react";
@@ -683,6 +685,12 @@ interface Props {
    * calendario no queda «menos bonito»: queda ilegible sobre la foto del hero.
    */
   hojaVidrio?: boolean;
+  /**
+   * Avisa si la fecha elegida ya no tiene lugar para este grupo (o si vuelve a
+   * tenerlo). La ficha apaga su botón de reservar con esto: antes el aviso se
+   * pintaba aquí y el botón de abajo seguía mandando al carrito.
+   */
+  onSinLugar?: (sinLugar: boolean) => void;
 }
 
 export function TourCalendar({
@@ -703,6 +711,7 @@ export function TourCalendar({
   proximosDias = true,
   disparadorSinCaja = false,
   hojaVidrio = false,
+  onSinLugar,
 }: Props) {
   const { locale } = useLocale();
   const t = getBooking(locale).calendario;
@@ -726,6 +735,21 @@ export function TourCalendar({
   const { dias, cargando } = useDisponibilidad(slug, personas, !!slug && (abierto || modo === "inline" || !!value));
   const estadoElegido = value && !cargando ? dias?.[value] : undefined;
   const elegidaSinLugar = !!estadoElegido && !SE_ELIGE.has(estadoElegido);
+  useEffect(() => { onSinLugar?.(!!value && elegidaSinLugar); }, [value, elegidaSinLugar, onSinLugar]);
+
+  // «Ver fechas disponibles», «Elegir fecha» de la barra y «Reservar» del menú
+  // piden abrir ESTE calendario (ver `abrirCalendario` en `lib/anclas.ts`).
+  // Solo con slug: en el carrito hay un calendario por recorrido y abre el suyo.
+  useEffect(() => {
+    if (!slug) return;
+    const abrir = (e: Event) => {
+      const d = (e as CustomEvent<{ slug?: string }>).detail;
+      if (d?.slug && d.slug !== slug) return;
+      setAbierto(true);
+    };
+    window.addEventListener(EVENTO_ABRIR_CALENDARIO, abrir);
+    return () => window.removeEventListener(EVENTO_ABRIR_CALENDARIO, abrir);
+  }, [slug]);
 
   useEffect(() => setMontado(true), []);
 

@@ -207,11 +207,14 @@ export function BarraInferiorMovil() {
       data-wa-manual="1"
       onClick={alWhatsApp}
       aria-label={t.barra.preguntarWhatsapp}
-      // Contorno y no relleno: el dorado es la acción principal y WhatsApp la
-      // de al lado. Verde sobre negro da 9:1; el blanco sobre el verde, 2:1.
-      className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-[#25D366]/50 text-[#25D366] transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] [@media(hover:hover)]:hover:border-[#25D366] [@media(hover:hover)]:hover:bg-[#25D366]/10"
+      // Con la palabra, no solo el ícono: desde que la burbuja verde se quitó
+      // (oct 2026) los chats «generales» cayeron a cero; un ícono con contorno
+      // no se lee como «escríbenos». Sigue siendo la acción de al lado (el
+      // dorado manda), pero se entiende qué es. Verde sobre negro: 9:1.
+      className="flex h-11 flex-shrink-0 flex-col items-center justify-center gap-0.5 px-2.5 border border-[#25D366]/60 text-[#25D366] transition-[background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] [@media(hover:hover)]:hover:border-[#25D366] [@media(hover:hover)]:hover:bg-[#25D366]/10"
     >
       {WA_SVG}
+      <span className="font-dm text-[8px] leading-none tracking-[1px] uppercase">WhatsApp</span>
     </a>
   );
 

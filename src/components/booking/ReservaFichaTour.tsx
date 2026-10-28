@@ -14,7 +14,9 @@ import { pctACobrar } from "@/lib/carrito";
 // El ancla del módulo vive en `lib/anclas.ts`, no aquí: la ficha del tour es un
 // Server Component y una constante importada de este archivo "use client" le
 // llegaba como objeto (`#[object Object]`). Ver la nota en ese archivo.
-import { ID_MODULO_RESERVA } from "@/lib/anclas";
+import { ID_MODULO_RESERVA, abrirCalendario } from "@/lib/anclas";
+import { publicarSeleccion } from "@/lib/seleccionFicha";
+import { marcarToqueHumano } from "@/lib/toqueHumano";
 
 /**
  * Elegir fecha y personas SIN salir de la ficha del tour.
@@ -99,6 +101,8 @@ export function ReservaFichaTour({
   const [adultos, setAdultos]       = useState(porGrupo ? minAdultos : Math.max(2, groupMin || 1));
   const [ninosMid, setNinosMid]     = useState(0);
   const [ninosSmall, setNinosSmall] = useState(0);
+  // La fecha elegida ya no tiene lugar para este grupo: lo dice el calendario.
+  const [sinLugar, setSinLugar]     = useState(false);
 
   /**
    * Lo que trae el buscador del inicio: `?fecha=…&adultos=…`.
@@ -166,6 +170,26 @@ export function ReservaFichaTour({
   const hoy   = Math.round((total * pctACobrar()) / 100);
   const resto = total - hoy;
 
+  // Lo elegido, publicado para el WhatsApp del cuadro lateral y la barra del
+  // celular (`lib/seleccionFicha.ts`): así escriben con fecha, personas y total.
+  useEffect(() => {
+    publicarSeleccion({ slug, fecha, adultos, ninosMid, ninosSmall, ninos: ninosMid + ninosSmall, total, sinLugar });
+  }, [slug, fecha, adultos, ninosMid, ninosSmall, total, sinLugar]);
+
+  // «Ver fechas disponibles» (arriba de la ficha) y «Reservar» (menú) son
+  // anclas a este módulo; si todavía no hay fecha, además se abre el
+  // calendario. Clarity: 21 de 24 personas nunca lo abrían porque esos
+  // botones solo bajaban la página.
+  useEffect(() => {
+    const alClic = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.(`a[href$="#${ID_MODULO_RESERVA}"]`);
+      if (!a || fecha) return;
+      window.setTimeout(() => abrirCalendario(slug), 450);
+    };
+    document.addEventListener("click", alClic);
+    return () => document.removeEventListener("click", alClic);
+  }, [slug, fecha]);
+
   const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
 
   // La hora sale del catálogo (`tourCat`, arriba), no de una prop más: así la
@@ -207,6 +231,7 @@ export function ReservaFichaTour({
     );
   }
 
+  const BOTON_RESERVAR = "flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors";
   const href = lp(
     `/reservar/carrito?agregar=${slug}` +
     (fecha ? `&fecha=${fecha}` : "") +
@@ -238,6 +263,7 @@ export function ReservaFichaTour({
           // fecha ya no alcanza, el calendario lo dice antes del carrito.
           slug={slug}
           personas={personas}
+          onSinLugar={setSinLugar}
           // La hoja en vidrio esmerilado (8 oct 2026). Solo aquí: el carrito,
           // el RZR y el buscador del inicio no la piden y siguen igual.
           hojaVidrio
@@ -306,20 +332,49 @@ export function ReservaFichaTour({
             {tf.sinPromoEnFecha(PROMO_TEMPORADA.hastaTexto[locale === "en" ? "en" : "es"])}
           </p>
         )}
-        <Link
-          href={href}
-          onClick={() => {
-            // Para GA4 este botón AGREGA al carrito (que abre con fecha y
-            // personas puestas): `add_to_cart`. El `begin_checkout` lo manda el
-            // carrito al abrirse. El evento interno no cambia.
-            trackAddToCart({ tourId, tourName: nombre, total, cantidad: personas, source: "widget" });
-            trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosMid + ninosSmall, amount: total, source: "ficha" });
-          }}
-          className="flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors"
-        >
-          <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          {fecha ? tf.reservarHoy(dinero(hoy)) : tf.continuar}
-        </Link>
+        {fecha && !sinLugar ? (
+          <Link
+            href={href}
+            onClick={() => {
+              marcarToqueHumano();
+              // Para GA4 este botón AGREGA al carrito (que abre con fecha y
+              // personas puestas): `add_to_cart`. El `begin_checkout` lo manda el
+              // carrito al abrirse. El evento interno no cambia.
+              trackAddToCart({ tourId, tourName: nombre, total, cantidad: personas, source: "widget" });
+              trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosMid + ninosSmall, amount: total, fecha, source: "ficha" });
+            }}
+            className={BOTON_RESERVAR}
+          >
+            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+            {tf.reservarHoy(dinero(hoy))}
+          </Link>
+        ) : (
+          /* Sin fecha, «Elegir fecha y reservar» mandaba al carrito SIN fecha y
+             la persona se perdía ahí (Clarity, 11–28 oct: 7 de 7 que llegaron
+             así no pasaron del paso 1). Ahora abre el calendario aquí mismo. Con
+             fecha pero sin lugar, igual: que elija otra. */
+          <button
+            type="button"
+            onClick={() => abrirCalendario(slug)}
+            className={BOTON_RESERVAR}
+          >
+            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+            {sinLugar ? tf.sinLugarEligeOtra : tf.continuar}
+          </button>
+        )}
+        {!fecha && (
+          <Link
+            href={href}
+            onClick={() => {
+              marcarToqueHumano();
+              trackAddToCart({ tourId, tourName: nombre, total, cantidad: personas, source: "widget" });
+              trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosMid + ninosSmall, amount: total, source: "ficha_sin_fecha" });
+            }}
+            className="block text-center font-dm text-[10px] text-crema/45 hover:text-crema/70 underline underline-offset-2 mt-2"
+          >
+            {tf.continuarSinFecha}
+          </Link>
+        )}
         {total > 0 && (
           <p className="font-dm text-[11px] text-crema/60 mt-2 text-center">
             {tf.restoElDia(pctACobrar(), dinero(resto))}

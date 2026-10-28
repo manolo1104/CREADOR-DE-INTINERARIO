@@ -12,7 +12,7 @@
  * el desglose de ingresos que agrupa por ella.
  */
 
-export const ORIGENES = ["web", "whatsapp", "telefono", "walkin", "ota"] as const;
+export const ORIGENES = ["web", "whatsapp", "whatsapp_sitio", "telefono", "walkin", "ota"] as const;
 
 export type OrigenReserva = (typeof ORIGENES)[number];
 
@@ -22,6 +22,7 @@ export const ORIGEN_POR_DEFECTO: OrigenReserva = "web";
 export const ORIGEN_ETIQUETA: Record<OrigenReserva, string> = {
   web:      "Web (pagó en línea)",
   whatsapp: "WhatsApp",
+  whatsapp_sitio: "WhatsApp (escribió desde un botón del sitio)",
   telefono: "Teléfono",
   walkin:   "Llegó al hotel",
   ota:      "OTA (Viator, GetYourGuide u otra plataforma)",

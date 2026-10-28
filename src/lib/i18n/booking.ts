@@ -438,6 +438,10 @@ export interface BookingMessages {
      * ningún lado y el botón parecía llevar directo al cobro.
      */
     pasoUnoDeTres: string;
+    /** La fecha elegida ya no tiene lugar: el botón abre el calendario para elegir otra. */
+    sinLugarEligeOtra: string;
+    /** Debajo del botón, sin fecha: el camino al carrito sin elegirla. */
+    continuarSinFecha: string;
     grupoLleno: (max: number) => string;
     /** Contador de un recorrido de tarifa por grupo: una sola casilla, sin tramos de niño. */
     personas: string;
@@ -1055,6 +1059,8 @@ const es: BookingMessages = {
     sinPromoEnFecha: (hasta) => `Precio normal en esta fecha: la promo de temporada baja es para recorridos hasta el ${hasta}.`,
     continuar: "Elegir fecha y reservar",
     pasoUnoDeTres: "Paso 1 de 3 · después: tus datos y el pago. Puedes cambiar fecha y personas.",
+    sinLugarEligeOtra: "Sin lugar ese día · elige otra fecha",
+    continuarSinFecha: "¿Aún no sabes la fecha? Continúa sin elegirla",
     grupoLleno: (max) => `Este recorrido sale con grupos de máximo ${max} personas. ¿Van más? Escríbenos y armamos una salida privada.`,
     personas: "personas",
     grupoTope: (max) => `${max} personas es el máximo que permite el jardín por experiencia; no se puede ampliar.`,
@@ -1673,6 +1679,8 @@ const en: BookingMessages = {
     sinPromoEnFecha: (hasta) => `Regular price on this date: the low-season deal is for tours through ${hasta}.`,
     continuar: "Pick a date and book",
     pasoUnoDeTres: "Step 1 of 3 · next: your details and payment. You can still change date and party size.",
+    sinLugarEligeOtra: "Full that day · pick another date",
+    continuarSinFecha: "Not sure of the date yet? Continue without one",
     grupoLleno: (max) => `This tour runs with groups of up to ${max}. More of you? Message us and we'll set up a private departure.`,
     personas: "people",
     grupoTope: (max) => `${max} people is the maximum the garden allows per experience; it cannot be extended.`,
