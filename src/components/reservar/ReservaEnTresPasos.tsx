@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Check, Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { SelectorPersonas } from "@/components/buscador/SelectorPersonas";
+import { CELDA_BUSCADOR, ETIQUETA_BUSCADOR, FILA_BUSCADOR, SEPARADOR_BUSCADOR } from "@/components/buscador/estilos";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { toursQueIncluyen } from "@/lib/tourMapping";
 import { precioDeFecha, precioGrupo, tourDurTexto, type Tour } from "@/lib/tours";
@@ -20,68 +21,66 @@ import { trackAddToCart } from "@/lib/analytics";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 
 /**
- * /reservar en tres pasos (28 oct 2026, Manolo: «quedó horrible, hazlo mucho
- * más limpio y con una lógica de reserva fácil en 3 pasos»).
+ * /reservar: SOLO la fila del buscador y, debajo, tu reserva (28 oct 2026,
+ * Manolo: «deja solo el buscador; al hacer clic en ¿qué quieres ver? que se
+ * despliegue un menú con los destinos, y si escriben "tamul" que salgan los
+ * recorridos donde se menciona Tamul»).
  *
- * 1. ¿Qué quieres ver?  → un lugar o un recorrido (la lista de lugares lleva
- *    al recorrido que lo visita; el buscador filtra la lista).
- * 2. ¿Cuándo y cuántos? → el calendario del recorrido elegido, con el cupo
- *    de cada día para ese grupo, y las personas.
- * 3. Tu reserva         → total, anticipo del 30 % y «Continuar con la
- *    reserva», que abre el carrito ya con todo puesto.
- *
- * Lo que venía del buscador del inicio (recorrido, fecha, personas) se
- * respeta: `leerIntencion()`. Antes esta página eran 15 tarjetas grandes con
- * dos botones cada una, 11 píldoras, una fila de búsqueda y 13,000 px en el
- * celular; en Clarity 8 de 8 búsquedas regresaban sin agregar nada.
+ * 1. ¿Qué quieres ver? → abre una hoja centrada (la misma del buscador del
+ *    inicio) con un cuadro para escribir, los LUGARES y los RECORRIDOS. Al
+ *    escribir se filtran los dos; un lugar elige el recorrido que lo visita.
+ * 2. ¿Cuándo? y ¿Cuántos? en la misma fila (el calendario ya trae el cupo del
+ *    recorrido elegido).
+ * 3. Debajo, «Tu reserva»: total, anticipo del 30 % y «Continuar con la
+ *    reserva», que abre el carrito con todo puesto.
  */
 const UI = {
   es: {
-    pasos: ["Lugar", "Fecha y personas", "Tu reserva"],
-    p1: "¿Qué quieres ver?",
-    p1Ayuda: "Toca un lugar o un recorrido.",
-    lugares: "Por lugar",
+    placeholder: "Elige un lugar o recorrido",
+    escribe: "Escribe un lugar o un recorrido…",
+    lugares: "Lugares",
     recorridos: "Recorridos",
-    p2: "¿Cuándo van y cuántos son?",
-    p2Antes: "Primero elige un lugar o recorrido.",
-    p3: "Tu reserva",
-    p3Antes: "Elige la fecha para ver el total.",
-    porPersona: "por persona",
+    sinResultados: "Nada se llama así. Prueba con otro nombre.",
+    continuar: "Continuar con la reserva",
+    eligeLugar: "Elige un lugar",
+    eligeFecha: "Elige una fecha",
+    tuReserva: "Tu reserva",
+    lugar: "Recorrido",
+    fechaPersonas: "Fecha y personas",
+    total: "Total",
     porVehiculo: "por vehículo",
     porGrupo: "por grupo",
-    total: "Total",
+    porPersona: "por persona",
     apartas: (pct: number, monto: string, resto: string) => `Apartas con el ${pct} % (${monto}). El resto (${resto}) lo pagas el día del tour.`,
-    cancelacion: "Cancelación gratis hasta 48 h antes · Pago seguro con tarjeta",
-    continuar: "Continuar con la reserva",
     vehiculoNota: "La ruta y el vehículo los eliges en el siguiente paso.",
+    cancelacion: "Cancelación gratis hasta 48 h antes · Pago seguro con tarjeta",
     ficha: "Ver la ficha completa",
     whatsapp: "Prefiero reservar por WhatsApp",
-    cambiar: "Cambiar",
-    sinResultados: "Ningún recorrido se llama así. Prueba con un lugar de la lista.",
+    pista: "Elige un lugar y una fecha: aquí verás tu total y el anticipo.",
     horas: "h",
   },
   en: {
-    pasos: ["Place", "Date & people", "Your booking"],
-    p1: "What do you want to see?",
-    p1Ayuda: "Tap a place or a tour.",
-    lugares: "By place",
+    placeholder: "Pick a place or a tour",
+    escribe: "Type a place or a tour…",
+    lugares: "Places",
     recorridos: "Tours",
-    p2: "When are you going, and how many?",
-    p2Antes: "Pick a place or a tour first.",
-    p3: "Your booking",
-    p3Antes: "Pick a date to see the total.",
-    porPersona: "per person",
+    sinResultados: "Nothing is called that. Try another name.",
+    continuar: "Continue booking",
+    eligeLugar: "Pick a place",
+    eligeFecha: "Pick a date",
+    tuReserva: "Your booking",
+    lugar: "Tour",
+    fechaPersonas: "Date & people",
+    total: "Total",
     porVehiculo: "per vehicle",
     porGrupo: "per group",
-    total: "Total",
+    porPersona: "per person",
     apartas: (pct: number, monto: string, resto: string) => `You hold your spots with ${pct}% (${monto}). The rest (${resto}) is paid on the tour day.`,
-    cancelacion: "Free cancellation up to 48 h before · Secure card payment",
-    continuar: "Continue booking",
     vehiculoNota: "You choose the route and the vehicle in the next step.",
+    cancelacion: "Free cancellation up to 48 h before · Secure card payment",
     ficha: "See the full tour page",
     whatsapp: "I'd rather book on WhatsApp",
-    cambiar: "Change",
-    sinResultados: "No tour is called that. Try a place from the list.",
+    pista: "Pick a place and a date: your total and deposit show up here.",
     horas: "h",
   },
 };
@@ -100,9 +99,11 @@ export function ReservaEnTresPasos({ tours }: { tours: Tour[] }) {
   const [fecha, setFecha] = useState("");
   const [personas, setPersonas] = useState(2);
   const [texto, setTexto] = useState("");
+  const [abierto, setAbierto] = useState(false);
   const [montado, setMontado] = useState(false);
-  const paso2Ref = useRef<HTMLDivElement>(null);
-  const paso3Ref = useRef<HTMLDivElement>(null);
+  const botonRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const resumenRef = useRef<HTMLElement>(null);
 
   // Lo que ya dijo en el buscador del inicio.
   useEffect(() => {
@@ -120,15 +121,29 @@ export function ReservaEnTresPasos({ tours }: { tours: Tour[] }) {
     return () => window.removeEventListener(EVENTO_INTENCION, aplicar);
   }, [tours]);
 
+  // La hoja: foco al cuadro, Escape cierra, sin scroll detrás.
+  useEffect(() => {
+    if (!abierto) return;
+    inputRef.current?.focus();
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setAbierto(false); botonRef.current?.focus(); } };
+    window.addEventListener("keydown", esc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", esc); document.body.style.overflow = prev; };
+  }, [abierto]);
+
   const tour = tours.find((x) => x.slug === slug) ?? null;
-  const lugares = useMemo(
+  type Lugar = { nombre: string; slug: string; tour: { nombre: string; slug: string } };
+  const lugares = useMemo<Lugar[]>(
     () => DESTINOS_DB
       .map((d) => ({ nombre: d.nombre, slug: d.slug, tour: toursQueIncluyen(d.slug)[0] }))
-      .filter((l) => l.tour && tours.some((x) => x.slug === l.tour!.slug)),
+      .filter((l): l is Lugar => !!l.tour && tours.some((x) => x.slug === l.tour!.slug)),
     [tours],
   );
   const q = normaliza(texto.trim());
-  const visibles = q
+  const lugaresVisibles = q ? lugares.filter((l) => normaliza(`${l.nombre} ${l.tour.nombre}`).includes(q)) : lugares;
+  // Un recorrido «menciona» el lugar si va en su nombre, su frase o su lista de destinos.
+  const toursVisibles = q
     ? tours.filter((x) => normaliza(`${x.nombre} ${x.nombreCorto} ${x.tagline} ${x.destinos.join(" ")}`).includes(q))
     : tours;
 
@@ -136,19 +151,19 @@ export function ReservaEnTresPasos({ tours }: { tours: Tour[] }) {
     setSlug(s);
     const x = tours.find((y) => y.slug === s);
     if (x && (personas < x.groupMin || personas > x.groupMax)) setPersonas(Math.max(x.groupMin, Math.min(x.groupMax, personas)));
-    trackTourEvent(destino ? "DESTINO_TOUR_CLICK" : "FILTRO_RESERVAR", { tour: s, destino, source: origen });
-    window.setTimeout(() => paso2Ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+    trackTourEvent(destino ? "DESTINO_TOUR_CLICK" : "FILTRO_RESERVAR", { tour: s, destino, source: origen, texto: texto.trim() || undefined });
+    setAbierto(false);
+    setTexto("");
   };
 
-  // ── Precio del paso 3 (la misma cuenta que la ficha y el carrito) ──────────
+  // ── Precio (la misma cuenta que la ficha y el carrito) ────────────────────
   const porVehiculo = tour?.precioUnidad === "vehiculo";
   const porGrupo = !!tour?.tarifaGrupo?.length;
-  const precioFecha = tour ? precioDeFecha(tour, fecha || null) : 0;
   const total = !tour ? 0
     : porVehiculo ? tour.precio
     : porGrupo ? (precioGrupo(tour, personas) ?? 0)
     : totalRecorrido({
-        precio: precioFecha,
+        precio: precioDeFecha(tour, fecha || null),
         precioLista: tour.precioLista ?? tour.precio,
         escalaPersona: tour.escalaPersona,
         groupMin: tour.groupMin,
@@ -158,202 +173,200 @@ export function ReservaEnTresPasos({ tours }: { tours: Tour[] }) {
   const pct = pctACobrar();
   const hoy = Math.round((total * pct) / 100);
   const resto = total - hoy;
+  const listo = !!tour && !!fecha;
 
   const hrefCarrito = tour
     ? lp(`/reservar/carrito?agregar=${tour.slug}${fecha ? `&fecha=${fecha}` : ""}${porVehiculo ? "" : `&adultos=${personas}&ninosMid=0&ninosSmall=0`}`)
     : "#";
   const hrefFicha = tour ? lp(`/tours/${tour.slug}${fecha ? `?fecha=${fecha}&adultos=${personas}` : `?adultos=${personas}`}`) : "#";
   const hrefWa = tour ? waLink(WA_MESSAGES.tourConFecha(en ? "en" : "es", tour.nombre, fecha, personas, 0, total)) : "#";
-
-  const pasoActual = !tour ? 1 : !fecha ? 2 : 3;
   const unidad = porVehiculo ? t.porVehiculo : porGrupo ? t.porGrupo : t.porPersona;
 
-  const Cabecera = ({ n, titulo, listo, sub }: { n: number; titulo: string; listo?: string; sub?: string }) => (
-    <div className="flex items-start gap-3">
-      <span className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full font-dm text-[12px] font-medium ${
-        pasoActual === n ? "bg-dorado text-negro" : pasoActual > n ? "bg-verde-vivo text-negro" : "border border-white/20 text-crema/50"
-      }`}>{pasoActual > n ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : n}</span>
-      <div className="min-w-0 flex-1">
-        <h2 className="font-cormorant text-[24px] font-light leading-tight text-crema sm:text-[28px]">{titulo}</h2>
-        {listo && <p className="mt-0.5 truncate font-dm text-[13px] text-verde-vivo">{listo}</p>}
-        {!listo && sub && <p className="mt-0.5 font-dm text-[12px] text-crema/50">{sub}</p>}
-      </div>
-    </div>
+  const irAlCarrito = () => {
+    if (!tour) return;
+    marcarToqueHumano();
+    trackAddToCart({ tourId: tour.id, tourName: tour.nombre, total, cantidad: personas, source: "widget" });
+    trackTourEvent("CHECKOUT_STARTED", { tour: tour.id, tour_name: tour.nombre, adults: personas, children: 0, amount: total, fecha, source: "reservar_buscador" });
+  };
+
+  useEffect(() => {
+    if (listo) window.setTimeout(() => resumenRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 250);
+  }, [listo]);
+
+  const Opcion = ({ etiqueta, detalle, activa, onClick }: { etiqueta: string; detalle?: string; activa?: boolean; onClick: () => void }) => (
+    <button
+      type="button"
+      role="option"
+      aria-selected={!!activa}
+      onClick={onClick}
+      className={`flex w-full items-baseline justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.06] ${activa ? "text-dorado" : "text-crema/90"}`}
+    >
+      <span className="font-dm text-[15px]">{etiqueta}</span>
+      {detalle && <span className="shrink-0 font-dm text-[10px] uppercase tracking-[1.5px] text-crema/40">{detalle}</span>}
+    </button>
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
-      {/* Los tres pasos, de un vistazo. */}
-      <ol className="mb-8 grid grid-cols-3 gap-2 font-dm text-[10px] uppercase tracking-[1.5px]">
-        {t.pasos.map((p, i) => (
-          <li key={p} className={`border-t-2 pt-2 ${pasoActual >= i + 1 ? "border-dorado text-crema" : "border-white/15 text-crema/40"}`}>
-            {i + 1} · {p}
-          </li>
-        ))}
-      </ol>
-
-      {/* ── 1 · Lugar ─────────────────────────────────────────────────── */}
-      <section className="border border-white/10 bg-negro/40 p-5 sm:p-6">
-        <Cabecera n={1} titulo={t.p1} listo={tour ? tour.nombre : undefined} sub={t.p1Ayuda} />
-        {tour ? (
-          <button type="button" onClick={() => { setSlug(""); setFecha(""); }} className="mt-3 font-dm text-[11px] uppercase tracking-[1.5px] text-crema/50 underline underline-offset-4 hover:text-dorado">
-            {t.cambiar}
+    <div className="mx-auto max-w-5xl">
+      {/* ── La fila ─────────────────────────────────────────────────────── */}
+      <div className={FILA_BUSCADOR}>
+        <div className={`${CELDA_BUSCADOR} sm:flex-[1.3]`}>
+          <span className={ETIQUETA_BUSCADOR} id="reservar-que">{ui.queVer}</span>
+          <button
+            ref={botonRef}
+            type="button"
+            onClick={() => setAbierto(true)}
+            aria-haspopup="listbox"
+            aria-expanded={abierto}
+            aria-labelledby="reservar-que"
+            className="flex w-full min-h-[34px] items-center gap-2.5 bg-transparent font-dm text-base text-crema"
+          >
+            <Search className="h-4 w-4 shrink-0 text-dorado" aria-hidden="true" />
+            <span className={`min-w-0 flex-1 truncate text-left ${tour ? "text-crema" : "text-crema/50"}`}>{tour ? (tour.nombreCorto || tour.nombre) : t.placeholder}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-crema/40" aria-hidden="true" />
           </button>
+        </div>
+
+        <div className={SEPARADOR_BUSCADOR} aria-hidden="true" />
+
+        <div className={`${CELDA_BUSCADOR} sm:flex-[0.85]`}>
+          <span id="reservar-cuando" className={ETIQUETA_BUSCADOR}>{ui.cuando}</span>
+          <TourCalendar
+            value={fecha}
+            onChange={(ymd) => { setFecha(ymd); if (ymd) trackTourEvent("DATE_SELECTED", { tour: tour?.id, fecha: ymd, reservar: true }); }}
+            modo="compact"
+            tema="oscuro"
+            placeholder={ui.cuandoSinFecha}
+            titulo={tour ? `${ui.cuando} · ${tour.nombreCorto || tour.nombre}` : ui.cuando}
+            permitirLimpiar
+            slug={tour && !porVehiculo ? tour.slug : undefined}
+            personas={tour ? personas : 0}
+            disparadorSinCaja
+            hojaTema="oscura"
+            hojaPosicion="centro"
+            proximosDias={false}
+          />
+        </div>
+
+        <div className={SEPARADOR_BUSCADOR} aria-hidden="true" />
+
+        <div className={`${CELDA_BUSCADOR} sm:flex-[0.8]`}>
+          <span id="reservar-cuantos" className={ETIQUETA_BUSCADOR}>{ui.cuantos}</span>
+          <SelectorPersonas
+            personas={personas}
+            min={tour ? Math.max(1, tour.groupMin) : 1}
+            max={tour ? tour.groupMax : 12}
+            onChange={setPersonas}
+            ui={ui}
+            montado={montado}
+            etiquetaId="reservar-cuantos"
+          />
+        </div>
+
+        {listo ? (
+          <Link
+            href={hrefCarrito}
+            onClick={irAlCarrito}
+            className="flex min-h-[60px] items-center justify-center bg-dorado px-7 text-center font-dm text-[13px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-lima sm:min-h-0 sm:min-w-[200px]"
+          >
+            {t.continuar}
+          </Link>
         ) : (
-          <div className="mt-5 space-y-5">
-            <label className="flex items-center gap-2.5 border border-white/15 bg-white/[0.04] px-3 py-2.5">
-              <Search className="h-4 w-4 flex-shrink-0 text-dorado" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => (tour ? document.getElementById("reservar-cuando")?.parentElement?.querySelector<HTMLButtonElement>("button")?.click() : setAbierto(true))}
+            className="flex min-h-[60px] items-center justify-center bg-dorado/80 px-7 text-center font-dm text-[13px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-dorado sm:min-h-0 sm:min-w-[200px]"
+          >
+            {tour ? t.eligeFecha : t.eligeLugar}
+          </button>
+        )}
+      </div>
+
+      {/* ── La hoja «¿Qué quieres ver?» ─────────────────────────────────── */}
+      {abierto && montado && createPortal(
+        <div className="fixed inset-0 z-[90]">
+          <div className="absolute inset-0 bg-negro/70 backdrop-blur-sm" onClick={() => setAbierto(false)} aria-hidden="true" />
+          <div
+            role="listbox"
+            aria-labelledby="reservar-que"
+            className="absolute left-1/2 top-1/2 flex max-h-[85vh] w-[calc(100vw-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 animate-centrado flex-col overflow-hidden rounded-2xl border border-crema/20 bg-negro shadow-2xl"
+          >
+            <div className="flex items-center gap-3 border-b border-crema/10 px-4 py-3">
+              <Search className="h-4 w-4 shrink-0 text-dorado" aria-hidden="true" />
               <input
-                type="search"
-                aria-label={ui.buscarLabel}
-                placeholder={ui.buscar}
+                ref={inputRef}
+                type="text"
+                autoComplete="off"
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
+                placeholder={t.escribe}
+                aria-label={ui.buscarLabel}
                 className="min-w-0 flex-1 bg-transparent font-dm text-base text-crema placeholder:text-crema/40 focus:outline-none"
               />
-              {!!texto && (
-                <button type="button" onClick={() => setTexto("")} aria-label={ui.limpiar} className="text-crema/40 hover:text-dorado">
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
-              )}
-            </label>
+              <button type="button" onClick={() => { setAbierto(false); botonRef.current?.focus(); }} aria-label={ui.cerrar} className="-mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-crema/50 transition-colors hover:text-crema">
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
 
-            {!q && (
-              <div>
-                <p className="mb-2 font-dm text-[10px] uppercase tracking-[2px] text-crema/45">{t.lugares}</p>
-                <ul className="flex flex-wrap gap-2">
-                  {lugares.map((l) => (
-                    <li key={l.slug}>
-                      <button
-                        type="button"
-                        onClick={() => elegir(l.tour!.slug, "lista_reservar", l.slug)}
-                        className="min-h-[38px] border border-white/15 px-3 py-1.5 font-dm text-[12px] text-crema/85 transition-colors hover:border-dorado/60 hover:text-crema"
-                      >
-                        {l.nombre}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+            <div className="overflow-y-auto py-2">
+              {lugaresVisibles.length === 0 && toursVisibles.length === 0 && (
+                <p className="px-4 py-6 text-center font-dm text-[13px] text-crema/60">{t.sinResultados}</p>
+              )}
+              <div className="sm:grid sm:grid-cols-2 sm:gap-x-2">
+                {lugaresVisibles.length > 0 && (
+                  <div>
+                    <p className="px-4 pb-1 pt-3 font-dm text-[9px] uppercase tracking-[2px] text-verde-vivo/70">{t.lugares}</p>
+                    {lugaresVisibles.map((l) => (
+                      <Opcion key={l.slug} etiqueta={l.nombre} detalle={l.tour.nombre} activa={slug === l.tour.slug} onClick={() => elegir(l.tour.slug, "hoja_lugares", l.slug)} />
+                    ))}
+                  </div>
+                )}
+                {toursVisibles.length > 0 && (
+                  <div>
+                    <p className="px-4 pb-1 pt-3 font-dm text-[9px] uppercase tracking-[2px] text-verde-vivo/70">{t.recorridos}</p>
+                    {toursVisibles.map((x) => (
+                      <Opcion
+                        key={x.slug}
+                        etiqueta={x.nombreCorto || x.nombre}
+                        detalle={`${tourDurTexto(x, t.horas)} · ${dinero(x.precio)}`}
+                        activa={slug === x.slug}
+                        onClick={() => elegir(x.slug, "hoja_recorridos")}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-
-            <div>
-              <p className="mb-2 font-dm text-[10px] uppercase tracking-[2px] text-crema/45">{t.recorridos}</p>
-              {visibles.length === 0 ? (
-                <p className="font-dm text-[13px] text-crema/60">{t.sinResultados}</p>
-              ) : (
-                <ul className="divide-y divide-white/8 border-y border-white/8">
-                  {visibles.map((x) => (
-                    <li key={x.slug}>
-                      <button
-                        type="button"
-                        onClick={() => elegir(x.slug, "lista_recorridos")}
-                        className="flex w-full items-center gap-3 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
-                      >
-                        <span className="relative h-14 w-20 flex-shrink-0 overflow-hidden bg-negro">
-                          <Image src={x.imagenTarjeta ?? x.imagen_hero} alt="" fill sizes="80px" className="object-cover" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="line-clamp-2 font-cormorant text-[18px] leading-tight text-crema sm:text-[19px]">{x.nombreCorto || x.nombre}</span>
-                          <span className="line-clamp-1 font-dm text-[11px] text-crema/50">
-                            {tourDurTexto(x, t.horas)} · {x.destinos.slice(0, 2).join(" · ")}
-                          </span>
-                        </span>
-                        <span className="flex-shrink-0 text-right">
-                          <span className="block font-cormorant text-[18px] leading-none text-dorado">{dinero(x.precio)}</span>
-                          <span className="block font-dm text-[9px] uppercase tracking-[1px] text-crema/40">
-                            {x.precioUnidad === "vehiculo" ? t.porVehiculo : x.tarifaGrupo?.length ? t.porGrupo : t.porPersona}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
           </div>
-        )}
-      </section>
+        </div>,
+        document.body,
+      )}
 
-      {/* ── 2 · Fecha y personas ──────────────────────────────────────── */}
-      <section ref={paso2Ref} className={`mt-4 scroll-mt-24 border border-white/10 bg-negro/40 p-5 sm:p-6 ${tour ? "" : "opacity-50"}`} aria-disabled={!tour}>
-        <Cabecera n={2} titulo={t.p2} listo={tour && fecha ? `${fechaCorta(fecha, en)} · ${ui.personas(personas)}` : undefined} sub={tour ? undefined : t.p2Antes} />
-        {tour && (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="mb-1.5 font-dm text-[10px] uppercase tracking-[2px] text-crema/45">{ui.cuando}</p>
-              <TourCalendar
-                value={fecha}
-                onChange={(ymd) => {
-                  setFecha(ymd);
-                  if (ymd) {
-                    trackTourEvent("DATE_SELECTED", { tour: tour.id, fecha: ymd, reservar: true });
-                    window.setTimeout(() => paso3Ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
-                  }
-                }}
-                modo="compact"
-                tema="oscuro"
-                titulo={tour.nombre}
-                permitirLimpiar
-                slug={porVehiculo ? undefined : tour.slug}
-                personas={personas}
-                hojaTema="oscura"
-                hojaPosicion="centro"
-              />
-            </div>
-            {!porVehiculo && (
-              <div>
-                <p id="tres-pasos-cuantos" className="mb-1.5 font-dm text-[10px] uppercase tracking-[2px] text-crema/45">{ui.cuantos}</p>
-                <div className="border border-white/15 bg-white/[0.04] px-3">
-                  <SelectorPersonas
-                    personas={personas}
-                    min={Math.max(1, tour.groupMin)}
-                    max={tour.groupMax}
-                    onChange={setPersonas}
-                    ui={ui}
-                    montado={montado}
-                    etiquetaId="tres-pasos-cuantos"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* ── 3 · Tu reserva ────────────────────────────────────────────── */}
-      <section ref={paso3Ref} className={`mt-4 scroll-mt-24 border p-5 sm:p-6 ${tour && fecha ? "border-dorado/50 bg-verde-profundo/40" : "border-white/10 bg-negro/40 opacity-50"}`}>
-        <Cabecera n={3} titulo={t.p3} sub={!tour ? t.p2Antes : !fecha ? t.p3Antes : undefined} />
-        {tour && fecha && (
-          <div className="mt-5">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 font-dm text-[13px] text-crema/80">
-              <dt className="text-crema/45">{t.pasos[0]}</dt><dd>{tour.nombre}</dd>
-              <dt className="text-crema/45">{t.pasos[1]}</dt><dd>{fechaCorta(fecha, en)}{porVehiculo ? "" : ` · ${ui.personas(personas)}`}</dd>
+      {/* ── Tu reserva ──────────────────────────────────────────────────── */}
+      <section ref={resumenRef} className={`mt-5 scroll-mt-24 border p-5 sm:p-6 ${listo ? "border-dorado/50 bg-verde-profundo/40" : "border-white/10 bg-negro/30"}`} aria-live="polite">
+        {listo && tour ? (
+          <>
+            <h2 className="font-cormorant text-[24px] font-light leading-tight text-crema sm:text-[28px]">{t.tuReserva}</h2>
+            <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 font-dm text-[13px] text-crema/80">
+              <dt className="text-crema/45">{t.lugar}</dt><dd>{tour.nombre}</dd>
+              <dt className="text-crema/45">{t.fechaPersonas}</dt><dd>{fechaCorta(fecha, en)}{porVehiculo ? "" : ` · ${ui.personas(personas)}`}</dd>
               <dt className="text-crema/45">{t.total}</dt>
-              <dd><span className="font-cormorant text-[26px] leading-none text-dorado">{dinero(total)} MXN</span> <span className="text-[11px] text-crema/45">{unidad === t.porPersona ? "" : unidad}</span></dd>
+              <dd><span className="font-cormorant text-[26px] leading-none text-dorado">{dinero(total)} MXN</span>{unidad !== t.porPersona && <span className="ml-1 text-[11px] text-crema/45">{unidad}</span>}</dd>
             </dl>
-            {porVehiculo ? (
-              <p className="mt-3 font-dm text-[12px] text-crema/60">{t.vehiculoNota}</p>
-            ) : (
-              <p className="mt-3 font-dm text-[12px] leading-snug text-crema/70">{t.apartas(pct, dinero(hoy), dinero(resto))}</p>
-            )}
-            <Link
-              href={hrefCarrito}
-              onClick={() => {
-                marcarToqueHumano();
-                trackAddToCart({ tourId: tour.id, tourName: tour.nombre, total, cantidad: personas, source: "widget" });
-                trackTourEvent("CHECKOUT_STARTED", { tour: tour.id, tour_name: tour.nombre, adults: personas, children: 0, amount: total, fecha, source: "reservar_3pasos" });
-              }}
-              className="mt-5 flex w-full items-center justify-center bg-dorado py-4 font-dm text-[12px] font-medium uppercase tracking-[2px] text-negro transition-colors hover:bg-lima"
-            >
+            <p className="mt-3 font-dm text-[12px] leading-snug text-crema/70">{porVehiculo ? t.vehiculoNota : t.apartas(pct, dinero(hoy), dinero(resto))}</p>
+            <Link href={hrefCarrito} onClick={irAlCarrito} className="mt-5 flex w-full items-center justify-center bg-dorado py-4 font-dm text-[12px] font-medium uppercase tracking-[2px] text-negro transition-colors hover:bg-lima">
               {t.continuar}
             </Link>
             <p className="mt-2 text-center font-dm text-[10px] text-crema/40">{t.cancelacion}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 font-dm text-[11px] uppercase tracking-[1.5px]">
               <Link href={hrefFicha} className="text-crema/55 underline underline-offset-4 hover:text-crema">{t.ficha}</Link>
-              <a href={hrefWa} target="_blank" rel="noopener noreferrer" data-seccion="reservar_3pasos" data-fecha={fecha} data-personas={personas} className="text-[#25D366] underline underline-offset-4 hover:brightness-110">{t.whatsapp}</a>
+              <a href={hrefWa} target="_blank" rel="noopener noreferrer" data-seccion="reservar_buscador" data-fecha={fecha} data-personas={personas} className="text-[#25D366] underline underline-offset-4 hover:brightness-110">{t.whatsapp}</a>
             </div>
-          </div>
+          </>
+        ) : (
+          <p className="text-center font-dm text-[13px] text-crema/50">
+            {tour ? `${tour.nombreCorto || tour.nombre} · ${t.pista}` : t.pista}
+          </p>
         )}
       </section>
     </div>

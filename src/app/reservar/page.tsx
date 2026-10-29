@@ -188,7 +188,7 @@ export default async function ReservarPage() {
       </section>
 
       {/* ── RESERVA EN 3 PASOS (28 oct 2026) ───────────────────────────── */}
-      <section id="catalogo" className="mx-auto max-w-6xl px-6 py-10 sm:py-12">
+      <section id="catalogo" className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
         <ReservaEnTresPasos tours={tours} />
       </section>
 
