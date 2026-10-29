@@ -29,13 +29,11 @@ const T = {
   meco:       { nombre: "Cascadas del Meco", slug: "cascadas-del-meco" },
   paraiso:    { nombre: "Paraíso Escalonado", slug: "paraiso-escalonado-minas-micos" },
   acuatica:   { nombre: "Ruta Acuática",     slug: "ruta-acuatica-puente-de-dios" },
-  buceo:      { nombre: "Descubre el Buceo", slug: "buceo-media-luna" },
   eden:       { nombre: "El Edén en el Jardín", slug: "eden-en-el-jardin" },
   xilo:       { nombre: "Gruta de Xilo",     slug: "gruta-de-xilo" },
   amanecer:   { nombre: "Amanecer de Nubes", slug: "amanecer-de-nubes" },
   olla:       { nombre: "Olla de la Luz",    slug: "olla-de-la-luz" },
   cafe:       { nombre: "Travesía del Café", slug: "travesia-del-cafe" },
-  insta:      { nombre: "Huasteca Instagrameable",    slug: "huasteca-instagrameable" },
 } as const;
 
 /** Marca una referencia como "cerca" (el tour no visita el destino). */
@@ -43,23 +41,23 @@ const cerca = (t: { nombre: string; slug: string }): TourRef => ({ ...t, relacio
 
 export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
   // ── Aquismón ──────────────────────────────────────────────────────────────
-  "cascada-de-tamul":               [T.tamul, T.rappel, T.insta],
-  "sotano-de-las-huahuas":          [T.tamul, T.insta],
+  "cascada-de-tamul":               [T.tamul, T.rappel],
+  "sotano-de-las-huahuas":          [T.tamul],
   // 🔴 Era [T.tamul]: la ficha decía que la Expedición Tamul lo visita y el bot
   // lo vendía dentro de Tamul (un operador llegó a cotizarlo). Golondrinas NO se
   // opera (decisión de la empresa, 17 sep 2026): queda como "cerca", y la web
   // dice que no lo visitamos dentro de un tour pero que se puede combinar.
   "sotano-de-las-golondrinas":      [cerca(T.tamul)],
-  "rio-tampaon-rafting":            [T.rafting, T.rappel, cerca(T.insta)],
+  "rio-tampaon-rafting":            [T.rafting, T.rappel],
   "nacimiento-tambaque":            [cerca(T.tamul), cerca(T.rafting)],
   "cuevas-de-mantetzulel":          [cerca(T.tamul)],
   "aquismon-pueblo-magico":         [cerca(T.tamul), cerca(T.rafting)],
 
   // ── Xilitla ───────────────────────────────────────────────────────────────
-  "las-pozas-jardin-surrealista":   [T.surrealista, T.eden, T.insta, cerca(T.rzr)],
+  "las-pozas-jardin-surrealista":   [T.surrealista, T.eden, cerca(T.rzr)],
   // Todo lo que sale de Xilitla y no pasa por el pueblo mismo va como "cerca":
   // la ficha del pueblo es la puerta de entrada de quien ya decidió quedarse ahí.
-  "xilitla-pueblo-magico":          [T.surrealista, T.rzr, cerca(T.eden), cerca(T.xilo), cerca(T.amanecer), cerca(T.olla), cerca(T.cafe), cerca(T.insta)],
+  "xilitla-pueblo-magico":          [T.surrealista, T.rzr, cerca(T.eden), cerca(T.xilo), cerca(T.amanecer), cerca(T.olla), cerca(T.cafe)],
   "nacimiento-huichihuayan":        [T.surrealista, T.rzr],
   "la-trinidad-xilitla":            [T.amanecer, T.olla, T.rzr],
   "cascada-los-comales":            [cerca(T.surrealista), cerca(T.rzr)],
@@ -76,16 +74,17 @@ export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
   "cascada-el-trampolin-tamasopo":  [cerca(T.acuatica)],
 
   // ── El Naranjo ────────────────────────────────────────────────────────────
-  "cascada-el-meco":                [T.meco, T.insta],
-  "cascada-el-salto":               [T.meco, T.insta],
-  "cascadas-minas-viejas":          [T.paraiso, T.insta],
+  "cascada-el-meco":                [T.meco],
+  "cascada-el-salto":               [T.meco],
+  "cascadas-minas-viejas":          [T.paraiso],
 
   // ── Ciudad Valles ─────────────────────────────────────────────────────────
-  "cascadas-de-micos":              [T.paraiso, T.insta],
+  "cascadas-de-micos":              [T.paraiso],
   "balneario-taninul":              [cerca(T.paraiso), cerca(T.rafting)],
 
   // ── Rioverde ──────────────────────────────────────────────────────────────
-  "laguna-media-luna":              [T.buceo],
+  // El buceo se retiró del catálogo (29 oct 2026): ningún recorrido la visita.
+  "laguna-media-luna":              [],
 
   // ── Tamuín ────────────────────────────────────────────────────────────────
   "zona-arqueologica-tamtoc":               [cerca(T.rafting), cerca(T.paraiso)],

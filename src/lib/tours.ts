@@ -2622,7 +2622,18 @@ export function conPrecio(texto: string, precio: number, locale: "es" | "en" = "
  * arrancar y había que desplegar ese día.) `precio` es lo que se ANUNCIA; lo
  * que se cobra depende de la fecha del recorrido: `precioDeFecha`.
  */
-export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => {
+/**
+ * Recorridos RETIRADOS del catálogo (Manolo, 29 oct 2026: «elimina el
+ * producto de Huasteca Instagrameable y el de Buceo en la Media Luna»).
+ *
+ * Se filtran aquí y no se borran de `TOURS_RAW`: sus textos, fotos, FAQ y
+ * reseñas siguen en el repo por si vuelven, y ninguna reserva vieja se queda
+ * sin nombre. Las URL viejas redirigen en `next.config.mjs`.
+ */
+export const TOURS_RETIRADOS: ReadonlySet<string> = new Set(["buceo-media-luna", "huasteca-instagrameable"]);
+const TOURS_VIGENTES = TOURS_RAW.filter((t) => !TOURS_RETIRADOS.has(t.slug));
+
+export const TOURS_DB: Tour[] = TOURS_VIGENTES.map((t) => {
   const enPromo = () => promoVigente() && (PROMO_TEMPORADA.tours as ReadonlySet<string>).has(t.slug);
   const precio = () => (enPromo() ? t.precio - PROMO_TEMPORADA.monto : t.precio);
   const tour: Tour = { ...t, precioLista: t.precio };
@@ -2644,7 +2655,7 @@ export const TOURS_DB: Tour[] = TOURS_RAW.map((t) => {
  * octubre. Ahí se cotiza siempre al precio normal y el descuento lo pone él a
  * mano (campo Descuento en cotizaciones, total editable en reservas).
  */
-export const TOURS_LISTA: Tour[] = TOURS_RAW.map((t) => ({
+export const TOURS_LISTA: Tour[] = TOURS_VIGENTES.map((t) => ({
   ...t,
   descripcion: conPrecio(t.descripcion, t.precio),
   descripcionLarga: t.descripcionLarga ? conPrecio(t.descripcionLarga, t.precio) : t.descripcionLarga,

@@ -10,7 +10,7 @@ import { waLink } from "@/lib/whatsapp";
 import { GOOGLE_PERFIL_URL, GOOGLE_RATING } from "@/lib/resenas";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { precioVisible } from "@/lib/paquetes";
-import { ReservaEnTresPasos } from "@/components/reservar/ReservaEnTresPasos";
+import { CatalogoReservar } from "@/components/reservar/CatalogoReservar";
 import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildTourOffer, ORG_REF } from "@/lib/jsonld";
@@ -187,9 +187,11 @@ export default async function ReservarPage() {
         </div>
       </section>
 
-      {/* ── RESERVA EN 3 PASOS (28 oct 2026) ───────────────────────────── */}
+      {/* ── CATÁLOGO: buscador + píldoras + tarjetas (29 oct 2026) ──────── */}
       <section id="catalogo" className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
-        <ReservaEnTresPasos tours={tours} />
+        {/* «El más reservado» solo cuando la cifra vale algo (`vale`): con 2
+            reservas de diferencia el sello mentiría. */}
+        <CatalogoReservar tours={tours} masReservado={stats && vale(stats.total) ? stats.masReservado : null} />
       </section>
 
       {/* ── PAQUETES (compacto) ────────────────────────────────────────── */}

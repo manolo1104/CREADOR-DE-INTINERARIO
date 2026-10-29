@@ -79,7 +79,7 @@ const ARRANQUE_SECA: Temporada = {
   nombre:  "La mejor temporada para venir",
   gancho:  "Aflojan las lluvias, el agua empieza a aclararse y todavía faltan meses para las multitudes de primavera. Es la mejor temporada del año para venir: la mejor mezcla de agua clara y poca gente.",
   matiz:   "El turquesa más intenso llega de marzo a mayo; ahora el agua se está aclarando. Y en diciembre las fechas de fin de año se llenan primero: si vienes en esas semanas, conviene apartar con tiempo.",
-  destaca: ["expedicion-tamul", "cascadas-del-meco", "buceo-media-luna"],
+  destaca: ["expedicion-tamul", "cascadas-del-meco", "paraiso-escalonado-minas-micos"],
 };
 
 for (const m of [1, 2])            VENTANAS[m] = SECA;

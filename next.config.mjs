@@ -112,6 +112,12 @@ const nextConfig = {
       // paquete de pareja del catálogo es la Inmersión Huasteca (3 días).
       { source: "/paquetes/luna-de-miel",        destination: "/paquetes/inmersion-huasteca",    permanent: true },
       { source: "/en/paquetes/luna-de-miel",     destination: "/en/paquetes/inmersion-huasteca", permanent: true },
+      // Dos recorridos retirados del catálogo el 29 oct 2026 (Manolo). El buceo
+      // manda a la página del lugar; el de fotos, al catálogo.
+      { source: "/tours/buceo-media-luna",           destination: "/destinos/laguna-media-luna",    permanent: true },
+      { source: "/en/tours/buceo-media-luna",        destination: "/en/destinos/laguna-media-luna", permanent: true },
+      { source: "/tours/huasteca-instagrameable",    destination: "/tours",                         permanent: true },
+      { source: "/en/tours/huasteca-instagrameable", destination: "/en/tours",                      permanent: true },
       // "Tu Huasteca" se retiró: el que más se le parece es el Odisea.
       { source: "/paquetes/tu-huasteca",         destination: "/paquetes/odisea-huasteca",    permanent: true },
       { source: "/en/paquetes/tu-huasteca",      destination: "/en/paquetes/odisea-huasteca", permanent: true },

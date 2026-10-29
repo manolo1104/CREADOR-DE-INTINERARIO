@@ -77,6 +77,9 @@ export function PopupViaje() {
     // La ficha de un tour: Clarity (11–28 oct 2026) vio gente elegir fecha y, a
     // los 20 s, irse al blog por este aviso. Ahí no se interrumpe la compra.
     /^\/tours\/[^/]+/.test(ruta) ||
+    // El catálogo de reservas (29 oct 2026): en el teléfono esta ventana tapaba
+    // las tarjetas enteras de /reservar, que es la página que vende.
+    ruta === "/reservar" ||
     ruta.startsWith("/confirmacion") ||
     ruta.startsWith("/recomendar") ||
     ruta.startsWith("/comparar") ||

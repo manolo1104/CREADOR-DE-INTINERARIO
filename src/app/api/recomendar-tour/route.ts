@@ -236,7 +236,10 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   if (destino.includes("Olla") || destino.includes("Hoya"))        scores["tour-olla-de-la-luz"] += 4;
   if (/foto|instagram|reel|contenido|creador/i.test(destino))      scores["tour-huasteca-instagrameable"] += 4;
 
-  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  // Solo lo que está en el catálogo: los retirados (`TOURS_RETIRADOS`) siguen
+  // sumando puntos arriba, pero no se recomiendan.
+  const vigentes = new Set(TOURS_DB.map((t) => t.id));
+  const sorted = Object.entries(scores).filter(([id]) => vigentes.has(id)).sort((a, b) => b[1] - a[1]);
   return { primaryId: sorted[0][0], secondaryId: sorted[1][0] };
 }
 
