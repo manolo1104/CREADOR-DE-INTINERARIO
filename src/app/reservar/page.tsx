@@ -1,18 +1,16 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import { unstable_cache } from "next/cache";
-import Image from "next/image";
 import Link from "next/link";
-import { Clock, Users, Shield, Check, MapPin, CalendarCheck, CreditCard, Lock, Star, Flame } from "lucide-react";
-import { TOURS_DB, tourDurTexto, type Tour } from "@/lib/tours";
+import { CalendarCheck, Star } from "lucide-react";
+import { TOURS_DB, type Tour } from "@/lib/tours";
 import { formatMXN } from "@/lib/tourBooking";
 import { getReservasStats, vale, type ReservasStats } from "@/lib/reservasStats";
 import { waLink } from "@/lib/whatsapp";
 import { GOOGLE_PERFIL_URL, GOOGLE_RATING } from "@/lib/resenas";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { precioVisible } from "@/lib/paquetes";
-import { PCTS_PAQUETE } from "@/lib/paquetePricing";
-import { ToursFiltroReservar } from "@/components/reservar/ToursFiltroReservar";
+import { ReservaEnTresPasos } from "@/components/reservar/ReservaEnTresPasos";
 import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildTourOffer, ORG_REF } from "@/lib/jsonld";
@@ -189,193 +187,34 @@ export default async function ReservarPage() {
         </div>
       </section>
 
-      {/* ── BARRA DE CONFIANZA ─────────────────────────────────────────── */}
-      <section className="border-y border-white/8 bg-negro/60">
-        <div className="max-w-6xl mx-auto px-6 py-5 grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-6">
-          {[CreditCard, Shield, Users, MapPin].map((Icon, n) => (
-            <div key={t.confianza[n].t} className="flex items-start gap-2.5">
-              <Icon className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <span className="leading-tight">
-                <span className="block text-[12px] font-dm text-crema/90 font-medium">{t.confianza[n].t}</span>
-                <span className="block text-[11px] font-dm text-crema/45">{t.confianza[n].s}</span>
-              </span>
-            </div>
-          ))}
-        </div>
+      {/* ── RESERVA EN 3 PASOS (28 oct 2026) ───────────────────────────── */}
+      <section id="catalogo" className="mx-auto max-w-6xl px-6 py-10 sm:py-12">
+        <ReservaEnTresPasos tours={tours} />
       </section>
 
-      {/*
-        🔴 Aquí vivía «Cómo funciona», tres pasos explicados (9 oct 2026, Manolo:
-        «la de Paraíso se ve mucho más limpia, quita lo que no sea
-        indispensable»). Decía lo mismo que la barra de confianza que tiene
-        JUSTO ENCIMA —«apartas con el 30 %», «liquidas el día del tour»— con
-        otras palabras y 127 px más, y empujaba el catálogo media pantalla hacia
-        abajo. Quien entra al motor viene a elegir recorrido, no a leer cómo
-        funciona el motor. Los textos siguen en `i18n/booking.ts` (`t.pasos`)
-        por si vuelven a hacer falta en otra parte.
-      */}
-
-      {/* ── CATÁLOGO ───────────────────────────────────────────────────── */}
-      <section id="catalogo" className="max-w-6xl mx-auto px-6 py-12">
-        <div className="flex items-baseline justify-between flex-wrap gap-2 mb-8 border-b border-white/8 pb-4">
-          <h2 className="font-cormorant font-light text-crema" style={{ fontSize: "clamp(24px,3.5vw,38px)" }}>
-            {t.todosLosRecorridos}
+      {/* ── PAQUETES (compacto) ────────────────────────────────────────── */}
+      <section id="paquetes" className="mx-auto max-w-3xl px-6 pb-12">
+        <div className="border border-white/10 bg-negro/40 p-5 sm:p-6">
+          <p className="font-dm text-[10px] uppercase tracking-[2px] text-crema/45">{en ? "Multi-day trips" : "¿Varios días?"}</p>
+          <h2 className="mt-1 font-cormorant text-[24px] font-light leading-tight text-crema">
+            {en ? "Packages with hotel, breakfasts and transport" : "Paquetes con hotel, desayunos y traslados"}
           </h2>
-          <div className="flex flex-col items-start gap-1.5 sm:items-end">
-            <p className="text-[11px] font-dm text-crema/45">
-              {t.conteo(TOURS_DB.length, formatMXN(desde))}
-              {stats && t.ordenadosPorReservas}
-            </p>
-            {/*
-              El ritmo real de ventas, por fin dicho en voz alta.
-              `getReservasStats` ya lo contaba desde siempre para ordenar las
-              tarjetas, pero el número nunca se veía.
-
-              🔴 Va AQUÍ y no en el encabezado de la página: ahí arriba está la
-              calificación de Google, y el comentario de más arriba explica por
-              qué el conteo se había quitado —un número chico al lado del
-              "+10,000 viajeros" resta—. Pegado al catálogo no compite con
-              nada: dice que esto se mueve justo cuando se va a elegir.
-
-              El umbral es el de la casa (`vale()`, 5 reservas): por debajo no
-              impresiona, así que no se enseña.
-
-              Va en DORADO y no en terracota: esta página es negra (#0e1710) y
-              el terracota da 2.95:1 contra ella, que no pasa AA. El dorado da
-              6.07:1, y es el color con el que el calendario ya avisa en
-              oscuro.
-            */}
-            {stats && vale(stats.ultimos30) && (
-              <p className="flex items-center gap-1.5 font-dm text-[11px] text-dorado" role="status">
-                <Flame className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                <span>{t.reservasUltimoMes(stats.ultimos30)}</span>
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* El mismo filtro que el inicio (8 oct 2026). El buscador del hero manda
-            aquí, y quien eligió «cascadas, 20 de noviembre, 4 personas» llegaba
-            a quince tarjetas sin filtrar y tenía que volver a buscar a ojo lo
-            que acababa de pedir. La intención viaja en sessionStorage, no en la
-            URL: así esta página sigue sirviendo el mismo HTML para todos. */}
-        <ToursFiltroReservar tours={tours} masReservado={stats?.masReservado ?? undefined} />
-      </section>
-
-      {/* ── PAQUETES ───────────────────────────────────────────────────── */}
-      {/*
-        La página se llamaba "motor de reservas" pero solo listaba los tours de
-        un día: los paquetes de varios días —el producto de mayor ticket— no
-        aparecían por ningún lado. Quien llegaba aquí buscando un viaje completo
-        no encontraba nada y se iba.
-      */}
-      {/* Los paquetes estuvieron ocultos en inglés mientras /reservar-paquete y
-          /paquetes/[slug] eran solo-ES. Ambas se tradujeron y están en prod
-          desde el 14 ago, así que la tarjeta vuelve a los dos idiomas: es el
-          producto de mayor ticket y el visitante inglés no lo veía. */}
-      <section id="paquetes" className="max-w-6xl mx-auto px-6 pb-14">
-        <div className="flex items-baseline justify-between flex-wrap gap-2 mb-8 border-b border-white/8 pb-4">
-          <h2 className="font-cormorant font-light text-crema" style={{ fontSize: "clamp(24px,3.5vw,38px)" }}>
-            {en ? "Multi-day trips" : "Viajes de varios días"}
-          </h2>
-          <p className="text-[11px] font-dm text-crema/45">
-            {en
-              ? "Hotel, breakfasts and in-region transport included"
-              : "Con hospedaje, desayunos y traslados incluidos"}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {getLocalizedPaquetes(locale).map((paq) => (
-            <article
-              key={paq.id}
-              className="group relative flex flex-col border border-dorado/20 bg-negro/40 hover:border-dorado/50 transition-colors duration-300 overflow-hidden"
-            >
-              <div className="relative h-44 overflow-hidden flex-shrink-0">
-                <Image
-                  src={paq.imagen}
-                  alt={paq.nombre}
-                  fill
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/15 to-negro/25" />
-                <span className="absolute bottom-3 left-3 bg-negro/75 text-crema/85 text-[9px] font-dm tracking-[1px] px-2 py-1">
-                  {en
-                    ? `${paq.dias} days · ${paq.noches} nights`
-                    : `${paq.dias} días · ${paq.noches} noches`}
-                </span>
-              </div>
-
-              <div className="flex flex-col flex-1 p-5">
-                <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-1.5">{en ? "Package" : "Paquete"}</p>
-                <h3 className="font-cormorant text-crema text-xl leading-tight mb-2">
-                  {paq.nombre.split("—")[0].trim()}
-                </h3>
-                <p className="text-[11px] font-dm text-crema/50 leading-snug mb-3 line-clamp-3">
-                  {paq.subtitulo}
-                </p>
-
-                <div className="mt-auto pt-4 border-t border-white/8">
-                  <p className="flex items-baseline gap-2 mb-0.5">
-                    <span className="font-cormorant text-dorado text-3xl font-light leading-none">
-                      {formatMXN(precioVisible(paq))}
-                    </span>
-                    <span className="text-[10px] text-crema/40 font-dm">MXN {paq.precioLabel}</span>
-                  </p>
-                  {/* El anticipo se saca de PCTS_PAQUETE (el motor sólo acepta
-                      30/50/100 %), no de un 0.1 escrito a mano: la tarjeta
-                      ofrecía $1,450 y el checkout más barato pide $4,350.
-                      Y va sobre `paq.precio` —el total de los dos— con su
-                      porcentaje a la vista, para que no se lea como anticipo
-                      por persona debajo del titular «por persona». */}
-                  <p className="text-[11px] font-dm text-crema/55 mb-4">
-                    {en ? `Reserve from (${PCTS_PAQUETE[0]}%) ` : `Apartas desde (${PCTS_PAQUETE[0]} %) `}
-                    {/* En inglés todo importe lleva "MXN": un "$2,610" a secas se lee en dólares. */}
-                    <strong className="text-crema/85">{formatMXN(Math.round(paq.precio * PCTS_PAQUETE[0] / 100))}{en ? " MXN" : ""}</strong>
-                  </p>
-
-                  <div className="flex gap-2">
-                    <Link
-                      href={lp(`/reservar-paquete/${paq.slug}`)}
-                      className="flex-1 text-center bg-dorado hover:bg-lima text-negro text-[10px] tracking-[2px] uppercase font-dm font-medium py-3 transition-colors"
-                    >
-                      {en ? "Book" : "Reservar"}
-                    </Link>
-                    <Link
-                      href={lp(`/paquetes/${paq.slug}`)}
-                      className="px-3 flex items-center border border-white/15 hover:border-crema/40 text-crema/60 hover:text-crema text-[10px] tracking-[1.5px] uppercase font-dm transition-colors"
-                    >
-                      {en ? "Details" : "Detalles"}
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* ── REVERSIÓN DE RIESGO ────────────────────────────────────────── */}
-      <section className="bg-verde-profundo/30 border-y border-white/8 py-14 px-6">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-center mb-8" style={{ fontSize: "clamp(22px,3vw,34px)" }}>
-            {t.sinRiesgoTitulo}
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-4">
-            {t.sinRiesgo.map((linea) => (
-              <p key={linea} className="flex items-start gap-2.5 text-[13px] font-dm text-crema/70 leading-relaxed">
-                <Check className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
-                {linea}
-              </p>
+          <ul className="mt-4 divide-y divide-white/8 border-y border-white/8">
+            {getLocalizedPaquetes(locale).map((paq) => (
+              <li key={paq.id}>
+                <Link href={lp(`/paquetes/${paq.slug}`)} className="flex items-center justify-between gap-4 py-3 transition-colors hover:text-dorado">
+                  <span className="min-w-0">
+                    <span className="block truncate font-cormorant text-[19px] leading-tight text-crema">{paq.nombre.split("—")[0].trim()}</span>
+                    <span className="block font-dm text-[11px] text-crema/50">{en ? `${paq.dias} days · ${paq.noches} nights` : `${paq.dias} días · ${paq.noches} noches`}</span>
+                  </span>
+                  <span className="flex-shrink-0 text-right">
+                    <span className="block font-cormorant text-[18px] leading-none text-dorado">{formatMXN(precioVisible(paq))}</span>
+                    <span className="block font-dm text-[9px] uppercase tracking-[1px] text-crema/40">{paq.precioLabel}</span>
+                  </span>
+                </Link>
+              </li>
             ))}
-          </div>
-
-          <div className="mt-10 text-center">
-            <p className="inline-flex items-center gap-2 text-[11px] font-dm text-crema/40">
-              <Lock className="w-3.5 h-3.5" aria-hidden="true" /> {t.pagoSeguro}
-            </p>
-          </div>
+          </ul>
         </div>
       </section>
 
