@@ -167,20 +167,20 @@ export function MapaRegion({ locale }: { locale: Locale }) {
   return (
     <section
       aria-label={t("Mapa de la Huasteca Potosina", "Map of the Huasteca Potosina")}
-      className="border-b border-negro/10 bg-verde-profundo px-6 py-24"
+      className="border-t border-negro/10 bg-crema px-6 py-20 sm:py-24"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="mb-10 text-center">
-          <p className="reveal-fade mb-4 font-dm text-[10px] uppercase tracking-[4px] text-verde-vivo">
-            {t("Qué queda cerca de qué", "What's near what")}
-          </p>
+        {/* Titular a la izquierda y fondo claro (rediseño del 29 oct 2026): el
+            inicio saltaba de claro a oscuro seis veces; ahora el único bloque
+            oscuro después del hero es el cierre. */}
+        <div className="reveal-up mb-10 max-w-2xl">
           <h2
-            className="reveal-up font-cormorant font-light text-crema"
-            style={{ fontSize: "clamp(32px,4.5vw,52px)" }}
+            className="font-cormorant font-light leading-[1.08] text-verde-profundo"
+            style={{ fontSize: "clamp(36px,4.6vw,58px)" }}
           >
-            {en ? <>The region, <em className="shimmer-gold">from our door</em></> : <>La región, <em className="shimmer-gold">desde nuestra puerta</em></>}
+            {en ? <>The region, <em className="text-dorado">from our door</em></> : <>La región, <em className="text-dorado">desde nuestra puerta</em></>}
           </h2>
-          <p className="mx-auto mt-5 max-w-xl font-dm text-sm leading-relaxed text-crema/60">
+          <p className="mt-4 max-w-[60ch] font-dm text-[15px] leading-relaxed text-negro/60 sm:text-base">
             {t(
               "Salimos de Xilitla. Tamul y el Sótano de las Huahuas quedan al norte, Tamasopo y Puente de Dios al poniente, y Las Pozas a cinco minutos caminando del hotel.",
               "We leave from Xilitla. Tamul and Las Huahuas sinkhole are to the north, Tamasopo and Puente de Dios to the west, and Las Pozas is a five-minute walk from the hotel.",
@@ -219,14 +219,14 @@ export function MapaRegion({ locale }: { locale: Locale }) {
                       key={`l-${p.id}`}
                       x1={base.x} y1={base.y} x2={p.x} y2={p.y}
                       stroke="currentColor"
-                      className="text-crema/15"
+                      className="text-verde-profundo/25"
                       strokeWidth={1.5}
                       strokeDasharray="5 7"
                     />
                   ))}
 
               {/* La rosa de los vientos, para que «al norte» signifique algo. */}
-              <g className="text-crema/30" transform={`translate(${ANCHO - 54} 54)`}>
+              <g className="text-verde-profundo/45" transform={`translate(${ANCHO - 54} 54)`}>
                 <line x1="0" y1="16" x2="0" y2="-14" stroke="currentColor" strokeWidth="1.5" />
                 <polygon points="0,-20 4.5,-10 -4.5,-10" fill="currentColor" />
                 <text x="0" y="31" textAnchor="middle" fontSize="13" fill="currentColor" className="font-dm">N</text>
@@ -245,19 +245,19 @@ export function MapaRegion({ locale }: { locale: Locale }) {
                         <circle cx={p.x} cy={p.y} r={7.5} className="fill-dorado" />
                       </>
                     ) : p.slug ? (
-                      <circle cx={p.x} cy={p.y} r={6} className="fill-verde-vivo" />
+                      <circle cx={p.x} cy={p.y} r={6} className="fill-verde-selva" />
                     ) : (
-                      <rect x={p.x - 5} y={p.y - 5} width={10} height={10} className="fill-crema/70" />
+                      <rect x={p.x - 5} y={p.y - 5} width={10} height={10} className="fill-verde-profundo/50" />
                     )}
                     <text
                       x={p.x + dx}
                       y={p.y + dyTexto}
                       textAnchor={anclaTexto}
                       fontSize={p.base ? 22 : 17}
-                      className={`font-dm ${p.base ? "fill-dorado" : p.slug ? "fill-crema/85" : "fill-crema/60"}`}
+                      className={`font-dm ${p.base ? "fill-dorado" : p.slug ? "fill-verde-profundo" : "fill-negro/55"}`}
                     >
                       {p.nombre}
-                      {p.base && <tspan className="fill-crema/55" fontSize={14}>{sufijoBase}</tspan>}
+                      {p.base && <tspan className="fill-negro/50" fontSize={14}>{sufijoBase}</tspan>}
                     </text>
                   </>
                 );
@@ -272,7 +272,7 @@ export function MapaRegion({ locale }: { locale: Locale }) {
                 );
               })}
             </svg>
-            <figcaption className="mt-3 text-center font-dm text-[11px] text-crema/35">
+            <figcaption className="mt-3 font-dm text-[12px] leading-relaxed text-negro/40">
               {t(
                 "Esquema, no un mapa a escala. Las posiciones salen de las coordenadas reales de cada destino y conservan qué queda al norte y al poniente de qué, pero el dibujo se estira a lo ancho para que quepan los nombres, y no dibuja carreteras.",
                 "A schematic, not a scale map. Positions come from each place's real coordinates and keep what lies north and west of what, but the drawing is stretched sideways so the names fit, and it draws no roads.",
@@ -282,19 +282,19 @@ export function MapaRegion({ locale }: { locale: Locale }) {
 
           {/* ── Las distancias en texto, para quien no ve el dibujo ── */}
           <div>
-            <h3 className="mb-4 font-dm text-[10px] uppercase tracking-[3px] text-verde-vivo">
+            <h3 className="mb-4 font-dm text-sm font-medium text-verde-profundo">
               {t("Cuánto se hace hasta Xilitla", "How long it takes to Xilitla")}
             </h3>
             <ul className="mb-8 space-y-2.5">
               {DESDE.map((d) => (
-                <li key={d.slug} className="flex items-baseline justify-between gap-4 border-b border-white/10 pb-2.5">
-                  <span className="font-dm text-sm text-crema/75">{en ? d.ciudadEn : d.ciudad}</span>
+                <li key={d.slug} className="flex items-baseline justify-between gap-4 border-t border-negro/10 pt-2.5">
+                  <span className="font-dm text-sm text-negro/70">{en ? d.ciudadEn : d.ciudad}</span>
                   <span className="font-cormorant text-xl text-dorado">{en ? d.autoXilitlaEn : d.autoXilitla}</span>
                 </li>
               ))}
             </ul>
 
-            <h3 className="mb-4 font-dm text-[10px] uppercase tracking-[3px] text-verde-vivo">
+            <h3 className="mb-4 font-dm text-sm font-medium text-verde-profundo">
               {t("A dónde vamos", "Where we go")}
             </h3>
             <ul className="flex flex-wrap gap-2">
@@ -302,7 +302,7 @@ export function MapaRegion({ locale }: { locale: Locale }) {
                 <li key={d.slug}>
                   <Link
                     href={lp(`/destinos/${d.slug}`)}
-                    className="inline-flex min-h-[38px] items-center border border-white/15 px-3.5 font-dm text-xs text-crema/70 transition-colors hover:border-verde-vivo/60 hover:text-crema"
+                    className="inline-flex min-h-[40px] items-center rounded-full border border-negro/15 bg-white px-4 font-dm text-[13px] text-negro/70 transition-colors hover:border-verde-selva hover:text-verde-selva"
                   >
                     {d.nombre}
                   </Link>
@@ -314,9 +314,9 @@ export function MapaRegion({ locale }: { locale: Locale }) {
               <Link
                 href={lp("/destinos")}
                 prefetch={false}
-                className="font-dm text-xs uppercase tracking-[2px] text-dorado underline underline-offset-4 transition-colors hover:text-crema"
+                className="font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota"
               >
-                {t(`Ver los ${DESTINOS_DB.length} destinos →`, `See all ${DESTINOS_DB.length} destinations →`)}
+                {t(`Ver los ${DESTINOS_DB.length} destinos`, `See all ${DESTINOS_DB.length} destinations`)}
               </Link>
             </p>
           </div>

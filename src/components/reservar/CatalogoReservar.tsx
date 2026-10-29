@@ -3,16 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { ChevronDown, Clock, Search, X } from "lucide-react";
+import { Check, ChevronDown, Clock, Search, X } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { SelectorPersonas } from "@/components/buscador/SelectorPersonas";
 import { CELDA_BUSCADOR, ETIQUETA_BUSCADOR, FILA_BUSCADOR, SEPARADOR_BUSCADOR } from "@/components/buscador/estilos";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { etiquetaUnidad, recogidaDeTour, tourCollage, tourDurTexto, tourEnFecha, type Tour } from "@/lib/tours";
+import { etiquetaUnidad, recogidaDeTour, salidaCorta, tourCollage, tourDurTexto, tourEnFecha, type Tour } from "@/lib/tours";
 import { formatMXN, totalRecorrido } from "@/lib/tourBooking";
-import { chipDeIntencion, chipsDeTours, porChipYTexto, PREFIJO_TOUR } from "@/lib/filtroTours";
+import { chipDeIntencion, chipsDeTours, porChipYTexto } from "@/lib/filtroTours";
 import { fechaCorta, leerIntencion, EVENTO_INTENCION } from "@/lib/intencionInicio";
 import { toursQueIncluyen } from "@/lib/tourMapping";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -28,9 +27,16 @@ import { trackTourEvent } from "@/lib/tourTracker";
  * Esa lógica, en tres piezas y en este orden:
  *
  * 1. **Buscador arriba** (qué · cuándo · cuántos). «¿Qué quieres ver?» abre la
- *    hoja con lugares y recorridos; elegir uno ahí ABRE SU FICHA con la fecha
- *    y las personas ya puestas (pedido del 28 oct). El botón dorado baja a la
- *    lista.
+ *    hoja con lugares y recorridos; elegir uno ahí SE QUEDA EN EL CAMPO y la
+ *    lista de abajo se reduce a los recorridos que visitan ese lugar (o a ese
+ *    recorrido). El botón dorado baja a la lista.
+ *
+ *    🔴 Hasta el 29 oct elegir en la hoja abría la ficha del tour en el acto
+ *    (pedido del 28 oct). Manolo lo revirtió ese mismo día: «cuando se elige
+ *    el lugar o recorrido manda directo a la página… quiero que el cliente
+ *    pueda acabar de poner lugar, fecha y personas y que cuando dé en ver
+ *    recorridos se muestren ahí mismo en reservar». La ficha sigue siendo el
+ *    destino de la TARJETA, no de la hoja.
  * 2. **Píldoras de categoría** en una fila que se desliza (las mismas de
  *    `filtroTours.ts` que usa el inicio, para que los conteos no se
  *    desincronicen) y un orden: más reservados, precio, duración.
@@ -70,6 +76,8 @@ const UI = {
     verFechas: "Ver fechas y reservar",
     apartas: "Apartas con el 30 %",
     horas: "h",
+    visitan: (n: number, lugar: string) => (n === 1 ? `1 recorrido visita ${lugar}` : `${n} recorridos visitan ${lugar}`),
+    quitar: "Ver todos",
   },
   en: {
     placeholder: "Pick a place or a tour",
@@ -92,10 +100,15 @@ const UI = {
     verFechas: "See dates & book",
     apartas: "Book with 30 % down",
     horas: "h",
+    visitan: (n: number, lugar: string) => (n === 1 ? `1 tour visits ${lugar}` : `${n} tours visit ${lugar}`),
+    quitar: "See all",
   },
 };
 
 type Orden = "recomendados" | "precioAsc" | "precioDesc" | "duracion";
+
+/** Lo puesto en «¿Qué quieres ver?»: un lugar, un recorrido concreto, o nada. */
+type Eleccion = { tipo: "lugar"; slug: string } | { tipo: "tour"; slug: string } | null;
 
 /** «Cascada de Tamul (paseo en canoa)» → «Cascada de Tamul»: en la tarjeta solo cabe el nombre. */
 function soloNombre(d: string) {
@@ -118,11 +131,11 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
   const tb = getBooking(locale).tarjeta;
   const dinero = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
 
-  const router = useRouter();
   const [fecha, setFecha] = useState("");
   const [personas, setPersonas] = useState(2);
   const [texto, setTexto] = useState("");
   const [chip, setChip] = useState("todos");
+  const [eleccion, setEleccion] = useState<Eleccion>(null);
   const [orden, setOrden] = useState<Orden>("recomendados");
   const [abierto, setAbierto] = useState(false);
   const [montado, setMontado] = useState(false);
@@ -143,13 +156,13 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
       if (i.fecha) setFecha(i.fecha);
       if (i.personas) setPersonas(i.personas);
       const que = i.que;
-      // Venía del inicio con un recorrido ya elegido: directo a su ficha.
-      if (que.tipo === "tour" && tours.some((x) => x.slug === que.slug)) {
-        router.replace(hrefFichaDe(que.slug, i.fecha, i.personas));
+      // Venía del inicio con un recorrido ya elegido: queda puesto en el campo
+      // y la lista enseña solo ése. (Antes lo mandaba a la ficha sin preguntar.)
+      if (que.tipo === "tour") {
+        if (tours.some((x) => x.slug === que.slug)) setEleccion({ tipo: "tour", slug: que.slug });
         return;
       }
-      const c = chipDeIntencion(i);
-      if (!c.startsWith(PREFIJO_TOUR)) setChip(c);
+      setChip(chipDeIntencion(i));
     };
     aplicar();
     window.addEventListener(EVENTO_INTENCION, aplicar);
@@ -169,38 +182,73 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
   }, [abierto]);
 
   // ── La hoja «¿Qué quieres ver?» ──
-  type Lugar = { nombre: string; slug: string; tour: { nombre: string; slug: string } };
+  /** Cada lugar con los recorridos del catálogo que de verdad lo visitan. */
+  type Lugar = { nombre: string; slug: string; tours: Tour[] };
   const lugares = useMemo<Lugar[]>(
     () => DESTINOS_DB
-      .map((d) => ({ nombre: d.nombre, slug: d.slug, tour: toursQueIncluyen(d.slug)[0] }))
-      .filter((l): l is Lugar => !!l.tour && tours.some((x) => x.slug === l.tour!.slug)),
+      .map((d) => ({
+        nombre: d.nombre,
+        slug: d.slug,
+        tours: toursQueIncluyen(d.slug).map((r) => tours.find((x) => x.slug === r.slug)).filter((x): x is Tour => !!x),
+      }))
+      .filter((l) => l.tours.length > 0),
     [tours],
   );
   const q = normaliza(texto.trim());
-  const lugaresVisibles = q ? lugares.filter((l) => normaliza(`${l.nombre} ${l.tour.nombre}`).includes(q)) : lugares;
+  const lugaresVisibles = q
+    ? lugares.filter((l) => normaliza(`${l.nombre} ${l.tours.map((x) => x.nombre).join(" ")}`).includes(q))
+    : lugares;
   const toursHoja = q
     ? tours.filter((x) => normaliza(`${x.nombre} ${x.nombreCorto} ${x.tagline} ${x.destinos.join(" ")}`).includes(q))
     : tours;
 
-  const elegirEnHoja = (s: string, origen: string, destino?: string) => {
-    const x = tours.find((y) => y.slug === s);
-    const n = x ? Math.max(x.groupMin, Math.min(x.groupMax, personas)) : personas;
-    trackTourEvent(destino ? "DESTINO_TOUR_CLICK" : "FILTRO_RESERVAR", { tour: s, destino, source: origen, texto: texto.trim() || undefined, fecha: fecha || undefined, personas: n });
-    setAbierto(false);
+  // ── Lo elegido manda sobre la lista ──
+  const lugarElegido = eleccion?.tipo === "lugar" ? lugares.find((l) => l.slug === eleccion.slug) : undefined;
+  const tourElegido  = eleccion?.tipo === "tour"  ? tours.find((x) => x.slug === eleccion.slug)   : undefined;
+  const nombreElegido = tourElegido ? (tourElegido.nombreCorto || tourElegido.nombre) : lugarElegido ? soloNombre(lugarElegido.nombre) : null;
+  /** Los recorridos que caben en lo elegido, ANTES de las píldoras. */
+  const base = useMemo<Tour[]>(() => {
+    if (tourElegido) return [tourElegido];
+    if (lugarElegido) return lugarElegido.tours;
+    return tours;
+  }, [tours, tourElegido, lugarElegido]);
+  /* Con UN solo recorrido en juego (un recorrido elegido, o un lugar que solo
+     visita uno), «¿Cuándo?» pasa a ser SU calendario: consulta el cupo real y
+     pinta los días que quedan, igual que en el hero del inicio. */
+  const unico = eleccion && base.length === 1 ? base[0] : undefined;
+
+  const cerrarHoja = () => {
     setTexto("");
-    router.push(hrefFichaDe(s, fecha, n));
+    if (abierto) { setAbierto(false); botonRef.current?.focus(); }
+  };
+
+  /** Elegir en la hoja (o quitar lo elegido): se queda en el campo y filtra la lista. No navega. */
+  const elegirEnHoja = (nueva: Eleccion, origen: string) => {
+    const cambia = nueva?.tipo !== eleccion?.tipo || nueva?.slug !== eleccion?.slug;
+    trackTourEvent(nueva?.tipo === "lugar" ? "DESTINO_TOUR_CLICK" : "FILTRO_RESERVAR", {
+      ...(nueva?.tipo === "lugar" ? { destino: nueva.slug } : { tour: nueva?.slug ?? "todos" }),
+      source: origen, texto: texto.trim() || undefined, fecha: fecha || undefined, personas,
+    });
+    // La fecha validada con el calendario de OTRO recorrido no vale para éste;
+    // una fecha «de cualquier recorrido» sí se conserva.
+    if (cambia && unico) setFecha("");
+    if (cambia) setChip("todos");
+    setEleccion(nueva);
+    cerrarHoja();
   };
 
   // ── Píldoras y orden ──
-  const chips = useMemo(() => chipsDeTours(tours, en), [tours, en]);
+  // Se cuentan sobre lo elegido: con «Cascada de Tamul» puesto, «Extremas · 4»
+  // mentiría cuando solo el rappel pasa por ahí. Las que quedan en cero no salen.
+  const chips = useMemo(() => chipsDeTours(base, en), [base, en]);
   const filtrados = useMemo(() => {
-    const base = porChipYTexto(tours, chips, chip, "");
-    if (orden === "recomendados") return base; // ya vienen ordenados por reservas
-    return [...base].sort((a, b) =>
+    const lista = porChipYTexto(base, chips, chip, "");
+    if (orden === "recomendados") return lista; // ya vienen ordenados por reservas
+    return [...lista].sort((a, b) =>
       orden === "precioAsc" ? a.precio - b.precio
       : orden === "precioDesc" ? b.precio - a.precio
       : a.duracion_hrs - b.duracion_hrs);
-  }, [tours, chips, chip, orden]);
+  }, [base, chips, chip, orden]);
 
   const elegirChip = (id: string) => {
     setChip(id);
@@ -209,18 +257,27 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
 
   const bajarALaLista = () => {
     listaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    trackTourEvent("FILTRO_RESERVAR", { source: "boton_buscar", chip, fecha: fecha || undefined, personas });
+    trackTourEvent("FILTRO_RESERVAR", {
+      source: "boton_buscar", chip, fecha: fecha || undefined, personas,
+      eleccion: eleccion ? `${eleccion.tipo}:${eleccion.slug}` : undefined,
+      resultados: filtrados.length,
+    });
   };
 
-  const Opcion = ({ etiqueta, detalle, onClick }: { etiqueta: string; detalle?: string; onClick: () => void }) => (
+  const Opcion = ({ etiqueta, detalle, activa, onClick }: { etiqueta: string; detalle?: string; activa: boolean; onClick: () => void }) => (
     <button
       type="button"
       role="option"
-      aria-selected={false}
+      aria-selected={activa}
       onClick={onClick}
-      className="flex w-full items-baseline justify-between gap-3 px-4 py-2.5 text-left text-crema/90 transition-colors hover:bg-white/[0.06]"
+      className={`flex w-full min-h-[44px] items-center justify-between gap-3 px-4 py-2 text-left transition-colors ${
+        activa ? "bg-dorado/15 text-dorado" : "text-crema/90 hover:bg-white/[0.06]"
+      }`}
     >
-      <span className="font-dm text-[15px]">{etiqueta}</span>
+      <span className="flex min-w-0 items-center gap-2">
+        <Check className={`h-3.5 w-3.5 shrink-0 ${activa ? "opacity-100" : "opacity-0"}`} aria-hidden="true" />
+        <span className="truncate font-dm text-[15px]">{etiqueta}</span>
+      </span>
       {detalle && <span className="shrink-0 font-dm text-[10px] uppercase tracking-[1.5px] text-crema/40">{detalle}</span>}
     </button>
   );
@@ -241,7 +298,7 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
             className="flex w-full min-h-[34px] items-center gap-2.5 bg-transparent font-dm text-base text-crema"
           >
             <Search className="h-4 w-4 shrink-0 text-dorado" aria-hidden="true" />
-            <span className="min-w-0 flex-1 truncate text-left text-crema/50">{t.placeholder}</span>
+            <span className={`min-w-0 flex-1 truncate text-left ${nombreElegido ? "text-crema" : "text-crema/50"}`}>{nombreElegido ?? t.placeholder}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-crema/40" aria-hidden="true" />
           </button>
         </div>
@@ -256,8 +313,11 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
             modo="compact"
             tema="oscuro"
             placeholder={ui.cuandoSinFecha}
-            titulo={ui.cuando}
+            titulo={unico ? `${ui.cuando} · ${unico.nombreCorto || unico.nombre}` : ui.cuando}
             permitirLimpiar
+            slug={unico?.slug}
+            personas={unico ? personas : 0}
+            salida={unico ? salidaCorta(unico, en) : null}
             disparadorSinCaja
             hojaTema="oscura"
             hojaPosicion="centro"
@@ -319,12 +379,19 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
               {lugaresVisibles.length === 0 && toursHoja.length === 0 && (
                 <p className="px-4 py-6 text-center font-dm text-[13px] text-crema/60">{t.sinResultados}</p>
               )}
+              {!q && <Opcion etiqueta={ui.queVerTodos} activa={!eleccion} onClick={() => elegirEnHoja(null, "hoja_todos")} />}
               <div className="sm:grid sm:grid-cols-2 sm:gap-x-2">
                 {lugaresVisibles.length > 0 && (
                   <div>
                     <p className="px-4 pb-1 pt-3 font-dm text-[9px] uppercase tracking-[2px] text-verde-vivo/70">{t.lugares}</p>
                     {lugaresVisibles.map((l) => (
-                      <Opcion key={l.slug} etiqueta={l.nombre} detalle={l.tour.nombre} onClick={() => elegirEnHoja(l.tour.slug, "hoja_lugares", l.slug)} />
+                      <Opcion
+                        key={l.slug}
+                        etiqueta={l.nombre}
+                        detalle={l.tours.length === 1 ? (l.tours[0].nombreCorto || l.tours[0].nombre) : ui.resultados(l.tours.length)}
+                        activa={eleccion?.tipo === "lugar" && eleccion.slug === l.slug}
+                        onClick={() => elegirEnHoja({ tipo: "lugar", slug: l.slug }, "hoja_lugares")}
+                      />
                     ))}
                   </div>
                 )}
@@ -336,7 +403,8 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
                         key={x.slug}
                         etiqueta={x.nombreCorto || x.nombre}
                         detalle={`${tourDurTexto(x, t.horas)} · ${dinero(x.precio)}`}
-                        onClick={() => elegirEnHoja(x.slug, "hoja_recorridos")}
+                        activa={eleccion?.tipo === "tour" && eleccion.slug === x.slug}
+                        onClick={() => elegirEnHoja({ tipo: "tour", slug: x.slug }, "hoja_recorridos")}
                       />
                     ))}
                   </div>
@@ -352,7 +420,7 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
       <div ref={listaRef} className="mt-8 scroll-mt-24 sm:mt-10">
         <div className="-mx-6 overflow-x-auto px-6 scrollbar-none">
           <div className="flex min-w-max gap-2">
-            {[{ id: "todos", label: ui.todos, n: tours.length }, ...chips].map((c) => {
+            {[{ id: "todos", label: ui.todos, n: base.length }, ...chips].map((c) => {
               const activo = c.id === chip;
               return (
                 <button
@@ -376,9 +444,19 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <p aria-live="polite" className="font-dm text-[13px] text-crema/60">
-            <strong className="font-medium text-crema">{ui.resultados(filtrados.length)}</strong>
+            <strong className="font-medium text-crema">
+              {lugarElegido ? t.visitan(filtrados.length, soloNombre(lugarElegido.nombre)) : ui.resultados(filtrados.length)}
+            </strong>
             {" · "}{ui.paraGrupo(personas)}
             {!!fecha && <> · {ui.paraFecha(fechaCorta(fecha, en))}</>}
+            {eleccion && (
+              <>
+                {" · "}
+                <button type="button" onClick={() => elegirEnHoja(null, "quitar_eleccion")} className="underline decoration-crema/30 underline-offset-4 transition-colors hover:text-crema">
+                  {t.quitar}
+                </button>
+              </>
+            )}
           </p>
           <label className="flex items-center gap-2 font-dm text-[12px] text-crema/55">
             {t.ordenar}
@@ -479,7 +557,7 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
         {filtrados.length === 0 && (
           <div className="mt-5 border border-white/10 px-6 py-12 text-center">
             <p className="font-cormorant text-2xl font-light text-crema">{ui.vacio}</p>
-            <button type="button" onClick={() => elegirChip("todos")} className="mt-5 min-h-[44px] border border-dorado px-6 font-dm text-xs uppercase tracking-[2px] text-dorado transition-colors hover:bg-dorado/10">
+            <button type="button" onClick={() => { setEleccion(null); elegirChip("todos"); }} className="mt-5 min-h-[44px] border border-dorado px-6 font-dm text-xs uppercase tracking-[2px] text-dorado transition-colors hover:bg-dorado/10">
               {ui.limpiar}
             </button>
           </div>

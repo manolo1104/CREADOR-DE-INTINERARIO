@@ -17,15 +17,15 @@ type Post = {
   focusKeyword: string;
 };
 
-// ── Category mapping (from tags) ──────────────────────────────────────────────
+// ── Categorías (se infieren de las etiquetas y el título) ────────────────────
 const CATEGORIES = [
-  { label: "Todos",             value: "all" },
-  { label: "Destinos",          value: "destinos" },
-  { label: "Tours & Rutas",     value: "tours" },
-  { label: "Cultura & Arte",    value: "cultura" },
-  { label: "Gastronomía",       value: "gastronomia" },
-  { label: "Presupuesto",       value: "presupuesto" },
-  { label: "Familia",           value: "familia" },
+  { label: "Todos",          value: "all" },
+  { label: "Destinos",       value: "destinos" },
+  { label: "Tours y rutas",  value: "tours" },
+  { label: "Cultura y arte", value: "cultura" },
+  { label: "Gastronomía",    value: "gastronomia" },
+  { label: "Presupuesto",    value: "presupuesto" },
+  { label: "Familia",        value: "familia" },
 ];
 
 function inferCategory(tags: string[], title: string): string {
@@ -39,11 +39,23 @@ function inferCategory(tags: string[], title: string): string {
   return "destinos";
 }
 
-// Detect promotional content (own hotel/restaurant)
+// Contenido sobre el hotel o el restaurante propios: se marca como tal.
 function isPromocional(tags: string[], title: string): boolean {
   const text = (tags.join(" ") + " " + title).toLowerCase();
   return /paraíso encantado|papan huasteco|reseña.*hotel|nuestros huéspedes|opiniones.*hotel/.test(text);
 }
+
+const fechaCorta = (d: Date) =>
+  new Date(d).toLocaleDateString("es-MX", { month: "short", year: "numeric", timeZone: "America/Mexico_City" }).replace(".", "");
+
+const fechaLarga = (d: Date) =>
+  new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" });
+
+const TITULO_TARJETA =
+  "font-cormorant font-normal leading-[1.15] text-verde-profundo transition-colors group-hover:text-verde-selva";
+const META = "font-dm text-[13px] text-negro/45";
+const SELLO_PROPIO =
+  "inline-flex items-center rounded-full border border-dorado/40 bg-white/90 px-2.5 py-0.5 font-dm text-[11px] font-medium text-dorado";
 
 interface Props {
   posts: Post[];
@@ -51,6 +63,12 @@ interface Props {
   initialQuery?: string;
 }
 
+/**
+ * Buscador, categorías y la rejilla con TODOS los artículos publicados.
+ * Mismo lenguaje que el inicio: fondo crema, sin cajas, botones y chips en
+ * píldora, títulos en Cormorant. El destacado es el más reciente y solo se
+ * enseña cuando no hay filtro ni búsqueda.
+ */
 export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [query, setQuery]                   = useState(initialQuery);
@@ -64,133 +82,166 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
     });
   }, [posts, activeCategory, query]);
 
-  // Detect duplicate cover images
-  const imageCounts: Record<string, number> = {};
-  for (const p of posts) {
-    if (p.coverImageUrl) imageCounts[p.coverImageUrl] = (imageCounts[p.coverImageUrl] ?? 0) + 1;
-  }
+  // Cuántos artículos caen en cada categoría, para que el chip lo diga.
+  const conteo = useMemo(() => {
+    const c: Record<string, number> = { all: posts.length };
+    for (const p of posts) {
+      const k = inferCategory(p.tags, p.title);
+      c[k] = (c[k] ?? 0) + 1;
+    }
+    return c;
+  }, [posts]);
 
   const showFeatured = !query && activeCategory === "all" && featuredPost;
   const gridPosts = showFeatured ? filtered.slice(1) : filtered;
+  const hayFiltro = Boolean(query) || activeCategory !== "all";
+  const etiquetaCategoria = CATEGORIES.find((c) => c.value === activeCategory)?.label;
 
   return (
     <div>
-      {/* Search + Category filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-10">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-crema/30 pointer-events-none" />
+      {/* Buscador + categorías */}
+      <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <label className="relative flex w-full items-center gap-2.5 rounded-full border border-negro/15 bg-white px-5 py-3 transition-colors focus-within:border-verde-selva lg:max-w-sm">
+          <Search className="h-4 w-4 shrink-0 text-negro/40" aria-hidden="true" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar artículos…"
-            className="w-full bg-negro/40 border border-white/15 focus:border-lima/40 text-crema placeholder:text-crema/30 font-dm text-sm pl-9 pr-9 py-2.5 outline-none transition-colors"
+            placeholder="Buscar un artículo"
+            aria-label="Buscar un artículo"
+            className="min-w-0 flex-1 bg-transparent font-dm text-[15px] text-negro outline-none placeholder:text-negro/40"
           />
           {query && (
-            <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-crema/40 hover:text-crema transition-colors">
-              <X className="w-3.5 h-3.5" />
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Borrar la búsqueda"
+              className="-mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-negro/50 transition-colors hover:bg-negro/5 hover:text-negro"
+            >
+              <X className="h-4 w-4" />
             </button>
           )}
-        </div>
+        </label>
 
-        {/* Category pills */}
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setActiveCategory(cat.value)}
-              className={`text-[9px] tracking-[2px] uppercase font-dm px-3 py-2 border transition-all ${
-                activeCategory === cat.value
-                  ? "border-lima bg-lima/10 text-lima"
-                  : "border-white/15 text-crema/50 hover:border-crema/30 hover:text-crema"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        <div className="-mx-6 overflow-x-auto px-6 lg:mx-0 lg:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2">
+            {CATEGORIES.map((cat) => {
+              const activo = activeCategory === cat.value;
+              const n = conteo[cat.value] ?? 0;
+              if (cat.value !== "all" && n === 0) return null;
+              return (
+                <button
+                  key={cat.value}
+                  type="button"
+                  onClick={() => setActiveCategory(cat.value)}
+                  aria-pressed={activo}
+                  className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
+                    activo
+                      ? "border-verde-profundo bg-verde-profundo text-crema"
+                      : "border-negro/15 bg-white text-negro/70 hover:border-verde-selva hover:text-verde-profundo"
+                  }`}
+                >
+                  {cat.label}
+                  <span className={`tabular-nums ${activo ? "text-crema/60" : "text-negro/40"}`}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Results count */}
-      {(query || activeCategory !== "all") && (
-        <p className="text-[10px] tracking-[2px] uppercase font-dm text-crema/30 mb-6">
-          {filtered.length} artículo{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
-          {activeCategory !== "all" && <span className="ml-2 text-lima/50">· {CATEGORIES.find((c) => c.value === activeCategory)?.label}</span>}
+      {/* Cuántos salieron */}
+      {hayFiltro && (
+        <p className="mb-6 font-dm text-sm text-negro/55" aria-live="polite">
+          {filtered.length === 0
+            ? "Ningún artículo coincide."
+            : `${filtered.length} ${filtered.length === 1 ? "artículo" : "artículos"}`}
+          {activeCategory !== "all" && etiquetaCategoria ? ` en ${etiquetaCategoria}` : ""}
+          {query ? ` para «${query.trim()}»` : ""}
         </p>
       )}
 
-      {/* Featured post (only when no filters active) */}
+      {/* Destacado: el más reciente, solo sin filtros */}
       {showFeatured && (
-        <Link href={urlBlog(featuredPost!.slug)} className="group block mb-12">
-          <article className="grid md:grid-cols-2 gap-0 bg-verde-profundo/30 border border-white/8 overflow-hidden hover:border-lima/30 transition-colors">
+        <Link href={urlBlog(featuredPost!.slug)} prefetch={false} className="group mb-14 block">
+          <article className="grid gap-6 lg:grid-cols-[7fr_5fr] lg:items-center lg:gap-12">
             {featuredPost!.coverImageUrl && (
-              <div className="aspect-[4/3] md:aspect-auto overflow-hidden">
-                <img src={featuredPost!.coverImageUrl} alt={featuredPost!.coverImageAlt || featuredPost!.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-negro/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={featuredPost!.coverImageUrl}
+                  alt={featuredPost!.coverImageAlt || featuredPost!.title}
+                  className="h-full w-full object-cover transition-transform duration-500 ease-smooth-out group-hover:scale-[1.03]"
+                />
               </div>
             )}
-            <div className="p-8 md:p-12 flex flex-col justify-center">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[9px] tracking-[3px] uppercase text-lima/70 font-dm">✦ Artículo Destacado</span>
-                {isPromocional(featuredPost!.tags, featuredPost!.title) && (
-                  <span className="text-[8px] tracking-[1px] uppercase font-dm text-dorado/70 border border-dorado/25 px-2 py-0.5">✦ Contenido propio</span>
-                )}
-              </div>
-              <h2 className="font-cormorant text-crema text-3xl mb-4 leading-tight group-hover:text-lima transition-colors">{featuredPost!.title}</h2>
-              <p className="text-crema/50 font-dm font-light text-sm leading-relaxed mb-6">{featuredPost!.excerpt}</p>
-              <div className="flex items-center gap-4 text-[10px] tracking-[2px] uppercase font-dm text-crema/30">
-                <span>{featuredPost!.readingTime} min lectura</span>
-                <span>·</span>
-                <span>{new Date(featuredPost!.publishedAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Mexico_City" })}</span>
-              </div>
+            <div>
+              <p className="mb-3 flex flex-wrap items-center gap-2 font-dm text-[13px] text-dorado">
+                <span>Lo más nuevo</span>
+                {isPromocional(featuredPost!.tags, featuredPost!.title) && <span className={SELLO_PROPIO}>Contenido propio</span>}
+              </p>
+              <h2
+                className="font-cormorant font-light leading-[1.08] text-verde-profundo transition-colors group-hover:text-verde-selva"
+                style={{ fontSize: "clamp(30px,3.4vw,44px)" }}
+              >
+                {featuredPost!.title}
+              </h2>
+              <p className="mt-4 line-clamp-3 max-w-[55ch] font-dm text-[15px] leading-relaxed text-negro/60 sm:text-base">
+                {featuredPost!.excerpt}
+              </p>
+              <p className={`mt-4 ${META}`}>
+                {featuredPost!.readingTime} min de lectura · {fechaLarga(featuredPost!.publishedAt)}
+              </p>
+              <span className="mt-5 inline-flex min-h-[44px] items-center rounded-full border border-verde-selva px-5 font-dm text-sm font-medium text-verde-selva transition-colors group-hover:bg-verde-selva/10">
+                Leer la guía
+              </span>
             </div>
           </article>
         </Link>
       )}
 
-      {/* Grid */}
+      {/* Todos los demás */}
       {gridPosts.length === 0 ? (
-        <p className="text-center text-crema/40 font-dm py-16">No hay artículos en esta categoría todavía.</p>
+        <div className="rounded-2xl bg-white px-6 py-14 text-center">
+          <p className="font-cormorant text-2xl text-verde-profundo">No hay artículos con esa búsqueda.</p>
+          <p className="mt-2 font-dm text-sm text-negro/55">Prueba con otra palabra o quita el filtro.</p>
+          <button
+            type="button"
+            onClick={() => { setQuery(""); setActiveCategory("all"); }}
+            className="mt-5 inline-flex min-h-[44px] items-center rounded-full border border-verde-selva px-5 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10"
+          >
+            Ver todos los artículos
+          </button>
+        </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
           {gridPosts.map((post) => {
-            const isDuplicate = imageCounts[post.coverImageUrl ?? ""] > 1;
-            const isPromo     = isPromocional(post.tags, post.title);
+            const isPromo = isPromocional(post.tags, post.title);
             return (
-              <Link key={post.slug} href={urlBlog(post.slug)} className="group">
-                <article className="bg-verde-profundo/30 border border-white/8 overflow-hidden hover:border-lima/30 transition-colors h-full flex flex-col relative">
-                  {isPromo && (
-                    <div className="absolute top-2 right-2 z-10 text-[8px] tracking-[1px] uppercase font-dm text-dorado/80 border border-dorado/30 bg-negro/60 backdrop-blur-sm px-2 py-0.5">
-                      ✦ Contenido propio
-                    </div>
-                  )}
-                  {post.coverImageUrl && (
-                    <div className="aspect-video overflow-hidden relative">
-                      <img src={post.coverImageUrl} alt={post.coverImageAlt || post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                      {isDuplicate && (
-                        <div className="absolute bottom-1.5 left-1.5 text-[8px] font-dm text-white/60 bg-negro/70 px-1.5 py-0.5 rounded">
-                          Sin imagen única
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="p-6 flex flex-col flex-1">
-                    {post.tags[0] && (
-                      <span className="text-[9px] tracking-[3px] uppercase text-lima/60 font-dm mb-3">{post.tags[0]}</span>
+              <li key={post.slug}>
+                <Link href={urlBlog(post.slug)} prefetch={false} className="group flex h-full flex-col">
+                  <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-2xl bg-negro/5">
+                    {post.coverImageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={post.coverImageUrl}
+                        alt={post.coverImageAlt || post.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 ease-smooth-out group-hover:scale-[1.03]"
+                      />
                     )}
-                    <h3 className="font-cormorant text-crema text-xl mb-3 leading-snug group-hover:text-lima transition-colors flex-1">{post.title}</h3>
-                    <p className="text-crema/40 font-dm font-light text-xs leading-relaxed mb-4">{post.excerpt.slice(0, 120)}…</p>
-                    <div className="flex items-center gap-3 text-[9px] tracking-[2px] uppercase font-dm text-crema/45 mt-auto">
-                      <span>{post.readingTime} min</span>
-                      <span>·</span>
-                      <span>{new Date(post.publishedAt).toLocaleDateString("es-MX", { month: "short", year: "numeric", timeZone: "America/Mexico_City" })}</span>
-                    </div>
+                    {isPromo && <span className={`absolute left-3 top-3 ${SELLO_PROPIO}`}>Contenido propio</span>}
                   </div>
-                </article>
-              </Link>
+                  <h3 className={`${TITULO_TARJETA} text-[22px] sm:text-2xl`}>{post.title}</h3>
+                  <p className="mt-2 line-clamp-2 font-dm text-[14px] leading-relaxed text-negro/55">{post.excerpt}</p>
+                  <p className={`mt-3 ${META}`}>
+                    {post.readingTime} min de lectura · {fechaCorta(post.publishedAt)}
+                  </p>
+                </Link>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );

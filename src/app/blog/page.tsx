@@ -2,7 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogFilters } from "@/components/BlogFilters";
-import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { applyBlogImageEditsPreview } from "@/lib/blogImageEdits";
 import { aplicaBlogSeo } from "@/lib/blogSeo";
 import { urlBlog } from "@/lib/blogDestinoMap";
@@ -102,55 +101,91 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: itemListSchema }} />
-      <main className="relative min-h-screen bg-negro pt-24 pb-20">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-          <FloatingLeaves count={20} />
-        </div>
-        <div className="relative z-10">
-        {/* Hero */}
-        <section className="max-w-5xl mx-auto px-6 text-center mb-12">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-lima/70 font-dm mb-4">✦ Huasteca Potosina · Blog de Viajes</p>
-          <h1 className="reveal-up font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(32px,5vw,60px)" }}>
-            Guías & Rutas para Explorar<br />
-            <span className="text-lima">la Huasteca Potosina</span>
-          </h1>
-          <p className="text-crema/60 font-dm font-light text-lg max-w-2xl mx-auto mb-8">
-            Cascadas turquesas, cañones imposibles, selva viva. Todo lo que necesitas saber para planear tu viaje perfecto.
-          </p>
-          <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-6 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
-            Ver recorridos y reservar →
-          </Link>
-        </section>
-
-        {/* Filters + Grid */}
-        {posts.length === 0 ? (
-          <div className="max-w-2xl mx-auto px-6 text-center py-20">
-            <p className="text-crema/40 font-dm text-lg">Próximamente — El primer artículo está en camino.</p>
+      <main className="min-h-screen bg-crema pb-20 pt-[calc(var(--navbar-alto,64px)+20px)] sm:pt-[calc(var(--navbar-alto,64px)+36px)]">
+        {/* Cabecera: a la izquierda, como el inicio */}
+        <section className="mx-auto max-w-6xl px-6">
+          <nav aria-label="Ruta" className="mb-6 font-dm text-[13px] text-negro/50">
+            <Link href="/" prefetch={false} className="transition-colors hover:text-verde-selva">Inicio</Link>
+            <span className="mx-2">/</span>
+            <span className="text-negro/70">Blog</span>
+          </nav>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <h1
+                className="font-cormorant font-light leading-[1.05] text-verde-profundo"
+                style={{ fontSize: "clamp(40px,5.4vw,68px)" }}
+              >
+                Guías para explorar <em className="text-dorado">la Huasteca</em>
+              </h1>
+              <p className="mt-5 max-w-[58ch] font-dm text-[15px] leading-relaxed text-negro/60 sm:text-base">
+                {posts.length > 0 ? `${posts.length} artículos escritos ` : "Artículos escritos "}
+                por los guías que viven aquí: cuándo venir, cuánto cuesta, cómo llegar y qué vale la pena
+                en cada cascada, sótano y pueblo.
+              </p>
+            </div>
+            <Link
+              href="/reservar"
+              prefetch={false}
+              className="inline-flex min-h-[52px] shrink-0 items-center justify-center rounded-full bg-dorado px-8 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
+            >
+              Ver recorridos y reservar
+            </Link>
           </div>
-        ) : (
-          <section className="max-w-6xl mx-auto px-6">
-            <BlogFilters posts={posts} featuredPost={posts[0] ?? null} initialQuery={initialQuery} />
-          </section>
-        )}
-
-        {/* CTA final */}
-        <section className="max-w-2xl mx-auto px-6 text-center mt-20 py-16 border-t border-white/8">
-          <p className="text-[10px] tracking-[4px] uppercase text-lima/60 font-dm mb-4">✦ {GOOGLE_RATING}★ · {GOOGLE_RESENAS} reseñas de Google</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema text-3xl mb-4">¿Listo para reservar tu viaje?</h2>
-          {/* Decía «Diez recorridos con todo incluido»: son los que marque
-              TOURS_DB (hoy 14) y no todos llevan traslado ni desayuno. La
-              cancelación gratis tampoco aplica a los que traen su propia
-              `cancelacion` (el Edén no reembolsa). */}
-          <p className="text-crema/50 font-dm font-light mb-8">{TOURS_DB.length} recorridos a precio final. Apartas con el 30 % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes{sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : ""}.</p>
-          <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-4 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
-            Ver recorridos y reservar →
-          </Link>
-          <p className="mt-5 text-[11px] text-crema/30 font-dm">
-            ¿No sabes qué tour elegir?{" "}
-            <Link href="/recomendar" className="text-verde-vivo hover:text-lima underline underline-offset-2">Recomendador →</Link>
-          </p>
         </section>
-        </div>
+
+        {/* Buscador, categorías y todos los artículos */}
+        <section className="mx-auto mt-12 max-w-6xl px-6 sm:mt-14">
+          {posts.length === 0 ? (
+            <div className="rounded-2xl bg-white px-6 py-16 text-center">
+              <p className="font-cormorant text-2xl text-verde-profundo">El primer artículo está en camino.</p>
+            </div>
+          ) : (
+            <BlogFilters posts={posts} featuredPost={posts[0] ?? null} initialQuery={initialQuery} />
+          )}
+        </section>
+
+        {/* Cierre: el único bloque oscuro de la página */}
+        <section aria-label="Reserva tu viaje" className="mx-auto mt-20 max-w-6xl px-6 sm:mt-24">
+          <div className="rounded-2xl bg-verde-profundo px-6 py-12 sm:px-12 sm:py-16 lg:px-16">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-16">
+              <div className="max-w-2xl">
+                <p className="font-dm text-sm text-crema/60">
+                  {GOOGLE_RATING} en Google · {GOOGLE_RESENAS} reseñas
+                </p>
+                <h2
+                  className="mt-3 font-cormorant font-light leading-[1.08] text-crema"
+                  style={{ fontSize: "clamp(32px,4vw,52px)" }}
+                >
+                  ¿Listo para <em className="text-dorado">reservar</em> tu viaje?
+                </h2>
+                {/* Son los recorridos que marque TOURS_DB y no todos llevan
+                    traslado ni desayuno. La cancelación gratis tampoco aplica
+                    a los que traen su propia `cancelacion`. */}
+                <p className="mt-4 max-w-[55ch] font-dm text-[15px] leading-relaxed text-crema/70 sm:text-base">
+                  {TOURS_DB.length} recorridos a precio final. Apartas con el 30 % y liquidas el resto el día
+                  del tour. Cancelas gratis hasta 48 h antes
+                  {sinReembolso.length ? ` (salvo ${sinReembolso.join(", ")})` : ""}.
+                </p>
+              </div>
+              <div className="flex flex-col items-start gap-4 lg:items-end">
+                <Link
+                  href="/reservar"
+                  prefetch={false}
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-dorado px-8 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
+                >
+                  Ver recorridos y reservar
+                </Link>
+                <Link
+                  href="/recomendar"
+                  prefetch={false}
+                  className="font-dm text-sm text-crema/70 underline decoration-crema/30 underline-offset-4 transition-colors hover:text-crema"
+                >
+                  ¿No sabes qué tour elegir? Te lo recomendamos
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </>
   );

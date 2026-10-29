@@ -156,7 +156,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
     <div id={ANCLA_RECORRIDOS} className="scroll-mt-24">
       {/* ── Controles ── */}
       <div className="mb-8">
-        <label className="relative mx-auto mb-5 flex max-w-md items-center gap-2.5 border border-negro/15 bg-white px-4 py-3 transition-colors focus-within:border-verde-selva">
+        <label className="relative mb-5 flex max-w-md items-center gap-2.5 rounded-full border border-negro/15 bg-white px-5 py-3 transition-colors focus-within:border-verde-selva">
           <Search className="h-4 w-4 shrink-0 text-negro/35" aria-hidden="true" />
           <input
             type="search"
@@ -183,7 +183,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
             arriba se acomodan en varios renglones, porque en una sola fila la
             última quedaba cortada contra el borde de la pantalla. */}
         <div className="-mx-6 overflow-x-auto px-6 scrollbar-none md:overflow-visible">
-          <div className="mx-auto flex min-w-max justify-center gap-2.5 md:min-w-0 md:flex-wrap">
+          <div className="flex min-w-max gap-2 md:min-w-0 md:flex-wrap">
             {[{ id: "todos", label: ui.todos, n: tours.length }, ...chips].map((c) => {
               const activo = c.id === chip;
               const n = c.n;
@@ -193,14 +193,14 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
                   type="button"
                   aria-pressed={activo}
                   onClick={() => elegirChip(c.id)}
-                  className={`inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap border px-5 font-dm text-xs uppercase tracking-[2px] transition-colors duration-200 ${
+                  className={`inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
                     activo
                       ? "border-verde-selva bg-verde-selva text-crema"
                       : "border-negro/15 bg-white text-negro/60 hover:border-verde-vivo/60 hover:bg-verde-selva/5 hover:text-verde-selva"
                   }`}
                 >
                   {c.label}
-                  <span className={`font-dm text-[10px] tabular-nums ${activo ? "text-crema/60" : "text-negro/30"}`}>
+                  <span className={`font-dm text-[11px] tabular-nums ${activo ? "text-crema/60" : "text-negro/35"}`}>
                     {n}
                   </span>
                 </button>
@@ -210,7 +210,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
         </div>
 
         {/* La línea de contexto: qué está mirando y por qué sobran o faltan. */}
-        <p aria-live="polite" className="mt-5 text-center font-dm text-xs text-negro/50">
+        <p aria-live="polite" className="mt-4 font-dm text-[13px] text-negro/50">
           {ui.resultados(filtrados.length)}
           {!!personas && <> · {ui.paraGrupo(personas)}</>}
           {!!fecha && <> · {ui.paraFecha(fechaCorta(fecha, en))}</>}
@@ -294,7 +294,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
           </p>
         </div>
       ) : (
-        <div className="border border-negro/10 bg-white px-6 py-14 text-center">
+        <div className="rounded-2xl border border-negro/10 bg-white px-6 py-14 text-center">
           <p className="font-cormorant text-2xl font-light text-verde-profundo">
             {soloPorElGrupo ? ui.vacioPorGrupo(personas) : ui.vacio}
           </p>
@@ -308,7 +308,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
               <button
                 type="button"
                 onClick={() => setIntencion((i) => (i ? { ...i, personas: 0 } : null))}
-                className="min-h-[44px] bg-verde-selva px-6 font-dm text-xs uppercase tracking-[2px] text-crema transition-colors hover:bg-verde-vivo"
+                className="min-h-[44px] rounded-full bg-verde-selva px-6 font-dm text-sm font-medium text-crema transition-colors hover:bg-verde-vivo"
               >
                 {ui.verlosIgual(sinContarGrupo.length)}
               </button>
@@ -316,7 +316,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
             <button
               type="button"
               onClick={limpiar}
-              className="min-h-[44px] border border-verde-selva px-6 font-dm text-xs uppercase tracking-[2px] text-verde-selva transition-colors hover:bg-verde-selva/10"
+              className="min-h-[44px] rounded-full border border-verde-selva px-6 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10"
             >
               {ui.limpiar}
             </button>
@@ -326,7 +326,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
               rel="noopener noreferrer"
               data-wa-manual="1"
               onClick={() => trackTourEvent("WHATSAPP_CLICK", { context: "rejilla_inicio", boton: "sin_resultados" })}
-              className="inline-flex min-h-[44px] items-center border border-[#25D366] px-6 font-dm text-xs uppercase tracking-[2px] text-[#128C4A] transition-colors hover:bg-[#25D366]/10"
+              className="inline-flex min-h-[44px] items-center rounded-full border border-[#25D366] px-6 font-dm text-sm font-medium text-[#128C4A] transition-colors hover:bg-[#25D366]/10"
             >
               WhatsApp
             </a>
@@ -334,12 +334,12 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
         </div>
       )}
 
-      <p className="mt-10 text-center">
+      <p className="mt-8">
         {/* `prefetch` normal: /tours es la página del catálogo y es la segunda
             más visitada del sitio, así que el prefetch se amortiza. */}
         <Link
           href={hrefCatalogo}
-          className="font-dm text-xs uppercase tracking-[2px] text-verde-selva underline underline-offset-4 transition-colors hover:text-terracota"
+          className="font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota"
         >
           {ui.verCatalogo}
         </Link>

@@ -56,16 +56,16 @@ export function BlogNewsletterInline({
 
   if (status === "success") {
     return (
-      <div className="my-10 p-6 border border-verde-vivo/30 bg-verde-selva/10 flex items-center gap-4">
+      <div className="my-10 flex items-center gap-4 rounded-2xl border border-verde-selva/30 bg-white p-6">
         <CheckCircle className="w-8 h-8 text-verde-vivo flex-shrink-0" />
         <div>
-          <p className="text-crema font-dm text-sm font-medium">¡Listo! Revisa tu correo.</p>
-          <p className="text-crema/50 font-dm text-xs mt-0.5">
-            Te enviamos el itinerario de 3 días a <strong className="text-crema/70">{email}</strong>.
+          <p className="font-dm text-[15px] font-medium text-verde-profundo">¡Listo! Revisa tu correo.</p>
+          <p className="mt-0.5 font-dm text-[13px] text-negro/60">
+            Te enviamos el itinerario de 3 días a <strong className="text-negro/80">{email}</strong>.
             Si no aparece, revisa spam o pídelo por{" "}
             <a
               href="https://wa.me/524891090388?text=Hola%2C%20quiero%20el%20itinerario%20de%203%20d%C3%ADas%20en%20la%20Huasteca"
-              className="text-verde-vivo underline"
+              className="text-verde-selva underline"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -78,20 +78,20 @@ export function BlogNewsletterInline({
   }
 
   return (
-    <aside className="my-10 p-6 border border-lima/20 bg-forest">
+    <aside className="my-10 rounded-2xl border border-negro/10 bg-white p-6">
       <div className="flex items-start gap-3 mb-4">
-        <Map className="w-5 h-5 text-lima flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <Map className="mt-0.5 h-5 w-5 flex-shrink-0 text-verde-selva" aria-hidden="true" />
         <div>
-          <p className="text-crema font-dm text-sm font-medium leading-snug">
-            Itinerario de 3 días en la Huasteca — gratis
+          <p className="font-cormorant text-xl leading-snug text-verde-profundo">
+            Itinerario de 3 días en la Huasteca, gratis
           </p>
-          <p className="text-crema/50 font-dm text-xs leading-relaxed mt-1">
+          <p className="mt-1 font-dm text-[13px] leading-relaxed text-negro/60">
             El recorrido que le armamos a la mayoría de nuestros viajeros: qué ver
             cada día, a qué hora llegar a cada sitio y qué llevar. Te lo mandamos por correo.
           </p>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
         <input
           type="email"
           required
@@ -99,18 +99,18 @@ export function BlogNewsletterInline({
           onChange={(e) => { setEmail(e.target.value); if (status === "error") setStatus("idle"); }}
           placeholder="tu@email.com"
           aria-label="Tu correo para recibir el itinerario"
-          className="flex-1 min-w-0 bg-negro/40 border border-white/15 focus:border-lima/50 text-crema placeholder:text-crema/30 font-dm text-sm px-3 py-2 outline-none transition-colors"
+          className="min-h-[48px] min-w-0 flex-1 rounded-full border border-negro/20 bg-crema/60 px-4 font-dm text-base text-negro placeholder:text-negro/40 outline-none transition-colors focus:border-verde-selva"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="flex items-center gap-1.5 bg-verde-selva hover:bg-verde-vivo text-crema px-4 py-2 text-[10px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-50 flex-shrink-0"
+          className="inline-flex min-h-[48px] flex-shrink-0 items-center gap-1.5 rounded-full bg-verde-selva px-5 font-dm text-sm font-medium text-crema transition-colors hover:bg-verde-vivo disabled:opacity-50"
         >
           {status === "loading" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Enviármelo"}
         </button>
       </form>
       {status === "error" && (
-        <p className="mt-2 text-terracota font-dm text-xs" role="alert">
+        <p className="mt-2 font-dm text-[13px] text-terracota" role="alert">
           {error}{" "}
           <a
             href="https://wa.me/524891090388?text=Hola%2C%20quiero%20el%20itinerario%20de%203%20d%C3%ADas%20en%20la%20Huasteca"

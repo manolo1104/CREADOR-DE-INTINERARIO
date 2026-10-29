@@ -37,7 +37,14 @@ const CADA_MS = 5000;
  */
 export function CarruselPromos({
   cargaDiferida = false,
+  tema = "oscuro",
 }: {
+  /**
+   * `claro` para montarlo sobre fondo crema (el inicio desde el 29 oct 2026):
+   * los controles eran crema sobre negro y sobre crema desaparecían. Por
+   * omisión se comporta como siempre (/paquetes sigue oscuro).
+   */
+  tema?: "oscuro" | "claro";
   /**
    * Para cuando el carrusel vive lejos de la primera pantalla (el inicio, 7 oct
    * 2026): el primer cartel ya no lleva `priority` y nada se pide hasta que el
@@ -47,6 +54,7 @@ export function CarruselPromos({
    */
   cargaDiferida?: boolean;
 } = {}) {
+  const claro = tema === "claro";
   const promos = PROMOS_PAQUETES;
   const [i, setI] = useState(0);
   const [detenido, setDetenido] = useState(false);
@@ -130,11 +138,14 @@ export function CarruselPromos({
     setAMano(true);
     setI((n + promos.length) % promos.length);
   };
-  const botonCls =
-    "flex h-10 w-10 items-center justify-center rounded-full border border-crema/25 text-crema/80 " +
-    "transition-[background-color,border-color,transform] duration-200 ease-out " +
-    "[@media(hover:hover)]:hover:border-crema/60 [@media(hover:hover)]:hover:bg-crema/10 " +
-    "[@media(hover:hover)]:hover:text-crema active:scale-[0.92]";
+  const botonCls = claro
+    ? "flex h-10 w-10 items-center justify-center rounded-full border border-negro/15 bg-white text-verde-profundo " +
+      "transition-[background-color,border-color,transform] duration-200 ease-out " +
+      "[@media(hover:hover)]:hover:border-verde-selva active:scale-[0.92]"
+    : "flex h-10 w-10 items-center justify-center rounded-full border border-crema/25 text-crema/80 " +
+      "transition-[background-color,border-color,transform] duration-200 ease-out " +
+      "[@media(hover:hover)]:hover:border-crema/60 [@media(hover:hover)]:hover:bg-crema/10 " +
+      "[@media(hover:hover)]:hover:text-crema active:scale-[0.92]";
 
   return (
     <div
@@ -148,7 +159,7 @@ export function CarruselPromos({
       <Link
         href={`/paquetes/${activo.slug}`}
         aria-label={activo.alt}
-        className="group block overflow-hidden rounded-2xl border border-crema/15 bg-negro shadow-[0_24px_64px_rgba(0,0,0,.45)] transition-[transform,box-shadow,border-color] duration-300 ease-out [@media(hover:hover)]:hover:-translate-y-1.5 [@media(hover:hover)]:hover:border-crema/30 [@media(hover:hover)]:hover:shadow-[0_34px_80px_rgba(0,0,0,.55)] focus-visible:-translate-y-1.5 active:scale-[0.995]"
+        className={`group block overflow-hidden rounded-2xl border bg-negro transition-[transform,box-shadow,border-color] duration-300 ease-out [@media(hover:hover)]:hover:-translate-y-1.5 focus-visible:-translate-y-1.5 active:scale-[0.995] ${claro ? "border-negro/10 shadow-[0_24px_64px_rgba(14,23,16,.22)] [@media(hover:hover)]:hover:shadow-[0_34px_80px_rgba(14,23,16,.3)]" : "border-crema/15 shadow-[0_24px_64px_rgba(0,0,0,.45)] [@media(hover:hover)]:hover:border-crema/30 [@media(hover:hover)]:hover:shadow-[0_34px_80px_rgba(0,0,0,.55)]"}`}
       >
         {/* La caja guarda la proporción del cartel (2:3) para que la sección no
             dé un salto mientras carga ni al cambiar de imagen. */}
@@ -199,7 +210,9 @@ export function CarruselPromos({
                 aria-label={`Ver el cartel ${idx + 1} de ${promos.length}`}
                 aria-current={idx === i}
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  idx === i ? "w-6 bg-lima" : "w-2 bg-crema/25 hover:bg-crema/50"
+                  idx === i
+                    ? (claro ? "w-6 bg-verde-selva" : "w-6 bg-lima")
+                    : (claro ? "w-2 bg-negro/20 hover:bg-negro/40" : "w-2 bg-crema/25 hover:bg-crema/50")
                 }`}
               />
             ))}

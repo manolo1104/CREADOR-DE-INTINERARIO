@@ -5,7 +5,6 @@ import Image from "next/image";
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import { FAQAccordion } from "@/components/FAQAccordion";
-import { FloatingLeaves } from "@/components/FloatingLeaves";
 import type { FAQCategory } from "@/components/FAQAccordion";
 import { ClimaWidget } from "@/components/ClimaWidget";
 import type { LucideIcon } from "lucide-react";
@@ -63,36 +62,64 @@ export function generateMetadata(): Metadata {
   };
 }
 
+/* ── Lenguaje visual compartido con el inicio, /blog y los artículos ──────── */
+const H2 = "font-cormorant font-light leading-[1.1] text-verde-profundo";
+const H2_SIZE = { fontSize: "clamp(30px,3.6vw,44px)" };
+const PARRAFO = "font-dm text-[15px] leading-relaxed text-negro/70 sm:text-base";
+const ENLACE = "text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota";
+const PILDORA_DORADA =
+  "inline-flex min-h-[48px] items-center justify-center rounded-full bg-dorado px-6 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]";
+const PILDORA_LINEA =
+  "inline-flex min-h-[44px] items-center justify-center rounded-full border border-verde-selva px-5 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10";
+const PILDORA_WHATSAPP =
+  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-[#25D366] px-5 font-dm text-sm font-medium text-[#128C4A] transition-colors hover:bg-[#25D366]/10";
+const CAJA = "rounded-2xl bg-white p-6 sm:p-7";
+const PIE_FOTO = "mt-2 font-dm text-[13px] text-negro/50";
+const ETIQUETA = "font-dm text-[13px] font-medium text-dorado";
+
+/** Las cadenas traen «✦» y «→» de la versión oscura; aquí no se pintan. */
+const limpia = (s: string) => s.replace(/^✦\s*/, "").replace(/\s*→\s*$/, "");
+
+type Acento = "verde" | "dorado" | "agua" | "terracota";
+const PUNTO: Record<Acento, string> = {
+  verde: "bg-verde-selva",
+  dorado: "bg-dorado",
+  agua: "bg-agua",
+  terracota: "bg-terracota",
+};
+const BORDE: Record<Acento, string> = {
+  verde: "border-verde-selva",
+  dorado: "border-dorado",
+  agua: "border-agua",
+  terracota: "border-terracota",
+};
+const TEXTO: Record<Acento, string> = {
+  verde: "text-verde-selva",
+  dorado: "text-dorado",
+  agua: "text-agua",
+  terracota: "text-terracota",
+};
+
 function Section({
   id,
   Icon,
   title,
-  alterna = false,
   children,
 }: {
   id: string;
   Icon: LucideIcon;
   title: string;
-  /** Una franja sí y otra no, para que se note dónde acaba cada tema. */
-  alterna?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <section
       id={id}
-      className={`border-b border-white/6 py-16 ${alterna ? "bg-verde-profundo/25" : ""}`}
+      className="scroll-mt-[calc(var(--navbar-offset,64px)+72px)] border-t border-negro/10 py-16 sm:py-20"
     >
       <div className="mx-auto max-w-4xl px-6">
-        {/* El icono en su placa: suelto se perdía contra el texto del título y
-            no se leía como la marca de la sección. */}
-        <div className="mb-8 flex items-center gap-4">
-          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-verde-vivo/25 bg-verde-selva/15">
-            <Icon className="h-5 w-5 text-verde-vivo" aria-hidden="true" />
-          </span>
-          <h2
-            className="reveal-up font-cormorant font-light text-crema"
-            style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
-          >
+        <div className="mb-8 flex items-center gap-3">
+          <Icon className="h-6 w-6 shrink-0 text-verde-selva" strokeWidth={1.5} aria-hidden="true" />
+          <h2 className={H2} style={H2_SIZE}>
             {title}
           </h2>
         </div>
@@ -109,20 +136,14 @@ function InfoCard({
 }: {
   title: string;
   children: React.ReactNode;
-  accent?: "verde" | "dorado" | "agua" | "terracota";
+  accent?: Acento;
 }) {
-  const colors = {
-    verde: "border-l-verde-vivo bg-verde-selva/8",
-    dorado: "border-l-dorado bg-dorado/8",
-    agua: "border-l-agua bg-agua/8",
-    terracota: "border-l-terracota bg-terracota/8",
-  };
   return (
-    <div className={`rounded-xl border-l-2 ${colors[accent]} p-5`}>
-      {/* Título de verdad, no una versalita de 11 px con tracking: el texto
-          fuente ya viene en "En avión", y en mayúsculas forzadas se leía peor
-          y hacía que cada tarjeta pareciera una etiqueta decorativa más. */}
-      <h3 className="font-dm text-[15px] font-medium text-crema mb-3">{title}</h3>
+    <div className={CAJA}>
+      <h3 className="mb-3 flex items-center gap-2.5 font-dm text-[15px] font-medium text-verde-profundo">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${PUNTO[accent]}`} aria-hidden="true" />
+        {title}
+      </h3>
       {children}
     </div>
   );
@@ -132,8 +153,8 @@ function BulletList({ items }: { items: string[] }) {
   return (
     <ul className="space-y-2">
       {items.map((item) => (
-        <li key={item} className="flex items-start gap-2 text-sm text-crema/75 font-dm">
-          <span className="mt-[9px] h-px w-2 flex-shrink-0 bg-verde-vivo/70" aria-hidden="true" />
+        <li key={item} className={`flex items-start gap-3 ${PARRAFO}`}>
+          <span className="mt-[12px] h-px w-3 shrink-0 bg-verde-selva/60" aria-hidden="true" />
           {item}
         </li>
       ))}
@@ -202,12 +223,27 @@ const IDS_SECCIONES = [
  * menos favorable. Antes eran tres casillas fijas (`cancelacion[0..2]`) y faltaba
  * el tramo de 48 a 24 h, que /politica-de-cancelacion sí trae. Ahora se recorre
  * la lista: un tramo sin estilo aquí toma el último en vez de desaparecer.
+ * El color va SOLO en el icono; el texto se queda oscuro por contraste.
  */
 const ESTILO_CANCELACION: { color: string; Icon: LucideIcon }[] = [
-  { color: "text-lima border-lima/30 bg-lima/8",                Icon: CheckCircle2 },
-  { color: "text-dorado border-dorado/30 bg-dorado/8",          Icon: AlertTriangle },
-  { color: "text-dorado border-dorado/30 bg-dorado/8",          Icon: RefreshCw },
-  { color: "text-terracota border-terracota/30 bg-terracota/8", Icon: XCircle },
+  { color: "text-verde-selva", Icon: CheckCircle2 },
+  { color: "text-dorado",      Icon: AlertTriangle },
+  { color: "text-dorado",      Icon: RefreshCw },
+  { color: "text-terracota",   Icon: XCircle },
+];
+
+/** Los tres enlaces de transporte (ADO, renta de auto, vuelos), en ese orden. */
+const AFILIADOS_HREF = [
+  "https://www.ado.com.mx/",
+  "https://www.rentalcars.com/es/?affiliateCode=huasteca",
+  "https://www.kayak.com.mx/flights",
+];
+
+const DESTINOS_MAPA = [
+  "/destinos/cascada-de-tamul",
+  "/destinos/las-pozas-jardin-surrealista",
+  "/destinos/sotano-de-las-golondrinas",
+  "/destinos/puente-de-dios-tamasopo",
 ];
 
 export default function InfoPracticaPage() {
@@ -216,6 +252,7 @@ export default function InfoPracticaPage() {
   const lp = (path: string) => localePath(path, locale);
   const en = locale === "en";
   const faq = faqConExcepciones(t, locale);
+  const nombreMenu = getDict(locale).nav.infoPractica;
 
   // Esta página publicaba su FAQPage sin una sola miga de pan, y es la SEGUNDA
   // del sitio por impresiones (16.910): Google sabía qué responde, no dónde
@@ -223,7 +260,7 @@ export default function InfoPracticaPage() {
   // .infoPractica`) para que la ruta del resultado y el enlace de navegación se
   // llamen igual. Cuelga de la home, como en el menú y en el pie.
   const breadcrumbSchema = buildBreadcrumbJsonLd(
-    [{ name: getDict(locale).nav.infoPractica, path: "/info-practica" }],
+    [{ name: nombreMenu, path: "/info-practica" }],
     locale,
   );
 
@@ -240,48 +277,55 @@ export default function InfoPracticaPage() {
   const vallesXilitla = toursXilitla[0] ? partesRecogida(toursXilitla[0], en).valles : null;
 
   return (
-    <main className="min-h-screen bg-negro">
+    <main className="min-h-screen bg-crema">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(faq, locale)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
-      {/* Hero
-          Antes era media pantalla de verde vacío: 490 px de nada antes de la
-          primera palabra útil. Ahora la portada de la guía es una foto de la
-          Huasteca con un velo encima, y el alto está acotado para que el índice
-          de secciones entre en la primera pantalla. */}
-      <section className="relative overflow-hidden px-6 pt-24 pb-14 text-center">
-        <Image
-          src="/imagenes/cascada-de-tamul/gallery-1.jpg"
-          alt=""
-          aria-hidden="true"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        {/* El velo va en `style` a propósito: las opacidades raras de Tailwind
-            (`via-negro/72`) no generan CSS y el texto se queda ilegible sin avisar. */}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to bottom, rgba(10,16,10,.78) 0%, rgba(10,16,10,.68) 55%, rgb(10,16,10) 100%)" }}
-        />
-        <div className="relative">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-lima mb-4 font-dm">
-            {t.heroEyebrow}
-          </p>
-          <h1
-            className="reveal-up font-cormorant font-light text-crema mb-5"
-            style={{ fontSize: "clamp(38px,6vw,64px)" }}
-          >
-            {t.heroH1a}<em className="shimmer-gold">{t.heroH1b}</em>
-          </h1>
-          <p className="reveal-fade text-crema/85 font-dm text-sm max-w-lg mx-auto leading-relaxed">
-            {t.heroIntro}
-          </p>
+      {/* Portada: texto a la izquierda y la foto a la derecha, en claro, como
+          el inicio. El alto queda acotado para que el índice entre en la
+          primera pantalla. */}
+      <section className="px-6 pb-12 pt-[calc(var(--navbar-alto,64px)+20px)] sm:pb-16 sm:pt-[calc(var(--navbar-alto,64px)+36px)]">
+        <div className="mx-auto max-w-6xl">
+          <nav aria-label={en ? "Breadcrumb" : "Ruta"} className="mb-6 font-dm text-[13px] text-negro/50">
+            <Link href={lp("/")} prefetch={false} className="transition-colors hover:text-verde-selva">{en ? "Home" : "Inicio"}</Link>
+            <span className="mx-2">/</span>
+            <span className="text-negro/70">{nombreMenu}</span>
+          </nav>
+          <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+            <div>
+              <h1
+                className="font-cormorant font-light leading-[1.05] text-verde-profundo"
+                style={{ fontSize: "clamp(40px,5.4vw,68px)" }}
+              >
+                {t.heroH1a}<em className="text-dorado">{t.heroH1b}</em>
+              </h1>
+              <p className={`mt-5 max-w-[58ch] ${PARRAFO}`}>
+                {t.heroIntro}
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link href={lp("/reservar")} prefetch={false} className={PILDORA_DORADA}>
+                  {limpia(t.ctaRecomendar)}
+                </Link>
+                <Link href={lp("/destinos")} prefetch={false} className={`${PILDORA_LINEA} min-h-[48px] px-6`}>
+                  {t.ctaDestinos}
+                </Link>
+              </div>
+            </div>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-negro/5">
+              <Image
+                src="/imagenes/cascada-de-tamul/vista-abajo.jpg"
+                alt={en ? "Tamul waterfall over the turquoise Tampaón river, Huasteca Potosina" : "Cascada de Tamul sobre el río Tampaón turquesa, Huasteca Potosina"}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 560px"
+                className="object-cover"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* El índice deja de vivir sólo en el hero y acompaña toda la lectura. */}
+      {/* El índice acompaña toda la lectura, pegado bajo la barra. */}
       <IndiceInfoPractica
         secciones={IDS_SECCIONES.map((id, i) => ({ href: `#${id}`, label: t.navLabels[i] }))}
         etiqueta={t.tituloIndice}
@@ -289,11 +333,11 @@ export default function InfoPracticaPage() {
 
       {/* ── CÓMO LLEGAR ── */}
       <Section id="como-llegar" Icon={Bus} title={t.tituloComoLlegar}>
-        <p className="text-crema/70 font-dm text-sm mb-8 leading-relaxed">
-          <strong className="text-crema">{t.llegarIntroFuerte}</strong>{t.llegarIntro}
+        <p className={`mb-8 ${PARRAFO}`}>
+          <strong className="font-medium text-verde-profundo">{t.llegarIntroFuerte}</strong>{t.llegarIntro}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           {t.llegarBloques.map((b, i) => (
             <InfoCard key={b.titulo} title={b.titulo} accent={(["agua","verde","dorado","agua"] as const)[i]}>
               <BulletList items={b.items} />
@@ -301,96 +345,71 @@ export default function InfoPracticaPage() {
           ))}
         </div>
 
-        {/* Imagen contextual */}
-        <div className="relative aspect-[21/9] overflow-hidden rounded-xl mb-6">
-          <Image
-            src="/imagenes/tours/tamul/gallery-3.jpg"
-            alt={t.llegarFotoAlt}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 896px"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-negro/60 to-transparent" />
-          <p className="absolute bottom-3 left-4 text-[10px] font-dm text-crema/75">
-            {t.llegarFotoPie}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-dorado/8 border border-dorado/25 p-5 mb-6">
-          <p className="text-[10px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
-            <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" /> {t.consejoViajero}
-          </p>
-          <p className="text-crema/70 text-sm font-dm">
-            {t.llegarConsejo}
-          </p>
-        </div>
-
-        {/* Links afiliados de transporte */}
-        <div className="rounded-xl border border-white/8 bg-negro/30 p-5">
-          <p className="text-[9px] tracking-[2px] uppercase text-crema/75 font-dm mb-4">{t.reservaTransporte}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <a
-              href="https://www.ado.com.mx/"
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="flex items-center justify-between rounded-lg border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
-            >
-              <div>
-                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">{t.afiliados[0].nombre}</p>
-                <p className="text-[10px] font-dm text-crema/75">{t.afiliados[0].sub}</p>
-              </div>
-              <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
-            </a>
-            <a
-              href="https://www.rentalcars.com/es/?affiliateCode=huasteca"
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="flex items-center justify-between rounded-lg border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
-            >
-              <div>
-                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">{t.afiliados[1].nombre}</p>
-                <p className="text-[10px] font-dm text-crema/75">{t.afiliados[1].sub}</p>
-              </div>
-              <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
-            </a>
-            <a
-              href="https://www.kayak.com.mx/flights"
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="flex items-center justify-between rounded-lg border border-white/10 hover:border-verde-vivo/40 px-4 py-3 group transition-all"
-            >
-              <div>
-                <p className="text-xs font-dm font-medium text-crema/80 group-hover:text-crema">{t.afiliados[2].nombre}</p>
-                <p className="text-[10px] font-dm text-crema/75">{t.afiliados[2].sub}</p>
-              </div>
-              <ExternalLink className="w-3 h-3 text-verde-vivo flex-shrink-0" />
-            </a>
+        {/* El pie va DEBAJO de la foto: encima pedía un degradado oscuro. */}
+        <figure className="mb-8">
+          <div className="relative aspect-[21/9] overflow-hidden rounded-2xl bg-negro/5">
+            <Image
+              src="/imagenes/tours/tamul/gallery-3.jpg"
+              alt={t.llegarFotoAlt}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 896px"
+            />
           </div>
+          <figcaption className={PIE_FOTO}>{t.llegarFotoPie}</figcaption>
+        </figure>
+
+        <div className="mb-6 flex gap-4 rounded-2xl border border-dorado/40 bg-dorado/10 p-5 sm:p-6">
+          <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-dorado" strokeWidth={1.5} aria-hidden="true" />
+          <div>
+            <p className="mb-1 font-dm text-[15px] font-medium text-verde-profundo">{t.consejoViajero}</p>
+            <p className={PARRAFO}>{t.llegarConsejo}</p>
+          </div>
+        </div>
+
+        {/* Enlaces afiliados de transporte */}
+        <div className={CAJA}>
+          <p className="mb-2 font-dm text-[15px] font-medium text-verde-profundo">{t.reservaTransporte}</p>
+          <ul className="divide-y divide-negro/10">
+            {t.afiliados.map((a, i) => (
+              <li key={a.nombre}>
+                <a
+                  href={AFILIADOS_HREF[i]}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="group flex min-h-[52px] items-center justify-between gap-4 py-3"
+                >
+                  <span>
+                    <span className="block font-dm text-[15px] font-medium text-verde-profundo transition-colors group-hover:text-verde-selva">{a.nombre}</span>
+                    <span className="block font-dm text-[13px] text-negro/55">{a.sub}</span>
+                  </span>
+                  <ExternalLink className="h-4 w-4 shrink-0 text-verde-selva" strokeWidth={1.5} aria-hidden="true" />
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </Section>
 
       {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
-      <div className="max-w-4xl mx-auto px-6 py-10">
+      <div className="mx-auto max-w-4xl px-6 pb-16">
         <TarjetaViajeCdmx origen={`info-practica${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} titulo={locale === "en" ? "In Mexico City? The easiest way: our monthly trip with transport" : "¿Sales de la CDMX? La forma más fácil: el viaje del mes con transporte"} />
       </div>
 
       {/* ── CUÁNDO VIAJAR ── */}
-      <Section alterna id="cuando-viajar" Icon={Calendar} title={t.tituloCuandoViajar}>
-        <p className="text-crema/70 font-dm text-sm mb-8">
+      <Section id="cuando-viajar" Icon={Calendar} title={t.tituloCuandoViajar}>
+        <p className={`mb-8 ${PARRAFO}`}>
           {t.cuandoIntro}
         </p>
 
-        {/* Imágenes temporada seca vs verde */}
-        {/* El pie va DEBAJO de la foto, no encima. Encima tapaba parte de la
-            imagen y obligaba a un degradado negro que ensuciaba el agua, que es
-            justo lo que la foto tiene que enseñar. */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
+        {/* Temporada seca y temporada verde, con el pie debajo de cada foto. */}
+        <div className="mb-8 grid grid-cols-2 gap-4">
           {[
             { src: "/imagenes/tours/tamul/gallery-1.jpg", alt: t.fotoSecaAlt,  pie: t.fotoSecaPie },
             { src: "/imagenes/tours/tamul/gallery-5.jpg", alt: t.fotoVerdeAlt, pie: t.fotoVerdePie },
           ].map((f) => (
             <figure key={f.src}>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-negro/5">
                 <Image
                   src={f.src}
                   alt={f.alt}
@@ -399,141 +418,116 @@ export default function InfoPracticaPage() {
                   sizes="(max-width: 768px) 50vw, 440px"
                 />
               </div>
-              <figcaption className="mt-2 font-dm text-[11px] text-crema/70">{f.pie}</figcaption>
+              <figcaption className={PIE_FOTO}>{f.pie}</figcaption>
             </figure>
           ))}
         </div>
 
-        <div className="space-y-4 mb-8">
+        <div className="mb-8 space-y-4">
           {t.temporadas.map((temp, i) => ({ ...temp, color: (["verde","dorado","agua"] as const)[i] })).map((temp, i) => (
             <div key={temp.meses}>
               <InfoCard title={`${temp.meses} · ${temp.etiqueta}`} accent={temp.color}>
                 <BulletList items={temp.puntos} />
+                {/* Enlace tras la temporada ideal */}
+                {i === 0 && (
+                  <p className="mt-4">
+                    <Link href={lp("/tours")} prefetch={false} className={`font-dm text-sm ${ENLACE}`}>
+                      {t.verToursTemporada}
+                    </Link>
+                  </p>
+                )}
               </InfoCard>
-              {/* Micro-CTA tras temporada ideal */}
-              {i === 0 && (
-                <div className="mt-2 ml-4 flex items-center gap-2">
-                  <span className="text-verde-vivo text-sm">→</span>
-                  <Link
-                    href={lp("/tours")}
-                    className="text-xs font-dm text-lima hover:text-lima underline underline-offset-2 transition-colors"
-                  >
-                    {t.verToursTemporada}
-                  </Link>
-                </div>
-              )}
             </div>
           ))}
         </div>
 
-        {/* Month table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs font-dm border-collapse">
+        {/* Tabla por mes */}
+        <div className="overflow-x-auto rounded-2xl bg-white px-5 py-2 sm:px-7">
+          <table className="w-full border-collapse font-dm text-sm">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-2 pr-4 text-crema/75 tracking-[1px] uppercase font-normal w-24">{t.tablaCabeceras[0]}</th>
-                <th className="text-left py-2 pr-4 text-crema/75 tracking-[1px] uppercase font-normal">{t.tablaCabeceras[1]}</th>
-                <th className="text-left py-2 pr-4 text-crema/75 tracking-[1px] uppercase font-normal">{t.tablaCabeceras[2]}</th>
-                <th className="text-left py-2 text-crema/75 tracking-[1px] uppercase font-normal">{t.tablaCabeceras[3]}</th>
+              <tr className="border-b border-negro/15">
+                {t.tablaCabeceras.map((c) => (
+                  <th key={c} className="py-3 pr-4 text-left font-medium text-verde-profundo last:pr-0">{c}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {t.tablaFilas.map((row) => (
-                <tr key={row.mes} className="border-b border-white/6 hover:bg-verde-profundo/20 transition-colors">
-                  <td className="py-2.5 pr-4 text-crema/70">{row.mes}</td>
-                  <td className="py-2.5 pr-4 text-crema/70">{row.temp}</td>
-                  <td className="py-2.5 pr-4 text-crema/70">{row.lluvia}</td>
-                  <td className="py-2.5 text-crema/70">{row.cascadas}</td>
+                <tr key={row.mes} className="border-b border-negro/10 last:border-0">
+                  <td className="py-3 pr-4 font-medium text-negro/80">{row.mes}</td>
+                  <td className="py-3 pr-4 tabular-nums text-negro/70">{row.temp}</td>
+                  <td className="py-3 pr-4 text-negro/70">{row.lluvia}</td>
+                  <td className="py-3 text-negro/70">{row.cascadas}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </Section>
 
-      {/* ── WIDGET DE CLIMA ── (dentro del bloque Cuándo Viajar pero fuera del Section — mejor UX) */}
-      <div className="max-w-4xl mx-auto px-6 -mt-8 mb-10">
         <ClimaWidget />
-      </div>
+      </Section>
 
       {/* ── DÓNDE QUEDARSE ── */}
       <Section id="donde-quedarse" Icon={BedDouble} title={t.tituloDondeQuedarse}>
-        <p className="text-crema/70 font-dm text-sm mb-8">
+        <p className={`mb-8 ${PARRAFO}`}>
           {t.quedarseIntro}
         </p>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* 🔴 El orden importa y estaba al revés: Ciudad Valles abría la
               sección y nuestro hotel salía en segundo lugar. Desde el 8 oct
               2026 abre Xilitla, que es donde está el hotel; Valles se queda
               porque sigue siendo cierto que tiene la mejor logística para
               quien hace los recorridos del norte. */}
-          {/* Xilitla — con Hotel Paraíso Encantado destacado */}
           <InfoCard title={t.xilitlaTitulo} accent="dorado">
-            <p className="text-crema/70 text-sm mb-4">
+            <p className={`mb-4 ${PARRAFO}`}>
               {t.xilitlaTexto1}
-              <Link href={lp("/destinos/las-pozas-jardin-surrealista")} className="text-dorado hover:text-lima underline underline-offset-2 transition-colors">
+              <Link href={lp("/destinos/las-pozas-jardin-surrealista")} className={ENLACE}>
                 {t.xilitlaLasPozas}
               </Link>
               {t.xilitlaTexto2}
             </p>
 
             {/* Recomendación destacada */}
-            <div className="rounded-xl border border-dorado/40 bg-dorado/8 p-4 mb-4">
-              <p className="text-[9px] tracking-[2px] uppercase text-dorado font-dm mb-2 flex items-center gap-1.5">
-                <Star className="w-3 h-3 fill-dorado" aria-hidden="true" /> {t.recomendacionEquipo}
+            <div className="mb-5 rounded-2xl border border-dorado/40 bg-crema p-5">
+              <p className={`mb-2 flex items-center gap-1.5 ${ETIQUETA}`}>
+                <Star className="h-3.5 w-3.5 fill-dorado" aria-hidden="true" /> {t.recomendacionEquipo}
               </p>
-              <p className="text-crema font-dm text-sm font-medium mb-1">
+              <p className="mb-1 font-cormorant text-2xl text-verde-profundo">
                 {t.hotelNombre}
               </p>
-              <p className="text-crema/75 font-dm text-xs leading-relaxed mb-3">
+              <p className={`mb-3 ${PARRAFO}`}>
                 {t.hotelTexto}
               </p>
-              <ul className="space-y-1 mb-3">
+              <ul className="mb-4 space-y-1.5">
                 {t.hotelItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-xs text-crema/75 font-dm">
-                    <span className="text-dorado mt-0.5 flex-shrink-0">✦</span>
+                  <li key={item} className={`flex items-start gap-2 ${PARRAFO}`}>
+                    <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-dorado" strokeWidth={1.5} aria-hidden="true" />
                     {item}
                   </li>
                 ))}
               </ul>
-              <a
-                href={waLink(t.waHospedaje)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block rounded-lg text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/50 hover:border-dorado hover:bg-dorado/10 px-4 py-1.5 transition-all"
-              >
-                {t.consultarDisponibilidad}
+              <a href={waLink(t.waHospedaje)} target="_blank" rel="noopener noreferrer" className={PILDORA_WHATSAPP}>
+                {limpia(t.consultarDisponibilidad)}
               </a>
             </div>
 
-            <p className="text-[10px] tracking-[1px] uppercase text-crema/75 font-dm mb-2">{t.otrasOpciones}</p>
-            <BulletList
-              items={t.xilitlaOtras}
-            />
-          </InfoCard>
+            <p className="mb-2 font-dm text-[15px] font-medium text-verde-profundo">{t.otrasOpciones}</p>
+            <BulletList items={t.xilitlaOtras} />
 
-          {/* Micro-CTA Xilitla */}
-          <div className="flex items-center gap-2 ml-4 -mt-2">
-            <span className="text-dorado text-sm">→</span>
-            <Link
-              href={waLink(t.waTarifaTour)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-dm text-dorado hover:text-lima underline underline-offset-2 transition-colors"
-            >
-              {t.xilitlaMicroCta}
-            </Link>
-          </div>
+            <p className="mt-4">
+              <Link href={waLink(t.waTarifaTour)} target="_blank" rel="noopener noreferrer" className={`font-dm text-sm ${ENLACE}`}>
+                {t.xilitlaMicroCta}
+              </Link>
+            </p>
+          </InfoCard>
 
           {/* Ciudad Valles */}
           <InfoCard title={t.vallesTitulo} accent="verde">
-            <p className="text-crema/70 text-sm mb-3">
+            <p className={`mb-3 ${PARRAFO}`}>
               {t.vallesTexto}
             </p>
-            <BulletList
-              items={t.vallesItems}
-            />
+            <BulletList items={t.vallesItems} />
             {/* 🔴 Aquí había dos enlaces `sponsored` a Airbnb y a Booking para
                 buscar hospedaje en Ciudad Valles. Los quitó Manolo el 8 oct
                 2026: la guía del negocio que tiene hotel propio estaba
@@ -542,36 +536,31 @@ export default function InfoPracticaPage() {
 
           {/* Tamasopo */}
           <InfoCard title={t.tamasopoTitulo} accent="agua">
-            <p className="text-crema/70 text-sm mb-3">
+            <p className={`mb-3 ${PARRAFO}`}>
               {t.tamasopoTexto}
             </p>
-            <BulletList
-              items={t.tamasopoItems}
-            />
+            <BulletList items={t.tamasopoItems} />
           </InfoCard>
         </div>
       </Section>
 
       {/* ── HOTEL PARAÍSO ENCANTADO ── */}
-      <Section alterna id="hotel-paraiso" Icon={Hotel} title={t.tituloHotelParaiso}>
-        <p className="text-crema/70 font-dm text-sm mb-8 leading-relaxed">
+      <Section id="hotel-paraiso" Icon={Hotel} title={t.tituloHotelParaiso}>
+        <p className={`mb-8 ${PARRAFO}`}>
           {t.paraisoIntroA}
           {/* SEO-10 (19 oct 2026): el nombre enlaza al sitio del hotel, dentro
               del texto y sin nofollow. Los botones de abajo no cambian
               (WhatsApp y Google Maps). */}
-          <a
-            href={t.paraisoUrl}
-            className="text-crema underline underline-offset-2 decoration-dorado/60 hover:text-lima transition-colors"
-          >
-            <strong>{t.hotelNombre}</strong>
+          <a href={t.paraisoUrl} className={`font-medium ${ENLACE}`}>
+            {t.hotelNombre}
           </a>
           {t.paraisoIntroB}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {/* Galería */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative aspect-[4/3] col-span-2 overflow-hidden rounded-xl">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative col-span-2 aspect-[4/3] overflow-hidden rounded-2xl bg-negro/5">
               <Image
                 src="/imagenes/hotel-paraiso-encantado/hero.jpg"
                 alt={t.paraisoFotoHeroAlt}
@@ -580,7 +569,7 @@ export default function InfoPracticaPage() {
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
-            <div className="relative aspect-square overflow-hidden rounded-xl">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-negro/5">
               <Image
                 src="/imagenes/hotel-paraiso-encantado/habitacion.jpg"
                 alt={t.paraisoFotoHabAlt}
@@ -589,7 +578,7 @@ export default function InfoPracticaPage() {
                 sizes="25vw"
               />
             </div>
-            <div className="relative aspect-square overflow-hidden rounded-xl">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-negro/5">
               <Image
                 src="/imagenes/hotel-paraiso-encantado/terraza.jpg"
                 alt={t.paraisoFotoTerrazaAlt}
@@ -600,35 +589,28 @@ export default function InfoPracticaPage() {
             </div>
           </div>
 
-          {/* Info */}
+          {/* Información */}
           <div className="space-y-4">
             {/* Cuatro estrellas, como dice el texto de al lado ("Boutique 4
                 estrellas"): pintaba cinco, que se lee como una calificación de
                 5/5 que nadie ha dado. */}
-            <div className="flex items-center gap-1 mb-2">
+            <div className="flex items-center gap-1">
               {[1,2,3,4].map((i) => (
-                <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
+                <Star key={i} className="h-4 w-4 fill-dorado text-dorado" aria-hidden="true" />
               ))}
-              <span className="text-crema/75 font-dm text-xs ml-2">{t.boutique4}</span>
+              <span className="ml-2 font-dm text-sm text-negro/60">{t.boutique4}</span>
             </div>
 
             <InfoCard title={t.porQueHospedarte} accent="dorado">
-              <BulletList
-                items={t.paraisoPorQue}
-              />
+              <BulletList items={t.paraisoPorQue} />
             </InfoCard>
 
             <InfoCard title={t.reservasTitulo} accent="verde">
-              <p className="text-crema/70 font-dm text-sm mb-3">
+              <p className={`mb-4 ${PARRAFO}`}>
                 {t.reservasTexto}
               </p>
-              <a
-                href={waLink(t.waHospedaje)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block rounded-lg text-[10px] tracking-[2px] uppercase font-dm text-[#25D366] border border-[#25D366]/40 hover:border-[#25D366] hover:bg-[#25D366]/10 px-4 py-2 transition-all rounded"
-              >
-                {t.consultarDisponibilidad}
+              <a href={waLink(t.waHospedaje)} target="_blank" rel="noopener noreferrer" className={PILDORA_WHATSAPP}>
+                {limpia(t.consultarDisponibilidad)}
               </a>
             </InfoCard>
 
@@ -636,9 +618,10 @@ export default function InfoPracticaPage() {
               href="https://share.google/YS3dbxN4wrnHZ8lO9"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-[10px] tracking-[2px] uppercase font-dm text-lima hover:text-lima transition-colors"
+              className={`inline-flex items-center gap-1.5 font-dm text-sm ${ENLACE}`}
             >
-              {t.verEnGoogleMaps}
+              <MapPin className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+              {limpia(t.verEnGoogleMaps)}
             </a>
           </div>
         </div>
@@ -646,27 +629,22 @@ export default function InfoPracticaPage() {
 
       {/* ── MAPA INTERACTIVO ── */}
       <Section id="mapa" Icon={Map} title={t.tituloMapa}>
-        <p className="text-crema/70 font-dm text-sm mb-6 leading-relaxed">
+        <p className={`mb-6 ${PARRAFO}`}>
           {t.mapaIntroA}
-          <Link href={lp("/destinos/xilitla-pueblo-magico")} className="text-lima hover:text-crema underline underline-offset-2 transition-colors">
+          <Link href={lp("/destinos/xilitla-pueblo-magico")} className={ENLACE}>
             {t.mapaXilitla}
           </Link>
           {t.mapaIntroB}
-          <strong className="text-crema">Ciudad Valles</strong>{t.mapaIntroC}
-          {[
-            "/destinos/cascada-de-tamul",
-            "/destinos/las-pozas-jardin-surrealista",
-            "/destinos/sotano-de-las-golondrinas",
-            "/destinos/puente-de-dios-tamasopo",
-          ].map((href, i) => (
+          <strong className="font-medium text-verde-profundo">Ciudad Valles</strong>{t.mapaIntroC}
+          {DESTINOS_MAPA.map((href, i) => (
             <span key={href}>
-              <Link href={lp(href)} className="text-lima hover:text-crema underline underline-offset-2 transition-colors">{t.mapaPuntos[i]}</Link>
+              <Link href={lp(href)} className={ENLACE}>{t.mapaPuntos[i]}</Link>
               {i < 3 ? ", " : "."}
             </span>
           ))}
         </p>
 
-        <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl border border-white/10">
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-negro/5">
           <iframe
             src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d458726.1!2d-99.01!3d21.95!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1ses-419!2smx!4v1"
             width="100%"
@@ -679,53 +657,45 @@ export default function InfoPracticaPage() {
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            "/destinos/cascada-de-tamul",
-            "/destinos/las-pozas-jardin-surrealista",
-            "/destinos/sotano-de-las-golondrinas",
-            "/destinos/puente-de-dios-tamasopo",
-          ].map((href, i) => ({ href, ...t.mapaDestinos[i] })).map((d) => (
-            <Link
-              key={d.href}
-              href={lp(d.href)}
-              className="rounded-xl border border-white/8 hover:border-verde-vivo/40 bg-negro/30 p-3 group transition-all"
-            >
-              <p className="text-xs font-dm font-medium text-crema/75 group-hover:text-crema transition-colors leading-snug mb-1">
-                {d.label}
-              </p>
-              <p className="text-[10px] font-dm text-crema/75">{d.dist}</p>
-            </Link>
+        <ul className="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
+          {DESTINOS_MAPA.map((href, i) => ({ href, ...t.mapaDestinos[i] })).map((d) => (
+            <li key={d.href} className="border-t border-negro/15">
+              <Link
+                href={lp(d.href)}
+                prefetch={false}
+                className="group flex min-h-[56px] items-center justify-between gap-4 py-3"
+              >
+                <span className="font-dm text-[15px] font-medium text-verde-profundo transition-colors group-hover:text-verde-selva">
+                  {d.label}
+                </span>
+                <span className="shrink-0 font-dm text-[13px] text-negro/50">{d.dist}</span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </Section>
 
       {/* ── RESTAURANTE PAPÁN HUASTECO ── */}
-      <Section alterna id="papan-huasteco" Icon={UtensilsCrossed} title={t.tituloPapan}>
-        <p className="text-crema/70 font-dm text-sm mb-8 leading-relaxed">
+      <Section id="papan-huasteco" Icon={UtensilsCrossed} title={t.tituloPapan}>
+        <p className={`mb-8 ${PARRAFO}`}>
           {t.papanIntroA}
-          <strong className="text-crema">{t.papanNombre}</strong>{t.papanIntroB}
+          <strong className="font-medium text-verde-profundo">{t.papanNombre}</strong>{t.papanIntroB}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          {/* Info */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <div className="space-y-4">
             <InfoCard title={t.papanNoPerderte} accent="terracota">
-              <BulletList
-                items={t.papanPlatillos}
-              />
+              <BulletList items={t.papanPlatillos} />
             </InfoCard>
 
             <InfoCard title={t.papanRazones} accent="dorado">
-              <BulletList
-                items={t.papanRazonesItems}
-              />
+              <BulletList items={t.papanRazonesItems} />
             </InfoCard>
           </div>
 
           {/* Galería */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative aspect-[4/3] col-span-2 overflow-hidden rounded-xl">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative col-span-2 aspect-[4/3] overflow-hidden rounded-2xl bg-negro/5">
               <Image
                 src="/imagenes/papan-huasteco/hero.webp"
                 alt={t.papanFotoHeroAlt}
@@ -734,7 +704,7 @@ export default function InfoPracticaPage() {
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
-            <div className="relative aspect-square overflow-hidden rounded-xl">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-negro/5">
               <Image
                 src="/imagenes/papan-huasteco/chilaquiles-con-arrachera.jpg"
                 alt={t.papanFotoPlatillosAlt}
@@ -743,7 +713,7 @@ export default function InfoPracticaPage() {
                 sizes="25vw"
               />
             </div>
-            <div className="relative aspect-square overflow-hidden rounded-xl">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-negro/5">
               <Image
                 src="/imagenes/papan-huasteco/fogon-de-lena.jpg"
                 alt={t.papanFotoFogonAlt}
@@ -758,20 +728,16 @@ export default function InfoPracticaPage() {
 
       {/* ── PRESUPUESTO ── */}
       <Section id="presupuesto" Icon={DollarSign} title={t.tituloPresupuesto}>
-        <p className="text-crema/70 font-dm text-sm mb-8">
+        <p className={`mb-8 ${PARRAFO}`}>
           {t.presupuestoIntro}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-          {t.niveles.map((n, i) => ({
-            ...n,
-            color: (["border-lima/40 bg-lima/8", "border-dorado/40 bg-dorado/8", "border-agua/40 bg-agua/8"])[i],
-            dot: (["bg-lima", "bg-dorado", "bg-agua"])[i],
-          })).map((p) => (
-            <div key={p.nivel} className={`rounded-xl border ${p.color} p-6`}>
-              <span className={`inline-block w-3 h-3 rounded-full ${p.dot} mb-3`} aria-hidden="true" />
-              <h3 className="font-cormorant text-crema text-xl mb-1">{p.nivel}</h3>
-              <p className="text-dorado font-dm text-sm font-medium mb-4">{p.rango} {t.porDia}</p>
+        {/* Tres niveles en columnas con su línea de color, sin cajas. */}
+        <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-3">
+          {t.niveles.map((n, i) => ({ ...n, acento: (["verde", "dorado", "agua"] as const)[i] })).map((p) => (
+            <div key={p.nivel} className={`border-t-2 pt-5 ${BORDE[p.acento]}`}>
+              <h3 className="font-cormorant text-2xl text-verde-profundo">{p.nivel}</h3>
+              <p className="mb-4 mt-1 font-dm text-[15px] font-medium tabular-nums text-dorado">{p.rango} {t.porDia}</p>
               <BulletList items={p.incluye} />
             </div>
           ))}
@@ -783,50 +749,42 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── ITINERARIOS SUGERIDOS ── */}
-      <Section alterna id="itinerarios" Icon={Route} title={t.tituloItinerarios}>
-        <p className="text-crema/70 font-dm text-sm mb-8 leading-relaxed">
+      <Section id="itinerarios" Icon={Route} title={t.tituloItinerarios}>
+        <p className={`mb-8 ${PARRAFO}`}>
           {t.itinerariosIntro}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {/* El destino de cada CTA no depende del idioma; el texto sí. El plan
               de 5 días apunta al recomendador IA, que es solo-ES: en inglés se
-              manda al catálogo de tours en vez de cruzar de idioma. */}
+              manda al catálogo de tours en vez de cruzar de idioma. El plan de
+              en medio lleva el botón lleno: es el que más se vende. */}
           {t.planes.map((plan, i) => {
-            const estilo = [
-              { caja: "border-verde-vivo/20 bg-verde-selva/5", dot: "bg-verde-vivo", texto: "text-lima",
-                cta: "border border-verde-vivo/40 hover:bg-verde-vivo/10 text-lima" },
-              { caja: "border-dorado/20 bg-dorado/5", dot: "bg-dorado", texto: "text-dorado",
-                cta: "bg-dorado/20 hover:bg-dorado/30 text-dorado" },
-              { caja: "border-agua/20 bg-agua/5", dot: "bg-agua", texto: "text-agua",
-                cta: "border border-agua/40 hover:bg-agua/10 text-agua" },
-            ][i];
+            const acento = (["verde", "dorado", "agua"] as const)[i];
             const href = [
               lp("/tours/expedicion-tamul"),
               en ? lp("/tours") : "/recomendar",
               lp("/tours"),
             ][i];
             return (
-              <div key={plan.dias} className={`rounded-xl border ${estilo.caja} p-6`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${estilo.dot}`} />
-                  <p className={`text-[9px] tracking-[2px] uppercase font-dm ${estilo.texto}`}>{plan.etiqueta}</p>
-                </div>
-                <h3 className="font-cormorant text-crema text-xl mb-0.5">{plan.dias}</h3>
-                <p className="text-crema/75 font-dm text-[11px] mb-5">{plan.sub}</p>
+              <div key={plan.dias} className={`flex flex-col border-t-2 pt-5 ${BORDE[acento]}`}>
+                <p className={`font-dm text-[13px] font-medium ${TEXTO[acento]}`}>{plan.etiqueta}</p>
+                <h3 className="mt-1 font-cormorant text-2xl text-verde-profundo">{plan.dias}</h3>
+                <p className="mb-5 font-dm text-[13px] text-negro/55">{plan.sub}</p>
                 <ol className="space-y-3">
                   {plan.pasos.map((d) => (
                     <li key={d.dia} className="flex gap-3">
-                      <span className={`text-[9px] tracking-[1px] uppercase font-dm font-bold flex-shrink-0 mt-0.5 w-10 ${estilo.texto}`}>{d.dia}</span>
-                      <span className="text-crema/75 font-dm text-xs leading-relaxed">{d.lugar}</span>
+                      <span className={`w-12 shrink-0 pt-0.5 font-dm text-[13px] font-medium ${TEXTO[acento]}`}>{d.dia}</span>
+                      <span className="font-dm text-[14px] leading-relaxed text-negro/70">{d.lugar}</span>
                     </li>
                   ))}
                 </ol>
                 <Link
                   href={href}
-                  className={`mt-5 block rounded-lg text-center text-[10px] tracking-[2px] uppercase font-dm py-2.5 transition-all ${estilo.cta}`}
+                  prefetch={false}
+                  className={`mt-6 w-full ${i === 1 ? PILDORA_DORADA : PILDORA_LINEA}`}
                 >
-                  {plan.cta}
+                  {limpia(plan.cta)}
                 </Link>
               </div>
             );
@@ -834,34 +792,31 @@ export default function InfoPracticaPage() {
         </div>
 
         {toursXilitla.length > 0 && (
-          <div className="mt-8 rounded-xl border border-white/10 bg-negro/30 p-5">
-            <h3 className="font-dm text-[15px] font-medium text-crema mb-1.5">{t.xilitlaExtraTitulo}</h3>
-            <p className="text-crema/75 font-dm text-xs leading-relaxed mb-4">{t.xilitlaExtraIntro}</p>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+          <div className={`mt-8 ${CAJA}`}>
+            <h3 className="mb-1.5 font-dm text-[15px] font-medium text-verde-profundo">{t.xilitlaExtraTitulo}</h3>
+            <p className={`mb-4 ${PARRAFO}`}>{t.xilitlaExtraIntro}</p>
+            <ul className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
               {toursXilitla.map((tour) => (
-                <li key={tour.slug} className="flex items-baseline justify-between gap-3 border-b border-white/6 pb-2">
-                  <Link
-                    href={lp(`/tours/${tour.slug}`)}
-                    className="text-sm font-dm text-lima hover:text-crema underline underline-offset-2 transition-colors"
-                  >
+                <li key={tour.slug} className="flex items-baseline justify-between gap-3 border-t border-negro/10 py-2.5">
+                  <Link href={lp(`/tours/${tour.slug}`)} prefetch={false} className={`font-dm text-[15px] ${ENLACE}`}>
                     {localizeTour(tour, locale).nombreCorto}
                   </Link>
-                  <span className="text-[11px] font-dm text-crema/70 text-right">{horaEnLista(tour, en)}</span>
+                  <span className="text-right font-dm text-[13px] text-negro/55">{horaEnLista(tour, en)}</span>
                 </li>
               ))}
             </ul>
             {vallesXilitla && (
-              <p className="mt-3 text-[11px] font-dm text-crema/70">{vallesXilitla}</p>
+              <p className="mt-3 font-dm text-[13px] text-negro/55">{vallesXilitla}</p>
             )}
           </div>
         )}
 
         {/* El recomendador IA es solo-ES: el pie se omite en inglés. */}
         {!en && (
-          <p className="mt-6 text-center text-crema/75 font-dm text-xs">
+          <p className={`mt-6 ${PARRAFO}`}>
             {t.itinerariosPie}
-            <Link href="/recomendar" className="text-lima hover:text-crema underline underline-offset-2 transition-colors">
-              {t.itinerariosPieLink}
+            <Link href="/recomendar" prefetch={false} className={ENLACE}>
+              {limpia(t.itinerariosPieLink)}
             </Link>
           </p>
         )}
@@ -869,25 +824,25 @@ export default function InfoPracticaPage() {
 
       {/* ── QUÉ LLEVAR ── */}
       <Section id="que-llevar" Icon={Backpack} title={t.tituloQueLlevar}>
-        {/* Imagen introductoria */}
-        <div className="relative aspect-[21/9] overflow-hidden rounded-xl mb-8">
-          <Image
-            src="/imagenes/tours/tamul/gallery-4.jpg"
-            alt={t.llevarFotoAlt}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 896px"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
-          <p className="absolute bottom-3 left-4 text-[10px] font-dm text-crema/70">
+        <figure className="mb-8">
+          <div className="relative aspect-[21/9] overflow-hidden rounded-2xl bg-negro/5">
+            <Image
+              src="/imagenes/tours/tamul/gallery-4.jpg"
+              alt={t.llevarFotoAlt}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 896px"
+            />
+          </div>
+          <figcaption className={PIE_FOTO}>
             {t.llevarFotoPieA}
-            <Link href={lp("/destinos/cascada-de-tamul")} className="text-lima hover:text-crema underline underline-offset-2 transition-colors">
+            <Link href={lp("/destinos/cascada-de-tamul")} className={ENLACE}>
               {t.llevarFotoPieLink}
             </Link>
-          </p>
-        </div>
+          </figcaption>
+        </figure>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {t.llevarCategorias.map((cat) => (
             <InfoCard key={cat.titulo} title={cat.titulo} accent="verde">
               <BulletList items={cat.items} />
@@ -897,19 +852,17 @@ export default function InfoPracticaPage() {
       </Section>
 
       {/* ── SEGURIDAD ── */}
-      <Section alterna id="seguridad" Icon={Shield} title={t.tituloSeguridad}>
-        <div className="space-y-5">
+      <Section id="seguridad" Icon={Shield} title={t.tituloSeguridad}>
+        <div className="space-y-4">
           <InfoCard title={t.emergenciasTitulo} accent="terracota">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            <dl className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
               {t.emergencias.map((e) => (
-                <div key={e.label} className="flex items-center gap-3 py-2 border-b border-white/6">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[1px] text-crema/75 font-dm">{e.label}</div>
-                    <div className="text-crema text-sm font-dm font-medium">{e.num}</div>
-                  </div>
+                <div key={e.label} className="flex items-baseline justify-between gap-4 border-t border-negro/10 py-2.5">
+                  <dt className="font-dm text-[14px] text-negro/60">{e.label}</dt>
+                  <dd className="font-dm text-[15px] font-medium tabular-nums text-verde-profundo">{e.num}</dd>
                 </div>
               ))}
-            </div>
+            </dl>
           </InfoCard>
 
           {t.seguridadBloques.map((b, i) => (
@@ -920,35 +873,31 @@ export default function InfoPracticaPage() {
         </div>
       </Section>
 
-      {/* ── FAQ ── */}
-      <section className="py-20 border-b border-white/6">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="flex items-center gap-3 mb-4">
-            <HelpCircle className="w-7 h-7 text-verde-selva flex-shrink-0" aria-hidden="true" />
-            <h2
-              className="font-cormorant font-light text-crema"
-              style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
-            >
+      {/* ── PREGUNTAS FRECUENTES ── */}
+      <section className="border-t border-negro/10 py-16 sm:py-20">
+        <div className="mx-auto max-w-4xl px-6">
+          <div className="mb-4 flex items-center gap-3">
+            <HelpCircle className="h-6 w-6 shrink-0 text-verde-selva" strokeWidth={1.5} aria-hidden="true" />
+            <h2 className={H2} style={H2_SIZE}>
               {t.faqTitulo}
             </h2>
           </div>
-          <p className="text-crema/75 font-dm text-sm mb-10 ml-10">
+          <p className={`mb-10 ${PARRAFO}`}>
             {t.faqIntro}
           </p>
 
-          {/* Política de cancelación destacada */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
+          {/* Política de cancelación, de más a menos favorable */}
+          <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {t.cancelacion.map((tramo, i) => ({
               ...ESTILO_CANCELACION[Math.min(i, ESTILO_CANCELACION.length - 1)],
               ...tramo,
             })).map((p) => (
-              <div key={p.titulo} className={`border ${p.color} p-4 rounded`}>
-                {/* El color va en el icono, el borde y el fondo; el TEXTO va en
-                    crema. Pintar "No-show / sin reembolso" en terracota daba 2.94
-                    de contraste: justo la regla que más caro sale no leer. */}
-                <p.Icon className="w-5 h-5 mb-2" aria-hidden="true" />
-                <p className="font-dm text-sm font-medium mb-1 text-crema">{p.titulo}</p>
-                <p className="text-[11px] font-dm text-crema/75">{p.sub}</p>
+              <div key={p.titulo} className="rounded-2xl bg-white p-5">
+                {/* El color va en el icono; el texto, oscuro: "No-show / sin
+                    reembolso" en terracota daba 2.94 de contraste. */}
+                <p.Icon className={`mb-3 h-5 w-5 ${p.color}`} strokeWidth={1.5} aria-hidden="true" />
+                <p className="mb-1 font-dm text-[15px] font-medium text-verde-profundo">{p.titulo}</p>
+                <p className="font-dm text-[13px] leading-relaxed text-negro/60">{p.sub}</p>
               </div>
             ))}
           </div>
@@ -957,47 +906,43 @@ export default function InfoPracticaPage() {
         </div>
       </section>
 
-      {/* ── LEAD MAGNET PDF ── */}
+      {/* ── GUÍA EN PDF ── */}
       {/* La guía es un PDF en español: la sección se oculta en inglés en vez de
           ofrecer algo que el visitante no va a poder leer.
           🔴 GRATIS a cambio del correo (28 sep 2026), como en la portada y en
-          /guia, que es donde se deja el correo y arranca la descarga. Aquí
-          seguía "$199" tachado → "$49 MXN" con "Pago seguro · Garantía 7 días",
-          y el botón llevaba a una /guia que ya dice «Gratis». */}
+          /guia, que es donde se deja el correo y arranca la descarga. */}
       {!en && (
-      <section className="py-16 border-b border-white/6">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+      <section className="border-t border-negro/10 py-16 sm:py-20">
+        <div className="mx-auto max-w-4xl px-6">
+          <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[1.2fr_1fr]">
             <div>
-              <p className="text-[10px] tracking-[3px] uppercase text-lima font-dm mb-3">
-                {t.guiaEyebrow}
+              <p className={`mb-3 flex items-center gap-1.5 ${ETIQUETA}`}>
+                <Download className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
+                {limpia(t.guiaEyebrow)}
               </p>
-              <h2
-                className="reveal-up font-cormorant font-light text-crema mb-4"
-                style={{ fontSize: "clamp(26px,3.5vw,42px)" }}
-              >
+              <h2 className={`mb-4 ${H2}`} style={H2_SIZE}>
                 {t.guiaH2a}
-                <em className="shimmer-gold">{t.guiaH2b}</em>
+                <em className="text-dorado">{t.guiaH2b}</em>
               </h2>
-              <p className="text-crema/75 font-dm text-sm mb-6 leading-relaxed">
+              <p className={`mb-5 ${PARRAFO}`}>
                 {t.guiaTexto}
               </p>
-              <ul className="space-y-2 mb-6">
+              <ul className="space-y-2">
                 {t.guiaItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-crema/75 font-dm">
-                    <span className="text-verde-vivo mt-0.5 flex-shrink-0">✦</span>
+                  <li key={item} className={`flex items-start gap-2.5 ${PARRAFO}`}>
+                    <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-verde-selva" strokeWidth={1.5} aria-hidden="true" />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-xl bg-negro/40 border border-white/10 p-6 text-center">
-              <p className="font-cormorant font-light text-dorado text-3xl mb-1">{t.guiaPrecio}</p>
-              <p className="font-dm text-[11px] text-crema/75 mb-5">
+            <div className={`${CAJA} text-center`}>
+              <p className="font-cormorant text-4xl font-light text-dorado">{t.guiaPrecio}</p>
+              <p className="mb-5 mt-1 font-dm text-[13px] text-negro/55">
                 {t.guiaCondicion}
               </p>
-              <Link href="/guia" className="block w-full rounded-lg text-center bg-dorado text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors duration-300">
-                {t.guiaCta}
+              <Link href="/guia" prefetch={false} className={`${PILDORA_DORADA} w-full`}>
+                {limpia(t.guiaCta)}
               </Link>
             </div>
           </div>
@@ -1005,36 +950,39 @@ export default function InfoPracticaPage() {
       </section>
       )}
 
-      {/* CTA */}
-      <section className="relative py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6 overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10">
-        <h2
-          className="reveal-up font-cormorant font-light text-crema mb-4"
-          style={{ fontSize: "clamp(24px,3.5vw,40px)" }}
-        >
-          {t.ctaH2a}<em className="shimmer-gold">{t.ctaH2b}</em>
-        </h2>
-        <p className="text-crema/75 font-dm text-sm mb-8 max-w-md mx-auto">
-          {t.ctaTexto}
-        </p>
-        <div className="flex flex-wrap gap-4 justify-center">
-          <Link
-            href={lp("/destinos")}
-            className="rounded-lg border border-crema/30 text-crema px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-crema/10 transition-all"
-          >
-            {t.ctaDestinos}
-          </Link>
-          {/* Los dos idiomas al motor: el recomendador (solo-ES) se llevaba el
-              CTA principal de una página de alta intención y lo usaron 4
-              personas en 14 días. */}
-          <Link
-            href={lp("/reservar")}
-            className="rounded-lg bg-verde-selva text-crema px-10 py-3.5 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
-          >
-            {t.ctaRecomendar}
-          </Link>
-        </div>
+      {/* ── CIERRE ── el único bloque oscuro de la página */}
+      <section aria-label={limpia(t.ctaRecomendar)} className="px-6 pb-20 pt-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-2xl bg-verde-profundo px-6 py-12 sm:px-12 sm:py-16 lg:px-16">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-16">
+              <div className="max-w-2xl">
+                <h2
+                  className="font-cormorant font-light leading-[1.08] text-crema"
+                  style={{ fontSize: "clamp(32px,4vw,52px)" }}
+                >
+                  {t.ctaH2a}<em className="text-dorado">{t.ctaH2b}</em>
+                </h2>
+                <p className="mt-4 max-w-[55ch] font-dm text-[15px] leading-relaxed text-crema/70 sm:text-base">
+                  {t.ctaTexto}
+                </p>
+              </div>
+              {/* Los dos idiomas al motor: el recomendador (solo-ES) se llevaba el
+                  CTA principal de una página de alta intención y lo usaron 4
+                  personas en 14 días. */}
+              <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end">
+                <Link href={lp("/reservar")} prefetch={false} className={`${PILDORA_DORADA} min-h-[52px] px-8`}>
+                  {limpia(t.ctaRecomendar)}
+                </Link>
+                <Link
+                  href={lp("/destinos")}
+                  prefetch={false}
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-crema/40 px-8 font-dm text-[15px] font-medium text-crema transition-colors hover:bg-crema/10"
+                >
+                  {t.ctaDestinos}
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

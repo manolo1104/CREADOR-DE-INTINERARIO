@@ -1,12 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Hotel, UtensilsCrossed, Tag, CalendarCheck } from "lucide-react";
-import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_PERFIL_URL } from "@/lib/resenas";
+import { BadgeCheck, Hotel, UtensilsCrossed, CalendarCheck } from "lucide-react";
 import { HOTEL_PROPIO, horarioRestaurante } from "@/lib/hotelPropio";
 import { GUIAS } from "@/lib/guias";
-import { ANTICIPO_PCT } from "@/lib/carrito";
 import { GRUPO_MAX } from "@/lib/tours";
-import { ReservaDirecto } from "@/components/ReservaDirecto";
 import { localePath, type Locale } from "@/lib/i18n/config";
 
 /**
@@ -17,13 +14,27 @@ import { localePath, type Locale } from "@/lib/i18n/config";
  * El argumento estaba partido en cuatro paradas del inicio, cada una con medio
  * razonamiento: la banda negra de premios, la barra blanca de confianza justo
  * debajo, «Reserva directo» doscientas líneas más abajo y, al final de la
- * página, las certificaciones oficiales. El efecto de un bloque entero es muy
+ * página, las certificaciones. El efecto de un bloque entero es muy
  * superior al de cuatro fragmentos dispersos.
  *
  * Y aquí se desarrolla por primera vez lo único que no se puede copiar: que el
- * hotel, el restaurante y los guías son nuestros. Eso estaba mencionado de
- * pasada en un párrafo del hero, sin una sola foto, mientras siete fotos reales
- * del restaurante llevaban meses en `public/` sin montarse en ninguna página.
+ * hotel, el restaurante y los guías son nuestros.
+ *
+ * 🔴 Rediseño del 29 oct 2026 (lo que cambió y por qué):
+ *  · **Fuera la ceja en mayúsculas y la rayita bajo el titular.** Las llevaba
+ *    cada sección del inicio, y un sitio donde todas las secciones arrancan
+ *    igual se lee como una plantilla. El titular va a la izquierda, como el
+ *    texto, no centrado sobre una columna.
+ *  · **Las cuatro fotos ya no son cuatro recuadros iguales**: la del hotel
+ *    manda (ocupa la mitad) y las otras tres la acompañan. Son las mismas
+ *    cuatro fotos reales de siempre.
+ *  · **Las razones son cuatro, no cinco**: «Precio final» ya está en la línea
+ *    de confianza del hero, repetirla a dos pantallas no suma.
+ *  · **`ReservaDirecto` ya no se monta aquí**: sus cinco puntos (anticipo,
+ *    pesos, WhatsApp, guías NOM-09, hotel propio) repetían los de esta misma
+ *    lista con otras palabras. Sigue en las fichas, que es donde se decide.
+ *  · **La calificación de Google sale de aquí**: vive en el hero y en el
+ *    bloque de reseñas; aquí era la tercera vez en la misma página.
  *
  * 🔴 Lo que este bloque NO dice, y por qué (ver `hotelPropio.ts`):
  *  · **Nada del precio de la noche** ($1,900 en una fuente contra $2,000 en la
@@ -34,12 +45,11 @@ import { localePath, type Locale } from "@/lib/i18n/config";
  *    en el hotel ni en El Papán.
  *  · **«+10,000 viajeros» no aparece.** Esa cifra está escrita a mano en trece
  *    sitios del repo y no tiene fuente. Aquí solo va lo verificable.
- *  · Las reseñas son del NEGOCIO y salen UNA vez, de `resenas.ts`.
  */
 
 /** Las insignias que ya estaban en el inicio, reunidas. */
 const INSIGNIAS = [
-  { src: "/badges/sectur.png",            alt: "SECTUR — Secretaría de Turismo de México",  altEn: "SECTUR — Mexico Ministry of Tourism", w: 150, h: 56 },
+  { src: "/badges/sectur.png",            alt: "SECTUR, Secretaría de Turismo de México",  altEn: "SECTUR, Mexico Ministry of Tourism", w: 150, h: 56 },
   { src: "/badges/tripadvisor-full.png",  alt: "Tripadvisor",                               altEn: "Tripadvisor",                         w: 150, h: 56 },
   { src: "/badges/travellers-choice.svg", alt: "Travellers' Choice de Tripadvisor",         altEn: "Tripadvisor Travellers' Choice",      w: 110, h: 56 },
   { src: "/badges/viajemos-todos.png",    alt: "Viajemos Todos por México",                 altEn: "Viajemos Todos por México",           w: 150, h: 56 },
@@ -49,7 +59,7 @@ const INSIGNIAS = [
 /**
  * Las fotos reales de la casa. Todas existen ya en `public/`; si algún día se
  * cambia una por otra mejor, es una línea. Si un archivo faltara, `next/image`
- * fallaría en el build —no en silencio—, que es lo que se quiere.
+ * fallaría en el build, no en silencio, que es lo que se quiere.
  */
 const FOTOS_CASA = {
   hotel:       { src: "/imagenes/hotel-paraiso-encantado/hero.jpg",      alt: "Alberca y jardines del Hotel Paraíso Encantado, en Xilitla",     altEn: "Pool and gardens at Hotel Paraíso Encantado, in Xilitla" },
@@ -103,16 +113,6 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
       ),
     },
     {
-      Icon: Tag,
-      titulo: t("Precio final", "Final price"),
-      // Sin repetir el anticipo: `ReservaDirecto`, que va dentro de este mismo
-      // bloque unas líneas más abajo, ya lo dice con el número de `ANTICIPO_PCT`.
-      texto: t(
-        "Lo que ves es lo que pagas, en pesos y sin comisión de plataforma. Ningún cargo aparece al final.",
-        "What you see is what you pay, in pesos, with no platform fee. Nothing shows up at the end.",
-      ),
-    },
-    {
       Icon: CalendarCheck,
       titulo: t("Grupos chicos", "Small groups"),
       texto: t(
@@ -122,148 +122,126 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
     },
   ];
 
+  const fotoCls = "relative overflow-hidden rounded-2xl bg-negro/5";
+  const imgCls = "object-cover transition-transform duration-500 ease-smooth-out group-hover:scale-[1.03]";
+
   return (
     <section
       aria-label={t("Por qué reservar con nosotros", "Why book with us")}
-      className="border-y border-negro/10 bg-arena/30 px-6 py-24"
+      className="border-t border-negro/10 bg-crema px-6 py-20 sm:py-24"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="mb-14 text-center">
-          <p className="reveal-fade mb-4 font-dm text-[10px] uppercase tracking-[4px] text-verde-selva">
-            {t("Operadora local, no intermediario", "Local operator, not a reseller")}
-          </p>
+        {/* ── Titular, a la izquierda y sin ceja ── */}
+        <div className="reveal-up mb-12 max-w-2xl">
           <h2
-            className="reveal-up font-cormorant font-light text-verde-profundo"
-            style={{ fontSize: "clamp(32px,4.5vw,52px)" }}
+            className="font-cormorant font-light leading-[1.08] text-verde-profundo"
+            style={{ fontSize: "clamp(36px,4.6vw,58px)" }}
           >
-            {en ? <>Why <em className="shimmer-gold">with us</em></> : <>Por qué <em className="shimmer-gold">con nosotros</em></>}
+            {en ? <>Why <em className="text-dorado">with us</em></> : <>Por qué <em className="text-dorado">con nosotros</em></>}
           </h2>
-          <div className="heading-underline" aria-hidden="true" />
-          {/* Aquí aterriza el párrafo que estaba en el hero, donde eran cuatro
-              líneas sobre el buscador. */}
-          <p className="reveal-up reveal-d1 mx-auto mt-5 max-w-2xl font-dm text-sm leading-relaxed text-negro/55">
+          <p className="mt-4 max-w-[60ch] font-dm text-[15px] leading-relaxed text-negro/60 sm:text-base">
             {t(
-              "Somos de Xilitla. Te acuestas con la sierra enfrente, cenas lo que se cocina en el fogón de la casa y al día siguiente te lleva al río la misma gente. El hotel, el restaurante y los guías son nuestros, y también pasamos por ti en Ciudad Valles. Eso es lo que ninguna plataforma de reventa puede copiar.",
-              "We're from Xilitla. You turn in with the sierra in front of you, you have dinner straight off the house hearth, and the next morning the same people take you to the river. The hotel, the restaurant and the guides are ours, and we'll pick you up in Ciudad Valles too. That's the part no reselling platform can copy.",
+              "Somos de Xilitla. El hotel, el restaurante y los guías son nuestros, y eso es lo que ninguna plataforma de reventa puede copiar.",
+              "We're from Xilitla. The hotel, the restaurant and the guides are ours, and that's the part no reselling platform can copy.",
             )}
           </p>
         </div>
 
-        {/* ── Las fotos de la casa ──
-            Cuatro fotos REALES. Todas en diferido: este bloque queda muy por
-            debajo del póster del hero, que es el LCP y la única imagen que debe
-            precargarse. */}
-        <div className="mb-14 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[FOTOS_CASA.hotel, FOTOS_CASA.habitacion, FOTOS_CASA.restaurante, FOTOS_CASA.platillos].map((f) => (
-            <div key={f.src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-negro/5">
-              <Image
-                src={f.src}
-                alt={en ? f.altEn : f.alt}
-                fill
-                sizes="(max-width: 1023px) 50vw, 25vw"
-                loading="lazy"
-                className="object-cover"
-              />
-            </div>
-          ))}
+        {/* ── Las fotos de la casa: una manda, tres acompañan ──
+            Cuatro fotos REALES, en diferido: este bloque queda muy por debajo
+            del póster del hero, que es el LCP y la única imagen que debe
+            precargarse. En el teléfono: hotel y terraza a todo lo ancho, el
+            fogón y el platillo a medias, sin ninguna celda huérfana. */}
+        {/* 🔴 En `lg` las filas llevan alto FIJO (`lg:grid-rows-[280px_280px]`):
+            las fotos van con `fill`, que no mide nada, y sin alto declarado la
+            rejilla se quedaba en una tira de 20 px (visto en la primera captura
+            del 29 oct). Abajo de `lg` cada foto se sostiene con su proporción. */}
+        <div className="mb-14 grid grid-cols-2 gap-3 lg:grid-cols-[7fr_2.5fr_2.5fr] lg:grid-rows-[280px_280px] lg:gap-4">
+          <div className={`group col-span-2 aspect-[16/10] lg:col-span-1 lg:row-span-2 lg:aspect-auto ${fotoCls}`}>
+            <Image src={FOTOS_CASA.hotel.src} alt={en ? FOTOS_CASA.hotel.altEn : FOTOS_CASA.hotel.alt} fill sizes="(max-width: 1023px) 100vw, 58vw" loading="lazy" className={imgCls} />
+          </div>
+          <div className={`group col-span-2 aspect-[16/9] lg:aspect-auto ${fotoCls}`}>
+            <Image src={FOTOS_CASA.habitacion.src} alt={en ? FOTOS_CASA.habitacion.altEn : FOTOS_CASA.habitacion.alt} fill sizes="(max-width: 1023px) 100vw, 42vw" loading="lazy" className={imgCls} />
+          </div>
+          <div className={`group aspect-[4/3] lg:aspect-auto ${fotoCls}`}>
+            <Image src={FOTOS_CASA.restaurante.src} alt={en ? FOTOS_CASA.restaurante.altEn : FOTOS_CASA.restaurante.alt} fill sizes="(max-width: 1023px) 50vw, 21vw" loading="lazy" className={imgCls} />
+          </div>
+          <div className={`group aspect-[4/3] lg:aspect-auto ${fotoCls}`}>
+            <Image src={FOTOS_CASA.platillos.src} alt={en ? FOTOS_CASA.platillos.altEn : FOTOS_CASA.platillos.alt} fill sizes="(max-width: 1023px) 50vw, 21vw" loading="lazy" className={imgCls} />
+          </div>
         </div>
 
-        {/* ── Las razones ── */}
-        <ul className="mb-14 grid gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
+        {/* ── Las cuatro razones: una línea arriba de cada una, sin cajas ── */}
+        <ul className="mb-16 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
           {razones.map((r) => (
-            <li key={r.titulo} className="flex gap-3.5">
-              <r.Icon className="mt-0.5 h-5 w-5 shrink-0 text-verde-selva" aria-hidden="true" />
-              <div>
-                <h3 className="font-dm text-sm font-medium text-verde-profundo">{r.titulo}</h3>
-                <p className="mt-1 font-dm text-[13px] leading-relaxed text-negro/55">{r.texto}</p>
-              </div>
+            <li key={r.titulo} className="border-t border-negro/15 pt-5">
+              <r.Icon className="mb-3 h-5 w-5 text-verde-selva" strokeWidth={1.75} aria-hidden="true" />
+              <h3 className="font-dm text-[15px] font-medium text-verde-profundo">{r.titulo}</h3>
+              <p className="mt-1.5 font-dm text-[13px] leading-relaxed text-negro/55">{r.texto}</p>
             </li>
           ))}
         </ul>
 
         {/* ── Alex y Ángel, con cara, nombre y lo que dicen ──
             Los retratos grandes (720×960) estaban solo en las fichas de los
-            recorridos acuáticos; en el inicio se veían dos avatares de 48 px. */}
-        <div className="mb-14 grid gap-5 sm:grid-cols-2">
+            recorridos acuáticos; en el inicio se veían dos avatares de 48 px.
+            Sin caja alrededor: el retrato y la cita se sostienen solos. */}
+        <div className="mb-16 grid gap-8 sm:grid-cols-2 lg:gap-12">
           {GUIAS.map((g) => (
-            <figure key={g.nombre} className="flex gap-4 border border-negro/10 bg-white p-5">
-              <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded bg-negro/5">
+            <figure key={g.nombre} className="flex gap-5">
+              <div className="relative h-36 w-28 shrink-0 overflow-hidden rounded-2xl bg-negro/5 sm:h-40 sm:w-32">
                 <Image
                   src={g.foto}
                   alt={en ? g.fotoAlt.en : g.fotoAlt.es}
                   fill
-                  sizes="96px"
+                  sizes="128px"
                   loading="lazy"
                   className="object-cover"
                   style={{ objectPosition: g.fotoPos }}
                 />
               </div>
-              <div className="min-w-0">
-                <figcaption className="font-dm text-sm font-medium text-verde-profundo">
-                  {g.apodo ?? g.nombre.split(" ")[0]}
-                  <span className="ml-1.5 font-normal text-negro/40">
-                    {t(`guía desde ${g.desde}`, `guiding since ${g.desde}`)}
-                  </span>
-                </figcaption>
-                <p className="mt-0.5 font-dm text-[11px] text-negro/45">
-                  {g.origen} · {(en ? g.certificaciones.en : g.certificaciones.es)[0]}
-                </p>
-                <blockquote className="mt-2 font-dm text-[13px] italic leading-relaxed text-negro/60">
+              <div className="min-w-0 self-center">
+                <blockquote className="font-cormorant text-xl italic leading-snug text-verde-profundo sm:text-2xl">
                   &ldquo;{en ? g.frase.en : g.frase.es}&rdquo;
                 </blockquote>
+                <figcaption className="mt-3 font-dm text-sm text-negro/70">
+                  <span className="font-medium text-verde-profundo">{g.apodo ?? g.nombre.split(" ")[0]}</span>
+                  {", "}
+                  {t(`guía desde ${g.desde}`, `guiding since ${g.desde}`)}
+                  <span className="block text-[12px] text-negro/45">
+                    {g.origen}. {(en ? g.certificaciones.en : g.certificaciones.es)[0]}
+                  </span>
+                </figcaption>
               </div>
             </figure>
           ))}
         </div>
 
-        {/* ── Reserva directo ──
-            El componente que ya existía, dentro del bloque en vez de solo a
-            doscientas líneas de distancia. */}
-        <div className="mb-12">
-          <ReservaDirecto locale={locale} donde="inicio" />
-        </div>
-
-        {/* ── La calificación real, UNA vez en toda la página ── */}
-        <p className="mb-9 text-center">
-          <a
-            href={GOOGLE_PERFIL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] items-center gap-2 border border-verde-selva/40 px-7 font-dm text-xs uppercase tracking-[2px] text-verde-selva transition-colors hover:bg-verde-selva/10"
-          >
-            <span className="text-dorado" aria-hidden="true">★</span>
-            <span className="font-medium">{GOOGLE_RATING}</span>
-            {t(`en Google · ${GOOGLE_RESENAS} reseñas`, `on Google · ${GOOGLE_RESENAS} reviews`)}
-          </a>
-        </p>
-
-        {/* ── Las certificaciones, que vivían al final de la página ── */}
-        <div>
-          <p className="reveal-fade mb-7 text-center font-dm text-[9px] uppercase tracking-[3px] text-negro/30">
-            {t("Certificados y reconocidos por", "Certified and recognized by")}
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
-            {INSIGNIAS.map((b) => (
-              <Image
-                key={b.src}
-                src={b.src}
-                alt={en ? b.altEn : b.alt}
-                width={b.w}
-                height={b.h}
-                loading="lazy"
-                className="h-11 w-auto opacity-60 transition-opacity hover:opacity-100"
-              />
-            ))}
-          </div>
-          <p className="mt-7 text-center">
+        {/* ── Las certificaciones, que vivían al final de la página ──
+            Solo los logotipos: la credibilidad es la marca, no un rótulo debajo. */}
+        <div className="border-t border-negro/10 pt-10">
+          <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-6">
+            <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
+              {INSIGNIAS.map((b) => (
+                <Image
+                  key={b.src}
+                  src={b.src}
+                  alt={en ? b.altEn : b.alt}
+                  width={b.w}
+                  height={b.h}
+                  loading="lazy"
+                  className="h-10 w-auto opacity-55 transition-opacity hover:opacity-100"
+                />
+              ))}
+            </div>
             <Link
               href={lp("/nosotros")}
               prefetch={false}
-              className="font-dm text-xs uppercase tracking-[2px] text-verde-selva underline underline-offset-4 transition-colors hover:text-terracota"
+              className="font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota"
             >
-              {t("Conoce al equipo →", "Meet the team →")}
+              {t("Conoce al equipo", "Meet the team")}
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </section>

@@ -48,8 +48,8 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
     .slice(0, 3);
 
   return (
-    <aside className="my-12 border border-lima/20 bg-verde-profundo/40 p-6 sm:p-8">
-      <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-4">
+    <aside className="my-12 rounded-2xl border border-negro/10 bg-white p-6 sm:p-8">
+      <p className="mb-4 font-dm text-sm font-medium text-verde-selva">
         {fichas.length > 1 ? "Las fichas de los dos lugares" : "Ficha práctica del lugar"}
       </p>
 
@@ -58,11 +58,11 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
           <Link
             key={d.slug}
             href={`/destinos/${d.slug}`}
-            className="group flex items-center gap-3 text-crema hover:text-lima transition-colors"
+            className="group flex flex-wrap items-center gap-x-3 gap-y-1 text-verde-profundo transition-colors hover:text-verde-selva"
           >
-            <MapPin className="w-4 h-4 text-lima/70 flex-shrink-0" aria-hidden />
+            <MapPin className="h-4 w-4 flex-shrink-0 text-verde-selva" aria-hidden />
             <span className="font-cormorant text-xl font-light">{d.nombre}</span>
-            <span className="text-crema/40 font-dm text-xs">
+            <span className="font-dm text-[13px] text-negro/50">
               {[d.precio_entrada, d.horario].filter(Boolean).join(" · ")}
             </span>
             <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
@@ -72,22 +72,22 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
 
       {tours.length > 0 && (
         <>
-          <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">
+          <p className="mb-1 mt-2 font-dm text-sm font-medium text-verde-selva">
             {visitan ? "Tours que van a este lugar" : "Tours que operan en la zona"}
           </p>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col">
             {tours.map((t) => (
               <li key={t.slug}>
                 <Link
                   href={`/tours/${t.slug}`}
-                  className="group flex items-baseline justify-between gap-4 border-b border-white/8 py-2 hover:border-lima/40 transition-colors"
+                  className="group flex items-baseline justify-between gap-4 border-t border-negro/10 py-3 transition-colors"
                 >
-                  <span className="font-dm text-sm text-crema/80 group-hover:text-crema transition-colors">
+                  <span className="font-dm text-[15px] text-verde-profundo transition-colors group-hover:text-verde-selva">
                     {t.nombre}
                   </span>
-                  <span className="font-dm text-sm text-lima whitespace-nowrap">
+                  <span className="whitespace-nowrap font-dm text-sm font-medium text-dorado">
                     {precioTour(t)}
-                    <span className="text-crema/35 text-xs">
+                    <span className="text-[12px] font-normal text-negro/45">
                       {t.precioUnidad === "vehiculo" ? " /vehículo" : t.precioUnidad === "grupo" ? " /grupo" : " /persona"}
                     </span>
                   </span>
@@ -98,7 +98,7 @@ export function GuiaDelLugar({ blogSlug }: { blogSlug: string }) {
           {/* El 30 % es la regla real (`pctACobrar`, 29 sep 2026). La
               cancelación sí tiene excepción: el Edén no tiene reembolso
               (`cancelacion`), y la salvedad se dice abajo. */}
-          <p className="mt-4 text-crema/45 font-dm text-xs">
+          <p className="mt-4 font-dm text-[13px] text-negro/55">
             Apartas con el {ANTICIPO_PCT} % al reservar y liquidas el resto el día del tour.
             {tours.some((t) => t.cancelacion)
               ? " Cada recorrido tiene su política de cancelación en su ficha."

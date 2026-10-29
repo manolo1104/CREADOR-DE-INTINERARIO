@@ -76,22 +76,20 @@ export function FaqInicio({ locale }: { locale: Locale }) {
   return (
     <section
       aria-label={t("Preguntas frecuentes", "Frequently asked questions")}
-      className="border-b border-negro/10 bg-crema px-6 py-24"
+      className="border-t border-negro/10 bg-crema px-6 py-20 sm:py-24"
     >
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
       <div className="mx-auto max-w-3xl">
-        <div className="mb-10 text-center">
-          <p className="reveal-fade mb-4 font-dm text-[10px] uppercase tracking-[4px] text-verde-selva">
-            {t("Antes de decidir", "Before you decide")}
-          </p>
+        {/* Titular a la izquierda, sin ceja ni rayita (rediseño del 29 oct 2026):
+            todas las secciones del inicio arrancaban igual y se leía como plantilla. */}
+        <div className="reveal-up mb-10 max-w-2xl">
           <h2
-            className="reveal-up font-cormorant font-light text-verde-profundo"
-            style={{ fontSize: "clamp(32px,4.5vw,48px)" }}
+            className="font-cormorant font-light leading-[1.08] text-verde-profundo"
+            style={{ fontSize: "clamp(36px,4.6vw,58px)" }}
           >
-            {en ? <>The usual <em className="shimmer-gold">questions</em></> : <>Las dudas <em className="shimmer-gold">de siempre</em></>}
+            {en ? <>The usual <em className="text-dorado">questions</em></> : <>Las dudas <em className="text-dorado">de siempre</em></>}
           </h2>
-          <div className="heading-underline" aria-hidden="true" />
         </div>
 
         <div className="divide-y divide-negro/10 border-y border-negro/10">
@@ -112,7 +110,7 @@ export function FaqInicio({ locale }: { locale: Locale }) {
           ))}
         </div>
 
-        <p className="mt-8 text-center font-dm text-sm text-negro/50">
+        <p className="mt-8 font-dm text-sm text-negro/50">
           {t("¿Te queda otra duda? ", "Still something else? ")}
           <Link
             href={lp("/preguntas-frecuentes")}
@@ -120,8 +118,8 @@ export function FaqInicio({ locale }: { locale: Locale }) {
             className="text-verde-selva underline underline-offset-4 transition-colors hover:text-terracota"
           >
             {t(
-              `Las ${faq.faqs.length} preguntas frecuentes →`,
-              `All ${faq.faqs.length} frequently asked questions →`,
+              `Ver las ${faq.faqs.length} preguntas frecuentes`,
+              `All ${faq.faqs.length} frequently asked questions`,
             )}
           </Link>
         </p>

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { GuiaDelLugar } from "@/components/blog/GuiaDelLugar";
+import { BlogViewTracker } from "@/components/blog/BlogViewTracker";
 import { TarjetaViajeCdmx, tarjetaViajeEnBlog } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import { XantoloPlanDeViaje, XantoloDiasYNoches, esArticuloXantolo, xantoloVigente } from "@/components/blog/CtaXantolo";
 import { TOURS_DB, etiquetaUnidad, tourDurTexto } from "@/lib/tours";
@@ -681,37 +682,67 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const safeSchema = blogPostingSchema.replace(RAILWAY_REGEX, SITE);
   const clusterTag = tagsEspecificos(post.tags)[0] || "la Huasteca Potosina";
 
+  /* ══════════════════════════════════════════════════════════════════════
+     🔴 REDISEÑO DE LA PÁGINA DE ARTÍCULO (29 oct 2026). Manolo: «dale un mejor
+     diseño a los artículos sin quitarle protagonismo a la conversión y ctas».
+      · Fondo CLARO (crema) y columna de lectura de 68 caracteres: un artículo
+        de 2,000 palabras en crema al 70 % sobre verde oscuro cansaba a las tres
+        pantallas, y el 88 % lo lee en el teléfono.
+      · Fuera los rótulos de 8-9 px en mayúsculas (había catorce en una sola
+        página), los «✦», el azul #00B4D8 de los botones del contenido y la
+        palabra clave pintada bajo el título. Un solo acento: el dorado para
+        reservar, el verde para enlaces.
+      · TODAS las salidas a la venta siguen en el mismo sitio y con los mismos
+        enlaces: tarjeta del tour (barra lateral en escritorio, dentro del
+        artículo en el teléfono), ficha del lugar con sus tours, itinerario por
+        correo, recorridos relacionados y el cierre, que ahora es el único
+        bloque oscuro de la página para que destaque más, no menos.
+     La versión anterior es `git show 96ca2c3:src/app/blog/[slug]/page.tsx`.
+     ══════════════════════════════════════════════════════════════════════ */
+
   // Prose styles shared by both content halves
-  const proseClass = `prose prose-invert prose-lg max-w-none
-    prose-headings:font-display prose-headings:text-crema prose-headings:font-normal
-    prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6 prose-h2:scroll-mt-28
-    prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4 prose-h3:text-lima
-    prose-p:text-crema/70 prose-p:font-dm prose-p:font-light prose-p:leading-relaxed
-    prose-a:text-lima prose-a:no-underline hover:prose-a:underline
-    prose-strong:text-crema prose-strong:font-medium
-    prose-ul:text-crema/70 prose-li:font-dm prose-li:font-light
-    prose-blockquote:border-lima/40 prose-blockquote:text-crema/60
-    prose-img:rounded-none prose-img:w-full
+  const proseClass = `prose prose-lg max-w-none
+    prose-headings:font-cormorant prose-headings:font-normal prose-headings:text-verde-profundo
+    prose-h2:text-[2rem] prose-h2:leading-[1.15] prose-h2:mt-12 prose-h2:mb-5 prose-h2:scroll-mt-28
+    prose-h3:text-[1.35rem] prose-h3:leading-snug prose-h3:mt-9 prose-h3:mb-3
+    prose-p:font-dm prose-p:text-[17px] prose-p:leading-[1.75] prose-p:text-negro/75
+    prose-a:text-verde-selva prose-a:underline prose-a:decoration-verde-selva/30 prose-a:underline-offset-4 hover:prose-a:text-terracota
+    prose-strong:text-negro prose-strong:font-medium
+    prose-ul:font-dm prose-ul:text-negro/75 prose-ol:font-dm prose-ol:text-negro/75 prose-li:leading-relaxed prose-li:marker:text-verde-selva
+    prose-blockquote:border-l-2 prose-blockquote:border-dorado prose-blockquote:font-cormorant prose-blockquote:text-2xl prose-blockquote:not-italic prose-blockquote:text-verde-profundo prose-blockquote:font-light
+    prose-img:rounded-2xl prose-img:w-full
     prose-figure:my-8
-    prose-figcaption:text-crema/40 prose-figcaption:text-xs prose-figcaption:text-center prose-figcaption:mt-2
-    [&_.cta-box]:my-10 [&_.cta-box]:p-8 [&_.cta-box]:bg-forest [&_.cta-box]:border [&_.cta-box]:border-lima/20 [&_.cta-box]:text-center
-    [&_.cta-block]:my-10 [&_.cta-block]:p-8 [&_.cta-block]:border [&_.cta-block]:border-lima/20 [&_.cta-block]:text-center [&_.cta-block]:rounded-lg
-    [&_.cta-tours]:bg-[#00B4D8]/10 [&_.cta-tours]:border-[#00B4D8]/30
-    [&_.cta-itinerario]:bg-[#f0f9ff]/5 [&_.cta-itinerario]:border-[#2D6A4F]/30
-    [&_.cta-final]:bg-verde-selva [&_.cta-final]:text-crema
-    [&_.cta-headline]:font-display [&_.cta-headline]:text-xl [&_.cta-headline]:text-crema [&_.cta-headline]:mb-2 [&_.cta-headline]:font-normal
-    [&_.cta-subtext]:text-crema/60 [&_.cta-subtext]:font-dm [&_.cta-subtext]:text-sm [&_.cta-subtext]:mb-4 [&_.cta-subtext]:font-light
-    [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:gap-2 [&_.cta-button]:px-8 [&_.cta-button]:py-3 [&_.cta-button]:text-xs [&_.cta-button]:tracking-widest [&_.cta-button]:uppercase [&_.cta-button]:font-dm [&_.cta-button]:no-underline [&_.cta-button]:rounded [&_.cta-button]:mx-2 [&_.cta-button]:mt-2
-    [&_.cta-button--primary]:bg-[#00B4D8] [&_.cta-button--primary]:text-white [&_.cta-button--primary]:hover:bg-[#0096B7]
-    [&_.cta-button--secondary]:bg-transparent [&_.cta-button--secondary]:text-crema [&_.cta-button--secondary]:border [&_.cta-button--secondary]:border-crema/40 [&_.cta-button--secondary]:hover:border-lima/60
-    [&_.cta-link]:text-lima [&_.cta-link]:underline
-    [&_.tour-cta]:my-8 [&_.tour-cta]:p-5 [&_.tour-cta]:border [&_.tour-cta]:border-verde-selva/30 [&_.tour-cta]:bg-verde-selva/8 [&_.tour-cta]:not-prose
-    [&_details]:my-3 [&_details]:border [&_details]:border-white/10 [&_details]:rounded-lg [&_details]:overflow-hidden [&_details]:bg-forest
-    [&_details[open]]:border-lima/20
-    [&_summary]:cursor-pointer [&_summary]:px-5 [&_summary]:py-4 [&_summary]:text-crema [&_summary]:font-dm [&_summary]:font-medium [&_summary]:text-base [&_summary]:list-none [&_summary]:select-none
-    [&_summary::-webkit-details-marker]:hidden [&_summary::marker]:hidden [&_summary]:hover:bg-white/5
-    [&_details>p]:px-5 [&_details>p]:pb-4 [&_details>p]:pt-0 [&_details>p]:text-crema/60 [&_details>p]:text-sm [&_details>p]:font-light [&_details>p]:leading-relaxed
-    [&_details_strong]:text-crema [&_details_strong]:font-medium`;
+    prose-figcaption:font-dm prose-figcaption:text-negro/45 prose-figcaption:text-[13px] prose-figcaption:text-center prose-figcaption:mt-2
+    prose-hr:border-negro/10
+    prose-table:font-dm prose-table:text-[15px] prose-th:text-verde-profundo prose-td:text-negro/75
+    [&_.cta-box]:my-10 [&_.cta-box]:rounded-2xl [&_.cta-box]:border [&_.cta-box]:border-negro/10 [&_.cta-box]:bg-white [&_.cta-box]:p-7 [&_.cta-box]:text-center
+    [&_.cta-block]:my-10 [&_.cta-block]:rounded-2xl [&_.cta-block]:border [&_.cta-block]:border-negro/10 [&_.cta-block]:bg-white [&_.cta-block]:p-7 [&_.cta-block]:text-center
+    [&_.cta-final]:bg-verde-profundo [&_.cta-final]:border-verde-profundo
+    [&_.cta-headline]:font-cormorant [&_.cta-headline]:text-2xl [&_.cta-headline]:leading-snug [&_.cta-headline]:text-verde-profundo [&_.cta-headline]:mb-2 [&_.cta-headline]:font-normal
+    [&_.cta-final_.cta-headline]:text-crema
+    [&_.cta-subtext]:font-dm [&_.cta-subtext]:text-negro/60 [&_.cta-subtext]:text-[15px] [&_.cta-subtext]:leading-relaxed [&_.cta-subtext]:mb-5
+    [&_.cta-final_.cta-subtext]:text-crema/70
+    [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:justify-center [&_.cta-button]:gap-2 [&_.cta-button]:min-h-[48px] [&_.cta-button]:rounded-full [&_.cta-button]:px-7 [&_.cta-button]:py-2.5 [&_.cta-button]:font-dm [&_.cta-button]:text-[15px] [&_.cta-button]:font-medium [&_.cta-button]:no-underline [&_.cta-button]:mx-1.5 [&_.cta-button]:mt-2
+    [&_.cta-button--primary]:bg-dorado [&_.cta-button--primary]:text-negro [&_.cta-button--primary]:hover:bg-lima
+    [&_.cta-button--secondary]:bg-transparent [&_.cta-button--secondary]:text-verde-profundo [&_.cta-button--secondary]:border [&_.cta-button--secondary]:border-negro/20 [&_.cta-button--secondary]:hover:border-verde-selva
+    [&_.cta-final_.cta-button--secondary]:text-crema [&_.cta-final_.cta-button--secondary]:border-crema/40
+    [&_.cta-link]:text-verde-selva [&_.cta-link]:underline
+    [&_.tour-cta]:my-8 [&_.tour-cta]:rounded-2xl [&_.tour-cta]:border [&_.tour-cta]:border-negro/10 [&_.tour-cta]:bg-white [&_.tour-cta]:p-5 [&_.tour-cta]:not-prose
+    [&_details]:my-3 [&_details]:rounded-2xl [&_details]:border [&_details]:border-negro/10 [&_details]:bg-white [&_details]:overflow-hidden
+    [&_details[open]]:border-verde-selva/40
+    [&_summary]:cursor-pointer [&_summary]:px-5 [&_summary]:py-4 [&_summary]:text-verde-profundo [&_summary]:font-dm [&_summary]:font-medium [&_summary]:text-base [&_summary]:list-none [&_summary]:select-none
+    [&_summary::-webkit-details-marker]:hidden [&_summary::marker]:hidden [&_summary]:hover:bg-crema/60
+    [&_details>p]:px-5 [&_details>p]:pb-4 [&_details>p]:pt-0 [&_details>p]:text-negro/65 [&_details>p]:text-[15px] [&_details>p]:leading-relaxed
+    [&_details_strong]:text-negro [&_details_strong]:font-medium`;
+
+  /* Clases compartidas por los recuadros de la página (un solo sistema de
+     esquinas: superficies `rounded-2xl`, botones y píldoras redondos). */
+  const CAJA = "rounded-2xl border border-negro/10 bg-white";
+  const BOTON_DORADO =
+    "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-dorado px-7 font-dm text-[15px] font-medium text-negro " +
+    "transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]";
+  const ENLACE = "font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota";
+  const temas = tagsEspecificos(post.tags).slice(0, 5);
 
   return (
     <>
@@ -723,84 +754,81 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           dangerouslySetInnerHTML={{ __html: schemaGuardadoExtra.replace(RAILWAY_REGEX, SITE) }}
         />
       )}
+      <main className="min-h-screen bg-crema pb-20 pt-[calc(var(--navbar-alto,64px)+20px)] sm:pt-[calc(var(--navbar-alto,64px)+36px)]">
+        {/* Cuenta la lectura para «Lo más leído» del inicio. */}
+        <BlogViewTracker slug={post.slug} />
 
-      <main className="min-h-screen bg-jungle pt-24 pb-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 items-start">
+        <div className="mx-auto max-w-6xl px-6">
+          {/* ── CABECERA ── */}
+          <header className="mb-10 sm:mb-12">
+            <nav aria-label="Migas" className="mb-6 flex flex-wrap items-center gap-x-2 font-dm text-[13px] text-negro/50">
+              <Link href="/" className="transition-colors hover:text-verde-selva">Inicio</Link>
+              <span aria-hidden="true">/</span>
+              <Link href="/blog" className="transition-colors hover:text-verde-selva">Blog</Link>
+              <span aria-hidden="true">/</span>
+              <span className="text-verde-selva">{seccion}</span>
+            </nav>
 
-            {/* ── ARTÍCULO PRINCIPAL ── */}
-            <article>
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-[9px] tracking-[3px] uppercase font-dm text-crema/30 mb-8">
-                <Link href="/" className="hover:text-crema/60 transition-colors">Inicio</Link>
-                <span>/</span>
-                <Link href="/blog" className="hover:text-crema/60 transition-colors">Blog</Link>
-                <span>/</span>
-                <span className="text-lima/60">{seccion}</span>
-              </nav>
+            <div className="max-w-3xl">
+              <h1
+                className="font-cormorant font-light leading-[1.05] text-verde-profundo"
+                style={{ fontSize: "clamp(34px,5vw,60px)" }}
+              >
+                {post.title}
+              </h1>
+              {post.excerpt && (
+                <p className="mt-5 max-w-[60ch] font-dm text-[17px] leading-relaxed text-negro/60">
+                  {post.excerpt}
+                </p>
+              )}
 
-              {/* Tags + Editorial badge */}
-              <div className="flex flex-wrap items-center gap-2 mb-6">
-                {post.tags.map(tag => (
-                  <span key={tag} className="text-[9px] tracking-[2px] uppercase font-dm text-lima/70 border border-lima/20 px-3 py-1">
-                    {tag}
-                  </span>
-                ))}
-                {promoPost && (
-                  <span className="text-[9px] tracking-[1.5px] uppercase font-dm text-dorado/70 border border-dorado/30 bg-dorado/5 px-3 py-1 ml-auto">
-                    ✦ Contenido propio
-                  </span>
-                )}
-              </div>
-
-              <h1 className="font-display text-4xl md:text-5xl text-crema leading-tight mb-6">{post.title}</h1>
-
-              {/* Meta */}
-              <div className="flex flex-wrap items-center gap-3 text-[10px] tracking-[2px] uppercase font-dm text-crema/30 mb-10 pb-8 border-b border-white/8">
-                {/* Author */}
-                <Link href="/nosotros" className="flex items-center gap-2 hover:text-crema/60 transition-colors group">
+              {/* Autor, fecha y lectura, en minúsculas normales y sin puntos
+                  medios: era una tira de 10 px en mayúsculas con cinco datos. */}
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 font-dm text-[13px] text-negro/55">
+                <Link href="/nosotros" className="group flex items-center gap-2.5 transition-colors hover:text-verde-selva">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/imagenes/guias/manolo-covarrubias.jpg"
-                    alt="Manolo Covarrubias"
-                    className="w-7 h-7 rounded-full object-cover object-top border border-white/15 group-hover:border-lima/40 transition-colors flex-shrink-0"
+                    alt=""
+                    className="h-8 w-8 flex-shrink-0 rounded-full border border-negro/10 object-cover object-top"
                   />
-                  <span className="text-crema/50 group-hover:text-crema/80 transition-colors">Manolo Covarrubias</span>
+                  <span className="font-medium text-negro/75 transition-colors group-hover:text-verde-selva">Manolo Covarrubias</span>
                 </Link>
-                <span className="text-crema/15">·</span>
                 <time dateTime={post.publishedAt.toISOString()}>{fechaLarga(post.publishedAt)}</time>
                 {/* Visible y no solo en el JSON-LD: Google compara el
                     `dateModified` con lo que ve el lector. */}
                 {mostrarActualizado && (
-                  <>
-                    <span className="text-crema/15">·</span>
-                    <span>
-                      Actualizado el <time dateTime={modificado.toISOString()}>{fechaLarga(modificado)}</time>
-                    </span>
-                  </>
+                  <span>
+                    Actualizado el <time dateTime={modificado.toISOString()}>{fechaLarga(modificado)}</time>
+                  </span>
                 )}
-                <span className="text-crema/15">·</span>
                 <span>{post.readingTime} min de lectura</span>
-                <span className="text-crema/15 hidden sm:inline">·</span>
-                <span className="text-lima/50 hidden sm:inline">{post.focusKeyword}</span>
+                {promoPost && <span className="text-dorado">Contenido propio</span>}
               </div>
+            </div>
 
-              {/* Hero image */}
-              {post.coverImageUrl && (
-                <div className="aspect-video overflow-hidden mb-10">
-                  <img src={post.coverImageUrl} alt={post.coverImageAlt || post.title} className="w-full h-full object-cover" loading="eager" />
-                </div>
-              )}
+            {/* Portada */}
+            {post.coverImageUrl && (
+              <div className="mt-8 aspect-[16/9] overflow-hidden rounded-2xl bg-negro/5 sm:mt-10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={post.coverImageUrl} alt={post.coverImageAlt || post.title} className="h-full w-full object-cover" loading="eager" />
+              </div>
+            )}
+          </header>
 
+          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-16">
+            {/* ── ARTÍCULO PRINCIPAL ── */}
+            <article className="min-w-0 max-w-[68ch]">
               {/* Índice. Los artículos pasan de 2,000 palabras y el 88 % se
                   lee en el teléfono: sin esto, quien buscaba "cuánto cuesta"
                   tenía que bajar seis pantallas para encontrarlo. */}
               {mostrarIndice && (
-                <nav aria-label="Índice del artículo" className="mb-10 border border-white/10 bg-negro/20 p-5 sm:p-6">
-                  <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">En este artículo</p>
-                  <ol className="space-y-2 list-decimal list-inside marker:text-crema/30">
+                <nav aria-label="Índice del artículo" className={`mb-10 p-5 sm:p-6 ${CAJA}`}>
+                  <p className="mb-3 font-dm text-sm font-medium text-verde-profundo">En este artículo</p>
+                  <ol className="list-inside list-decimal space-y-2 marker:text-negro/35">
                     {indice.map((s) => (
-                      <li key={s.id} className="font-dm text-sm text-crema/65 leading-snug">
-                        <a href={`#${s.id}`} className="hover:text-lima transition-colors">{s.texto}</a>
+                      <li key={s.id} className="font-dm text-[15px] leading-snug text-negro/70">
+                        <a href={`#${s.id}`} className="transition-colors hover:text-verde-selva">{s.texto}</a>
                       </li>
                     ))}
                   </ol>
@@ -821,11 +849,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   es móvil: ahí el único enlace a una ficha de tour no existía.
                   `lg:hidden` evita que en escritorio salga dos veces. */}
               {/* En Xantolo, en lugar de UN tour: cuáles caben en un día de
-                  fiesta y cuáles conviene dejar para antes o después. Sale en
-                  escritorio también: ahí la barra lateral no lo explica. */}
+                  fiesta y cuáles conviene dejar para antes o después. */}
               {esArticuloXantolo(post.slug) && xantoloVigente()
                 ? <XantoloDiasYNoches />
-                : relevantTour && <TarjetaTour tour={relevantTour} className="lg:hidden my-10" />}
+                : relevantTour && <TarjetaTour tour={relevantTour} className="my-10 lg:hidden" />}
 
               {/* Ficha del lugar + tours que lo visitan. Va a mitad del
                   artículo: es donde el lector ya decidió que quiere ir. */}
@@ -844,8 +871,8 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   enlace a su ficha. Es la salida a la venta de quien terminó
                   de leer. */}
               {toursFijados.length > 0 && (
-                <section aria-labelledby="recorridos-relacionados" className="mt-12 border border-verde-selva/25 bg-verde-selva/8 p-6">
-                  <h2 id="recorridos-relacionados" className="text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo mb-4">
+                <section aria-labelledby="recorridos-relacionados" className={`mt-12 p-6 ${CAJA}`}>
+                  <h2 id="recorridos-relacionados" className="mb-2 font-cormorant text-2xl font-normal text-verde-profundo">
                     Recorridos relacionados
                   </h2>
                   <ul className="flex flex-col">
@@ -853,13 +880,13 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                       <li key={t.slug}>
                         <Link
                           href={`/tours/${t.slug}`}
-                          className="group flex items-baseline justify-between gap-4 border-b border-white/8 py-3 hover:border-lima/40 transition-colors"
+                          className="group flex items-baseline justify-between gap-4 border-t border-negro/10 py-3.5 transition-colors"
                         >
                           <span className="min-w-0">
-                            <span className="block font-dm text-sm text-crema/85 group-hover:text-crema transition-colors">{t.nombreCorto}</span>
-                            <span className="block font-dm font-light text-xs text-crema/40 mt-0.5">{t.tagline}</span>
+                            <span className="block font-dm text-[15px] font-medium text-verde-profundo transition-colors group-hover:text-verde-selva">{t.nombreCorto}</span>
+                            <span className="mt-0.5 block font-dm text-[13px] text-negro/50">{t.tagline}</span>
                           </span>
-                          <span className="font-dm text-sm text-lima whitespace-nowrap">
+                          <span className="whitespace-nowrap font-dm text-sm font-medium text-dorado">
                             {precioTarjeta(t)}
                           </span>
                         </Link>
@@ -869,25 +896,34 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </section>
               )}
 
-              {/* Author card — siempre visible */}
-              <div className="mt-12 pt-8 border-t border-white/8">
+              {/* Temas del artículo, al final y en texto: arriba eran píldoras
+                  en mayúsculas antes del título. */}
+              {temas.length > 0 && (
+                <p className="mt-10 font-dm text-[13px] text-negro/50">
+                  Temas: {temas.join(", ")}
+                </p>
+              )}
+
+              {/* Author card, siempre visible */}
+              <div className="mt-10 border-t border-negro/10 pt-8">
                 <div className="flex items-start gap-5">
                   <Link href="/nosotros" className="flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/imagenes/guias/manolo-covarrubias.jpg"
-                      alt="Manolo Covarrubias — guía local y fundador"
-                      className="w-16 h-16 rounded-full object-cover object-top border-2 border-verde-selva/40 hover:border-lima/60 transition-colors"
+                      alt="Manolo Covarrubias, guía local y fundador"
+                      className="h-16 w-16 rounded-full border border-negro/10 object-cover object-top"
                     />
                   </Link>
                   <div>
-                    <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-1">Escrito por</p>
-                    <Link href="/nosotros" className="font-cormorant text-crema text-xl font-light hover:text-lima transition-colors">
+                    <p className="font-dm text-[13px] text-negro/50">Escrito por</p>
+                    <Link href="/nosotros" className="font-cormorant text-2xl font-light text-verde-profundo transition-colors hover:text-verde-selva">
                       Manolo Covarrubias
                     </Link>
-                    <p className="text-[10px] tracking-[1.5px] uppercase font-dm text-crema/35 mb-2">
-                      Guía local · Fundador · Certificado NOM-09
+                    <p className="mb-2 font-dm text-[13px] text-negro/50">
+                      Guía local, fundador, certificado NOM-09
                     </p>
-                    <p className="text-crema/45 font-dm font-light text-sm leading-relaxed max-w-md">
+                    <p className="max-w-md font-dm text-[15px] leading-relaxed text-negro/65">
                       Nacido en la Huasteca Potosina. Lleva más de 6 años llevando viajeros a los rincones que ningún autobús turístico alcanza.
                       {/* La cifra sale de `resenas.ts`: aquí decía 4.9 y Google dice otra cosa.
                           🔴 El «Premio Arival 2023» se quitó el 28 sep (igual que del JSON-LD
@@ -898,77 +934,72 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </div>
               </div>
 
-              {/* CTA final. Cuando el artículo tiene un destino comercial en
+              {/* CTA final: el único bloque oscuro de la página, para que sea lo
+                  que más pesa. Cuando el artículo tiene un destino comercial en
                   `ofertasDeBlog` se enlaza ESO y no el catálogo genérico: el
                   lector de Tamul sale al tour de Tamul, no a "ver recorridos". */}
-              <div className="my-12 p-8 bg-forest border border-lima/20 text-center">
-                <p className="text-[9px] tracking-[3px] uppercase text-lima/70 font-dm mb-3">✦ Salidas todos los días</p>
-                <h3 className="font-display text-2xl text-crema mb-3">
+              <div className="my-12 rounded-2xl bg-verde-profundo p-7 text-center sm:p-10">
+                <h3 className="font-cormorant text-3xl font-light leading-tight text-crema">
                   {ofertas.length ? "De la guía al viaje" : "Reserva tu tour en la Huasteca Potosina"}
                 </h3>
-                <p className="text-crema/50 font-dm font-light text-sm mb-6">
-                  {/* Decía "Todo incluido … y comida": la Expedición Tamul, que es
-                      la tarjeta que más sale en el blog, NO incluye la comida
-                      del día, y no todos los recorridos pasan por ti. */}
-                  {/* La regla de pago es la de `pctACobrar` (carrito.ts), con su
-                      mismo número: el recuadro de GuiaDelLugar de esta misma
-                      página dice exactamente lo mismo. */}
+                <p className="mx-auto mt-3 mb-6 max-w-md font-dm text-[15px] leading-relaxed text-crema/70">
+                  {/* La Expedición Tamul, que es la tarjeta que más sale en el
+                      blog, NO incluye la comida del día, y no todos los recorridos
+                      pasan por ti. La regla de pago es la de `pctACobrar`. */}
                   Guía certificado, entradas y, en casi todos los recorridos, traslado desde tu hospedaje.
                   Apartas con el {ANTICIPO_PCT} % y liquidas el resto el día del tour. Cancelas gratis hasta 48 h antes{SALVO_POLITICA_PROPIA}.
                 </p>
                 {ofertas.length > 0 ? (
-                  <div className="flex flex-col gap-3 max-w-md mx-auto">
+                  <div className="mx-auto flex max-w-md flex-col gap-3">
                     {ofertas.map((o) => (
                       <Link
                         key={o.href}
                         href={o.href}
-                        className="block border border-dorado/40 hover:border-dorado bg-dorado/5 hover:bg-dorado/10 px-6 py-4 transition-colors text-left"
+                        className="block rounded-2xl border border-crema/25 bg-crema/5 px-6 py-4 text-left transition-colors hover:border-dorado hover:bg-crema/10"
                       >
-                        <span className="block font-dm text-sm text-crema leading-snug">{o.ancla} →</span>
-                        <span className="block font-dm font-light text-xs text-crema/45 mt-1">{o.nota}</span>
+                        <span className="block font-dm text-[15px] font-medium leading-snug text-crema">{o.ancla}</span>
+                        <span className="mt-1 block font-dm text-[13px] text-crema/60">{o.nota}</span>
                       </Link>
                     ))}
                   </div>
                 ) : (
-                  <Link href="/reservar" className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
-                    Ver recorridos y reservar →
+                  <Link href="/reservar" className={BOTON_DORADO}>
+                    Ver recorridos y reservar
                   </Link>
                 )}
               </div>
             </article>
 
             {/* ── SIDEBAR STICKY ── */}
-            <aside className="lg:sticky lg:top-24 space-y-5 hidden lg:block">
-
+            <aside className="hidden space-y-5 lg:sticky lg:top-24 lg:block">
               {/* Tour relevante (escritorio; en móvil va dentro del artículo) */}
               {relevantTour && <TarjetaTour tour={relevantTour} />}
 
-              {/* AI recommender */}
-              <div className="border border-white/10 bg-negro/30 p-5 text-center">
-                <p className="text-[8px] tracking-[2px] uppercase font-dm text-lima/60 mb-2">✦ IA · 2 min · Gratis</p>
-                <p className="font-cormorant text-crema text-base mb-2 leading-snug">¿Cuántos días tienes?</p>
-                <p className="text-crema/40 font-dm text-xs mb-4 leading-relaxed">La IA elige el tour perfecto según tu grupo e intereses.</p>
-                <Link href="/recomendar" className="block text-center bg-negro/50 border border-lima/25 hover:border-lima/50 text-lima text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
-                  Recomendador IA →
+              {/* Recomendador */}
+              <div className={`p-5 ${CAJA}`}>
+                <p className="font-cormorant text-xl leading-snug text-verde-profundo">¿Cuántos días tienes?</p>
+                <p className="mt-1.5 mb-4 font-dm text-[13px] leading-relaxed text-negro/60">En 2 minutos te decimos qué tour te queda según tu grupo y lo que te emociona. Gratis.</p>
+                <Link href="/recomendar" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva">
+                  Recomendar mi tour
                 </Link>
               </div>
 
               {/* Related articles */}
               {related.length > 0 && (
-                <div className="border border-white/8 bg-negro/20 p-5">
-                  <p className="text-[8px] tracking-[2px] uppercase font-dm text-crema/35 mb-4">Artículos relacionados</p>
-                  <div className="space-y-4">
+                <div className={`p-5 ${CAJA}`}>
+                  <p className="mb-3 font-dm text-sm font-medium text-verde-profundo">Artículos relacionados</p>
+                  <div className="flex flex-col">
                     {related.slice(0, 3).map((r) => (
-                      <Link key={r.slug} href={urlBlog(r.slug)} className="group flex gap-3 items-start">
+                      <Link key={r.slug} href={urlBlog(r.slug)} className="group flex items-start gap-3 border-t border-negro/10 py-3 first:border-t-0 first:pt-0">
                         {r.coverImageUrl && (
-                          <div className="w-14 h-14 overflow-hidden flex-shrink-0">
+                          <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-negro/5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={r.coverImageUrl} alt={r.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform" loading="lazy" />
+                            <img src={r.coverImageUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-xs font-dm text-crema/70 group-hover:text-crema leading-snug line-clamp-2 transition-colors">{r.title}</p>
-                          <p className="text-[9px] font-dm text-crema/30 mt-1">{r.readingTime} min</p>
+                          <p className="line-clamp-2 font-dm text-[13px] leading-snug text-negro/75 transition-colors group-hover:text-verde-selva">{r.title}</p>
+                          <p className="mt-1 font-dm text-[12px] text-negro/45">{r.readingTime} min</p>
                         </div>
                       </Link>
                     ))}
@@ -976,84 +1007,61 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                 </div>
               )}
 
-              {/* Back to blog */}
-              <Link href="/blog" className="block text-center text-[9px] tracking-[2px] uppercase font-dm text-crema/35 hover:text-crema/60 transition-colors py-2">
-                ← Ver todos los artículos
-              </Link>
+              <p className="text-center">
+                <Link href="/blog" className={ENLACE}>Ver todos los artículos</Link>
+              </p>
             </aside>
           </div>
 
-          {/* Related articles (mobile — below article) */}
+          {/* Related articles (mobile, below article) */}
           {related.length > 0 && (
-            <section className="mt-16 pt-12 border-t border-white/8 lg:hidden">
-              <div className="text-center mb-8">
-                <p className="text-[9px] tracking-[3px] uppercase text-lima/50 font-dm mb-2">Clúster de contenido</p>
-                <p className="text-[10px] tracking-[4px] uppercase text-crema/30 font-dm">
-                  Más guías sobre <span className="text-lima/60">{clusterTag}</span>
-                </p>
-              </div>
-              <div className="grid md:grid-cols-3 gap-6">
-                {related.map(p => (
-                  <Link key={p.slug} href={urlBlog(p.slug)} className="group">
-                    <article className="bg-forest border border-white/8 hover:border-lima/30 transition-colors overflow-hidden h-full flex flex-col">
-                      {p.coverImageUrl && (
-                        <div className="aspect-video overflow-hidden">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.coverImageUrl} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
-                        </div>
-                      )}
-                      <div className="p-5 flex flex-col flex-1">
-                        {p.tags[0] && <span className="text-[9px] tracking-[2px] uppercase text-lima/50 font-dm mb-2">{p.tags[0]}</span>}
-                        <h4 className="font-display text-lg text-crema group-hover:text-lima transition-colors leading-snug mb-2 flex-1">{p.title}</h4>
-                        <p className="text-crema/40 font-dm font-light text-xs">{p.readingTime} min lectura</p>
+            <section className="mt-16 border-t border-negro/10 pt-12 lg:hidden">
+              <h2 className="mb-6 font-cormorant text-3xl font-light text-verde-profundo">
+                Más guías sobre <em className="text-dorado">{clusterTag}</em>
+              </h2>
+              <div className="grid gap-6 md:grid-cols-3">
+                {related.map((p) => (
+                  <Link key={p.slug} href={urlBlog(p.slug)} className="group block">
+                    {p.coverImageUrl && (
+                      <div className="mb-3 aspect-video overflow-hidden rounded-2xl bg-negro/5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.coverImageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                       </div>
-                    </article>
+                    )}
+                    <h3 className="font-cormorant text-xl leading-snug text-verde-profundo transition-colors group-hover:text-verde-selva">{p.title}</h3>
+                    <p className="mt-1.5 font-dm text-[13px] text-negro/50">{p.readingTime} min de lectura</p>
                   </Link>
                 ))}
               </div>
+              <p className="mt-8 text-center">
+                <Link href="/blog" className={ENLACE}>Ver todos los artículos</Link>
+              </p>
             </section>
           )}
-
-          {/* Volver al blog (mobile) */}
-          <section className="max-w-2xl mx-auto text-center mt-16 pt-12 border-t border-white/8 lg:hidden">
-            <Link href="/blog" className="text-[10px] tracking-[3px] uppercase font-dm text-crema/40 hover:text-crema/70 transition-colors">
-              ← Ver todos los artículos
-            </Link>
-          </section>
         </div>
       </main>
     </>
   );
 }
 
-/**
- * El precio de un recorrido es "desde" cuando depende de algo más que la gente:
- * la ruta y el vehículo en el RZR, el tamaño del grupo en el Edén.
- */
 function tieneDesde(t: (typeof TOURS_DB)[number]): boolean {
   return t.precioUnidad === "grupo" || (t.rutas?.length ?? 0) > 0;
 }
 
-/**
- * "Salida 7:00 PM" · "Horario según el día" (el Edén: la hora la pone el
- * jardín) · "" cuando no hay hora pública (el buceo: se llega a la laguna).
- */
 function salidaTarjeta(t: (typeof TOURS_DB)[number]): string {
   const hora = horaEnLista(t, false);
   if (!hora) return "";
   return /^\d/.test(hora) ? `Salida ${hora}` : hora.charAt(0).toUpperCase() + hora.slice(1);
 }
 
-/** "$1,550 MXN por persona" · "desde $1,600 MXN por vehículo". */
 function precioTarjeta(t: (typeof TOURS_DB)[number]): string {
   return `${tieneDesde(t) ? "desde " : ""}$${t.precio.toLocaleString("es-MX")} MXN ${etiquetaUnidad(t)}`;
 }
 
 /**
- * La tarjeta del tour relacionado. Vivía suelta dentro de la barra lateral, que
- * es `hidden lg:block`: el único enlace del artículo a una ficha de tour no se
- * veía en móvil, o sea para el 88 % del tráfico. Ahora es un componente y se
- * pinta en los dos sitios, cada uno con su `className` de visibilidad.
+ * La tarjeta del tour relacionado: la salida a la venta más directa del
+ * artículo. Mismos dos enlaces de siempre (al carrito con el tour agregado y a
+ * la ficha); lo que cambió es la piel: clara, con el botón dorado de reservar.
  */
 function TarjetaTour({
   tour,
@@ -1063,33 +1071,36 @@ function TarjetaTour({
   className?: string;
 }) {
   return (
-    <div className={`border border-verde-selva/25 bg-verde-selva/8 p-5 ${className}`}>
-      <p className="text-[8px] tracking-[2px] uppercase font-dm text-verde-vivo mb-3">📍 Tour relacionado</p>
+    <div className={`rounded-2xl border border-negro/10 bg-white p-5 ${className}`}>
+      <p className="mb-3 font-dm text-[13px] font-medium text-verde-selva">Tour relacionado</p>
       {tour.imagen_hero && (
-        <div className="relative aspect-video overflow-hidden mb-3">
+        <div className="relative mb-4 aspect-video overflow-hidden rounded-xl bg-negro/5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={tour.imagen_hero} alt={tour.nombre} className="w-full h-full object-cover" loading="lazy" />
+          <img src={tour.imagen_hero} alt={tour.nombre} className="h-full w-full object-cover" loading="lazy" />
         </div>
       )}
-      <p className="font-cormorant text-crema text-base leading-snug mb-1">{tour.nombre}</p>
-      {/* Aquí iba "★ 4.9 · Todo incluido" fijo en TODOS los tours: las
-          reseñas son del negocio, no de cada recorrido (`resenas.ts`), y no
-          todos incluyen lo mismo. Se dice lo que el catálogo sabe de este. */}
-      <p className="text-[9px] font-dm text-crema/40 mb-3">
-        {[tourDurTexto(tour, " h"), salidaTarjeta(tour)].filter(Boolean).join(" · ")}
+      <p className="font-cormorant text-xl leading-snug text-verde-profundo">{tour.nombre}</p>
+      {/* Las reseñas son del negocio, no de cada recorrido (`resenas.ts`), y
+          no todos incluyen lo mismo: se dice lo que el catálogo sabe de este. */}
+      <p className="mt-1 mb-3 font-dm text-[13px] text-negro/50">
+        {[tourDurTexto(tour, " h"), salidaTarjeta(tour)].filter(Boolean).join(", ")}
       </p>
-      <p className="font-cormorant text-dorado text-lg leading-none mb-3">
-        {tieneDesde(tour) && <span className="font-dm text-[10px] text-crema/40 mr-1">desde</span>}
+      <p className="mb-4 font-cormorant text-2xl leading-none text-dorado">
+        {tieneDesde(tour) && <span className="mr-1 font-dm text-[12px] text-negro/50">desde</span>}
         ${tour.precio.toLocaleString("es-MX")}
-        <span className="font-dm text-[10px] text-crema/40 ml-1">MXN {etiquetaUnidad(tour)}</span>
+        <span className="ml-1 font-dm text-[12px] text-negro/50">MXN {etiquetaUnidad(tour)}</span>
       </p>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2.5">
         <Link
           href={`/reservar/carrito?agregar=${tour.slug}`}
-          className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">
-          Reservar →
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-dorado px-5 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 hover:bg-lima active:scale-[0.98]"
+        >
+          Reservar
         </Link>
-        <Link href={`/tours/${tour.slug}`} className="block text-center border border-white/15 hover:border-verde-selva/40 text-crema/50 hover:text-crema text-[9px] tracking-[2px] uppercase font-dm py-2 transition-colors">
+        <Link
+          href={`/tours/${tour.slug}`}
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva"
+        >
           Ver tour completo
         </Link>
       </div>

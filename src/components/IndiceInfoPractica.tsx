@@ -79,23 +79,31 @@ export function IndiceInfoPractica({
 
   // En el teléfono el índice se desliza: la sección activa se trae a la vista
   // sola, o el usuario no ve nunca dónde está.
+  //
+  // 🔴 Se desplaza SOLO la pista, en horizontal (29 oct 2026). Antes era
+  // `chip.scrollIntoView(...)`, y en un hijo de un `position: sticky` el
+  // navegador además mueve la PÁGINA hasta donde el índice viviría en el
+  // flujo, con el `scroll-behavior: smooth` de globals.css: cada cambio de
+  // sección activa frenaba el scroll del lector a mitad de camino.
   useEffect(() => {
-    if (!activa || !pista.current) return;
-    const chip = pista.current.querySelector<HTMLElement>(`[data-id="${activa}"]`);
-    if (!chip) return;
+    const pistaEl = pista.current;
+    if (!activa || !pistaEl) return;
+    const chip = pistaEl.querySelector<HTMLElement>(`[data-id="${activa}"]`);
+    if (!chip || pistaEl.scrollWidth <= pistaEl.clientWidth) return;
     const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    chip.scrollIntoView({ behavior: suave ? "smooth" : "auto", block: "nearest", inline: "center" });
+    const left = chip.offsetLeft - (pistaEl.clientWidth - chip.offsetWidth) / 2;
+    pistaEl.scrollTo({ left: Math.max(0, left), behavior: suave ? "smooth" : "auto" });
   }, [activa]);
 
   return (
     <nav
       aria-label={etiqueta}
-      className="sticky sticky-subnav z-40 border-b border-white/8 bg-negro/98 px-6 backdrop-blur-md"
+      className="sticky sticky-subnav z-40 border-b border-negro/10 bg-crema/95 px-6 backdrop-blur-md"
       style={{ top: "var(--navbar-offset, 64px)" }}
     >
       <ul
         ref={pista}
-        className="scrollbar-none mx-auto flex min-w-max items-center justify-start gap-2 overflow-x-auto py-2.5 sm:justify-center"
+        className="scrollbar-none mx-auto flex min-w-max items-center justify-start gap-2 overflow-x-auto py-3 sm:justify-center"
       >
         {secciones.map((s) => {
           const id = s.href.replace("#", "");
@@ -106,10 +114,10 @@ export function IndiceInfoPractica({
                 href={s.href}
                 data-id={id}
                 aria-current={esActiva ? "true" : undefined}
-                className={`inline-flex items-center rounded-full border px-4 py-2 font-dm text-[10px] uppercase tracking-[1.5px] transition-[color,background-color,border-color,transform] duration-200 ease-out active:scale-[0.97] ${
+                className={`inline-flex min-h-[40px] items-center whitespace-nowrap rounded-full border px-4 font-dm text-[13px] font-medium transition-[color,background-color,border-color,transform] duration-200 ease-out active:scale-[0.97] ${
                   esActiva
-                    ? "border-verde-vivo/60 bg-verde-selva/25 text-crema"
-                    : "border-white/12 text-crema/65 [@media(hover:hover)]:hover:border-verde-vivo/50 [@media(hover:hover)]:hover:bg-verde-selva/15 [@media(hover:hover)]:hover:text-crema"
+                    ? "border-verde-profundo bg-verde-profundo text-crema"
+                    : "border-negro/15 bg-white text-negro/70 [@media(hover:hover)]:hover:border-verde-selva [@media(hover:hover)]:hover:text-verde-profundo"
                 }`}
               >
                 {s.label}

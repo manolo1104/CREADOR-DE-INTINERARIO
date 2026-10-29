@@ -20,22 +20,22 @@ function FAQRow({ item }: { item: FAQItem }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border-b border-white/8 last:border-0">
+    <div className="border-t border-negro/15">
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-4 py-4 text-left group"
+        className="group flex w-full items-center justify-between gap-4 py-4 text-left"
       >
-        <span className="text-crema/85 font-dm text-sm leading-snug group-hover:text-crema transition-colors">
+        <span className="font-dm text-[15px] leading-snug text-verde-profundo transition-colors group-hover:text-verde-selva sm:text-base">
           {item.q}
         </span>
         <span
-          className={`flex-shrink-0 w-5 h-5 border border-crema/25 rounded-full flex items-center justify-center text-crema/50 transition-all duration-200 ${
-            open ? "bg-verde-vivo/20 border-verde-vivo/60 rotate-45" : ""
+          className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
+            open ? "rotate-45 border-verde-selva bg-verde-selva/10 text-verde-selva" : "border-negro/25 text-negro/50"
           }`}
           aria-hidden="true"
         >
-          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
         </span>
@@ -43,10 +43,10 @@ function FAQRow({ item }: { item: FAQItem }) {
 
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          open ? "max-h-96 pb-4" : "max-h-0"
+          open ? "max-h-96 pb-5" : "max-h-0"
         }`}
       >
-        <p className="text-crema/60 font-dm text-sm leading-relaxed whitespace-pre-line pl-0 pr-8">
+        <p className="whitespace-pre-line pr-10 font-dm text-[15px] leading-relaxed text-negro/70">
           {item.a}
         </p>
       </div>
@@ -54,20 +54,19 @@ function FAQRow({ item }: { item: FAQItem }) {
   );
 }
 
+/** Acordeón de preguntas, en claro: renglones con línea, sin caja. */
 export function FAQAccordion({ categorias }: Props) {
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       {categorias.map((cat) => (
         <div key={cat.titulo}>
-          <h3 className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-4">
+          <h3 className="mb-3 font-cormorant text-2xl text-verde-profundo sm:text-3xl">
             {cat.titulo}
           </h3>
-          <div className="border border-white/8 bg-negro/30">
-            <div className="divide-y divide-white/0 px-5">
-              {cat.items.map((item) => (
-                <FAQRow key={item.q} item={item} />
-              ))}
-            </div>
+          <div className="border-b border-negro/15">
+            {cat.items.map((item) => (
+              <FAQRow key={item.q} item={item} />
+            ))}
           </div>
         </div>
       ))}

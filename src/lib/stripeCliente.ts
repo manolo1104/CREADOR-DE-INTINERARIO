@@ -9,10 +9,17 @@ import { loadStripe } from "@stripe/stripe-js";
  * `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (comprobado el 4 oct 2026), así que en
  * producción la llave publicable sale de aquí. Es la PUBLICABLE (pk_live), la
  * que por diseño viaja al navegador; la secreta nunca pasa por este archivo.
+ *
+ * 🔴 Cuenta NUEVA de Stripe (29 oct 2026, Manolo: «cambia las claves de
+ * Stripe»): la publicable es de la cuenta `51UV52SA…`; la anterior era de
+ * `51SuFNKP…`. Una publicable solo cobra con la SECRETA de SU MISMA cuenta:
+ * `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` en Railway deben ser de la
+ * cuenta nueva ANTES de que este cambio llegue a producción, o ningún pago
+ * pasará (Stripe.js rechaza el PaymentIntent de otra cuenta).
  */
 export const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  "pk_live_51SuFNKPRwYk9rOzoUc56CjtGJ2VdnUkHvRNlP6N6EXX2PHdemLg0oHcOhXTUyv1jl1XHKvxcMfoIJErQSBBp4ojT00UPdWzcaR"
+  "pk_live_51UV52SAaj6hZowZJfZJqcsTvxlPrUvU2xLcrzGSSV0SYTNmlw3JeXENzQpGbuqwP3af2aut0thqA80hc5LMPXD4Z00q699Epr4"
 );
 
 /**
