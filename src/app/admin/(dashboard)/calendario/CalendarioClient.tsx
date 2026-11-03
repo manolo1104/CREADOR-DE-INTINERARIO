@@ -12,7 +12,7 @@ import { hospedajeDeReserva } from "@/lib/admin/hospedaje";
 import { grupoDe } from "@/lib/admin/reserva";
 import { colorDeTour, codigoDeTour, nombreDeTour } from "@/lib/admin/coloresTour";
 import {
-  agruparSalidas, diasDeTourDe, estadoDeSalida, fechasFijasSinVenta, resumirSalidas, ETIQUETA_ESTADO_SALIDA,
+  agruparSalidas, diasDeTourDe, estadoDeSalida, resumirSalidas, ETIQUETA_ESTADO_SALIDA,
   type EstadoSalida, type SalidaAgrupada,
 } from "@/lib/admin/salidas";
 import { playClick } from "@/lib/admin/sfx";
@@ -154,9 +154,6 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
   for (const sa of agruparSalidas(diasTour)) (salidasPorDia[sa.fecha] ??= []).push(sa);
   const diasMes = diasTour.filter(d => d.fecha >= mesIni && d.fecha <= mesFin);
   const resumenMes = resumirSalidas(diasMes);
-  const fijasPorDia: Record<string, string[]> = {};
-  for (const f of fechasFijasSinVenta(diasMes, mesIni, mesFin, todayStr)) (fijasPorDia[f.fecha] ??= []).push(f.slug);
-  const fijasSinVenta = Object.values(fijasPorDia).reduce((t, x) => t + x.length, 0);
   const cupoDe = (slug: string) => cupo.tours.find(t => t.slug === slug)?.cupo ?? null;
 
   // Todos los recorridos con cupo, con cómo están el día abierto: primero los
@@ -266,11 +263,10 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
 
       {/* Resumen del mes: lo que el scorecard mide por salida, aquí a la vista. */}
       {vista === "salidas" && (
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Dato valor={String(resumenMes.salidas)} etiqueta="Salidas reales" nota={`${resumenMes.reservas} reservas, ${resumenMes.diasDeTour} días de tour`} />
-          <Dato valor={String(resumenMes.paxPorSalida)} etiqueta="Personas por salida" nota="mínimo rentable: 3" tono={resumenMes.paxPorSalida >= 3 ? "bien" : "atencion"} />
+          <Dato valor={String(resumenMes.paxPorSalida)} etiqueta="Personas por salida" nota="meta: 3 o más (con 2 sí se sale, deja menos margen)" tono={resumenMes.paxPorSalida >= 3 ? "bien" : "atencion"} />
           <Dato valor={String(resumenMes.regularesBajoMinimo)} etiqueta="Salidas bajo mínimo" nota={`de ${resumenMes.regulares} regulares (2 pax o menos)`} tono={resumenMes.regularesBajoMinimo === 0 ? "bien" : "atencion"} />
-          <Dato valor={String(fijasSinVenta)} etiqueta="Salidas fijas sin ventas" nota="Tamul mar · jue · sáb, de hoy en adelante" />
         </div>
       )}
 
@@ -300,7 +296,7 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
                   </div>
                   <CupoDelDia dia={cupoDias[dateStr]} />
                 </div>
-                {vista === "salidas" && <CeldaSalidas salidas={salidasPorDia[dateStr] ?? []} fijas={fijasPorDia[dateStr] ?? []} cupoDe={cupoDe} />}
+                {vista === "salidas" && <CeldaSalidas salidas={salidasPorDia[dateStr] ?? []} cupoDe={cupoDe} />}
                 <div className={`space-y-0.5 ${vista === "salidas" ? "hidden" : ""}`}>
                   {dayBookings.slice(0,3).map(s => (
                     <div key={s.key}
@@ -333,7 +329,6 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
           {(["en-meta", "bajo-minimo", "lleno"] as EstadoSalida[]).map(e => (
             <span key={e} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: COLOR_ESTADO[e] }} aria-hidden="true" />{ETIQUETA_ESTADO_SALIDA[e]}{e === "en-meta" ? ": 3 pax o más" : e === "bajo-minimo" ? ": 2 o menos" : ""}</span>
           ))}
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm border border-dashed border-[#2433D6]" aria-hidden="true" />Salida fija sin ventas</span>
           <span>RZR, buceo y salidas a medida no llevan meta.</span>
         </p>
       )}
@@ -554,9 +549,9 @@ function Dato({ valor, etiqueta, nota, tono }: { valor: string; etiqueta: string
 
 /**
  * Las salidas de un día en su celda: código, personas/cupo, barra de ocupación,
- * nombres y estado; y las fijas sin venta punteadas. Cada una abre su detalle.
+ * nombres y estado. Cada una abre su detalle.
  */
-function CeldaSalidas({ salidas, fijas, cupoDe }: { salidas: SalidaAgrupada[]; fijas: string[]; cupoDe: (slug: string) => number | null }) {
+function CeldaSalidas({ salidas, cupoDe }: { salidas: SalidaAgrupada[]; cupoDe: (slug: string) => number | null }) {
   return (
     <div className="space-y-1" onClick={e => e.stopPropagation()}>
       {salidas.slice(0, 3).map(sa => {
@@ -582,11 +577,6 @@ function CeldaSalidas({ salidas, fijas, cupoDe }: { salidas: SalidaAgrupada[]; f
         );
       })}
       {salidas.length > 3 && <div className="text-[9px] font-dm text-[#1B4332]/40">+{salidas.length - 3} más</div>}
-      {fijas.map(slug => (
-        <div key={slug} className="rounded-sm border border-dashed px-1 py-0.5 text-[9px] font-dm leading-tight" style={{ borderColor: colorDeTour(slug), color: colorDeTour(slug) }}>
-          <strong>{codigoDeTour(slug)} fija</strong> · 0/{cupoDe(slug) ?? "–"}<br />A la venta
-        </div>
-      ))}
     </div>
   );
 }

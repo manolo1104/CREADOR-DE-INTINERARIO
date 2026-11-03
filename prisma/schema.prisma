@@ -941,7 +941,7 @@ model Salida {
   tourSlug  String
   /// YYYY-MM-DD
   fecha     String
-  /// fija | privada
+  /// fija (compartida, el valor de siempre) | privada
   tipo      String   @default("fija")
   guia      String?
   vehiculo  String?

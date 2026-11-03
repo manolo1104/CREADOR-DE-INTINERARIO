@@ -71,7 +71,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
     <div className="mt-3">
       <EncabezadoPagina
         titulo={s.tourNombre}
-        subtitulo={`${fechaLarga(s.fecha)} · ${s.personas}${s.cupo !== null ? ` / ${s.cupo}` : ""} personas · ${registro.tipo === "privada" ? "privada" : "salida fija"}`}
+        subtitulo={`${fechaLarga(s.fecha)} · ${s.personas}${s.cupo !== null ? ` / ${s.cupo}` : ""} personas · ${registro.tipo === "privada" ? "privada" : "compartida"}`}
         acciones={<ChipEstado tono={TONO_ESTADO_SALIDA[s.estadoPax]}>{ETIQUETA_ESTADO_SALIDA[s.estadoPax]}</ChipEstado>}
       />
 
@@ -172,7 +172,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
                   </select></label>
                 <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Tipo
                   <select value={registro.tipo} disabled={!puedeAsignar} onChange={e => setRegistro(r => ({ ...r, tipo: e.target.value }))} className={`${input} mt-1 normal-case tracking-normal`}>
-                    <option value="fija">Salida fija</option><option value="privada">Privada</option>
+                    <option value="fija">Compartida</option><option value="privada">Privada</option>
                   </select></label>
               </div>
               <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Notas de la salida

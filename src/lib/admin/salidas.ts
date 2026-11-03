@@ -11,7 +11,6 @@
 // script de conciliación, y se prueba en `__tests__/salidas.test.ts`.
 
 import { codigoDeTour } from "./coloresTour";
-import { weekdayYMD, addDaysYMD } from "@/lib/dates";
 import { resumirCostos, type ConceptoCosto } from "./costos";
 import { grupoDe, lineasDe, type ConLineas } from "./reserva";
 
@@ -155,24 +154,9 @@ export function diasEnRango(reservas: ReservaParaSalidas[], desde: string, hasta
 // ── Salidas fijas, estado y números (PR 1.2, 3 nov 2026) ─────────────────────
 
 
-/** Días de salida fija por tour (0 = domingo). Tamul: martes, jueves y sábado. Configurable por tour. */
-export const DIAS_FIJOS: Record<string, number[]> = {
-  "expedicion-tamul": [2, 4, 6],
-};
-
-/** Las salidas fijas de un rango que no tienen ninguna venta: «TAM fija · 0/12 · A la venta». */
-export function fechasFijasSinVenta(dias: DiaDeTour[], desde: string, hasta: string, aPartirDe = desde): { fecha: string; slug: string }[] {
-  const conVenta = new Set(dias.map(d => `${d.fecha}|${d.slug}`));
-  const out: { fecha: string; slug: string }[] = [];
-  for (let f = desde; f <= hasta; f = addDaysYMD(f, 1)) {
-    if (f < aPartirDe) continue;
-    const dow = weekdayYMD(f);
-    for (const [slug, diasFijos] of Object.entries(DIAS_FIJOS)) {
-      if (diasFijos.includes(dow) && !conVenta.has(`${f}|${slug}`)) out.push({ fecha: f, slug });
-    }
-  }
-  return out;
-}
+// Salidas fijas: NO (Manolo, 3 nov 2026). «Nuestras salidas son a partir de dos
+// personas, por lo que casi siempre podemos salir»: no hay días fijos a la
+// venta sin reserva. «Bajo mínimo» queda solo como aviso de rentabilidad.
 
 export type EstadoSalida = "en-meta" | "bajo-minimo" | "lleno" | "a-medida";
 

@@ -107,15 +107,8 @@ describe("noviembre de la línea base: 20 reservas → 31 días de tour → 27 s
 });
 
 describe("salidas fijas, estado y números (PR 1.2)", () => {
-  it("Tamul sale fijo martes, jueves y sábado; sin venta queda «a la venta»", async () => {
-    const { fechasFijasSinVenta, estadoDeSalida, numerosDeSalida, simularMargen } = await import("../salidas");
-    // Semana del lunes 9 al domingo 15 de noviembre de 2026: mar 10, jue 12, sáb 14.
-    const dias = diasEnRango(noviembre, "2026-11-09", "2026-11-15"); // Araceli tiene TAM el sáb 14
-    const fijas = fechasFijasSinVenta(dias, "2026-11-09", "2026-11-15");
-    expect(fijas).toEqual([{ fecha: "2026-11-10", slug: T.TAM }, { fecha: "2026-11-12", slug: T.TAM }]);
-    // Desde el jueves: el martes ya pasó.
-    expect(fechasFijasSinVenta(dias, "2026-11-09", "2026-11-15", "2026-11-12")).toEqual([{ fecha: "2026-11-12", slug: T.TAM }]);
-
+  it("estado por personas y cupo; números y simulador con los costos de Tamul", async () => {
+    const { estadoDeSalida, numerosDeSalida, simularMargen } = await import("../salidas");
     expect(estadoDeSalida({ personas: 4, aMedida: false }, 12)).toBe("en-meta");
     expect(estadoDeSalida({ personas: 2, aMedida: false }, 12)).toBe("bajo-minimo");
     expect(estadoDeSalida({ personas: 12, aMedida: false }, 12)).toBe("lleno");
