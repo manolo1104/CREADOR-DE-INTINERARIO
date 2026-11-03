@@ -226,6 +226,7 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   { prefijo: "/admin/leads",         seccion: "leads"        },
   { prefijo: "/admin/seguimientos",  seccion: "seguimientos" },
   { prefijo: "/admin/salidas-dia",   seccion: "salidas-dia"  },
+  { prefijo: "/api/admin/salidas-dia", seccion: "salidas-dia" },
   { prefijo: "/admin/rutas",         seccion: "rutas"        },
   { prefijo: "/admin/proveedores",   seccion: "proveedores"  },
   { prefijo: "/admin/rentabilidad",  seccion: "rentabilidad" },

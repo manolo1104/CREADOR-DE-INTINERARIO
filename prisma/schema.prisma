@@ -928,3 +928,31 @@ model CodigoCumple {
 
   @@unique([email, anio])
 }
+
+/// Una SALIDA (rediseño del panel, 3 nov 2026): tour + fecha (+ nombre si es a
+/// medida). Las reservas NO se migran: la salida se deriva de los renglones de
+/// `TourBooking.lineItems` (`lib/admin/salidas.ts`) y esta tabla guarda solo lo
+/// que no se puede derivar: guía, vehículo, estado, checklist y notas. Se crea
+/// al primer toque desde «Salidas del día».
+model Salida {
+  id        String   @id @default(cuid())
+  /// `claveDeSalida()`: "YYYY-MM-DD|<slug>" o "YYYY-MM-DD|<slug>|<nombre>" (a medida).
+  clave     String   @unique
+  tourSlug  String
+  /// YYYY-MM-DD
+  fecha     String
+  /// fija (compartida, el valor de siempre) | privada
+  tipo      String   @default("fija")
+  guia      String?
+  vehiculo  String?
+  /// programada | confirmada | operada | cancelada
+  estado    String   @default("programada")
+  /// [{ clave, texto, hecho, por, en }] — ver `lib/admin/checklistSalida.ts`.
+  checklist Json?
+  notas     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
+  @@index([tourSlug, fecha])
+}

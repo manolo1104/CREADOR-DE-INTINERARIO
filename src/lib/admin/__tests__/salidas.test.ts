@@ -105,3 +105,24 @@ describe("noviembre de la línea base: 20 reservas → 31 días de tour → 27 s
     expect(diasEnRango(noviembre, "2026-12-01", "2026-12-31")).toHaveLength(0);
   });
 });
+
+describe("salidas fijas, estado y números (PR 1.2)", () => {
+  it("estado por personas y cupo; números y simulador con los costos de Tamul", async () => {
+    const { estadoDeSalida, numerosDeSalida, simularMargen } = await import("../salidas");
+    expect(estadoDeSalida({ personas: 4, aMedida: false }, 12)).toBe("en-meta");
+    expect(estadoDeSalida({ personas: 2, aMedida: false }, 12)).toBe("bajo-minimo");
+    expect(estadoDeSalida({ personas: 12, aMedida: false }, 12)).toBe("lleno");
+    expect(estadoDeSalida({ personas: 1, aMedida: true }, null)).toBe("a-medida");
+
+    // Tamul del prompt: $1,400/pax; fijo $1,200 (gasolina + guía); $395/pax.
+    const tamul = [
+      { concepto: "Gasolina", monto: 400, tipo: "fijo" as const }, { concepto: "Guía", monto: 800, tipo: "fijo" as const },
+      { concepto: "Entradas", monto: 45, tipo: "persona" as const }, { concepto: "Canoa", monto: 200, tipo: "persona" as const }, { concepto: "Desayuno", monto: 150, tipo: "persona" as const },
+    ];
+    const n = numerosDeSalida(1400 * 4, 4, tamul);
+    expect(n).toMatchObject({ ingreso: 5600, costoFijo: 1200, costoPorPax: 395, costos: 2780, margen: 2820, margenPct: 50, parteSocio: 1410, conCostos: true });
+    expect(numerosDeSalida(3100, 2, []).conCostos).toBe(false);
+    const sim = simularMargen(1400, tamul, 6);
+    expect(sim.map(x => x.margen)).toEqual([-195, 810, 1815, 2820, 3825, 4830]);
+  });
+});
