@@ -956,3 +956,27 @@ model Salida {
   @@index([fecha])
   @@index([tourSlug, fecha])
 }
+
+/// La revisión del jueves (rediseño, 3 nov 2026): lo que todavía no sale del
+/// panel porque no hay Bandeja de WhatsApp (Fase 2) ni score automático
+/// (Fase 3) se captura a mano una vez por semana, y el scorecard lo lee de
+/// aquí. Cuando esos datos salgan solos, esta tabla queda como respaldo.
+model RevisionSemanal {
+  id             String   @id @default(cuid())
+  /// Lunes de la semana, YYYY-MM-DD.
+  semana         String   @unique
+  /// Contactos nuevos que escribieron esa semana (revisión de WhatsApp).
+  leadsNuevos    Int?
+  /// De esos, cuántos recibieron el primer mensaje en 5 min o menos (en horario).
+  respuestas5min Int?
+  /// Clientes distintos a los que se les cotizó (si no se captura, se cuenta del panel).
+  leadsCotizados Int?
+  /// Score del operador, 0 a 100 (rúbrica de 14 reglas).
+  score          Int?
+  /// Reseñas nuevas de Google esa semana (si no se captura, sale de la lectura de Google).
+  resenasNuevas  Int?
+  notas          String?
+  guardadoPor    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

@@ -188,6 +188,8 @@ export function rolDesdeToken(valor: unknown): RolAdmin {
 const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boolean }[] = [
   { prefijo: "/admin",                       seccion: "inicio", exacto: true },
   { prefijo: "/api/admin/permisos",          seccion: "inicio" },
+  // La revisión del jueves se captura desde el scorecard de Inicio.
+  { prefijo: "/api/admin/revision-semanal",  seccion: "inicio" },
   { prefijo: "/admin/reservas",              seccion: "reservas"     },
   { prefijo: "/admin/calendario",            seccion: "calendario"   },
   { prefijo: "/admin/salidas",               seccion: "salidas"      },

@@ -5,11 +5,18 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { puedeVer } from "@/lib/admin/usuarios";
 import { permisosDeTodos } from "@/lib/admin/permisos";
 import DashboardClient from "./DashboardClient";
+import { datosScorecard, type DatosScorecard } from "@/lib/admin/scorecardDatos";
+import { lunesDe } from "@/lib/admin/corteSemanal";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ searchParams }: { searchParams: { semana?: string } }) {
   const sesion     = await sesionActual();
+  // El scorecard semanal (rediseño, 3 nov 2026): la semana pedida o la actual.
+  const pedida = searchParams?.semana ?? "";
+  const lunes = lunesDe(/^\d{4}-\d{2}-\d{2}$/.test(pedida) && addDaysYMD(pedida, 0) === pedida ? pedida : hoyMX());
+  let scorecard: DatosScorecard | null = null;
+  try { scorecard = await datosScorecard(lunes); } catch (e) { console.error("scorecard:", (e as Error)?.message); }
   const verDinero  = puedeVer(sesion?.rol ?? "operacion", "ingresos");
   const todayStr   = hoyMX();
   const nextWeek   = addDaysYMD(todayStr, 7);
@@ -64,6 +71,7 @@ export default async function AdminDashboard() {
       pendingAmount={verDinero ? pendingAmount : 0}
       activeQuotes={activeQuotesCount}
       personas={personas}
+      scorecard={scorecard}
     />
   );
 }

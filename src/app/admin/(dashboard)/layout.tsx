@@ -27,7 +27,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminSidebar rol={sesion?.rol ?? "operacion"} nombre={sesion?.nombre ?? ""} secciones={secciones} />
       <NewBookingWatcher />
 
-      <main className="relative z-10 flex-1 min-w-0 overflow-auto pt-14 md:pt-0">
+      {/* La tinta del panel va aquí: lo que no pone color hereda la del sitio
+          público (clara) y se lee lavado. */}
+      <main className="relative z-10 flex-1 min-w-0 overflow-auto pt-14 md:pt-0 text-[var(--panel-tinta)]">
         {children}
       </main>
     </div>
