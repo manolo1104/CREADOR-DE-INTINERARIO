@@ -16,6 +16,7 @@ const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+import { etiquetaMotivo } from "@/lib/admin/cancelacion";
 const STATUS_LABEL: Record<string, string> = { paid: "Pagada", pending: "Pendiente", cancelled: "Cancelada" };
 const STATUS_STYLE: Record<string, string> = {
   paid: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800", cancelled: "bg-red-100 text-red-700",
@@ -106,6 +107,11 @@ export default function ReservaDetalle({
               <span className="text-[10px] font-dm text-[#1B4332]/40">
                 {b.stripePaymentIntentId ? "Pagó en línea" : "Capturada a mano"}
               </span>
+              {b.status === "cancelled" && (b as { motivoCancelacion?: string | null }).motivoCancelacion && (
+                <span className="text-[10px] font-dm text-[#b8413f]">
+                  Motivo: {etiquetaMotivo((b as { motivoCancelacion?: string | null }).motivoCancelacion)}
+                </span>
+              )}
             </div>
             <p className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{b.customerName}</p>
           </div>

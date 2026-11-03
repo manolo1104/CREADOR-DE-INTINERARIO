@@ -100,7 +100,7 @@ export default function DashboardClient({
                pie="saldo por cobrar" />
 
         <Cifra etiqueta="Cotizaciones activas" tono={activeQuotes > 0 ? "neutro" : "apagado"}
-               valor={<CountUp value={activeQuotes} />} pie="borrador y enviadas" />
+               valor={<CountUp value={activeQuotes} />} pie="enviadas y por vencer" />
       </div>
 
       {/* Main 3-column grid */}

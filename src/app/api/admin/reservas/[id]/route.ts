@@ -6,12 +6,12 @@ import {
 } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { puedeHacer } from "@/lib/admin/usuarios";
-import { anularCobro } from "@/lib/admin/cobros";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import {
   canjearCodigoCumple, codigoCumpleAlGuardar, codigoDeLineas, liberarCodigoCumple, liberarCodigosDeFolio,
 } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
+import { motivoParaGuardar } from "@/lib/admin/cancelacion";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ const BOOKING_FIELDS = [
   "tourId", "tourName", "tourSlug", "tourDate", "adults", "children",
   "totalAmount", "depositoPagado", "promoCode", "promoDiscount",
   "customerName", "customerEmail", "customerPhone", "notes",
-  "lineItems", "packageItems", "extraItems", "status",
+  "lineItems", "packageItems", "extraItems", "status", "motivoCancelacion",
   "pagoProveedor", "pagoProveedorMonto", "pagoProveedorFecha", "pagoProveedorNota",
   "guia", "idiomaTour",
 ] as const;
@@ -91,6 +91,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // reactivar una cancelada lo vuelve a tomar, si nadie más lo usó.
     const cancela   = !!antes && data.status === "cancelled" && antes.status !== "cancelled";
     const reactiva  = !!antes && data.status !== undefined && data.status !== "cancelled" && antes.status === "cancelled";
+    // Cancelar exige el motivo (3 nov 2026): el panel manda `motivo` + `motivoDetalle`
+    // o ya el texto armado en `motivoCancelacion`. Reactivar lo limpia.
+    if (cancela) {
+      const motivo = typeof data.motivoCancelacion === "string" && data.motivoCancelacion.trim()
+        ? String(data.motivoCancelacion).trim().slice(0, 220)
+        : motivoParaGuardar(body.motivo, body.motivoDetalle);
+      if (!motivo) {
+        return NextResponse.json({ error: "Para cancelar hay que decir el motivo." }, { status: 400 });
+      }
+      data.motivoCancelacion = motivo;
+    }
+    if (reactiva) data.motivoCancelacion = null;
     if (reactiva && antes) {
       const codigo = codigoDeLineas(data.lineItems !== undefined ? data.lineItems : antes.lineItems);
       if (codigo && codigo !== canjeado) {
@@ -141,52 +153,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
+/**
+ * Las reservas ya NO se borran (3 nov 2026). Antes esta ruta eliminaba la fila
+ * y anulaba sus cobros; en la línea base el panel decía «0 canceladas» aunque
+ * sí las hubo, porque se borraban. Ahora se cancelan con motivo y queda el
+ * rastro en la reserva y en la bitácora. Se deja la ruta para que un panel
+ * viejo en caché reciba una respuesta clara, no un 404.
+ */
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    // Eliminación completa de la base de datos. La evidencia del pago al
-    // proveedor vive en otra tabla sin llave foránea, así que se borra a mano:
-    // si no, quedarían bytes huérfanos ocupando espacio para siempre.
-    // Se lee antes de borrar: después ya no hay a quién nombrar en la bitácora.
-    const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
-
-    // 🔴 Los cobros no tienen llave foránea: al borrar la reserva quedaban
-    // huérfanos, seguían contando como efectivo en mano en los cortes y
-    // desaparecían de Finanzas. Si tiene cobros vivos, solo un socio o el dueño
-    // la borra, y sus cobros se ANULAN con motivo (queda rastro); Operación la
-    // cancela en vez de borrarla.
-    const sesion = await sesionActual();
-    const cobrosVivos = await prisma.movimiento.findMany({
-      where:  { reservaId: params.id, tipo: "cobro", anulado: false },
-      select: { id: true },
-    });
-    if (cobrosVivos.length) {
-      if (!sesion || !puedeHacer(sesion.rol, "anularMovimiento")) {
-        return NextResponse.json(
-          { error: "Esta reserva tiene cobros registrados. Cámbiala a «cancelada» o pídele a un socio que la elimine." },
-          { status: 403 },
-        );
-      }
-      for (const c of cobrosVivos) {
-        await anularCobro(c.id, `Reserva ${antes?.confirmationNumber ?? params.id} eliminada`, sesion.nombre);
-      }
-    }
-
-    await prisma.evidencia.deleteMany({ where: { bookingId: params.id } });
-    await prisma.tourBooking.delete({ where: { id: params.id } });
-    // El código de cumpleaños que usaba vuelve a servirle al cliente.
-    if (antes) await liberarCodigosDeFolio(antes.confirmationNumber);
-
-    await registrarEnBitacora({
-      accion:     "eliminó",
-      entidad:    "reserva",
-      referencia: antes?.confirmationNumber,
-      resumen:    antes
-        ? `Reserva ${antes.confirmationNumber} — ${antes.customerName}, ${antes.tourName || "sin tour"} el ${antes.tourDate || "sin fecha"}, ${pesos(antes.totalAmount)}`
-        : `Reserva ${params.id} (ya no estaba en la base)`,
-    });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    console.error("admin/reservas/[id]:", e?.message);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
-  }
+  const antes = await prisma.tourBooking.findUnique({ where: { id: params.id }, select: { confirmationNumber: true } }).catch(() => null);
+  await registrarEnBitacora({
+    accion:     "modificó",
+    entidad:    "reserva",
+    referencia: antes?.confirmationNumber ?? params.id,
+    resumen:    `Intento de borrar la reserva ${antes?.confirmationNumber ?? params.id}: las reservas no se borran, se cancelan con motivo`,
+  });
+  return NextResponse.json(
+    { error: "Las reservas no se borran: cámbiala a «Cancelada» y di el motivo." },
+    { status: 403 },
+  );
 }
