@@ -600,32 +600,44 @@ input[type="tel"]:focus {
 
 :root {
   /* Superficies, de la más al fondo a la más elevada */
-  --panel-fondo:        #f4f6f3;
-  --panel-fondo-velo:   rgba(27, 67, 50, 0.04);
-  --panel-superficie:   #ffffff;
-  --panel-borde:        rgba(27, 67, 50, 0.10);
-  --panel-borde-fuerte: rgba(27, 67, 50, 0.20);
+  /* Tokens del rediseño del panel (3 nov 2026): el mismo estilo, con nombre.
+     Fondo gris muy claro, superficie blanca, borde cálido, tinta casi negra y
+     un verde oscuro de acento. */
+  --panel-fondo:        #F5F5F3;
+  --panel-fondo-velo:   rgba(28, 28, 26, 0.04);
+  --panel-superficie:   #FFFFFF;
+  --panel-borde:        #E6E4DF;
+  --panel-borde-fuerte: #CFCCC5;
 
-  /* Tinta: tres pesos y ni uno más, para que la jerarquía se note */
-  --panel-tinta:        #16362a;
-  /* Opacidades calculadas, no elegidas a ojo: 0.66 da 4.59:1 sobre blanco
-     (el mínimo para texto es 4.5) y 0.51 da 3.02:1 para las etiquetas. */
-  --panel-tinta-media:  rgba(22, 54, 42, 0.66);
-  --panel-tinta-suave:  rgba(22, 54, 42, 0.51);
+  /* Tinta: tres pesos y ni uno más, para que la jerarquía se note.
+     Contraste sobre blanco: #1C1C1A 17:1 · #66655F 5.7:1 (texto) ·
+     #8A8983 3.4:1 (solo etiquetas, mínimo 3:1). Al tocarlos, recalcular. */
+  --panel-tinta:        #1C1C1A;
+  --panel-tinta-media:  #66655F;
+  --panel-tinta-suave:  #8A8983;
 
-  --panel-acento:       #1B4332;
-  --panel-positivo:     #2b845c;  /* 4.61:1 sobre blanco */
-  --panel-alerta:       #a86814;  /* 4.51:1 sobre blanco */
-  --panel-peligro:      #b8413f;
+  --panel-acento:       #1F3B2D;
+  /* Estados: siempre texto oscuro sobre fondo tenue, y siempre con palabra
+     (el color nunca va solo). Bien 5.6:1 · Atención 6.0:1 · Problema 5.7:1. */
+  --panel-bien:            #2E6B45;
+  --panel-bien-fondo:      #E5F0E8;
+  --panel-atencion:        #8A5A00;
+  --panel-atencion-fondo:  #FBF0D9;
+  --panel-problema:        #A33A26;
+  --panel-problema-fondo:  #F8E3DE;
+  /* Nombres de antes, para lo que aún los usa. */
+  --panel-positivo:     var(--panel-bien);
+  --panel-alerta:       var(--panel-atencion);
+  --panel-peligro:      var(--panel-problema);
 
   /* Sombras teñidas del verde del fondo: una sombra negra pura sobre un
      fondo cálido se ve sucia. */
-  --panel-sombra-sm: 0 1px 2px rgba(22, 54, 42, 0.05);
-  --panel-sombra:    0 2px 8px -2px rgba(22, 54, 42, 0.08), 0 1px 2px rgba(22, 54, 42, 0.04);
-  --panel-sombra-lg: 0 12px 32px -8px rgba(22, 54, 42, 0.16), 0 2px 6px rgba(22, 54, 42, 0.06);
+  --panel-sombra-sm: 0 1px 2px rgba(28, 28, 26, 0.05);
+  --panel-sombra:    0 2px 8px -2px rgba(28, 28, 26, 0.08), 0 1px 2px rgba(28, 28, 26, 0.04);
+  --panel-sombra-lg: 0 12px 32px -8px rgba(28, 28, 26, 0.16), 0 2px 6px rgba(28, 28, 26, 0.06);
 
-  --panel-radio:    10px;
-  --panel-radio-sm: 7px;
+  --panel-radio:    12px;
+  --panel-radio-sm: 8px;
 }
 
 @layer components {

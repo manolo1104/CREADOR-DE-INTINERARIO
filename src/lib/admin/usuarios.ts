@@ -4,12 +4,22 @@
 // Cada persona tiene su propia variable de entorno en Railway; si la variable
 // no está puesta, ese usuario simplemente no puede entrar (fail closed).
 
-export type RolAdmin = "dueno" | "socio" | "operacion";
+// `guia` (3 nov 2026): quien sale a guiar ve solo sus salidas del día y el
+// calendario; nada de dinero ni de clientes.
+export type RolAdmin = "dueno" | "socio" | "operacion" | "guia";
+
+export const ETIQUETA_ROL: Record<RolAdmin, string> = {
+  dueno: "Dirección", socio: "Socio operador", operacion: "Operación", guia: "Guía",
+};
 
 export type SeccionAdmin =
   | "inicio" | "reservas" | "calendario" | "cotizaciones"
   | "cotizador" | "clientes" | "ingresos" | "curso" | "bitacora"
-  | "cortes" | "cobros" | "fotos" | "resenas" | "salidas" | "analisis";
+  | "cortes" | "cobros" | "fotos" | "resenas" | "salidas" | "analisis"
+  // Rediseño del panel (3 nov 2026). Llegan por fases; mientras, cada una es
+  // una página «Nuevo» que explica qué va a tener y lleva a lo que hoy existe.
+  | "bandeja" | "leads" | "seguimientos" | "salidas-dia" | "rutas"
+  | "proveedores" | "rentabilidad" | "score" | "agente";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -37,23 +47,29 @@ const OPERACION: SeccionAdmin[] = [
   // El Cotizador NO: enseña lo que nos cuesta cada tour y el margen que deja.
   // Estaba dentro y contradecía la propia definición del rol —"sin ver los
   // números del negocio"—. Fuera por decisión de Manolo, 23 sep 2026.
+  // Rediseño (3 nov 2026): lo comercial, las salidas del día y su propio score.
+  "bandeja", "leads", "seguimientos", "salidas-dia", "score",
 ];
+// guía: solo sus salidas y el calendario para saber qué hay esa semana.
+const GUIA: SeccionAdmin[] = ["salidas-dia", "calendario"];
 // socio: todo lo de tours, ventas y el corte semanal. Sin el Curso de IA (otro
 // negocio).
 // ⚠️ El Cotizador entra AQUÍ y no en OPERACION. OPERACION es la base de los
 // otros dos roles: lo que se le quita, se le quita también al socio y al
 // dueño. Al sacarlo de ahí se quedó sin él TODO el mundo, Manolo incluido.
-const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "cortes", "cotizador"];
+// Rediseño (3 nov 2026): rutas y protocolos, proveedores y la rentabilidad.
+const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "cortes", "cotizador", "rutas", "proveedores", "rentabilidad"];
 // dueño: todo. La bitácora (quién hizo qué) es SOLO suya: si quien está siendo
 // registrado pudiera leerla, dejaría de servir para lo que se hizo.
 // Análisis (21 oct 2026) cruza datos personales del check-in con el dinero:
 // solo suyo de entrada; desde Inicio se la puede abrir a quien quiera.
-const DUENO: SeccionAdmin[] = [...SOCIO, "curso", "bitacora", "analisis"];
+const DUENO: SeccionAdmin[] = [...SOCIO, "curso", "bitacora", "analisis", "agente"];
 
 export const SECCIONES_POR_ROL: Record<RolAdmin, SeccionAdmin[]> = {
   dueno:     DUENO,
   socio:     SOCIO,
   operacion: OPERACION,
+  guia:      GUIA,
 };
 
 export function puedeVer(rol: RolAdmin, seccion: SeccionAdmin): boolean {
@@ -66,24 +82,52 @@ export function puedeVer(rol: RolAdmin, seccion: SeccionAdmin): boolean {
 // las páginas no puede leer la base. Lo de arriba (por rol) es solo lo que
 // cada quien ve mientras Manolo no haya decidido nada.
 
-/** Todas las pestañas, en el orden del menú, con su página y su nombre. */
-export const PESTANAS: { seccion: SeccionAdmin; pagina: string; etiqueta: string; grupo: string }[] = [
-  { seccion: "inicio",       pagina: "/admin",              etiqueta: "Inicio",        grupo: "Operación" },
-  { seccion: "reservas",     pagina: "/admin/reservas",     etiqueta: "Reservas",      grupo: "Operación" },
-  { seccion: "calendario",   pagina: "/admin/calendario",   etiqueta: "Calendario",    grupo: "Operación" },
-  { seccion: "salidas",      pagina: "/admin/salidas",      etiqueta: "Viaje CDMX",    grupo: "Operación" },
-  { seccion: "cotizaciones", pagina: "/admin/cotizaciones", etiqueta: "Cotizaciones",  grupo: "Operación" },
-  { seccion: "cobros",       pagina: "/admin/cobros",       etiqueta: "Cobros",        grupo: "Operación" },
-  { seccion: "fotos",        pagina: "/admin/fotos",        etiqueta: "Fotos",         grupo: "Operación" },
-  { seccion: "resenas",      pagina: "/admin/resenas",      etiqueta: "Reseñas",       grupo: "Operación" },
-  { seccion: "clientes",     pagina: "/admin/clientes",     etiqueta: "Clientes",      grupo: "Operación" },
-  { seccion: "cortes",       pagina: "/admin/cortes",       etiqueta: "Corte semanal", grupo: "Dinero" },
-  { seccion: "cotizador",    pagina: "/admin/cotizador",    etiqueta: "Cotizador",     grupo: "Dinero" },
-  { seccion: "ingresos",     pagina: "/admin/ingresos",     etiqueta: "Ventas",        grupo: "Dinero" },
-  { seccion: "analisis",     pagina: "/admin/analisis",     etiqueta: "Análisis",      grupo: "Dinero" },
-  { seccion: "bitacora",     pagina: "/admin/bitacora",     etiqueta: "Bitácora",      grupo: "Control" },
-  { seccion: "curso",        pagina: "/admin/curso",        etiqueta: "Curso IA",      grupo: "Control" },
+export type GrupoMenu = "Hoy" | "Comercial" | "Operación" | "Dinero" | "Calidad" | "Agente" | "Control";
+
+export interface Pestana {
+  seccion: SeccionAdmin;
+  pagina: string;
+  etiqueta: string;
+  grupo: GrupoMenu;
+  /** Sección del rediseño (3 nov 2026): lleva la marca «Nuevo» las primeras semanas. */
+  nueva?: boolean;
+}
+
+/**
+ * Todas las pestañas, en el orden del menú, agrupadas por ÁREA de trabajo
+ * (rediseño del panel, 3 nov 2026): lo de hoy, lo comercial, la operación, el
+ * dinero, la calidad, el agente y el control. El menú y «¿Quién ve qué?» se
+ * pintan desde aquí: una sola lista.
+ */
+export const PESTANAS: Pestana[] = [
+  { seccion: "inicio",       pagina: "/admin",              etiqueta: "Inicio",             grupo: "Hoy" },
+  { seccion: "bandeja",      pagina: "/admin/bandeja",      etiqueta: "Bandeja",            grupo: "Comercial", nueva: true },
+  { seccion: "leads",        pagina: "/admin/leads",        etiqueta: "Leads",              grupo: "Comercial", nueva: true },
+  { seccion: "seguimientos", pagina: "/admin/seguimientos", etiqueta: "Seguimientos",       grupo: "Comercial", nueva: true },
+  { seccion: "cotizaciones", pagina: "/admin/cotizaciones", etiqueta: "Cotizaciones",       grupo: "Comercial" },
+  { seccion: "clientes",     pagina: "/admin/clientes",     etiqueta: "Clientes",           grupo: "Comercial" },
+  { seccion: "calendario",   pagina: "/admin/calendario",   etiqueta: "Calendario",         grupo: "Operación" },
+  { seccion: "salidas-dia",  pagina: "/admin/salidas-dia",  etiqueta: "Salidas del día",    grupo: "Operación", nueva: true },
+  { seccion: "reservas",     pagina: "/admin/reservas",     etiqueta: "Reservas",           grupo: "Operación" },
+  { seccion: "salidas",      pagina: "/admin/salidas",      etiqueta: "Viaje CDMX",         grupo: "Operación" },
+  { seccion: "rutas",        pagina: "/admin/rutas",        etiqueta: "Rutas y protocolos", grupo: "Operación", nueva: true },
+  { seccion: "proveedores",  pagina: "/admin/proveedores",  etiqueta: "Proveedores",        grupo: "Operación", nueva: true },
+  { seccion: "cobros",       pagina: "/admin/cobros",       etiqueta: "Cobros",             grupo: "Dinero" },
+  { seccion: "cortes",       pagina: "/admin/cortes",       etiqueta: "Corte semanal",      grupo: "Dinero" },
+  { seccion: "cotizador",    pagina: "/admin/cotizador",    etiqueta: "Cotizador",          grupo: "Dinero" },
+  { seccion: "rentabilidad", pagina: "/admin/rentabilidad", etiqueta: "Rentabilidad",       grupo: "Dinero", nueva: true },
+  { seccion: "ingresos",     pagina: "/admin/ingresos",     etiqueta: "Ventas",             grupo: "Dinero" },
+  { seccion: "analisis",     pagina: "/admin/analisis",     etiqueta: "Análisis",           grupo: "Dinero" },
+  { seccion: "score",        pagina: "/admin/score",        etiqueta: "Score WhatsApp",     grupo: "Calidad", nueva: true },
+  { seccion: "resenas",      pagina: "/admin/resenas",      etiqueta: "Reseñas",            grupo: "Calidad" },
+  { seccion: "fotos",        pagina: "/admin/fotos",        etiqueta: "Fotos",              grupo: "Calidad" },
+  { seccion: "agente",       pagina: "/admin/agente",       etiqueta: "Agente",             grupo: "Agente", nueva: true },
+  { seccion: "bitacora",     pagina: "/admin/bitacora",     etiqueta: "Bitácora",           grupo: "Control" },
+  { seccion: "curso",        pagina: "/admin/curso",        etiqueta: "Curso IA",           grupo: "Control" },
 ];
+
+/** Los grupos del menú en orden, sin repetir. */
+export const GRUPOS_MENU: GrupoMenu[] = PESTANAS.map(p => p.grupo).filter((g, i, xs) => xs.indexOf(g) === i);
 
 /** La pestaña que solo ve el dueño: desde ahí se decide lo de los demás. */
 export const SECCION_SOLO_DUENO: SeccionAdmin = "inicio";
@@ -117,6 +161,7 @@ export type AccionFinanciera =
 // y el único que sabe si llegó en efectivo o por transferencia. Lo que NO puede
 // es dar por entregado ese efectivo — eso lo confirma quien lo recibe.
 const PERMISOS_FINANCIEROS: Record<RolAdmin, AccionFinanciera[]> = {
+  guia:      [],
   operacion: ["registrarCobro"],
   socio:     ["registrarCobro", "marcarEntregaEfectivo", "anularMovimiento"],
   dueno:     ["registrarCobro", "marcarEntregaEfectivo", "anularMovimiento"],
@@ -129,7 +174,7 @@ export function puedeHacer(rol: RolAdmin, accion: AccionFinanciera): boolean {
 // Un token viejo (emitido antes de que existieran los roles) no trae rol:
 // se trata como dueño, porque hasta hoy la única credencial era la de Manolo.
 export function rolDesdeToken(valor: unknown): RolAdmin {
-  return valor === "socio" || valor === "operacion" || valor === "dueno"
+  return valor === "socio" || valor === "operacion" || valor === "dueno" || valor === "guia"
     ? valor
     : "dueno";
 }
@@ -175,6 +220,17 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   { prefijo: "/api/admin/costos",             seccion: "cotizador" },
   { prefijo: "/api/admin/precios-extras",     seccion: "cotizador" },
   { prefijo: "/api/admin/tarifas-proveedor",  seccion: "cotizador" },
+  // Rediseño (3 nov 2026). «/admin/salidas-dia» no choca con «/admin/salidas»:
+  // el prefijo se compara exacto o seguido de «/».
+  { prefijo: "/admin/bandeja",       seccion: "bandeja"      },
+  { prefijo: "/admin/leads",         seccion: "leads"        },
+  { prefijo: "/admin/seguimientos",  seccion: "seguimientos" },
+  { prefijo: "/admin/salidas-dia",   seccion: "salidas-dia"  },
+  { prefijo: "/admin/rutas",         seccion: "rutas"        },
+  { prefijo: "/admin/proveedores",   seccion: "proveedores"  },
+  { prefijo: "/admin/rentabilidad",  seccion: "rentabilidad" },
+  { prefijo: "/admin/score",         seccion: "score"        },
+  { prefijo: "/admin/agente",        seccion: "agente"       },
 ];
 
 export function seccionRestringida(pathname: string): SeccionAdmin | null {
@@ -210,6 +266,15 @@ export function usuariosAdmin(): UsuarioAdmin[] {
       rol: "operacion",
       envPassword: "ADMIN_PASSWORD_ERICK",
       envPasswordHash: "ADMIN_PASSWORD_HASH_ERICK",
+    },
+    // Un acceso para quien guía (3 nov 2026). Sin `ADMIN_PASSWORD_GUIA` en
+    // Railway no puede entrar: no hay contraseña por defecto.
+    {
+      user: "guia",
+      nombre: "Guía",
+      rol: "guia",
+      envPassword: "ADMIN_PASSWORD_GUIA",
+      envPasswordHash: "ADMIN_PASSWORD_HASH_GUIA",
     },
   ];
 }

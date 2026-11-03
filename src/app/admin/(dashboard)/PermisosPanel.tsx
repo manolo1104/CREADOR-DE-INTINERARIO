@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
 import { Check, Loader2, Lock } from "lucide-react";
-import { PESTANAS, SECCION_SOLO_DUENO, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
+import { ETIQUETA_ROL, GRUPOS_MENU, PESTANAS, SECCION_SOLO_DUENO, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 
 export interface PersonaPermisos { user: string; nombre: string; rol: RolAdmin; secciones: SeccionAdmin[] }
 
-const ETIQUETA_ROL: Record<RolAdmin, string> = { dueno: "Dueño", socio: "Socio", operacion: "Operación" };
-const GRUPOS = Array.from(new Set(PESTANAS.map(p => p.grupo)));
+// Sin «Hoy»: solo trae Inicio, que es del dueño.
+const GRUPOS = GRUPOS_MENU.filter(g => PESTANAS.some(p => p.grupo === g && p.seccion !== SECCION_SOLO_DUENO));
 
 /**
  * «¿Quién ve qué?» (Manolo, 20 oct 2026): qué pestañas ve cada persona del
