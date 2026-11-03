@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Lock } from "lucide-react";
 // Solo los TIPOS: `cupoTour.ts` lee la base; las cuentas llegan hechas de `page.tsx`.
 import type { CupoDeTourEnDia, EstadoDia, ResumenCupoPanel } from "@/lib/cupoTour";
@@ -10,6 +11,10 @@ import { hoyMX } from "@/lib/dates";
 import { hospedajeDeReserva } from "@/lib/admin/hospedaje";
 import { grupoDe } from "@/lib/admin/reserva";
 import { colorDeTour, codigoDeTour, nombreDeTour } from "@/lib/admin/coloresTour";
+import {
+  agruparSalidas, diasDeTourDe, estadoDeSalida, fechasFijasSinVenta, resumirSalidas, ETIQUETA_ESTADO_SALIDA,
+  type EstadoSalida, type SalidaAgrupada,
+} from "@/lib/admin/salidas";
 import { playClick } from "@/lib/admin/sfx";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
 import { CheckinBoton } from "@/components/admin/Checkin";
@@ -66,6 +71,8 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
   const [msjCupo, setMsjCupo] = useState<string | null>(null);
   // La reserva abierta en su ficha, encima del panel del día.
   const [detalle, setDetalle] = useState<TourBooking | null>(null);
+  // «Salidas agrupadas» (tour + día, PR 1.2) o «Reservas» (una entrada por renglón, como antes).
+  const [vista, setVista] = useState<"salidas" | "reservas">("salidas");
 
   function prevMonth() { if (month===0) { setMonth(11); setYear(y=>y-1); } else setMonth(m=>m-1); }
   function nextMonth() { if (month===11) { setMonth(0); setYear(y=>y+1); } else setMonth(m=>m+1); }
@@ -135,6 +142,22 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
     byDay[s.date].push(s);
   });
   const sel = selFecha ? byDay[selFecha] || [] : [];
+
+  // Salidas agrupadas: la misma cuenta que el scorecard y «Salidas del día»
+  // (`lib/admin/salidas.ts`). En noviembre de 2026: 20 reservas → 31 días de
+  // tour → 27 salidas; el encabezado de antes decía «31 salidas».
+  const mm = String(month + 1).padStart(2, "0");
+  const mesIni = `${year}-${mm}-01`;
+  const mesFin = `${year}-${mm}-${String(daysInMo).padStart(2, "0")}`;
+  const diasTour = bookings.flatMap(diasDeTourDe);
+  const salidasPorDia: Record<string, SalidaAgrupada[]> = {};
+  for (const sa of agruparSalidas(diasTour)) (salidasPorDia[sa.fecha] ??= []).push(sa);
+  const diasMes = diasTour.filter(d => d.fecha >= mesIni && d.fecha <= mesFin);
+  const resumenMes = resumirSalidas(diasMes);
+  const fijasPorDia: Record<string, string[]> = {};
+  for (const f of fechasFijasSinVenta(diasMes, mesIni, mesFin, todayStr)) (fijasPorDia[f.fecha] ??= []).push(f.slug);
+  const fijasSinVenta = Object.values(fijasPorDia).reduce((t, x) => t + x.length, 0);
+  const cupoDe = (slug: string) => cupo.tours.find(t => t.slug === slug)?.cupo ?? null;
 
   // Todos los recorridos con cupo, con cómo están el día abierto: primero los
   // que tienen gente o están cerrados, luego los demás en el orden del catálogo.
@@ -218,9 +241,19 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-cormorant text-[#1B4332] text-2xl font-light">Calendario de Reservas</h1>
-          <p className="text-[#1B4332]/50 font-dm text-sm mt-1">{thisMonthSalidas.length} salida{thisMonthSalidas.length !== 1 ? "s" : ""} en {MESES[month]} {year}</p>
+          <p className="text-[#1B4332]/50 font-dm text-sm mt-1">
+            {resumenMes.reservas} reserva{resumenMes.reservas !== 1 ? "s" : ""} · {resumenMes.diasDeTour} día{resumenMes.diasDeTour !== 1 ? "s" : ""} de tour · {resumenMes.salidas} salida{resumenMes.salidas !== 1 ? "s" : ""} en {MESES[month]} {year}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div role="group" aria-label="Vista" className="flex rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white p-0.5">
+            {([["salidas", "Salidas agrupadas"], ["reservas", "Reservas"]] as const).map(([v, t]) => (
+              <button key={v} type="button" aria-pressed={vista === v} onClick={() => { playClick(); setVista(v); }}
+                className={`panel-foco min-h-[36px] rounded-[6px] px-3 text-[12.5px] font-dm font-medium ${vista === v ? "bg-[var(--panel-tinta)] text-white" : "text-[var(--panel-tinta-media)] hover:text-[var(--panel-tinta)]"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
           <button onClick={prevMonth} className="p-2 border border-[#1B4332]/15 hover:bg-[#FAFAF8] transition-colors rounded-sm">
             <ChevronLeft className="w-4 h-4 text-[#1B4332]" />
           </button>
@@ -230,6 +263,16 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
           </button>
         </div>
       </div>
+
+      {/* Resumen del mes: lo que el scorecard mide por salida, aquí a la vista. */}
+      {vista === "salidas" && (
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Dato valor={String(resumenMes.salidas)} etiqueta="Salidas reales" nota={`${resumenMes.reservas} reservas, ${resumenMes.diasDeTour} días de tour`} />
+          <Dato valor={String(resumenMes.paxPorSalida)} etiqueta="Personas por salida" nota="mínimo rentable: 3" tono={resumenMes.paxPorSalida >= 3 ? "bien" : "atencion"} />
+          <Dato valor={String(resumenMes.regularesBajoMinimo)} etiqueta="Salidas bajo mínimo" nota={`de ${resumenMes.regulares} regulares (2 pax o menos)`} tono={resumenMes.regularesBajoMinimo === 0 ? "bien" : "atencion"} />
+          <Dato valor={String(fijasSinVenta)} etiqueta="Salidas fijas sin ventas" nota="Tamul mar · jue · sáb, de hoy en adelante" />
+        </div>
+      )}
 
       <div className="panel-card overflow-hidden">
         {/* Days of week */}
@@ -257,7 +300,8 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
                   </div>
                   <CupoDelDia dia={cupoDias[dateStr]} />
                 </div>
-                <div className="space-y-0.5">
+                {vista === "salidas" && <CeldaSalidas salidas={salidasPorDia[dateStr] ?? []} fijas={fijasPorDia[dateStr] ?? []} cupoDe={cupoDe} />}
+                <div className={`space-y-0.5 ${vista === "salidas" ? "hidden" : ""}`}>
                   {dayBookings.slice(0,3).map(s => (
                     <div key={s.key}
                       style={{ background: colorDeTour(s.tourSlug)+"1f", borderLeft:`3px solid ${colorDeTour(s.tourSlug)}` }}
@@ -283,6 +327,16 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
           })}
         </div>
       </div>
+
+      {vista === "salidas" && (
+        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-dm text-[#1B4332]/60">
+          {(["en-meta", "bajo-minimo", "lleno"] as EstadoSalida[]).map(e => (
+            <span key={e} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: COLOR_ESTADO[e] }} aria-hidden="true" />{ETIQUETA_ESTADO_SALIDA[e]}{e === "en-meta" ? ": 3 pax o más" : e === "bajo-minimo" ? ": 2 o menos" : ""}</span>
+          ))}
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm border border-dashed border-[#2433D6]" aria-hidden="true" />Salida fija sin ventas</span>
+          <span>RZR, buceo y salidas a medida no llevan meta.</span>
+        </p>
+      )}
 
       {/* Leyenda tours — solo los que aparecen en reservas */}
       <div className="mt-4 flex flex-wrap gap-3">
@@ -477,5 +531,62 @@ function CupoDelDia({ dia }: { dia?: CupoDeTourEnDia[] }) {
         </span>
       )}
     </span>
+  );
+}
+
+// ── Salidas agrupadas (PR 1.2) ──────────────────────────────────────────────
+
+const COLOR_ESTADO: Record<EstadoSalida, string> = {
+  "en-meta": "#2E6B45", "bajo-minimo": "#8A5A00", lleno: "#1C1C1A", "a-medida": "#66655F",
+};
+
+/** Un dato del resumen del mes. */
+function Dato({ valor, etiqueta, nota, tono }: { valor: string; etiqueta: string; nota: string; tono?: "bien" | "atencion" }) {
+  const color = tono === "bien" ? "var(--panel-bien)" : tono === "atencion" ? "var(--panel-atencion)" : "var(--panel-tinta)";
+  return (
+    <div className="panel-card px-3.5 py-3">
+      <p className="panel-cifra text-[22px] font-dm font-semibold leading-none" style={{ color }}>{valor}</p>
+      <p className="mt-1 text-[12px] font-dm font-medium text-[var(--panel-tinta)]">{etiqueta}</p>
+      <p className="text-[11px] font-dm text-[var(--panel-tinta-media)]">{nota}</p>
+    </div>
+  );
+}
+
+/**
+ * Las salidas de un día en su celda: código, personas/cupo, barra de ocupación,
+ * nombres y estado; y las fijas sin venta punteadas. Cada una abre su detalle.
+ */
+function CeldaSalidas({ salidas, fijas, cupoDe }: { salidas: SalidaAgrupada[]; fijas: string[]; cupoDe: (slug: string) => number | null }) {
+  return (
+    <div className="space-y-1" onClick={e => e.stopPropagation()}>
+      {salidas.slice(0, 3).map(sa => {
+        const cupo = cupoDe(sa.slug);
+        const estado = estadoDeSalida(sa, cupo);
+        const color = colorDeTour(sa.slug);
+        return (
+          <Link key={sa.clave} href={`/admin/salidas-dia/${encodeURIComponent(sa.clave)}`}
+            className="panel-foco block rounded-sm px-1 py-0.5 text-[9px] font-dm leading-tight text-[#1B4332]/80 hover:brightness-95"
+            style={{ background: color + "1f", borderLeft: `3px solid ${color}` }}
+            title={`${sa.nombre} · ${sa.clientes.join(", ")} · ${ETIQUETA_ESTADO_SALIDA[estado]}`}>
+            <span className="flex justify-between gap-1 font-bold tabular-nums" style={{ color }}>
+              <span>{sa.codigo}</span><span>{sa.personas}{cupo !== null ? `/${cupo}` : "p"}</span>
+            </span>
+            {cupo !== null && (
+              <span className="my-0.5 block h-[3px] overflow-hidden rounded-sm bg-black/10" aria-hidden="true">
+                <span className="block h-full" style={{ width: `${Math.min(100, (sa.personas / cupo) * 100)}%`, background: color }} />
+              </span>
+            )}
+            <span className="block truncate">{sa.clientes.map(c => c.split(" ")[0]).join(", ")}{sa.reservas > 1 ? ` (${sa.reservas})` : ""}</span>
+            {estado !== "a-medida" && <span className="block font-semibold" style={{ color: COLOR_ESTADO[estado] }}>{ETIQUETA_ESTADO_SALIDA[estado]}</span>}
+          </Link>
+        );
+      })}
+      {salidas.length > 3 && <div className="text-[9px] font-dm text-[#1B4332]/40">+{salidas.length - 3} más</div>}
+      {fijas.map(slug => (
+        <div key={slug} className="rounded-sm border border-dashed px-1 py-0.5 text-[9px] font-dm leading-tight" style={{ borderColor: colorDeTour(slug), color: colorDeTour(slug) }}>
+          <strong>{codigoDeTour(slug)} fija</strong> · 0/{cupoDe(slug) ?? "–"}<br />A la venta
+        </div>
+      ))}
+    </div>
   );
 }

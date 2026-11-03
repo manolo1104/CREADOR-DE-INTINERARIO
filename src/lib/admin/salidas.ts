@@ -11,6 +11,8 @@
 // script de conciliación, y se prueba en `__tests__/salidas.test.ts`.
 
 import { codigoDeTour } from "./coloresTour";
+import { weekdayYMD, addDaysYMD } from "@/lib/dates";
+import { resumirCostos, type ConceptoCosto } from "./costos";
 import { grupoDe, lineasDe, type ConLineas } from "./reserva";
 
 /** Lo que hace falta de una reserva para sacar sus días de tour. */
@@ -148,4 +150,75 @@ export function resumirSalidas(dias: DiaDeTour[]): ResumenSalidas {
 /** Los días de tour de varias reservas que caen en un rango YYYY-MM-DD (inclusive). */
 export function diasEnRango(reservas: ReservaParaSalidas[], desde: string, hasta: string): DiaDeTour[] {
   return reservas.flatMap(diasDeTourDe).filter(d => d.fecha >= desde && d.fecha <= hasta);
+}
+
+// ── Salidas fijas, estado y números (PR 1.2, 3 nov 2026) ─────────────────────
+
+
+/** Días de salida fija por tour (0 = domingo). Tamul: martes, jueves y sábado. Configurable por tour. */
+export const DIAS_FIJOS: Record<string, number[]> = {
+  "expedicion-tamul": [2, 4, 6],
+};
+
+/** Las salidas fijas de un rango que no tienen ninguna venta: «TAM fija · 0/12 · A la venta». */
+export function fechasFijasSinVenta(dias: DiaDeTour[], desde: string, hasta: string, aPartirDe = desde): { fecha: string; slug: string }[] {
+  const conVenta = new Set(dias.map(d => `${d.fecha}|${d.slug}`));
+  const out: { fecha: string; slug: string }[] = [];
+  for (let f = desde; f <= hasta; f = addDaysYMD(f, 1)) {
+    if (f < aPartirDe) continue;
+    const dow = weekdayYMD(f);
+    for (const [slug, diasFijos] of Object.entries(DIAS_FIJOS)) {
+      if (diasFijos.includes(dow) && !conVenta.has(`${f}|${slug}`)) out.push({ fecha: f, slug });
+    }
+  }
+  return out;
+}
+
+export type EstadoSalida = "en-meta" | "bajo-minimo" | "lleno" | "a-medida";
+
+export const ETIQUETA_ESTADO_SALIDA: Record<EstadoSalida, string> = {
+  "en-meta": "En meta", "bajo-minimo": "Bajo mínimo", lleno: "Lleno", "a-medida": "A medida",
+};
+
+/** En meta con 3 o más; bajo mínimo con 2 o menos; lleno al cupo; a medida sin meta. */
+export function estadoDeSalida(s: Pick<SalidaAgrupada, "personas" | "aMedida">, cupo: number | null): EstadoSalida {
+  if (s.aMedida) return "a-medida";
+  if (cupo !== null && s.personas >= cupo) return "lleno";
+  return s.personas >= MINIMO_RENTABLE ? "en-meta" : "bajo-minimo";
+}
+
+export interface NumerosSalida {
+  ingreso: number;
+  pax: number;
+  costoFijo: number;
+  costoPorPax: number;
+  costos: number;
+  /** Ingreso − costos (sin comisiones: esas se descuentan en el corte). */
+  margen: number;
+  /** % sobre el ingreso; 0 sin ingreso. */
+  margenPct: number;
+  /** La mitad del margen: lo de cada socio en un tour 50/50. */
+  parteSocio: number;
+  /** Falso cuando el tour no tiene costos capturados: el margen es un techo. */
+  conCostos: boolean;
+}
+
+/** Los números de una salida con los costos del Cotizador (fijos por salida + por persona). */
+export function numerosDeSalida(ingreso: number, pax: number, conceptos: ConceptoCosto[]): NumerosSalida {
+  const { fijo, porPersona } = resumirCostos(conceptos);
+  const costos = fijo + porPersona * Math.max(0, pax);
+  const margen = ingreso - costos;
+  return {
+    ingreso, pax, costoFijo: fijo, costoPorPax: porPersona, costos, margen,
+    margenPct: ingreso > 0 ? Math.round((margen / ingreso) * 100) : 0,
+    parteSocio: Math.floor(margen / 2),
+    conCostos: conceptos.length > 0,
+  };
+}
+
+/** El margen según cuánta gente va, de 1 a `hasta`, a un precio por persona. */
+export function simularMargen(precioPorPax: number, conceptos: ConceptoCosto[], hasta = 6): NumerosSalida[] {
+  const out: NumerosSalida[] = [];
+  for (let pax = 1; pax <= hasta; pax++) out.push(numerosDeSalida(precioPorPax * pax, pax, conceptos));
+  return out;
 }
