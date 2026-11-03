@@ -9,8 +9,8 @@ import DescuentoEditor from "@/components/admin/DescuentoEditor";
 import { montoDescuento, type Descuento, type EventoDescuento, type TipoDescuento } from "@/lib/admin/descuento";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
-import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
-import { ORIGENES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
+import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
+import { ORIGENES_ELEGIBLES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import {
   HABITACIONES_PANEL, HABITACION_POR_DEFECTO, habitacionPanel, tarifaPanel, maxHuespedesPanel,
 } from "@/lib/admin/habitacionesPanel";
@@ -256,6 +256,20 @@ export function aplicarHabitacion(p: PackageItem, nombre: string, huespedes?: nu
   if (tarifa > 0) up.precioPorNoche = tarifa;
   up.subtotal = calcPackageLine(up);
   return up;
+}
+
+/**
+ * Captura tardía (línea base del 3 nov 2026: 4 de 97 reservas se capturaron
+ * DESPUÉS del tour, hasta 3 meses después). No se impide —a veces se captura
+ * lo que ya se operó— pero se avisa, y el scorecard la cuenta por su fecha.
+ */
+export function AvisoFechaPasada({ fecha }: { fecha: string }) {
+  if (!fecha || fecha >= hoyMX()) return null;
+  return (
+    <p className="mt-1 text-[10px] font-dm text-[#8a5a00] leading-snug" role="status">
+      Esta fecha ya pasó: la reserva quedará como capturada tarde.
+    </p>
+  );
 }
 
 export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
@@ -903,6 +917,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                                   <div>
                                     <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
                                     <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
+                                    <AvisoFechaPasada fecha={line.tourDate} />
                                   </div>
                                   <div>
                                     <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Ruta</label>
@@ -941,6 +956,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                               <div>
                                 <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Fecha *</label>
                                 <input type="date" value={line.tourDate} onChange={e => updateLine(i, "tourDate", e.target.value)} className={inputCls} />
+                                    <AvisoFechaPasada fecha={line.tourDate} />
                               </div>
                               <div>
                                 <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Adultos</label>
@@ -1256,7 +1272,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   className={`${inputCls} ${form.origen ? "" : "border-terracota/60"}`}
                   aria-invalid={!form.origen}>
                   <option value="">— Elige por dónde entró (obligatorio) —</option>
-                  {ORIGENES.map(o => (
+                  {ORIGENES_ELEGIBLES.map(o => (
                     <option key={o} value={o}>{ORIGEN_ETIQUETA[o]}</option>
                   ))}
                 </select>

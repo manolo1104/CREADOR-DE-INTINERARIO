@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
+import { Search, RefreshCw, Mail, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { descuentoDeMeta, historialDeMeta, montoDescuento } from "@/lib/admin/descuento";
@@ -14,6 +14,7 @@ import ReservaDetalle from "@/components/admin/ReservaDetalle";
 import { zonaDeReserva } from "@/lib/admin/hospedaje";
 import CobroModal from "@/components/admin/CobroModal";
 import { origenValido } from "@/lib/origenReserva";
+import { MOTIVOS_CANCELACION, motivoParaGuardar, type MotivoCancelacion } from "@/lib/admin/cancelacion";
 import { escapeHtml as esc } from "@/lib/escapeHtml";
 import { CheckinBoton } from "@/components/admin/Checkin";
 import type { EstadoCheckin } from "@/lib/encuestas/opciones";
@@ -84,6 +85,10 @@ export default function ReservasClient(
   const [loading,       setLoading]       = useState(false);
   const [sending,       setSending]       = useState<string | null>(null);
   const [statusEditing, setStatusEditing] = useState<string | null>(null);
+  // Cancelar pide el motivo (3 nov 2026): la reserva que se está cancelando y lo elegido.
+  const [cancelando,    setCancelando]    = useState<TourBooking | null>(null);
+  const [motivo,        setMotivo]        = useState<MotivoCancelacion | "">("");
+  const [motivoDetalle, setMotivoDetalle] = useState("");
   const [msg,           setMsg]           = useState("");
   const [modal,         setModal]         = useState<"new" | "edit" | null>(null);
   const [editTarget,    setEditTarget]    = useState<TourBooking | null>(null);
@@ -130,29 +135,38 @@ export default function ReservasClient(
     setSending(null);
   }
 
-  async function changeStatus(id: string, newStatus: string) {
+  async function changeStatus(id: string, newStatus: string, motivoCancelacion?: string) {
     const r = await fetch(`/api/admin/reservas/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify(motivoCancelacion ? { status: newStatus, motivoCancelacion } : { status: newStatus }),
     }).catch(() => null);
     if (r?.ok) {
-      setBookings(b => b.map(x => x.id === id ? { ...x, status: newStatus } : x));
+      setBookings(b => b.map(x => x.id === id
+        ? { ...x, status: newStatus, motivoCancelacion: newStatus === "cancelled" ? (motivoCancelacion ?? null) : null }
+        : x));
       flash("✅ Estado actualizado");
     } else {
-      flash("❌ No se pudo actualizar el estado");
+      const d = await r?.json().catch(() => null);
+      flash(`❌ ${d?.error || "No se pudo actualizar el estado"}`);
     }
     setStatusEditing(null);
   }
 
-  async function hardDelete(id: string) {
-    if (!confirm("¿Eliminar completamente esta reserva? No se puede deshacer.")) return;
-    const r = await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" }).catch(() => null);
-    if (r?.ok) {
-      setBookings(b => b.filter(x => x.id !== id));
-      flash("✅ Reserva eliminada");
-    } else {
-      flash("❌ No se pudo eliminar la reserva");
+  // Cancelar pasa por el cuadro del motivo; los demás estados cambian directo.
+  function pedirEstado(b: TourBooking, s: string) {
+    if (s === "cancelled" && b.status !== "cancelled") {
+      setStatusEditing(null); setMotivo(""); setMotivoDetalle(""); setCancelando(b);
+      return;
     }
+    changeStatus(b.id, s);
+  }
+
+  async function confirmarCancelacion() {
+    if (!cancelando) return;
+    const texto = motivoParaGuardar(motivo, motivoDetalle);
+    if (!texto) { flash("❌ Elige el motivo (y explícalo si es «Otro»)"); return; }
+    await changeStatus(cancelando.id, "cancelled", texto);
+    setCancelando(null);
   }
 
   function openEdit(b: TourBooking) {
@@ -859,7 +873,6 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                   className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
                 <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
-                <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
           );
@@ -929,7 +942,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           <div className="fixed inset-0 z-10" onClick={() => setStatusEditing(null)} />
                           <div className="absolute left-0 top-8 z-20 bg-white border border-[#1B4332]/15 shadow-lg rounded-sm overflow-hidden min-w-[120px]">
                             {(["paid", "pending", "cancelled"] as const).map(s => (
-                              <button key={s} onClick={() => { playClick(); changeStatus(b.id, s); }}
+                              <button key={s} onClick={() => { playClick(); pedirEstado(b, s); }}
                                 className={`w-full text-left px-3 py-2 text-[10px] font-dm tracking-[1px] uppercase hover:bg-[#FAFAF8] transition-colors flex items-center gap-2 ${b.status === s ? "text-[#1B4332] font-semibold" : "text-[#1B4332]/60"}`}>
                                 {b.status === s && <span className="text-[#1B4332]">✓</span>}
                                 {STATUS_LABEL[s]}
@@ -957,8 +970,6 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
                         <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
-                        <button onClick={() => { playClick(); hardDelete(b.id); }} title="Eliminar"
-                          className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -969,6 +980,32 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {cancelando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setCancelando(null)} />
+          <div role="dialog" aria-labelledby="cancelar-titulo" className="relative bg-white rounded-sm shadow-2xl w-full max-w-md border border-[#1B4332]/10 p-5">
+            <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Cancelar reserva</p>
+            <h3 id="cancelar-titulo" className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{cancelando.customerName}</h3>
+            <p className="font-mono text-xs text-[#1B4332]/60 mb-4">{cancelando.confirmationNumber}</p>
+            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">¿Por qué se cancela? *</label>
+            <select value={motivo} onChange={e => setMotivo(e.target.value as MotivoCancelacion | "")}
+              className="w-full border border-[#1B4332]/20 rounded-sm px-3 py-2.5 text-[16px] font-dm mb-3 panel-foco" aria-invalid={!motivo}>
+              <option value="">— Elige el motivo —</option>
+              {MOTIVOS_CANCELACION.map(m => <option key={m.clave} value={m.clave}>{m.etiqueta}</option>)}
+            </select>
+            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Detalle {motivo === "otro" ? "*" : "(opcional)"}</label>
+            <input value={motivoDetalle} onChange={e => setMotivoDetalle(e.target.value)} maxLength={200}
+              placeholder="Por ejemplo: avisó por WhatsApp el martes"
+              className="w-full border border-[#1B4332]/20 rounded-sm px-3 py-2.5 text-[16px] font-dm mb-4 panel-foco" />
+            <p className="text-[11px] font-dm text-[#1B4332]/55 mb-4">La reserva no se borra: queda como cancelada con este motivo y en la bitácora. Si tiene cobros, regístralos o anúlalos desde Cobros.</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setCancelando(null)} className="px-4 py-2.5 text-xs font-dm text-[#1B4332]/70 hover:text-[#1B4332] panel-foco">Dejarla como está</button>
+              <button onClick={() => { playClick(); confirmarCancelacion(); }} disabled={!motivo}
+                className="px-4 py-2.5 text-xs font-dm bg-[#b8413f] text-white rounded-sm disabled:opacity-40 panel-pulsable panel-foco">Cancelar la reserva</button>
+            </div>
+          </div>
+        </div>
+      )}
       {detalle && (
         <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} onCheckin={ponCheckin(detalle.id)} />
       )}

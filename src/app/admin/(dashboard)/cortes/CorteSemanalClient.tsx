@@ -852,6 +852,20 @@ function Resultados({ r, cobros, onCambio }: {
         </div>
       </Bloque>
       <Total icono={TrendingUp} texto="Ganancia" nota="lo que queda real menos costos" valor={r.utilidad} color={C_QUEDA} grande />
+      {/* La cuenta completa en una línea (3 nov 2026): «ventas − costos» NO es
+          la ganancia, y verlo escrito evita pensar que el reparto está mal. */}
+      {r.ventas > 0 && (
+        <p className="mt-1.5 px-3 text-[11px] leading-relaxed text-[#1B4332]/60 panel-cifra">
+          Cómo se calcula: cobrado {fmx(r.ventas)}
+          {r.comisionStripe > 0 && <> − Stripe {fmx(r.comisionStripe)}</>}
+          {r.hosting > 0 && <> − Railway {fmx(r.hosting)}</>}
+          {r.rzr.vendedor > 0 && <> − {VENDEDOR} {fmx(r.rzr.vendedor)}</>}
+          {r.hospedaje > 0 && <> − hotel {fmx(r.hospedaje)}</>}
+          {" "}= {fmx(r.quedaReal)}; − costos {fmx(r.costos)} = <strong>{fmx(r.utilidad)}</strong>.
+          {" "}Manolo = 50 % de tours {fmx(gManolo)}{r.rzr.manolo > 0 && <> + {REPARTO_RZR.pctManolo} % del RZR {fmx(r.rzr.manolo)}</>} = <strong>{fmx(parteManolo)}</strong>;
+          {" "}Martín = {fmx(gMartin)}{r.rzr.martin > 0 && <> + {fmx(r.rzr.martin)} del RZR</>}{r.rzr.costos > 0 && <> − costos del RZR {fmx(r.rzr.costos)}</>} = <strong>{fmx(parteMartin)}</strong>.
+        </p>
+      )}
 
       {/* La ganancia, separada (Manolo, 20 oct 2026): los tours solos, con su
           50/50, y el RZR aparte, con su 10 % de Erick y su 20/80. */}

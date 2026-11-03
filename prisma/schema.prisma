@@ -271,6 +271,10 @@ model TourBooking {
   pagoProveedorFecha    DateTime?
   pagoProveedorNota     String?
   status                String    @default("pending")
+  /// Por qué se canceló (`lib/admin/cancelacion.ts`: clave y detalle). Obligatorio
+  /// al pasar a `cancelled` desde el panel; las reservas ya NO se borran.
+  /// Opcional a propósito: `prisma db push` corre al arrancar Railway.
+  motivoCancelacion     String?
   /// Quién sale a guiar esta reserva. Texto libre a propósito: los guías
   /// cambian con la temporada y una tabla aparte obligaría a darlos de alta
   /// antes de poder asignarlos. El panel ofrece los nombres ya usados.

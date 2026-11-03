@@ -26,8 +26,10 @@ export default async function AdminDashboard() {
       orderBy: { tourDate: "asc" },
     }),
     prisma.tourBooking.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+    // Activas = enviadas (incluye las «por vencer»). Los borradores NO: 106
+    // borradores, 101 de antes de octubre, inflaban el número (3 nov 2026).
     prisma.tourQuote.findMany({
-      where: { status: { in: ["borrador", "enviada"] } },
+      where: { status: "enviada" },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
@@ -40,7 +42,7 @@ export default async function AdminDashboard() {
     // El total real de cotizaciones activas. La lista de arriba lleva `take: 5`
     // porque solo se pintan 5 en el panel; contar esa lista hacía que el KPI
     // dijera siempre "5" aunque hubiera decenas abiertas.
-    prisma.tourQuote.count({ where: { status: { in: ["borrador", "enviada"] } } }),
+    prisma.tourQuote.count({ where: { status: "enviada" } }),
   ]);
   // Inicio es solo de Manolo: desde aquí decide qué pestañas ve cada quien.
   const personas = sesion?.rol === "dueno" ? (await permisosDeTodos()).filter(p => p.rol !== "dueno") : [];

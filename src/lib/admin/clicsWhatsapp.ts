@@ -26,16 +26,23 @@ export interface ClicsWhatsapp {
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
+/** Una página del panel interno: sus clics no son de clientes. */
+export const esDelPanel = (path: string) => /^\/admin(\/|$|\?)/.test(path);
+
 export async function contarClicsWhatsapp(): Promise<ClicsWhatsapp> {
   const hace30 = new Date(Date.now() - 30 * 86400000);
   const hace7  = new Date(Date.now() -  7 * 86400000);
 
-  const eventos = await prisma.trackEvent.findMany({
+  // 🔴 Fuera los clics que salen del propio panel (línea base 3 nov 2026: 34
+  // de 154 venían de /admin/cobros y /admin/calendario, y la «conversión» de
+  // WhatsApp salía más baja de lo real). El histórico se filtra al leer; desde
+  // hoy `/api/track` tampoco los guarda.
+  const eventos = (await prisma.trackEvent.findMany({
     where:   { event: "WHATSAPP_CLICK", createdAt: { gte: hace30 } },
     select:  { path: true, tourSlug: true, createdAt: true, data: true },
     orderBy: { createdAt: "desc" },
     take: 5000,
-  });
+  })).filter(e => !esDelPanel(e.path || ((e.data as any)?.pagina as string) || ""));
 
   const porPagina: Record<string, number> = {};
   const porTour:   Record<string, number> = {};

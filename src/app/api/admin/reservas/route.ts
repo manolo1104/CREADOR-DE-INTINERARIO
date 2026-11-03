@@ -62,9 +62,10 @@ export async function POST(req: NextRequest) {
         status:                body.status || "paid",
         guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
         idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
-        // Una reserva capturada a mano casi nunca entró por la web: por eso el
-        // formulario la marca y aquí solo se normaliza.
-        origen:                origenValido(body.origen),
+        // Una reserva capturada a mano casi nunca entró por la web: el
+        // formulario obliga a elegirlo; si una llamada vieja no lo manda, queda
+        // «por confirmar» y NO «web» (línea base 3 nov 2026: Web 90 de 97).
+        origen:                origenValido(body.origen, "por_confirmar"),
       },
     }).catch(async (e) => {
       // No se creó: el código vuelve a quedar libre.

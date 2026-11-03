@@ -41,6 +41,8 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   enviada:  { label: "Enviada",   cls: "bg-yellow-100 text-yellow-800" },
   aceptada: { label: "Aceptada",  cls: "bg-green-100 text-green-800"   },
   expirada: { label: "Vencida",   cls: "bg-red-100 text-red-700"       },
+  // Borrador de más de 30 días que archivó el cron (`archivar-borradores`).
+  archivada: { label: "Archivada", cls: "bg-gray-100 text-gray-400"     },
 };
 
 /** El color del «vence…»: verde con holgura, ámbar el último día, rojo vencida. */
@@ -158,7 +160,7 @@ export default function CotizacionesClient(
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
-  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "bot">("all");
+  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "archivada" | "bot">("all");
   const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto" | "vence">("reciente");
 
   // «Hoy» en México: de aquí salen el «vence…», la franja y los mensajes.
@@ -520,6 +522,20 @@ export default function CotizacionesClient(
     flash(r.ok ? "✅ Email enviado al cliente" : `❌ ${d.error || "Error al enviar"}`);
     if (r.ok) setQuotes(q => q.map(x => x.id === id ? { ...x, status: "enviada" } : x));
     setSending(null);
+  }
+
+  /** Un borrador archivado por el cron vuelve a ser borrador. */
+  async function desarchivar(id: string) {
+    const r = await fetch(`/api/admin/cotizaciones/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "borrador" }),
+    }).catch(() => null);
+    if (r?.ok) {
+      setQuotes(q => q.map(x => x.id === id ? { ...x, status: "borrador" } : x));
+      flash("✅ Cotización desarchivada: vuelve a Borrador");
+    } else {
+      flash("❌ No se pudo desarchivar");
+    }
   }
 
   async function expireQ(id: string) {
@@ -1093,7 +1109,9 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     const list = quotes.filter(c => {
       if (statusFilter === "por-vencer") { if (etapaDe(c, hoy) !== "por-vencer") return false; }
       else if (statusFilter === "bot") { if (!esDelBot(c)) return false; }
-      else if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      // «Todas» no enseña las archivadas: para eso está su pestaña.
+      else if (statusFilter === "all") { if (c.status === "archivada") return false; }
+      else if (c.status !== statusFilter) return false;
       return !q || [c.customerName, c.customerEmail, c.quoteNumber, c.tourName].some(v => v?.toLowerCase().includes(q));
     });
     return [...list].sort((a, b) => {
@@ -1189,9 +1207,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           { key: "por-vencer", label: "Por vencer" },
           { key: "aceptada", label: "Aceptadas" },
           { key: "expirada", label: "Vencidas"  },
+          { key: "archivada", label: "Archivadas" },
           { key: "bot",      label: "Bot"       },
         ] as const).map(tab => {
-          const count = tab.key === "all" ? quotes.length
+          const count = tab.key === "all" ? quotes.filter(q => q.status !== "archivada").length
             : tab.key === "por-vencer" ? porVencer.length
             : tab.key === "bot" ? quotes.filter(esDelBot).length
             : quotes.filter(q => q.status === tab.key).length;
@@ -1250,7 +1269,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               )}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" className="text-[#1B4332]/50 hover:text-[#1B4332]"><Eye className="w-4 h-4" /></button>
-                {q.status !== "aceptada" && q.status !== "expirada" && (
+                {q.status === "archivada" && (
+                  <button onClick={() => { playClick(); desarchivar(q.id); }} className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
+                )}
+                {q.status !== "aceptada" && q.status !== "expirada" && q.status !== "archivada" && (
                   <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
                 )}
                 <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
@@ -1311,7 +1333,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                       <div className="flex items-center gap-2">
                         <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
-                        {q.status !== "aceptada" && q.status !== "expirada" && (
+                        {q.status === "archivada" && (
+                          <button onClick={() => { playClick(); desarchivar(q.id); }} title="Volver a borrador"
+                            className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
+                        )}
+                        {q.status !== "aceptada" && q.status !== "expirada" && q.status !== "archivada" && (
                           <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva"
                             className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
                         )}

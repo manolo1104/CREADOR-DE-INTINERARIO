@@ -239,10 +239,15 @@ export async function POST(req: NextRequest) {
       actividad(`📊  ${event}`, path ?? "/", visitante);
     }
 
+    // Lo que hace el equipo no se mide (3 nov 2026): ni desde una página del
+    // panel ni con la sesión del panel abierta en el sitio. Antes 34 de 154
+    // clics a WhatsApp salían de /admin y el embudo contaba al propio equipo.
+    const delEquipo = (path ?? "").startsWith("/admin") || !!req.cookies.get("admin_session")?.value;
+
     // SIN await: medir jamás debe frenar al visitante. Con la base caída, la
     // conexión de Prisma tarda ~9 s en rendirse; esperarla convertía cada
     // evento en una petición colgada.
-    void persistir(event, data ?? {}, path, sid, device, referrer);
+    if (!delEquipo) void persistir(event, data ?? {}, path, sid, device, referrer);
 
     return NextResponse.json({ ok: true });
   } catch {
