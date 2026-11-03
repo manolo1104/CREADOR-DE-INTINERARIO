@@ -10,6 +10,8 @@ import { RioEstadoControl } from "./RioEstadoControl";
 import { CupoPaqueteControl } from "./CupoPaqueteControl";
 import { PermisosPanel, type PersonaPermisos } from "./PermisosPanel";
 import { Cifra } from "@/components/admin/Cifra";
+import { ScorecardSemanal } from "./ScorecardSemanal";
+import type { DatosScorecard } from "@/lib/admin/scorecardDatos";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
@@ -34,11 +36,13 @@ interface Props {
   verDinero?:       boolean;
   /** Las demás personas del panel y qué pestañas ve cada una (solo Manolo ve Inicio). */
   personas?:        PersonaPermisos[];
+  /** El scorecard semanal (null si no se pudo armar). */
+  scorecard?:       DatosScorecard | null;
 }
 
 export default function DashboardClient({
   todayBookings, upcomingBookings, recentBookings, pendingQuotes,
-  monthIngresos, monthReservas, pendingAmount, activeQuotes, verDinero = true, personas = [],
+  monthIngresos, monthReservas, pendingAmount, activeQuotes, verDinero = true, personas = [], scorecard = null,
 }: Props) {
   const today      = new Date();
   const dateStr    = today.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -68,6 +72,8 @@ export default function DashboardClient({
           </Link>
         </div>
       </div>
+
+      {scorecard && <ScorecardSemanal datos={scorecard} />}
 
       {/* El semáforo del río que anuncia el sitio público (banda del navbar). */}
       <RioEstadoControl />
