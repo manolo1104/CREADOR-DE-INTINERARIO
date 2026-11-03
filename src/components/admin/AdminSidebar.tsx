@@ -3,54 +3,33 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX, Calculator, GraduationCap, ScrollText, Scissors, Link2, Camera, Star, Bus, PieChart } from "lucide-react";
+import {
+  BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX,
+  Calculator, GraduationCap, ScrollText, Scissors, Link2, Camera, Star, Bus, PieChart, Inbox, KanbanSquare,
+  ClipboardCheck, Truck, Route, Boxes, MessageSquareText, Bot,
+} from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
-import { type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
+import { ETIQUETA_ROL, GRUPOS_MENU, PESTANAS, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
+import { MarcaNuevo } from "@/components/admin/ui/EncabezadoPagina";
 
-interface ItemNav {
-  href: string; icon: typeof BookOpen; label: string;
-  seccion: SeccionAdmin; exact?: boolean;
-}
-
-// El menú se agrupa por el trabajo que se hace, no por orden de llegada: lo
-// del día a día arriba, el dinero en medio, lo de vigilancia abajo. Una lista
-// plana de diez destinos obliga a leerla entera cada vez.
-const GRUPOS: { titulo: string; items: ItemNav[] }[] = [
-  {
-    titulo: "Operación",
-    items: [
-      { href: "/admin",              icon: LayoutDashboard, label: "Inicio",       seccion: "inicio", exact: true },
-      { href: "/admin/reservas",     icon: BookOpen,        label: "Reservas",     seccion: "reservas"      },
-      { href: "/admin/calendario",   icon: Calendar,        label: "Calendario",   seccion: "calendario"    },
-      { href: "/admin/salidas",      icon: Bus,             label: "Viaje CDMX",   seccion: "salidas"       },
-      { href: "/admin/cotizaciones", icon: FileText,        label: "Cotizaciones", seccion: "cotizaciones"  },
-      { href: "/admin/cobros",       icon: Link2,           label: "Cobros",       seccion: "cobros"        },
-      { href: "/admin/fotos",        icon: Camera,          label: "Fotos",        seccion: "fotos"         },
-      { href: "/admin/resenas",      icon: Star,            label: "Reseñas",      seccion: "resenas"       },
-      { href: "/admin/clientes",     icon: Users,           label: "Clientes",     seccion: "clientes"      },
-    ],
-  },
-  {
-    titulo: "Dinero",
-    items: [
-      { href: "/admin/cortes",       icon: Scissors,        label: "Corte semanal", seccion: "cortes"       },
-      { href: "/admin/cotizador",    icon: Calculator,      label: "Cotizador",    seccion: "cotizador"     },
-      { href: "/admin/ingresos",     icon: TrendingUp,      label: "Ventas",       seccion: "ingresos"      },
-      { href: "/admin/analisis",     icon: PieChart,        label: "Análisis",     seccion: "analisis"      },
-    ],
-  },
-  {
-    titulo: "Control",
-    items: [
-      { href: "/admin/bitacora",     icon: ScrollText,      label: "Bitácora",     seccion: "bitacora"      },
-      { href: "/admin/curso",        icon: GraduationCap,   label: "Curso IA",     seccion: "curso"         },
-    ],
-  },
-];
-
-const ETIQUETA_ROL: Record<string, string> = {
-  dueno: "Dueño", socio: "Socio", operacion: "Operación",
+// El menú sale de PESTANAS (una sola lista para el menú, los permisos y el
+// middleware), agrupado por ÁREA de trabajo (rediseño, 3 nov 2026). Aquí solo
+// vive el icono de cada sección.
+const ICONO: Record<SeccionAdmin, typeof BookOpen> = {
+  inicio: LayoutDashboard, bandeja: Inbox, leads: KanbanSquare, seguimientos: ClipboardCheck,
+  cotizaciones: FileText, clientes: Users, calendario: Calendar, "salidas-dia": Truck, reservas: BookOpen,
+  salidas: Bus, rutas: Route, proveedores: Boxes, cobros: Link2, cortes: Scissors, cotizador: Calculator,
+  rentabilidad: PieChart, ingresos: TrendingUp, analisis: PieChart, score: MessageSquareText, resenas: Star,
+  fotos: Camera, agente: Bot, bitacora: ScrollText, curso: GraduationCap,
 };
+
+const GRUPOS = GRUPOS_MENU.map(titulo => ({
+  titulo,
+  items: PESTANAS.filter(p => p.grupo === titulo).map(p => ({
+    href: p.pagina, icon: ICONO[p.seccion], label: p.etiqueta, seccion: p.seccion,
+    exact: p.pagina === "/admin", nueva: !!p.nueva,
+  })),
+}));
 
 export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [] }: {
   rol?: RolAdmin; nombre?: string;
@@ -94,8 +73,9 @@ export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [
           <div key={grupo.titulo} className="mb-4 last:mb-0">
             <p className="panel-eyebrow px-3 mb-1.5">{grupo.titulo}</p>
             <div className="space-y-0.5">
-              {visibles.map(({ href, icon: Icon, label, exact }) => {
-                const active = exact ? pathname === href : pathname.startsWith(href);
+              {visibles.map(({ href, icon: Icon, label, exact, nueva }) => {
+                // «/admin/salidas» no debe encender «/admin/salidas-dia»: exacto o seguido de «/».
+                const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
                 return (
                   <Link key={href} href={href} onClick={() => { playClick(); setOpen(false); }}
                     aria-current={active ? "page" : undefined}
@@ -112,7 +92,8 @@ export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [
                         active ? "h-5 opacity-100" : "h-0 opacity-0"
                       }`} />
                     <Icon className={`w-[15px] h-[15px] flex-shrink-0 ${active ? "text-[#1B4332]" : "text-[rgba(22,54,42,0.51)] group-hover:text-[#1B4332]"}`} strokeWidth={1.75} />
-                    {label}
+                    <span className="flex-1 truncate">{label}</span>
+                    {nueva && !active && <MarcaNuevo />}
                   </Link>
                 );
               })}
