@@ -4,39 +4,10 @@ import type { TourBooking } from "@prisma/client";
 import { TOURS_LISTA } from "@/lib/tours";
 import { ORIGENES, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 
-type CashFields = Pick<TourBooking, "depositoPagado" | "stripePaymentIntentId" | "totalAmount"> & { createdAt?: Date };
-
-/**
- * Desde aquí toda reserva pagada en línea nace con su `depositoPagado` y su
- * renglón de cobro (`cobros.ts`, 29 sep 2026). El respaldo «Stripe sin depósito
- * = pagada completa» es SOLO para las de antes.
- */
-const DESDE_DEPOSITO_SIEMPRE = new Date("2026-09-29T00:00:00-06:00");
-
-/**
- * Dinero realmente cobrado de una reserva = el anticipo registrado, o el total si fue
- * un pago 100% por Stripe (puede no tener anticipo explícito guardado).
- *
- * ⚠️ Si una reserva se capturó a mano SIN anticipo, esto devuelve 0 aunque el
- * dinero sí haya entrado. No se adivina a partir de `status`: en esta base
- * TODAS las reservas están en "paid" (incluidas 8 con anticipo parcial), así
- * que `status` no distingue "pagada completa" de "capturada y ya". Esas
- * reservas se reportan aparte en `sinRegistroDePago` para poder corregirlas.
- */
-export function montoCobrado(b: CashFields): number {
-  const dep = b.depositoPagado ?? 0;
-  if (dep > 0) return dep;
-  // 🔴 Con una reserva nueva, depósito en 0 quiere decir que se ANULÓ su cobro
-  // (un reembolso): antes salía como cobrada al 100 % y el panel no dejaba
-  // registrar otro pago («ya está liquidada»).
-  if (b.createdAt && b.createdAt >= DESDE_DEPOSITO_SIEMPRE) return 0;
-  return b.stripePaymentIntentId ? b.totalAmount : 0;
-}
-
-/** Saldo que falta por cobrar de una reserva (nunca negativo). */
-export function saldoPendiente(b: CashFields): number {
-  return Math.max(0, b.totalAmount - montoCobrado(b));
-}
+// `montoCobrado` y `saldoPendiente` viven en `dinero.ts` (puro, con pruebas);
+// se reexportan para que Inicio, Cobros, el corte y los correos sigan igual.
+import { montoCobrado, saldoPendiente, type CashFields } from "./dinero";
+export { montoCobrado, saldoPendiente };
 
 /** Una reserva marcada como cobrada pero sin ningún importe registrado. */
 function sinImporteRegistrado(b: CashFields & { status: string }): boolean {
