@@ -124,3 +124,17 @@ describe("viaje ya pasado → Operado", () => {
     expect(viajeYaPaso([null, "", "por definir"], "2026-11-04")).toEqual({ paso: false, ultima: null });
   });
 });
+
+import { agruparPorPlazo } from "../crm";
+describe("seguimientos por plazo", () => {
+  it("vencidos (lo más viejo arriba), hoy por hora, mañana, esta semana y más adelante; sin las hechas", () => {
+    const t = (id: string, vence: string, hora: string | null = null, estado = "pendiente") => ({ id, responsable: "Erick", vence, hora, estado });
+    const g = agruparPorPlazo([
+      t("a", "2026-11-10"), t("b", "2026-11-04", "16:00"), t("c", "2026-11-02"), t("d", "2026-11-04", "09:00"),
+      t("e", "2026-11-05"), t("f", "2026-11-30"), t("g", "2026-11-01"), t("h", "2026-11-04", null, "hecha"),
+    ], "2026-11-04");
+    expect(g.map(x => [x.clave, x.tareas.map(y => y.id).join("")])).toEqual([
+      ["vencidos", "gc"], ["hoy", "db"], ["manana", "e"], ["semana", "a"], ["despues", "f"],
+    ]);
+  });
+});

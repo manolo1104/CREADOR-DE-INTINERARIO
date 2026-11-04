@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import type { TareaFila } from "@/lib/admin/crmDatos";
-import { agruparTareas } from "@/lib/admin/crm";
+import { agruparPorPlazo } from "@/lib/admin/crm";
 import { REGLAS } from "@/lib/admin/automatizaciones";
 import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "./FilaSeguimiento";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
@@ -22,7 +22,8 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
   const [tareas, setTareas] = useState(iniciales);
   const [base, setBase] = useState(iniciales);
   if (base !== iniciales) { setBase(iniciales); setTareas(iniciales); }
-  const [filtro, setFiltro] = useState<string>(responsables.includes(quien) ? quien : "");
+  // Abre en «Todos» (4 nov 2026): abrir filtrado a quien entra hacía creer que faltaban seguimientos.
+  const [filtro, setFiltro] = useState<string>("");
   const [nueva, setNueva] = useState({ titulo: "", responsable: quien || responsables[0] || "", vence: hoy, hora: "" });
   const [abierto, setAbierto] = useState(false);
   const [msj, setMsj] = useState<{ texto: string; error?: boolean } | null>(null);
@@ -57,7 +58,7 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
   }
 
   const visibles = tareas.filter(t => !filtro || t.responsable === filtro);
-  const grupos = agruparTareas(visibles, hoy);
+  const grupos = agruparPorPlazo(visibles, hoy);
   const vencidas = visibles.filter(t => t.estado !== "hecha" && t.vence < hoy).length;
   const deHoy = visibles.filter(t => t.estado !== "hecha" && t.vence === hoy).length;
   const hechasHoy = visibles.filter(t => t.estado === "hecha");
@@ -98,16 +99,14 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
       {grupos.length === 0 ? (
         <EstadoVacio titulo="Sin seguimientos pendientes" texto="Cuando un lead necesite un siguiente paso, créalo desde su ficha o aquí. Lo vencido sale en rojo." accion={{ href: "/admin/leads", etiqueta: "Ir a Leads" }} />
       ) : grupos.map(g => (
-        <section key={g.responsable} className="mb-5">
-          <h2 className="mb-2 font-cormorant text-[22px] text-[var(--panel-tinta)]">{g.responsable}</h2>
-          {([["Vencidos", g.vencidas], ["Hoy", g.hoy], ["Próximos", g.proximas]] as const).filter(([, ts]) => ts.length > 0).map(([titulo, ts]) => (
-            <div key={titulo} className="panel-card mb-3 overflow-hidden">
-              <p className={`px-4 pt-3 text-[11px] font-dm font-semibold uppercase tracking-[0.12em] ${titulo === "Vencidos" ? "text-[var(--panel-problema)]" : "text-[var(--panel-tinta-suave)]"}`}>{titulo} · {ts.length}</p>
-              <ul className="divide-y divide-[var(--panel-borde)]">
-                {ts.map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} onEditar={editar} responsables={responsables} />)}
-              </ul>
-            </div>
-          ))}
+        // Por prioridad de plazo: vencidos (lo más viejo primero), hoy, mañana, esta semana y más adelante.
+        <section key={g.clave} className="panel-card mb-4 overflow-hidden">
+          <h2 className={`flex items-baseline justify-between px-4 pt-3 font-cormorant text-[22px] ${g.clave === "vencidos" ? "text-[var(--panel-problema)]" : g.clave === "hoy" ? "text-[var(--panel-atencion)]" : "text-[var(--panel-tinta)]"}`}>
+            {g.titulo}<span className="panel-cifra text-[13px] font-dm">{g.tareas.length}</span>
+          </h2>
+          <ul className="divide-y divide-[var(--panel-borde)]">
+            {g.tareas.map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} onEditar={editar} responsables={responsables} conResponsable />)}
+          </ul>
         </section>
       ))}
 

@@ -9,7 +9,7 @@ import SalidaDetalleClient from "./SalidaDetalleClient";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Salida — Admin" };
 
-export default async function SalidaDetallePage({ params }: { params: { clave: string } }) {
+export default async function SalidaDetallePage({ params, searchParams }: { params: { clave: string }; searchParams?: { de?: string } }) {
   const clave = decodeURIComponent(params.clave);
   const [salida, sesion] = await Promise.all([salidaPorClave(clave), sesionActual()]);
   if (!salida) {
@@ -26,7 +26,10 @@ export default async function SalidaDetallePage({ params }: { params: { clave: s
   const datos = verDinero ? salida : { ...salida, conceptos: [], precioPorPax: 0, numeros: numerosDeSalida(0, salida.personas, []) };
   return (
     <div className="mx-auto max-w-5xl p-4 pb-16 sm:p-6 md:p-8">
-      <Link href={`/admin/salidas-dia?fecha=${salida.fecha}`} className="panel-foco text-[12.5px] font-dm text-[var(--panel-tinta-media)] hover:text-[var(--panel-tinta)]">← Salidas del {salida.fecha.slice(8)}/{salida.fecha.slice(5, 7)}</Link>
+      {/* Desde el Calendario, «regresar» vuelve al Calendario con ese día abierto (Manolo, 4 nov 2026). */}
+      {searchParams?.de === "calendario"
+        ? <Link href={`/admin/calendario?dia=${salida.fecha}`} className="panel-foco text-[12.5px] font-dm text-[var(--panel-tinta-media)] hover:text-[var(--panel-tinta)]">← Calendario · {salida.fecha.slice(8)}/{salida.fecha.slice(5, 7)}</Link>
+        : <Link href={`/admin/salidas-dia?fecha=${salida.fecha}`} className="panel-foco text-[12.5px] font-dm text-[var(--panel-tinta-media)] hover:text-[var(--panel-tinta)]">← Salidas del {salida.fecha.slice(8)}/{salida.fecha.slice(5, 7)}</Link>}
       <SalidaDetalleClient inicial={datos} quien={sesion?.nombre ?? ""} puedeAsignar={!!sesion && sesion.rol !== "guia"} verDinero={verDinero} />
     </div>
   );

@@ -167,6 +167,30 @@ export function agruparTareas<T extends TareaLigera>(tareas: T[], hoy: string) {
     .sort((a, b) => b.vencidas.length - a.vencidas.length || a.responsable.localeCompare(b.responsable));
 }
 
+export type Plazo = "vencidos" | "hoy" | "manana" | "semana" | "despues";
+export const PLAZOS: { clave: Plazo; titulo: string }[] = [
+  { clave: "vencidos", titulo: "Vencidos" }, { clave: "hoy", titulo: "Hoy" }, { clave: "manana", titulo: "Mañana" },
+  { clave: "semana", titulo: "Esta semana" }, { clave: "despues", titulo: "Más adelante" },
+];
+
+/**
+ * Los seguimientos pendientes por PRIORIDAD de plazo (Manolo, 4 nov 2026): lo
+ * vencido arriba (lo más viejo primero), luego hoy (por hora), mañana, los
+ * próximos 7 días y lo demás. Cada sección ordenada por día y hora.
+ */
+export function agruparPorPlazo<T extends TareaLigera>(tareas: T[], hoy: string): { clave: Plazo; titulo: string; tareas: T[] }[] {
+  const manana = sumarDias(hoy, 1), semana = sumarDias(hoy, 7);
+  const plazoDe = (v: string): Plazo => v < hoy ? "vencidos" : v === hoy ? "hoy" : v === manana ? "manana" : v <= semana ? "semana" : "despues";
+  const pendientes = tareas.filter(t => t.estado !== "hecha").sort(ordenTareas);
+  return PLAZOS.map(p => ({ ...p, tareas: pendientes.filter(t => plazoDe(t.vence) === p.clave) })).filter(g => g.tareas.length > 0);
+}
+
+function sumarDias(ymd: string, n: number): string {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Por fecha y, el mismo día, por hora (las de sin hora al final del día). */
 export const ordenTareas = (a: TareaLigera, b: TareaLigera) =>
   `${a.vence} ${a.hora ?? "99"}`.localeCompare(`${b.vence} ${b.hora ?? "99"}`);

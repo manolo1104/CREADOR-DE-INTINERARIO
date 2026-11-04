@@ -7,6 +7,7 @@ import { cupoDeTour } from "@/lib/cupoTour";
 import { origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import { conceptosDe, type ConceptoCosto } from "./costos";
 import { saldoPendiente } from "./dinero";
+import { claveTarjeta, costosDelCorte, type CostoDelCorte } from "./costosReales";
 import { hospedajeDeReserva } from "./hospedaje";
 import { checklistDe, type ItemChecklist } from "./checklistSalida";
 import {
@@ -58,6 +59,14 @@ export interface SalidaOperativa extends SalidaAgrupada {
   registro: RegistroSalida;
   checklist: ItemChecklist[];
   conceptos: ConceptoCosto[];
+  /**
+   * De dónde salen los costos de `numeros` (4 nov 2026, Manolo): «corte» = los
+   * capturados en el corte semanal de esa semana (los reales); «cotizador» = la
+   * estimación del Cotizador mientras no hay corte; null = sin costos.
+   */
+  fuenteCostos: "corte" | "cotizador" | null;
+  /** Lunes de la semana del corte de donde salieron (si fuente = corte). */
+  semanaCorte: string | null;
   numeros: NumerosSalida;
   /** Precio por persona del catálogo, para el simulador (0 si se cobra por vehículo o a medida). */
   precioPorPax: number;
@@ -79,10 +88,11 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
   const salidas = agruparSalidas(dias);
   if (salidas.length === 0) return [];
   const slugs = Array.from(new Set(salidas.map(s => s.slug)));
-  const [registros, costos, rutas] = await Promise.all([
+  const [registros, costos, rutas, corte] = await Promise.all([
     prisma.salida.findMany({ where: { clave: { in: salidas.map(s => s.clave) } } }).catch(() => []),
     prisma.tourCosto.findMany({ where: { tourSlug: { in: slugs } } }),
     prisma.rutaTour.findMany({ where: { tourSlug: { in: slugs } } }).catch(() => []),
+    costosDelCorte(desde, hasta).catch(e => { console.error("costos del corte:", (e as Error)?.message); return new Map<string, CostoDelCorte>(); }),
   ]);
   const idsProv = Array.from(new Set(rutas.flatMap(r => r.proveedores)));
   const provs = idsProv.length ? await prisma.proveedor.findMany({ where: { id: { in: idsProv }, activo: true }, select: { id: true, nombre: true, servicio: true, telefono: true } }).catch(() => []) : [];
@@ -114,6 +124,15 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
           idioma: b.idiomaTour ?? "es", monto: d.monto,
         };
       });
+    // Costos REALES del corte (Manolo, 4 nov 2026): si todas sus reservas están en
+    // un corte guardado, la utilidad sale de lo capturado ahí; si no, se estima
+    // con el Cotizador y se dice que es estimado.
+    const tarjetas = pasajeros.map(p => corte.get(claveTarjeta(s.fecha, s.slug, p.bookingId)));
+    const conCorte = pasajeros.length > 0 && tarjetas.every(Boolean);
+    const costoCorte = conCorte ? tarjetas.reduce((t, x) => t + (x?.costos ?? 0), 0) : 0;
+    const numeros = conCorte
+      ? numerosDeSalida(s.monto, s.personas, [{ concepto: "Costos del corte", monto: costoCorte, tipo: "fijo" }])
+      : numerosDeSalida(s.monto, s.personas, conceptos);
     const cupo = tour ? cupoDeTour(tour) : null;
     const precioPorPax = tour && tour.precioUnidad !== "vehiculo" && tour.precioUnidad !== "grupo" ? tour.precio : 0;
     const p = tour ? partesRecogida(tour, false) : null;
@@ -127,7 +146,9 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
         : REGISTRO_VACIO,
       checklist: checklistDe(s.slug, reg?.checklist),
       conceptos,
-      numeros: numerosDeSalida(s.monto, s.personas, conceptos),
+      numeros,
+      fuenteCostos: conCorte ? "corte" as const : numeros.conCostos ? "cotizador" as const : null,
+      semanaCorte: conCorte ? (tarjetas[0]?.semana ?? null) : null,
       precioPorPax,
       protocolo: tour && p ? {
         // El punto de encuentro capturado en «Rutas» manda sobre el del catálogo.

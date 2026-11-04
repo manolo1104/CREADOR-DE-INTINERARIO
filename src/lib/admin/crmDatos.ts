@@ -81,6 +81,9 @@ export async function crearOportunidad(d: NuevoLead, quien: string) {
   if (etapa !== "nuevo") await registrarEtapa(op.id, "nuevo", etapa, "Regla: tour, fecha y personas", "regla");
   const nota = texto(d.nota, 2000);
   if (nota) await prisma.notaOportunidad.create({ data: { oportunidadId: op.id, autor: quien, texto: nota } });
+  // El próximo paso del alta es un SEGUIMIENTO de verdad (4 nov 2026): antes quedaba
+  // solo como texto en el lead y no salía en /seguimientos ni avisaba a nadie.
+  if (op.proximoPaso) await crearTarea({ titulo: op.proximoPaso, vence: op.proximoPasoEn ?? undefined, responsable: op.responsable ?? quien, oportunidadId: op.id }, quien);
   await registrarEnBitacora({ accion: "creó", entidad: "lead", referencia: contacto.nombre, resumen: `Lead nuevo: ${contacto.nombre} (${etiquetaEtapa(etapa)})` });
   return { oportunidad: op, existente: false };
 }

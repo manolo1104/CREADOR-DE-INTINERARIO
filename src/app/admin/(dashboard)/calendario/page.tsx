@@ -8,7 +8,7 @@ import CalendarioClient, { type ApartadoDelDia } from "./CalendarioClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarioPage() {
+export default async function CalendarioPage({ searchParams }: { searchParams?: { dia?: string } }) {
   // 🔴 El guía no: esta página manda al navegador todas las reservas con su
   // dinero y sus cobros (revisión del 4 nov 2026). Lo suyo es Salidas del día.
   if ((await sesionActual())?.rol === "guia") redirect("/admin/salidas-dia");
@@ -34,5 +34,6 @@ export default async function CalendarioPage() {
   // que el sitio ya no vende. Se cuenta aquí porque esa cuenta lee la base y
   // no puede viajar al navegador.
   const checkins = await estadosDe(bookings.map(b => b.id));
-  return <CalendarioClient bookings={bookings} cupo={resumenCupoPanel(bookings, cerradas)} apartados={apartadosPorDia} checkins={checkins} />;
+  const dia = typeof searchParams?.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.dia) ? searchParams.dia : null;
+  return <CalendarioClient diaInicial={dia} bookings={bookings} cupo={resumenCupoPanel(bookings, cerradas)} apartados={apartadosPorDia} checkins={checkins} />;
 }

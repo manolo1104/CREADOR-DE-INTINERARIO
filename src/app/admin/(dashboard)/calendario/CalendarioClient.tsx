@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 // Solo los TIPOS: `cupoTour.ts` lee la base; las cuentas llegan hechas de `page.tsx`.
 import type { CupoDeTourEnDia, EstadoDia, ResumenCupoPanel } from "@/lib/cupoTour";
@@ -50,7 +51,9 @@ export interface ApartadoDelDia {
   vence:    number;
 }
 
-export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {} }: {
+export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {}, diaInicial = null }: {
+  /** YYYY-MM-DD: al volver de una salida, el calendario abre en ese mes con ese día abierto. */
+  diaInicial?: string | null;
   bookings: TourBooking[];
   cupo: ResumenCupoPanel;
   apartados?: Record<string, ApartadoDelDia[]>;
@@ -60,11 +63,12 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
   const [checkins, setCheckins] = useState(checkinsIniciales);
   const ponCheckin = (id: string) => (e: EstadoCheckin) => setCheckins(c => ({ ...c, [id]: e }));
   const today = new Date();
-  const [year,  setYear]  = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
+  const router = useRouter();
+  const [year,  setYear]  = useState(diaInicial ? Number(diaInicial.slice(0, 4)) : today.getFullYear());
+  const [month, setMonth] = useState(diaInicial ? Number(diaInicial.slice(5, 7)) - 1 : today.getMonth());
   // El día abierto en el panel lateral. Antes se guardaban sus salidas y solo
   // se abría si tenía reservas; ahora se abre cualquiera, para poder cerrarlo.
-  const [selFecha, setSelFecha] = useState<string | null>(null);
+  const [selFecha, setSelFecha] = useState<string | null>(diaInicial);
   // El cupo de cada día: cambia en su lugar al cerrar o abrir una fecha.
   const [cupoDias, setCupoDias] = useState(cupo.dias);
   const [guardandoCupo, setGuardandoCupo] = useState<string | null>(null);
@@ -151,7 +155,18 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
   const mesFin = `${year}-${mm}-${String(daysInMo).padStart(2, "0")}`;
   const diasTour = bookings.flatMap(diasDeTourDe);
   const salidasPorDia: Record<string, SalidaAgrupada[]> = {};
-  for (const sa of agruparSalidas(diasTour)) (salidasPorDia[sa.fecha] ??= []).push(sa);
+  // La salida de cada reserva en cada día: el clic en su tarjeta lleva a ESA salida (Manolo, 4 nov 2026).
+  const salidaDeTarjeta = new Map<string, string>();
+  for (const sa of agruparSalidas(diasTour)) {
+    (salidasPorDia[sa.fecha] ??= []).push(sa);
+    for (const f of sa.folios) salidaDeTarjeta.set(`${sa.fecha}|${sa.slug}|${f}`, sa.clave);
+  }
+  const irASalida = (fecha: string, slug: string, folio: string): boolean => {
+    const clave = salidaDeTarjeta.get(`${fecha}|${slug}|${folio}`);
+    if (!clave) return false;
+    router.push(`/admin/salidas-dia/${encodeURIComponent(clave)}?de=calendario`);
+    return true;
+  };
   const diasMes = diasTour.filter(d => d.fecha >= mesIni && d.fecha <= mesFin);
   const resumenMes = resumirSalidas(diasMes);
   const cupoDe = (slug: string) => cupo.tours.find(t => t.slug === slug)?.cupo ?? null;
@@ -370,13 +385,11 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
               <p className="font-dm text-[11px] text-[#1B4332]/50 mb-3">Sin salidas este día.</p>
             )}
             <div className="space-y-3">
-              {/* Clic en la tarjeta → la ficha completa de la reserva, la misma
-                  de la pestaña Reservas (Manolo, 20 oct 2026): antes había que
-                  ir a buscarla allá para ver el grupo, los cobros o las notas.
-                  El nombre es el botón (teclado y lector de pantalla); el resto
-                  de la tarjeta solo amplía el área de clic. */}
+              {/* Clic en la tarjeta → la ficha de su SALIDA (Manolo, 4 nov 2026),
+                  y «regresar» vuelve aquí con el día abierto. El nombre sigue
+                  abriendo la ficha de la reserva (grupo, cobros, notas). */}
               {sel.map(s => (
-                <div key={s.key} onClick={() => { playClick(); setDetalle(s.reserva); }}
+                <div key={s.key} onClick={() => { playClick(); if (!irASalida(s.date, s.tourSlug, s.confirmationNumber)) setDetalle(s.reserva); }}
                   className="border border-[#1B4332]/10 p-3 rounded-sm cursor-pointer hover:border-[#1B4332]/30 hover:bg-[#FAFAF8] transition-colors"
                   style={{borderLeft:`3px solid ${colorDeTour(s.tourSlug)}`}}>
                   <button type="button"
@@ -559,7 +572,7 @@ function CeldaSalidas({ salidas, cupoDe }: { salidas: SalidaAgrupada[]; cupoDe: 
         const estado = estadoDeSalida(sa, cupo);
         const color = colorDeTour(sa.slug);
         return (
-          <Link key={sa.clave} href={`/admin/salidas-dia/${encodeURIComponent(sa.clave)}`}
+          <Link key={sa.clave} href={`/admin/salidas-dia/${encodeURIComponent(sa.clave)}?de=calendario`}
             className="panel-foco block rounded-sm px-1 py-0.5 text-[9px] font-dm leading-tight text-[#1B4332]/80 hover:brightness-95"
             style={{ background: color + "1f", borderLeft: `3px solid ${color}` }}
             title={`${sa.nombre} · ${sa.clientes.join(", ")} · ${ETIQUETA_ESTADO_SALIDA[estado]}`}>

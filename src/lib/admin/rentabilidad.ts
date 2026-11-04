@@ -25,6 +25,8 @@ export interface DatosRentabilidad {
   salidas: number; personas: number; paxPorSalida: number; bajoMinimo: number; regulares: number;
   ingreso: number; margen: number; ingresoConCostos: number; margenPct: number | null;
   toursConCostos: number; toursTotal: number;
+  /** Cuántas salidas usan los costos REALES del corte (el resto se estima con el Cotizador). */
+  salidasConCorte: number;
   porTour: FilaTour[];
   porTamano: { etiqueta: string; salidas: number }[];
   porCanal: FilaCanal[];
@@ -82,5 +84,6 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
     margenPct: ingresoConCostos > 0 ? Math.round((margen / ingresoConCostos) * 100) : null,
     toursConCostos: porTour.filter(t => t.conCostos && !t.aMedida).length, toursTotal: porTour.filter(t => !t.aMedida).length,
     porTour, porTamano, porCanal,
+    salidasConCorte: salidas.filter(s => s.fuenteCostos === "corte").length,
   };
 }

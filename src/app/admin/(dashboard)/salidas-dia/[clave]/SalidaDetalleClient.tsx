@@ -243,11 +243,17 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
           {/* Números (solo quien ve el Cotizador) */}
           {verDinero && <section className="panel-card p-4">
             <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Números de la salida</h2>
-            {!n.conCostos && <p className="mt-1 text-[12px] font-dm text-[var(--panel-atencion)]">Faltan costos: captúralos en el Cotizador para ver el margen real.</p>}
+            {s.fuenteCostos === "corte"
+              ? <p className="mt-1 text-[12px] font-dm text-[var(--panel-bien)]">Costos reales del corte de la semana del {s.semanaCorte}.</p>
+              : n.conCostos
+                ? <p className="mt-1 text-[12px] font-dm text-[var(--panel-atencion)]">Estimado con el Cotizador: los reales salen al hacer el corte de esa semana.</p>
+                : <p className="mt-1 text-[12px] font-dm text-[var(--panel-atencion)]">Faltan costos: se capturan en el corte semanal (o se estiman en el Cotizador).</p>}
             <dl className="mt-2 space-y-1.5 text-[13px] font-dm">
               <Fila k="Ingreso registrado" v={fmx(n.ingreso)} />
-              <Fila k={`Costo fijo de la salida`} v={n.conCostos ? `− ${fmx(n.costoFijo)}` : "—"} />
-              <Fila k={`Costo por persona × ${n.pax}`} v={n.conCostos ? `− ${fmx(n.costoPorPax * n.pax)}` : "—"} />
+              {s.fuenteCostos === "corte" ? <Fila k="Costos capturados en el corte" v={`− ${fmx(n.costos)}`} /> : <>
+                <Fila k={`Costo fijo de la salida`} v={n.conCostos ? `− ${fmx(n.costoFijo)}` : "—"} />
+                <Fila k={`Costo por persona × ${n.pax}`} v={n.conCostos ? `− ${fmx(n.costoPorPax * n.pax)}` : "—"} />
+              </>}
               <div className="flex justify-between border-t border-[var(--panel-borde)] pt-1.5 font-medium text-[var(--panel-tinta)]"><dt>Margen de contribución</dt><dd className="panel-cifra">{n.conCostos ? `${fmx(n.margen)} · ${n.margenPct} %` : "Faltan costos"}</dd></div>
               {n.conCostos && <Fila k="Parte de cada socio (50/50)" v={fmx(n.parteSocio)} />}
             </dl>

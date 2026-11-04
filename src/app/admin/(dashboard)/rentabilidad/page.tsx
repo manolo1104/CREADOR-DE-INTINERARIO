@@ -33,6 +33,9 @@ export default async function RentabilidadPage({ searchParams }: { searchParams:
         <EstadoVacio titulo="Sin salidas este mes" texto="No hay reservas con tour en este mes. Las cifras salen solas de las reservas y de los costos del Cotizador." accion={{ href: "/admin/calendario", etiqueta: "Ver el calendario" }} />
       ) : (
         <>
+          <p className="mb-2 text-[12.5px] font-dm text-[var(--panel-tinta-media)]">
+            Costos: <strong className="text-[var(--panel-tinta)]">{d.salidasConCorte} de {d.salidas}</strong> salidas con los costos reales del corte semanal{d.salidasConCorte < d.salidas ? "; el resto, estimado con el Cotizador hasta que se haga su corte" : ""}.
+          </p>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <TarjetaKpi etiqueta="Margen de contribución" area="Dinero" valor={d.margenPct === null ? "—" : `${d.margenPct} %`}
               contexto={d.margenPct === null ? "Ninguna salida con costos capturados" : `${fmx(d.margen)} sobre ${fmx(d.ingresoConCostos)} con costos · meta 35 %`}
