@@ -51,7 +51,9 @@ export interface ApartadoDelDia {
   vence:    number;
 }
 
-export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {}, diaInicial = null }: {
+export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {}, diaInicial = null, porJuntar = 0 }: {
+  /** Cuántos pares de salidas se pueden juntar (regla «Juntar salidas»). */
+  porJuntar?: number;
   /** YYYY-MM-DD: al volver de una salida, el calendario abre en ese mes con ese día abierto. */
   diaInicial?: string | null;
   bookings: TourBooking[];
@@ -276,6 +278,11 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
         </div>
       </div>
 
+      {porJuntar > 0 && (
+        <Link href="/admin/agente#agrupar" className="panel-foco mb-3 block rounded-[var(--panel-radio-sm)] bg-[var(--panel-atencion-fondo)] px-4 py-2 text-[13px] font-dm text-[var(--panel-tinta)] hover:underline">
+          🚐 {porJuntar} {porJuntar === 1 ? "par de salidas se puede" : "pares de salidas se pueden"} juntar en una sola (mismo tour, fechas cercanas, poca gente). Ver cuáles →
+        </Link>
+      )}
       {/* Resumen del mes: lo que el scorecard mide por salida, aquí a la vista. */}
       {vista === "salidas" && (
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">

@@ -13,13 +13,14 @@ export const RESPONSABLE_OPERACION = "Erick";
 /** Quién registra el dinero: los saldos vencidos son suyos. */
 export const RESPONSABLE_COBROS = "Manolo";
 
-export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h";
+export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas";
 
 export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] = [
   { clave: "cotizado-24h", etiqueta: "Cotizado sin respuesta 24 h", detalle: "Lead en Cotizado desde hace 24 h y sin ningún seguimiento pendiente." },
   { clave: "saldo-vencido", etiqueta: "Saldo vencido", detalle: "El tour ya pasó y la reserva tiene saldo sin registrar." },
   { clave: "liga-24h", etiqueta: "Liga de pago sin pagar 24 h", detalle: "Se mandó una liga de pago hace 24 h y no se ha pagado." },
   { clave: "salida-48h", etiqueta: "Confirmar salida (48 h)", detalle: "Pasado mañana sale un tour: confirmar a los clientes punto de encuentro, hora y qué llevar." },
+  { clave: "agrupar-salidas", etiqueta: "Juntar salidas", detalle: "El mismo tour a 3 días o menos, una salida bajo el mínimo y juntas caben: proponerle al grupo más chico cambiarse de fecha (un guía y una camioneta menos)." },
 ];
 
 export interface TareaPorRegla {

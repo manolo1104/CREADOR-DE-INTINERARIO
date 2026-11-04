@@ -6,6 +6,7 @@ import { ymdMX } from "@/lib/dates";
 import { ORIGENES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import { montoCobrado } from "./dinero";
 import { salidasEntre } from "./salidasDia";
+import { sugerenciasAgrupar } from "./agruparDatos";
 
 /**
  * Lo que se queda cada canal de lo cobrado. OTA ≈ 25 % (prompt); la web paga
@@ -27,6 +28,8 @@ export interface DatosRentabilidad {
   toursConCostos: number; toursTotal: number;
   /** Cuántas salidas usan los costos REALES del corte (el resto se estima con el Cotizador). */
   salidasConCorte: number;
+  /** Juntar salidas del mes que aún se pueden mover: cuántas y el ahorro estimado (costos fijos). */
+  agrupar: { n: number; ahorro: number; sinCosto: number };
   porTour: FilaTour[];
   porTamano: { etiqueta: string; salidas: number }[];
   porCanal: FilaCanal[];
@@ -35,6 +38,7 @@ export interface DatosRentabilidad {
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad> {
+  const sugs = await sugerenciasAgrupar().catch(() => []);
   const [y, m] = mes.split("-").map(Number);
   const ini = `${mes}-01`;
   const fin = ymdMX(new Date(Date.UTC(y, m, 0, 12)));
@@ -85,5 +89,9 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
     toursConCostos: porTour.filter(t => t.conCostos && !t.aMedida).length, toursTotal: porTour.filter(t => !t.aMedida).length,
     porTour, porTamano, porCanal,
     salidasConCorte: salidas.filter(s => s.fuenteCostos === "corte").length,
+    agrupar: (() => {
+      const del = sugs.filter(g => g.mover.fecha.startsWith(mes));
+      return { n: del.length, ahorro: del.reduce((t, g) => t + (g.ahorro ?? 0), 0), sinCosto: del.filter(g => !g.ahorro).length };
+    })(),
   };
 }

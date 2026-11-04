@@ -74,3 +74,31 @@ describe("Resumen diario", () => {
     expect(c.textContent).toContain("Venció el 02/11: Llamar <Ana> (Ana)");
   });
 });
+
+import { sugerenciasDeAgrupar, tituloAgrupar } from "../agrupar";
+describe("juntar salidas", () => {
+  const s = (clave: string, fecha: string, personas: number, extra: Partial<{ slug: string; aMedida: boolean; tipo: string; clientes: string[] }> = {}) =>
+    ({ clave, fecha, slug: extra.slug ?? "ruta-surrealista", tour: "Ruta Surrealista — Edward James", personas, clientes: extra.clientes ?? [clave], folios: [clave], aMedida: extra.aMedida ?? false, tipo: extra.tipo ?? "fija" });
+  const o = { hoy: "2026-11-04", cupoDe: () => 14, costoFijoDe: () => 1200 };
+  it("el caso de Manolo: Ruta Surrealista 14 y 15 nov con 2 pax cada una → una salida de 4 (se adelanta la del 15)", () => {
+    const r = sugerenciasDeAgrupar([s("A", "2026-11-14", 2, { clientes: ["POZAS 1"] }), s("B", "2026-11-15", 2, { clientes: ["POZAS 2"] })], o);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ juntas: 4, dias: 1, ahorro: 1200, mover: { fecha: "2026-11-15" }, hacia: { fecha: "2026-11-14" } });
+    expect(tituloAgrupar(r[0])).toContain("proponer a POZAS 2 (2 pax) pasar su Ruta Surrealista del dom 15 de nov al sáb 14 de nov, con POZAS 1: 4 pax");
+  });
+  it("se mueve el grupo más chico; no si las dos ya van en meta, ni si no caben, ni lejos, ni privadas, ni a medida, ni sin tiempo de avisar", () => {
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 5), s("B", "2026-11-16", 2)], o)[0].mover.clave).toBe("B");
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 3), s("B", "2026-11-15", 4)], o)).toHaveLength(0);
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 13), s("B", "2026-11-15", 2)], o)).toHaveLength(0);
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 2), s("B", "2026-11-18", 2)], o)).toHaveLength(0);
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 2, { tipo: "privada" }), s("B", "2026-11-15", 2)], o)).toHaveLength(0);
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 2, { aMedida: true }), s("B", "2026-11-15", 2, { aMedida: true })], o)).toHaveLength(0);
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-05", 2), s("B", "2026-11-06", 2)], o)).toHaveLength(0);
+    expect(sugerenciasDeAgrupar([s("A", "2026-11-14", 2), s("B", "2026-11-15", 2, { slug: "tamul" })], o)).toHaveLength(0);
+  });
+  it("cada salida se usa una vez (tres seguidas → un par, el más cercano)", () => {
+    const r = sugerenciasDeAgrupar([s("A", "2026-11-14", 2), s("B", "2026-11-15", 1), s("C", "2026-11-17", 2)], o);
+    expect(r).toHaveLength(1);
+    expect(new Set([r[0].mover.clave, r[0].hacia.clave])).toEqual(new Set(["A", "B"]));
+  });
+});

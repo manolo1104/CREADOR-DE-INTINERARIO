@@ -9,12 +9,14 @@ import { addDaysYMD } from "@/lib/dates";
 import { saldoPendiente } from "./dinero";
 import { diasDeTourDe } from "./salidas";
 import { salidasEntre } from "./salidasDia";
+import { sugerenciasAgrupar } from "./agruparDatos";
+import { tituloAgrupar } from "./agrupar";
 import { sincronizarProximoPaso } from "./crmDatos";
 import { usuariosAdmin } from "./usuarios";
 import { ahoraMX } from "./crm";
 import { correoDe } from "./recordatorios";
 import {
-  correoResumen, reglaCotizado, reglaLiga, reglaSaldo, reglaSalida, type LineaResumen, type TareaPorRegla,
+  RESPONSABLE_OPERACION, correoResumen, reglaCotizado, reglaLiga, reglaSaldo, reglaSalida, type LineaResumen, type TareaPorRegla,
 } from "./automatizaciones";
 
 /** Ligas más viejas que esto no generan tarea: son de antes de la regla. */
@@ -73,6 +75,11 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
       oportunidadId: (l.cotizacionId && cotsLiga.find(q => q.id === l.cotizacionId)?.oportunidadId) || (l.reservaId && resLiga.find(r => r.id === l.reservaId)?.oportunidadId) || null,
     })), ahora, hoy, responsables),
     ...reglaSalida(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, reservas: s.pasajeros.length })), hoy),
+    // Juntar salidas (4 nov 2026): una tarea por par, a Operación, para proponerlo al cliente.
+    ...(await sugerenciasAgrupar(hoy).catch(() => [])).map(g => ({
+      claveRegla: `agrupar-salidas:${g.mover.clave}>${g.hacia.clave}`, regla: "agrupar-salidas" as const,
+      titulo: tituloAgrupar(g), responsable: RESPONSABLE_OPERACION, vence: hoy, salidaClave: g.mover.clave,
+    })),
   ];
 }
 

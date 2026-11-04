@@ -7,6 +7,8 @@ import { TarjetaKpi } from "@/components/admin/ui/TarjetaKpi";
 import AgenteClient from "./AgenteClient";
 import ReporteClient from "./ReporteClient";
 import PreguntarClient from "./PreguntarClient";
+import Link from "next/link";
+import { sugerenciasAgrupar } from "@/lib/admin/agruparDatos";
 import { lunesDe } from "@/lib/admin/corteSemanal";
 import { hoyMX } from "@/lib/dates";
 
@@ -40,6 +42,11 @@ export default async function AgentePage() {
   // Regla del plan: 30 aprobaciones seguidas sin edición → el panel sugiere subir de nivel (solo el director decide).
   const racha = await prisma.propuestaAgente.findMany({ where: { tipo: "respuesta", estado: { in: ["aprobada", "editada", "rechazada"] } }, orderBy: { decididoEn: "desc" }, take: 30, select: { estado: true } });
   const listoParaMas = racha.length === 30 && racha.every(r => r.estado === "aprobada");
+  // Juntar salidas (4 nov 2026): lo que la regla ve en los próximos 45 días y si ya es seguimiento.
+  const agrupar = await sugerenciasAgrupar().catch(() => []);
+  const yaTareas = agrupar.length ? new Set((await prisma.tarea.findMany({ where: { regla: "agrupar-salidas", claveRegla: { in: agrupar.map(g => `agrupar-salidas:${g.mover.clave}>${g.hacia.clave}`) } }, select: { claveRegla: true } })).map(t => t.claveRegla)) : new Set<string | null>();
+  const diaC = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  const enc = (c: string) => `/admin/salidas-dia/${encodeURIComponent(c)}`;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 pb-12 sm:p-6 md:p-8">
@@ -69,6 +76,24 @@ export default async function AgentePage() {
           <li>Al llegar al tope se detiene hasta el día 1 (o hasta que se suba el tope).</li>
         </ul>
       </div>
+
+      <section id="agrupar" className="panel-card p-4">
+        <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Juntar salidas</h2>
+        <p className="text-[12.5px] font-dm text-[var(--panel-tinta-media)]">El mismo tour a 3 días o menos, una salida bajo el mínimo (menos de 3) y juntas caben: proponerle al grupo más chico cambiarse de fecha. La regla lo revisa sola cada 5 minutos y le deja el seguimiento a Erick (no gasta Claude).</p>
+        {agrupar.length === 0 ? <p className="mt-2 text-[13px] font-dm text-[var(--panel-tinta-media)]">Nada que juntar en los próximos 45 días.</p> : (
+          <ul className="mt-3 space-y-2">
+            {agrupar.map(g => (
+              <li key={g.mover.clave} className="rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] p-3 text-[13px] font-dm">
+                <p className="font-semibold text-[var(--panel-tinta)]">{g.tour.split(" — ")[0]}: {g.juntas} personas en una sola salida{g.ahorro ? ` · ahorro ~$${g.ahorro.toLocaleString("es-MX")}` : ""}</p>
+                <p className="text-[var(--panel-tinta-media)]">Mover a <strong className="text-[var(--panel-tinta)]">{g.mover.clientes.join(", ")}</strong> ({g.mover.personas} pax) del <Link href={enc(g.mover.clave)} className="panel-foco font-semibold text-[var(--panel-acento)] hover:underline">{diaC(g.mover.fecha)}</Link> al <Link href={enc(g.hacia.clave)} className="panel-foco font-semibold text-[var(--panel-acento)] hover:underline">{diaC(g.hacia.fecha)}</Link>, con {g.hacia.clientes.join(", ")} ({g.hacia.personas} pax).</p>
+                {!g.ahorro && <p className="text-[12px] text-[var(--panel-tinta-suave)]">Captura los costos fijos del tour en el Cotizador para ver cuánto se ahorra.</p>}
+                {g.avisos.map((a, i) => <p key={i} className="text-[12px] text-[var(--panel-atencion)]">{a}</p>)}
+                <p className="mt-1 text-[12px] text-[var(--panel-tinta-suave)]">{yaTareas.has(`agrupar-salidas:${g.mover.clave}>${g.hacia.clave}`) ? "✓ Ya está en Seguimientos para Erick." : "Se le deja a Erick en Seguimientos en la siguiente vuelta del reloj."}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <PreguntarClient />
 

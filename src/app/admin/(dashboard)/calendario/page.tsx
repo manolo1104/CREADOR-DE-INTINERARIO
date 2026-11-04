@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { sesionActual } from "@/lib/admin/sesion";
+import { sugerenciasAgrupar } from "@/lib/admin/agruparDatos";
 import { resumenCupoPanel, todasLasFechasCerradas } from "@/lib/cupoTour";
 import { apartadosVigentes } from "@/lib/apartadosAlmacen";
 import { estadosDe } from "@/lib/encuestas/encuesta";
@@ -35,5 +36,6 @@ export default async function CalendarioPage({ searchParams }: { searchParams?: 
   // no puede viajar al navegador.
   const checkins = await estadosDe(bookings.map(b => b.id));
   const dia = typeof searchParams?.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.dia) ? searchParams.dia : null;
-  return <CalendarioClient diaInicial={dia} bookings={bookings} cupo={resumenCupoPanel(bookings, cerradas)} apartados={apartadosPorDia} checkins={checkins} />;
+  const porJuntar = (await sugerenciasAgrupar().catch(() => [])).length;
+  return <CalendarioClient porJuntar={porJuntar} diaInicial={dia} bookings={bookings} cupo={resumenCupoPanel(bookings, cerradas)} apartados={apartadosPorDia} checkins={checkins} />;
 }

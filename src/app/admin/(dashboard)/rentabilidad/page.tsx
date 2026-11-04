@@ -33,6 +33,11 @@ export default async function RentabilidadPage({ searchParams }: { searchParams:
         <EstadoVacio titulo="Sin salidas este mes" texto="No hay reservas con tour en este mes. Las cifras salen solas de las reservas y de los costos del Cotizador." accion={{ href: "/admin/calendario", etiqueta: "Ver el calendario" }} />
       ) : (
         <>
+          {d.agrupar.n > 0 && (
+            <p className="mb-2 rounded-[var(--panel-radio-sm)] bg-[var(--panel-atencion-fondo)] px-3 py-2 text-[12.5px] font-dm text-[var(--panel-tinta)]">
+              <strong>Margen potencial por juntar salidas:</strong> {d.agrupar.n} {d.agrupar.n === 1 ? "par" : "pares"} de salidas del mes se pueden juntar{d.agrupar.ahorro ? ` · ahorro ~${fmx(d.agrupar.ahorro)}` : ""}{d.agrupar.sinCosto ? ` (${d.agrupar.sinCosto} sin costos capturados)` : ""}. <a href="/admin/agente#agrupar" className="panel-foco font-semibold text-[var(--panel-acento)] hover:underline">Ver cuáles</a>
+            </p>
+          )}
           <p className="mb-2 text-[12.5px] font-dm text-[var(--panel-tinta-media)]">
             Costos: <strong className="text-[var(--panel-tinta)]">{d.salidasConCorte} de {d.salidas}</strong> salidas con los costos reales del corte semanal{d.salidasConCorte < d.salidas ? "; el resto, estimado con el Cotizador hasta que se haga su corte" : ""}.
           </p>
