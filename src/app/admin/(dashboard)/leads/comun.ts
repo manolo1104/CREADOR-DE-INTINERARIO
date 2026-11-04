@@ -7,9 +7,17 @@ export const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 /** "jue 21 nov" */
 export const fechaCorta = (ymd: string | null) =>
   ymd ? new Date(`${ymd}T12:00:00`).toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" }).replace(/\./g, "") : "";
-export const canalCorto = (c: string) => (ORIGEN_ETIQUETA[c as OrigenReserva] ?? c).split(" (")[0];
+/** El canal en corto. «WhatsApp (escribió desde un botón del sitio)» no puede quedar igual que «WhatsApp». */
+export const canalCorto = (c: string) => c === "whatsapp_sitio" ? "WhatsApp del sitio" : (ORIGEN_ETIQUETA[c as OrigenReserva] ?? c).split(" (")[0];
+/** Igual que `fechaCorta`, con mayúscula solo al inicio («Jue 5 de nov», no «Jue 5 De Nov»). */
+export const fechaCortaM = (ymd: string | null) => { const t = fechaCorta(ymd); return t ? t[0].toUpperCase() + t.slice(1) : t; };
 export const COLOR_FECHA: Record<EstadoFecha, string> = {
   vencido: "text-[var(--panel-problema)]", hoy: "text-[var(--panel-atencion)]", proximo: "text-[var(--panel-tinta-media)]", "sin-fecha": "text-[var(--panel-tinta-suave)]",
+};
+/** El color de «vence…» de la cotización: rojo vencida, ámbar por vencer o sin enviar. */
+export const COLOR_VENCE: Record<string, string> = {
+  vencida: "text-[var(--panel-problema)]", "por-vencer": "text-[var(--panel-atencion)]", borrador: "text-[var(--panel-atencion)]",
+  enviada: "text-[var(--panel-tinta-media)]", aceptada: "text-[var(--panel-bien)]",
 };
 export const inputCls = "w-full rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-3 py-2.5 text-[16px] font-dm text-[var(--panel-tinta)] panel-foco";
 export const etiquetaCls = "block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]";

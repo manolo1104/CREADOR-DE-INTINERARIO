@@ -101,6 +101,36 @@ export function etapaPorReglas(actual: Etapa, o: DatosCalificacion): Etapa {
   return actual === "nuevo" && estaCalificada(o) ? "calificado" : actual;
 }
 
+/**
+ * La etapa que pide una reserva enlazada, según lo cobrado (reglas del prompt:
+ * «pago del anticipo → Anticipo pagado»). Sin cobro: En seguimiento; con parte
+ * cobrada: Anticipo pagado; liquidada: Confirmado.
+ */
+export function etapaPorCobro(cobrado: number, total: number): Etapa {
+  if (cobrado <= 0) return "seguimiento";
+  return total > 0 && cobrado >= total ? "confirmado" : "anticipo";
+}
+
+/** La etapa siguiente en el camino (null en Confirmado, Operado o Perdido). */
+export function etapaSiguiente(actual: string): Etapa | null {
+  const i = ETAPAS_PIPELINE.indexOf(actual as Etapa);
+  return i >= 0 && i < ETAPAS_PIPELINE.length - 1 ? ETAPAS_PIPELINE[i + 1] : actual === "confirmado" ? "operado" : null;
+}
+
+/**
+ * ¿Ya pasó el viaje? El último día de tour (de todas sus reservas vivas, o la
+ * fecha del lead si no tiene reserva) es anterior a hoy. Con eso un lead con
+ * Anticipo pagado o Confirmado pasa solo a Operado al día siguiente del tour.
+ */
+export function viajeYaPaso(fechas: (string | null | undefined)[], hoy: string): { paso: boolean; ultima: string | null } {
+  const validas = fechas.filter((f): f is string => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
+  const ultima = validas[validas.length - 1] ?? null;
+  return { paso: !!ultima && ultima < hoy, ultima };
+}
+
+/** Etapas que pasan solas a Operado cuando el viaje ya pasó. Las anteriores no: sin pago registrado hay que revisarlas. */
+export const ETAPAS_QUE_SE_OPERAN: Etapa[] = ["anticipo", "confirmado"];
+
 export type ValidacionCambio = { ok: true } | { ok: false; error: string };
 
 /** Mover de etapa a mano: cualquiera puede, pero Perdido exige motivo. */

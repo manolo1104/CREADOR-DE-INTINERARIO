@@ -12,6 +12,7 @@ import {
 } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
 import { motivoParaGuardar } from "@/lib/admin/cancelacion";
+import { leadTrasCancelarReserva, leadTrasReactivarReserva } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       throw e;
     });
     if (porLiberar) await liberarCodigoCumple(porLiberar, updated.confirmationNumber);
+    // Su lead: cancelar su única reserva viva lo pierde con ese motivo; reactivarla lo regresa.
+    if (cancela) await leadTrasCancelarReserva(updated.id, sesion?.nombre ?? "Desconocido");
+    if (reactiva) await leadTrasReactivarReserva(updated.id);
     if (cancela && (await liberarCodigosDeFolio(updated.confirmationNumber))) {
       resumenCumple = [resumenCumple, "al cancelarla se liberó su código de cumpleaños"].filter(Boolean).join(" · ");
     }

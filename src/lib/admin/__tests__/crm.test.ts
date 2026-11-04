@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   agruparTareas, contarMotivos, estadoFecha, etapaPorReglas, etiquetaMotivoPerdida, motivoPerdidaParaGuardar,
-  normalizarTelefono, validarCambioEtapa, ETAPAS_PIPELINE,
+  normalizarTelefono, validarCambioEtapa, ETAPAS_PIPELINE, etapaPorCobro, etapaSiguiente, viajeYaPaso
 } from "../crm";
 
 describe("teléfonos a E.164", () => {
@@ -95,5 +95,32 @@ describe("recordatorios de seguimiento", () => {
     const { ordenTareas } = await import("../crm");
     const ts = [{ id: "a", responsable: "E", estado: "pendiente", vence: "2026-11-04", hora: null }, { id: "b", responsable: "E", estado: "pendiente", vence: "2026-11-04", hora: "16:00" }, { id: "c", responsable: "E", estado: "pendiente", vence: "2026-11-04", hora: "09:30" }];
     expect([...ts].sort(ordenTareas).map(t => t.id)).toEqual(["c", "b", "a"]);
+  });
+});
+
+describe("etapa por lo cobrado y la siguiente", () => {
+  it("sin cobro En seguimiento, con anticipo Anticipo pagado, liquidada Confirmado", () => {
+    expect(etapaPorCobro(0, 4800)).toBe("seguimiento");
+    expect(etapaPorCobro(1440, 4800)).toBe("anticipo");
+    expect(etapaPorCobro(4800, 4800)).toBe("confirmado");
+    expect(etapaPorCobro(5000, 4800)).toBe("confirmado");
+  });
+  it("la siguiente sigue el camino y para en Operado", () => {
+    expect(etapaSiguiente("calificado")).toBe("cotizado");
+    expect(etapaSiguiente("anticipo")).toBe("confirmado");
+    expect(etapaSiguiente("confirmado")).toBe("operado");
+    expect(etapaSiguiente("operado")).toBeNull();
+    expect(etapaSiguiente("perdido")).toBeNull();
+  });
+});
+
+describe("viaje ya pasado → Operado", () => {
+  it("al día siguiente del ÚLTIMO tour, no el mismo día", () => {
+    expect(viajeYaPaso(["2026-11-03"], "2026-11-03")).toEqual({ paso: false, ultima: "2026-11-03" });
+    expect(viajeYaPaso(["2026-11-03"], "2026-11-04")).toEqual({ paso: true, ultima: "2026-11-03" });
+    expect(viajeYaPaso(["2026-11-02", "2026-11-05"], "2026-11-04").paso).toBe(false);
+  });
+  it("sin fecha válida no se mueve", () => {
+    expect(viajeYaPaso([null, "", "por definir"], "2026-11-04")).toEqual({ paso: false, ultima: null });
   });
 });

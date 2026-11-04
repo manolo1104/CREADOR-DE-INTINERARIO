@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { TourBooking } from "@prisma/client";
 import { Search, RefreshCw, Mail, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
@@ -70,9 +72,12 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin", checkins: checkinsIniciales = {} }:
-  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string; checkins?: Record<string, EstadoCheckin> },
+  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin", checkins: checkinsIniciales = {}, abrir = null }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string; checkins?: Record<string, EstadoCheckin>;
+    /** Desde la ficha de un lead: la reserva a abrir (y si es para cobrar). */
+    abrir?: { folio: string; cobrar: boolean } | null },
 ) {
+  const router = useRouter();
   const [bookings,      setBookings]      = useState(initialBookings);
   // El estado del check-in de cada reserva (21 oct 2026). Vive aparte de la
   // reserva: lo actualizan el botón de la fila y la ficha.
@@ -100,6 +105,16 @@ export default function ReservasClient(
   const [dateFrom,      setDateFrom]      = useState("");
   const [dateTo,        setDateTo]        = useState("");
   const today = useMemo(() => todayMX(), []);
+
+  // `?folio=HP-…` (y `&cobrar=1`) desde la ficha del lead: se busca esa reserva
+  // y se abre su detalle o su cobro, una sola vez.
+  const reservaPedida = abrir ? initialBookings.find(b => b.confirmationNumber === abrir.folio) ?? null : null;
+  useEffect(() => {
+    if (!abrir || !reservaPedida) return;
+    setSearch(abrir.folio);
+    if (abrir.cobrar) setCobrando(reservaPedida); else setDetalle(reservaPedida);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Los guías que ya se han asignado alguna vez. Salen de las propias
   // reservas: no hace falta darlos de alta en ningún lado, y el nombre se
@@ -768,6 +783,12 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {reservaPedida && (reservaPedida as any).oportunidadId && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-[#1B4332]/15 bg-[#F3F8F5] px-4 py-2.5 text-sm font-dm text-[#1B4332]">
+          <span>Reserva <span className="font-mono">{reservaPedida.confirmationNumber}</span> de <strong>{reservaPedida.customerName}</strong>.</span>
+          <Link href={`/admin/leads/${(reservaPedida as any).oportunidadId}`} className="panel-foco font-semibold hover:underline">← Volver a su ficha</Link>
+        </div>
+      )}
       {msg && (
         // Con el formulario abierto el aviso flota encima (si no, queda tapado
         // por el modal y un error al guardar no se ve). Sin translate: la
@@ -1020,6 +1041,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             setBookings(bs => bs.map(b => (b.id === cobrando.id ? { ...b, depositoPagado: cobrado } : b)));
             setCobrando(c => (c ? { ...c, depositoPagado: cobrado } : c));
             flash("✅ Cobro registrado");
+            // La ficha del lead lee lo cobrado: que no se quede con lo de antes.
+            router.refresh();
           }}
         />
       )}

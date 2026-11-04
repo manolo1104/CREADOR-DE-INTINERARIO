@@ -17,6 +17,12 @@ export async function GET() {
   }
 }
 
+async function leadExistente(v: unknown): Promise<string | null> {
+  if (typeof v !== "string" || !v || v.length > 40) return null;
+  const op = await prisma.oportunidad.findUnique({ where: { id: v }, select: { id: true } }).catch(() => null);
+  return op?.id ?? null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -46,6 +52,8 @@ export async function POST(req: NextRequest) {
         packageItems:  (sellado.lineItems as any) ?? undefined,
         extraItems:    body.extraItems   ?? undefined,
         status:        "borrador",
+        // Creada desde la ficha de un lead: queda enlazada a ese lead (si existe).
+        oportunidadId: await leadExistente(body.oportunidadId),
       },
     });
     await registrarEnBitacora({

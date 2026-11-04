@@ -6,7 +6,9 @@ import ReservasClient from "./ReservasClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReservasPage() {
+export default async function ReservasPage({ searchParams = {} }: { searchParams?: Record<string, string | string[] | undefined> }) {
+  // Desde la ficha de un lead: «Ver reserva» (?folio=) o «Registrar cobro» (&cobrar=1).
+  const folio = typeof searchParams.folio === "string" ? searchParams.folio.slice(0, 40) : null;
   const [bookings, presetsExtras, sesion] = await Promise.all([
     prisma.tourBooking.findMany({ orderBy: { createdAt: "desc" } }),
     leerPreciosExtras(),
@@ -21,6 +23,7 @@ export default async function ReservasPage() {
       presetsExtras={presetsExtras}
       quien={sesion?.nombre ?? "Admin"}
       checkins={checkins}
+      abrir={folio ? { folio, cobrar: searchParams.cobrar === "1" } : null}
     />
   );
 }
