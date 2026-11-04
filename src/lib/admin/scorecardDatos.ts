@@ -36,6 +36,8 @@ export interface DatosScorecard {
   revision: RevisionSemanalDatos;
   /** Las reseñas de Google que salen de la lectura semanal (para proponerlas en la revisión). */
   resenasGoogleSemana: number | null;
+  /** Leads capturados en el CRM esa semana (Fase 2): se usan si la revisión no trae el número. */
+  leadsCrm: number;
   cotizadosDelPanel: number;
   pendientes: Pendiente[];
   salidasSemana: SalidaResumen[];
@@ -51,6 +53,7 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   const mesIni = `${lunes.slice(0, 7)}-01`;
   const mesFin = ymdMX(new Date(Date.UTC(Number(lunes.slice(0, 4)), Number(lunes.slice(5, 7)), 0, 12)));
 
+  const leadsCrm = await prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }).catch(() => 0);
   const [creadas, delMes, cotizaciones, enTour, revisionRaw, google, salidas, salidasHoy, enviadas, vivas] = await Promise.all([
     prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }),
     prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: inicioMX(mesIni), lte: finMX(mesFin) } }, select: { totalAmount: true } }),
@@ -84,7 +87,7 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   };
 
   const scorecard = calcularScorecard({
-    leadsNuevos: revision.leadsNuevos,
+    leadsNuevos: revision.leadsNuevos ?? (leadsCrm > 0 ? leadsCrm : null),
     respuestas5min: revision.respuestas5min,
     leadsCotizados: revision.leadsCotizados,
     cotizadosDelPanel: cotizados,
@@ -117,7 +120,7 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
 
   return {
     semana: { lunes, domingo, etiqueta: etiquetaSemana(lunes), numero: numeroSemana(lunes), esActual: hoy >= lunes && hoy <= domingo },
-    scorecard, revision, resenasGoogleSemana, cotizadosDelPanel: cotizados, pendientes,
+    scorecard, revision, resenasGoogleSemana, leadsCrm, cotizadosDelPanel: cotizados, pendientes,
     salidasSemana: salidas.map(s => ({
       clave: s.clave, fecha: s.fecha, codigo: s.codigo, tourNombre: s.tourNombre, clientes: s.clientes, personas: s.personas, cupo: s.cupo,
       estadoPax: s.estadoPax, margen: s.numeros.conCostos ? s.numeros.margen : null, checklist: avanceChecklist(s.checklist), guia: s.registro.guia,

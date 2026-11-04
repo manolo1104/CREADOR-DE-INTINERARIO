@@ -143,12 +143,15 @@ model TourQuote {
   /// `prisma db push --accept-data-loss` en producción y una columna
   /// obligatoria sobre filas existentes tumba el despliegue.
   extraItems    Json? // [{concepto,detalle,cantidad,precioUnitario,incluido,costoUnitario,subtotal}]
-  status        String   @default("borrador") // borrador | enviada | aceptada | expirada
+  status        String   @default("borrador") // borrador | enviada | aceptada | expirada | archivada
+  /// La oportunidad del CRM de la que salió (Fase 2, 3 nov 2026). Opcional: las de antes no tienen.
+  oportunidadId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([customerEmail])
   @@index([status])
+  @@index([oportunidadId])
 }
 
 // Carrito abandonado: el cliente eligió tour/fecha y dejó su correo pero no pagó.
@@ -297,6 +300,8 @@ model TourBooking {
   /// fecha y las personas de estas reservas solo cambian desde Salidas, que
   /// pasa por el candado del cupo; Reservas las rechaza.
   salidaId              String?
+  /// La oportunidad del CRM que terminó en esta reserva (Fase 2, 3 nov 2026).
+  oportunidadId         String?
   /// Check-in previo y encuesta de satisfacción (21 oct 2026). Tabla aparte, no
   /// el `_meta`: el PATCH de Reservas reescribe `lineItems` entero.
   encuesta              EncuestaReserva?
@@ -308,6 +313,7 @@ model TourBooking {
   @@index([status])
   @@index([origen])
   @@index([salidaId])
+  @@index([oportunidadId])
 }
 
 model BlogPost {
@@ -979,4 +985,114 @@ model RevisionSemanal {
   guardadoPor    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// ── CRM (Fase 2 del rediseño, 3 nov 2026) ───────────────────────────────────
+// Un CONTACTO es una persona (único por teléfono). Una OPORTUNIDAD es una
+// intención de viaje de esa persona: pasa por etapas hasta reservar o
+// perderse. La tabla `Lead` de arriba es OTRA cosa (secuencias de correo del
+// recomendador) y no se toca.
+
+model Contacto {
+  id        String   @id @default(cuid())
+  nombre    String
+  /// E.164 (+52…). Único cuando existe: dos oportunidades del mismo número son la misma persona.
+  telefono  String?  @unique
+  correo    String?
+  /// es | en
+  idioma    String   @default("es")
+  notas     String?
+  oportunidades Oportunidad[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([correo])
+}
+
+model Oportunidad {
+  id            String    @id @default(cuid())
+  contactoId    String
+  contacto      Contacto  @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  /// nuevo | calificado | cotizado | seguimiento | anticipo | confirmado | operado | perdido
+  etapa         String    @default("nuevo")
+  /// Mismo catálogo que `TourBooking.origen` (`lib/origenReserva.ts`).
+  canal         String    @default("whatsapp")
+  /// Slugs de los tours que le interesan.
+  tours         String[]  @default([])
+  /// YYYY-MM-DD
+  fechaViaje    String?
+  pax           Int?
+  /// pareja | familia | amigos | empresa | solo
+  perfil        String?
+  quiereHospedaje Boolean?
+  /// Pesos. Lo cotizado (o lo estimado mientras no hay cotización).
+  monto         Int?
+  responsable   String?
+  proximoPaso   String?
+  /// YYYY-MM-DD
+  proximoPasoEn String?
+  /// `lib/admin/crm.ts` MOTIVOS_PERDIDA: clave y detalle. Obligatorio al pasar a perdido.
+  motivoPerdida String?
+  creadoPor     String?
+  historial     EtapaOportunidad[]
+  notasLista    NotaOportunidad[]
+  tareas        Tarea[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([etapa])
+  @@index([createdAt])
+  @@index([proximoPasoEn])
+}
+
+/// Cada cambio de etapa, con quién lo hizo: una persona, una regla o el agente.
+model EtapaOportunidad {
+  id            String      @id @default(cuid())
+  oportunidadId String
+  oportunidad   Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  anterior      String?
+  nueva         String
+  por           String
+  /// persona | regla | agente
+  origen        String      @default("persona")
+  createdAt     DateTime    @default(now())
+
+  @@index([oportunidadId])
+}
+
+model NotaOportunidad {
+  id            String      @id @default(cuid())
+  oportunidadId String
+  oportunidad   Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  autor         String
+  texto         String
+  createdAt     DateTime    @default(now())
+
+  @@index([oportunidadId])
+}
+
+/// Un pendiente con dueño y fecha. De una oportunidad o de una salida.
+model Tarea {
+  id            String       @id @default(cuid())
+  oportunidadId String?
+  oportunidad   Oportunidad? @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  /// Clave de la salida (`claveDeSalida`), si es de una salida.
+  salidaClave   String?
+  titulo        String
+  responsable   String
+  /// YYYY-MM-DD
+  vence         String
+  /// pendiente | hecha
+  estado        String       @default("pendiente")
+  /// manual | regla | agente
+  origen        String       @default("manual")
+  creadaPor     String?
+  hechaPor      String?
+  hechaEn       DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([estado, vence])
+  @@index([responsable])
+  @@index([oportunidadId])
 }
