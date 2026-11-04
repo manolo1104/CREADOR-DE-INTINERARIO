@@ -3,7 +3,7 @@
 // después anota lo que costó. Si algo falla, la operación del panel sigue.
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
-import { cabeEnTope, costoDe, mesMX, TOPE_USD_POR_OMISION, usd, type Uso } from "./costos";
+import { cabeEnTope, costoDe, mesMX, TOPE_USD_POR_OMISION, usd, type TareaAgente, type Uso } from "./costos";
 
 export class ErrorAgente extends Error {}
 
@@ -55,7 +55,7 @@ async function anotar(tarea: string, modelo: string, u: Uso | null, ok: boolean,
 }
 
 export interface PedidoJson {
-  tarea: "extraer" | "responder";
+  tarea: TareaAgente;
   modelo: string;
   system: string;
   mensaje: string;

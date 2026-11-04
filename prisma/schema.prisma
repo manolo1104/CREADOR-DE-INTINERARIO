@@ -1212,6 +1212,8 @@ model PropuestaAgente {
   conversacionId String?
   oportunidadId  String?
   borrador       String
+  /// A qué se refiere (p. ej. la clave de la salida de una confirmación de 48 h): no se prepara dos veces.
+  referencia     String?
   razon          String?
   /// Lo que falta saber para contestar mejor (el agente no inventa).
   faltaDato      String?
@@ -1225,6 +1227,7 @@ model PropuestaAgente {
 
   @@index([estado, createdAt])
   @@index([conversacionId])
+  @@index([referencia])
 }
 
 // ── Rutas y protocolos + Proveedores (Fase 1 del rediseño, 4 nov 2026) ──────
@@ -1272,4 +1275,45 @@ model Proveedor {
   updatedAt DateTime @updatedAt
 
   @@index([activo])
+}
+
+/// La revisión de calidad de UN chat en una semana (Fase 4, 4 nov 2026): qué
+/// reglas de la rúbrica aplicaron y cuáles se cumplieron. La suma es la
+/// propuesta del Score WhatsApp; la persona la revisa antes de guardarla.
+model RevisionChat {
+  id             String   @id @default(cuid())
+  /// Lunes de la semana, YYYY-MM-DD.
+  semana         String
+  conversacionId String
+  /// { [clave de la regla]: { aplica, cumple } }
+  reglas         Json
+  nota           String?
+  /// agente | nombre de la persona
+  revisor        String
+  createdAt      DateTime @default(now())
+
+  @@unique([semana, conversacionId])
+  @@index([semana])
+}
+
+/// Un hallazgo del reporte de oportunidades de los jueves (Fase 4).
+model HallazgoAgente {
+  id          String    @id @default(cuid())
+  semana      String
+  /// repetitiva | error | incidencia
+  tipo        String
+  titulo      String
+  evidencia   String
+  frecuencia  String?
+  impacto     String?
+  solucion    String
+  /// Quién debería hacerlo.
+  responsable String?
+  /// nuevo | aceptado | descartado
+  estado      String    @default("nuevo")
+  tareaId     String?
+  decididoPor String?
+  createdAt   DateTime  @default(now())
+
+  @@index([semana, estado])
 }

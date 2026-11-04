@@ -264,7 +264,7 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
                 {msj && <p role="status" className={`mb-1.5 text-[12.5px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
                 {detalle.propuesta && (
                   <div className="mb-2 rounded-[var(--panel-radio-sm)] border border-[#c9b8f0] bg-[#f6f2ff] p-2.5 text-[13px] font-dm">
-                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5b3fa8]"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />Propuesta del agente</p>
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5b3fa8]"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{detalle.propuesta.tipo === "confirmacion" ? "Confirmación de 48 h lista" : "Propuesta del agente"}</p>
                     <p className="mt-1 whitespace-pre-wrap text-[var(--panel-tinta)]">{detalle.propuesta.borrador}</p>
                     {(detalle.propuesta.razon || detalle.propuesta.faltaDato) && <p className="mt-1 text-[11.5px] text-[var(--panel-tinta-media)]">{detalle.propuesta.razon}{detalle.propuesta.faltaDato ? ` · Falta: ${detalle.propuesta.faltaDato}` : ""}</p>}
                     {motivoRechazo === null ? (

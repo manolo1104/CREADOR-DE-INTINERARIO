@@ -37,10 +37,11 @@ export function costoDe(modelo: string, u: Uso): number {
 }
 
 /** Lo que se aparta ANTES de llamar (si no cabe, no se llama). Holgado a propósito. */
-export const RESERVA_USD: Record<"extraer" | "responder", number> = { extraer: 0.005, responder: 0.08 };
+export type TareaAgente = "extraer" | "responder" | "calidad" | "reporte";
+export const RESERVA_USD: Record<TareaAgente, number> = { extraer: 0.005, responder: 0.08, calidad: 0.006, reporte: 0.5 };
 
 /** ¿Cabe otra llamada este mes? */
-export function cabeEnTope(gastadoUsd: number, topeUsd: number, tarea: "extraer" | "responder"): boolean {
+export function cabeEnTope(gastadoUsd: number, topeUsd: number, tarea: TareaAgente): boolean {
   return topeUsd > 0 && gastadoUsd + RESERVA_USD[tarea] <= topeUsd;
 }
 

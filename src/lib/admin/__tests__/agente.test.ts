@@ -63,3 +63,43 @@ describe("agente: el chat que se le manda y la medición", () => {
     expect(mismoTexto("Hola Ana", "Hola Ana!")).toBe(false);
   });
 });
+
+import { textoConfirmacion, textoProveedor } from "../agente/confirmaciones";
+describe("preparación de salidas: confirmación de 48 h", () => {
+  const base = { nombre: "Lucía Pérez", idioma: "es", tour: "Expedición Tamul", fecha: "2026-11-14", hora: "08:00", punto: "Plaza de Ciudad Valles", queLlevar: ["Ropa que se moje", "", "Bloqueador"], saldo: 1500, operador: "Erick" };
+  it("en español: nombre de pila, día, hora, punto, qué llevar, saldo y pregunta final (sin caritas)", () => {
+    const t = textoConfirmacion(base);
+    expect(t).toContain("Hola Lucía, soy Erick de Huasteca Potosina Tours");
+    expect(t).toContain("sábado, 14 de noviembre a las 08:00");
+    expect(textoConfirmacion({ ...base, hora: "entre 8:00 y 9:00 AM" })).toContain("14 de noviembre, entre 8:00 y 9:00 AM.");
+    expect(t).toContain("Punto de encuentro: Plaza de Ciudad Valles.");
+    expect(t).toContain("Qué llevar: Ropa que se moje, Bloqueador.");
+    expect(t).toContain("El saldo de $1,500 se paga en sitio.");
+    expect(t.trim().endsWith("?")).toBe(true);
+    expect(/[\uD800-\uDFFF\u2600-\u27BF]/.test(t)).toBe(false); // sin emojis
+  });
+  it("sin saldo no lo menciona; en inglés para clientes en inglés", () => {
+    expect(textoConfirmacion({ ...base, saldo: 0 })).not.toContain("saldo");
+    expect(textoConfirmacion({ ...base, idioma: "en" })).toContain("Hi Lucía, this is Erick");
+  });
+  it("al proveedor: día y personas", () => {
+    expect(textoProveedor({ contacto: "Don Pepe Martínez", nombre: "Lanchas" }, "Expedición Tamul", "2026-11-14", 6)).toBe("Hola Don, te confirmo Expedición Tamul el sábado, 14 de noviembre: 6 personas. ¿Todo listo de tu lado?");
+  });
+});
+
+import { primerMensajeDelChat, sumarRevisiones } from "../agente/calidadReglas";
+describe("score automático", () => {
+  it("suma las revisiones por regla (solo cuentan los chats donde aplica)", () => {
+    const c = sumarRevisiones([
+      { "sin-caritas": { aplica: true, cumple: true }, "seguimiento-d3": { aplica: true, cumple: false } },
+      { "sin-caritas": { aplica: true, cumple: false }, "seguimiento-d3": { aplica: false, cumple: false } },
+    ]);
+    expect(c).toEqual({ "sin-caritas": { aplican: 2, cumplen: 1 }, "seguimiento-d3": { aplican: 1, cumplen: 0 } });
+  });
+  it("el primer mensaje en 5 min se mide con la hora real, no lo adivina Claude", () => {
+    const d = new Date("2026-11-02T06:00:00Z"), h = new Date("2026-11-09T05:59:59Z");
+    expect(primerMensajeDelChat([{ direccion: "entra", fecha: new Date("2026-11-03T16:00:00Z") }, { direccion: "sale", fecha: new Date("2026-11-03T16:04:00Z") }], d, h)).toEqual({ aplica: true, cumple: true });
+    expect(primerMensajeDelChat([{ direccion: "entra", fecha: new Date("2026-11-03T16:00:00Z") }, { direccion: "sale", fecha: new Date("2026-11-03T16:09:00Z") }], d, h)).toEqual({ aplica: true, cumple: false });
+    expect(primerMensajeDelChat([{ direccion: "entra", fecha: new Date("2026-11-04T05:00:00Z") }], d, h).aplica).toBe(false); // 23:00 MX
+  });
+});

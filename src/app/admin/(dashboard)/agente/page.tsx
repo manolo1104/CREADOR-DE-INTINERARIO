@@ -5,6 +5,9 @@ import { MODELO_EXTRAER, MODELO_RESPONDER, mesMX, usd } from "@/lib/admin/agente
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { TarjetaKpi } from "@/components/admin/ui/TarjetaKpi";
 import AgenteClient from "./AgenteClient";
+import ReporteClient from "./ReporteClient";
+import { lunesDe } from "@/lib/admin/corteSemanal";
+import { hoyMX } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agente — Admin" };
@@ -24,6 +27,9 @@ export default async function AgentePage() {
     prisma.propuestaAgente.groupBy({ by: ["estado"], where: { createdAt: { gte: new Date(`${mes}-01T00:00:00-06:00`) } }, _count: { _all: true } }),
     prisma.propuestaAgente.findMany({ orderBy: { createdAt: "desc" }, take: 15 }),
   ]);
+  // El reporte de los jueves: el de la semana más reciente que tenga uno.
+  const ultimoReporte = await prisma.hallazgoAgente.findFirst({ orderBy: { semana: "desc" }, select: { semana: true } });
+  const hallazgos = ultimoReporte ? await prisma.hallazgoAgente.findMany({ where: { semana: ultimoReporte.semana }, orderBy: { createdAt: "asc" } }) : [];
   const n = (e: string) => propuestas.find(p => p.estado === e)?._count._all ?? 0;
   const decididas = n("aprobada") + n("editada") + n("rechazada");
   const pctSinCambios = decididas ? Math.round((n("aprobada") / decididas) * 100) : null;
@@ -58,6 +64,9 @@ export default async function AgentePage() {
           <li>Al llegar al tope se detiene hasta el día 1 (o hasta que se suba el tope).</li>
         </ul>
       </div>
+
+      <ReporteClient semanaActual={lunesDe(hoyMX())} puedeCambiar={sesion?.rol === "dueno"} semana={ultimoReporte?.semana ?? null}
+        hallazgos={hallazgos.map(h => ({ id: h.id, tipo: h.tipo, titulo: h.titulo, evidencia: h.evidencia, frecuencia: h.frecuencia, impacto: h.impacto, solucion: h.solucion, responsable: h.responsable, estado: h.estado }))} />
 
       <section className="panel-card overflow-hidden">
         <h2 className="px-4 pt-4 font-cormorant text-[22px] text-[var(--panel-tinta)]">Últimas propuestas</h2>

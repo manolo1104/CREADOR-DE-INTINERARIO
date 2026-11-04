@@ -227,7 +227,7 @@ export async function detalleConversacion(id: string) {
   return {
     id: c.id, nombre: c.nombre, telefono: c.telefono, chatId: c.chatId, noEsCliente: c.noEsCliente, archivada: c.archivada,
     ultimoEntranteEn: c.ultimoEntranteEn?.toISOString() ?? null,
-    propuesta: propuesta ? { id: propuesta.id, borrador: propuesta.borrador, razon: propuesta.razon, faltaDato: propuesta.faltaDato, en: propuesta.createdAt.toISOString() } : null,
+    propuesta: propuesta ? { id: propuesta.id, tipo: propuesta.tipo, borrador: propuesta.borrador, razon: propuesta.razon, faltaDato: propuesta.faltaDato, en: propuesta.createdAt.toISOString() } : null,
     mensajes: mensajes.reverse().map(m => ({
       id: m.id, direccion: m.direccion, tipo: m.tipo, texto: m.texto, enviadoDesde: m.enviadoDesde, enviadoPor: m.enviadoPor,
       estado: m.estado, error: m.error, fecha: m.fecha.toISOString(), importado: m.importado,

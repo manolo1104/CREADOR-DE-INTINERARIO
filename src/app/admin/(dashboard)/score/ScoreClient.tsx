@@ -42,6 +42,22 @@ export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }:
   const set = (clave: string, campo: "aplican" | "cumplen") => (e: React.ChangeEvent<HTMLInputElement>) =>
     setCap(c => ({ ...c, [clave]: { ...c[clave], [campo]: e.target.value.replace(/\D/g, "").slice(0, 4) } }));
 
+  // Fase 4: el agente revisa los chats de la semana y propone los números (no guarda: lo decide la persona).
+  const [revisando, setRevisando] = useState(false);
+  async function proponerConAgente() {
+    if (revisando) return;
+    setRevisando(true); setMsj(null);
+    const res = await fetch("/api/admin/score/agente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ semana }) }).catch(() => null);
+    const d = await res?.json().catch(() => null);
+    setRevisando(false);
+    if (!res?.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "El agente no pudo revisar", error: true }); return; }
+    if (!d.chats) { setMsj({ texto: "Esta semana no hay chats de clientes en la Bandeja." }); return; }
+    setCap(Object.fromEntries(RUBRICA.map(r => [r.clave, { aplican: d.captura[r.clave]?.aplican?.toString() ?? "", cumplen: d.captura[r.clave]?.cumplen?.toString() ?? "" }])));
+    if (!revisadas.trim() && d.notas?.length) setRevisadas(d.notas.join("\n"));
+    playSuccess();
+    setMsj({ texto: `Propuesta del agente: ${d.chats} chats (${d.revisados} revisados ahora${d.yaEstaban ? `, ${d.yaEstaban} de antes` : ""})${d.detenido ? ` · se detuvo: ${d.detenido}` : ""}. Revísala y guarda.` });
+  }
+
   async function guardar(mandar: boolean) {
     if (guardando) return;
     if (mandar && !window.confirm("¿Guardar y mandarle a Erick su score con las recomendaciones?")) return;
@@ -132,6 +148,7 @@ export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }:
 
       {puedeEditar ? (
         <div className="flex flex-wrap items-center gap-3">
+          <button type="button" onClick={() => void proponerConAgente()} disabled={revisando || !!guardando} className={`${botonSecundario} border-[#c9b8f0] text-[#5b3fa8]`}>{revisando ? "El agente está revisando…" : "Que el agente lo proponga"}</button>
           <button type="button" onClick={() => void guardar(false)} disabled={!!guardando} className={botonSecundario}>{guardando === "guardar" ? "Guardando…" : "Guardar"}</button>
           <button type="button" onClick={() => void guardar(true)} disabled={!!guardando || r.score === null} className={botonPrimario}><Send className="h-4 w-4" aria-hidden="true" />{guardando === "mandar" ? "Mandando…" : "Guardar y mandar a Erick"}</button>
           {msj && <p role="status" className={`text-[13px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}

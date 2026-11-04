@@ -5,6 +5,7 @@ import { Phone, MapPin, Send, Copy, Check } from "lucide-react";
 import type { SalidaOperativa, RegistroSalida } from "@/lib/admin/salidasDia";
 import { ETIQUETA_ESTADO_SALIDA, numerosDeSalida, simularMargen } from "@/lib/admin/salidas";
 import { avanceChecklist, type ItemChecklist } from "@/lib/admin/checklistSalida";
+import { textoProveedor } from "@/lib/admin/agente/confirmaciones";
 import { colorDeTour } from "@/lib/admin/coloresTour";
 import { ORIGEN_ETIQUETA } from "@/lib/origenReserva";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
@@ -29,6 +30,18 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
   const [msj, setMsj] = useState<{ texto: string; error?: boolean; lista?: boolean } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const av = avanceChecklist(checklist);
+  // Preparación de salidas (Fase 4): la confirmación de 48 h de cada cliente, lista para aprobar.
+  const [preparando, setPreparando] = useState(false);
+  const [confirmaciones, setConfirmaciones] = useState<{ enChat: number; yaEstaban: number; sinChat: { cliente: string; telefono: string | null; texto: string }[] } | null>(null);
+  async function prepararConfirmaciones() {
+    if (preparando) return;
+    setPreparando(true); setMsj(null);
+    const r = await fetch("/api/admin/salidas-dia/confirmaciones", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clave: s.clave }) }).catch(() => null);
+    const d = await r?.json().catch(() => null);
+    setPreparando(false);
+    if (!r?.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "No se pudieron preparar", error: true }); return; }
+    playSuccess(); setConfirmaciones(d);
+  }
 
   async function guardar(cambios: Record<string, unknown>) {
     setGuardando(true); setMsj(null);
@@ -91,6 +104,15 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-5">
+          {confirmaciones && (
+            <section className="panel-card p-4 text-[13px] font-dm" role="status">
+              <p className="text-[var(--panel-tinta)]"><strong>{confirmaciones.enChat}</strong> {confirmaciones.enChat === 1 ? "confirmación lista" : "confirmaciones listas"} en la <a href="/admin/bandeja" className="panel-foco font-semibold text-[var(--panel-acento)] hover:underline">Bandeja</a> para aprobar{confirmaciones.yaEstaban ? ` · ${confirmaciones.yaEstaban} ya estaban` : ""}.</p>
+              {confirmaciones.sinChat.length > 0 && (
+                <div className="mt-2"><p className="text-[var(--panel-tinta-media)]">Sin chat en la Bandeja (se abre WhatsApp con el texto puesto):</p>
+                  <ul className="mt-1 space-y-1">{confirmaciones.sinChat.map((x, i) => <li key={i}>{x.cliente}{x.telefono ? <> · <a href={`https://wa.me/${x.telefono.replace(/\D/g, "")}?text=${encodeURIComponent(x.texto)}`} target="_blank" rel="noopener noreferrer" className="panel-foco font-semibold text-[#1f7a4d] hover:underline">Mandar por WhatsApp</a></> : <span className="text-[var(--panel-problema)]"> · sin teléfono</span>}</li>)}</ul></div>
+              )}
+            </section>
+          )}
           {/* Pasajeros */}
           <section className="panel-card overflow-hidden">
             <h2 className="px-4 pt-4 font-cormorant text-[22px] text-[var(--panel-tinta)]">Pasajeros</h2>
@@ -126,6 +148,12 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                 className="panel-foco panel-pulsable inline-flex min-h-[44px] items-center gap-2 rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-4 text-[13px] font-dm font-medium text-[var(--panel-tinta)]">
                 {copiado ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}{copiado ? "Copiada" : "Copiar lista"}
               </button>
+              {puedeAsignar && (
+                <button type="button" onClick={() => void prepararConfirmaciones()} disabled={preparando}
+                  className="panel-foco panel-pulsable inline-flex min-h-[44px] items-center gap-2 rounded-[var(--panel-radio-sm)] border border-[#c9b8f0] bg-white px-4 text-[13px] font-dm font-medium text-[#5b3fa8] disabled:opacity-50">
+                  {preparando ? "Preparando…" : "Preparar confirmaciones (48 h)"}
+                </button>
+              )}
             </div>
           </section>
 
@@ -177,7 +205,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                 {s.protocolo.ruta.queLlevar && <div><p className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Qué llevar</p><p className="whitespace-pre-wrap text-[var(--panel-tinta)]">{s.protocolo.ruta.queLlevar}</p></div>}
                 {s.protocolo.ruta.proveedores.length > 0 && (
                   <div><p className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Proveedores</p>
-                    <ul>{s.protocolo.ruta.proveedores.map((p, i) => <li key={i}>{p.nombre} <span className="text-[var(--panel-tinta-media)]">({p.servicio})</span>{p.telefono && <> · <a href={`https://wa.me/${p.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="panel-foco text-[#1f7a4d] hover:underline">WhatsApp</a></>}</li>)}</ul></div>
+                    <ul>{s.protocolo.ruta.proveedores.map((p, i) => <li key={i}>{p.nombre} <span className="text-[var(--panel-tinta-media)]">({p.servicio})</span>{p.telefono && <> · <a href={`https://wa.me/${p.telefono.replace(/\D/g, "")}?text=${encodeURIComponent(textoProveedor({ contacto: null, nombre: p.nombre }, s.tourNombre, s.fecha, s.personas))}`} target="_blank" rel="noopener noreferrer" className="panel-foco text-[#1f7a4d] hover:underline">Confirmar por WhatsApp</a></>}</li>)}</ul></div>
                 )}
               </div>
             ) : <p className="mt-3 text-[12px] font-dm text-[var(--panel-tinta-suave)]">Este tour aún no tiene su ficha en «Rutas y protocolos» (paradas, seguridad, plan B y proveedores).</p>}
