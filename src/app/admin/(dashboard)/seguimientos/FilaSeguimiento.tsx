@@ -29,7 +29,8 @@ export function FilaSeguimiento({ t, hoy, onCambiar, onEditar, responsables, con
     try { await onCambiar(t, a, dias); } finally { setOcupada(false); }
   };
   const ef = estadoFecha(t.vence, hoy);
-  const ficha = t.oportunidadId ? `/admin/leads/${t.oportunidadId}` : null;
+  // La fila abre lo suyo: la ficha del lead o, si es de una salida, esa salida.
+  const ficha = t.oportunidadId ? `/admin/leads/${t.oportunidadId}` : t.salidaClave ? `/admin/salidas-dia/${encodeURIComponent(t.salidaClave)}` : null;
   if (editando && onEditar) {
     return (
       <li className="px-4 py-3">
@@ -48,7 +49,7 @@ export function FilaSeguimiento({ t, hoy, onCambiar, onEditar, responsables, con
       <button type="button" aria-label="Marcar hecho" title="Marcar hecho" onClick={() => void hacer("hecha")} disabled={ocupada}
         className="panel-foco flex h-9 w-9 disabled:opacity-50 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-suave)] hover:border-[var(--panel-bien)] hover:text-[var(--panel-bien)]"><Check className="h-4 w-4" aria-hidden="true" /></button>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-dm font-medium text-[var(--panel-tinta)]">{t.titulo}</p>
+        <p className="text-[14px] font-dm font-medium text-[var(--panel-tinta)]">{t.titulo}{t.origen === "regla" && <span title="Lo creó una regla automática" className="ml-2 inline-block rounded-full bg-[var(--panel-fondo-velo)] px-2 py-0.5 align-middle text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--panel-tinta-media)]">Automático</span>}</p>
         <p className="flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
           <span className={`${COLOR_FECHA[ef]}`}>{ef === "vencido" ? "Venció " : ef === "hoy" ? "Hoy" : ""}{ef === "hoy" ? "" : fechaCortaM(t.vence)}{t.hora ? ` ${t.hora}` : ""}</span>
           {conResponsable && <span>{t.responsable}</span>}

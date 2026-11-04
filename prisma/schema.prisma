@@ -1090,6 +1090,10 @@ model Tarea {
   estado        String       @default("pendiente")
   /// manual | regla | agente
   origen        String       @default("manual")
+  /// Fase 3 (4 nov 2026): la regla que la creó (`lib/admin/automatizaciones.ts`)
+  /// y su clave única «regla:objeto», para que la misma no nazca dos veces.
+  regla         String?
+  claveRegla    String?      @unique
   creadaPor     String?
   hechaPor      String?
   hechaEn       DateTime?
