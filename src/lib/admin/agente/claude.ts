@@ -54,6 +54,16 @@ async function anotar(tarea: string, modelo: string, u: Uso | null, ok: boolean,
   }).catch(e => console.error("agente: no se anotó el uso:", (e as Error)?.message));
 }
 
+/** Para quien arma su propia llamada (el ciclo de herramientas): revisa encendido y tope, y da el cliente. */
+export async function abrirLlamada(tarea: TareaAgente): Promise<Anthropic> {
+  const cfg = await configAgente();
+  if (!cfg.encendido) throw new ErrorAgente("El agente está apagado (se enciende en Agente).");
+  const gastado = await gastoDelMes();
+  if (!cabeEnTope(gastado, cfg.topeUsd, tarea)) throw new ErrorAgente(`Se llegó al tope del mes: ${usd(gastado)} de ${usd(cfg.topeUsd)}.`);
+  return claude();
+}
+export const anotarUso = (tarea: TareaAgente, modelo: string, u: Uso | null, ok: boolean, error?: string) => anotar(tarea, modelo, u, ok, error);
+
 export interface PedidoJson {
   tarea: TareaAgente;
   modelo: string;

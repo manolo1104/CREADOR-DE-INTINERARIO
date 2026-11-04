@@ -6,6 +6,7 @@ import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { TarjetaKpi } from "@/components/admin/ui/TarjetaKpi";
 import AgenteClient from "./AgenteClient";
 import ReporteClient from "./ReporteClient";
+import PreguntarClient from "./PreguntarClient";
 import { lunesDe } from "@/lib/admin/corteSemanal";
 import { hoyMX } from "@/lib/dates";
 
@@ -36,12 +37,16 @@ export default async function AgentePage() {
   const pctTope = cfg.topeUsd ? Math.min(100, Math.round((gastado / cfg.topeUsd) * 100)) : 100;
   const tarea = (t: string) => porTarea.find(x => x.tarea === t);
   const sinLlave = !process.env.ANTHROPIC_API_KEY;
+  // Regla del plan: 30 aprobaciones seguidas sin edición → el panel sugiere subir de nivel (solo el director decide).
+  const racha = await prisma.propuestaAgente.findMany({ where: { tipo: "respuesta", estado: { in: ["aprobada", "editada", "rechazada"] } }, orderBy: { decididoEn: "desc" }, take: 30, select: { estado: true } });
+  const listoParaMas = racha.length === 30 && racha.every(r => r.estado === "aprobada");
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 p-4 pb-12 sm:p-6 md:p-8">
       <EncabezadoPagina titulo="Agente" nueva subtitulo="Lee los chats, llena los datos del lead y propone respuestas que una persona aprueba" />
       {sinLlave && <p className="rounded-[var(--panel-radio-sm)] bg-[var(--panel-problema-fondo)] px-4 py-2 text-[13px] font-dm text-[var(--panel-problema)]">Falta la llave de Claude (ANTHROPIC_API_KEY) en este servidor: el agente no puede trabajar.</p>}
 
+      {listoParaMas && <p className="rounded-[var(--panel-radio-sm)] bg-[var(--panel-bien-fondo)] px-4 py-2 text-[13px] font-dm text-[var(--panel-bien)]">Las últimas 30 respuestas del agente se aprobaron sin cambios. Según el plan, ya se le podría dar más autonomía (por ejemplo, mandar solo las respuestas de información general). Es decisión tuya: por ahora todo sigue pasando por una persona.</p>}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <TarjetaKpi etiqueta="Gasto del mes" area="Agente" valor={usd(gastado)} contexto={`de ${usd(cfg.topeUsd)} · ${pctTope} % del tope`}
           estado={pctTope >= 100 ? { tono: "problema", texto: "Tope alcanzado" } : pctTope >= 80 ? { tono: "atencion", texto: "Cerca del tope" } : { tono: "bien", texto: "Dentro del tope" }} />
@@ -64,6 +69,8 @@ export default async function AgentePage() {
           <li>Al llegar al tope se detiene hasta el día 1 (o hasta que se suba el tope).</li>
         </ul>
       </div>
+
+      <PreguntarClient />
 
       <ReporteClient semanaActual={lunesDe(hoyMX())} puedeCambiar={sesion?.rol === "dueno"} semana={ultimoReporte?.semana ?? null}
         hallazgos={hallazgos.map(h => ({ id: h.id, tipo: h.tipo, titulo: h.titulo, evidencia: h.evidencia, frecuencia: h.frecuencia, impacto: h.impacto, solucion: h.solucion, responsable: h.responsable, estado: h.estado }))} />
