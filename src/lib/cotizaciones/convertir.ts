@@ -383,6 +383,8 @@ export async function convertirCotizacionEnReserva(
         customerPhone:  q.customerPhone || null,
         notes:          q.notes || null,
         origen:         origenValido(opciones.origen ?? "whatsapp"),
+        // El lead del CRM de la cotización sigue en su reserva (4 nov 2026).
+        oportunidadId:  q.oportunidadId ?? null,
       },
     });
     const cotizacion = await tx.tourQuote.update({
@@ -439,6 +441,10 @@ export async function convertirCotizacionEnReserva(
       detalle:    [{ campo: "estado", antes: r.antes, despues: "aceptada" }],
       actor,
     });
+    // Su lead pasa a la etapa de una reserva (sin pago: En seguimiento). No lanza.
+    await import("@/lib/admin/crmDatos")
+      .then(m => m.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true }))
+      .catch(() => {});
   }
 
   return { reserva: r.reserva, cotizacion: r.cotizacion, nueva: r.nueva, avisos };

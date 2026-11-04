@@ -19,13 +19,14 @@ const ESTADOS: { clave: RegistroSalida["estado"]; etiqueta: string }[] = [
 const PAGO = { pagado: { t: "Pagado", tono: "bien" }, ota: { t: "Pagado vía OTA", tono: "neutro" }, saldo: { t: "Saldo en sitio", tono: "atencion" } } as const;
 const input = "w-full rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-3 py-2.5 text-[16px] font-dm text-[var(--panel-tinta)] panel-foco";
 
-export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { inicial: SalidaOperativa; quien: string; puedeAsignar: boolean }) {
+export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verDinero }: { inicial: SalidaOperativa; quien: string; puedeAsignar: boolean; verDinero: boolean }) {
   const s = inicial;
   const [registro, setRegistro] = useState<RegistroSalida>(s.registro);
+  const [guardado, setGuardado] = useState<RegistroSalida>(s.registro);
   const [checklist, setChecklist] = useState<ItemChecklist[]>(s.checklist);
   const [nuevoItem, setNuevoItem] = useState("");
   const [guardando, setGuardando] = useState(false);
-  const [msj, setMsj] = useState<{ texto: string; error?: boolean } | null>(null);
+  const [msj, setMsj] = useState<{ texto: string; error?: boolean; lista?: boolean } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const av = avanceChecklist(checklist);
 
@@ -34,23 +35,36 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
     try {
       const r = await fetch("/api/admin/salidas-dia", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clave: s.clave, ...cambios }) });
       const d = await r.json().catch(() => null);
-      if (!r.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo guardar", error: true }); return false; }
-      setRegistro(d.registro); setChecklist(d.checklist); playSuccess(); setMsj({ texto: "Guardado" });
+      if (!r.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo guardar", error: true, lista: "marcar" in cambios || "agregar" in cambios }); return false; }
+      // Marcar el checklist no toca lo que se está escribiendo en Operación.
+      const deLista = "marcar" in cambios || "agregar" in cambios;
+      if (!deLista) setRegistro(d.registro);
+      setGuardado(d.registro); setChecklist(d.checklist); playSuccess(); setMsj({ texto: "Guardado", lista: deLista });
       return true;
     } catch { playError(); setMsj({ texto: "No se pudo guardar", error: true }); return false; }
     finally { setGuardando(false); }
   }
+  // Un renglón a la vez (revisión del 4 nov 2026): mandar la lista entera
+  // pisaba lo que otra persona marcó desde su celular. Si falla, se deshace.
   function marcar(clave: string) {
-    const nuevo = checklist.map(i => i.clave === clave ? { ...i, hecho: !i.hecho } : i);
-    setChecklist(nuevo); // optimista
-    void guardar({ checklist: nuevo });
+    const antes = checklist;
+    const item = checklist.find(i => i.clave === clave);
+    if (!item) return;
+    setChecklist(checklist.map(i => i.clave === clave ? { ...i, hecho: !i.hecho } : i)); // optimista
+    void guardar({ marcar: { clave, hecho: !item.hecho } }).then(ok => { if (!ok) setChecklist(antes); });
   }
   function agregarItem() {
     const texto = nuevoItem.trim();
     if (!texto) return;
-    const nuevo = [...checklist, { clave: `x-${Date.now().toString(36)}`, texto, hecho: false, propio: true }];
-    setChecklist(nuevo); setNuevoItem("");
-    void guardar({ checklist: nuevo });
+    const antes = checklist;
+    setChecklist([...checklist, { clave: `x-${Date.now().toString(36)}`, texto, hecho: false, propio: true }]); setNuevoItem("");
+    void guardar({ agregar: texto }).then(ok => { if (!ok) { setChecklist(antes); setNuevoItem(texto); } });
+  }
+  // Solo lo que cambió respecto a lo guardado: no se pisa lo que otro guardó.
+  function cambiosDeOperacion(): Record<string, unknown> {
+    const c: Record<string, unknown> = {};
+    for (const k of ["guia", "vehiculo", "estado", "tipo", "notas"] as const) if (registro[k] !== guardado[k]) c[k] = registro[k];
+    return c;
   }
 
   // La lista para el guía, lista para pegar en WhatsApp.
@@ -121,6 +135,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
               <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Antes de salir</h2>
               <span className="panel-cifra text-[12.5px] font-dm text-[var(--panel-tinta-media)]">{av.hechos} de {av.total}</span>
             </div>
+            {msj?.lista && msj.error && <p role="alert" className="mt-1 text-[12px] font-dm text-[var(--panel-problema)]">{msj.texto}: se deshizo el cambio.</p>}
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--panel-fondo-velo)]" aria-hidden="true">
               <div className="h-full rounded-full bg-[var(--panel-bien)] transition-[width]" style={{ width: `${av.total ? (av.hechos / av.total) * 100 : 0}%` }} />
             </div>
@@ -160,7 +175,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
           {/* Operación */}
           <section className="panel-card p-4">
             <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Operación</h2>
-            <form className="mt-3 space-y-3" onSubmit={e => { e.preventDefault(); void guardar({ guia: registro.guia, vehiculo: registro.vehiculo, estado: registro.estado, tipo: registro.tipo, notas: registro.notas }); }}>
+            <form className="mt-3 space-y-3" onSubmit={e => { e.preventDefault(); const c = cambiosDeOperacion(); if (!Object.keys(c).length) { setMsj({ texto: "Sin cambios" }); return; } void guardar(c); }}>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Guía
                   <input value={registro.guia} disabled={!puedeAsignar} onChange={e => setRegistro(r => ({ ...r, guia: e.target.value }))} className={`${input} mt-1 normal-case tracking-normal`} placeholder="Quién sale" /></label>
@@ -179,13 +194,13 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
                 <textarea value={registro.notas} onChange={e => setRegistro(r => ({ ...r, notas: e.target.value }))} rows={3} className={`${input} mt-1 normal-case tracking-normal`} placeholder="Río, clima, pendientes…" /></label>
               <div className="flex items-center gap-3">
                 <button type="submit" disabled={guardando} className="panel-foco panel-pulsable min-h-[44px] rounded-[var(--panel-radio-sm)] bg-[var(--panel-acento)] px-4 text-[13px] font-dm font-semibold text-white disabled:opacity-50">{guardando ? "Guardando…" : "Guardar"}</button>
-                {msj && <p role="status" className={`text-[12px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
+                {msj && !msj.lista && <p role="status" className={`text-[12px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
               </div>
             </form>
           </section>
 
-          {/* Números */}
-          <section className="panel-card p-4">
+          {/* Números (solo quien ve el Cotizador) */}
+          {verDinero && <section className="panel-card p-4">
             <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Números de la salida</h2>
             {!n.conCostos && <p className="mt-1 text-[12px] font-dm text-[var(--panel-atencion)]">Faltan costos: captúralos en el Cotizador para ver el margen real.</p>}
             <dl className="mt-2 space-y-1.5 text-[13px] font-dm">
@@ -196,9 +211,9 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar }: { 
               {n.conCostos && <Fila k="Parte de cada socio (50/50)" v={fmx(n.parteSocio)} />}
             </dl>
             <p className="mt-2 text-[11px] font-dm text-[var(--panel-tinta-suave)]">Antes de Stripe, Railway y hotel: esos se descuentan en el corte semanal.</p>
-          </section>
+          </section>}
 
-          {simulacion.length > 0 && (
+          {verDinero && simulacion.length > 0 && (
             <section className="panel-card p-4">
               <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">¿Y si fueran…?</h2>
               <p className="text-[12px] font-dm text-[var(--panel-tinta-media)]">A {fmx(s.precioPorPax)} por persona{n.conCostos ? "" : " (sin costos capturados: el margen es un techo)"}.</p>

@@ -7,7 +7,21 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import { codigoCumpleAlGuardar, liberarCodigoCumple } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
-import { leadDesdeReserva } from "@/lib/admin/crmDatos";
+import { leadDesdeReserva, leadParaReservaSinLead } from "@/lib/admin/crmDatos";
+
+/** El lead que manda el panel, solo si existe (un id roto no se guarda). */
+async function leadExistente(v: unknown): Promise<string | null> {
+  if (typeof v !== "string" || !v || v.length > 40) return null;
+  const op = await prisma.oportunidad.findUnique({ where: { id: v }, select: { id: true } }).catch(() => null);
+  return op?.id ?? null;
+}
+
+/** El lead vigente de la cotización que se está convirtiendo. */
+async function leadDeCotizacion(v: unknown): Promise<string | null> {
+  if (typeof v !== "string" || !v || v.length > 40) return null;
+  const q = await prisma.tourQuote.findUnique({ where: { id: v }, select: { oportunidadId: true } }).catch(() => null);
+  return q?.oportunidadId ?? null;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +82,7 @@ export async function POST(req: NextRequest) {
         // «por confirmar» y NO «web» (línea base 3 nov 2026: Web 90 de 97).
         origen:                origenValido(body.origen, "por_confirmar"),
         // El lead del que viene (al convertir una cotización): se mide la conversión real.
-        oportunidadId:         typeof body.oportunidadId === "string" && body.oportunidadId ? body.oportunidadId.slice(0, 40) : null,
+        oportunidadId:         (await leadExistente(body.oportunidadId)) ?? (await leadDeCotizacion(body.cotizacionId)),
       },
     }).catch(async (e) => {
       // No se creó: el código vuelve a quedar libre.
@@ -93,7 +107,9 @@ export async function POST(req: NextRequest) {
         + (cumple.resumen ? ` · ${cumple.resumen}` : ""),
     });
 
-    await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`, true);
+    // Sin lead (capturada directo en Reservas): entra al CRM con el de esa persona o uno nuevo.
+    if (!booking.oportunidadId) await leadParaReservaSinLead(booking.id, sesion?.nombre ?? "Desconocido");
+    await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`, { conContacto: true, revivir: true });
     return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
 }

@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         bg-[radial-gradient(1100px_520px_at_18%_-8%,rgba(27,67,50,0.07),transparent_62%),radial-gradient(760px_420px_at_100%_0%,rgba(82,183,136,0.06),transparent_60%)]" />
 
       <AdminSidebar rol={sesion?.rol ?? "operacion"} nombre={sesion?.nombre ?? ""} secciones={secciones} contadores={contadores} />
-      <NewBookingWatcher />
+      {sesion && sesion.rol !== "guia" && <NewBookingWatcher />}
       {sesion && sesion.rol !== "guia" && <SeguimientoWatcher />}
 
       {/* La tinta del panel va aquí: lo que no pone color hereda la del sitio

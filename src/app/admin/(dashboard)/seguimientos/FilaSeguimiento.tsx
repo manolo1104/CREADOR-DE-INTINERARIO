@@ -16,11 +16,18 @@ export interface EdicionSeguimiento { titulo: string; vence: string; hora: strin
  * la ficha del lead. Lo usan Leads y Seguimientos.
  */
 export function FilaSeguimiento({ t, hoy, onCambiar, onEditar, responsables, conResponsable }: {
-  t: TareaFila; hoy: string; onCambiar: (t: TareaFila, a: AccionSeguimiento, dias?: number) => void;
+  t: TareaFila; hoy: string; onCambiar: (t: TareaFila, a: AccionSeguimiento, dias?: number) => void | Promise<void>;
   onEditar?: (t: TareaFila, e: EdicionSeguimiento) => Promise<boolean>; responsables?: string[]; conResponsable?: boolean;
 }) {
   const router = useRouter();
   const [editando, setEditando] = useState(false);
+  // Un toque a la vez: un doble toque en «+1 día» lo movía dos días.
+  const [ocupada, setOcupada] = useState(false);
+  const hacer = async (a: AccionSeguimiento, dias?: number) => {
+    if (ocupada) return;
+    setOcupada(true);
+    try { await onCambiar(t, a, dias); } finally { setOcupada(false); }
+  };
   const ef = estadoFecha(t.vence, hoy);
   const ficha = t.oportunidadId ? `/admin/leads/${t.oportunidadId}` : null;
   if (editando && onEditar) {
@@ -38,8 +45,8 @@ export function FilaSeguimiento({ t, hoy, onCambiar, onEditar, responsables, con
   };
   return (
     <li onClick={abrir} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${ficha ? "cursor-pointer hover:bg-[var(--panel-fondo-velo)]" : ""}`}>
-      <button type="button" aria-label="Marcar hecho" title="Marcar hecho" onClick={() => onCambiar(t, "hecha")}
-        className="panel-foco flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-suave)] hover:border-[var(--panel-bien)] hover:text-[var(--panel-bien)]"><Check className="h-4 w-4" aria-hidden="true" /></button>
+      <button type="button" aria-label="Marcar hecho" title="Marcar hecho" onClick={() => void hacer("hecha")} disabled={ocupada}
+        className="panel-foco flex h-9 w-9 disabled:opacity-50 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-suave)] hover:border-[var(--panel-bien)] hover:text-[var(--panel-bien)]"><Check className="h-4 w-4" aria-hidden="true" /></button>
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-dm font-medium text-[var(--panel-tinta)]">{t.titulo}</p>
         <p className="flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
@@ -52,8 +59,8 @@ export function FilaSeguimiento({ t, hoy, onCambiar, onEditar, responsables, con
       <div className="flex gap-1.5">
         {onEditar && <button type="button" onClick={() => setEditando(true)} aria-label="Editar seguimiento" title="Editar"
           className="panel-foco inline-flex min-h-[36px] items-center gap-1 rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]"><Pencil className="h-3.5 w-3.5" aria-hidden="true" />Editar</button>}
-        <button type="button" onClick={() => onCambiar(t, "posponer", 1)} className="panel-foco min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+1 día</button>
-        <button type="button" onClick={() => onCambiar(t, "posponer", 3)} className="panel-foco min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+3 días</button>
+        <button type="button" onClick={() => void hacer("posponer", 1)} disabled={ocupada} className="panel-foco disabled:opacity-50 min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+1 día</button>
+        <button type="button" onClick={() => void hacer("posponer", 3)} disabled={ocupada} className="panel-foco disabled:opacity-50 min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+3 días</button>
       </div>
     </li>
   );

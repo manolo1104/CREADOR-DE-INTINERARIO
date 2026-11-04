@@ -31,13 +31,16 @@ async function registrarEtapa(oportunidadId: string, anterior: string | null, nu
 /** Busca el contacto por teléfono (o correo) o lo crea. */
 async function contactoPara(datos: { nombre: string; telefono: string | null; correo: string | null; idioma?: string | null }) {
   const correo = datos.correo?.toLowerCase() ?? null;
-  const existente = datos.telefono
-    ? await prisma.contacto.findUnique({ where: { telefono: datos.telefono } })
-    : correo ? await prisma.contacto.findFirst({ where: { correo } }) : null;
+  // Por teléfono; si no, por correo. Un contacto capturado solo con correo y
+  // que luego llega con teléfono (p. ej. la cotización) es la MISMA persona:
+  // antes nacía un segundo contacto y un segundo lead (revisión del 4 nov 2026).
+  const existente = (datos.telefono ? await prisma.contacto.findUnique({ where: { telefono: datos.telefono } }) : null)
+    ?? (correo ? await prisma.contacto.findFirst({ where: { correo, ...(datos.telefono ? { telefono: null } : {}) }, orderBy: { createdAt: "asc" } }) : null);
   if (existente) {
     // Lo que faltaba se completa; lo que ya había no se pisa.
     const falta: Record<string, string> = {};
     if (!existente.correo && correo) falta.correo = correo;
+    if (!existente.telefono && datos.telefono) falta.telefono = datos.telefono;
     return Object.keys(falta).length ? prisma.contacto.update({ where: { id: existente.id }, data: falta }) : existente;
   }
   return prisma.contacto.create({ data: { nombre: datos.nombre, telefono: datos.telefono, correo, idioma: datos.idioma === "en" ? "en" : "es" } });
@@ -444,15 +447,21 @@ async function contactoDesdeCotizacion(contactoId: string, q: { customerName: st
  * `etapaPorCobro`). Nunca baja. El canal que se eligió al capturar la reserva
  * («¿por dónde entró?») pasa al lead: es el dato más confiable.
  */
-export async function leadDesdeReserva(bookingId: string, motivo: string, conContacto = false): Promise<void> {
+export async function leadDesdeReserva(bookingId: string, motivo: string, { conContacto = false, revivir = false } = {}): Promise<void> {
   try {
     const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
     if (!r?.oportunidadId || r.status === "cancelled") return;
     const op = await prisma.oportunidad.findUnique({ where: { id: r.oportunidadId } });
     if (!op) return;
-    const etapa = subirA(op.etapa as Etapa, etapaPorCobro(montoCobrado(r), r.totalAmount));
+    // Un lead Perdido que vuelve y reserva (o paga) ya no está perdido: una
+    // reserva NUEVA o un cobro son hechos (revisión del 4 nov 2026). Editar una
+    // reserva vieja no lo revive: alguien lo marcó perdido a propósito.
+    const revive = revivir && op.etapa === "perdido";
+    const porCobro = etapaPorCobro(montoCobrado(r), r.totalAmount);
+    const etapa = revive ? porCobro : subirA(op.etapa as Etapa, porCobro);
     const data: Record<string, unknown> = {};
     if (etapa !== op.etapa) data.etapa = etapa;
+    if (revive) data.motivoPerdida = null;
     if (r.origen && r.origen !== "por_confirmar" && r.origen !== op.canal) data.canal = r.origen;
     if (r.totalAmount && r.totalAmount !== op.monto) data.monto = r.totalAmount;
     // Al crear la reserva (p. ej. al convertir la cotización) el nombre, correo
@@ -461,11 +470,77 @@ export async function leadDesdeReserva(bookingId: string, motivo: string, conCon
     if (conContacto) await contactoDesdeCotizacion(op.contactoId, r);
     if (!Object.keys(data).length) return;
     await prisma.oportunidad.update({ where: { id: op.id }, data });
-    if (etapa !== op.etapa) await registrarEtapa(op.id, op.etapa, etapa, `Regla: ${motivo}`, "regla");
+    if (etapa !== op.etapa) await registrarEtapa(op.id, op.etapa, etapa, `Regla: ${motivo}${revive ? " (estaba perdido y volvió)" : ""}`, "regla");
   } catch (e) {
     console.error("leadDesdeReserva:", (e as Error)?.message);
   }
 }
+
+/**
+ * Una reserva capturada SIN lead (directo en Reservas o desde el Calendario)
+ * también entra al CRM (revisión del 4 nov 2026: antes se quedaba fuera y el
+ * pipeline no la veía). Se enlaza al lead abierto de esa persona (por teléfono
+ * o correo) o nace uno con los datos de la reserva; después `leadDesdeReserva`
+ * le pone la etapa según lo cobrado. Nunca tumba la reserva.
+ */
+export async function leadParaReservaSinLead(bookingId: string, quien: string): Promise<string | null> {
+  try {
+    const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
+    if (!r || r.oportunidadId || r.status === "cancelled") return r?.oportunidadId ?? null;
+    const telefono = normalizarTelefono(r.customerPhone);
+    const correo = r.customerEmail?.trim() || null;
+    // Sin teléfono ni correo no hay a quién darle seguimiento: no se inventa un contacto.
+    if (!telefono && !correo) return null;
+    const contacto = await contactoPara({ nombre: r.customerName || "Sin nombre", telefono, correo, idioma: r.idiomaTour });
+    let op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } }, orderBy: { createdAt: "desc" } });
+    if (!op) {
+      const etapa = etapaPorCobro(montoCobrado(r), r.totalAmount);
+      op = await prisma.oportunidad.create({
+        data: {
+          contactoId: contacto.id, etapa, canal: origenValido(r.origen, "por_confirmar"), tours: toursDe(r).filter(t => SLUGS.has(t)),
+          fechaViaje: ymd(r.tourDate), pax: (r.adults + r.children) || null, monto: r.totalAmount || null, responsable: quien, creadoPor: quien,
+        },
+      });
+      await registrarEtapa(op.id, null, etapa, `Regla: reserva ${r.confirmationNumber} capturada`, "regla");
+    }
+    await prisma.tourBooking.update({ where: { id: r.id }, data: { oportunidadId: op.id } });
+    return op.id;
+  } catch (e) {
+    console.error("leadParaReservaSinLead:", (e as Error)?.message);
+    return null;
+  }
+}
+
+/**
+ * La liga de pago de una cotización o reserva mueve su lead (reglas del
+ * prompt, revisión del 4 nov 2026): mandarla → En seguimiento; pagarla →
+ * Anticipo pagado (si era de una cotización; la de una reserva ya entra por
+ * `registrarCobro`). Nunca baja; un perdido que paga vuelve. No lanza.
+ */
+export async function leadPorLigaDePago(link: { cotizacionId: string | null; reservaId: string | null; titulo?: string | null }, evento: "creada" | "pagada", quien: string): Promise<void> {
+  try {
+    let opId: string | null = null;
+    if (link.cotizacionId) {
+      const q = await prisma.tourQuote.findUnique({ where: { id: link.cotizacionId }, select: { oportunidadId: true } });
+      opId = q?.oportunidadId ?? (await leadDesdeCotizacion(link.cotizacionId, "cotizado", quien, "liga de pago de la cotización"));
+    } else if (link.reservaId) {
+      opId = (await prisma.tourBooking.findUnique({ where: { id: link.reservaId }, select: { oportunidadId: true } }))?.oportunidadId ?? null;
+    }
+    if (!opId) return;
+    const op = await prisma.oportunidad.findUnique({ where: { id: opId } });
+    if (!op) return;
+    if (evento === "pagada" && !link.cotizacionId) return; // la de reserva: registrarCobro ya lo movió
+    const objetivo: Etapa = evento === "creada" ? "seguimiento" : "anticipo";
+    const etapa = evento === "pagada" && op.etapa === "perdido" ? objetivo : subirA(op.etapa as Etapa, objetivo);
+    if (etapa === op.etapa) return;
+    await prisma.oportunidad.update({ where: { id: op.id }, data: { etapa, ...(op.etapa === "perdido" ? { motivoPerdida: null } : {}) } });
+    await registrarEtapa(op.id, op.etapa, etapa, `Regla: liga de pago ${evento === "creada" ? "enviada" : "pagada"}${link.titulo ? ` (${link.titulo.slice(0, 60)})` : ""}`, "regla");
+  } catch (e) {
+    console.error("leadPorLigaDePago:", (e as Error)?.message);
+  }
+}
+
+const ETAPAS_PIPELINE_ABIERTAS = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
 
 export { estaAbierta, esEtapa };
 

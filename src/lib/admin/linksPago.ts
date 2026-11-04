@@ -149,6 +149,8 @@ export async function crearLinkDePago(datos: DatosLink, creadoPor: string): Prom
         creadoPor,
       },
     });
+    // Su lead: liga de anticipo enviada → En seguimiento (no lanza).
+    await import("./crmDatos").then(m => m.leadPorLigaDePago(guardado, "creada", creadoPor)).catch(() => {});
     return { id: guardado.id, url: link.url, titulo, monto };
   } catch (e) {
     try {
@@ -223,6 +225,8 @@ export async function marcarLinkPagado(
         data:  { status: "aceptada" },
       });
     }
+    // Su lead: anticipo pagado (no lanza).
+    await import("./crmDatos").then(m => m.leadPorLigaDePago(link, "pagada", "Stripe")).catch(() => {});
   }
 
   // Si el cobro era de una reserva, el dinero se le abona: el panel tiene que

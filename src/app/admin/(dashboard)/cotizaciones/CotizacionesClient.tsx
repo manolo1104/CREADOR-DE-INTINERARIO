@@ -450,8 +450,12 @@ export default function CotizacionesClient(
     setInicioHecho(true);
     const q = initialQuotes.find(x => x.id === (inicio.editar || inicio.convertir));
     if (inicio.editar && q) openEdit(q);
-    else if (inicio.convertir && q) setConvirtiendo(q);
+    // Solo una que todavía se puede convertir: recargar la página tras
+    // convertirla ya no abre otra vez el cuadro (y no nace otra reserva).
+    else if (inicio.convertir && q && (q.status === "borrador" || q.status === "enviada")) setConvirtiendo(q);
     else if (inicio.nueva) openNew(inicio.lead);
+    // Se quita de la dirección: Atrás/Adelante o recargar no lo repiten.
+    if (inicio.editar || inicio.convertir || inicio.nueva) router.replace("/admin/cotizaciones", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -556,7 +560,7 @@ export default function CotizacionesClient(
     const r = await fetch(`/api/admin/cotizaciones/${id}/send-email`, { method: "POST" });
     const d = await r.json();
     flash(r.ok ? "✅ Email enviado al cliente" : `❌ ${d.error || "Error al enviar"}`);
-    if (r.ok) setQuotes(q => q.map(x => x.id === id ? { ...x, status: "enviada" } : x));
+    if (r.ok) { setQuotes(q => q.map(x => x.id === id ? { ...x, status: "enviada" } : x)); router.refresh(); }
     setSending(null);
   }
 
@@ -569,6 +573,7 @@ export default function CotizacionesClient(
     if (r?.ok) {
       setQuotes(q => q.map(x => x.id === id ? { ...x, status: "borrador" } : x));
       flash("✅ Cotización desarchivada: vuelve a Borrador");
+      router.refresh();
     } else {
       flash("❌ No se pudo desarchivar");
     }
@@ -580,6 +585,7 @@ export default function CotizacionesClient(
     if (r?.ok) {
       setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
       flash("✅ Cotización marcada como vencida");
+      router.refresh();
     } else {
       flash("❌ No se pudo actualizar la cotización");
     }
@@ -657,7 +663,10 @@ export default function CotizacionesClient(
         // En cuanto se registra el cobro, `sincronizarDeposito` la pasa a pagada.
         status:         "pending",
         // El lead de la cotización: la reserva queda enlazada y lo hace avanzar.
+        // `cotizacionId` también: el servidor lee el lead VIGENTE de la
+        // cotización (si nació al mandarla, esta pantalla no lo sabe todavía).
         oportunidadId:  q.oportunidadId ?? null,
+        cotizacionId:   q.id,
         tourId:         q.tourSlug,
         tourName:       q.tourName,
         tourSlug:       q.tourSlug,
@@ -725,7 +734,7 @@ export default function CotizacionesClient(
     const win = window.open("", "_blank");
     if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
     // Descargar el PDF es mandarla: su lead pasa a Cotizado (3 nov 2026).
-    fetch(`/api/admin/cotizaciones/${q.id}/pdf`, { method: "POST", keepalive: true }).catch(() => {});
+    fetch(`/api/admin/cotizaciones/${q.id}/pdf`, { method: "POST", keepalive: true }).then(() => router.refresh()).catch(() => {});
 
     const rawPkgs  = (q as any).packageItems ?? [];
     const meta     = getMeta(rawPkgs);
@@ -1122,7 +1131,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       body: JSON.stringify({ tipo: "envio", venceEl }),
     })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.ok) setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.status, lineItems: d.lineItems } : x)); })
+      .then(d => { if (d?.ok) { setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.status, lineItems: d.lineItems } : x)); router.refresh(); } })
       .catch(() => {});
   }
 

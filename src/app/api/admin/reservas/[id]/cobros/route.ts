@@ -1,4 +1,3 @@
-import { leadDesdeReserva } from "@/lib/admin/crmDatos";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sesionActual } from "@/lib/admin/sesion";
@@ -125,8 +124,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       });
     }
 
-    // Con dinero cobrado, su lead pasa a Confirmado (3 nov 2026).
-    await leadDesdeReserva(params.id, "se registró un cobro");
     return NextResponse.json({ ok: true, ...r, cobros: await cobrosDeReserva(params.id) });
   } catch (e: any) {
     console.error("admin/cobros POST:", e?.message);

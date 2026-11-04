@@ -113,6 +113,8 @@ export default function ReservasClient(
     if (!abrir || !reservaPedida) return;
     setSearch(abrir.folio);
     if (abrir.cobrar) setCobrando(reservaPedida); else setDetalle(reservaPedida);
+    // Una sola vez: recargar o Atrás/Adelante ya no vuelve a abrir el cobro.
+    router.replace("/admin/reservas", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -160,6 +162,7 @@ export default function ReservasClient(
         ? { ...x, status: newStatus, motivoCancelacion: newStatus === "cancelled" ? (motivoCancelacion ?? null) : null }
         : x));
       flash("✅ Estado actualizado");
+      router.refresh(); // su lead pudo cambiar de etapa (cancelar / reactivar)
     } else {
       const d = await r?.json().catch(() => null);
       flash(`❌ ${d?.error || "No se pudo actualizar el estado"}`);

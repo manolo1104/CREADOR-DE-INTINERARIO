@@ -50,8 +50,10 @@ const OPERACION: SeccionAdmin[] = [
   // Rediseño (3 nov 2026): lo comercial, las salidas del día y su propio score.
   "bandeja", "leads", "seguimientos", "salidas-dia", "score",
 ];
-// guía: solo sus salidas y el calendario para saber qué hay esa semana.
-const GUIA: SeccionAdmin[] = ["salidas-dia", "calendario"];
+// guía: solo sus salidas del día (con flechas para ver los días que siguen).
+// El Calendario se le quitó en la revisión del 4 nov 2026: manda al navegador
+// todas las reservas con totales, cobros y correos, y el guía no ve dinero.
+const GUIA: SeccionAdmin[] = ["salidas-dia"];
 // socio: todo lo de tours, ventas y el corte semanal. Sin el Curso de IA (otro
 // negocio).
 // ⚠️ El Cotizador entra AQUÍ y no en OPERACION. OPERACION es la base de los

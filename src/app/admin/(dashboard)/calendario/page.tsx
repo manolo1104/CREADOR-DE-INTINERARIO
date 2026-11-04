@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { sesionActual } from "@/lib/admin/sesion";
 import { resumenCupoPanel, todasLasFechasCerradas } from "@/lib/cupoTour";
 import { apartadosVigentes } from "@/lib/apartadosAlmacen";
 import { estadosDe } from "@/lib/encuestas/encuesta";
@@ -7,6 +9,9 @@ import CalendarioClient, { type ApartadoDelDia } from "./CalendarioClient";
 export const dynamic = "force-dynamic";
 
 export default async function CalendarioPage() {
+  // 🔴 El guía no: esta página manda al navegador todas las reservas con su
+  // dinero y sus cobros (revisión del 4 nov 2026). Lo suyo es Salidas del día.
+  if ((await sesionActual())?.rol === "guia") redirect("/admin/salidas-dia");
   const [bookings, cerradas, apartados] = await Promise.all([
     prisma.tourBooking.findMany({
       where: { status: { not: "cancelled" } },

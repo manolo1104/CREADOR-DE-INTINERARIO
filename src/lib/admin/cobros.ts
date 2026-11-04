@@ -221,6 +221,11 @@ export async function registrarCobro(d: DatosCobro): Promise<ResultadoCobro> {
     actor:      d.actor,
   });
 
+  // Su lead (CRM) avanza según lo cobrado: Anticipo pagado o Confirmado. Aquí
+  // y no en cada ruta: por este punto pasan el panel, las ligas de pago, el
+  // webhook de Stripe y el /confirma (revisión del 4 nov 2026). No lanza.
+  await import("./crmDatos").then(m => m.leadDesdeReserva(d.reservaId, `se registró un cobro de ${pesos(monto)}`, { revivir: true })).catch(() => {});
+
   return {
     cobro:   { id: cobro.id, monto, metodoPago: d.metodo, fecha },
     cobrado,
