@@ -982,6 +982,15 @@ model RevisionSemanal {
   /// Reseñas nuevas de Google esa semana (si no se captura, sale de la lectura de Google).
   resenasNuevas  Int?
   notas          String?
+  /// Score WhatsApp (Fase 3, 4 nov 2026): por regla de `lib/admin/rubrica.ts`,
+  /// { [clave]: { aplican, cumplen } }. El `score` de arriba sale de aquí.
+  rubrica        Json?
+  /// Conversaciones revisadas con su nota (texto libre, una por renglón).
+  revisadas      String?
+  /// Lo que se le pide al operador para la próxima semana.
+  recomendaciones String?
+  /// Cuándo se le mandó al operador (botón «Guardar y mandar»).
+  enviadoOperadorEn DateTime?
   guardadoPor    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
