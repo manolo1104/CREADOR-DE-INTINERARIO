@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import {
-  primeraPagina, rolDesdeToken, seccionesValidas, seccionRestringida, type SeccionAdmin,
+  primeraPagina, rolDesdeToken, seccionesValidas, seccionRestringida, type RolAdmin, type SeccionAdmin,
 } from "@/lib/admin/usuarios";
 
 // El secreto NO tiene fallback: si falta la env var, fallamos cerrado (denegar acceso)
@@ -16,16 +16,29 @@ const PUBLIC_ADMIN_API = ["/api/admin/login", "/api/admin/logout"];
 // sesión de antes de esto no las trae: ve lo de su rol, sin Inicio si no es el
 // dueño.
 async function seccionesDeSesion(req: NextRequest): Promise<SeccionAdmin[] | null> {
+  return (await sesionDeCookie(req))?.secciones ?? null;
+}
+
+async function sesionDeCookie(req: NextRequest): Promise<{ rol: RolAdmin; secciones: SeccionAdmin[] } | null> {
   if (!secret) return null; // sin secreto configurado → nadie pasa
   const token = req.cookies.get("admin_session")?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
-    return seccionesValidas(rolDesdeToken(payload.rol), payload.secciones);
+    const rol = rolDesdeToken(payload.rol);
+    return { rol, secciones: seccionesValidas(rol, payload.secciones) };
   } catch {
     return null;
   }
 }
+
+// 🔴 El GUÍA (rol nuevo del rediseño, 3 nov 2026) solo usa estas APIs. Las
+// de reservas, cotizaciones o clientes no están amarradas a una pestaña
+// (varias las comparten), así que sin esta lista un guía con sesión podía
+// leer los datos de todos los clientes y cancelar reservas llamándolas a mano.
+// Si Manolo le abre más pestañas desde «¿Quién ve qué?», se le quita el candado.
+const API_GUIA = ["/api/admin/salidas-dia", "/api/admin/sesion", "/api/admin/tareas"];
+const PESTANAS_GUIA: SeccionAdmin[] = ["salidas-dia", "calendario"]; // calendario: por si Manolo se lo vuelve a dar
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -33,9 +46,13 @@ export async function middleware(req: NextRequest) {
   // ── Protección de las APIs de admin ───────────────────────────────────────
   // (van antes que las páginas: responden 401 JSON en vez de redirigir)
   if (pathname.startsWith("/api/admin") && !PUBLIC_ADMIN_API.includes(pathname)) {
-    const secciones = await seccionesDeSesion(req);
-    if (!secciones) {
+    const sesion = await sesionDeCookie(req);
+    if (!sesion) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+    const { secciones } = sesion;
+    if (sesion.rol === "guia" && secciones.every(s => PESTANAS_GUIA.includes(s)) && !API_GUIA.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
+      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     }
     const seccion = seccionRestringida(pathname);
     if (seccion && !secciones.includes(seccion)) {

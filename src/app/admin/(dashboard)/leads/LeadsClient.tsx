@@ -69,12 +69,19 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
   const mes = hoy.slice(0, 7);
   const motivosMes = contarMotivos(leads.filter(l => l.etapa === "perdido" && l.updatedAt.slice(0, 7) === mes).map(l => l.motivoPerdida));
 
+  // Una tarjeta que todavía se está guardando no se vuelve a mover, y si falla
+  // solo ELLA regresa a su lugar (antes el respaldo deshacía también otra
+  // tarjeta movida bien mientras tanto).
+  const guardando = useRef(new Set<string>());
   async function mover(l: LeadTarjeta, etapa: Etapa, motivo?: MotivoPerdida, detalle?: string) {
-    const antes = leads;
+    if (guardando.current.has(l.id)) return;
+    guardando.current.add(l.id);
+    const previa = leads.find(x => x.id === l.id) ?? l;
     setLeads(ls => ls.map(x => x.id === l.id ? { ...x, etapa, motivoPerdida: motivo ? (detalle ? `${motivo}: ${detalle}` : motivo) : null, updatedAt: new Date().toISOString() } : x));
     const r = await fetch(`/api/admin/leads/${l.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "etapa", etapa, motivo, motivoDetalle: detalle }) }).catch(() => null);
     const d = await r?.json().catch(() => null);
-    if (!r?.ok) { playError(); setLeads(antes); setMsj({ texto: d?.error || "No se pudo mover", error: true }); return; }
+    guardando.current.delete(l.id);
+    if (!r?.ok) { playError(); setLeads(ls => ls.map(x => x.id === l.id ? previa : x)); setMsj({ texto: d?.error || "No se pudo mover", error: true }); return; }
     playSuccess(); setMsj({ texto: `${l.nombre} → ${etiquetaEtapa(etapa)}` });
     router.refresh();
   }
@@ -302,7 +309,8 @@ function SeguimientosUrgentes({ tareas, hoy, responsables, onError }: { tareas: 
   ].filter(g => g.ts.length);
   async function cambiar(t: TareaFila, accion: AccionSeguimiento, dias?: number) {
     playClick();
-    setOcultas(o => [...o, t.id]);
+    // Solo «hecho» la quita; pospuesta sigue en la lista con su fecha nueva al refrescar.
+    if (accion === "hecha") setOcultas(o => [...o, t.id]);
     const r = await cambiarSeguimiento(t, accion, dias);
     if (r.error) { playError(); setOcultas(o => o.filter(x => x !== t.id)); onError(r.error); return; }
     playSuccess(); router.refresh();

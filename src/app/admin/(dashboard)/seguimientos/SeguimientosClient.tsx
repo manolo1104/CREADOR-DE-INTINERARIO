@@ -43,10 +43,14 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
     router.refresh();
     return true;
   }
+  const [creando, setCreando] = useState(false);
   async function crear(e: React.FormEvent) {
     e.preventDefault();
+    if (creando) return; // un doble toque creaba dos
+    setCreando(true);
     const r = await fetch("/api/admin/tareas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...nueva, hora: nueva.hora || null }) }).catch(() => null);
     const d = await r?.json().catch(() => null);
+    setCreando(false);
     if (!r?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo crear", error: true }); return; }
     playSuccess(); setNueva(n => ({ ...n, titulo: "" })); setAbierto(false); setMsj({ texto: "Seguimiento creado" }); router.refresh();
   }
@@ -68,7 +72,7 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
           <select aria-label="Responsable" value={nueva.responsable} onChange={e => setNueva(n => ({ ...n, responsable: e.target.value }))} className={inputCls}>{responsables.map(r => <option key={r} value={r}>{r}</option>)}</select>
           <input aria-label="Vence" type="date" value={nueva.vence} onChange={e => setNueva(n => ({ ...n, vence: e.target.value }))} className={inputCls} />
           <input aria-label="Hora" type="time" value={nueva.hora} onChange={e => setNueva(n => ({ ...n, hora: e.target.value }))} className={inputCls} />
-          <button type="submit" className={botonPrimario}>Crear</button>
+          <button type="submit" disabled={creando} className={`${botonPrimario} disabled:opacity-50`}>{creando ? "Creando…" : "Crear"}</button>
           <p className="text-[11.5px] font-dm text-[var(--panel-tinta-suave)] sm:col-span-5">Para un cliente, créalo desde su ficha en Leads: así queda como su próximo paso.</p>
         </form>
       )}

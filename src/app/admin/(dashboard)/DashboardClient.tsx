@@ -73,7 +73,7 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {scorecard && <ScorecardSemanal datos={scorecard} />}
+      {scorecard && <ScorecardSemanal key={scorecard.semana.lunes} datos={scorecard} />}
 
       {/* El semáforo del río que anuncia el sitio público (banda del navbar). */}
       <RioEstadoControl />

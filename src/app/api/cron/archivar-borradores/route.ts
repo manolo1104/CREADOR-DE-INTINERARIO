@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
   const dry = new URL(req.url).searchParams.get("dry") === "1";
   const limite = new Date(Date.now() - DIAS_BORRADOR * 86400000);
   try {
-    const where = { status: "borrador", createdAt: { lt: limite } };
+    // Por la última edición: un borrador viejo que se trabajó ayer sigue vivo.
+    const where = { status: "borrador", updatedAt: { lt: limite } };
     const candidatos = await prisma.tourQuote.count({ where });
     if (dry || candidatos === 0) {
       return NextResponse.json({ ok: true, dry, candidatos, archivadas: 0 });

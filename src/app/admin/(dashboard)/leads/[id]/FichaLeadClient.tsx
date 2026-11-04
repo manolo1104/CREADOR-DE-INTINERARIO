@@ -46,7 +46,14 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
   const [d, setD] = useState(() => datosDe(f));
   const firma = JSON.stringify(datosDe(f));
   const [firmaBase, setFirmaBase] = useState(firma);
-  if (firma !== firmaBase) { setFirmaBase(firma); setD(datosDe(f)); }
+  const [recienGuardado, setRecienGuardado] = useState(false);
+  if (firma !== firmaBase) {
+    // Lo que se está escribiendo en «Datos» no se pierde porque otra acción
+    // (agendar, +1 día, enlazar) refresque la ficha (revisión del 4 nov 2026).
+    const sucio = JSON.stringify(d) !== firmaBase;
+    setFirmaBase(firma);
+    if (!sucio || recienGuardado) { setD(datosDe(f)); setRecienGuardado(false); }
+  }
 
   const [nota, setNota] = useState("");
   // El próximo seguimiento: por omisión a Erick (él atiende el WhatsApp) salvo que el lead tenga responsable.
@@ -72,6 +79,18 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
     finally { setOcupado(null); }
   }
   const lead = (cuerpo: Record<string, unknown>, que: string, ok: string) => llamar(`/api/admin/leads/${f.id}`, "PATCH", cuerpo, que, ok);
+  // Solo lo que cambió, y nunca el próximo paso (lo manda su seguimiento): antes
+  // una ficha abierta de rato devolvía el próximo paso viejo al guardar.
+  async function guardarDatos() {
+    const base = datosDe(f) as Record<string, unknown>;
+    const cambios: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(d)) {
+      if (k === "proximoPaso" || k === "proximoPasoEn" || JSON.stringify(v) === JSON.stringify(base[k])) continue;
+      cambios[k] = ["pax", "monto", "fechaViaje", "perfil"].includes(k) && v === "" ? null : v;
+    }
+    if (!Object.keys(cambios).length) { setMsj({ texto: "Sin cambios" }); return; }
+    if (await lead({ accion: "editar", ...cambios }, "editar", "Datos guardados")) setRecienGuardado(true);
+  }
   const set = (k: keyof typeof d) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setD(x => ({ ...x, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value }));
 
@@ -259,7 +278,7 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
             )}
           </section>
 
-          <form className="panel-card space-y-3 p-4" onSubmit={e => { e.preventDefault(); void lead({ accion: "editar", ...d, pax: d.pax || null, monto: d.monto || null, fechaViaje: d.fechaViaje || null, proximoPasoEn: d.proximoPasoEn || null, perfil: d.perfil || null }, "editar", "Datos guardados"); }}>
+          <form className="panel-card space-y-3 p-4" onSubmit={e => { e.preventDefault(); void guardarDatos(); }}>
             <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Datos</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={etiquetaCls}>Nombre<input value={d.nombre} onChange={set("nombre")} className={`${inputCls} mt-1 normal-case tracking-normal`} /></label>

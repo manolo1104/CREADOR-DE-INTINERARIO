@@ -30,9 +30,9 @@ describe("rutas restringidas", () => {
 });
 
 describe("roles", () => {
-  it("el guía ve solo sus salidas y el calendario, y no toca dinero", () => {
-    expect(seccionesValidas("guia", undefined)).toEqual(["calendario", "salidas-dia"]);
-    expect(primeraPagina(seccionesValidas("guia", undefined))).toBe("/admin/calendario");
+  it("el guía ve solo sus salidas del día, y no toca dinero", () => {
+    expect(seccionesValidas("guia", undefined)).toEqual(["salidas-dia"]);
+    expect(primeraPagina(seccionesValidas("guia", undefined))).toBe("/admin/salidas-dia");
     expect(puedeHacer("guia", "registrarCobro")).toBe(false);
     expect(rolDesdeToken("guia")).toBe("guia");
   });
