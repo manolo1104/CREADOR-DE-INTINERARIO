@@ -226,6 +226,7 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   // el prefijo se compara exacto o seguido de «/».
   { prefijo: "/admin/bandeja",       seccion: "bandeja"      },
   { prefijo: "/admin/leads",         seccion: "leads"        },
+  { prefijo: "/api/admin/leads",     seccion: "leads"        },
   { prefijo: "/admin/seguimientos",  seccion: "seguimientos" },
   { prefijo: "/admin/salidas-dia",   seccion: "salidas-dia"  },
   { prefijo: "/api/admin/salidas-dia", seccion: "salidas-dia" },

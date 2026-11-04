@@ -65,7 +65,7 @@ export function ScorecardSemanal({ datos }: { datos: DatosScorecard }) {
         <form onSubmit={guardar} className="panel-card mb-4 p-4">
           <p className="text-[13px] font-dm text-[var(--panel-tinta-media)]">Lo que el panel todavía no sabe solo (hasta que llegue la Bandeja de WhatsApp): escríbelo de tu revisión y el scorecard lo usa. Vacío = sin dato.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <label className="text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Leads nuevos{num("leadsNuevos")}</label>
+            <label className="text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Leads nuevos <span className="normal-case tracking-normal">(CRM: {datos.leadsCrm})</span>{num("leadsNuevos")}</label>
             <label className="text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Con respuesta en 5 min{num("respuestas5min")}</label>
             <label className="text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Clientes cotizados <span className="normal-case tracking-normal">(panel: {datos.cotizadosDelPanel})</span>{num("leadsCotizados")}</label>
             <label className="text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Score WhatsApp (0–100){num("score")}</label>

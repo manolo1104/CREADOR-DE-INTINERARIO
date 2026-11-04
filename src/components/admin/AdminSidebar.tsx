@@ -31,8 +31,10 @@ const GRUPOS = GRUPOS_MENU.map(titulo => ({
   })),
 }));
 
-export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [] }: {
+export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [], contadores = { leads: 0, vencidos: 0 } }: {
   rol?: RolAdmin; nombre?: string;
+  /** Leads abiertos y seguimientos vencidos (estos en rojo). */
+  contadores?: { leads: number; vencidos: number };
   /** Las pestañas que ve esta persona (las decide Manolo desde Inicio). */
   secciones?: SeccionAdmin[];
 }) {
@@ -93,7 +95,11 @@ export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [
                       }`} />
                     <Icon className={`w-[15px] h-[15px] flex-shrink-0 ${active ? "text-[#1B4332]" : "text-[rgba(22,54,42,0.51)] group-hover:text-[#1B4332]"}`} strokeWidth={1.75} />
                     <span className="flex-1 truncate">{label}</span>
-                    {nueva && !active && <MarcaNuevo />}
+                    {href === "/admin/leads" && contadores.leads > 0 ? (
+                      <span className="panel-cifra min-w-[20px] rounded-full bg-[rgba(28,28,26,0.07)] px-1.5 text-center text-[11px] font-semibold text-[var(--panel-tinta)]" aria-label={`${contadores.leads} abiertos`}>{contadores.leads}</span>
+                    ) : href === "/admin/seguimientos" && contadores.vencidos > 0 ? (
+                      <span className="panel-cifra min-w-[20px] rounded-full bg-[var(--panel-problema-fondo)] px-1.5 text-center text-[11px] font-semibold text-[var(--panel-problema)]" aria-label={`${contadores.vencidos} vencidos`}>{contadores.vencidos}</span>
+                    ) : nueva && !active && <MarcaNuevo />}
                   </Link>
                 );
               })}
