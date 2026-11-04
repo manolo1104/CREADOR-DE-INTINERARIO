@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
+import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,11 @@ export async function POST(req: NextRequest) {
         + (sellado.evento ? ` · ${resumenEvento(sellado.evento)}` : ""),
     });
 
-    return NextResponse.json({ ok: true, id: quote.id, quoteNumber });
+    // Toda cotización nace con su lead en «Calificado» (3 nov 2026): el de esa
+    // persona si ya tenía uno abierto, o uno nuevo con estos datos.
+    const oportunidadId = await leadDesdeCotizacion(quote.id, "calificado", sesion?.nombre ?? "Desconocido", `cotización ${quote.quoteNumber} creada`);
+
+    return NextResponse.json({ ok: true, id: quote.id, quoteNumber, oportunidadId });
   } catch (e: any) {
     console.error("admin/cotizaciones POST:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enviarCotizacionPorCorreo } from "@/lib/cotizaciones/enviar";
+import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
+import { sesionActual } from "@/lib/admin/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -12,5 +14,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     console.error("admin/cotizaciones send-email:", r.error);
     return NextResponse.json({ error: "No se pudo enviar el email" }, { status: 500 });
   }
+  // Mandada por correo → su lead pasa a Cotizado (3 nov 2026).
+  await leadDesdeCotizacion(params.id, "cotizado", (await sesionActual())?.nombre ?? "Desconocido", "cotización enviada por correo");
   return NextResponse.json({ ok: true, seguimiento: r.seguimiento });
 }

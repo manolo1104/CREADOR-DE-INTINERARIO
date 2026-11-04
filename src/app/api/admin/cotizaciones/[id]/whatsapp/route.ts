@@ -1,3 +1,5 @@
+import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
+import { sesionActual } from "@/lib/admin/sesion";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { conMeta } from "@/lib/quoteFollowUp";
@@ -39,6 +41,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const r = await marcarEnviadaPorWhatsapp(params.id, body?.venceEl);
     if (!r.ok) throw new Error(r.error);
+    // Mandada por WhatsApp → su lead pasa a Cotizado (3 nov 2026).
+    await leadDesdeCotizacion(params.id, "cotizado", (await sesionActual())?.nombre ?? "Desconocido", "cotización enviada por WhatsApp");
     return NextResponse.json({ ok: true, status: r.status, lineItems: r.lineItems });
   } catch (e: unknown) {
     console.error("admin/cotizaciones whatsapp:", e instanceof Error ? e.message : e);

@@ -5,6 +5,7 @@ import {
 } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
+import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         detalle:    cambios,
       });
     }
+    // Su lead: si la cotización no tenía (las de antes del CRM), nace al
+    // editarla; si quedó «enviada», sube a Cotizado. Nunca baja una etapa.
+    await leadDesdeCotizacion(quote.id, quote.status === "enviada" ? "cotizado" : "calificado",
+      (await sesionActual())?.nombre ?? "Desconocido", quote.status === "enviada" ? `cotización ${quote.quoteNumber} enviada` : `cotización ${quote.quoteNumber} editada`);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("admin/cotizaciones PATCH:", e?.message);

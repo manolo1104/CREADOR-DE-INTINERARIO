@@ -7,6 +7,7 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import { codigoCumpleAlGuardar, liberarCodigoCumple } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
+import { leadDesdeReserva } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,8 @@ export async function POST(req: NextRequest) {
         // formulario obliga a elegirlo; si una llamada vieja no lo manda, queda
         // «por confirmar» y NO «web» (línea base 3 nov 2026: Web 90 de 97).
         origen:                origenValido(body.origen, "por_confirmar"),
+        // El lead del que viene (al convertir una cotización): se mide la conversión real.
+        oportunidadId:         typeof body.oportunidadId === "string" && body.oportunidadId ? body.oportunidadId.slice(0, 40) : null,
       },
     }).catch(async (e) => {
       // No se creó: el código vuelve a quedar libre.
@@ -90,6 +93,7 @@ export async function POST(req: NextRequest) {
         + (cumple.resumen ? ` · ${cumple.resumen}` : ""),
     });
 
+    await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`);
     return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
 }

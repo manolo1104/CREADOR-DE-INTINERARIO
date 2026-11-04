@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import NewBookingWatcher from "@/components/admin/NewBookingWatcher";
+import SeguimientoWatcher from "@/components/admin/SeguimientoWatcher";
 import { sesionActual } from "@/lib/admin/sesion";
 import { seccionesDe } from "@/lib/admin/permisos";
 import { primeraPagina, seccionRestringida } from "@/lib/admin/usuarios";
@@ -29,6 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <AdminSidebar rol={sesion?.rol ?? "operacion"} nombre={sesion?.nombre ?? ""} secciones={secciones} contadores={contadores} />
       <NewBookingWatcher />
+      {sesion && sesion.rol !== "guia" && <SeguimientoWatcher />}
 
       {/* La tinta del panel va aquí: lo que no pone color hereda la del sitio
           público (clara) y se lee lavado. */}
