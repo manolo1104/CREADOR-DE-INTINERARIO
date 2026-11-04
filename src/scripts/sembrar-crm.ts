@@ -16,7 +16,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { cargarEnv, describeBase } from "./_env";
-import { normalizarTelefono, subirA, etapaPorReglas, type Etapa } from "../lib/admin/crm";
+import { normalizarTelefono, subirA, etapaPorCobro, etapaPorReglas, type Etapa } from "../lib/admin/crm";
 import { montoCobrado } from "../lib/admin/dinero";
 import { diasDeTourDe } from "../lib/admin/salidas";
 import { lineasDe } from "../lib/admin/reserva";
@@ -62,7 +62,7 @@ async function main() {
   for (const r of futuras) {
     const tel = normalizarTelefono(r.customerPhone);
     const clave = claveDe(tel, r.customerEmail || null, r.customerName, r.id);
-    const etapa: Etapa = montoCobrado(r) > 0 ? "confirmado" : "seguimiento";
+    const etapa: Etapa = etapaPorCobro(montoCobrado(r), r.totalAmount);
     const datos = { tours: toursDe(r), fechaViaje: esFecha(r.tourDate) ? r.tourDate : null, pax: (r.adults + r.children) || null };
     const p = planes.get(clave);
     if (p) { p.etapa = subirA(p.etapa, etapa); p.reservas.push(r.id); p.origen.push(r.confirmationNumber); p.canal = r.origen; p.monto = r.totalAmount; Object.assign(p, datos); continue; }

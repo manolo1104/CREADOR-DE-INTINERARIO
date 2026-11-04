@@ -101,6 +101,22 @@ export function etapaPorReglas(actual: Etapa, o: DatosCalificacion): Etapa {
   return actual === "nuevo" && estaCalificada(o) ? "calificado" : actual;
 }
 
+/**
+ * La etapa que pide una reserva enlazada, según lo cobrado (reglas del prompt:
+ * «pago del anticipo → Anticipo pagado»). Sin cobro: En seguimiento; con parte
+ * cobrada: Anticipo pagado; liquidada: Confirmado.
+ */
+export function etapaPorCobro(cobrado: number, total: number): Etapa {
+  if (cobrado <= 0) return "seguimiento";
+  return total > 0 && cobrado >= total ? "confirmado" : "anticipo";
+}
+
+/** La etapa siguiente en el camino (null en Confirmado, Operado o Perdido). */
+export function etapaSiguiente(actual: string): Etapa | null {
+  const i = ETAPAS_PIPELINE.indexOf(actual as Etapa);
+  return i >= 0 && i < ETAPAS_PIPELINE.length - 1 ? ETAPAS_PIPELINE[i + 1] : actual === "confirmado" ? "operado" : null;
+}
+
 export type ValidacionCambio = { ok: true } | { ok: false; error: string };
 
 /** Mover de etapa a mano: cualquiera puede, pero Perdido exige motivo. */

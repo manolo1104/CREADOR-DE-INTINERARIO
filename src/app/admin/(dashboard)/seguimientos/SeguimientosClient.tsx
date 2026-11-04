@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import type { TareaFila } from "@/lib/admin/crmDatos";
 import { agruparTareas } from "@/lib/admin/crm";
-import { FilaSeguimiento, cambiarSeguimiento, type AccionSeguimiento } from "./FilaSeguimiento";
+import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "./FilaSeguimiento";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { EstadoVacio } from "@/components/admin/ui/EstadoVacio";
@@ -34,6 +34,14 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
     if (r.error) { playError(); setTareas(antes); setMsj({ texto: r.error, error: true }); return; }
     if (accion === "posponer" && r.vence) setTareas(ts => ts.map(x => x.id === t.id ? { ...x, vence: r.vence as string } : x));
     playSuccess(); router.refresh();
+  }
+  async function editar(t: TareaFila, e: EdicionSeguimiento) {
+    const error = await editarSeguimiento(t.id, e);
+    if (error) { playError(); setMsj({ texto: error, error: true }); return false; }
+    playSuccess(); setMsj({ texto: e.responsable !== t.responsable ? `Seguimiento cambiado: ahora le toca a ${e.responsable}` : "Seguimiento cambiado" });
+    setTareas(ts => ts.map(x => x.id === t.id ? { ...x, titulo: e.titulo, vence: e.vence, hora: e.hora || null, responsable: e.responsable } : x));
+    router.refresh();
+    return true;
   }
   async function crear(e: React.FormEvent) {
     e.preventDefault();
@@ -84,7 +92,7 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
             <div key={titulo} className="panel-card mb-3 overflow-hidden">
               <p className={`px-4 pt-3 text-[11px] font-dm font-semibold uppercase tracking-[0.12em] ${titulo === "Vencidos" ? "text-[var(--panel-problema)]" : "text-[var(--panel-tinta-suave)]"}`}>{titulo} · {ts.length}</p>
               <ul className="divide-y divide-[var(--panel-borde)]">
-                {ts.map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} />)}
+                {ts.map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} onEditar={editar} responsables={responsables} />)}
               </ul>
             </div>
           ))}

@@ -55,8 +55,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Su lead: si la cotización no tenía (las de antes del CRM), nace al
     // editarla; si quedó «enviada», sube a Cotizado. Nunca baja una etapa.
+    // Si se editaron los datos (no solo el estado), lo que dice la cotización
+    // pasa al lead: total, fecha, personas, tours y contacto.
+    const editoDatos = ["totalAmount", "tourDate", "lineItems", "adults", "children", "customerName", "customerEmail", "customerPhone", "tourName"].some(k => data[k] !== undefined);
     await leadDesdeCotizacion(quote.id, quote.status === "enviada" ? "cotizado" : "calificado",
-      (await sesionActual())?.nombre ?? "Desconocido", quote.status === "enviada" ? `cotización ${quote.quoteNumber} enviada` : `cotización ${quote.quoteNumber} editada`);
+      (await sesionActual())?.nombre ?? "Desconocido", quote.status === "enviada" ? `cotización ${quote.quoteNumber} enviada` : `cotización ${quote.quoteNumber} editada`, editoDatos);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("admin/cotizaciones PATCH:", e?.message);

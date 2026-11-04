@@ -15,6 +15,10 @@ import {
   SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta, TrasladoVallesLinea, conTrasladoValles,
 } from "@/components/admin/ReservaModal";
 import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
+import ConvertirReservaModal, { type DatosConversion } from "@/components/admin/ConvertirReservaModal";
+import CobroModal, { type ReservaCobrable } from "@/components/admin/CobroModal";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { HABITACION_POR_DEFECTO } from "@/lib/admin/habitacionesPanel";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { addDaysYMD, hoyMX, ymdMX } from "@/lib/dates";
@@ -124,11 +128,26 @@ const esc = escapeHtml;
 
 const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
+/** Lo que llega por la dirección desde la ficha de un lead: qué abrir al entrar. */
+export interface InicioCotizaciones {
+  editar?: string | null; convertir?: string | null; nueva?: boolean;
+  lead?: { id: string; nombre: string; telefono: string | null; correo: string | null } | null;
+}
+/** Del lead de cada cotización: su canal (se sugiere al convertir) y su idioma. */
+export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
+
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET }:
-  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[] },
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {} }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones },
 ) {
+  const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
+  // Convertir a reserva pide lo que falta (3 nov 2026) y, si ya pagó, abre el cobro.
+  const [convirtiendo,   setConvirtiendo]   = useState<TourQuote | null>(null);
+  const [cobrando,       setCobrando]       = useState<ReservaCobrable | null>(null);
+  // La cotización nueva que se abrió desde la ficha de un lead queda enlazada a él.
+  const [paraLead,       setParaLead]       = useState<string | null>(null);
+  const leadVuelta = inicio.lead ?? null;
   const [detalle,        setDetalle]        = useState<TourQuote | null>(null);
   const [search,         setSearch]         = useState("");
   const [modal,          setModal]          = useState<"new" | "edit" | null>(null);
@@ -341,9 +360,10 @@ export default function CotizacionesClient(
     setTimeout(() => setMsg(""), 5000);
   }
 
-  function openNew() {
+  function openNew(lead?: InicioCotizaciones["lead"]) {
     setEditTarget(null);
-    setForm(EMPTY_FORM);
+    setParaLead(lead?.id ?? null);
+    setForm(lead ? { ...EMPTY_FORM, customerName: lead.nombre, customerPhone: lead.telefono ?? "", customerEmail: lead.correo ?? "" } : EMPTY_FORM);
     setLines([{ ...EMPTY_LINE }]);
     setPackages([]);
     setExtras([]);
@@ -420,7 +440,20 @@ export default function CotizacionesClient(
     setModal("edit");
   }
 
-  function closeModal() { setModal(null); setEditTarget(null); }
+  function closeModal() { setModal(null); setEditTarget(null); setParaLead(null); }
+
+  // Desde la ficha del lead: «Editar cotización», «Convertir a reserva» o
+  // «Nueva cotización» abren aquí directo lo que se pidió (una sola vez).
+  const [inicioHecho, setInicioHecho] = useState(false);
+  useEffect(() => {
+    if (inicioHecho) return;
+    setInicioHecho(true);
+    const q = initialQuotes.find(x => x.id === (inicio.editar || inicio.convertir));
+    if (inicio.editar && q) openEdit(q);
+    else if (inicio.convertir && q) setConvirtiendo(q);
+    else if (inicio.nueva) openNew(inicio.lead);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function saveQuote() {
     if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
@@ -488,6 +521,7 @@ export default function CotizacionesClient(
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
       ...(reactivar ? { status: "enviada" } : {}),
+      ...(modal === "new" && paraLead ? { oportunidadId: paraLead } : {}),
     };
 
     let r: Response;
@@ -505,7 +539,9 @@ export default function CotizacionesClient(
       const ref = await fetch("/api/admin/cotizaciones");
       setQuotes(await ref.json());
       closeModal();
-      flash(modal === "edit" ? "✅ Cotización actualizada" : "✅ Cotización creada");
+      flash(modal === "edit" ? "✅ Cotización actualizada · su lead ya tiene los datos nuevos" : "✅ Cotización creada · su lead quedó en Calificado");
+      // La ficha del lead lee estos datos: que no se quede con los de antes.
+      router.refresh();
     } else {
       const d = await r.json().catch(() => ({}));
       const msg = d.error || `Error ${r.status}`;
@@ -549,8 +585,7 @@ export default function CotizacionesClient(
     }
   }
 
-  async function convertToReserva(q: TourQuote) {
-    if (!confirm(`¿Convertir la cotización ${q.quoteNumber} a una reserva pagada?`)) return;
+  async function convertToReserva(q: TourQuote, datos: DatosConversion): Promise<boolean> {
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
     const rawPkgs      = (q as any).packageItems ?? [];
     const meta         = getMeta(rawPkgs);
@@ -581,7 +616,8 @@ export default function CotizacionesClient(
         // A quien sale de Valles no se le escribe el lobby de Xilitla: el correo
         // imprime este texto en vez de la recogida del catálogo. Se deja vacío
         // para anotar ahí su hotel, como hace la conversión del bot.
-        pickupLugar: zonaDeTexto((meta as any).zonaHospedaje) === "valles" ? "" : "Lobby de tu hotel en Xilitla",
+        // Lo escribió quien convirtió (ver `ConvertirReservaModal`).
+        pickupLugar: datos.pickupLugar,
         // La zona viaja a la reserva: con ella el Corte marca la tarjeta.
         ...((meta as any).zonaHospedaje ? { zonaHospedaje: (meta as any).zonaHospedaje } : {}),
         numPersonas: personas,
@@ -635,24 +671,38 @@ export default function CotizacionesClient(
         lineItems,
         packageItems,
         extraItems,
-        customerName:   q.customerName,
-        customerEmail:  q.customerEmail,
-        customerPhone:  q.customerPhone,
+        customerName:   datos.customerName,
+        customerEmail:  datos.customerEmail,
+        customerPhone:  datos.customerPhone || null,
         notes:          q.notes,
+        // Lo que la cotización no traía: por dónde entró, idioma y guía.
+        origen:         datos.origen,
+        idiomaTour:     datos.idiomaTour,
+        guia:           datos.guia || null,
       }),
     });
 
     if (r.ok) {
+      const creada = await r.json().catch(() => ({}));
       await fetch(`/api/admin/cotizaciones/${q.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "aceptada" }),
       });
       setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "aceptada" } : x));
-      flash(`✅ Reserva creada · ${confirmationNumber} — falta registrar el cobro en Reservas 💵`);
+      setConvirtiendo(null);
+      router.refresh();
+      if (datos.yaPago && creada?.id) {
+        flash(`✅ Reserva creada · ${confirmationNumber}. Registra el pago para terminar.`);
+        setCobrando({ id: creada.id, confirmationNumber, customerName: datos.customerName, totalAmount: q.totalAmount, depositoPagado: 0, stripePaymentIntentId: null, lineItems });
+      } else {
+        flash(`✅ Reserva creada · ${confirmationNumber} — queda pendiente de pago; el cobro se registra en Reservas 💵`);
+      }
+      return true;
     } else {
       const d = await r.json().catch(() => ({}));
       flash(`❌ Error: ${d.error || "No se pudo crear la reserva"}`);
+      return false;
     }
   }
 
@@ -1155,6 +1205,12 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {leadVuelta && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-[#1B4332]/15 bg-[#F3F8F5] px-4 py-2.5 text-sm font-dm text-[#1B4332]">
+          <span>Vienes de la ficha de <strong>{leadVuelta.nombre}</strong>. Lo que guardes aquí se refleja en su lead.</span>
+          <Link href={`/admin/leads/${leadVuelta.id}`} className="panel-foco font-semibold underline-offset-2 hover:underline">← Volver a su ficha</Link>
+        </div>
+      )}
       {msg && (
         <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
       )}
@@ -1277,7 +1333,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   <button onClick={() => { playClick(); desarchivar(q.id); }} className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                 )}
                 {q.status !== "aceptada" && q.status !== "expirada" && q.status !== "archivada" && (
-                  <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
+                  <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
                 )}
                 <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
@@ -1342,7 +1398,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                             className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                         )}
                         {q.status !== "aceptada" && q.status !== "expirada" && q.status !== "archivada" && (
-                          <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva"
+                          <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva"
                             className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
                         )}
                         <button onClick={() => { playClick(); openEdit(q); }} title="Editar"
@@ -1373,6 +1429,31 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
       {detalle && (
         <CotizacionDetalle cotizacion={detalle} onClose={() => setDetalle(null)} />
+      )}
+
+      {convirtiendo && (() => {
+        const q = convirtiendo as any;
+        const meta = getMeta(q.packageItems ?? []) as any;
+        const zona = zonaDeTexto(meta.zonaHospedaje);
+        const lead = q.oportunidadId ? leads[q.oportunidadId] : undefined;
+        return (
+          <ConvertirReservaModal
+            q={{
+              quoteNumber: q.quoteNumber, customerName: q.customerName, customerEmail: q.customerEmail, customerPhone: q.customerPhone,
+              tourName: q.tourName, tourDate: q.tourDate, personas: Number(meta.numPersonas) || grupoDe(q).total || 0,
+              total: q.totalAmount, anticipo: meta.anticipo != null ? Number(meta.anticipo) : 0,
+              zona: zona ? ZONA_TEXTO[zona] : "", pickupSugerido: zona === "valles" ? "" : "Lobby de tu hotel en Xilitla",
+            }}
+            canalSugerido={lead?.canal ?? null} idiomaSugerido={lead?.idioma ?? null} guiasConocidos={guiasConocidos}
+            onCancelar={() => setConvirtiendo(null)}
+            onConvertir={datos => convertToReserva(convirtiendo, datos)}
+          />
+        );
+      })()}
+
+      {cobrando && (
+        <CobroModal reserva={cobrando} quien={quien} onClose={() => setCobrando(null)}
+          onGuardado={cobrado => { flash(`✅ Pago registrado: ${cobrado.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} cobrados. El lead quedó al día.`); router.refresh(); }} />
       )}
 
       {/* Modal nueva/editar cotización */}

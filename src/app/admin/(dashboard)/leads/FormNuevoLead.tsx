@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import { ORIGENES_ELEGIBLES, ORIGEN_ETIQUETA } from "@/lib/origenReserva";
+import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
 import { PERFILES } from "@/lib/admin/crm";
 import { colorDeTour } from "@/lib/admin/coloresTour";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
-import { botonPrimario, botonSecundario, etiquetaCls, inputCls, type TourOpcion } from "./comun";
+import { botonPrimario, botonSecundario, canalCorto, etiquetaCls, inputCls, type TourOpcion } from "./comun";
 
 /**
  * Capturar un lead en 20 segundos desde el celular (Fase 2): nombre y
@@ -58,7 +58,7 @@ export function FormNuevoLead({ tours, responsables, quien, onCerrar, onCreado }
           <label className={etiquetaCls}>Teléfono (WhatsApp)<input type="tel" inputMode="tel" value={f.telefono} onChange={set("telefono")} placeholder="489 109 0388" className={`${inputCls} mt-1 normal-case tracking-normal`} /></label>
           <label className={etiquetaCls}>¿Por dónde llegó?
             <select value={f.canal} onChange={set("canal")} className={`${inputCls} mt-1 normal-case tracking-normal`}>
-              {ORIGENES_ELEGIBLES.map(o => <option key={o} value={o}>{ORIGEN_ETIQUETA[o].split(" (")[0]}</option>)}
+              {ORIGENES_ELEGIBLES.map(o => <option key={o} value={o}>{canalCorto(o)}</option>)}
             </select></label>
           <label className={etiquetaCls}>Responsable
             <select value={f.responsable} onChange={set("responsable")} className={`${inputCls} mt-1 normal-case tracking-normal`}>

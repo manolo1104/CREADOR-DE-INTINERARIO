@@ -11,7 +11,8 @@ import {
 import type { LeadTarjeta, TareaFila } from "@/lib/admin/crmDatos";
 import { ETAPAS_PIPELINE, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, ordenTareas, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
 import { addDaysYMD } from "@/lib/dates";
-import { FilaSeguimiento, cambiarSeguimiento, type AccionSeguimiento } from "../seguimientos/FilaSeguimiento";
+import { estiloEtapa } from "./etapas";
+import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "../seguimientos/FilaSeguimiento";
 import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
 import { colorDeTour, codigoDeTour } from "@/lib/admin/coloresTour";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
@@ -19,7 +20,7 @@ import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { EstadoVacio } from "@/components/admin/ui/EstadoVacio";
 import { FormNuevoLead } from "./FormNuevoLead";
 import { DialogoPerdido } from "./MotivoPerdida";
-import { COLOR_FECHA, botonPrimario, canalCorto, fechaCorta, fmx, inputCls, type TourOpcion } from "./comun";
+import { COLOR_FECHA, botonPrimario, canalCorto, fechaCorta, fechaCortaM, fmx, inputCls, type TourOpcion } from "./comun";
 
 // Los filtros van a lo ancho de su texto (no `inputCls`, que estira a todo el renglón).
 const filtroCls = "min-h-[44px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-3 text-[16px] font-dm text-[var(--panel-tinta)] panel-foco sm:text-[14px]";
@@ -142,7 +143,7 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
       )}
 
       {vista === "pipeline" && (
-        <SeguimientosUrgentes tareas={tareas.filter(t => !responsable || t.responsable === responsable)} hoy={hoy}
+        <SeguimientosUrgentes tareas={tareas.filter(t => !responsable || t.responsable === responsable)} hoy={hoy} responsables={responsables}
           onError={texto => setMsj({ texto, error: true })} />
       )}
 
@@ -176,10 +177,10 @@ function Columna({ etapa, leads, hoy, onClicTarjeta }: { etapa: Etapa; leads: Le
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
   const total = leads.reduce((t, l) => t + (l.monto ?? 0), 0);
   return (
-    <section ref={setNodeRef} aria-label={etiquetaEtapa(etapa)}
+    <section ref={setNodeRef} aria-label={etiquetaEtapa(etapa)} style={{ borderTopColor: estiloEtapa(etapa).color, borderTopWidth: 3 }}
       className={`flex w-[272px] shrink-0 snap-start flex-col rounded-[var(--panel-radio)] border p-2 transition-colors ${isOver ? "border-[var(--panel-acento)] bg-[var(--panel-bien-fondo)]" : "border-[var(--panel-borde)] bg-[var(--panel-fondo-velo)]"}`}>
       <header className="flex items-baseline justify-between px-1.5 pb-2 pt-1">
-        <h2 className="text-[13px] font-dm font-semibold text-[var(--panel-tinta)]">{etiquetaEtapa(etapa)} <span className="font-normal text-[var(--panel-tinta-suave)]">{leads.length}</span></h2>
+        <h2 className="flex items-center gap-1.5 text-[13px] font-dm font-semibold" style={{ color: estiloEtapa(etapa).color }}><IconoEtapa etapa={etapa} />{etiquetaEtapa(etapa)} <span className="font-normal text-[var(--panel-tinta-suave)]">{leads.length}</span></h2>
         {total > 0 && <span className="panel-cifra text-[11.5px] font-dm text-[var(--panel-tinta-media)]">{fmx(total)}</span>}
       </header>
       <div className="flex min-h-[120px] flex-col gap-2">
@@ -188,6 +189,11 @@ function Columna({ etapa, leads, hoy, onClicTarjeta }: { etapa: Etapa; leads: Le
       </div>
     </section>
   );
+}
+
+function IconoEtapa({ etapa }: { etapa: string }) {
+  const Icono = estiloEtapa(etapa).icono;
+  return <Icono className="h-3.5 w-3.5" aria-hidden="true" />;
 }
 
 function ZonaPerdido({ activa }: { activa: boolean }) {
@@ -227,7 +233,7 @@ function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; on
         </div>
       )}
       <p className="mt-1.5 flex flex-wrap gap-x-2 text-[12px] font-dm text-[var(--panel-tinta-media)]">
-        {l.fechaViaje && <span className="capitalize">{fechaCorta(l.fechaViaje)}</span>}
+        {l.fechaViaje && <span>{fechaCortaM(l.fechaViaje)}</span>}
         {l.pax ? <span>{l.pax} pax</span> : null}
         <span>{canalCorto(l.canal)}</span>
         {l.responsable && <span>· {l.responsable}</span>}
@@ -256,7 +262,7 @@ function ListaCerrados({ leads, vista }: { leads: LeadTarjeta[]; vista: "perdido
             <tr key={l.id}>
               <td className="px-4 py-2"><Link href={`/admin/leads/${l.id}`} className="panel-foco font-medium hover:underline">{l.nombre}</Link></td>
               <td className="px-2 py-2">{l.tours.map(t => codigoDeTour(t)).join(" · ") || "—"}</td>
-              <td className="px-2 py-2 capitalize">{fechaCorta(l.fechaViaje) || "—"}</td>
+              <td className="px-2 py-2">{fechaCortaM(l.fechaViaje) || "—"}</td>
               <td className="panel-cifra px-2 py-2 text-right">{l.monto ? fmx(l.monto) : "—"}</td>
               <td className="px-4 py-2 text-[var(--panel-tinta-media)]">{vista === "perdido" ? etiquetaMotivoPerdida(l.motivoPerdida) : canalCorto(l.canal)}</td>
             </tr>
@@ -271,7 +277,7 @@ function ListaCerrados({ leads, vista }: { leads: LeadTarjeta[]; vista: "perdido
  * Debajo de las etapas, lo más urgente (Manolo, 3 nov 2026): seguimientos
  * vencidos, de hoy y de los próximos 7 días, con hecho y +1 día a la mano.
  */
-function SeguimientosUrgentes({ tareas, hoy, onError }: { tareas: TareaFila[]; hoy: string; onError: (t: string) => void }) {
+function SeguimientosUrgentes({ tareas, hoy, responsables, onError }: { tareas: TareaFila[]; hoy: string; responsables: string[]; onError: (t: string) => void }) {
   const router = useRouter();
   const [ocultas, setOcultas] = useState<string[]>([]);
   const hasta = addDaysYMD(hoy, 7);
@@ -288,6 +294,12 @@ function SeguimientosUrgentes({ tareas, hoy, onError }: { tareas: TareaFila[]; h
     if (r.error) { playError(); setOcultas(o => o.filter(x => x !== t.id)); onError(r.error); return; }
     playSuccess(); router.refresh();
   }
+  async function editar(t: TareaFila, e: EdicionSeguimiento) {
+    const error = await editarSeguimiento(t.id, e);
+    if (error) { playError(); onError(error); return false; }
+    playSuccess(); router.refresh();
+    return true;
+  }
   return (
     <section className="mt-5" aria-label="Seguimientos urgentes">
       <div className="mb-2 flex items-baseline justify-between">
@@ -302,7 +314,7 @@ function SeguimientosUrgentes({ tareas, hoy, onError }: { tareas: TareaFila[]; h
             <div key={g.titulo} className="panel-card overflow-hidden">
               <p className={`px-4 pt-3 text-[11px] font-dm font-semibold uppercase tracking-[0.12em] ${g.rojo ? "text-[var(--panel-problema)]" : "text-[var(--panel-tinta-suave)]"}`}>{g.titulo} · {g.ts.length}</p>
               <ul className="divide-y divide-[var(--panel-borde)]">
-                {g.ts.slice(0, 8).map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} conResponsable />)}
+                {g.ts.slice(0, 8).map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} onEditar={editar} responsables={responsables} conResponsable />)}
               </ul>
               {g.ts.length > 8 && <Link href="/admin/seguimientos" className="panel-foco block px-4 pb-3 text-[12.5px] font-dm text-[var(--panel-acento)] hover:underline">+{g.ts.length - 8} más</Link>}
             </div>

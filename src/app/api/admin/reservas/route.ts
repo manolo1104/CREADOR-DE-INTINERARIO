@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         + (cumple.resumen ? ` · ${cumple.resumen}` : ""),
     });
 
-    await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`);
+    await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`, true);
     return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
 }
