@@ -110,7 +110,7 @@ export default function ConvertirReservaModal({ q, canalSugerido, idiomaSugerido
             <div className="grid grid-cols-2 gap-2">
               {ORIGENES_ELEGIBLES.map(o => (
                 <button key={o} type="button" aria-pressed={d.origen === o} onClick={() => { playClick(); setD(x => ({ ...x, origen: o })); }} className={chip(d.origen === o)}>
-                  {o === "whatsapp_sitio" ? "WhatsApp del sitio" : ORIGEN_ETIQUETA[o].split(" (")[0]}
+                  {ORIGEN_ETIQUETA[o].split(" (")[0]}
                   {canalSugerido === o && <span className={`block text-[10px] ${d.origen === o ? "text-white/70" : "text-[#1B4332]/45"}`}>lo dice su lead</span>}
                 </button>
               ))}

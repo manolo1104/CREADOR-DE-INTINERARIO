@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, Mail, Check, Clock, FileText, BookOpen, StickyNote, Pencil, ChevronDown, ArrowRight, Plus, Banknote, Eye, Repeat2, type LucideIcon } from "lucide-react";
+import { MapPin, Users, CalendarDays, Wallet, Hotel, UtensilsCrossed, Tag, Languages, EyeOff, Phone, Mail, Check, Clock, FileText, BookOpen, StickyNote, Pencil, ChevronDown, ArrowRight, Plus, Banknote, Eye, Repeat2, type LucideIcon } from "lucide-react";
 import type { FichaLead } from "@/lib/admin/crmDatos";
 import { ETAPAS, PERFILES, estadoFecha, etapaSiguiente, etiquetaEtapa, etiquetaMotivoPerdida, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
 import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
 import { colorDeTour } from "@/lib/admin/coloresTour";
-import { addDaysYMD } from "@/lib/dates";
+import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
+import { etiquetaVence } from "@/lib/vencimientoCotizacion";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { DialogoPerdido } from "../MotivoPerdida";
 import { ChipEtapa, estiloEtapa } from "../etapas";
 import { EditorSeguimiento, type EdicionSeguimiento } from "../../seguimientos/FilaSeguimiento";
-import { COLOR_FECHA, botonPrimario, botonSecundario, canalCorto, etiquetaCls, fechaCorta, fechaCortaM, fmx, inputCls, type TourOpcion } from "../comun";
+import { COLOR_FECHA, COLOR_VENCE, botonPrimario, botonSecundario, canalCorto, etiquetaCls, fechaCorta, fechaCortaM, fmx, inputCls, type TourOpcion } from "../comun";
 
 const TZ = "America/Mexico_City";
 const fHora = (iso: string) => new Date(iso).toLocaleString("es-MX", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(/\./g, "");
@@ -174,6 +175,8 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
       </nav>
       {msj && <p role="status" className={`mb-3 text-[13px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
 
+      <ResumenAvance f={f} hoy={hoy} conLead={conLead} />
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-5">
           {/* Cotizaciones y Reservaciones del lead, con sus botones directos */}
@@ -202,7 +205,9 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
                         <p className="mt-0.5 flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
                           <span className="font-mono">{c.folio}</span>
                           <span className="font-semibold" style={{ color: e.color }}>{e.texto}</span>
-                          {c.fecha && <span>{fechaCortaM(c.fecha)}</span>}
+                          {c.estadoVence === "borrador" && <span className={`font-semibold ${COLOR_VENCE.borrador}`}>Sin enviar: vence al mandarla</span>}
+                          {c.vence && c.estadoVence !== "aceptada" && <span className={`font-semibold ${COLOR_VENCE[c.estadoVence]}`}>Vence {fechaCorta(c.vence)} · {etiquetaVence(c.vence, hoy)}</span>}
+                          {c.fecha && <span>Viaje {fechaCortaM(c.fecha)}</span>}
                           <span>{c.personas} persona{c.personas === 1 ? "" : "s"}</span>
                           <span>Editada {fHora(c.editadaEn)}</span>
                         </p>
@@ -452,6 +457,90 @@ function Historial({ f, hoy }: { f: FichaLead; hoy: string }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+/**
+ * «Para avanzar»: lo que hace falta para seguir con el lead sin abrir nada más
+ * (Manolo, 3 nov 2026): total, anticipo, de dónde sale, cuándo vence la
+ * cotización, grupo, hospedaje, extras, punto de encuentro y notas internas.
+ * Con el siguiente paso más probable como botón.
+ */
+function ResumenAvance({ f, hoy, conLead }: { f: FichaLead; hoy: string; conLead: (ruta: string) => string }) {
+  const r = f.resumen;
+  if (!r.fuente) {
+    return (
+      <section className="panel-card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-[13.5px] font-dm text-[var(--panel-tinta-media)]">Todavía sin cotización. En cuanto la hagas, aquí ves el total, el anticipo, de dónde sale y cuándo vence.</p>
+        <Link href={conLead("/admin/cotizaciones?nueva=1")} className={botonPrimario}><Plus className="h-4 w-4" aria-hidden="true" />Hacer cotización</Link>
+      </section>
+    );
+  }
+  const a = r.anticipo;
+  const c = r.cotizacion;
+  const diasViaje = r.fechaViaje ? diffDiasYMD(hoy, r.fechaViaje) : null;
+  // El siguiente paso más probable.
+  const accion = f.etapa === "perdido" ? null : r.reserva
+    ? (a?.falta ?? 0) > 0 ? { href: `/admin/reservas?folio=${encodeURIComponent(r.reserva.folio)}&cobrar=1`, texto: (a?.cobrado ?? 0) > 0 ? "Registrar el saldo" : "Registrar el anticipo", Icono: Banknote } : null
+    : c?.estado === "borrador" ? { href: conLead(`/admin/cotizaciones?editar=${c.id}`), texto: "Revisar y mandar la cotización", Icono: Pencil }
+    : c?.estado === "vencida" ? { href: conLead(`/admin/cotizaciones?editar=${c.id}`), texto: "Darle otra fecha a la cotización", Icono: Pencil }
+    : c && (c.estado === "enviada" || c.estado === "por-vencer") ? { href: conLead(`/admin/cotizaciones?convertir=${c.id}`), texto: "Ya pagó: convertir a reserva", Icono: BookOpen } : null;
+  const Dato = ({ Icono, titulo, children }: { Icono: LucideIcon; titulo: string; children: React.ReactNode }) => (
+    <div className="flex min-w-0 gap-2.5">
+      <Icono className="mt-0.5 h-4 w-4 shrink-0 text-[var(--panel-tinta-suave)]" aria-hidden="true" />
+      <div className="min-w-0 text-[13px] font-dm">
+        <p className="text-[10.5px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">{titulo}</p>
+        <div className="text-[var(--panel-tinta)]">{children}</div>
+      </div>
+    </div>
+  );
+  return (
+    <section aria-label="Para avanzar" className="panel-card mb-5 p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Para avanzar <span className="font-dm text-[12px] text-[var(--panel-tinta-suave)]">· según {r.fuente.tipo === "reserva" ? "la reserva" : "la cotización"} {r.fuente.folio}</span></h2>
+        {accion && <Link href={accion.href} className={botonPrimario}><accion.Icono className="h-4 w-4" aria-hidden="true" />{accion.texto}</Link>}
+      </div>
+      <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Dato Icono={Wallet} titulo="Total y anticipo">
+          <p className="panel-cifra font-semibold">{r.total ? fmx(r.total) : "—"}</p>
+          {a && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">Anticipo {fmx(a.acordado)}{a.esPorOmision ? " (30 %)" : ""}</p>}
+          {a && a.cobrado !== null && (
+            <p className={`text-[12.5px] font-semibold ${a.falta === 0 ? "text-[var(--panel-bien)]" : a.cobrado >= a.acordado ? "text-[var(--panel-bien)]" : "text-[var(--panel-atencion)]"}`}>
+              {a.falta === 0 ? "Liquidado" : `Cobrado ${fmx(a.cobrado)} · falta ${fmx(a.falta ?? 0)}`}
+            </p>
+          )}
+          {a && a.cobrado === null && <p className="text-[12.5px] text-[var(--panel-atencion)]">Sin anticipo todavía</p>}
+          {r.descuento && <p className="inline-flex items-center gap-1 text-[12px] text-[var(--panel-tinta-media)]"><Tag className="h-3 w-3" aria-hidden="true" />Descuento {r.descuento}</p>}
+        </Dato>
+        <Dato Icono={MapPin} titulo="Sale de">
+          {r.saleDe ? <p className="font-semibold">{r.saleDe}</p> : <p className="text-[var(--panel-atencion)]">No se dijo</p>}
+          {r.reserva?.encuentro && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">Encuentro: {r.reserva.encuentro}</p>}
+          {r.reserva && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">{r.reserva.guia ? `Guía ${r.reserva.guia}` : "Sin guía asignado"}</p>}
+        </Dato>
+        <Dato Icono={CalendarDays} titulo="Viaje">
+          <p className="font-semibold">{r.fechaViaje ? fechaCortaM(r.fechaViaje) : "Sin fecha"}{diasViaje !== null && diasViaje >= 0 ? <span className="font-normal text-[var(--panel-tinta-media)]"> · {diasViaje === 0 ? "hoy" : diasViaje === 1 ? "mañana" : `en ${diasViaje} días`}</span> : null}</p>
+          {r.tours.length > 0 && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">{r.tours.join(" + ")}</p>}
+          {r.grupo && <p className="inline-flex items-center gap-1 text-[12.5px] text-[var(--panel-tinta-media)]"><Users className="h-3 w-3" aria-hidden="true" />{r.grupo}</p>}
+        </Dato>
+        <Dato Icono={FileText} titulo="Cotización">
+          {c ? (
+            <>
+              <p className="font-semibold"><span className="font-mono text-[12px]">{c.folio}</span> · {ESTADO_COT[c.status]?.texto ?? c.status}</p>
+              {c.estado === "borrador" && <p className={`text-[12.5px] font-semibold ${COLOR_VENCE.borrador}`}>Sin enviar</p>}
+              {c.vence && c.estado !== "aceptada" && <p className={`text-[12.5px] font-semibold ${COLOR_VENCE[c.estado]}`}>Vence {fechaCorta(c.vence)} · {etiquetaVence(c.vence, hoy)}</p>}
+            </>
+          ) : <p className="text-[var(--panel-tinta-media)]">—</p>}
+        </Dato>
+        {r.hospedaje.length > 0 && <Dato Icono={Hotel} titulo="Hospedaje">{r.hospedaje.map(h => <p key={h}>{h}</p>)}</Dato>}
+        {r.extras.length > 0 && <Dato Icono={UtensilsCrossed} titulo="Extras">{r.extras.map(x => <p key={x}>{x}</p>)}</Dato>}
+        {r.reserva && <Dato Icono={Languages} titulo="Idioma del tour"><p>{r.reserva.idiomaTour === "en" ? "Inglés" : "Español"}</p></Dato>}
+      </div>
+      {r.notasInternas && (
+        <p className="mt-3 flex gap-2 rounded-[var(--panel-radio-sm)] bg-[var(--panel-atencion-fondo)] p-2.5 text-[13px] font-dm text-[#4A3A12]">
+          <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /><span><strong>Notas internas:</strong> {r.notasInternas}</span>
+        </p>
+      )}
     </section>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Phone } from "lucide-react";
+import { FileText, Plus, Search, Phone } from "lucide-react";
 import {
   DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
@@ -12,8 +12,10 @@ import type { LeadTarjeta, TareaFila } from "@/lib/admin/crmDatos";
 import { ETAPAS_PIPELINE, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, ordenTareas, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
 import { addDaysYMD } from "@/lib/dates";
 import { estiloEtapa } from "./etapas";
+import { etiquetaVence } from "@/lib/vencimientoCotizacion";
+import { COLOR_VENCE } from "./comun";
 import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "../seguimientos/FilaSeguimiento";
-import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
+import { ORIGENES_ELEGIBLES, mismoCanal } from "@/lib/origenReserva";
 import { colorDeTour, codigoDeTour } from "@/lib/admin/coloresTour";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
@@ -60,7 +62,7 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
     const t = q.trim().toLowerCase();
     const digitos = t.replace(/\D/g, "");
     return leads.filter(l =>
-      (!canal || l.canal === canal) && (!tour || l.tours.includes(tour)) && (!responsable || l.responsable === responsable) &&
+      (!canal || mismoCanal(l.canal, canal)) && (!tour || l.tours.includes(tour)) && (!responsable || l.responsable === responsable) &&
       (!t || l.nombre.toLowerCase().includes(t) || (digitos.length >= 3 && (l.telefono ?? "").includes(digitos))));
   }, [leads, q, canal, tour, responsable]);
   const porEtapa = (e: string) => filtrados.filter(l => l.etapa === e);
@@ -238,6 +240,12 @@ function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; on
         <span>{canalCorto(l.canal)}</span>
         {l.responsable && <span>· {l.responsable}</span>}
       </p>
+      {l.estadoCotizacion && l.estadoCotizacion !== "aceptada" && (
+        <p className={`mt-1.5 flex items-center gap-1 text-[12px] font-dm font-medium ${COLOR_VENCE[l.estadoCotizacion]}`}>
+          <FileText className="h-3 w-3" aria-hidden="true" />
+          {l.estadoCotizacion === "borrador" ? "Cotización sin enviar" : l.venceCotizacion ? `Cotización: ${etiquetaVence(l.venceCotizacion, hoy)}` : "Cotización enviada"}
+        </p>
+      )}
       {(l.proximoPaso || l.proximoPasoEn) && (
         <p className={`mt-1.5 text-[12px] font-dm ${COLOR_FECHA[ef]}`}>
           {ef === "vencido" ? "Vencido: " : ef === "hoy" ? "Hoy: " : "→ "}{l.proximoPaso ?? "Seguimiento"}{l.proximoPasoEn && ef !== "hoy" ? ` · ${fechaCorta(l.proximoPasoEn)}` : ""}

@@ -8,6 +8,9 @@ import { TOURS_LISTA } from "@/lib/tours";
 import { registrarEnBitacora } from "./bitacora";
 import { montoCobrado } from "./dinero";
 import { lineasDe } from "./reserva";
+import { resumenLead, cotizacionVigente } from "./resumenLead";
+import { fechaLimite, etapaDe } from "../vencimientoCotizacion";
+import { etiquetaMotivo as etiquetaCancelacion } from "./cancelacion";
 import {
   esEtapa, estaAbierta, etapaPorCobro, etapaPorReglas, horaValida, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
   etiquetaEtapa, type Etapa,
@@ -256,7 +259,19 @@ export async function listarPipeline() {
     include: { contacto: true, _count: { select: { tareas: { where: { estado: "pendiente" } } } } },
     orderBy: { updatedAt: "desc" },
   });
+  // La cotización vigente de cada lead, para enseñar cuándo vence en su tarjeta.
+  const cots = ops.length ? await prisma.tourQuote.findMany({
+    where: { oportunidadId: { in: ops.map(o => o.id) } },
+    select: { id: true, oportunidadId: true, status: true, tourDate: true, lineItems: true, packageItems: true, createdAt: true, quoteNumber: true, totalAmount: true, tourName: true, tourSlug: true, adults: true, children: true, notes: true, extraItems: true },
+  }) : [];
+  const hoy = hoyMX();
+  const venceDe = (id: string) => {
+    const q = cotizacionVigente(cots.filter(c => c.oportunidadId === id));
+    if (!q) return { venceCotizacion: null, estadoCotizacion: null };
+    return { venceCotizacion: fechaLimite(q), estadoCotizacion: etapaDe(q, hoy) };
+  };
   return ops.map(o => ({
+    ...venceDe(o.id),
     id: o.id, etapa: o.etapa, canal: o.canal, tours: o.tours, fechaViaje: o.fechaViaje, pax: o.pax, monto: o.monto,
     responsable: o.responsable, proximoPaso: o.proximoPaso, proximoPasoEn: o.proximoPasoEn, motivoPerdida: o.motivoPerdida,
     nombre: o.contacto.nombre, telefono: o.contacto.telefono, tareasPendientes: o._count.tareas,
@@ -275,10 +290,12 @@ export async function fichaOportunidad(id: string) {
   });
   if (!op) return null;
   const [cotizaciones, reservas] = await Promise.all([
-    prisma.tourQuote.findMany({ where: { oportunidadId: id }, orderBy: { createdAt: "desc" }, select: { id: true, quoteNumber: true, status: true, totalAmount: true, tourName: true, tourDate: true, adults: true, children: true, createdAt: true, updatedAt: true } }),
+    prisma.tourQuote.findMany({ where: { oportunidadId: id }, orderBy: { createdAt: "desc" } }),
     prisma.tourBooking.findMany({ where: { oportunidadId: id }, orderBy: { createdAt: "desc" } }),
   ]);
+  const hoy = hoyMX();
   return {
+    resumen: resumenLead(cotizaciones, reservas, hoy),
     id: op.id, etapa: op.etapa, canal: op.canal, tours: op.tours, fechaViaje: op.fechaViaje, pax: op.pax, perfil: op.perfil,
     quiereHospedaje: op.quiereHospedaje, monto: op.monto, responsable: op.responsable, proximoPaso: op.proximoPaso,
     proximoPasoEn: op.proximoPasoEn, motivoPerdida: op.motivoPerdida, creadoPor: op.creadoPor, createdAt: op.createdAt.toISOString(),
@@ -290,6 +307,7 @@ export async function fichaOportunidad(id: string) {
     cotizaciones: cotizaciones.map(c => ({
       id: c.id, folio: c.quoteNumber, status: c.status, total: c.totalAmount, tour: c.tourName, fecha: c.tourDate,
       personas: c.adults + c.children, en: c.createdAt.toISOString(), editadaEn: c.updatedAt.toISOString(),
+      vence: fechaLimite(c), estadoVence: etapaDe(c, hoy),
     })),
     reservas: reservas.map(r => ({
       id: r.id, folio: r.confirmationNumber, status: r.status, total: r.totalAmount, cobrado: montoCobrado(r), tour: r.tourName,
@@ -448,3 +466,92 @@ export async function leadDesdeReserva(bookingId: string, motivo: string, conCon
 }
 
 export { estaAbierta, esEtapa };
+
+// ── Cuando se quita lo que sostenía al lead (3 nov 2026, pregunta de Manolo:
+// «¿qué pasa si elimino una cotización? ¿se pasa sola a perdida?») ──────────
+// - Eliminar una cotización: si el lead SOLO existía por ella (sin otras
+//   cotizaciones, reservas, notas ni seguimientos), el lead se borra. Si tiene
+//   más, se queda, se anota y sus datos pasan a lo que sigue vivo.
+// - Marcarla vencida NO lo pierde: es justo cuando hay que darle seguimiento
+//   (la ficha y la tarjeta la enseñan en rojo).
+// - Cancelar su única reserva viva: el lead pasa a Perdido con el motivo de la
+//   cancelación. «Capturada dos veces o por error» no es venta perdida: solo se anota.
+// - Reactivar esa reserva: el lead vuelve a la etapa que dice lo cobrado.
+
+/** Tras eliminar (de verdad) una cotización enlazada a un lead. Devuelve si el lead se borró. */
+export async function leadTrasBorrarCotizacion(oportunidadId: string, folio: string, quien: string): Promise<"borrado" | "actualizado" | null> {
+  try {
+    const op = await prisma.oportunidad.findUnique({
+      where: { id: oportunidadId },
+      include: { _count: { select: { notasLista: true, tareas: true } }, historial: { where: { origen: "persona" }, select: { id: true } } },
+    });
+    if (!op) return null;
+    const [cots, ress] = await Promise.all([
+      prisma.tourQuote.findMany({ where: { oportunidadId } }),
+      prisma.tourBooking.findMany({ where: { oportunidadId } }),
+    ]);
+    const soloEra = !cots.length && !ress.length && !op._count.notasLista && !op._count.tareas && !op.historial.length;
+    if (soloEra) {
+      await prisma.oportunidad.delete({ where: { id: oportunidadId } });
+      // El contacto se va con él si no tiene otro lead.
+      const otros = await prisma.oportunidad.count({ where: { contactoId: op.contactoId } });
+      if (!otros) await prisma.contacto.delete({ where: { id: op.contactoId } }).catch(() => null);
+      await registrarEnBitacora({ accion: "eliminó", entidad: "lead", referencia: folio, resumen: `Se eliminó la cotización ${folio} y con ella su lead (no tenía nada más)` });
+      return "borrado";
+    }
+    // Lo que sigue vivo manda: la reserva viva, si no la cotización más reciente.
+    const viva = ress.filter(r => r.status !== "cancelled").sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+    const q = cotizacionVigente(cots);
+    const fuente = viva ?? q;
+    const data: Record<string, unknown> = fuente
+      ? { monto: fuente.totalAmount || null, fechaViaje: ymd(fuente.tourDate) ?? op.fechaViaje, tours: toursDe(fuente).filter(t => SLUGS.has(t)).length ? toursDe(fuente).filter(t => SLUGS.has(t)) : op.tours }
+      : { monto: null };
+    // En Cotizado sin ninguna cotización ni reserva ya no está cotizado.
+    const baja = !fuente && op.etapa === "cotizado";
+    if (baja) data.etapa = "calificado";
+    await prisma.oportunidad.update({ where: { id: oportunidadId }, data });
+    if (baja) await registrarEtapa(oportunidadId, op.etapa, "calificado", `Regla: se eliminó la cotización ${folio}`, "regla");
+    await prisma.notaOportunidad.create({ data: { oportunidadId, autor: quien, texto: `Se eliminó la cotización ${folio}.` } });
+    return "actualizado";
+  } catch (e) {
+    console.error("leadTrasBorrarCotizacion:", (e as Error)?.message);
+    return null;
+  }
+}
+
+/** Tras cancelar una reserva enlazada: si era su única reserva viva, el lead se pierde con ese motivo. */
+export async function leadTrasCancelarReserva(bookingId: string, quien: string): Promise<void> {
+  try {
+    const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
+    if (!r?.oportunidadId) return;
+    const op = await prisma.oportunidad.findUnique({ where: { id: r.oportunidadId } });
+    if (!op || op.etapa === "perdido") return;
+    const vivas = await prisma.tourBooking.count({ where: { oportunidadId: op.id, status: { not: "cancelled" } } });
+    const motivo = etiquetaCancelacion(r.motivoCancelacion) || "sin motivo";
+    if (vivas > 0 || String(r.motivoCancelacion ?? "").startsWith("duplicada")) {
+      await prisma.notaOportunidad.create({ data: { oportunidadId: op.id, autor: quien, texto: `Se canceló la reserva ${r.confirmationNumber} (${motivo}).${vivas > 0 ? " Sigue con otra reserva viva." : ""}` } });
+      return;
+    }
+    const clave = String(r.motivoCancelacion ?? "").split(":")[0];
+    const motivoPerdida = clave === "cupo" ? `sin-disponibilidad: reserva ${r.confirmationNumber} cancelada` : `otro: reserva ${r.confirmationNumber} cancelada — ${motivo}`;
+    await prisma.oportunidad.update({ where: { id: op.id }, data: { etapa: "perdido", motivoPerdida } });
+    await registrarEtapa(op.id, op.etapa, "perdido", `Regla: se canceló la reserva ${r.confirmationNumber} (${motivo})`, "regla");
+  } catch (e) {
+    console.error("leadTrasCancelarReserva:", (e as Error)?.message);
+  }
+}
+
+/** Tras reactivar una reserva cancelada: si el lead se perdió por ella, vuelve a su etapa por lo cobrado. */
+export async function leadTrasReactivarReserva(bookingId: string): Promise<void> {
+  try {
+    const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
+    if (!r?.oportunidadId) return;
+    const op = await prisma.oportunidad.findUnique({ where: { id: r.oportunidadId } });
+    if (!op || op.etapa !== "perdido" || !String(op.motivoPerdida ?? "").includes(r.confirmationNumber)) return;
+    const etapa = etapaPorCobro(montoCobrado(r), r.totalAmount);
+    await prisma.oportunidad.update({ where: { id: op.id }, data: { etapa, motivoPerdida: null } });
+    await registrarEtapa(op.id, "perdido", etapa, `Regla: se reactivó la reserva ${r.confirmationNumber}`, "regla");
+  } catch (e) {
+    console.error("leadTrasReactivarReserva:", (e as Error)?.message);
+  }
+}

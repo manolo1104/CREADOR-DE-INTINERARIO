@@ -22,8 +22,15 @@ export const ORIGENES = ["web", "whatsapp", "whatsapp_sitio", "telefono", "walki
  * en el formulario: es un estado del dato, no un canal.
  */
 export const ORIGEN_POR_CONFIRMAR = "por_confirmar" as const;
-/** Los canales que sí se pueden elegir al capturar. */
-export const ORIGENES_ELEGIBLES = ORIGENES.filter(o => o !== ORIGEN_POR_CONFIRMAR);
+/**
+ * Los canales que sí se pueden elegir al capturar. Una sola opción de WhatsApp
+ * (Manolo, 3 nov 2026): «WhatsApp (escribió desde un botón del sitio)» ya no
+ * se ofrece; las reservas viejas que lo traen lo conservan y se leen igual.
+ */
+export const ORIGENES_ELEGIBLES = ORIGENES.filter(o => o !== ORIGEN_POR_CONFIRMAR && o !== "whatsapp_sitio");
+/** Para filtrar: «WhatsApp» también trae las viejas de «WhatsApp desde el sitio». */
+export const mismoCanal = (guardado: string, elegido: string) =>
+  guardado === elegido || (elegido === "whatsapp" && guardado === "whatsapp_sitio");
 
 export type OrigenReserva = (typeof ORIGENES)[number];
 

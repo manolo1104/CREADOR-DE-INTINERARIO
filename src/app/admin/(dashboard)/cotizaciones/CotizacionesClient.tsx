@@ -707,11 +707,15 @@ export default function CotizacionesClient(
   }
 
   async function hardDeleteQ(id: string) {
-    if (!confirm("¿Eliminar completamente esta cotización?")) return;
+    if (!confirm("¿Eliminar completamente esta cotización?\n\nSi su lead solo existía por ella, el lead también se quita. Si el cliente no la quiso, mejor márcala como Perdido en su ficha.")) return;
     const r = await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) {
+      const d = await r.json().catch(() => ({}));
       setQuotes(q => q.filter(x => x.id !== id));
-      flash("✅ Cotización eliminada");
+      flash(d?.lead === "borrado" ? "✅ Cotización eliminada · su lead también se quitó (no tenía nada más)"
+        : d?.lead === "actualizado" ? "✅ Cotización eliminada · su lead se queda (tiene más cosas) y quedó anotado"
+        : "✅ Cotización eliminada");
+      router.refresh();
     } else {
       flash("❌ No se pudo eliminar la cotización");
     }
@@ -1444,7 +1448,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               total: q.totalAmount, anticipo: meta.anticipo != null ? Number(meta.anticipo) : 0,
               zona: zona ? ZONA_TEXTO[zona] : "", pickupSugerido: zona === "valles" ? "" : "Lobby de tu hotel en Xilitla",
             }}
-            canalSugerido={lead?.canal ?? null} idiomaSugerido={lead?.idioma ?? null} guiasConocidos={guiasConocidos}
+            canalSugerido={lead?.canal === "whatsapp_sitio" ? "whatsapp" : lead?.canal ?? null} idiomaSugerido={lead?.idioma ?? null} guiasConocidos={guiasConocidos}
             onCancelar={() => setConvirtiendo(null)}
             onConvertir={datos => convertToReserva(convirtiendo, datos)}
           />

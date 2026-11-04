@@ -5,7 +5,7 @@ import {
 } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
-import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
+import { leadDesdeCotizacion, leadTrasBorrarCotizacion } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -72,8 +72,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const { searchParams } = new URL(req.url);
     const borradoTotal = searchParams.get("hard") === "1";
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
+    let lead: "borrado" | "actualizado" | null = null;
     if (borradoTotal) {
       await prisma.tourQuote.delete({ where: { id: params.id } });
+      // Su lead: se va con ella si solo existía por ella; si no, se anota y se pone al día.
+      if (antes?.oportunidadId) lead = await leadTrasBorrarCotizacion(antes.oportunidadId, antes.quoteNumber, (await sesionActual())?.nombre ?? "Desconocido");
     } else {
       await prisma.tourQuote.update({ where: { id: params.id }, data: { status: "expirada" } });
     }
@@ -87,7 +90,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
           (borradoTotal ? " (borrada de la base)" : " marcada como expirada")
         : `Cotización ${params.id} (ya no estaba en la base)`,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, lead });
   } catch (e: any) {
     console.error("admin/cotizaciones DELETE:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

@@ -1275,6 +1275,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   {ORIGENES_ELEGIBLES.map(o => (
                     <option key={o} value={o}>{ORIGEN_ETIQUETA[o]}</option>
                   ))}
+                  {/* Una reserva vieja con un canal que ya no se ofrece lo conserva. */}
+                  {form.origen && !(ORIGENES_ELEGIBLES as readonly string[]).includes(form.origen) && (
+                    <option value={form.origen}>{ORIGEN_ETIQUETA[form.origen]}</option>
+                  )}
                 </select>
               </div>
 
