@@ -9,6 +9,8 @@ export interface EntradaScorecard {
   /** Lo capturado en la revisión del jueves (null = no se ha capturado). */
   leadsNuevos: number | null;
   respuestas5min: number | null;
+  /** De la Bandeja (Fase 2.3): chats nuevos en horario y cuántos se contestaron en 5 min. Se usa si la revisión no trae el número. */
+  respuestaBandeja?: { en5: number; enHorario: number } | null;
   /** Clientes cotizados: capturado, o contado del panel si no. */
   leadsCotizados: number | null;
   cotizadosDelPanel: number;
@@ -87,11 +89,12 @@ export function calcularScorecard(e: EntradaScorecard): Scorecard {
     conDato: leads !== null,
   });
   // 2. Primer mensaje en 5 min.
-  const r5 = leads !== null && e.respuestas5min !== null ? pct(e.respuestas5min, leads) : null;
+  const deBandeja = e.respuestas5min === null && !!e.respuestaBandeja && e.respuestaBandeja.enHorario > 0;
+  const r5 = deBandeja ? pct(e.respuestaBandeja!.en5, e.respuestaBandeja!.enHorario) : leads !== null && e.respuestas5min !== null ? pct(e.respuestas5min, leads) : null;
   kpis.push({
     clave: "respuesta", etiqueta: "Primer mensaje en 5 min", area: "Embudo",
     valor: r5 === null ? "—" : `${r5} %`,
-    contexto: r5 === null ? "De la revisión del jueves" : `${e.respuestas5min} de ${leads} leads · meta ${METAS.respuesta5min} %`,
+    contexto: r5 === null ? "De la revisión del jueves" : deBandeja ? `${e.respuestaBandeja!.en5} de ${e.respuestaBandeja!.enHorario} chats nuevos en horario (Bandeja) · meta ${METAS.respuesta5min} %` : `${e.respuestas5min} de ${leads} leads · meta ${METAS.respuesta5min} %`,
     estado: r5 === null ? sinDato : contraMeta(r5, METAS.respuesta5min),
     conDato: r5 !== null,
   });

@@ -7,6 +7,7 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { seccionesDe } from "@/lib/admin/permisos";
 import { primeraPagina, seccionRestringida } from "@/lib/admin/usuarios";
 import { contadoresCrm } from "@/lib/admin/crmDatos";
+import { noLeidosBandeja } from "@/lib/admin/bandejaDatos";
 
 export const metadata = { title: "Admin — Tours Huasteca Potosina" };
 export const dynamic = "force-dynamic"; // el menú depende de quién entró
@@ -19,7 +20,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const seccion = seccionRestringida(headers().get("x-pathname") ?? "");
   if (seccion && !secciones.includes(seccion)) redirect(primeraPagina(secciones) ?? "/admin/login");
   // Leads abiertos y seguimientos vencidos, junto a su pestaña (Fase 2).
-  const contadores = secciones.includes("leads") || secciones.includes("seguimientos") ? await contadoresCrm() : { leads: 0, vencidos: 0 };
+  const contadores = {
+    ...(secciones.includes("leads") || secciones.includes("seguimientos") ? await contadoresCrm() : { leads: 0, vencidos: 0 }),
+    bandeja: secciones.includes("bandeja") ? await noLeidosBandeja() : 0,
+  };
 
   return (
     // El fondo no es un gris plano: lleva un velo verde muy tenue arriba, que

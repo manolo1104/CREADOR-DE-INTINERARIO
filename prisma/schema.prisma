@@ -1113,3 +1113,66 @@ model Tarea {
   @@index([responsable])
   @@index([oportunidadId])
 }
+
+// ── Bandeja de WhatsApp (Fase 2.3 del rediseño, 4 nov 2026) ─────────────────
+// Sin Meta: un «puente» (`whatsapp-bandeja/`, servicio aparte en Railway) se
+// vincula al número del negocio como WhatsApp Web y le pasa al panel cada
+// mensaje que entra o sale (también los que Erick manda desde su celular). El
+// panel los guarda aquí y deja en cola lo que se contesta desde la Bandeja.
+
+/// Un chat individual. Se identifica por el id de WhatsApp («…@c.us» o «…@lid»):
+/// en los «@lid» el teléfono no viene en el id y puede tardar en saberse.
+model Conversacion {
+  id               String    @id @default(cuid())
+  chatId           String    @unique
+  /// E.164 cuando se sabe.
+  telefono         String?
+  nombre           String?
+  contactoId       String?
+  /// Último mensaje del cliente (para saber cuánto lleva sin respuesta).
+  ultimoEntranteEn DateTime?
+  ultimoMensajeEn  DateTime?
+  ultimoTexto      String?
+  /// Quién escribió lo último: cliente | equipo.
+  ultimoDe         String?
+  noLeidos         Int       @default(0)
+  archivada        Boolean   @default(false)
+  /// Proveedor, amigo, alguien del equipo: sus mensajes no crean leads ni cuentan en los KPI.
+  noEsCliente      Boolean   @default(false)
+  mensajes         Mensaje[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([ultimoMensajeEn])
+  @@index([telefono])
+  @@index([contactoId])
+}
+
+model Mensaje {
+  id             String       @id @default(cuid())
+  conversacionId String
+  conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+  /// Id de WhatsApp: único, para no guardar dos veces el mismo (idempotente).
+  waId           String?      @unique
+  /// entra | sale
+  direccion      String
+  /// texto | imagen | audio | video | documento | ubicacion | sticker | otro
+  tipo           String       @default("texto")
+  texto          String?
+  /// Desde dónde salió: cliente | app (el celular) | panel | agente | bot
+  enviadoDesde   String
+  /// Quién del equipo lo mandó desde el panel.
+  enviadoPor     String?
+  /// pendiente | enviado | entregado | leido | fallo
+  estado         String       @default("enviado")
+  error          String?
+  /// Cuándo lo tomó el puente para enviarlo (si no confirma en 3 min, se da por fallido).
+  tomadoEn       DateTime?
+  /// Vino de la importación del historial: no crea leads ni cuenta como no leído.
+  importado      Boolean      @default(false)
+  fecha          DateTime
+  createdAt      DateTime     @default(now())
+
+  @@index([conversacionId, fecha])
+  @@index([direccion, estado])
+}

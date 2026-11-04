@@ -24,12 +24,12 @@ const tours = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(s => SLUG
 
 export class ErrorCrm extends Error {}
 
-async function registrarEtapa(oportunidadId: string, anterior: string | null, nueva: string, por: string, origen: "persona" | "regla" | "agente") {
+export async function registrarEtapa(oportunidadId: string, anterior: string | null, nueva: string, por: string, origen: "persona" | "regla" | "agente") {
   await prisma.etapaOportunidad.create({ data: { oportunidadId, anterior, nueva, por, origen } });
 }
 
 /** Busca el contacto por teléfono (o correo) o lo crea. */
-async function contactoPara(datos: { nombre: string; telefono: string | null; correo: string | null; idioma?: string | null }) {
+export async function contactoPara(datos: { nombre: string; telefono: string | null; correo: string | null; idioma?: string | null }) {
   const correo = datos.correo?.toLowerCase() ?? null;
   // Por teléfono; si no, por correo. Un contacto capturado solo con correo y
   // que luego llega con teléfono (p. ej. la cotización) es la MISMA persona:

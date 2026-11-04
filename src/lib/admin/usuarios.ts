@@ -227,6 +227,7 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   // Rediseño (3 nov 2026). «/admin/salidas-dia» no choca con «/admin/salidas»:
   // el prefijo se compara exacto o seguido de «/».
   { prefijo: "/admin/bandeja",       seccion: "bandeja"      },
+  { prefijo: "/api/admin/bandeja",   seccion: "bandeja"      },
   { prefijo: "/admin/leads",         seccion: "leads"        },
   { prefijo: "/api/admin/leads",     seccion: "leads"        },
   { prefijo: "/admin/seguimientos",  seccion: "seguimientos" },

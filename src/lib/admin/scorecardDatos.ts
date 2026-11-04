@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { addDaysYMD, hoyMX, ymdMX } from "@/lib/dates";
 import { domingoDe, etiquetaSemana } from "./corteSemanal";
 import { montoCobrado, saldoPendiente } from "./dinero";
+import { mensajesParaKpi } from "./bandejaDatos";
+import { primerMensajeEn5 } from "./bandeja";
 import { diasDeTourDe } from "./salidas";
 import { salidasEntre, type SalidaOperativa } from "./salidasDia";
 import { avanceChecklist } from "./checklistSalida";
@@ -89,6 +91,7 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   const scorecard = calcularScorecard({
     leadsNuevos: revision.leadsNuevos ?? (leadsCrm > 0 ? leadsCrm : null),
     respuestas5min: revision.respuestas5min,
+    respuestaBandeja: await mensajesParaKpi(inicioMX(lunes), finMX(domingo)).then(cs => primerMensajeEn5(cs, inicioMX(lunes), finMX(domingo))).catch(() => null),
     leadsCotizados: revision.leadsCotizados,
     cotizadosDelPanel: cotizados,
     score: revision.score,

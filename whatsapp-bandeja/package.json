@@ -1,0 +1,16 @@
+{
+  "name": "huasteca-bandeja-puente",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Puente entre el WhatsApp del negocio y la Bandeja del panel (Fase 2.3, sin Meta)",
+  "main": "index.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js && node --check simulador.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.34.7"
+  }
+}
