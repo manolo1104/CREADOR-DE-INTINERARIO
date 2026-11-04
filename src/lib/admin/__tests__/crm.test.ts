@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   agruparTareas, contarMotivos, estadoFecha, etapaPorReglas, etiquetaMotivoPerdida, motivoPerdidaParaGuardar,
-  normalizarTelefono, validarCambioEtapa, ETAPAS_PIPELINE, etapaPorCobro, etapaSiguiente
+  normalizarTelefono, validarCambioEtapa, ETAPAS_PIPELINE, etapaPorCobro, etapaSiguiente, viajeYaPaso
 } from "../crm";
 
 describe("teléfonos a E.164", () => {
@@ -111,5 +111,16 @@ describe("etapa por lo cobrado y la siguiente", () => {
     expect(etapaSiguiente("confirmado")).toBe("operado");
     expect(etapaSiguiente("operado")).toBeNull();
     expect(etapaSiguiente("perdido")).toBeNull();
+  });
+});
+
+describe("viaje ya pasado → Operado", () => {
+  it("al día siguiente del ÚLTIMO tour, no el mismo día", () => {
+    expect(viajeYaPaso(["2026-11-03"], "2026-11-03")).toEqual({ paso: false, ultima: "2026-11-03" });
+    expect(viajeYaPaso(["2026-11-03"], "2026-11-04")).toEqual({ paso: true, ultima: "2026-11-03" });
+    expect(viajeYaPaso(["2026-11-02", "2026-11-05"], "2026-11-04").paso).toBe(false);
+  });
+  it("sin fecha válida no se mueve", () => {
+    expect(viajeYaPaso([null, "", "por definir"], "2026-11-04")).toEqual({ paso: false, ultima: null });
   });
 });

@@ -519,7 +519,7 @@ function ResumenAvance({ f, hoy, conLead }: { f: FichaLead; hoy: string; conLead
           {r.reserva && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">{r.reserva.guia ? `Guía ${r.reserva.guia}` : "Sin guía asignado"}</p>}
         </Dato>
         <Dato Icono={CalendarDays} titulo="Viaje">
-          <p className="font-semibold">{r.fechaViaje ? fechaCortaM(r.fechaViaje) : "Sin fecha"}{diasViaje !== null && diasViaje >= 0 ? <span className="font-normal text-[var(--panel-tinta-media)]"> · {diasViaje === 0 ? "hoy" : diasViaje === 1 ? "mañana" : `en ${diasViaje} días`}</span> : null}</p>
+          <p className="font-semibold">{r.fechaViaje ? fechaCortaM(r.fechaViaje) : "Sin fecha"}{diasViaje !== null && diasViaje >= 0 ? <span className="font-normal text-[var(--panel-tinta-media)]"> · {diasViaje === 0 ? "hoy" : diasViaje === 1 ? "mañana" : `en ${diasViaje} días`}</span> : null}{diasViaje !== null && diasViaje < 0 ? <span className="font-normal text-[var(--panel-problema)]"> · ya pasó</span> : null}</p>
           {r.tours.length > 0 && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">{r.tours.join(" + ")}</p>}
           {r.grupo && <p className="inline-flex items-center gap-1 text-[12.5px] text-[var(--panel-tinta-media)]"><Users className="h-3 w-3" aria-hidden="true" />{r.grupo}</p>}
         </Dato>

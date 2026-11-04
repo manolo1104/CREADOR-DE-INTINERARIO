@@ -117,6 +117,20 @@ export function etapaSiguiente(actual: string): Etapa | null {
   return i >= 0 && i < ETAPAS_PIPELINE.length - 1 ? ETAPAS_PIPELINE[i + 1] : actual === "confirmado" ? "operado" : null;
 }
 
+/**
+ * ¿Ya pasó el viaje? El último día de tour (de todas sus reservas vivas, o la
+ * fecha del lead si no tiene reserva) es anterior a hoy. Con eso un lead con
+ * Anticipo pagado o Confirmado pasa solo a Operado al día siguiente del tour.
+ */
+export function viajeYaPaso(fechas: (string | null | undefined)[], hoy: string): { paso: boolean; ultima: string | null } {
+  const validas = fechas.filter((f): f is string => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
+  const ultima = validas[validas.length - 1] ?? null;
+  return { paso: !!ultima && ultima < hoy, ultima };
+}
+
+/** Etapas que pasan solas a Operado cuando el viaje ya pasó. Las anteriores no: sin pago registrado hay que revisarlas. */
+export const ETAPAS_QUE_SE_OPERAN: Etapa[] = ["anticipo", "confirmado"];
+
 export type ValidacionCambio = { ok: true } | { ok: false; error: string };
 
 /** Mover de etapa a mano: cualquiera puede, pero Perdido exige motivo. */

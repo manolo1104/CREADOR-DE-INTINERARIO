@@ -240,7 +240,12 @@ function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; on
         <span>{canalCorto(l.canal)}</span>
         {l.responsable && <span>· {l.responsable}</span>}
       </p>
-      {l.estadoCotizacion && l.estadoCotizacion !== "aceptada" && (
+      {/* Antes de Anticipo pagado no se mueve solo: sin pago registrado hay que revisarlo (¿no llegó o no se anotó el cobro?). */}
+      {l.fechaViaje && l.fechaViaje < hoy && ["nuevo", "calificado", "cotizado", "seguimiento"].includes(l.etapa) && (
+        <p className="mt-1.5 text-[12px] font-dm font-semibold text-[var(--panel-problema)]">Ya pasó la fecha del viaje: ¿se operó o se perdió?</p>
+      )}
+      {/* Con anticipo o ya confirmado manda la reserva: el estado de la cotización ya no dice nada. */}
+      {l.estadoCotizacion && l.estadoCotizacion !== "aceptada" && !["anticipo", "confirmado", "operado"].includes(l.etapa) && (
         <p className={`mt-1.5 flex items-center gap-1 text-[12px] font-dm font-medium ${COLOR_VENCE[l.estadoCotizacion]}`}>
           <FileText className="h-3 w-3" aria-hidden="true" />
           {l.estadoCotizacion === "borrador" ? "Cotización sin enviar" : l.venceCotizacion ? `Cotización: ${etiquetaVence(l.venceCotizacion, hoy)}` : "Cotización enviada"}

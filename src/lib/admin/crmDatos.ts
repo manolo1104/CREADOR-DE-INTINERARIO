@@ -12,7 +12,7 @@ import { resumenLead, cotizacionVigente } from "./resumenLead";
 import { fechaLimite, etapaDe } from "../vencimientoCotizacion";
 import { etiquetaMotivo as etiquetaCancelacion } from "./cancelacion";
 import {
-  esEtapa, estaAbierta, etapaPorCobro, etapaPorReglas, horaValida, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
+  esEtapa, estaAbierta, etapaPorCobro, etapaPorReglas, horaValida, viajeYaPaso, ETAPAS_QUE_SE_OPERAN, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
   etiquetaEtapa, type Etapa,
 } from "./crm";
 
@@ -253,6 +253,7 @@ export function toursDe(x: { tourSlug: string; lineItems?: unknown }): string[] 
 }
 
 export async function listarPipeline() {
+  await operarViajesPasados();
   const desde = new Date(Date.now() - 120 * 86400000);
   const ops = await prisma.oportunidad.findMany({
     where: { OR: [{ etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } }, { updatedAt: { gte: desde } }] },
@@ -281,6 +282,7 @@ export async function listarPipeline() {
 export type LeadTarjeta = Awaited<ReturnType<typeof listarPipeline>>[number];
 
 export async function fichaOportunidad(id: string) {
+  await operarViajesPasados(hoyMX(), id);
   const op = await prisma.oportunidad.findUnique({
     where: { id },
     include: {
@@ -553,5 +555,50 @@ export async function leadTrasReactivarReserva(bookingId: string): Promise<void>
     await registrarEtapa(op.id, "perdido", etapa, `Regla: se reactivó la reserva ${r.confirmationNumber}`, "regla");
   } catch (e) {
     console.error("leadTrasReactivarReserva:", (e as Error)?.message);
+  }
+}
+
+// ── Viaje ya pasado → Operado (regla del prompt, 3 nov 2026) ───────────────
+// Pregunta de Manolo: «¿qué pasa con los que ya están confirmados y pasa la
+// fecha del tour?». Al día siguiente del último tour, un lead con Anticipo
+// pagado o Confirmado pasa solo a Operado y sale del tablero. Si quedó saldo
+// sin registrar, se anota en su historial para cobrarlo o registrarlo. Se
+// revisa al abrir Leads o una ficha: sin cron y sin que nadie lo empuje.
+
+/** Pasa a Operado los leads cuyo viaje ya pasó. Con `soloId`, solo ese. Devuelve cuántos movió. */
+export async function operarViajesPasados(hoy: string = hoyMX(), soloId?: string): Promise<number> {
+  try {
+    const ops = await prisma.oportunidad.findMany({
+      where: { etapa: { in: ETAPAS_QUE_SE_OPERAN }, ...(soloId ? { id: soloId } : {}) },
+      select: { id: true, etapa: true, fechaViaje: true },
+    });
+    if (!ops.length) return 0;
+    const ress = await prisma.tourBooking.findMany({
+      where: { oportunidadId: { in: ops.map(o => o.id) }, status: { not: "cancelled" } },
+      select: { oportunidadId: true, confirmationNumber: true, tourDate: true, tourSlug: true, lineItems: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true },
+    });
+    let movidos = 0;
+    for (const op of ops) {
+      const suyas = ress.filter(r => r.oportunidadId === op.id);
+      const fechas = suyas.length
+        ? suyas.flatMap(r => { const f = lineasDe(r as never).map(l => l.tourDate); return f.length ? f : [r.tourDate]; })
+        : [op.fechaViaje];
+      const { paso, ultima } = viajeYaPaso(fechas, hoy);
+      if (!paso || !ultima) continue;
+      // Solo si nadie la movió mientras tanto.
+      const r = await prisma.oportunidad.updateMany({ where: { id: op.id, etapa: op.etapa }, data: { etapa: "operado" } });
+      if (!r.count) continue;
+      const dia = new Date(`${ultima}T12:00:00`).toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" }).replace(/\./g, "");
+      await registrarEtapa(op.id, op.etapa, "operado", `Regla: el viaje ya pasó (${dia})`, "regla");
+      const falta = suyas.reduce((t, x) => t + Math.max(0, x.totalAmount - montoCobrado(x)), 0);
+      if (falta > 0) {
+        await prisma.notaOportunidad.create({ data: { oportunidadId: op.id, autor: "Panel", texto: `El viaje ya se operó y hay ${pesosCorto(falta)} sin registrar como cobrados. Si ya se cobró, regístralo en Reservas; si no, hay que cobrarlo.` } });
+      }
+      movidos++;
+    }
+    return movidos;
+  } catch (e) {
+    console.error("operarViajesPasados:", (e as Error)?.message);
+    return 0;
   }
 }
