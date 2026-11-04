@@ -116,6 +116,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       creadoPor:   sesion.nombre,
       sinRescate:  desglosar,
     });
+    // 🔴 Desglose PARCIAL (revisión del 4 nov 2026): antes se quedaba solo lo
+    // desglosado y el resto del dinero ya cobrado desaparecía. Lo que falta queda
+    // en un renglón aparte («otro»), para corregirle el método cuando se sepa.
+    if (desglosar && monto < yaCobrado) {
+      const resto = await registrarCobro({
+        reservaId: params.id, monto: yaCobrado - monto, metodo: "otro", fecha: b?.fecha, creadoPor: sesion.nombre, sinRescate: true,
+        nota: "Lo que faltaba por desglosar de lo que ya figuraba cobrado. Corrige su método cuando se sepa.",
+      });
+      Object.assign(r, { cobrado: resto.cobrado, saldo: resto.saldo });
+    }
 
     if (evidenciaIds.length) {
       await prisma.evidencia.updateMany({

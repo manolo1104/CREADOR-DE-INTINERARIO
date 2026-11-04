@@ -1,7 +1,8 @@
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { registrarCobroSilencioso } from "@/lib/admin/cobros";
+import { registrarCobro } from "@/lib/admin/cobros";
+import { SISTEMA } from "@/lib/admin/bitacora";
 
 /**
  * Cobros sueltos: título, monto y una liga que se manda por WhatsApp.
@@ -204,8 +205,10 @@ export async function marcarLinkPagado(
   if (!link) return;                    // no lo creó el panel: no es asunto nuestro
   if (link.estado === "pagado") return; // ya estaba registrado
 
-  await prisma.linkPago.update({
-    where: { id: link.id },
+  // 🔴 Reclamo atómico (revisión del 4 nov 2026): dos entregas de Stripe al
+  // mismo tiempo pasaban las dos la revisión de arriba y abonaban dos cobros.
+  const reclamo = await prisma.linkPago.updateMany({
+    where: { id: link.id, estado: { not: "pagado" } },
     data: {
       estado:           "pagado",
       pagadoAt:         new Date(),
@@ -214,6 +217,8 @@ export async function marcarLinkPagado(
       correoDelPagador: correo,
     },
   });
+  if (reclamo.count !== 1) return;      // otra entrega ya lo está registrando
+  try {
 
   // Un anticipo pagado convierte la cotización en venta: deja de ser una
   // propuesta en el aire y el panel tiene que decirlo sin que nadie la toque.
@@ -235,12 +240,42 @@ export async function marcarLinkPagado(
   // Se abona registrando un COBRO, no sumando a mano sobre `depositoPagado`:
   // así la liga pagada aparece en el desglose del corte como "liga de pago" y
   // `depositoPagado` lo recalcula `sincronizarDeposito()` desde los renglones.
+  // 🔴 Con el cobro que SÍ avisa si falla: antes uno silencioso se tragaba el
+  // error y la liga quedaba «pagada» sin dinero en la reserva.
   if (link.reservaId && montoPagado > 0) {
-    await registrarCobroSilencioso({
+    await registrarCobro({
       reservaId: link.reservaId,
       monto:     montoPagado,
       metodo:    "stripe",
+      folio:     sessionId,
       nota:      `Liga de pago: ${link.titulo ?? "sin título"}`,
+      actor:     SISTEMA,
+      creadoPor: SISTEMA.nombre,
     });
   }
+  } catch (e) {
+    // Se suelta el reclamo: el webhook contesta 500 y Stripe vuelve a intentar.
+    await prisma.linkPago.update({ where: { id: link.id }, data: { estado: link.estado, pagadoAt: null, stripeSessionId: null, montoPagado: null, correoDelPagador: null } }).catch(() => {});
+    throw e;
+  }
+}
+
+/**
+ * El anticipo pagado con la liga de una COTIZACIÓN (aún sin reserva) no tenía
+ * a dónde abonarse: al convertirla, la reserva nacía en $0 (revisión del 4 nov
+ * 2026). Al crear la reserva de esa cotización, cada liga pagada y sin reserva
+ * se registra como cobro de la reserva nueva, una sola vez.
+ */
+export async function abonarLigasDeCotizacion(cotizacionId: string, reservaId: string): Promise<number> {
+  const ligas = await prisma.linkPago.findMany({ where: { cotizacionId, estado: "pagado", reservaId: null } });
+  let abonado = 0;
+  for (const l of ligas) {
+    const monto = l.montoPagado ?? l.monto;
+    // Se reclama primero (reservaId) para que dos conversiones no la abonen dos veces.
+    const r = await prisma.linkPago.updateMany({ where: { id: l.id, reservaId: null }, data: { reservaId } });
+    if (r.count !== 1 || monto <= 0) continue;
+    await registrarCobro({ reservaId, monto, metodo: "stripe", folio: l.stripeSessionId ?? undefined, nota: `Liga de pago de la cotización: ${l.titulo}`, actor: SISTEMA, creadoPor: SISTEMA.nombre, fecha: l.pagadoAt ? l.pagadoAt.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : undefined });
+    abonado += monto;
+  }
+  return abonado;
 }

@@ -447,6 +447,9 @@ async function contactoDesdeCotizacion(contactoId: string, q: { customerName: st
  * `etapaPorCobro`). Nunca baja. El canal que se eligió al capturar la reserva
  * («¿por dónde entró?») pasa al lead: es el dato más confiable.
  */
+/** Las etapas que dice el dinero de las reservas: entre ellas el lead sube o baja según lo cobrado. */
+const ETAPAS_DE_DINERO = ["seguimiento", "anticipo", "confirmado"];
+
 export async function leadDesdeReserva(bookingId: string, motivo: string, { conContacto = false, revivir = false } = {}): Promise<void> {
   try {
     const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
@@ -457,13 +460,19 @@ export async function leadDesdeReserva(bookingId: string, motivo: string, { conC
     // reserva NUEVA o un cobro son hechos (revisión del 4 nov 2026). Editar una
     // reserva vieja no lo revive: alguien lo marcó perdido a propósito.
     const revive = revivir && op.etapa === "perdido";
-    const porCobro = etapaPorCobro(montoCobrado(r), r.totalAmount);
-    const etapa = revive ? porCobro : subirA(op.etapa as Etapa, porCobro);
+    // El dinero de TODAS sus reservas vivas manda (revisión del 4 nov 2026): si se
+    // anula un cobro o sube el total, Confirmado regresa a Anticipo pagado. Entre
+    // las etapas de dinero se puede bajar; antes de ellas, nunca.
+    const vivas = await prisma.tourBooking.findMany({ where: { oportunidadId: op.id, status: { not: "cancelled" } } });
+    const cobrado = vivas.reduce((t, x) => t + montoCobrado(x), 0);
+    const total = vivas.reduce((t, x) => t + x.totalAmount, 0);
+    const porCobro = etapaPorCobro(cobrado, total);
+    const etapa = revive ? porCobro : ETAPAS_DE_DINERO.includes(op.etapa) ? porCobro : subirA(op.etapa as Etapa, porCobro);
     const data: Record<string, unknown> = {};
     if (etapa !== op.etapa) data.etapa = etapa;
     if (revive) data.motivoPerdida = null;
     if (r.origen && r.origen !== "por_confirmar" && r.origen !== op.canal) data.canal = r.origen;
-    if (r.totalAmount && r.totalAmount !== op.monto) data.monto = r.totalAmount;
+    if (total && total !== op.monto) data.monto = total;
     // Al crear la reserva (p. ej. al convertir la cotización) el nombre, correo
     // y teléfono que se capturaron pasan al contacto. En los cobros, no: ahí
     // nadie los tocó y no deben pisar lo que se corrigió en la ficha.

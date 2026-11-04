@@ -8,6 +8,8 @@ import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import { codigoCumpleAlGuardar, liberarCodigoCumple } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
 import { leadDesdeReserva, leadParaReservaSinLead } from "@/lib/admin/crmDatos";
+import { abonarLigasDeCotizacion } from "@/lib/admin/linksPago";
+import { pedidosSinCupo } from "@/lib/cupoTour";
 
 /** El lead que manda el panel, solo si existe (un id roto no se guarda). */
 async function leadExistente(v: unknown): Promise<string | null> {
@@ -53,6 +55,14 @@ export async function POST(req: NextRequest) {
     const cumple = await codigoCumpleAlGuardar(sellado.lineItems, null, folio, hoyMX());
     if (!cumple.ok) return NextResponse.json({ error: cumple.error }, { status: 409 });
     // Whitelist de campos permitidos (evita asignación masiva de columnas inesperadas).
+    // ¿Cabe? (revisión del 4 nov 2026): el panel no revisaba el cupo al capturar.
+    // No se bloquea —a veces se suma una unidad—, pero queda en la nota y se avisa.
+    const lineasCupo = (Array.isArray(sellado.lineItems) ? (sellado.lineItems as Record<string, unknown>[]) : []).filter(l => l && !l._meta && l.tourSlug && l.tourDate);
+    const pedidosCupo = (lineasCupo.length ? lineasCupo : [{ tourSlug: body.tourSlug, tourDate: body.tourDate, adults: body.adults, childrenMid: body.children } as Record<string, unknown>])
+      .filter(l => l.tourSlug && l.tourDate)
+      .map(l => ({ slug: String(l.tourSlug), fecha: String(l.tourDate), personas: Number(l.adults || 0) + Number(l.childrenMid ?? l.children ?? 0) + Number(l.childrenSmall || 0) }));
+    const sinLugar = pedidosCupo.length ? await pedidosSinCupo(pedidosCupo).catch(() => []) : [];
+    const avisoCupo = sinLugar.length ? `⚠️ SOBRECUPO (capturada en el panel): ${sinLugar.map(s => `${s.slug} el ${s.fecha} (${s.personas} pers., ${s.estado === "cerrada" ? "fecha cerrada" : "sin lugar"})`).join("; ")}. Mover de fecha o sumar unidad.` : null;
     const booking = await prisma.tourBooking.create({
       data: {
         confirmationNumber:    String(body.confirmationNumber),
@@ -70,11 +80,12 @@ export async function POST(req: NextRequest) {
         customerName:          String(body.customerName),
         customerEmail:         body.customerEmail || "",
         customerPhone:         body.customerPhone || null,
-        notes:                 body.notes || null,
+        notes:                 [avisoCupo, body.notes].filter(Boolean).join("\n") || null,
         lineItems:             (sellado.lineItems as any) ?? undefined,
         packageItems:          body.packageItems ?? undefined,
         extraItems:            body.extraItems   ?? undefined,
-        status:                body.status || "paid",
+        // Sin estado explícito, lo dice el dinero (antes nacía «pagada» con $0).
+        status:                body.status || (Math.round(Number(body.depositoPagado) || 0) >= Math.round(Number(body.totalAmount) || 0) && Number(body.totalAmount) > 0 ? "paid" : "pending"),
         guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
         idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
         // Una reserva capturada a mano casi nunca entró por la web: el
@@ -109,7 +120,11 @@ export async function POST(req: NextRequest) {
 
     // Sin lead (capturada directo en Reservas): entra al CRM con el de esa persona o uno nuevo.
     if (!booking.oportunidadId) await leadParaReservaSinLead(booking.id, sesion?.nombre ?? "Desconocido");
+    // Lo que ya se pagó con la liga de pago de su cotización se abona aquí (antes la reserva nacía en $0).
+    const abonadoPorLiga = typeof body.cotizacionId === "string" && body.cotizacionId
+      ? await abonarLigasDeCotizacion(body.cotizacionId, booking.id).catch(e => { console.error("abonarLigasDeCotizacion:", (e as Error)?.message); return 0; })
+      : 0;
     await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`, { conContacto: true, revivir: true });
-    return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados });
+    return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados, abonadoPorLiga, avisoCupo });
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
 }

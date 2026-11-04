@@ -13,6 +13,10 @@ import {
 import { hoyMX } from "@/lib/dates";
 import { motivoParaGuardar } from "@/lib/admin/cancelacion";
 import { leadDesdeReserva, leadTrasCancelarReserva, leadTrasReactivarReserva } from "@/lib/admin/crmDatos";
+import { sincronizarDeposito } from "@/lib/admin/cobros";
+import { montoCobrado } from "@/lib/admin/dinero";
+import { lineasDe } from "@/lib/admin/reserva";
+import { pedidosSinCupo } from "@/lib/cupoTour";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +108,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data.motivoCancelacion = motivo;
     }
     if (reactiva) data.motivoCancelacion = null;
+    // 🔴 Reactivar no revisaba el cupo (revisión del 4 nov 2026): una salida llena
+    // se sobrevendía sin aviso. Ahora se pregunta; con `forzarCupo` se reactiva
+    // igual (a veces se suma una camioneta). Los lugares del viaje CDMX tienen su
+    // propio cupo: también se pide confirmar.
+    if (reactiva && antes && body.forzarCupo !== true) {
+      if (antes.salidaId) {
+        return NextResponse.json({ error: "Es un lugar del viaje CDMX: revisa en Viaje CDMX que todavía haya lugar antes de reactivarlo.", sePuedeForzar: true }, { status: 409 });
+      }
+      const lineas = lineasDe(antes as never).filter(l => l.tourSlug && l.tourDate);
+      const pedidos = (lineas.length ? lineas : [{ tourSlug: antes.tourSlug, tourDate: antes.tourDate, adults: antes.adults, childrenMid: antes.children, childrenSmall: 0 }])
+        .map(l => ({ slug: String(l.tourSlug), fecha: String(l.tourDate), personas: Number(l.adults || 0) + Number((l as { childrenMid?: number }).childrenMid || 0) + Number((l as { childrenSmall?: number }).childrenSmall || 0) }));
+      const sinLugar = await pedidosSinCupo(pedidos).catch(() => []);
+      if (sinLugar.length) {
+        return NextResponse.json({
+          error: `Ya no cabe: ${sinLugar.map(s => `${s.slug} el ${s.fecha} (${s.personas} pers., ${s.estado === "cerrada" ? "fecha cerrada" : "sin lugar"})`).join("; ")}. ¿Reactivarla de todos modos?`,
+          sePuedeForzar: true,
+        }, { status: 409 });
+      }
+    }
     if (reactiva && antes) {
       const codigo = codigoDeLineas(data.lineItems !== undefined ? data.lineItems : antes.lineItems);
       if (codigo && codigo !== canjeado) {
@@ -127,7 +150,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Su lead: cancelar su única reserva viva lo pierde con ese motivo; reactivarla lo regresa.
     if (cancela) await leadTrasCancelarReserva(updated.id, sesion?.nombre ?? "Desconocido");
     if (reactiva) await leadTrasReactivarReserva(updated.id);
-    // Editada (total, pagos, fechas): su lead se pone al día; nunca baja de etapa.
+    // El estado de pago lo dicen los cobros (revisión del 4 nov 2026): tras cambiar
+    // el total, reactivarla o ponerle un estado a mano, se recalcula pagada ↔
+    // pendiente. Solo si su dinero ya vive en cobros (las históricas no se tocan).
+    if (updated.status !== "cancelled") {
+      if ((await prisma.movimiento.count({ where: { reservaId: updated.id, tipo: "cobro" } })) > 0) await sincronizarDeposito(updated.id);
+      else if (updated.status === "paid" || updated.status === "pending") {
+        // Sin renglones de cobro, lo dice lo que figura cobrado (montoCobrado): ya
+        // no se puede dejar «pagada» con $0 ni «pendiente» una liquidada.
+        const debe = montoCobrado(updated) >= updated.totalAmount && updated.totalAmount > 0 ? "paid" : "pending";
+        if (debe !== updated.status) await prisma.tourBooking.update({ where: { id: updated.id }, data: { status: debe } });
+      }
+    }
+    // Editada (total, pagos, fechas): su lead se pone al día según el dinero.
     if (!cancela && !reactiva && updated.status !== "cancelled") await leadDesdeReserva(updated.id, `reserva ${updated.confirmationNumber} editada`);
     if (cancela && (await liberarCodigosDeFolio(updated.confirmationNumber))) {
       resumenCumple = [resumenCumple, "al cancelarla se liberó su código de cumpleaños"].filter(Boolean).join(" · ");
@@ -152,7 +187,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         detalle:    cambios,
       });
     }
-    return NextResponse.json({ ok: true, updated });
+    // Lo que quedó de verdad (el estado pudo cambiar al recalcular con los cobros).
+    return NextResponse.json({ ok: true, updated: (await prisma.tourBooking.findUnique({ where: { id: updated.id } })) ?? updated });
   } catch (e: any) {
     console.error("admin/reservas/[id]:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

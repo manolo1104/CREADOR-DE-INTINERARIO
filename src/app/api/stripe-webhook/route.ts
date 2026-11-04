@@ -75,12 +75,16 @@ export async function POST(req: NextRequest) {
           session.customer_details?.email || session.customer_email || null,
         );
       } catch (e) {
-        // Un fallo aquí no puede tumbar el webhook: Stripe reintentaría y el
-        // resto de los avisos (correos, reservas) se mandarían dos veces.
+        // Revisión del 4 nov 2026: si el cobro no se pudo registrar, la liga se
+        // soltó y se contesta 500 para que Stripe vuelva a intentar. Antes la
+        // liga quedaba «pagada» sin dinero en la reserva y Stripe no reintentaba.
+        // Es seguro: una sesión de liga de pago no pasa por las otras ramas
+        // (correos de la guía, del curso o de reservas), así que no se duplica nada.
         logger.error("link_pago_webhook_failed", {
           reason: e instanceof Error ? e.message : "desconocido",
           payment_link: String(session.payment_link),
         });
+        return NextResponse.json({ error: "liga-de-pago" }, { status: 500 });
       }
     }
 

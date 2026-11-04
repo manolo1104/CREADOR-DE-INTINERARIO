@@ -441,6 +441,9 @@ export async function convertirCotizacionEnReserva(
       detalle:    [{ campo: "estado", antes: r.antes, despues: "aceptada" }],
       actor,
     });
+    // Lo pagado con la liga de pago de la cotización se abona a la reserva nueva.
+    await import("@/lib/admin/linksPago").then(m => m.abonarLigasDeCotizacion(r.cotizacion.id, r.reserva.id))
+      .catch(e => console.error("abonarLigasDeCotizacion:", (e as Error)?.message));
     // Su lead pasa a la etapa de una reserva (sin pago: En seguimiento). No lanza.
     await import("@/lib/admin/crmDatos")
       .then(m => m.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true }))
@@ -473,7 +476,8 @@ export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor
 
     // Pago online por Stripe = liquidado al 100% aunque no tenga anticipo registrado.
     const rawDeposito = b.depositoPagado ?? 0;
-    const depositoEfectivo = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+    // Revisión del 4 nov 2026: el mismo criterio que el panel (una reembolsada ya no sale «Liquidado» en el correo).
+    const depositoEfectivo = rawDeposito > 0 ? rawDeposito : montoCobrado(b);
 
     const html = buildTourEmailHtml({
       customerName:       b.customerName,

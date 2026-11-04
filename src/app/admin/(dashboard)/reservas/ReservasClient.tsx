@@ -1,5 +1,6 @@
 "use client";
 
+import { cobradoDe } from "@/lib/admin/dinero";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -137,11 +138,13 @@ export default function ReservasClient(
     setTimeout(() => setMsg(""), 4000);
   }
 
-  async function refresh() {
+  async function refresh(): Promise<TourBooking[] | null> {
     setLoading(true);
     const r = await fetch("/api/admin/reservas");
-    if (r.ok) setBookings(await r.json());
+    const lista = r.ok ? await r.json() : null;
+    if (lista) setBookings(lista);
     setLoading(false);
+    return lista;
   }
 
   async function sendEmail(id: string) {
@@ -152,16 +155,25 @@ export default function ReservasClient(
     setSending(null);
   }
 
-  async function changeStatus(id: string, newStatus: string, motivoCancelacion?: string) {
+  async function changeStatus(id: string, newStatus: string, motivoCancelacion?: string, forzarCupo = false) {
     const r = await fetch(`/api/admin/reservas/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(motivoCancelacion ? { status: newStatus, motivoCancelacion } : { status: newStatus }),
+      body: JSON.stringify(motivoCancelacion ? { status: newStatus, motivoCancelacion } : { status: newStatus, ...(forzarCupo ? { forzarCupo: true } : {}) }),
     }).catch(() => null);
+    // Reactivar una salida llena: el servidor pregunta antes de sobrevender.
+    if (r?.status === 409) {
+      const d = await r.json().catch(() => null);
+      if (d?.sePuedeForzar && window.confirm(d.error)) return changeStatus(id, newStatus, motivoCancelacion, true);
+      flash(`❌ ${d?.error || "No se reactivó"}`); setStatusEditing(null); return;
+    }
     if (r?.ok) {
+      // El estado que quedó de verdad: con cobros, «pagada» o «pendiente» lo decide el dinero.
+      const d = await r.json().catch(() => null);
+      const final = typeof d?.updated?.status === "string" ? d.updated.status : newStatus;
       setBookings(b => b.map(x => x.id === id
-        ? { ...x, status: newStatus, motivoCancelacion: newStatus === "cancelled" ? (motivoCancelacion ?? null) : null }
+        ? { ...x, status: final, depositoPagado: d?.updated?.depositoPagado ?? x.depositoPagado, motivoCancelacion: newStatus === "cancelled" ? (motivoCancelacion ?? null) : null }
         : x));
-      flash("✅ Estado actualizado");
+      flash(final !== newStatus ? `✅ Estado actualizado: queda «${final === "paid" ? "pagada" : "pendiente"}» por lo que ya se cobró` : "✅ Estado actualizado");
       router.refresh(); // su lead pudo cambiar de etapa (cancelar / reactivar)
     } else {
       const d = await r?.json().catch(() => null);
@@ -323,14 +335,24 @@ export default function ReservasClient(
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
     const datos = buildPayload(form);
-    // Pagada sólo si el dinero ya está: antes toda reserva manual nacía "paid"
-    // aunque no se hubiera cobrado un peso, y el corte lo daba por bueno.
-    const status = datos.depositoPagado >= datos.totalAmount && datos.totalAmount > 0 ? "paid" : "pending";
+    // 🔴 Revisión del 4 nov 2026: el anticipo ya NO se guarda como número suelto
+    // (quedaba sin método ni quién lo recibió, y no salía en el efectivo de cada
+    // quien). La reserva nace pendiente y se abre el cobro con ese monto puesto.
+    const anticipo = datos.depositoPagado;
     const r = await fetch("/api/admin/reservas", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmationNumber, status, ...datos }),
+      body: JSON.stringify({ confirmationNumber, ...datos, status: "pending", depositoPagado: 0 }),
     });
-    if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM); flash("✅ Reserva creada"); }
+    if (r.ok) {
+      const j = await r.json().catch(() => null);
+      const lista = await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM);
+      const nueva = anticipo > 0 ? lista?.find(b => b.id === j?.id) : null;
+      if (nueva) {
+        const lineas = Array.isArray((nueva as any).lineItems) ? (nueva as any).lineItems : [];
+        setCobrando({ ...nueva, lineItems: [{ _meta: true, anticipoAcordado: anticipo }, ...lineas.filter((l: any) => !l?._meta)] } as TourBooking);
+        flash(`✅ Reserva creada. Ahora registra cómo entró el anticipo de $${anticipo.toLocaleString("es-MX")}`);
+      } else flash(j?.avisoCupo ? `✅ Reserva creada. ${j.avisoCupo}` : "✅ Reserva creada");
+    }
     // Antes un error no decía nada: el botón dejaba de girar y ya.
     else { const j = await r.json().catch(() => ({})); flash(`❌ ${j.error || "No se pudo guardar la reserva"}`); }
     setSaving(false);
@@ -371,7 +393,7 @@ export default function ReservasClient(
     const pkgs: PackageItem[] = (b as any).packageItems ?? [];
     const rawDeposito = (b as any).depositoPagado ?? 0;
     // Pago online por Stripe = liquidado al 100% aunque no tenga anticipo registrado.
-    const deposito   = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+    const deposito   = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
     const pendiente  = Math.max(0, b.totalAmount - deposito);
     // 🔴 Todo lo que sale de la base y pudo escribir un cliente, el equipo o el
     // bot entra al HTML escapado con `esc`: este voucher se abre con
@@ -861,7 +883,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         {filtered.length === 0 && <p className="py-10 text-center text-[#1B4332]/30 font-dm text-sm">Sin resultados</p>}
         {filtered.map(b => {
           const rawDeposito = (b as any).depositoPagado ?? 0;
-          const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+          const deposito = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
           const pendiente = Math.max(0, b.totalAmount - deposito);
           const hosp = hospedajeSummary(b);
           return (
@@ -918,7 +940,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               {filtered.length === 0 && <tr><td colSpan={11} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
                 const rawDeposito = (b as any).depositoPagado ?? 0;
-                const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+                const deposito = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
                 const pendiente = Math.max(0, b.totalAmount - deposito);
                 const hosp = hospedajeSummary(b);
                 return (

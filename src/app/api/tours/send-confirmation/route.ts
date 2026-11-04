@@ -162,6 +162,8 @@ export async function POST(req: NextRequest) {
           reservaId: creada.id, monto: cobrado, metodo: "stripe",
           nota: "Pago en línea desde el sitio", sinRescate: true,
         });
+        // Al CRM (revisión del 4 nov 2026): la reserva de la web también es un lead, enlazado al de esa persona o uno nuevo. No lanza.
+        await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(creada.id, "Web")).catch(() => {});
       }
       await registrarEnBitacora({
         accion:     "creó",

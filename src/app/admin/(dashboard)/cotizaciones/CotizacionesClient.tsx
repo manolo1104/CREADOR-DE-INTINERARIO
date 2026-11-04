@@ -701,9 +701,14 @@ export default function CotizacionesClient(
       setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "aceptada" } : x));
       setConvirtiendo(null);
       router.refresh();
+      const porLiga = Number(creada?.abonadoPorLiga) || 0;
+      if (creada?.avisoCupo) window.setTimeout(() => flash(`⚠️ ${String(creada.avisoCupo).replace(/^⚠️ /, "")}`), 3500);
       if (datos.yaPago && creada?.id) {
-        flash(`✅ Reserva creada · ${confirmationNumber}. Registra el pago para terminar.`);
-        setCobrando({ id: creada.id, confirmationNumber, customerName: datos.customerName, totalAmount: q.totalAmount, depositoPagado: 0, stripePaymentIntentId: null, lineItems });
+        // Lo que ya entró por la liga de pago de la cotización ya está abonado: el cobro abre con lo que falta.
+        flash(porLiga ? `✅ Reserva creada · ${confirmationNumber}. Ya entraron $${porLiga.toLocaleString("es-MX")} por la liga de pago; registra solo lo demás.` : `✅ Reserva creada · ${confirmationNumber}. Registra el pago para terminar.`);
+        setCobrando({ id: creada.id, confirmationNumber, customerName: datos.customerName, totalAmount: q.totalAmount, depositoPagado: porLiga, stripePaymentIntentId: null, lineItems: porLiga ? (lineItems as any[]).filter((l: any) => !l?._meta) : lineItems });
+      } else if (porLiga) {
+        flash(`✅ Reserva creada · ${confirmationNumber} con $${porLiga.toLocaleString("es-MX")} ya cobrados por la liga de pago`);
       } else {
         flash(`✅ Reserva creada · ${confirmationNumber} — queda pendiente de pago; el cobro se registra en Reservas 💵`);
       }

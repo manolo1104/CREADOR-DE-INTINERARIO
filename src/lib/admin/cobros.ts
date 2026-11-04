@@ -21,6 +21,7 @@
 // del corte se duplicarían.
 
 import { prisma } from "@/lib/prisma";
+import { montoCobrado } from "./dinero";
 import { hoyMX } from "@/lib/dates";
 import { metaDe, conMeta } from "@/lib/admin/reserva";
 import { registrarEnBitacora, pesos, SISTEMA, type Actor } from "@/lib/admin/bitacora";
@@ -85,6 +86,13 @@ export async function sincronizarDeposito(reservaId: string): Promise<number> {
 
   const cobrado = await sumaDeCobros(reservaId);
   const saldado = cobrado >= reserva.totalAmount && reserva.totalAmount > 0;
+  // Revisión del 4 nov 2026: si se anula un cobro o sube el total, la reserva
+  // vuelve a «pendiente» (antes se quedaba «pagada» con saldo). Solo cuando su
+  // dinero ya vive en los cobros: una histórica pagada por Stripe sin renglones
+  // no se toca (su cobro se «rescata» al registrar el primero).
+  const conCobros = !saldado && reserva.status === "paid"
+    ? (await prisma.movimiento.count({ where: { reservaId, tipo: "cobro" } })) > 0
+    : false;
 
   await prisma.tourBooking.update({
     where: { id: reservaId },
@@ -92,7 +100,7 @@ export async function sincronizarDeposito(reservaId: string): Promise<number> {
       depositoPagado: cobrado,
       // Sólo se sube de pendiente a pagada. Una reserva cancelada no revive
       // porque le entre un cobro, y una pagada no se degrada sola.
-      ...(saldado && reserva.status === "pending" ? { status: "paid" } : {}),
+      ...(saldado && reserva.status === "pending" ? { status: "paid" } : conCobros ? { status: "pending" } : {}),
     },
   });
   return cobrado;
@@ -119,11 +127,11 @@ async function asegurarHistorico(reservaId: string): Promise<void> {
   ]);
   if (!reserva || cuantos > 0) return;
 
-  // Mismo criterio que `montoCobrado()` en kpis.ts: una reserva pagada por
-  // Stripe puede tener el depósito en cero y estar cobrada al 100%.
-  const yaCobrado = reserva.depositoPagado > 0
-    ? reserva.depositoPagado
-    : (reserva.stripePaymentIntentId ? reserva.totalAmount : 0);
+  // El MISMO criterio que el resto del panel (revisión del 4 nov 2026): antes
+  // aquí se daba por pagada al 100 % toda reserva de Stripe con depósito en
+  // cero, aunque desde el 29 sep el depósito es siempre lo cobrado de verdad
+  // (un anticipo del viaje CDMX se «rescataba» como pago total).
+  const yaCobrado = montoCobrado(reserva);
   if (yaCobrado <= 0) return;
 
   await prisma.movimiento.create({
@@ -326,6 +334,8 @@ export async function anularCobro(id: string, motivo: string, quien: string): Pr
   });
 
   const cobrado = antes.reservaId ? await sincronizarDeposito(antes.reservaId) : 0;
+  // Su lead regresa a la etapa que dice el dinero (p. ej. Confirmado → Anticipo pagado). No lanza.
+  if (antes.reservaId) await import("./crmDatos").then(m => m.leadDesdeReserva(antes.reservaId!, `se anuló un cobro de ${pesos(antes.monto)}`)).catch(() => {});
 
   await registrarEnBitacora({
     accion:  "eliminó",

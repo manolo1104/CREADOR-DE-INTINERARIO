@@ -1,5 +1,6 @@
 "use client";
 
+import { cobradoDe } from "@/lib/admin/dinero";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TourBooking } from "@prisma/client";
@@ -81,7 +82,7 @@ export default function ReservaDetalle({
   const extras   = extrasDe((b as any).extraItems);
 
   const rawDeposito = (b as any).depositoPagado ?? 0;
-  const deposito    = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+  const deposito    = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
   const pendiente   = Math.max(0, b.totalAmount - deposito);
   const sumaLineas  = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
                     + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)

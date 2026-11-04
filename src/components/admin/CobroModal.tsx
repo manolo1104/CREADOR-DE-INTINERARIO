@@ -1,5 +1,6 @@
 "use client";
 
+import { cobradoDe } from "@/lib/admin/dinero";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Banknote, ArrowLeftRight, Building2, CreditCard, MoreHorizontal, Check, Pencil } from "lucide-react";
@@ -65,9 +66,7 @@ export default function CobroModal({
   onClose: () => void;
   onGuardado: (cobrado: number) => void;
 }) {
-  const yaCobrado = reserva.depositoPagado > 0
-    ? reserva.depositoPagado
-    : (reserva.stripePaymentIntentId ? reserva.totalAmount : 0);
+  const yaCobrado = cobradoDe(reserva as Parameters<typeof cobradoDe>[0]);
   const saldo = Math.max(0, reserva.totalAmount - yaCobrado);
 
   // 🔴 Lo primero que entra casi nunca es el total: es el anticipo que se

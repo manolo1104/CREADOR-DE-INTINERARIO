@@ -98,6 +98,8 @@ export async function agregarPasajero(salidaId: string, d: DatosPasajero, actor:
     accion: "creó", entidad: "reserva", referencia: reserva.confirmationNumber, actor,
     resumen: `Viaje CDMX ${reserva.tourDate}: ${reserva.customerName}, ${reserva.adults} persona${reserva.adults === 1 ? "" : "s"}, ${d.cortesia ? "cortesía" : pesos(reserva.totalAmount)} (venta del panel)`,
   });
+  // Al CRM (revisión del 4 nov 2026): el pasajero del viaje también es un lead. No lanza.
+  await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(reserva.id, actor.nombre)).catch(() => {});
   return reserva;
 }
 
@@ -153,7 +155,9 @@ export async function cancelarPasajero(reservaId: string, actor: Actor): Promise
   const previa = await prisma.tourBooking.findUnique({ where: { id: reservaId } });
   if (!previa?.salidaId) throw new ErrorViaje(404, "sin-reserva", "Esa reserva no es del viaje.");
   const r = await conSalidaBloqueada(previa.salidaId, (tx) =>
-    tx.tourBooking.update({ where: { id: reservaId }, data: { status: "cancelled" } }));
+    tx.tourBooking.update({ where: { id: reservaId }, data: { status: "cancelled", motivoCancelacion: previa.motivoCancelacion ?? "otro: lugar del viaje CDMX cancelado desde el panel" } }));
+  // Su lead: si era su única reserva viva, pasa a Perdido con este motivo. No lanza.
+  await import("@/lib/admin/crmDatos").then(m => m.leadTrasCancelarReserva(reservaId, actor.nombre)).catch(() => {});
   await registrarEnBitacora({
     accion: "modificó", entidad: "reserva", referencia: r.confirmationNumber, actor,
     resumen: `Viaje CDMX ${r.tourDate}: canceló el lugar de ${r.customerName} (${r.adults + r.children} persona${r.adults + r.children === 1 ? "" : "s"})`,

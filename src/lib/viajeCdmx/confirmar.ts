@@ -151,6 +151,8 @@ export async function confirmarPasaje(
       nota: `Anticipo en línea del viaje (${r.metodo} por Stripe)`,
       sinRescate: true,
     });
+        // Al CRM (revisión del 4 nov 2026): la reserva de la web también es un lead, enlazado al de esa persona o uno nuevo. No lanza.
+        await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(reserva.id, "Web")).catch(() => {});
   }
 
   await registrarEnBitacora({

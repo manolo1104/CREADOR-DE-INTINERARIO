@@ -36,6 +36,15 @@ export function montoCobrado(b: CashFields): number {
   return b.stripePaymentIntentId ? b.totalAmount : 0;
 }
 
+/**
+ * `montoCobrado` para pantallas (revisión del 4 nov 2026): en el navegador la
+ * fecha de creación llega como texto y la regla de «depósito siempre» se perdía,
+ * así que una reserva de Stripe reembolsada salía «liquidada».
+ */
+export function cobradoDe(b: { depositoPagado?: number | null; stripePaymentIntentId?: string | null; totalAmount: number; createdAt?: Date | string | null }): number {
+  return montoCobrado({ depositoPagado: b.depositoPagado ?? 0, stripePaymentIntentId: b.stripePaymentIntentId ?? null, totalAmount: b.totalAmount, createdAt: b.createdAt ? new Date(b.createdAt) : undefined });
+}
+
 /** Saldo que falta por cobrar de una reserva (nunca negativo). */
 export function saldoPendiente(b: CashFields): number {
   return Math.max(0, b.totalAmount - montoCobrado(b));
