@@ -232,6 +232,13 @@ export async function marcarLinkPagado(
     }
     // Su lead: anticipo pagado (no lanza).
     await import("./crmDatos").then(m => m.leadPorLigaDePago(link, "pagada", "Stripe")).catch(() => {});
+    // 🔴 Pedido de Erick (4 nov 2026): la liga pagada dejaba la cotización
+    // «aceptada» pero NO llegaba a Reservas ni al Calendario, y al estar aceptada
+    // ya no se podía convertir: había que rehacer la cotización. Ahora se
+    // convierte sola en reserva y el anticipo queda como cobro «liga de pago».
+    // Si algo lo impide (otra reserva del mismo cliente, cotización vencida…),
+    // queda un seguimiento para que una persona lo resuelva. Nunca tumba el pago.
+    await convertirPorLigaPagada(link.cotizacionId, montoPagado).catch(e => console.error("conversión por liga pagada:", (e as Error)?.message));
   }
 
   // Si el cobro era de una reserva, el dinero se le abona: el panel tiene que
@@ -274,8 +281,35 @@ export async function abonarLigasDeCotizacion(cotizacionId: string, reservaId: s
     // Se reclama primero (reservaId) para que dos conversiones no la abonen dos veces.
     const r = await prisma.linkPago.updateMany({ where: { id: l.id, reservaId: null }, data: { reservaId } });
     if (r.count !== 1 || monto <= 0) continue;
-    await registrarCobro({ reservaId, monto, metodo: "stripe", folio: l.stripeSessionId ?? undefined, nota: `Liga de pago de la cotización: ${l.titulo}`, actor: SISTEMA, creadoPor: SISTEMA.nombre, fecha: l.pagadoAt ? l.pagadoAt.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : undefined });
+    try {
+      await registrarCobro({ reservaId, monto, metodo: "stripe", folio: l.stripeSessionId ?? undefined, nota: `Liga de pago de la cotización: ${l.titulo}`, actor: SISTEMA, creadoPor: SISTEMA.nombre, fecha: l.pagadoAt ? l.pagadoAt.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : undefined });
+    } catch (e) {
+      // Se suelta para que el siguiente intento (otra conversión o el botón) la abone.
+      await prisma.linkPago.update({ where: { id: l.id }, data: { reservaId: null } }).catch(() => {});
+      throw e;
+    }
     abonado += monto;
   }
   return abonado;
+}
+
+
+/** La cotización cuya liga se pagó pasa a reserva (o deja un seguimiento si no se puede). */
+async function convertirPorLigaPagada(cotizacionId: string, montoPagado: number) {
+  const q = await prisma.tourQuote.findUnique({ where: { id: cotizacionId } });
+  if (!q) return;
+  const lead = q.oportunidadId ? await prisma.oportunidad.findUnique({ where: { id: q.oportunidadId } }) : null;
+  const responsable = lead?.responsable && ["Manolo", "Martín", "Erick"].includes(lead.responsable) ? lead.responsable : "Erick";
+  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const tarea = (titulo: string, clave: string) => prisma.tarea.create({
+    data: { titulo: titulo.slice(0, 200), responsable, vence: hoy, oportunidadId: q.oportunidadId, origen: "regla", regla: "liga-pagada", claveRegla: clave, creadaPor: "Liga de pago" },
+  }).catch(e => { if ((e as { code?: string })?.code !== "P2002") throw e; });
+  try {
+    const { convertirCotizacionEnReserva } = await import("@/lib/cotizaciones/convertir");
+    const conv = await convertirCotizacionEnReserva(q.id, { origen: lead?.canal && lead.canal !== "por_confirmar" ? lead.canal : "whatsapp", actor: SISTEMA });
+    await tarea(`Pagó la liga: ${q.customerName} ya tiene la reserva ${conv.reserva.confirmationNumber} ($${montoPagado.toLocaleString("es-MX")}). Mándale la confirmación y revisa guía y recogida.`, `liga-pagada:${q.id}`);
+  } catch (e) {
+    await tarea(`Pagó la liga de ${q.quoteNumber} (${q.customerName}, $${montoPagado.toLocaleString("es-MX")}) pero no se pudo pasar a reserva sola: ${(e as Error)?.message ?? "revisar"}. Conviértela desde Cotizaciones.`, `liga-pagada-revisar:${q.id}`);
+  }
+  if (q.oportunidadId) await import("./crmDatos").then(m => m.sincronizarProximoPaso(q.oportunidadId!)).catch(() => {});
 }

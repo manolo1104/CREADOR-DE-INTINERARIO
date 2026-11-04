@@ -29,6 +29,8 @@ export interface ResumenLead {
   fechaViaje: string | null;
   grupo: string | null;
   tours: string[];
+  /** Los slugs de esos tours (para los badges de color con su acrónimo). */
+  slugs: string[];
   hospedaje: string[];
   extras: string[];
   descuento: string | null;
@@ -90,6 +92,7 @@ export function resumenLead(cotizaciones: CotizacionCruda[], reservas: ReservaCr
     fechaViaje: base ? fechaValida(base.tourDate) : null,
     grupo: base ? grupoLargo(grupoDe(base as never)) : null,
     tours: base ? Array.from(new Set(lineasDe(base as never).map(l => l.tourName).filter((t): t is string => !!t))) : [],
+    slugs: base ? Array.from(new Set([...lineasDe(base as never).map(l => l.tourSlug), (base as { tourSlug?: string }).tourSlug].filter((t): t is string => !!t))) : [],
     hospedaje: hospedajeDe(base?.packageItems),
     extras: base ? extrasDe(base.extraItems).map(etiquetaExtra) : [],
     descuento: textoDescuento(desc),

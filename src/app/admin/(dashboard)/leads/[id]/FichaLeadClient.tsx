@@ -1,4 +1,5 @@
 "use client";
+import { codigoDeTour } from "@/lib/admin/coloresTour";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -12,7 +13,7 @@ import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
 import { etiquetaVence } from "@/lib/vencimientoCotizacion";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { DialogoPerdido } from "../MotivoPerdida";
-import { ChipEtapa, estiloEtapa } from "../etapas";
+import { BadgesTour, ChipEtapa, estiloEtapa } from "../etapas";
 import { EditorSeguimiento, type EdicionSeguimiento } from "../../seguimientos/FilaSeguimiento";
 import { COLOR_FECHA, COLOR_VENCE, botonPrimario, botonSecundario, canalCorto, etiquetaCls, fechaCorta, fechaCortaM, fmx, inputCls, type TourOpcion } from "../comun";
 
@@ -214,16 +215,18 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
                 <ul className="space-y-3">
                   {f.cotizaciones.map(c => {
                     const e = ESTADO_COT[c.status] ?? { texto: c.status, color: "#6B6F6C" };
-                    const convertible = c.status === "borrador" || c.status === "enviada";
+                    // También la «aceptada» por una liga pagada que aún no tiene reserva (caso de Erick).
+                    const convertible = c.status === "borrador" || c.status === "enviada" || (c.status === "aceptada" && c.pagadoPorLiga > 0);
                     return (
                       <li key={c.id} className="rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] p-3">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <p className="text-[14px] font-dm font-semibold text-[var(--panel-tinta)]">{c.tour || "Sin tour"}</p>
+                          <p className="flex flex-wrap items-center gap-2 text-[14px] font-dm font-semibold text-[var(--panel-tinta)]" title={c.tour || undefined}><BadgesTour slugs={c.tours} vacio="Sin tour" grande /></p>
                           <p className="panel-cifra text-[16px] font-dm font-semibold text-[var(--panel-tinta)]">{fmx(c.total)}</p>
                         </div>
                         <p className="mt-0.5 flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
                           <span className="font-mono">{c.folio}</span>
                           <span className="font-semibold" style={{ color: e.color }}>{e.texto}</span>
+                          {c.pagadoPorLiga > 0 && <span className="font-semibold text-[var(--panel-bien)]">Liga pagada {fmx(c.pagadoPorLiga)} · falta pasarla a reserva</span>}
                           {c.estadoVence === "borrador" && <span className={`font-semibold ${COLOR_VENCE.borrador}`}>Sin enviar: vence al mandarla</span>}
                           {c.vence && c.estadoVence !== "aceptada" && <span className={`font-semibold ${COLOR_VENCE[c.estadoVence]}`}>Vence {fechaCorta(c.vence)} · {etiquetaVence(c.vence, hoy)}</span>}
                           {c.fecha && <span>Viaje {fechaCortaM(c.fecha)}</span>}
@@ -250,7 +253,7 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
                     return (
                       <li key={r.id} className="rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] p-3">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <p className="text-[14px] font-dm font-semibold text-[var(--panel-tinta)]">{r.tour || "Sin tour"}</p>
+                          <p className="flex flex-wrap items-center gap-2 text-[14px] font-dm font-semibold text-[var(--panel-tinta)]" title={r.tour || undefined}><BadgesTour slugs={r.tours} vacio="Sin tour" grande /></p>
                           <p className="panel-cifra text-[16px] font-dm font-semibold text-[var(--panel-tinta)]">{fmx(r.total)}</p>
                         </div>
                         <p className="mt-0.5 flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
@@ -423,11 +426,11 @@ function Historial({ f, hoy }: { f: FichaLead; hoy: string }) {
     })),
     ...f.cotizaciones.map(c => ({
       en: c.en, Icono: FileText, ...estiloEtapa("cotizado"), titulo: `Cotización ${c.folio} · ${fmx(c.total)}`,
-      detalle: [c.tour, c.fecha && fechaCorta(c.fecha), `${c.personas} persona${c.personas === 1 ? "" : "s"}`, (ESTADO_COT[c.status]?.texto ?? c.status)].filter(Boolean).join(" · "),
+      detalle: [c.tours.map(codigoDeTour).join(" · "), c.fecha && fechaCorta(c.fecha), `${c.personas} persona${c.personas === 1 ? "" : "s"}`, (ESTADO_COT[c.status]?.texto ?? c.status)].filter(Boolean).join(" · "),
     })),
     ...f.reservas.map(r => ({
       en: r.en, Icono: BookOpen, ...estiloEtapa("confirmado"), titulo: `Reserva ${r.folio} · ${fmx(r.total)}`,
-      detalle: [r.tour, r.fecha && fechaCorta(r.fecha), `cobrado ${fmx(r.cobrado)}`, `entró por ${canalCorto(r.origen)}`].filter(Boolean).join(" · "),
+      detalle: [r.tours.map(codigoDeTour).join(" · "), r.fecha && fechaCorta(r.fecha), `cobrado ${fmx(r.cobrado)}`, `entró por ${canalCorto(r.origen)}`].filter(Boolean).join(" · "),
     })),
   ].sort((a, b) => b.en.localeCompare(a.en));
 
@@ -539,7 +542,7 @@ function ResumenAvance({ f, hoy, conLead }: { f: FichaLead; hoy: string; conLead
         </Dato>
         <Dato Icono={CalendarDays} titulo="Viaje">
           <p className="font-semibold">{r.fechaViaje ? fechaCortaM(r.fechaViaje) : "Sin fecha"}{diasViaje !== null && diasViaje >= 0 ? <span className="font-normal text-[var(--panel-tinta-media)]"> · {diasViaje === 0 ? "hoy" : diasViaje === 1 ? "mañana" : `en ${diasViaje} días`}</span> : null}{diasViaje !== null && diasViaje < 0 ? <span className="font-normal text-[var(--panel-problema)]"> · ya pasó</span> : null}</p>
-          {r.tours.length > 0 && <p className="text-[12.5px] text-[var(--panel-tinta-media)]">{r.tours.join(" + ")}</p>}
+          {r.slugs.length > 0 && <p title={r.tours.join(" + ")}><BadgesTour slugs={r.slugs} /></p>}
           {r.grupo && <p className="inline-flex items-center gap-1 text-[12.5px] text-[var(--panel-tinta-media)]"><Users className="h-3 w-3" aria-hidden="true" />{r.grupo}</p>}
         </Dato>
         <Dato Icono={FileText} titulo="Cotización">

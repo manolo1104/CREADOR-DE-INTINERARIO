@@ -25,6 +25,11 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
   const ids = Array.from(new Set(quotes.map(q => q.oportunidadId).filter((x): x is string => !!x)));
   const ops = ids.length ? await prisma.oportunidad.findMany({ where: { id: { in: ids } }, select: { id: true, canal: true, contacto: { select: { idioma: true } } } }).catch(() => []) : [];
   const leads: LeadsDeCotizaciones = Object.fromEntries(ops.map(o => [o.id, { canal: o.canal, idioma: o.contacto.idioma }]));
+  // Cotizaciones cuya liga de pago YA se pagó y todavía no tienen reserva (caso de Erick, 4 nov 2026):
+  // quedan «aceptadas» pero se pueden convertir, y el anticipo pagado entra solo como cobro.
+  const ligasPagadas = await prisma.linkPago.findMany({ where: { estado: "pagado", reservaId: null, cotizacionId: { not: null } }, select: { cotizacionId: true, montoPagado: true, monto: true } }).catch(() => []);
+  const pagadasSinReserva: Record<string, number> = {};
+  for (const l of ligasPagadas) pagadasSinReserva[l.cotizacionId!] = (pagadasSinReserva[l.cotizacionId!] ?? 0) + (l.montoPagado ?? l.monto);
   const inicio: InicioCotizaciones = {
     editar: param(searchParams.editar), convertir: param(searchParams.convertir), nueva: searchParams.nueva === "1",
     lead: lead ? { id: lead.id, nombre: lead.contacto.nombre, telefono: lead.contacto.telefono, correo: lead.contacto.correo } : null,
@@ -32,7 +37,7 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
   return (
     <CotizacionesClient
       initialQuotes={quotes} presetsExtras={presetsExtras} quien={sesion?.nombre ?? "Admin"}
-      guiasConocidos={guias.map(g => (g.guia ?? "").trim()).filter(Boolean)} leads={leads} inicio={inicio}
+      guiasConocidos={guias.map(g => (g.guia ?? "").trim()).filter(Boolean)} leads={leads} inicio={inicio} pagadasSinReserva={pagadasSinReserva}
     />
   );
 }

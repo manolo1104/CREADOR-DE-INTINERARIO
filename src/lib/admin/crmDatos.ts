@@ -298,6 +298,8 @@ export async function fichaOportunidad(id: string) {
     prisma.tourQuote.findMany({ where: { oportunidadId: id }, orderBy: { createdAt: "desc" } }),
     prisma.tourBooking.findMany({ where: { oportunidadId: id }, orderBy: { createdAt: "desc" } }),
   ]);
+  const ligas = cotizaciones.length ? await prisma.linkPago.findMany({ where: { cotizacionId: { in: cotizaciones.map(c => c.id) }, estado: "pagado", reservaId: null }, select: { cotizacionId: true, montoPagado: true, monto: true } }) : [];
+  const pagadoPorLiga = (cid: string) => ligas.filter(l => l.cotizacionId === cid).reduce((t, l) => t + (l.montoPagado ?? l.monto), 0);
   const hoy = hoyMX();
   return {
     resumen: resumenLead(cotizaciones, reservas, hoy),
@@ -310,12 +312,12 @@ export async function fichaOportunidad(id: string) {
     notas: op.notasLista.map(n => ({ id: n.id, autor: n.autor, texto: n.texto, en: n.createdAt.toISOString() })),
     tareas: op.tareas.map(t => ({ id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, hora: t.hora, estado: t.estado, hechaPor: t.hechaPor, hechaEn: t.hechaEn?.toISOString() ?? null, creadaPor: t.creadaPor, en: t.createdAt.toISOString() })),
     cotizaciones: cotizaciones.map(c => ({
-      id: c.id, folio: c.quoteNumber, status: c.status, total: c.totalAmount, tour: c.tourName, fecha: c.tourDate,
+      id: c.id, folio: c.quoteNumber, status: c.status, total: c.totalAmount, tour: c.tourName, tours: toursDe(c), fecha: c.tourDate,
       personas: c.adults + c.children, en: c.createdAt.toISOString(), editadaEn: c.updatedAt.toISOString(),
-      vence: fechaLimite(c), estadoVence: etapaDe(c, hoy),
+      vence: fechaLimite(c), estadoVence: etapaDe(c, hoy), pagadoPorLiga: pagadoPorLiga(c.id),
     })),
     reservas: reservas.map(r => ({
-      id: r.id, folio: r.confirmationNumber, status: r.status, total: r.totalAmount, cobrado: montoCobrado(r), tour: r.tourName,
+      id: r.id, folio: r.confirmationNumber, status: r.status, total: r.totalAmount, cobrado: montoCobrado(r), tour: r.tourName, tours: toursDe(r),
       fecha: r.tourDate, personas: r.adults + r.children, origen: r.origen, guia: r.guia, en: r.createdAt.toISOString(),
     })),
   };

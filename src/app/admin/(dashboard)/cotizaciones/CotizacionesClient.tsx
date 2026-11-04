@@ -137,11 +137,13 @@ export interface InicioCotizaciones {
 export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
 
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {} }:
-  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones },
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {} }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number> },
 ) {
   const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
+  // Se puede convertir: borrador o enviada, o «aceptada» por una liga pagada que aún no tiene reserva.
+  const convertible = (q: TourQuote) => q.status === "borrador" || q.status === "enviada" || (q.status === "aceptada" && (pagadasSinReserva[q.id] ?? 0) > 0);
   // Convertir a reserva pide lo que falta (3 nov 2026) y, si ya pagó, abre el cobro.
   const [convirtiendo,   setConvirtiendo]   = useState<TourQuote | null>(null);
   const [cobrando,       setCobrando]       = useState<ReservaCobrable | null>(null);
@@ -452,7 +454,7 @@ export default function CotizacionesClient(
     if (inicio.editar && q) openEdit(q);
     // Solo una que todavía se puede convertir: recargar la página tras
     // convertirla ya no abre otra vez el cuadro (y no nace otra reserva).
-    else if (inicio.convertir && q && (q.status === "borrador" || q.status === "enviada")) setConvirtiendo(q);
+    else if (inicio.convertir && q && convertible(q)) setConvirtiendo(q);
     else if (inicio.nueva) openNew(inicio.lead);
     // Se quita de la dirección: Atrás/Adelante o recargar no lo repiten.
     if (inicio.editar || inicio.convertir || inicio.nueva) router.replace("/admin/cotizaciones", { scroll: false });
@@ -1350,7 +1352,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 {q.status === "archivada" && (
                   <button onClick={() => { playClick(); desarchivar(q.id); }} className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                 )}
-                {q.status !== "aceptada" && q.status !== "expirada" && q.status !== "archivada" && (
+                {convertible(q) && (
                   <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
                 )}
                 <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
@@ -1415,7 +1417,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           <button onClick={() => { playClick(); desarchivar(q.id); }} title="Volver a borrador"
                             className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                         )}
-                        {q.status !== "aceptada" && q.status !== "expirada" && q.status !== "archivada" && (
+                        {convertible(q) && (
                           <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva"
                             className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
                         )}

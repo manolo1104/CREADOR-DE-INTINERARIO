@@ -441,14 +441,15 @@ export async function convertirCotizacionEnReserva(
       detalle:    [{ campo: "estado", antes: r.antes, despues: "aceptada" }],
       actor,
     });
-    // Lo pagado con la liga de pago de la cotización se abona a la reserva nueva.
-    await import("@/lib/admin/linksPago").then(m => m.abonarLigasDeCotizacion(r.cotizacion.id, r.reserva.id))
-      .catch(e => console.error("abonarLigasDeCotizacion:", (e as Error)?.message));
     // Su lead pasa a la etapa de una reserva (sin pago: En seguimiento). No lanza.
     await import("@/lib/admin/crmDatos")
       .then(m => m.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true }))
       .catch(() => {});
   }
+  // Lo pagado con la liga de pago de la cotización se abona a su reserva (nueva
+  // o ya existente): idempotente, cada liga se abona una sola vez.
+  await import("@/lib/admin/linksPago").then(m => m.abonarLigasDeCotizacion(r.cotizacion.id, r.reserva.id))
+    .catch(e => console.error("abonarLigasDeCotizacion:", (e as Error)?.message));
 
   return { reserva: r.reserva, cotizacion: r.cotizacion, nueva: r.nueva, avisos };
 }

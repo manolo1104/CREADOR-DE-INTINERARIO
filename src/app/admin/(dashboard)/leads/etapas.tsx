@@ -1,5 +1,6 @@
 import { Sparkles, UserCheck, FileText, MessagesSquare, Wallet, BadgeCheck, Flag, XCircle, type LucideIcon } from "lucide-react";
 import { etiquetaEtapa } from "@/lib/admin/crm";
+import { codigoDeTour, colorDeTour } from "@/lib/admin/coloresTour";
 
 /**
  * El color y el ícono de cada etapa (3 nov 2026, pedido de Manolo: «dale un
@@ -27,6 +28,23 @@ export function ChipEtapa({ etapa, texto, grande }: { etapa: string; texto?: str
     <span className={`inline-flex items-center gap-1.5 rounded-full font-dm font-semibold ${grande ? "px-3 py-1.5 text-[13px]" : "px-2 py-0.5 text-[11.5px]"}`}
       style={{ color: s.color, background: s.fondo }}>
       <Icono className={grande ? "h-4 w-4" : "h-3.5 w-3.5"} aria-hidden="true" />{texto ?? etiquetaEtapa(etapa)}
+    </span>
+  );
+}
+
+/**
+ * Los tours como badges de color con su acrónimo (TAM, MEC, SUR…), el mismo de
+ * todo el panel: se reconocen de un vistazo (Manolo, 4 nov 2026: «siempre badges
+ * con colores y el acrónimo»). El nombre completo sale al pasar el cursor.
+ */
+export function BadgesTour({ slugs, nombres, vacio = "—", grande }: { slugs: string[]; nombres?: Record<string, string>; vacio?: string; grande?: boolean }) {
+  const lista = Array.from(new Set(slugs.filter(Boolean)));
+  if (!lista.length) return <span className="text-[12px] font-dm text-[var(--panel-tinta-suave)]">{vacio}</span>;
+  return (
+    <span className="inline-flex flex-wrap gap-1">
+      {lista.map(t => (
+        <span key={t} title={nombres?.[t] ?? t} className={`rounded px-1.5 py-0.5 font-dm font-bold ${grande ? "text-[12.5px]" : "text-[10.5px]"}`} style={{ color: colorDeTour(t), background: colorDeTour(t) + "1f" }}>{codigoDeTour(t)}</span>
+      ))}
     </span>
   );
 }

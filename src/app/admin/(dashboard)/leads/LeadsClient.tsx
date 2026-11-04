@@ -11,7 +11,7 @@ import {
 import type { LeadTarjeta, TareaFila } from "@/lib/admin/crmDatos";
 import { ETAPAS_PIPELINE, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, ordenTareas, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
 import { addDaysYMD } from "@/lib/dates";
-import { estiloEtapa } from "./etapas";
+import { BadgesTour, estiloEtapa } from "./etapas";
 import { etiquetaVence } from "@/lib/vencimientoCotizacion";
 import { COLOR_VENCE } from "./comun";
 import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "../seguimientos/FilaSeguimiento";
@@ -238,7 +238,7 @@ function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; on
       </div>
       {l.tours.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {l.tours.map(t => <span key={t} className="rounded px-1.5 py-0.5 text-[10.5px] font-dm font-bold" style={{ color: colorDeTour(t), background: colorDeTour(t) + "1f" }}>{codigoDeTour(t)}</span>)}
+          <BadgesTour slugs={l.tours} />
         </div>
       )}
       <p className="mt-1.5 flex flex-wrap gap-x-2 text-[12px] font-dm text-[var(--panel-tinta-media)]">
@@ -281,7 +281,7 @@ function ListaCerrados({ leads, vista }: { leads: LeadTarjeta[]; vista: "perdido
           {leads.map(l => (
             <tr key={l.id}>
               <td className="px-4 py-2"><Link href={`/admin/leads/${l.id}`} className="panel-foco font-medium hover:underline">{l.nombre}</Link></td>
-              <td className="px-2 py-2">{l.tours.map(t => codigoDeTour(t)).join(" · ") || "—"}</td>
+              <td className="px-2 py-2"><BadgesTour slugs={l.tours} /></td>
               <td className="px-2 py-2">{fechaCortaM(l.fechaViaje) || "—"}</td>
               <td className="panel-cifra px-2 py-2 text-right">{l.monto ? fmx(l.monto) : "—"}</td>
               <td className="px-4 py-2 text-[var(--panel-tinta-media)]">{vista === "perdido" ? etiquetaMotivoPerdida(l.motivoPerdida) : canalCorto(l.canal)}</td>

@@ -8,7 +8,7 @@ import {
 import type { ConversacionFila, DetalleConversacion, EstadoConexion } from "@/lib/admin/bandejaDatos";
 import { ETAPAS_PIPELINE, etiquetaEtapa } from "@/lib/admin/crm";
 import { haceCuanto } from "@/lib/admin/bandeja";
-import { ChipEtapa } from "../leads/etapas";
+import { BadgesTour, ChipEtapa } from "../leads/etapas";
 import { botonPrimario, botonSecundario, canalCorto, fechaCortaM, fmx, inputCls, type TourOpcion } from "../leads/comun";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 
@@ -336,7 +336,7 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
                   {ETAPAS_PIPELINE.map(e => <option key={e} value={e}>{etiquetaEtapa(e)}</option>)}
                 </select></label>
               <dl className="space-y-1 text-[13px] font-dm">
-                <Dato k="Tours" v={l.tours.length ? l.tours.map(tourNombre).join(", ") : "—"} />
+                <div className="flex justify-between gap-3"><dt className="text-[var(--panel-tinta-media)]">Tours</dt><dd className="text-right"><BadgesTour slugs={l.tours} nombres={Object.fromEntries(l.tours.map(t => [t, tourNombre(t)]))} /></dd></div>
                 <Dato k="Fecha" v={l.fechaViaje ? fechaCortaM(l.fechaViaje) ?? "—" : "—"} />
                 <Dato k="Personas" v={l.pax ? String(l.pax) : "—"} />
                 <Dato k="Monto" v={l.monto ? fmx(l.monto) : "—"} />
