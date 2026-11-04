@@ -239,6 +239,7 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   { prefijo: "/admin/score",         seccion: "score"        },
   { prefijo: "/api/admin/score",     seccion: "score"        },
   { prefijo: "/admin/agente",        seccion: "agente"       },
+  { prefijo: "/api/admin/agente",    seccion: "agente"       },
 ];
 
 export function seccionRestringida(pathname: string): SeccionAdmin | null {

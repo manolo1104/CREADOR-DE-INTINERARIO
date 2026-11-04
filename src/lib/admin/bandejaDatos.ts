@@ -216,7 +216,10 @@ export type ConversacionFila = Awaited<ReturnType<typeof listarConversaciones>>[
 export async function detalleConversacion(id: string) {
   const c = await prisma.conversacion.findUnique({ where: { id } });
   if (!c) return null;
-  const mensajes = await prisma.mensaje.findMany({ where: { conversacionId: id }, orderBy: { fecha: "desc" }, take: 300 });
+  const [mensajes, propuesta] = await Promise.all([
+    prisma.mensaje.findMany({ where: { conversacionId: id }, orderBy: { fecha: "desc" }, take: 300 }),
+    prisma.propuestaAgente.findFirst({ where: { conversacionId: id, estado: "pendiente" }, orderBy: { createdAt: "desc" } }),
+  ]);
   const lead = c.contactoId ? await prisma.oportunidad.findFirst({
     where: { contactoId: c.contactoId }, orderBy: [{ createdAt: "desc" }],
     include: { contacto: true, tareas: { where: { estado: "pendiente" }, orderBy: [{ vence: "asc" }], take: 3 } },
@@ -224,6 +227,7 @@ export async function detalleConversacion(id: string) {
   return {
     id: c.id, nombre: c.nombre, telefono: c.telefono, chatId: c.chatId, noEsCliente: c.noEsCliente, archivada: c.archivada,
     ultimoEntranteEn: c.ultimoEntranteEn?.toISOString() ?? null,
+    propuesta: propuesta ? { id: propuesta.id, borrador: propuesta.borrador, razon: propuesta.razon, faltaDato: propuesta.faltaDato, en: propuesta.createdAt.toISOString() } : null,
     mensajes: mensajes.reverse().map(m => ({
       id: m.id, direccion: m.direccion, tipo: m.tipo, texto: m.texto, enviadoDesde: m.enviadoDesde, enviadoPor: m.enviadoPor,
       estado: m.estado, error: m.error, fecha: m.fecha.toISOString(), importado: m.importado,

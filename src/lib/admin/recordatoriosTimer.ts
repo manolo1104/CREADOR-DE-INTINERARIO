@@ -31,6 +31,13 @@ export function iniciarRecordatorios() {
       .catch(e => console.error("recordatorios:", (e as Error)?.message));
   };
   setTimeout(correr, 60_000).unref?.();
+  // El agente (Fase 4) cada minuto: lee los chats con mensajes nuevos y llena el lead. Respeta el tope y el apagado.
+  const agente = () => {
+    import("./agente/copiloto").then(m => m.vueltaAgente())
+      .then(r => { if (r.leidos || r.detenido) console.log(`🤖 Agente: ${r.leidos} chat(s) leídos, ${r.llenados} lead(s) con datos nuevos${r.detenido ? ` · detenido: ${r.detenido}` : ""}`); })
+      .catch(e => console.error("agente:", (e as Error)?.message));
+  };
+  setInterval(agente, 60_000).unref?.();
   g.__recordatoriosHuasteca = setInterval(correr, CADA_MS);
   g.__recordatoriosHuasteca.unref?.();
 }

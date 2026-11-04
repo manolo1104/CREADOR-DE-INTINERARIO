@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sesionActual } from "@/lib/admin/sesion";
 import { cambiarConversacion, encolarRespuesta, reintentar } from "@/lib/admin/bandejaDatos";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
+import { propuestaUsada } from "@/lib/admin/agente/copiloto";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +10,12 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const sesion = await sesionActual();
   if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
-  let body: { texto?: unknown };
+  let body: { texto?: unknown; propuestaId?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {
     const m = await encolarRespuesta(params.id, body.texto, sesion.nombre);
+    // Salió de una propuesta del agente: queda aprobada (igual) o editada (cambiada).
+    if (typeof body.propuestaId === "string" && body.propuestaId) await propuestaUsada(body.propuestaId, m.texto ?? "", sesion.nombre).catch(() => {});
     return NextResponse.json({ ok: true, id: m.id });
   } catch (e) {
     return NextResponse.json({ error: (e as Error)?.message || "No se pudo mandar." }, { status: 400 });

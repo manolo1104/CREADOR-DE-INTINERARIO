@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle, Archive, ArrowLeft, CalendarPlus, Check, CheckCheck, Clock, ExternalLink, FileText, Search, Send, UserCheck, UserX, Zap,
+  AlertTriangle, Archive, ArrowLeft, CalendarPlus, Check, CheckCheck, Clock, ExternalLink, FileText, Search, Send, Sparkles, UserCheck, UserX, Zap,
 } from "lucide-react";
 import type { ConversacionFila, DetalleConversacion, EstadoConexion } from "@/lib/admin/bandejaDatos";
 import { ETAPAS_PIPELINE, etiquetaEtapa } from "@/lib/admin/crm";
@@ -37,6 +37,10 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
   const [verRapidas, setVerRapidas] = useState(false);
   const [editandoRapidas, setEditandoRapidas] = useState<string | null>(null);
   const [nota, setNota] = useState("");
+  // Copiloto (Fase 4): la propuesta que se está usando y el rechazo con motivo.
+  const [propuestaUsada, setPropuestaUsada] = useState<string | null>(null);
+  const [pidiendo, setPidiendo] = useState(false);
+  const [motivoRechazo, setMotivoRechazo] = useState<string | null>(null);
   const [ahora, setAhora] = useState(() => new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -72,7 +76,7 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
 
   async function abrir(id: string) {
     playClick();
-    abiertoRef.current = id; setAbierto(id); setVista("chat"); setMsj(null); setTexto("");
+    abiertoRef.current = id; setAbierto(id); setVista("chat"); setMsj(null); setTexto(""); setPropuestaUsada(null); setMotivoRechazo(null);
     setDetalle(d => (d?.id === id ? d : null));
     window.history.replaceState(null, "", `/admin/bandeja?chat=${encodeURIComponent(id)}`);
     const c = convs.find(x => x.id === id);
@@ -89,13 +93,34 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
     const t = texto.trim();
     if (!t || !abierto || enviando) return;
     setEnviando(true); setMsj(null);
-    const r = await fetch(`/api/admin/bandeja/${abierto}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t }) }).catch(() => null);
+    const r = await fetch(`/api/admin/bandeja/${abierto}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t, propuestaId: propuestaUsada }) }).catch(() => null);
     const d = await r?.json().catch(() => null);
     setEnviando(false);
     if (!r?.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo mandar", error: true }); return; }
-    playSuccess(); setTexto("");
+    playSuccess(); setTexto(""); setPropuestaUsada(null);
     await cargar();
     requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; });
+  }
+
+  async function sugerir() {
+    if (!abierto || pidiendo) return;
+    setPidiendo(true); setMsj(null);
+    const r = await fetch(`/api/admin/bandeja/${abierto}/propuesta`, { method: "POST" }).catch(() => null);
+    const d = await r?.json().catch(() => null);
+    setPidiendo(false);
+    if (!r?.ok) { playError(); setMsj({ texto: d?.error || "El agente no pudo proponer", error: true }); return; }
+    playSuccess();
+    if (d.propuesta?.urgente) setMsj({ texto: "El agente ve una queja o emergencia: se le avisó a Manolo para que lo atienda una persona.", error: true });
+    await cargar();
+  }
+  async function rechazar() {
+    const p = detalle?.propuesta;
+    if (!p || !abierto || !motivoRechazo?.trim()) return;
+    const r = await fetch(`/api/admin/bandeja/${abierto}/propuesta`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ propuestaId: p.id, motivo: motivoRechazo }) }).catch(() => null);
+    const d = await r?.json().catch(() => null);
+    if (!r?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo", error: true }); return; }
+    playSuccess(); setMotivoRechazo(null); setMsj({ texto: "Propuesta rechazada: el motivo queda para mejorar las siguientes" });
+    await cargar();
   }
 
   async function accion(accion: string, extra: Record<string, unknown> = {}) {
@@ -237,6 +262,24 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
               </div>
               <div className="border-t border-[var(--panel-borde)] bg-white p-2 sm:p-3">
                 {msj && <p role="status" className={`mb-1.5 text-[12.5px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
+                {detalle.propuesta && (
+                  <div className="mb-2 rounded-[var(--panel-radio-sm)] border border-[#c9b8f0] bg-[#f6f2ff] p-2.5 text-[13px] font-dm">
+                    <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#5b3fa8]"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />Propuesta del agente</p>
+                    <p className="mt-1 whitespace-pre-wrap text-[var(--panel-tinta)]">{detalle.propuesta.borrador}</p>
+                    {(detalle.propuesta.razon || detalle.propuesta.faltaDato) && <p className="mt-1 text-[11.5px] text-[var(--panel-tinta-media)]">{detalle.propuesta.razon}{detalle.propuesta.faltaDato ? ` · Falta: ${detalle.propuesta.faltaDato}` : ""}</p>}
+                    {motivoRechazo === null ? (
+                      <div className="mt-2 flex gap-2">
+                        <button type="button" onClick={() => { setTexto(detalle.propuesta!.borrador); setPropuestaUsada(detalle.propuesta!.id); }} className={`${botonPrimario} min-h-[36px]`}>Usar (puedes editarla)</button>
+                        <button type="button" onClick={() => setMotivoRechazo("")} className={`${botonSecundario} min-h-[36px]`}>No sirve</button>
+                      </div>
+                    ) : (
+                      <form className="mt-2 flex gap-2" onSubmit={e => { e.preventDefault(); void rechazar(); }}>
+                        <input autoFocus value={motivoRechazo} onChange={e => setMotivoRechazo(e.target.value)} placeholder="¿Por qué no sirve? (precio mal, tono, falta algo…)" aria-label="Motivo del rechazo" className={`${inputCls} py-1.5`} />
+                        <button type="submit" disabled={!motivoRechazo.trim()} className={`${botonSecundario} min-h-[36px]`}>Rechazar</button>
+                      </form>
+                    )}
+                  </div>
+                )}
                 {verRapidas && (
                   <div className="mb-2 max-h-48 overflow-y-auto rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white p-2">
                     {editandoRapidas !== null ? (
@@ -254,6 +297,7 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
                   </div>
                 )}
                 <div className="flex items-end gap-2">
+                  <button type="button" onClick={() => void sugerir()} disabled={pidiendo} aria-label="Sugerir respuesta con el agente" title="Sugerir respuesta (agente)" className="panel-foco inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c9b8f0] text-[#5b3fa8] disabled:opacity-50">{pidiendo ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}</button>
                   <button type="button" onClick={() => setVerRapidas(v => !v)} aria-label="Respuestas rápidas" title="Respuestas rápidas" className="panel-foco inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde)] text-[var(--panel-tinta-media)]"><Zap className="h-4 w-4" aria-hidden="true" /></button>
                   <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={1} aria-label="Escribe un mensaje" placeholder="Escribe un mensaje"
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(); } }}

@@ -1139,6 +1139,8 @@ model Conversacion {
   archivada        Boolean   @default(false)
   /// Proveedor, amigo, alguien del equipo: sus mensajes no crean leads ni cuentan en los KPI.
   noEsCliente      Boolean   @default(false)
+  /// Hasta cuándo leyó el agente este chat (Fase 4): se vuelve a leer solo si entró algo después.
+  agenteLeyoHasta  DateTime?
   mensajes         Mensaje[]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -1175,4 +1177,52 @@ model Mensaje {
 
   @@index([conversacionId, fecha])
   @@index([direccion, estado])
+}
+
+// ── Agente de operaciones (Fase 4 del rediseño, 4 nov 2026) ────────────────
+// Claude vía API con tope de gasto mensual (10 USD, decisión de Manolo). Lo
+// interno lo hace solo (llenar datos vacíos del lead); lo que sale a un
+// cliente es SIEMPRE una propuesta que una persona aprueba, edita o rechaza.
+
+/// Cada llamada a Claude, con su costo: de aquí sale el gasto del mes y el tope.
+model UsoClaude {
+  id           String   @id @default(cuid())
+  /// YYYY-MM (hora de México): el tope es por mes.
+  mes          String
+  /// extraer | responder
+  tarea        String
+  modelo       String
+  entrada      Int      @default(0)
+  salida       Int      @default(0)
+  cacheLectura Int      @default(0)
+  cacheEscrita Int      @default(0)
+  costoUsd     Float    @default(0)
+  ok           Boolean  @default(true)
+  error        String?
+  createdAt    DateTime @default(now())
+
+  @@index([mes])
+}
+
+/// Lo que el agente propone y una persona decide. Cada decisión queda con su motivo.
+model PropuestaAgente {
+  id             String    @id @default(cuid())
+  /// respuesta (mensaje al cliente)
+  tipo           String
+  conversacionId String?
+  oportunidadId  String?
+  borrador       String
+  razon          String?
+  /// Lo que falta saber para contestar mejor (el agente no inventa).
+  faltaDato      String?
+  /// pendiente | aprobada (sin cambios) | editada | rechazada | caducada
+  estado         String    @default("pendiente")
+  textoFinal     String?
+  motivo         String?
+  decididoPor    String?
+  decididoEn     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([estado, createdAt])
+  @@index([conversacionId])
 }
