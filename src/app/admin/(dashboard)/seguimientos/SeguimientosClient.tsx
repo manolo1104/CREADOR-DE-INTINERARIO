@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import type { TareaFila } from "@/lib/admin/crmDatos";
 import { agruparTareas } from "@/lib/admin/crm";
+import { REGLAS } from "@/lib/admin/automatizaciones";
 import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "./FilaSeguimiento";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
@@ -85,6 +86,13 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
           </button>
         ))}
       </div>
+      <details className="mb-3 text-[12.5px] font-dm text-[var(--panel-tinta-media)]">
+        <summary className="panel-foco cursor-pointer select-none">Qué seguimientos se crean solos</summary>
+        <ul className="mt-2 space-y-1 pl-4">
+          {REGLAS.map(r => <li key={r.clave} className="list-disc"><span className="font-medium text-[var(--panel-tinta)]">{r.etiqueta}:</span> {r.detalle}</li>)}
+          <li className="list-disc">Cada mañana a las 7:30 llega por correo el resumen del día a cada quien.</li>
+        </ul>
+      </details>
       {msj && <p role="status" className={`mb-3 text-[13px] font-dm ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
 
       {grupos.length === 0 ? (

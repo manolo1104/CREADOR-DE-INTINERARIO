@@ -241,7 +241,7 @@ export async function cambiarTarea(id: string, c: CambioTarea, quien: string) {
  * ninguna y el próximo paso era la tarea que se acaba de cerrar, se limpia
  * (uno escrito a mano en la ficha se respeta).
  */
-async function sincronizarProximoPaso(oportunidadId: string, tituloCerrado: string | null = null) {
+export async function sincronizarProximoPaso(oportunidadId: string, tituloCerrado: string | null = null) {
   const sig = await prisma.tarea.findFirst({ where: { oportunidadId, estado: "pendiente" }, orderBy: [{ vence: "asc" }, { hora: "asc" }] });
   if (sig) { await prisma.oportunidad.update({ where: { id: oportunidadId }, data: { proximoPaso: sig.titulo, proximoPasoEn: sig.vence } }); return; }
   if (tituloCerrado) await prisma.oportunidad.updateMany({ where: { id: oportunidadId, proximoPaso: tituloCerrado }, data: { proximoPaso: null, proximoPasoEn: null } });
