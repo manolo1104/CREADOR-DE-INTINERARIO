@@ -43,6 +43,12 @@ export interface ProtocoloSalida {
   hora: string | null;
   duracion: string;
   incluye: string[];
+  /** La ficha de «Rutas y protocolos» del tour (Fase 1), si ya se capturó. */
+  ruta: {
+    paradas: { hora: string; lugar: string; detalle: string }[];
+    seguridad: string | null; planB: string | null; queLlevar: string | null;
+    proveedores: { nombre: string; servicio: string; telefono: string | null }[];
+  } | null;
 }
 
 export interface SalidaOperativa extends SalidaAgrupada {
@@ -73,10 +79,22 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
   const salidas = agruparSalidas(dias);
   if (salidas.length === 0) return [];
   const slugs = Array.from(new Set(salidas.map(s => s.slug)));
-  const [registros, costos] = await Promise.all([
+  const [registros, costos, rutas] = await Promise.all([
     prisma.salida.findMany({ where: { clave: { in: salidas.map(s => s.clave) } } }).catch(() => []),
     prisma.tourCosto.findMany({ where: { tourSlug: { in: slugs } } }),
+    prisma.rutaTour.findMany({ where: { tourSlug: { in: slugs } } }).catch(() => []),
   ]);
+  const idsProv = Array.from(new Set(rutas.flatMap(r => r.proveedores)));
+  const provs = idsProv.length ? await prisma.proveedor.findMany({ where: { id: { in: idsProv }, activo: true }, select: { id: true, nombre: true, servicio: true, telefono: true } }).catch(() => []) : [];
+  const rutaDe = (slug: string): ProtocoloSalida["ruta"] => {
+    const r = rutas.find(x => x.tourSlug === slug);
+    if (!r) return null;
+    return {
+      paradas: Array.isArray(r.paradas) ? (r.paradas as { hora: string; lugar: string; detalle: string }[]) : [],
+      seguridad: r.seguridad, planB: r.planB, queLlevar: r.queLlevar,
+      proveedores: r.proveedores.map(id => provs.find(p => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p).map(p => ({ nombre: p.nombre, servicio: p.servicio, telefono: p.telefono })),
+    };
+  };
   const porFolio = new Map(reservas.map(r => [r.confirmationNumber, r]));
 
   return salidas.map(s => {
@@ -111,7 +129,11 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
       conceptos,
       numeros: numerosDeSalida(s.monto, s.personas, conceptos),
       precioPorPax,
-      protocolo: tour && p ? { lugar: p.lugar, hora: p.hora, duracion: tourDurTexto(tour), incluye: tour.incluye ?? [] } : null,
+      protocolo: tour && p ? {
+        // El punto de encuentro capturado en «Rutas» manda sobre el del catálogo.
+        lugar: rutas.find(x => x.tourSlug === s.slug)?.puntoEncuentro || p.lugar, hora: p.hora,
+        duracion: tourDurTexto(tour), incluye: tour.incluye ?? [], ruta: rutaDe(s.slug),
+      } : null,
       pasajeros,
     };
   });

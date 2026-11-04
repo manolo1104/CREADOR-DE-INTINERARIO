@@ -167,7 +167,20 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                 <div className="sm:col-span-2"><dt className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Incluye</dt><dd className="text-[var(--panel-tinta)]">{s.protocolo.incluye.join(" · ") || "—"}</dd></div>
               </dl>
             ) : <p className="mt-2 text-[13px] font-dm text-[var(--panel-tinta-media)]">Salida a medida: el protocolo se acuerda con el cliente.</p>}
-            <p className="mt-3 text-[12px] font-dm text-[var(--panel-tinta-suave)]">Paradas, guion del guía, plan B y proveedores llegan con «Rutas y protocolos».</p>
+            {s.protocolo?.ruta ? (
+              <div className="mt-3 space-y-3 text-[13px] font-dm">
+                {s.protocolo.ruta.paradas.length > 0 && (
+                  <ol className="space-y-1">{s.protocolo.ruta.paradas.map((p, i) => <li key={i} className="flex gap-2"><span className="panel-cifra w-12 shrink-0 text-[var(--panel-tinta-media)]">{p.hora || "—"}</span><span><strong className="font-medium text-[var(--panel-tinta)]">{p.lugar}</strong>{p.detalle ? <span className="text-[var(--panel-tinta-media)]"> · {p.detalle}</span> : null}</span></li>)}</ol>
+                )}
+                {s.protocolo.ruta.seguridad && <div><p className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-problema)]">Seguridad</p><p className="whitespace-pre-wrap text-[var(--panel-tinta)]">{s.protocolo.ruta.seguridad}</p></div>}
+                {s.protocolo.ruta.planB && <div><p className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Plan B</p><p className="whitespace-pre-wrap text-[var(--panel-tinta)]">{s.protocolo.ruta.planB}</p></div>}
+                {s.protocolo.ruta.queLlevar && <div><p className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Qué llevar</p><p className="whitespace-pre-wrap text-[var(--panel-tinta)]">{s.protocolo.ruta.queLlevar}</p></div>}
+                {s.protocolo.ruta.proveedores.length > 0 && (
+                  <div><p className="text-[11px] uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Proveedores</p>
+                    <ul>{s.protocolo.ruta.proveedores.map((p, i) => <li key={i}>{p.nombre} <span className="text-[var(--panel-tinta-media)]">({p.servicio})</span>{p.telefono && <> · <a href={`https://wa.me/${p.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="panel-foco text-[#1f7a4d] hover:underline">WhatsApp</a></>}</li>)}</ul></div>
+                )}
+              </div>
+            ) : <p className="mt-3 text-[12px] font-dm text-[var(--panel-tinta-suave)]">Este tour aún no tiene su ficha en «Rutas y protocolos» (paradas, seguridad, plan B y proveedores).</p>}
           </section>
         </div>
 

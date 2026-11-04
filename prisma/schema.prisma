@@ -1226,3 +1226,50 @@ model PropuestaAgente {
   @@index([estado, createdAt])
   @@index([conversacionId])
 }
+
+// ── Rutas y protocolos + Proveedores (Fase 1 del rediseño, 4 nov 2026) ──────
+// Una ficha por tour: la base de la futura «escuela de guías». Los COSTOS no
+// van aquí: siguen en el Cotizador (`CostoTour`), que es de donde los leen la
+// salida, Rentabilidad y el corte.
+
+model RutaTour {
+  tourSlug       String   @id
+  /// [{ hora: "08:00", lugar: "…", detalle: "…" }]
+  paradas        Json?
+  puntoEncuentro String?
+  /// Lo que cuenta el guía en el camino.
+  guion          String?
+  /// Puntos de seguridad (uno por renglón).
+  seguridad      String?
+  /// Qué se hace si el río sube, llueve, cierran el acceso…
+  planB          String?
+  /// Qué llevar (uno por renglón).
+  queLlevar      String?
+  notas          String?
+  /// Ids de `Proveedor` que participan.
+  proveedores    String[] @default([])
+  actualizadoPor String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Proveedor {
+  id        String   @id @default(cuid())
+  nombre    String
+  /// canoas | alimentos | hospedaje | transporte | guia | equipo | entradas | otro
+  servicio  String   @default("otro")
+  contacto  String?
+  /// E.164 cuando se puede.
+  telefono  String?
+  correo    String?
+  /// [{ temporada: "Alta (15 dic–6 ene)", concepto: "Canoa", precio: 300, porPersona: true }]
+  precios   Json?
+  /// Slugs de los tours en los que participa.
+  tours     String[] @default([])
+  notas     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([activo])
+}
